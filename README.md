@@ -122,11 +122,26 @@ in die `.env` auf dem Server.
 
 ---
 
+## Kommandozeile
+
+```bash
+python -m cli healthcheck                 # zuerst auf jedem neuen Server
+python -m cli backfill --von 2020-03-30   # Historie laden (resumierbar)
+python -m cli status                      # was liegt im Speicher?
+python -m cli quality                     # Lücken, Duplikate, Ausreißer
+python -m cli ingest                      # Live-Kerzen mitschreiben
+python -m cli leverage --kapital 500      # Hebel-Tabelle für dein Konto
+```
+
+`backfill` lädt ~6 Jahre BTC-Historie (1m/15m/1h/4h) in rund 3.400 Anfragen
+(~8 Minuten bei 8 req/s). Er ist **resumierbar** — ein Abbruch kostet höchstens
+eine Seite, der nächste Aufruf setzt hinter der letzten vollständigen Kerze an.
+
 ## Struktur
 
 ```
 core/       Konfiguration, Domänenmodelle          [P0 ✓]
-data/       Bybit-Adapter, Backfill, News          [P0 ✓ / P1]
+data/       Bybit-Adapter, Store, Backfill, WS     [P0 ✓ / P1 ✓]
 strategy/   Genome, Compiler, Indikatoren          [P3]
 backtest/   Engine, Fill-Modell, Walk-Forward      [P2]
 execution/  Sizer, Risk-Officer, Order-Router      [P0 ✓ / P4]
@@ -134,6 +149,27 @@ research/   CEO, Analyst, Gates, Champion          [P6]
 api/ web/   FastAPI + Next.js PWA                  [P5]
 scripts/    Health-Check, Wartungswerkzeuge        [P0 ✓]
 ```
+
+### Datenhaltung — bewusst zweigleisig
+
+| | Wofür | Warum |
+|---|---|---|
+| **Parquet** | Historische Kerzen | Spaltenorientiert; ein Walk-Forward scannt Millionen Zeilen. Nach Monat partitioniert ⇒ Backfill resumierbar. |
+| **Postgres** | Trades, Positionen, Research-Journal, Kosten | Transaktional, gleichzeitig les- und schreibbar. |
+
+Im Parquet liegen `float64` statt `Decimal` — der Rundungsfehler liegt bei BTC-Preisen
+um 100.000 bei ~1e-11, also neun Größenordnungen unter der Tick-Größe von 0,1, während
+`Decimal` über 3,3 Mio. Kerzen zwei Größenordnungen langsamer wäre. `Decimal` bleibt
+zwingend für alles, was zur Börse geht.
+
+### Drei Lookahead-Fallen, gegen die explizit gebaut wird
+
+1. **Kerzenreihenfolge.** Bybit liefert absteigend (neueste zuerst). Unbemerkt ergibt
+   das einen rückwärts durch die Zeit laufenden Backtest, der plausibel aussieht.
+2. **Unfertige Kerzen.** Die zuletzt gelieferte Kerze bildet sich meist noch. Ihr
+   Hoch/Tief/Schluss stand zum Signalzeitpunkt nicht fest. `drop_unfinished()` wirft sie weg.
+3. **Unbestätigte WS-Updates.** Bybit sendet während einer laufenden Periode mehrfach
+   Aktualisierungen mit `confirm: false`. Nur `confirm: true` wird gespeichert.
 
 Aller Bybit-Kontakt läuft ausschließlich über `data/bybit/adapter.py`. Das macht die
 Demo/Live-Umschaltung zu einer Konfigurationsänderung und die Testsuite netzwerkfrei.
