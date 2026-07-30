@@ -24,7 +24,6 @@ from execution.risk import (
     Vetoed,
     VetoReason,
 )
-
 from tests.factories import make_signal
 
 T0 = datetime(2026, 3, 2, 12, 0, tzinfo=UTC)  # ein Montag
@@ -39,7 +38,7 @@ class Clock:
     def __call__(self) -> datetime:
         return self.now
 
-    def advance(self, **kwargs) -> None:  # noqa: ANN003
+    def advance(self, **kwargs) -> None:
         self.now += timedelta(**kwargs)
 
 

@@ -255,6 +255,14 @@ class PathSettings(BaseModel):
     data_store: str = "data_store"
     logs: str = "logs"
 
+    state: str = "state"
+    """Betriebszustand, der einen Neustart ueberleben muss - vor allem der
+    Risk-Officer. Getrennt vom Datenspeicher, weil er anders gesichert wird:
+    Kerzen lassen sich jederzeit nachladen, ein ausgeloester Kill-Switch nicht."""
+
+    strategies: str = "strategies"
+    """Zugelassene Genome. Was hier liegt, hat die neun Gates bestanden."""
+
 
 class Settings(BaseSettings):
     """Wurzel-Konfiguration."""

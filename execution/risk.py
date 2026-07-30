@@ -24,7 +24,7 @@ Reihenfolge der Pruefungen - von der haertesten zur mildesten:
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from enum import StrEnum
@@ -133,6 +133,33 @@ class RiskState:
         )
 
 
+def load_risk_state(path: Path | str | None) -> RiskState:
+    """Zustand von der Platte lesen, ohne einen Risk-Officer zu bauen.
+
+    Wird von der Kommandozeile gebraucht: Ob der Kill-Switch aktiv ist, muss
+    feststehen, **bevor** eine Verbindung zur Boerse aufgebaut wird. Ein
+    abgeschaltetes System soll sich nicht erst noch anmelden.
+
+    Ein unlesbarer Zustand fuehrt zu PAUSED, nicht zu einem frischen Start:
+    Im Zweifel stillstehen, der Mensch entscheidet.
+    """
+    if path is None:
+        return RiskState()
+    file = Path(path)
+    if not file.exists():
+        return RiskState()
+    try:
+        return RiskState.from_json(json.loads(file.read_text()))
+    except (json.JSONDecodeError, ValueError, KeyError) as exc:
+        log.error(
+            "risk.zustand_unlesbar",
+            fehler=str(exc),
+            pfad=str(file),
+            massnahme="Handel pausiert, bis der Zustand geprueft wurde",
+        )
+        return RiskState(trading_state=TradingState.PAUSED)
+
+
 @dataclass(slots=True)
 class RiskAssessment:
     """Momentaufnahme der Risikolage - fuer Dashboard und Protokoll."""
@@ -160,7 +187,7 @@ class RiskOfficer:
         instrument: Instrument,
         *,
         state_path: Path | str | None = None,
-        clock=None,  # noqa: ANN001 - Callable[[], datetime]
+        clock=None,
     ) -> None:
         self.settings = settings
         self.instrument = instrument
@@ -170,27 +197,14 @@ class RiskOfficer:
 
     # -- Zustandshaltung -----------------------------------------------------
     def _load_state(self) -> RiskState:
-        if self.state_path is None or not self.state_path.exists():
-            return RiskState()
-        try:
-            data = json.loads(self.state_path.read_text())
-            state = RiskState.from_json(data)
+        state = load_risk_state(self.state_path)
+        if self.state_path is not None and self.state_path.exists():
             log.info(
                 "risk.zustand_geladen",
                 zustand=state.trading_state.value,
                 hoechststand=str(state.equity_peak),
             )
-            return state
-        except (json.JSONDecodeError, ValueError, KeyError) as exc:
-            # Ein kaputter Zustand darf nicht zu unbegrenztem Handeln fuehren.
-            # Im Zweifel stillstehen: Der Mensch entscheidet.
-            log.error(
-                "risk.zustand_unlesbar",
-                fehler=str(exc),
-                pfad=str(self.state_path),
-                massnahme="Handel pausiert, bis der Zustand geprueft wurde",
-            )
-            return RiskState(trading_state=TradingState.PAUSED)
+        return state
 
     def save(self) -> None:
         if self.state_path is None:
@@ -277,14 +291,19 @@ class RiskOfficer:
                 log.error("risk.wochenlimit", verlust_pct=float(week_pnl))
             return
 
-        if day_pnl <= -self.settings.daily_loss_limit_pct:
-            if self.state.paused_until is None or self.state.paused_until < now:
-                self.state.paused_until = now + timedelta(hours=24)
-                log.warning(
-                    "risk.tageslimit",
-                    verlust_pct=float(day_pnl),
-                    pause_bis=self.state.paused_until.isoformat(),
-                )
+        # Nur eine neue Pause setzen, wenn keine laufende besteht - sonst
+        # wuerde sich die Sperre bei jeder Kerze um weitere 24 Stunden
+        # verlaengern und nie ablaufen.
+        already_paused = (
+            self.state.paused_until is not None and self.state.paused_until >= now
+        )
+        if day_pnl <= -self.settings.daily_loss_limit_pct and not already_paused:
+            self.state.paused_until = now + timedelta(hours=24)
+            log.warning(
+                "risk.tageslimit",
+                verlust_pct=float(day_pnl),
+                pause_bis=self.state.paused_until.isoformat(),
+            )
 
     @staticmethod
     def _pct_change(

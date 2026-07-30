@@ -7,13 +7,15 @@
     python -m cli status
     python -m cli quality
     python -m cli ingest                   # Live-Kerzen mitschreiben
+    python -m cli trade --trocken          # Handelsplan pruefen, ohne zu handeln
+    python -m cli trade                    # handeln
 """
 
 from __future__ import annotations
 
 import asyncio
 import signal
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import structlog
 import typer
@@ -285,6 +287,204 @@ def ingest(
             f"\n[dim]Beendet. {stream.stats.confirmed_candles} bestaetigte Kerzen, "
             f"{stream.stats.reconnects} Reconnects.[/]"
         )
+
+    asyncio.run(main())
+
+
+@app.command()
+def trade(
+    strategie: str = typer.Option(
+        None, "--strategie", "-s", help="Genom-Datei. Standard: <strategies>/champion.json"
+    ),
+    intervall: str = typer.Option("15", "--intervall", "-i", help="Handelsintervall."),
+    markt: str = typer.Option("perpetual", help="perpetual oder spot."),
+    echtgeld: bool = typer.Option(
+        False, "--echtgeld", help="Pflichtangabe auf Mainnet. Ohne sie wird abgebrochen."
+    ),
+    trocken: bool = typer.Option(
+        False, "--trocken", help="Alles pruefen und den Plan zeigen, aber nicht handeln."
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Handeln. Der Befehl, um den es die ganze Zeit ging.
+
+    Ablauf je abgeschlossener Kerze: Strategie fragen, Risk-Officer fragen,
+    Order platzieren, Stop an die Position haengen, Ziele setzen. Kein LLM in
+    dieser Schleife - es laeuft derselbe deterministische Code wie im Backtest.
+
+    Vor dem ersten Lauf: ``python -m cli healthcheck``, dann ``backfill``,
+    dann ``quality``. Und dann 30 Tage Demo, bevor echtes Geld hineingeht.
+
+    Beenden mit Strg-C. Offene Positionen bleiben dabei bestehen - ihr Stop
+    liegt an der Boerse und wirkt weiter, auch wenn dieser Prozess nicht laeuft.
+    """
+    import json
+    from pathlib import Path
+
+    from data.bybit.adapter import BybitAccount
+    from data.bybit.errors import BybitAuthError, BybitError, BybitGeoBlockedError
+    from data.bybit.trading import BybitTrading
+    from execution.live import LiveTrader, telegram_notifier
+    from execution.risk import RiskOfficer, TradingState, load_risk_state
+    from execution.router import MarketKind
+    from strategy.compiler import compile_genome
+    from strategy.genome import Genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+
+    # -- 1. Echtgeld-Sperre --------------------------------------------------
+    # Ein Tippfehler in der Umgebungsvariablen darf nicht dazu fuehren, dass
+    # versehentlich mit echtem Geld gehandelt wird. Die Bestaetigung muss auf
+    # der Kommandozeile stehen, nicht in einer Datei.
+    if settings.bybit.environment.is_real_money and not echtgeld:
+        console.print(
+            "[red]Umgebung ist MAINNET - hier liegt echtes Geld.[/]\n"
+            "Wenn das gewollt ist, ausdruecklich bestaetigen:\n"
+            "  [bold]python -m cli trade --echtgeld[/]"
+        )
+        raise typer.Exit(2)
+
+    try:
+        market_kind = MarketKind(markt)
+    except ValueError as exc:
+        raise typer.BadParameter("markt muss 'perpetual' oder 'spot' sein") from exc
+
+    # -- 2. Strategie laden --------------------------------------------------
+    path = Path(strategie) if strategie else Path(settings.paths.strategies) / "champion.json"
+    if not path.exists():
+        console.print(
+            f"[red]Keine Strategie unter {path}.[/]\n"
+            "Es wird nur gehandelt, was die Zulassungs-Gates bestanden hat - "
+            "ohne zugelassenes Genom gibt es nichts zu handeln."
+        )
+        raise typer.Exit(2)
+
+    genome = Genome.model_validate(json.loads(path.read_text()))
+    strategy = compile_genome(genome)
+
+    # -- 3. Kill-Switch ------------------------------------------------------
+    # Vor jeder Verbindung: Ein abgeschaltetes System soll sich nicht erst
+    # noch bei der Boerse anmelden.
+    state_path = Path(settings.paths.state) / "risk.json"
+    persisted = load_risk_state(state_path)
+    if persisted.trading_state is TradingState.KILLED:
+        console.print(
+            f"[red]Kill-Switch ist aktiv:[/] {persisted.kill_reason}\n"
+            "Erst nachsehen, was passiert ist. Zuruecksetzen danach im Dashboard "
+            "oder ueber reset_kill_switch()."
+        )
+        raise typer.Exit(2)
+
+    # -- 4. Boersenanbindung -------------------------------------------------
+    store = CandleStore(settings.paths.data_store)
+    market = BybitMarketData(settings.bybit)
+    account = BybitAccount(settings.bybit)
+    gateway = BybitTrading(settings.bybit)
+    interval_obj = Interval(intervall)
+
+    # Der erste Kontakt zur Boerse. Hier scheitert es, wenn die IP nicht auf
+    # der Whitelist steht oder der Host in einer gesperrten Region laeuft -
+    # die beiden haeufigsten Probleme beim ersten Start auf einem neuen Server.
+    try:
+        instrument = market.get_instrument(settings.bybit.symbol)
+        equity = account.get_wallet_balance("USDT").equity
+        positions = account.get_positions(settings.bybit.symbol)
+    except BybitGeoBlockedError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(2) from exc
+    except BybitAuthError as exc:
+        console.print(
+            f"[red]Anmeldung abgelehnt:[/] {exc}\n"
+            "Haeufigste Ursache: Die IP dieses Servers steht nicht auf der "
+            "Whitelist des API-Keys.\n"
+            "Pruefen mit: python -m cli healthcheck"
+        )
+        raise typer.Exit(2) from exc
+    except BybitError as exc:
+        console.print(f"[red]Boerse nicht erreichbar:[/] {exc}")
+        raise typer.Exit(2) from exc
+
+    officer = RiskOfficer(settings.risk, instrument, state_path=state_path)
+
+    last = store.last_candle_time(settings.bybit.symbol, interval_obj)
+    if last is None:
+        console.print(
+            f"[red]Keine Kerzen fuer {interval_obj.label} im Speicher.[/]\n"
+            "Zuerst: python -m cli backfill"
+        )
+        raise typer.Exit(2)
+
+    age = datetime.now(UTC) - last
+    if age > interval_obj.duration * 3:
+        # Ein kalter Puffer bedeutet: Die Indikatoren rechnen ueber eine Luecke
+        # hinweg. Das ist kein Fehler des Roboters, sieht aber wie einer aus.
+        console.print(
+            f"[yellow]Letzte Kerze ist {age.total_seconds() / 3600:.1f} h alt.[/] "
+            "Vor dem Handeln nachladen: python -m cli backfill"
+        )
+
+    console.print(
+        f"\n[bold]Handelsplan[/]\n"
+        f"  Umgebung     {settings.bybit.environment.value}"
+        f"{'  [red](ECHTES GELD)[/]' if settings.bybit.environment.is_real_money else ''}\n"
+        f"  Markt        {market_kind.value}"
+        f"{'' if market_kind.supports_leverage else '  (kein Hebel, keine Shorts)'}\n"
+        f"  Symbol       {instrument.symbol} {interval_obj.label}\n"
+        f"  Strategie    {genome.name}  [dim]({strategy.strategy_id})[/]\n"
+        f"  Vorlauf      {strategy.warmup_bars} Kerzen\n"
+        f"  Kapital      {equity:.2f} USDT\n"
+        f"  Risiko       {settings.risk.risk_per_trade_pct} % "
+        f"(= {equity * settings.risk.risk_per_trade_pct / 100:.2f} USDT je Trade)\n"
+        f"  Hebel max.   {settings.risk.max_leverage}x\n"
+        f"  Kill-Switch  {settings.risk.max_drawdown_pct} % Drawdown\n"
+        f"  Offen        {len(positions)} Position(en)\n"
+    )
+
+    if trocken:
+        console.print(
+            "[green]Trockenlauf - es wurde keine Order platziert.[/]\n"
+            "[dim]Ohne --trocken beginnt der Handel.[/]"
+        )
+        return
+
+    # -- 5. Handeln ----------------------------------------------------------
+    async def main() -> None:
+        notifier = None
+        if settings.notify.telegram_enabled:
+            notifier = await telegram_notifier(
+                settings.notify.telegram_bot_token.get_secret_value(),
+                settings.notify.telegram_chat_id,
+            )
+
+        trader = LiveTrader(
+            settings=settings.bybit,
+            strategy=strategy,
+            instrument=instrument,
+            risk_settings=settings.risk,
+            market=market,
+            account=account,
+            gateway=gateway,
+            officer=officer,
+            store=store,
+            interval=interval_obj,
+            market_kind=market_kind,
+            notifier=notifier,
+        )
+
+        loop = asyncio.get_running_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, trader.stop)
+
+        console.print("[dim]Strg-C beendet die Schleife. Offene Stops bleiben bestehen.[/]\n")
+        await trader.start()
+
+        console.print(f"\n[dim]Beendet. {trader.stats.describe()}[/]")
+        if trader.bracket is not None and trader.bracket.is_open:
+            console.print(
+                f"[yellow]Achtung: {trader.bracket.describe()}[/]\n"
+                "[yellow]Die Position laeuft weiter. Ihr Stop liegt an der Boerse.[/]"
+            )
 
     asyncio.run(main())
 

@@ -66,3 +66,8 @@ strict = true
 warn_return_any = true
 disallow_untyped_defs = true
 plugins = ["pydantic.mypy"]
+
+[tool.ruff.lint.per-file-ignores]
+# Typer erwartet ``typer.Option(...)`` als Default-Wert - das ist die
+# vorgesehene Verwendung, nicht der Fehler, den B008 sonst meint.
+"cli.py" = ["B008"]
