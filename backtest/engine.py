@@ -588,7 +588,7 @@ class _SubBarIndex:
         ]
 
 
-def _to_datetime(value) -> datetime:  # noqa: ANN001 - numpy datetime64 oder Timestamp
+def _to_datetime(value) -> datetime:
     return pd.Timestamp(value).to_pydatetime()
 
 

@@ -18,7 +18,6 @@ from core.models import Candle, Interval
 from data.backfill import Backfiller, RateLimiter, drop_unfinished, estimate_requests
 from data.quality import Severity, check_candles
 from data.store import CandleStore, candles_to_frame, empty_frame, frame_to_candles
-
 from tests.factories import make_candles
 from tests.fakes import FakeMarketData, make_series_with_gap
 

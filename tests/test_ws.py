@@ -12,13 +12,10 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
-import pytest
-
 from core.config import BybitEnvironment, BybitSettings
 from core.models import Interval
 from data.bybit.ws import GapFiller, KlineStream, StreamStats, parse_kline_message
 from data.store import CandleStore
-
 from tests.factories import make_candles
 from tests.fakes import FakeMarketData
 

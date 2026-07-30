@@ -168,7 +168,7 @@ class WalkForwardSplitter:
 
 def run_walkforward(
     frame: pd.DataFrame,
-    build_strategy,  # noqa: ANN001 - Callable[[], Strategy]
+    build_strategy,
     config: BacktestConfig,
     splitter: WalkForwardSplitter,
     *,

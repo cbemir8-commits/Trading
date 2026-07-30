@@ -64,8 +64,8 @@ class TestFees:
         assert costs.fee(Decimal("-900"), LiquidityRole.TAKER) > 0
 
     def test_defaults_match_bybit_vip0(self) -> None:
-        assert DEFAULT_MAKER_FEE == Decimal("0.0002")
-        assert DEFAULT_TAKER_FEE == Decimal("0.00055")
+        assert Decimal("0.0002") == DEFAULT_MAKER_FEE
+        assert Decimal("0.00055") == DEFAULT_TAKER_FEE
 
 
 class TestSlippage:

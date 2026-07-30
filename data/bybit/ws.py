@@ -142,7 +142,7 @@ class KlineStream:
                 backoff = 1.0  # saubere Verbindung -> Backoff zuruecksetzen
             except asyncio.CancelledError:
                 raise
-            except Exception as exc:  # noqa: BLE001 - der Stream muss alles ueberleben
+            except Exception as exc:
                 self.stats.reconnects += 1
                 log.warning(
                     "ws.verbindung_verloren",

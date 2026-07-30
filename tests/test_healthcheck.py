@@ -28,7 +28,6 @@ from scripts.healthcheck import (
     check_leverage_preview,
     check_reachability,
 )
-
 from tests.factories import make_candles, make_kline_response
 
 BASE = "https://api-demo.bybit.com"

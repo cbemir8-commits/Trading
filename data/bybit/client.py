@@ -11,6 +11,7 @@ vollstaendig gegen Fixtures testen koennen.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import hmac
 import json
@@ -216,10 +217,8 @@ class BybitHTTPClient:
     def _record_rate_limit(self, response: httpx.Response) -> None:
         raw = response.headers.get("X-Bapi-Limit-Status")
         if raw is not None:
-            try:
+            with contextlib.suppress(ValueError):
                 self.last_rate_limit_status = int(raw)
-            except ValueError:
-                pass
 
     def _parse_response(self, response: httpx.Response, path: str) -> dict[str, Any]:
         text = response.text

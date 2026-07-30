@@ -30,7 +30,6 @@ from data.bybit.errors import (
     BybitRateLimitError,
     BybitTransportError,
 )
-
 from tests.factories import make_candles, make_kline_response
 
 BASE = "https://api-demo.bybit.com"
@@ -105,9 +104,8 @@ class TestErrorHandling:
                 "to block access from your country\n}",
             )
         )
-        with BybitHTTPClient(bybit_settings) as client:
-            with pytest.raises(BybitGeoBlockedError, match="Region"):
-                client.get_public("/v5/market/time")
+        with BybitHTTPClient(bybit_settings) as client, pytest.raises(BybitGeoBlockedError, match="Region"):
+            client.get_public("/v5/market/time")
 
     @respx.mock
     def test_geoblock_is_not_retried(self, bybit_settings: BybitSettings) -> None:
@@ -116,9 +114,8 @@ class TestErrorHandling:
         route = respx.get(f"{BASE}/v5/market/time").mock(
             return_value=httpx.Response(403, text="blocked: not available in your country")
         )
-        with BybitHTTPClient(settings) as client:
-            with pytest.raises(BybitGeoBlockedError):
-                client.get_public("/v5/market/time")
+        with BybitHTTPClient(settings) as client, pytest.raises(BybitGeoBlockedError):
+            client.get_public("/v5/market/time")
         assert route.call_count == 1
 
     @respx.mock
@@ -128,9 +125,8 @@ class TestErrorHandling:
                 200, json={"retCode": 10001, "retMsg": "params error: symbol invalid", "result": {}}
             )
         )
-        with BybitHTTPClient(bybit_settings) as client:
-            with pytest.raises(BybitAPIError) as exc_info:
-                client.get_public("/v5/market/kline", {"symbol": "NOPE"})
+        with BybitHTTPClient(bybit_settings) as client, pytest.raises(BybitAPIError) as exc_info:
+            client.get_public("/v5/market/kline", {"symbol": "NOPE"})
         assert exc_info.value.ret_code == 10001
         assert not exc_info.value.retryable
 
@@ -144,9 +140,8 @@ class TestErrorHandling:
                 200, json={"retCode": 10004, "retMsg": "error sign!", "result": {}}
             )
         )
-        with BybitHTTPClient(settings) as client:
-            with pytest.raises(BybitAuthError):
-                client.get_private("/v5/position/list")
+        with BybitHTTPClient(settings) as client, pytest.raises(BybitAuthError):
+            client.get_private("/v5/position/list")
         assert route.call_count == 1
 
     @respx.mock
@@ -175,16 +170,14 @@ class TestErrorHandling:
         respx.get(f"{BASE}/v5/market/time").mock(
             return_value=httpx.Response(429, text="rate limit")
         )
-        with BybitHTTPClient(settings) as client:
-            with pytest.raises(BybitRateLimitError):
-                client.get_public("/v5/market/time")
+        with BybitHTTPClient(settings) as client, pytest.raises(BybitRateLimitError):
+            client.get_public("/v5/market/time")
 
     @respx.mock
     def test_timeout_becomes_transport_error(self, bybit_settings: BybitSettings) -> None:
         respx.get(f"{BASE}/v5/market/time").mock(side_effect=httpx.ReadTimeout("zu langsam"))
-        with BybitHTTPClient(bybit_settings) as client:
-            with pytest.raises(BybitTransportError, match="Timeout"):
-                client.get_public("/v5/market/time")
+        with BybitHTTPClient(bybit_settings) as client, pytest.raises(BybitTransportError, match="Timeout"):
+            client.get_public("/v5/market/time")
 
 
 # ---------------------------------------------------------------------------

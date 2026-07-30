@@ -21,7 +21,6 @@ from execution.sizing import (
     size_position,
     split_take_profits,
 )
-
 from tests.factories import make_signal
 
 

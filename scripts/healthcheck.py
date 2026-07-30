@@ -377,7 +377,7 @@ def main() -> int:
 
     try:
         settings = get_settings()
-    except Exception as exc:  # noqa: BLE001 - Konfigurationsfehler sollen lesbar sein
+    except Exception as exc:
         console.print(f"[red]Konfiguration ungueltig:[/] {exc}")
         console.print("[dim].env gegen .env.example pruefen.[/]")
         return 2

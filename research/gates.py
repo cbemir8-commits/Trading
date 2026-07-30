@@ -30,7 +30,6 @@ eine schlechte zuzulassen.
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from decimal import Decimal
 from enum import StrEnum
@@ -40,7 +39,7 @@ import pandas as pd
 import structlog
 
 from backtest.engine import BacktestConfig, Backtester
-from backtest.metrics import Metrics, compute_metrics
+from backtest.metrics import compute_metrics
 from backtest.walkforward import WalkForwardReport
 from core.models import Trade
 from strategy.compiler import compile_genome
@@ -610,7 +609,7 @@ def classify_regimes(
     return pd.DataFrame({"time": frame["open_time"], "regime": regime})
 
 
-def _regime_at(regimes: pd.DataFrame, moment) -> str | None:  # noqa: ANN001
+def _regime_at(regimes: pd.DataFrame, moment) -> str | None:
     matches = regimes.loc[regimes["time"] <= pd.Timestamp(moment)]
     if matches.empty:
         return None
@@ -641,14 +640,14 @@ def _vary_periods(genome: Genome, variation: float):
                     _, spec = REGISTRY[operand["name"]]
                     for key, value in list(operand["params"].items()):
                         low, high = spec.param_bounds[key]
-                        candidate = max(low, min(high, int(round(value * factor))))
+                        candidate = max(low, min(high, round(value * factor)))
                         if candidate != value:
                             operand["params"][key] = candidate
                             changed = True
 
         if payload["stop"]["kind"] == "atr":
             low, high = 5, 50
-            candidate = max(low, min(high, int(round(payload["stop"]["atr_period"] * factor))))
+            candidate = max(low, min(high, round(payload["stop"]["atr_period"] * factor)))
             if candidate != payload["stop"]["atr_period"]:
                 payload["stop"]["atr_period"] = candidate
                 changed = True
@@ -657,7 +656,7 @@ def _vary_periods(genome: Genome, variation: float):
             continue
         try:
             neighbour = Genome.model_validate(payload)
-        except Exception:  # noqa: BLE001 - ungueltige Nachbarn einfach auslassen
+        except Exception:
             continue
         if neighbour.genome_id not in seen:
             seen.add(neighbour.genome_id)

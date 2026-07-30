@@ -34,7 +34,7 @@ class BarContext:
     genau der Lookahead, den wir verhindern.
     """
 
-    __slots__ = ("_frame", "_indicators", "_index", "_times", "_arrays")
+    __slots__ = ("_arrays", "_frame", "_index", "_indicators", "_times")
 
     def __init__(
         self,

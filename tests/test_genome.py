@@ -32,8 +32,6 @@ from strategy.genome import (
     TargetSpec,
 )
 
-from tests.factories import make_candles
-
 
 @pytest.fixture
 def frame() -> pd.DataFrame:
@@ -420,7 +418,7 @@ class TestCompiler:
                 assert signal.stop_loss > signal.entry_price
 
 
-def _collect_signals(strategy, frame: pd.DataFrame) -> list:  # noqa: ANN001
+def _collect_signals(strategy, frame: pd.DataFrame) -> list:
     """Laesst die Strategie ueber die Reihe laufen und sammelt alle Signale."""
     from strategy.base import BarContext, frame_to_arrays
 

@@ -56,7 +56,7 @@ from decimal import ROUND_DOWN, Decimal
 from enum import StrEnum
 
 from core.config import RiskSettings
-from core.models import Instrument, Side, Signal, TakeProfitLeg
+from core.models import Instrument, Signal, TakeProfitLeg
 
 
 class RejectReason(StrEnum):

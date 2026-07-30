@@ -20,7 +20,6 @@ from core.config import RiskSettings
 from core.models import Candle, Instrument, Interval, Side, Signal, TakeProfitLeg
 from data.store import candles_to_frame
 from strategy.base import LookaheadError
-
 from tests.strategies import (
     NonCausalStrategy,
     PeekingStrategy,
@@ -356,7 +355,7 @@ class TestLookaheadProtection:
 
                 return {"kaputt": np.zeros(len(frame) - 1)}
 
-            def on_bar(self, ctx) -> None:  # noqa: ANN001
+            def on_bar(self, ctx) -> None:
                 return None
 
         with pytest.raises(ValueError, match="verschiebt die Zuordnung"):
@@ -659,7 +658,7 @@ def _corrupt_from(frame: pd.DataFrame, index: int) -> pd.DataFrame:
 
 def _record_decisions(
     config: BacktestConfig, frame: pd.DataFrame, strategy
-) -> dict[int, tuple | None]:  # noqa: ANN001
+) -> dict[int, tuple | None]:
     """Fuehrt den Backtest aus und zeichnet jede Strategieentscheidung auf.
 
     Erfasst wird eine vergleichbare Kurzform des Signals - Zeitstempel und
@@ -674,7 +673,7 @@ def _record_decisions(
         def prepare(self, f: pd.DataFrame) -> dict:
             return strategy.prepare(f)
 
-        def on_bar(self, ctx):  # noqa: ANN001, ANN202
+        def on_bar(self, ctx):
             signal = strategy.on_bar(ctx)
             recorded[ctx.index] = (
                 None

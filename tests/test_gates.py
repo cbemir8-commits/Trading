@@ -8,7 +8,7 @@ wertlos - es muss beweisen, dass es auch ablehnt.
 
 from __future__ import annotations
 
-import math
+import itertools
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -19,13 +19,13 @@ import pytest
 
 from backtest.costs import CostModel, FundingSchedule
 from backtest.engine import BacktestConfig
-from backtest.metrics import Metrics, compute_metrics
+from backtest.metrics import compute_metrics
 from backtest.walkforward import (
     WalkForwardReport,
     WalkForwardSplitter,
     WindowResult,
-    run_walkforward,
     _add_months,
+    run_walkforward,
 )
 from core.config import RiskSettings
 from core.models import Candle, Instrument, Interval, Side, Trade
@@ -33,6 +33,7 @@ from data.store import candles_to_frame
 from research.gates import (
     GateStatus,
     GateThresholds,
+    _vary_periods,
     classify_regimes,
     deflated_sharpe_ratio,
     evaluate_gates,
@@ -42,7 +43,6 @@ from research.gates import (
     gate_oos_sharpe,
     gate_regime_split,
     gate_sample_size,
-    _vary_periods,
 )
 from strategy.compiler import compile_genome
 from strategy.genome import Condition, Genome, Operand, Operator, StopSpec, TargetSpec
@@ -127,7 +127,7 @@ class TestSplitter:
             datetime(2020, 1, 1, tzinfo=UTC), datetime(2026, 1, 1, tzinfo=UTC)
         )
         assert len(windows) > 5
-        for earlier, later in zip(windows, windows[1:], strict=False):
+        for earlier, later in itertools.pairwise(windows):
             assert earlier.test_end <= later.test_start
 
     def test_embargo_separates_train_and_test(self) -> None:
@@ -219,7 +219,7 @@ class TestWalkForwardRun:
             cooldown_bars=50,
         )
 
-        def build():  # noqa: ANN202
+        def build():
             built.append(1)
             return compile_genome(genome)
 
@@ -481,7 +481,7 @@ class TestGateSystemRejectsOverfitting:
             name="Ueberangepasst",
             rationale=(
                 "Sehr enge, willkuerlich gewaehlte Schwellen mit exotischen "
-                "Perioden - typisches Ergebnis einer Rasterоptimierung."
+                "Perioden - typisches Ergebnis einer Rasteroptimierung."
             ),
             filters=[
                 Condition(left=ind("adx", period=17), op=Operator.GT,
