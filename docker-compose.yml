@@ -1,0 +1,35 @@
+# Laufzeitumgebung fuer den VPS.
+#
+#   docker compose up -d db      # nur die Datenbank (Phase 0/1)
+#   docker compose up -d         # alles, sobald die Dienste existieren
+#
+# Die Dienste engine/research/api kommen in den Phasen 4-6 dazu und sind hier
+# bereits vorgezeichnet, damit die Netz- und Volumen-Struktur von Anfang an steht.
+
+services:
+  db:
+    image: timescale/timescaledb:latest-pg16
+    container_name: trading-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-trading}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trading}
+      POSTGRES_DB: ${POSTGRES_DB:-trading}
+      # Zeitreihen profitieren stark von groesseren Puffern.
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    ports:
+      # Nur lokal erreichbar - die Datenbank gehoert nicht ins offene Internet.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trading} -d ${POSTGRES_DB:-trading}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    shm_size: 256mb
+
+volumes:
+  db_data:
+    driver: local

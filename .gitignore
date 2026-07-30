@@ -1,0 +1,45 @@
+# --- Geheimnisse: NIEMALS committen ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+dist/
+build/
+
+# --- Daten (gross, gehoert nicht ins Repo) ---
+data_store/
+*.parquet
+*.duckdb
+*.sqlite
+*.db
+
+# --- Node / Next.js ---
+node_modules/
+.next/
+out/
+web/.env*
+!web/.env.example
+
+# --- Logs & Laufzeit ---
+logs/
+*.log
+runtime/
+
+# --- Editor / OS ---
+.DS_Store
+.idea/
+.vscode/

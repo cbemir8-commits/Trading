@@ -1,0 +1,186 @@
+# Autonomes BTC-Trading-System (Bybit)
+
+Selbstlernendes Handelssystem für BTC-Perpetuals. Eine KI entwickelt und verbessert
+laufend die Strategie, eine deterministische Engine handelt sie, ein Dashboard zeigt
+live, was passiert.
+
+> **Status:** Phase 0 (Fundament) — Konfiguration, Bybit-Adapter, Positions-Sizer,
+> Health-Check. Handelt noch nicht.
+
+---
+
+## Grundprinzip: Die KI schlägt vor, der Code entscheidet
+
+**Im Ausführungspfad läuft kein LLM.** Nie.
+
+| | Wer | Warum |
+|---|---|---|
+| Strategien erfinden & verbessern | Claude (periodisch) | Kreativität, Mustererkennung, Fehleranalyse |
+| Handeln | Python (Echtzeit) | Schnell, reproduzierbar, backtestbar |
+| Risiko durchsetzen | Python (Vetorecht) | Darf von der KI nicht überschrieben werden |
+
+Claude gibt Strategien als **JSON-Genome** aus einer festen Indikator-Whitelist aus.
+Es führt nie eigenen Code auf dem Konto aus. Was im Backtest lief, läuft auch live.
+
+---
+
+## Der Hebel — die wichtigste Rechnung im System
+
+Der Hebel ist hier **kein Regler für mehr Gewinn**. Er ist das *Ergebnis* der
+risikobasierten Positionsgröße:
+
+```
+Risikobetrag  = Kapital × risk_per_trade_pct / 100
+Menge         = Risikobetrag / Stop-Distanz      (auf qty_step abgerundet)
+Nominalwert   = Menge × Einstiegspreis
+Hebel         = Nominalwert / Kapital
+```
+
+Daraus folgt eine Identität, die man sich merken sollte:
+
+```
+Hebel = Risiko% / Stop%
+```
+
+Bei 500 € Kapital und 0,75 % Risiko (= 3,75 € pro Trade):
+
+| Stop-Distanz | Hebel | Nominalwert | Menge BTC | riskiertes Geld |
+|---|---|---|---|---|
+| 1,0 % | 0,75× | 375 € | 0,003 | 3,75 € |
+| 0,5 % | 1,50× | 750 € | 0,007 | 3,75 € |
+| 0,3 % | 2,50× | 1250 € | 0,012 | 3,75 € |
+| 0,2 % | 3,75× | ⚠️ über 3×-Deckel → wird verkleinert | | < 3,75 € |
+
+Drei Dinge fallen auf:
+
+1. **Enge Stops brauchen zwingend Hebel.** Ohne ihn wären wir auf Stops jenseits von
+   1,5 % beschränkt — und damit auf sehr wenige Setups. Bei 500 € kommt dazu: Bybits
+   Mindestmenge von 0,001 BTC entspricht bei 100k$ schon 100 $ Nominalwert.
+2. **Das riskierte Geld bleibt in jeder Zeile gleich.** Der Hebel steigt, weil der
+   Stop enger wird — nicht weil wir mutiger werden.
+3. **Mehr Kapital erhöht den Hebel nicht.** Er hängt nur an Risiko% und Stop%.
+
+### Die teure Falle: Liquidation hängt am *eingestellten* Hebel
+
+Bei Isolated Margin hinterlegt Bybit für eine Position genau `Nominalwert / eingestellter
+Hebel` als Margin. Der Rest des Kontos schützt diese Position **nicht**.
+
+| Am Symbol eingestellt | Liquidation entfernt | Bewertung |
+|---|---|---|
+| 3× | ~33 % | Unerreichbar, wenn der Stop bei 1 % sitzt |
+| 20× | ~4,5 % | Innerhalb eines gewöhnlichen BTC-Dochts |
+
+Steht bei Bybit 25× eingestellt, liegt die Liquidation bei ~4 % — **auch wenn unsere
+Position gemessen am Gesamtkapital nur 1,2× beträgt**. Deshalb prüft der Sizer gegen
+`RISK__MAX_LEVERAGE` (den eingestellten Wert), nicht gegen das abgeleitete Verhältnis.
+Siehe `tests/test_sizing.py::test_liquidation_uses_exchange_setting_not_derived_ratio`.
+
+**Der einzige Regler, der das Risiko wirklich verändert, ist `RISK__RISK_PER_TRADE_PCT`.**
+
+---
+
+## Schnellstart
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+
+cp .env.example .env      # ausfüllen — .env wird NIE committet
+python -m scripts.healthcheck
+```
+
+Der Health-Check ist der **erste Schritt auf jedem neuen Server**. Er prüft:
+
+- Ist Bybit von hier aus überhaupt erreichbar? (Geoblocking)
+- Stimmt die Systemuhr? (zu große Abweichung ⇒ jede Signatur schlägt fehl)
+- Reicht die Historie für Walk-Forward?
+- **Hat der API-Key ein Auszahlungsrecht?** ⇒ harter Fehler
+- Welcher Hebel ergibt sich bei welcher Stop-Distanz?
+
+> ⚠️ **Der Claude-Code-Entwicklungscontainer ist von Bybit geoblockt** (CloudFront, HTTP 403).
+> Der Health-Check erkennt und benennt das. Die gesamte Testsuite läuft deshalb ohne
+> Netzwerk gegen aufgezeichnete Fixtures; die echte Verbindung wird auf dem VPS geprüft.
+
+---
+
+## API-Key einrichten (Sicherheit)
+
+Auf Bybit unter *API Management* einen Key erzeugen:
+
+| Recht | Einstellung |
+|---|---|
+| Read | ✅ |
+| Contract Trade (Order, Position) | ✅ |
+| **Withdrawal** | ❌ **NIEMALS** |
+| IP-Whitelist | ✅ VPS-IP eintragen |
+
+Ein kompromittierter Key ohne Auszahlungsrecht kann schlimmstenfalls schlecht handeln —
+das Geld bleibt auf dem Konto. Mit Auszahlungsrecht ist es weg.
+
+**Keys niemals in einen Chat kopieren, niemals ins Repo.** Sie gehören ausschließlich
+in die `.env` auf dem Server.
+
+---
+
+## Struktur
+
+```
+core/       Konfiguration, Domänenmodelle          [P0 ✓]
+data/       Bybit-Adapter, Backfill, News          [P0 ✓ / P1]
+strategy/   Genome, Compiler, Indikatoren          [P3]
+backtest/   Engine, Fill-Modell, Walk-Forward      [P2]
+execution/  Sizer, Risk-Officer, Order-Router      [P0 ✓ / P4]
+research/   CEO, Analyst, Gates, Champion          [P6]
+api/ web/   FastAPI + Next.js PWA                  [P5]
+scripts/    Health-Check, Wartungswerkzeuge        [P0 ✓]
+```
+
+Aller Bybit-Kontakt läuft ausschließlich über `data/bybit/adapter.py`. Das macht die
+Demo/Live-Umschaltung zu einer Konfigurationsänderung und die Testsuite netzwerkfrei.
+
+---
+
+## Tests
+
+```bash
+pytest -q                       # ohne Netzwerk, ~3 s
+RUN_NETWORK_TESTS=1 pytest      # zusätzlich echte Bybit-Aufrufe (nur auf dem VPS)
+```
+
+Schwerpunkte der aktuellen 62 Tests: Positionsgröße und Hebel (inkl. Liquidations­schutz),
+Signierung, Fehlerklassifikation, **chronologische Sortierung der Kerzen** (Bybit liefert
+sie rückwärts — unbemerkt ergibt das einen rückwärts laufenden Backtest).
+
+---
+
+## Risikorahmen
+
+| Parameter | Wert | Env |
+|---|---|---|
+| Risiko pro Trade | 0,75 % | `RISK__RISK_PER_TRADE_PCT` |
+| Hebeldeckel | 3× isoliert | `RISK__MAX_LEVERAGE` |
+| Liquidationspuffer | 4× Stop-Distanz | `RISK__MIN_LIQUIDATION_BUFFER` |
+| Tagesverlust | 3 % → 24 h Pause | `RISK__DAILY_LOSS_LIMIT_PCT` |
+| Wochenverlust | 7 % → Stopp | `RISK__WEEKLY_LOSS_LIMIT_PCT` |
+| **Kill-Switch** | **15 % Drawdown** | `RISK__MAX_DRAWDOWN_PCT` |
+
+Diese Werte liegen in der Umgebung, nicht im Prompt — die Research-KI kann sie nicht ändern.
+
+### Gebühren-Disziplin
+
+Bei kleinem Konto entscheidend: **Entries und Take-Profits laufen als PostOnly-Limit
+(Maker, 0,020 %), nur der Stop-Loss ist Market (Taker, 0,055 %).**
+
+30 Trades/Monat × 900 $ Nominal: ~11 $ (Maker) statt ~30 $ (Taker) — 2 % statt 5,5 %
+des Kontos pro Monat.
+
+---
+
+## Warum kein Gewinnversprechen
+
+„Perfekt" gibt es im Trading nicht. Die meisten Strategien, die im Backtest glänzen,
+überleben live nicht — genau dagegen bauen wir die acht Zulassungs-Gates (P3). Sie sind
+ein Filter, keine Garantie.
+
+Es ist möglich, dass die KI keine Strategie findet, die alle Gates besteht. Das wäre
+kein Fehler des Systems, sondern seine ehrlichste Leistung.
