@@ -85,9 +85,13 @@ Siehe `tests/test_sizing.py::test_liquidation_uses_exchange_setting_not_derived_
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
-cp .env.example .env      # ausfüllen — .env wird NIE committet
-python -m scripts.healthcheck
+python -m cli setup       # fragt Key + Secret ab, legt .env an, prüft sofort
 ```
+
+`setup` fragt die Zugangsdaten **per Eingabeaufforderung** ab, nicht als
+Kommandozeilenargument: Ein Argument stünde in der Prozessliste und in der
+Shell-History. Das Secret wird beim Tippen nicht angezeigt, die `.env` bekommt
+Dateirechte 600, und der Health-Check läuft direkt hinterher.
 
 Der Health-Check ist der **erste Schritt auf jedem neuen Server**. Er prüft:
 
@@ -105,14 +109,27 @@ Der Health-Check ist der **erste Schritt auf jedem neuen Server**. Er prüft:
 
 ## API-Key einrichten (Sicherheit)
 
-Auf Bybit unter *API Management* einen Key erzeugen:
+Auf Bybit unter *API Management* einen Key erzeugen.
+
+**Erste Frage: „Read-Only" oder „Read-Write"?** → **Read-Write.**
+Read-Only ist die naheliegende, sichere Wahl — und die falsche: Ein solcher Key
+kann keine Order platzieren, der Handel scheitert dann bei jedem Signal. Lesen
+(Kontostand, Positionen, Kerzen) ist in Read-Write enthalten; ein zweiter Key
+dafür ist nicht nötig.
+
+**Danach nur diese Rechte anhaken:**
 
 | Recht | Einstellung |
 |---|---|
-| Read | ✅ |
-| Contract Trade (Order, Position) | ✅ |
-| **Withdrawal** | ❌ **NIEMALS** |
+| Unified Trading → Trade (Order, Position, Stop) | ✅ |
+| **Withdrawal / Auszahlung** | ❌ **NIEMALS** |
+| Transfer, Subkonto, Exchange | ❌ nicht nötig |
 | IP-Whitelist | ✅ VPS-IP eintragen |
+
+> **Demo-Konto:** Demo-Keys werden *innerhalb* des Demo-Kontos erzeugt
+> (Profil → Demo Trading → API) und funktionieren nur dort. Ein Key aus dem
+> echten Konto wird gegen `api-demo.bybit.com` mit „ungültiger API-Key"
+> abgelehnt — und umgekehrt. Das ist der häufigste Stolperstein beim Start.
 
 Ein kompromittierter Key ohne Auszahlungsrecht kann schlimmstenfalls schlecht handeln —
 das Geld bleibt auf dem Konto. Mit Auszahlungsrecht ist es weg.
@@ -125,12 +142,15 @@ in die `.env` auf dem Server.
 ## Kommandozeile
 
 ```bash
+python -m cli setup                       # Zugangsdaten einrichten
 python -m cli healthcheck                 # zuerst auf jedem neuen Server
 python -m cli backfill --von 2020-03-30   # Historie laden (resumierbar)
 python -m cli status                      # was liegt im Speicher?
 python -m cli quality                     # Lücken, Duplikate, Ausreißer
 python -m cli ingest                      # Live-Kerzen mitschreiben
 python -m cli leverage --kapital 500      # Hebel-Tabelle für dein Konto
+python -m cli trade --trocken             # Handelsplan zeigen, keine Order
+python -m cli trade                       # handeln
 ```
 
 `backfill` lädt ~6 Jahre BTC-Historie (1m/15m/1h/4h) in rund 3.400 Anfragen

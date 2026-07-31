@@ -61,6 +61,171 @@ def _parse_date(value: str) -> datetime:
 
 
 @app.command()
+def setup(
+    umgebung: str = typer.Option(
+        "demo", help="demo | testnet | mainnet. Angefangen wird mit demo."
+    ),
+    pruefen: bool = typer.Option(
+        True, help="Nach dem Speichern sofort den Health-Check laufen lassen."
+    ),
+) -> None:
+    """Bybit-Zugangsdaten einrichten.
+
+    Fragt Key und Secret ab und legt sie in der ``.env`` ab - **nicht** als
+    Kommandozeilenargument. Ein Argument stuende in der Prozessliste und in
+    der Shell-History; die Eingabe hier nicht.
+
+    Das Secret wird bei der Eingabe nicht angezeigt. Der Key schon: Er ist
+    allein wertlos, so wie ein Benutzername, und man muss sehen koennen, ob
+    er richtig eingefuegt wurde.
+    """
+    from pathlib import Path
+
+    from core.config import BybitEnvironment
+    from core.envfile import file_is_world_readable, mask, read_env_value, update_env_file
+
+    try:
+        environment = BybitEnvironment(umgebung)
+    except ValueError as exc:
+        raise typer.BadParameter("umgebung muss demo, testnet oder mainnet sein") from exc
+
+    env_path = Path(".env")
+    example = Path(".env.example")
+
+    console.print(
+        "\n[bold]Bybit-Zugangsdaten einrichten[/]\n"
+        f"Umgebung: [bold]{environment.value}[/] -> {environment.rest_url}\n"
+    )
+
+    # -- 1. Anleitung --------------------------------------------------------
+    if environment is BybitEnvironment.DEMO:
+        console.print(
+            "[bold]Auf Bybit:[/]\n"
+            "  1. Oben rechts aufs Profil, [bold]Demo Trading[/] waehlen.\n"
+            "  2. [bold]Im Demo-Konto[/] auf API -> API-Key erstellen.\n"
+            "\n"
+            "[yellow]Wichtig:[/] Demo-Keys werden im Demo-Konto erzeugt und "
+            "funktionieren nur dort.\n"
+            "Ein Key aus dem echten Konto wird hier mit 'ungueltige API-Key' "
+            "abgelehnt - und umgekehrt.\n"
+        )
+    else:
+        console.print(
+            "[bold]Auf Bybit:[/] Profil -> API -> Neuen Key erstellen.\n"
+        )
+
+    console.print(
+        "[bold]Bei der Abfrage 'Read-Only oder Read-Write':[/]\n"
+        "  -> [bold]Read-Write[/]. Ein Read-Only-Key kann keine Order "
+        "platzieren; der Handel scheitert dann bei jedem Signal.\n"
+        "\n"
+        "[bold]Rechte - nur diese anhaken:[/]\n"
+        "  [green]x[/] Unified Trading -> Trade   (Order, Position, Stop)\n"
+        "  [red] [/] Withdrawal / Auszahlung      [red]NIEMALS aktivieren[/]\n"
+        "  [red] [/] Transfer, Subkonto, Exchange  [dim]nicht noetig[/]\n"
+        "  [green]x[/] IP-Whitelist auf die IP dieses Servers\n"
+        "\n"
+        "[dim]Lesen (Kontostand, Positionen, Kerzen) ist in Read-Write "
+        "enthalten - ein zweiter Key dafuer ist nicht noetig.\n"
+        "Ein gestohlener Key ohne Auszahlungsrecht kann schlimmstenfalls "
+        "schlecht handeln; das Geld bleibt auf dem Konto.\n"
+        "Mit Auszahlungsrecht ist es weg. Der Health-Check bricht deshalb ab, "
+        "wenn das Recht gesetzt ist.[/]\n"
+    )
+
+    if environment.is_real_money:
+        console.print("[red]MAINNET - hier liegt echtes Geld.[/]")
+        if not typer.confirm("Wirklich Mainnet-Zugangsdaten hinterlegen?", default=False):
+            console.print("[dim]Abgebrochen. Nichts geaendert.[/]")
+            raise typer.Exit(1)
+
+    # -- 2. Datei vorbereiten ------------------------------------------------
+    if not env_path.exists():
+        if not example.exists():
+            console.print("[red].env.example fehlt - falsches Verzeichnis?[/]")
+            raise typer.Exit(2)
+        env_path.write_text(example.read_text())
+        console.print("[dim].env aus .env.example angelegt.[/]")
+
+    existing = read_env_value(env_path, "BYBIT__API_KEY")
+    if existing:
+        console.print(f"Hinterlegt ist bereits: [bold]{mask(existing)}[/]")
+        if not typer.confirm("Ueberschreiben?", default=False):
+            console.print("[dim]Abgebrochen. Nichts geaendert.[/]")
+            raise typer.Exit(1)
+
+    # -- 3. Eingabe ----------------------------------------------------------
+    api_key = typer.prompt("API-Key").strip()
+    api_secret = typer.prompt("API-Secret", hide_input=True).strip()
+
+    problems = _check_credentials(api_key, api_secret)
+    if problems:
+        for problem in problems:
+            console.print(f"[red]{problem}[/]")
+        raise typer.Exit(2)
+
+    # -- 4. Speichern --------------------------------------------------------
+    update_env_file(
+        env_path,
+        {
+            "BYBIT__ENVIRONMENT": environment.value,
+            "BYBIT__API_KEY": api_key,
+            "BYBIT__API_SECRET": api_secret,
+        },
+    )
+    console.print(
+        f"\n[green]Gespeichert in {env_path.resolve()}[/] (Rechte 600)\n"
+        f"  Key    {mask(api_key)}\n"
+        f"  Secret {mask(api_secret)}\n"
+    )
+
+    if file_is_world_readable(env_path):
+        console.print("[yellow]Warnung: Andere Konten koennen die Datei lesen.[/]")
+
+    console.print(
+        "[dim].env steht in .gitignore und wird nicht committet. "
+        "Trotzdem gilt: niemals in einen Chat kopieren.[/]\n"
+    )
+
+    # -- 5. Sofort pruefen ---------------------------------------------------
+    if not pruefen:
+        console.print("[dim]Naechster Schritt: python -m cli healthcheck[/]")
+        return
+
+    get_settings.cache_clear()
+    from scripts.healthcheck import main as run_healthcheck
+
+    code = run_healthcheck()
+    if code == 0:
+        console.print("\n[green]Verbindung steht.[/] Weiter mit: python -m cli backfill")
+    raise typer.Exit(code)
+
+
+def _check_credentials(api_key: str, api_secret: str) -> list[str]:
+    """Offensichtliche Fehleingaben abfangen, bevor sie in der Datei landen.
+
+    Faengt die drei Faelle, die in der Praxis vorkommen: nichts eingefuegt,
+    beim Kopieren Leerzeichen mitgenommen, oder Key und Secret vertauscht
+    (das Secret ist bei Bybit deutlich laenger als der Key).
+    """
+    problems: list[str] = []
+    if not api_key:
+        problems.append("Kein API-Key eingegeben.")
+    if not api_secret:
+        problems.append("Kein API-Secret eingegeben.")
+    if any(character.isspace() for character in api_key + api_secret):
+        problems.append(
+            "Key oder Secret enthaelt ein Leerzeichen - beim Kopieren zu viel erwischt."
+        )
+    if api_key and api_secret and len(api_key) > len(api_secret):
+        problems.append(
+            "Der Key ist laenger als das Secret. Bei Bybit ist es umgekehrt - "
+            "vermutlich vertauscht."
+        )
+    return problems
+
+
+@app.command()
 def healthcheck() -> None:
     """Verbindung, Uhrzeit, Key-Rechte und Hebel-Vorschau pruefen."""
     from scripts.healthcheck import main as run_healthcheck
