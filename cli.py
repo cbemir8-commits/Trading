@@ -390,6 +390,199 @@ def quality(
 
 
 @app.command()
+def research(
+    intervall: str = typer.Option("15", "--intervall", "-i", help="Handelsintervall."),
+    von: str | None = typer.Option(None, help="Startdatum der Auswertung (YYYY-MM-DD)."),
+    schnell: bool = typer.Option(
+        False,
+        "--schnell",
+        help="Die teuren Gates (Plateau, Kosten-Stress) ueberspringen. "
+        "Nur zur Vorauswahl - fuer die Zulassung muessen sie laufen.",
+    ),
+    uebernehmen: bool = typer.Option(
+        True, help="Den Champion nach champion.json schreiben."
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Strategien pruefen und den Champion bestimmen.
+
+    Jedes Genom laeuft durch Walk-Forward und die neun Zulassungs-Gates. Wer
+    alle besteht, kommt in die Auswahl; der Bestaendigste wird Champion und
+    landet in ``strategies/champion.json``. Nur der wird gehandelt.
+
+    Braucht Daten im Speicher - vorher ``backfill`` und ``quality`` laufen
+    lassen. Ein Durchlauf ueber sechs Jahre dauert je nach Kandidatenzahl
+    einige Minuten.
+    """
+    from decimal import Decimal
+    from pathlib import Path
+
+    from backtest.engine import BacktestConfig
+    from data.bybit.errors import BybitError
+    from research.admission import (
+        load_trials,
+        run_admission,
+        save_trials,
+        write_champion,
+        write_journal,
+    )
+    from research.seeds import load_seeds
+    from strategy.genome import Genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+
+    frame = store.read(
+        settings.bybit.symbol, interval_obj, start=_parse_date(von) if von else None
+    )
+    if frame.empty:
+        console.print(
+            f"[red]Keine Kerzen fuer {interval_obj.label} im Speicher.[/]\n"
+            "Zuerst: python -m cli backfill"
+        )
+        raise typer.Exit(2)
+
+    span_days = (frame["open_time"].iloc[-1] - frame["open_time"].iloc[0]).days
+    if span_days < 450:
+        # 12 Monate Training + 3 Monate Test ergeben sonst kein einziges Fenster.
+        console.print(
+            f"[red]Nur {span_days} Tage Historie.[/] Der Walk-Forward braucht "
+            "mindestens rund 15 Monate, sonst entsteht kein einziges Testfenster.\n"
+            "Mehr laden: python -m cli backfill --von 2020-03-30"
+        )
+        raise typer.Exit(2)
+
+    # Feinere Kerzen machen die Fill-Simulation ehrlicher: Ohne sie muss die
+    # Engine annehmen, dass innerhalb einer Kerze der schlechtere Fall eintritt.
+    sub_frame = store.read(settings.bybit.symbol, Interval.M1)
+    if sub_frame.empty:
+        console.print(
+            "[yellow]Keine 1m-Kerzen - die Fill-Simulation rechnet pessimistisch.[/]"
+        )
+        sub_frame = None
+
+    try:
+        market = BybitMarketData(settings.bybit)
+        instrument = market.get_instrument(settings.bybit.symbol)
+    except BybitError as exc:
+        console.print(
+            f"[yellow]Kontraktdaten nicht abrufbar ({exc}). "
+            "Es werden die bekannten BTCUSDT-Werte verwendet.[/]"
+        )
+        instrument = _fallback_instrument(settings.bybit.symbol)
+
+    config = BacktestConfig(
+        instrument=instrument,
+        risk=settings.risk,
+        initial_equity=Decimal("500"),
+    )
+
+    genomes: list[Genome] = load_seeds()
+    trials_path = Path(settings.paths.state) / "trials.json"
+    trials_before = load_trials(trials_path)
+
+    console.print(
+        f"\n[bold]Zulassung[/] {settings.bybit.symbol} {interval_obj.label}\n"
+        f"  Historie    {frame['open_time'].iloc[0]:%Y-%m-%d} bis "
+        f"{frame['open_time'].iloc[-1]:%Y-%m-%d}  ({len(frame):,} Kerzen)\n"
+        f"  Kandidaten  {len(genomes)}\n"
+        f"  Versuche    {trials_before} bisher"
+        f"{'  [dim](fliesst in die Mehrfachtest-Korrektur ein)[/]' if trials_before else ''}\n"
+        f"  Gates       {'6 (schnell)' if schnell else '9 (vollstaendig)'}\n".replace(
+            ",", "."
+        )
+    )
+
+    def show(position: int, total: int, genome: Genome) -> None:
+        console.print(f"  [dim]{position}/{total}[/] {genome.name} ...")
+
+    report = run_admission(
+        genomes,
+        frame,
+        config,
+        trials_so_far=trials_before,
+        sub_frame=sub_frame,
+        run_expensive=not schnell,
+        on_progress=show,
+    )
+    save_trials(trials_path, report.trials_after)
+    write_journal(report, Path(settings.paths.state) / "journal.json")
+
+    table = Table(title="Zulassungsergebnis", header_style="bold")
+    table.add_column("Strategie")
+    table.add_column("Trades", justify="right")
+    table.add_column("Sharpe", justify="right")
+    table.add_column("Fenster +", justify="right")
+    table.add_column("Ergebnis")
+    for candidate in report.candidates:
+        style = "green" if candidate.admitted else "red"
+        verdict = "zugelassen" if candidate.admitted else candidate.gates.summary()
+        table.add_row(
+            candidate.genome.name,
+            str(candidate.trades),
+            f"{candidate.sharpe:.2f}",
+            f"{candidate.consistency:.0%}",
+            f"[{style}]{verdict}[/]",
+        )
+    console.print(table)
+
+    for candidate in report.candidates:
+        if not candidate.admitted:
+            console.print(f"\n[bold]{candidate.genome.name}[/] - woran es lag:")
+            console.print(f"[dim]{candidate.gates.feedback_for_ai()}[/]")
+
+    if report.champion is None:
+        console.print(
+            "\n[yellow]Kein Kandidat hat alle Gates bestanden.[/]\n"
+            "Das ist ein brauchbares Ergebnis, kein Fehlschlag: Lieber keine "
+            "Strategie als eine, die nur im Backtest funktioniert.\n"
+            "[dim]Die Begruendungen oben sind die Grundlage fuer die naechste "
+            "Generation.[/]"
+        )
+        raise typer.Exit(1)
+
+    console.print(
+        f"\n[green]Champion: {report.champion.genome.name}[/]\n"
+        f"[dim]{report.champion.genome.rationale}[/]"
+    )
+
+    if uebernehmen:
+        path = write_champion(
+            report.champion, Path(settings.paths.strategies) / "champion.json"
+        )
+        console.print(f"\nGeschrieben nach [bold]{path}[/]")
+        console.print("[dim]Naechster Schritt: python -m cli trade --trocken[/]")
+
+
+def _fallback_instrument(symbol: str):
+    """BTCUSDT-Perpetual mit den bekannten Bybit-Spezifikationen.
+
+    Nur fuer den Fall, dass die Kontraktdaten gerade nicht abrufbar sind - der
+    Backtest soll nicht daran scheitern, dass die Boerse nicht erreichbar ist.
+    Fuer den Handel wird immer der echte Kontrakt geladen.
+    """
+    from decimal import Decimal
+
+    from core.models import Instrument
+
+    return Instrument(
+        symbol=symbol,
+        category="linear",
+        base_coin="BTC",
+        quote_coin="USDT",
+        tick_size=Decimal("0.1"),
+        qty_step=Decimal("0.001"),
+        min_order_qty=Decimal("0.001"),
+        max_order_qty=Decimal("100"),
+        min_notional=Decimal("5"),
+        max_leverage=Decimal("100"),
+        maintenance_margin_rate=Decimal("0.005"),
+    )
+
+
+@app.command()
 def ingest(
     intervalle: list[str] = typer.Option(None, "--intervall", "-i"),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
