@@ -624,10 +624,161 @@ GENERATION_3 = [
     momentum_exposure,
 ]
 
-GENERATIONS = {1: GENERATION_1, 2: GENERATION_2, 3: GENERATION_3}
+# ===========================================================================
+#  Vierte Generation - andere Daten, nicht andere Regeln
+# ===========================================================================
+#
+# Die Generationen 1 bis 3 hatten eine Gemeinsamkeit, die lange nicht auffiel:
+# Sie benutzten **alle dieselbe Datenquelle**. Kerzen. Also genau die Zahlen,
+# die weltweit am gruendlichsten durchsucht sind - seit Jahrzehnten, von
+# Firmen mit eigenen Rechenzentren. Dass dort mit gleitenden Durchschnitten
+# nichts mehr liegt, ist keine Ueberraschung, sondern die Erwartung.
+#
+# Diese Generation aendert nicht die Regeln, sondern die **Eingangsdaten**.
+#
+# Die Funding-Rate ist keine Kursbewegung, sondern Positionierung: Sie sagt,
+# wer gerade gedraengt steht. Bei stark positiver Rate zahlen die Longs den
+# Shorts - das passiert, wenn zu viele long sind. Diese Information steckt in
+# keiner Kerze, und sie existiert nur bei Perpetuals. Aktien, Anleihen und
+# Devisen kennen nichts Vergleichbares; die grosse quantitative Industrie hat
+# ihre Werkzeuge an jenen Maerkten entwickelt. Der Kreis derer, die hier
+# suchen, ist um Groessenordnungen kleiner.
+#
+# Das ist keine Garantie. Es ist der erste Ort, an dem Suchen ueberhaupt Sinn
+# ergibt.
+#
+# Voraussetzung: ``python -m cli funding`` muss gelaufen sein. Ohne die Daten
+# liefern die Funding-Indikatoren NaN, und die Strategien handeln nicht - was
+# richtig ist, aber im Bericht wie ein Fehlschlag aussieht.
 
 
-def load_seeds(generation: int = 2) -> list[Genome]:
+def funding_extreme_fade() -> Genome:
+    """Nicht kaufen, wenn alle schon long sind.
+
+    Hypothese: Eine ungewoehnlich hohe Funding-Rate bedeutet, dass die
+    Long-Seite gedraengt steht. Solche Positionen werden bei jedem Rueckschlag
+    zuerst liquidiert - was den Rueckschlag verstaerkt. Wer dann erst
+    einsteigt, kauft die Position derer, die gleich verkaufen muessen.
+
+    Bewusst als **Filter** formuliert, nicht als eigenes Signal: Der Einstieg
+    bleibt der einfache Trendausbruch aus Generation 2. Wenn dieses Genom
+    besser abschneidet als sein Zwilling ohne Funding-Filter, liegt es an der
+    neuen Datenquelle - und nur daran.
+    """
+    return Genome(
+        name="Ausbruch ohne Long-Ueberhitzung",
+        rationale=(
+            "Derselbe Trendausbruch wie in Generation 2, aber nur wenn die "
+            "Funding-Rate nicht ungewoehnlich hoch ist (z-Wert unter 1,5). "
+            "Hypothese: Bei ueberhitzter Long-Seite kauft man die Position "
+            "derer, die beim naechsten Rueckschlag liquidiert werden."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("donchian_upper", period=50)),
+        ],
+        filters=[
+            Condition(left=_ind("funding_zscore", period=90), op=Operator.LT,
+                      right=_const(1.5)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=20, multiple=2.5),
+        targets=[
+            TargetSpec(rr=3.0, portion=0.5),
+            TargetSpec(rr=8.0, portion=0.5),
+        ],
+        cooldown_bars=24,
+        max_hold_bars=480,
+    )
+
+
+def funding_carry_long() -> Genome:
+    """Long, wenn die Shorts zahlen.
+
+    Hypothese: Eine dauerhaft **negative** Funding-Rate heisst, dass Shorts
+    den Longs Geld zahlen. Wer dann long ist, bekommt alle acht Stunden etwas
+    ueberwiesen - unabhaengig davon, wohin der Kurs laeuft.
+
+    Das ist der eigentlich neue Gedanke: **keine Prognose, sondern ein
+    Zahlungsstrom.** Alle bisherigen 13 Hypothesen mussten richtig raten, um
+    zu verdienen. Diese nicht - sie muss nur nicht zu falsch liegen, waehrend
+    das Geld fliesst.
+    """
+    return Genome(
+        name="Funding-Carry Long",
+        rationale=(
+            "Long, wenn die durchschnittliche Funding-Rate der letzten Woche "
+            "negativ ist - dann zahlen die Shorts. Raus, sobald sie wieder "
+            "positiv wird. Hypothese: Ein Zahlungsstrom ist verlaesslicher "
+            "als eine Prognose; die Position muss nur nicht zu falsch sein, "
+            "waehrend das Geld fliesst."
+        ),
+        entry_long=[
+            Condition(left=_ind("funding_avg", period=21), op=Operator.LT,
+                      right=_const(0.0)),
+        ],
+        exit_long=[
+            Condition(left=_ind("funding_avg", period=21), op=Operator.GT,
+                      right=_const(0.0)),
+        ],
+        stop=StopSpec(kind="percent", percent=3.0),
+        targets=[TargetSpec(rr=15.0, portion=1.0)],
+        cooldown_bars=8,
+        max_hold_bars=0,
+    )
+
+
+def funding_crowd_short() -> Genome:
+    """Short gegen die ueberhitzte Long-Seite.
+
+    Hypothese: Bei extremer Funding-Rate ist die Long-Seite so gedraengt, dass
+    schon eine kleine Gegenbewegung Liquidationen ausloest - und die naehren
+    sich selbst. Das ist die schaerfste Fassung der Positionierungs-These, und
+    zugleich die riskanteste: Gegen einen starken Trend zu stehen kostet, wenn
+    man zu frueh dran ist.
+
+    Faellt dieses Genom durch, waehrend der Filter oben funktioniert, dann
+    taugt Funding als Warnung, aber nicht als Signal. Auch das waere ein
+    brauchbares Ergebnis.
+    """
+    return Genome(
+        name="Gegen die ueberhitzte Long-Seite",
+        rationale=(
+            "Short, wenn die Funding-Rate ungewoehnlich hoch ist (z-Wert ueber "
+            "2). Hypothese: Eine gedraengte Long-Seite loest bei kleinen "
+            "Rueckschlaegen Liquidationen aus, die sich selbst naehren. "
+            "Riskanteste Fassung der These - gegen den Trend zu stehen kostet, "
+            "wenn man zu frueh dran ist."
+        ),
+        entry_short=[
+            Condition(left=_ind("funding_zscore", period=90), op=Operator.CROSS_ABOVE,
+                      right=_const(2.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=20, multiple=2.0),
+        targets=[
+            TargetSpec(rr=2.0, portion=0.6),
+            TargetSpec(rr=5.0, portion=0.4),
+        ],
+        cooldown_bars=48,
+        max_hold_bars=240,
+    )
+
+
+#: Vierte Generation: andere Eingangsdaten statt anderer Regeln.
+GENERATION_4 = [
+    funding_extreme_fade,
+    funding_carry_long,
+    funding_crowd_short,
+]
+
+GENERATIONS = {
+    1: GENERATION_1,
+    2: GENERATION_2,
+    3: GENERATION_3,
+    4: GENERATION_4,
+}
+
+
+def load_seeds(generation: int = 4) -> list[Genome]:
     """Die Kandidaten einer Generation erzeugen.
 
     Standard ist die neueste: Was widerlegt ist, muss nicht erneut geprueft

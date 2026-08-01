@@ -4,8 +4,10 @@
 
     python -m cli healthcheck              # zuerst ausfuehren auf neuem Server
     python -m cli backfill --von 2020-03-30
+    python -m cli funding                  # zweite Datenquelle: Positionierung
     python -m cli status
     python -m cli quality
+    python -m cli research                 # Strategien pruefen
     python -m cli ingest                   # Live-Kerzen mitschreiben
     python -m cli trade --trocken          # Handelsplan pruefen, ohne zu handeln
     python -m cli trade                    # handeln
@@ -348,6 +350,78 @@ def backfill(
 
 
 @app.command()
+def funding(
+    von: str = typer.Option("2020-03-30", help="Startdatum (YYYY-MM-DD)."),
+    bis: str | None = typer.Option(None, help="Enddatum. Standard: jetzt."),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Funding-Historie nachladen - die zweite Datenquelle.
+
+    Alle acht Stunden zahlt eine Seite der anderen. Diese Zahlen sagen etwas
+    ueber die **Positionierung** aus, nicht ueber den Kursverlauf, und es gibt
+    sie nur bei Perpetuals. Die Strategien der vierten Generation stehen und
+    fallen damit; ohne diesen Befehl liefern ihre Indikatoren nur NaN, und sie
+    handeln schlicht nicht.
+
+    Klein und schnell: Drei Werte am Tag ergeben ueber sechs Jahre rund 6.500
+    Zeilen, das sind gut 30 Anfragen.
+    """
+    from data.funding import FundingStore, backfill_funding
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = FundingStore(settings.paths.data_store)
+    market = BybitMarketData(settings.bybit)
+
+    start = _parse_date(von)
+    end = _parse_date(bis) if bis else datetime.now(UTC)
+
+    console.print(
+        f"[bold]Funding-Historie[/] {settings.bybit.symbol} "
+        f"{start:%Y-%m-%d} bis {end:%Y-%m-%d}\n"
+    )
+
+    def show(written: int, cursor: datetime) -> None:
+        console.print(f"  [dim]{written:,} Eintraege, bis {cursor:%Y-%m-%d}[/]".replace(",", "."))
+
+    written = backfill_funding(
+        market, store, settings.bybit.symbol, start=start, end=end, on_progress=show
+    )
+
+    frame = store.read(settings.bybit.symbol)
+    if frame.empty:
+        console.print(
+            "[red]Nichts geladen.[/] Ohne Funding-Daten handeln die Strategien "
+            "der vierten Generation nicht.\n"
+            "[dim]Pruefen: python -m cli healthcheck[/]"
+        )
+        raise typer.Exit(2)
+
+    first = frame["time"].iloc[0]
+    last = frame["time"].iloc[-1]
+    positive = float((frame["funding_rate"] > 0).mean())
+
+    table = Table(title="Funding-Historie", header_style="bold")
+    table.add_column("Kennzahl")
+    table.add_column("Wert", justify="right")
+    table.add_row("Neue Eintraege", f"{written:,}".replace(",", "."))
+    table.add_row("Gesamt", f"{len(frame):,}".replace(",", "."))
+    table.add_row("Von", f"{first:%Y-%m-%d}")
+    table.add_row("Bis", f"{last:%Y-%m-%d %H:%M}")
+    table.add_row("Anteil positiv", f"{positive:.1%}")
+    table.add_row("Durchschnitt", f"{frame['funding_rate'].mean():.5%}")
+    console.print(table)
+
+    # Ein Anteil weit ueber 50 % ist der Normalfall und zugleich die
+    # Grundannahme der vierten Generation: Die Long-Seite zahlt meistens.
+    console.print(
+        f"\n[dim]Die Long-Seite zahlte in {positive:.0%} aller Perioden. "
+        "Genau daran setzen die Carry-Kandidaten an.[/]"
+    )
+    console.print("[dim]Naechster Schritt: python -m cli research --schnell[/]")
+
+
+@app.command()
 def status() -> None:
     """Was liegt im Datenspeicher?"""
     settings = get_settings()
@@ -480,6 +554,7 @@ def research(
 
     from backtest.engine import BacktestConfig
     from data.bybit.errors import BybitError
+    from data.funding import FundingStore, attach_funding
     from research.admission import (
         load_trials,
         run_admission,
@@ -514,6 +589,34 @@ def research(
             "Mehr laden: python -m cli backfill --von 2020-03-30"
         )
         raise typer.Exit(2)
+
+    # Die zweite Datenquelle an die Kerzen schreiben.
+    #
+    # Fehlt sie, steht in der Spalte NaN, die Funding-Indikatoren geben NaN
+    # zurueck, und die Kandidaten der vierten Generation handeln nicht ein
+    # einziges Mal. Im Bericht saehe das aus wie ein Fehlschlag der Idee,
+    # waere aber nur eine fehlende Datei - deshalb hier die deutliche
+    # Warnung statt eines stillen Durchlaufs.
+    funding_frame = FundingStore(settings.paths.data_store).read(settings.bybit.symbol)
+    if funding_frame.empty:
+        console.print(
+            "[yellow]Keine Funding-Historie im Speicher.[/] Kandidaten, die "
+            "darauf aufbauen, handeln nicht - das ist dann kein Urteil ueber "
+            "die Idee, sondern eine fehlende Datei.\n"
+            "[dim]Nachladen: python -m cli funding[/]\n"
+        )
+    else:
+        covered = (
+            funding_frame["time"].iloc[0] <= frame["open_time"].iloc[0]
+        )
+        if not covered:
+            console.print(
+                f"[yellow]Funding-Historie beginnt erst "
+                f"{funding_frame['time'].iloc[0]:%Y-%m-%d}, die Kerzen schon "
+                f"{frame['open_time'].iloc[0]:%Y-%m-%d}.[/] Bis dahin steht "
+                "in der Spalte NaN, und Funding-Kandidaten handeln nicht.\n"
+            )
+    frame = attach_funding(frame, funding_frame)
 
     # Feinere Kerzen machen die Fill-Simulation ehrlicher: Ohne sie muss die
     # Engine annehmen, dass innerhalb einer Kerze der schlechtere Fall eintritt.

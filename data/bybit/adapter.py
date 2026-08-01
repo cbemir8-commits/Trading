@@ -78,7 +78,12 @@ class MarketDataSource(Protocol):
     def get_ticker(self, symbol: str) -> Ticker: ...
 
     def get_funding_history(
-        self, symbol: str, *, start: datetime | None = None, limit: int = 200
+        self,
+        symbol: str,
+        *,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        limit: int = 200,
     ) -> list[FundingRate]: ...
 
 
@@ -195,8 +200,21 @@ class BybitMarketData:
         )
 
     def get_funding_history(
-        self, symbol: str, *, start: datetime | None = None, limit: int = 200
+        self,
+        symbol: str,
+        *,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        limit: int = 200,
     ) -> list[FundingRate]:
+        """Funding-Historie. ``start`` und ``end`` gehoeren zusammen.
+
+        Bybit behandelt einen alleinstehenden ``startTime`` nicht als "ab
+        hier", sondern liefert die juengsten Eintraege - dieselbe Eigenheit,
+        die beim Kerzen-Backfill aus sechs Jahren zehn Tage gemacht hat. Wer
+        hier paginieren will, muss beide Grenzen setzen; ``backfill_funding``
+        tut das.
+        """
         params: dict[str, Any] = {
             "category": self.category,
             "symbol": symbol,
@@ -204,6 +222,8 @@ class BybitMarketData:
         }
         if start is not None:
             params["startTime"] = int(start.timestamp() * 1000)
+        if end is not None:
+            params["endTime"] = int(end.timestamp() * 1000)
 
         payload = self.client.get_public("/v5/market/funding/history", params)
         rates = [

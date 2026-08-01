@@ -36,13 +36,16 @@ class FakeMarketData:
         interval: Interval = Interval.M15,
         instrument: Instrument | None = None,
         now: datetime | None = None,
+        funding: list[FundingRate] | None = None,
     ) -> None:
         self.candles = sorted(candles or [], key=lambda c: c.open_time)
         self.interval = interval
         self.instrument = instrument or make_instrument()
         self.now = now or datetime.now(UTC)
+        self.funding = sorted(funding or [], key=lambda r: r.funding_time)
         #: Aufgezeichnete Aufrufe - fuer Tests, die das Paging pruefen.
         self.calls: list[dict] = []
+        self.funding_calls: list[dict] = []
 
     # -- MarketDataSource ----------------------------------------------------
     def get_server_time(self) -> datetime:
@@ -93,9 +96,25 @@ class FakeMarketData:
         )
 
     def get_funding_history(
-        self, symbol: str, *, start: datetime | None = None, limit: int = 200
+        self,
+        symbol: str,
+        *,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        limit: int = 200,
     ) -> list[FundingRate]:
-        return []
+        self.funding_calls.append({"start": start, "end": end, "limit": limit})
+        selected = self.funding
+        if start is not None:
+            selected = [r for r in selected if r.funding_time >= start]
+        if end is not None:
+            selected = [r for r in selected if r.funding_time < end]
+
+        # Dieselbe Unfreundlichkeit wie bei ``get_klines``: die juengsten aus
+        # dem Fenster, nicht die aeltesten. Ein Double, das hier vorne
+        # abschneidet, bestaetigt einen Backfill, der live nach einer Seite
+        # aufhoert - genau das ist schon einmal passiert.
+        return selected[-limit:] if limit else selected
 
 
 def make_series_with_gap(

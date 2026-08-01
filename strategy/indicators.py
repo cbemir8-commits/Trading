@@ -257,7 +257,72 @@ def hour_of_day(frame: pd.DataFrame) -> np.ndarray:
 
 
 #: Die Whitelist. Nur was hier steht, darf die Research-KI verwenden.
+# ---------------------------------------------------------------------------
+#  Funding - die einzigen Eingangsdaten hier, die keine Kursbewegung sind
+# ---------------------------------------------------------------------------
+#
+# Alles andere in dieser Datei rechnet auf Kerzen. Funding sagt etwas anderes:
+# wer gerade gedraengt steht. Bei stark positiver Rate zahlen die Longs den
+# Shorts - das passiert, wenn zu viele long sind. Diese Information steckt in
+# keinem Kursverlauf.
+#
+# Fehlt die Spalte, geben diese Indikatoren NaN zurueck. Dann handelt die
+# Strategie nicht, statt auf einer Annahme zu handeln.
+
+
+def _funding_column(frame: pd.DataFrame) -> pd.Series:
+    if "funding_rate" not in frame.columns:
+        return pd.Series(np.nan, index=frame.index, dtype="float64")
+    return frame["funding_rate"].astype("float64")
+
+
+def funding_rate(frame: pd.DataFrame) -> np.ndarray:
+    """Die zuletzt festgestellte Funding-Rate, in Prozent.
+
+    Positiv heisst: Longs zahlen. Typische Werte liegen bei 0,01 % je acht
+    Stunden; Werte ueber 0,05 % gelten als ausgepraegte Long-Ueberhitzung.
+    """
+    return (_funding_column(frame) * 100.0).to_numpy(dtype=np.float64)
+
+
+def funding_avg(frame: pd.DataFrame, period: int = 21) -> np.ndarray:
+    """Gleitender Durchschnitt der Funding-Rate in Prozent.
+
+    21 Perioden sind bei achtstuendiger Zahlung rund eine Woche. Der
+    Durchschnitt glaettet einzelne Ausschlaege, die oft nur eine Reaktion auf
+    eine grosse Order sind.
+    """
+    return (
+        (_funding_column(frame) * 100.0).rolling(period, min_periods=period).mean()
+    ).to_numpy(dtype=np.float64)
+
+
+def funding_zscore(frame: pd.DataFrame, period: int = 90) -> np.ndarray:
+    """Wie ungewoehnlich ist die aktuelle Rate im eigenen Verlauf?
+
+    Absolute Schwellen taugen hier schlecht: Was 2021 als extrem galt, ist
+    2026 normal. Der z-Wert misst gegen die eigene juengere Geschichte -
+    ausschliesslich rueckwaerts.
+    """
+    values = _funding_column(frame)
+    mean = values.rolling(period, min_periods=period).mean()
+    deviation = values.rolling(period, min_periods=period).std()
+    return ((values - mean) / deviation.replace(0.0, np.nan)).to_numpy(dtype=np.float64)
+
+
 REGISTRY: dict[str, tuple[Callable[..., np.ndarray], IndicatorSpec]] = {
+    "funding_rate": (funding_rate, IndicatorSpec(
+        "funding_rate",
+        "Funding-Rate in Prozent je 8 h. Positiv = Longs zahlen den Shorts. "
+        "Keine Kursgroesse, sondern Positionierung.",
+        {})),
+    "funding_avg": (funding_avg, IndicatorSpec(
+        "funding_avg", "Gleitender Durchschnitt der Funding-Rate in Prozent",
+        {"period": (3, 200)})),
+    "funding_zscore": (funding_zscore, IndicatorSpec(
+        "funding_zscore",
+        "Wie ungewoehnlich die Funding-Rate im eigenen Verlauf ist",
+        {"period": (20, 400)})),
     "sma": (sma, IndicatorSpec("sma", "Einfacher gleitender Durchschnitt",
                                {"period": (5, 400)})),
     "ema": (ema, IndicatorSpec("ema", "Exponentieller gleitender Durchschnitt",
