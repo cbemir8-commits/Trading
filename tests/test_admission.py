@@ -314,3 +314,65 @@ def test_walkforward_needs_enough_history(config: BacktestConfig) -> None:
 
     assert report.candidates[0].walkforward.window_count == 0
     assert report.champion is None
+
+
+class TestGeneration2:
+    """Die zweite Generation - gebaut gegen die Befunde der ersten.
+
+    Die erste Generation handelte 30 bis 95 Mal im Monat und verlor je Trade
+    zwischen 0,09 und 0,50 R. Bei 16,7 % Gebuehrenanteil am Bruttogewinn ist
+    das kein Zufall, sondern Arithmetik: Wer so oft handelt, zahlt seinen
+    Vorteil an die Boerse, bevor er entsteht.
+    """
+
+    def test_targets_are_wider_than_in_the_first_generation(self) -> None:
+        """Wenn 16 % des Bruttogewinns an Gebuehren gehen, muss ein Gewinner
+        mehr tragen als 1,5 R."""
+        from research.seeds import load_seeds
+
+        for genome in load_seeds(generation=2):
+            assert max(t.rr for t in genome.targets) >= 6.0, genome.name
+
+    def test_cooldowns_are_longer(self) -> None:
+        """Die direkteste Bremse gegen zu haeufiges Handeln."""
+        from research.seeds import load_seeds
+
+        first = {g.name: g.cooldown_bars for g in load_seeds(generation=1)}
+        second = [g.cooldown_bars for g in load_seeds(generation=2)]
+
+        assert min(second) > max(first.values())
+
+    def test_at_most_two_conditions_each(self) -> None:
+        """Die klarste Aussage des ersten Laufs: Der einfachste Kandidat war
+        der beste. Jeder zusaetzliche Filter machte es schlechter."""
+        from research.seeds import load_seeds
+
+        for genome in load_seeds(generation=2):
+            per_side = max(len(genome.entry_long), len(genome.entry_short))
+            assert per_side + len(genome.filters) <= 2, genome.name
+
+    def test_both_generations_stay_available(self) -> None:
+        """Die widerlegte Generation bleibt abrufbar - das Journal verweist
+        auf sie, und Nachvollziehbarkeit ist der halbe Wert der Uebung."""
+        from research.seeds import load_seeds
+
+        assert len(load_seeds(generation=1)) == 5
+        assert len(load_seeds(generation=2)) == 5
+
+    def test_unknown_generation_is_refused(self) -> None:
+        import pytest as _pytest
+
+        from research.seeds import load_seeds
+
+        with _pytest.raises(ValueError, match="Generation 7"):
+            load_seeds(generation=7)
+
+    def test_generations_do_not_overlap(self) -> None:
+        """Ein wiederholter Kandidat zaehlt in der Mehrfachtest-Korrektur,
+        traegt aber nichts bei."""
+        from research.seeds import load_seeds
+
+        first = {g.genome_id for g in load_seeds(generation=1)}
+        second = {g.genome_id for g in load_seeds(generation=2)}
+
+        assert not (first & second)

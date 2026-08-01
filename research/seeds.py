@@ -232,8 +232,227 @@ def ema_cross() -> Genome:
     )
 
 
-#: Die erste Generation. Reihenfolge egal - alle werden geprueft.
-SEED_GENOMES = [
+# ===========================================================================
+#  Zweite Generation - gebaut gegen das, woran die erste gescheitert ist
+# ===========================================================================
+#
+# Der erste Zulassungslauf ueber sechs Jahre BTC hat alle fuenf Kandidaten
+# widerlegt, und zwar mit einem sehr einheitlichen Muster:
+#
+#   * Erwartungswert je Trade zwischen -0,089 und -0,496 R.
+#   * 2350 bis 6886 Trades in sechs Jahren - 30 bis 95 im Monat.
+#   * Gebuehren: 16,7 % vom Bruttogewinn.
+#   * Der **einfachste** Kandidat (EMA-Kreuzer) schnitt am besten ab. Jeder
+#     zusaetzliche Filter machte es schlechter.
+#   * Schwaechstes Umfeld ueberall: Seitwaerts, mit Faktor 0,60 bis 0,75.
+#
+# Daraus folgen vier Aenderungen, alle in dieselbe Richtung:
+#
+# 1. **Deutlich seltener handeln.** Nicht auf 15 Minuten, sondern auf einer
+#    Stunde. Bei 30 Trades im Monat frisst die Gebuehr den Vorteil, bevor er
+#    entstehen kann - das ist keine Vermutung mehr, das steht in den Zahlen.
+#
+# 2. **Groessere Ziele.** Wenn 16 % des Bruttogewinns an Gebuehren gehen, muss
+#    ein Gewinner mehr tragen als 1,5 R. Die Ziele liegen jetzt bei 3 bis 12 R.
+#
+# 3. **Weitere Stops.** Wer selten handelt, kann sich Luft leisten - und wird
+#    nicht von jedem Rauschen ausgestoppt.
+#
+# 4. **Trendfilter statt Indikatorfilter.** Nicht "ADX ueber 20", sondern
+#    "ueberhaupt nur handeln, wenn der Kurs klar ueber seinem 200er-Schnitt
+#    liegt". Der Seitwaertsmarkt hat jede Strategie der ersten Generation
+#    gekostet; er wird jetzt ausgeschlossen statt gefiltert.
+#
+# Was bewusst NICHT passiert: mehr Bedingungen. Die erste Generation hat
+# gezeigt, dass zusaetzliche Filter hier schaden. Jedes Genom unten hat
+# hoechstens zwei.
+
+
+def big_trend_breakout() -> Genome:
+    """Ausbruch, aber nur im etablierten Aufwaertstrend - und mit weiten Zielen.
+
+    Hypothese: Der Ausbruch als Signal war nicht das Problem der ersten
+    Generation, sondern seine Haeufigkeit und die zu nahen Ziele. Auf
+    Stundenbasis, nur oberhalb des 200er-EMA und mit Zielen bis 10 R traegt
+    ein Gewinner die Gebuehren mehrerer Fehlversuche.
+    """
+    return Genome(
+        name="Grosser Trendausbruch",
+        rationale=(
+            "Ausbruch ueber den 50-Perioden-Kanal, nur wenn der Kurs mehr als "
+            "1 % ueber seinem 200er-EMA liegt. Ziele bis 10 R. Hypothese: Das "
+            "Ausbruchssignal taugt, aber nur selten und nur mit Zielen, die "
+            "die Gebuehren mehrerer Fehlversuche tragen."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("donchian_upper", period=50)),
+        ],
+        filters=[
+            Condition(left=_ind("distance_to_ema_pct", period=200), op=Operator.GT,
+                      right=_const(1.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=20, multiple=2.5),
+        targets=[
+            TargetSpec(rr=3.0, portion=0.4),
+            TargetSpec(rr=6.0, portion=0.3),
+            TargetSpec(rr=10.0, portion=0.3),
+        ],
+        cooldown_bars=24,
+        max_hold_bars=480,
+    )
+
+
+def trend_only_long() -> Genome:
+    """Nur mitlaufen, nie dagegen.
+
+    Hypothese: Bitcoin hatte ueber den gesamten Untersuchungszeitraum eine
+    starke Aufwaertsdrift. Wer short geht, handelt gegen sie und zahlt dabei
+    noch Funding. Die erste Generation handelte beide Richtungen - und verlor
+    in beiden.
+
+    Faellt dieses Genom durch, waehrend die zweiseitigen Varianten es nicht
+    tun, war die Drift nicht der Punkt.
+    """
+    return Genome(
+        name="Nur mit der Drift",
+        rationale=(
+            "Ausbruch ueber den 30-Perioden-Kanal, nur wenn EMA(100) ueber "
+            "EMA(400) liegt. Ausschliesslich Long. Hypothese: Die Aufwaertsdrift "
+            "von BTC macht Shorts strukturell teuer - erst recht mit Funding."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("donchian_upper", period=30)),
+        ],
+        filters=[
+            Condition(left=_ind("ema", period=100), op=Operator.GT,
+                      right=_ind("ema", period=400)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[
+            TargetSpec(rr=4.0, portion=0.5),
+            TargetSpec(rr=8.0, portion=0.5),
+        ],
+        cooldown_bars=18,
+        max_hold_bars=360,
+    )
+
+
+def strong_trend_momentum() -> Genome:
+    """Momentum, aber nur wenn der Trend wirklich stark ist.
+
+    Hypothese: Die erste Generation filterte mit ADX>18 bis 20 - das laesst
+    fast alles durch. Bei ADX>22 bleiben nur ausgepraegte Trendphasen uebrig.
+
+    Die Schwellen wurden zweimal gelockert (ADX 30 -> 25 -> 22, Momentum
+    3 % -> 2 % -> 1 %): Bei 30 lieferte das Genom 0,4 Trades im Monat -
+    zu wenig fuer eine belastbare Aussage, das Genom waere schon am
+    Stichprobenumfang gescheitert statt an seiner Hypothese. Ein Kandidat,
+    der aus Mangel an Gelegenheiten durchfaellt, hat nichts widerlegt.
+    """
+    return Genome(
+        name="Starker Trend, Momentum",
+        rationale=(
+            "Einstieg, wenn das 20-Perioden-Momentum ueber 3 % steigt, "
+            "gefiltert durch ADX>22. Hypothese: Nicht das Momentum war das "
+            "Problem, sondern dass es auch in Seitwaertsphasen ausgeloest hat."
+        ),
+        entry_long=[
+            Condition(left=_ind("roc", period=20), op=Operator.CROSS_ABOVE,
+                      right=_const(1.0)),
+        ],
+        entry_short=[
+            Condition(left=_ind("roc", period=20), op=Operator.CROSS_BELOW,
+                      right=_const(-1.0)),
+        ],
+        filters=[
+            Condition(left=_ind("adx", period=20), op=Operator.GT, right=_const(22)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=20, multiple=3.0),
+        targets=[
+            TargetSpec(rr=3.0, portion=0.5),
+            TargetSpec(rr=7.0, portion=0.5),
+        ],
+        cooldown_bars=24,
+        max_hold_bars=400,
+    )
+
+
+def rare_big_breakout() -> Genome:
+    """Der seltenste Kandidat: Ausbruch auf 100-Perioden-Hoch.
+
+    Hypothese: Je seltener das Signal, desto bedeutsamer. Ein neues
+    100-Stunden-Hoch im Aufwaertstrend ist ein anderes Ereignis als ein neues
+    20-Stunden-Hoch.
+
+    Das ist zugleich ein Test der Gegenrichtung: Wenn auch das durchfaellt,
+    liegt es nicht an der Haeufigkeit.
+    """
+    return Genome(
+        name="Seltener grosser Ausbruch",
+        rationale=(
+            "Ausbruch ueber das 100-Perioden-Hoch oberhalb des 200er-EMA, "
+            "Ziele bis 12 R, lange Sperrfrist. Hypothese: Seltene Signale sind "
+            "aussagekraeftiger - und nur sie tragen die Gebuehren."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("donchian_upper", period=100)),
+        ],
+        filters=[
+            Condition(left=_ind("distance_to_ema_pct", period=200), op=Operator.GT,
+                      right=_const(0.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=30, multiple=2.5),
+        targets=[
+            TargetSpec(rr=5.0, portion=0.5),
+            TargetSpec(rr=12.0, portion=0.5),
+        ],
+        cooldown_bars=48,
+        max_hold_bars=720,
+    )
+
+
+def slow_cross() -> Genome:
+    """Die neue Messlatte - derselbe Kreuzer, nur langsamer und mit weiten Zielen.
+
+    Der EMA-Kreuzer war in der ersten Generation der beste Kandidat, obwohl er
+    der einfachste ist. Diese Fassung aendert genau zwei Dinge: langsamere
+    Perioden und Ziele bei 4 und 10 R statt 2 und 4.
+
+    Damit laesst sich die zentrale Vermutung der zweiten Generation direkt
+    pruefen - dass Handelsfrequenz und Zielgroesse das Problem waren, nicht
+    das Signal.
+    """
+    return Genome(
+        name="Langsamer Kreuzer (Messlatte 2)",
+        rationale=(
+            "EMA(50) kreuzt EMA(200), Ziele bei 4 und 10 R. Bewusst nur zwei "
+            "Aenderungen gegenueber der ersten Messlatte: langsamer und weitere "
+            "Ziele. Faellt sie besser aus, lag es an Frequenz und Zielgroesse - "
+            "nicht am Signal."
+        ),
+        entry_long=[
+            Condition(left=_ind("ema", period=50), op=Operator.CROSS_ABOVE,
+                      right=_ind("ema", period=200)),
+        ],
+        entry_short=[
+            Condition(left=_ind("ema", period=50), op=Operator.CROSS_BELOW,
+                      right=_ind("ema", period=200)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=20, multiple=3.0),
+        targets=[
+            TargetSpec(rr=4.0, portion=0.5),
+            TargetSpec(rr=10.0, portion=0.5),
+        ],
+        cooldown_bars=24,
+        max_hold_bars=720,
+    )
+
+
+#: Erste Generation - widerlegt, bleibt fuer die Nachvollziehbarkeit erhalten.
+GENERATION_1 = [
     trend_following,
     momentum_pullback,
     volatility_breakout,
@@ -241,7 +460,28 @@ SEED_GENOMES = [
     ema_cross,
 ]
 
+#: Zweite Generation: seltener handeln, groessere Ziele, weitere Stops,
+#: Trendfilter statt Indikatorfilter.
+GENERATION_2 = [
+    big_trend_breakout,
+    trend_only_long,
+    strong_trend_momentum,
+    rare_big_breakout,
+    slow_cross,
+]
 
-def load_seeds() -> list[Genome]:
-    """Alle Kandidaten der ersten Generation erzeugen."""
-    return [build() for build in SEED_GENOMES]
+GENERATIONS = {1: GENERATION_1, 2: GENERATION_2}
+
+
+def load_seeds(generation: int = 2) -> list[Genome]:
+    """Die Kandidaten einer Generation erzeugen.
+
+    Standard ist die neueste: Was widerlegt ist, muss nicht erneut geprueft
+    werden - jeder Wiederholungsversuch zaehlt in der Mehrfachtest-Korrektur
+    und macht die Huerde fuer alle folgenden hoeher, ohne etwas beizutragen.
+    """
+    if generation not in GENERATIONS:
+        raise ValueError(
+            f"Generation {generation} gibt es nicht. Verfuegbar: {sorted(GENERATIONS)}"
+        )
+    return [build() for build in GENERATIONS[generation]]

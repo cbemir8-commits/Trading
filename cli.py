@@ -441,7 +441,12 @@ def quality(
 
 @app.command()
 def research(
-    intervall: str = typer.Option("15", "--intervall", "-i", help="Handelsintervall."),
+    intervall: str = typer.Option(
+        "60",
+        "--intervall",
+        "-i",
+        help="Handelsintervall. 60 = Stunde, die Zeitebene der zweiten Generation.",
+    ),
     von: str | None = typer.Option(None, help="Startdatum der Auswertung (YYYY-MM-DD)."),
     schnell: bool = typer.Option(
         False,
