@@ -72,7 +72,20 @@ class CompiledStrategy:
         return indicators.compute(operand.name, frame, operand.params)
 
     def _all_conditions(self) -> list[Condition]:
-        return [*self.genome.filters, *self.genome.entry_long, *self.genome.entry_short]
+        return self.genome.all_conditions
+
+    def should_exit(self, ctx: BarContext, side: Side) -> bool:
+        """Ist die Bedingung erfuellt, unter der die Position beendet wird?
+
+        Zusaetzlich zu Stop und Zielen, nicht an deren Stelle. Ein Genom ohne
+        Ausstiegsbedingungen verhaelt sich unveraendert.
+        """
+        conditions = (
+            self.genome.exit_long if side is Side.BUY else self.genome.exit_short
+        )
+        if not conditions:
+            return False
+        return self._evaluate_all(ctx, conditions)
 
     # -- Auswertung ----------------------------------------------------------
     def on_bar(self, ctx: BarContext) -> Signal | None:

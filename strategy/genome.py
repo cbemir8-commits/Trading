@@ -173,6 +173,17 @@ class Genome(BaseModel):
     entry_short: list[Condition] = Field(default_factory=list)
     filters: list[Condition] = Field(default_factory=list)
 
+    exit_long: list[Condition] = Field(default_factory=list)
+    exit_short: list[Condition] = Field(default_factory=list)
+    """Ausstieg, sobald **alle** genannten Bedingungen zutreffen - zusaetzlich
+    zu Stop und Zielen, nicht an deren Stelle.
+
+    Gebraucht fuer Strategien, die nicht entscheiden, *wann gehandelt* wird,
+    sondern *wann investiert* geblieben wird. Dort ist der Ausstieg keine
+    Preismarke, sondern das Ende einer Bedingung: "raus, sobald der Kurs unter
+    seinen langfristigen Schnitt faellt". Solche Regeln handeln wenige Male im
+    Jahr - und genau deshalb kosten sie kaum Gebuehren."""
+
     stop: StopSpec = Field(default_factory=StopSpec)
     targets: list[TargetSpec] = Field(min_length=1, max_length=4)
 
@@ -241,10 +252,26 @@ class Genome(BaseModel):
             lines.append(f"  Maximale Haltedauer: {self.max_hold_bars} Kerzen")
         return "\n".join(lines)
 
+    @property
+    def all_conditions(self) -> list[Condition]:
+        """Jede Bedingung des Genoms - Einstieg, Filter und Ausstieg.
+
+        Eine Stelle statt vier Aufzaehlungen: Wer eine Sorte vergisst,
+        berechnet den zugehoerigen Indikator nicht vor, und die Strategie
+        stolpert erst zur Laufzeit darueber.
+        """
+        return [
+            *self.entry_long,
+            *self.entry_short,
+            *self.filters,
+            *self.exit_long,
+            *self.exit_short,
+        ]
+
     def required_operands(self) -> set[str]:
         """Alle Indikatoren, die dieses Genom braucht."""
         keys: set[str] = set()
-        for condition in [*self.entry_long, *self.entry_short, *self.filters]:
+        for condition in self.all_conditions:
             for operand in (condition.left, condition.right):
                 if operand.kind != "constant":
                     keys.add(operand.key)

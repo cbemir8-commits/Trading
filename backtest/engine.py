@@ -35,7 +35,7 @@ from backtest.costs import CostModel, FundingSchedule
 from core.config import RiskSettings
 from core.models import Instrument, LiquidityRole, Side, Signal, Trade
 from execution.sizing import SizedPosition, SizingRejected, size_position
-from strategy.base import BarContext, Strategy, frame_to_arrays
+from strategy.base import BarContext, Strategy, frame_to_arrays, wants_exit
 
 log = structlog.get_logger(__name__)
 
@@ -44,6 +44,9 @@ class ExitReason(StrEnum):
     STOP_LOSS = "stop_loss"
     TAKE_PROFIT = "take_profit"
     LIQUIDATION = "liquidation"
+    SIGNAL_EXIT = "signal_exit"
+    """Die Strategie hat den Ausstieg verlangt - ihre Bedingung gilt nicht mehr."""
+
     MAX_HOLD = "max_hold"
     END_OF_DATA = "end_of_data"
 
@@ -212,6 +215,21 @@ class Backtester:
             # 2. Strategie zur abgeschlossenen Kerze befragen.
             ctx = BarContext(frame, arrays, indicators, i)
             signal = strategy.on_bar(ctx)
+
+            # Ausstiegsbedingung der Strategie - **nach** Stop und Zielen.
+            # Die haetten innerhalb der Kerze zuerst gegriffen; diese Bedingung
+            # steht erst am Kerzenschluss fest und wird deshalb auch zu diesem
+            # Kurs ausgefuehrt, als Taker.
+            if state.position is not None and wants_exit(strategy, ctx, state.position.side):
+                self._close_position(
+                    state,
+                    result,
+                    state.position.qty,
+                    Decimal(str(arrays["close"][i])),
+                    _to_datetime(bar_time),
+                    ExitReason.SIGNAL_EXIT,
+                    role=LiquidityRole.TAKER,
+                )
 
             if signal is not None:
                 result.signals_generated += 1

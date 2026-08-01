@@ -470,7 +470,161 @@ GENERATION_2 = [
     slow_cross,
 ]
 
-GENERATIONS = {1: GENERATION_1, 2: GENERATION_2}
+# ===========================================================================
+#  Dritte Generation - nicht *wann handeln*, sondern *wann investiert sein*
+# ===========================================================================
+#
+# Zehn widerlegte Hypothesen der Generationen 1 und 2 hatten alle dieselbe
+# Bauform: Sie versuchten, die naechste Bewegung vorherzusagen. Das ist das am
+# gruendlichsten durchgekaemmte Gebiet der ganzen Finanzwelt, und die Zahlen
+# sagen deutlich, dass dort nichts uebrig ist - jedenfalls nicht mit
+# Indikatoren, die jeder kennt.
+#
+# Diese Generation stellt eine andere Frage. Nicht "wohin geht der Kurs",
+# sondern "**soll ich gerade ueberhaupt investiert sein**". Der Unterschied
+# ist grundlegend:
+#
+#   * Es wird nichts vorhergesagt. Die Regel schaltet Beteiligung an und aus.
+#   * Ausgestiegen wird nicht an einer Preismarke, sondern wenn die Bedingung
+#     endet. Dafuer gibt es seit dieser Generation ``exit_long``.
+#   * Gehandelt wird wenige Male im Jahr. Die Gebuehren, an denen die ersten
+#     zehn Kandidaten gestorben sind, fallen praktisch nicht mehr ins Gewicht.
+#
+# Der Massstab ist ein anderer: Diese Strategien schlagen einfaches Halten
+# nicht in der Rendite - das schafft fast nichts. Sie sollen den **groessten
+# Rueckgang** deutlich senken und dabei den groesseren Teil der Rendite
+# behalten. Fuer ein Konto mit Kill-Switch bei 15 % ist das der relevante
+# Handel: Halten hatte in diesem Zeitraum Drawdowns von ueber 70 %, und die
+# haetten das Konto laengst abgeschaltet.
+#
+# Ehrlich dazugesagt: Diese Kandidaten handeln so selten, dass sie am
+# Stichprobenumfang von 100 Trades scheitern werden. Das ist kein Fehler der
+# Strategien, sondern eine Schwelle, die fuer Mustersuche gemacht ist und fuer
+# Investitionssteuerung nicht passt. Sie brauchen eine eigene Bewertung -
+# die steht noch aus, und bis dahin ist diese Generation ein Vorschlag, kein
+# Ergebnis.
+
+
+def trend_exposure() -> Genome:
+    """Investiert, solange der Kurs ueber seinem langfristigen Schnitt liegt.
+
+    Die aelteste und am besten dokumentierte Regel dieser Art. Hypothese: Sie
+    verhindert nicht die ersten 20 % eines Absturzes, aber die restlichen 50 -
+    und genau die entscheiden, ob ein Konto mit Kill-Switch ueberlebt.
+    """
+    return Genome(
+        name="Trendbeteiligung EMA200",
+        rationale=(
+            "Long, solange der Kurs ueber dem 200er-EMA liegt, raus wenn er "
+            "darunter faellt. Hypothese: Die Regel verhindert nicht den Beginn "
+            "eines Absturzes, aber den Grossteil davon. Ziel ist nicht mehr "
+            "Rendite als Halten, sondern deutlich weniger Rueckgang."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("ema", period=200)),
+        ],
+        exit_long=[
+            Condition(left=_price("close"), op=Operator.LT,
+                      right=_ind("ema", period=200)),
+        ],
+        # Der Stop ist hier **Notbremse, nicht Ausstieg** - ausgestiegen wird
+        # ueber die Bedingung. 3 % ist der Hoechstwert, den die Risikoregeln
+        # zulassen; ein 6xATR-Stop, wie er zu dieser Bauform passen wuerde,
+        # wird vom Sizer abgelehnt (stop_too_wide). Das ist ein Kompromiss und
+        # kein Entwurf: Auf Stundenkerzen wird eine 3-%-Marke oft von Rauschen
+        # getroffen, und jeder solche Treffer nimmt genau die Position weg,
+        # die die Regel eigentlich halten wollte.
+        stop=StopSpec(kind="percent", percent=3.0),
+        targets=[TargetSpec(rr=20.0, portion=1.0)],
+        cooldown_bars=0,
+        max_hold_bars=0,
+    )
+
+
+def slow_trend_exposure() -> Genome:
+    """Dasselbe, aber traeger - mit Abstandspuffer gegen Fehlausstiege.
+
+    Hypothese: Der EMA200 wird oft knapp durchbrochen und sofort wieder
+    zurueckerobert. Jedes Mal kostet das zwei Gebuehren und einen verpassten
+    Wiedereinstieg. Ein Puffer von 2 % laesst solche Faelle durchlaufen.
+    """
+    return Genome(
+        name="Trendbeteiligung mit Puffer",
+        rationale=(
+            "Long, wenn der Kurs mehr als 2 % ueber dem 200er-EMA liegt; raus, "
+            "wenn er mehr als 2 % darunter faellt. Hypothese: Der Puffer "
+            "verhindert das staendige Hin und Her um die Linie herum, das "
+            "jede einfache Trendregel teuer macht."
+        ),
+        entry_long=[
+            Condition(left=_ind("distance_to_ema_pct", period=200), op=Operator.GT,
+                      right=_const(2.0)),
+        ],
+        exit_long=[
+            Condition(left=_ind("distance_to_ema_pct", period=200), op=Operator.LT,
+                      right=_const(-2.0)),
+        ],
+        # Der Stop ist hier **Notbremse, nicht Ausstieg** - ausgestiegen wird
+        # ueber die Bedingung. 3 % ist der Hoechstwert, den die Risikoregeln
+        # zulassen; ein 6xATR-Stop, wie er zu dieser Bauform passen wuerde,
+        # wird vom Sizer abgelehnt (stop_too_wide). Das ist ein Kompromiss und
+        # kein Entwurf: Auf Stundenkerzen wird eine 3-%-Marke oft von Rauschen
+        # getroffen, und jeder solche Treffer nimmt genau die Position weg,
+        # die die Regel eigentlich halten wollte.
+        stop=StopSpec(kind="percent", percent=3.0),
+        targets=[TargetSpec(rr=20.0, portion=1.0)],
+        cooldown_bars=0,
+        max_hold_bars=0,
+    )
+
+
+def momentum_exposure() -> Genome:
+    """Beteiligung nach Zwoelfmonats-Momentum.
+
+    Hypothese: Die am breitesten belegte Anomalie ueberhaupt - Maerkte, die
+    ueber lange Zeitraeume gestiegen sind, steigen eher weiter. Anders als die
+    EMA-Regel schaut diese auf die absolute Veraenderung statt auf eine Linie.
+
+    Bewusst als dritte Variante derselben Idee: Wenn alle drei aehnlich
+    ausfallen, liegt es an der Idee und nicht an der Umsetzung.
+    """
+    return Genome(
+        name="Momentum-Beteiligung",
+        rationale=(
+            "Long, wenn die Veraenderung ueber 90 Perioden positiv ist; raus, "
+            "wenn sie negativ wird. Hypothese: Zeitreihen-Momentum - die am "
+            "breitesten belegte Anomalie - wirkt auch auf BTC."
+        ),
+        entry_long=[
+            Condition(left=_ind("roc", period=90), op=Operator.CROSS_ABOVE,
+                      right=_const(0.0)),
+        ],
+        exit_long=[
+            Condition(left=_ind("roc", period=90), op=Operator.LT, right=_const(0.0)),
+        ],
+        # Der Stop ist hier **Notbremse, nicht Ausstieg** - ausgestiegen wird
+        # ueber die Bedingung. 3 % ist der Hoechstwert, den die Risikoregeln
+        # zulassen; ein 6xATR-Stop, wie er zu dieser Bauform passen wuerde,
+        # wird vom Sizer abgelehnt (stop_too_wide). Das ist ein Kompromiss und
+        # kein Entwurf: Auf Stundenkerzen wird eine 3-%-Marke oft von Rauschen
+        # getroffen, und jeder solche Treffer nimmt genau die Position weg,
+        # die die Regel eigentlich halten wollte.
+        stop=StopSpec(kind="percent", percent=3.0),
+        targets=[TargetSpec(rr=20.0, portion=1.0)],
+        cooldown_bars=0,
+        max_hold_bars=0,
+    )
+
+
+#: Dritte Generation: Beteiligungssteuerung statt Mustersuche.
+GENERATION_3 = [
+    trend_exposure,
+    slow_trend_exposure,
+    momentum_exposure,
+]
+
+GENERATIONS = {1: GENERATION_1, 2: GENERATION_2, 3: GENERATION_3}
 
 
 def load_seeds(generation: int = 2) -> list[Genome]:

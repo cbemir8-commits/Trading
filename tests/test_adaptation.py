@@ -387,3 +387,137 @@ class TestExitAnalysis:
         analysis = analyse_exits(good + without_stop)
 
         assert analysis.trades == 45
+
+
+class TestBenchmark:
+    """Kaufen und Halten als Messlatte.
+
+    Die Frage ist nicht "verdient die Strategie Geld", sondern "schlaegt sie
+    einfaches Halten". Ueber 2020-2026 hat BTC sich vervielfacht; eine
+    Strategie mit 30 % Rendite in diesem Zeitraum ist ein Verlustgeschaeft.
+    Diese Zahl fehlte in den ersten beiden Zulassungslaeufen.
+    """
+
+    def test_hold_return_matches_the_price_move(self) -> None:
+        from research.benchmark import buy_and_hold
+
+        frame = _rising_frame(factor=3.0)
+
+        bench = buy_and_hold(frame)
+
+        # Dreifacher Kurs = rund +200 %, abzueglich der einmaligen Kaufgebuehr.
+        assert 195 < bench.return_pct < 200
+
+    def test_entry_fee_is_charged_once(self) -> None:
+        """Sonst waere die Messlatte guenstiger als die Wirklichkeit - und
+        jede Strategie ihr sicher unterlegen."""
+        from research.benchmark import buy_and_hold
+
+        bench = buy_and_hold(_rising_frame(factor=1.0))
+
+        assert bench.return_pct < 0  # nur die Gebuehr, kein Kursgewinn
+        assert bench.return_pct > -0.2
+
+    def test_verdict_names_the_quiet_win(self) -> None:
+        """Weniger Rendite bei deutlich weniger Rueckgang ist fuer ein Konto
+        mit 15 %-Kill-Switch der bessere Handel - das muss die Bewertung
+        auch so sagen."""
+        from types import SimpleNamespace
+
+        from research.benchmark import buy_and_hold
+
+        # Eine Reihe mit echtem Einbruch - sonst hat die Messlatte gar keinen
+        # Rueckgang, und "ruhiger als nichts" ist keine sinnvolle Aussage.
+        bench = buy_and_hold(_frame_with_crash())
+        quieter = SimpleNamespace(
+            total_return_pct=bench.return_pct * 0.7,
+            max_drawdown_pct=bench.max_drawdown_pct / 3,
+        )
+
+        assert "ruhiger" in bench.verdict_for(quieter)
+
+    def test_verdict_is_blunt_about_losing_to_nothing(self) -> None:
+        from types import SimpleNamespace
+
+        from research.benchmark import buy_and_hold
+
+        bench = buy_and_hold(_rising_frame(factor=3.0))
+        worse = SimpleNamespace(total_return_pct=-20.0, max_drawdown_pct=90.0)
+
+        assert "Nichtstun" in bench.verdict_for(worse)
+
+
+class TestExitConditions:
+    """Ausstieg ueber eine Bedingung statt ueber eine Preismarke.
+
+    Ohne das gibt es keine Strategie, die *wann investiert sein* steuert statt
+    *wann handeln* - und genau diese Bauform handelt selten genug, dass die
+    Gebuehren nicht mehr entscheiden.
+    """
+
+    def test_genome_without_exit_conditions_is_unchanged(self) -> None:
+        from research.seeds import ema_cross
+        from strategy.compiler import compile_genome
+
+        genome = ema_cross()
+
+        assert genome.exit_long == []
+        assert compile_genome(genome).warmup_bars > 0
+
+    def test_exit_indicators_are_precomputed(self) -> None:
+        """Wer die Ausstiegsbedingungen beim Vorberechnen vergisst, stolpert
+        erst zur Laufzeit darueber - mitten im Backtest."""
+        from research.seeds import trend_exposure
+
+        genome = trend_exposure()
+        keys = genome.required_operands()
+
+        for condition in genome.exit_long:
+            for operand in (condition.left, condition.right):
+                if operand.kind != "constant":
+                    assert operand.key in keys
+
+    def test_generation_3_all_have_an_exit(self) -> None:
+        from research.seeds import load_seeds
+
+        for genome in load_seeds(generation=3):
+            assert genome.exit_long, genome.name
+
+
+def _frame_with_crash() -> pd.DataFrame:
+    """Steigt, bricht um die Haelfte ein, erholt sich - wie 2021/22."""
+    up = np.linspace(30000.0, 60000.0, 200)
+    down = np.linspace(60000.0, 30000.0, 100)
+    recover = np.linspace(30000.0, 70000.0, 200)
+    close = np.concatenate([up, down, recover])
+    return pd.DataFrame(
+        {
+            "open_time": pd.date_range(
+                datetime(2024, 1, 1, tzinfo=UTC), periods=len(close), freq="4h"
+            ),
+            "open": close,
+            "high": close,
+            "low": close,
+            "close": close,
+            "volume": np.ones(len(close)),
+            "turnover": np.ones(len(close)),
+        }
+    )
+
+
+def _rising_frame(*, factor: float) -> pd.DataFrame:
+    n = 500
+    close = np.linspace(30000.0, 30000.0 * factor, n)
+    return pd.DataFrame(
+        {
+            "open_time": pd.date_range(
+                datetime(2024, 1, 1, tzinfo=UTC), periods=n, freq="4h"
+            ),
+            "open": close,
+            "high": close,
+            "low": close,
+            "close": close,
+            "volume": np.ones(n),
+            "turnover": np.ones(n),
+        }
+    )

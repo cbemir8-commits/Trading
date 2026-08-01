@@ -19,7 +19,7 @@ from typing import Protocol, runtime_checkable
 import numpy as np
 import pandas as pd
 
-from core.models import Signal
+from core.models import Side, Signal
 
 
 class LookaheadError(RuntimeError):
@@ -153,6 +153,23 @@ class Strategy(Protocol):
         PostOnly-Limit platziert und fuellt nur, wenn der Markt sie erreicht.
         """
         ...
+
+
+def wants_exit(strategy: object, ctx: BarContext, side: Side) -> bool:
+    """Will die Strategie die offene Position schliessen?
+
+    Optional - die meisten Strategien beantworten das ueber Stop und Ziele.
+    Gebraucht wird es fuer eine andere Sorte Strategie: solche, die nicht
+    entscheiden, *wann gehandelt* wird, sondern *wann investiert* geblieben
+    wird. Dort ist der Ausstieg keine Preismarke, sondern das Ende einer
+    Bedingung - "raus, sobald der Kurs unter seinen langfristigen Schnitt
+    faellt".
+
+    Als freie Funktion und nicht als Pflichtmethode, damit bestehende
+    Strategien unveraendert weiterlaufen.
+    """
+    check = getattr(strategy, "should_exit", None)
+    return bool(check(ctx, side)) if check is not None else False
 
 
 def frame_to_arrays(frame: pd.DataFrame) -> dict[str, np.ndarray]:
