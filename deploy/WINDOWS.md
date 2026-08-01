@@ -133,6 +133,22 @@ Dann prüfen, ob die Daten sauber sind:
 
 ---
 
+## Schritt 6b: Funding-Daten laden
+
+```
+.venv\Scripts\python -m cli funding
+```
+
+Dauert unter einer Minute. Das sind **keine Kurse**, sondern die Zahlungen, die
+alle acht Stunden zwischen Käufern und Verkäufern fließen — daran erkennt man,
+welche Seite gerade gedrängt steht.
+
+Ohne diesen Schritt laufen die neuen Strategien zwar durch, machen aber
+**keinen einzigen Trade**. Im Bericht sähe das aus wie eine widerlegte Idee,
+wäre aber nur eine fehlende Datei.
+
+---
+
 ## Schritt 7: Strategie suchen
 
 ```
