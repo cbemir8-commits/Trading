@@ -150,6 +150,8 @@ python -m cli quality                     # Lücken, Duplikate, Ausreißer
 python -m cli ingest                      # Live-Kerzen mitschreiben
 python -m cli leverage --kapital 500      # Hebel-Tabelle für dein Konto
 python -m cli research                    # Strategien pruefen, Champion waehlen
+python -m cli research --ki               # KI schlaegt neue Kandidaten vor
+python -m cli review                      # laeuft die Strategie noch?
 python -m cli trade --trocken             # Handelsplan zeigen, keine Order
 python -m cli trade                       # handeln
 python -m cli dashboard                   # Website + Not-Aus

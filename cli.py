@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import signal
 from datetime import UTC, datetime
 from pathlib import Path
@@ -400,6 +401,12 @@ def research(
         help="Die teuren Gates (Plateau, Kosten-Stress) ueberspringen. "
         "Nur zur Vorauswahl - fuer die Zulassung muessen sie laufen.",
     ),
+    ki: bool = typer.Option(
+        False,
+        "--ki",
+        help="Die Research-KI neue Kandidaten vorschlagen lassen, statt der "
+        "Standardliste. Kostet Geld und braucht LLM__ANTHROPIC_API_KEY.",
+    ),
     uebernehmen: bool = typer.Option(
         True, help="Den Champion nach champion.json schreiben."
     ),
@@ -480,9 +487,20 @@ def research(
         initial_equity=Decimal("500"),
     )
 
-    genomes: list[Genome] = load_seeds()
     trials_path = Path(settings.paths.state) / "trials.json"
+    journal_path = Path(settings.paths.state) / "journal.json"
     trials_before = load_trials(trials_path)
+
+    genomes: list[Genome] = []
+    if ki:
+        genomes = _ask_the_analyst(settings, journal_path)
+        if not genomes:
+            console.print(
+                "[yellow]Keine brauchbaren Vorschlaege - es laufen die "
+                "Standardkandidaten.[/]"
+            )
+    if not genomes:
+        genomes = load_seeds()
 
     console.print(
         f"\n[bold]Zulassung[/] {settings.bybit.symbol} {interval_obj.label}\n"
@@ -555,6 +573,68 @@ def research(
         )
         console.print(f"\nGeschrieben nach [bold]{path}[/]")
         console.print("[dim]Naechster Schritt: python -m cli trade --trocken[/]")
+
+
+def _ask_the_analyst(settings, journal_path: Path) -> list:
+    """Die Research-KI um neue Kandidaten bitten.
+
+    Sie schlaegt vor, sie entscheidet nicht: Jeder Vorschlag durchlaeuft
+    danach dieselben neun Gates wie ein von Hand geschriebenes Genom,
+    inklusive Mehrfachtest-Korrektur. Ein Modellaufruf verschiebt keine
+    einzige Schwelle.
+    """
+    import json as _json
+
+    from research.analyst import AnthropicClient, load_budget, propose, save_budget
+
+    if not settings.llm.has_credentials:
+        console.print(
+            "[yellow]Kein LLM__ANTHROPIC_API_KEY gesetzt - die KI kann nicht "
+            "gefragt werden.[/]"
+        )
+        return []
+
+    journal = []
+    if journal_path.exists():
+        with contextlib.suppress(Exception):
+            journal = _json.loads(journal_path.read_text())
+
+    budget_path = journal_path.parent / "budget.json"
+    budget = load_budget(budget_path, monthly_usd=settings.cost.profile.monthly_budget_usd)
+
+    console.print(
+        f"[dim]Forschungsbudget: {budget.remaining_usd:.2f} von "
+        f"{budget.monthly_usd} USD offen ({budget.month})[/]"
+    )
+    if budget.exhausted:
+        console.print(
+            "[yellow]Monatsbudget ausgeschoepft.[/] "
+            "[dim]Der Handel laeuft davon unberuehrt weiter - es kommt nur "
+            "nichts Neues dazu.[/]"
+        )
+        return []
+
+    # Was schon versucht wurde, muss die KI nicht noch einmal vorschlagen.
+    tried: set[str] = set()
+    for entry in journal:
+        for candidate in entry.get("candidates", []):
+            if candidate.get("genome_id"):
+                tried.add(candidate["genome_id"])
+
+    client = AnthropicClient(settings.llm.anthropic_api_key.get_secret_value())
+    result = propose(client, journal=journal, budget=budget, already_tried=tried)
+    save_budget(budget_path, budget)
+
+    console.print(f"[dim]{result.summary()}[/]")
+    for proposal in result.proposals:
+        if not proposal.accepted:
+            console.print(f"  [dim]abgelehnt: {proposal.genome.name} - {proposal.reason}[/]")
+
+    for genome in result.genomes:
+        console.print(f"  [green]neu:[/] {genome.name}")
+        console.print(f"       [dim]{genome.rationale[:150]}[/]")
+
+    return result.genomes
 
 
 def _fallback_instrument(symbol: str):
