@@ -24,13 +24,54 @@ EU lizenzierten Börse zu wechseln. Nicht, drumherum zu routen.
 
 **Betriebssystem: Ubuntu 24.04 LTS.**
 
-Beim Anlegen einen **SSH-Schlüssel** hinterlegen, kein Passwort. Falls du
-keinen hast, auf deinem eigenen Rechner:
+### Zuerst: SSH-Schlüssel auf deinem eigenen Rechner
+
+**Vor** dem Anlegen des Servers, nicht danach. Wer den Schritt überspringt,
+bekommt ein Root-Passwort per E-Mail — und ein Passwort, das per E-Mail
+verschickt wurde, gehört nicht auf eine Maschine mit einem API-Schlüssel
+darauf.
+
+Terminal öffnen (macOS: *Terminal*, Windows: *PowerShell*, Linux: was du hast):
 
 ```bash
 ssh-keygen -t ed25519 -C "trading"
-cat ~/.ssh/id_ed25519.pub        # diesen Text bei Hetzner einfügen
 ```
+
+Dreimal Enter — Standardpfad, kein Passwort auf dem Schlüssel (oder eins, wenn
+du magst). Dann den **öffentlichen** Teil anzeigen:
+
+```bash
+cat ~/.ssh/id_ed25519.pub          # macOS / Linux
+type $env:USERPROFILE\.ssh\id_ed25519.pub    # Windows PowerShell
+```
+
+Die Ausgabe beginnt mit `ssh-ed25519 AAAA…` und endet mit `trading`. Das ist
+die Zeile, die gleich bei Hetzner eingefügt wird. Sie ist **öffentlich** und
+darf gezeigt werden — anders als die Datei ohne `.pub` daneben, die niemals
+irgendwohin kopiert wird.
+
+### Server anlegen
+
+1. Konto anlegen auf **console.hetzner.cloud** (Ausweis wird geprüft, dauert
+   meist wenige Minuten).
+2. **Neues Projekt** anlegen, z. B. „Trading".
+3. **Server erstellen**, dann:
+
+| Feld | Auswahl |
+|---|---|
+| Standort | **Nürnberg** oder **Falkenstein** |
+| Image | **Ubuntu 24.04** |
+| Typ | Shared vCPU → x86 → **CX22** |
+| Netzwerk | IPv4 anlassen |
+| SSH-Key | **Hinzufügen** → die `ssh-ed25519 …`-Zeile einfügen |
+| Backups | optional, +20 % — kann man später zuschalten |
+| Name | z. B. `trading` |
+
+4. **Erstellen & kaufen.** Nach etwa 30 Sekunden steht die IPv4-Adresse oben
+   im Server-Übersichtsfenster. Das ist dein `DEINSERVER`.
+
+Abgerechnet wird stundenweise. Löschst du den Server nach einer Woche wieder,
+kostet er auch nur diese Woche.
 
 ---
 
