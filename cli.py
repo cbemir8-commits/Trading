@@ -62,6 +62,27 @@ def _parse_date(value: str) -> datetime:
         raise typer.BadParameter(f"Datum muss YYYY-MM-DD sein, war: {value}") from exc
 
 
+def _install_stop_handler(stop) -> None:
+    """Strg-C sauber behandeln - auf allen Systemen.
+
+    ``loop.add_signal_handler`` gibt es unter Windows nicht; dort wirft es
+    NotImplementedError. Ohne diese Fallunterscheidung stuerzt jeder
+    Dauerbefehl auf einem Windows-Rechner sofort beim Start ab - und zwar mit
+    einer Meldung, die nichts mit dem Handel zu tun hat.
+
+    Der Rueckfallweg ueber ``signal.signal`` deckt unter Windows das ab, was
+    dort ueberhaupt geht: Strg-C.
+    """
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, stop)
+        except (NotImplementedError, AttributeError, ValueError):
+            # Windows, oder ein Signal, das es hier nicht gibt.
+            with contextlib.suppress(ValueError, OSError, AttributeError):
+                signal.signal(sig, lambda *_: stop())
+
+
 @app.command()
 def setup(
     umgebung: str = typer.Option(
@@ -711,9 +732,7 @@ def ingest(
                         f"[dim]{interval.label}: {result.written} Kerzen nachgeladen[/]"
                     )
 
-        loop = asyncio.get_running_loop()
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(sig, stream.stop)
+        _install_stop_handler(stream.stop)
 
         console.print(
             f"[bold]Live-Ingest[/] {settings.bybit.symbol} "
@@ -913,9 +932,7 @@ def trade(
             journal=LiveJournal(state_path.parent),
         )
 
-        loop = asyncio.get_running_loop()
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(sig, trader.stop)
+        _install_stop_handler(trader.stop)
 
         console.print("[dim]Strg-C beendet die Schleife. Offene Stops bleiben bestehen.[/]\n")
         await trader.start()

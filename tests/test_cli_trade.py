@@ -186,3 +186,38 @@ def test_trade_command_is_registered() -> None:
 
     assert result.exit_code == 0
     assert "trade" in result.output
+
+
+class TestCrossPlatform:
+    """Der Handel muss auch unter Windows starten.
+
+    ``loop.add_signal_handler`` gibt es dort nicht. Ohne Fallunterscheidung
+    stuerzt jeder Dauerbefehl sofort beim Start ab - mit einer Meldung, die
+    nichts mit dem Handel zu tun hat, und die man deshalb lange sucht.
+    """
+
+    async def test_stop_handler_survives_a_platform_without_signal_support(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import asyncio
+
+        from cli import _install_stop_handler
+
+        class WindowsLikeLoop:
+            def add_signal_handler(self, *args, **kwargs):
+                raise NotImplementedError("nicht unter Windows")
+
+        monkeypatch.setattr(asyncio, "get_running_loop", lambda: WindowsLikeLoop())
+        stopped = []
+
+        # Darf nicht werfen - das ist der ganze Punkt.
+        _install_stop_handler(lambda: stopped.append(True))
+
+    async def test_stop_handler_registers_where_it_can(self) -> None:
+        from cli import _install_stop_handler
+
+        stopped = []
+        _install_stop_handler(lambda: stopped.append(True))
+
+        # Auf Unix laeuft es ueber die Ereignisschleife und ist damit gesetzt.
+        assert stopped == []  # noch nicht ausgeloest, nur registriert

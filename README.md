@@ -157,6 +157,27 @@ python -m cli trade                       # handeln
 python -m cli dashboard                   # Website + Not-Aus
 ```
 
+## Auf dem eigenen Rechner (Windows)
+
+Schritt für Schritt, ohne Fachwörter: **[deploy/WINDOWS.md](deploy/WINDOWS.md)**
+
+Kurzfassung — nach jedem Befehl kurz schauen, ob etwas Rotes dabei war:
+
+```
+python install.py                       einrichten, 1-3 Minuten
+.venv\Scripts\python -m cli setup       Bybit verbinden
+.venv\Scripts\python -m cli backfill    Kurse laden, ~8 Minuten
+.venv\Scripts\python -m cli research    Strategie suchen
+start.bat                               loslaufen lassen
+```
+
+`install.py` läuft auf allen drei Systemen. Auf macOS und Linux heißt der
+Interpreter `.venv/bin/python` und die Startdatei `./start.sh`.
+
+Solange der Rechner an ist, wird gehandelt. Ist er aus, wird nicht gehandelt —
+**offene Positionen bleiben trotzdem geschützt**, weil ihre Stops bei Bybit
+liegen und nicht auf dem Rechner.
+
 ## Auf einem Server einrichten
 
 Schritt für Schritt, zum Kopieren: **[deploy/README.md](deploy/README.md)**
