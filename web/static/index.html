@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0e14">
+<link rel="manifest" href="/manifest.json">
+<title>Trading</title>
+<style>
+  /* Eine Datei, kein Build-Schritt, keine Fremdquellen.
+     Fuer ein Einzelbenutzer-Dashboard auf einem kleinen Server ist ein
+     Framework mehr Betriebsaufwand als Nutzen. */
+  :root {
+    --bg: #0b0e14;  --panel: #141924;  --line: #232a39;
+    --text: #e6e9ef;  --dim: #8b95a8;
+    --up: #35c48a;  --down: #f0616d;  --warn: #f5b442;  --accent: #5b8cf0;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 16px 14px 40px; }
+
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  h1 { font-size: 17px; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+  .pill {
+    font-size: 11px; padding: 3px 9px; border-radius: 999px;
+    background: var(--line); color: var(--dim); font-weight: 600;
+    letter-spacing: 0.02em; text-transform: uppercase;
+  }
+  .pill.live { background: rgba(53,196,138,.15); color: var(--up); }
+  .pill.dead { background: rgba(240,97,109,.15); color: var(--down); }
+  .pill.real { background: rgba(245,180,66,.16); color: var(--warn); }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 16px; margin-bottom: 12px;
+  }
+  .card h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--dim); margin: 0 0 12px; font-weight: 600;
+  }
+
+  .equity { font-size: 34px; font-weight: 650; letter-spacing: -0.02em; }
+  .equity small { font-size: 15px; color: var(--dim); font-weight: 500; margin-left: 4px; }
+  .delta { font-size: 14px; margin-top: 2px; font-weight: 600; }
+  .up { color: var(--up); } .down { color: var(--down); } .warn { color: var(--warn); }
+  .dim { color: var(--dim); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .metric { background: rgba(255,255,255,.02); border-radius: 10px; padding: 10px 12px; }
+  .metric .label { font-size: 11px; color: var(--dim); }
+  .metric .value { font-size: 17px; font-weight: 600; margin-top: 1px; }
+
+  /* Der Abstand zum Kill-Switch - die wichtigste Zahl auf der Seite */
+  .bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin-top: 10px; }
+  .bar > i { display: block; height: 100%; background: var(--up); transition: width .4s, background .4s; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td { padding: 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td.k { color: var(--dim); width: 42%; }
+  td.v { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .event { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .event:last-child { border-bottom: 0; }
+  .event .dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 7px; flex: 0 0 7px; background: var(--dim); }
+  .event .body { flex: 1; min-width: 0; }
+  .event .msg { font-size: 14px; word-wrap: break-word; }
+  .event .time { font-size: 11px; color: var(--dim); margin-top: 1px; }
+  .k-entry .dot, .k-signal .dot { background: var(--accent); }
+  .k-target .dot, .k-exit .dot { background: var(--up); }
+  .k-veto .dot { background: var(--dim); }
+  .k-warning .dot, .k-kill .dot { background: var(--down); }
+  .k-command .dot { background: var(--warn); }
+  .k-kill .msg, .k-warning .msg { color: var(--down); }
+
+  button {
+    font: inherit; font-weight: 600; border: 0; border-radius: 11px;
+    padding: 13px; width: 100%; cursor: pointer; color: var(--text);
+    background: var(--line); margin-top: 8px;
+  }
+  button:active { opacity: .7; }
+  button.danger { background: var(--down); color: #fff; }
+  button.ghost { background: transparent; border: 1px solid var(--line); color: var(--dim); }
+  button:disabled { opacity: .4; }
+  input {
+    font: inherit; width: 100%; padding: 13px; border-radius: 11px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--text);
+  }
+  .hint { font-size: 12px; color: var(--dim); margin-top: 10px; line-height: 1.45; }
+  .hidden { display: none !important; }
+  .banner {
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
+    font-size: 14px; font-weight: 500;
+  }
+  .banner.dead { background: rgba(240,97,109,.14); color: var(--down); }
+  .banner.killed { background: var(--down); color: #fff; }
+  .banner.paused { background: rgba(245,180,66,.15); color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Trading</h1>
+    <span class="pill" id="env">—</span>
+    <span class="pill" id="alive">verbinde…</span>
+  </header>
+
+  <div id="banner"></div>
+
+  <div class="card">
+    <h2>Kapital</h2>
+    <div class="equity"><span id="equity">—</span><small>USDT</small></div>
+    <div class="delta" id="day">&nbsp;</div>
+    <div class="grid">
+      <div class="metric"><div class="label">Drawdown</div><div class="value" id="dd">—</div></div>
+      <div class="metric"><div class="label">Höchststand</div><div class="value" id="peak">—</div></div>
+    </div>
+    <div class="bar"><i id="ddbar" style="width:100%"></i></div>
+    <div class="hint" id="ddtext">Abstand zum Kill-Switch bei 15 % Drawdown.</div>
+  </div>
+
+  <div class="card" id="poscard">
+    <h2>Position</h2>
+    <div id="position" class="dim">Keine offene Position.</div>
+  </div>
+
+  <div class="card">
+    <h2>Was der Bot tut</h2>
+    <div id="events" class="dim">Noch keine Ereignisse.</div>
+  </div>
+
+  <div class="card">
+    <h2>Betrieb</h2>
+    <table id="ops"><tbody></tbody></table>
+  </div>
+
+  <div class="card" id="logincard">
+    <h2>Steuerung</h2>
+    <div id="loginform">
+      <input type="password" id="pw" placeholder="Passwort" autocomplete="current-password">
+      <button id="loginbtn">Anmelden</button>
+      <div class="hint" id="loginhint">Zum Pausieren, Glattstellen und für den Not-Aus.</div>
+    </div>
+    <div id="controls" class="hidden">
+      <button id="pause">Pause — keine neuen Positionen</button>
+      <button id="resume" class="ghost">Fortsetzen</button>
+      <button id="close" class="ghost">Alles glattstellen</button>
+      <button id="kill" class="danger">NOT-AUS</button>
+      <div class="hint">
+        Anweisungen werden bei der nächsten Kerze ausgeführt — auf 15 Minuten
+        kann das bis zu 15 Minuten dauern. Wer sofort raus muss, schließt die
+        Position direkt bei Bybit. Das geht jederzeit; kein Automat steht
+        zwischen dir und deinem Geld.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const KILL_AT = 15;
+
+function num(value, digits = 2) {
+  if (value === null || value === undefined || value === "") return "—";
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toFixed(digits) : "—";
+}
+function signed(value, digits = 2, suffix = "") {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  return (n > 0 ? "+" : "") + n.toFixed(digits) + suffix;
+}
+function ago(iso) {
+  if (!iso) return "—";
+  const seconds = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (seconds < 60) return "gerade eben";
+  if (seconds < 3600) return `vor ${Math.floor(seconds / 60)} min`;
+  if (seconds < 86400) return `vor ${Math.floor(seconds / 3600)} h`;
+  return `vor ${Math.floor(seconds / 86400)} d`;
+}
+
+let authenticated = false;
+
+async function refresh() {
+  let data;
+  try {
+    data = await (await fetch("/api/status")).json();
+  } catch {
+    $("alive").textContent = "kein Kontakt";
+    $("alive").className = "pill dead";
+    return;
+  }
+  const s = data.snapshot || {};
+
+  // -- Kopf
+  $("env").textContent = s.environment || "—";
+  $("env").className = "pill" + (s.real_money ? " real" : "");
+  // Kurz halten: Die ausfuehrliche Meldung steht im Banner darunter,
+  // im Kopf wuerde sie umbrechen und die Zeile sprengen.
+  $("alive").textContent = data.alive
+    ? "läuft"
+    : (data.last_heartbeat ? "gestoppt" : "nie gestartet");
+  $("alive").className = "pill " + (data.alive ? "live" : "dead");
+
+  // -- Banner: der wichtigste Zustand ganz oben
+  const banner = $("banner");
+  banner.innerHTML = "";
+  if (s.trading_state === "killed") {
+    banner.innerHTML = `<div class="banner killed">KILL-SWITCH AKTIV — ${s.kill_reason || "abgeschaltet"}</div>`;
+  } else if (!data.alive && data.last_heartbeat) {
+    banner.innerHTML = `<div class="banner dead">Handelsprozess antwortet nicht — letztes Lebenszeichen ${ago(data.last_heartbeat)}. Offene Stops liegen bei Bybit und wirken weiter.</div>`;
+  } else if (s.trading_state === "paused") {
+    banner.innerHTML = `<div class="banner paused">Pausiert — keine neuen Positionen.</div>`;
+  } else if (s.trading_state === "close_only") {
+    banner.innerHTML = `<div class="banner paused">Nur-Schließen-Modus.</div>`;
+  }
+
+  // -- Kapital
+  $("equity").textContent = num(s.equity);
+  $("peak").textContent = num(s.equity_peak);
+  const day = Number(s.day_pnl_pct);
+  $("day").textContent = Number.isFinite(day) ? `Heute ${signed(day, 2, " %")}` : "";
+  $("day").className = "delta " + (day > 0 ? "up" : day < 0 ? "down" : "dim");
+
+  const dd = Number(s.drawdown_pct) || 0;
+  $("dd").textContent = num(dd) + " %";
+  $("dd").className = "value " + (dd > 10 ? "down" : dd > 5 ? "warn" : "");
+  const left = Math.max(0, KILL_AT - dd);
+  $("ddbar").style.width = (left / KILL_AT * 100) + "%";
+  $("ddbar").style.background = left < 3 ? "var(--down)" : left < 7 ? "var(--warn)" : "var(--up)";
+  $("ddtext").textContent = `Noch ${left.toFixed(1)} Prozentpunkte bis zum Kill-Switch bei ${KILL_AT} %.`;
+
+  // -- Position
+  const p = s.position;
+  if (!p) {
+    $("position").innerHTML = '<span class="dim">Keine offene Position.</span>';
+  } else if (p.pending) {
+    $("position").innerHTML = `<span class="dim">${p.pending}</span>`;
+  } else {
+    $("position").innerHTML = `
+      <table><tbody>
+        <tr><td class="k">Richtung</td><td class="v">${p.side === "Buy" ? "Long" : "Short"}</td></tr>
+        <tr><td class="k">Menge</td><td class="v">${p.qty}</td></tr>
+        <tr><td class="k">Einstieg</td><td class="v">${num(p.entry_price, 1)}</td></tr>
+        <tr><td class="k">Stop</td><td class="v">${num(p.stop_price, 1)}${p.at_breakeven ? ' <span class="up">(Einstand)</span>' : ""}</td></tr>
+        <tr><td class="k">Ziele erreicht</td><td class="v">${p.targets_hit}</td></tr>
+      </tbody></table>`;
+  }
+
+  // -- Ereignisse
+  const events = data.events || [];
+  $("events").innerHTML = events.length === 0
+    ? '<span class="dim">Noch keine Ereignisse.</span>'
+    : events.map((e) => `
+        <div class="event k-${e.kind}">
+          <div class="dot"></div>
+          <div class="body">
+            <div class="msg">${escapeHtml(e.message)}</div>
+            <div class="time">${ago(e.timestamp)}</div>
+          </div>
+        </div>`).join("");
+
+  // -- Betrieb
+  const st = s.stats || {};
+  const rows = [
+    ["Symbol", `${s.symbol || "—"} ${s.interval || ""}`],
+    ["Strategie", (s.strategy_id || "—").slice(0, 12)],
+    ["Letzter Kurs", num(s.last_price, 1)],
+    ["Kerzen gesehen", st.candles_seen ?? "—"],
+    ["Signale", st.signals_generated ?? "—"],
+    ["Einstiege", st.entries_filled ?? "—"],
+    ["Abgelehnt", st.signals_vetoed ?? "—"],
+    ["Letztes Lebenszeichen", ago(data.last_heartbeat)],
+  ];
+  $("ops").querySelector("tbody").innerHTML = rows
+    .map(([k, v]) => `<tr><td class="k">${k}</td><td class="v">${v}</td></tr>`).join("");
+
+  // -- Steuerung
+  authenticated = data.authenticated;
+  $("loginform").classList.toggle("hidden", authenticated);
+  $("controls").classList.toggle("hidden", !authenticated);
+  if (data.read_only) {
+    $("loginform").classList.add("hidden");
+    $("loginhint").classList.remove("hidden");
+    $("logincard").querySelector("h2").textContent = "Steuerung gesperrt";
+    $("logincard").innerHTML = '<h2>Steuerung gesperrt</h2><div class="hint">Kein Passwort gesetzt. In der <code>.env</code> <code>WEB__PASSWORD</code> eintragen und das Dashboard neu starten. Ein Not-Aus-Knopf ohne Passwort wäre schlimmer als keiner.</div>';
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text ?? "";
+  return div.innerHTML;
+}
+
+async function send(action, confirmText) {
+  if (confirmText && !confirm(confirmText)) return;
+  const response = await fetch(`/api/control/${action}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason: "vom Dashboard" }),
+  });
+  const result = await response.json();
+  alert(response.ok ? result.hinweis : (result.detail || "Fehlgeschlagen"));
+  refresh();
+}
+
+$("loginbtn").onclick = async () => {
+  const response = await fetch("/api/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: $("pw").value }),
+  });
+  if (response.ok) { $("pw").value = ""; refresh(); }
+  else alert("Falsches Passwort");
+};
+$("pw").onkeydown = (e) => { if (e.key === "Enter") $("loginbtn").click(); };
+
+$("pause").onclick = () => send("pause");
+$("resume").onclick = () => send("resume");
+$("close").onclick = () => send("close_all", "Alle Positionen glattstellen?");
+$("kill").onclick = () => send("kill",
+  "NOT-AUS: Alles wird geschlossen und der Handel abgeschaltet. " +
+  "Zurückholen geht danach nur von Hand. Sicher?");
+
+refresh();
+setInterval(refresh, 10000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+</script>
+</body>
+</html>

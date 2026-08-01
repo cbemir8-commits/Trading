@@ -687,6 +687,7 @@ def trade(
     from execution.router import MarketKind
     from strategy.compiler import compile_genome
     from strategy.genome import Genome
+    from web.journal import LiveJournal
 
     _configure_logging(verbose)
     settings = get_settings()
@@ -828,6 +829,7 @@ def trade(
             interval=interval_obj,
             market_kind=market_kind,
             notifier=notifier,
+            journal=LiveJournal(state_path.parent),
         )
 
         loop = asyncio.get_running_loop()
@@ -845,6 +847,58 @@ def trade(
             )
 
     asyncio.run(main())
+
+
+@app.command()
+def dashboard(
+    host: str | None = typer.Option(None, help="Standard: 127.0.0.1 (nur lokal)."),
+    port: int | None = typer.Option(None, help="Standard: 8000."),
+) -> None:
+    """Die Website starten - Live-Ansicht und Not-Aus.
+
+    Laeuft als **eigener Prozess** neben dem Handel. Das ist Absicht: Liefe
+    sie im selben Prozess, waere sie genau dann weg, wenn man sie am
+    dringendsten braucht - naemlich wenn der Handel abgestuerzt ist. Getrennt
+    zeigt sie dann "Handelsprozess antwortet nicht" statt gar nichts.
+
+    Sie spricht nie selbst mit Bybit. Sie liest, was der Handel schreibt, und
+    legt Anweisungen ab, die er abholt.
+
+    Von aussen erreichbar macht man sie ueber einen SSH-Tunnel:
+
+        ssh -L 8000:localhost:8000 benutzer@server
+
+    Dann im Browser http://localhost:8000 - auch auf dem iPhone, ueber eine
+    SSH-App. Wer sie direkt ins Netz stellt, gehoert hinter einen
+    Reverse-Proxy mit TLS.
+    """
+    import uvicorn
+
+    from web.api import create_app
+
+    settings = get_settings()
+    bind_host = host or settings.web.host
+    bind_port = port or settings.web.port
+
+    if not settings.web.password.get_secret_value():
+        console.print(
+            "[yellow]Kein WEB__PASSWORD gesetzt - die Steuerung bleibt gesperrt.[/]\n"
+            "[dim]Die Ansicht funktioniert; Pause, Glattstellen und Not-Aus nicht.\n"
+            "Ein Not-Aus-Knopf ohne Passwort waere schlimmer als keiner.[/]\n"
+        )
+    if bind_host not in {"127.0.0.1", "localhost"}:
+        console.print(
+            f"[yellow]Achtung: Das Dashboard hoert auf {bind_host} und ist damit "
+            "aus dem Netz erreichbar.[/]\n"
+            "[dim]Ohne TLS davor ist das Passwort im Klartext unterwegs. "
+            "Besser: auf 127.0.0.1 lassen und einen SSH-Tunnel benutzen.[/]\n"
+        )
+
+    console.print(
+        f"[bold]Dashboard[/] http://{bind_host}:{bind_port}\n"
+        f"[dim]Zustand aus {settings.paths.state}/ - Strg-C zum Beenden[/]\n"
+    )
+    uvicorn.run(create_app(settings), host=bind_host, port=bind_port, log_level="warning")
 
 
 @app.command()

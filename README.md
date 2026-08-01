@@ -149,9 +149,39 @@ python -m cli status                      # was liegt im Speicher?
 python -m cli quality                     # Lücken, Duplikate, Ausreißer
 python -m cli ingest                      # Live-Kerzen mitschreiben
 python -m cli leverage --kapital 500      # Hebel-Tabelle für dein Konto
+python -m cli research                    # Strategien pruefen, Champion waehlen
 python -m cli trade --trocken             # Handelsplan zeigen, keine Order
 python -m cli trade                       # handeln
+python -m cli dashboard                   # Website + Not-Aus
 ```
+
+## Die zwei Prozesse
+
+Handel und Website laufen **getrennt**:
+
+```
+python -m cli trade       ──schreibt──▶  state/live.json, events.jsonl
+                          ◀──liest────   state/command.json
+python -m cli dashboard   ──liest────▶   http://localhost:8000
+```
+
+Das ist Absicht. Liefe die Website im selben Prozess wie der Handel, wäre sie
+genau dann weg, wenn man sie am dringendsten braucht — nämlich wenn der Handel
+abgestürzt ist. Getrennt zeigt sie stattdessen *„Handelsprozess antwortet nicht,
+letztes Lebenszeichen vor 14 Minuten"*. Das ist die Information, um die es geht.
+
+Die Website spricht **nie selbst mit Bybit**. Sie liest Dateien und legt
+Anweisungen ab, die der Handel bei der nächsten Kerze abholt. Ein Fehler dort
+kann keine Order auslösen.
+
+Aufs iPhone kommt sie über einen SSH-Tunnel:
+
+```bash
+ssh -L 8000:localhost:8000 benutzer@server
+```
+
+Dann `http://localhost:8000` öffnen, *Teilen → Zum Home-Bildschirm* — und sie
+verhält sich wie eine App.
 
 `backfill` lädt ~6 Jahre BTC-Historie (1m/15m/1h/4h) in rund 3.400 Anfragen
 (~8 Minuten bei 8 req/s). Er ist **resumierbar** — ein Abbruch kostet höchstens

@@ -245,9 +245,21 @@ class NotifySettings(BaseModel):
 
 
 class WebSettings(BaseModel):
-    session_secret: SecretStr = SecretStr("")
-    password_hash: str = ""
-    totp_secret: SecretStr = SecretStr("")
+    password: SecretStr = SecretStr("")
+    """Zugang zum Dashboard. **Leer bedeutet Nur-Lese-Betrieb** - die
+    Steuerung (Pause, Glattstellen, Not-Aus) ist dann gesperrt. Ein
+    Not-Aus-Knopf ohne Passwort waere schlimmer als keiner.
+
+    Im Klartext in der ``.env``, die Dateirechte 600 traegt. Ein Hash waere
+    hier Sicherheitstheater: Wer die ``.env`` lesen kann, hat ohnehin schon
+    die API-Zugangsdaten - und die sind ungleich mehr wert."""
+
+    host: str = "127.0.0.1"
+    """Standardmaessig nur lokal erreichbar. Von aussen erreichbar macht man
+    das Dashboard ueber einen SSH-Tunnel oder einen Reverse-Proxy mit TLS -
+    nicht, indem man hier 0.0.0.0 eintraegt und hofft."""
+
+    port: int = 8000
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 
 

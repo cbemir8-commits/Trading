@@ -47,6 +47,7 @@ from data.store import CandleStore, candles_to_frame
 from execution.risk import Approved, RiskOfficer, TradingState, Vetoed
 from execution.router import Bracket, BracketState, MarketKind, OrderRouter
 from strategy.base import BarContext, Strategy, frame_to_arrays
+from web.journal import CommandAction, EventKind, LiveJournal
 
 log = structlog.get_logger(__name__)
 
@@ -102,6 +103,7 @@ class LiveTrader:
         market_kind: MarketKind = MarketKind.PERPETUAL,
         notifier: Notifier | None = None,
         entry_expiry_bars: int = 3,
+        journal: LiveJournal | None = None,
     ) -> None:
         self.settings = settings
         self.strategy = strategy
@@ -113,12 +115,14 @@ class LiveTrader:
         self.interval = interval
         self.entry_expiry_bars = entry_expiry_bars
         self.notifier = notifier
+        self.journal = journal
 
         self.router = OrderRouter(
             gateway, instrument, risk_settings, market_kind=market_kind
         )
         self.stats = LiveStats()
         self.bracket: Bracket | None = None
+        self.last_equity: Decimal = Decimal(0)
         self._frame: pd.DataFrame = pd.DataFrame()
         self._bars_since_entry_placed = 0
         self._stream: KlineStream | None = None
@@ -137,6 +141,14 @@ class LiveTrader:
             f"{self.instrument.symbol} {self.interval.label}\n"
             f"Strategie: {self.strategy.strategy_id}\n"
             f"Umgebung: {self.settings.environment.value}"
+        )
+        self._report(
+            EventKind.START,
+            f"Handelsroboter gestartet - {self.instrument.symbol} "
+            f"{self.interval.label}, Strategie {self.strategy.strategy_id}, "
+            f"Umgebung {self.settings.environment.value}",
+            symbol=self.instrument.symbol,
+            environment=self.settings.environment.value,
         )
         log.info(
             "live.gestartet",
@@ -178,6 +190,11 @@ class LiveTrader:
             await self._notify(
                 "WARNUNG: Offene Position ohne Stop gefunden. "
                 "Sie wird sofort geschlossen."
+            )
+            self._report(
+                EventKind.WARNING,
+                f"Offene Position ohne Stop gefunden ({position.side.value} "
+                f"{position.size}) - wird sofort geschlossen",
             )
             log.critical(
                 "live.position_ohne_stop",
@@ -234,10 +251,16 @@ class LiveTrader:
         self._append(candle)
 
         equity = self._current_equity()
+        self.last_equity = equity
         assessment = self.officer.observe_equity(equity)
 
-        if assessment.trading_state is TradingState.KILLED:
+        # Erst der Befehl vom Dashboard, dann alles andere: Ein Not-Aus vom
+        # Telefon soll nicht warten, bis die Strategie ihre Meinung gebildet hat.
+        await self._handle_commands()
+
+        if self.officer.state.trading_state is TradingState.KILLED:
             await self._handle_kill_switch()
+            self._publish(assessment)
             return
 
         await self._manage_open_position()
@@ -248,6 +271,129 @@ class LiveTrader:
         # auf ``is_open`` prueft, legt bei jedem Signal eine zweite dazu.
         if self.bracket is None:
             await self._look_for_entry()
+
+        self._publish(assessment, candle=candle)
+
+    # -- Dashboard -----------------------------------------------------------
+    def _report(self, kind: EventKind, message: str, **data) -> None:
+        """Ein Ereignis ans Dashboard melden.
+
+        Wie beim Benachrichtigungsdienst gilt: Ein Fehler beim Berichten darf
+        den Handel nie stoppen. Das Dashboard ist Beobachtung, nicht Steuerung.
+        """
+        if self.journal is None:
+            return
+        with contextlib.suppress(Exception):
+            self.journal.record(kind, message, **data)
+
+    def _publish(self, assessment, candle: Candle | None = None) -> None:
+        """Die Momentaufnahme fuer die Website schreiben - inklusive Herzschlag.
+
+        Bei **jeder** Kerze, auch wenn nichts passiert ist. Der Herzschlag ist
+        die einzige Art, wie das Dashboard zwischen "nichts zu tun" und
+        "Prozess tot" unterscheiden kann.
+        """
+        if self.journal is None:
+            return
+        with contextlib.suppress(Exception):
+            self.journal.write_snapshot(self._snapshot(assessment, candle))
+
+    def _snapshot(self, assessment, candle: Candle | None = None) -> dict:
+        position = None
+        if self.bracket is not None and self.bracket.is_open:
+            position = {
+                "side": self.bracket.signal.side.value,
+                "qty": self.bracket.remaining_qty,
+                "entry_price": self.bracket.entry_price,
+                "stop_price": self.bracket.stop_price,
+                "targets_hit": self.bracket.targets_hit,
+                "at_breakeven": self.bracket.moved_to_breakeven,
+                "description": self.bracket.describe(),
+            }
+        elif self.bracket is not None:
+            position = {"pending": self.bracket.describe()}
+
+        return {
+            "symbol": self.instrument.symbol,
+            "interval": self.interval.label,
+            "environment": self.settings.environment.value,
+            "real_money": self.settings.environment.is_real_money,
+            "strategy_id": self.strategy.strategy_id,
+            "equity": assessment.equity,
+            "equity_peak": assessment.equity_peak,
+            "drawdown_pct": assessment.drawdown_pct,
+            "day_pnl_pct": assessment.day_pnl_pct,
+            "week_pnl_pct": assessment.week_pnl_pct,
+            # Nicht aus der Bewertung: Die entstand vor den Dashboard-Befehlen
+            # und wuesste von einer soeben ausgeloesten Pause nichts.
+            "trading_state": self.officer.state.trading_state.value,
+            "kill_reason": self.officer.state.kill_reason,
+            "last_price": candle.close if candle else None,
+            "last_candle": candle.open_time if candle else None,
+            "position": position,
+            "stats": {
+                "candles_seen": self.stats.candles_seen,
+                "signals_generated": self.stats.signals_generated,
+                "signals_vetoed": self.stats.signals_vetoed,
+                "entries_placed": self.stats.entries_placed,
+                "entries_filled": self.stats.entries_filled,
+                "entries_expired": self.stats.entries_expired,
+                "veto_reasons": self.stats.veto_reasons,
+                "started_at": self.stats.started_at,
+                "summary": self.stats.describe(),
+            },
+        }
+
+    async def _handle_commands(self) -> None:
+        """Anweisungen vom Dashboard ausfuehren.
+
+        Der Rueckkanal vom Telefon. Bewusst als Abholung statt als offene
+        Verbindung: Ein abgestuerztes Dashboard soll den Handel nicht
+        beruehren, und ein Befehl soll einen Neustart des Handels ueberleben.
+        """
+        if self.journal is None:
+            return
+
+        command = None
+        with contextlib.suppress(Exception):
+            command = self.journal.take_command()
+        if command is None:
+            return
+
+        log.warning("live.befehl", befehl=command.action.value, grund=command.reason)
+        self._report(
+            EventKind.COMMAND,
+            f"Anweisung vom Dashboard: {command.action.value}",
+            reason=command.reason,
+        )
+
+        if command.action is CommandAction.PAUSE:
+            self.officer.pause(command.reason or "vom Dashboard pausiert")
+            await self._notify("Handel pausiert. Offene Positionen laufen weiter.")
+
+        elif command.action is CommandAction.RESUME:
+            self.officer.resume()
+            await self._notify("Handel fortgesetzt.")
+
+        elif command.action is CommandAction.CLOSE_ALL:
+            await self._close_everything("Vom Dashboard geschlossen")
+            self.officer.pause("nach Glattstellung pausiert")
+            await self._notify("Alles glattgestellt. Handel pausiert.")
+
+        elif command.action is CommandAction.KILL:
+            # Nur den Schalter umlegen. Das Schliessen uebernimmt die Pruefung
+            # gleich danach in ``_on_candle`` - sonst laeuft der Notausstieg
+            # zweimal.
+            self.officer.trigger_kill_switch(
+                command.reason or "Not-Aus vom Dashboard"
+            )
+
+    async def _close_everything(self, reason: str) -> None:
+        if self.bracket is not None and self.bracket.is_open:
+            self.router.emergency_close(self.bracket, reason=reason)
+        else:
+            self.router.close_all(reason)
+        self.bracket = None
 
     def _append(self, candle: Candle) -> None:
         row = candles_to_frame([candle])
@@ -273,6 +419,11 @@ class LiveTrader:
         else:
             self.router.close_all("Kill-Switch")
 
+        self._report(
+            EventKind.KILL,
+            f"KILL-SWITCH: {self.officer.state.kill_reason}",
+            equity=self.last_equity,
+        )
         await self._notify(
             f"KILL-SWITCH AUSGELOEST\n{self.officer.state.kill_reason}\n"
             "Alles glattgestellt. Handel gestoppt bis zur manuellen Freigabe."
@@ -301,6 +452,12 @@ class LiveTrader:
 
         position = self._first_position()
         if position is None:
+            self._report(
+                EventKind.EXIT,
+                f"Position geschlossen nach {self.bracket.targets_hit} Zielen.",
+                targets_hit=self.bracket.targets_hit,
+                equity=self.last_equity,
+            )
             await self._notify(
                 f"Position geschlossen. {self.bracket.targets_hit} Ziele erreicht."
             )
@@ -311,6 +468,15 @@ class LiveTrader:
         if position.size < self.bracket.remaining_qty:
             filled = self.bracket.remaining_qty - position.size
             self.router.on_target_hit(self.bracket, qty=filled)
+            self._report(
+                EventKind.TARGET,
+                f"Ziel {self.bracket.targets_hit} erreicht, {filled} verkauft. "
+                f"Stop steht bei {self.bracket.stop_price}.",
+                target=self.bracket.targets_hit,
+                qty=filled,
+                stop_price=self.bracket.stop_price,
+                at_breakeven=self.bracket.moved_to_breakeven,
+            )
             await self._notify(
                 f"Ziel {self.bracket.targets_hit} erreicht ({filled} verkauft). "
                 f"Stop steht bei {self.bracket.stop_price}."
@@ -371,6 +537,18 @@ class LiveTrader:
 
         self.stats.entries_filled += 1
         self._bars_since_entry_placed = 0
+        self._report(
+            EventKind.ENTRY,
+            f"Einstieg {self.bracket.signal.side.value} {position.size} @ "
+            f"{position.entry_price}, Stop {self.bracket.stop_price}",
+            side=self.bracket.signal.side.value,
+            qty=position.size,
+            entry_price=position.entry_price,
+            stop_price=self.bracket.stop_price,
+            leverage=self.bracket.sized.leverage,
+            risk_amount=self.bracket.sized.risk_amount,
+            reason=self.bracket.signal.reason,
+        )
         await self._notify(
             f"EINSTIEG {self.bracket.signal.side.value} {position.size} "
             f"@ {position.entry_price}\n"
@@ -403,6 +581,12 @@ class LiveTrader:
         if isinstance(decision, Vetoed):
             self.stats.count_veto(decision.reason.value)
             log.info("live.signal_abgelehnt", grund=decision.describe())
+            self._report(
+                EventKind.VETO,
+                f"Signal abgelehnt - {decision.detail}",
+                reason=decision.reason.value,
+                side=signal.side.value,
+            )
             return
 
         assert isinstance(decision, Approved)
@@ -410,8 +594,19 @@ class LiveTrader:
             self.bracket = self.router.open(signal, decision.sized)
             self.stats.entries_placed += 1
             self._bars_since_entry_placed = 0
+            self._report(
+                EventKind.SIGNAL,
+                f"Einstiegsorder {signal.side.value} {decision.sized.qty} @ "
+                f"{signal.entry_price} - {signal.reason}",
+                side=signal.side.value,
+                qty=decision.sized.qty,
+                entry_price=signal.entry_price,
+                stop_loss=signal.stop_loss,
+                leverage=decision.sized.leverage,
+            )
         except Exception as exc:
             log.error("live.einstieg_fehlgeschlagen", fehler=str(exc))
+            self._report(EventKind.WARNING, f"Einstieg fehlgeschlagen: {exc}")
             await self._notify(f"Einstieg fehlgeschlagen: {exc}")
             self.bracket = None
 

@@ -23,6 +23,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -38,6 +39,7 @@ from execution.router import BracketState
 from tests.factories import make_candles, make_signal
 from tests.fake_exchange import FakeAccount, FakeExchange
 from tests.fakes import FakeMarketData
+from web.journal import CommandAction, EventKind, LiveJournal, read_view, send_command
 
 HISTORY_BARS = 60
 MARK_PRICE = Decimal("100000")
@@ -80,6 +82,7 @@ class Rig:
     strategy: QueuedStrategy
     messages: list[str]
     next_open: datetime
+    state_dir: Path
 
     async def feed(self, *, close: Decimal | None = None) -> Candle:
         """Die naechste abgeschlossene Kerze zustellen."""
@@ -154,6 +157,7 @@ def build_rig(
         interval=Interval.M15,
         notifier=notifier,
         entry_expiry_bars=entry_expiry_bars,
+        journal=LiveJournal(tmp_path / "state"),
     )
     trader._load_history()
 
@@ -165,6 +169,7 @@ def build_rig(
         strategy=trader.strategy,  # type: ignore[arg-type]
         messages=messages,
         next_open=next_open,
+        state_dir=tmp_path / "state",
     )
 
 
@@ -675,3 +680,145 @@ def test_interval_duration_matches_expectation() -> None:
     """Absicherung gegen eine verrutschte Intervalltabelle - die Testkerzen
     haengen daran."""
     assert Interval.M15.duration == timedelta(minutes=15)
+
+
+# ---------------------------------------------------------------------------
+#  Dashboard-Anbindung
+# ---------------------------------------------------------------------------
+class TestDashboard:
+    async def test_heartbeat_is_written_every_candle(self, rig: Rig) -> None:
+        """Auch wenn nichts passiert.
+
+        Der Herzschlag ist die einzige Art, wie die Website zwischen "nichts
+        zu tun" und "Prozess tot" unterscheiden kann.
+        """
+        await rig.feed()
+
+        view = read_view(rig.state_dir)
+
+        assert view.alive
+        assert view.snapshot["equity"] == "500"
+        assert view.snapshot["symbol"] == "BTCUSDT"
+
+    async def test_entry_shows_up_as_an_event(self, rig: Rig) -> None:
+        rig.strategy.emit(long_below_market())
+        await rig.feed()
+        rig.fill_entry()
+        await rig.feed()
+
+        kinds = [e["kind"] for e in read_view(rig.state_dir).events]
+
+        assert EventKind.ENTRY.value in kinds
+        assert EventKind.SIGNAL.value in kinds
+
+    async def test_open_position_appears_in_the_snapshot(self, rig: Rig) -> None:
+        await _open_protected(rig)
+
+        position = read_view(rig.state_dir).snapshot["position"]
+
+        assert position["side"] == "Buy"
+        assert position["stop_price"] is not None
+
+    async def test_veto_is_visible_too(self, rig: Rig) -> None:
+        """Warum *nicht* gehandelt wurde, ist genauso interessant wie was
+        gehandelt wurde - sonst wirkt ein ruhiger Tag wie ein Ausfall."""
+        rig.officer.pause("Test")
+        rig.strategy.emit(long_below_market())
+        await rig.feed()
+
+        events = read_view(rig.state_dir).events
+
+        assert any(e["kind"] == EventKind.VETO.value for e in events)
+
+    async def test_journal_failure_does_not_stop_trading(self, rig: Rig) -> None:
+        """Das Dashboard ist Beobachtung, nicht Steuerung. Eine volle Platte
+        darf keinen Einstieg verhindern."""
+        def broken(*args, **kwargs):
+            raise OSError("Platte voll")
+
+        rig.trader.journal.write_snapshot = broken
+        rig.trader.journal.record = broken
+        rig.strategy.emit(long_below_market())
+
+        await rig.feed()
+
+        assert rig.trader.bracket is not None
+
+
+class TestRemoteControl:
+    async def test_pause_from_the_dashboard(self, rig: Rig) -> None:
+        send_command(rig.state_dir, CommandAction.PAUSE, "vom Telefon")
+        rig.strategy.emit(long_below_market())
+
+        await rig.feed()
+
+        assert rig.entry_orders == []
+        assert rig.officer.state.trading_state.value == "paused"
+
+    async def test_resume_from_the_dashboard(self, rig: Rig) -> None:
+        rig.officer.pause("Test")
+        send_command(rig.state_dir, CommandAction.RESUME)
+        rig.strategy.emit(long_below_market())
+
+        await rig.feed()
+
+        assert len(rig.entry_orders) == 1
+
+    async def test_close_all_flattens_and_pauses(self, rig: Rig) -> None:
+        await _open_protected(rig)
+        send_command(rig.state_dir, CommandAction.CLOSE_ALL, "Not-Ausstieg")
+
+        await rig.feed()
+
+        assert rig.exchange.position is None
+        assert rig.trader.bracket is None
+        assert rig.officer.state.trading_state.value == "paused"
+
+    async def test_kill_from_the_dashboard(self, rig: Rig) -> None:
+        """Der Not-Aus vom Telefon - der Knopf, um den es beim Dashboard
+        eigentlich geht."""
+        await _open_protected(rig)
+        send_command(rig.state_dir, CommandAction.KILL, "Not-Aus vom Dashboard")
+
+        await rig.feed()
+
+        assert rig.exchange.position is None
+        assert rig.officer.state.trading_state.value == "killed"
+        assert "Not-Aus vom Dashboard" in rig.officer.state.kill_reason
+
+    async def test_kill_closes_the_position_exactly_once(self, rig: Rig) -> None:
+        """Der Befehl legt nur den Schalter um; geschlossen wird an einer
+        Stelle. Sonst laeuft der Notausstieg zweimal und die zweite
+        Market-Order trifft auf eine leere Position."""
+        await _open_protected(rig)
+        send_command(rig.state_dir, CommandAction.KILL)
+
+        await rig.feed()
+
+        closes = [
+            kwargs for name, kwargs in rig.exchange.calls
+            if name == "place_market" and kwargs.get("reduce_only")
+        ]
+        assert len(closes) == 1
+
+    async def test_command_is_executed_only_once(self, rig: Rig) -> None:
+        """Ein liegengebliebener Befehl wuerde sich bei jeder Kerze
+        wiederholen - ein 'alles schliessen' alle 15 Minuten."""
+        send_command(rig.state_dir, CommandAction.PAUSE)
+        await rig.feed()
+        rig.officer.resume()
+
+        await rig.feed()
+
+        assert rig.officer.state.trading_state.value == "active"
+
+    async def test_command_is_handled_before_the_strategy(self, rig: Rig) -> None:
+        """Ein Not-Aus soll nicht warten, bis die Strategie ihre Meinung
+        gebildet hat."""
+        send_command(rig.state_dir, CommandAction.KILL)
+        rig.strategy.emit(long_below_market())
+
+        await rig.feed()
+
+        assert rig.entry_orders == []
+        assert rig.strategy.calls == 0
