@@ -559,11 +559,13 @@ def research(
     from data.funding import FundingStore, attach_funding
     from research.admission import (
         load_trials,
+        report_payload,
         run_admission,
         save_trials,
         write_champion,
         write_journal,
     )
+    from research.benchmark import buy_and_hold
     from research.seeds import load_seeds
     from strategy.genome import Genome
 
@@ -692,6 +694,38 @@ def research(
     save_trials(trials_path, report.trials_after)
     write_journal(report, Path(settings.paths.state) / "journal.json")
 
+    # Die Messlatte: Was haette einfaches Halten im selben Zeitraum gebracht?
+    #
+    # Ohne diese Zahl ist "-19 % Rendite" nicht einzuordnen. Sie gehoert in den
+    # Bericht, gerade wenn kein Kandidat besteht - dann sagt sie, wie weit der
+    # Weg noch ist.
+    messlatte = None
+    try:
+        vergleich = buy_and_hold(frame, initial_equity=config.initial_equity)
+        messlatte = {
+            "rendite_pct": round(vergleich.return_pct, 2),
+            "max_drawdown_pct": round(vergleich.max_drawdown_pct, 2),
+            "sharpe": round(vergleich.metrics.sharpe, 3),
+            "beschreibung": vergleich.describe(),
+        }
+    except ValueError:
+        pass
+
+    _send_report(
+        settings,
+        report_payload(
+            report,
+            symbol=settings.bybit.symbol,
+            interval=interval_obj.label,
+            history_from=f"{frame['open_time'].iloc[0]:%Y-%m-%d}",
+            history_to=f"{frame['open_time'].iloc[-1]:%Y-%m-%d}",
+            candles=len(frame),
+            gates_full=not schnell,
+            benchmark=messlatte,
+            funding_rows=len(funding_frame),
+        ),
+    )
+
     table = Table(title="Zulassungsergebnis", header_style="bold")
     table.add_column("Strategie")
     table.add_column("Trades", justify="right")
@@ -736,6 +770,48 @@ def research(
         )
         console.print(f"\nGeschrieben nach [bold]{path}[/]")
         console.print("[dim]Naechster Schritt: python -m cli trade --trocken[/]")
+
+
+def _send_report(settings, payload: dict) -> None:
+    """Bericht schreiben und selbstaendig ins Repository schieben.
+
+    Der Rechner, auf dem gerechnet wird, steht beim Nutzer; ausgewertet wird
+    woanders. Dazwischen lagen bisher Bildschirmfotos - unvollstaendig und
+    genau dann vergessen, wenn ein Lauf interessant war.
+
+    Faellt das Senden aus, ist das kein Grund zur Aufregung: Die Zahlen liegen
+    dann in ``reports/`` und gehen beim naechsten gelungenen Lauf mit. Deshalb
+    wird hier nie eine Ausnahme durchgelassen - ein abgebrochener
+    Zulassungslauf waere der teurere Verlust.
+    """
+    from core.report import PublishStatus, publish, write_report
+
+    try:
+        file = write_report(payload, root=Path.cwd(), kind="zulassung")
+    except OSError as exc:
+        console.print(f"[yellow]Bericht konnte nicht geschrieben werden: {exc}[/]")
+        return
+
+    lauf = payload.get("lauf", {})
+    result = publish(
+        [file],
+        root=Path.cwd(),
+        message=(
+            f"Bericht: {lauf.get('kandidaten', 0)} Kandidaten, "
+            f"{lauf.get('zugelassen', 0)} zugelassen "
+            f"({payload.get('markt', {}).get('symbol', '?')} "
+            f"{payload.get('markt', {}).get('intervall', '?')})"
+        ),
+        enabled=settings.report.autopush,
+    )
+
+    if result.status is PublishStatus.PUSHED:
+        console.print(f"\n[dim]Bericht gesendet: {file.name}[/]")
+    elif result.status is PublishStatus.COMMITTED:
+        console.print(f"\n[yellow]Bericht liegt in {file}[/]\n[dim]{result.detail}[/]")
+    elif result.status is PublishStatus.FAILED:
+        console.print(f"\n[yellow]Bericht nicht gesendet: {result.detail}[/]")
+        console.print(f"[dim]Er liegt aber in {file}[/]")
 
 
 def _ask_the_analyst(settings, journal_path: Path) -> list:

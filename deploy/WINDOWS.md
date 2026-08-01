@@ -157,6 +157,16 @@ wäre aber nur eine fehlende Datei.
 
 Dauert einige Minuten. Am Ende steht eine Tabelle.
 
+**Den Bericht schickt das Programm von selbst.** Jeder Lauf legt eine
+vollständige Auswertung in `reports/` ab und schiebt sie ins Repository —
+jeder Gate-Wert, jedes Fenster, jede Ausstiegsart. Du musst nichts abtippen und
+nichts abfotografieren.
+
+Steht am Ende „Bericht nicht gesendet", ist nur die Übermittlung schiefgegangen;
+die Zahlen liegen trotzdem lokal und gehen beim nächsten Lauf mit. Kommt dabei
+etwas von GitHub über eine Anmeldung, einmal von Hand `git push` ausführen und
+anmelden — danach läuft es allein.
+
 **Wahrscheinlich steht dort, dass keine Strategie bestanden hat.** Das ist
 kein Fehler, sondern der Sinn der Sache: Es wird nur gehandelt, was neun
 Prüfungen übersteht. Darunter steht bei jeder Strategie, woran sie

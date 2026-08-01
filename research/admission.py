@@ -263,3 +263,110 @@ def write_journal(report: AdmissionReport, path: Path | str) -> Path:
     )
     file.write_text(json.dumps(entries, indent=2))
     return file
+
+
+def report_payload(
+    report: AdmissionReport,
+    *,
+    symbol: str,
+    interval: str,
+    history_from: str,
+    history_to: str,
+    candles: int,
+    gates_full: bool,
+    benchmark: dict | None = None,
+    funding_rows: int = 0,
+) -> dict:
+    """Der vollstaendige Bericht eines Zulassungslaufs, maschinenlesbar.
+
+    Absichtlich ausfuehrlicher als die Bildschirmausgabe. Auf dem Bildschirm
+    zaehlt, was ein Mensch in zehn Sekunden erfassen kann; hier zaehlt, was
+    eine spaetere Auswertung braucht - jeder Gate-Wert samt Schwelle, jedes
+    einzelne Fenster, jede Ausstiegsart.
+
+    Der Unterschied ist nicht kosmetisch. "Durchgefallen bei Sharpe" sagt
+    nichts darueber, ob es knapp war oder aussichtslos, und ob es an allen
+    Fenstern lag oder an einem einzigen. Genau daran entscheidet sich, ob eine
+    Idee nachgebessert oder verworfen wird.
+    """
+    return {
+        "art": "zulassung",
+        "zeitpunkt": datetime.now(UTC).isoformat(),
+        "markt": {
+            "symbol": symbol,
+            "intervall": interval,
+            "historie_von": history_from,
+            "historie_bis": history_to,
+            "kerzen": candles,
+            "funding_eintraege": funding_rows,
+        },
+        "lauf": {
+            "kandidaten": len(report.candidates),
+            "zugelassen": len(report.admitted),
+            "versuche_vorher": report.trials_before,
+            "versuche_nachher": report.trials_after,
+            "gates": "vollstaendig" if gates_full else "schnell",
+            "champion": report.champion.genome.name if report.champion else None,
+        },
+        "messlatte": benchmark,
+        "kandidaten": [_candidate_payload(c) for c in report.candidates],
+    }
+
+
+def _candidate_payload(candidate: Candidate) -> dict:
+    combined = candidate.walkforward.combined
+    return {
+        "name": candidate.genome.name,
+        "genome_id": candidate.genome.genome_id,
+        "hypothese": candidate.genome.rationale,
+        "zugelassen": candidate.admitted,
+        "genom": candidate.genome.model_dump(mode="json"),
+        "gesamt": _metrics_payload(combined),
+        "gates": [
+            {
+                "name": r.name,
+                "status": r.status.value,
+                "wert": round(r.value, 4),
+                "schwelle": round(r.threshold, 4),
+                "begruendung": r.message,
+            }
+            for r in candidate.gates.results
+        ],
+        "fenster": [
+            {
+                "nummer": w.window.index,
+                "test_von": w.window.test_start.isoformat(),
+                "test_bis": w.window.test_end.isoformat(),
+                "profitabel": w.is_profitable,
+                **(_metrics_payload(w.metrics) or {}),
+            }
+            for w in candidate.walkforward.windows
+        ],
+    }
+
+
+def _metrics_payload(metrics) -> dict | None:
+    """Kennzahlen in relativen Groessen.
+
+    Absolute Betraege bleiben draussen - nicht aus Sparsamkeit, sondern weil
+    der Bericht in ein oeffentliches Repository geht. Prozent und R sagen alles
+    aus, was fuer die Bewertung noetig ist, und nichts ueber das Konto.
+    """
+    if metrics is None:
+        return None
+    return {
+        "trades": metrics.trades,
+        "rendite_pct": round(metrics.total_return_pct, 2),
+        "cagr_pct": round(metrics.cagr_pct, 2),
+        "sharpe": round(metrics.sharpe, 3),
+        "sortino": round(metrics.sortino, 3),
+        "max_drawdown_pct": round(metrics.max_drawdown_pct, 2),
+        "trefferquote": round(metrics.win_rate, 4),
+        "profit_faktor": round(metrics.profit_factor, 3),
+        "erwartung_r": round(metrics.expectancy_r, 4),
+        "trades_pro_monat": round(metrics.trades_per_month, 2),
+        "gebuehren_pct_vom_brutto": round(metrics.fees_pct_of_gross, 2),
+        "max_verluste_hintereinander": metrics.max_consecutive_losses,
+        "haltedauer_stunden": round(metrics.avg_duration_hours, 1),
+        "ausstiegsgruende": dict(metrics.exit_reasons),
+    }

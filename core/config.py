@@ -297,6 +297,23 @@ class WebSettings(BaseModel):
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 
 
+class ReportSettings(BaseModel):
+    """Berichte, die von selbst ankommen.
+
+    Standardmaessig **an**: Jeder Zulassungslauf legt einen vollstaendigen
+    Bericht in ``reports/`` ab und schiebt ihn ins Repository. Das ersetzt die
+    Bildschirmfotos, die vorher zwischen dem Rechner des Nutzers und der
+    Auswertung standen.
+
+    Was mitgeht, ist im Bericht selbst begrenzt: relative Kennzahlen, keine
+    Kontostaende, keine Zugangsdaten. Wer das trotzdem nicht will, setzt
+    ``REPORT__AUTOPUSH=false`` - dann bleiben die Dateien lokal liegen.
+    """
+
+    autopush: bool = True
+    remote: str = "origin"
+
+
 class PathSettings(BaseModel):
     data_store: str = "data_store"
     logs: str = "logs"
@@ -327,6 +344,7 @@ class Settings(BaseSettings):
     db: DBSettings = Field(default_factory=DBSettings)
     notify: NotifySettings = Field(default_factory=NotifySettings)
     web: WebSettings = Field(default_factory=WebSettings)
+    report: ReportSettings = Field(default_factory=ReportSettings)
     paths: PathSettings = Field(default_factory=PathSettings)
 
     @model_validator(mode="after")
