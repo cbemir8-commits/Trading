@@ -157,6 +157,15 @@ python -m cli trade                       # handeln
 python -m cli dashboard                   # Website + Not-Aus
 ```
 
+## Auf einem Server einrichten
+
+Schritt für Schritt, zum Kopieren: **[deploy/README.md](deploy/README.md)**
+
+Rechne mit 30 Minuten. Enthält die Grundabsicherung des Servers, die
+`systemd`-Dienste (Bot und Dashboard getrennt), den SSH-Tunnel fürs iPhone —
+und den Härtetest, der über alles andere entscheidet: Prozess mitten in einer
+offenen Position hart killen und bei Bybit nachsehen, ob der Stop noch hängt.
+
 ## Die zwei Prozesse
 
 Handel und Website laufen **getrennt**:

@@ -1,0 +1,43 @@
+[Unit]
+# Der Handelsprozess. Laeuft dauerhaft, startet nach Absturz und nach
+# Neustart des Servers von selbst wieder.
+Description=Trading-Bot (Bybit)
+After=network-online.target
+Wants=network-online.target
+
+# Faellt der Prozess fuenfmal in fuenf Minuten aus, liegt ein echtes Problem
+# vor - dann ist Stillstand besser als ein Roboter, der im Sekundentakt neu
+# startet und dabei jedes Mal den Zustandsabgleich durchlaeuft.
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
+[Service]
+Type=simple
+User=trading
+WorkingDirectory=/home/trading/Trading
+ExecStart=/home/trading/Trading/.venv/bin/python -m cli trade
+
+# Nach einem Absturz wieder hoch, aber nicht in Endlosschleife (siehe
+# StartLimit* oben).
+Restart=always
+RestartSec=30
+
+# SIGINT statt SIGTERM: Die Schleife behandelt es als geordnetes Beenden und
+# laesst offene Positionen samt ihrer boersenseitigen Stops in Ruhe.
+KillSignal=SIGINT
+TimeoutStopSec=60
+
+# Grundabsicherung: Der Prozess braucht nichts ausser seinem eigenen
+# Verzeichnis. Ein kompromittierter Handelsbot soll nicht mehr anrichten
+# koennen, als er ohnehin schon anrichten kann.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/trading/Trading
+
+StandardOutput=append:/home/trading/Trading/logs/bot.log
+StandardError=append:/home/trading/Trading/logs/bot.log
+
+[Install]
+WantedBy=multi-user.target

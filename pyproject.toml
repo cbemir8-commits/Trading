@@ -22,7 +22,7 @@ dependencies = [
 
 [project.optional-dependencies]
 research = ["anthropic>=0.116"]
-api = ["fastapi>=0.111", "uvicorn[standard]>=0.30", "pyotp>=2.9", "argon2-cffi>=23.1"]
+api = ["fastapi>=0.111", "uvicorn[standard]>=0.30"]
 news = ["feedparser>=6.0"]
 dev = [
     "pytest>=8.2",

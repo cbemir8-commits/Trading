@@ -1,0 +1,31 @@
+[Unit]
+# Die Website. Bewusst ein eigener Dienst: Faellt der Handel aus, laeuft das
+# Dashboard weiter und zeigt genau das an. Ein Dashboard, das mit dem Handel
+# zusammen abstuerzt, ist in dem Moment nutzlos, in dem man es braucht.
+Description=Trading-Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=trading
+WorkingDirectory=/home/trading/Trading
+ExecStart=/home/trading/Trading/.venv/bin/python -m cli dashboard
+
+Restart=always
+RestartSec=10
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+
+# Die Website liest nur - schreiben muss sie ausschliesslich die Befehlsdatei,
+# ueber die sie dem Handel Anweisungen zustellt.
+ReadWritePaths=/home/trading/Trading/state
+
+StandardOutput=append:/home/trading/Trading/logs/dashboard.log
+StandardError=append:/home/trading/Trading/logs/dashboard.log
+
+[Install]
+WantedBy=multi-user.target
