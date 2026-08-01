@@ -317,6 +317,33 @@ def backfill(
             f"{progress.elapsed.total_seconds():.0f}s",
         )
     console.print(table)
+
+    # Deckt der Speicher wirklich den angeforderten Zeitraum ab?
+    #
+    # Ein Backfill kann fehlerfrei durchlaufen und trotzdem fast nichts
+    # geliefert haben - dann steht in der Tabelle "999 Kerzen, 1 Anfrage,
+    # fertig" und alles sieht gut aus. Genau so geschehen, als die Kerzen
+    # versehentlich vom Demo-Host kamen: Der ignoriert den Startzeitpunkt und
+    # gibt nur die juengsten rund 1000 Stueck zurueck.
+    #
+    # Ein Walk-Forward auf zehn Tagen Historie ist wertlos. Diese Pruefung
+    # kostet nichts und faengt jede Variante des Problems ab, auch kuenftige.
+    requested_days = max(1, (end - start).days)
+    for interval in selected:
+        coverage = store.coverage(settings.bybit.symbol, interval)
+        if coverage.is_empty or coverage.start is None or coverage.end is None:
+            console.print(f"[red]{interval.label}: nichts im Speicher.[/]")
+            continue
+        covered_days = max(1, (coverage.end - coverage.start).days)
+        if covered_days < requested_days * 0.5:
+            console.print(
+                f"[red]{interval.label}: nur {covered_days} von "
+                f"{requested_days} angeforderten Tagen im Speicher[/] "
+                f"({coverage.start:%Y-%m-%d} bis {coverage.end:%Y-%m-%d}).\n"
+                "[yellow]Der Backfill lief durch, hat aber kaum Daten geholt. "
+                "Ein Walk-Forward darauf waere wertlos.[/]"
+            )
+
     console.print("\n[dim]Naechster Schritt: python -m cli quality[/]")
 
 

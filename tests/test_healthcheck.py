@@ -30,7 +30,12 @@ from scripts.healthcheck import (
 )
 from tests.factories import make_candles, make_kline_response
 
+#: Kontoabfragen gehen an den Demo-Host ...
 BASE = "https://api-demo.bybit.com"
+#: ... Marktdaten dagegen immer ans Mainnet. Siehe BybitEnvironment.public_rest_url:
+#: Der Demo-Host ignoriert bei Kerzen den start-Parameter und liefert nur die
+#: juengsten rund 1000 Stueck.
+PUBLIC = "https://api.bybit.com"
 
 
 @pytest.fixture
@@ -40,7 +45,7 @@ def settings(bybit_settings: BybitSettings) -> Settings:
 
 def _mock_server_time(offset_s: float = 0.0) -> None:
     now_ns = int((datetime.now(UTC).timestamp() + offset_s) * 1_000_000_000)
-    respx.get(f"{BASE}/v5/market/time").mock(
+    respx.get(f"{PUBLIC}/v5/market/time").mock(
         return_value=httpx.Response(
             200, json={"retCode": 0, "retMsg": "OK", "result": {"timeNano": str(now_ns)}}
         )
@@ -48,7 +53,7 @@ def _mock_server_time(offset_s: float = 0.0) -> None:
 
 
 def _mock_instrument_and_ticker(price: str = "100000") -> None:
-    respx.get(f"{BASE}/v5/market/instruments-info").mock(
+    respx.get(f"{PUBLIC}/v5/market/instruments-info").mock(
         return_value=httpx.Response(
             200,
             json={
@@ -75,7 +80,7 @@ def _mock_instrument_and_ticker(price: str = "100000") -> None:
             },
         )
     )
-    respx.get(f"{BASE}/v5/market/tickers").mock(
+    respx.get(f"{PUBLIC}/v5/market/tickers").mock(
         return_value=httpx.Response(
             200,
             json={
@@ -126,7 +131,7 @@ class TestReachability:
 
     @respx.mock
     def test_geoblock_gives_actionable_message(self, settings: Settings) -> None:
-        respx.get(f"{BASE}/v5/market/time").mock(
+        respx.get(f"{PUBLIC}/v5/market/time").mock(
             return_value=httpx.Response(
                 403, text="{error:The Amazon CloudFront distribution is configured "
                 "to block access from your country}"
@@ -156,7 +161,7 @@ class TestInstrumentAndHistory:
     @respx.mock
     def test_short_history_warns(self, settings: Settings) -> None:
         recent = make_candles(count=3, start=datetime(2025, 6, 1, tzinfo=UTC), interval=Interval.D1)
-        respx.get(f"{BASE}/v5/market/kline").mock(
+        respx.get(f"{PUBLIC}/v5/market/kline").mock(
             return_value=httpx.Response(200, json=make_kline_response(recent))
         )
         report = Report()
@@ -167,7 +172,7 @@ class TestInstrumentAndHistory:
     @respx.mock
     def test_long_history_passes(self, settings: Settings) -> None:
         old = make_candles(count=3, start=datetime(2020, 3, 30, tzinfo=UTC), interval=Interval.D1)
-        respx.get(f"{BASE}/v5/market/kline").mock(
+        respx.get(f"{PUBLIC}/v5/market/kline").mock(
             return_value=httpx.Response(200, json=make_kline_response(old))
         )
         report = Report()

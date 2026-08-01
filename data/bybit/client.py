@@ -109,8 +109,19 @@ class BybitHTTPClient:
 
     # -- oeffentliche Aufrufe -------------------------------------------------
     def get_public(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        """Unsignierter Aufruf fuer Marktdaten."""
-        return self._request("GET", path, params=params or {}, signed=False)
+        """Unsignierter Aufruf fuer Marktdaten.
+
+        Geht bewusst an einen **anderen Host** als die Kontoabfragen: Der
+        Demo-Host ignoriert bei Kerzen den ``start``-Parameter und liefert nur
+        die juengsten rund 1000 Stueck. Siehe ``public_rest_url``.
+        """
+        return self._request(
+            "GET",
+            path,
+            params=params or {},
+            signed=False,
+            base_url=self.settings.environment.public_rest_url,
+        )
 
     def get_private(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         return self._request("GET", path, params=params or {}, signed=True)
@@ -127,12 +138,15 @@ class BybitHTTPClient:
         params: dict[str, Any] | None = None,
         body: dict[str, Any] | None = None,
         signed: bool,
+        base_url: str | None = None,
     ) -> dict[str, Any]:
         last_error: BybitError | None = None
 
         for attempt in range(self.settings.max_retries + 1):
             try:
-                return self._request_once(method, path, params=params, body=body, signed=signed)
+                return self._request_once(
+                    method, path, params=params, body=body, signed=signed, base_url=base_url
+                )
             except BybitError as exc:
                 last_error = exc
                 if not exc.retryable or attempt == self.settings.max_retries:
@@ -168,6 +182,7 @@ class BybitHTTPClient:
         params: dict[str, Any] | None,
         body: dict[str, Any] | None,
         signed: bool,
+        base_url: str | None = None,
     ) -> dict[str, Any]:
         query = encode_query(params or {}) if method == "GET" else ""
         raw_body = (
@@ -175,7 +190,11 @@ class BybitHTTPClient:
         )
         headers = self._auth_headers(query if method == "GET" else raw_body) if signed else {}
 
-        url = f"{path}?{query}" if query else path
+        # Marktdaten gehen an einen anderen Host als Kontoabfragen - siehe
+        # ``public_rest_url``. Der Pfad wird deshalb absolut gebaut, sonst
+        # greift die base_url des Clients.
+        prefix = base_url.rstrip("/") if base_url and base_url != self.base_url else ""
+        url = f"{prefix}{path}?{query}" if query else f"{prefix}{path}"
 
         try:
             if method == "GET":

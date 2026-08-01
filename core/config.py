@@ -35,6 +35,27 @@ class BybitEnvironment(StrEnum):
         }[self]
 
     @property
+    def public_rest_url(self) -> str:
+        """Marktdaten - Kerzen, Kontrakte, Ticker.
+
+        **Nicht dieselbe Adresse wie fuer das Konto.** Der Demo-Host liefert
+        zwar Kerzen, aber nur die juengsten rund 1000 je Zeitreihe - der
+        Parameter ``start`` wird dort ignoriert. Ein Backfill laeuft dagegen
+        scheinbar fehlerfrei durch: eine Anfrage, 999 Kerzen, "fertig". Das
+        Ergebnis sind zehn Tage Historie statt sechs Jahren, und ein
+        Walk-Forward daraus waere wertlos, ohne dass irgendetwas nach einem
+        Fehler aussieht.
+
+        Deshalb kommen Marktdaten immer vom Mainnet - so wie beim
+        Websocket-Stream auch. Echte Preise, Spielgeld: genau das wollen wir.
+        """
+        return {
+            BybitEnvironment.DEMO: "https://api.bybit.com",
+            BybitEnvironment.TESTNET: "https://api-testnet.bybit.com",
+            BybitEnvironment.MAINNET: "https://api.bybit.com",
+        }[self]
+
+    @property
     def private_ws_url(self) -> str:
         return {
             BybitEnvironment.DEMO: "wss://stream-demo.bybit.com/v5/private",

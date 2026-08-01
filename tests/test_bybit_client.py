@@ -32,7 +32,12 @@ from data.bybit.errors import (
 )
 from tests.factories import make_candles, make_kline_response
 
+#: Kontoabfragen gehen an den Demo-Host ...
 BASE = "https://api-demo.bybit.com"
+#: ... Marktdaten dagegen immer ans Mainnet. Siehe BybitEnvironment.public_rest_url:
+#: Der Demo-Host ignoriert bei Kerzen den start-Parameter und liefert nur die
+#: juengsten rund 1000 Stueck.
+PUBLIC = "https://api.bybit.com"
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +102,7 @@ class TestErrorHandling:
         Genau dieser Fall tritt im Entwicklungscontainer auf - die Meldung muss
         sofort sagen, was zu tun ist.
         """
-        respx.get(f"{BASE}/v5/market/time").mock(
+        respx.get(f"{PUBLIC}/v5/market/time").mock(
             return_value=httpx.Response(
                 403,
                 text="{\n    error:The Amazon CloudFront distribution is configured "
@@ -111,7 +116,7 @@ class TestErrorHandling:
     def test_geoblock_is_not_retried(self, bybit_settings: BybitSettings) -> None:
         """Geoblocking ist dauerhaft - Wiederholen waere reine Zeitverschwendung."""
         settings = bybit_settings.model_copy(update={"max_retries": 3})
-        route = respx.get(f"{BASE}/v5/market/time").mock(
+        route = respx.get(f"{PUBLIC}/v5/market/time").mock(
             return_value=httpx.Response(403, text="blocked: not available in your country")
         )
         with BybitHTTPClient(settings) as client, pytest.raises(BybitGeoBlockedError):
@@ -120,7 +125,7 @@ class TestErrorHandling:
 
     @respx.mock
     def test_business_error_raises_api_error(self, bybit_settings: BybitSettings) -> None:
-        respx.get(f"{BASE}/v5/market/kline").mock(
+        respx.get(f"{PUBLIC}/v5/market/kline").mock(
             return_value=httpx.Response(
                 200, json={"retCode": 10001, "retMsg": "params error: symbol invalid", "result": {}}
             )
@@ -147,7 +152,7 @@ class TestErrorHandling:
     @respx.mock
     def test_rate_limit_is_retried_then_succeeds(self, bybit_settings: BybitSettings) -> None:
         settings = bybit_settings.model_copy(update={"max_retries": 2})
-        respx.get(f"{BASE}/v5/market/time").mock(
+        respx.get(f"{PUBLIC}/v5/market/time").mock(
             side_effect=[
                 httpx.Response(429, text="rate limit"),
                 httpx.Response(
@@ -167,7 +172,7 @@ class TestErrorHandling:
     @respx.mock
     def test_rate_limit_exhausts_retries_and_raises(self, bybit_settings: BybitSettings) -> None:
         settings = bybit_settings.model_copy(update={"max_retries": 1})
-        respx.get(f"{BASE}/v5/market/time").mock(
+        respx.get(f"{PUBLIC}/v5/market/time").mock(
             return_value=httpx.Response(429, text="rate limit")
         )
         with BybitHTTPClient(settings) as client, pytest.raises(BybitRateLimitError):
@@ -175,7 +180,7 @@ class TestErrorHandling:
 
     @respx.mock
     def test_timeout_becomes_transport_error(self, bybit_settings: BybitSettings) -> None:
-        respx.get(f"{BASE}/v5/market/time").mock(side_effect=httpx.ReadTimeout("zu langsam"))
+        respx.get(f"{PUBLIC}/v5/market/time").mock(side_effect=httpx.ReadTimeout("zu langsam"))
         with BybitHTTPClient(bybit_settings) as client, pytest.raises(BybitTransportError, match="Timeout"):
             client.get_public("/v5/market/time")
 
@@ -195,7 +200,7 @@ class TestMarketData:
         bleiben kann, weil die Ergebnisse plausibel aussehen.
         """
         expected = make_candles(count=5)
-        respx.get(f"{BASE}/v5/market/kline").mock(
+        respx.get(f"{PUBLIC}/v5/market/kline").mock(
             return_value=httpx.Response(200, json=make_kline_response(expected))
         )
         market = BybitMarketData(bybit_settings)
@@ -208,7 +213,7 @@ class TestMarketData:
     @respx.mock
     def test_kline_values_are_parsed_as_decimal(self, bybit_settings: BybitSettings) -> None:
         """Bybit liefert Strings. Float waere hier ein Rundungsrisiko."""
-        respx.get(f"{BASE}/v5/market/kline").mock(
+        respx.get(f"{PUBLIC}/v5/market/kline").mock(
             return_value=httpx.Response(200, json=make_kline_response(make_candles(count=1)))
         )
         market = BybitMarketData(bybit_settings)
@@ -218,7 +223,7 @@ class TestMarketData:
 
     @respx.mock
     def test_kline_limit_is_capped_at_api_maximum(self, bybit_settings: BybitSettings) -> None:
-        route = respx.get(f"{BASE}/v5/market/kline").mock(
+        route = respx.get(f"{PUBLIC}/v5/market/kline").mock(
             return_value=httpx.Response(200, json=make_kline_response([]))
         )
         market = BybitMarketData(bybit_settings)
@@ -227,7 +232,7 @@ class TestMarketData:
 
     @respx.mock
     def test_instrument_parses_lot_and_price_filters(self, bybit_settings: BybitSettings) -> None:
-        respx.get(f"{BASE}/v5/market/instruments-info").mock(
+        respx.get(f"{PUBLIC}/v5/market/instruments-info").mock(
             return_value=httpx.Response(
                 200,
                 json={
@@ -265,7 +270,7 @@ class TestMarketData:
 
     @respx.mock
     def test_unknown_symbol_raises(self, bybit_settings: BybitSettings) -> None:
-        respx.get(f"{BASE}/v5/market/instruments-info").mock(
+        respx.get(f"{PUBLIC}/v5/market/instruments-info").mock(
             return_value=httpx.Response(
                 200, json={"retCode": 0, "retMsg": "OK", "result": {"list": []}}
             )
@@ -384,3 +389,60 @@ class TestEnvironments:
             "wss://stream.bybit.com/v5/public/linear"
         )
         assert BybitEnvironment.DEMO.private_ws_url == "wss://stream-demo.bybit.com/v5/private"
+
+
+class TestPublicHostRouting:
+    """Marktdaten und Kontodaten gehen an verschiedene Hosts.
+
+    Der Demo-Host liefert zwar Kerzen, ignoriert dabei aber den
+    ``start``-Parameter und gibt nur die juengsten rund 1000 Stueck zurueck.
+    Ein Backfill laeuft dann scheinbar sauber durch - eine Anfrage, 999
+    Kerzen, "fertig" - und hinterlaesst zehn Tage Historie statt sechs Jahren.
+    Nichts daran sieht nach einem Fehler aus; der Walk-Forward waere trotzdem
+    wertlos.
+    """
+
+    def test_demo_reads_market_data_from_mainnet(self) -> None:
+        assert BybitEnvironment.DEMO.public_rest_url == "https://api.bybit.com"
+        assert BybitEnvironment.DEMO.rest_url == "https://api-demo.bybit.com"
+
+    def test_testnet_stays_on_testnet(self) -> None:
+        """Dort gibt es echte Historie, und die Konten sind dieselben."""
+        assert BybitEnvironment.TESTNET.public_rest_url == BybitEnvironment.TESTNET.rest_url
+
+    def test_mainnet_uses_one_host_for_everything(self) -> None:
+        assert BybitEnvironment.MAINNET.public_rest_url == BybitEnvironment.MAINNET.rest_url
+
+    @respx.mock
+    def test_klines_really_go_to_mainnet_in_demo(self, bybit_settings: BybitSettings) -> None:
+        """Der Test, der den Fehler gefunden haette.
+
+        Er prueft nicht die Konfiguration, sondern wohin die Anfrage
+        tatsaechlich geht - und dass sie eben *nicht* beim Demo-Host landet.
+        """
+        demo_route = respx.get(f"{BASE}/v5/market/kline").mock(
+            return_value=httpx.Response(200, json=make_kline_response([]))
+        )
+        mainnet_route = respx.get(f"{PUBLIC}/v5/market/kline").mock(
+            return_value=httpx.Response(
+                200, json=make_kline_response(make_candles(count=3))
+            )
+        )
+
+        BybitMarketData(bybit_settings).get_klines("BTCUSDT", Interval.M15)
+
+        assert mainnet_route.call_count == 1
+        assert demo_route.call_count == 0
+
+    @respx.mock
+    def test_account_calls_still_go_to_demo(self, bybit_settings: BybitSettings) -> None:
+        """Die Gegenprobe: Das Konto liegt beim Demo-Host, und nur dort."""
+        route = respx.get(f"{BASE}/v5/position/list").mock(
+            return_value=httpx.Response(
+                200, json={"retCode": 0, "retMsg": "OK", "result": {"list": []}}
+            )
+        )
+
+        BybitAccount(bybit_settings).get_positions("BTCUSDT")
+
+        assert route.call_count == 1
