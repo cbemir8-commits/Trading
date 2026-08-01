@@ -546,3 +546,63 @@ class TestGateSystemRejectsOverfitting:
 
         assert "Schwelle" in feedback
         assert not gates.passed
+
+
+class TestWindowChaining:
+    """Wie die Fenster zu einer Kapitalkurve verkettet werden.
+
+    Der Fehler, der im ersten echten Zulassungslauf einen Drawdown von 1005 %
+    erzeugt hat: Die absoluten Fensterergebnisse wurden addiert. Jedes Fenster
+    startet im Backtest aber mit dem vollen Anfangskapital und bemisst seine
+    Positionen daran - wer die Ergebnisse aneinanderhaengt, addiert Verluste,
+    die sich auf jeweils 500 EUR bezogen, auch wenn das verkettete Konto
+    laengst leer waere.
+    """
+
+    def test_losing_windows_cannot_exceed_total_loss(self) -> None:
+        """Zwanzig Fenster mit je -50 % ergeben -100 %, nicht -1000 %."""
+        from backtest.walkforward import _combine
+
+        initial = Decimal("500")
+        windows = [_halving_window(index) for index in range(20)]
+
+        combined = _combine(windows, initial)
+
+        assert combined.max_drawdown_pct <= 100.0
+
+    def test_gains_compound(self) -> None:
+        """Die Gegenprobe: Zwei Fenster mit je +50 % ergeben +125 %, nicht +100 %."""
+        from backtest.walkforward import _combine
+
+        windows = [_doubling_window(0, factor=1.5), _doubling_window(1, factor=1.5)]
+
+        combined = _combine(windows, Decimal("500"))
+
+        assert combined.total_return_pct == pytest.approx(125.0, abs=1.0)
+
+
+def _window_curve(index: int, end_factor: float) -> pd.DataFrame:
+    start = datetime(2024, 1, 1, tzinfo=UTC) + timedelta(days=index * 30)
+    times = pd.date_range(start, periods=30, freq="D")
+    equity = np.linspace(500.0, 500.0 * end_factor, 30)
+    return pd.DataFrame({"time": times, "equity": equity})
+
+
+def _fake_window(index: int, end_factor: float):
+    from types import SimpleNamespace
+
+    start = datetime(2024, 1, 1, tzinfo=UTC) + timedelta(days=index * 30)
+    curve = _window_curve(index, end_factor)
+    return SimpleNamespace(
+        window=SimpleNamespace(test_start=start),
+        trades=[],
+        result=SimpleNamespace(equity_curve=curve),
+    )
+
+
+def _halving_window(index: int):
+    return _fake_window(index, 0.5)
+
+
+def _doubling_window(index: int, *, factor: float):
+    return _fake_window(index, factor)

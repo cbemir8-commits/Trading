@@ -119,6 +119,20 @@ class BacktestResult:
     total_fees: Decimal = Decimal(0)
     total_funding: Decimal = Decimal(0)
 
+    ruined_at: datetime | None = None
+    """Zeitpunkt, an dem das Konto aufgebraucht war - ab da wurde nicht mehr
+    gehandelt.
+
+    Ohne diese Grenze handelt der Backtest mit negativem Kapital weiter und
+    erholt sich davon womoeglich wieder. Das ist nicht bloss unrealistisch,
+    es macht die wichtigste Kennzahl unbrauchbar: Ein Drawdown von 1005 %
+    kann es nicht geben, mehr als alles kann man nicht verlieren. Wer solche
+    Zahlen sieht, misst nicht mehr die Strategie, sondern einen Rechenfehler."""
+
+    @property
+    def is_ruined(self) -> bool:
+        return self.ruined_at is not None
+
     @property
     def fill_rate(self) -> float:
         """Anteil der Signale, die tatsaechlich zu einem Trade wurden.
@@ -208,6 +222,26 @@ class Backtester:
             equity = state.cash + (
                 state.position.unrealised(mark) if state.position else Decimal(0)
             )
+
+            # **Unter null geht es nicht.**
+            # Bei Isolated Margin ist die gestellte Margin das Maximum, das
+            # verloren gehen kann - davor liquidiert die Boerse. Ohne diese
+            # Grenze laeuft die Kapitalkurve ins Minus, und der Drawdown wird
+            # groesser als 100 %: eine Zahl, die es nicht geben kann und die
+            # jede darauf aufbauende Schwelle wertlos macht. Der erste echte
+            # Zulassungslauf meldete 1005 %.
+            if equity <= 0:
+                equity = Decimal(0)
+                if not state.ruined:
+                    state.ruined = True
+                    result.ruined_at = bar_time
+                    log.warning(
+                        "backtest.konto_aufgebraucht",
+                        zeitpunkt=bar_time.isoformat(),
+                        trades_bis_dahin=len(result.trades),
+                        hinweis="Ab hier wird nicht mehr gehandelt.",
+                    )
+
             state.equity_times.append(bar_time)
             state.equity_values.append(float(equity))
 
@@ -240,6 +274,16 @@ class Backtester:
             return
 
         equity = state.cash if self.config.reinvest_profits else self.config.initial_equity
+
+        # **Ein aufgebrauchtes Konto handelt nicht weiter.**
+        # In der Wirklichkeit ist dann Schluss: kein Geld mehr fuer Margin,
+        # die Boerse liquidiert, und niemand handelt sich aus dem Minus
+        # zurueck. Ein Backtest, der das zulaesst, rechnet sich anschliessend
+        # wieder hoch - reine Fantasie.
+        if state.ruined or equity <= self.config.instrument.min_notional:
+            state.count_rejection(result, "konto_aufgebraucht")
+            return
+
         sized = size_position(
             signal,
             equity=equity,
@@ -533,6 +577,8 @@ class _RunState:
     total_fees: Decimal = Decimal(0)
     total_funding: Decimal = Decimal(0)
     funding_checkpoint: datetime | None = None
+    ruined: bool = False
+    """Kapital aufgebraucht. Ab hier keine neuen Positionen mehr."""
 
     def count_rejection(self, result: BacktestResult, reason: str) -> None:
         result.rejections[reason] = result.rejections.get(reason, 0) + 1

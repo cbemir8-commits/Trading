@@ -16,10 +16,12 @@ import pytest
 
 from backtest.costs import CostModel, FundingSchedule
 from backtest.engine import BacktestConfig, Backtester, ExitReason
+from backtest.metrics import compute_metrics
 from core.config import RiskSettings
 from core.models import Candle, Instrument, Interval, Side, Signal, TakeProfitLeg
 from data.store import candles_to_frame
 from strategy.base import LookaheadError
+from tests.factories import make_candles, make_signal
 from tests.strategies import (
     NonCausalStrategy,
     PeekingStrategy,
@@ -712,3 +714,81 @@ def _wavy_series(count: int) -> list[Candle]:
             )
         )
     return candles
+
+
+class TestEquityFloor:
+    """Die Kapitalkurve darf nicht unter null.
+
+    Bei Isolated Margin ist die gestellte Margin das Maximum, das verloren
+    gehen kann - davor liquidiert die Boerse. Laeuft die Kurve trotzdem ins
+    Minus, wird der Drawdown groesser als 100 %, und jede darauf aufbauende
+    Schwelle ist wertlos. Der erste echte Zulassungslauf meldete 1005 %.
+    """
+
+    def test_equity_curve_never_goes_negative(
+        self, btcusdt: Instrument, risk: RiskSettings
+    ) -> None:
+        candles = make_candles(count=600, step=Decimal("-120"), wick=Decimal("40"))
+        frame = candles_to_frame(candles)
+        signals = {
+            i: make_signal(
+                entry=str(candles[i].close),
+                stop_pct="1.0",
+                timestamp=candles[i].open_time,
+            )
+            for i in range(2, 590)
+        }
+        config = BacktestConfig(
+            instrument=btcusdt,
+            risk=risk.model_copy(update={"risk_per_trade_pct": Decimal("5")}),
+            initial_equity=Decimal("100"),
+        )
+
+        result = Backtester(config).run(frame, ScriptedStrategy(signals))
+
+        assert (result.equity_curve["equity"] >= 0).all()
+
+    def test_drawdown_stays_within_one_hundred_percent(
+        self, btcusdt: Instrument, risk: RiskSettings
+    ) -> None:
+        candles = make_candles(count=600, step=Decimal("-120"), wick=Decimal("40"))
+        frame = candles_to_frame(candles)
+        signals = {
+            i: make_signal(
+                entry=str(candles[i].close),
+                stop_pct="1.0",
+                timestamp=candles[i].open_time,
+            )
+            for i in range(2, 590)
+        }
+        config = BacktestConfig(
+            instrument=btcusdt,
+            risk=risk.model_copy(update={"risk_per_trade_pct": Decimal("5")}),
+            initial_equity=Decimal("100"),
+        )
+
+        result = Backtester(config).run(frame, ScriptedStrategy(signals))
+        metrics = compute_metrics(
+            result.trades,
+            result.equity_curve,
+            initial_equity=result.initial_equity,
+            total_fees=result.total_fees,
+        )
+
+        assert metrics.max_drawdown_pct <= 100.0
+
+    def test_healthy_run_is_not_marked_as_ruined(
+        self, btcusdt: Instrument, risk: RiskSettings
+    ) -> None:
+        candles = make_candles(count=200, step=Decimal("50"))
+        frame = candles_to_frame(candles)
+        signals = {
+            5: make_signal(entry=str(candles[5].close), timestamp=candles[5].open_time)
+        }
+        config = BacktestConfig(
+            instrument=btcusdt, risk=risk, initial_equity=Decimal("500")
+        )
+
+        result = Backtester(config).run(frame, ScriptedStrategy(signals))
+
+        assert not result.is_ruined

@@ -286,8 +286,21 @@ def _combine(windows: list[WindowResult], initial_equity: Decimal) -> Metrics:
         ].reset_index(drop=True)
         if curve.empty:
             continue
+        # **Multiplikativ verketten, nicht addieren.**
+        #
+        # Jedes Fenster startet im Backtest mit dem vollen Anfangskapital und
+        # bemisst seine Positionen daran. Wer die absoluten Ergebnisse
+        # aneinanderhaengt, addiert Verluste, die sich auf jeweils 500 EUR
+        # bezogen - auch dann noch, wenn das verkettete Konto laengst leer
+        # waere. Nach 21 Fenstern stand so ein Drawdown von 1005 % in der
+        # Tabelle: eine Zahl, die es nicht geben kann.
+        #
+        # Richtig ist die Verkettung der Renditen: Jedes Fenster wirkt als
+        # Faktor auf das, was vom Vorgaenger uebrig blieb. Ein Konto, das auf
+        # null faellt, bleibt danach bei null - so wie in der Wirklichkeit.
+        factor = curve["equity"] / float(initial_equity)
         shifted = curve.copy()
-        shifted["equity"] = curve["equity"] - float(initial_equity) + offset
+        shifted["equity"] = (offset * factor).clip(lower=0.0)
         pieces.append(shifted)
         offset = float(shifted["equity"].iloc[-1])
 
