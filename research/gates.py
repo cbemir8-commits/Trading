@@ -259,9 +259,13 @@ def gate_monte_carlo(
     drawdowns = np.empty(simulations)
     for i in range(simulations):
         shuffled = rng.permutation(pnls)
-        equity = start + np.cumsum(shuffled)
-        peak = np.maximum.accumulate(np.concatenate(([start], equity)))
+        # Bei null ist Schluss - auch in der Simulation. Ohne diese Grenze
+        # laeuft die Kurve ins Minus und meldet Drawdowns jenseits von 100 %,
+        # so wie es die Kapitalkurve vor der Korrektur tat. Ein Konto, das
+        # aufgebraucht ist, handelt die restlichen Trades nicht mehr mit.
+        equity = np.maximum(start + np.cumsum(shuffled), 0.0)
         curve = np.concatenate(([start], equity))
+        peak = np.maximum.accumulate(curve)
         with np.errstate(divide="ignore", invalid="ignore"):
             relative = np.where(peak > 0, (peak - curve) / peak * 100, 0.0)
         drawdowns[i] = relative.max()

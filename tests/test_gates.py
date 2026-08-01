@@ -606,3 +606,21 @@ def _halving_window(index: int):
 
 def _doubling_window(index: int, *, factor: float):
     return _fake_window(index, factor)
+
+
+def test_monte_carlo_drawdown_cannot_exceed_total_loss() -> None:
+    """Auch die Simulation kennt keine Verluste ueber 100 %.
+
+    Dieselbe Grenze wie bei der echten Kapitalkurve: Ein aufgebrauchtes Konto
+    handelt die restlichen Trades nicht mehr mit. Ohne sie meldete das Gate
+    bei einer durchweg verlierenden Strategie 1021 % - eine Zahl, die neben
+    korrekten Werten steht und diese mit entwertet.
+    """
+    from research.gates import gate_monte_carlo
+
+    losers = [make_trade("-40", index=i, hours_offset=i * 4) for i in range(60)]
+
+    result = gate_monte_carlo(losers, Decimal("500"), GateThresholds())
+
+    assert result.value <= 100.0
+    assert not result.passed  # inhaltlich unveraendert: faellt trotzdem durch
