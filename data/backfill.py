@@ -29,6 +29,12 @@ from data.store import CandleStore
 
 log = structlog.get_logger(__name__)
 
+#: So viele leere Zeitfenster hintereinander gelten als Ende der Zeitreihe.
+#: Bei begrenzten Seiten ist ein einzelnes leeres Fenster harmlos - es kann
+#: eine Boersenwartung sein. Fuenf leere Fenster sind bei 15-Minuten-Kerzen
+#: rund 52 Tage ohne einen einzigen Handel; da kommt nichts mehr.
+MAX_EMPTY_PAGES = 5
+
 #: Bybit erlaubt 1000 Kerzen je Anfrage.
 PAGE_SIZE = 1000
 
@@ -154,27 +160,52 @@ class Backfiller:
             return progress
 
         pages = 0
+        empty_in_a_row = 0
         while cursor < end:
             if max_pages is not None and pages >= max_pages:
                 log.info("backfill.seitenlimit", symbol=symbol, seiten=pages)
                 break
 
+            # **Das Zeitfenster je Seite auf genau eine Seitenlaenge begrenzen.**
+            #
+            # Bybit liefert bei einem weiten Fenster die *juengsten* ``limit``
+            # Kerzen daraus, nicht die aeltesten. Wer das gesamte Restfenster
+            # anfragt, bekommt also sofort die Kerzen von heute - der Cursor
+            # springt ans Ende, und der Backfill haelt sich nach einer einzigen
+            # Anfrage fuer fertig. Sechs Jahre Historie werden so zu zehn Tagen,
+            # ohne dass irgendetwas nach einem Fehler aussieht.
+            #
+            # Passt das Fenster dagegen genau eine Seite, sind "die juengsten
+            # 1000" und "alle" dasselbe, und das Blaettern laeuft vorwaerts.
+            page_end = min(end, cursor + interval.duration * self.page_size)
+
             self.rate_limiter.wait()
             candles = self.market.get_klines(
-                symbol, interval, start=cursor, end=end, limit=self.page_size
+                symbol, interval, start=cursor, end=page_end, limit=self.page_size
             )
             progress.requests += 1
             pages += 1
 
             if not candles:
                 progress.pages_empty += 1
+                empty_in_a_row += 1
                 log.info(
                     "backfill.leere_seite",
                     symbol=symbol,
                     interval=interval.label,
                     cursor=cursor.isoformat(),
+                    hintereinander=empty_in_a_row,
                 )
-                break
+                # Ein leeres Fenster ist bei begrenzten Seiten normal - es kann
+                # schlicht eine Handelspause sein. Erst mehrere leere Fenster
+                # hintereinander bedeuten, dass hier nichts mehr kommt.
+                if empty_in_a_row >= MAX_EMPTY_PAGES:
+                    break
+                cursor = page_end
+                progress.cursor = cursor
+                continue
+
+            empty_in_a_row = 0
 
             complete = drop_unfinished(candles, interval, now=self.clock())
             if complete:
@@ -202,11 +233,6 @@ class Backfiller:
 
             if on_progress is not None:
                 on_progress(progress)
-
-            # Weniger als eine volle Seite und keine unfertigen Kerzen entfernt:
-            # wir sind am aktuellen Rand angekommen.
-            if len(candles) < self.page_size and len(complete) == len(candles):
-                break
 
         log.info(
             "backfill.fertig",

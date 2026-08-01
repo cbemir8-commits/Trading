@@ -68,7 +68,17 @@ class FakeMarketData:
             selected = [c for c in selected if c.open_time >= start]
         if end is not None:
             selected = [c for c in selected if c.open_time < end]
-        return selected[:limit]
+
+        # **Die neuesten, nicht die aeltesten.** Genau so verhaelt sich Bybit:
+        # Passt man ein weites Zeitfenster, kommen die juengsten ``limit``
+        # Kerzen daraus zurueck - nicht die ersten.
+        #
+        # Diese Zeile stand frueher als ``selected[:limit]`` hier, und weil das
+        # Double damit freundlicher war als die Wirklichkeit, bestaetigten die
+        # Tests einen Backfill, der live nach einer Seite aufhoerte. Ein
+        # Test-Double, das sich gutmuetiger verhaelt als das Original, prueft
+        # nichts - es beruhigt nur.
+        return selected[-limit:] if limit else selected
 
     def get_ticker(self, symbol: str) -> Ticker:
         last = self.candles[-1].close if self.candles else Decimal("100000")

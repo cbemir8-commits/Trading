@@ -287,6 +287,15 @@ class TestBackfiller:
         assert progress.requests <= 2, "Muss sofort abbrechen, nicht bis zum Limit laufen"
 
     def test_empty_response_ends_run(self, store: CandleStore) -> None:
+        """Nichts da heisst irgendwann aufhoeren - aber nicht sofort.
+
+        Seit die Seiten ein begrenztes Zeitfenster anfragen, ist ein einzelnes
+        leeres Fenster harmlos: Es kann eine Boersenwartung sein, und wer dann
+        abbricht, verliert alles danach. Erst mehrere leere Fenster
+        hintereinander bedeuten, dass nichts mehr kommt.
+        """
+        from data.backfill import MAX_EMPTY_PAGES
+
         market = FakeMarketData([], now=datetime(2026, 1, 1, tzinfo=UTC))
         backfiller = Backfiller(market, store, rate_limiter=RateLimiter(0))
 
@@ -296,7 +305,7 @@ class TestBackfiller:
             start=datetime(2025, 1, 1, tzinfo=UTC),
             end=datetime(2026, 1, 1, tzinfo=UTC),
         )
-        assert progress.requests == 1
+        assert progress.requests == MAX_EMPTY_PAGES
         assert progress.candles_written == 0
 
     def test_run_many_does_coarse_intervals_first(self, store: CandleStore) -> None:
@@ -419,3 +428,66 @@ class TestQuality:
         assert "BTCUSDT" in summary
         assert "15m" in summary
         assert "Vollstaendigkeit" in summary
+
+
+class TestPagingDirection:
+    """Der Fehler, der sechs Jahre Historie zu zehn Tagen gemacht hat.
+
+    Bybit liefert bei einem weiten Zeitfenster die **juengsten** ``limit``
+    Kerzen daraus, nicht die aeltesten. Wer das gesamte Restfenster anfragt,
+    bekommt sofort die Kerzen von heute - der Cursor springt ans Ende, und der
+    Backfill haelt sich nach einer einzigen Anfrage fuer fertig.
+
+    Nichts daran sieht nach einem Fehler aus: Die Tabelle meldet "999 Kerzen,
+    1 Anfrage, fertig".
+    """
+
+    def test_many_pages_are_needed_for_a_long_history(self, store: CandleStore) -> None:
+        candles = make_candles(count=2500, interval=Interval.M15)
+        end = candles[-1].open_time + timedelta(minutes=15)
+        market = FakeMarketData(candles, now=end)
+        backfiller = Backfiller(market, store, rate_limiter=RateLimiter(0), page_size=500)
+
+        progress = backfiller.run(
+            "BTCUSDT", Interval.M15, start=candles[0].open_time, end=end
+        )
+
+        assert progress.requests >= 5, "Nach einer Anfrage fertig - der alte Fehler"
+        assert progress.candles_written == 2500
+
+    def test_each_request_asks_for_at_most_one_page_of_time(
+        self, store: CandleStore
+    ) -> None:
+        """Der Kern der Korrektur.
+
+        Passt das angefragte Fenster genau eine Seite, sind 'die juengsten
+        1000' und 'alle' dasselbe - und das Blaettern laeuft vorwaerts.
+        """
+        candles = make_candles(count=1200, interval=Interval.M15)
+        end = candles[-1].open_time + timedelta(minutes=15)
+        market = FakeMarketData(candles, now=end)
+        backfiller = Backfiller(market, store, rate_limiter=RateLimiter(0), page_size=300)
+
+        backfiller.run("BTCUSDT", Interval.M15, start=candles[0].open_time, end=end)
+
+        for call in market.calls:
+            window = call["end"] - call["start"]
+            assert window <= Interval.M15.duration * 300
+
+    def test_oldest_candle_really_arrives(self, store: CandleStore) -> None:
+        """Die Probe aufs Ganze: Steht die *erste* Kerze am Ende im Speicher?
+
+        Beim alten Verhalten lag dort nur das juengste Stueck - und ein
+        Walk-Forward ueber zehn Tage haette Zahlen geliefert, die niemand
+        angezweifelt haette.
+        """
+        candles = make_candles(count=1500, interval=Interval.M15)
+        end = candles[-1].open_time + timedelta(minutes=15)
+        market = FakeMarketData(candles, now=end)
+        backfiller = Backfiller(market, store, rate_limiter=RateLimiter(0), page_size=400)
+
+        backfiller.run("BTCUSDT", Interval.M15, start=candles[0].open_time, end=end)
+
+        coverage = store.coverage("BTCUSDT", Interval.M15)
+        assert coverage.start == candles[0].open_time
+        assert coverage.rows == 1500
