@@ -552,6 +552,8 @@ def research(
     from decimal import Decimal
     from pathlib import Path
 
+    import pandas as pd
+
     from backtest.engine import BacktestConfig
     from data.bybit.errors import BybitError
     from data.funding import FundingStore, attach_funding
@@ -606,15 +608,20 @@ def research(
             "[dim]Nachladen: python -m cli funding[/]\n"
         )
     else:
-        covered = (
-            funding_frame["time"].iloc[0] <= frame["open_time"].iloc[0]
-        )
-        if not covered:
+        # Nur melden, wenn wirklich etwas fehlt.
+        #
+        # Die erste Zahlung des Tages faellt um 08:00 an, die erste Kerze um
+        # 00:00 - streng genommen sind das acht unbedeckte Stunden, praktisch
+        # ist es nichts. Eine Warnung, die bei jedem Lauf erscheint und nie
+        # etwas bedeutet, bringt einem bei, Warnungen zu ueberlesen.
+        luecke = funding_frame["time"].iloc[0] - frame["open_time"].iloc[0]
+        if luecke > pd.Timedelta(days=7):
             console.print(
                 f"[yellow]Funding-Historie beginnt erst "
                 f"{funding_frame['time'].iloc[0]:%Y-%m-%d}, die Kerzen schon "
-                f"{frame['open_time'].iloc[0]:%Y-%m-%d}.[/] Bis dahin steht "
-                "in der Spalte NaN, und Funding-Kandidaten handeln nicht.\n"
+                f"{frame['open_time'].iloc[0]:%Y-%m-%d} - "
+                f"{luecke.days} Tage ohne Deckung.[/] Dort steht in der Spalte "
+                "NaN, und Funding-Kandidaten handeln nicht.\n"
             )
     frame = attach_funding(frame, funding_frame)
 
