@@ -116,6 +116,7 @@ class LiveTrader:
         self.entry_expiry_bars = entry_expiry_bars
         self.notifier = notifier
         self.journal = journal
+        self.risk_settings = risk_settings
 
         self.router = OrderRouter(
             gateway, instrument, risk_settings, market_kind=market_kind
@@ -414,7 +415,17 @@ class LiveTrader:
         )
 
     def _current_equity(self) -> Decimal:
+        """Kapital, mit dem gerechnet wird - gegebenenfalls gedeckelt.
+
+        Der Deckel ist fuer die Demo gedacht: Bybit haendigt dort gerne 50.000
+        USDT Spielgeld aus. Ohne ihn wuerde die Demo Positionen im
+        hundertfachen Umfang des geplanten Kontos eroeffnen und ausgerechnet
+        die Grenzen nie beruehren, an denen es spaeter scheitern koennte.
+        """
         balance = self.account.get_wallet_balance("USDT")
+        cap = self.risk_settings.equity_cap
+        if cap > 0 and balance.equity > cap:
+            return cap
         return balance.equity
 
     async def _handle_kill_switch(self) -> None:

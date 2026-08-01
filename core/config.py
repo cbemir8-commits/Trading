@@ -117,6 +117,19 @@ class RiskSettings(BaseModel):
     risk_per_trade_pct: Decimal = Field(Decimal("0.75"), gt=0, le=5)
     max_concurrent_positions: int = Field(1, ge=1, le=10)
 
+    equity_cap: Decimal = Field(Decimal(0), ge=0)
+    """Obergrenze fuer das Kapital, mit dem gerechnet wird. 0 = aus.
+
+    Gebaut fuer die Demo-Phase, und dort unverzichtbar: Bybit haendigt im
+    Demo-Konto gerne 50.000 USDT Spielgeld aus. Ohne Deckel wuerde das System
+    dann Positionen im hundertfachen Umfang des geplanten 500-EUR-Kontos
+    eroeffnen - und damit ausgerechnet die Grenzen nie beruehren, an denen es
+    spaeter scheitern koennte: Mindestmenge 0,001 BTC, Schrittweite, der
+    Hebeldeckel.
+
+    Mit ``equity_cap=500`` handelt die Demo exakt so, wie das echte Konto es
+    taete. Nur dann sagt sie etwas ueber das echte Konto aus."""
+
     # --- Hebel ---
     max_leverage: Decimal = Field(Decimal("3"), ge=1, le=25)
     margin_mode: MarginMode = MarginMode.ISOLATED

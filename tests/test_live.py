@@ -891,3 +891,63 @@ def _read_trades(rig: Rig):
     if not path.exists():
         return []
     return [Trade.model_validate(json.loads(line)) for line in path.read_text().splitlines()]
+
+
+class TestEquityCap:
+    """Ohne Deckel sagt die Demo nichts ueber das echte Konto aus.
+
+    Bybit haendigt im Demo-Konto gerne 50.000 USDT aus. Ungedeckelt eroeffnet
+    das System dann Positionen im hundertfachen Umfang - und beruehrt
+    ausgerechnet die Grenzen nie, an denen es spaeter scheitern koennte:
+    Mindestmenge 0,001 BTC, Schrittweite, Hebeldeckel.
+    """
+
+    async def test_demo_play_money_is_capped(
+        self, tmp_path, btcusdt: Instrument, bybit_settings: BybitSettings
+    ) -> None:
+
+        risk = RiskSettings(
+            risk_per_trade_pct=Decimal("0.75"),
+            max_leverage=Decimal("3"),
+            equity_cap=Decimal("500"),
+        )
+        rig = build_rig(
+            tmp_path, btcusdt, risk, bybit_settings,
+            strategy=QueuedStrategy(long_below_market()),
+            equity=Decimal("50000"),  # Spielgeld von Bybit
+        )
+
+        await rig.feed()
+
+        # 0,75 % von 500 = 3,75 riskiert - nicht 0,75 % von 50.000 = 375.
+        assert rig.trader.last_equity == Decimal("500")
+        assert rig.trader.bracket is not None
+        assert rig.trader.bracket.sized.risk_amount < Decimal("4")
+
+    async def test_cap_does_not_inflate_a_smaller_account(
+        self, tmp_path, btcusdt: Instrument, bybit_settings: BybitSettings
+    ) -> None:
+        """Der Deckel deckelt nur - er fuellt nicht auf. Ein Konto mit 300 EUR
+        handelt mit 300, nicht mit 500."""
+        risk = RiskSettings(max_leverage=Decimal("3"), equity_cap=Decimal("500"))
+        rig = build_rig(
+            tmp_path, btcusdt, risk, bybit_settings, equity=Decimal("300")
+        )
+
+        await rig.feed()
+
+        assert rig.trader.last_equity == Decimal("300")
+
+    async def test_no_cap_by_default(
+        self, tmp_path, btcusdt: Instrument, risk: RiskSettings,
+        bybit_settings: BybitSettings,
+    ) -> None:
+        """Im Livebetrieb mit echtem Geld soll nichts gedeckelt werden -
+        dort ist der Kontostand die Wahrheit."""
+        rig = build_rig(
+            tmp_path, btcusdt, risk, bybit_settings, equity=Decimal("50000")
+        )
+
+        await rig.feed()
+
+        assert rig.trader.last_equity == Decimal("50000")
