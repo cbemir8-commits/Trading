@@ -96,6 +96,35 @@ class Report:
         console.print(table)
 
 
+def _clock_fix_hint() -> str:
+    """Wie man die Uhr richtigstellt - auf dem System, auf dem das hier laeuft.
+
+    Ein Linux-Befehl auf einem Windows-Rechner ist schlimmer als kein Hinweis:
+    Er sieht nach einer Loesung aus, fuehrt aber nur zu einer zweiten
+    Fehlermeldung, die mit der ersten nichts zu tun hat.
+    """
+    import platform
+
+    system = platform.system()
+    if system == "Windows":
+        return (
+            "Signierte Anfragen schlagen damit fehl. Windows-Taste druecken, "
+            "'Datum und Uhrzeit' eingeben, oeffnen -> 'Uhrzeit automatisch "
+            "festlegen' einschalten und auf 'Jetzt synchronisieren' klicken. "
+            "Danach diesen Check erneut ausfuehren."
+        )
+    if system == "Darwin":
+        return (
+            "Signierte Anfragen schlagen damit fehl. Systemeinstellungen -> "
+            "Allgemein -> Datum & Uhrzeit -> 'Datum und Uhrzeit automatisch "
+            "einstellen' einschalten."
+        )
+    return (
+        "Signierte Anfragen schlagen damit fehl. Zeitabgleich einschalten: "
+        "'sudo timedatectl set-ntp true'"
+    )
+
+
 def check_config(report: Report, settings: Settings) -> None:
     env = settings.bybit.environment
     level = Level.OK
@@ -154,8 +183,7 @@ def check_reachability(report: Report, market: BybitMarketData) -> bool:
             "Erreichbarkeit",
             Level.FAIL,
             f"Bybit erreichbar, aber Uhrzeit weicht um {drift.total_seconds():.1f} s ab",
-            "Signierte Anfragen werden fehlschlagen. NTP einrichten: "
-            "'sudo timedatectl set-ntp true'",
+            _clock_fix_hint(),
         )
         return False
 

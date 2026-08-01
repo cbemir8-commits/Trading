@@ -120,7 +120,9 @@ class TestReachability:
         assert check_reachability(report, BybitMarketData(settings.bybit)) is False
         check = report.checks[0]
         assert check.level is Level.FAIL
-        assert "NTP" in check.hint
+        # Der Hinweis richtet sich nach dem System, auf dem der Check laeuft -
+        # gemeinsam ist allen, dass sie die Folge benennen.
+        assert "Signierte Anfragen" in check.hint
 
     @respx.mock
     def test_geoblock_gives_actionable_message(self, settings: Settings) -> None:
@@ -362,3 +364,40 @@ class TestReportExitCodes:
         failed.add("a", Level.WARN, "")
         failed.add("b", Level.FAIL, "")
         assert failed.exit_code == 2
+
+
+class TestClockFixHint:
+    """Ein Linux-Befehl auf einem Windows-Rechner ist schlimmer als kein
+    Hinweis: Er sieht nach einer Loesung aus, fuehrt aber nur zu einer zweiten
+    Fehlermeldung, die mit der ersten nichts zu tun hat."""
+
+    def test_windows_gets_the_windows_way(self, monkeypatch) -> None:
+        import platform
+
+        from scripts.healthcheck import _clock_fix_hint
+
+        monkeypatch.setattr(platform, "system", lambda: "Windows")
+        hint = _clock_fix_hint()
+
+        assert "Datum und Uhrzeit" in hint
+        assert "timedatectl" not in hint
+
+    def test_mac_gets_the_mac_way(self, monkeypatch) -> None:
+        import platform
+
+        from scripts.healthcheck import _clock_fix_hint
+
+        monkeypatch.setattr(platform, "system", lambda: "Darwin")
+        hint = _clock_fix_hint()
+
+        assert "Systemeinstellungen" in hint
+        assert "timedatectl" not in hint
+
+    def test_linux_gets_the_linux_way(self, monkeypatch) -> None:
+        import platform
+
+        from scripts.healthcheck import _clock_fix_hint
+
+        monkeypatch.setattr(platform, "system", lambda: "Linux")
+
+        assert "timedatectl" in _clock_fix_hint()
