@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import signal
 from datetime import UTC, datetime
+from pathlib import Path
 
 import structlog
 import typer
@@ -847,6 +848,124 @@ def trade(
             )
 
     asyncio.run(main())
+
+
+@app.command()
+def review(
+    intervall: str = typer.Option("15", "--intervall", "-i"),
+    erwartung: float = typer.Option(
+        None, help="Erwartungswert je Trade in R aus dem Walk-Forward."
+    ),
+) -> None:
+    """Laeuft die Strategie noch? Und wo liegt Spielraum?
+
+    Drei Auswertungen ueber die tatsaechlich gehandelten Trades:
+
+    1. **Verfall** - deckt sich die Live-Erwartung noch mit dem Backtest?
+       Vergleichsgroesse ist R, nicht Euro.
+    2. **Marktphasen** - in welcher Umgebung funktioniert sie, in welcher nicht?
+    3. **Ausstiege** - sagen MAE und MFE, dass Stop oder Ziele falsch sitzen?
+
+    Einmal pro Woche ausfuehren, nicht taeglich. Wer taeglich draufschaut,
+    reagiert auf Rauschen.
+    """
+    from pathlib import Path
+
+    from research.decay import Health, assess_decay, detectable_drop
+    from research.exits import analyse_exits
+    from research.regime import performance_by_regime
+
+    settings = get_settings()
+    trades = _load_live_trades(Path(settings.paths.state))
+
+    if not trades:
+        console.print(
+            "[yellow]Noch keine abgeschlossenen Trades.[/]\n"
+            "[dim]Diese Auswertung wird interessant, sobald der Handel laeuft.[/]"
+        )
+        raise typer.Exit(1)
+
+    console.print(f"\n[bold]Ueberpruefung[/] - {len(trades)} abgeschlossene Trades\n")
+
+    # -- 1. Verfall ----------------------------------------------------------
+    expected = erwartung if erwartung is not None else 0.10
+    report = assess_decay(trades, expected_r=expected)
+    colour = {
+        Health.UNKNOWN: "dim",
+        Health.HEALTHY: "green",
+        Health.WATCH: "yellow",
+        Health.DEGRADED: "red",
+        Health.DEAD: "red",
+    }[report.health]
+    console.print(f"[bold]Zustand[/]  [{colour}]{report.health.value}[/]")
+    console.print(f"[dim]{report.detail}[/]\n")
+
+    if report.health is not Health.UNKNOWN:
+        from research.decay import _stdev, r_multiples
+
+        spread = _stdev(r_multiples(trades)) or 1.0
+        share = detectable_drop(len(trades), spread, expected)
+        console.print(
+            f"[dim]Erkennbar waere derzeit erst ein Rueckgang um "
+            f"{share:.0%} des Erwartungswerts. "
+            f"{'Bei dieser Zahl Trades laesst sich wenig ausschliessen.' if share > 0.8 else ''}[/]\n"
+        )
+
+    # -- 2. Marktphasen ------------------------------------------------------
+    store = CandleStore(settings.paths.data_store)
+    frame = store.read(settings.bybit.symbol, Interval(intervall))
+    if not frame.empty:
+        table = Table(title="Nach Marktphase", header_style="bold")
+        table.add_column("Phase")
+        table.add_column("Trades", justify="right")
+        table.add_column("R/Trade", justify="right")
+        table.add_column("Treffer", justify="right")
+        table.add_column("Urteil")
+        for regime, performance in performance_by_regime(trades, frame).items():
+            if performance.trades == 0:
+                continue
+            style = "green" if performance.is_competent else "red"
+            verdict = "zustaendig" if performance.is_competent else "nicht zustaendig"
+            table.add_row(
+                regime.value,
+                str(performance.trades),
+                f"{performance.expectancy_r:+.3f}",
+                f"{performance.win_rate:.0%}",
+                f"[{style}]{verdict}[/]",
+            )
+        console.print(table)
+
+    # -- 3. Ausstiege --------------------------------------------------------
+    analysis = analyse_exits(trades)
+    console.print(f"\n[bold]Ausstiege[/]\n[dim]{analysis.describe()}[/]\n")
+    for suggestion in analysis.suggestions:
+        console.print(f"  - {suggestion}\n")
+
+    if report.should_retire:
+        console.print(
+            "[red]Empfehlung: Champion absetzen.[/] "
+            "Die Live-Ergebnisse decken sich nicht mehr mit dem Backtest."
+        )
+        raise typer.Exit(2)
+
+
+def _load_live_trades(state: Path):
+    """Abgeschlossene Trades aus dem Betriebsjournal lesen."""
+    import json
+
+    from core.models import Trade
+
+    file = state / "trades.jsonl"
+    if not file.exists():
+        return []
+
+    trades = []
+    for line in file.read_text().splitlines():
+        try:
+            trades.append(Trade.model_validate(json.loads(line)))
+        except (json.JSONDecodeError, ValueError):
+            continue  # abgeschnittene letzte Zeile ist normal
+    return trades
 
 
 @app.command()

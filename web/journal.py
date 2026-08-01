@@ -150,6 +150,19 @@ class LiveJournal:
         except OSError as exc:  # Protokollpflege darf nie den Handel stoeren
             log.warning("journal.kuerzen_fehlgeschlagen", fehler=str(exc))
 
+    # -- Abgeschlossene Trades -----------------------------------------------
+    def record_trade(self, trade) -> None:
+        """Einen abgeschlossenen Trade festhalten.
+
+        Getrennt vom Ereignisstrom, weil diese Datei etwas anderes ist: Der
+        Ereignisstrom wird gekuerzt, wenn er zu lang wird - die Trades **nie**.
+        Sie sind die Grundlage jeder spaeteren Auswertung, und die wird mit
+        jedem Monat wertvoller statt weniger wert.
+        """
+        path = self.directory / "trades.jsonl"
+        with path.open("a") as handle:
+            handle.write(trade.model_dump_json() + "\n")
+
     # -- Rueckkanal ----------------------------------------------------------
     def take_command(self) -> Command | None:
         """Einen wartenden Befehl abholen - und dabei entfernen.

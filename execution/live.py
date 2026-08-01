@@ -39,7 +39,7 @@ import pandas as pd
 import structlog
 
 from core.config import BybitSettings, RiskSettings
-from core.models import Candle, Instrument, Interval, Position
+from core.models import Candle, Instrument, Interval, Position, Side, Trade
 from data.bybit.adapter import AccountSource, MarketDataSource
 from data.bybit.trading import TradingGateway
 from data.bybit.ws import KlineStream
@@ -123,6 +123,9 @@ class LiveTrader:
         self.stats = LiveStats()
         self.bracket: Bracket | None = None
         self.last_equity: Decimal = Decimal(0)
+        self.equity_at_entry: Decimal = Decimal(0)
+        self._mae: Decimal = Decimal(0)
+        self._mfe: Decimal = Decimal(0)
         self._frame: pd.DataFrame = pd.DataFrame()
         self._bars_since_entry_placed = 0
         self._stream: KlineStream | None = None
@@ -263,6 +266,7 @@ class LiveTrader:
             self._publish(assessment)
             return
 
+        self._track_excursion(candle)
         await self._manage_open_position()
 
         # **Nur wenn gar kein Bracket offen ist.** Ein Bracket im Zustand
@@ -452,10 +456,16 @@ class LiveTrader:
 
         position = self._first_position()
         if position is None:
+            self._record_trade(
+                exit_price=self.bracket.stop_price or self.bracket.entry_price or Decimal(0),
+                reason=f"{self.bracket.targets_hit} Ziele erreicht",
+            )
             self._report(
                 EventKind.EXIT,
-                f"Position geschlossen nach {self.bracket.targets_hit} Zielen.",
+                f"Position geschlossen nach {self.bracket.targets_hit} Zielen. "
+                f"Ergebnis {self.last_equity - self.equity_at_entry:+.2f}",
                 targets_hit=self.bracket.targets_hit,
+                pnl=self.last_equity - self.equity_at_entry,
                 equity=self.last_equity,
             )
             await self._notify(
@@ -481,6 +491,73 @@ class LiveTrader:
                 f"Ziel {self.bracket.targets_hit} erreicht ({filled} verkauft). "
                 f"Stop steht bei {self.bracket.stop_price}."
             )
+
+    def _track_excursion(self, candle: Candle) -> None:
+        """Groessten Gegen- und Vorlauf mitschreiben, solange die Position lebt.
+
+        MAE und MFE sind die beiden Zahlen, aus denen sich spaeter ablesen
+        laesst, ob Stop und Ziele richtig sitzen - siehe research/exits.py.
+        Sie lassen sich **nur waehrend** des Trades erheben; im Nachhinein sind
+        sie aus der Ausfuehrungshistorie nicht mehr rekonstruierbar.
+        """
+        bracket = self.bracket
+        if bracket is None or not bracket.is_open or bracket.entry_price is None:
+            return
+
+        entry = bracket.entry_price
+        qty = bracket.filled_qty
+        if bracket.signal.side is Side.BUY:
+            adverse = (entry - candle.low) * qty
+            favourable = (candle.high - entry) * qty
+        else:
+            adverse = (candle.high - entry) * qty
+            favourable = (entry - candle.low) * qty
+
+        self._mae = max(self._mae, max(Decimal(0), adverse))
+        self._mfe = max(self._mfe, max(Decimal(0), favourable))
+
+    def _record_trade(self, exit_price: Decimal, reason: str) -> None:
+        """Den abgeschlossenen Trade festhalten.
+
+        Grundlage fuer die woechentliche Ueberpruefung (``cli review``): Verfall,
+        Marktphasen, Ausstiegsqualitaet. Ohne diese Zeilen gibt es spaeter
+        nichts auszuwerten ausser dem Kontostand - und der sagt nicht, *warum*
+        etwas nicht mehr funktioniert.
+
+        Das Ergebnis wird aus der **Kapitaldifferenz** bestimmt, nicht aus
+        Preisen: Darin stecken Gebuehren und Funding bereits drin, ohne dass
+        wir sie einzeln nachschlagen muessen.
+        """
+        bracket = self.bracket
+        if bracket is None or bracket.entry_price is None or self.journal is None:
+            return
+
+        net = self.last_equity - self.equity_at_entry
+        trade = Trade(
+            trade_id=f"{bracket.signal.strategy_id}-{bracket.opened_at:%Y%m%d%H%M%S}"
+            if bracket.opened_at
+            else f"{bracket.signal.strategy_id}-{datetime.now(UTC):%Y%m%d%H%M%S}",
+            symbol=self.instrument.symbol,
+            side=bracket.signal.side,
+            strategy_id=self.strategy.strategy_id,
+            entry_time=bracket.opened_at or datetime.now(UTC),
+            entry_price=bracket.entry_price,
+            exit_time=datetime.now(UTC),
+            exit_price=exit_price,
+            qty=bracket.filled_qty,
+            gross_pnl=net,
+            fees=Decimal(0),  # bereits in der Kapitaldifferenz enthalten
+            stop_loss=bracket.signal.stop_loss,
+            exit_reason=reason,
+            leverage=bracket.sized.leverage,
+            max_adverse_excursion=self._mae,
+            max_favourable_excursion=self._mfe,
+        )
+        with contextlib.suppress(Exception):
+            self.journal.record_trade(trade)
+
+        self._mae = Decimal(0)
+        self._mfe = Decimal(0)
 
     def _first_position(self) -> Position | None:
         positions = self.account.get_positions(self.instrument.symbol)
@@ -537,6 +614,9 @@ class LiveTrader:
 
         self.stats.entries_filled += 1
         self._bars_since_entry_placed = 0
+        self.equity_at_entry = self.last_equity
+        self._mae = Decimal(0)
+        self._mfe = Decimal(0)
         self._report(
             EventKind.ENTRY,
             f"Einstieg {self.bracket.signal.side.value} {position.size} @ "

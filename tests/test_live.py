@@ -822,3 +822,72 @@ class TestRemoteControl:
 
         assert rig.entry_orders == []
         assert rig.strategy.calls == 0
+
+
+class TestTradeRecording:
+    """Ohne diese Zeilen gibt es spaeter nichts auszuwerten ausser dem
+    Kontostand - und der sagt nicht, *warum* etwas nicht mehr funktioniert."""
+
+    async def test_closed_trade_is_written(self, rig: Rig) -> None:
+        await _open_protected(rig)
+        rig.account.set_equity(Decimal("512"))  # Trade lief ins Plus
+        rig.exchange.position = None
+
+        await rig.feed()
+
+        trades = _read_trades(rig)
+        assert len(trades) == 1
+        assert trades[0].strategy_id == "queued"
+        assert trades[0].net_pnl > 0
+
+    async def test_result_comes_from_the_equity_change(self, rig: Rig) -> None:
+        """Gebuehren und Funding stecken in der Kapitaldifferenz bereits drin.
+        Aus Preisen gerechnet muesste man sie einzeln nachschlagen - und jede
+        vergessene Position machte das Ergebnis zu optimistisch."""
+        await _open_protected(rig)
+        entry_equity = rig.trader.equity_at_entry
+        rig.account.set_equity(entry_equity - Decimal("4.05"))  # Stop mit Gebuehren
+        rig.exchange.position = None
+
+        await rig.feed()
+
+        assert _read_trades(rig)[0].net_pnl == Decimal("-4.05")
+
+    async def test_excursions_are_tracked_while_the_position_lives(
+        self, rig: Rig
+    ) -> None:
+        """MAE und MFE lassen sich nur waehrend des Trades erheben - im
+        Nachhinein sind sie aus der Ausfuehrungshistorie nicht mehr
+        rekonstruierbar. Aus ihnen leitet sich spaeter ab, ob Stop und Ziele
+        richtig sitzen."""
+        await _open_protected(rig)
+
+        await rig.feed(close=Decimal("101000"))  # laeuft davon
+        await rig.feed(close=Decimal("99000"))  # kommt zurueck
+        rig.exchange.position = None
+        await rig.feed()
+
+        trade = _read_trades(rig)[0]
+        assert trade.max_favourable_excursion > 0
+        assert trade.max_adverse_excursion > 0
+
+    async def test_excursions_reset_between_trades(self, rig: Rig) -> None:
+        """Sonst schleppt der zweite Trade die Ausschlaege des ersten mit."""
+        await _open_protected(rig)
+        await rig.feed(close=Decimal("103000"))
+        rig.exchange.position = None
+        await rig.feed()
+
+        assert rig.trader._mfe == Decimal(0)
+        assert rig.trader._mae == Decimal(0)
+
+
+def _read_trades(rig: Rig):
+    import json
+
+    from core.models import Trade
+
+    path = rig.state_dir / "trades.jsonl"
+    if not path.exists():
+        return []
+    return [Trade.model_validate(json.loads(line)) for line in path.read_text().splitlines()]
