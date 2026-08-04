@@ -396,6 +396,162 @@ def body_pct(frame: pd.DataFrame) -> np.ndarray:
     offen = frame["open"].astype("float64")
     return ((close - offen) / close * 100.0).to_numpy(dtype=np.float64)
 
+
+# ---------------------------------------------------------------------------
+#  Smart-Money-Bausteine: Abfolgen statt Momentaufnahmen
+# ---------------------------------------------------------------------------
+#
+# Die bisherigen Indikatoren beschreiben alle **einen Balken**. Das reicht fuer
+# "ueberverkauft" oder "ueber dem Durchschnitt", aber nicht fuer das Modell,
+# das hinter ICT und den daraus abgeleiteten Ansaetzen steht. Dort ist das
+# Signal eine **Abfolge**:
+#
+#     1. Liquiditaet abgeraeumt  - Kurs sticht unter ein Tief und schliesst
+#                                  wieder darueber
+#     2. Struktur gebrochen      - danach ein Impuls ueber das letzte Hoch
+#     3. Rueckkehr in die Luecke - Einstieg dort, wo der Impuls eine
+#                                  Preisluecke hinterlassen hat
+#
+# Eine Bedingung auf einem einzelnen Balken kann so etwas nicht ausdruecken.
+# Deshalb geben die folgenden Indikatoren **Abstaende in Balken** zurueck: "wie
+# lange ist das her". Damit laesst sich eine Reihenfolge als gewoehnliche
+# Bedingung schreiben - "Sweep vor hoechstens 10 Balken und Bruch vor
+# hoechstens 5".
+#
+# Alle rechnen ausschliesslich rueckwaerts. Ein Indikator, der wuesste, dass
+# ein Bruch noch kommt, waere die bequemste Art, sich selbst zu betruegen.
+
+#: Ersatzwert fuer "ist noch nie passiert". Bewusst gross statt NaN: Eine
+#: Bedingung "vor hoechstens 10 Balken" soll dann schlicht falsch sein, nicht
+#: den ganzen Balken unbrauchbar machen.
+NIE = 9999.0
+
+
+def _bars_since(events: np.ndarray) -> np.ndarray:
+    """Zu jedem Balken: wie viele Balken seit dem letzten ``True``.
+
+    Der aktuelle Balken zaehlt als 0. Ohne vorheriges Ereignis ``NIE``.
+    """
+    index = np.arange(len(events), dtype=np.float64)
+    letzte = np.where(events, index, np.nan)
+    letzte = pd.Series(letzte).ffill().to_numpy()
+    abstand = index - letzte
+    return np.where(np.isnan(letzte), NIE, abstand)
+
+
+def fvg_up_pct(frame: pd.DataFrame) -> np.ndarray:
+    """Groesse einer aufwaertsgerichteten Preisluecke, in Prozent.
+
+    Die Luecke entsteht ueber drei Balken: Bewegt sich der mittlere so
+    kraftvoll nach oben, dass das Tief des dritten ueber dem Hoch des ersten
+    liegt, wurde ein Preisbereich uebersprungen - dort hat schlicht kein
+    Handel stattgefunden.
+
+    Null, wenn keine Luecke da ist. Kein NaN: "keine Luecke" ist eine Aussage,
+    kein fehlender Wert.
+    """
+    hoch = frame["high"].astype("float64").to_numpy()
+    tief = frame["low"].astype("float64").to_numpy()
+    close = frame["close"].astype("float64").to_numpy()
+
+    luecke = np.full(len(close), 0.0)
+    if len(close) > 2:
+        luecke[2:] = np.maximum(0.0, tief[2:] - hoch[:-2])
+    return luecke / close * 100.0
+
+
+def fvg_down_pct(frame: pd.DataFrame) -> np.ndarray:
+    """Groesse einer abwaertsgerichteten Preisluecke, in Prozent."""
+    hoch = frame["high"].astype("float64").to_numpy()
+    tief = frame["low"].astype("float64").to_numpy()
+    close = frame["close"].astype("float64").to_numpy()
+
+    luecke = np.full(len(close), 0.0)
+    if len(close) > 2:
+        luecke[2:] = np.maximum(0.0, tief[:-2] - hoch[2:])
+    return luecke / close * 100.0
+
+
+def fvg_up_level(frame: pd.DataFrame, lookback: int = 20) -> np.ndarray:
+    """Untere Kante der juengsten Aufwaerts-Luecke, als Preis.
+
+    Vergleichbar mit ``low``: Faellt der Kurs auf dieses Niveau zurueck, ist er
+    in der Luecke - der Einstiegspunkt des Modells. Aelter als ``lookback``
+    Balken gilt die Luecke als verbraucht und wird nicht mehr angeboten.
+    """
+    luecke = fvg_up_pct(frame) > 0
+    tief = frame["low"].astype("float64").to_numpy()
+
+    stufen = np.where(luecke, tief, np.nan)
+    aktuell = pd.Series(stufen).ffill().to_numpy()
+    alter = _bars_since(luecke)
+    return np.where(alter <= lookback, aktuell, np.nan)
+
+
+def bars_since_sweep_low(frame: pd.DataFrame, period: int = 20) -> np.ndarray:
+    """Wie lange ist der letzte Abgriff unter ein Tief her?
+
+    Abgriff heisst: Das Tief des Balkens lag unter dem Tief der vorangegangenen
+    N Balken, der Schlusskurs aber wieder darueber. Wer dort verkauft hat, ist
+    ausgestoppt worden und der Kurs ist trotzdem zurueckgekommen.
+    """
+    tief = frame["low"].astype("float64").to_numpy()
+    close = frame["close"].astype("float64").to_numpy()
+    marke = swing_low(frame, period)
+
+    ereignis = (tief < marke) & (close > marke) & ~np.isnan(marke)
+    return _bars_since(ereignis)
+
+
+def bars_since_sweep_high(frame: pd.DataFrame, period: int = 20) -> np.ndarray:
+    """Dasselbe nach oben."""
+    hoch = frame["high"].astype("float64").to_numpy()
+    close = frame["close"].astype("float64").to_numpy()
+    marke = swing_high(frame, period)
+
+    ereignis = (hoch > marke) & (close < marke) & ~np.isnan(marke)
+    return _bars_since(ereignis)
+
+
+def bars_since_bos_up(frame: pd.DataFrame, period: int = 10) -> np.ndarray:
+    """Wie lange ist der letzte Bruch der Struktur nach oben her?
+
+    Bruch heisst hier: Der Schlusskurs liegt ueber dem hoechsten Hoch der
+    vorangegangenen N Balken. Kein Docht, sondern ein Schlusskurs - ein kurz
+    ueberschossenes Hoch ist genau das Gegenteil eines Bruchs, naemlich ein
+    Abgriff.
+    """
+    close = frame["close"].astype("float64").to_numpy()
+    marke = swing_high(frame, period)
+    return _bars_since((close > marke) & ~np.isnan(marke))
+
+
+def bars_since_bos_down(frame: pd.DataFrame, period: int = 10) -> np.ndarray:
+    """Bruch der Struktur nach unten."""
+    close = frame["close"].astype("float64").to_numpy()
+    marke = swing_low(frame, period)
+    return _bars_since((close < marke) & ~np.isnan(marke))
+
+
+def body_atr_ratio(frame: pd.DataFrame, period: int = 14) -> np.ndarray:
+    """Kerzenkoerper im Verhaeltnis zur durchschnittlichen Spanne.
+
+    Warum nicht einfach der Koerper in Prozent: Eine feste Schwelle wie
+    "groesser als 0,5 %" bedeutet in ruhigen Wochen "kommt praktisch nie vor"
+    und in bewegten "jede dritte Kerze". Sie misst dann die Volatilitaet und
+    nicht das, was gemeint war.
+
+    Das Verhaeltnis zur ATR ist von der Phase unabhaengig: 1,5 heisst
+    "anderthalb mal die uebliche Spanne dieser Tage" - in jeder Marktlage
+    dasselbe. Genau das ist mit "auffaellig grosse Kerze" gemeint.
+
+    Der Fehler ist beim Pruefen aufgefallen: Der Kandidat mit fester
+    0,5-%-Schwelle loeste auf 5.000 Kerzen genau einmal aus.
+    """
+    koerper = body_pct(frame)
+    spanne = atr_pct(frame, period)
+    return koerper / np.where(spanne > 0, spanne, np.nan)
+
 #: Die Whitelist. Nur was hier steht, darf die Research-KI verwenden.
 # ---------------------------------------------------------------------------
 #  Funding - die einzigen Eingangsdaten hier, die keine Kursbewegung sind
@@ -463,6 +619,27 @@ REGISTRY: dict[str, tuple[Callable[..., np.ndarray], IndicatorSpec]] = {
         "funding_zscore",
         "Wie ungewoehnlich die Funding-Rate im eigenen Verlauf ist",
         {"period": (20, 400)})),
+    "fvg_up_pct": (fvg_up_pct, IndicatorSpec(
+        "fvg_up_pct", "Groesse einer Aufwaerts-Preisluecke in Prozent (0 = keine)",
+        {})),
+    "fvg_down_pct": (fvg_down_pct, IndicatorSpec(
+        "fvg_down_pct", "Groesse einer Abwaerts-Preisluecke in Prozent",
+        {})),
+    "fvg_up_level": (fvg_up_level, IndicatorSpec(
+        "fvg_up_level", "Untere Kante der juengsten Aufwaerts-Luecke, als Preis",
+        {"lookback": (3, 100)})),
+    "bars_since_sweep_low": (bars_since_sweep_low, IndicatorSpec(
+        "bars_since_sweep_low", "Balken seit dem letzten Abgriff unter ein Tief",
+        {"period": (5, 100)})),
+    "bars_since_sweep_high": (bars_since_sweep_high, IndicatorSpec(
+        "bars_since_sweep_high", "Balken seit dem letzten Abgriff ueber ein Hoch",
+        {"period": (5, 100)})),
+    "bars_since_bos_up": (bars_since_bos_up, IndicatorSpec(
+        "bars_since_bos_up", "Balken seit dem letzten Strukturbruch nach oben",
+        {"period": (3, 100)})),
+    "bars_since_bos_down": (bars_since_bos_down, IndicatorSpec(
+        "bars_since_bos_down", "Balken seit dem letzten Strukturbruch nach unten",
+        {"period": (3, 100)})),
     "vwap_distance_pct": (vwap_distance_pct, IndicatorSpec(
         "vwap_distance_pct",
         "Abstand zum volumengewichteten Durchschnittspreis in Prozent",
@@ -488,6 +665,10 @@ REGISTRY: dict[str, tuple[Callable[..., np.ndarray], IndicatorSpec]] = {
     "wick_above_pct": (wick_above_pct, IndicatorSpec(
         "wick_above_pct", "Oberer Docht in Prozent",
         {})),
+    "body_atr_ratio": (body_atr_ratio, IndicatorSpec(
+        "body_atr_ratio",
+        "Kerzenkoerper im Verhaeltnis zur ATR - phasenunabhaengig",
+        {"period": (5, 50)})),
     "body_pct": (body_pct, IndicatorSpec(
         "body_pct", "Kerzenkoerper in Prozent des Kurses, mit Vorzeichen",
         {})),

@@ -369,3 +369,157 @@ class TestHistorienSchranke:
 
         assert result.exit_code == 2
         assert "Tage Historie" in result.output
+
+
+# ---------------------------------------------------------------------------
+#  Die Bausteine des Abfolge-Modells
+# ---------------------------------------------------------------------------
+class TestAbfolgeBausteine:
+    """Ein von Hand gebauter Fall, in dem jedes Ereignis an bekannter Stelle sitzt.
+
+    Auf zufaelligen Testkerzen kommen Preisluecken kaum vor - ein Test darauf
+    wuerde gruen sein, ohne etwas geprueft zu haben. Deshalb steht hier eine
+    Reihe, in der Luecke, Abgriff und Strukturbruch bewusst platziert sind.
+    """
+
+    @staticmethod
+    def _reihe():
+        import pandas as pd
+
+        zeilen = [
+            (100.0, 101.0, 99.0, 100.0),
+            (100.0, 101.0, 99.0, 100.0),
+            (100.0, 102.0, 99.5, 101.5),
+            (102.0, 106.0, 101.5, 105.5),   # Luecke: 101.5 ueber Hoch 101.0
+            (105.0, 106.0, 104.0, 105.0),
+            (105.0, 106.0, 104.0, 105.0),
+            (104.0, 105.0, 98.0, 104.5),    # Abgriff unter das Tief
+            (104.0, 108.0, 104.0, 107.5),   # Bruch nach oben
+        ]
+        frame = pd.DataFrame(zeilen, columns=["open", "high", "low", "close"])
+        frame["volume"] = 100.0
+        frame["open_time"] = pd.date_range(
+            "2026-01-01", periods=len(frame), freq="15min", tz="UTC"
+        )
+        return frame
+
+    def test_preisluecke_wird_erkannt(self) -> None:
+        from strategy.indicators import fvg_up_pct
+
+        werte = fvg_up_pct(self._reihe())
+
+        # 101.5 - 101.0 = 0.5 auf einen Schluss von 105.5
+        assert werte[3] == pytest.approx(0.5 / 105.5 * 100, rel=1e-6)
+        assert werte[0] == 0.0
+        assert werte[2] == 0.0
+
+    def test_luecke_hat_ein_ablaufdatum(self) -> None:
+        """Eine Luecke von vor hundert Balken ist kein Einstiegsniveau mehr."""
+        import numpy as np
+
+        from strategy.indicators import fvg_up_level
+
+        frisch = fvg_up_level(self._reihe(), lookback=10)
+        # Die juengste Luecke liegt bei Index 4, der letzte Balken ist 7 -
+        # also drei Balken her. Bei lookback=2 ist sie damit abgelaufen.
+        alt = fvg_up_level(self._reihe(), lookback=2)
+
+        assert frisch[3] == pytest.approx(101.5)
+        assert np.isnan(alt[-1]), "Nach Ablauf darf kein Niveau mehr kommen"
+
+    def test_abgriff_braucht_den_rueckschluss(self) -> None:
+        """Unter das Tief **und** wieder darueber schliessen.
+
+        Ohne den Rueckschluss ist es kein Abgriff, sondern schlicht ein Bruch
+        nach unten - das Gegenteil dessen, was das Modell meint.
+        """
+        from strategy.indicators import bars_since_sweep_low
+
+        werte = bars_since_sweep_low(self._reihe(), period=4)
+
+        assert werte[6] == 0.0, "Balken 6 ist der Abgriff"
+        assert werte[7] == 1.0
+        assert werte[5] > 1000, "Davor gab es keinen"
+
+    def test_strukturbruch_zaehlt_nur_schlusskurse(self) -> None:
+        """Ein kurz ueberschossenes Hoch ist ein Abgriff, kein Bruch.
+
+        Wuerde hier das Hoch statt des Schlusskurses zaehlen, waeren beide
+        Ereignisse dasselbe - und das Modell haette keinen Inhalt mehr.
+        """
+        from strategy.indicators import bars_since_bos_up
+
+        werte = bars_since_bos_up(self._reihe(), period=3)
+
+        assert werte[7] == 0.0
+        assert werte[0] > 1000
+
+    def test_koerper_wird_an_der_atr_gemessen(self) -> None:
+        """Eine feste Prozentschwelle misst die Volatilitaet, nicht die Kerze.
+
+        Beim Pruefen loeste der Kandidat mit fester 0,5-%-Schwelle auf 5.000
+        Kerzen genau einmal aus. Dasselbe Verhaeltnis zur ATR ist von der
+        Marktphase unabhaengig.
+        """
+        import numpy as np
+        import pandas as pd
+
+        from strategy.indicators import body_atr_ratio
+
+        def reihe(spanne: float) -> pd.DataFrame:
+            n = 200
+            close = np.full(n, 100.0)
+            close[-1] = 100.0 + spanne
+            offen = np.full(n, 100.0)
+            frame = pd.DataFrame(
+                {
+                    "open": offen,
+                    "high": np.maximum(offen, close) + spanne * 0.1,
+                    "low": np.minimum(offen, close) - spanne * 0.1,
+                    "close": close,
+                    "volume": np.full(n, 100.0),
+                }
+            )
+            frame["high"] = frame[["high", "close"]].max(axis=1)
+            frame["low"] = frame[["low", "close"]].min(axis=1)
+            frame["open_time"] = pd.date_range(
+                "2026-01-01", periods=n, freq="15min", tz="UTC"
+            )
+            return frame
+
+        ruhig = body_atr_ratio(reihe(0.5), period=14)[-1]
+        bewegt = body_atr_ratio(reihe(5.0), period=14)[-1]
+
+        # Beide Male ist die letzte Kerze gleich auffaellig im Verhaeltnis zu
+        # ihrer Umgebung - das Verhaeltnis muss das zeigen, die Prozentzahl
+        # wuerde sich verzehnfachen.
+        assert bewegt == pytest.approx(ruhig, rel=0.05)
+
+
+class TestGeneration8:
+    def test_alle_kandidaten_kompilieren(self) -> None:
+        for genome in load_seeds(8):
+            assert compile_genome(genome).warmup_bars > 0
+
+    def test_die_short_seite_ist_vertreten(self) -> None:
+        """Von 24 frueher geprueften Regeln waren 23 long.
+
+        Ueber den geprueften Zeitraum ist BTC gestiegen; eine Long-Regel kann
+        allein davon leben. Ohne Gegenproben nach unten laesst sich nicht
+        trennen, was Mechanismus war und was Trend.
+        """
+        shorts = [g for g in load_seeds(8) if g.entry_short]
+
+        assert len(shorts) >= 4, "Zu wenige Gegenproben nach unten"
+
+    def test_das_modell_liegt_zerlegt_vor(self) -> None:
+        """Vollstaendig, ohne Luecke, ohne Bruch.
+
+        Nur so laesst sich sagen, ob die Reihenfolge etwas beitraegt oder ob
+        einer der Bestandteile allein die Arbeit macht.
+        """
+        namen = {g.name for g in load_seeds(8)}
+
+        assert "Abfolge-Modell (Abgriff, Bruch, Rueckkehr)" in namen
+        assert "Abfolge ohne Luecke" in namen
+        assert "Abfolge ohne Strukturbruch" in namen

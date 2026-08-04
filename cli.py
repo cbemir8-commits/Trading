@@ -425,7 +425,8 @@ def funding(
 def wettbewerb(
     intervall: str = typer.Option("15", "--intervall", "-i", help="Handelsintervall."),
     generation: int = typer.Option(
-        7, "--generation", "-g", help="Startkatalog. 7 = Scalp-Setups."
+        8, "--generation", "-g",
+        help="Startkatalog. 7 = Scalp-Setups, 8 = Abfolge-Modell und Short-Seite."
     ),
     runden: int = typer.Option(
         0, help="Anzahl Runden. 0 = Dauerlauf bis Strg-C oder bis einer besteht."

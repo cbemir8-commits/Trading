@@ -1323,15 +1323,16 @@ def displacement_candle() -> Genome:
     return Genome(
         name="Grosse Kerze mit Volumen",
         rationale=(
-            "Long, wenn der Kerzenkoerper groesser als 0,5 % ist und das "
-            "Volumen mehr als zwei Standardabweichungen ueber dem Schnitt "
-            "liegt. Hypothese: Wer mit Groesse kauft, ist nach einer Kerze "
+            "Long, wenn der Kerzenkoerper mehr als das 1,5-fache der ATR "
+            "betraegt und das Volumen mehr als zwei Standardabweichungen ueber "
+            "dem Schnitt liegt. Hypothese: Wer mit Groesse kauft, ist nach einer Kerze "
             "nicht fertig. Ziel 1,5:1."
         ),
         entry_long=[
-            Condition(left=_ind("body_pct"), op=Operator.GT, right=_const(0.5)),
+            Condition(left=_ind("body_atr_ratio", period=14), op=Operator.GT,
+                      right=_const(1.5)),
             Condition(left=_ind("volume_zscore", period=50), op=Operator.GT,
-                      right=_const(2.0)),
+                      right=_const(1.5)),
         ],
         stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
         targets=[TargetSpec(rr=1.5, portion=1.0)],
@@ -1519,6 +1520,312 @@ GENERATION_7 = [
 ]
 
 
+# ===========================================================================
+#  Achte Generation - das Abfolge-Modell, und die Short-Seite
+# ===========================================================================
+#
+# Die siebte Generation hatte den Abgriff, aber nur als Momentaufnahme. Das
+# eigentliche Modell hinter ICT und den daraus abgeleiteten Ansaetzen ist eine
+# **Abfolge ueber mehrere Balken**:
+#
+#     1. Abgriff        - Kurs sticht unter ein Tief, schliesst wieder darueber
+#     2. Strukturbruch  - danach ein Schlusskurs ueber dem letzten Hoch
+#     3. Rueckkehr      - Einstieg dort, wo der Impuls eine Luecke hinterliess
+#
+# Erst alle drei zusammen sind das Modell. Nur der Abgriff ist ein Docht, nur
+# der Bruch ist ein Ausbruch - beides haben wir schon geprueft und beides hat
+# nichts getragen. Ob die Reihenfolge etwas hinzufuegt, ist die Frage dieser
+# Generation, und sie ist zum ersten Mal ueberhaupt stellbar.
+#
+# ZERLEGT STATT AM STUECK
+# -----------------------
+# Deshalb laeuft das Modell hier in drei Fassungen: vollstaendig, ohne die
+# Luecke, und ohne den Strukturbruch. Wenn die vollstaendige nicht besser
+# abschneidet als ihre Teile, dann traegt die Reihenfolge nichts bei - und das
+# ist eine Aussage, die man sonst nie bekommt.
+#
+# DIE SHORT-SEITE
+# ---------------
+# Von 24 bisher geprueften Kandidaten waren 23 long. Das ist ein blinder Fleck:
+# Ueber 2020 bis 2026 ist BTC gestiegen, und eine Long-Regel kann allein davon
+# leben, ohne irgendetwas zu erkennen. Erst die Gegenprobe nach unten zeigt, ob
+# eine Regel einen Mechanismus trifft oder den Trend.
+
+
+def sequenz_modell_long() -> Genome:
+    """Abgriff, Strukturbruch, Rueckkehr in die Luecke - das ganze Modell.
+
+    Hypothese: Erst die Reihenfolge macht das Signal. Ein Abgriff allein ist
+    ein Docht; ein Bruch allein ein Ausbruch. Zusammen beschreiben sie, dass
+    Verkaeufer ausgestoppt wurden **und** die Gegenseite danach die Kontrolle
+    uebernommen hat - und die Luecke markiert den Preis, zu dem sie es tat.
+
+    Der Stop liegt weit genug, um unter dem Abgriffsdocht zu sitzen; genau
+    dort ist die Idee widerlegt, wenn er faellt.
+    """
+    return Genome(
+        name="Abfolge-Modell (Abgriff, Bruch, Rueckkehr)",
+        rationale=(
+            "Long, wenn innerhalb der letzten 12 Balken ein Abgriff unter das "
+            "20-Perioden-Tief stattfand, danach innerhalb von 6 Balken ein "
+            "Schlusskurs ueber dem 10-Perioden-Hoch lag, und der Kurs jetzt in "
+            "die dabei entstandene Preisluecke zurueckfaellt. Hypothese: Erst "
+            "die Reihenfolge macht das Signal - Abgriff und Bruch einzeln haben "
+            "wir schon widerlegt."
+        ),
+        entry_long=[
+            Condition(left=_price("low"), op=Operator.LTE,
+                      right=_ind("fvg_up_level", lookback=20)),
+        ],
+        filters=[
+            Condition(left=_ind("bars_since_sweep_low", period=20), op=Operator.LTE,
+                      right=_const(12.0)),
+            Condition(left=_ind("bars_since_bos_up", period=10), op=Operator.LTE,
+                      right=_const(6.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.0, portion=0.5), TargetSpec(rr=3.0, portion=0.5)],
+        cooldown_bars=8,
+        max_hold_bars=32,
+    )
+
+
+def sequenz_ohne_luecke() -> Genome:
+    """Dasselbe, aber ohne die Rueckkehr in die Luecke.
+
+    Der erste von zwei Zerlegungsversuchen: Wenn diese Fassung genauso gut
+    abschneidet, traegt die Luecke nichts bei - und der aufwendigste Teil des
+    Modells waere Zierrat.
+    """
+    return Genome(
+        name="Abfolge ohne Luecke",
+        rationale=(
+            "Long nach Abgriff und Strukturbruch, aber sofort statt beim "
+            "Rueckfall in die Preisluecke. Zerlegungsversuch: Traegt die "
+            "Luecke etwas bei oder nicht?"
+        ),
+        entry_long=[
+            Condition(left=_ind("bars_since_bos_up", period=10), op=Operator.LTE,
+                      right=_const(2.0)),
+        ],
+        filters=[
+            Condition(left=_ind("bars_since_sweep_low", period=20), op=Operator.LTE,
+                      right=_const(12.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.0, portion=0.5), TargetSpec(rr=3.0, portion=0.5)],
+        cooldown_bars=8,
+        max_hold_bars=32,
+    )
+
+
+def sequenz_ohne_bruch() -> Genome:
+    """Dasselbe, aber ohne den Strukturbruch.
+
+    Der zweite Zerlegungsversuch. Zusammen mit dem ersten laesst sich sagen,
+    welcher Bestandteil - falls einer - ueberhaupt etwas beitraegt.
+    """
+    return Genome(
+        name="Abfolge ohne Strukturbruch",
+        rationale=(
+            "Long beim Rueckfall in eine Preisluecke nach einem Abgriff, ohne "
+            "auf einen Strukturbruch zu warten. Zweiter Zerlegungsversuch."
+        ),
+        entry_long=[
+            Condition(left=_price("low"), op=Operator.LTE,
+                      right=_ind("fvg_up_level", lookback=20)),
+        ],
+        filters=[
+            Condition(left=_ind("bars_since_sweep_low", period=20), op=Operator.LTE,
+                      right=_const(12.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.0, portion=0.5), TargetSpec(rr=3.0, portion=0.5)],
+        cooldown_bars=8,
+        max_hold_bars=32,
+    )
+
+
+def sequenz_modell_short() -> Genome:
+    """Das Abfolge-Modell nach unten - die eigentliche Bewaehrungsprobe.
+
+    Ueber den geprueften Zeitraum ist BTC gestiegen. Eine Long-Regel kann
+    allein davon leben; eine Short-Regel nicht. Schneidet das Modell nach unten
+    aehnlich ab wie nach oben, beschreibt es tatsaechlich einen Mechanismus.
+    Faellt nur die Short-Seite durch, hat die Long-Seite den Trend gemessen.
+    """
+    return Genome(
+        name="Abfolge-Modell short",
+        rationale=(
+            "Spiegelbild: Short nach einem Abgriff ueber das 20-Perioden-Hoch "
+            "und einem Strukturbruch nach unten. Bewaehrungsprobe - eine "
+            "Long-Regel kann vom Aufwaertstrend leben, eine Short-Regel nicht."
+        ),
+        entry_short=[
+            Condition(left=_ind("bars_since_bos_down", period=10), op=Operator.LTE,
+                      right=_const(2.0)),
+        ],
+        filters=[
+            Condition(left=_ind("bars_since_sweep_high", period=20), op=Operator.LTE,
+                      right=_const(12.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.0, portion=0.5), TargetSpec(rr=3.0, portion=0.5)],
+        cooldown_bars=8,
+        max_hold_bars=32,
+    )
+
+
+def sequenz_in_der_sitzung() -> Genome:
+    """Das Modell, aber nur zur New Yorker Eroeffnung.
+
+    Hypothese: Das Modell beschreibt das Verhalten grosser Ausfuehrungen. Die
+    finden zu bestimmten Zeiten statt - und in duennen Stunden ist ein Docht
+    unter einem Tief eher Zufall als Absicht.
+
+    Falls die Sitzungsvariante deutlich besser abschneidet, liegt darin eine
+    uebertragbare Erkenntnis: Dann ist die Tageszeit ein Filter fuer alle
+    Kandidaten und nicht nur fuer diesen.
+    """
+    return Genome(
+        name="Abfolge zur New Yorker Eroeffnung",
+        rationale=(
+            "Wie das Abfolge-Modell, aber nur zwischen 13 und 17 Uhr UTC. "
+            "Hypothese: Grosse Ausfuehrungen haben Zeiten; in duennen Stunden "
+            "ist ein Docht eher Zufall."
+        ),
+        entry_long=[
+            Condition(left=_ind("bars_since_bos_up", period=10), op=Operator.LTE,
+                      right=_const(2.0)),
+        ],
+        filters=[
+            Condition(left=_ind("bars_since_sweep_low", period=20), op=Operator.LTE,
+                      right=_const(12.0)),
+            Condition(left=_ind("hour_of_day"), op=Operator.GTE, right=_const(13.0)),
+            Condition(left=_ind("hour_of_day"), op=Operator.LTE, right=_const(17.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.0, portion=0.5), TargetSpec(rr=3.0, portion=0.5)],
+        cooldown_bars=8,
+        max_hold_bars=32,
+    )
+
+
+def luecke_als_ziel() -> Genome:
+    """Eine grosse Preisluecke wird geschlossen.
+
+    Hypothese: Ein uebersprungener Preisbereich zieht den Kurs zurueck - dort
+    hat kein Handel stattgefunden, und offene Nachfrage bleibt liegen.
+
+    Das ist die Gegenrichtung zum Abfolge-Modell: Dort ist die Luecke ein
+    Einstiegsniveau in Trendrichtung, hier ein Ziel gegen die Bewegung. Beide
+    koennen nicht zugleich stimmen.
+    """
+    return Genome(
+        name="Luecke wird geschlossen",
+        rationale=(
+            "Short, wenn eine Aufwaerts-Luecke groesser als 0,3 % entsteht - "
+            "auf die Erwartung, dass der uebersprungene Bereich nachgeholt "
+            "wird. Gegenrichtung zum Abfolge-Modell; beide koennen nicht "
+            "zugleich stimmen."
+        ),
+        entry_short=[
+            Condition(left=_ind("fvg_up_pct"), op=Operator.GT, right=_const(0.3)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.2, portion=1.0)],
+        cooldown_bars=6,
+        max_hold_bars=24,
+    )
+
+
+def bollinger_fade_short() -> Genome:
+    """Der Bollinger-Ruecksetzer, gespiegelt.
+
+    Gegenprobe zu einem Kandidaten der sechsten Generation. Von 24 bisher
+    geprueften Regeln waren 23 long - ohne solche Spiegelungen laesst sich
+    nicht trennen, was Mechanismus und was Aufwaertstrend war.
+    """
+    return Genome(
+        name="Bollinger-Ruecksetzer short",
+        rationale=(
+            "Short am oberen Bollinger-Band, waehrend der Kurs unter dem "
+            "EMA(200) liegt. Spiegelung des Long-Kandidaten - trennt "
+            "Mechanismus von Trend."
+        ),
+        entry_short=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("bollinger_upper", period=20, deviations=2)),
+        ],
+        filters=[
+            Condition(left=_price("close"), op=Operator.LT,
+                      right=_ind("ema", period=200)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=1.5),
+        targets=[TargetSpec(rr=1.5, portion=1.0)],
+        cooldown_bars=8,
+        max_hold_bars=32,
+    )
+
+
+def vwap_reversion_short() -> Genome:
+    """Die VWAP-Rueckkehr, gespiegelt."""
+    return Genome(
+        name="VWAP-Rueckkehr short",
+        rationale=(
+            "Short, wenn der Kurs mehr als 0,8 % ueber dem Tages-VWAP liegt "
+            "und die Lage in der Spanne ueber 80 steigt. Spiegelung des "
+            "Long-Kandidaten."
+        ),
+        entry_short=[
+            Condition(left=_ind("vwap_distance_pct", period=96), op=Operator.GT,
+                      right=_const(0.8)),
+            Condition(left=_ind("stochastic", period=14), op=Operator.GT,
+                      right=_const(80.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.5, portion=1.0)],
+        cooldown_bars=8,
+        max_hold_bars=32,
+    )
+
+
+def displacement_short() -> Genome:
+    """Die grosse Kerze mit Volumen, nach unten."""
+    return Genome(
+        name="Grosse Kerze mit Volumen short",
+        rationale=(
+            "Short, wenn der Kerzenkoerper mehr als das 1,5-fache der ATR "
+            "nach unten betraegt und das Volumen zwei Standardabweichungen "
+            "ueber dem Schnitt liegt. Spiegelung - Verkaufsdruck mit Groesse."
+        ),
+        entry_short=[
+            Condition(left=_ind("body_atr_ratio", period=14), op=Operator.LT,
+                      right=_const(-1.5)),
+            Condition(left=_ind("volume_zscore", period=50), op=Operator.GT,
+                      right=_const(1.5)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.5, portion=1.0)],
+        cooldown_bars=4,
+        max_hold_bars=16,
+    )
+
+
+#: Achte Generation: das Abfolge-Modell, zerlegt, plus die Short-Seite.
+GENERATION_8 = [
+    sequenz_modell_long,
+    sequenz_ohne_luecke,
+    sequenz_ohne_bruch,
+    sequenz_modell_short,
+    sequenz_in_der_sitzung,
+    luecke_als_ziel,
+    bollinger_fade_short,
+    vwap_reversion_short,
+    displacement_short,
+]
+
+
 GENERATIONS = {
     1: GENERATION_1,
     2: GENERATION_2,
@@ -1527,6 +1834,7 @@ GENERATIONS = {
     5: GENERATION_5,
     6: GENERATION_6,
     7: GENERATION_7,
+    8: GENERATION_8,
 }
 
 
