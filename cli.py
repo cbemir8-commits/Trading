@@ -424,6 +424,10 @@ def funding(
 @app.command()
 def wettbewerb(
     intervall: str = typer.Option("15", "--intervall", "-i", help="Handelsintervall."),
+    symbol: str | None = typer.Option(
+        None, "--symbol",
+        help="Abweichendes Symbol, z.B. BTCUSD_BITSTAMP fuer Referenzkerzen.",
+    ),
     generation: int = typer.Option(
         8, "--generation", "-g",
         help="Startkatalog. 7 = Scalp-Setups, 8 = Abfolge-Modell und Short-Seite."
@@ -474,10 +478,11 @@ def wettbewerb(
     store = CandleStore(settings.paths.data_store)
     interval_obj = Interval(intervall)
 
-    frame = store.read(settings.bybit.symbol, interval_obj)
+    handelssymbol = symbol or settings.bybit.symbol
+    frame = store.read(handelssymbol, interval_obj)
     if frame.empty:
         console.print(
-            f"[red]Keine Kerzen fuer {interval_obj.label}.[/] "
+            f"[red]Keine Kerzen fuer {handelssymbol} {interval_obj.label}.[/] "
             f"Zuerst: python -m cli backfill --intervall {intervall}"
         )
         raise typer.Exit(2)
@@ -505,9 +510,9 @@ def wettbewerb(
         )
         raise typer.Exit(2)
 
-    funding_frame = FundingStore(settings.paths.data_store).read(settings.bybit.symbol)
+    funding_frame = FundingStore(settings.paths.data_store).read(handelssymbol)
     frame = attach_funding(frame, funding_frame)
-    sub_frame = store.read(settings.bybit.symbol, Interval.M1)
+    sub_frame = store.read(handelssymbol, Interval.M1)
     if sub_frame.empty:
         sub_frame = None
 
@@ -525,7 +530,7 @@ def wettbewerb(
     trials_path = state / "trials.json"
 
     console.print(
-        f"\n[bold]Wettbewerb[/] {settings.bybit.symbol} {interval_obj.label}\n"
+        f"\n[bold]Wettbewerb[/] {handelssymbol} {interval_obj.label}\n"
         f"  Historie   {frame['open_time'].iloc[0]:%Y-%m-%d} bis "
         f"{frame['open_time'].iloc[-1]:%Y-%m-%d}\n"
         f"  Bisher     {board.summary()}\n"
@@ -558,7 +563,10 @@ def wettbewerb(
             board.save()
 
             _zeige_bestenliste(board, limit=10)
-            _send_report(settings, _wettbewerbs_bericht(board, runde, interval_obj))
+            _send_report(
+                settings,
+                _wettbewerbs_bericht(board, runde, interval_obj, handelssymbol),
+            )
 
             if report.champion is not None:
                 console.print(
@@ -615,17 +623,107 @@ def _zeige_bestenliste(board, *, limit: int = 10) -> None:
     console.print(table)
 
 
-def _wettbewerbs_bericht(board, runde: int, interval_obj) -> dict:
+def _wettbewerbs_bericht(board, runde: int, interval_obj, symbol: str) -> dict:
+    """Der Bericht eines Wettbewerbslaufs.
+
+    Die Abschnitte ``lauf`` und ``markt`` heissen genauso wie beim
+    Zulassungsbericht - nicht aus Bequemlichkeit, sondern weil ``_send_report``
+    daraus die Commit-Nachricht baut. Beim ersten Entwurf hiessen sie anders,
+    und in der Historie standen zwei Commits mit dem Text
+    "0 Kandidaten, 0 zugelassen (? ?)".
+    """
     from dataclasses import asdict
 
     return {
         "art": "wettbewerb",
         "zeitpunkt": datetime.now(UTC).isoformat(),
         "runde": runde,
-        "intervall": interval_obj.label,
+        "markt": {"symbol": symbol, "intervall": interval_obj.label},
+        "lauf": {
+            "kandidaten": len(board.entries),
+            "zugelassen": len(board.admitted),
+            "runde": runde,
+            "laeufe": board.laeufe,
+        },
         "zusammenfassung": board.summary(),
         "bestenliste": [asdict(e) for e in board.best(25)],
     }
+
+
+@app.command()
+def referenz(
+    intervall: str = typer.Option("15", "--intervall", "-i", help="Bybit-Code."),
+    von: str = typer.Option("2020-03-30", help="Startdatum (YYYY-MM-DD)."),
+    bis: str | None = typer.Option(None, help="Enddatum. Standard: jetzt."),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Referenzkerzen von Bitstamp laden - zum Forschen, nicht zum Handeln.
+
+    Gedacht fuer Umgebungen, aus denen Bybit nicht erreichbar ist. Die Kerzen
+    landen unter einem **eigenen Symbol** im Speicher und vermischen sich nicht
+    mit den Handelsdaten.
+
+    Was sie sind und was nicht: Bitstamp BTC/USD ist ein Kassamarkt. Es gibt
+    dort **keine Funding-Zahlungen**, die Liquiditaet ist eine andere, und die
+    Dochte weichen in schnellen Bewegungen ab. Fuer die Vorauswahl genuegt das -
+    was auf Bitstamp nichts traegt, traegt auf Bybit auch nichts. Fuer die
+    Zulassung gehoert die Pruefung auf die Daten der Boerse, auf der gehandelt
+    wird.
+    """
+    from data.reference import (
+        REFERENCE_SYMBOL,
+        BitstampReference,
+        backfill_reference,
+        estimate_pages,
+    )
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+
+    start = _parse_date(von)
+    end = _parse_date(bis) if bis else datetime.now(UTC)
+    seiten = estimate_pages(interval_obj, start, end)
+
+    console.print(
+        f"[bold]Referenzkerzen[/] Bitstamp BTC/USD {interval_obj.label}\n"
+        f"  {start:%Y-%m-%d} bis {end:%Y-%m-%d}, geschaetzt ~{seiten} Anfragen "
+        f"(~{seiten * 0.4 / 60:.0f} Minuten)\n"
+        f"[dim]Symbol im Speicher: {REFERENCE_SYMBOL} - getrennt von den "
+        f"Handelsdaten.[/]\n"
+    )
+
+    def zeige(geschrieben: int, cursor: datetime) -> None:
+        if geschrieben % 20000 < PAGE_MELDUNG:
+            console.print(f"  [dim]{geschrieben:,} Kerzen, bis {cursor:%Y-%m-%d}[/]".replace(",", "."))
+
+    geschrieben = backfill_reference(
+        BitstampReference(), store, interval_obj,
+        start=start, end=end, on_progress=zeige,
+    )
+
+    coverage = store.coverage(REFERENCE_SYMBOL, interval_obj)
+    if coverage.is_empty:
+        console.print("[red]Nichts geladen.[/]")
+        raise typer.Exit(2)
+
+    table = Table(title="Referenzkerzen", header_style="bold")
+    table.add_column("Kennzahl")
+    table.add_column("Wert", justify="right")
+    table.add_row("Neu", f"{geschrieben:,}".replace(",", "."))
+    table.add_row("Gesamt", f"{coverage.rows:,}".replace(",", "."))
+    table.add_row("Von", f"{coverage.start:%Y-%m-%d}")
+    table.add_row("Bis", f"{coverage.end:%Y-%m-%d %H:%M}")
+    console.print(table)
+    console.print(
+        f"\n[dim]Naechster Schritt: python -m cli wettbewerb "
+        f"--symbol {REFERENCE_SYMBOL} -i {intervall}[/]"
+    )
+
+
+#: Wie oft der Fortschritt gemeldet wird - alle rund 20.000 Kerzen.
+PAGE_MELDUNG = 1000
 
 
 @app.command()

@@ -35,6 +35,11 @@ web/.env*
 !web/.env.example
 
 # --- Logs & Laufzeit ---
+# state/ ist maschinenspezifisch: Risk-Officer-Zustand, Versuchszaehler,
+# Bestenliste. Zwei Rechner, die daran arbeiten, wuerden sich bei jedem Pull
+# gegenseitig ueberschreiben. Die Ergebnisse wandern ueber reports/ - dafuer
+# gibt es die.
+state/
 logs/
 *.log
 runtime/
