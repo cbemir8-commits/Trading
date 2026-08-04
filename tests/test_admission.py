@@ -364,8 +364,11 @@ class TestGeneration2:
 
         from research.seeds import load_seeds
 
-        with _pytest.raises(ValueError, match="Generation 7"):
-            load_seeds(generation=7)
+        # Bewusst eine Zahl weit jenseits des Vorhandenen: Frueher stand hier
+        # 7, und als Generation 7 dazukam, pruefte der Test nichts mehr - er
+        # schlug fehl, weil das Erwartete eingetreten war.
+        with _pytest.raises(ValueError, match="Generation 99"):
+            load_seeds(generation=99)
 
     def test_generations_do_not_overlap(self) -> None:
         """Ein wiederholter Kandidat zaehlt in der Mehrfachtest-Korrektur,

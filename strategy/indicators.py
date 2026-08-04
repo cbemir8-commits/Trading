@@ -256,6 +256,146 @@ def hour_of_day(frame: pd.DataFrame) -> np.ndarray:
     return frame["open_time"].dt.hour.to_numpy(dtype=np.float64)
 
 
+
+# ---------------------------------------------------------------------------
+#  Bausteine der bekannten Scalp-Setups
+# ---------------------------------------------------------------------------
+#
+# Was in Videos und Foren unter vielen Namen kursiert - Order Block, Liquidity
+# Sweep, VWAP Bounce, Squeeze - laesst sich fast immer auf wenige messbare
+# Groessen zurueckfuehren. Genau die stehen hier. Ein Name ist keine Strategie;
+# eine Bedingung auf einer Zahl ist eine.
+#
+# Bewusst als Bausteine und nicht als fertige "Setups": Wer ein Setup als einen
+# Indikator einbaut, kann hinterher nicht mehr sagen, welcher Teil davon
+# gewirkt hat.
+
+
+def vwap_distance_pct(frame: pd.DataFrame, period: int = 96) -> np.ndarray:
+    """Abstand zum volumengewichteten Durchschnittspreis, in Prozent.
+
+    Der VWAP ist die meistbenutzte Linie im kurzfristigen Handel, und zwar aus
+    einem sachlichen Grund: Grosse Haeuser messen ihre Ausfuehrung daran. Ein
+    Kurs deutlich unter VWAP heisst, dass wer heute gekauft hat, im Minus liegt.
+
+    Gerechnet ueber ein rollierendes Fenster statt ab Sitzungsbeginn - Krypto
+    hat keinen Handelsschluss, an dem sich ein Anker natuerlich ergaebe. 96
+    Perioden sind auf 15-Minuten-Kerzen ein Tag.
+    """
+    close = frame["close"].astype("float64")
+    volume = frame["volume"].astype("float64")
+    typical = (
+        frame["high"].astype("float64")
+        + frame["low"].astype("float64")
+        + close
+    ) / 3.0
+
+    gewichtet = (typical * volume).rolling(period, min_periods=period).sum()
+    menge = volume.rolling(period, min_periods=period).sum()
+    vwap = gewichtet / menge.replace(0.0, np.nan)
+    return ((close - vwap) / vwap * 100.0).to_numpy(dtype=np.float64)
+
+
+def stochastic(frame: pd.DataFrame, period: int = 14) -> np.ndarray:
+    """Wo im Bereich der letzten N Kerzen liegt der Schlusskurs? 0..100.
+
+    Anders als der RSI, der Auf- gegen Abwaertsbewegung misst, misst das hier
+    die Lage in der Spanne. Bei 0 schliesst der Kurs am Tief der Periode, bei
+    100 am Hoch.
+    """
+    tief = frame["low"].astype("float64").rolling(period, min_periods=period).min()
+    hoch = frame["high"].astype("float64").rolling(period, min_periods=period).max()
+    spanne = (hoch - tief).replace(0.0, np.nan)
+    return (
+        (frame["close"].astype("float64") - tief) / spanne * 100.0
+    ).to_numpy(dtype=np.float64)
+
+
+def keltner_upper(frame: pd.DataFrame, period: int = 20, multiple: float = 2.0) -> np.ndarray:
+    """Oberes Keltner-Band: EMA plus ein Vielfaches der ATR.
+
+    Der Unterschied zu Bollinger ist nicht kosmetisch: Bollinger misst die
+    Streuung der Schlusskurse, Keltner die tatsaechliche Spanne inklusive
+    Luecken. Liegt das Bollinger-Band **innerhalb** des Keltner-Bands, spricht
+    man von einer Enge - die klassische Vorstufe eines Ausbruchs.
+    """
+    mitte = ema(frame, period)
+    spanne = atr(frame, period)
+    return mitte + spanne * float(multiple)
+
+
+def keltner_lower(frame: pd.DataFrame, period: int = 20, multiple: float = 2.0) -> np.ndarray:
+    mitte = ema(frame, period)
+    spanne = atr(frame, period)
+    return mitte - spanne * float(multiple)
+
+
+def swing_high(frame: pd.DataFrame, period: int = 20) -> np.ndarray:
+    """Das hoechste Hoch der letzten N Kerzen - **ohne die aktuelle**.
+
+    Der ausgeschlossene aktuelle Balken ist der ganze Punkt. Ein Hoch, das die
+    laufende Kerze einschliesst, ist zirkulaer: Der Kurs kann sein eigenes Hoch
+    nicht durchbrechen. Genau daran scheitern viele selbstgebaute
+    Ausbruchsregeln, ohne dass es auffaellt - sie loesen nie aus oder immer.
+    """
+    return (
+        frame["high"].astype("float64")
+        .shift(1)
+        .rolling(period, min_periods=period)
+        .max()
+        .to_numpy(dtype=np.float64)
+    )
+
+
+def swing_low(frame: pd.DataFrame, period: int = 20) -> np.ndarray:
+    """Das tiefste Tief der letzten N Kerzen, ohne die aktuelle."""
+    return (
+        frame["low"].astype("float64")
+        .shift(1)
+        .rolling(period, min_periods=period)
+        .min()
+        .to_numpy(dtype=np.float64)
+    )
+
+
+def wick_below_pct(frame: pd.DataFrame) -> np.ndarray:
+    """Unterer Docht in Prozent des Kurses.
+
+    Die messbare Fassung dessen, was als "Liquidity Sweep" oder "Stop Hunt"
+    beschrieben wird: Der Kurs faellt unter ein Tief, wird aber sofort
+    zurueckgekauft und schliesst wieder darueber. Uebrig bleibt ein langer
+    Docht nach unten.
+
+    Ob dahinter wirklich abgeraeumte Stops stehen, ist eine Erzaehlung. Der
+    Docht ist die Zahl.
+    """
+    close = frame["close"].astype("float64")
+    tief = frame["low"].astype("float64")
+    offen = frame["open"].astype("float64")
+    koerper_tief = np.minimum(close, offen)
+    return ((koerper_tief - tief) / close * 100.0).to_numpy(dtype=np.float64)
+
+
+def wick_above_pct(frame: pd.DataFrame) -> np.ndarray:
+    """Oberer Docht in Prozent des Kurses - das Gegenstueck nach oben."""
+    close = frame["close"].astype("float64")
+    hoch = frame["high"].astype("float64")
+    offen = frame["open"].astype("float64")
+    koerper_hoch = np.maximum(close, offen)
+    return ((hoch - koerper_hoch) / close * 100.0).to_numpy(dtype=np.float64)
+
+
+def body_pct(frame: pd.DataFrame) -> np.ndarray:
+    """Kerzenkoerper in Prozent des Kurses, mit Vorzeichen.
+
+    Positiv bei steigender Kerze. Die schlichte Fassung von "starke Kerze",
+    "Momentum-Kerze" oder "Engulfing" - alle drei sind letztlich Aussagen
+    darueber, wie weit sich der Kurs innerhalb einer Periode bewegt hat.
+    """
+    close = frame["close"].astype("float64")
+    offen = frame["open"].astype("float64")
+    return ((close - offen) / close * 100.0).to_numpy(dtype=np.float64)
+
 #: Die Whitelist. Nur was hier steht, darf die Research-KI verwenden.
 # ---------------------------------------------------------------------------
 #  Funding - die einzigen Eingangsdaten hier, die keine Kursbewegung sind
@@ -323,6 +463,34 @@ REGISTRY: dict[str, tuple[Callable[..., np.ndarray], IndicatorSpec]] = {
         "funding_zscore",
         "Wie ungewoehnlich die Funding-Rate im eigenen Verlauf ist",
         {"period": (20, 400)})),
+    "vwap_distance_pct": (vwap_distance_pct, IndicatorSpec(
+        "vwap_distance_pct",
+        "Abstand zum volumengewichteten Durchschnittspreis in Prozent",
+        {"period": (10, 400)})),
+    "stochastic": (stochastic, IndicatorSpec(
+        "stochastic", "Lage des Schlusskurses in der Spanne der Periode, 0..100",
+        {"period": (5, 100)})),
+    "keltner_upper": (keltner_upper, IndicatorSpec(
+        "keltner_upper", "Oberes Keltner-Band (EMA + Vielfaches der ATR)",
+        {"period": (10, 100), "multiple": (1, 4)})),
+    "keltner_lower": (keltner_lower, IndicatorSpec(
+        "keltner_lower", "Unteres Keltner-Band",
+        {"period": (10, 100), "multiple": (1, 4)})),
+    "swing_high": (swing_high, IndicatorSpec(
+        "swing_high", "Hoechstes Hoch der letzten N Kerzen, ohne die aktuelle",
+        {"period": (3, 200)})),
+    "swing_low": (swing_low, IndicatorSpec(
+        "swing_low", "Tiefstes Tief der letzten N Kerzen, ohne die aktuelle",
+        {"period": (3, 200)})),
+    "wick_below_pct": (wick_below_pct, IndicatorSpec(
+        "wick_below_pct", "Unterer Docht in Prozent - messbare Fassung des Stop-Hunt",
+        {})),
+    "wick_above_pct": (wick_above_pct, IndicatorSpec(
+        "wick_above_pct", "Oberer Docht in Prozent",
+        {})),
+    "body_pct": (body_pct, IndicatorSpec(
+        "body_pct", "Kerzenkoerper in Prozent des Kurses, mit Vorzeichen",
+        {})),
     "sma": (sma, IndicatorSpec("sma", "Einfacher gleitender Durchschnitt",
                                {"period": (5, 400)})),
     "ema": (ema, IndicatorSpec("ema", "Exponentieller gleitender Durchschnitt",

@@ -62,6 +62,18 @@
   .bar > i { display: block; height: 100%; background: var(--up); transition: width .4s, background .4s; }
 
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .wb { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .wb th { text-align: left; font-weight: 600; color: #7d8799; padding: 6px 4px;
+           border-bottom: 1px solid #1e2430; font-size: 12px; }
+  .wb td { padding: 7px 4px; border-bottom: 1px solid #151a23; vertical-align: top; }
+  .wb tr.ok td { color: #4ade80; }
+  .wb .rank { color: #7d8799; width: 26px; }
+  .wb .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .wb .why { color: #7d8799; font-size: 12px; }
+  .wb .name { font-weight: 500; }
+  .wb .tag { color: #7d8799; font-size: 11px; }
+  .wbwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .gates { display: inline-block; min-width: 34px; }
   td { padding: 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
   tr:last-child td { border-bottom: 0; }
   td.k { color: var(--dim); width: 42%; }
@@ -136,6 +148,11 @@
     <div id="events" class="dim">Noch keine Ereignisse.</div>
   </div>
 
+  <div class="card" id="wbcard">
+    <h2>Wettbewerb <span class="dim" id="wbsub" style="font-weight:400;font-size:13px"></span></h2>
+    <div id="wettbewerb" class="dim">Noch nichts geprueft.</div>
+  </div>
+
   <div class="card">
     <h2>Betrieb</h2>
     <table id="ops"><tbody></tbody></table>
@@ -187,6 +204,62 @@ function ago(iso) {
 }
 
 let authenticated = false;
+
+// Die Bestenliste. Getrennt vom Status geladen, weil sie sich viel seltener
+// aendert - ein Zulassungslauf dauert Minuten, der Handel tickt im Sekundentakt.
+async function refreshWettbewerb() {
+  let data;
+  try {
+    data = await (await fetch("/api/wettbewerb")).json();
+  } catch {
+    return;
+  }
+
+  $("wbsub").textContent = data.geprueft
+    ? `${data.geprueft} geprueft in ${data.laeufe} Laeufen`
+    : "";
+
+  if (!data.eintraege.length) {
+    $("wettbewerb").className = "dim";
+    $("wettbewerb").textContent =
+      "Noch nichts geprueft. Starten mit: python -m cli wettbewerb";
+    return;
+  }
+
+  const zeilen = data.eintraege.map((e) => {
+    const grund = e.zugelassen
+      ? "alle Gates bestanden"
+      : (e.gescheitert_an || []).slice(0, 2).join(", ") || "-";
+    return `<tr class="${e.zugelassen ? "ok" : ""}">
+      <td class="rank">${e.platz}</td>
+      <td>
+        <div class="name">${escapeHtml(e.name)}</div>
+        <div class="why">${escapeHtml(grund)}</div>
+      </td>
+      <td class="num"><span class="gates">${e.gates_bestanden}/${e.gates_gesamt}</span></td>
+      <td class="num">${e.trades}</td>
+      <td class="num">${signed(e.erwartung_r, 3)}</td>
+      <td class="num">${num(e.max_drawdown_pct, 1)} %</td>
+      <td class="num tag">${escapeHtml(e.herkunft || "")}</td>
+    </tr>`;
+  });
+
+  $("wettbewerb").className = "";
+  $("wettbewerb").innerHTML = `
+    <div class="hint">${escapeHtml(data.zusammenfassung)}</div>
+    <div class="wbwrap"><table class="wb">
+      <thead><tr>
+        <th></th><th>Strategie</th><th class="num">Gates</th>
+        <th class="num">Trades</th><th class="num">Erwartung R</th>
+        <th class="num">Drawdown</th><th class="num">Herkunft</th>
+      </tr></thead>
+      <tbody>${zeilen.join("")}</tbody>
+    </table></div>
+    ${data.zugelassen === 0
+      ? `<div class="hint">Platz 1 heisst "kam am weitesten", nicht "profitabel".
+         Solange keine Strategie zugelassen ist, wird nicht gehandelt.</div>`
+      : ""}`;
+}
 
 async function refresh() {
   let data;
@@ -331,8 +404,14 @@ $("kill").onclick = () => send("kill",
   "Zurückholen geht danach nur von Hand. Sicher?");
 
 refresh();
+refreshWettbewerb();
 setInterval(refresh, 10000);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+// Deutlich seltener: Ein Zulassungslauf dauert Minuten, und die Liste steht
+// auf der Platte - haeufiger abzufragen kostet nur Akku.
+setInterval(refreshWettbewerb, 60000);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) { refresh(); refreshWettbewerb(); }
+});
 </script>
 </body>
 </html>

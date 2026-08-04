@@ -948,12 +948,585 @@ GENERATION_5 = [
 ]
 
 
+
+# ===========================================================================
+#  Sechste Generation - schnell handeln, wie ein Haendler es taete
+# ===========================================================================
+#
+# Kurze Haltedauern, enge Stops, Hebel. Vier Bauformen, die in der Praxis
+# tatsaechlich so gehandelt werden - nicht ausgedachte Varianten, sondern das,
+# was ein Daytrader am Bildschirm macht.
+#
+# DIE RECHNUNG, DIE MAN VORHER KENNEN MUSS
+# ----------------------------------------
+# Gebuehren zaehlen nicht in Prozent vom Nominalwert, sondern als Anteil am
+# Risiko. Der Umrechnungsfaktor ist die Stop-Distanz:
+#
+#     Gebuehr in R = Gebuehrensatz / Stop-Distanz
+#
+# Bei VIP0 (Maker 0,020 %, Taker 0,055 %, plus Stop-Slippage) ergibt das bei
+# 1,5:1 Chance-Risiko-Verhaeltnis:
+#
+#     Stop 0,15 %  ->  59,8 % Trefferquote noetig
+#     Stop 0,30 %  ->  50,9 %
+#     Stop 0,50 %  ->  46,8 %
+#     Stop 1,00 %  ->  43,5 %
+#     ohne Gebuehren:  40,0 %
+#
+# Bei 0,15 % Stop muss also jeder zweite Trade sitzen, nur um die Boerse zu
+# bezahlen. Das ist der Grund, warum die Stops hier zwischen 0,4 und 0,8 %
+# liegen und nicht enger: nicht Vorsicht, sondern Arithmetik.
+#
+# DER HEBEL IST HIER KEIN PARAMETER
+# ---------------------------------
+# Er ergibt sich, und zwar zwangslaeufig:
+#
+#     Hebel = Risiko je Trade / Stop-Distanz
+#
+# Bei 0,75 % Risiko und 0,5 % Stop sind das 1,5x, bei 0,3 % Stop 2,5x. Enger
+# stellen heisst hoeher hebeln - dieselbe Entscheidung, zweimal ausgedrueckt.
+# Was der Hebel **nicht** tut: einen Vorteil erzeugen. Er vergroessert, was da
+# ist. Bei negativem Erwartungswert beschleunigt er nur den Weg zur Null.
+#
+# HANDELSZEITEN
+# -------------
+# Zwei Kandidaten handeln nur zwischen 13 und 21 Uhr UTC - die Stunden, in
+# denen London und New York offen sind. Das ist eine Technik aus der Praxis,
+# die wir bisher nie benutzt haben: In duennen Stunden sind die Spreads
+# breiter und Ausbrueche halten seltener.
+
+
+def bollinger_fade_scalp() -> Genome:
+    """Ruecksetzer im Aufwaertstrend kaufen.
+
+    Hypothese: In einem intakten Trend sind kurze Ausschlaege nach unten
+    Uebertreibungen und keine Trendwende. Wer das untere Bollinger-Band
+    beruehrt, waehrend der Kurs ueber seinem laengeren Durchschnitt liegt,
+    kauft in eine Erholung hinein.
+
+    Die klassischste Scalp-Bauform ueberhaupt - und deshalb auch die am
+    haeufigsten durchprobierte. Sie steht hier trotzdem, weil sie der Massstab
+    ist: Wenn nicht einmal sie in die Naehe der Kostenschwelle kommt, sagt das
+    etwas ueber die Zeitebene und nicht ueber die Variante.
+    """
+    return Genome(
+        name="Bollinger-Ruecksetzer im Trend",
+        rationale=(
+            "Long, wenn der Kurs das untere Bollinger-Band unterschreitet, "
+            "waehrend er ueber dem EMA(200) liegt. Hypothese: Kurze "
+            "Ausschlaege gegen einen intakten Trend sind Uebertreibungen. "
+            "Ziel 1,5:1, Stop knapp unter dem Band."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_BELOW,
+                      right=_ind("bollinger_lower", period=20, deviations=2)),
+        ],
+        filters=[
+            Condition(left=_price("close"), op=Operator.GT,
+                      right=_ind("ema", period=200)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=1.5),
+        targets=[TargetSpec(rr=1.5, portion=1.0)],
+        cooldown_bars=8,
+        max_hold_bars=32,
+    )
+
+
+def session_breakout_scalp() -> Genome:
+    """Ausbruch, aber nur wenn jemand da ist.
+
+    Hypothese: Ein Ausbruch traegt nur, wenn Volumen dahintersteht und der
+    Markt besetzt ist. Beides wird hier verlangt - ein Volumen deutlich ueber
+    dem Schnitt und die Stunden, in denen London und New York handeln.
+
+    Das ist der erste Kandidat ueberhaupt, der Handelszeiten benutzt. Wenn er
+    besser abschneidet als der Ausbruch aus Generation 2, der rund um die Uhr
+    handelte, liegt darin eine Erkenntnis, die uebertragbar ist.
+    """
+    return Genome(
+        name="Sitzungs-Ausbruch mit Volumen",
+        rationale=(
+            "Long beim Ausbruch ueber das 20-Perioden-Hoch, wenn das Volumen "
+            "mehr als eine Standardabweichung ueber dem Schnitt liegt und es "
+            "zwischen 13 und 21 Uhr UTC ist. Hypothese: Ausbrueche in duennen "
+            "Stunden halten seltener; Volumen unterscheidet echte von "
+            "zufaelligen."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("donchian_upper", period=20)),
+        ],
+        filters=[
+            Condition(left=_ind("volume_zscore", period=50), op=Operator.GT,
+                      right=_const(1.0)),
+            Condition(left=_ind("hour_of_day"), op=Operator.GTE,
+                      right=_const(13.0)),
+            Condition(left=_ind("hour_of_day"), op=Operator.LTE,
+                      right=_const(21.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.0, portion=0.5), TargetSpec(rr=2.0, portion=0.5)],
+        cooldown_bars=4,
+        max_hold_bars=24,
+    )
+
+
+def squeeze_scalp() -> Genome:
+    """Nach der Ruhe der Ausbruch.
+
+    Hypothese: Volatilitaet kommt in Schueben. Eine ungewoehnlich enge
+    Bollinger-Breite heisst, dass sich Bewegung aufgestaut hat - was danach
+    kommt, kommt schnell und laeuft weit genug fuer ein Ziel bei 2:1.
+
+    Anders als die drei Ausbruchsvarianten der ersten Generationen setzt diese
+    nicht an einem Preisniveau an, sondern an der **Enge davor**. Damit ist es
+    die einzige Bauform hier, deren Signal nicht aus einem Kursvergleich
+    stammt.
+    """
+    return Genome(
+        name="Ausbruch nach Volatilitaetsenge",
+        rationale=(
+            "Long, wenn die Bollinger-Breite unter 1,2 % faellt und der Kurs "
+            "danach das 20-Perioden-Hoch nimmt. Hypothese: Volatilitaet kommt "
+            "in Schueben, und die Enge davor ist messbar. Ziel 2:1."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("donchian_upper", period=20)),
+        ],
+        filters=[
+            Condition(left=_ind("bollinger_width", period=20, deviations=2),
+                      op=Operator.LT, right=_const(1.2)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=1.5),
+        targets=[TargetSpec(rr=2.0, portion=1.0)],
+        cooldown_bars=8,
+        max_hold_bars=48,
+    )
+
+
+def rsi_pullback_scalp() -> Genome:
+    """Der Klassiker vom Bildschirm: ueberverkauft im Aufwaertstrend.
+
+    Hypothese: Ein RSI unter 30, waehrend der laengerfristige Trend nach oben
+    zeigt, markiert einen Ruecksetzer und keine Wende.
+
+    Bewusst als vierte Variante derselben Grundidee wie der Bollinger-Fade,
+    nur mit einem anderen Messinstrument. Fallen beide gleich aus, liegt es an
+    der Idee; faellt nur eine, lag es am Instrument. Diese Unterscheidung war
+    in Generation 1 nicht moeglich und hat dort Rueckschluesse verhindert.
+    """
+    return Genome(
+        name="RSI-Ruecksetzer im Trend",
+        rationale=(
+            "Long, wenn der RSI(14) unter 30 faellt, waehrend der Kurs ueber "
+            "dem EMA(200) liegt. Raus bei RSI ueber 60 oder am Ziel. "
+            "Hypothese: Ueberverkauft im Aufwaertstrend ist ein Ruecksetzer, "
+            "keine Wende. Zwillingsversuch zum Bollinger-Ruecksetzer."
+        ),
+        entry_long=[
+            Condition(left=_ind("rsi", period=14), op=Operator.CROSS_BELOW,
+                      right=_const(30.0)),
+        ],
+        filters=[
+            Condition(left=_price("close"), op=Operator.GT,
+                      right=_ind("ema", period=200)),
+        ],
+        exit_long=[
+            Condition(left=_ind("rsi", period=14), op=Operator.GT,
+                      right=_const(60.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.5, portion=1.0)],
+        cooldown_bars=8,
+        max_hold_bars=32,
+    )
+
+
+#: Sechste Generation: schnelles Handeln auf 15-Minuten-Kerzen, mit Hebel.
+GENERATION_6 = [
+    bollinger_fade_scalp,
+    session_breakout_scalp,
+    squeeze_scalp,
+    rsi_pullback_scalp,
+]
+
+
+# ===========================================================================
+#  Siebte Generation - der Katalog der bekannten Scalp-Setups
+# ===========================================================================
+#
+# Was im Netz unter vielen Namen kursiert, laesst sich fast immer auf wenige
+# messbare Groessen zurueckfuehren. "Order Block", "Liquidity Sweep",
+# "Displacement", "VWAP Bounce", "Squeeze" - jedes davon ist eine Erzaehlung
+# ueber eine Zahl. Die Erzaehlung ist nicht pruefbar, die Zahl schon.
+#
+# Deshalb steht hier keine Nacherzaehlung, sondern die jeweils schlichteste
+# Bedingung, die das beschriebene Verhalten trifft. Wer ein Setup mit sieben
+# Zusatzbedingungen nachbaut, bekommt im Backtest fast immer ein schoenes Bild
+# und kann hinterher nicht sagen, welcher Teil gewirkt hat.
+#
+# Alle Kandidaten hier:
+#
+#   * laufen auf 15-Minuten-Kerzen
+#   * halten Stunden, nicht Tage (max_hold_bars begrenzt das hart)
+#   * dimensionieren nach Risiko - der Hebel ergibt sich daraus
+#   * haben Stops zwischen etwa 0,4 und 0,9 %
+#
+# Die Stopweite ist kein Geschmack, sondern folgt aus der Kostenrechnung: Bei
+# 0,15 % Stop braucht es 59,8 % Trefferquote, nur um die Boerse zu bezahlen;
+# bei 0,5 % sind es 46,8 %. Enger geht nicht, ohne dass die Gebuehren die
+# Strategie auffressen. Nachzurechnen mit ``python -m cli kosten``.
+
+
+def vwap_reversion() -> Genome:
+    """Rueckkehr zum volumengewichteten Durchschnitt.
+
+    Hypothese: Der VWAP ist die Linie, an der grosse Haeuser ihre Ausfuehrung
+    messen. Ein Kurs deutlich darunter bedeutet, dass wer heute gekauft hat im
+    Minus liegt - und dass Nachfrage entsteht, die ihn zurueckholt.
+
+    Von allen Kandidaten hier der mit der sachlichsten Begruendung: Der VWAP
+    wird tatsaechlich als Massstab benutzt, nicht nur betrachtet.
+    """
+    return Genome(
+        name="VWAP-Rueckkehr",
+        rationale=(
+            "Long, wenn der Kurs mehr als 0,8 % unter dem Tages-VWAP liegt "
+            "und die Lage in der Spanne unter 20 faellt. Hypothese: Der VWAP "
+            "ist der Massstab grosser Ausfuehrungen; deutliche Abweichungen "
+            "werden zurueckgeholt. Ziel 1,5:1."
+        ),
+        entry_long=[
+            Condition(left=_ind("vwap_distance_pct", period=96), op=Operator.LT,
+                      right=_const(-0.8)),
+            Condition(left=_ind("stochastic", period=14), op=Operator.LT,
+                      right=_const(20.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.5, portion=1.0)],
+        cooldown_bars=8,
+        max_hold_bars=32,
+    )
+
+
+def liquidity_sweep() -> Genome:
+    """Unter das Tief und sofort zurueck.
+
+    Hypothese: Unter einem sichtbaren Tief liegen Stop-Orders. Wird es kurz
+    durchstochen und der Kurs schliesst wieder darueber, wurden diese Stops
+    abgeraeumt - und die Gegenseite hat gekauft. Was bleibt, ist ein langer
+    Docht nach unten.
+
+    Das ist die messbare Fassung dessen, was als Liquidity Sweep oder Stop
+    Hunt beschrieben wird. Ob die Erzaehlung ueber die Stops stimmt, laesst
+    sich nicht pruefen; der Docht schon, und nur er steht in der Regel.
+    """
+    return Genome(
+        name="Liquiditaets-Abgriff",
+        rationale=(
+            "Long, wenn das Tief unter das 20-Perioden-Tief faellt, der "
+            "Schlusskurs aber wieder darueber liegt und der untere Docht "
+            "groesser als 0,25 % ist. Hypothese: Abgeraeumte Stops unter einem "
+            "sichtbaren Tief, danach Rueckkauf. Ziel 2:1."
+        ),
+        entry_long=[
+            Condition(left=_price("low"), op=Operator.LT,
+                      right=_ind("swing_low", period=20)),
+            Condition(left=_price("close"), op=Operator.GT,
+                      right=_ind("swing_low", period=20)),
+            Condition(left=_ind("wick_below_pct"), op=Operator.GT,
+                      right=_const(0.25)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=1.5),
+        targets=[TargetSpec(rr=2.0, portion=1.0)],
+        cooldown_bars=8,
+        max_hold_bars=24,
+    )
+
+
+def liquidity_sweep_short() -> Genome:
+    """Dasselbe nach oben - und deshalb der eigentlich interessante Fall.
+
+    Wenn der Abgriff nach unten funktioniert und der nach oben nicht, dann
+    misst die Regel keinen Mechanismus, sondern nur den Aufwaertstrend von
+    Bitcoin. Diese Unterscheidung ist der Grund, warum beide Richtungen als
+    getrennte Kandidaten laufen und nicht als ein Genom mit zwei Seiten.
+    """
+    return Genome(
+        name="Liquiditaets-Abgriff (Gegenprobe short)",
+        rationale=(
+            "Spiegelbild des Liquiditaets-Abgriffs: Short, wenn das Hoch ueber "
+            "das 20-Perioden-Hoch steigt, der Schlusskurs aber darunter bleibt "
+            "und der obere Docht groesser als 0,25 % ist. Gegenprobe - "
+            "funktioniert nur die Long-Seite, misst die Regel den Trend und "
+            "nicht den Mechanismus."
+        ),
+        entry_short=[
+            Condition(left=_price("high"), op=Operator.GT,
+                      right=_ind("swing_high", period=20)),
+            Condition(left=_price("close"), op=Operator.LT,
+                      right=_ind("swing_high", period=20)),
+            Condition(left=_ind("wick_above_pct"), op=Operator.GT,
+                      right=_const(0.25)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=1.5),
+        targets=[TargetSpec(rr=2.0, portion=1.0)],
+        cooldown_bars=8,
+        max_hold_bars=24,
+    )
+
+
+def keltner_squeeze() -> Genome:
+    """Enge, dann Ausbruch - die messbare Fassung.
+
+    Hypothese: Liegt das Bollinger-Band innerhalb des Keltner-Bands, hat sich
+    Bewegung aufgestaut. Was danach kommt, laeuft weit genug fuer 2:1.
+
+    Der Unterschied zum Ausbruch aus Generation 2 ist der Zeitpunkt: Dort war
+    das Signal ein neues Hoch, hier ist es die Ruhe davor.
+    """
+    return Genome(
+        name="Keltner-Enge mit Ausbruch",
+        rationale=(
+            "Long beim Ausbruch ueber das 20-Perioden-Hoch, wenn das obere "
+            "Bollinger-Band unter dem oberen Keltner-Band liegt - die "
+            "klassische Enge. Hypothese: Volatilitaet kommt in Schueben, und "
+            "die Enge davor ist messbar."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("swing_high", period=20)),
+        ],
+        filters=[
+            Condition(left=_ind("bollinger_upper", period=20, deviations=2),
+                      op=Operator.LT,
+                      right=_ind("keltner_upper", period=20, multiple=2)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=1.5),
+        targets=[TargetSpec(rr=1.0, portion=0.5), TargetSpec(rr=2.5, portion=0.5)],
+        cooldown_bars=6,
+        max_hold_bars=32,
+    )
+
+
+def displacement_candle() -> Genome:
+    """Eine grosse Kerze mit Volumen - und dann hinterher.
+
+    Hypothese: Eine ungewoehnlich grosse Kerze mit ungewoehnlich hohem Volumen
+    zeigt an, dass jemand mit Groesse gekauft hat. Wer solche Orders ausfuehrt,
+    ist selten in einer Kerze fertig.
+
+    Das ist die schlichte Fassung von "Displacement", "Momentum Candle" oder
+    "Engulfing" - drei Namen fuer dieselbe Beobachtung.
+    """
+    return Genome(
+        name="Grosse Kerze mit Volumen",
+        rationale=(
+            "Long, wenn der Kerzenkoerper groesser als 0,5 % ist und das "
+            "Volumen mehr als zwei Standardabweichungen ueber dem Schnitt "
+            "liegt. Hypothese: Wer mit Groesse kauft, ist nach einer Kerze "
+            "nicht fertig. Ziel 1,5:1."
+        ),
+        entry_long=[
+            Condition(left=_ind("body_pct"), op=Operator.GT, right=_const(0.5)),
+            Condition(left=_ind("volume_zscore", period=50), op=Operator.GT,
+                      right=_const(2.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.5, portion=1.0)],
+        cooldown_bars=4,
+        max_hold_bars=16,
+    )
+
+
+def stochastic_trend_pullback() -> Genome:
+    """Ueberverkauft, aber nur im Aufwaertstrend.
+
+    Hypothese: Die Lage in der Spanne sagt mehr ueber einen Ruecksetzer als
+    der RSI, weil sie Hoch und Tief benutzt statt nur Schlusskurse.
+
+    Bewusst als Zwilling zum RSI-Kandidaten der sechsten Generation gebaut.
+    Fallen beide gleich aus, liegt es an der Idee "Ruecksetzer im Trend" und
+    nicht am Messinstrument.
+    """
+    return Genome(
+        name="Stochastik-Ruecksetzer im Trend",
+        rationale=(
+            "Long, wenn die Lage in der Spanne unter 15 faellt, waehrend der "
+            "Kurs ueber dem EMA(200) liegt. Zwillingsversuch zum "
+            "RSI-Ruecksetzer - anderes Messinstrument, dieselbe Idee."
+        ),
+        entry_long=[
+            Condition(left=_ind("stochastic", period=14), op=Operator.CROSS_BELOW,
+                      right=_const(15.0)),
+        ],
+        filters=[
+            Condition(left=_price("close"), op=Operator.GT,
+                      right=_ind("ema", period=200)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.5, portion=1.0)],
+        cooldown_bars=8,
+        max_hold_bars=32,
+    )
+
+
+def macd_momentum() -> Genome:
+    """MACD-Kreuzung oberhalb der Nulllinie.
+
+    Hypothese: Eine Kreuzung sagt wenig; eine Kreuzung, waehrend der MACD
+    ueber null liegt, sagt "Aufwaertsbewegung beschleunigt erneut".
+
+    Steht hier vor allem als Vertreter der klassischen Indikator-Schule -
+    wenn diese ganze Familie nichts traegt, ist auch das ein Ergebnis.
+    """
+    return Genome(
+        name="MACD-Beschleunigung",
+        rationale=(
+            "Long, wenn der MACD(12,26) seine Signallinie von unten kreuzt "
+            "und dabei ueber null liegt. Hypothese: Erneute Beschleunigung "
+            "innerhalb einer bestehenden Aufwaertsbewegung."
+        ),
+        entry_long=[
+            Condition(left=_ind("macd", fast=12, slow=26), op=Operator.CROSS_ABOVE,
+                      right=_ind("macd_signal", fast=12, slow=26, signal=9)),
+        ],
+        filters=[
+            Condition(left=_ind("macd", fast=12, slow=26), op=Operator.GT,
+                      right=_const(0.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.5, portion=1.0)],
+        cooldown_bars=8,
+        max_hold_bars=32,
+    )
+
+
+def trend_pullback_to_ema() -> Genome:
+    """Ruecksetzer an den gleitenden Durchschnitt im Trend.
+
+    Hypothese: In einem Trend ist der EMA(50) eine Zone, an der Nachfrage
+    wartet. Der Kurs laeuft ihn an, statt ihn zu durchbrechen.
+
+    Die vielleicht meistgehandelte Bauform ueberhaupt - und genau deshalb
+    diejenige, bei der ein Vorteil am ehesten schon wegkonkurriert ist.
+    """
+    return Genome(
+        name="Ruecksetzer an den EMA(50)",
+        rationale=(
+            "Long, wenn der Abstand zum EMA(50) unter -0,3 % faellt, waehrend "
+            "der Kurs ueber dem EMA(200) liegt und der ADX ueber 20 steht. "
+            "Hypothese: Im Trend wartet am EMA(50) Nachfrage."
+        ),
+        entry_long=[
+            Condition(left=_ind("distance_to_ema_pct", period=50),
+                      op=Operator.CROSS_BELOW, right=_const(-0.3)),
+        ],
+        filters=[
+            Condition(left=_price("close"), op=Operator.GT,
+                      right=_ind("ema", period=200)),
+            Condition(left=_ind("adx", period=14), op=Operator.GT,
+                      right=_const(20.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.5, portion=1.0)],
+        cooldown_bars=8,
+        max_hold_bars=32,
+    )
+
+
+def vwap_trend_continuation() -> Genome:
+    """Ueber dem VWAP bleiben und Ruecksetzer dorthin kaufen.
+
+    Hypothese: Solange der Kurs ueber dem VWAP notiert, sind die Kaeufer des
+    Tages im Gewinn. Ein Ruecksetzer an die Linie trifft dann auf
+    Nachkaufbereitschaft statt auf Ausstiege.
+
+    Die Gegenrichtung zur VWAP-Rueckkehr: Dort ist die Abweichung das Signal,
+    hier die Beruehrung. Beide koennen nicht zugleich richtig sein, und das
+    macht sie zu einem sauberen Paar.
+    """
+    return Genome(
+        name="VWAP-Fortsetzung",
+        rationale=(
+            "Long, wenn der Kurs von oben an den VWAP zurueckkommt (Abstand "
+            "unter 0,1 %), der VWAP aber ueber dem Kurs von vor 96 Perioden "
+            "liegt. Gegenrichtung zur VWAP-Rueckkehr - beide koennen nicht "
+            "zugleich stimmen."
+        ),
+        entry_long=[
+            Condition(left=_ind("vwap_distance_pct", period=96),
+                      op=Operator.CROSS_BELOW, right=_const(0.1)),
+        ],
+        filters=[
+            Condition(left=_ind("roc", period=96), op=Operator.GT, right=_const(0.0)),
+            Condition(left=_price("close"), op=Operator.GT,
+                      right=_ind("ema", period=200)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.5, portion=1.0)],
+        cooldown_bars=8,
+        max_hold_bars=32,
+    )
+
+
+def range_fade() -> Genome:
+    """Im Seitwaertsmarkt die Raender handeln.
+
+    Hypothese: Wenn kein Trend da ist - erkennbar an einem niedrigen ADX -,
+    laufen Ausbrueche ins Leere und die Raender halten. Genau umgekehrt zu
+    allen Ausbruchskandidaten.
+
+    Steht hier als Gegenstueck: Sollten die Ausbruchsvarianten scheitern und
+    diese bestehen, liegt darin eine Aussage ueber den Markt und nicht nur
+    ueber eine Regel.
+    """
+    return Genome(
+        name="Randhandel im Seitwaertsmarkt",
+        rationale=(
+            "Long am unteren Bollinger-Band, wenn der ADX unter 20 liegt - "
+            "also kein Trend da ist. Gegenstueck zu den Ausbruchskandidaten: "
+            "Beide zusammen sagen mehr aus als jeder fuer sich."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_BELOW,
+                      right=_ind("bollinger_lower", period=20, deviations=2)),
+        ],
+        filters=[
+            Condition(left=_ind("adx", period=14), op=Operator.LT,
+                      right=_const(20.0)),
+        ],
+        stop=StopSpec(kind="atr", atr_period=14, multiple=2.0),
+        targets=[TargetSpec(rr=1.2, portion=1.0)],
+        cooldown_bars=8,
+        max_hold_bars=24,
+    )
+
+
+#: Siebte Generation: der Katalog der bekannten Scalp-Setups.
+GENERATION_7 = [
+    vwap_reversion,
+    vwap_trend_continuation,
+    liquidity_sweep,
+    liquidity_sweep_short,
+    keltner_squeeze,
+    displacement_candle,
+    stochastic_trend_pullback,
+    macd_momentum,
+    trend_pullback_to_ema,
+    range_fade,
+]
+
+
 GENERATIONS = {
     1: GENERATION_1,
     2: GENERATION_2,
     3: GENERATION_3,
     4: GENERATION_4,
     5: GENERATION_5,
+    6: GENERATION_6,
+    7: GENERATION_7,
 }
 
 

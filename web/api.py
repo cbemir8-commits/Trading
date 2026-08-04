@@ -161,6 +161,45 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"ok": True}
 
     # -- Lesen ---------------------------------------------------------------
+    @app.get("/api/wettbewerb")
+    def wettbewerb() -> dict:
+        """Die Bestenliste - Platz 1 bis Ende, ueber alle Laeufe hinweg.
+
+        Bewusst ohne Anmeldung lesbar, wie der uebrige Statusteil: Es stehen
+        Kennzahlen von Strategien darin, keine Kontodaten. Wer die Seite
+        ohnehin sieht, sieht auch den Kontostand.
+        """
+        from research.leaderboard import Leaderboard
+
+        board = Leaderboard(state_dir / "leaderboard.json")
+        return {
+            "zusammenfassung": board.summary(),
+            "laeufe": board.laeufe,
+            "geprueft": len(board.entries),
+            "zugelassen": len(board.admitted),
+            "eintraege": [
+                {
+                    "platz": platz,
+                    "name": e.name,
+                    "generation": e.generation,
+                    "herkunft": e.herkunft,
+                    "zugelassen": e.zugelassen,
+                    "gates_bestanden": e.gates_bestanden,
+                    "gates_gesamt": e.gates_gesamt,
+                    "gescheitert_an": e.gescheitert_an,
+                    "trades": e.trades,
+                    "erwartung_r": e.erwartung_r,
+                    "sharpe": e.sharpe,
+                    "rendite_pct": e.rendite_pct,
+                    "max_drawdown_pct": e.max_drawdown_pct,
+                    "fenster_profitabel": e.fenster_profitabel,
+                    "geprueft": e.geprueft,
+                    "hypothese": e.hypothese,
+                }
+                for platz, e in enumerate(board.ranked(), start=1)
+            ],
+        }
+
     @app.get("/api/status")
     def status(session: Annotated[str | None, Cookie()] = None) -> dict:
         """Alles, was die Oberflaeche anzeigt - in einem Aufruf.

@@ -1,0 +1,371 @@
+"""Tests fuer Bestenliste, Variantenbildung und die Anzeige davon.
+
+Der Dauerlauf hat eine Eigenschaft, die ihn gefaehrlich macht: Er hoert nicht
+von selbst auf, und er findet garantiert **irgendwann** etwas, das im Rueckblick
+gut aussieht. Genau dagegen ist die Mehrfachtest-Korrektur gebaut, und deshalb
+steht hier ein Test, der prueft, dass jede Variante als Versuch zaehlt.
+
+Der zweite wichtige Punkt: Die Bestenliste darf ein gutes Ergebnis nie durch ein
+spaeteres schlechteres ersetzen. Sonst haengt es an der Reihenfolge der Laeufe,
+was oben steht - und die Liste waere wertlos.
+"""
+
+from __future__ import annotations
+
+import json
+import random
+from dataclasses import dataclass
+from pathlib import Path
+
+import pytest
+
+from research.leaderboard import Leaderboard
+from research.mutation import breed, mutate
+from research.seeds import load_seeds
+from strategy.compiler import compile_genome
+from strategy.genome import Genome
+
+
+# ---------------------------------------------------------------------------
+#  Ein schlanker Ersatz fuer Candidate - hier wird die Liste geprueft,
+#  nicht die Zulassungsstrecke.
+# ---------------------------------------------------------------------------
+@dataclass
+class FakeMetrics:
+    expectancy_r: float = 0.0
+    total_return_pct: float = 0.0
+    max_drawdown_pct: float = 0.0
+
+
+@dataclass
+class FakeWalk:
+    combined: FakeMetrics | None = None
+    all_trades: list = None  # type: ignore[assignment]
+
+
+@dataclass
+class FakeGate:
+    name: str
+    passed: bool
+
+
+@dataclass
+class FakeGates:
+    results: list
+
+    @property
+    def failures(self):
+        return [r for r in self.results if not r.passed]
+
+
+@dataclass
+class FakeCandidate:
+    genome: Genome
+    walkforward: FakeWalk
+    gates: FakeGates
+    admitted: bool
+    trades: int = 0
+    sharpe: float = 0.0
+    consistency: float = 0.0
+
+
+def kandidat(
+    genome: Genome,
+    *,
+    bestanden: int = 3,
+    gesamt: int = 9,
+    erwartung: float = 0.0,
+    zugelassen: bool = False,
+    trades: int = 120,
+) -> FakeCandidate:
+    gates = [FakeGate(f"Gate {i}", i < bestanden) for i in range(gesamt)]
+    return FakeCandidate(
+        genome=genome,
+        walkforward=FakeWalk(combined=FakeMetrics(expectancy_r=erwartung)),
+        gates=FakeGates(results=gates),
+        admitted=zugelassen,
+        trades=trades,
+    )
+
+
+@pytest.fixture
+def genome() -> Genome:
+    return load_seeds(7)[0]
+
+
+@pytest.fixture
+def board(tmp_path: Path) -> Leaderboard:
+    return Leaderboard(tmp_path / "leaderboard.json")
+
+
+# ---------------------------------------------------------------------------
+#  Bestenliste
+# ---------------------------------------------------------------------------
+class TestBestenliste:
+    def test_traegt_ein_und_sortiert(self, board: Leaderboard) -> None:
+        seeds = load_seeds(7)
+        board.record(
+            [
+                kandidat(seeds[0], bestanden=3, erwartung=-0.2),
+                kandidat(seeds[1], bestanden=7, erwartung=-0.1),
+                kandidat(seeds[2], bestanden=5, erwartung=0.3),
+            ],
+            generation=7,
+        )
+
+        rang = board.ranked()
+        assert [e.gates_bestanden for e in rang] == [7, 5, 3]
+
+    def test_zugelassen_steht_immer_oben(self, board: Leaderboard) -> None:
+        """Auch wenn ein anderer mehr Gates bestanden haette.
+
+        Zugelassen heisst: alle Gates. Ein Kandidat mit acht von neun ist nicht
+        "fast zugelassen", sondern abgelehnt - und gehoert darunter.
+        """
+        seeds = load_seeds(7)
+        board.record(
+            [
+                kandidat(seeds[0], bestanden=8, gesamt=9, erwartung=0.9),
+                kandidat(seeds[1], bestanden=9, gesamt=9, erwartung=0.1,
+                         zugelassen=True),
+            ],
+            generation=7,
+        )
+
+        assert board.ranked()[0].zugelassen
+
+    def test_schlechteres_ergebnis_ueberschreibt_nicht(
+        self, board: Leaderboard, genome: Genome
+    ) -> None:
+        """Sonst haengt es an der Reihenfolge der Laeufe, was oben steht.
+
+        Dieselbe Strategie liefert je nach Zeitraum unterschiedliche Zahlen.
+        Die Liste soll festhalten, was eine Idee **kann** - nicht, was sie
+        beim letzten Mal zufaellig gemacht hat.
+        """
+        board.record([kandidat(genome, bestanden=7, erwartung=0.4)], generation=7)
+        board.record([kandidat(genome, bestanden=2, erwartung=-0.9)], generation=7)
+
+        eintrag = board.ranked()[0]
+        assert eintrag.gates_bestanden == 7
+        assert eintrag.erwartung_r == pytest.approx(0.4)
+        assert eintrag.geprueft == 2, "Der Zaehler muss trotzdem hochgehen"
+
+    def test_besseres_ergebnis_ersetzt(
+        self, board: Leaderboard, genome: Genome
+    ) -> None:
+        board.record([kandidat(genome, bestanden=2, erwartung=-0.5)], generation=7)
+        board.record([kandidat(genome, bestanden=6, erwartung=0.2)], generation=7)
+
+        assert board.ranked()[0].gates_bestanden == 6
+
+    def test_ueberlebt_den_neustart(self, tmp_path: Path, genome: Genome) -> None:
+        pfad = tmp_path / "leaderboard.json"
+        erste = Leaderboard(pfad)
+        erste.record([kandidat(genome, bestanden=5, erwartung=0.1)], generation=7)
+        erste.save()
+
+        zweite = Leaderboard(pfad)
+
+        assert len(zweite.entries) == 1
+        assert zweite.laeufe == 1
+        assert zweite.ranked()[0].gates_bestanden == 5
+
+    def test_kaputte_datei_faengt_neu_an_statt_abzustuerzen(
+        self, tmp_path: Path
+    ) -> None:
+        """Ein abgebrochener Schreibvorgang darf den Dauerlauf nicht beenden."""
+        pfad = tmp_path / "leaderboard.json"
+        pfad.write_text("{kaputt")
+
+        board = Leaderboard(pfad)
+
+        assert board.entries == {}
+
+    def test_altes_format_wird_nicht_falsch_gedeutet(self, tmp_path: Path) -> None:
+        pfad = tmp_path / "leaderboard.json"
+        pfad.write_text(json.dumps({"format": 1, "eintraege": [{"name": "alt"}]}))
+
+        board = Leaderboard(pfad)
+
+        assert board.entries == {}
+
+    def test_zusammenfassung_nennt_die_spitze(
+        self, board: Leaderboard, genome: Genome
+    ) -> None:
+        board.record([kandidat(genome, bestanden=6, erwartung=0.15)], generation=7)
+
+        text = board.summary()
+        assert genome.name in text
+        assert "6/9" in text
+
+
+# ---------------------------------------------------------------------------
+#  Varianten
+# ---------------------------------------------------------------------------
+class TestVarianten:
+    def test_variante_ist_gueltig_und_anders(self, genome: Genome) -> None:
+        variante = mutate(genome, random.Random(1))
+
+        assert variante is not None
+        assert variante.genome_id != genome.genome_id
+        # Muss uebersetzbar sein - sonst faellt es erst mitten im Lauf auf.
+        assert compile_genome(variante).warmup_bars > 0
+
+    def test_aendert_nur_eine_sache(self, genome: Genome) -> None:
+        """Sonst laesst sich aus einem besseren Ergebnis nichts ablesen.
+
+        Wer fuenf Dinge gleichzeitig verstellt und danach ein besseres Bild
+        bekommt, weiss nicht welches davon gewirkt hat - und hat meistens nur
+        das Rauschen besser getroffen.
+        """
+        for seed in range(25):
+            variante = mutate(genome, random.Random(seed))
+            if variante is None:
+                continue
+
+            unterschiede = sum(
+                1
+                for feld in (
+                    "entry_long", "entry_short", "filters", "exit_long",
+                    "exit_short", "stop", "targets", "cooldown_bars",
+                    "max_hold_bars",
+                )
+                if getattr(variante, feld) != getattr(genome, feld)
+            )
+            assert unterschiede == 1, (
+                f"Saat {seed}: {unterschiede} Aenderungen statt einer"
+            )
+
+    def test_breed_liefert_lauter_verschiedene(self, genome: Genome) -> None:
+        """Zwei identische Regelwerke waeren derselbe Versuch.
+
+        Sie wuerden aber zweimal gezaehlt und die Huerde fuer alle anderen
+        unnoetig anheben - die Mehrfachtest-Korrektur bestraft dann fuer
+        Arbeit, die gar nicht stattgefunden hat.
+        """
+        basis = load_seeds(7)
+        varianten = breed(basis, 15, seed=3)
+
+        ids = [g.genome_id for g in varianten]
+        assert len(ids) == len(set(ids))
+        assert not set(ids) & {g.genome_id for g in basis}
+
+    def test_breed_ist_reproduzierbar(self) -> None:
+        basis = load_seeds(7)
+
+        a = [g.genome_id for g in breed(basis, 6, seed=42)]
+        b = [g.genome_id for g in breed(basis, 6, seed=42)]
+
+        assert a == b
+
+    def test_alle_varianten_kompilieren(self) -> None:
+        for variante in breed(load_seeds(7), 30, seed=11):
+            assert compile_genome(variante).warmup_bars > 0
+
+    def test_ohne_grundlage_keine_varianten(self) -> None:
+        assert breed([], 5) == []
+
+
+# ---------------------------------------------------------------------------
+#  Anzeige
+# ---------------------------------------------------------------------------
+class TestWebAnzeige:
+    def test_endpunkt_liefert_die_rangfolge(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from fastapi.testclient import TestClient
+
+        from core.config import Settings
+        from web.api import create_app
+
+        state = tmp_path / "state"
+        state.mkdir()
+        board = Leaderboard(state / "leaderboard.json")
+        seeds = load_seeds(7)
+        board.record(
+            [
+                kandidat(seeds[0], bestanden=3, erwartung=-0.2),
+                kandidat(seeds[1], bestanden=7, erwartung=-0.05),
+            ],
+            generation=7,
+        )
+        board.save()
+
+        settings = Settings()
+        settings.paths.state = str(state)
+        client = TestClient(create_app(settings))
+
+        daten = client.get("/api/wettbewerb").json()
+
+        assert daten["geprueft"] == 2
+        assert [e["platz"] for e in daten["eintraege"]] == [1, 2]
+        assert daten["eintraege"][0]["gates_bestanden"] == 7
+
+    def test_leere_liste_ist_kein_fehler(self, tmp_path: Path) -> None:
+        from fastapi.testclient import TestClient
+
+        from core.config import Settings
+        from web.api import create_app
+
+        settings = Settings()
+        settings.paths.state = str(tmp_path)
+        client = TestClient(create_app(settings))
+
+        antwort = client.get("/api/wettbewerb")
+
+        assert antwort.status_code == 200
+        assert antwort.json()["eintraege"] == []
+
+
+class TestHistorienSchranke:
+    """Der Fehler, der drei Runden Rechenzeit in eine leere Tabelle steckte."""
+
+    def test_zu_kurze_historie_bricht_ab(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Lieber ein Abbruch als eine Bestenliste voller Nullen.
+
+        Bei 416 Tagen Historie ergibt der Walk-Forward mit 12 Monaten Training
+        und 3 Monaten Test kein einziges Fenster. Der Lauf lief trotzdem
+        fehlerfrei durch, bildete Varianten und fuellte die Rangliste - jeder
+        Eintrag mit null Trades. Das sah nach Ergebnis aus und war keins.
+        """
+        from datetime import UTC, datetime, timedelta
+        from decimal import Decimal
+
+        from typer.testing import CliRunner
+
+        import cli as cli_module
+        from core.config import get_settings
+        from core.models import Candle, Interval
+        from data.store import CandleStore
+
+        monkeypatch.chdir(tmp_path)
+        get_settings.cache_clear()
+
+        t0 = datetime(2025, 1, 1, tzinfo=UTC)
+        candles = [
+            Candle(
+                symbol="BTCUSDT",
+                interval=Interval.M15,
+                open_time=t0 + timedelta(minutes=15 * i),
+                open=Decimal("30000"),
+                high=Decimal("30010"),
+                low=Decimal("29990"),
+                close=Decimal("30000"),
+                volume=Decimal("100"),
+                turnover=Decimal("100"),
+            )
+            # 100 Tage - deutlich zu wenig fuer ein Fenster.
+            for i in range(100 * 96)
+        ]
+        CandleStore(get_settings().paths.data_store).write(
+            "BTCUSDT", Interval.M15, candles
+        )
+
+        result = CliRunner().invoke(cli_module.app, ["wettbewerb", "--runden", "1"])
+        get_settings.cache_clear()
+
+        assert result.exit_code == 2
+        assert "Tage Historie" in result.output

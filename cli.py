@@ -422,6 +422,266 @@ def funding(
 
 
 @app.command()
+def wettbewerb(
+    intervall: str = typer.Option("15", "--intervall", "-i", help="Handelsintervall."),
+    generation: int = typer.Option(
+        7, "--generation", "-g", help="Startkatalog. 7 = Scalp-Setups."
+    ),
+    runden: int = typer.Option(
+        0, help="Anzahl Runden. 0 = Dauerlauf bis Strg-C oder bis einer besteht."
+    ),
+    varianten: int = typer.Option(
+        8, help="Wie viele Varianten je Runde aus den Besten gebildet werden."
+    ),
+    schnell: bool = typer.Option(
+        True, "--schnell/--vollstaendig",
+        help="Vorauswahl mit 7 Gates. Die Zulassung laeuft am Ende mit allen.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Dauerlauf: Strategien pruefen, Beste abwandeln, wiederholen.
+
+    Runde 1 prueft den Katalog. Jede weitere Runde bildet Varianten aus den
+    Kandidaten, die am weitesten kamen, und prueft die. Alles landet in der
+    Bestenliste und ist auf der Website sichtbar - Platz 1 bis Ende, mit dem
+    Grund des Scheiterns.
+
+    Beendet wird durch Strg-C, durch ``--runden``, oder wenn ein Kandidat alle
+    Gates besteht.
+
+    **Was ein Dauerlauf nicht kann.** Er findet nicht durch Ausdauer eine
+    profitable Strategie. Wer lange genug sucht, findet immer etwas, das im
+    Rueckblick gut aussieht - genau dagegen ist die Deflated Sharpe Ratio
+    gebaut. Sie zaehlt jeden Versuch mit und hebt die Huerde entsprechend.
+    Nach tausend Varianten muss ein Kandidat deutlich besser sein als nach
+    zehn, um dieselbe Zulassung zu bekommen. Das ist der Preis des Suchens,
+    und er ist hier sichtbar statt versteckt.
+    """
+    from decimal import Decimal
+    from pathlib import Path
+
+    from backtest.engine import BacktestConfig
+    from data.bybit.errors import BybitError
+    from data.funding import FundingStore, attach_funding
+    from research.admission import load_trials, run_admission, save_trials, write_champion
+    from research.leaderboard import Leaderboard
+    from research.mutation import breed
+    from research.seeds import load_seeds
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+
+    frame = store.read(settings.bybit.symbol, interval_obj)
+    if frame.empty:
+        console.print(
+            f"[red]Keine Kerzen fuer {interval_obj.label}.[/] "
+            f"Zuerst: python -m cli backfill --intervall {intervall}"
+        )
+        raise typer.Exit(2)
+
+    # Reicht die Historie fuer ueberhaupt ein Testfenster?
+    #
+    # Ohne diese Pruefung laeuft der Wettbewerb fehlerfrei durch, erzeugt
+    # Runde um Runde Varianten und traegt sie in die Bestenliste ein - mit
+    # null Trades bei jedem einzelnen. Genau so geschehen: 416 Tage Historie
+    # ergeben bei 12 Monaten Training und 3 Monaten Test **kein** Fenster, und
+    # die Rangliste sah trotzdem gefuellt aus.
+    #
+    # Der ``research``-Befehl hatte diese Schranke von Anfang an. Sie hier zu
+    # vergessen, hat drei Runden Rechenzeit in eine Tabelle gesteckt, die
+    # nichts bedeutete.
+    span_days = (frame["open_time"].iloc[-1] - frame["open_time"].iloc[0]).days
+    if span_days < 450:
+        console.print(
+            f"[red]Nur {span_days} Tage Historie.[/] Der Walk-Forward braucht "
+            "mindestens rund 15 Monate, sonst entsteht kein einziges "
+            "Testfenster - und jede Bestenliste daraus waere leer, ohne dass "
+            "es auffiele.\n"
+            f"Mehr laden: python -m cli backfill --intervall {intervall} "
+            "--von 2020-03-30"
+        )
+        raise typer.Exit(2)
+
+    funding_frame = FundingStore(settings.paths.data_store).read(settings.bybit.symbol)
+    frame = attach_funding(frame, funding_frame)
+    sub_frame = store.read(settings.bybit.symbol, Interval.M1)
+    if sub_frame.empty:
+        sub_frame = None
+
+    try:
+        instrument = BybitMarketData(settings.bybit).get_instrument(settings.bybit.symbol)
+    except BybitError:
+        instrument = _fallback_instrument(settings.bybit.symbol)
+
+    config = BacktestConfig(
+        instrument=instrument, risk=settings.risk, initial_equity=Decimal("500")
+    )
+
+    state = Path(settings.paths.state)
+    board = Leaderboard(state / "leaderboard.json")
+    trials_path = state / "trials.json"
+
+    console.print(
+        f"\n[bold]Wettbewerb[/] {settings.bybit.symbol} {interval_obj.label}\n"
+        f"  Historie   {frame['open_time'].iloc[0]:%Y-%m-%d} bis "
+        f"{frame['open_time'].iloc[-1]:%Y-%m-%d}\n"
+        f"  Bisher     {board.summary()}\n"
+        f"  Ende       {'nach ' + str(runden) + ' Runden' if runden else 'Strg-C'}\n"
+    )
+
+    runde = 0
+    aktuell = load_seeds(generation)
+    herkunft = "Katalog"
+
+    try:
+        while runden == 0 or runde < runden:
+            runde += 1
+            trials_before = load_trials(trials_path)
+            console.print(
+                f"[bold]Runde {runde}[/] - {len(aktuell)} Kandidaten "
+                f"({herkunft}), {trials_before} Versuche bisher"
+            )
+
+            report = run_admission(
+                aktuell,
+                frame,
+                config,
+                trials_so_far=trials_before,
+                sub_frame=sub_frame,
+                run_expensive=not schnell,
+            )
+            save_trials(trials_path, report.trials_after)
+            board.record(report.candidates, generation=generation, herkunft=herkunft)
+            board.save()
+
+            _zeige_bestenliste(board, limit=10)
+            _send_report(settings, _wettbewerbs_bericht(board, runde, interval_obj))
+
+            if report.champion is not None:
+                console.print(
+                    f"\n[green]Ein Kandidat hat alle Gates bestanden: "
+                    f"{report.champion.genome.name}[/]"
+                )
+                write_champion(
+                    report.champion, Path(settings.paths.strategies) / "champion.json"
+                )
+                console.print("[dim]Naechster Schritt: python -m cli trade --trocken[/]")
+                break
+
+            # Weiter mit Varianten der Besten. Nur aus denen, die schon nahe
+            # dran waren - wild zu streuen kostet Versuche und bringt nichts.
+            spitze = board.best(5)
+            ids = {e.genome_id for e in spitze}
+            basis = [c.genome for c in report.candidates if c.genome.genome_id in ids]
+            if not basis:
+                basis = [c.genome for c in report.candidates[:3]]
+
+            aktuell = breed(basis, varianten, seed=runde)
+            herkunft = "Variante"
+            if not aktuell:
+                console.print("[yellow]Keine neuen Varianten mehr moeglich.[/]")
+                break
+
+    except KeyboardInterrupt:
+        console.print("\n[dim]Abgebrochen. Die Bestenliste ist gespeichert.[/]")
+
+    board.save()
+    console.print(f"\n[bold]{board.summary()}[/]")
+    console.print(f"[dim]Bestenliste: {board.path}[/]")
+
+
+def _zeige_bestenliste(board, *, limit: int = 10) -> None:
+    table = Table(title="Bestenliste", header_style="bold")
+    table.add_column("#", justify="right")
+    table.add_column("Strategie")
+    table.add_column("Gates", justify="right")
+    table.add_column("Trades", justify="right")
+    table.add_column("Erwartung", justify="right")
+    table.add_column("Gescheitert an")
+
+    for platz, eintrag in enumerate(board.best(limit), start=1):
+        stil = "green" if eintrag.zugelassen else ""
+        table.add_row(
+            str(platz),
+            f"[{stil}]{eintrag.name[:38]}[/]" if stil else eintrag.name[:38],
+            f"{eintrag.gates_bestanden}/{eintrag.gates_gesamt}",
+            str(eintrag.trades),
+            f"{eintrag.erwartung_r:+.3f} R",
+            ", ".join(eintrag.gescheitert_an[:2]) or "-",
+        )
+    console.print(table)
+
+
+def _wettbewerbs_bericht(board, runde: int, interval_obj) -> dict:
+    from dataclasses import asdict
+
+    return {
+        "art": "wettbewerb",
+        "zeitpunkt": datetime.now(UTC).isoformat(),
+        "runde": runde,
+        "intervall": interval_obj.label,
+        "zusammenfassung": board.summary(),
+        "bestenliste": [asdict(e) for e in board.best(25)],
+    }
+
+
+@app.command()
+def kosten(
+    rr: float = typer.Option(1.5, help="Chance-Risiko-Verhaeltnis der Ziele."),
+) -> None:
+    """Was Gebuehren kosten - in R, nicht in Prozent.
+
+    Die Umrechnung, an der schnelles Handeln haengt: Gebuehren zaehlen als
+    Anteil am **Risiko** eines Trades, und der Umrechnungsfaktor ist die
+    Stop-Distanz. Derselbe Gebuehrensatz kostet bei 0,2 % Stop das Fuenffache
+    von dem, was er bei 1 % Stop kostet.
+
+    Die Tabelle sagt, welche Trefferquote noetig ist, um bei der jeweiligen
+    Stop-Distanz gerade eben nicht zu verlieren.
+    """
+    from backtest.costs import CostModel
+    from research.costfloor import floor_table
+
+    settings = get_settings()
+    # Die Gebuehrensaetze stehen im Kostenmodell des Backtests, nicht in den
+    # Einstellungen - dort geht es um das Budget der Research-KI. Beides
+    # "Kosten" zu nennen war schon einmal verwirrend genug.
+    costs = CostModel()
+
+    table = Table(
+        title=f"Kostenschwelle bei {rr:g}:1", header_style="bold"
+    )
+    table.add_column("Stop-Distanz", justify="right")
+    table.add_column("noetige Trefferquote", justify="right")
+    table.add_column("Gebuehren je Trade", justify="right")
+
+    ohne_kosten = 1.0 / (rr + 1.0)
+    for stop, quote, gebuehren, _ in floor_table(rr=rr, costs=costs):
+        stil = "red" if quote > 0.5 else "yellow" if quote > 0.45 else "green"
+        table.add_row(
+            f"{stop:.2f} %",
+            f"[{stil}]{quote:.1%}[/]",
+            f"{gebuehren:.3f} R",
+        )
+    console.print(table)
+
+    console.print(
+        f"\nOhne Gebuehren waeren [bold]{ohne_kosten:.1%}[/] noetig.\n"
+        f"[dim]Maker {float(costs.maker_fee_rate) * 100:.3f} %, "
+        f"Taker {float(costs.taker_fee_rate) * 100:.3f} % - VIP0 bei Bybit.[/]\n"
+    )
+    console.print(
+        "[dim]Der Hebel folgt daraus, er ist kein eigener Regler:\n"
+        f"  Hebel = Risiko je Trade / Stop-Distanz = "
+        f"{float(settings.risk.risk_per_trade_pct):g} % / Stop.\n"
+        "Enger stellen heisst hoeher hebeln - dieselbe Entscheidung, zweimal "
+        "ausgedrueckt.[/]"
+    )
+
+
+@app.command()
 def status() -> None:
     """Was liegt im Datenspeicher?"""
     settings = get_settings()
@@ -533,6 +793,13 @@ def research(
         "--ki",
         help="Die Research-KI neue Kandidaten vorschlagen lassen, statt der "
         "Standardliste. Kostet Geld und braucht LLM__ANTHROPIC_API_KEY.",
+    ),
+    generation: int = typer.Option(
+        5,
+        "--generation",
+        "-g",
+        help="Welche Kandidatenliste. 5 = Halten (Tageskerzen), "
+        "6 = schnelles Handeln mit Hebel (15-Minuten-Kerzen).",
     ),
     uebernehmen: bool = typer.Option(
         True, help="Den Champion nach champion.json schreiben."
@@ -665,7 +932,7 @@ def research(
                 "Standardkandidaten.[/]"
             )
     if not genomes:
-        genomes = load_seeds()
+        genomes = load_seeds(generation)
 
     # Passt die Zeitebene zur Bauform?
     #
@@ -692,7 +959,7 @@ def research(
         f"\n[bold]Zulassung[/] {settings.bybit.symbol} {interval_obj.label}\n"
         f"  Historie    {frame['open_time'].iloc[0]:%Y-%m-%d} bis "
         f"{frame['open_time'].iloc[-1]:%Y-%m-%d}  ({len(frame):,} Kerzen)\n"
-        f"  Kandidaten  {len(genomes)}\n"
+        f"  Kandidaten  {len(genomes)} (Generation {generation})\n"
         f"  Versuche    {trials_before} bisher"
         f"{'  [dim](fliesst in die Mehrfachtest-Korrektur ein)[/]' if trials_before else ''}\n"
         f"  Gates       {'6 (schnell)' if schnell else '9 (vollstaendig)'}\n".replace(
