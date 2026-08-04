@@ -193,6 +193,12 @@ class Backtester:
         indicators = strategy.prepare(frame)
         _verify_indicator_lengths(indicators, len(frame))
 
+        # Die Betriebsart der Positionsgroesse gehoert zur Strategie, nicht zur
+        # Konfiguration: Ob eine Menge aus dem Stop oder aus dem Kapital folgt,
+        # entscheidet die Idee dahinter. Strategien ohne diese Angabe verhalten
+        # sich unveraendert - ``None`` ist die bisherige Risikoformel.
+        equity_fraction = getattr(strategy, "equity_fraction", None)
+
         sub_index = _SubBarIndex(sub_frame) if sub_frame is not None else None
 
         state = _RunState(
@@ -233,7 +239,7 @@ class Backtester:
 
             if signal is not None:
                 result.signals_generated += 1
-                self._consider_entry(state, result, signal, i)
+                self._consider_entry(state, result, signal, i, equity_fraction)
 
             # 3. Kapitalkurve fortschreiben.
             mark = Decimal(str(arrays["close"][i]))
@@ -282,7 +288,12 @@ class Backtester:
 
     # -- Einstieg ------------------------------------------------------------
     def _consider_entry(
-        self, state: _RunState, result: BacktestResult, signal: Signal, index: int
+        self,
+        state: _RunState,
+        result: BacktestResult,
+        signal: Signal,
+        index: int,
+        equity_fraction: Decimal | None = None,
     ) -> None:
         if state.position is not None or state.pending is not None:
             state.count_rejection(result, "position_bereits_offen")
@@ -307,6 +318,7 @@ class Backtester:
             equity=equity,
             instrument=self.config.instrument,
             risk=self.config.risk,
+            equity_fraction=equity_fraction,
         )
         if isinstance(sized, SizingRejected):
             state.count_rejection(result, sized.reason.value)

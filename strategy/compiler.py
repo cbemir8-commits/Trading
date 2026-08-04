@@ -40,6 +40,18 @@ class CompiledStrategy:
         self.warmup_bars = _estimate_warmup(genome)
         self._last_entry_index: int | None = None
 
+    @property
+    def equity_fraction(self) -> Decimal | None:
+        """Kapitalanteil, falls das Genom danach dimensioniert - sonst ``None``.
+
+        ``None`` heisst ausdruecklich "die bisherige Risikoformel" und nicht
+        "kein Wert": Engine und Risk-Officer unterscheiden genau daran, welche
+        Betriebsart gilt.
+        """
+        if self.genome.sizing.kind != "kapitalanteil":
+            return None
+        return Decimal(str(self.genome.sizing.fraction))
+
     # -- Vorberechnung -------------------------------------------------------
     def prepare(self, frame: pd.DataFrame) -> dict[str, np.ndarray]:
         """Alle benoetigten Reihen einmal berechnen.

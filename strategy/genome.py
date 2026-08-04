@@ -138,12 +138,64 @@ class StopSpec(BaseModel):
     kind: Literal["atr", "percent"] = "atr"
     atr_period: int = Field(14, ge=5, le=50)
     multiple: float = Field(1.5, ge=0.3, le=6.0)
-    percent: float = Field(0.6, ge=0.15, le=3.0)
+
+    percent: float = Field(0.6, ge=0.15, le=25.0)
+    """Bis 25 %, weil der Stop nicht immer der Ausstieg ist.
+
+    Fuer eine wettende Strategie waere das absurd - dort bestimmt die
+    Stop-Distanz die Menge, und ein weiter Stop hiesse eine winzige Position.
+    Der Sizer lehnt solche Genome deshalb weiterhin ab
+    (``max_stop_distance_pct``); diese Schranke hier muss die Arbeit nicht
+    doppelt tun.
+
+    Fuer eine investierte Strategie ist der Stop dagegen **Notbremse und nicht
+    Ausstieg**: Ausgestiegen wird ueber eine Bedingung, der Stop faengt nur den
+    Fall ab, in dem der Markt ohne Zwischenschritt wegbricht. Er gehoert dann
+    weit genug hinaus, dass normales Rauschen ihn nicht erreicht. Die alte
+    Obergrenze von 3 % hat genau diese Bauform unmoeglich gemacht - auf
+    Stundenkerzen wird eine 3-%-Marke staendig getroffen."""
 
     def describe(self) -> str:
         if self.kind == "atr":
             return f"{self.multiple:g} x ATR({self.atr_period})"
         return f"{self.percent:g} % fest"
+
+
+class SizingSpec(BaseModel):
+    """Wie gross die Position wird - und das ist keine Nebensache.
+
+    Bisher gab es genau einen Weg: Menge = Risikobetrag / Stop-Distanz. Er ist
+    richtig fuer Strategien, die auf ein Ereignis wetten und einen engen Stop
+    haben. Fuer eine Strategie, die **investiert bleibt**, ist er es nicht -
+    dort ist der Stop weit oder faktisch nicht vorhanden, und die Formel liefert
+    dann eine winzige Position oder verweigert den Handel ganz.
+
+    Genau daran sind bisher alle Kandidaten gescheitert, die laenger als ein
+    paar Stunden dabeibleiben wollten: nicht an der Idee, sondern an unserer
+    eigenen Sperre ``max_stop_distance_pct``. Das war ein blinder Fleck im
+    Aufbau, keine Erkenntnis ueber die Maerkte.
+
+    ``kapitalanteil`` macht die Menge stattdessen am Kapital fest: 40 % Anteil
+    heisst 40 % des Kontos im Markt, unabhaengig davon, wo der Stop liegt. Der
+    Rueckgang wird dann nicht ueber den Stop begrenzt, sondern darueber,
+    **nicht investiert zu sein** - und ob das gelingt, misst das Drawdown-Gate
+    ohnehin.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    kind: Literal["risiko", "kapitalanteil"] = "risiko"
+    fraction: float = Field(0.4, gt=0, le=1.0)
+    """Anteil des Kapitals im Markt. Nur bei ``kapitalanteil`` wirksam.
+
+    Obergrenze 1,0: kein Hebel. Wer investiert bleibt statt zu wetten, soll das
+    nicht auf Kredit tun - ein Rueckgang von 50 % im Basiswert waere sonst das
+    Ende des Kontos, und in Bitcoin ist das kein hypothetischer Fall."""
+
+    def describe(self) -> str:
+        if self.kind == "risiko":
+            return "Menge aus Risiko und Stop-Distanz"
+        return f"{self.fraction:.0%} des Kapitals im Markt"
 
 
 class TargetSpec(BaseModel):
@@ -186,6 +238,9 @@ class Genome(BaseModel):
 
     stop: StopSpec = Field(default_factory=StopSpec)
     targets: list[TargetSpec] = Field(min_length=1, max_length=4)
+
+    sizing: SizingSpec = Field(default_factory=SizingSpec)
+    """Standard bleibt die Risikoformel - bestehende Genome aendern sich nicht."""
 
     cooldown_bars: int = Field(0, ge=0, le=200)
     """Sperrfrist nach einem Trade. Verhindert, dass dieselbe Bedingung

@@ -666,7 +666,10 @@ class LiveTrader:
         open_positions = len(self.account.get_positions(self.instrument.symbol))
 
         decision = self.officer.evaluate(
-            signal, equity=equity, open_positions=open_positions
+            signal,
+            equity=equity,
+            open_positions=open_positions,
+            equity_fraction=getattr(self.strategy, "equity_fraction", None),
         )
 
         if isinstance(decision, Vetoed):

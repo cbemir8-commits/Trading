@@ -22,7 +22,15 @@ Pruefung.
 
 from __future__ import annotations
 
-from strategy.genome import Condition, Genome, Operand, Operator, StopSpec, TargetSpec
+from strategy.genome import (
+    Condition,
+    Genome,
+    Operand,
+    Operator,
+    SizingSpec,
+    StopSpec,
+    TargetSpec,
+)
 
 
 def _ind(name: str, **params: int) -> Operand:
@@ -770,15 +778,169 @@ GENERATION_4 = [
     funding_crowd_short,
 ]
 
+
+
+# ===========================================================================
+#  Fuenfte Generation - dieselben Ideen, ohne unsere eigene Fessel
+# ===========================================================================
+#
+# Die dritte Generation wollte Beteiligung steuern statt Muster suchen. Sie
+# konnte es nie zeigen. Nicht weil die Idee falsch war, sondern weil zwei
+# Zahlen im eigenen Aufbau sie unmoeglich machten:
+#
+#   max_stop_distance_pct = 3.0   -> weitere Stops wurden abgelehnt
+#   min_oos_trades        = 100   -> wer lange haelt, erreicht das nie
+#
+# Beide sind fuer wettende Strategien richtig und fuer investierte falsch. Der
+# Kompromiss war ein 3-%-Stop auf Stundenkerzen - eine Marke, die staendig von
+# Rauschen getroffen wird und dabei genau die Position wegnimmt, die die Regel
+# halten wollte. Aus 535 Signalen wurden null Trades.
+#
+# Diese Generation ist deshalb keine neue Hypothese, sondern dieselbe unter
+# fairen Bedingungen: Positionsgroesse aus dem Kapitalanteil, Stop als
+# Notbremse weit draussen, Ausstieg ueber die Bedingung. Wenn die dritte
+# Generation nun besteht, lag es an uns. Wenn sie wieder faellt, an der Idee.
+#
+# Die Lockerung ist nicht umsonst: Genau diese Bauform muss zusaetzlich die
+# Messlatte schlagen - Kaufen-und-Halten im selben Zeitraum, risikobereinigt.
+# Ohne diesen Zusatz waere "immer long" ein Kandidat, der bequem durchkaeme.
+
+
+def funding_aware_exposure() -> Genome:
+    """Investiert, ausser die Long-Seite ist ueberhitzt.
+
+    Hypothese: Die Rendite von BTC entsteht ueber lange Haltezeiten, nicht in
+    einzelnen Ausbruechen - deshalb ist Investiertsein der Normalzustand. Die
+    teuren Abschnitte sind die, in denen alle long sind: Dort ist die Rate
+    hoch, jeder Ruecksetzer loest Liquidationen aus, und die naehren sich
+    selbst.
+
+    Das ist die erste Regel, die Funding **zum Aussteigen** benutzt statt zum
+    Einsteigen - und die erste, die von der Messlatte aus denkt statt vom
+    einzelnen Trade. Nicht "wann ist ein guter Einstieg", sondern "wann lohnt
+    es sich, nicht dabei zu sein".
+    """
+    return Genome(
+        name="Beteiligt, ausser es ist ueberhitzt",
+        rationale=(
+            "Long, solange der Kurs ueber seinem 200er-Schnitt liegt und die "
+            "Funding-Rate nicht ungewoehnlich hoch ist. Raus, sobald der "
+            "z-Wert der Funding-Rate ueber 1,5 steigt oder der Trend bricht. "
+            "Hypothese: Die Rendite entsteht ueber lange Haltezeiten; teuer "
+            "sind die Abschnitte mit gedraengter Long-Seite."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.GT,
+                      right=_ind("sma", period=200)),
+            Condition(left=_ind("funding_zscore", period=90), op=Operator.LT,
+                      right=_const(1.5)),
+        ],
+        exit_long=[
+            Condition(left=_ind("funding_zscore", period=90), op=Operator.GT,
+                      right=_const(1.5)),
+        ],
+        # Notbremse, kein Ausstieg: 15 % liegt so weit draussen, dass normales
+        # Rauschen sie nicht erreicht. Ausgestiegen wird ueber die Bedingung.
+        stop=StopSpec(kind="percent", percent=15.0),
+        targets=[TargetSpec(rr=20.0, portion=1.0)],
+        sizing=SizingSpec(kind="kapitalanteil", fraction=0.5),
+        cooldown_bars=0,
+        max_hold_bars=0,
+    )
+
+
+def trend_exposure_fair() -> Genome:
+    """Die dritte Generation, endlich unter fairen Bedingungen.
+
+    Wortgleiche Regel wie ``trend_exposure`` - long ueber dem 200er-Schnitt,
+    raus darunter. Geaendert ist allein, was ausserhalb der Regel liegt:
+    Positionsgroesse aus dem Kapitalanteil, Stop weit genug draussen, um
+    Notbremse zu sein.
+
+    Deshalb ist dieser Kandidat der wichtigste des Laufs, obwohl er der
+    langweiligste ist: Er ist der **Kontrollversuch**. Ein Unterschied zur
+    dritten Generation ist ausschliesslich unserem eigenen Aufbau zuzurechnen.
+    """
+    return Genome(
+        name="Trend-Beteiligung (fair gerechnet)",
+        rationale=(
+            "Long ueber dem 200er-Schnitt, raus darunter. Identisch zur "
+            "dritten Generation; nur Positionsgroesse und Stop folgen jetzt "
+            "der Bauform statt der Wettformel. Kontrollversuch: Ein "
+            "Unterschied liegt dann an unserem Aufbau, nicht an der Idee."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("sma", period=200)),
+        ],
+        exit_long=[
+            Condition(left=_price("close"), op=Operator.LT,
+                      right=_ind("sma", period=200)),
+        ],
+        stop=StopSpec(kind="percent", percent=15.0),
+        targets=[TargetSpec(rr=20.0, portion=1.0)],
+        sizing=SizingSpec(kind="kapitalanteil", fraction=0.5),
+        cooldown_bars=0,
+        max_hold_bars=0,
+    )
+
+
+def carry_exposure() -> Genome:
+    """Beteiligt, wenn die Shorts zahlen.
+
+    Der Carry-Gedanke der vierten Generation, aber als Beteiligung statt als
+    Wette. Dort scheiterte er an 11 Trades im Monat und 24 % Gebuehren vom
+    Bruttogewinn - die Idee war ein Zahlungsstrom, die Umsetzung ein
+    Vielhandelssystem. Das passt nicht zusammen.
+
+    Hier bleibt die Position, solange die Woche im Schnitt guenstig war, und
+    der Ausstieg braucht eine deutliche Gegenbewegung statt eines
+    Vorzeichenwechsels. Weniger Umschlag, weniger Gebuehren, laengere
+    Haltezeit - so, wie ein Zahlungsstrom vereinnahmt wird.
+    """
+    return Genome(
+        name="Carry-Beteiligung",
+        rationale=(
+            "Long, wenn die Funding-Rate der letzten Woche im Schnitt unter "
+            "0,01 % liegt - also guenstig oder negativ. Raus erst bei "
+            "deutlich positivem Schnitt ueber 0,03 %. Hypothese: Der "
+            "Carry-Gedanke stimmt, aber er ertraegt keinen haeufigen Handel; "
+            "in Generation 4 frassen 11 Trades im Monat 24 % des Bruttogewinns."
+        ),
+        entry_long=[
+            Condition(left=_ind("funding_avg", period=21), op=Operator.LT,
+                      right=_const(0.01)),
+        ],
+        exit_long=[
+            Condition(left=_ind("funding_avg", period=21), op=Operator.GT,
+                      right=_const(0.03)),
+        ],
+        stop=StopSpec(kind="percent", percent=15.0),
+        targets=[TargetSpec(rr=20.0, portion=1.0)],
+        sizing=SizingSpec(kind="kapitalanteil", fraction=0.5),
+        cooldown_bars=0,
+        max_hold_bars=0,
+    )
+
+
+#: Fuenfte Generation: Beteiligung, diesmal wirklich messbar.
+GENERATION_5 = [
+    trend_exposure_fair,
+    funding_aware_exposure,
+    carry_exposure,
+]
+
+
 GENERATIONS = {
     1: GENERATION_1,
     2: GENERATION_2,
     3: GENERATION_3,
     4: GENERATION_4,
+    5: GENERATION_5,
 }
 
 
-def load_seeds(generation: int = 4) -> list[Genome]:
+def load_seeds(generation: int = 5) -> list[Genome]:
     """Die Kandidaten einer Generation erzeugen.
 
     Standard ist die neueste: Was widerlegt ist, muss nicht erneut geprueft

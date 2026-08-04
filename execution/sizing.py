@@ -71,6 +71,7 @@ class RejectReason(StrEnum):
     LEVERAGE_CAP_MAKES_QTY_INVALID = "leverage_cap_makes_qty_invalid"
     LIQUIDATION_TOO_CLOSE = "liquidation_too_close"
     NO_EQUITY = "no_equity"
+    INVALID_FRACTION = "invalid_fraction"
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,12 +120,26 @@ def size_position(
     equity: Decimal,
     instrument: Instrument,
     risk: RiskSettings,
+    equity_fraction: Decimal | None = None,
 ) -> SizingResult:
     """Berechnet Menge, Hebel und Take-Profit-Aufteilung fuer ein Signal.
 
     Gibt entweder eine handelbare :class:`SizedPosition` zurueck oder eine
     :class:`SizingRejected` mit Begruendung. Es wird nie geraten und nie
     aufgerundet - im Zweifel handeln wir nicht.
+
+    ``equity_fraction`` schaltet auf die zweite Betriebsart um: Die Menge
+    ergibt sich dann aus dem Kapital, nicht aus der Stop-Distanz. Gedacht fuer
+    Strategien, die investiert bleiben statt auf ein Ereignis zu wetten - dort
+    ist der Stop weit, und die Risikoformel liefert entweder eine winzige
+    Position oder verweigert den Handel an ``max_stop_distance_pct``.
+
+    Wichtig und leicht zu uebersehen: In dieser Betriebsart ist der Verlust je
+    Trade **nicht** mehr auf ``risk_per_trade_pct`` gedeckelt. Er ist gedeckelt
+    auf Anteil x Stop-Distanz, und was dabei herauskommt, steht in
+    ``risk_pct_of_equity``. Die Sicherheit kommt hier nicht vom Stop, sondern
+    davon, in schlechten Phasen gar nicht investiert zu sein - was das
+    Drawdown-Gate misst und der Kill-Switch im Betrieb absichert.
     """
     if equity <= 0:
         return SizingRejected(RejectReason.NO_EQUITY, f"Kapital ist {equity}")
@@ -138,15 +153,31 @@ def size_position(
             f"Stop {stop_pct:.3f} % < Minimum {risk.min_stop_distance_pct} %. "
             "Zu enge Stops werden von normalem Marktrauschen ausgeloest.",
         )
-    if stop_pct > risk.max_stop_distance_pct:
+
+    nach_kapitalanteil = equity_fraction is not None
+
+    # Die Obergrenze fuer die Stop-Distanz gilt nur, wenn der Stop die Menge
+    # bestimmt. Wo er das nicht tut, ist ein weiter Stop kein Risiko, sondern
+    # Absicht - er soll ja gerade nicht bei jedem Ruecksetzer ausloesen.
+    if not nach_kapitalanteil and stop_pct > risk.max_stop_distance_pct:
         return SizingRejected(
             RejectReason.STOP_TOO_WIDE,
             f"Stop {stop_pct:.3f} % > Maximum {risk.max_stop_distance_pct} %.",
         )
 
-    # --- Schritt 1: Menge aus dem Risiko ableiten ---------------------------
-    target_risk = equity * risk.risk_per_trade_pct / Decimal(100)
-    raw_qty = target_risk / stop_distance
+    # --- Schritt 1: Menge bestimmen -----------------------------------------
+    if nach_kapitalanteil:
+        anteil = Decimal(str(equity_fraction))
+        if anteil <= 0 or anteil > risk.max_leverage:
+            return SizingRejected(
+                RejectReason.INVALID_FRACTION,
+                f"Kapitalanteil {anteil} liegt ausserhalb von 0 bis "
+                f"{risk.max_leverage} (Hebeldeckel).",
+            )
+        raw_qty = equity * anteil / signal.entry_price
+    else:
+        target_risk = equity * risk.risk_per_trade_pct / Decimal(100)
+        raw_qty = target_risk / stop_distance
 
     # --- Schritt 2: Hebeldeckel anwenden ------------------------------------
     # Der Deckel begrenzt den Nominalwert, nicht das Risiko. Greift er, wird die
@@ -201,7 +232,18 @@ def size_position(
     #
     # Wuerden wir hier mit dem abgeleiteten Hebel rechnen, kaeme ein viel zu
     # optimistischer Abstand heraus und die Pruefung wuerde nie greifen.
-    exchange_leverage = max(risk.max_leverage, Decimal(1))
+    #
+    # Beim Kapitalanteil wird der Hebel deshalb auf 1 gestellt - und zwar
+    # wirklich, nicht nur in dieser Rechnung: ``exchange_leverage`` wandert in
+    # die Order und setzt den Hebel am Symbol. Sonst passiert genau das
+    # Gegenteil des Gemeinten: Eine Position ueber 40 % des Kontos, bei 3x
+    # eingestellt, hinterlegt nur 13 % als Margin und wird schon nach einem
+    # Rueckgang von 33 % liquidiert - obwohl 60 % des Kontos unberuehrt
+    # danebenliegen. Wer investiert bleiben will, braucht das ganze Konto als
+    # Puffer.
+    exchange_leverage = (
+        Decimal(1) if nach_kapitalanteil else max(risk.max_leverage, Decimal(1))
+    )
     liq_price = instrument.estimate_liquidation_price(
         entry=signal.entry_price, side=signal.side, leverage=exchange_leverage
     )

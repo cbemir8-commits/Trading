@@ -316,9 +316,19 @@ class RiskOfficer:
 
     # -- Signalpruefung ------------------------------------------------------
     def evaluate(
-        self, signal: Signal, *, equity: Decimal, open_positions: int = 0
+        self,
+        signal: Signal,
+        *,
+        equity: Decimal,
+        open_positions: int = 0,
+        equity_fraction: Decimal | None = None,
     ) -> Decision:
-        """Darf dieses Signal gehandelt werden - und wenn ja, wie gross?"""
+        """Darf dieses Signal gehandelt werden - und wenn ja, wie gross?
+
+        ``equity_fraction`` reicht die Betriebsart der Strategie durch. Sie muss
+        hier ankommen und nicht nur im Backtest: Rechnete der Betrieb nach der
+        Risikoformel, waehrend die Zulassung nach Kapitalanteil gerechnet hat,
+        haette die gehandelte Strategie mit der geprueften nichts mehr zu tun."""
         now = self.clock()
 
         if self.state.trading_state is TradingState.KILLED:
@@ -362,7 +372,11 @@ class RiskOfficer:
             )
 
         sized = size_position(
-            signal, equity=equity, instrument=self.instrument, risk=self.settings
+            signal,
+            equity=equity,
+            instrument=self.instrument,
+            risk=self.settings,
+            equity_fraction=equity_fraction,
         )
         if isinstance(sized, SizingRejected):
             return Vetoed(VetoReason.SIZING_REJECTED, sized.detail)

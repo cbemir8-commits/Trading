@@ -38,10 +38,12 @@ import numpy as np
 import pandas as pd
 import structlog
 
+from backtest.costs import CostModel
 from backtest.engine import BacktestConfig, Backtester
 from backtest.metrics import compute_metrics
 from backtest.walkforward import WalkForwardReport
 from core.models import Trade
+from research.benchmark import benchmark_at_equal_risk, buy_and_hold_over_windows
 from strategy.compiler import compile_genome
 from strategy.genome import Genome
 
@@ -122,6 +124,39 @@ class GateThresholds:
     """
 
     min_oos_trades: int = 100
+    """Fuer wettende Strategien: Jeder Trade ist eine Beobachtung."""
+
+    min_oos_days_in_market: int = 250
+    """Fuer investierte Strategien: Ein Handelsjahr gemeinsame Zeit mit dem
+    Markt. Dort ist nicht der Trade die Beobachtung, sondern der Tag."""
+
+    min_oos_entries: int = 10
+    """Auch eine investierte Strategie braucht mehr als eine Entscheidung -
+    sonst haengt das Ergebnis an einem einzigen gluecklichen Einstieg."""
+
+    min_benchmark_edge: float = 1.0
+    """Vielfaches der risikobereinigten Messlatte. 1,0 heisst: mindestens
+    gleichauf mit Kaufen-und-Halten. Weniger zu fordern hiesse, Aufwand,
+    Gebuehren und Liquidationsrisiko fuer nichts in Kauf zu nehmen."""
+
+    min_cagr_pct: float = 15.0
+    """Jahresrendite, unter der sich der Betrieb nicht lohnt.
+
+    Diese Schwelle ist **kein statistisches Kriterium**, sondern eine
+    wirtschaftliche Entscheidung, und sie soll auch so gelesen werden: Ein
+    System, das 3 % im Jahr macht, ist vielleicht sauber gerechnet, deckt aber
+    weder die laufenden Kosten noch den Aufwand.
+
+    Sie steht hier statt der naheliegenden Forderung "mindestens die Haelfte
+    der Rendite der Messlatte". Die waere unerfuellbar gewesen: BTC hat sich
+    von 2020 bis 2026 vervielfacht, aber mit rund 77 % Rueckgang. Die Haelfte
+    dieser Rendite bei den geforderten hoechstens 12 % Rueckgang gibt es nicht -
+    die Bedingung haette jede denkbare Strategie ausgeschlossen und dabei so
+    ausgesehen, als sei keine gut genug.
+
+    Die risikobereinigte Bedingung darueber macht die eigentliche Arbeit: Sie
+    fragt, ob dieselbe Rendite mit weniger Rueckgang erkauft wurde."""
+
     min_oos_sharpe: float = 1.0
     max_oos_drawdown_pct: float = 12.0
     min_window_consistency: float = 0.5
@@ -135,25 +170,141 @@ class GateThresholds:
 # ---------------------------------------------------------------------------
 #  Einzelne Gates
 # ---------------------------------------------------------------------------
-def gate_sample_size(report: WalkForwardReport, t: GateThresholds) -> GateResult:
-    """Genug Trades fuer eine belastbare Aussage?
+def gate_sample_size(
+    report: WalkForwardReport, t: GateThresholds, *, genome: Genome | None = None
+) -> GateResult:
+    """Genug Beobachtungen fuer eine belastbare Aussage?
 
     Ein Sharpe von 3,0 aus 12 Trades ist keine Aussage, sondern Rauschen. Erst
     ab rund 100 Trades wird der Standardfehler klein genug, dass ein Unterschied
     zwischen 0,8 und 1,2 ueberhaupt Bedeutung hat.
+
+    **Was fuer eine wettende Strategie gilt, gilt nicht fuer eine investierte.**
+    Diese Schwelle war lange die einzige, und sie hat eine ganze Klasse von
+    Strategien ausgeschlossen, ohne je etwas ueber sie auszusagen: Wer
+    monatelang investiert bleibt, kommt in sechs Jahren nie auf 100 Trades -
+    sammelt dabei aber Tausende von Tagesergebnissen. Das ist mehr Information,
+    nicht weniger, nur in anderer Form.
+
+    Fuer Genome, die nach Kapitalanteil dimensionieren, zaehlt deshalb die
+    **Zeit im Markt**, dazu eine Untergrenze an Ein- und Ausstiegen, damit das
+    Ergebnis nicht an einer einzigen gluecklichen Entscheidung haengt.
+
+    Diese Lockerung wird nicht verschenkt: Genau diese Klasse muss zusaetzlich
+    das Messlatten-Gate bestehen - sie muss also Kaufen-und-Halten schlagen.
+    Ohne diesen Zusatz waere "immer long" ein Kandidat, der hier durchspaziert.
     """
     count = len(report.all_trades)
-    passed = count >= t.min_oos_trades
+    investiert = genome is not None and genome.sizing.kind == "kapitalanteil"
+
+    if not investiert:
+        passed = count >= t.min_oos_trades
+        return GateResult(
+            name="Stichprobengroesse",
+            status=GateStatus.PASS if passed else GateStatus.FAIL,
+            value=float(count),
+            threshold=float(t.min_oos_trades),
+            message=(
+                f"{count} Trades ausserhalb der Trainingsdaten"
+                if passed
+                else f"Nur {count} Trades - zu wenig fuer eine belastbare Aussage. "
+                "Haeufiger handelnde Bedingungen oder laengerer Zeitraum noetig."
+            ),
+        )
+
+    stunden = report.combined.avg_duration_hours * count if report.combined else 0.0
+    tage = stunden / 24.0
+    passed = tage >= t.min_oos_days_in_market and count >= t.min_oos_entries
     return GateResult(
         name="Stichprobengroesse",
         status=GateStatus.PASS if passed else GateStatus.FAIL,
-        value=float(count),
-        threshold=float(t.min_oos_trades),
+        value=round(tage, 1),
+        threshold=float(t.min_oos_days_in_market),
         message=(
-            f"{count} Trades ausserhalb der Trainingsdaten"
+            f"{tage:.0f} Tage im Markt aus {count} Ein- und Ausstiegen"
             if passed
-            else f"Nur {count} Trades - zu wenig fuer eine belastbare Aussage. "
-            "Haeufiger handelnde Bedingungen oder laengerer Zeitraum noetig."
+            else f"Nur {tage:.0f} Tage im Markt aus {count} Ein- und Ausstiegen "
+            f"(noetig: {t.min_oos_days_in_market} Tage und "
+            f"{t.min_oos_entries} Einstiege). Zu wenig gemeinsame Zeit mit dem "
+            "Markt fuer eine belastbare Aussage."
+        ),
+    )
+
+
+def gate_benchmark(
+    report: WalkForwardReport,
+    frame: pd.DataFrame,
+    t: GateThresholds,
+    *,
+    costs: CostModel | None = None,
+) -> GateResult:
+    """Schlaegt die Strategie einfaches Halten - im selben Zeitraum?
+
+    Die Frage, die zwei Generationen lang gefehlt hat. Sie ist nicht dieselbe
+    wie "verdient die Strategie Geld": Ueber 2020 bis 2026 hat BTC sich
+    vervielfacht. Eine Strategie mit 30 % Rendite in diesem Zeitraum klingt gut
+    und ist trotzdem ein Verlustgeschaeft - Nichtstun haette mehr gebracht, ohne
+    Gebuehren, ohne Nachtschichten, ohne Liquidationsrisiko.
+
+    Gemessen wird auf **denselben Testfenstern**, nicht auf der ganzen
+    Historie, und an zwei Bedingungen zugleich:
+
+    * **risikobereinigt mindestens gleichauf** - die Messlatte wird auf den
+      Rueckgang der Strategie skaliert. Zwei Drittel der Rendite bei einem
+      Drittel des Rueckgangs ist der Messlatte ueberlegen, obwohl weniger
+      verdient wird.
+    * **kein Feigenblatt** - die Jahresrendite muss ueber der Schwelle liegen,
+      unter der sich der Betrieb nicht lohnt. Sonst besteht eine Strategie, die
+      fast nie investiert ist, allein durch ihren winzigen Rueckgang - und
+      verdient nichts.
+    """
+    windows = [
+        (w.window.test_start, w.window.test_end)
+        for w in report.windows
+        if w.window is not None
+    ]
+    if not windows or report.combined is None:
+        return GateResult(
+            name="Messlatte",
+            status=GateStatus.SKIP,
+            value=0.0,
+            threshold=t.min_benchmark_edge,
+            message="Keine Testfenster - nichts zu vergleichen",
+        )
+
+    halten_rendite, halten_rueckgang = buy_and_hold_over_windows(
+        frame, windows, costs=costs
+    )
+    eigen = report.combined.total_return_pct
+    messlatte = benchmark_at_equal_risk(
+        halten_rendite, halten_rueckgang, report.combined.max_drawdown_pct
+    )
+
+    besser = eigen >= messlatte * t.min_benchmark_edge
+    lohnend = report.combined.cagr_pct >= t.min_cagr_pct
+
+    if besser and lohnend:
+        zusatz = ""
+    elif not besser:
+        zusatz = " - risikobereinigt schlechter als Nichtstun."
+    else:
+        zusatz = (
+            f" - risikobereinigt besser, aber nur {report.combined.cagr_pct:.1f} % "
+            f"im Jahr. Unter {t.min_cagr_pct:.0f} % lohnt der Betrieb nicht."
+        )
+
+    return GateResult(
+        name="Messlatte",
+        status=GateStatus.PASS if besser and lohnend else GateStatus.FAIL,
+        value=round(eigen, 3),
+        threshold=round(messlatte * t.min_benchmark_edge, 3),
+        message=(
+            f"Strategie {report.combined.total_return_pct:+.1f} % bei "
+            f"{report.combined.max_drawdown_pct:.1f} % Rueckgang "
+            f"({report.combined.cagr_pct:+.1f} % p.a.), "
+            f"Halten {halten_rendite:+.1f} % bei {halten_rueckgang:.1f} % "
+            f"(auf gleiches Risiko gebracht: {messlatte:+.1f} %)"
+            + zusatz
         ),
     )
 
@@ -690,7 +841,8 @@ def evaluate_gates(
     thresholds = thresholds or GateThresholds()
     report = GateReport(genome_id=genome.genome_id)
 
-    report.results.append(gate_sample_size(walkforward, thresholds))
+    report.results.append(gate_sample_size(walkforward, thresholds, genome=genome))
+    report.results.append(gate_benchmark(walkforward, frame, thresholds))
     report.results.append(gate_oos_sharpe(walkforward, thresholds))
     report.results.append(gate_drawdown(walkforward, thresholds))
     report.results.append(gate_consistency(walkforward, thresholds))
