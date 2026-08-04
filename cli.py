@@ -472,6 +472,7 @@ def wettbewerb(
     from research.leaderboard import Leaderboard
     from research.mutation import breed
     from research.seeds import load_seeds
+    from research.tradelog import build_log
 
     _configure_logging(verbose)
     settings = get_settings()
@@ -562,6 +563,17 @@ def wettbewerb(
             board.record(report.candidates, generation=generation, herkunft=herkunft)
             board.save()
 
+            # Von den Besten die einzelnen Trades mitschreiben.
+            #
+            # Die Kennzahlen sagen nicht, was eine Strategie eigentlich getan
+            # hat: Ausgeglichene Erwartung kann viele kleine Gewinne mit
+            # wenigen grossen Verlusten heissen - oder genau umgekehrt.
+            # Dieselbe Zahl, gegensaetzliche Erfahrung damit.
+            spitzen_ids = {e.genome_id for e in board.best(3)}
+            for kandidat in report.candidates:
+                if kandidat.genome.genome_id in spitzen_ids:
+                    _schreibe_tradelog(state, build_log(kandidat))
+
             _zeige_bestenliste(board, limit=10)
             _send_report(
                 settings,
@@ -599,6 +611,23 @@ def wettbewerb(
     board.save()
     console.print(f"\n[bold]{board.summary()}[/]")
     console.print(f"[dim]Bestenliste: {board.path}[/]")
+
+
+def _schreibe_tradelog(state, log) -> None:
+    """Trades und Kapitalkurve eines Kandidaten ablegen.
+
+    Je Genom eine Datei. Ein neuer, besserer Lauf ueberschreibt sie - anders
+    als die Bestenliste, die das jeweils beste Ergebnis behaelt: Hier geht es
+    um Anschauung, und der juengste Lauf ist der anschaulichste.
+    """
+    import json as _json
+    from dataclasses import asdict as _asdict
+
+    ordner = state / "trades"
+    ordner.mkdir(parents=True, exist_ok=True)
+    (ordner / f"{log.genome_id}.json").write_text(
+        _json.dumps(_asdict(log), indent=2, ensure_ascii=False, default=str)
+    )
 
 
 def _zeige_bestenliste(board, *, limit: int = 10) -> None:
