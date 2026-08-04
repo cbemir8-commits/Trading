@@ -541,3 +541,69 @@ class TestZeitebene:
                 f"{genome.name} dimensioniert nach der Wettformel - dann "
                 "gehoert der Kandidat nicht in diese Generation."
             )
+
+
+class TestBestaendigkeitZaehltNurGehandeltes:
+    """Ein Fenster ohne Trade ist weder Erfolg noch Misserfolg.
+
+    Frueher zaehlte es als "nicht profitabel". Damit wurde genau das bestraft,
+    was eine Halte-Strategie tun soll: In den vier Baerenmarkt-Quartalen 2022
+    stand ein Kandidat korrekt an der Seitenlinie - und bekam vier
+    Verlustfenster angerechnet. Von 19 Fenstern hatten 10 keinen Trade; die
+    Quote fiel dadurch von 44 % auf 21 %.
+    """
+
+    @staticmethod
+    def _bericht(muster: list[str]):
+        """``+`` Gewinn, ``-`` Verlust, ``.`` kein Handel."""
+        from types import SimpleNamespace
+
+        from backtest.walkforward import WalkForwardReport
+
+        report = WalkForwardReport()
+        for zeichen in muster:
+            netto = {"+" : 100.0, "-": -50.0, ".": 0.0}[zeichen]
+            report.windows.append(
+                SimpleNamespace(
+                    metrics=SimpleNamespace(net_profit=netto),
+                    is_profitable=netto > 0,
+                    trades=[] if zeichen == "." else [object()],
+                )
+            )
+        return report
+
+    def test_leere_fenster_zaehlen_nicht_mit(self) -> None:
+        bericht = self._bericht(["+", "+", "-", ".", ".", ".", ".", "+", "-", "-"])
+
+        # 3 Gewinner von 6 gehandelten Fenstern - nicht von 10.
+        assert bericht.active_windows == 6
+        assert bericht.consistency == pytest.approx(0.5)
+
+    def test_ohne_jeden_handel_null(self) -> None:
+        assert self._bericht([".", ".", "."]).consistency == 0.0
+
+    def test_ein_glueckliches_fenster_besteht_nicht(self) -> None:
+        """Das Schlupfloch, das die Korrektur haette oeffnen koennen.
+
+        Wer in genau einem Fenster handelt und gewinnt, haette rechnerisch
+        100 % Bestaendigkeit. Deshalb verlangt das Gate eine Mindestzahl
+        aktiver Fenster, bevor die Quote ueberhaupt etwas bedeutet.
+        """
+        from research.gates import GateStatus, GateThresholds, gate_consistency
+
+        bericht = self._bericht(["+", ".", ".", ".", ".", ".", ".", ".", "."])
+
+        assert bericht.consistency == pytest.approx(1.0)
+        ergebnis = gate_consistency(bericht, GateThresholds())
+        assert ergebnis.status is GateStatus.FAIL
+        assert "zu wenige" in ergebnis.message
+
+    def test_genug_aktive_fenster_werden_beurteilt(self) -> None:
+        from research.gates import GateStatus, GateThresholds, gate_consistency
+
+        bericht = self._bericht(["+"] * 5 + ["-"] * 2 + ["."] * 8)
+
+        ergebnis = gate_consistency(bericht, GateThresholds())
+
+        assert ergebnis.status is GateStatus.PASS
+        assert "zaehlen nicht mit" in ergebnis.message

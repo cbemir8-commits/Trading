@@ -187,9 +187,14 @@ def make_candidate(
     report = WalkForwardReport()
     for index in range(windows):
         net = 100.0 if index < profitable else -50.0
+        # ``trades`` muss belegt sein: Fenster ohne Handel zaehlen bei der
+        # Bestaendigkeit nicht mit, und ein Kandidat, der in keinem Fenster
+        # handelt, haette hier eine Quote von null statt der gemeinten.
         report.windows.append(
             SimpleNamespace(  # type: ignore[arg-type]
-                metrics=SimpleNamespace(net_profit=net), is_profitable=net > 0
+                metrics=SimpleNamespace(net_profit=net),
+                is_profitable=net > 0,
+                trades=[object()],
             )
         )
     report.combined = SimpleNamespace(sharpe=sharpe)  # type: ignore[assignment]

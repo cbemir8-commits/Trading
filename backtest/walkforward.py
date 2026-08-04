@@ -86,16 +86,36 @@ class WalkForwardReport:
         return sum(1 for w in self.windows if w.is_profitable)
 
     @property
+    def active_windows(self) -> int:
+        """Fenster, in denen ueberhaupt gehandelt wurde."""
+        return sum(1 for w in self.windows if w.trades)
+
+    @property
     def consistency(self) -> float:
-        """Anteil profitabler Fenster.
+        """Anteil profitabler Fenster - gemessen an denen, in denen gehandelt wurde.
 
         Aussagekraeftiger als die Gesamtrendite: Eine Strategie mit 60 %
         profitablen Fenstern ist belastbarer als eine, die ihren gesamten
         Gewinn aus einem einzigen Ausreisser zieht.
+
+        **Fenster ohne Trade zaehlen nicht mit**, und das ist eine Korrektur,
+        keine Milderung. Frueher gingen sie als "nicht profitabel" ein. Damit
+        wurde genau das bestraft, was eine Halte-Strategie tun soll: In den
+        vier Baerenmarkt-Quartalen 2022 stand ein Kandidat korrekt an der
+        Seitenlinie - und bekam dafuer vier Verlustfenster angerechnet.
+
+        Ein Fenster ohne Handel ist weder Erfolg noch Misserfolg. Es sagt
+        nichts darueber aus, ob die Strategie funktioniert, und darf deshalb
+        in keine Richtung zaehlen.
+
+        Dass daraus kein Schlupfloch wird - "einmal handeln, gewinnen, 100 %
+        Bestaendigkeit" -, sichert das Gate ab: Es verlangt eine Mindestzahl
+        aktiver Fenster.
         """
-        if not self.windows:
+        aktiv = self.active_windows
+        if not aktiv:
             return 0.0
-        return self.profitable_windows / len(self.windows)
+        return self.profitable_windows / aktiv
 
     @property
     def worst_window(self) -> WindowResult | None:

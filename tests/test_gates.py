@@ -269,8 +269,16 @@ def make_report(
         window_metrics = compute_metrics(
             [make_trade(str(pnl), index=i)], window_curve, initial_equity=Decimal("500")
         )
+        # Jedes Fenster bekommt seinen Trade. Fenster ohne Handel zaehlen bei
+        # der Bestaendigkeit nicht mit - eine leere Liste wuerde hier also
+        # etwas anderes pruefen, als der Test zu pruefen vorgibt.
         report.windows.append(
-            WindowResult(window=None, metrics=window_metrics, trades=[], result=None)  # type: ignore[arg-type]
+            WindowResult(  # type: ignore[arg-type]
+                window=None,
+                metrics=window_metrics,
+                trades=[make_trade(str(pnl), index=i)],
+                result=None,
+            )
         )
     return report
 

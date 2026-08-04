@@ -160,6 +160,13 @@ class GateThresholds:
     min_oos_sharpe: float = 1.0
     max_oos_drawdown_pct: float = 12.0
     min_window_consistency: float = 0.5
+
+    min_active_windows: int = 6
+    """So viele Fenster muessen ueberhaupt einen Trade enthalten, bevor die
+    Bestaendigkeitsquote etwas bedeutet.
+
+    Ohne diese Schranke waere die Quote ein Schlupfloch: Wer in einem einzigen
+    Fenster handelt und gewinnt, haette 100 % Bestaendigkeit."""
     min_plateau_ratio: float = 0.6
     max_monte_carlo_drawdown_pct: float = 15.0
     min_regime_profit_factor: float = 0.9
@@ -357,21 +364,42 @@ def gate_consistency(report: WalkForwardReport, t: GateThresholds) -> GateResult
     Gesamtzeitraum hervorragend aus und ist trotzdem wertlos.
     """
     consistency = report.consistency
-    passed = consistency >= t.min_window_consistency
+    aktiv = report.active_windows
     worst = report.worst_window
     detail = (
         f", schlechtestes Fenster {worst.metrics.net_profit:+.2f}"
         if worst is not None
         else ""
     )
+
+    # Gezaehlt wird nur, wo gehandelt wurde - ein Fenster ohne Trade sagt
+    # nichts darueber aus, ob die Strategie funktioniert. Damit daraus kein
+    # Schlupfloch wird ("einmal handeln, gewinnen, 100 %"), braucht es genug
+    # aktive Fenster, bevor die Quote ueberhaupt etwas bedeutet.
+    if aktiv < t.min_active_windows:
+        return GateResult(
+            name="Bestaendigkeit",
+            status=GateStatus.FAIL,
+            value=float(aktiv),
+            threshold=float(t.min_active_windows),
+            message=(
+                f"Nur {aktiv} von {report.window_count} Fenstern mit Handel - "
+                f"zu wenige, um Bestaendigkeit zu beurteilen. Noetig sind "
+                f"{t.min_active_windows}."
+            ),
+        )
+
+    passed = consistency >= t.min_window_consistency
+    ruhig = report.window_count - aktiv
     return GateResult(
         name="Bestaendigkeit",
         status=GateStatus.PASS if passed else GateStatus.FAIL,
         value=consistency,
         threshold=t.min_window_consistency,
         message=(
-            f"{report.profitable_windows} von {report.window_count} Fenstern "
+            f"{report.profitable_windows} von {aktiv} gehandelten Fenstern "
             f"profitabel{detail}"
+            + (f" ({ruhig} Fenster ohne Handel, zaehlen nicht mit)" if ruhig else "")
         ),
     )
 
