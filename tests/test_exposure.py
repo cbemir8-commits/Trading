@@ -498,3 +498,46 @@ def _report_mit(*, rendite: float, rueckgang: float, cagr: float, rahmen: pd.Dat
         combined=kennzahlen,
         all_trades=[],
     )
+
+
+class TestZeitebene:
+    """Die Beschraenkung, die den ersten Entwurf von Generation 5 wertlos machte."""
+
+    def test_halte_strategien_gehoeren_auf_tageskerzen(self) -> None:
+        """200 Perioden muessen 200 Tage heissen, nicht 200 Stunden.
+
+        Die Whitelist laesst hoechstens 400 Perioden zu. Auf Stundenkerzen ist
+        der laengste ausdrueckbare Durchschnitt damit gut zwei Wochen - ein
+        Langfristfilter existiert dort schlicht nicht. Wer eine Halte-Strategie
+        auf Stundenkerzen rechnet, misst etwas anderes, als in ihrer
+        Begruendung steht.
+        """
+        from research.seeds import load_seeds
+        from strategy.indicators import REGISTRY
+
+        _, spec = REGISTRY["sma"]
+        hoechste = spec.param_bounds["period"][1]
+
+        for genome in load_seeds(5):
+            for condition in genome.all_conditions:
+                for operand in (condition.left, condition.right):
+                    if operand.kind != "indicator":
+                        continue
+                    period = operand.params.get("period", 0)
+                    assert period <= hoechste
+                    # Auf Tageskerzen ist jede Periode zugleich die Zahl der
+                    # Tage - genau das steht in den Begruendungen.
+                    assert period <= 400, (
+                        f"{genome.name}: Periode {period} ist auch auf "
+                        "Tageskerzen nicht ausdrueckbar"
+                    )
+
+    def test_alle_kandidaten_der_generation_halten(self) -> None:
+        """Sonst greift die Warnung im research-Befehl nicht fuer alle."""
+        from research.seeds import load_seeds
+
+        for genome in load_seeds(5):
+            assert genome.sizing.kind == "kapitalanteil", (
+                f"{genome.name} dimensioniert nach der Wettformel - dann "
+                "gehoert der Kandidat nicht in diese Generation."
+            )

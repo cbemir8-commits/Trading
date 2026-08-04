@@ -804,6 +804,23 @@ GENERATION_4 = [
 # Die Lockerung ist nicht umsonst: Genau diese Bauform muss zusaetzlich die
 # Messlatte schlagen - Kaufen-und-Halten im selben Zeitraum, risikobereinigt.
 # Ohne diesen Zusatz waere "immer long" ein Kandidat, der bequem durchkaeme.
+#
+# ACHTUNG, TAGESKERZEN
+# --------------------
+# Diese Generation gehoert auf ``-i D`` und nirgendwo sonst. Der Grund ist eine
+# Beschraenkung, die man leicht uebersieht: Die Indikator-Whitelist laesst
+# hoechstens 400 Perioden zu. Auf Stundenkerzen sind 200 Perioden deshalb
+# **acht Tage**, nicht acht Monate - und der klassische Langfristfilter laesst
+# sich dort ueberhaupt nicht ausdruecken.
+#
+# Beim ersten Entwurf stand in den Begruendungen "langfristiger Durchschnitt"
+# und "die letzte Woche", waehrend der Code auf Stundenkerzen acht Tage und
+# einen Tag meinte. Eine Halte-Strategie mit Acht-Tage-Filter haelt nichts;
+# sie springt rein und raus und frisst genau die Gebuehren, die diese
+# Generation vermeiden sollte. Der Text war richtig, die Zeitebene falsch.
+#
+#     python -m cli backfill --intervall D
+#     python -m cli research --intervall D
 
 
 def funding_aware_exposure() -> Genome:
@@ -908,11 +925,11 @@ def carry_exposure() -> Genome:
             "in Generation 4 frassen 11 Trades im Monat 24 % des Bruttogewinns."
         ),
         entry_long=[
-            Condition(left=_ind("funding_avg", period=21), op=Operator.LT,
+            Condition(left=_ind("funding_avg", period=7), op=Operator.LT,
                       right=_const(0.01)),
         ],
         exit_long=[
-            Condition(left=_ind("funding_avg", period=21), op=Operator.GT,
+            Condition(left=_ind("funding_avg", period=7), op=Operator.GT,
                       right=_const(0.03)),
         ],
         stop=StopSpec(kind="percent", percent=15.0),

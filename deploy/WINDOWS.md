@@ -152,8 +152,20 @@ wäre aber nur eine fehlende Datei.
 ## Schritt 7: Strategie suchen
 
 ```
-.venv\Scripts\python -m cli research
+.venv\Scripts\python -m cli backfill --intervall D
 ```
+
+```
+.venv\Scripts\python -m cli research --intervall D
+```
+
+Das `D` steht für Tageskerzen und ist kein Detail: Die aktuellen Strategien
+sollen **wochenlang halten**. Auf Stundenkerzen bedeutet ihre längste Regel nur
+acht Tage statt acht Monate — sie würden ständig rein und raus springen und
+genau die Gebühren fressen, die sie vermeiden sollen. Läuft es auf der falschen
+Zeitebene, warnt das Programm inzwischen von selbst.
+
+Der Backfill für Tageskerzen dauert Sekunden — es sind nur rund 2.300 Stück.
 
 Dauert einige Minuten. Am Ende steht eine Tabelle.
 

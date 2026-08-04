@@ -667,6 +667,27 @@ def research(
     if not genomes:
         genomes = load_seeds()
 
+    # Passt die Zeitebene zur Bauform?
+    #
+    # Die Indikator-Whitelist laesst hoechstens 400 Perioden zu. Auf
+    # Stundenkerzen sind 200 Perioden deshalb acht Tage, nicht acht Monate -
+    # der klassische Langfristfilter laesst sich dort gar nicht ausdruecken.
+    # Eine Halte-Strategie mit Acht-Tage-Filter haelt nichts, sie springt rein
+    # und raus und frisst genau die Gebuehren, die sie vermeiden sollte.
+    #
+    # Das ist beim Bauen genau so passiert und waere im Bericht als
+    # "Idee widerlegt" durchgegangen. Deshalb hier eine Warnung statt eines
+    # stillen Durchlaufs - der Lauf selbst bleibt erlaubt.
+    haltend = [g for g in genomes if g.sizing.kind == "kapitalanteil"]
+    if haltend and interval_obj not in (Interval.D1, Interval.W1):
+        console.print(
+            f"[yellow]{len(haltend)} von {len(genomes)} Kandidaten sind "
+            f"Halte-Strategien, laufen hier aber auf {interval_obj.label}.[/]\n"
+            "Ihre Perioden bedeuten dann Tage statt Monate, und sie handeln "
+            "viel haeufiger als gedacht.\n"
+            "[dim]Gemeint ist: python -m cli research --intervall D[/]\n"
+        )
+
     console.print(
         f"\n[bold]Zulassung[/] {settings.bybit.symbol} {interval_obj.label}\n"
         f"  Historie    {frame['open_time'].iloc[0]:%Y-%m-%d} bis "
