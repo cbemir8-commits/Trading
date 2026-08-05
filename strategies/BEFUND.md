@@ -310,8 +310,72 @@ Drei Wege, und nur zwei davon sind ehrlich:
 1. **Weitersuchen** nach einer Ertragsquelle mit mehr Gelegenheiten. Kostet
    Versuche, und jeder hebt die Huerde weiter.
 2. **Demo handeln.** Die Gates schuetzen echtes Geld. Ein Demokonto kostet
-   keines, und jeder Trade dort ist echte Evidenz ausserhalb der Stichprobe -
-   der einzige Weg, n zu erhoehen, ohne Qualitaet einzutauschen. Nach dem
-   Plan des Nutzers stehen ohnehin 30 Tage Demo vor dem ersten echten Euro.
+   keines, und jeder Trade dort ist echte Evidenz ausserhalb der Stichprobe.
+   Was das wirklich leistet, steht im naechsten Abschnitt - deutlich weniger,
+   als ich zunaechst behauptet hatte.
 3. Die Schwelle senken. **Kommt nicht in Frage** - dann misst das ganze
    System nur noch sich selbst.
+
+## Was Demo-Handel beweisen kann - und was nicht
+
+Ich hatte den Demobetrieb als "den einzigen Weg, n zu erhoehen, ohne
+Qualitaet einzutauschen" bezeichnet. Das stimmt, taugt aber viel weniger als
+es klingt. Ausgerechnet, nicht geschaetzt (``cli evidenz``):
+
+    Zeitraum        Trades    Was unentdeckt bliebe
+    ein Monat          1,4    alles
+    ein Quartal        4,3    alles
+    ein Jahr          17,4    alles
+    drei Jahre        52,1    alles
+    zehn Jahre       173,8    77 % des Vorteils
+
+"alles" heisst: Selbst wenn der Vorteil vollstaendig verschwunden waere,
+wuerde man es an so wenigen Trades nicht bemerken.
+
+Die beiden Zahlen, um die es geht:
+
+    Damit der Deflated Sharpe reicht         70 Trades  =  4 Jahre
+    Damit eine Halbierung auffiele          417 Trades  = 24 Jahre
+    Damit ein Viertel weniger auffiele     1704 Trades  = 98 Jahre
+
+Das ist der unangenehme Kern: Der Demobetrieb wuerde die Huerde in vier
+Jahren **rechnerisch** nehmen, ohne in derselben Zeit ausschliessen zu
+koennen, dass die Strategie inzwischen die Haelfte ihres Vorteils verloren
+hat. Beides zugleich geht bei 17 Trades im Jahr nicht.
+
+### Der Fehler, der dabei fast passiert waere
+
+Die erste Fassung von ``research/live_evidenz.py`` pruefte, ob der
+Livebetrieb **signifikant** schlechter laeuft, und rechnete sonst zusammen.
+Gemessen an der echten Verteilung, mit 40 Live-Trades:
+
+    Live-Ergebnis      Deflated Sharpe naiv    Drift erkannt?
+    unveraendert            0,824 -> 0,937          -
+    33 % schlechter         0,824 -> 0,931         nein
+    71 % schlechter         0,824 -> 0,896         nein
+   100 % schlechter         0,824 -> 0,820          ja
+
+Ein Livebetrieb, der **zwei Drittel** des Vorteils verliert, haette den Wert
+also gehoben - weil sqrt(n) schneller waechst, als der Mittelwert faellt -
+und der Test haette geschwiegen. Nicht weil alles in Ordnung war, sondern
+weil er bei 40 Beobachtungen dieser Verteilung fast nichts sehen kann.
+
+Die Beweislast stand verkehrt herum. Jetzt steht dort eine zweite
+Bedingung: **Waere die Verschlechterung ueberhaupt aufgefallen?** Ist der
+blinde Fleck groesser als ein Viertel des Vorteils, wird nicht
+zusammengerechnet - egal wie unauffaellig der Test ausfaellt.
+
+Nicht "ich habe nichts Schlimmes gefunden", sondern "ich haette es
+gefunden, wenn es da waere".
+
+### Was daraus fuer den Plan folgt
+
+Die 30 Tage Demo bleiben richtig und noetig - sie pruefen, ob Orders
+ankommen, ob der Stop an der Position haengt, ob der Not-Aus wirkt, ob der
+Prozess einen Neustart mitten in einer Position uebersteht. Das sind
+Ja-Nein-Fragen, und die beantwortet ein Monat.
+
+Sie beantworten nur nicht die Frage, ob der Vorteil echt ist. Wer nach 30
+Tagen Demo echtes Geld einsetzt, tut das auf Grundlage des **Backtests** -
+der Demobetrieb hat daran nichts hinzugefuegt. Das ist vertretbar, solange
+man es weiss.

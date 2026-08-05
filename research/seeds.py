@@ -2164,6 +2164,65 @@ GENERATION_10 = [
 ]
 
 
+def spitzenkandidat() -> Genome:
+    """Der weiteste bisher gekommene Kandidat: 9 von 11 Gates.
+
+    Steht bewusst **ausserhalb** der Generationen. Er ist kein Vorschlag, der
+    noch geprueft werden muesste, sondern das Ergebnis von 81 Pruefungen -
+    und wer ihn erneut durch den Wettbewerb schickt, erhoeht den
+    Versuchszaehler fuer eine Frage, die schon beantwortet ist.
+
+    Er hat einen Namen bekommen, weil er vorher nur in Wegwerf-Skripten
+    existierte. Eine Strategie, die man zum Nachrechnen jedes Mal neu
+    abtippt, ist keine, auf die man Geld setzen sollte.
+
+    Gemessen ueber August 2017 bis August 2026 auf BTC + ETH, Walk-Forward,
+    nach Gebuehren: 11,22 % im Jahr, 9,74 % Rueckgang, Sharpe 1,50, 156
+    Trades zu je +1,043 R. Offen bleiben Messlatte (15 % gefordert) und
+    Deflated Sharpe (0,830 gegen 0,95).
+
+    Das Vola-Ziel steht hier auf 19,3 - der Punkt, an dem Rueckgang und
+    schlechtestes Jahr gerade noch innerhalb der Grenzen liegen. Wer daran
+    dreht, verschiebt nur, welches Gate reisst (siehe ``betriebspunkt``).
+    """
+    return Genome(
+        name="Trend 50 Tage mit Konfluenz",
+        rationale=(
+            "Long ueber dem 50-Tage-Schnitt, raus darunter. Drei "
+            "Zusatzbedingungen entscheiden nicht **ob** gehandelt wird, "
+            "sondern **wie gross** - als Filter gemessen und widerlegt, als "
+            "Groessensignal wirksam."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("sma", period=50)),
+        ],
+        exit_long=[
+            Condition(left=_price("close"), op=Operator.LT,
+                      right=_ind("sma", period=50)),
+        ],
+        konfluenz=[
+            Condition(left=_ind("sma", period=50), op=Operator.GT,
+                      right=_ind("sma", period=200)),
+            Condition(left=_ind("roc", period=90), op=Operator.GT,
+                      right=_const(0.0)),
+            Condition(left=_ind("rsi", period=14), op=Operator.GT,
+                      right=_const(50.0)),
+        ],
+        # Notbremse, nicht Ausstieg: Ausgestiegen wird ueber den Schnitt.
+        # Ein engerer Stop wurde gemessen und ist schlechter - er senkt den
+        # Deflated Sharpe, weil er mehr Trades zu schlechteren macht.
+        stop=StopSpec(kind="percent", percent=4.0),
+        targets=[TargetSpec(rr=20.0, portion=1.0)],
+        sizing=SizingSpec(
+            kind="vola_ziel", fraction=3.0, target_vol_pct=19.3,
+            vol_period=30, konviktion_bonus=1.0,
+        ),
+        cooldown_bars=0,
+        max_hold_bars=0,
+    )
+
+
 GENERATIONS = {
     1: GENERATION_1,
     2: GENERATION_2,

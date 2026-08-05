@@ -2197,5 +2197,139 @@ def korb(
         )
 
 
+@app.command()
+def evidenz(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    vola_ziel: float = typer.Option(19.3, help="Vola-Ziel des Kandidaten."),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Was der Livebetrieb bisher beweist - und was er beweisen koennte.
+
+    Beantwortet die Frage, die vor dem ersten echten Euro steht: Reicht das,
+    was auf dem Demokonto passiert ist, als Beleg?
+
+    Die Antwort ist fast nie ja, und der Grund ist Arithmetik, keine
+    Vorsicht: Eine Strategie mit 17 Trades im Jahr erzeugt in 30 Tagen
+    **1,4** Trades. Ein Monat Demo prueft, ob die Technik haelt - nicht, ob
+    der Vorteil echt ist. Das sind zwei verschiedene Fragen, und nur die
+    erste laesst sich in einem Monat beantworten.
+
+    Der Versuchszaehler bleibt unberuehrt: Dieselbe Strategie laenger zu
+    beobachten ist kein weiterer Versuch.
+    """
+    from decimal import Decimal
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.live_evidenz import (
+        bewerten,
+        demo_dauer,
+        erkennbare_verschlechterung,
+        live_trades_fuer_nachweis,
+        r_werte,
+    )
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+    from strategy.genome import SizingSpec
+    from web.trades import read_trades
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    frames = common_range(roh)
+    erster = next(iter(frames.values()))
+    genome = spitzenkandidat().model_copy(
+        update={
+            "sizing": SizingSpec(
+                kind="vola_ziel", fraction=3.0, target_vol_pct=vola_ziel,
+                vol_period=30, konviktion_bonus=1.0,
+            )
+        }
+    )
+    configs = {
+        s: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(s)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+        )
+        for s in symbole
+    }
+
+    console.print(f"\n[bold]Evidenz[/] {' + '.join(symbole)} {interval_obj.label}\n")
+    report = run_portfolio_walkforward(
+        frames, lambda: compile_genome(genome), configs
+    )
+    if not report.windows:
+        console.print("[red]Keine Fenster - zu wenig gemeinsame Historie.[/]")
+        raise typer.Exit(2)
+
+    backtest_r = r_werte(report.all_trades)
+    jahre = (erster["open_time"].iloc[-1] - erster["open_time"].iloc[0]).days / 365.25
+    pro_jahr = len(backtest_r) / jahre if jahre > 0 else 0.0
+
+    state_dir = Path(settings.paths.state)
+    uebersicht = read_trades(state_dir, limit=1000)
+    trials = load_trials(state_dir / "trials.json")
+
+    ergebnis = bewerten(
+        report.all_trades, uebersicht.trades, trials=trials,
+        live_tage=None,
+    )
+    console.print(ergebnis.bericht())
+    console.print(
+        f"\n[dim]Backtest: {len(backtest_r)} Trades in {jahre:.1f} Jahren "
+        f"= {pro_jahr:.1f} im Jahr. Versuchszaehler {trials}, unveraendert.[/]\n"
+    )
+
+    tabelle = Table(header_style="bold", title="Was ein Demo-Zeitraum bringt")
+    tabelle.add_column("Zeitraum")
+    tabelle.add_column("Trades", justify="right")
+    tabelle.add_column("Was unentdeckt bliebe", justify="right")
+    for tage, name in ((30, "ein Monat"), (90, "ein Quartal"),
+                       (365, "ein Jahr"), (1095, "drei Jahre"),
+                       (3650, "zehn Jahre")):
+        anzahl = demo_dauer(pro_jahr, tage)
+        blind = erkennbare_verschlechterung(backtest_r, max(1, round(anzahl)))
+        # Ueber 100 % hiesse: Der Vorteil koennte sich ins Gegenteil verkehrt
+        # haben, ohne aufzufallen. Die genaue Zahl dahinter ist bedeutungslos
+        # und nur Rauschen der Stichprobe - "alles" ist die ehrlichere Angabe.
+        text = "alles" if blind >= 1.0 else f"{blind:.0%} des Vorteils"
+        tabelle.add_row(name, f"{anzahl:.1f}", text)
+    console.print(tabelle)
+    console.print(
+        "[dim]  \"alles\" heisst: Selbst wenn der Vorteil vollstaendig weg "
+        "waere, wuerde man es an so wenigen Trades nicht sehen.[/]"
+    )
+
+    fuer_25 = live_trades_fuer_nachweis(backtest_r, 0.25)
+    fuer_50 = live_trades_fuer_nachweis(backtest_r, 0.50)
+    console.print(
+        f"\n  Um eine Halbierung des Vorteils zu bemerken: [bold]{fuer_50}[/] "
+        f"Trades ([bold]{fuer_50 / pro_jahr:.0f} Jahre[/])\n"
+        f"  Um ein Viertel weniger zu bemerken:          [bold]{fuer_25}[/] "
+        f"Trades ([bold]{fuer_25 / pro_jahr:.0f} Jahre[/])\n"
+    )
+    console.print(
+        "[dim]Der Demobetrieb ist damit ein Test der Technik, kein Beleg fuer "
+        "den Vorteil. Beides ist noetig - aber nur das erste ist in einem "
+        "Monat zu haben.[/]"
+    )
+
+
 if __name__ == "__main__":
     app()
