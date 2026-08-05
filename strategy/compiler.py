@@ -97,26 +97,112 @@ class CompiledStrategy:
         return series
 
     def _compute_fractions(self, frame: pd.DataFrame) -> np.ndarray | None:
-        """Kapitalanteil je Balken - nur beim Vola-Ziel.
+        """Kapitalanteil je Balken.
 
-        Einsatz = Zielschwankung / gemessene Schwankung, gedeckelt. In ruhigen
-        Phasen steht damit mehr Kapital im Markt, in stuermischen weniger, und
-        das Risiko bleibt ueber die Zeit ungefaehr gleich.
+        Zwei Regler wirken hier nacheinander:
+
+        **Vola-Ziel** - Einsatz = Zielschwankung / gemessene Schwankung. In
+        ruhigen Phasen steht mehr Kapital im Markt, in stuermischen weniger,
+        und das Risiko bleibt ueber die Zeit ungefaehr gleich.
+
+        **Konviktion** - je mehr Zusatzbedingungen zutreffen, desto groesser.
+        Der Faktor wirkt multiplikativ, also auch auf das Vola-Ziel: Ein
+        starkes Setup in einer stuermischen Phase wird nicht wieder gross.
 
         Wo die Schwankungsbreite noch nicht messbar ist - zu Beginn der Reihe -
         bleibt der Wert NaN. Dann wird nicht gehandelt, statt auf einer
         Annahme zu handeln.
         """
         sizing = self.genome.sizing
-        if sizing.kind != "vola_ziel":
+        konviktion = self._compute_konviktion(frame)
+
+        if sizing.kind == "vola_ziel":
+            vola = indicators.compute(
+                "realized_vol", frame, {"period": sizing.vol_period}
+            )
+            with np.errstate(divide="ignore", invalid="ignore"):
+                anteil = sizing.target_vol_pct / vola
+        elif konviktion is not None and sizing.kind == "kapitalanteil":
+            anteil = np.full(len(frame), sizing.fraction, dtype=float)
+        else:
             return None
 
-        vola = indicators.compute(
-            "realized_vol", frame, {"period": sizing.vol_period}
-        )
-        with np.errstate(divide="ignore", invalid="ignore"):
-            anteil = sizing.target_vol_pct / vola
+        if konviktion is not None:
+            anteil = anteil * konviktion
+
+        # Der Deckel steht am Ende, nach der Konviktion.
+        #
+        # Andersherum koennte ein starkes Setup ueber ``fraction`` hinaus
+        # wachsen - und damit ueber die Grenze, die als hartes Risikolimit
+        # gedacht ist. Eine Groessensteuerung, die ihre eigene Obergrenze
+        # anheben darf, ist keine Obergrenze.
         return np.clip(anteil, 0.0, sizing.fraction)
+
+    def _compute_konviktion(self, frame: pd.DataFrame) -> np.ndarray | None:
+        """Faktor je Balken aus der Quote erfuellter Zusatzbedingungen.
+
+        Der Faktor laeuft von ``1/(1+Bonus)`` bis **1,0**, nicht von 1,0 bis
+        ``1+Bonus``. Das ist der entscheidende Unterschied:
+
+        **Konviktion verteilt um, sie legt nicht drauf.** Waere der Faktor
+        1,0 bis 1+Bonus, wuerde allein das Einschalten dieser Betriebsart den
+        durchschnittlichen Einsatz erhoehen - und jeder Vergleich "mit gegen
+        ohne" wuerde in Wahrheit "mehr Hebel gegen weniger Hebel" messen. Beim
+        ersten Bauen war es genau so herum, und die Zahlen sahen gut aus, weil
+        schlicht mehr Kapital im Markt stand.
+
+        So herum ist das volle Setup so gross wie vorher, und alles Schwaechere
+        wird kleiner. Wer insgesamt mehr Einsatz will, hebt ``fraction`` oder
+        das Vola-Ziel - eine bewusste Entscheidung, keine Nebenwirkung.
+
+        ``None`` heisst "nicht in Betrieb" - dann bleibt die Groessensteuerung
+        genau die, die sie vorher war.
+        """
+        bonus = self.genome.sizing.konviktion_bonus
+        if bonus <= 0 or not self.genome.konfluenz:
+            return None
+
+        treffer = np.zeros(len(frame), dtype=float)
+        for condition in self.genome.konfluenz:
+            treffer += self._condition_series(frame, condition)
+
+        quote = treffer / len(self.genome.konfluenz)
+        return (1.0 + bonus * quote) / (1.0 + bonus)
+
+    def _condition_series(self, frame: pd.DataFrame, condition: Condition) -> np.ndarray:
+        """Eine Bedingung fuer jeden Balken auswerten, als 0/1-Reihe.
+
+        Kreuzungen sind hier bewusst **nicht** erlaubt: Ein Kreuzen ist ein
+        Ereignis auf genau einem Balken. Als Groessenregler waere es sinnlos -
+        der Einsatz spraenge fuer eine einzige Kerze hoch und faellt sofort
+        zurueck. Konfluenz beschreibt einen Zustand, keinen Moment.
+        """
+        links = self._operand_series(frame, condition.left)
+        rechts = self._operand_series(frame, condition.right)
+
+        with np.errstate(invalid="ignore"):
+            match condition.op:
+                case Operator.GT:
+                    treffer = links > rechts
+                case Operator.LT:
+                    treffer = links < rechts
+                case Operator.GTE:
+                    treffer = links >= rechts
+                case Operator.LTE:
+                    treffer = links <= rechts
+                case _:
+                    # CROSS_ABOVE / CROSS_BELOW: siehe Docstring.
+                    treffer = np.zeros(len(frame), dtype=bool)
+
+        # Noch nicht eingeschwungene Indikatoren zaehlen als "nicht erfuellt".
+        # Nicht als "erfuellt" - das waere Einsatz auf Basis fehlender Daten.
+        gueltig = np.isfinite(links) & np.isfinite(rechts)
+        return np.where(gueltig & treffer, 1.0, 0.0)
+
+    def _operand_series(self, frame: pd.DataFrame, operand: Operand) -> np.ndarray:
+        if operand.kind == "constant":
+            return np.full(len(frame), operand.value, dtype=float)
+        return self._compute_operand(frame, operand)
 
     @staticmethod
     def _compute_operand(frame: pd.DataFrame, operand: Operand) -> np.ndarray:
