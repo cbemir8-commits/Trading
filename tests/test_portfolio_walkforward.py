@@ -335,3 +335,145 @@ class TestSymbolKommtVomKontrakt:
 
         assert result.trades, "der Testaufbau muss Trades erzeugen"
         assert {t.symbol for t in result.trades} == {"ETHUSDT"}
+
+
+class TestTradesTragenIhrGewicht:
+    """Jedes Bein laeuft mit vollem Startkapital, hat im Portfolio aber nur
+    seinen Anteil. Die Trades muessen das abbilden.
+
+    **Dieser Fehler hat eine Kennzahl um das Doppelte verfaelscht.** Die
+    Kapitalkurve war richtig gewichtet, die Trades nicht - und die
+    Monte-Carlo-Simulation liest die Trades. Sie meldete 15,70 % Rueckgang,
+    waehrend die Kurve aus denselben Fenstern 8,72 % zeigte. Bei sechs Beinen
+    stieg die Meldung auf 62 %, und erst diese unmoegliche Zahl hat den
+    Fehler sichtbar gemacht.
+
+    **Die Korrektur macht ein Gate milder.** Deshalb steht hier die Probe,
+    dass sie sauber ist: Das R-Vielfache darf sich nicht aendern. Es ist
+    Gewinn geteilt durch (Stopabstand mal Menge) - skaliert man beide mit
+    demselben Faktor, bleibt es gleich. Waere das nicht so, wuerde die
+    Skalierung Kennzahlen verschieben, die sie nicht anfassen darf.
+    """
+
+    @pytest.fixture
+    def risk(self) -> RiskSettings:
+        return RiskSettings()
+
+    def _lauf(self, risk: RiskSettings, beine: int):
+        frames = {f"M{i}": _tage(1100, seed=3 + i * 7) for i in range(beine)}
+        configs = {
+            name: BacktestConfig(
+                instrument=_instrument(f"M{i}USDT"), risk=risk,
+                initial_equity=Decimal("500"),
+            )
+            for i, name in enumerate(frames)
+        }
+        genome = _trendfolger()
+        return run_portfolio_walkforward(
+            frames, lambda: compile_genome(genome), configs,
+            WalkForwardSplitter(train_months=12, test_months=3),
+        )
+
+    def test_bei_einem_bein_bleiben_die_trades_unveraendert(
+        self, risk: RiskSettings
+    ) -> None:
+        """Der Einzelmarktfall darf sich durch die Korrektur nicht aendern."""
+        from backtest.walkforward import run_walkforward
+
+        frame = _tage(1100, seed=3)
+        config = BacktestConfig(
+            instrument=_instrument("M0USDT"), risk=risk, initial_equity=Decimal("500")
+        )
+        genome = _trendfolger()
+        splitter = WalkForwardSplitter(train_months=12, test_months=3)
+
+        allein = run_walkforward(frame, lambda: compile_genome(genome), config, splitter)
+        als_portfolio = run_portfolio_walkforward(
+            {"M0": frame}, lambda: compile_genome(genome), {"M0": config}, splitter
+        )
+
+        assert len(allein.all_trades) == len(als_portfolio.all_trades)
+        for a, b in zip(allein.all_trades, als_portfolio.all_trades, strict=True):
+            assert a.qty == b.qty
+            assert a.net_pnl == b.net_pnl
+
+    def test_zwei_beine_halbieren_die_trades(self, risk: RiskSettings) -> None:
+        from backtest.walkforward import run_walkforward
+
+        frames = {f"M{i}": _tage(1100, seed=3 + i * 7) for i in range(2)}
+        configs = {
+            name: BacktestConfig(
+                instrument=_instrument(f"M{i}USDT"), risk=risk,
+                initial_equity=Decimal("500"),
+            )
+            for i, name in enumerate(frames)
+        }
+        genome = _trendfolger()
+        splitter = WalkForwardSplitter(train_months=12, test_months=3)
+
+        einzeln = sum(
+            float(t.net_pnl)
+            for name, frame in frames.items()
+            for t in run_walkforward(
+                frame, lambda: compile_genome(genome), configs[name], splitter
+            ).all_trades
+        )
+        portfolio = sum(
+            float(t.net_pnl)
+            for t in run_portfolio_walkforward(
+                frames, lambda: compile_genome(genome), configs, splitter
+            ).all_trades
+        )
+
+        assert portfolio == pytest.approx(einzeln / 2, rel=0.01), (
+            "bei zwei gleich gewichteten Beinen muss jeder Trade halb zaehlen"
+        )
+
+    def test_das_r_vielfache_bleibt_unveraendert(self) -> None:
+        """Die entscheidende Probe, direkt an der Skalierung.
+
+        R misst am riskierten Betrag: Gewinn geteilt durch (Stopabstand mal
+        Menge). Werden Gewinn und Menge mit demselben Faktor skaliert, kuerzt
+        er sich heraus. Waere das nicht so, wuerde die Gewichtung Kennzahlen
+        verschieben, die sie nicht anfassen darf - allen voran den
+        Erwartungswert, an dem der Livebetrieb gegen den Backtest gemessen
+        wird.
+        """
+        from backtest.portfolio_walkforward import _trade_skalieren
+
+        original = _trade('BTCUSDT', '50', tag=0)
+
+        def r_wert(t) -> float:
+            risiko = abs(float(t.entry_price) - float(t.stop_loss)) * float(t.qty)
+            return float(t.net_pnl) / risiko
+
+        for anteil in (0.5, 0.25, 0.1):
+            skaliert = _trade_skalieren(original, anteil)
+            assert r_wert(skaliert) == pytest.approx(r_wert(original)), (
+                f"R haengt am Gewicht {anteil}"
+            )
+            assert float(skaliert.net_pnl) == pytest.approx(
+                float(original.net_pnl) * anteil
+            )
+            assert float(skaliert.qty) == pytest.approx(float(original.qty) * anteil)
+
+    def test_voller_anteil_gibt_den_trade_unveraendert_zurueck(self) -> None:
+        """Der Einzelmarktfall darf nicht durch eine Rechnung laufen."""
+        from backtest.portfolio_walkforward import _trade_skalieren
+
+        original = _trade("BTCUSDT", "50", tag=0)
+
+        assert _trade_skalieren(original, 1.0) is original
+
+    def test_preise_und_zeiten_bleiben(self) -> None:
+        """Skaliert wird nur, was von der Kontogroesse abhaengt."""
+        from backtest.portfolio_walkforward import _trade_skalieren
+
+        original = _trade("BTCUSDT", "50", tag=0)
+        skaliert = _trade_skalieren(original, 0.5)
+
+        assert skaliert.entry_price == original.entry_price
+        assert skaliert.exit_price == original.exit_price
+        assert skaliert.stop_loss == original.stop_loss
+        assert skaliert.entry_time == original.entry_time
+        assert skaliert.symbol == original.symbol

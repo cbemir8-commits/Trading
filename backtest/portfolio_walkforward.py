@@ -105,7 +105,17 @@ def run_portfolio_walkforward(
     weights: dict[str, float] | None = None,
     initial_equity: Decimal | None = None,
 ) -> WalkForwardReport:
-    """Mehrere Maerkte zu einem Walk-Forward-Ergebnis zusammenlegen.
+    """Mehrere Beine zu einem Walk-Forward-Ergebnis zusammenlegen.
+
+    Ein **Bein** ist ein Datensatz mit einer Regel darauf. Meist ist das ein
+    Markt, es muss aber keiner sein: ``build_strategy`` darf eine Zuordnung
+    Bein -> Bauplan sein, und dann kann derselbe Markt mehrfach vorkommen,
+    einmal je Regelvariante.
+
+    Das ist kein Kunstgriff, sondern der Zweck: Wer eine Trendfolge mit 30,
+    50 und 80 Tagen gleichzeitig zu je einem Drittel handelt, bekommt drei
+    leicht verschobene Einstiegszeitpunkte statt eines einzigen. Genau daran
+    haengt, wie stark das Gesamtergebnis von wenigen Trades abhaengt.
 
     Das Ergebnis ist von einem einzelnen Markt nicht zu unterscheiden und
     laeuft durch dieselben Gates.
@@ -119,6 +129,13 @@ def run_portfolio_walkforward(
     def config_fuer(name: str) -> BacktestConfig:
         return configs[name] if isinstance(configs, dict) else configs
 
+    def bauplan_fuer(name: str):
+        if isinstance(build_strategy, dict):
+            if name not in build_strategy:
+                raise KeyError(f"Kein Bauplan fuer Bein {name}")
+            return build_strategy[name]
+        return build_strategy
+
     gewichte = weights or {name: 1.0 for name in zugeschnitten}
     summe = sum(gewichte.get(name, 0.0) for name in zugeschnitten)
     if summe <= 0:
@@ -127,12 +144,12 @@ def run_portfolio_walkforward(
     einzeln: dict[str, WalkForwardReport] = {}
     for name, frame in zugeschnitten.items():
         bericht = run_walkforward(
-            frame, build_strategy, config_fuer(name), splitter
+            frame, bauplan_fuer(name), config_fuer(name), splitter
         )
         if bericht.windows:
             einzeln[name] = bericht
         else:
-            log.warning("portfolio.markt_ohne_fenster", markt=name)
+            log.warning("portfolio.bein_ohne_fenster", bein=name)
 
     if not einzeln:
         return WalkForwardReport()
@@ -192,9 +209,26 @@ def _fenster_zusammenlegen(
     """Ein Fenster ueber alle Maerkte zu einem Ergebnis machen."""
     erster = next(iter(teile.values()))
 
+    # Trades auf das Gewicht des Beins bringen.
+    #
+    # Jedes Bein laeuft im Backtest mit dem **vollen** Startkapital, im
+    # Portfolio hat es aber nur seinen Anteil. Ungeskaliert tragen die Trades
+    # damit ein Vielfaches ihres wirklichen Gewichts - bei zwei Beinen das
+    # Doppelte, bei sechs das Sechsfache.
+    #
+    # Aufgefallen ist es an einer Zahl, die nicht sein konnte: Die
+    # Kapitalkurve meldete 8,5 % Rueckgang, die Monte-Carlo-Simulation aus
+    # denselben Trades 62 %. Die Kurve war richtig gewichtet, die Trades
+    # nicht - und die Simulation liest die Trades.
+    #
+    # Menge und Gewinn werden mit demselben Faktor skaliert. Das R-Vielfache
+    # bleibt dadurch unveraendert, denn es ist Gewinn geteilt durch
+    # (Stopabstand mal Menge) - genau die Probe, dass die Skalierung sauber
+    # ist und keine Kennzahl verschiebt, die sie nicht verschieben darf.
     trades: list[Trade] = []
-    for teil in teile.values():
-        trades.extend(teil.trades)
+    for name, teil in teile.items():
+        anteil = gewichte.get(name, 0.0) / summe
+        trades.extend(_trade_skalieren(t, anteil) for t in teil.trades)
     trades.sort(key=lambda t: t.exit_time)
 
     kurve = _kurven_summieren(
@@ -217,6 +251,26 @@ def _fenster_zusammenlegen(
         metrics=metrics,
         trades=trades,
         result=_result_zusammenlegen(teile, kurve, trades),
+    )
+
+
+def _trade_skalieren(trade: Trade, anteil: float) -> Trade:
+    """Einen Trade auf den Kapitalanteil seines Beins bringen.
+
+    Preise und Zeiten bleiben, Menge und Geldbetraege werden skaliert. Ein
+    Anteil von 1,0 gibt den Trade unveraendert zurueck - der Einzelmarktfall
+    aendert sich dadurch nicht.
+    """
+    if anteil == 1.0:
+        return trade
+    faktor = Decimal(str(anteil))
+    return trade.model_copy(
+        update={
+            "qty": trade.qty * faktor,
+            "gross_pnl": trade.gross_pnl * faktor,
+            "fees": trade.fees * faktor,
+            "funding": trade.funding * faktor,
+        }
     )
 
 

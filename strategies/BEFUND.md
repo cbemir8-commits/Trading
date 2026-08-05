@@ -4,7 +4,7 @@ Diese Datei haelt fest, was gemessen wurde und welche Wege damit
 ausgeschlossen sind. Sie ist kein Champion - `champion.json` entsteht nur,
 wenn alle elf Gates bestanden sind.
 
-**Stand: 8 von 11. Nach 59 gepruefen Hypothesen.**
+**Stand: 9 von 11. Nach 66 gepruefen Hypothesen.**
 
 ## Der beste Kandidat
 
@@ -28,8 +28,10 @@ Gemessen ueber August 2018 bis Mai 2026, Walk-Forward, nach Gebuehren:
 | Gate | Wert | Schwelle |
 |---|---|---|
 | Messlatte | 11,7 % p.a. | 15 % p.a. |
-| Monte-Carlo | 15,70 % | 15,00 % |
-| Deflated Sharpe | 0,892 | 0,95 |
+| Deflated Sharpe | 0,865 | 0,95 |
+
+Monte-Carlo besteht seit der Gewichtungskorrektur (siehe unten) mit 8,51 %
+gegen 15 %.
 
 Die Messlatte selbst wird **vierfach uebertroffen** (136 % gegen 34 %). Sie
 scheitert an der zweiten Bedingung, der Mindestjahresrendite - einer
@@ -69,20 +71,42 @@ Die Reihenfolge ist **nicht monoton** - 1/3 schlaegt 2/3. Das Signal ist
 schwach, und die schwachen Setups wegzulassen wuerde +85 R Gewinn loeschen.
 Ein Filter darauf waere Anpassung an Rauschen.
 
-## Die eine Zahl, um die es geht
+## Ein Fehler in meinem eigenen Code - und was er verdeckt hat
 
-Fuer eine Zulassung muss gelten: Monte-Carlo geteilt durch Jahresrendite
-**hoechstens 1,0**. Denn bei 15 % Jahresrendite darf der Monte-Carlo
-hoechstens 15 % betragen.
+Die vier obigen Messungen liefen alle mit einem Fehler im
+Portfolio-Walk-Forward: Jedes Bein laeuft mit dem **vollen** Startkapital,
+hat im Portfolio aber nur seinen Anteil. Die Trades trugen damit ein
+Vielfaches ihres wirklichen Gewichts - bei zwei Beinen das Doppelte.
 
-    bisher              1,34
-    Teilgewinne 3R/8R   2,45
-    Teilgewinne 2R/5R   2,06
-    Short-Seite         1,50
-    Teilgewinne+Short   2,10
+Die Kapitalkurve war richtig gewichtet, die Trades nicht. Und die
+Monte-Carlo-Simulation liest die Trades. Sie meldete 15,70 % Rueckgang,
+waehrend die Kurve aus denselben Fenstern 8,72 % zeigte.
 
-Bester Wert 1,34, noetig 1,00 - **34 % Verbesserung**, und keine
-Einsatzhoehe aendert dieses Verhaeltnis. Es haengt allein daran, wie
+Aufgefallen ist es erst bei einem Versuch mit sechs Beinen: Dort meldete sie
+62 % - eine Zahl, die nicht sein kann. Nach der Korrektur:
+
+    Monte-Carlo   15,70 %  ->  8,51 %      Gate besteht
+    Stand         8 von 11  ->  9 von 11
+
+**Die Korrektur macht ein Gate milder.** Die Probe dafuer, dass sie sauber
+ist: Das R-Vielfache bleibt unveraendert, weil Gewinn und Menge mit
+demselben Faktor skaliert werden und sich der Faktor herauskuerzt. Vier
+Tests halten das fest.
+
+## Die verbleibende Luecke
+
+Mit korrigierter Gewichtung sind nur noch zwei Bedingungen im Konflikt:
+
+    Jahresrendite >= 15 %      braucht Vola-Ziel >= 22,1
+    Schlechtestes Jahr >= -10 %  erlaubt Vola-Ziel <= 20,5
+
+Das sind **8 % Abstand** - vorher waren es 34 %. Gemessen:
+
+    Vola-Ziel   p.a.    DD       Monte-Carlo   fehlt
+       17,29   11,7 %   8,72 %       8,51 %    Messlatte, Deflated Sharpe
+       23,00   15,6 %  11,95 %      11,51 %    Schlechtestes Jahr, DSR
+
+Beide Male 9 von 11 - nur mit unterschiedlichen offenen Gates. Es haengt allein daran, wie
 gleichmaessig die Ergebnisse ausfallen: Schiefe +3,7, Woelbung 17,4. Wenige
 Riesengewinner tragen alles, und in einer unguenstigen Reihenfolge liegen
 die vielen kleinen Verluste beieinander.
