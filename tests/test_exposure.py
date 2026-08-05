@@ -1001,3 +1001,106 @@ class TestStichprobeErkenntAlleHalteformen:
             )
             ergebnis = gate_sample_size(report, GateThresholds(), genome=genome)
             assert ergebnis.status is GateStatus.PASS, f"{art} wurde nicht erkannt"
+
+
+class TestHebel:
+    """Einsatz ueber 100 % - und was er wirklich kostet.
+
+    Der Nutzer hat ihn ausdruecklich gewuenscht. Er bekommt ihn, aber die
+    Zahlen dazu muessen stimmen: Hebel vergroessert Rendite und Rueckgang
+    gemeinsam, und zwei Dinge wachsen dabei **schneller** als linear - der Weg
+    zurueck aus einem Verlust und die Liquidationsgefahr.
+    """
+
+    def test_hebel_ist_erlaubt_bis_drei(self) -> None:
+        from pydantic import ValidationError
+
+        assert SizingSpec(kind="kapitalanteil", fraction=2.0).fraction == 2.0
+        assert SizingSpec(kind="kapitalanteil", fraction=3.0).fraction == 3.0
+
+        with pytest.raises(ValidationError):
+            SizingSpec(kind="kapitalanteil", fraction=3.5)
+
+    def test_der_sizer_haelt_den_hebeldeckel_ein(self) -> None:
+        """Die Risikoeinstellung hat das letzte Wort, nicht das Genom.
+
+        Ein Genom mit 3x Anteil auf einem Konto, das nur 1x erlaubt, darf
+        nicht stillschweigend 3x handeln.
+        """
+        from execution.sizing import RejectReason, SizingRejected, size_position
+        from tests.factories import make_signal
+
+        ergebnis = size_position(
+            make_signal(stop_pct="5.0"),
+            equity=Decimal("1000"),
+            instrument=make_instrument(),
+            risk=RiskSettings(max_leverage=Decimal("1")),
+            equity_fraction=Decimal("3.0"),
+        )
+
+        assert isinstance(ergebnis, SizingRejected)
+        assert ergebnis.reason is RejectReason.INVALID_FRACTION
+
+    def test_hebel_verdoppelt_die_position(self) -> None:
+        from execution.sizing import SizedPosition, size_position
+        from tests.factories import make_signal
+
+        einfach, doppelt = (
+            size_position(
+                make_signal(stop_pct="5.0", entry="100000"),
+                equity=Decimal("1000"),
+                instrument=make_instrument(),
+                risk=RiskSettings(max_leverage=Decimal("3")),
+                equity_fraction=Decimal(str(f)),
+            )
+            for f in (1.0, 2.0)
+        )
+
+        assert isinstance(einfach, SizedPosition)
+        assert isinstance(doppelt, SizedPosition)
+        assert doppelt.qty == einfach.qty * 2
+
+    def test_das_vola_ziel_ist_der_eigentliche_regler(self) -> None:
+        """Eine Feinheit, die beim Messen fast zu einem falschen Schluss fuehrte.
+
+        Bei Vola-Ziel 50 % und einem Deckel von 1x, 2x oder 3x kommt fast
+        dasselbe heraus: Der Einsatz betraegt Zielschwankung durch gemessene
+        Schwankung, und der liegt bei Bitcoin selten ueber 1,0. Der Deckel
+        greift dann gar nicht.
+
+        Wer den Hebel erhoehen will, muss das **Ziel** anheben, nicht den
+        Deckel. Sonst dreht er an einer Schraube, die nichts bewegt.
+        """
+        from strategy.compiler import compile_genome
+
+        def anteil(ziel: float, deckel: float) -> float:
+            genome = Genome(
+                name="Hebeltest",
+                rationale="Misst den mittleren Einsatz bei gegebenem Ziel.",
+                entry_long=[
+                    Condition(left=_price("close"), op=Operator.GT, right=_const(1.0))
+                ],
+                stop=StopSpec(kind="percent", percent=20.0),
+                targets=[TargetSpec(rr=20.0, portion=1.0)],
+                sizing=SizingSpec(
+                    kind="vola_ziel", target_vol_pct=ziel,
+                    vol_period=30, fraction=deckel,
+                ),
+            )
+            strategie = compile_genome(genome)
+            rng = np.random.default_rng(4)
+            preise = 30000 * np.exp(np.cumsum(rng.normal(0, 0.03, 400)))
+            strategie.prepare(
+                pd.DataFrame({
+                    "open_time": pd.date_range(T0, periods=400, freq="D", tz="UTC"),
+                    "open": preise, "high": preise * 1.01, "low": preise * 0.99,
+                    "close": preise, "volume": np.full(400, 100.0),
+                })
+            )
+            gut = strategie._fractions[np.isfinite(strategie._fractions)]
+            return float(np.median(gut))
+
+        # Deckel anheben bewegt kaum etwas ...
+        assert anteil(50.0, 3.0) == pytest.approx(anteil(50.0, 2.0), rel=0.15)
+        # ... das Ziel anzuheben dagegen deutlich.
+        assert anteil(100.0, 3.0) > anteil(50.0, 3.0) * 1.5

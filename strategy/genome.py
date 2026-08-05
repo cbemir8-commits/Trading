@@ -205,9 +205,24 @@ class SizingSpec(BaseModel):
     vol_period: int = Field(30, ge=5, le=200)
     """Ueber wie viele Kerzen die Schwankungsbreite gemessen wird."""
 
-    fraction: float = Field(0.4, gt=0, le=1.0)
+    fraction: float = Field(0.4, gt=0, le=3.0)
     """Anteil des Kapitals im Markt. Bei ``kapitalanteil`` der feste Wert,
     bei ``vola_ziel`` die **Obergrenze**.
+
+    Werte ueber 1,0 bedeuten Hebel: 2,0 heisst, dass fuer 1.000 USDT gehandelt
+    wird, waehrend 500 auf dem Konto liegen. Die Obergrenze von 3,0 ist
+    dieselbe wie in den Risikoeinstellungen; der Sizer lehnt alles darueber
+    ohnehin ab.
+
+    **Hebel vergroessert, was da ist - er erzeugt nichts.** Rendite und
+    Rueckgang wachsen gemeinsam, der Sharpe bleibt unveraendert; das ist in
+    diesem Projekt ueber alle Einsatzquoten gemessen worden. Zwei Dinge
+    wachsen dabei allerdings **schneller** als linear:
+
+    * Der Weg zurueck. Wer 50 % verliert, braucht 100 % Gewinn, um wieder bei
+      null zu sein - bei 25 % Verlust sind es nur 33 %.
+    * Die Liquidation. Bei Isolated Margin und dreifachem Hebel ist die
+      Position nach rund 33 % Gegenbewegung weg, unabhaengig vom Stop.
 
     Obergrenze 1,0: kein Hebel. Wer investiert bleibt statt zu wetten, soll das
     nicht auf Kredit tun - ein Rueckgang von 50 % im Basiswert waere sonst das
