@@ -33,6 +33,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 from core.config import Settings, get_settings
 from web.journal import CommandAction, read_view, send_command
+from web.trades import read_trades
 
 log = structlog.get_logger(__name__)
 
@@ -220,6 +221,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "read_only": read_only,
             "server_time": datetime.now(UTC).isoformat(),
         }
+
+    @app.get("/api/trades")
+    def trades(
+        limit: int = 200,
+        _: str = Depends(require_session),
+    ) -> dict:
+        """Jeder abgeschlossene Trade einzeln - Einstieg, Stop, Ergebnis.
+
+        **Hinter der Anmeldung**, anders als der Wettbewerb. Backtest-Zahlen
+        sind Forschung und duerfen jeder sehen; diese Liste ist der Verlauf
+        eines echten Kontos. Aus Einstiegen, Mengen und Gewinnen laesst sich
+        die Kontogroesse zurueckrechnen.
+
+        Die Kennzahlen oben beziehen sich immer auf **alle** Trades, auch wenn
+        die Liste gekuerzt wird - sonst aenderte sich die Trefferquote,
+        sobald jemand weniger Zeilen anfordert.
+        """
+        return read_trades(state_dir, limit=max(1, min(limit, 1000))).to_json()
 
     # -- Steuern -------------------------------------------------------------
     @app.post("/api/control/{action}")

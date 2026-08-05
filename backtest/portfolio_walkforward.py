@@ -27,6 +27,24 @@ Danach ist das Ergebnis ein ganz normaler ``WalkForwardReport``. Alle elf
 Gates laufen unveraendert darauf - kein Gate musste angefasst werden, um das
 Portfolio bewerten zu koennen.
 
+Mehr Maerkte sind nicht besser - gemessen
+-----------------------------------------
+Die naheliegende Fortsetzung war, weitere Maerkte dazuzunehmen, um Rueckgang
+und Monte-Carlo zu entspannen. Das Gegenteil trat ein. Dieselbe Regel, alle
+auf 11,4 % Rueckgang gebracht, 2017-08 bis 2026-08:
+
+    BTC+ETH       +117,0 %   Sharpe 1,29   Monte-Carlo 19,7 %
+    +LTC           +74,6 %   Sharpe 0,97   Monte-Carlo 34,3 %
+    +XRP           +81,3 %   Sharpe 0,92   Monte-Carlo 46,0 %
+
+Streuung senkt den Rueckgang nur, wenn die dazugenommenen Maerkte fuer sich
+genommen etwas taugen. LTC und XRP tun das unter dieser Regel nicht - sie
+bringen Trades mit, aber schlechtere, und die Monte-Carlo-Simulation findet
+entsprechend mehr Spielraum fuer eine unguenstige Reihenfolge.
+
+Wer diese Richtung erneut probiert, sollte zuerst jeden Markt **einzeln**
+messen. Ein Markt, der allein nichts taugt, rettet kein Portfolio.
+
 Was dabei ehrlich bleiben muss
 ------------------------------
 Zwei Trades auf zwei Maerkten zur selben Zeit sind **nicht** zwei unabhaengige
