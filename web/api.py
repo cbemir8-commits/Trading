@@ -39,6 +39,23 @@ log = structlog.get_logger(__name__)
 
 STATIC = Path(__file__).parent / "static"
 
+
+def _kurve_auf_konto(uebersicht, stand: float) -> list[tuple[str, float]]:
+    """Die Gewinnkurve auf den heutigen Kontostand beziehen.
+
+    ``read_trades`` summiert die Gewinne ab null. Was jemand sehen will, ist
+    aber der Kontostand - also dieselbe Kurve, verschoben um das, was vor dem
+    ersten Trade da war: heutiger Stand minus alle bisherigen Gewinne.
+
+    Das ist eine Verschiebung, keine Rekonstruktion. Ein- oder Auszahlungen
+    zwischendurch wuerde sie nicht abbilden; bei einem Demokonto, auf das
+    nichts eingezahlt wird, stimmt sie.
+    """
+    if not uebersicht.kurve:
+        return []
+    start = stand - uebersicht.gewinn_gesamt
+    return [(zeit, round(wert + start, 2)) for zeit, wert in uebersicht.kurve]
+
 #: Wie lange eine Anmeldung gilt. Kurz genug, dass ein vergessenes Telefon
 #: kein Dauerzugang ist; lang genug, dass man nicht staendig tippt.
 SESSION_HOURS = 72
@@ -238,7 +255,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         die Liste gekuerzt wird - sonst aenderte sich die Trefferquote,
         sobald jemand weniger Zeilen anfordert.
         """
-        return read_trades(state_dir, limit=max(1, min(limit, 1000))).to_json()
+        # Startkapital aus dem laufenden Betrieb ableiten: aktueller Stand
+        # minus alles, was bisher verdient wurde. Ohne diesen Bezug zeigte
+        # die Kurve nur den Gewinn und begaenne bei null - richtig, aber
+        # nicht das, was jemand sehen will, der seinen Kontostand sucht.
+        uebersicht = read_trades(state_dir, limit=max(1, min(limit, 1000)))
+        stand = (read_view(state_dir, event_limit=1).snapshot or {}).get("equity")
+        if stand is not None:
+            try:
+                uebersicht.kurve = _kurve_auf_konto(
+                    uebersicht, float(stand)
+                )
+            except (TypeError, ValueError):
+                log.warning("trades.kontostand_unlesbar", wert=stand)
+        return uebersicht.to_json()
 
     # -- Steuern -------------------------------------------------------------
     @app.post("/api/control/{action}")

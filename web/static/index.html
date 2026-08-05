@@ -114,6 +114,95 @@
   .banner.dead { background: rgba(240,97,109,.14); color: var(--down); }
   .banner.killed { background: var(--down); color: #fff; }
   .banner.paused { background: rgba(245,180,66,.15); color: var(--warn); }
+
+  /* ---- Zahlen ------------------------------------------------------
+     Kurse und Mengen gehoeren in eine Ziffernbreite. Ohne das springen
+     die Spalten bei jeder Aktualisierung, und genau das laesst eine
+     Handelsansicht unruhig wirken. */
+  .num, .tape td.n, .ladder .px {
+    font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* ---- Offene Position: die Preisleiter -----------------------------
+     Der Kern dieser Ansicht. Stop unten, Einstieg in der Mitte, Ziele
+     oben - und ein Marker fuer den aktuellen Kurs dazwischen. Damit ist
+     auf einen Blick sichtbar, wohin die Position laeuft und wieviel Luft
+     zum Stop bleibt. Bei Short dreht sich die Reihenfolge. */
+  .pos { display: flex; flex-direction: column; gap: 14px; }
+  .pos .head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  .pos .side {
+    font-size: 12px; font-weight: 700; letter-spacing: .06em;
+    padding: 3px 8px; border-radius: 6px; text-transform: uppercase;
+  }
+  .pos .side.buy { background: rgba(53,196,138,.16); color: var(--up); }
+  .pos .side.sell { background: rgba(240,97,109,.16); color: var(--down); }
+  .pos .pnl { margin-left: auto; font-size: 20px; font-weight: 650; }
+
+  .ladder { display: flex; flex-direction: column; gap: 1px; }
+  .rung {
+    display: grid; grid-template-columns: 74px 1fr auto;
+    gap: 10px; align-items: center;
+    padding: 7px 10px; border-radius: 7px; font-size: 13px;
+    background: rgba(255,255,255,.02);
+  }
+  .rung .tag { font-size: 11px; color: var(--dim); letter-spacing: .04em; }
+  .rung .px { font-weight: 600; }
+  .rung .note { font-size: 11px; color: var(--dim); text-align: right; }
+  .rung.tp { border-left: 2px solid var(--up); }
+  .rung.tp.done { background: rgba(53,196,138,.12); }
+  .rung.tp.done .tag { color: var(--up); }
+  .rung.entry { background: rgba(91,140,240,.10); border-left: 2px solid var(--accent); }
+  .rung.entry .tag { color: var(--accent); }
+  .rung.stop { border-left: 2px solid var(--down); }
+  .rung.stop .tag { color: var(--down); }
+  .rung.now {
+    background: var(--text); color: var(--bg);
+    border-left: 2px solid var(--text); font-weight: 700;
+  }
+  .rung.now .tag, .rung.now .note { color: rgba(11,14,20,.65); }
+
+  /* ---- Abgeschlossene Trades --------------------------------------- */
+  .tape { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tape th {
+    text-align: left; font-size: 11px; color: var(--dim); font-weight: 600;
+    letter-spacing: .05em; text-transform: uppercase;
+    padding: 0 8px 7px 0; border-bottom: 1px solid var(--line);
+  }
+  .tape td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--line); }
+  .tape tr:last-child td { border-bottom: 0; }
+  .tape td.n { text-align: right; white-space: nowrap; }
+  .tape .win { color: var(--up); }
+  .tape .loss { color: var(--down); }
+  .tape .sub { font-size: 11px; color: var(--dim); }
+  .tapewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .stats div { background: rgba(255,255,255,.02); border-radius: 9px; padding: 9px 8px; text-align: center; }
+  .stats .v { font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .stats .l { font-size: 10px; color: var(--dim); margin-top: 2px; }
+
+  /* ---- Kapitalkurve -------------------------------------------------
+     Feste Hoehe, nicht "auto": Mit preserveAspectRatio="none" leitet der
+     Browser aus dem viewBox keine Hoehe mehr ab, und die Grafik wird null
+     Pixel hoch - die Karte sieht dann leer aus, obwohl das SVG stimmt. */
+  .curve { width: 100%; height: 150px; display: block; }
+  .curvefoot {
+    display: flex; justify-content: space-between; margin-top: 6px;
+    font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 480px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .rung { grid-template-columns: 62px 1fr auto; }
+    /* Sieben Spalten passen auf einem Telefon nicht. Weg muessen die
+       Kurse - Gewinn und R bleiben, das sind die Spalten, wegen derer
+       ueberhaupt jemand hinsieht. Die Kurse stehen im Detail darunter. */
+    .tape .opt { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
 </style>
 </head>
 <body>
@@ -139,8 +228,35 @@
   </div>
 
   <div class="card" id="poscard">
-    <h2>Position</h2>
+    <h2>Offene Position</h2>
     <div id="position" class="dim">Keine offene Position.</div>
+  </div>
+
+  <div class="card hidden" id="curvecard">
+    <h2>Kapitalverlauf</h2>
+    <svg id="curve" class="curve" viewBox="0 0 620 150" preserveAspectRatio="none"
+         role="img" aria-label="Kontostand seit dem ersten Trade"></svg>
+    <div class="curvefoot">
+      <span id="curvestart">—</span>
+      <span id="curveend">—</span>
+    </div>
+  </div>
+
+  <div class="card hidden" id="tradecard">
+    <h2>Abgeschlossene Trades <span class="dim" id="tradesub"
+        style="font-weight:400;font-size:13px;text-transform:none;letter-spacing:0"></span></h2>
+    <div class="stats" id="tradestats"></div>
+    <div class="tapewrap">
+      <table class="tape">
+        <thead><tr>
+          <th>Zeit</th><th>Markt</th><th class="n opt">Einstieg</th>
+          <th class="n opt">Ausstieg</th><th class="n opt">Stop</th>
+          <th class="n">Gewinn</th><th class="n">R</th>
+        </tr></thead>
+        <tbody id="tradelist"></tbody>
+      </table>
+    </div>
+    <div class="hint" id="tradehint"></div>
   </div>
 
   <div class="card">
@@ -311,21 +427,7 @@ async function refresh() {
   $("ddtext").textContent = `Noch ${left.toFixed(1)} Prozentpunkte bis zum Kill-Switch bei ${KILL_AT} %.`;
 
   // -- Position
-  const p = s.position;
-  if (!p) {
-    $("position").innerHTML = '<span class="dim">Keine offene Position.</span>';
-  } else if (p.pending) {
-    $("position").innerHTML = `<span class="dim">${p.pending}</span>`;
-  } else {
-    $("position").innerHTML = `
-      <table><tbody>
-        <tr><td class="k">Richtung</td><td class="v">${p.side === "Buy" ? "Long" : "Short"}</td></tr>
-        <tr><td class="k">Menge</td><td class="v">${p.qty}</td></tr>
-        <tr><td class="k">Einstieg</td><td class="v">${num(p.entry_price, 1)}</td></tr>
-        <tr><td class="k">Stop</td><td class="v">${num(p.stop_price, 1)}${p.at_breakeven ? ' <span class="up">(Einstand)</span>' : ""}</td></tr>
-        <tr><td class="k">Ziele erreicht</td><td class="v">${p.targets_hit}</td></tr>
-      </tbody></table>`;
-  }
+  renderPosition(s.position, s.symbol);
 
   // -- Ereignisse
   const events = data.events || [];
@@ -367,6 +469,175 @@ async function refresh() {
   }
 }
 
+/* ---- Offene Position als Preisleiter -------------------------------
+   Stop, Einstieg, Ziele und der aktuelle Kurs als Sprossen, nach Preis
+   sortiert. Bei Long steht der Stop unten und die Ziele oben; bei Short
+   dreht sich das um, und genau deshalb wird sortiert statt fest gebaut -
+   eine Leiter mit dem Stop ueber dem Einstieg bei einem Short waere
+   optisch richtig und inhaltlich verwirrend. */
+function renderPosition(p, symbol) {
+  const box = $("position");
+  if (!p) {
+    box.className = "dim";
+    box.innerHTML = "Keine offene Position.";
+    return;
+  }
+  if (p.pending) {
+    box.className = "dim";
+    box.innerHTML = escapeHtml(p.pending);
+    return;
+  }
+
+  const long = p.side === "Buy";
+  const u = p.unrealized;
+  const sprossen = [];
+
+  (p.take_profits || []).forEach((tp, i) => sprossen.push({
+    preis: Number(tp.price), klasse: "tp" + (tp.erreicht ? " done" : ""),
+    tag: "Ziel " + (i + 1),
+    note: tp.erreicht ? "erreicht" : Math.round(Number(tp.portion) * 100) + " %",
+  }));
+  sprossen.push({
+    preis: Number(p.entry_price), klasse: "entry", tag: "Einstieg",
+    note: p.qty + " " + (symbol || ""),
+  });
+  if (p.stop_price != null) {
+    sprossen.push({
+      preis: Number(p.stop_price), klasse: "stop", tag: "Stop",
+      note: p.at_breakeven ? "Einstand" : (p.protected ? "gesetzt" : "OHNE STOP"),
+    });
+  }
+  if (u && u.preis != null) {
+    sprossen.push({
+      preis: Number(u.preis), klasse: "now", tag: "jetzt",
+      note: u.stop_abstand_pct != null
+        ? num(u.stop_abstand_pct, 1) + " % bis Stop" : "",
+    });
+  }
+
+  // Bei Long faellt der Preis nach unten, bei Short steigt er - die
+  // Leiter zeigt in beiden Faellen "Ziel oben, Gefahr unten".
+  sprossen.sort((a, b) => long ? b.preis - a.preis : a.preis - b.preis);
+
+  const pnl = u ? Number(u.pnl) : null;
+  box.className = "pos";
+  box.innerHTML = `
+    <div class="head">
+      <span class="side ${long ? "buy" : "sell"}">${long ? "Long" : "Short"}</span>
+      <span class="num dim">${escapeHtml(symbol || "")}</span>
+      ${pnl === null ? "" : `<span class="pnl num ${pnl >= 0 ? "up" : "down"}">
+        ${signed(pnl, 2)} <span class="dim" style="font-size:13px;font-weight:500">
+        ${signed(u.pnl_pct, 2, " %")}</span></span>`}
+    </div>
+    <div class="ladder">
+      ${sprossen.map((r) => `<div class="rung ${r.klasse}">
+        <span class="tag">${escapeHtml(r.tag)}</span>
+        <span class="px">${num(r.preis, 1)}</span>
+        <span class="note">${escapeHtml(r.note)}</span>
+      </div>`).join("")}
+    </div>
+    ${p.protected === false
+      ? '<div class="hint down">Kein Stop an der Position. Wird beim nächsten Takt neu gesetzt.</div>'
+      : ""}`;
+}
+
+/* ---- Abgeschlossene Trades und Kapitalkurve ------------------------ */
+async function refreshTrades() {
+  let data;
+  try {
+    const antwort = await fetch("/api/trades?limit=100");
+    if (antwort.status === 401 || antwort.status === 403) {
+      // Nicht angemeldet - die Liste ist Kontodaten und bleibt verborgen.
+      $("tradecard").classList.add("hidden");
+      $("curvecard").classList.add("hidden");
+      return;
+    }
+    data = await antwort.json();
+  } catch { return; }
+
+  if (!data || !data.anzahl) {
+    $("tradecard").classList.add("hidden");
+    $("curvecard").classList.add("hidden");
+    return;
+  }
+
+  $("tradecard").classList.remove("hidden");
+  $("tradesub").textContent = `${data.anzahl} insgesamt`;
+
+  const quote = data.trefferquote === null ? "—"
+    : Math.round(data.trefferquote * 100) + " %";
+  $("tradestats").innerHTML = `
+    <div><div class="v ${data.gewinn_gesamt >= 0 ? "up" : "down"}">${signed(data.gewinn_gesamt, 2)}</div><div class="l">Gewinn USDT</div></div>
+    <div><div class="v">${quote}</div><div class="l">Trefferquote</div></div>
+    <div><div class="v">${data.erwartung_r === null ? "—" : signed(data.erwartung_r, 2)}</div><div class="l">Erwartung R</div></div>
+    <div><div class="v ${data.laengste_verlustserie >= 5 ? "warn" : ""}">${data.laengste_verlustserie}</div><div class="l">Verluste in Folge</div></div>`;
+
+  $("tradelist").innerHTML = data.trades.map((t) => {
+    const klasse = t.gewonnen ? "win" : "loss";
+    return `<tr>
+      <td>${kurzzeit(t.zeitpunkt)}<div class="sub">${escapeHtml(t.grund)}</div></td>
+      <td>${escapeHtml(t.symbol)}<div class="sub">${t.seite === "Buy" ? "Long" : "Short"} ${num(t.hebel, 2)}×</div></td>
+      <td class="n opt">${num(t.einstieg, 1)}</td>
+      <td class="n opt">${num(t.ausstieg, 1)}</td>
+      <td class="n opt">${t.stop === null ? "—" : num(t.stop, 1)}</td>
+      <td class="n ${klasse}">${signed(t.gewinn, 2)}</td>
+      <td class="n ${klasse}">${t.r === null ? "—" : signed(t.r, 2)}</td>
+    </tr>`;
+  }).join("");
+
+  $("tradehint").textContent =
+    `Gebühren insgesamt ${num(data.gebuehren_gesamt, 2)} USDT. `
+    + `R heißt: Gewinn gemessen am Betrag, der beim Einstieg riskiert war.`;
+
+  zeichneKurve(data.kurve || []);
+}
+
+function kurzzeit(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString("de-DE",
+    { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+function zeichneKurve(punkte) {
+  if (punkte.length < 2) {
+    $("curvecard").classList.add("hidden");
+    return;
+  }
+  $("curvecard").classList.remove("hidden");
+
+  const W = 620, H = 150, PAD = 8;
+  const werte = punkte.map((p) => p[1]);
+  let lo = Math.min(...werte), hi = Math.max(...werte);
+  if (hi === lo) { hi = lo + 1; }          // flache Kurve: Division durch null
+  const spanne = hi - lo;
+  lo -= spanne * 0.08; hi += spanne * 0.08;
+
+  const x = (i) => PAD + (i / (punkte.length - 1)) * (W - 2 * PAD);
+  const y = (v) => H - PAD - ((v - lo) / (hi - lo)) * (H - 2 * PAD);
+
+  const linie = punkte.map((p, i) =>
+    `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
+  const start = punkte[0][1], ende = punkte[punkte.length - 1][1];
+  const farbe = ende >= start ? "var(--up)" : "var(--down)";
+
+  $("curve").innerHTML = `
+    <defs><linearGradient id="cf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${farbe}" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="${farbe}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <line x1="${PAD}" x2="${W - PAD}" y1="${y(start).toFixed(1)}" y2="${y(start).toFixed(1)}"
+          stroke="var(--line)" stroke-width="1" stroke-dasharray="3 4"/>
+    <path d="${linie}L${x(punkte.length - 1).toFixed(1)},${H - PAD}L${x(0).toFixed(1)},${H - PAD}Z"
+          fill="url(#cf)"/>
+    <path d="${linie}" fill="none" stroke="${farbe}" stroke-width="2"
+          stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${x(punkte.length - 1).toFixed(1)}" cy="${y(ende).toFixed(1)}"
+            r="3.5" fill="${farbe}"/>`;
+
+  $("curvestart").textContent = kurzzeit(punkte[0][0]) + " · " + num(start, 0);
+  $("curveend").textContent = kurzzeit(punkte[punkte.length - 1][0]) + " · " + num(ende, 0);
+}
+
 function escapeHtml(text) {
   const div = document.createElement("div");
   div.textContent = text ?? "";
@@ -383,6 +654,7 @@ async function send(action, confirmText) {
   const result = await response.json();
   alert(response.ok ? result.hinweis : (result.detail || "Fehlgeschlagen"));
   refresh();
+  refreshTrades();
 }
 
 $("loginbtn").onclick = async () => {
@@ -391,7 +663,7 @@ $("loginbtn").onclick = async () => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ password: $("pw").value }),
   });
-  if (response.ok) { $("pw").value = ""; refresh(); }
+  if (response.ok) { $("pw").value = ""; refresh(); refreshTrades(); }
   else alert("Falsches Passwort");
 };
 $("pw").onkeydown = (e) => { if (e.key === "Enter") $("loginbtn").click(); };
@@ -405,12 +677,16 @@ $("kill").onclick = () => send("kill",
 
 refresh();
 refreshWettbewerb();
+refreshTrades();
 setInterval(refresh, 10000);
+// Trades aendern sich nur, wenn einer schliesst - alle 30 Sekunden reicht,
+// und der schwebende Gewinn der offenen Position kommt ohnehin aus /status.
+setInterval(refreshTrades, 30000);
 // Deutlich seltener: Ein Zulassungslauf dauert Minuten, und die Liste steht
 // auf der Platte - haeufiger abzufragen kostet nur Akku.
 setInterval(refreshWettbewerb, 60000);
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) { refresh(); refreshWettbewerb(); }
+  if (!document.hidden) { refresh(); refreshWettbewerb(); refreshTrades(); }
 });
 </script>
 </body>

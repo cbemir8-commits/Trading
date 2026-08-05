@@ -242,3 +242,68 @@ class TestRoute:
 
         assert client.get("/api/trades?limit=999999").status_code == 200
         assert client.get("/api/trades?limit=0").status_code == 200
+
+
+class TestKurve:
+    def test_beginnt_vor_dem_ersten_trade(self, tmp_path: Path) -> None:
+        """Ohne diesen Punkt sieht das Ergebnis des ersten Trades wie der
+        Ausgangspunkt aus."""
+        _schreiben(tmp_path, [_zeile(stunde=0, brutto=100.0)])
+
+        kurve = read_trades(tmp_path, startkapital=500.0).kurve
+
+        assert len(kurve) == 2
+        assert kurve[0][1] == pytest.approx(500.0)
+        assert kurve[1][1] == pytest.approx(599.5)
+
+    def test_summiert_auf(self, tmp_path: Path) -> None:
+        _schreiben(
+            tmp_path,
+            [
+                _zeile(stunde=0, brutto=100.0),
+                _zeile(stunde=24, brutto=-40.0),
+                _zeile(stunde=48, brutto=60.0),
+            ],
+        )
+
+        kurve = read_trades(tmp_path, startkapital=500.0).kurve
+
+        assert [round(w, 1) for _, w in kurve] == [500.0, 599.5, 559.0, 618.5]
+
+    def test_ohne_trades_keine_kurve(self, tmp_path: Path) -> None:
+        assert read_trades(tmp_path).kurve == []
+
+    def test_ohne_startkapital_zeigt_sie_den_gewinn(self, tmp_path: Path) -> None:
+        """Ehrlicher, als eine Kontogroesse zu erfinden."""
+        _schreiben(tmp_path, [_zeile(stunde=0, brutto=100.0)])
+
+        kurve = read_trades(tmp_path).kurve
+
+        assert kurve[0][1] == pytest.approx(0.0)
+
+
+class TestKurveAmKonto:
+    def test_wird_auf_den_kontostand_verschoben(self, tmp_path: Path) -> None:
+        """Die Route bezieht die Gewinnkurve auf den heutigen Stand.
+
+        Sonst begaenne sie bei null - richtig, aber nicht das, was jemand
+        sieht, der seinen Kontostand sucht.
+        """
+        from web.api import _kurve_auf_konto
+
+        _schreiben(
+            tmp_path,
+            [_zeile(stunde=0, brutto=100.0), _zeile(stunde=24, brutto=-40.0)],
+        )
+        uebersicht = read_trades(tmp_path)
+
+        # Heute 559 auf dem Konto, 59 davon verdient -> Start war 500.
+        verschoben = _kurve_auf_konto(uebersicht, 559.0)
+
+        assert verschoben[0][1] == pytest.approx(500.0)
+        assert verschoben[-1][1] == pytest.approx(559.0)
+
+    def test_ohne_trades_bleibt_sie_leer(self, tmp_path: Path) -> None:
+        from web.api import _kurve_auf_konto
+
+        assert _kurve_auf_konto(read_trades(tmp_path), 500.0) == []

@@ -105,6 +105,14 @@ class TradeUebersicht:
     bester_r: float | None = None
     schlechtester_r: float | None = None
     laengste_verlustserie: int = 0
+    kurve: list[tuple[str, float]] = field(default_factory=list)
+    """Kapitalverlauf als (Zeitpunkt, Stand) - aufsummierte Gewinne.
+
+    Nur **realisierte** Trades. Der schwebende Gewinn einer offenen Position
+    steht bewusst nicht darin: Er aendert sich mit jedem Tick, und eine Kurve,
+    deren letzter Punkt staendig springt, laedt dazu ein, den Verlauf mit dem
+    Kontostand zu verwechseln. Der aktuelle Stand steht daneben.
+    """
 
     @property
     def trefferquote(self) -> float | None:
@@ -130,10 +138,16 @@ class TradeUebersicht:
             "bester_r": self.bester_r,
             "schlechtester_r": self.schlechtester_r,
             "laengste_verlustserie": self.laengste_verlustserie,
+            "kurve": [[zeit, wert] for zeit, wert in self.kurve],
         }
 
 
-def read_trades(directory: Path | str, *, limit: int = MAX_ZEILEN) -> TradeUebersicht:
+def read_trades(
+    directory: Path | str,
+    *,
+    limit: int = MAX_ZEILEN,
+    startkapital: float = 0.0,
+) -> TradeUebersicht:
     """Den Live-Trade-Strom lesen und aufbereiten.
 
     Die Datei waechst nur - sie wird nie gekuerzt. Gelesen wird deshalb alles,
@@ -168,9 +182,31 @@ def read_trades(directory: Path | str, *, limit: int = MAX_ZEILEN) -> TradeUeber
     alle.sort(key=lambda t: t.zeitpunkt)
 
     uebersicht = _kennzahlen(alle)
+    uebersicht.kurve = _kurve(alle, startkapital)
     # Neueste zuerst - so steht oben, was gerade passiert ist.
     uebersicht.trades = list(reversed(alle[-limit:]))
     return uebersicht
+
+
+def _kurve(alle: list[LiveTrade], startkapital: float) -> list[tuple[str, float]]:
+    """Aufsummierte Gewinne als Verlauf.
+
+    Beginnt mit dem Startkapital vor dem ersten Trade - ohne diesen Punkt
+    faengt die Grafik beim Ergebnis des ersten Trades an, und der sieht dann
+    aus wie der Ausgangspunkt.
+
+    Ist kein Startkapital bekannt, wird bei null begonnen und die Kurve zeigt
+    den **Gewinn** statt des Kontostands. Das ist ehrlicher, als eine
+    Kontogroesse zu erfinden.
+    """
+    if not alle:
+        return []
+    stand = startkapital
+    punkte = [(alle[0].zeitpunkt, round(stand, 2))]
+    for trade in alle:
+        stand += trade.gewinn
+        punkte.append((trade.zeitpunkt, round(stand, 2)))
+    return punkte
 
 
 def _kennzahlen(alle: list[LiveTrade]) -> TradeUebersicht:

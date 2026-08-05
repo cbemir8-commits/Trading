@@ -314,6 +314,13 @@ class LiveTrader:
                 "targets_hit": self.bracket.targets_hit,
                 "at_breakeven": self.bracket.moved_to_breakeven,
                 "description": self.bracket.describe(),
+                "opened_at": self.bracket.opened_at,
+                "protected": self.bracket.is_protected,
+                # Ohne diese beiden ist die Position auf dem Bildschirm eine
+                # Zeile ohne Aussage: Man sieht, dass etwas offen ist, aber
+                # nicht, wie es steht und wohin es laufen soll.
+                "take_profits": self._take_profit_levels(),
+                "unrealized": self._unrealized(candle),
             }
         elif self.bracket is not None:
             position = {"pending": self.bracket.describe()}
@@ -347,6 +354,57 @@ class LiveTrader:
                 "started_at": self.stats.started_at,
                 "summary": self.stats.describe(),
             },
+        }
+
+    def _take_profit_levels(self) -> list[dict]:
+        """Die Ziele der offenen Position - Preis, Anteil, erreicht ja/nein.
+
+        Genommen wird das **Signal**, nicht die Orderliste der Boerse: Eine
+        erreichte Teilorder verschwindet dort, und dann fehlte auf dem
+        Bildschirm ausgerechnet das Ziel, das gerade gegriffen hat.
+        """
+        if self.bracket is None:
+            return []
+        return [
+            {
+                "price": leg.price,
+                "portion": leg.portion,
+                "erreicht": nummer <= self.bracket.targets_hit,
+            }
+            for nummer, leg in enumerate(self.bracket.signal.take_profits, start=1)
+        ]
+
+    def _unrealized(self, candle: Candle | None) -> dict | None:
+        """Schwebender Gewinn der offenen Position.
+
+        ``None``, solange kein aktueller Preis vorliegt - eine Zahl aus dem
+        Einstiegskurs gegen sich selbst waere immer null und damit eine
+        Falschaussage statt einer fehlenden Angabe.
+
+        Gerechnet wird brutto: Die Gebuehren des Ausstiegs stehen noch nicht
+        fest, weil noch nicht feststeht, wie ausgestiegen wird.
+        """
+        bracket = self.bracket
+        if bracket is None or candle is None or bracket.entry_price is None:
+            return None
+        if bracket.remaining_qty <= 0:
+            return None
+
+        richtung = Decimal(1) if bracket.signal.side is Side.BUY else Decimal(-1)
+        pnl = (candle.close - bracket.entry_price) * bracket.remaining_qty * richtung
+        einsatz = bracket.entry_price * bracket.remaining_qty
+        prozent = (pnl / einsatz * Decimal(100)) if einsatz > 0 else Decimal(0)
+
+        # Abstand zum Stop in Prozent - die Zahl, die im Betrieb zaehlt.
+        abstand = None
+        if bracket.stop_price is not None and candle.close > 0:
+            abstand = abs(candle.close - bracket.stop_price) / candle.close * Decimal(100)
+
+        return {
+            "pnl": pnl,
+            "pnl_pct": prozent,
+            "preis": candle.close,
+            "stop_abstand_pct": abstand,
         }
 
     async def _handle_commands(self) -> None:
