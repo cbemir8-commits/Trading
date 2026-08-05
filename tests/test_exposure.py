@@ -665,3 +665,178 @@ class TestGeneration9:
         from research.seeds import trend_mit_vollem_einsatz
 
         assert trend_mit_vollem_einsatz().sizing.fraction == 1.0
+
+
+class TestVolaZiel:
+    """Einsatz nach Schwankungsbreite - die dritte Betriebsart.
+
+    Der Unterschied zur festen Quote ist nicht Feinschliff: Eine feste Quote
+    skaliert Rendite und Rueckgang gemeinsam, der Sharpe bleibt konstant. Das
+    Vola-Ziel verschiebt die Kurve selbst - auf denselben Daten stieg der
+    Sharpe von 1,02 auf 1,16, bei geringerem Rueckgang.
+    """
+
+    @staticmethod
+    def _rahmen(vola_hoch: bool, count: int = 400) -> pd.DataFrame:
+        """Eine Reihe mit vorgegebener Schwankungsbreite."""
+        rng = np.random.default_rng(3)
+        staerke = 0.05 if vola_hoch else 0.005
+        preise = 30000 * np.exp(np.cumsum(rng.normal(0, staerke, count)))
+        return pd.DataFrame(
+            {
+                "open_time": pd.date_range(T0, periods=count, freq="D", tz="UTC"),
+                "open": preise,
+                "high": preise * 1.002,
+                "low": preise * 0.998,
+                "close": preise,
+                "volume": np.full(count, 100.0),
+            }
+        )
+
+    def _genom(self, ziel: float = 25.0, deckel: float = 1.0) -> Genome:
+        return Genome(
+            name="Vola-Ziel Testkandidat",
+            rationale="Einsatz gegenlaeufig zur Schwankungsbreite.",
+            entry_long=[
+                Condition(left=_price("close"), op=Operator.GT, right=_const(1.0))
+            ],
+            stop=StopSpec(kind="percent", percent=20.0),
+            targets=[TargetSpec(rr=20.0, portion=1.0)],
+            sizing=SizingSpec(
+                kind="vola_ziel", target_vol_pct=ziel, vol_period=30, fraction=deckel
+            ),
+        )
+
+    def test_ruhiger_markt_mehr_einsatz(self) -> None:
+        """Der Kern der Betriebsart, an zwei gebauten Reihen.
+
+        Dieselbe Regel, dieselbe Zielschwankung - nur der Markt ist ein
+        anderer. In der ruhigen Reihe muss deutlich mehr Kapital im Markt
+        stehen als in der wilden.
+        """
+        strategie = compile_genome(self._genom())
+
+        strategie.prepare(self._rahmen(vola_hoch=False))
+        ruhig = strategie.fraction_at(200)
+        strategie.prepare(self._rahmen(vola_hoch=True))
+        wild = strategie.fraction_at(200)
+
+        assert ruhig is not None and wild is not None
+        assert ruhig > wild * 3, f"ruhig {ruhig}, wild {wild} - kaum Unterschied"
+
+    def test_der_deckel_haelt(self) -> None:
+        """Ohne Deckel wuerde ein sehr ruhiger Markt zu Hebel fuehren.
+
+        Ein Rueckgang von 50 % im Basiswert waere dann das Ende des Kontos -
+        und in Bitcoin ist das kein hypothetischer Fall.
+        """
+        strategie = compile_genome(self._genom(ziel=200.0, deckel=0.6))
+        strategie.prepare(self._rahmen(vola_hoch=False))
+
+        anteile = [strategie.fraction_at(i) for i in range(100, 400)]
+        assert all(a is None or a <= Decimal("0.6") for a in anteile)
+
+    def test_vor_dem_einschwingen_kein_handel(self) -> None:
+        """Wo die Schwankungsbreite noch nicht messbar ist, wird nicht gehandelt.
+
+        ``None`` heisst hier nicht "Standardquote", sondern "diese Kerze
+        nicht" - ein geratener Einsatz waere schlimmer als keiner.
+        """
+        strategie = compile_genome(self._genom())
+        strategie.prepare(self._rahmen(vola_hoch=False))
+
+        assert strategie.fraction_at(5) is None
+
+    def test_feste_quote_bleibt_konstant(self) -> None:
+        """Die zweite Betriebsart darf sich davon nicht veraendern."""
+        genome = self._genom().model_copy(
+            update={"sizing": SizingSpec(kind="kapitalanteil", fraction=0.5)}
+        )
+        strategie = compile_genome(genome)
+        strategie.prepare(self._rahmen(vola_hoch=False))
+
+        assert strategie.fraction_at(100) == Decimal("0.5")
+        assert strategie.fraction_at(300) == Decimal("0.5")
+
+    def test_risikoformel_bleibt_ohne_anteil(self) -> None:
+        genome = self._genom().model_copy(
+            update={"sizing": SizingSpec(kind="risiko")}
+        )
+        strategie = compile_genome(genome)
+        strategie.prepare(self._rahmen(vola_hoch=False))
+
+        assert strategie.fraction_at(100) is None
+        assert strategie.equity_fraction is None
+
+
+class TestAnnualisierung:
+    """Die Jahresumrechnung folgt der Kerzenlaenge, nicht einer Annahme."""
+
+    @staticmethod
+    def _reihe(freq: str, count: int = 300) -> pd.DataFrame:
+        preise = np.full(count, 30000.0) * np.exp(
+            np.cumsum(np.random.default_rng(1).normal(0, 0.01, count))
+        )
+        return pd.DataFrame(
+            {
+                "open_time": pd.date_range(T0, periods=count, freq=freq, tz="UTC"),
+                "open": preise, "high": preise * 1.01, "low": preise * 0.99,
+                "close": preise, "volume": np.full(count, 100.0),
+            }
+        )
+
+    def test_kerzenlaenge_wird_abgelesen(self) -> None:
+        from strategy.indicators import periods_per_year
+
+        assert periods_per_year(self._reihe("15min")) == pytest.approx(35040, rel=0.01)
+        assert periods_per_year(self._reihe("D")) == pytest.approx(365, rel=0.01)
+        assert periods_per_year(self._reihe("h")) == pytest.approx(8760, rel=0.01)
+
+    def test_gleiche_bewegung_gleiche_jahresvola(self) -> None:
+        """Der Fehler, der vorher drinsteckte.
+
+        Dieselben Tagesschwankungen ergaben auf Tageskerzen eine Volatilitaet,
+        die um den Faktor zehn zu hoch war - weil die Umrechnung fest mit
+        15-Minuten-Kerzen rechnete. Auf einer Reihe mit derselben Bewegung je
+        Kerze muss die Jahresvola von der Kerzenlaenge abhaengen, und zwar
+        genau um die Wurzel des Verhaeltnisses.
+        """
+        import numpy as _np
+
+        from strategy.indicators import realized_vol
+
+        taeglich = realized_vol(self._reihe("D"), 30)
+        stuendlich = realized_vol(self._reihe("h"), 30)
+
+        # Gleiche Bewegung je Kerze, 24-mal so viele Kerzen im Jahr:
+        # die Jahresvola verhaelt sich wie die Wurzel aus 24.
+        verhaeltnis = _np.nanmedian(stuendlich) / _np.nanmedian(taeglich)
+        assert verhaeltnis == pytest.approx(_np.sqrt(24), rel=0.05)
+
+    def test_luecke_verschiebt_die_umrechnung_nicht(self) -> None:
+        """Der Median statt des Mittelwerts - eine fehlende Kerze darf die
+        Skalierung nicht verfaelschen."""
+        from strategy.indicators import periods_per_year
+
+        reihe = self._reihe("D")
+        mit_luecke = pd.concat([reihe.iloc[:100], reihe.iloc[150:]], ignore_index=True)
+
+        assert periods_per_year(mit_luecke) == pytest.approx(365, rel=0.01)
+
+
+class TestGeneration10:
+    def test_alle_kandidaten_kompilieren(self) -> None:
+        from research.seeds import load_seeds
+
+        for genome in load_seeds(10):
+            assert compile_genome(genome).warmup_bars > 0
+            assert genome.sizing.kind == "vola_ziel"
+
+    def test_die_familie_unterscheidet_sich_nur_im_ziel_und_fenster(self) -> None:
+        from research.seeds import load_seeds
+
+        genome = load_seeds(10)
+        for g in genome:
+            assert g.entry_long == genome[0].entry_long
+            assert g.exit_long == genome[0].exit_long
+            assert g.stop == genome[0].stop

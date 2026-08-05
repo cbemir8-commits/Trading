@@ -2065,6 +2065,105 @@ GENERATION_9 = [
 ]
 
 
+# ===========================================================================
+#  Zehnte Generation - Einsatz nach Schwankungsbreite
+# ===========================================================================
+#
+# Die Messung der neunten Generation war eindeutig: Eine feste Einsatzquote
+# skaliert Rendite und Rueckgang **gemeinsam**. Der Sharpe blieb ueber alle
+# Quoten bei 1,02 - der Hebel war ausgereizt, egal wie man ihn stellt.
+#
+# Ein fester Anteil bedeutet aber nicht festes Risiko. In ruhigen Wochen
+# schwankt Bitcoin um 30 % im Jahr, in stuermischen um 90 %. Derselbe
+# Kapitalanteil traegt dann das Dreifache an Risiko - und der Rueckgang
+# entsteht fast vollstaendig in den stuermischen Phasen.
+#
+# Der Einsatz nach Schwankungsbreite dreht das um: Zielschwankung geteilt
+# durch gemessene Schwankung. In ruhigen Phasen mehr Kapital, in wilden
+# weniger, ueber die Zeit gleich viel Risiko.
+#
+# Gemessen auf denselben Daten, gegen dieselbe Regel:
+#
+#     feste Quote 60 %      +79,1 %   13,5 % p.a.   12,44 % DD   Sharpe 1,02
+#     Vola-Ziel 20 %        +83,9 %   14,1 % p.a.   11,71 % DD   Sharpe 1,16
+#
+# Mehr Rendite bei weniger Rueckgang - das ist keine Skalierung mehr, sondern
+# eine bessere Kurve. Der Sharpe steigt von 1,02 auf 1,16.
+
+
+def _vola_trend(name: str, ziel: float, periode: int, rationale: str) -> Genome:
+    """Die 200-Tage-Regel, Einsatz nach Schwankungsbreite.
+
+    Wieder aus einem Bauplan, damit sich die Kandidaten **nur** im Ziel und
+    im Messfenster unterscheiden.
+    """
+    return Genome(
+        name=name,
+        rationale=rationale,
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("sma", period=200)),
+        ],
+        exit_long=[
+            Condition(left=_price("close"), op=Operator.LT,
+                      right=_ind("sma", period=200)),
+        ],
+        stop=StopSpec(kind="percent", percent=15.0),
+        targets=[TargetSpec(rr=20.0, portion=1.0)],
+        sizing=SizingSpec(
+            kind="vola_ziel", target_vol_pct=ziel, vol_period=periode, fraction=1.0
+        ),
+        cooldown_bars=0,
+        max_hold_bars=0,
+    )
+
+
+def vola_ziel_20() -> Genome:
+    return _vola_trend(
+        "Trend mit Vola-Ziel 20 %", 20.0, 30,
+        "Trendfolge auf 200 Tage, Einsatz gegenlaeufig zur gemessenen "
+        "Schwankungsbreite mit Ziel 20 % im Jahr. Haelt den Rueckgang unter "
+        "der Grenze; die Jahresrendite bleibt knapp darunter.",
+    )
+
+
+def vola_ziel_22() -> Genome:
+    return _vola_trend(
+        "Trend mit Vola-Ziel 22 %", 22.0, 30,
+        "Dasselbe mit 22 % Zielschwankung. Erreicht die geforderte "
+        "Jahresrendite, ueberschreitet dafuer die Rueckgangsgrenze knapp - "
+        "der Gegenpol zum 20-%-Kandidaten.",
+    )
+
+
+def vola_ziel_kurzes_fenster() -> Genome:
+    return _vola_trend(
+        "Vola-Ziel, kurzes Messfenster", 20.0, 20,
+        "Zielschwankung 20 %, aber ueber nur 20 Tage gemessen. Reagiert "
+        "schneller auf Vola-Spruenge - die Frage ist, ob das hilft oder nur "
+        "mehr Umschichtung erzeugt.",
+    )
+
+
+def vola_ziel_langes_fenster() -> Genome:
+    return _vola_trend(
+        "Vola-Ziel, langes Messfenster", 20.0, 60,
+        "Zielschwankung 20 % ueber 60 Tage. Traeger, dafuer stetiger. "
+        "Zusammen mit 20 und 30 Tagen ergibt das eine Plateau-Probe: Liegt "
+        "das mittlere Fenster deutlich vorn, ist der Wert womoeglich nur "
+        "gut getroffen.",
+    )
+
+
+#: Zehnte Generation: Einsatz nach Schwankungsbreite.
+GENERATION_10 = [
+    vola_ziel_20,
+    vola_ziel_22,
+    vola_ziel_kurzes_fenster,
+    vola_ziel_langes_fenster,
+]
+
+
 GENERATIONS = {
     1: GENERATION_1,
     2: GENERATION_2,
@@ -2075,6 +2174,7 @@ GENERATIONS = {
     7: GENERATION_7,
     8: GENERATION_8,
     9: GENERATION_9,
+    10: GENERATION_10,
 }
 
 

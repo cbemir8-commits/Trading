@@ -39,6 +39,23 @@ class CompiledStrategy:
         self.strategy_id = genome.genome_id
         self.warmup_bars = _estimate_warmup(genome)
         self._last_entry_index: int | None = None
+        self._fractions: np.ndarray | None = None
+
+    def fraction_at(self, index: int) -> Decimal | None:
+        """Kapitalanteil fuer diesen Balken.
+
+        Bei fester Quote immer derselbe Wert; bei Vola-Ziel je Balken ein
+        anderer. Der Einstieg fragt hier nach, statt einen Wert vom Beginn des
+        Laufs zu benutzen - sonst waere die ganze Steuerung wirkungslos.
+        """
+        if self._fractions is None:
+            return self.equity_fraction
+        if not 0 <= index < len(self._fractions):
+            return self.equity_fraction
+        wert = self._fractions[index]
+        if not np.isfinite(wert) or wert <= 0:
+            return None
+        return Decimal(str(round(float(wert), 4)))
 
     @property
     def equity_fraction(self) -> Decimal | None:
@@ -48,7 +65,7 @@ class CompiledStrategy:
         "kein Wert": Engine und Risk-Officer unterscheiden genau daran, welche
         Betriebsart gilt.
         """
-        if self.genome.sizing.kind != "kapitalanteil":
+        if self.genome.sizing.kind == "risiko":
             return None
         return Decimal(str(self.genome.sizing.fraction))
 
@@ -67,6 +84,8 @@ class CompiledStrategy:
                     continue
                 series[operand.key] = self._compute_operand(frame, operand)
 
+        self._fractions = self._compute_fractions(frame)
+
         # Der Stop braucht immer ATR, auch wenn keine Bedingung ihn nutzt.
         if self.genome.stop.kind == "atr":
             key = _atr_key(self.genome.stop.atr_period)
@@ -76,6 +95,28 @@ class CompiledStrategy:
                 )
 
         return series
+
+    def _compute_fractions(self, frame: pd.DataFrame) -> np.ndarray | None:
+        """Kapitalanteil je Balken - nur beim Vola-Ziel.
+
+        Einsatz = Zielschwankung / gemessene Schwankung, gedeckelt. In ruhigen
+        Phasen steht damit mehr Kapital im Markt, in stuermischen weniger, und
+        das Risiko bleibt ueber die Zeit ungefaehr gleich.
+
+        Wo die Schwankungsbreite noch nicht messbar ist - zu Beginn der Reihe -
+        bleibt der Wert NaN. Dann wird nicht gehandelt, statt auf einer
+        Annahme zu handeln.
+        """
+        sizing = self.genome.sizing
+        if sizing.kind != "vola_ziel":
+            return None
+
+        vola = indicators.compute(
+            "realized_vol", frame, {"period": sizing.vol_period}
+        )
+        with np.errstate(divide="ignore", invalid="ignore"):
+            anteil = sizing.target_vol_pct / vola
+        return np.clip(anteil, 0.0, sizing.fraction)
 
     @staticmethod
     def _compute_operand(frame: pd.DataFrame, operand: Operand) -> np.ndarray:

@@ -221,17 +221,38 @@ def volume_zscore(frame: pd.DataFrame, period: int = 50) -> np.ndarray:
     return ((volume - mean) / spread.replace(0, np.nan)).to_numpy(dtype=np.float64)
 
 
+def periods_per_year(frame: pd.DataFrame) -> float:
+    """Wie viele Kerzen dieser Reihe passen in ein Jahr?
+
+    Abgelesen am tatsaechlichen Abstand der Zeitstempel, nicht angenommen.
+    Diese Zahl stand frueher fest im Quelltext - 35.040, also 15-Minuten-Kerzen.
+    Auf Tageskerzen kam damit eine Volatilitaet heraus, die um den Faktor zehn
+    zu hoch war, ohne dass irgendetwas darauf hingewiesen haette.
+
+    Krypto handelt durchgehend, deshalb 365 Tage und keine Boersentage.
+    """
+    if "open_time" not in frame.columns or len(frame) < 3:
+        return 365 * 24 * 4  # Rueckfall: 15-Minuten-Kerzen
+
+    zeiten = pd.to_datetime(frame["open_time"])
+    # Median statt Mittelwert: Eine einzelne Luecke - Boersenwartung, fehlende
+    # Kerzen - wuerde den Mittelwert verschieben und die Skalierung verfaelschen.
+    abstand = zeiten.diff().median()
+    if pd.isna(abstand) or abstand.total_seconds() <= 0:
+        return 365 * 24 * 4
+    return (365 * 24 * 3600) / abstand.total_seconds()
+
+
 def realized_vol(frame: pd.DataFrame, period: int = 20) -> np.ndarray:
     """Annualisierte realisierte Volatilitaet in Prozent.
 
-    Bei 15-Minuten-Kerzen sind das 35.040 Perioden im Jahr (Krypto handelt
-    durchgehend).
+    Die Annualisierung folgt der tatsaechlichen Kerzenlaenge - siehe
+    :func:`periods_per_year`.
     """
     returns = np.log(frame["close"] / frame["close"].shift(1))
-    periods_per_year = 365 * 24 * 4
     return (
         returns.rolling(period, min_periods=period).std(ddof=0)
-        * np.sqrt(periods_per_year)
+        * np.sqrt(periods_per_year(frame))
         * 100
     ).to_numpy(dtype=np.float64)
 

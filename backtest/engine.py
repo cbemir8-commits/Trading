@@ -197,7 +197,12 @@ class Backtester:
         # Konfiguration: Ob eine Menge aus dem Stop oder aus dem Kapital folgt,
         # entscheidet die Idee dahinter. Strategien ohne diese Angabe verhalten
         # sich unveraendert - ``None`` ist die bisherige Risikoformel.
-        equity_fraction = getattr(strategy, "equity_fraction", None)
+        #
+        # ``fraction_at`` wird **je Balken** gefragt: Beim Vola-Ziel aendert
+        # sich der Anteil mit der gemessenen Schwankungsbreite. Einmal am
+        # Anfang zu fragen wuerde die ganze Steuerung wirkungslos machen.
+        hole_anteil = getattr(strategy, "fraction_at", None)
+        statischer_anteil = getattr(strategy, "equity_fraction", None)
 
         sub_index = _SubBarIndex(sub_frame) if sub_frame is not None else None
 
@@ -239,7 +244,10 @@ class Backtester:
 
             if signal is not None:
                 result.signals_generated += 1
-                self._consider_entry(state, result, signal, i, equity_fraction)
+                anteil = (
+                    hole_anteil(i) if hole_anteil is not None else statischer_anteil
+                )
+                self._consider_entry(state, result, signal, i, anteil)
 
             # 3. Kapitalkurve fortschreiben.
             mark = Decimal(str(arrays["close"][i]))

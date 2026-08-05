@@ -184,9 +184,30 @@ class SizingSpec(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    kind: Literal["risiko", "kapitalanteil"] = "risiko"
+    kind: Literal["risiko", "kapitalanteil", "vola_ziel"] = "risiko"
+
+    target_vol_pct: float = Field(25.0, ge=5.0, le=200.0)
+    """Angestrebte Schwankungsbreite der Position, auf ein Jahr gerechnet.
+    Nur bei ``vola_ziel`` wirksam.
+
+    Der Gedanke: Ein fester Kapitalanteil bedeutet in ruhigen Wochen wenig
+    Risiko und in stuermischen viel - dieselbe Zahl, voellig verschiedene
+    Wirkung. Der Rueckgang entsteht fast immer in den stuermischen Phasen.
+
+    Wird der Einsatz stattdessen gegenlaeufig zur gemessenen Schwankungsbreite
+    gesetzt, ist das Risiko ueber die Zeit gleich - in ruhigen Phasen mehr
+    Kapital, in wilden weniger. Das ist die einzige bekannte Methode, den
+    Rueckgang zu senken, ohne im gleichen Zug Rendite abzugeben; die feste
+    Quote skaliert beides gemeinsam, wie unsere eigene Messung gezeigt hat.
+
+    25 % ist etwa die Haelfte dessen, was Bitcoin selbst schwankt."""
+
+    vol_period: int = Field(30, ge=5, le=200)
+    """Ueber wie viele Kerzen die Schwankungsbreite gemessen wird."""
+
     fraction: float = Field(0.4, gt=0, le=1.0)
-    """Anteil des Kapitals im Markt. Nur bei ``kapitalanteil`` wirksam.
+    """Anteil des Kapitals im Markt. Bei ``kapitalanteil`` der feste Wert,
+    bei ``vola_ziel`` die **Obergrenze**.
 
     Obergrenze 1,0: kein Hebel. Wer investiert bleibt statt zu wetten, soll das
     nicht auf Kredit tun - ein Rueckgang von 50 % im Basiswert waere sonst das
@@ -195,6 +216,11 @@ class SizingSpec(BaseModel):
     def describe(self) -> str:
         if self.kind == "risiko":
             return "Menge aus Risiko und Stop-Distanz"
+        if self.kind == "vola_ziel":
+            return (
+                f"Vola-Ziel {self.target_vol_pct:g} %, hoechstens "
+                f"{self.fraction:.0%} Kapital"
+            )
         return f"{self.fraction:.0%} des Kapitals im Markt"
 
 
