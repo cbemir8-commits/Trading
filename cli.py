@@ -2040,5 +2040,162 @@ def betriebspunkt(
         console.print(f"[dim]JSON geschrieben: {json_datei}[/]")
 
 
+@app.command()
+def korb(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    generation: int = typer.Option(9, "--generation", "-g", help="Startkatalog."),
+    vola_ziel: float = typer.Option(
+        50.0, help="Vola-Ziel in Prozent. Siehe `betriebspunkt` fuer die Stufen."
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Mehrere Maerkte als **einen** Kandidaten durch alle elf Gates.
+
+    Die Zulassung kannte bisher nur einen Markt. Gemessen wurde deshalb immer
+    BTC allein oder ETH allein - und beide scheiterten unter anderem am
+    Rueckgang. Das Doppel aus beiden liegt darunter, war aber nie geprueft,
+    weil es die Maschinerie dafuer nicht gab.
+
+    Das ist keine Lockerung: Gehandelt wuerde ohnehin der Korb. Geprueft wird
+    jetzt das, was tatsaechlich laufen soll, mit denselben Schwellen.
+    """
+    from decimal import Decimal
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from data.bybit.errors import BybitError
+    from research.gates import evaluate_gates
+    from research.seeds import load_seeds
+    from strategy.compiler import compile_genome
+    from strategy.genome import SizingSpec
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    frames = common_range(roh)
+    erster = next(iter(frames.values()))
+    spanne = (erster["open_time"].iloc[-1] - erster["open_time"].iloc[0]).days
+    if spanne < 450:
+        console.print(
+            f"[red]Nur {spanne} Tage gemeinsame Historie.[/] Der Walk-Forward "
+            "braucht mindestens 450."
+        )
+        raise typer.Exit(2)
+
+    markt_data = BybitMarketData(settings.bybit)
+    configs: dict[str, BacktestConfig] = {}
+    for symbol in symbole:
+        try:
+            instrument = markt_data.get_instrument(_bybit_kontrakt(symbol))
+        except BybitError:
+            instrument = _fallback_instrument(_bybit_kontrakt(symbol))
+        configs[symbol] = BacktestConfig(
+            instrument=instrument, risk=settings.risk, initial_equity=Decimal("500")
+        )
+
+    trials_path = Path(settings.paths.state) / "trials.json"
+    from research.admission import load_trials, save_trials
+
+    trials = load_trials(trials_path)
+
+    console.print(
+        f"\n[bold]Korb[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Gemeinsam  {erster['open_time'].iloc[0]:%Y-%m-%d} bis "
+        f"{erster['open_time'].iloc[-1]:%Y-%m-%d} ({spanne} Tage)\n"
+        f"  Versuche   {trials} bisher\n"
+    )
+
+    tabelle = Table(header_style="bold")
+    tabelle.add_column("Kandidat")
+    tabelle.add_column("Gates", justify="right")
+    tabelle.add_column("Trades", justify="right")
+    tabelle.add_column("Sharpe", justify="right")
+    tabelle.add_column("Rueckgang", justify="right")
+    tabelle.add_column("Gescheitert an")
+
+    bester = None
+    for genome in load_seeds(generation):
+        # Alle Kandidaten auf dieselbe Groessenlogik stellen. Sonst
+        # vergleicht man Hebelstufen statt Regeln.
+        angepasst = genome.model_copy(
+            update={
+                "sizing": SizingSpec(
+                    kind="vola_ziel", fraction=3.0,
+                    target_vol_pct=vola_ziel, vol_period=30,
+                )
+            }
+        )
+        report = run_portfolio_walkforward(
+            frames, lambda g=angepasst: compile_genome(g), configs
+        )
+        if not report.windows:
+            continue
+
+        # Jeder gepruefte Kandidat erhoeht den Zaehler - auch dieser hier.
+        #
+        # Ohne das waere die Deflated Sharpe Ratio wertlos: Sie korrigiert
+        # dafuer, dass man bei genug Versuchen irgendwann etwas findet, das
+        # im Rueckblick gut aussieht. Wer Kandidaten prueft, ohne sie zu
+        # zaehlen, macht die Korrektur milder - und zwar genau dann, wenn er
+        # am meisten sucht.
+        trials += 1
+        gates = evaluate_gates(
+            angepasst, report, erster, next(iter(configs.values())),
+            trials_so_far=trials,
+        )
+        bestanden = sum(1 for r in gates.results if r.passed)
+        gescheitert = ", ".join(r.name for r in gates.failures)[:44] or "-"
+        stil = "green" if gates.passed else ""
+        tabelle.add_row(
+            f"[{stil}]{angepasst.name[:30]}[/]" if stil else angepasst.name[:30],
+            f"{bestanden}/{len(gates.results)}",
+            str(len(report.all_trades)),
+            f"{report.combined.sharpe:.2f}" if report.combined else "-",
+            f"{report.combined.max_drawdown_pct:.1f} %" if report.combined else "-",
+            gescheitert,
+        )
+        if bester is None or bestanden > bester[0]:
+            bester = (bestanden, angepasst.name, gates)
+
+    save_trials(trials_path, trials)
+    console.print(tabelle)
+
+    if bester is None:
+        console.print("[red]Kein Kandidat konnte gerechnet werden.[/]")
+        raise typer.Exit(2)
+
+    anzahl, name, gates = bester
+    console.print(f"\n[bold]Bester: {name}[/] - {anzahl}/{len(gates.results)} Gates\n")
+    for r in gates.results:
+        farbe = {"pass": "green", "fail": "red", "skip": "dim"}[r.status.value]
+        zeichen = {"pass": "OK", "fail": "--", "skip": ".."}[r.status.value]
+        console.print(
+            f"  [{farbe}]{zeichen}[/] {r.name:22s} "
+            f"{r.value:>9.3f} / {r.threshold:>8.3f}  [dim]{r.message[:50]}[/]"
+        )
+
+    if not gates.passed:
+        console.print(
+            "\n[dim]Nicht zugelassen. Die Schwellen bleiben, wo sie sind - "
+            "eine Strategie, die nur im Rueckblick funktioniert, kostet mehr "
+            "als gar keine.[/]"
+        )
+
+
 if __name__ == "__main__":
     app()

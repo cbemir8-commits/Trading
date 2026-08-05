@@ -476,6 +476,36 @@ def _test_monate(report: WalkForwardReport) -> float:
     return tage / 30.44
 
 
+def concurrent_groups(trades: list[Trade]) -> list[list[Trade]]:
+    """Trades zusammenfassen, die sich zeitlich ueberschneiden.
+
+    Zwei Positionen, die gleichzeitig offen sind, sind **keine zwei
+    unabhaengigen Beobachtungen**. Faellt der Markt, treffen sie das Konto
+    zusammen. Wer sie einzeln vertauscht, zieht genau die Verluste
+    auseinander, die in Wirklichkeit gemeinsam kamen - und bekommt einen zu
+    freundlichen Rueckgang heraus.
+
+    Ueberschneidung wird transitiv behandelt: A ueberlappt B, B ueberlappt C,
+    also gehoeren alle drei zusammen. Sie waren nacheinander gemeinsam offen
+    und lassen sich nicht sinnvoll trennen.
+    """
+    if not trades:
+        return []
+
+    sortiert = sorted(trades, key=lambda x: x.entry_time)
+    gruppen: list[list[Trade]] = [[sortiert[0]]]
+    ende = sortiert[0].exit_time
+
+    for trade in sortiert[1:]:
+        if trade.entry_time < ende:
+            gruppen[-1].append(trade)
+            ende = max(ende, trade.exit_time)
+        else:
+            gruppen.append([trade])
+            ende = trade.exit_time
+    return gruppen
+
+
 def gate_monte_carlo(
     trades: list[Trade],
     initial_equity: Decimal,
@@ -483,6 +513,7 @@ def gate_monte_carlo(
     *,
     simulations: int = 1000,
     seed: int = 42,
+    group_concurrent: bool = False,
 ) -> GateResult:
     """Wie schlimm haette es kommen koennen?
 
@@ -493,6 +524,18 @@ def gate_monte_carlo(
     Es wird die Reihenfolge vertauscht (nicht mit Zuruecklegen gezogen) - die
     Trades bleiben also dieselben, nur ihre Abfolge aendert sich. Geprueft wird
     das 95.-Perzentil des Rueckgangs: In 19 von 20 Faellen bleibt es darunter.
+
+    ``group_concurrent`` fasst vorher zeitgleich offene Positionen zusammen.
+    Bei mehreren Maerkten ist das noetig: Sonst wuerde die Simulation
+    unterstellen, dass ein BTC- und ein ETH-Verlust vom selben Tag unabhaengig
+    voneinander eintreten konnten. **Das Ergebnis wird dadurch strenger, nie
+    milder** - gemessen an BTC+ETH stieg das 95.-Perzentil von 28,46 % auf
+    33,25 % (51 Trades, 43 unabhaengige Zeitraeume). Bei einem einzelnen Markt
+    aendert sich nichts, weil dort nie zwei Positionen gleichzeitig offen sind:
+    BTC 51,52 % vor und nach der Gruppierung, ETH 13,35 %.
+
+    Wer die Gruppierung weglaesst, bekommt die freundlichere Zahl; genau
+    deshalb ist sie bei Portfolios eingeschaltet.
     """
     if len(trades) < 20:
         return GateResult(
@@ -503,7 +546,24 @@ def gate_monte_carlo(
             message="Zu wenige Trades fuer eine sinnvolle Simulation",
         )
 
-    pnls = np.array([float(trade.net_pnl) for trade in trades])
+    if group_concurrent:
+        gruppen = concurrent_groups(trades)
+        pnls = np.array(
+            [float(sum(x.net_pnl for x in gruppe)) for gruppe in gruppen]
+        )
+        if len(pnls) < 20:
+            return GateResult(
+                name="Monte-Carlo",
+                status=GateStatus.SKIP,
+                value=0.0,
+                threshold=t.max_monte_carlo_drawdown_pct,
+                message=(
+                    f"{len(trades)} Trades bilden nur {len(pnls)} unabhaengige "
+                    "Zeitraeume - zu wenige fuer eine sinnvolle Simulation"
+                ),
+            )
+    else:
+        pnls = np.array([float(trade.net_pnl) for trade in trades])
     start = float(initial_equity)
     rng = np.random.default_rng(seed)
 
@@ -947,8 +1007,17 @@ def evaluate_gates(
     report.results.append(gate_drawdown(walkforward, thresholds))
     report.results.append(gate_worst_year(walkforward, thresholds))
     report.results.append(gate_consistency(walkforward, thresholds))
+    # Bei mehreren Maerkten muessen zeitgleiche Positionen zusammenbleiben.
+    # Erkannt wird das an den Symbolen der Trades, nicht an einem Schalter -
+    # ein Schalter waere etwas, das man vergisst.
+    maerkte = {trade.symbol for trade in walkforward.all_trades}
     report.results.append(
-        gate_monte_carlo(walkforward.all_trades, config.initial_equity, thresholds)
+        gate_monte_carlo(
+            walkforward.all_trades,
+            config.initial_equity,
+            thresholds,
+            group_concurrent=len(maerkte) > 1,
+        )
     )
     report.results.append(gate_regime_split(walkforward.all_trades, frame, thresholds))
 

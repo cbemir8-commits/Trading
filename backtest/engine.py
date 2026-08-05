@@ -568,7 +568,16 @@ class Backtester:
             result.trades.append(
                 Trade(
                     trade_id=f"{position.signal.strategy_id}-{position.entry_index}",
-                    symbol=position.signal.symbol,
+                    # Der Markt kommt vom **Kontrakt**, nicht aus dem Signal.
+                    #
+                    # Ein Backtester handelt genau ein Instrument - das, gegen
+                    # das er auch die Groesse rechnet. Das Signal traegt zwar
+                    # ein Symbol, aber der Genome-Compiler setzt dort fest
+                    # "BTCUSDT", egal welche Kerzen er sieht. Solange nur ein
+                    # Markt lief, war das Kosmetik. Bei mehreren Maerkten
+                    # bekamen alle Trades dasselbe Symbol, und die Zuordnung
+                    # war stillschweigend weg.
+                    symbol=self.config.instrument.symbol,
                     side=position.side,
                     strategy_id=position.signal.strategy_id,
                     entry_time=position.entry_time,
