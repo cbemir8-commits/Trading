@@ -4,7 +4,12 @@ Diese Datei haelt fest, was gemessen wurde und welche Wege damit
 ausgeschlossen sind. Sie ist kein Champion - `champion.json` entsteht nur,
 wenn alle elf Gates bestanden sind.
 
-**Stand: 9 von 11. Nach 71 gepruefen Hypothesen.**
+**Stand: 9 von 11. Nach 76 gepruefen Hypothesen.**
+
+**Wichtige Einschraenkung, gemessen am 05.08.2026:** Diese 9 von 11 gelten
+fuer den Zeitraum ab August 2017. Laesst man die ersten zweieinhalb Jahre
+weg, sind es 8 von 11 und 7,4 % im Jahr statt 11,2 %. Siehe
+"Wie viel haengt am Zeitraum" weiter unten.
 
 ## Der beste Kandidat
 
@@ -130,17 +135,112 @@ gleichmaessig die Ergebnisse ausfallen: Schiefe +3,7, Woelbung 17,4. Wenige
 Riesengewinner tragen alles, und in einer unguenstigen Reihenfolge liegen
 die vielen kleinen Verluste beieinander.
 
+## Woran der Deflated Sharpe wirklich haengt
+
+Bisher stand hier, gebraucht werde eine **gleichmaessigere** Ertragsquelle.
+Das war falsch, und zwar nachrechenbar. Die Formel lautet
+
+    Statistik = (SR - erwartetes Maximum) * sqrt(n-1) / sqrt(1 - Schiefe*SR + (Woelbung-1)/4 * SR^2)
+
+Die Schiefe steht mit **negativem** Vorzeichen im Nenner. Positive Schiefe
+macht den Nenner kleiner und den Wert damit **groesser**. Die hohe Schiefe der
+Trendfolge ist also kein Nachteil, sondern hilft. Jede Zeile hier ist
+gerechnet, alles andere unveraendert bei 156 Trades:
+
+    Schiefe   0,0  ->  DSR 0,704
+    Schiefe  +3,74 ->  DSR 0,848   (der Ist-Zustand)
+    Schiefe  +6,0  ->  DSR 1,000
+
+Was den Wert wirklich traegt, ist die **Zahl der Trades**:
+
+    n=156   DSR 0,848
+    n=180   DSR 0,922
+    n=200   DSR 0,957   bestanden
+    n=312   DSR 0,999
+
+**Es fehlen rund 44 Trades**, nicht eine andere Art von Strategie. Damit ist
+die Aufgabe erstmals scharf gestellt: 44 weitere Trades derselben Qualitaet,
+oder ein Sharpe je Trade von 0,27 statt 0,242.
+
+Der Preis jeder weiteren Hypothese bleibt:
+
+    bei  76 Versuchen   DSR 0,841
+    bei 120 Versuchen   DSR 0,765
+    bei 400 Versuchen   DSR 0,519
+
+## Drei Wege zu mehr Trades - alle gemessen, alle teurer als sie bringen
+
+Der gemeinsame Befund: Mehr Trades sind zu haben, aber **nie zum gleichen
+Preis je Trade**. Der Gewinn aus ``sqrt(n)`` wird jedes Mal vom Verlust an
+Qualitaet ueberholt.
+
+**7. Mehr Maerkte.** Dieselbe Regel zusaetzlich auf LTC und XRP, Tageskerzen,
+gleiches Gewicht je Bein:
+
+    Maerkte  Trades    p.a.       DD   Sharpe    DSR      Gates
+       2       156   11,22 %   9,74 %   1,50    0,836     9/11
+       3       265    8,93 %  11,15 %   1,22    0,890     7/11
+       4       374    7,68 %  10,71 %   1,11    0,896     8/11
+
+Der DSR steigt tatsaechlich - aber nur von 0,836 auf 0,896, weil die Erwartung
+je Trade von 1,043 R auf 0,578 R faellt. LTC und XRP liefern einzeln Sharpe
+0,42 und 0,38 bei 21 % Rueckgang. Die Jahresrendite verliert ein Drittel.
+
+**8. Feinere Kerzen.** Dieselbe Regel, in Zeit konstant gehalten (50 Tage
+bleiben 50 Tage, also 100 Kerzen auf 12 Stunden). Beide Laeufe ab 2020-03:
+
+    Kerze   Trades    p.a.      DD    Sharpe   SR je Trade    DSR
+    Tag       104    7,34 %   9,40 %   1,02       0,225      0,411
+    12 h      138    6,57 %   8,84 %   0,92       0,176      0,299
+
+Feiner **erzeugt** mehr Trades - ein Drittel mehr -, aber es sind schlechtere:
+Rund um den Durchschnitt entstehen Fehlausbrueche, die die Tageskerze
+verschluckt. Der DSR faellt, obwohl n steigt.
+
+**9. Rueckkehr zum Mittelwert, 15 Minuten.** Bollinger-Unterband kreuzen,
+raus ueber dem SMA20, Stop 1,5 %. 3796 Trades - und **kein Vorteil**:
+
+    mit Gebuehren    Erwartung -0,0767 R    -32,98 % p.a.   Sharpe -4,01
+    ohne Gebuehren   Erwartung -0,0132 R     -9,35 % p.a.   Sharpe -0,98
+
+Auch ohne jede Gebuehr negativ. Die Idee scheitert nicht an den Kosten,
+sondern hat gar keinen Rohvorteil. Der Grund, aus dem ich sie geprueft habe -
+sie erzeuge die "richtige" negative Schiefe -, war ohnehin verkehrt herum
+gedacht (siehe oben).
+
+## Wie viel haengt am Zeitraum
+
+Die wichtigste Zahl dieses Durchlaufs. Dieselbe Regel, dieselben zwei
+Maerkte, nur ein spaeterer Start:
+
+    Zeitraum              Trades    p.a.       DD     Sharpe    DSR     Gates
+    2017-08 .. 2026-08      156   11,22 %   9,74 %    1,50    0,834     9/11
+    2020-03 .. 2026-08      104    7,41 %   9,03 %    1,06    0,405     8/11
+
+Ueber die letzten sechseinhalb Jahre allein waere der Kandidat **nicht** bei
+9 von 11, sondern bei 8 - und die Jahresrendite laege bei 7,4 %, also weit
+unter der Messlatte. Ein Drittel des Ergebnisses stammt aus 2017 bis 2020.
+
+Das ist kein Fehler im Code, aber es ist eine Warnung: Die Kennzahlen oben
+sind kein Naturgesetz, sie sind die Messung eines Zeitraums, der eine
+Vervierzigfachung von BTC und den Absturz 2018 enthaelt.
+
+Gegenprobe, dass es am Zeitraum liegt und nicht an den Daten: Dieselbe Regel
+auf Tageskerzen, die aus Viertelstunden gebaut wurden, ergibt 7,42 % gegen
+7,41 % auf den geholten Tageskerzen - identisch bis auf die zweite
+Nachkommastelle.
+
 ## Was daraus folgt
 
-Weitere Varianten derselben Idee helfen nicht - im Gegenteil. Jede gepruefte
-Hypothese hebt die Huerde des Deflated Sharpe:
+Drei Quellen fuer mehr Trades sind gemessen und alle drei kosten mehr
+Qualitaet, als sie an Zahl bringen. Was **nicht** geprueft ist:
 
-    bei  59 Versuchen   noetiger Sharpe je Trade  rund 1,19
-    bei 100 Versuchen                             rund 1,25
-    bei 200 Versuchen                             rund 1,33
+* mehr Historie auf den guten Maerkten - BTC-Tageskerzen reichen bis 2012
+  zurueck, genutzt wird erst ab 2017, weil ETH nicht frueher beginnt. Ein
+  Portfolio, dessen Beine zu verschiedenen Zeiten dazukommen, waere zulaessig
+  und wuerde rund 40 % mehr Historie auf dem besten Markt erschliessen.
+* ein hoeherer Sharpe je Trade statt mehr Trades - 0,27 statt 0,242 wuerde
+  reichen. Das ist eine Verbesserung von 12 %, nicht von 100 %.
 
-Aktuell liegt er bei 1,09. Wer weitersucht, ohne etwas strukturell anderes
-zu probieren, entfernt sich vom Ziel, statt sich ihm zu naehern.
-
-Gebraucht wird eine Ertragsquelle, die **gleichmaessiger** liefert als
-Trendfolge - nicht eine weitere Trendfolge-Variante.
+Der zweite Weg ist der ehrlichere: Er verlangt eine bessere Regel, keinen
+groesseren Datensatz.
