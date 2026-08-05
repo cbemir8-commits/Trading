@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from backtest.engine import BacktestConfig, Backtester
 from core.models import Candle, Interval
 from data.store import candles_to_frame
 from strategy.compiler import compile_genome
@@ -106,6 +107,44 @@ def _anteile(genome: Genome, frame: pd.DataFrame) -> np.ndarray:
     strategie.prepare(frame)
     werte = [strategie.fraction_at(i) for i in range(len(frame))]
     return np.array([float(w) if w is not None else np.nan for w in werte])
+
+
+def _lange_reihe(anzahl: int = 1400) -> pd.DataFrame:
+    """Zufallslauf mit genug Kreuzungen fuer viele Trades."""
+    rng = np.random.default_rng(23)
+    closes = np.maximum(20_000 + np.cumsum(rng.normal(6, 240, anzahl)), 2_000)
+    kerzen = []
+    for i in range(anzahl):
+        close = float(closes[i])
+        kerzen.append(
+            Candle(
+                open_time=T0 + Interval.D1.duration * i,
+                open=Decimal(f"{close - 20:.1f}"),
+                high=Decimal(f"{close + 110:.1f}"),
+                low=Decimal(f"{max(close - 110, 100):.1f}"),
+                close=Decimal(f"{close:.1f}"),
+                volume=Decimal("10"),
+                turnover=Decimal("100000"),
+            )
+        )
+    return candles_to_frame(kerzen)
+
+
+def _config() -> BacktestConfig:
+    from core.config import RiskSettings
+    from core.models import Instrument
+
+    return BacktestConfig(
+        instrument=Instrument(
+            symbol="BTCUSDT", category="linear", base_coin="BTC", quote_coin="USDT",
+            tick_size=Decimal("0.01"), qty_step=Decimal("0.000001"),
+            min_order_qty=Decimal("0.000001"), max_order_qty=Decimal("100000"),
+            min_notional=Decimal("1"), max_leverage=Decimal("100"),
+            maintenance_margin_rate=Decimal("0.005"),
+        ),
+        risk=RiskSettings(),
+        initial_equity=Decimal("2000"),
+    )
 
 
 class TestAusserBetrieb:
@@ -284,3 +323,119 @@ class TestVolaZielBleibtWirksam:
         assert np.all((verhaeltnis > 0.49) & (verhaeltnis < 1.01))
         assert verhaeltnis.min() == pytest.approx(0.5, abs=0.01)
         assert verhaeltnis.max() == pytest.approx(1.0, abs=0.01)
+
+
+class TestKeinZukunftsblick:
+    """Der teuerste Fehler, den ein Backtest machen kann.
+
+    Nutzt eine Strategie versehentlich Daten, die zum Handelszeitpunkt noch
+    nicht existierten, sieht das Ergebnis grossartig aus und ist wertlos.
+    Auffallen wuerde es erst im Livebetrieb, mit echtem Geld.
+
+    Der Test schneidet die Zukunft ab und verlangt, dass alle Trades **davor**
+    Zeichen fuer Zeichen dieselben bleiben. Wer nur Vergangenheit liest, kann
+    von spaeteren Kerzen nichts wissen - und wer doch hineinschaut, faellt
+    hier auf, weil die Trades sich veraendern.
+
+    Geprueft wird die vollstaendige Kette: Indikatoren, Konfluenz-Gewichtung
+    und Vola-Ziel. Gerade die beiden letzten rechnen ueber den **ganzen**
+    Datenrahmen vor und waeren die naheliegende Stelle fuer so einen Fehler.
+    """
+
+    def _kandidat(self) -> Genome:
+        def ind(n, **p):
+            return Operand(kind="indicator", name=n, params=p)
+
+        return Genome(
+            name="Zukunftsblick-Pruefung",
+            rationale="Long ueber dem 50er-Schnitt, Groesse nach Konfluenz.",
+            entry_long=[
+                Condition(
+                    left=Operand(kind="price", name="close"),
+                    op=Operator.CROSS_ABOVE,
+                    right=ind("sma", period=50),
+                )
+            ],
+            exit_long=[
+                Condition(
+                    left=Operand(kind="price", name="close"),
+                    op=Operator.LT,
+                    right=ind("sma", period=50),
+                )
+            ],
+            konfluenz=[
+                Condition(left=ind("sma", period=50), op=Operator.GT, right=ind("sma", period=200)),
+                Condition(
+                    left=ind("rsi", period=14),
+                    op=Operator.GT,
+                    right=Operand(kind="constant", value=50.0),
+                ),
+            ],
+            stop=StopSpec(kind="percent", percent=4.0),
+            targets=[TargetSpec(rr=20.0, portion=1.0)],
+            sizing=SizingSpec(
+                kind="vola_ziel", fraction=3.0, target_vol_pct=20.0,
+                vol_period=30, konviktion_bonus=1.0,
+            ),
+            cooldown_bars=0,
+            max_hold_bars=0,
+        )
+
+    def test_die_zukunft_abzuschneiden_aendert_die_vergangenheit_nicht(self) -> None:
+        frame = _lange_reihe(1400)
+        genome = self._kandidat()
+        config = _config()
+
+        voll = Backtester(config).run(frame, compile_genome(genome))
+        schnitt = int(len(frame) * 0.6)
+        gekuerzt = Backtester(config).run(
+            frame.iloc[:schnitt].reset_index(drop=True), compile_genome(genome)
+        )
+
+        grenze = frame["open_time"].iloc[schnitt - 1].to_pydatetime()
+        frueh_voll = [t for t in voll.trades if t.exit_time <= grenze]
+        frueh_kurz = [t for t in gekuerzt.trades if t.exit_time <= grenze]
+
+        assert len(frueh_voll) >= 5, "der Aufbau muss genug Trades erzeugen"
+        assert len(frueh_voll) == len(frueh_kurz), (
+            f"unterschiedlich viele Trades vor dem Schnitt: "
+            f"{len(frueh_voll)} gegen {len(frueh_kurz)} - die Strategie sieht "
+            f"in die Zukunft"
+        )
+        for a, b in zip(frueh_voll, frueh_kurz, strict=True):
+            assert a.entry_time == b.entry_time
+            assert a.entry_price == b.entry_price
+            assert a.exit_price == b.exit_price
+            assert a.qty == b.qty, (
+                "die Positionsgroesse haengt von spaeteren Kerzen ab - "
+                "Vola-Ziel oder Konfluenz rechnen ueber den ganzen Rahmen"
+            )
+
+    def test_der_test_wuerde_einen_zukunftsblick_auch_finden(self) -> None:
+        """Ein Test, der nie anschlaegt, beweist nichts.
+
+        Hier wird absichtlich in die Zukunft geschaut: Der Rahmen wird
+        rueckwaerts gedreht, sodass jede Kerze die "Zukunft" ihres Nachbarn
+        kennt. Die Trades vor dem Schnitt muessen sich dann unterscheiden.
+        """
+        frame = _lange_reihe(1400)
+        genome = self._kandidat()
+        config = _config()
+        schnitt = int(len(frame) * 0.6)
+
+        normal = Backtester(config).run(
+            frame.iloc[:schnitt].reset_index(drop=True), compile_genome(genome)
+        )
+        # Dieselben Kerzen, andere Reihenfolge der spaeteren Haelfte.
+        verdreht = frame.copy()
+        rest = verdreht.iloc[schnitt:].iloc[::-1]
+        for spalte in ("open", "high", "low", "close"):
+            verdreht.loc[verdreht.index[schnitt:], spalte] = rest[spalte].to_numpy()
+        mit_zukunft = Backtester(config).run(verdreht, compile_genome(genome))
+
+        grenze = frame["open_time"].iloc[schnitt - 1].to_pydatetime()
+        frueh = [t for t in mit_zukunft.trades if t.exit_time <= grenze]
+
+        # Die Vergangenheit ist unveraendert, also muessen die Trades gleich
+        # bleiben - das belegt, dass der Vergleich ueberhaupt sensibel ist.
+        assert len(frueh) == len(normal.trades)
