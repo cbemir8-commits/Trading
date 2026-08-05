@@ -64,7 +64,16 @@ def quelle_mit(seiten: list[int]) -> BitstampReference:
         aufrufe.append(params)
         start = datetime.fromtimestamp(int(params["start"]), tz=UTC)
         count = rest.pop(0) if rest else 0
-        return httpx.Response(200, json=bitstamp_antwort(start=start, count=count))
+        # Die Schrittweite aus der Anfrage uebernehmen, nicht raten. Das
+        # Double lieferte frueher immer 15-Minuten-Abstaende, auch wenn
+        # Tageskerzen angefragt waren - ein Test auf Tageskerzen prueft dann
+        # etwas anderes, als er zu pruefen vorgibt.
+        return httpx.Response(
+            200,
+            json=bitstamp_antwort(
+                start=start, count=count, step=int(params.get("step", 900))
+            ),
+        )
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
     quelle = BitstampReference(client=client, pause=0.0)
@@ -267,3 +276,67 @@ class TestMehrereMaerkte:
         assert btc.rows == 10
         assert eth.rows == 10
         assert store.read("LTCUSD_BITSTAMP", Interval.D1).empty
+
+
+class TestRueckwaertsNachladen:
+    """Aeltere Kerzen anfordern muss auch funktionieren.
+
+    Der Backfill setzte frueher nur vorwaerts fort: Lag im Speicher schon
+    etwas, begann er hinter dessen Ende. Wer aeltere Daten wollte, bekam
+    stillschweigend nichts - der Lauf meldete "1 neue Kerze" und war fertig.
+
+    Aufgefallen ist das beim Verlaengern der Historie von sechs auf vierzehn
+    Jahre. Der Befehl lief durch, aenderte nichts, und haette den ganzen
+    naechsten Schritt auf der alten Datenlage stattfinden lassen.
+    """
+
+    def test_aeltere_kerzen_werden_nachgeladen(self, store: CandleStore) -> None:
+        spaet = T0 + timedelta(days=100)
+        backfill_reference(
+            quelle_mit([50]), store, Interval.D1,
+            start=spaet, end=spaet + timedelta(days=50),
+        )
+        vorher = store.coverage(REFERENCE_SYMBOL, Interval.D1)
+
+        quelle = quelle_mit([100])
+        backfill_reference(
+            quelle, store, Interval.D1,
+            start=T0, end=spaet + timedelta(days=50),
+        )
+
+        nachher = store.coverage(REFERENCE_SYMBOL, Interval.D1)
+        assert nachher.start < vorher.start, "Nach vorne wurde nichts ergaenzt"
+        assert nachher.rows > vorher.rows
+
+    def test_beide_richtungen_zugleich(self, store: CandleStore) -> None:
+        """Vorne fehlt etwas und hinten auch - beides muss kommen."""
+        mitte_von = T0 + timedelta(days=100)
+        backfill_reference(
+            quelle_mit([30]), store, Interval.D1,
+            start=mitte_von, end=mitte_von + timedelta(days=30),
+        )
+
+        quelle = quelle_mit([100, 100])
+        backfill_reference(
+            quelle, store, Interval.D1,
+            start=T0, end=T0 + timedelta(days=300),
+        )
+
+        # Zwei Bereiche angefragt: der vor dem Speicher und der dahinter.
+        starts = {a["start"] for a in quelle.aufrufe}
+        assert len(starts) >= 2, "Nur ein Bereich geladen"
+
+    def test_nichts_zu_tun_bleibt_nichts_zu_tun(self, store: CandleStore) -> None:
+        backfill_reference(
+            quelle_mit([50]), store, Interval.D1,
+            start=T0, end=T0 + timedelta(days=50),
+        )
+
+        quelle = quelle_mit([10])
+        neu = backfill_reference(
+            quelle, store, Interval.D1,
+            start=T0 + timedelta(days=10), end=T0 + timedelta(days=40),
+        )
+
+        assert neu == 0
+        assert quelle.aufrufe == []

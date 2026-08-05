@@ -176,12 +176,71 @@ def backfill_reference(
     """
     end = end or datetime.now(UTC)
 
-    coverage = store.coverage(symbol, interval)
-    cursor = start
-    if not coverage.is_empty and coverage.end is not None and coverage.end >= start:
-        cursor = coverage.end + interval.duration
-
     geschrieben = 0
+    for luecke_von, luecke_bis in _fehlende_bereiche(
+        store, symbol, interval, start=start, end=end
+    ):
+        geschrieben += _lade_bereich(
+            source, store, interval,
+            start=luecke_von, end=luecke_bis, symbol=symbol,
+            max_pages=max_pages, geschrieben_bisher=geschrieben,
+            on_progress=on_progress,
+        )
+    cursor = end
+
+    log.info(
+        "referenz.geladen",
+        symbol=symbol,
+        intervall=interval.label,
+        neu=geschrieben,
+        bis=cursor.isoformat(),
+    )
+    return geschrieben
+
+
+def _fehlende_bereiche(
+    store, symbol: str, interval: Interval, *, start: datetime, end: datetime
+) -> list[tuple[datetime, datetime]]:
+    """Welche Zeitraeume fehlen im Speicher - **vorne wie hinten**.
+
+    Frueher setzte der Backfill nur vorwaerts fort: Lag im Speicher schon
+    etwas, begann er hinter dessen Ende. Wer aeltere Kerzen anforderte, bekam
+    stillschweigend nichts - der Lauf meldete "1 neue Kerze" und war fertig.
+    Genau das ist passiert, als die Historie von sechs auf vierzehn Jahre
+    verlaengert werden sollte.
+
+    Beide Richtungen zu pruefen kostet ein paar Zeilen und macht den Befehl
+    zu dem, was sein Name verspricht.
+    """
+    coverage = store.coverage(symbol, interval)
+    if coverage.is_empty or coverage.start is None or coverage.end is None:
+        return [(start, end)]
+
+    bereiche: list[tuple[datetime, datetime]] = []
+    if start < coverage.start:
+        bereiche.append((start, coverage.start))
+    naechster = coverage.end + interval.duration
+    if naechster < end:
+        bereiche.append((naechster, end))
+    return bereiche
+
+
+def _lade_bereich(
+    source: BitstampReference,
+    store,
+    interval: Interval,
+    *,
+    start: datetime,
+    end: datetime,
+    symbol: str,
+    max_pages: int,
+    geschrieben_bisher: int,
+    on_progress: Callable[[int, datetime], None] | None,
+) -> int:
+    """Einen zusammenhaengenden Zeitraum seitenweise laden."""
+    cursor = start
+    geschrieben = 0
+
     for _ in range(max_pages):
         if cursor >= end:
             break
@@ -202,16 +261,9 @@ def backfill_reference(
         cursor = naechster
 
         if on_progress is not None:
-            on_progress(geschrieben, cursor)
+            on_progress(geschrieben_bisher + geschrieben, cursor)
         time.sleep(source.pause)
 
-    log.info(
-        "referenz.geladen",
-        symbol=symbol,
-        intervall=interval.label,
-        neu=geschrieben,
-        bis=cursor.isoformat(),
-    )
     return geschrieben
 
 
