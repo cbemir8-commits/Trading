@@ -1297,26 +1297,62 @@ def _ask_the_analyst(settings, journal_path: Path) -> list:
     return result.genomes
 
 
-def _fallback_instrument(symbol: str):
-    """BTCUSDT-Perpetual mit den bekannten Bybit-Spezifikationen.
+#: Referenzsymbol -> Bybit-Kontrakt. Die Kursdaten kommen fuer die Vorauswahl
+#: von Bitstamp, die Handelsregeln muessen trotzdem die der Boerse sein, auf
+#: der spaeter gehandelt wird.
+_KONTRAKT_ZU_SYMBOL = {
+    "BTCUSD_BITSTAMP": "BTCUSDT",
+    "ETHUSD_BITSTAMP": "ETHUSDT",
+    "LTCUSD_BITSTAMP": "LTCUSDT",
+    "XRPUSD_BITSTAMP": "XRPUSDT",
+}
 
-    Nur fuer den Fall, dass die Kontraktdaten gerade nicht abrufbar sind - der
-    Backtest soll nicht daran scheitern, dass die Boerse nicht erreichbar ist.
+#: Bekannte Bybit-Spezifikationen je Perpetual, fuer den Fall, dass die Boerse
+#: gerade nicht erreichbar ist. Schrittweite, Mindest- und Hoechstmenge sind
+#: hier keine Nebensache: Sie entscheiden, ob eine Order zustande kommt.
+_KONTRAKTE = {
+    #                 Tick     Schritt    min       max     Basis
+    "BTCUSDT": ("0.1", "0.001", "0.001", "1190", "BTC"),
+    "ETHUSDT": ("0.01", "0.01", "0.01", "72000", "ETH"),
+    "LTCUSDT": ("0.01", "0.1", "0.1", "200000", "LTC"),
+    "XRPUSDT": ("0.0001", "1", "1", "8000000", "XRP"),
+}
+
+
+def _bybit_kontrakt(symbol: str) -> str:
+    """Zum Kursdatensymbol den Kontrakt finden, auf dem gehandelt wird."""
+    return _KONTRAKT_ZU_SYMBOL.get(symbol, symbol)
+
+
+def _fallback_instrument(symbol: str):
+    """Bekannte Bybit-Spezifikationen, wenn die Boerse nicht erreichbar ist.
+
+    Der Backtest soll nicht daran scheitern, dass gerade kein Netz da ist.
     Fuer den Handel wird immer der echte Kontrakt geladen.
+
+    **Warum je Symbol und nicht einmal fuer alle.** Es gab hier lange nur die
+    BTCUSDT-Werte, die dann auch fuer ETH galten. Deren Hoechstmenge von 100
+    Stueck ist fuer BTC nie erreichbar, fuer ETH bei 80 USD Kurs und Hebel aber
+    sehr wohl - die Orders wurden stillschweigend abgelehnt, und die
+    Ergebnisse sahen aus, als lohne sich Hebel ab einem Punkt nicht mehr.
+    Ein falsch gesetztes Limit, das wie ein Marktbefund aussah.
     """
     from decimal import Decimal
 
     from core.models import Instrument
 
+    tick, schritt, mindest, hoechst, basis = _KONTRAKTE.get(
+        symbol, _KONTRAKTE["BTCUSDT"]
+    )
     return Instrument(
         symbol=symbol,
         category="linear",
-        base_coin="BTC",
+        base_coin=basis,
         quote_coin="USDT",
-        tick_size=Decimal("0.1"),
-        qty_step=Decimal("0.001"),
-        min_order_qty=Decimal("0.001"),
-        max_order_qty=Decimal("100"),
+        tick_size=Decimal(tick),
+        qty_step=Decimal(schritt),
+        min_order_qty=Decimal(mindest),
+        max_order_qty=Decimal(hoechst),
         min_notional=Decimal("5"),
         max_leverage=Decimal("100"),
         maintenance_margin_rate=Decimal("0.005"),
@@ -1815,6 +1851,193 @@ def leverage(
         "\n[dim]Das riskierte Geld ist in jeder Zeile identisch. Der Hebel steigt, "
         "weil der Stop enger wird - nicht weil mehr riskiert wird.[/]"
     )
+
+
+@app.command()
+def betriebspunkt(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt. Mehrere heisst Portfolio.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    kapital: float = typer.Option(500.0, help="Startkapital fuer die Geldspalte."),
+    json_datei: Path | None = typer.Option(
+        None, "--json", help="Ergebnis zusaetzlich als JSON ablegen (fuer die Website)."
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Was jede Hebelstufe bringt - und was sie kostet.
+
+    Rechnet dieselbe Regel mit steigendem Vola-Ziel durch und stellt vier
+    Zahlen nebeneinander: Rendite, Rueckgang, Endkapital und - die
+    entscheidende - **wie oft der eigene Kill-Switch ausgeloest haette**.
+
+    Eine Rendite, die nur zustande kommt, wenn man die eigene Abbruchregel
+    ignoriert, ist keine Rendite. Deshalb steht diese Spalte hier und nicht
+    im Kleingedruckten.
+    """
+    from decimal import Decimal
+
+    from backtest.engine import BacktestConfig
+    from data.bybit.errors import BybitError
+    from research.operating_point import (
+        as_payload,
+        highest_safe,
+        measure,
+        turning_point,
+    )
+    from strategy.genome import (
+        Condition,
+        Genome,
+        Operator,
+        SizingSpec,
+        StopSpec,
+        TargetSpec,
+    )
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames: dict[str, object] = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        frames[symbol] = frame
+
+    def bauplan(vola_ziel: float) -> Genome:
+        """Trend-Beteiligung, Groesse nach Vola-Ziel.
+
+        Zwischen den Stufen aendert sich **ausschliesslich** das Vola-Ziel.
+        Jede zweite Aenderung wuerde den Vergleich wertlos machen.
+        """
+        return Genome(
+            name=f"Trend-Beteiligung Vola-Ziel {vola_ziel:.0f}",
+            rationale="Long ueber dem 200er-Schnitt, raus darunter.",
+            entry_long=[
+                Condition(
+                    left={"kind": "price", "name": "close"},
+                    op=Operator.CROSS_ABOVE,
+                    right={"kind": "indicator", "name": "sma", "params": {"period": 200}},
+                )
+            ],
+            exit_long=[
+                Condition(
+                    left={"kind": "price", "name": "close"},
+                    op=Operator.LT,
+                    right={"kind": "indicator", "name": "sma", "params": {"period": 200}},
+                )
+            ],
+            stop=StopSpec(kind="percent", percent=15.0),
+            targets=[TargetSpec(rr=20.0, portion=1.0)],
+            sizing=SizingSpec(
+                kind="vola_ziel", fraction=3.0,
+                target_vol_pct=vola_ziel, vol_period=30,
+            ),
+            cooldown_bars=0,
+            max_hold_bars=0,
+        )
+
+    # Je Markt der eigene Kontrakt.
+    #
+    # BTCs Werte auf ETH anzuwenden ist kein Schoenheitsfehler: ETH kostete
+    # Ende 2018 rund 80 USD, BTCUSDTs max_order_qty liegt bei 100 Stueck - bei
+    # hohem Hebel wurden die ETH-Orders damit stillschweigend abgelehnt und die
+    # betroffenen Stufen sahen schlechter aus, als sie sind.
+    markt_data = BybitMarketData(settings.bybit)
+    configs: dict[str, BacktestConfig] = {}
+    for symbol in symbole:
+        try:
+            instrument = markt_data.get_instrument(_bybit_kontrakt(symbol))
+        except BybitError:
+            instrument = _fallback_instrument(_bybit_kontrakt(symbol))
+        configs[symbol] = BacktestConfig(
+            instrument=instrument,
+            risk=settings.risk,
+            initial_equity=Decimal(str(kapital)),
+        )
+    grenze = float(settings.risk.max_drawdown_pct)
+
+    console.print(
+        f"\n[bold]Betriebspunkt[/] {' + '.join(symbole)} {interval_obj.label}, "
+        f"Abbruch bei {grenze:.0f} % Rueckgang\n"
+    )
+
+    stufen = measure(
+        frames, bauplan, configs, kill_switch_pct=grenze, start_capital=kapital
+    )
+    if not stufen:
+        console.print("[red]Keine Stufe konnte gerechnet werden.[/] Zu wenig Historie?")
+        raise typer.Exit(2)
+
+    table = Table(header_style="bold")
+    table.add_column("Stufe", justify="right")
+    table.add_column("Hebel", justify="right")
+    table.add_column("pro Jahr", justify="right")
+    table.add_column("Rueckgang", justify="right")
+    table.add_column(f"aus {kapital:.0f}", justify="right")
+    table.add_column("Sharpe", justify="right")
+    table.add_column("Kill-Switch", justify="right")
+
+    for s in stufen:
+        heikel = s.kill_switch > 0
+        stil = "red" if heikel else "green"
+        table.add_row(
+            f"{s.vola_ziel:.0f}",
+            f"{s.hebel:.2f}x",
+            f"{s.cagr_pct:.1f} %",
+            f"[{stil}]{s.drawdown_pct:.1f} %[/]",
+            f"{s.endwert:.0f}",
+            f"{s.sharpe:.2f}",
+            f"[{stil}]{s.kill_switch}x[/]",
+        )
+    console.print(table)
+
+    sicher = highest_safe(stufen)
+    if sicher is not None:
+        console.print(
+            f"\n[green]Hoechste Stufe ohne Abbruch: {sicher.vola_ziel:.0f}[/] - "
+            f"{sicher.hebel:.2f}x Hebel, {sicher.cagr_pct:.1f} % pro Jahr, "
+            f"{sicher.drawdown_pct:.1f} % Rueckgang, aus {kapital:.0f} werden "
+            f"{sicher.endwert:.0f}."
+        )
+    else:
+        console.print(
+            f"\n[red]Keine Stufe bleibt unter {grenze:.0f} % Rueckgang.[/] "
+            "Entweder niedriger ansetzen als die kleinste gepruefte Stufe, "
+            "oder die Regel selbst taugt nicht fuer dieses Kapital."
+        )
+
+    wende = turning_point(stufen)
+    if wende is not None:
+        console.print(
+            f"[yellow]Ab Stufe {wende.vola_ziel:.0f} bringt mehr Hebel weniger "
+            f"Geld[/] ({wende.endwert:.0f} statt mehr) bei hoeherem Rueckgang. "
+            "Der Weg zurueck aus einem Verlust waechst schneller als der "
+            "Verlust selbst."
+        )
+
+    console.print(
+        "\n[dim]Die letzte Spalte ist die wichtigste: Bei jedem Ausloesen waere "
+        "der Handel gestoppt worden. Die Gewinne der roten Stufen sind nach "
+        "der eigenen Abbruchregel nicht erreichbar.[/]"
+    )
+
+    if json_datei is not None:
+        import json
+
+        nutzlast = as_payload(
+            stufen, markets=symbole, kill_switch_pct=grenze, start_capital=kapital
+        )
+        nutzlast["erzeugt"] = datetime.now(UTC).isoformat()
+        nutzlast["intervall"] = interval_obj.label
+        json_datei.parent.mkdir(parents=True, exist_ok=True)
+        json_datei.write_text(json.dumps(nutzlast, indent=2), encoding="utf-8")
+        console.print(f"[dim]JSON geschrieben: {json_datei}[/]")
 
 
 if __name__ == "__main__":

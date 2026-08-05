@@ -11,17 +11,17 @@ des Rechnens mit mehreren Zeitreihen.
 Gemessen ueber 2017-08 bis 2026-08 - der Zeitraum, den **beide** Maerkte
 abdecken -, dieselbe Regel auf beiden, Vola-Ziel 50 %:
 
-    BTC allein       8,6 % p.a.   30,73 % Rueckgang   Sharpe 0,42
-    ETH allein      17,1 % p.a.   13,76 % Rueckgang   Sharpe 0,90
-    beide zusammen  13,3 % p.a.   11,51 % Rueckgang   Sharpe 0,82
+    BTC allein       8,9 % p.a.   29,17 % Rueckgang   Sharpe 0,45
+    ETH allein      16,7 % p.a.   13,25 % Rueckgang   Sharpe 0,90
+    beide zusammen  13,2 % p.a.   10,99 % Rueckgang   Sharpe 0,83
 
 Der Rueckgang des Doppels ist kleiner als der jedes einzelnen Marktes. Genau
 darin liegt der Gewinn: Weil das Rueckgang-Gate danach wieder Luft hat, laesst
 sich der Einsatz erhoehen - und bei gleichem Risiko wie BTC allein kommt am
 Ende ein Vielfaches heraus.
 
-    BTC allein, auf 11,5 % Rueckgang gestutzt    rund 3 % p.a.
-    beide bei 11,5 % Rueckgang                       13,3 % p.a.
+    BTC allein, auf 11,0 % Rueckgang gestutzt    rund 3 % p.a.
+    beide bei 11,0 % Rueckgang                       13,2 % p.a.
 
 Eine frueher hier notierte Fassung dieser Tabelle war falsch
 ------------------------------------------------------------
@@ -31,7 +31,7 @@ punktweise uebereinandergelegt hat - zwei verschiedene Zeitraeume. Der
 schmeichelhafte 4,93-%-Wert war die Panne selbst, nicht ihr Gegenbeweis.
 
 Die Richtung stimmt trotzdem: Auch sauber gerechnet liegt der Rueckgang des
-Doppels 2,25 Prozentpunkte unter dem des besseren Einzelmarktes. Nur ist BTC
+Doppels 2,26 Prozentpunkte unter dem des besseren Einzelmarktes. Nur ist BTC
 allein deutlich schlechter, als es damals aussah.
 
 Was diese Rechnung nicht ist
