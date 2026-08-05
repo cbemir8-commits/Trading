@@ -129,17 +129,34 @@ class _TradeInR:
 
 
 def _to_r(trade: Trade) -> _TradeInR | None:
-    """Einen Trade in R umrechnen. Ohne Stop gibt es kein R."""
+    """Einen Trade in R umrechnen. Ohne Stop gibt es kein R.
+
+    **Vorsicht mit den Einheiten - hier lag ein Fehler.** Die Engine schreibt
+    MAE und MFE als *Preisabstand* (``high - entry_price``), nicht als
+    Geldbetrag. Der Gewinn dagegen ist Geld. Wer beide durch denselben
+    Risikobetrag teilt, dividiert einmal Preis durch Geld und bekommt ein
+    Ergebnis, das um den Faktor Menge danebenliegt.
+
+    Bei 0,006 BTC Positionsgroesse war das ein Faktor von rund 167: Die
+    Analyse meldete einen Vorlauf von 140 R fuer eine Strategie, die im Mittel
+    unter 1 R realisiert - und daraus "0 % des Moeglichen realisiert". Beides
+    Unsinn, beides sah nach einem dramatischen Befund aus.
+
+    Richtig ist deshalb: Preisabstaende gegen den **Stopabstand** messen,
+    Geldbetraege gegen den **Risikobetrag**. Dann steht auf beiden Seiten
+    dieselbe Einheit.
+    """
     if trade.stop_loss is None:
         return None
     distance = abs(Decimal(trade.entry_price) - Decimal(trade.stop_loss))
     risk = float(distance * trade.qty)
-    if risk <= 0:
+    if risk <= 0 or distance <= 0:
         return None
+    stop_abstand = float(distance)
     return _TradeInR(
         result_r=float(trade.net_pnl) / risk,
-        mae_r=abs(float(trade.max_adverse_excursion)) / risk,
-        mfe_r=abs(float(trade.max_favourable_excursion)) / risk,
+        mae_r=abs(float(trade.max_adverse_excursion)) / stop_abstand,
+        mfe_r=abs(float(trade.max_favourable_excursion)) / stop_abstand,
     )
 
 

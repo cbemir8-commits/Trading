@@ -38,6 +38,9 @@ from research.regime import (
 )
 
 RISK_PER_TRADE = Decimal("10")  # 0.001 BTC x 10000 Punkte Stopabstand
+#: Der Stopabstand selbst, als Preis. MAE und MFE werden daran gemessen -
+#: sie sind Preisabstaende, keine Geldbetraege.
+STOP_DISTANCE = Decimal("10000")
 
 
 def make_trade(
@@ -69,8 +72,16 @@ def make_trade(
         gross_pnl=RISK_PER_TRADE * Decimal(str(r)),
         fees=Decimal(0),
         stop_loss=stop,
-        max_adverse_excursion=RISK_PER_TRADE * Decimal(str(mae_r)),
-        max_favourable_excursion=RISK_PER_TRADE * Decimal(str(mfe_r)),
+        # **Preisabstand, nicht Geldbetrag** - genau so schreibt die Engine
+        # diese beiden Felder (``high - entry_price``).
+        #
+        # Hier stand vorher ein Geldbetrag. Der passte zu der Umrechnung in
+        # research/exits.py, und beide zusammen widersprachen der Engine: Der
+        # Test bestaetigte das Modul, statt es zu pruefen. Auf echten Daten
+        # meldete die Analyse daraufhin 140 R Vorlauf bei einer Strategie,
+        # die unter 1 R realisiert.
+        max_adverse_excursion=STOP_DISTANCE * Decimal(str(mae_r)),
+        max_favourable_excursion=STOP_DISTANCE * Decimal(str(mfe_r)),
     )
 
 
@@ -521,3 +532,139 @@ def _rising_frame(*, factor: float) -> pd.DataFrame:
             "turnover": np.ones(n),
         }
     )
+
+
+class TestExitAnalysisEinheiten:
+    """MAE und MFE sind Preisabstaende. Das muss gegen die **Engine** geprueft
+    werden, nicht gegen eine Fixture.
+
+    Genau hier lag ein Fehler, den die bisherigen Tests nicht sehen konnten:
+    Die Fixture schrieb Geldbetraege, ``research/exits.py`` rechnete damit,
+    und beide zusammen widersprachen der Engine. Auf echten Daten meldete die
+    Analyse daraufhin einen Vorlauf von 140 R fuer eine Strategie, die im
+    Mittel unter 1 R realisiert - ein Faktor von rund 167, der genau der
+    Positionsgroesse entsprach.
+    """
+
+    def test_die_engine_schreibt_preisabstaende(self) -> None:
+        """Wenn sich das je aendert, muss _to_r mitgeaendert werden."""
+        
+        from backtest.engine import _OpenPosition
+
+        felder = _OpenPosition.__slots__
+        assert "mae" in felder and "mfe" in felder
+
+        # Der Nachweis ueber einen echten Lauf: Ein Trade, dessen Hoch
+        # bekannt ist, muss ein MFE in Preiseinheiten tragen.
+        import numpy as np
+
+        from backtest.engine import BacktestConfig, Backtester
+        from core.config import RiskSettings
+        from core.models import Candle, Instrument, Interval
+        from data.store import candles_to_frame
+        from strategy.compiler import compile_genome
+        from strategy.genome import (
+            Condition,
+            Genome,
+            Operand,
+            Operator,
+            SizingSpec,
+            StopSpec,
+            TargetSpec,
+        )
+
+        # Zufallslauf, kein Trend mit Rauschen: Bei stetig steigendem Kurs
+        # liegt der Schluss immer ueber dem Schnitt und kreuzt ihn nie - der
+        # Aufbau erzeugte dann null Signale.
+        rng = np.random.default_rng(5)
+        closes = np.maximum(20_000 + np.cumsum(rng.normal(8, 260, 700)), 2_000)
+        kerzen = []
+        for i in range(700):
+            close = float(closes[i])
+            kerzen.append(
+                Candle(
+                    open_time=datetime(2021, 1, 1, tzinfo=UTC) + Interval.D1.duration * i,
+                    open=Decimal(f"{close - 25:.1f}"),
+                    high=Decimal(f"{close + 120:.1f}"),
+                    low=Decimal(f"{max(close - 120, 100):.1f}"),
+                    close=Decimal(f"{close:.1f}"),
+                    volume=Decimal("10"),
+                    turnover=Decimal("100000"),
+                )
+            )
+        frame = candles_to_frame(kerzen)
+
+        genome = Genome(
+            name="Einheitentest",
+            rationale="Long ueber dem 50er-Schnitt, raus darunter.",
+            entry_long=[
+                Condition(
+                    left=Operand(kind="price", name="close"),
+                    op=Operator.CROSS_ABOVE,
+                    right=Operand(kind="indicator", name="sma", params={"period": 50}),
+                )
+            ],
+            exit_long=[
+                Condition(
+                    left=Operand(kind="price", name="close"),
+                    op=Operator.LT,
+                    right=Operand(kind="indicator", name="sma", params={"period": 50}),
+                )
+            ],
+            stop=StopSpec(kind="percent", percent=10.0),
+            targets=[TargetSpec(rr=8.0, portion=1.0)],
+            sizing=SizingSpec(kind="kapitalanteil", fraction=0.5),
+            cooldown_bars=0,
+            max_hold_bars=0,
+        )
+        config = BacktestConfig(
+            instrument=Instrument(
+                symbol="BTCUSDT", category="linear", base_coin="BTC", quote_coin="USDT",
+                tick_size=Decimal("0.01"), qty_step=Decimal("0.000001"),
+                min_order_qty=Decimal("0.000001"), max_order_qty=Decimal("10000"),
+                min_notional=Decimal("1"), max_leverage=Decimal("100"),
+                maintenance_margin_rate=Decimal("0.005"),
+            ),
+            risk=RiskSettings(),
+            initial_equity=Decimal("500"),
+        )
+
+        ergebnis = Backtester(config).run(frame, compile_genome(genome))
+        assert ergebnis.trades, "der Aufbau muss Trades erzeugen"
+
+        for trade in ergebnis.trades:
+            stop_abstand = abs(float(trade.entry_price) - float(trade.stop_loss))
+            mfe = float(trade.max_favourable_excursion)
+            # Ein Preisabstand liegt in der Groessenordnung des Kurses, ein
+            # Geldbetrag in der Groessenordnung von Kurs mal Menge. Bei einer
+            # Menge weit unter 1 unterscheiden sich beide um Zehnerpotenzen.
+            assert mfe < float(trade.entry_price) * 3, (
+                "MFE sieht nicht wie ein Preisabstand aus"
+            )
+            assert stop_abstand > 0
+
+    def test_mfe_wird_am_stopabstand_gemessen(self) -> None:
+        """Preis gegen Preis - nicht Preis gegen Geld."""
+        from research.exits import _to_r
+
+        # Stopabstand 10.000, MFE 25.000 -> 2,5 R, unabhaengig von der Menge.
+        klein = make_trade(r=1.0, mfe_r=2.5)
+        gross = klein.model_copy(
+            update={"qty": Decimal("0.004"), "gross_pnl": Decimal("40")}
+        )
+
+        assert _to_r(klein).mfe_r == pytest.approx(2.5)
+        assert _to_r(gross).mfe_r == pytest.approx(2.5), (
+            "R darf nicht von der Positionsgroesse abhaengen - das ist der "
+            "ganze Sinn der Einheit"
+        )
+
+    def test_realisierter_anteil_bleibt_zwischen_null_und_eins(self) -> None:
+        """Vorher kamen 0,3 % heraus, weil Geld gegen Preis verglichen wurde."""
+        # Ueber MIN_TRADES, sonst kommt nur "Anekdote" zurueck.
+        trades = series([2.0] * 45, mae_r=0.4, mfe_r=2.5)
+
+        anteil = analyse_exits(trades).captured_share
+
+        assert 0.0 <= anteil <= 1.2, f"unplausibler Anteil: {anteil}"
+        assert anteil == pytest.approx(2.0 / 2.5, abs=0.05)
