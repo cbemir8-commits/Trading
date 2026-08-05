@@ -11,6 +11,53 @@ fuer den Zeitraum ab August 2017. Laesst man die ersten zweieinhalb Jahre
 weg, sind es 8 von 11 und 7,4 % im Jahr statt 11,2 %. Siehe
 "Wie viel haengt am Zeitraum" weiter unten.
 
+## Zwei Fehler, die den Backtest wertlos gemacht haetten
+
+Gefunden am 05.08.2026, nachdem ich Backtest und Livebetrieb zum ersten Mal
+**nebeneinandergelegt** habe (``backtest/replay.py``, ``cli abgleich``).
+Beide waren im Backtest unsichtbar, weil der Backtest richtig rechnet - der
+Betrieb rechnete anders.
+
+**1. Die Positionsgroesse war im Betrieb rund zehnmal zu gross.**
+
+Der Livebetrieb holte den Kapitalanteil ueber ``equity_fraction``. Das ist
+bei Vola-Ziel-Genomen aber nicht der zu handelnde Anteil, sondern die
+**Obergrenze** (``sizing.fraction`` = 3,0). Gemessen ueber 5301
+BTC-Tageskerzen:
+
+    Backtest, Median      0,264 vom Kapital
+    Backtest, Hoechstwert 1,595
+    Livebetrieb           3,0    - immer, auf jedem Balken
+
+Die Obergrenze wird im Backtest **kein einziges Mal** erreicht. Bei 4 % Stop
+und dreifachem Kapital genuegen wenige Prozent Gegenbewegung fuer den
+15-%-Not-Aus; das Demokonto waere in Tagen erledigt gewesen, und die
+Vola-Steuerung - der ganze Sinn des Betriebspunkts - war im Betrieb
+wirkungslos.
+
+**2. Die Sperrfrist lief im Betrieb nie ab.**
+
+Sie rechnete mit dem Index im aktuellen Rahmen. Im Backtest waechst der von
+0 bis ans Ende; im Betrieb sieht die Strategie nur die letzten 2000 Kerzen,
+und sobald der Puffer voll ist, steht der Index fest. Ab dem ersten Trade
+galt dort immer "null Kerzen vergangen". Gemessen mit Sperrfrist 5:
+
+    Backtest      113 Signale
+    Livebetrieb     4 Signale
+
+Der Roboter haette nach seinem ersten Trade praktisch aufgehoert zu handeln.
+Der Spitzenkandidat handelt ohne Sperrfrist und war nicht betroffen - das ist
+Glueck, kein Verdienst.
+
+**Warum das nicht durch Zuschauen aufgefallen waere.** Genau darauf hatte der
+Abschnitt "Was Demo-Handel beweisen kann" schon hingewiesen: Bei 17 Trades im
+Jahr bliebe selbst ein vollstaendiger Verlust des Vorteils drei Jahre lang
+unentdeckt. Ein Zehnfaches an Positionsgroesse haette sich als
+"aussergewoehnlich schlechte Phase" getarnt, nicht als Fehler.
+
+Beide Fehler sind behoben, mit Tests, die sie beim Zurueckbauen wieder
+fangen. Der Abgleich laeuft jetzt vor jedem Livegang: ``cli abgleich``.
+
 ## Der beste Kandidat
 
     Trend-Beteiligung 50 Tage auf BTC + ETH

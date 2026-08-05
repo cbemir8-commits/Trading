@@ -55,6 +55,12 @@ log = structlog.get_logger(__name__)
 #: Indikatorperiode deutlich uebersteigen; 2000 deckt auch EMA(400) ab.
 BUFFER_BARS = 2000
 
+#: Rueckgabe von ``_equity_fraction``, wenn auf diesem Balken nicht gehandelt
+#: werden soll. Ein eigener Wert, weil ``None`` an dieser Stelle bereits
+#: "nimm die Risikoformel" bedeutet - zwei verschiedene Dinge, die sich mit
+#: ``None`` allein nicht auseinanderhalten liessen.
+_KEIN_HANDEL = object()
+
 Notifier = Callable[[str], Awaitable[None]]
 
 
@@ -706,6 +712,47 @@ class LiveTrader:
             f"Risiko {self.bracket.sized.risk_amount:.2f}"
         )
 
+    def _equity_fraction(self, index: int):
+        """Kapitalanteil fuer **diesen** Balken - so, wie die Engine ihn holt.
+
+        Hier stand ``getattr(self.strategy, "equity_fraction", None)``, und das
+        war der teuerste Fehler im Projekt bisher.
+
+        ``equity_fraction`` ist bei Vola-Ziel-Genomen nicht der zu handelnde
+        Anteil, sondern die **Obergrenze** (``sizing.fraction``). Der wirkliche
+        Anteil kommt aus ``fraction_at(index)`` und aendert sich mit der
+        gemessenen Schwankungsbreite. Gemessen am Spitzenkandidaten ueber 5301
+        BTC-Tageskerzen:
+
+            Backtest, Median   0,264 vom Kapital
+            Backtest, Hoechst  1,595
+            Livebetrieb        3,0  - immer, auf jedem Balken
+
+        Der Betrieb haette also im Mittel **zehnmal** so grosse Positionen
+        eroeffnet wie der Backtest - und die Obergrenze 3,0 wird im Backtest
+        kein einziges Mal erreicht. Bei 4 % Stop und dreifachem Kapital
+        genuegen wenige Prozent Gegenbewegung fuer den 15-%-Not-Aus.
+
+        Der Backtest haette davon nie etwas gezeigt: Er rechnet richtig. Und
+        ``research/live_evidenz.py`` hat ausgerechnet, dass auch der
+        Demobetrieb es nicht gezeigt haette - bei 17 Trades im Jahr braeuchte
+        es Jahre, um eine Abweichung von einer Pechstraehne zu unterscheiden.
+
+        Gefunden wurde es durch Nebeneinanderlegen, nicht durch Zuschauen.
+        """
+        hole_anteil = getattr(self.strategy, "fraction_at", None)
+        if hole_anteil is None:
+            return getattr(self.strategy, "equity_fraction", None)
+
+        anteil = hole_anteil(index)
+        if anteil is None and getattr(self.strategy, "equity_fraction", None) is not None:
+            # ``None`` bei einem Genom, das nach Kapitalanteil dimensioniert,
+            # heisst "auf diesem Balken nicht handeln" - nicht "nimm die
+            # Risikoformel". Der Unterschied ist der zwischen keiner Position
+            # und einer nach ganz anderer Logik bemessenen.
+            return _KEIN_HANDEL
+        return anteil
+
     async def _look_for_entry(self) -> None:
         """Strategie fragen, Risk-Officer fragen, gegebenenfalls handeln."""
         if len(self._frame) <= self.strategy.warmup_bars:
@@ -723,11 +770,19 @@ class LiveTrader:
         equity = self._current_equity()
         open_positions = len(self.account.get_positions(self.instrument.symbol))
 
+        anteil = self._equity_fraction(context.index)
+        if anteil is _KEIN_HANDEL:
+            # Die Groessenlogik sagt fuer diesen Balken "nicht handeln" - etwa
+            # weil die gemessene Schwankungsbreite noch fehlt. Das ist kein
+            # Fehler und kein Veto, sondern schlicht kein Trade.
+            log.info("live.kein_anteil", grund="Groessenlogik liefert keinen Anteil")
+            return
+
         decision = self.officer.evaluate(
             signal,
             equity=equity,
             open_positions=open_positions,
-            equity_fraction=getattr(self.strategy, "equity_fraction", None),
+            equity_fraction=anteil,
         )
 
         if isinstance(decision, Vetoed):

@@ -58,6 +58,21 @@ class BarContext:
         """Eroeffnungszeit der aktuellen Kerze."""
         return self._times[self._index]
 
+    @property
+    def times(self) -> np.ndarray:
+        """Alle Eroeffnungszeiten des aktuellen Rahmens, aufsteigend.
+
+        Gedacht fuer Zustand, der einen **Rahmenwechsel** ueberleben muss.
+        Der Livebetrieb sieht nur die letzten Kerzen, der Backtest alle - ein
+        gemerkter Index bedeutet in beiden etwas anderes, ein gemerkter
+        Zeitpunkt dasselbe. Wer sich etwas ueber Balken hinweg merkt, merke
+        sich die Zeit und suche sie hier.
+
+        Bewusst das rohe Array und keine Kopie: Es wird je Balken gelesen.
+        Aendern darf es niemand - der Rahmen gehoert dem Aufrufer.
+        """
+        return self._times
+
     def _resolve(self, offset: int) -> int:
         if offset < 0:
             raise LookaheadError(

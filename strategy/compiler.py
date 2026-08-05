@@ -38,8 +38,26 @@ class CompiledStrategy:
         self.genome = genome
         self.strategy_id = genome.genome_id
         self.warmup_bars = _estimate_warmup(genome)
-        self._last_entry_index: int | None = None
         self._fractions: np.ndarray | None = None
+
+        self._last_entry_time: pd.Timestamp | None = None
+        """Wann zuletzt eingestiegen wurde - als **Zeitpunkt**, nicht als Index.
+
+        Hier stand einmal der Index im aktuellen Rahmen, und das war ein
+        Fehler mit Folgen. Im Backtest waechst dieser Index von 0 bis ans
+        Ende; im Livebetrieb sieht die Strategie nur die letzten ``BUFFER_BARS``
+        Kerzen, und sobald der Puffer voll ist, steht der Index **fest** auf
+        ``BUFFER_BARS - 1``.
+
+        Ab dem ersten Trade galt dort also immer ``index - letzter_einstieg
+        == 0``, und die Sperrfrist lief nie ab. Gemessen ueber 5331
+        BTC-Tageskerzen mit Sperrfrist 5: Backtest 113 Signale, Livebetrieb
+        **4**. Der Roboter haette nach seinem ersten Trade praktisch aufgehoert
+        zu handeln - ohne Fehlermeldung, ohne dass eine Kennzahl es gezeigt
+        haette.
+
+        Ein Zeitpunkt hat dieses Problem nicht: Er bedeutet in jedem Rahmen
+        dasselbe. Gefunden hat es ``backtest/replay.py``."""
 
     def fraction_at(self, index: int) -> Decimal | None:
         """Kapitalanteil fuer diesen Balken.
@@ -228,7 +246,7 @@ class CompiledStrategy:
 
     # -- Auswertung ----------------------------------------------------------
     def on_bar(self, ctx: BarContext) -> Signal | None:
-        if self._in_cooldown(ctx.index):
+        if self._in_cooldown(ctx):
             return None
 
         if not self._evaluate_all(ctx, self.genome.filters):
@@ -243,13 +261,30 @@ class CompiledStrategy:
 
         signal = self._build_signal(ctx, side)
         if signal is not None:
-            self._last_entry_index = ctx.index
+            self._last_entry_time = ctx.time
         return signal
 
-    def _in_cooldown(self, index: int) -> bool:
-        if self.genome.cooldown_bars == 0 or self._last_entry_index is None:
+    def _in_cooldown(self, ctx: BarContext) -> bool:
+        """Laeuft die Sperrfrist nach dem letzten Einstieg noch?
+
+        Gezaehlt wird ueber den **Zeitpunkt** des letzten Einstiegs, nicht
+        ueber seinen Index - siehe ``_last_entry_time``. Der Zeitpunkt wird im
+        aktuellen Rahmen gesucht; daraus ergibt sich, wie viele Kerzen seither
+        vergangen sind.
+
+        Liegt er nicht mehr im Rahmen, ist er aus dem Puffer gerollt. Dann
+        sind mindestens ``BUFFER_BARS`` Kerzen vergangen, und die Sperrfrist -
+        hoechstens 50 Kerzen lang - ist mit Sicherheit abgelaufen.
+        """
+        if self.genome.cooldown_bars == 0 or self._last_entry_time is None:
             return False
-        return index - self._last_entry_index < self.genome.cooldown_bars
+
+        zeiten = ctx.times
+        position = int(np.searchsorted(zeiten, self._last_entry_time))
+        if position >= len(zeiten) or zeiten[position] != self._last_entry_time:
+            return False
+
+        return ctx.index - position < self.genome.cooldown_bars
 
     def _evaluate_all(self, ctx: BarContext, conditions: list[Condition]) -> bool:
         """Alle Bedingungen muessen zutreffen (UND-Verknuepfung).

@@ -2331,5 +2331,71 @@ def evidenz(
     )
 
 
+@app.command()
+def abgleich(
+    symbol: str = typer.Option("BTCUSD_BITSTAMP", "--symbol", "-s"),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    puffer: int = typer.Option(
+        2000, "--puffer",
+        help="Kerzen im Speicher des Livebetriebs. Kleiner setzen, um das "
+             "Ueberlaufen zu erzwingen.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Erzeugt der Livebetrieb dieselben Signale wie der Backtest?
+
+    **Vor jedem Livegang auszufuehren.** Alle Kennzahlen im BEFUND stammen aus
+    dem Backtest; gehandelt wird vom Livebetrieb. Weichen die beiden ab, misst
+    die ganze Zulassung etwas anderes als das, was passieren wird.
+
+    Auffallen wuerde das sonst nicht: ``cli evidenz`` rechnet vor, dass bei 17
+    Trades im Jahr selbst ein vollstaendiger Verlust des Vorteils drei Jahre
+    lang unentdeckt bliebe. Ein Unterschied zwischen Backtest und Betrieb muss
+    durch Nebeneinanderlegen gefunden werden, nicht durch Zuschauen.
+
+    Zwei Fehler hat dieser Vergleich bereits gefunden - beide in
+    ``strategies/BEFUND.md`` beschrieben.
+    """
+    from backtest.replay import vergleiche
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+
+    frame = store.read(symbol, interval_obj)
+    if frame.empty:
+        console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+        raise typer.Exit(2)
+
+    genome = spitzenkandidat()
+    console.print(
+        f"\n[bold]Abgleich[/] {symbol} {interval_obj.label}\n"
+        f"  Kerzen   {len(frame)}\n"
+        f"  Strategie {genome.name} ({genome.genome_id})\n"
+        f"  Puffer   {puffer} Kerzen\n"
+    )
+
+    ergebnis = vergleiche(frame, lambda: compile_genome(genome), buffer_bars=puffer)
+
+    if ergebnis.einig:
+        console.print(f"[green]{ergebnis.bericht()}[/]\n")
+        console.print(
+            "[dim]Der Backtest misst damit das, was im Betrieb passieren "
+            "wird - jedenfalls auf der Signalseite. Die Groessenlogik prueft "
+            "die Testsuite (test_live.py).[/]"
+        )
+        return
+
+    console.print(f"[red]{ergebnis.bericht()}[/]\n")
+    console.print(
+        "[red]Nicht live gehen.[/] Jede Abweichung heisst, dass die "
+        "Zulassungszahlen etwas anderes messen als den Betrieb."
+    )
+    raise typer.Exit(1)
+
+
 if __name__ == "__main__":
     app()

@@ -951,3 +951,106 @@ class TestEquityCap:
         await rig.feed()
 
         assert rig.trader.last_equity == Decimal("50000")
+
+
+class TestGroessenlogikStimmtMitDemBacktestUeberein:
+    """Der teuerste Fehler im Projekt - und der Test, der ihn gefangen haette.
+
+    Der Livebetrieb holte den Kapitalanteil ueber ``equity_fraction``. Das ist
+    bei Vola-Ziel-Genomen aber nicht der zu handelnde Anteil, sondern die
+    **Obergrenze** (``sizing.fraction``, hier 3,0). Der wirkliche Anteil kommt
+    aus ``fraction_at(index)`` und liegt beim Spitzenkandidaten im Median bei
+    0,264 - gemessen ueber 5301 BTC-Tageskerzen, mit einem Hoechstwert von
+    1,595. Die Obergrenze wurde kein einziges Mal erreicht.
+
+    Der Betrieb haette also im Schnitt **zehnmal** so grosse Positionen
+    eroeffnet wie der Backtest. Die ganze Suite war dabei gruen: Der Backtest
+    rechnet ja richtig, und kein Test hat beide Seiten nebeneinandergelegt.
+    """
+
+    class VolaZielStrategie:
+        """Eine Strategie mit Obergrenze **und** balkenweisem Anteil.
+
+        Genau die Bauform des Spitzenkandidaten: ``equity_fraction`` ist die
+        Grenze, ``fraction_at`` der wirkliche Wert.
+        """
+
+        strategy_id = "vola-ziel"
+        warmup_bars = 5
+        equity_fraction = Decimal("3.0")
+
+        def __init__(self, anteil: Decimal | None = Decimal("0.25")) -> None:
+            self.anteil = anteil
+            self.signale = [long_below_market()]
+            self.gefragt: list[int] = []
+
+        def fraction_at(self, index: int) -> Decimal | None:
+            self.gefragt.append(index)
+            return self.anteil
+
+        def prepare(self, frame: pd.DataFrame) -> dict[str, np.ndarray]:
+            return {}
+
+        def on_bar(self, ctx) -> Signal | None:
+            return self.signale.pop(0) if self.signale else None
+
+    async def test_livebetrieb_nimmt_den_balkenwert_nicht_die_obergrenze(
+        self, tmp_path, btcusdt: Instrument, risk: RiskSettings,
+        bybit_settings: BybitSettings,
+    ) -> None:
+        strategie = self.VolaZielStrategie(anteil=Decimal("0.25"))
+        rig = build_rig(
+            tmp_path, btcusdt, risk, bybit_settings,
+            strategy=strategie,  # type: ignore[arg-type]
+        )
+
+        await rig.feed()
+
+        assert strategie.gefragt, "fraction_at wurde gar nicht gefragt"
+        assert rig.trader.bracket is not None
+        sized = rig.trader.bracket.sized
+
+        # 25 % von 500 = 125 Nominalwert. Mit der Obergrenze 3,0 waeren es
+        # 1500 gewesen - das Zwoelffache.
+        nominal = sized.qty * rig.trader.bracket.signal.entry_price
+        assert nominal < Decimal("200"), (
+            f"Nominalwert {nominal} - der Livebetrieb nimmt offenbar wieder "
+            "die Obergrenze statt des Balkenwerts"
+        )
+
+    async def test_kein_anteil_heisst_kein_trade(
+        self, tmp_path, btcusdt: Instrument, risk: RiskSettings,
+        bybit_settings: BybitSettings,
+    ) -> None:
+        """``None`` von ``fraction_at`` heisst "auf diesem Balken nicht".
+
+        Es darf **nicht** auf die Risikoformel zurueckfallen - das waere eine
+        Position nach ganz anderer Logik, genau dann, wenn die eigentliche
+        Logik keine haben wollte.
+        """
+        strategie = self.VolaZielStrategie(anteil=None)
+        rig = build_rig(
+            tmp_path, btcusdt, risk, bybit_settings,
+            strategy=strategie,  # type: ignore[arg-type]
+        )
+
+        await rig.feed()
+
+        assert rig.trader.bracket is None
+        assert not rig.entry_orders
+
+    async def test_strategie_ohne_balkenwert_verhaelt_sich_unveraendert(
+        self, tmp_path, btcusdt: Instrument, risk: RiskSettings,
+        bybit_settings: BybitSettings,
+    ) -> None:
+        """Genome nach Risikoformel haben kein ``fraction_at`` - die duerfen
+        durch die Korrektur nicht anders laufen als vorher."""
+        rig = build_rig(
+            tmp_path, btcusdt, risk, bybit_settings,
+            strategy=QueuedStrategy(long_below_market()),
+        )
+
+        await rig.feed()
+
+        assert rig.trader.bracket is not None
+        assert rig.entry_orders
