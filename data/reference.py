@@ -52,10 +52,26 @@ log = structlog.get_logger(__name__)
 #: Forschungsmaterial, keine Handelsgrundlage.
 REFERENCE_SYMBOL = "BTCUSD_BITSTAMP"
 
+#: Weitere Maerkte - **nur zur Gegenprobe**, nicht zum Handeln.
+#:
+#: Der Sinn: Eine Regel, die auf sechs Jahren BTC gut aussieht, kann an diese
+#: sechs Jahre angepasst sein, ohne dass man es merkt. Dieselbe Regel
+#: **ungeaendert** auf einem anderen Markt zu pruefen ist der schaerfste
+#: verfuegbare Test - er benutzt Daten, die bei der Entwicklung keine Rolle
+#: gespielt haben.
+#:
+#: Gehandelt wird weiterhin ausschliesslich BTC.
+PAIRS: dict[str, str] = {
+    "BTCUSD_BITSTAMP": "btcusd",
+    "ETHUSD_BITSTAMP": "ethusd",
+    "LTCUSD_BITSTAMP": "ltcusd",
+    "XRPUSD_BITSTAMP": "xrpusd",
+}
+
 #: Bitstamp liefert hoechstens 1000 Kerzen je Anfrage.
 PAGE_SIZE = 1000
 
-BASE_URL = "https://www.bitstamp.net/api/v2/ohlc/btcusd/"
+BASE_URL = "https://www.bitstamp.net/api/v2/ohlc/{pair}/"
 
 #: Bybit-Intervall -> Bitstamp-Schrittweite in Sekunden.
 STEPS: dict[Interval, int] = {
@@ -99,6 +115,7 @@ class BitstampReference:
         *,
         start: datetime,
         limit: int = PAGE_SIZE,
+        symbol: str = REFERENCE_SYMBOL,
     ) -> list[Candle]:
         """Kerzen ab ``start``, aufsteigend.
 
@@ -115,7 +132,11 @@ class BitstampReference:
             "limit": min(limit, PAGE_SIZE),
             "start": int(start.timestamp()),
         }
-        antwort = self.client.get(BASE_URL, params=params)
+        paar = PAIRS.get(symbol)
+        if paar is None:
+            raise ValueError(f"Kein Bitstamp-Paar fuer {symbol} hinterlegt")
+
+        antwort = self.client.get(BASE_URL.format(pair=paar), params=params)
         antwort.raise_for_status()
         roh = antwort.json()["data"]["ohlc"]
 
@@ -146,6 +167,7 @@ def backfill_reference(
     end: datetime | None = None,
     max_pages: int = 400,
     on_progress: Callable[[int, datetime], None] | None = None,
+    symbol: str = REFERENCE_SYMBOL,
 ) -> int:
     """Referenzkerzen laden und in den Speicher schreiben.
 
@@ -154,7 +176,7 @@ def backfill_reference(
     """
     end = end or datetime.now(UTC)
 
-    coverage = store.coverage(REFERENCE_SYMBOL, interval)
+    coverage = store.coverage(symbol, interval)
     cursor = start
     if not coverage.is_empty and coverage.end is not None and coverage.end >= start:
         cursor = coverage.end + interval.duration
@@ -164,12 +186,14 @@ def backfill_reference(
         if cursor >= end:
             break
 
-        kerzen = source.get_klines(interval, start=cursor, limit=PAGE_SIZE)
+        kerzen = source.get_klines(
+            interval, start=cursor, limit=PAGE_SIZE, symbol=symbol
+        )
         kerzen = [k for k in kerzen if k.open_time < end]
         if not kerzen:
             break
 
-        geschrieben += store.write(REFERENCE_SYMBOL, interval, kerzen)
+        geschrieben += store.write(symbol, interval, kerzen)
         naechster = kerzen[-1].open_time + interval.duration
 
         if naechster <= cursor:
@@ -183,6 +207,7 @@ def backfill_reference(
 
     log.info(
         "referenz.geladen",
+        symbol=symbol,
         intervall=interval.label,
         neu=geschrieben,
         bis=cursor.isoformat(),

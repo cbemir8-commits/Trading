@@ -205,3 +205,65 @@ def test_seitenschaetzung_ist_grob_richtig() -> None:
 
     # Rund 222.000 Kerzen zu je 1000 pro Seite.
     assert 200 <= seiten <= 250
+
+
+class TestMehrereMaerkte:
+    """Die Gegenprobe auf anderen Maerkten - der schaerfste verfuegbare Test.
+
+    Eine Regel, die auf sechs Jahren BTC gut aussieht, kann an genau diese
+    sechs Jahre angepasst sein, ohne dass es jemandem auffaellt. Dieselbe
+    Regel **ungeaendert** auf einem Markt zu pruefen, der bei der Entwicklung
+    keine Rolle gespielt hat, benutzt Daten, die nicht mitgesucht wurden.
+
+    Gehandelt wird weiterhin ausschliesslich BTC - deshalb liegt jeder Markt
+    unter eigenem Symbol.
+    """
+
+    def test_jeder_markt_hat_ein_eigenes_symbol(self) -> None:
+        from data.reference import PAIRS
+
+        assert len(set(PAIRS)) == len(PAIRS)
+        assert len(set(PAIRS.values())) == len(PAIRS)
+        assert PAIRS[REFERENCE_SYMBOL] == "btcusd"
+
+    def test_unbekanntes_symbol_wird_abgelehnt(self) -> None:
+        """Lieber ein Fehler als stillschweigend die falschen Kerzen."""
+        quelle = quelle_mit([1])
+
+        with pytest.raises(ValueError, match="Bitstamp-Paar"):
+            quelle.get_klines(Interval.D1, start=T0, symbol="DOGEUSD_BITSTAMP")
+
+    def test_das_paar_landet_in_der_adresse(self) -> None:
+        aufgerufen: list[str] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            aufgerufen.append(str(request.url.path))
+            return httpx.Response(200, json=bitstamp_antwort(start=T0, count=1))
+
+        quelle = BitstampReference(
+            client=httpx.Client(transport=httpx.MockTransport(handler)), pause=0.0
+        )
+
+        quelle.get_klines(Interval.D1, start=T0, symbol="ETHUSD_BITSTAMP")
+
+        assert "ethusd" in aufgerufen[0]
+        assert "btcusd" not in aufgerufen[0]
+
+    def test_maerkte_vermischen_sich_nicht(self, store: CandleStore) -> None:
+        """Der Punkt, an dem eine Gegenprobe wertlos waere.
+
+        Landeten ETH-Kerzen unter dem BTC-Symbol, saehe die Gegenprobe
+        bestanden aus und haette in Wahrheit zweimal dieselben Daten geprueft.
+        """
+        for symbol in ("BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"):
+            backfill_reference(
+                quelle_mit([10]), store, Interval.D1,
+                start=T0, end=T0 + timedelta(days=10), symbol=symbol,
+            )
+
+        btc = store.coverage("BTCUSD_BITSTAMP", Interval.D1)
+        eth = store.coverage("ETHUSD_BITSTAMP", Interval.D1)
+
+        assert btc.rows == 10
+        assert eth.rows == 10
+        assert store.read("LTCUSD_BITSTAMP", Interval.D1).empty

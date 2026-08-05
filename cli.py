@@ -682,6 +682,11 @@ def _wettbewerbs_bericht(board, runde: int, interval_obj, symbol: str) -> dict:
 @app.command()
 def referenz(
     intervall: str = typer.Option("15", "--intervall", "-i", help="Bybit-Code."),
+    symbol: str = typer.Option(
+        "BTCUSD_BITSTAMP", "--symbol",
+        help="Auch ETHUSD_BITSTAMP, LTCUSD_BITSTAMP, XRPUSD_BITSTAMP - "
+        "ausschliesslich zur Gegenprobe, nicht zum Handeln.",
+    ),
     von: str = typer.Option("2020-03-30", help="Startdatum (YYYY-MM-DD)."),
     bis: str | None = typer.Option(None, help="Enddatum. Standard: jetzt."),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
@@ -719,7 +724,7 @@ def referenz(
         f"[bold]Referenzkerzen[/] Bitstamp BTC/USD {interval_obj.label}\n"
         f"  {start:%Y-%m-%d} bis {end:%Y-%m-%d}, geschaetzt ~{seiten} Anfragen "
         f"(~{seiten * 0.4 / 60:.0f} Minuten)\n"
-        f"[dim]Symbol im Speicher: {REFERENCE_SYMBOL} - getrennt von den "
+        f"[dim]Symbol im Speicher: {symbol} - getrennt von den "
         f"Handelsdaten.[/]\n"
     )
 
@@ -729,10 +734,10 @@ def referenz(
 
     geschrieben = backfill_reference(
         BitstampReference(), store, interval_obj,
-        start=start, end=end, on_progress=zeige,
+        start=start, end=end, on_progress=zeige, symbol=symbol,
     )
 
-    coverage = store.coverage(REFERENCE_SYMBOL, interval_obj)
+    coverage = store.coverage(symbol, interval_obj)
     if coverage.is_empty:
         console.print("[red]Nichts geladen.[/]")
         raise typer.Exit(2)
