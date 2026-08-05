@@ -1826,6 +1826,245 @@ GENERATION_8 = [
 ]
 
 
+# ===========================================================================
+#  Neunte Generation - die Trendfolge-Familie, breit aufgestellt
+# ===========================================================================
+#
+# Der erste Kandidat mit positivem Erwartungswert war eine Trend-Beteiligung
+# auf Tageskerzen: +59,1 % Rendite, 10,2 % Rueckgang, Sharpe 1,01, Gebuehren
+# 0,8 %. Gescheitert ist er an zwei Gates - und drei weitere konnten gar nicht
+# erst laufen.
+#
+# Alle drei Probleme haben dieselbe Wurzel: **17 Trades in fuenf Jahren.**
+#
+#   Bestaendigkeit 44 %   neun gehandelte Fenster sind eine duenne Stichprobe
+#   Messlatte 10,6 % p.a. zu selten investiert, um mehr herauszuholen
+#   Monte-Carlo, Regime-Aufteilung, Deflated Sharpe: uebersprungen
+#
+# Diese Generation sucht deshalb nicht nach einer neuen Idee, sondern nach
+# **mehr Beobachtungen derselben Idee**. Vier Wege dorthin, jeder fuer sich
+# pruefbar:
+#
+#   1. schnellere Trendmarke      50 und 100 statt 200 Tage
+#   2. beide Richtungen           short unter der Marke statt nur Kasse
+#   3. feinere Zeitebene          4-Stunden-Kerzen statt Tageskerzen
+#   4. andere Trenddefinition     Ausbruch statt Durchschnitt
+#
+# Der Kandidat mit 200 Tagen laeuft unveraendert mit. Ohne ihn liesse sich
+# nicht sagen, ob eine Aenderung etwas gebracht hat oder ob nur der Zeitraum
+# guenstiger war.
+
+
+def _trend_beteiligung(name: str, periode: int, rationale: str) -> Genome:
+    """Bauplan der Familie: long ueber der Marke, raus darunter.
+
+    Als Funktion, weil sich die Kandidaten **nur** in der Periode
+    unterscheiden sollen. Von Hand geschrieben schliche sich sonst noch ein
+    zweiter Unterschied ein, und dann waere der Vergleich wertlos.
+    """
+    return Genome(
+        name=name,
+        rationale=rationale,
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("sma", period=periode)),
+        ],
+        exit_long=[
+            Condition(left=_price("close"), op=Operator.LT,
+                      right=_ind("sma", period=periode)),
+        ],
+        stop=StopSpec(kind="percent", percent=15.0),
+        targets=[TargetSpec(rr=20.0, portion=1.0)],
+        sizing=SizingSpec(kind="kapitalanteil", fraction=0.5),
+        cooldown_bars=0,
+        max_hold_bars=0,
+    )
+
+
+def trend_50() -> Genome:
+    return _trend_beteiligung(
+        "Trend-Beteiligung 50 Tage", 50,
+        "Long ueber dem 50-Tage-Schnitt, raus darunter. Schnellere Marke als "
+        "die 200 - mehr Trades, aber auch mehr Fehlausbrueche. Die Frage ist, "
+        "was ueberwiegt.",
+    )
+
+
+def trend_100() -> Genome:
+    return _trend_beteiligung(
+        "Trend-Beteiligung 100 Tage", 100,
+        "Long ueber dem 100-Tage-Schnitt. Mittelweg zwischen 50 und 200 - "
+        "liegt das Ergebnis dazwischen, ist die Periode eine stetige "
+        "Stellschraube und kein Zufallstreffer.",
+    )
+
+
+def trend_200() -> Genome:
+    return _trend_beteiligung(
+        "Trend-Beteiligung 200 Tage", 200,
+        "Long ueber dem 200-Tage-Schnitt. Der bisherige Spitzenkandidat, "
+        "unveraendert als Vergleichsmassstab.",
+    )
+
+
+def trend_beide_richtungen() -> Genome:
+    """Unter der Marke short statt in Kasse.
+
+    Hypothese: Die Kasse-Variante stand 2022 ein Jahr lang still. Wer dort
+    short gewesen waere, haette den Baerenmarkt mitgenommen statt ihn nur
+    auszusitzen - und haette doppelt so viele Beobachtungen.
+
+    Der Preis: Ein Short in einem Markt, der langfristig steigt, ist teuer,
+    wenn die Marke zu oft falsch dreht. Genau das entscheidet sich hier.
+    """
+    return Genome(
+        name="Trend beide Richtungen",
+        rationale=(
+            "Long ueber dem 200-Tage-Schnitt, short darunter. Hypothese: Die "
+            "Kasse-Variante stand 2022 ein Jahr still; short haette denselben "
+            "Trend in die Gegenrichtung genutzt. Verdoppelt zugleich die Zahl "
+            "der Beobachtungen."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("sma", period=200)),
+        ],
+        entry_short=[
+            Condition(left=_price("close"), op=Operator.CROSS_BELOW,
+                      right=_ind("sma", period=200)),
+        ],
+        exit_long=[
+            Condition(left=_price("close"), op=Operator.LT,
+                      right=_ind("sma", period=200)),
+        ],
+        exit_short=[
+            Condition(left=_price("close"), op=Operator.GT,
+                      right=_ind("sma", period=200)),
+        ],
+        stop=StopSpec(kind="percent", percent=15.0),
+        targets=[TargetSpec(rr=20.0, portion=1.0)],
+        sizing=SizingSpec(kind="kapitalanteil", fraction=0.5),
+        cooldown_bars=0,
+        max_hold_bars=0,
+    )
+
+
+def donchian_turtle() -> Genome:
+    """Ausbruch statt Durchschnitt - das aelteste dokumentierte Trendsystem.
+
+    Hypothese: Ein neues 55-Tage-Hoch ist ein Trendbeginn; ausgestiegen wird
+    beim 20-Tage-Tief. Das ist im Kern die Regel, mit der in den achtziger
+    Jahren eine Gruppe angelernter Haendler bekannt wurde - und die seither
+    unzaehlige Male nachgerechnet wurde.
+
+    Der Unterschied zur Durchschnittsmarke ist nicht kosmetisch: Ein
+    Durchschnitt reagiert auf jeden Schlusskurs, ein Ausbruch nur auf
+    Extremwerte. In Seitwaertsphasen ergibt das deutlich weniger Fehlsignale.
+    """
+    return Genome(
+        name="Donchian-Ausbruch 55/20",
+        rationale=(
+            "Long beim Ausbruch ueber das 55-Tage-Hoch, raus beim 20-Tage-Tief. "
+            "Die aelteste dokumentierte Trendfolgeregel. Hypothese: Extremwerte "
+            "geben weniger Fehlsignale als ein Durchschnitt, der auf jeden "
+            "Schlusskurs reagiert."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("swing_high", period=55)),
+        ],
+        exit_long=[
+            Condition(left=_price("close"), op=Operator.LT,
+                      right=_ind("swing_low", period=20)),
+        ],
+        stop=StopSpec(kind="percent", percent=15.0),
+        targets=[TargetSpec(rr=20.0, portion=1.0)],
+        sizing=SizingSpec(kind="kapitalanteil", fraction=0.5),
+        cooldown_bars=0,
+        max_hold_bars=0,
+    )
+
+
+def momentum_beteiligung() -> Genome:
+    """Beteiligung nach der Veraenderung ueber 90 Tage.
+
+    Dritte Art, denselben Trend zu messen: nicht an einer Linie und nicht an
+    einem Extremwert, sondern an der reinen Veraenderung. Fallen alle drei
+    aehnlich aus, liegt es an der Idee und nicht am Messinstrument - und das
+    ist ein weit staerkeres Ergebnis als drei Zufallstreffer.
+    """
+    return Genome(
+        name="Momentum-Beteiligung 90 Tage",
+        rationale=(
+            "Long, wenn die Veraenderung ueber 90 Tage positiv wird; raus, "
+            "wenn sie negativ wird. Dritte Messart desselben Trends - stimmen "
+            "alle drei ueberein, liegt es an der Idee."
+        ),
+        entry_long=[
+            Condition(left=_ind("roc", period=90), op=Operator.CROSS_ABOVE,
+                      right=_const(0.0)),
+        ],
+        exit_long=[
+            Condition(left=_ind("roc", period=90), op=Operator.LT,
+                      right=_const(0.0)),
+        ],
+        stop=StopSpec(kind="percent", percent=15.0),
+        targets=[TargetSpec(rr=20.0, portion=1.0)],
+        sizing=SizingSpec(kind="kapitalanteil", fraction=0.5),
+        cooldown_bars=0,
+        max_hold_bars=0,
+    )
+
+
+def trend_mit_vollem_einsatz() -> Genome:
+    """Dieselbe Regel, aber mit vollem Kapital statt der Haelfte.
+
+    Kein neuer Gedanke, sondern eine Messung: Rendite und Rueckgang skalieren
+    beide mit dem Einsatz. Der Kandidat mit halbem Einsatz kam auf +59 % bei
+    10,2 % Rueckgang - mit vollem Einsatz muesste daraus grob das Doppelte
+    werden, in beiden Richtungen.
+
+    Damit laesst sich die Frage beantworten, die sonst Vermutung bleibt:
+    **Wieviel Rendite ist bei 12 % Rueckgang ueberhaupt erreichbar?** Und ob
+    die Vorgaben "hoechstens 15 % Rueckgang" und "spuerbarer Gewinn"
+    zusammenpassen.
+    """
+    return Genome(
+        name="Trend-Beteiligung voller Einsatz",
+        rationale=(
+            "Wie die 200-Tage-Beteiligung, aber mit vollem Kapital statt der "
+            "Haelfte. Messung, keine neue Idee: Rendite und Rueckgang "
+            "skalieren gemeinsam - die Frage ist, wieviel bei der erlaubten "
+            "Rueckgangsgrenze herausspringt."
+        ),
+        entry_long=[
+            Condition(left=_price("close"), op=Operator.CROSS_ABOVE,
+                      right=_ind("sma", period=200)),
+        ],
+        exit_long=[
+            Condition(left=_price("close"), op=Operator.LT,
+                      right=_ind("sma", period=200)),
+        ],
+        stop=StopSpec(kind="percent", percent=15.0),
+        targets=[TargetSpec(rr=20.0, portion=1.0)],
+        sizing=SizingSpec(kind="kapitalanteil", fraction=1.0),
+        cooldown_bars=0,
+        max_hold_bars=0,
+    )
+
+
+#: Neunte Generation: dieselbe Idee, mehr Beobachtungen.
+GENERATION_9 = [
+    trend_200,
+    trend_100,
+    trend_50,
+    trend_beide_richtungen,
+    donchian_turtle,
+    momentum_beteiligung,
+    trend_mit_vollem_einsatz,
+]
+
+
 GENERATIONS = {
     1: GENERATION_1,
     2: GENERATION_2,
@@ -1835,6 +2074,7 @@ GENERATIONS = {
     6: GENERATION_6,
     7: GENERATION_7,
     8: GENERATION_8,
+    9: GENERATION_9,
 }
 
 

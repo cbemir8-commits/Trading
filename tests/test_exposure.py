@@ -607,3 +607,61 @@ class TestBestaendigkeitZaehltNurGehandeltes:
 
         assert ergebnis.status is GateStatus.PASS
         assert "zaehlen nicht mit" in ergebnis.message
+
+
+class TestGeneration9:
+    """Die Trendfolge-Familie - dieselbe Idee in mehreren Ausprägungen."""
+
+    def test_alle_kandidaten_kompilieren(self) -> None:
+        from research.seeds import load_seeds
+
+        for genome in load_seeds(9):
+            assert compile_genome(genome).warmup_bars > 0
+
+    def test_die_familie_unterscheidet_sich_nur_in_der_periode(self) -> None:
+        """Der Vergleich 50 gegen 100 gegen 200 muss sauber sein.
+
+        Schliche sich neben der Periode ein zweiter Unterschied ein, waere
+        nicht mehr zu sagen, woran ein besseres Ergebnis lag. Deshalb kommen
+        die drei aus **einem** Bauplan und nicht aus drei Abschriften.
+        """
+        from research.seeds import trend_50, trend_100, trend_200
+
+        genome = [trend_50(), trend_100(), trend_200()]
+        perioden = set()
+
+        for g in genome:
+            assert g.sizing == genome[0].sizing
+            assert g.stop == genome[0].stop
+            assert g.targets == genome[0].targets
+            assert g.cooldown_bars == genome[0].cooldown_bars
+            perioden.add(g.entry_long[0].right.params["period"])
+
+        assert perioden == {50, 100, 200}, "Die Perioden muessen sich unterscheiden"
+
+    def test_der_vergleichsmassstab_ist_unveraendert_dabei(self) -> None:
+        """Ohne ihn liesse sich nicht sagen, ob eine Aenderung etwas brachte
+        oder nur der Zeitraum guenstiger war."""
+        from research.seeds import trend_200, trend_exposure_fair
+
+        assert trend_200().entry_long == trend_exposure_fair().entry_long
+        assert trend_200().exit_long == trend_exposure_fair().exit_long
+        assert trend_200().sizing == trend_exposure_fair().sizing
+
+    def test_beide_richtungen_handelt_wirklich_beide(self) -> None:
+        from research.seeds import trend_beide_richtungen
+
+        genome = trend_beide_richtungen()
+
+        assert genome.entry_long and genome.entry_short
+        assert genome.exit_long and genome.exit_short
+
+    def test_voller_einsatz_hebelt_nicht(self) -> None:
+        """Anteil 1,0 heisst volles Kapital - nicht Kredit.
+
+        Ein Rueckgang von 50 % im Basiswert waere sonst das Ende des Kontos,
+        und in Bitcoin ist das kein hypothetischer Fall.
+        """
+        from research.seeds import trend_mit_vollem_einsatz
+
+        assert trend_mit_vollem_einsatz().sizing.fraction == 1.0
