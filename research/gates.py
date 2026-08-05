@@ -18,6 +18,7 @@ Bestaendigkeit ueber Fenster  Ein Glueckstreffer traegt das Gesamtergebnis
 Parameter-Plateau             EMA(47) gewinnt, EMA(46) und EMA(48) verlieren
 Monte-Carlo                   Die Reihenfolge der Trades war guenstig
 Regime-Aufteilung             Funktioniert nur im Bullenmarkt von 2021
+Schlechtestes Jahr            Kurzer Einbruch oder zwei Jahre Duerre - gleicher DD
 Kosten-Stress                 Der Vorteil war nur ein zu mildes Kostenmodell
 Deflated Sharpe               Nach 500 Versuchen sieht einer immer gut aus
 ============================  ==================================================
@@ -41,7 +42,11 @@ import structlog
 from backtest.costs import CostModel
 from backtest.engine import BacktestConfig, Backtester
 from backtest.metrics import compute_metrics
-from backtest.walkforward import WalkForwardReport
+from backtest.walkforward import (
+    WalkForwardReport,
+    chained_curve,
+    worst_rolling_return,
+)
 from core.models import Trade
 from research.benchmark import benchmark_at_equal_risk, buy_and_hold_over_windows
 from strategy.compiler import compile_genome
@@ -161,6 +166,16 @@ class GateThresholds:
     max_oos_drawdown_pct: float = 12.0
     min_window_consistency: float = 0.5
 
+    worst_year_pct: float = -10.0
+    """Die schlechteste Zwoelfmonatsperiode darf nicht schlimmer sein als das.
+
+    Beantwortet, was der maximale Rueckgang offenlaesst: Ein kurzer tiefer
+    Einbruch und eine zwei Jahre lange Duerre koennen denselben Wert haben -
+    auszuhalten sind sie voellig verschieden. Wer nach zwoelf Monaten noch
+    12 % im Minus steht, hoert auf, egal was die Rechnung sagt.
+
+    -10 % liegt bewusst innerhalb des Kill-Switch von 15 %."""
+
     min_active_windows: int = 6
     """So viele Fenster muessen ueberhaupt einen Trade enthalten, bevor die
     Bestaendigkeitsquote etwas bedeutet.
@@ -202,7 +217,13 @@ def gate_sample_size(
     Ohne diesen Zusatz waere "immer long" ein Kandidat, der hier durchspaziert.
     """
     count = len(report.all_trades)
-    investiert = genome is not None and genome.sizing.kind == "kapitalanteil"
+
+    # **Jede** Bauform, die nach Kapital dimensioniert, ist eine investierte -
+    # feste Quote wie Vola-Ziel. Hier stand einmal nur ``kapitalanteil``, und
+    # als die dritte Betriebsart dazukam, fiel der beste Kandidat des Projekts
+    # ploetzlich an der Stichprobengroesse durch: 17 Trades gegen 100. Der
+    # Grund war nicht die Strategie, sondern dieser Vergleich.
+    investiert = genome is not None and genome.sizing.kind != "risiko"
 
     if not investiert:
         passed = count >= t.min_oos_trades
@@ -402,6 +423,57 @@ def gate_consistency(report: WalkForwardReport, t: GateThresholds) -> GateResult
             + (f" ({ruhig} Fenster ohne Handel, zaehlen nicht mit)" if ruhig else "")
         ),
     )
+
+
+def gate_worst_year(report: WalkForwardReport, t: GateThresholds) -> GateResult:
+    """Wie stuende jemand da, der zum unguenstigsten Zeitpunkt eingestiegen ist?
+
+    Der maximale Rueckgang misst die Tiefe, aber nicht die Dauer. Eine
+    Strategie, die binnen zwei Wochen 10 % verliert und sie in einem Monat
+    zurueckholt, und eine, die zwei Jahre lang 10 % im Minus liegt, haben
+    dieselbe Kennzahl - und sind voellig verschiedene Erfahrungen.
+
+    Diese Pruefung nimmt die Kapitalkurve statt der Trades. Das ist bei
+    langsamen Strategien der einzige Weg: Wer drei Mal im Jahr handelt, hat zu
+    wenige Trades fuer eine Aussage, aber jeden Tag einen Kurvenpunkt.
+
+    Ausdruecklich **zusaetzlich** zu den bestehenden Pruefungen und nicht an
+    ihrer Stelle - es wird nichts weicher, es kommt eine Huerde dazu.
+    """
+    kurve = chained_curve(report)
+    monate = _test_monate(report)
+    schlechteste = worst_rolling_return(kurve, months=12, total_months=monate)
+
+    if not math.isfinite(schlechteste):
+        return GateResult(
+            name="Schlechtestes Jahr",
+            status=GateStatus.SKIP,
+            value=0.0,
+            threshold=t.worst_year_pct,
+            message="Testzeitraum kuerzer als zwoelf Monate - nicht beurteilbar",
+        )
+
+    passed = schlechteste >= t.worst_year_pct
+    return GateResult(
+        name="Schlechtestes Jahr",
+        status=GateStatus.PASS if passed else GateStatus.FAIL,
+        value=round(schlechteste, 2),
+        threshold=t.worst_year_pct,
+        message=(
+            f"Wer zum unguenstigsten Zeitpunkt eingestiegen waere, stuende nach "
+            f"zwoelf Monaten bei {schlechteste:+.1f} %"
+            + ("" if passed else " - das haelt niemand durch.")
+        ),
+    )
+
+
+def _test_monate(report: WalkForwardReport) -> float:
+    """Laenge des gesamten Testzeitraums in Monaten."""
+    fenster = [w.window for w in report.windows if w.window is not None]
+    if not fenster:
+        return 0.0
+    tage = (max(w.test_end for w in fenster) - min(w.test_start for w in fenster)).days
+    return tage / 30.44
 
 
 def gate_monte_carlo(
@@ -873,6 +945,7 @@ def evaluate_gates(
     report.results.append(gate_benchmark(walkforward, frame, thresholds))
     report.results.append(gate_oos_sharpe(walkforward, thresholds))
     report.results.append(gate_drawdown(walkforward, thresholds))
+    report.results.append(gate_worst_year(walkforward, thresholds))
     report.results.append(gate_consistency(walkforward, thresholds))
     report.results.append(
         gate_monte_carlo(walkforward.all_trades, config.initial_equity, thresholds)

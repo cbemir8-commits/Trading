@@ -840,3 +840,164 @@ class TestGeneration10:
             assert g.entry_long == genome[0].entry_long
             assert g.exit_long == genome[0].exit_long
             assert g.stop == genome[0].stop
+
+
+class TestSchlechtestesJahr:
+    """Die Pruefung, die der maximale Rueckgang offenlaesst.
+
+    Ein kurzer tiefer Einbruch und eine zwei Jahre lange Duerre koennen
+    denselben maximalen Rueckgang haben - auszuhalten sind sie voellig
+    verschieden. Wer nach zwoelf Monaten noch im Minus steht, hoert auf, egal
+    was die Rechnung sagt.
+    """
+
+    @staticmethod
+    def _kurve_aus(werte: list[float]):
+        from types import SimpleNamespace
+
+        from backtest.walkforward import WalkForwardReport
+
+        report = WalkForwardReport()
+        kurve = pd.DataFrame(
+            {
+                "time": pd.date_range(T0, periods=len(werte), freq="D", tz="UTC"),
+                "equity": werte,
+            }
+        )
+        fenster = SimpleNamespace(
+            index=0,
+            train_start=T0, train_end=T0,
+            test_start=T0,
+            test_end=T0 + timedelta(days=len(werte)),
+        )
+        report.windows.append(
+            SimpleNamespace(
+                window=fenster,
+                metrics=SimpleNamespace(net_profit=0.0),
+                trades=[object()],
+                result=SimpleNamespace(equity_curve=kurve),
+            )
+        )
+        return report
+
+    def test_verkettet_multiplikativ(self) -> None:
+        """Zwei Fenster mit je +10 % ergeben +21 %, nicht +20 %."""
+        from types import SimpleNamespace
+
+        from backtest.walkforward import WalkForwardReport, chained_curve
+
+        report = WalkForwardReport()
+        for werte in ([100.0, 110.0], [50.0, 55.0]):
+            kurve = pd.DataFrame(
+                {"time": pd.date_range(T0, periods=2, freq="D", tz="UTC"),
+                 "equity": werte}
+            )
+            report.windows.append(
+                SimpleNamespace(
+                    window=None, metrics=SimpleNamespace(net_profit=0.0),
+                    trades=[], result=SimpleNamespace(equity_curve=kurve),
+                )
+            )
+
+        assert chained_curve(report)[-1] == pytest.approx(1.21, rel=1e-6)
+
+    def test_misst_zwoelf_monate_nicht_die_einbruchstiefe(self) -> None:
+        """Ein wichtiger Unterschied zum maximalen Rueckgang.
+
+        Diese Reihe faellt zwischendurch um 20 % - der maximale Rueckgang
+        waere also 20 %. Die schlechteste **Zwoelfmonatsperiode** ist trotzdem
+        nur rund -2 %, weil in jedes Jahresfenster auch Erholung faellt.
+
+        Genau das soll die Kennzahl leisten: Sie fragt nicht "wie tief ging es
+        zwischendurch", sondern "wie stuende jemand nach einem Jahr da".
+        """
+        from backtest.walkforward import worst_rolling_return
+
+        kurve = np.concatenate([
+            np.linspace(1.0, 1.3, 200),
+            np.linspace(1.3, 1.04, 200),
+            np.linspace(1.04, 1.5, 330),
+        ])
+
+        schlechteste = worst_rolling_return(kurve, months=12, total_months=24)
+
+        assert schlechteste < 0, "Der Einbruch muss sich zeigen"
+        assert schlechteste == pytest.approx(-2.4, abs=1.0)
+
+    def test_lange_duerre_schlaegt_durch(self) -> None:
+        """Dieselbe Tiefe, aber ohne Erholung - hier greift die Kennzahl."""
+        from backtest.walkforward import worst_rolling_return
+
+        stetig_abwaerts = np.linspace(1.0, 0.80, 730)
+
+        assert worst_rolling_return(stetig_abwaerts, 12, 24) == pytest.approx(
+            -11.1, abs=1.5
+        )
+
+    def test_zu_kurzer_zeitraum_gibt_nan(self) -> None:
+        """Eine Zahl waere dort geraten."""
+        from backtest.walkforward import worst_rolling_return
+
+        assert np.isnan(worst_rolling_return(np.array([1.0, 1.1]), 12, 6))
+
+    def test_gate_faellt_bei_langer_duerre(self) -> None:
+        from research.gates import GateStatus, GateThresholds, gate_worst_year
+
+        # Zwei Jahre stetig abwaerts. Der maximale Rueckgang bliebe mit 30 %
+        # unauffaelliger als das, was ein Anleger tatsaechlich erlebt haette.
+        werte = list(np.linspace(1.0, 0.70, 730))
+
+        ergebnis = gate_worst_year(self._kurve_aus(werte), GateThresholds())
+
+        assert ergebnis.status is GateStatus.FAIL
+        assert "haelt niemand durch" in ergebnis.message
+
+    def test_gate_besteht_bei_stetigem_anstieg(self) -> None:
+        from research.gates import GateStatus, GateThresholds, gate_worst_year
+
+        werte = list(np.linspace(1.0, 1.6, 730))
+
+        ergebnis = gate_worst_year(self._kurve_aus(werte), GateThresholds())
+
+        assert ergebnis.status is GateStatus.PASS
+
+    def test_ohne_genug_zeitraum_uebersprungen(self) -> None:
+        """Uebersprungen, nicht bestanden - der Unterschied zaehlt."""
+        from research.gates import GateStatus, GateThresholds, gate_worst_year
+
+        ergebnis = gate_worst_year(self._kurve_aus([1.0, 1.05]), GateThresholds())
+
+        assert ergebnis.status is GateStatus.SKIP
+
+
+class TestStichprobeErkenntAlleHalteformen:
+    def test_vola_ziel_zaehlt_als_investiert(self) -> None:
+        """Der Fehler, der beim Hinzufuegen der dritten Betriebsart entstand.
+
+        Die Pruefung erkannte nur ``kapitalanteil`` als Halte-Strategie. Als
+        das Vola-Ziel dazukam, fiel der beste Kandidat des Projekts ploetzlich
+        an der Stichprobengroesse durch - 17 Trades gegen 100 -, und der Grund
+        war nicht die Strategie, sondern dieser Vergleich.
+        """
+        from types import SimpleNamespace
+
+        from backtest.walkforward import WalkForwardReport
+        from research.gates import GateStatus, GateThresholds, gate_sample_size
+        from research.seeds import trend_200
+
+        report = WalkForwardReport(all_trades=[object()] * 17)
+        report.combined = SimpleNamespace(avg_duration_hours=24 * 30)
+        for _ in range(9):
+            report.windows.append(
+                SimpleNamespace(
+                    metrics=SimpleNamespace(net_profit=1.0),
+                    is_profitable=True, trades=[object()],
+                )
+            )
+
+        for art in ("kapitalanteil", "vola_ziel"):
+            genome = trend_200().model_copy(
+                update={"sizing": SizingSpec(kind=art, fraction=0.5)}
+            )
+            ergebnis = gate_sample_size(report, GateThresholds(), genome=genome)
+            assert ergebnis.status is GateStatus.PASS, f"{art} wurde nicht erkannt"

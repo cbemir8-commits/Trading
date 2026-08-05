@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
 
+import numpy as np
 import pandas as pd
 import structlog
 
@@ -184,6 +185,57 @@ class WalkForwardSplitter:
                 train_start = _add_months(train_start, self.test_months)
 
         return windows
+
+
+def chained_curve(report: WalkForwardReport) -> np.ndarray:
+    """Die Kapitalkurve ueber alle Testfenster, multiplikativ verkettet.
+
+    Startwert 1,0. Verkettet wird wie im Bericht selbst: Zwei Fenster mit je
+    +10 % ergeben +21 %, nicht +20 %. Additiv zu rechnen hat hier schon einmal
+    einen Rueckgang von 1005 % erzeugt.
+
+    Gebraucht von allem, was den **Verlauf** beurteilt statt einzelner Trades -
+    etwa die schlechteste Zwoelfmonatsperiode. Trades taugen dafuer nicht: Eine
+    Strategie, die drei Mal im Jahr handelt, hat davon zu wenige.
+    """
+    punkte: list[float] = []
+    faktor = 1.0
+
+    for fenster in report.windows:
+        kurve = getattr(fenster.result, "equity_curve", None)
+        if kurve is None or kurve.empty:
+            continue
+        werte = kurve["equity"].to_numpy(dtype=float)
+        if len(werte) < 2 or werte[0] <= 0:
+            continue
+        punkte.extend(faktor * werte / werte[0])
+        faktor = punkte[-1]
+
+    return np.asarray(punkte, dtype=float)
+
+
+def worst_rolling_return(curve: np.ndarray, months: int, total_months: float) -> float:
+    """Schlechteste Rendite ueber ein rollierendes Fenster, in Prozent.
+
+    Beantwortet die Frage, die der maximale Rueckgang offenlaesst: Wer zum
+    denkbar unguenstigsten Zeitpunkt eingestiegen waere - wie stuende er nach
+    einem Jahr da?
+
+    Ein kurzer, tiefer Einbruch und eine lange Duerre koennen denselben
+    maximalen Rueckgang haben. Auszuhalten sind sie voellig verschieden.
+
+    ``nan``, wenn der Zeitraum fuer das Fenster zu kurz ist. Eine Zahl waere
+    dort geraten.
+    """
+    if len(curve) < 3 or total_months <= months:
+        return float("nan")
+
+    spanne = int(len(curve) * months / total_months)
+    if spanne < 2 or spanne >= len(curve):
+        return float("nan")
+
+    renditen = curve[spanne:] / curve[:-spanne] - 1.0
+    return float(np.min(renditen) * 100.0)
 
 
 def run_walkforward(
