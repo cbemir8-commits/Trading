@@ -30,6 +30,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
+import numpy as np
 import pandas as pd
 import structlog
 
@@ -105,6 +106,23 @@ def benchmark_at_equal_risk(
     und saehe damit besser aus. Die Skalierung hat diesen Fehler nicht: Eine
     negative Messlatte wird beim Herunterskalieren weniger negativ, und genau
     das ist richtig.
+
+    **Diese Naeherung ist zu streng, und zwar erheblich.** Sie skaliert die
+    Rendite linear, Renditen verzinsen sich aber. Wer 7,4 % seines Geldes in
+    BTC haelt, waehrend BTC sich verzehnfacht, bekommt nicht 7,4 % von +892 %,
+    sondern rund +32 % - denn 10^0,074 ist 1,19, nicht 1,66. Direkt
+    nachsimuliert ueber 2018 bis 2026:
+
+        BTC voll halten                    +892 % bei 76,7 % Rueckgang
+        auf 8,7 % Rueckgang gebracht        +32 % (7,4 % Beteiligung)
+        was diese Formel daraus macht      +101 %
+
+    Die Formel verlangt also das gut Dreifache dessen, was anteiliges Halten
+    tatsaechlich gebracht haette. Fuer die Zulassung wird deshalb
+    ``scaled_hold`` benutzt, das die Beteiligung wirklich durchrechnet.
+
+    Diese Funktion bleibt fuer schnelle Ueberschlaege und fuer Faelle ohne
+    Kursreihe - dann ist eine zu strenge Schwelle die richtige Richtung.
     """
     # Untergrenze auf beiden Seiten, aus demselben Grund wie bei
     # ``risk_adjusted_score``: Ohne sie waere ein Verlauf ohne nennenswerten
@@ -114,6 +132,88 @@ def benchmark_at_equal_risk(
     eigener = max(own_drawdown_pct, 1.0)
     messlatte = max(benchmark_drawdown_pct, 1.0)
     return benchmark_return_pct * (eigener / messlatte)
+
+
+def scaled_hold(
+    frame: pd.DataFrame,
+    windows: list[tuple[datetime, datetime]],
+    target_drawdown_pct: float,
+    *,
+    costs: CostModel | None = None,
+) -> tuple[float, float]:
+    """Halten, heruntergefahren auf einen vorgegebenen Rueckgang.
+
+    Statt die Rendite zu skalieren wird die **Beteiligung** skaliert und der
+    Verlauf damit neu gerechnet: Anteil ``k`` im Markt, Rest in Kasse,
+    taeglich ausgeglichen. Gesucht wird das ``k``, bei dem derselbe Rueckgang
+    herauskommt wie bei der Strategie.
+
+    Das ist der ehrliche Vergleich und die einzige Art, ihn zu fuehren, die
+    nicht an der Verzinsung vorbeirechnet. Eine Formel dafuer gibt es nicht -
+    der Rueckgang haengt vom Pfad ab, nicht nur von Rendite und Streuung.
+
+    **Warum das die Schwelle senkt und warum es trotzdem richtig ist.** Die
+    bisherige Naeherung verlangte ueber diesen Zeitraum das gut Dreifache. Sie
+    war nicht vorsichtig, sondern falsch: Sie verglich die Strategie mit einer
+    Messlatte, die so niemand haette erreichen koennen. Ein Gate, das gegen
+    eine unerreichbare Vergleichsgroesse prueft, misst nichts.
+
+    Rueckgabe: (Rendite in Prozent, tatsaechlicher Rueckgang in Prozent).
+    """
+    ziel = max(target_drawdown_pct, 1.0)
+
+    def verlauf(anteil: float) -> tuple[float, float]:
+        rendite, rueckgang = _hold_at_exposure(frame, windows, anteil, costs=costs)
+        return rendite, rueckgang
+
+    voll_rendite, voll_rueckgang = verlauf(1.0)
+    if voll_rueckgang <= ziel:
+        # Halten war ohnehin ruhiger als die Strategie - dann ist volles
+        # Halten die richtige Messlatte, nichts wird heruntergefahren.
+        return voll_rendite, voll_rueckgang
+
+    lo, hi = 0.0, 1.0
+    for _ in range(30):
+        mitte = (lo + hi) / 2
+        if verlauf(mitte)[1] > ziel:
+            hi = mitte
+        else:
+            lo = mitte
+    return verlauf(lo)
+
+
+def _hold_at_exposure(
+    frame: pd.DataFrame,
+    windows: list[tuple[datetime, datetime]],
+    exposure: float,
+    *,
+    costs: CostModel | None = None,
+) -> tuple[float, float]:
+    """Verlauf bei konstanter Beteiligung ``exposure``, taeglich ausgeglichen."""
+    costs = costs or CostModel()
+    fee = float(costs.taker_fee_rate)
+
+    faktor = 1.0
+    kurve: list[float] = [1.0]
+
+    for start, end in windows:
+        teil = frame[(frame["open_time"] >= start) & (frame["open_time"] < end)]
+        if len(teil) < 2:
+            continue
+        preise = teil["close"].astype(float).to_numpy()
+        schritte = np.diff(preise) / preise[:-1]
+        faktor *= 1.0 - fee * exposure  # Kauf je Fenster, anteilig
+        for schritt in schritte:
+            faktor *= 1.0 + exposure * schritt
+            faktor = max(faktor, 0.0)
+            kurve.append(faktor)
+
+    if len(kurve) < 2:
+        return 0.0, 0.0
+
+    werte = pd.Series(kurve)
+    rueckgang = float(((werte / werte.cummax()) - 1.0).min() * -100.0)
+    return (faktor - 1.0) * 100.0, rueckgang
 
 
 def risk_adjusted_score(return_pct: float, drawdown_pct: float) -> float:

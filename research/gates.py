@@ -48,7 +48,7 @@ from backtest.walkforward import (
     worst_rolling_return,
 )
 from core.models import Trade
-from research.benchmark import benchmark_at_equal_risk, buy_and_hold_over_windows
+from research.benchmark import buy_and_hold_over_windows, scaled_hold
 from strategy.compiler import compile_genome
 from strategy.genome import Genome
 
@@ -304,8 +304,23 @@ def gate_benchmark(
         frame, windows, costs=costs
     )
     eigen = report.combined.total_return_pct
-    messlatte = benchmark_at_equal_risk(
-        halten_rendite, halten_rueckgang, report.combined.max_drawdown_pct
+
+    # Die Messlatte wird **nachsimuliert**, nicht geschaetzt.
+    #
+    # Frueher stand hier ``benchmark_at_equal_risk``, das die Rendite linear
+    # mit dem Rueckgang skaliert. Renditen verzinsen sich aber: Wer 7,4 % in
+    # BTC haelt, waehrend BTC sich verzehnfacht, bekommt +34 % - nicht 7,4 %
+    # von +1086 %. Ueber 2018 bis 2026 verlangte die Formel damit das gut
+    # Dreifache dessen, was anteiliges Halten tatsaechlich gebracht haette.
+    #
+    # Das war keine vorsichtige Schwelle, sondern eine falsche: Ein Gate, das
+    # gegen eine unerreichbare Vergleichsgroesse prueft, misst nichts.
+    #
+    # **Die Korrektur senkt die Huerde, und das ist ein Interessenkonflikt.**
+    # Deshalb wird sie nicht behauptet, sondern durchgerechnet - und die
+    # zweite Bedingung unten bleibt unveraendert scharf.
+    messlatte, messlatte_dd = scaled_hold(
+        frame, windows, report.combined.max_drawdown_pct, costs=costs
     )
 
     besser = eigen >= messlatte * t.min_benchmark_edge
@@ -331,7 +346,7 @@ def gate_benchmark(
             f"{report.combined.max_drawdown_pct:.1f} % Rueckgang "
             f"({report.combined.cagr_pct:+.1f} % p.a.), "
             f"Halten {halten_rendite:+.1f} % bei {halten_rueckgang:.1f} % "
-            f"(auf gleiches Risiko gebracht: {messlatte:+.1f} %)"
+            f"(auf {messlatte_dd:.1f} % Rueckgang heruntergefahren: {messlatte:+.1f} %)"
             + zusatz
         ),
     )

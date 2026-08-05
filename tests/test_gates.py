@@ -37,6 +37,7 @@ from research.gates import (
     classify_regimes,
     deflated_sharpe_ratio,
     evaluate_gates,
+    gate_benchmark,
     gate_consistency,
     gate_drawdown,
     gate_monte_carlo,
@@ -632,3 +633,165 @@ def test_monte_carlo_drawdown_cannot_exceed_total_loss() -> None:
 
     assert result.value <= 100.0
     assert not result.passed  # inhaltlich unveraendert: faellt trotzdem durch
+
+
+def _fenster_ergebnis(frame: pd.DataFrame, spanne):
+    """Ein WindowResult, das nur sein Zeitfenster tragen muss.
+
+    gate_benchmark liest daraus ausschliesslich Start und Ende - alles
+    andere kommt aus report.combined.
+    """
+    from backtest.walkforward import Window
+
+    start, ende = spanne
+    fenster = Window(
+        index=0, train_start=start, train_end=start, test_start=start, test_end=ende
+    )
+    kurve = pd.DataFrame({"time": [start, ende], "equity": [500.0, 550.0]})
+    return WindowResult(  # type: ignore[arg-type]
+        window=fenster,
+        metrics=compute_metrics([], kurve, initial_equity=Decimal("500")),
+        trades=[],
+        result=None,
+    )
+
+
+def _metrics_mit(*, rendite_pct: float, rueckgang_pct: float, cagr_pct: float):
+    """Kennzahlen mit vorgegebener Rendite - fuer Gate-Tests.
+
+    Der Weg ueber ``replace`` statt ueber einen erfundenen Kursverlauf: Wer
+    die Zahlen aus einer Kurve erzeugt, prueft am Ende die Kurve.
+    """
+    kurve = pd.DataFrame({"time": [T0, T0 + timedelta(days=100)], "equity": [500.0, 600.0]})
+    basis = compute_metrics([], kurve, initial_equity=Decimal("500"))
+    return replace(
+        basis,
+        total_return_pct=rendite_pct,
+        max_drawdown_pct=rueckgang_pct,
+        cagr_pct=cagr_pct,
+    )
+
+
+class TestMesslatteSimuliert:
+    """Die Messlatte wird nachsimuliert statt linear skaliert.
+
+    **Diese Korrektur senkt die Huerde** - sie ist damit genau die Art
+    Aenderung, bei der man sich selbst am leichtesten betruegt. Deshalb steht
+    hier nicht nur, dass sie richtig ist, sondern auch der Nachweis, dass sie
+    kein Freifahrtschein wurde.
+
+    Der Fehler: ``benchmark_at_equal_risk`` skaliert die Rendite linear mit
+    dem Rueckgang. Renditen verzinsen sich aber. Wer 7,4 % seines Geldes in
+    BTC haelt, waehrend BTC sich verzehnfacht, bekommt +34 % - nicht 7,4 %
+    von +1086 %. Ueber 2018 bis 2026 verlangte die Formel das gut Dreifache
+    dessen, was anteiliges Halten tatsaechlich gebracht haette.
+    """
+
+    def _steigende_reihe(self, tage: int = 1200, drift: float = 0.003) -> pd.DataFrame:
+        """Markt, der sich vervielfacht - mit einem echten Einbruch dazwischen.
+
+        Ohne Rueckgang greift die Skalierung gar nicht: ``scaled_hold`` gibt
+        dann volles Halten zurueck, weil nichts heruntergefahren werden muss.
+        Genau daran ist dieser Test zuerst gescheitert.
+        """
+        schritte = np.full(tage, drift)
+        schritte[tage // 3 : tage // 3 + 60] = -0.02   # 60 Tage Absturz
+        preise = 10_000 * np.cumprod(1.0 + schritte)
+        kerzen = [
+            Candle(
+                open_time=T0 + Interval.D1.duration * i,
+                open=Decimal(f"{p:.2f}"),
+                high=Decimal(f"{p * 1.01:.2f}"),
+                low=Decimal(f"{p * 0.99:.2f}"),
+                close=Decimal(f"{p:.2f}"),
+                volume=Decimal("10"),
+                turnover=Decimal("100000"),
+            )
+            for i, p in enumerate(preise)
+        ]
+        return candles_to_frame(kerzen)
+
+    def _fenster(self, frame: pd.DataFrame):
+        return [
+            (
+                frame["open_time"].iloc[0].to_pydatetime(),
+                frame["open_time"].iloc[-1].to_pydatetime(),
+            )
+        ]
+
+    def test_anteiliges_halten_verzinst_sich_nicht_linear(self) -> None:
+        """Der Kern des Fehlers, an einem Markt ohne Rueckgang."""
+        from research.benchmark import buy_and_hold_over_windows, scaled_hold
+
+        frame = self._steigende_reihe()
+        fenster = self._fenster(frame)
+        voll, voll_dd = buy_and_hold_over_windows(frame, fenster)
+
+        halb, _ = scaled_hold(frame, fenster, max(voll_dd, 1.0) / 2)
+
+        # Bei einem Markt, der sich vervielfacht, ist die halbe Beteiligung
+        # deutlich weniger als die halbe Rendite - Wurzel statt Haelfte.
+        assert halb < voll / 2, (
+            f"anteiliges Halten muss unterproportional sein: {halb} gegen {voll}"
+        )
+
+    def test_die_alte_formel_lag_zu_hoch(self) -> None:
+        """Der Nachweis, dass die Korrektur eine Korrektur ist."""
+        from research.benchmark import (
+            benchmark_at_equal_risk,
+            buy_and_hold_over_windows,
+            scaled_hold,
+        )
+
+        frame = self._steigende_reihe()
+        fenster = self._fenster(frame)
+        voll, voll_dd = buy_and_hold_over_windows(frame, fenster)
+        ziel = max(voll_dd, 1.0) / 4
+
+        echt, _ = scaled_hold(frame, fenster, ziel)
+        formel = benchmark_at_equal_risk(voll, voll_dd, ziel)
+
+        assert formel > echt, (
+            "die lineare Formel muss ueber dem liegen, was wirklich "
+            "erreichbar war - sonst war sie gar nicht der Fehler"
+        )
+
+    def test_eine_schlechte_strategie_faellt_weiterhin_durch(self) -> None:
+        """Der wichtigste Test hier.
+
+        Wenn die korrigierte Messlatte alles durchwinkt, ist sie kein Gate
+        mehr, sondern Dekoration. Eine Strategie, die deutlich weniger
+        verdient als anteiliges Halten, muss scheitern.
+        """
+        from research.benchmark import scaled_hold
+
+        frame = self._steigende_reihe()
+        fenster = self._fenster(frame)
+        messlatte, _ = scaled_hold(frame, fenster, 10.0)
+
+        report = WalkForwardReport()
+        report.windows = [_fenster_ergebnis(frame, fenster[0])]
+        report.combined = _metrics_mit(
+            rendite_pct=messlatte * 0.3, rueckgang_pct=10.0, cagr_pct=2.0
+        )
+
+        ergebnis = gate_benchmark(report, frame, GateThresholds())
+
+        assert ergebnis.status is GateStatus.FAIL
+
+    def test_eine_klar_bessere_strategie_besteht(self) -> None:
+        from research.benchmark import scaled_hold
+
+        frame = self._steigende_reihe()
+        fenster = self._fenster(frame)
+        messlatte, _ = scaled_hold(frame, fenster, 10.0)
+
+        report = WalkForwardReport()
+        report.windows = [_fenster_ergebnis(frame, fenster[0])]
+        report.combined = _metrics_mit(
+            rendite_pct=messlatte * 3.0 + 50.0, rueckgang_pct=10.0, cagr_pct=25.0
+        )
+
+        ergebnis = gate_benchmark(report, frame, GateThresholds())
+
+        assert ergebnis.status is GateStatus.PASS
