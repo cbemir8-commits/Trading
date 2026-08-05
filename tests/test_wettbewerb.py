@@ -47,6 +47,11 @@ class FakeWalk:
 class FakeGate:
     name: str
     passed: bool
+    wert: float = 0.0
+
+    @property
+    def value(self) -> float:
+        return self.wert
 
 
 @dataclass
@@ -77,8 +82,12 @@ def kandidat(
     erwartung: float = 0.0,
     zugelassen: bool = False,
     trades: int = 120,
+    deflated: float = 0.0,
 ) -> FakeCandidate:
     gates = [FakeGate(f"Gate {i}", i < bestanden) for i in range(gesamt)]
+    # Der Deflated Sharpe steht als eigenes Gate in der Liste - genau dort
+    # liest ihn die Bestenliste ab.
+    gates.append(FakeGate("Deflated Sharpe", deflated >= 0.95, wert=deflated))
     return FakeCandidate(
         genome=genome,
         walkforward=FakeWalk(combined=FakeMetrics(expectancy_r=erwartung)),
@@ -197,7 +206,7 @@ class TestBestenliste:
 
         text = board.summary()
         assert genome.name in text
-        assert "6/9" in text
+        assert "6/10" in text  # neun Gates plus Deflated Sharpe
 
 
 # ---------------------------------------------------------------------------
@@ -523,3 +532,80 @@ class TestGeneration8:
         assert "Abfolge-Modell (Abgriff, Bruch, Rueckkehr)" in namen
         assert "Abfolge ohne Luecke" in namen
         assert "Abfolge ohne Strukturbruch" in namen
+
+
+class TestRangfolgeBelohntKeineRisikoreduktion:
+    """Mehr bestandene Gates heisst nicht besserer Kandidat.
+
+    **Der Fall ist gemessen, nicht ausgedacht.** Derselbe Kandidat mit
+    engerem Stop bestand 9 von 11 Gates statt 8 - aber nur, weil er schlicht
+    weniger riskierte. Rueckgang, schlechtestes Jahr und Monte-Carlo
+    bestanden dort durch kleinere Positionen, waehrend der Deflated Sharpe
+    von 0,901 auf 0,619 fiel.
+
+    Nach der alten Reihenfolge waere die schlechtere Strategie auf Platz eins
+    gelandet, und die Bestenliste haette einen Rueckschritt als Fortschritt
+    ausgewiesen. Der Deflated Sharpe steht deshalb vor der Gate-Zahl: Er
+    laesst sich nicht durch kleinere Positionen verbessern.
+    """
+
+    def test_belastbarer_vorteil_schlaegt_mehr_gates(
+        self, board: Leaderboard
+    ) -> None:
+        seeds = load_seeds(7)
+        board.record(
+            [
+                # Weniger Gates, aber der Vorteil ist belastbarer.
+                kandidat(seeds[0], bestanden=8, deflated=0.90, erwartung=0.30),
+                # Mehr Gates - erkauft mit kleineren Positionen.
+                kandidat(seeds[1], bestanden=9, deflated=0.62, erwartung=0.10),
+            ],
+            generation=7,
+        )
+
+        rang = board.ranked()
+
+        assert rang[0].name == seeds[0].name, (
+            "die Bestenliste bevorzugt mehr bestandene Gates, obwohl der "
+            "Vorteil dort deutlich unsicherer ist"
+        )
+        assert rang[0].deflated_sharpe > rang[1].deflated_sharpe
+
+    def test_bei_gleichem_deflated_sharpe_entscheiden_die_gates(
+        self, board: Leaderboard
+    ) -> None:
+        """Die Gate-Zahl bleibt im Schluessel - nur eine Stufe tiefer."""
+        seeds = load_seeds(7)
+        board.record(
+            [
+                kandidat(seeds[0], bestanden=5, deflated=0.80),
+                kandidat(seeds[1], bestanden=8, deflated=0.80),
+            ],
+            generation=7,
+        )
+
+        assert board.ranked()[0].name == seeds[1].name
+
+    def test_zugelassen_steht_weiterhin_ganz_oben(self, board: Leaderboard) -> None:
+        """Wer alle Gates besteht, ist fertig - egal welche Kennzahl."""
+        seeds = load_seeds(7)
+        board.record(
+            [
+                kandidat(seeds[0], bestanden=9, deflated=0.99, erwartung=0.50),
+                kandidat(seeds[1], bestanden=9, deflated=0.96, zugelassen=True),
+            ],
+            generation=7,
+        )
+
+        assert board.ranked()[0].zugelassen
+
+    def test_uebersprungenes_gate_zaehlt_als_null(self, board: Leaderboard) -> None:
+        """Ein Kandidat, ueber dessen Belastbarkeit sich nichts sagen laesst,
+        steht nicht vor einem, ueber den etwas bekannt ist."""
+        seeds = load_seeds(7)
+        board.record(
+            [kandidat(seeds[0], bestanden=9, deflated=0.0, trades=8)],
+            generation=7,
+        )
+
+        assert board.ranked()[0].deflated_sharpe == 0.0

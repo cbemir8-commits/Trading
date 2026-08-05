@@ -72,15 +72,41 @@ class Entry:
     fenster_profitabel: float = 0.0
     hypothese: str = ""
 
+    deflated_sharpe: float = 0.0
+    """Wie sicher der Vorteil echt ist, nach Korrektur fuer die Zahl der
+    Versuche. Die einzige Kennzahl hier, die sich nicht schoenrechnen laesst,
+    indem man weniger riskiert."""
+
     @property
     def rang_schluessel(self) -> tuple:
         """Reihenfolge der Bestenliste - absteigend zu lesen.
 
         Bewusst mehrstufig statt als Punktwert: Jede Stufe ist fuer sich
-        begruendbar, und die Tabelle kann alle drei zeigen.
+        begruendbar, und die Tabelle kann alle zeigen.
+
+        **Warum die Zahl bestandener Gates nicht mehr an zweiter Stelle
+        steht.** Sie ist eine irrefuehrende Rangfolge, und der Fall ist
+        gemessen: Derselbe Kandidat mit engerem Stop bestand 9 von 11 Gates
+        statt 8 - aber nur, weil er schlicht weniger riskierte. Rueckgang,
+        schlechtestes Jahr und Monte-Carlo bestanden dort durch kleinere
+        Positionen, waehrend der Deflated Sharpe von 0,901 auf 0,619 fiel.
+
+        Nach der alten Reihenfolge waere die schlechtere Strategie auf Platz
+        eins gelandet, und die Bestenliste haette den Rueckschritt als
+        Fortschritt ausgewiesen.
+
+        Der Deflated Sharpe steht deshalb vor der Gate-Zahl: Er misst, wie
+        sicher der Vorteil ueberhaupt echt ist, und er laesst sich **nicht**
+        durch kleinere Positionen verbessern - er ist skaleninvariant. Wer
+        weniger riskiert, verbessert seinen Rang damit nicht mehr.
+
+        Die Gate-Zahl bleibt im Schluessel, aber dahinter: Zwischen zwei
+        Kandidaten mit gleich belastbarem Vorteil ist der weiter, der mehr
+        Pruefungen besteht.
         """
         return (
             self.zugelassen,
+            round(self.deflated_sharpe, 3),
             self.gates_bestanden,
             self.erwartung_r,
             self.sharpe,
@@ -216,5 +242,24 @@ def _aus_kandidat(candidate, *, generation: int, herkunft: str) -> Entry:
         rendite_pct=round(combined.total_return_pct, 2) if combined else 0.0,
         max_drawdown_pct=round(combined.max_drawdown_pct, 2) if combined else 0.0,
         fenster_profitabel=round(candidate.consistency, 3),
+        deflated_sharpe=_deflated_sharpe(candidate),
         hypothese=candidate.genome.rationale,
     )
+
+
+def _deflated_sharpe(candidate) -> float:
+    """Den Deflated Sharpe aus den Gate-Ergebnissen holen.
+
+    Er wird dort ohnehin berechnet - ihn hier ein zweites Mal zu rechnen
+    hiesse, zwei Quellen fuer dieselbe Zahl zu haben, die auseinanderlaufen
+    koennen.
+
+    Wurde das Gate uebersprungen (zu wenige Trades), bleibt der Wert null.
+    Das ist die richtige Richtung: Ein Kandidat, ueber dessen Belastbarkeit
+    sich nichts sagen laesst, steht nicht vor einem, ueber den etwas bekannt
+    ist.
+    """
+    for ergebnis in candidate.gates.results:
+        if ergebnis.name == "Deflated Sharpe":
+            return round(float(ergebnis.value), 4)
+    return 0.0

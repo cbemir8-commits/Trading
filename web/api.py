@@ -211,6 +211,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "rendite_pct": e.rendite_pct,
                     "max_drawdown_pct": e.max_drawdown_pct,
                     "fenster_profitabel": e.fenster_profitabel,
+                    "deflated_sharpe": e.deflated_sharpe,
                     "geprueft": e.geprueft,
                     "hypothese": e.hypothese,
                 }

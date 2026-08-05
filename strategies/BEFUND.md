@@ -4,7 +4,7 @@ Diese Datei haelt fest, was gemessen wurde und welche Wege damit
 ausgeschlossen sind. Sie ist kein Champion - `champion.json` entsteht nur,
 wenn alle elf Gates bestanden sind.
 
-**Stand: 9 von 11. Nach 66 gepruefen Hypothesen.**
+**Stand: 9 von 11. Nach 71 gepruefen Hypothesen.**
 
 ## Der beste Kandidat
 
@@ -70,6 +70,25 @@ Zahl erfuellter Zusatzbedingungen:
 Die Reihenfolge ist **nicht monoton** - 1/3 schlaegt 2/3. Das Signal ist
 schwach, und die schwachen Setups wegzulassen wuerde +85 R Gewinn loeschen.
 Ein Filter darauf waere Anpassung an Rauschen.
+
+**5. Parameter-Streuung.** Dieselbe Regel mit 30, 50 und 80 Tagen
+gleichzeitig zu je einem Drittel. Kein Effekt auf das Verhaeltnis - dafuer
+hat der Versuch einen Fehler im Portfolio-Walk-Forward sichtbar gemacht
+(siehe unten).
+
+**6. Sperrfrist nach dem Ausstieg.** Die Vermutung war, dass Fehlausbrueche
+in Seitwaertsphasen das schlechteste Jahr treiben und Abwarten hilft. Das
+Gegenteil, bei Vola-Ziel 19,3:
+
+    Sperre   Trades   p.a.     schl. Jahr   Deflated Sharpe
+        0      156    13,10 %     -9,41 %        0,849
+        3      144    11,33 %     -9,79 %        0,804
+        5      131     9,50 %     -9,47 %        0,684
+       10      106     5,56 %     -7,97 %        0,180
+
+Alles wird schlechter, das schlechteste Jahr kaum besser. Die Trades direkt
+nach einem Ausstieg sind nicht systematisch schlecht - wer wartet, verpasst
+die Wiedereinstiege in weiterlaufende Trends.
 
 ## Ein Fehler in meinem eigenen Code - und was er verdeckt hat
 

@@ -352,6 +352,7 @@ async function refreshWettbewerb() {
         <div class="name">${escapeHtml(e.name)}</div>
         <div class="why">${escapeHtml(grund)}</div>
       </td>
+      <td class="num">${e.deflated_sharpe ? num(e.deflated_sharpe, 2) : "—"}</td>
       <td class="num"><span class="gates">${e.gates_bestanden}/${e.gates_gesamt}</span></td>
       <td class="num">${e.trades}</td>
       <td class="num">${signed(e.erwartung_r, 3)}</td>
@@ -365,7 +366,7 @@ async function refreshWettbewerb() {
     <div class="hint">${escapeHtml(data.zusammenfassung)}</div>
     <div class="wbwrap"><table class="wb">
       <thead><tr>
-        <th></th><th>Strategie</th><th class="num">Gates</th>
+        <th></th><th>Strategie</th><th class="num">echt?</th><th class="num">Gates</th>
         <th class="num">Trades</th><th class="num">Erwartung R</th>
         <th class="num">Drawdown</th><th class="num">Herkunft</th>
       </tr></thead>
