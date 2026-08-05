@@ -4,7 +4,7 @@ Diese Datei haelt fest, was gemessen wurde und welche Wege damit
 ausgeschlossen sind. Sie ist kein Champion - `champion.json` entsteht nur,
 wenn alle elf Gates bestanden sind.
 
-**Stand: 9 von 11. Nach 76 gepruefen Hypothesen.**
+**Stand: 9 von 11. Nach 81 gepruefen Hypothesen.**
 
 **Wichtige Einschraenkung, gemessen am 05.08.2026:** Diese 9 von 11 gelten
 fuer den Zeitraum ab August 2017. Laesst man die ersten zweieinhalb Jahre
@@ -18,27 +18,29 @@ weg, sind es 8 von 11 und 7,4 % im Jahr statt 11,2 %. Siehe
     Einstieg   Kurs kreuzt den 50-Tage-Schnitt von unten
     Ausstieg   Kurs faellt unter den 50-Tage-Schnitt
     Stop       4 % vom Einstieg
-    Groesse    Vola-Ziel 17,3 %, Konviktions-Bonus 1,0
+    Groesse    Vola-Ziel 19,3 %, Konviktions-Bonus 1,0
     Konfluenz  SMA50 > SMA200, ROC(90) > 0, RSI(14) > 50
 
-Gemessen ueber August 2018 bis Mai 2026, Walk-Forward, nach Gebuehren:
+Gemessen ueber August 2017 bis August 2026, Walk-Forward, nach Gebuehren.
+Alle Zahlen in diesem Dokument stammen aus dem Lauf vom 05.08.2026, damit
+nicht zwei Staende nebeneinander stehen:
 
-    Rendite        +136,1 %      (11,7 % im Jahr)
-    Rueckgang         8,72 %
-    Sharpe             1,51
-    Trades              156      davon 39 Gewinner
+    Rendite        +159,5 %      (11,22 % im Jahr)
+    Rueckgang         9,74 %
+    Sharpe             1,50
+    Trades              156      Erwartung +1,043 R je Trade
 
 ## Was noch fehlt
 
 | Gate | Wert | Schwelle |
 |---|---|---|
-| Messlatte | 11,7 % p.a. | 15 % p.a. |
-| Deflated Sharpe | 0,865 | 0,95 |
+| Messlatte | 11,22 % p.a. | 15 % p.a. |
+| Deflated Sharpe | 0,830 | 0,95 |
 
-Monte-Carlo besteht seit der Gewichtungskorrektur (siehe unten) mit 8,51 %
+Monte-Carlo besteht seit der Gewichtungskorrektur (siehe unten) mit 9,72 %
 gegen 15 %.
 
-Die Messlatte selbst wird **vierfach uebertroffen** (136 % gegen 34 %). Sie
+Die Messlatte selbst wird **vierfach uebertroffen** (159 % gegen 34 %). Sie
 scheitert an der zweiten Bedingung, der Mindestjahresrendite - einer
 wirtschaftlichen Entscheidung, keiner statistischen.
 
@@ -164,7 +166,7 @@ oder ein Sharpe je Trade von 0,27 statt 0,242.
 
 Der Preis jeder weiteren Hypothese bleibt:
 
-    bei  76 Versuchen   DSR 0,841
+    bei  81 Versuchen   DSR 0,835
     bei 120 Versuchen   DSR 0,765
     bei 400 Versuchen   DSR 0,519
 
@@ -230,17 +232,86 @@ auf Tageskerzen, die aus Viertelstunden gebaut wurden, ergibt 7,42 % gegen
 7,41 % auf den geholten Tageskerzen - identisch bis auf die zweite
 Nachkommastelle.
 
+## Haelt der Vorteil ueber vierzehn Jahre?
+
+Ja. Das ist der belastbarste Befund im ganzen Dokument. BTC allein,
+dieselbe Regel, zehn verschiedene Startpunkte:
+
+    ab        Jahre  Trades    p.a.       DD    R je Trade   SR je Trade
+    2012       14,6    121    8,60 %   14,68 %     0,729        0,215
+    2014       12,6    104    8,83 %   14,68 %     0,718        0,214
+    2016       10,6     87    8,38 %   13,04 %     0,775        0,212
+    2018        8,6     73   10,52 %   13,04 %     0,826        0,239
+    2020        6,3     56    6,29 %   13,23 %     0,464        0,196
+    2021        5,6     49    7,00 %    7,87 %     0,499        0,215
+
+Der Sharpe je Trade liegt in **jedem** Fenster zwischen 0,196 und 0,242. Der
+Vorteil ist nicht in 2017 entstanden und 2021 verschwunden - er ist ueber
+vierzehn Jahre da, in derselben Groesse. Was schwankt, ist nur, wie stark
+sich das im Jahresergebnis niederschlaegt.
+
+Damit ist auch klar, warum die Zahlen weiter oben am Zeitraum haengen: nicht
+weil der Vorteil kaeme und ginge, sondern weil sich in guten Jahren mehr
+daraus machen laesst.
+
+Und es zeigt die eigentliche Grenze: **Vierzehn Jahre BTC ergeben 121
+Trades.** Die Regel feuert rund achtmal im Jahr. Es gibt keinen Datensatz,
+der daraus 200 Trades macht.
+
+## Zehn. Der Stop als Massstab statt als Notbremse
+
+Die letzte Idee mit Aussicht: Wenn nicht mehr Trades, dann bessere. Noetig
+waren 0,27 statt 0,242 Sharpe je Trade - 12 %, keine Verdopplung. Der feste
+4-%-Stop misst das Risiko in ruhigen und wilden Phasen verschieden; ein Stop
+in ATR haette ueberall dieselbe Bedeutung.
+
+    Stop               Trades    p.a.       DD     R je Trade  SR je Trade    DSR
+    4 % fest             156   11,22 %    9,74 %     1,043       0,242      0,830
+    2,0 x ATR(14)        154   10,23 %   11,93 %     0,548       0,228      0,717
+    3,0 x ATR(14)        145   10,44 %   13,31 %     0,398       0,239      0,744
+    4,0 x ATR(14)        125    9,19 %   10,89 %     0,309       0,237      0,606
+    5,0 x ATR(20)         86    9,12 %    8,07 %     0,320       0,293      0,642
+
+Widerlegt - aber die letzte Zeile erklaert, **warum** alles bisher
+Gemessene scheitert. Der weite ATR-Stop erreicht tatsaechlich 0,293 Sharpe je
+Trade, mehr als die noetigen 0,27. Nur bleiben davon 86 Trades uebrig statt
+156, und der Deflated Sharpe faellt trotzdem.
+
+Der Deflated Sharpe haengt naeherungsweise am **Produkt** aus beidem:
+
+    4 % fest         0,242 x sqrt(155) = 3,01
+    2,0 x ATR(14)    0,228 x sqrt(153) = 2,82
+    5,0 x ATR(20)    0,293 x sqrt( 85) = 2,70
+
+Der bisherige Kandidat steht auf dem hoechsten Wert. Jede Richtung, in die
+gemessen wurde - mehr Maerkte, feinere Kerzen, engere oder weitere Stops,
+mehr Historie -, senkt das Produkt. Qualitaet je Trade und Zahl der Trades
+gehen gegeneinander, und zwar staerker als sqrt.
+
 ## Was daraus folgt
 
-Drei Quellen fuer mehr Trades sind gemessen und alle drei kosten mehr
-Qualitaet, als sie an Zahl bringen. Was **nicht** geprueft ist:
+**Diese Regel ist ausgemessen.** Zehn Richtungen, alle gemessen, keine
+naeher am Ziel. Der Kandidat sitzt auf einem lokalen Hoechstwert, und die
+Luecke im Deflated Sharpe - 0,83 gegen 0,95 - ist durch Nachstellen an
+dieser Regel nicht zu schliessen.
 
-* mehr Historie auf den guten Maerkten - BTC-Tageskerzen reichen bis 2012
-  zurueck, genutzt wird erst ab 2017, weil ETH nicht frueher beginnt. Ein
-  Portfolio, dessen Beine zu verschiedenen Zeiten dazukommen, waere zulaessig
-  und wuerde rund 40 % mehr Historie auf dem besten Markt erschliessen.
-* ein hoeherer Sharpe je Trade statt mehr Trades - 0,27 statt 0,242 wuerde
-  reichen. Das ist eine Verbesserung von 12 %, nicht von 100 %.
+Was der Deflated Sharpe eigentlich verlangt, in Worten: "Sei dir nach 81
+Versuchen zu 95 % sicher, dass das kein Zufall war." Fuer eine Regel mit
+17 Trades im Jahr braucht das rund zwoelf Jahre auf zwei Maerkten. Es gibt
+neun.
 
-Der zweite Weg ist der ehrlichere: Er verlangt eine bessere Regel, keinen
-groesseren Datensatz.
+Der Vorteil ist also wahrscheinlich echt - vierzehn Jahre stabiler Sharpe je
+Trade sind ein starkes Argument -, nur ist er zu **selten**, um ihn auf
+diesem Niveau zu beweisen. Das ist etwas anderes als "funktioniert nicht",
+und die Unterscheidung gehoert dem Nutzer gesagt, nicht weggerundet.
+
+Drei Wege, und nur zwei davon sind ehrlich:
+
+1. **Weitersuchen** nach einer Ertragsquelle mit mehr Gelegenheiten. Kostet
+   Versuche, und jeder hebt die Huerde weiter.
+2. **Demo handeln.** Die Gates schuetzen echtes Geld. Ein Demokonto kostet
+   keines, und jeder Trade dort ist echte Evidenz ausserhalb der Stichprobe -
+   der einzige Weg, n zu erhoehen, ohne Qualitaet einzutauschen. Nach dem
+   Plan des Nutzers stehen ohnehin 30 Tage Demo vor dem ersten echten Euro.
+3. Die Schwelle senken. **Kommt nicht in Frage** - dann misst das ganze
+   System nur noch sich selbst.
