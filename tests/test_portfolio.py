@@ -80,18 +80,31 @@ class TestZusammenlegen:
         # unabhaengig von den Startwerten.
         assert zusammen.return_pct == pytest.approx(20.0, abs=0.1)
 
-    def test_kuerzt_auf_die_kuerzeste(self) -> None:
-        """Sonst sind gegen Ende weniger Maerkte im Topf.
+    def test_ungleiche_laenge_ist_ein_fehler(self) -> None:
+        """Frueher wurde hier stillschweigend gekuerzt. Das war falsch.
 
-        Der Rueckgang stiege dort kuenstlich an, und das Ergebnis waere ein
-        Vergleich des Portfolios mit sich selbst.
+        Eine Kapitalkurve traegt keine Zeitstempel - Punkt 0 ist bei jeder
+        einfach der Anfang. Kuerzen heisst deshalb: die **ersten** N Punkte
+        der laengeren Kurve nehmen. Bei BTC ab 2013 und ETH ab 2018 legte das
+        BTCs Jahre 2013 bis 2020 neben ETHs Jahre 2018 bis 2026.
+
+        Das Ergebnis war ein Portfolio-Rueckgang unter dem jedes Einzelmarkts
+        und sah damit genau wie der erhoffte Streuungsgewinn aus. Es war eine
+        Buchhaltungspanne. Ungleiche Laenge muss knallen, nicht schweigen.
         """
         lang = np.linspace(1.0, 2.0, 300)
         kurz = np.linspace(1.0, 1.5, 100)
 
-        zusammen = combine_curves({"lang": lang, "kurz": kurz}, years=1.0)
+        with pytest.raises(ValueError, match="unterschiedlich lang"):
+            combine_curves({"lang": lang, "kurz": kurz}, years=1.0)
 
-        assert len(zusammen.curve) == 100
+    def test_die_fehlermeldung_nennt_die_laengen(self) -> None:
+        """Ohne die Zahlen weiss der Aufrufer nicht, was er zuschneiden soll."""
+        with pytest.raises(ValueError, match=r"btc=300.*eth=100|eth=100.*btc=300"):
+            combine_curves(
+                {"btc": np.linspace(1.0, 2.0, 300), "eth": np.linspace(1.0, 1.5, 100)},
+                years=1.0,
+            )
 
     def test_gewichte_wirken(self) -> None:
         steigend = np.linspace(1.0, 2.0, 100)

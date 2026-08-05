@@ -8,19 +8,31 @@ kleineren Rueckgang als jeder von ihnen einzeln - **ohne dafuer Rendite
 abzugeben**. Das ist keine Verfeinerung einer Regel, sondern eine Eigenschaft
 des Rechnens mit mehreren Zeitreihen.
 
-Gemessen ueber 2017 bis 2026, dieselbe Regel auf beiden Maerkten:
+Gemessen ueber 2017-08 bis 2026-08 - der Zeitraum, den **beide** Maerkte
+abdecken -, dieselbe Regel auf beiden, Vola-Ziel 50 %:
 
-    BTC allein      2,8 % p.a.   12,47 % Rueckgang   Sharpe 0,46
-    ETH allein      5,7 % p.a.    6,64 % Rueckgang   Sharpe 0,91
-    beide zusammen  4,3 % p.a.    4,93 % Rueckgang   Sharpe 0,83
+    BTC allein       8,6 % p.a.   30,73 % Rueckgang   Sharpe 0,42
+    ETH allein      17,1 % p.a.   13,76 % Rueckgang   Sharpe 0,90
+    beide zusammen  13,3 % p.a.   11,51 % Rueckgang   Sharpe 0,82
 
 Der Rueckgang des Doppels ist kleiner als der jedes einzelnen Marktes. Genau
 darin liegt der Gewinn: Weil das Rueckgang-Gate danach wieder Luft hat, laesst
 sich der Einsatz erhoehen - und bei gleichem Risiko wie BTC allein kommt am
-Ende das Dreifache heraus.
+Ende ein Vielfaches heraus.
 
-    BTC allein bei 12,5 % Rueckgang    2,8 % p.a.
-    beide bei 11,1 % Rueckgang         9,0 % p.a.
+    BTC allein, auf 11,5 % Rueckgang gestutzt    rund 3 % p.a.
+    beide bei 11,5 % Rueckgang                       13,3 % p.a.
+
+Eine frueher hier notierte Fassung dieser Tabelle war falsch
+------------------------------------------------------------
+Sie nannte 12,47 % Rueckgang fuer BTC und 4,93 % fuer das Doppel. Beide Zahlen
+stammten aus einer Rechnung, die BTCs Kurve ab 2013 und ETHs ab 2018
+punktweise uebereinandergelegt hat - zwei verschiedene Zeitraeume. Der
+schmeichelhafte 4,93-%-Wert war die Panne selbst, nicht ihr Gegenbeweis.
+
+Die Richtung stimmt trotzdem: Auch sauber gerechnet liegt der Rueckgang des
+Doppels 2,25 Prozentpunkte unter dem des besseren Einzelmarktes. Nur ist BTC
+allein deutlich schlechter, als es damals aussah.
 
 Was diese Rechnung nicht ist
 ----------------------------
@@ -77,9 +89,18 @@ def combine_curves(
     Markt, dessen Kurve zufaellig hoeher beginnt, ein groesseres Gewicht
     bekommen, als ihm zusteht.
 
-    Die Kurven werden auf die kuerzeste gekuerzt. Sie unterschiedlich lang
-    zusammenzulegen hiesse, dass gegen Ende weniger Maerkte im Topf sind und
-    der Rueckgang dort kuenstlich steigt - ein Vergleich mit sich selbst.
+    **Die Kurven muessen denselben Zeitraum abdecken.** Eine nackte Kurve
+    traegt keine Zeitstempel - Punkt 0 ist bei jeder einfach der Anfang. Wer
+    hier unterschiedlich lange Kurven hineingibt, legt deshalb nicht zwei
+    Maerkte uebereinander, sondern zwei verschiedene Zeitraeume.
+
+    Genau das ist mir passiert: BTC ab 2013 mit 4698 Punkten, ETH ab 2018 mit
+    2598. Die Funktion hat stillschweigend auf 2598 gekuerzt und damit BTCs
+    Jahre 2013 bis 2020 neben ETHs Jahre 2018 bis 2026 gelegt. Das Ergebnis -
+    ein Rueckgang kleiner als bei jedem Einzelmarkt - sah nach Streuungsgewinn
+    aus und war eine Buchhaltungspanne. Deshalb ist ungleiche Laenge jetzt ein
+    Fehler und keine stille Kuerzung: Der Aufrufer schneidet seine Daten auf
+    den gemeinsamen Zeitraum zu, bevor er hierher kommt.
     """
     if not curves:
         raise ValueError("Ohne Kurven gibt es kein Portfolio")
@@ -88,7 +109,17 @@ def combine_curves(
     if not brauchbar:
         raise ValueError("Keine der Kurven ist auswertbar")
 
-    laenge = min(len(k) for k in brauchbar.values())
+    laengen = {name: len(k) for name, k in brauchbar.items()}
+    if len(set(laengen.values())) > 1:
+        raise ValueError(
+            "Die Kurven sind unterschiedlich lang "
+            + ", ".join(f"{n}={ln}" for n, ln in sorted(laengen.items()))
+            + " - dann decken sie nicht denselben Zeitraum ab. Zuerst die "
+            "Kursdaten auf den gemeinsamen Zeitraum zuschneiden, dann "
+            "zusammenlegen."
+        )
+
+    laenge = next(iter(laengen.values()))
     gewichte = weights or {name: 1.0 for name in brauchbar}
     summe = sum(gewichte.get(name, 0.0) for name in brauchbar)
     if summe <= 0:
