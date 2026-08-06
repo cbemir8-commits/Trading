@@ -962,83 +962,89 @@ def _feldgrenzen(feld, *, standard: tuple[int, int]) -> tuple[int, int]:
     return unten, oben
 
 
-def _vary_periods(genome: Genome, variation: float):
-    """Erzeugt Nachbar-Genome mit variierten Indikatorperioden.
+def skaliere_perioden(genome: Genome, faktor: float) -> Genome | None:
+    """Alle Perioden eines Genoms mit demselben Faktor verschieben.
 
-    Jede Periode wird einmal nach oben und einmal nach unten verschoben. Werte
-    ausserhalb der erlaubten Grenzen werden uebersprungen - dort haette das
-    Genom ohnehin nicht validiert.
+    Gibt ``None`` zurueck, wenn dabei nichts anderes herauskaeme - etwa weil
+    der Faktor zu nah an 1 liegt oder alle Perioden schon an ihren Grenzen
+    stehen.
 
-    **Alle** Abschnitte, und zwar mit demselben Faktor. Hier standen einmal
-    nur ``entry_long``, ``entry_short`` und ``filters``, und das machte die
-    Nachbarn zu etwas, das die Strategie nie war: Der Spitzenkandidat steigt
-    ueber dem 50-Tage-Schnitt ein und darunter wieder aus. Sein "Nachbar"
-    hatte Einstieg bei SMA(40) und Ausstieg weiterhin bei SMA(50) - eine
-    Regel, die sich selbst widerspricht und die niemand handeln wuerde.
+    **Alle** Abschnitte. Hier wirkten einmal nur ``entry_long``,
+    ``entry_short`` und ``filters``, und das machte die Nachbarn zu etwas,
+    das die Strategie nie war: Der Spitzenkandidat steigt ueber dem
+    50-Tage-Schnitt ein und darunter wieder aus. Sein "Nachbar" hatte
+    Einstieg bei SMA(40) und Ausstieg weiterhin bei SMA(50) - eine Regel, die
+    sich selbst widerspricht und die niemand handeln wuerde.
 
-    Geprueft werden soll, ob die Strategie auf einem Plateau steht. Dafuer
-    muss der Nachbar **dieselbe Strategie mit anderen Zahlen** sein, nicht
-    eine halb verstellte. Die Konfluenz gehoert aus demselben Grund dazu: Sie
-    bestimmt beim Spitzenkandidaten die Positionsgroesse und blieb bisher
-    voellig ungeprueft.
+    Die Konfluenz gehoert aus demselben Grund dazu: Sie bestimmt beim
+    Spitzenkandidaten die Positionsgroesse und blieb bisher voellig
+    ungeprueft. Das Messfenster der Vola-Steuerung ebenso - es ist eine
+    Periode wie jede andere und laesst sich genauso ueberanpassen.
 
-    Das Messfenster der Vola-Steuerung (``sizing.vol_period``) wird
-    mitverschoben. Es ist eine Periode wie jede andere und laesst sich
-    genauso ueberanpassen.
+    Als eigene Funktion, weil zwei Aufrufer sie brauchen: das Plateau-Gate
+    und die Landschaftskarte (``research/landschaft.py``). Wuerde jeder
+    seine eigene Skalierung mitbringen, verglichen sie verschiedene Dinge -
+    der Fehler, der in diesem Projekt schon viermal aufgetreten ist.
     """
     from strategy.indicators import REGISTRY
 
+    payload = genome.model_dump(mode="json")
+    changed = False
+
+    for section in (
+        "entry_long", "entry_short", "exit_long", "exit_short",
+        "filters", "konfluenz",
+    ):
+        for condition in payload.get(section, []):
+            for side in ("left", "right"):
+                operand = condition[side]
+                if operand["kind"] != "indicator":
+                    continue
+                _, spec = REGISTRY[operand["name"]]
+                for key, value in list(operand["params"].items()):
+                    low, high = spec.param_bounds[key]
+                    candidate = max(low, min(high, round(value * faktor)))
+                    if candidate != value:
+                        operand["params"][key] = candidate
+                        changed = True
+
+    if payload["stop"]["kind"] == "atr":
+        low, high = 5, 50
+        candidate = max(low, min(high, round(payload["stop"]["atr_period"] * faktor)))
+        if candidate != payload["stop"]["atr_period"]:
+            payload["stop"]["atr_period"] = candidate
+            changed = True
+
+    sizing = payload.get("sizing") or {}
+    if sizing.get("vol_period"):
+        # Grenzen aus dem Genom holen, nicht danebenschreiben. Zwei
+        # Stellen mit derselben Zahl laufen frueher oder spaeter
+        # auseinander - in diesem Projekt schon viermal geschehen.
+        feld = SizingSpec.model_fields["vol_period"]
+        low, high = _feldgrenzen(feld, standard=(5, 200))
+        candidate = max(low, min(high, round(sizing["vol_period"] * faktor)))
+        if candidate != sizing["vol_period"]:
+            sizing["vol_period"] = candidate
+            changed = True
+
+    if not changed:
+        return None
+    try:
+        return Genome.model_validate(payload)
+    except Exception:
+        return None
+
+
+def _vary_periods(genome: Genome, variation: float):
+    """Die beiden direkten Nachbarn: einmal schneller, einmal langsamer."""
     seen: set[str] = {genome.genome_id}
 
-    for factor in (1 - variation, 1 + variation):
-        payload = genome.model_dump(mode="json")
-        changed = False
-
-        for section in (
-            "entry_long", "entry_short", "exit_long", "exit_short",
-            "filters", "konfluenz",
-        ):
-            for condition in payload.get(section, []):
-                for side in ("left", "right"):
-                    operand = condition[side]
-                    if operand["kind"] != "indicator":
-                        continue
-                    _, spec = REGISTRY[operand["name"]]
-                    for key, value in list(operand["params"].items()):
-                        low, high = spec.param_bounds[key]
-                        candidate = max(low, min(high, round(value * factor)))
-                        if candidate != value:
-                            operand["params"][key] = candidate
-                            changed = True
-
-        if payload["stop"]["kind"] == "atr":
-            low, high = 5, 50
-            candidate = max(low, min(high, round(payload["stop"]["atr_period"] * factor)))
-            if candidate != payload["stop"]["atr_period"]:
-                payload["stop"]["atr_period"] = candidate
-                changed = True
-
-        sizing = payload.get("sizing") or {}
-        if sizing.get("vol_period"):
-            # Grenzen aus dem Genom holen, nicht danebenschreiben. Zwei
-            # Stellen mit derselben Zahl laufen frueher oder spaeter
-            # auseinander - in diesem Projekt schon viermal geschehen.
-            feld = SizingSpec.model_fields["vol_period"]
-            low, high = _feldgrenzen(feld, standard=(5, 200))
-            candidate = max(low, min(high, round(sizing["vol_period"] * factor)))
-            if candidate != sizing["vol_period"]:
-                sizing["vol_period"] = candidate
-                changed = True
-
-        if not changed:
+    for faktor in (1 - variation, 1 + variation):
+        neighbour = skaliere_perioden(genome, faktor)
+        if neighbour is None or neighbour.genome_id in seen:
             continue
-        try:
-            neighbour = Genome.model_validate(payload)
-        except Exception:
-            continue
-        if neighbour.genome_id not in seen:
-            seen.add(neighbour.genome_id)
-            yield neighbour
+        seen.add(neighbour.genome_id)
+        yield neighbour
 
 
 # ---------------------------------------------------------------------------

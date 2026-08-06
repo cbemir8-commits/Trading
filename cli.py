@@ -2403,5 +2403,92 @@ def abgleich(
     raise typer.Exit(1)
 
 
+@app.command()
+def landschaft(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Plateau oder Grat - wie sieht die Gegend um den Kandidaten aus?
+
+    Das Gate ``Parameter-Plateau`` prueft genau zwei Nachbarn. Daraus laesst
+    sich nicht ablesen, ob ein Kandidat auf einer Nadelspitze sitzt oder am
+    Rand einer breiten Hochebene - und das sind sehr verschiedene Lagen.
+
+    Diese Karte tastet die Periode ueber den halben bis doppelten Wert ab und
+    zeigt die Form.
+
+    **Kein Optimierer.** Wer die Karte liest und den besten Punkt zum neuen
+    Kandidaten erklaert, hat genau die Ueberanpassung begangen, gegen die das
+    Plateau-Gate gebaut wurde. Die Karte beantwortet eine andere Frage:
+    Traegt diese Regelfamilie ueberhaupt?
+
+    Jeder abgetastete Punkt zaehlt als Versuch und hebt die Huerde des
+    Deflated Sharpe. Der Zaehler wird deshalb erhoeht.
+    """
+    from decimal import Decimal
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range
+    from research.admission import load_trials, save_trials
+    from research.landschaft import kartieren
+    from research.seeds import spitzenkandidat
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    frames = common_range(roh)
+    configs = {
+        s: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(s)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+        )
+        for s in symbole
+    }
+
+    genome = spitzenkandidat()
+    erster = next(iter(frames.values()))
+    console.print(
+        f"\n[bold]Landschaft[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Strategie  {genome.name}\n"
+        f"  Zeitraum   {erster['open_time'].iloc[0]:%Y-%m} bis "
+        f"{erster['open_time'].iloc[-1]:%Y-%m}\n"
+    )
+
+    karte = kartieren(genome, frames, configs)
+    console.print(karte.tabelle())
+
+    trials_path = Path(settings.paths.state) / "trials.json"
+    neue = max(0, len(karte.punkte) - 1)  # der Kandidat selbst zaehlt nicht neu
+    vorher = load_trials(trials_path)
+    save_trials(trials_path, vorher + neue)
+
+    farbe = "green" if "Plateau" in karte.urteil() else "yellow"
+    console.print(f"\n[{farbe}]{karte.urteil()}[/]")
+    console.print(
+        f"[dim]{len(karte.profitabel)} von {len(karte.punkte)} Punkten "
+        f"profitabel. Versuchszaehler {vorher} -> {vorher + neue}.[/]\n"
+    )
+    console.print(
+        "[dim]Die Karte sagt, ob die Regelfamilie traegt - nicht, welchen "
+        "Punkt man nehmen soll. Den besten auszuwaehlen waere genau die "
+        "Ueberanpassung, gegen die das Plateau-Gate gebaut wurde.[/]"
+    )
+
+
 if __name__ == "__main__":
     app()

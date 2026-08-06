@@ -4,7 +4,7 @@ Diese Datei haelt fest, was gemessen wurde und welche Wege damit
 ausgeschlossen sind. Sie ist kein Champion - `champion.json` entsteht nur,
 wenn alle elf Gates bestanden sind.
 
-**Stand: 8 von 11. Nach 81 gepruefen Hypothesen.**
+**Stand: 8 von 11. Nach 92 gepruefen Hypothesen.**
 
 Bis zum 06.08.2026 stand hier 9 von 11. Der Rueckschritt kommt nicht von
 einer neuen Hypothese, sondern davon, dass der Backtest jetzt die
@@ -146,7 +146,7 @@ Die Uhr des Officers zeigt dabei auf die verarbeitete Kerze. Zeigte sie auf
 die Wirklichkeit, laegen alle 2830 Kerzen an einem Tag und die Tagesgrenze
 griffe nie.
 
-## Der fuenfte Befund: Die 50 steht auf einer Kante
+## Der fuenfte Befund: Das Plateau-Gate hatte selbst einen Fehler
 
 Das Parameter-Plateau ist seit dem 06.08.2026 offen. Bevor ich daraus etwas
 schliesse, habe ich das Gate selbst geprueft - und dort einen Fehler
@@ -180,14 +180,68 @@ Maerkten, damit nicht der Einzelmarkt-Zuschnitt des Gates die Antwort gibt:
     Nachbar   (40)   +1138,08       -58,67     +539,70   profitabel
     Nachbar   (60)      -33,28       -76,58      -54,93   VERLUST
 
-Der Befund steht also, und er ist unangenehm: **SMA 40 gewinnt, SMA 50
-gewinnt, SMA 60 verliert.** Das ist kein Plateau, das ist ein Abhang. Die
-Regelfamilie ist gegen ihre eigene Periodenwahl nicht robust.
+Der Befund des Gates steht also: **SMA 40 gewinnt, SMA 50 gewinnt, SMA 60
+verliert.**
 
-Auffaellig ist auch die Streuung von Nachbar 1: zehnfacher Gewinn auf BTC,
-Verlust auf ETH. Wo dieselbe Regel auf zwei verwandten Maerkten so weit
-auseinanderlaeuft, traegt die Periodenwahl mehr zum Ergebnis bei als der
-gemessene Vorteil.
+**Was ich daraus geschlossen habe, war falsch.** Hier stand: "Das ist kein
+Plateau, das ist ein Abhang. Die Regelfamilie ist gegen ihre eigene
+Periodenwahl nicht robust." Das war aus **zwei** Messpunkten geschlossen -
+genau die Art Verallgemeinerung, die ich an anderer Stelle in diesem
+Dokument kritisiere. Die Karte im naechsten Abschnitt zeigt etwas anderes.
+
+Auffaellig bleibt die Streuung von Nachbar 1: zehnfacher Gewinn auf BTC,
+Verlust auf ETH.
+
+## Der sechste Befund: Es ist ein Plateau - der Kandidat sitzt am Rand
+
+Zwei Messpunkte koennen nicht unterscheiden, ob jemand auf einer Nadelspitze
+sitzt oder am Rand einer breiten Hochebene. ``cli landschaft`` tastet die
+Periode vom halben bis zum doppelten Wert ab. Auf BTC + ETH, August 2017 bis
+August 2026:
+
+    Faktor  Leitperiode  Trades      Gewinn
+      0,50          100     103      377,94  +
+      0,60          120     168      844,11  +
+      0,70          140     128      589,66  +
+      0,80          160     121      539,70  +
+      0,90          180      98      539,68  +
+      1,00          200      93      475,85  +   <== Kandidat
+      1,10          220      84      219,12  +
+      1,25          250      45      -46,59  -
+      1,40          280      41       -5,38  -
+      1,60          320      80       -4,79  -
+      1,80          360      77      +16,81  +
+      2,00          400      71      -19,15  -
+
+**Sieben zusammenhaengende profitable Punkte**, und der Kandidat liegt
+darin. Die Regelfamilie traegt also ueber einen breiten Bereich - von
+halber bis leicht ueber voller Periodenlaenge. Das ist das Gegenteil dessen,
+was ich einen Durchlauf zuvor behauptet hatte.
+
+Der Kandidat sitzt allerdings am **rechten Rand** dieser Hochebene: rechts
+von ihm liegt nur noch ein profitabler Punkt, links sechs. Genau das
+berichtet das Gate mit seinem "1 von 2" - es prueft plus/minus 20 %, und die
+Seite nach oben faellt schon ab.
+
+Der Ausreisser bei Faktor 1,80 ist keine zweite Hochebene, sondern Rauschen:
+ein einzelner Punkt mit +16,81 zwischen lauter Verlusten.
+
+**Was auffaellt und nicht genutzt wird.** Die schnelleren Punkte liefern
+deutlich mehr Trades - 168 bei Faktor 0,60 gegen 93 beim Kandidaten - und
+sind zugleich profitabler. Mehr Trades derselben Guete waeren genau das, was
+dem Deflated Sharpe fehlt (siehe "Woran der Deflated Sharpe wirklich
+haengt").
+
+Trotzdem wird der Parameter **nicht** verschoben. Den besten Punkt aus einer
+Karte zu waehlen, die auf denselben Daten entstanden ist, ist Ueberanpassung
+mit mehr Nachkommastellen. Der legitime Weg waere, die Periode **innerhalb**
+des Walk-Forward je Trainingsfenster neu zu bestimmen und im Testfenster zu
+verwenden - dann waere sie out-of-sample gewaehlt. Das ist eine eigene
+Hypothese und eine eigene Baustelle.
+
+Die zwoelf Punkte sind in den Versuchszaehler eingegangen: 81 -> 92. Der
+Deflated Sharpe faellt dadurch von 0,820 auf 0,800. Wer eine Landschaft
+ansieht, hat sie gesehen - auch wenn er nichts daraus auswaehlt.
 
 **Was ich nicht getan habe.** Naheliegend waere, das Gate mit mehr
 Stuetzpunkten zu rechnen - bei nur zwei Nachbarn ist die Schwelle 0,6
@@ -224,7 +278,7 @@ nicht zwei Staende nebeneinander stehen:
 | Gate | Wert | Schwelle |
 |---|---|---|
 | Messlatte | 11,22 % p.a. | 15 % p.a. |
-| Deflated Sharpe | 0,820 | 0,95 |
+| Deflated Sharpe | 0,800 | 0,95 |
 | Parameter-Plateau | 0,500 | 0,600 |
 
 Das Parameter-Plateau ist seit dem 06.08.2026 offen - nicht weil sich die
@@ -360,7 +414,7 @@ oder ein Sharpe je Trade von 0,27 statt 0,242.
 
 Der Preis jeder weiteren Hypothese bleibt:
 
-    bei  81 Versuchen   DSR 0,835
+    bei  92 Versuchen   DSR 0,800
     bei 120 Versuchen   DSR 0,765
     bei 400 Versuchen   DSR 0,519
 
