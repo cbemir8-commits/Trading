@@ -95,25 +95,34 @@ und verdeckt die echten dahinter. Auch das ist behoben.
 der Boerse, Neustart mitten in einer Position. Dafuer gibt es die Testsuite
 und den Demobetrieb. Was dort noch lag, steht im achten Befund.
 
-## Der achte Befund: Eine Teilfuellung liess die halbe Position ohne Stop
+## Der achte Befund: Was eine Teilfuellung anrichtet
 
-Der erste Fehler in der **Ausfuehrung**, und der einzige, der echtes Geld
-sofort gekostet haette.
+Der erste Fehler in der **Ausfuehrung**. Bei PostOnly-Limits sind
+Teilfuellungen der **Normalfall**, nicht die Ausnahme - die Order liegt am
+Rand des Buchs und wird abgearbeitet, soweit Gegenseite da ist.
 
-Bei PostOnly-Limits sind Teilfuellungen der **Normalfall**, nicht die
-Ausnahme - die Order liegt am Rand des Buchs und wird abgearbeitet, soweit
-Gegenseite da ist. Der Router sicherte korrekt nur die gefuellte Menge ab
-(dafuer gab es sogar einen Test). Aber der **Rest der Einstiegsorder blieb im
-Markt liegen**. Wurde er spaeter gefuellt, wuchs die Position - der Stop
-nicht. Gemessen:
+**Zuerst eine Korrektur an meiner eigenen Darstellung.** Hier stand, die
+halbe Position habe "ohne jede Absicherung" gelaufen. Das war fuer
+Perpetuals **falsch**, und ich hatte es nicht geprueft, bevor ich es
+aufschrieb: Bei Perpetuals haengt der Stop an der **Position**, nicht an
+einer Menge (``set_position_stop``). Waechst die Position, waechst die
+Deckung mit. Nachgemessen, je Marktart:
+
+    PERPETUAL   Stop deckt die ganze Position - aber der Verlust am Stop
+                waere **doppelt so hoch** wie geplant
+    SPOT        Kein Positions-Stop moeglich; dort waere tatsaechlich die
+                halbe Position ungeschuetzt gewesen
+
+Gehandelt werden Perpetuals. Der Schaden war also nicht "ohne Stop", sondern
+**doppeltes Risiko je Trade** - ernst genug, aber etwas anderes. Ich hatte
+aus dem Testergebnis "Stop deckt 0,003" geschlossen, ohne nachzusehen, was
+``set_position_stop`` bei Bybit bedeutet.
+
+Der Ablauf, unveraendert richtig:
 
     Order platziert             0,006
-    halb gefuellt, abgesichert  0,003    Stop deckt 0,003
-    Rest doch noch gefuellt     0,006    Stop deckt weiter 0,003
-                                         -> 0,003 ohne jede Absicherung
-
-Eine Position ohne vollen Stop ist der gefaehrlichste Zustand ueberhaupt -
-das steht seit jeher im Zustandsabgleich beim Start und galt hier trotzdem.
+    halb gefuellt, abgesichert  0,003    Risiko wie geplant
+    Rest doch noch gefuellt     0,006    Risiko doppelt so hoch
 
 **Und ein Folgefehler direkt dahinter.** Beim Bauen des Netzes dagegen fiel
 auf, dass der Notausstieg die Lage nicht rettet: ``emergency_close`` schloss
@@ -139,6 +148,46 @@ ist damit blind fuer alles, was zwischen Entscheidung und Position passiert.
 Der Backtest kennt keine Teilfuellungen: Dort fuellt eine Order ganz oder gar
 nicht. Und im Demobetrieb waere es als "unerklaerlicher Verlust" erschienen,
 nicht als Fehler.
+
+## Der neunte Befund: Die Take-Profits waren doppelt so gross wie die Position
+
+Beim Nachpruefen des achten Befunds gefunden - und dieser wirkt auch bei
+Perpetuals, wo der Positions-Stop den anderen Fehler abgemildert hat.
+
+Die Zielmengen stammen aus ``sized.take_profit_legs``, berechnet aus der
+**bestellten** Groesse. Nach einer halben Fuellung standen dort Ziele ueber
+0,006 bei einer Position von 0,003:
+
+    Position                     0,003
+    Ziel 1  0,003 @ 100395,5
+    Ziel 2  0,001 @ 100992,5
+    Ziel 3  0,002 @ 101888,0
+    Summe                        0,006    - doppelte Ueberdeckung
+
+Reduce-Only faengt den unmittelbaren Schaden ab: Eine ueberzaehlige Order
+kann keine Gegenposition eroeffnen. Der Schaden kommt spaeter - die Orders
+bleiben nach dem Schliessen im Buch liegen und wuerden den **naechsten**
+Trade sofort anschneiden.
+
+Behoben mit zwei Griffen, und die Unterscheidung ist wichtiger, als sie
+aussieht:
+
+* **Deckelung** auf die verbleibende Menge. Sie verhindert die
+  Ueberdeckung - das ist die Sicherheitsgrenze.
+* **Skalierung** mit dem Fuellungsanteil. Sie erhaelt die **Staffelung**.
+
+Beim Testen fiel auf, dass die Deckelung allein schon "sicher" aussieht: Die
+Summe stimmt dann. Aber das erste Bein verschluckt die ganze Position, aus
+drei Zielen wird eines, und die gestaffelte Mitnahme faellt aus. Gemessen:
+
+    nur gedeckelt   1 Ziel  ueber 0,003   - schliesst alles auf einmal
+    skaliert        2 Ziele ueber je 0,001, Rest laeuft weiter
+
+Der Spitzenkandidat hat nur ein Ziel bei 20R und war davon nicht betroffen.
+Fuer jede Strategie mit gestaffelten Zielen macht es den Unterschied
+zwischen "ein Drittel mitnehmen" und "alles schliessen". Der Test dafuer
+prueft deshalb die **Verteilung**, nicht die Summe - eine Pruefung auf die
+Summe waere gruen geblieben.
 
 ## Der vierte Befund: Der Backtest kannte die Verlustgrenzen nicht
 

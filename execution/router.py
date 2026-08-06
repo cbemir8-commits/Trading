@@ -269,10 +269,13 @@ class OrderRouter:
         #
         # Bei PostOnly-Limits sind Teilfuellungen der Normalfall, nicht die
         # Ausnahme. Bleibt der Rest liegen, waechst die Position spaeter ueber
-        # die abgesicherte Menge hinaus - und der Stop deckt nur noch einen
-        # Teil davon. Gemessen: Eine zur Haelfte gefuellte Order ergab nach
-        # dem Nachfuellen eine doppelt so grosse Position mit unveraendertem
-        # Stop; die Haelfte lief ohne Absicherung.
+        # die geplante Groesse hinaus. Gemessen: Eine zur Haelfte gefuellte
+        # Order ergab nach dem Nachfuellen die doppelte Position.
+        #
+        # Bei Perpetuals haengt der Stop an der Position und waechst mit -
+        # der Verlust am Stop ist dann aber doppelt so hoch wie gerechnet.
+        # Auf Spot, wo der Stop eine Order ueber eine Menge ist, liefe die
+        # Haelfte tatsaechlich ungeschuetzt.
         #
         # Vor dem Stop, nicht danach: Ein Stop auf eine Menge zu setzen, die
         # sich im naechsten Moment noch aendern kann, waere von vornherein zu
@@ -341,21 +344,51 @@ class OrderRouter:
 
         Reduce-Only stellt sicher, dass eine Zielorder die Position nur
         verkleinern und niemals versehentlich eine Gegenposition eroeffnen kann.
+
+        **Auf die gefuellte Menge skaliert.** Die Zielmengen in ``sized``
+        stammen aus der **bestellten** Groesse. Wurde nur die Haelfte
+        gefuellt, waeren sie doppelt so gross wie die Position - gemessen:
+        0,006 an Zielen bei 0,003 Position.
+
+        Reduce-Only faengt den unmittelbaren Schaden ab, aber die
+        ueberzaehligen Orders bleiben nach dem Schliessen im Buch liegen und
+        wuerden den **naechsten** Trade sofort anschneiden. Deshalb wird hier
+        skaliert statt sich auf das Aufraeumen zu verlassen.
         """
+        anteil = self._fuellungsanteil(bracket)
+
+        gesamt = Decimal(0)
         for price, qty in bracket.sized.take_profit_legs:
-            if qty <= 0:
+            menge = self.instrument.round_qty(qty * anteil) if anteil != 1 else qty
+            # Nie mehr als noch da ist. Die Rundung je Bein kann sich sonst
+            # aufaddieren, bis die Ziele die Position uebersteigen.
+            menge = min(menge, bracket.remaining_qty - gesamt)
+            if menge < self.instrument.min_order_qty:
                 continue
+
             rounded = self.instrument.round_price(price, side=bracket.signal.side)
             order = self.gateway.place_limit(
                 symbol=self.instrument.symbol,
                 side=bracket.signal.side.opposite,
-                qty=qty,
+                qty=menge,
                 price=rounded,
                 reduce_only=True,
                 post_only=True,
                 order_link_id=new_order_link_id("tp"),
             )
             bracket.take_profit_orders.append(order)
+            gesamt += menge
+
+    def _fuellungsanteil(self, bracket: Bracket) -> Decimal:
+        """Welcher Anteil der bestellten Menge wurde gefuellt?
+
+        1 im Normalfall. Bei einer Teilfuellung entsprechend weniger - und
+        genau um diesen Faktor muessen die Zielmengen kleiner werden.
+        """
+        bestellt = bracket.sized.qty
+        if bestellt <= 0:
+            return Decimal(1)
+        return min(Decimal(1), bracket.filled_qty / bestellt)
 
     # -- Verwaltung waehrend der Haltedauer ----------------------------------
     def on_target_hit(self, bracket: Bracket, *, qty: Decimal) -> None:

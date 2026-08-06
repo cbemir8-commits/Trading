@@ -396,3 +396,89 @@ class TestRiskOfficerIntegration:
 
         assert isinstance(decision, Vetoed)
         assert exchange.calls == [], "Kein Aufruf an die Boerse bei Veto"
+
+
+class TestZieleFolgenDerGefuelltenMenge:
+    """Take-Profits duerfen die Position nie uebersteigen.
+
+    Die Zielmengen in ``sized`` stammen aus der **bestellten** Groesse. Wurde
+    nur die Haelfte gefuellt, waren sie doppelt so gross wie die Position -
+    gemessen: 0,006 an Zielen bei 0,003 Position.
+
+    Reduce-Only faengt den unmittelbaren Schaden ab: Eine ueberzaehlige Order
+    kann keine Gegenposition eroeffnen. Der Schaden kommt spaeter - die Orders
+    bleiben nach dem Schliessen im Buch und wuerden den **naechsten** Trade
+    sofort anschneiden.
+    """
+
+    def test_ziele_uebersteigen_die_position_nicht(
+        self, router: OrderRouter, exchange: FakeExchange, btcusdt: Instrument,
+        risk: RiskSettings,
+    ) -> None:
+        signal = make_signal(entry="99500", stop_pct="0.6")
+        sized = sized_for(signal, btcusdt, risk)
+        bracket = router.open(signal, sized)
+
+        haelfte = btcusdt.round_qty(sized.qty / 2)
+        gefuellt = exchange.fill(bracket.entry_order.order_id, qty=haelfte)
+        router.protect(bracket, filled_qty=gefuellt, fill_price=Decimal("99500"))
+
+        summe = sum(o.qty for o in bracket.take_profit_orders)
+        assert summe <= bracket.remaining_qty, (
+            f"Ziele ueber {summe} bei einer Position von "
+            f"{bracket.remaining_qty} - die ueberzaehligen Orders bleiben "
+            "liegen und schneiden den naechsten Trade an"
+        )
+
+    def test_volle_fuellung_behaelt_die_vollen_ziele(
+        self, router: OrderRouter, exchange: FakeExchange, btcusdt: Instrument,
+        risk: RiskSettings,
+    ) -> None:
+        """Der Normalfall darf sich durch die Skalierung nicht aendern."""
+        bracket = open_and_fill(router, exchange, btcusdt, risk)
+
+        summe = sum(o.qty for o in bracket.take_profit_orders)
+        assert summe == bracket.remaining_qty
+
+    def test_die_staffelung_bleibt_erhalten(self, router, exchange, btcusdt, risk):
+        """Die Deckelung allein reicht nicht.
+
+        Wuerden die Zielmengen nur gedeckelt und nicht skaliert, verschluckte
+        das **erste** Bein die ganze Position: aus drei Zielen wuerde eines,
+        und die gestaffelte Mitnahme faende nicht statt. Die Summe waere dabei
+        unauffaellig - deshalb prueft dieser Test die Verteilung.
+        """
+        signal = make_signal(entry="99500", stop_pct="0.6")
+        sized = sized_for(signal, btcusdt, risk)
+        bracket = router.open(signal, sized)
+
+        haelfte = btcusdt.round_qty(sized.qty / 2)
+        gefuellt = exchange.fill(bracket.entry_order.order_id, qty=haelfte)
+        router.protect(bracket, filled_qty=gefuellt, fill_price=Decimal("99500"))
+
+        assert len(bracket.take_profit_orders) >= 2, (
+            "Nur ein Ziel uebrig - das erste Bein hat die ganze Position "
+            "verschluckt, statt anteilig zu schrumpfen"
+        )
+        erstes = bracket.take_profit_orders[0].qty
+        assert erstes < bracket.remaining_qty, (
+            f"Das erste Ziel ({erstes}) schliesst die ganze Position "
+            f"({bracket.remaining_qty})"
+        )
+
+    def test_zu_kleine_beine_entfallen(
+        self, router: OrderRouter, exchange: FakeExchange, btcusdt: Instrument,
+        risk: RiskSettings,
+    ) -> None:
+        """Ein Bein unter der Mindestmenge waere eine Order, die die Boerse
+        ablehnt - besser gar nicht erst schicken."""
+        signal = make_signal(entry="99500", stop_pct="0.6")
+        sized = sized_for(signal, btcusdt, risk)
+        bracket = router.open(signal, sized)
+
+        winzig = btcusdt.min_order_qty
+        gefuellt = exchange.fill(bracket.entry_order.order_id, qty=winzig)
+        router.protect(bracket, filled_qty=gefuellt, fill_price=Decimal("99500"))
+
+        for order in bracket.take_profit_orders:
+            assert order.qty >= btcusdt.min_order_qty
