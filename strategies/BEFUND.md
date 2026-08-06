@@ -93,7 +93,52 @@ und verdeckt die echten dahinter. Auch das ist behoben.
 
 **Was der Abgleich nicht prueft:** die Ausfuehrung selbst - Fills, Stops an
 der Boerse, Neustart mitten in einer Position. Dafuer gibt es die Testsuite
-und den Demobetrieb.
+und den Demobetrieb. Was dort noch lag, steht im achten Befund.
+
+## Der achte Befund: Eine Teilfuellung liess die halbe Position ohne Stop
+
+Der erste Fehler in der **Ausfuehrung**, und der einzige, der echtes Geld
+sofort gekostet haette.
+
+Bei PostOnly-Limits sind Teilfuellungen der **Normalfall**, nicht die
+Ausnahme - die Order liegt am Rand des Buchs und wird abgearbeitet, soweit
+Gegenseite da ist. Der Router sicherte korrekt nur die gefuellte Menge ab
+(dafuer gab es sogar einen Test). Aber der **Rest der Einstiegsorder blieb im
+Markt liegen**. Wurde er spaeter gefuellt, wuchs die Position - der Stop
+nicht. Gemessen:
+
+    Order platziert             0,006
+    halb gefuellt, abgesichert  0,003    Stop deckt 0,003
+    Rest doch noch gefuellt     0,006    Stop deckt weiter 0,003
+                                         -> 0,003 ohne jede Absicherung
+
+Eine Position ohne vollen Stop ist der gefaehrlichste Zustand ueberhaupt -
+das steht seit jeher im Zustandsabgleich beim Start und galt hier trotzdem.
+
+**Und ein Folgefehler direkt dahinter.** Beim Bauen des Netzes dagegen fiel
+auf, dass der Notausstieg die Lage nicht rettet: ``emergency_close`` schloss
+``bracket.remaining_qty`` - also die **vermerkte** Menge, nicht die
+tatsaechliche. Bei einer auf 0,012 gewachsenen Position schloss er 0,006 und
+meldete Vollzug. Genau im einzigen Fall, in dem beide Zahlen auseinander-
+laufen, tat der Notausstieg das Falsche.
+
+Behoben in zwei Schichten, weil eine hier nicht reicht:
+
+1. ``OrderRouter.protect`` nimmt den Rest der Einstiegsorder aus dem Markt,
+   **bevor** der Stop gesetzt wird. Danach waere er schon zu klein.
+2. ``LiveTrader._manage_open_position`` schliesst sofort, wenn die Position
+   trotzdem groesser ist als abgesichert - mit der tatsaechlichen Menge.
+
+Schicht 2 ist noetig, weil Schritt 1 fehlschlagen kann und der Ausfall
+lautlos waere. Gegenprobe: Baut man beide Korrekturen zurueck, fallen zwei
+der fuenf neuen Tests um.
+
+**Warum das keiner der bisherigen Pruefungen aufgefallen ist.** ``cli
+abgleich`` vergleicht Entscheidungen - Signal, Ausstieg, Kapitalanteil - und
+ist damit blind fuer alles, was zwischen Entscheidung und Position passiert.
+Der Backtest kennt keine Teilfuellungen: Dort fuellt eine Order ganz oder gar
+nicht. Und im Demobetrieb waere es als "unerklaerlicher Verlust" erschienen,
+nicht als Fehler.
 
 ## Der vierte Befund: Der Backtest kannte die Verlustgrenzen nicht
 

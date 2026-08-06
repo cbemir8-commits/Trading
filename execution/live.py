@@ -562,6 +562,48 @@ class LiveTrader:
             self.bracket = None
             return
 
+        if position.size > self.bracket.remaining_qty:
+            # Die Position ist **gewachsen**, obwohl wir nichts gekauft haben.
+            #
+            # Das passiert, wenn ein Rest der Einstiegsorder doch noch gefuellt
+            # wurde - ``OrderRouter.protect`` nimmt ihn zwar aus dem Markt,
+            # aber das kann fehlschlagen. Der Stop deckt dann nur die alte
+            # Menge, und der Rest laeuft ungeschuetzt.
+            #
+            # Eine Position ohne vollen Stop ist der gefaehrlichste Zustand
+            # ueberhaupt. Deshalb wird hier nicht nachgebessert, sondern
+            # sofort geschlossen: Ein unnoetiger Ausstieg kostet Gebuehren,
+            # ein ungeschuetzter Rest kann das Konto kosten.
+            ueberzaehlig = position.size - self.bracket.remaining_qty
+            log.critical(
+                "live.position_gewachsen",
+                erwartet=str(self.bracket.remaining_qty),
+                gefunden=str(position.size),
+                ueberzaehlig=str(ueberzaehlig),
+            )
+            # Die **tatsaechliche** Menge schliessen, nicht die vermerkte -
+            # sonst bliebe genau der ungeschuetzte Rest stehen.
+            self.router.emergency_close(
+                self.bracket,
+                reason="Position groesser als abgesichert",
+                qty=position.size,
+            )
+            self._report(
+                EventKind.WARNING,
+                f"Position war {position.size} statt {self.bracket.remaining_qty} - "
+                f"{ueberzaehlig} lief ohne Stop. Alles sofort geschlossen.",
+                erwartet=self.bracket.remaining_qty,
+                gefunden=position.size,
+            )
+            await self._notify(
+                f"WARNUNG: Position groesser als abgesichert "
+                f"({position.size} statt {self.bracket.remaining_qty}). "
+                "Sofort geschlossen."
+            )
+            self.bracket.state = BracketState.CLOSED
+            self.bracket = None
+            return
+
         if position.size < self.bracket.remaining_qty:
             filled = self.bracket.remaining_qty - position.size
             self.router.on_target_hit(self.bracket, qty=filled)

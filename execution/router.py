@@ -220,6 +220,36 @@ class OrderRouter:
         )
 
     # -- Absicherung ---------------------------------------------------------
+    def _cancel_rest(self, bracket: Bracket) -> None:
+        """Den nicht gefuellten Teil der Einstiegsorder zuruecknehmen.
+
+        Was gefuellt ist, wird abgesichert; der Rest wird nicht mehr gewollt.
+        Die Alternative - den Stop bei jeder Nachfuellung vergroessern - waere
+        aufwendiger und liesse zwischen Fuellung und Anpassung jedes Mal ein
+        Fenster offen, in dem ein Teil ungeschuetzt laeuft.
+
+        Schlaegt das Stornieren fehl, wird es laut protokolliert und der
+        Ablauf geht weiter: Der Stop ist wichtiger. Das Netz dahinter ist die
+        Nachpruefung in ``LiveTrader._manage_open_position``, die eine
+        gewachsene Position erkennt.
+        """
+        order = bracket.entry_order
+        if order is None:
+            return
+        try:
+            self.gateway.cancel_order(
+                symbol=self.instrument.symbol, order_id=order.order_id
+            )
+        except Exception as exc:
+            # Auch der Normalfall landet hier: Eine vollstaendig gefuellte
+            # Order laesst sich nicht mehr stornieren, und Bybit meldet das
+            # als Fehler. Deshalb nur eine Notiz, keine Warnung.
+            log.debug(
+                "router.rest_nicht_storniert",
+                order=order.order_id,
+                grund=str(exc),
+            )
+
     def protect(self, bracket: Bracket, *, filled_qty: Decimal, fill_price: Decimal) -> None:
         """Nach dem Fill: Stop setzen, dann Take-Profits.
 
@@ -234,6 +264,22 @@ class OrderRouter:
         bracket.entry_price = fill_price
         bracket.opened_at = self.clock()
         bracket.state = BracketState.UNPROTECTED
+
+        # **Zuerst den Rest der Einstiegsorder aus dem Markt nehmen.**
+        #
+        # Bei PostOnly-Limits sind Teilfuellungen der Normalfall, nicht die
+        # Ausnahme. Bleibt der Rest liegen, waechst die Position spaeter ueber
+        # die abgesicherte Menge hinaus - und der Stop deckt nur noch einen
+        # Teil davon. Gemessen: Eine zur Haelfte gefuellte Order ergab nach
+        # dem Nachfuellen eine doppelt so grosse Position mit unveraendertem
+        # Stop; die Haelfte lief ohne Absicherung.
+        #
+        # Vor dem Stop, nicht danach: Ein Stop auf eine Menge zu setzen, die
+        # sich im naechsten Moment noch aendern kann, waere von vornherein zu
+        # klein. Ein Fehlschlag hier darf den Stop aber nicht verhindern -
+        # eine ungeschuetzte Position ist schlimmer als eine ueberzaehlige
+        # Order.
+        self._cancel_rest(bracket)
 
         stop_price = self.instrument.round_price(
             bracket.signal.stop_loss, side=bracket.signal.side.opposite
@@ -362,25 +408,35 @@ class OrderRouter:
         log.info("router.einstieg_abgelaufen", preis=str(bracket.signal.entry_price))
 
     # -- Notausstieg ---------------------------------------------------------
-    def emergency_close(self, bracket: Bracket, *, reason: str) -> None:
+    def emergency_close(
+        self, bracket: Bracket, *, reason: str, qty: Decimal | None = None
+    ) -> None:
         """Alles glattstellen. Market-Order, Taker-Gebuehr, sofort.
 
         Hier zaehlt Ausfuehrungssicherheit mehr als die Gebuehr. Wird vom
         Not-Aus im Dashboard und vom Kill-Switch aufgerufen - und wenn das
         Setzen des Stops fehlgeschlagen ist.
+
+        ``qty`` ueberschreibt die Menge aus dem Bracket. Noetig genau dann,
+        wenn beide auseinanderlaufen: Ist die Position an der Boerse groesser
+        als die im Bracket vermerkte, schloesse der Notausstieg nur einen Teil
+        und liesse den Rest ungeschuetzt stehen - im Notfall das Letzte, was
+        man will. Gemessen: Bei einer auf 0,012 gewachsenen Position schloss
+        er 0,006 und meldete Vollzug.
         """
-        log.critical("router.notausstieg", grund=reason, menge=str(bracket.remaining_qty))
+        menge = bracket.remaining_qty if qty is None else qty
+        log.critical("router.notausstieg", grund=reason, menge=str(menge))
 
         try:
             self.gateway.cancel_all(self.instrument.symbol)
         except Exception as exc:
             log.error("router.stornieren_fehlgeschlagen", fehler=str(exc))
 
-        if bracket.remaining_qty > 0:
+        if menge > 0:
             self.gateway.place_market(
                 symbol=self.instrument.symbol,
                 side=bracket.signal.side.opposite,
-                qty=bracket.remaining_qty,
+                qty=menge,
                 reduce_only=True,
             )
         bracket.state = BracketState.CLOSED

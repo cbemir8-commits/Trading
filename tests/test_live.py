@@ -1197,3 +1197,101 @@ class TestAusstiegsbedingungWirdAusgewertet:
         await rig.feed()
 
         assert rig.trader.bracket is not None
+
+
+class TestTeilfuellungLaesstNichtsUngeschuetzt:
+    """Der fuenfte gefundene Fehler - und der erste in der Ausfuehrung.
+
+    Bei PostOnly-Limits sind Teilfuellungen der **Normalfall**. Blieb der
+    Rest der Einstiegsorder danach im Markt liegen und wurde spaeter gefuellt,
+    verdoppelte sich die Position - waehrend der Stop nur die urspruengliche
+    Haelfte deckte. Gemessen:
+
+        Order platziert            0,006
+        halb gefuellt, abgesichert 0,003   Stop deckt 0,003
+        Rest doch noch gefuellt    0,006   Stop deckt weiter 0,003
+                                           -> 0,003 ohne Stop
+
+    Eine Position ohne vollen Stop ist der gefaehrlichste Zustand ueberhaupt -
+    das steht so schon im Zustandsabgleich beim Start.
+
+    Zwei Schichten dagegen: ``OrderRouter.protect`` nimmt den Rest aus dem
+    Markt, und ``_manage_open_position`` schliesst sofort, falls die Position
+    trotzdem waechst.
+    """
+
+    async def test_der_rest_wird_aus_dem_markt_genommen(self, rig: Rig) -> None:
+        rig.strategy.emit(long_below_market())
+        await rig.feed()
+        bracket = rig.trader.bracket
+        assert bracket is not None and bracket.entry_order is not None
+        haelfte = rig.trader.instrument.round_qty(bracket.entry_order.qty / 2)
+
+        rig.exchange.fill(bracket.entry_order.order_id, qty=haelfte)
+        await rig.feed()
+
+        offen = [
+            o for o in rig.exchange.open_orders("BTCUSDT")
+            if not getattr(o, "reduce_only", False)
+        ]
+        assert not offen, (
+            "Der nicht gefuellte Rest liegt noch im Markt - er kann die "
+            "Position spaeter ueber den Stop hinaus vergroessern"
+        )
+
+    async def test_stop_deckt_genau_die_gefuellte_menge(self, rig: Rig) -> None:
+        rig.strategy.emit(long_below_market())
+        await rig.feed()
+        bracket = rig.trader.bracket
+        haelfte = rig.trader.instrument.round_qty(bracket.entry_order.qty / 2)
+
+        rig.exchange.fill(bracket.entry_order.order_id, qty=haelfte)
+        await rig.feed()
+
+        assert rig.exchange.position.size == haelfte
+        assert rig.trader.bracket.remaining_qty == haelfte
+
+    async def test_gewachsene_position_wird_sofort_geschlossen(
+        self, rig: Rig
+    ) -> None:
+        """Das Netz, falls das Stornieren fehlschlaegt.
+
+        Hier wird die Position direkt an der Boerse vergroessert - so, wie es
+        aussaehe, wenn ein Rest doch noch gefuellt worden waere.
+        """
+        bracket = await _open_protected(rig)
+        abgesichert = bracket.remaining_qty
+
+        rig.exchange.position.size = abgesichert * 2
+        await rig.feed()
+
+        assert rig.trader.bracket is None, (
+            "Eine Position groesser als ihr Stop muss sofort geschlossen werden"
+        )
+        assert rig.exchange.position is None
+        assert any("groesser als abgesichert" in m for m in rig.messages)
+
+    async def test_geschrumpfte_position_gilt_weiter_als_ziel(
+        self, rig: Rig
+    ) -> None:
+        """Die Gegenprobe: Kleiner heisst Ziel erreicht, nicht Alarm."""
+        bracket = await _open_protected(rig)
+
+        rig.exchange.fill(bracket.take_profit_orders[0].order_id)
+        await rig.feed()
+
+        assert rig.trader.bracket is not None
+        assert bracket.targets_hit == 1
+        assert not any("groesser als abgesichert" in m for m in rig.messages)
+
+    async def test_volle_fuellung_laeuft_unveraendert(self, rig: Rig) -> None:
+        """Der haeufigste Fall darf sich durch die Korrektur nicht aendern.
+
+        Eine vollstaendig gefuellte Order laesst sich nicht mehr stornieren;
+        der Versuch schlaegt fehl und muss folgenlos bleiben.
+        """
+        bracket = await _open_protected(rig)
+
+        assert bracket.state is BracketState.PROTECTED
+        assert rig.exchange.position.stop_loss is not None
+        assert bracket.take_profit_orders
