@@ -2353,8 +2353,12 @@ def abgleich(
     lang unentdeckt bliebe. Ein Unterschied zwischen Backtest und Betrieb muss
     durch Nebeneinanderlegen gefunden werden, nicht durch Zuschauen.
 
-    Zwei Fehler hat dieser Vergleich bereits gefunden - beide in
-    ``strategies/BEFUND.md`` beschrieben.
+    Verglichen wird die ganze Entscheidungsflaeche: Einstiegssignal,
+    Ausstiegsbedingung und Kapitalanteil. Nur das Signal zu vergleichen
+    genuegte nicht - von den drei bisher gefundenen Abweichungen haette das
+    zwei durchgelassen.
+
+    Alle drei sind in ``strategies/BEFUND.md`` beschrieben.
     """
     from backtest.replay import vergleiche
     from research.seeds import spitzenkandidat
@@ -2383,9 +2387,11 @@ def abgleich(
     if ergebnis.einig:
         console.print(f"[green]{ergebnis.bericht()}[/]\n")
         console.print(
-            "[dim]Der Backtest misst damit das, was im Betrieb passieren "
-            "wird - jedenfalls auf der Signalseite. Die Groessenlogik prueft "
-            "die Testsuite (test_live.py).[/]"
+            "[dim]Einstieg, Ausstieg und Kapitalanteil stimmen auf jedem "
+            "Balken ueberein. Was hier nicht geprueft wird, ist die "
+            "Ausfuehrung selbst - Fills, Stops an der Boerse, Neustart mitten "
+            "in einer Position. Dafuer ist die Testsuite da (test_live.py) "
+            "und der Demobetrieb.[/]"
         )
         return
 

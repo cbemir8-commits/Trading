@@ -11,7 +11,7 @@ fuer den Zeitraum ab August 2017. Laesst man die ersten zweieinhalb Jahre
 weg, sind es 8 von 11 und 7,4 % im Jahr statt 11,2 %. Siehe
 "Wie viel haengt am Zeitraum" weiter unten.
 
-## Zwei Fehler, die den Backtest wertlos gemacht haetten
+## Drei Fehler, die den Backtest wertlos gemacht haetten
 
 Gefunden am 05.08.2026, nachdem ich Backtest und Livebetrieb zum ersten Mal
 **nebeneinandergelegt** habe (``backtest/replay.py``, ``cli abgleich``).
@@ -49,14 +49,46 @@ Der Roboter haette nach seinem ersten Trade praktisch aufgehoert zu handeln.
 Der Spitzenkandidat handelt ohne Sperrfrist und war nicht betroffen - das ist
 Glueck, kein Verdienst.
 
+**3. Die Ausstiegsbedingung wurde im Betrieb nie ausgewertet.**
+
+Die Engine schliesst 38,5 % aller Trades ueber ``should_exit`` - "raus, wenn
+der Kurs unter den Schnitt faellt". Im Livebetrieb kam dieser Aufruf
+ueberhaupt nicht vor. Jede Position waere bis zum Stop oder ins Ziel gelaufen,
+und aus "dem Trend folgen, raus wenn er bricht" wuerde "wetten und den Stop
+abwarten". Derselbe Kandidat, einmal mit und einmal ohne:
+
+                          Trades    p.a.      DD     Sharpe    DSR
+    mit Ausstieg             156   11,22 %   9,74 %   1,50    0,820
+    ohne (der Betrieb)       124    8,96 %  10,33 %   1,32    0,712
+
+Der Anteil der Trades, die am Stop enden, steigt von 42,9 % auf 72,6 %.
+
 **Warum das nicht durch Zuschauen aufgefallen waere.** Genau darauf hatte der
 Abschnitt "Was Demo-Handel beweisen kann" schon hingewiesen: Bei 17 Trades im
 Jahr bliebe selbst ein vollstaendiger Verlust des Vorteils drei Jahre lang
 unentdeckt. Ein Zehnfaches an Positionsgroesse haette sich als
-"aussergewoehnlich schlechte Phase" getarnt, nicht als Fehler.
+"aussergewoehnlich schlechte Phase" getarnt, nicht als Fehler - und ein
+Fuenftel weniger Rendite erst recht.
 
-Beide Fehler sind behoben, mit Tests, die sie beim Zurueckbauen wieder
-fangen. Der Abgleich laeuft jetzt vor jedem Livegang: ``cli abgleich``.
+Alle drei sind behoben, mit Tests, die sie beim Zurueckbauen wieder fangen
+(gegengeprueft: 2 bzw. 4 Tests fallen um).
+
+**Was ich daraus fuer das Werkzeug gelernt habe.** Der erste Abgleich verglich
+nur das **Einstiegssignal**. Von den drei Fehlern haette er damit nur einen
+gefunden - die beiden anderen fielen bei der Handpruefung auf, und darauf ist
+kein Verlass. ``cli abgleich`` vergleicht jetzt die ganze
+Entscheidungsflaeche: Signal, Ausstiegsbedingung und Kapitalanteil, auf jedem
+Balken.
+
+Beim Umbau meldete er prompt eine vierte Abweichung - die dann in ihm selbst
+sass: Er begann einen Balken spaeter als die Engine
+(``i <= warmup_bars`` statt ``i < max(warmup_bars, 1)``). Ein Pruefwerkzeug,
+das die Grenze anders zieht als das Gepruefte, findet Fehler, die keine sind,
+und verdeckt die echten dahinter. Auch das ist behoben.
+
+**Was der Abgleich nicht prueft:** die Ausfuehrung selbst - Fills, Stops an
+der Boerse, Neustart mitten in einer Position. Dafuer gibt es die Testsuite
+und den Demobetrieb.
 
 ## Der beste Kandidat
 

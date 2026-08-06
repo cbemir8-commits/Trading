@@ -1054,3 +1054,146 @@ class TestGroessenlogikStimmtMitDemBacktestUeberein:
 
         assert rig.trader.bracket is not None
         assert rig.entry_orders
+
+
+class TestAusstiegsbedingungWirdAusgewertet:
+    """Die Bedingung, die im Betrieb fehlte - und was ihr Fehlen gekostet haette.
+
+    Die Engine schliesst 38,5 % aller Trades ueber ``should_exit``. Der
+    Livebetrieb wertete sie ueberhaupt nicht aus: Jede Position lief bis zum
+    Stop oder ins Ziel. Aus "dem Trend folgen, raus wenn er bricht" wurde
+    "wetten und den Stop abwarten".
+
+    Gemessen ueber BTC + ETH, August 2017 bis August 2026, derselbe Kandidat:
+
+                          Trades    p.a.      DD     Sharpe    DSR
+        mit Ausstieg         156   11,22 %   9,74 %   1,50    0,820
+        ohne (der Betrieb)   124    8,96 %  10,33 %   1,32    0,712
+
+    Der Anteil der Trades, die am Stop enden, steigt dabei von 42,9 % auf
+    72,6 %. Das haette wie eine schwache Phase ausgesehen, nicht wie eine
+    fehlende Funktion - und die volle Testsuite war gruen.
+    """
+
+    class AusstiegsStrategie(QueuedStrategy):
+        """Wie ``QueuedStrategy``, aber mit schaltbarer Ausstiegsbedingung."""
+
+        strategy_id = "mit-ausstieg"
+
+        def __init__(self, *signals: Signal, warmup_bars: int = 5) -> None:
+            super().__init__(*signals, warmup_bars=warmup_bars)
+            self.raus = False
+            self.exit_calls = 0
+
+        def should_exit(self, ctx, side) -> bool:
+            self.exit_calls += 1
+            return self.raus
+
+    @pytest.fixture
+    def rig_mit_ausstieg(
+        self, tmp_path, btcusdt: Instrument, risk: RiskSettings,
+        bybit_settings: BybitSettings,
+    ) -> Rig:
+        return build_rig(
+            tmp_path, btcusdt, risk, bybit_settings,
+            strategy=self.AusstiegsStrategie(),
+        )
+
+    async def test_position_wird_geschlossen_wenn_die_regel_es_sagt(
+        self, rig_mit_ausstieg: Rig
+    ) -> None:
+        rig = rig_mit_ausstieg
+        await _open_protected(rig)
+
+        rig.strategy.raus = True  # type: ignore[attr-defined]
+        await rig.feed()
+
+        assert rig.trader.bracket is None, (
+            "Die Ausstiegsbedingung wurde nicht ausgewertet - die Position "
+            "liefe bis zum Stop"
+        )
+        assert rig.exchange.position is None
+        assert any("Ausstiegsbedingung" in m for m in rig.messages)
+
+    async def test_ohne_die_bedingung_bleibt_die_position_offen(
+        self, rig_mit_ausstieg: Rig
+    ) -> None:
+        """Die Gegenprobe: Solange die Regel schweigt, wird nicht geschlossen."""
+        rig = rig_mit_ausstieg
+        await _open_protected(rig)
+
+        await rig.feed()
+        await rig.feed()
+
+        assert rig.trader.bracket is not None
+        assert rig.strategy.exit_calls > 0, (  # type: ignore[attr-defined]
+            "should_exit wurde gar nicht gefragt"
+        )
+
+    async def test_der_trade_wird_mit_dem_richtigen_grund_verbucht(
+        self, rig_mit_ausstieg: Rig
+    ) -> None:
+        """Sonst taucht der Ausstieg in ``cli review`` als etwas anderes auf."""
+        from web.trades import read_trades
+
+        rig = rig_mit_ausstieg
+        await _open_protected(rig)
+        rig.strategy.raus = True  # type: ignore[attr-defined]
+
+        await rig.feed()
+
+        uebersicht = read_trades(rig.state_dir)
+        assert uebersicht.anzahl == 1
+        assert uebersicht.trades[0].grund == "signal_exit"
+
+    async def test_ohne_offene_position_passiert_nichts(
+        self, rig_mit_ausstieg: Rig
+    ) -> None:
+        """Eine wartende Einstiegsorder ist keine Position.
+
+        Wer hier schliesst, storniert den Einstieg, bevor er gefuellt ist -
+        und meldet einen Trade, den es nie gab.
+        """
+        rig = rig_mit_ausstieg
+        rig.strategy.emit(long_below_market())
+        await rig.feed()
+        assert rig.trader.bracket is not None
+        assert rig.trader.bracket.state is BracketState.PENDING_ENTRY
+
+        rig.strategy.raus = True  # type: ignore[attr-defined]
+        await rig.feed()
+
+        assert rig.trader.bracket is not None, (
+            "Eine wartende Order darf die Ausstiegsbedingung nicht schliessen"
+        )
+
+    async def test_nach_dem_ausstieg_ist_sofort_wieder_platz(
+        self, rig_mit_ausstieg: Rig
+    ) -> None:
+        """Wie in der Engine: schliessen und auf demselben Balken neu einsteigen.
+
+        Die Engine wertet ``should_exit`` vor ``_consider_entry`` aus. Wer
+        hier einen Balken Pause macht, verschiebt jeden Wiedereinstieg um eine
+        Kerze - und das waere wieder ein Unterschied zum Backtest.
+        """
+        rig = rig_mit_ausstieg
+        await _open_protected(rig)
+
+        rig.strategy.raus = True  # type: ignore[attr-defined]
+        rig.strategy.emit(long_below_market())
+        await rig.feed()
+
+        assert len(rig.entry_orders) == 2, (
+            "Nach dem Signalausstieg muss auf demselben Balken wieder "
+            "eingestiegen werden koennen"
+        )
+
+    async def test_strategie_ohne_ausstiegsbedingung_laeuft_unveraendert(
+        self, rig: Rig
+    ) -> None:
+        """``QueuedStrategy`` hat kein ``should_exit`` - das muss weiter gehen."""
+        await _open_protected(rig)
+
+        await rig.feed()
+
+        assert rig.trader.bracket is not None

@@ -22,6 +22,13 @@ unentdeckt. Ein Unterschied zwischen Backtest und Betrieb wuerde im
 Demobetrieb also nicht auffallen - er muss vorher gefunden werden, durch
 Vergleich, nicht durch Beobachtung.
 
+Verglichen wird die ganze Entscheidungsflaeche
+--------------------------------------------
+Nicht nur das Einstiegssignal: auch die Ausstiegsbedingung und der
+Kapitalanteil. Von den drei bisher gefundenen Abweichungen haette ein reiner
+Signalvergleich naemlich nur **eine** gefunden - die beiden anderen fielen
+bei der Handpruefung auf, und darauf ist kein Verlass.
+
 Was der Vergleich gefunden hat
 ------------------------------
 Die Sperrfrist (``cooldown_bars``) rechnete mit dem Index **im aktuellen
@@ -43,7 +50,7 @@ import pandas as pd
 import structlog
 
 from core.models import Side
-from strategy.base import BarContext, frame_to_arrays
+from strategy.base import BarContext, frame_to_arrays, wants_exit
 
 log = structlog.get_logger(__name__)
 
@@ -51,6 +58,41 @@ log = structlog.get_logger(__name__)
 #: gespiegelt statt importiert: Der Vergleich soll auch dann noch etwas
 #: aussagen, wenn dort jemand die Zahl aendert - dann faellt es hier auf.
 BUFFER_BARS = 2000
+
+
+@dataclass(frozen=True, slots=True)
+class Entscheidung:
+    """Alles, was die Strategie auf einem Balken entscheidet.
+
+    Bewusst **drei** Dinge und nicht nur das Einstiegssignal. Von den drei
+    bisher gefundenen Abweichungen zwischen Backtest und Betrieb haette ein
+    reiner Signalvergleich nur **eine** gefunden:
+
+        Sperrfrist lief nie ab        Signal      gefunden
+        Positionsgroesse zehnfach     Anteil      nicht gefunden
+        Ausstiegsbedingung fehlte     Ausstieg    nicht gefunden
+
+    Die beiden anderen fielen bei der Handpruefung auf. Darauf ist kein
+    Verlass - deshalb steht hier jetzt die ganze Entscheidungsflaeche.
+    """
+
+    signal: str
+    """"long", "short" oder "-"."""
+
+    raus_long: bool
+    raus_short: bool
+    """Ob die Ausstiegsbedingung greifen wuerde. Fuer beide Seiten erhoben,
+    weil hier keine Positionen mitgefuehrt werden - welche Seite offen ist,
+    weiss nur die Engine."""
+
+    anteil: str
+    """Kapitalanteil als Text, damit ``None`` und 0,0 unterscheidbar bleiben."""
+
+    def __str__(self) -> str:
+        return (
+            f"Signal {self.signal:<6} raus {int(self.raus_long)}{int(self.raus_short)} "
+            f"Anteil {self.anteil}"
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,8 +106,8 @@ class Abweichung:
 
     def __str__(self) -> str:
         return (
-            f"{self.zeit:%Y-%m-%d %H:%M}  Backtest {self.backtest:<8} "
-            f"Betrieb {self.livebetrieb}"
+            f"{self.zeit:%Y-%m-%d %H:%M}  Backtest [{self.backtest}]  "
+            f"Betrieb [{self.livebetrieb}]"
         )
 
 
@@ -102,8 +144,32 @@ def _beschreibe(signal) -> str:
     return "long" if signal.side is Side.BUY else "short"
 
 
-def signale_backtest(frame: pd.DataFrame, build_strategy) -> list:
-    """Signale so, wie der Backtest sie erzeugt.
+#: Die Entscheidung eines Balkens, an dem die Strategie noch nicht
+#: eingeschwungen ist. Ausdruecklich benannt, damit die Aufwaermphase in
+#: beiden Laeufen dieselbe Zeile erzeugt.
+NICHTS = Entscheidung(signal="-", raus_long=False, raus_short=False, anteil="-")
+
+
+def _entscheiden(strategy, ctx) -> Entscheidung:
+    """Was die Strategie auf diesem Balken will - alle drei Antworten."""
+    signal = strategy.on_bar(ctx)
+
+    hole_anteil = getattr(strategy, "fraction_at", None)
+    if hole_anteil is not None:
+        wert = hole_anteil(ctx.index)
+    else:
+        wert = getattr(strategy, "equity_fraction", None)
+
+    return Entscheidung(
+        signal=_beschreibe(signal),
+        raus_long=wants_exit(strategy, ctx, Side.BUY),
+        raus_short=wants_exit(strategy, ctx, Side.SELL),
+        anteil="-" if wert is None else f"{float(wert):.4f}",
+    )
+
+
+def entscheidungen_backtest(frame: pd.DataFrame, build_strategy) -> list[Entscheidung]:
+    """Entscheidungen so, wie der Backtest sie trifft.
 
     Ein ``prepare`` ueber alles, dann laufender Index. Das ist die Sicht, aus
     der alle Kennzahlen im BEFUND stammen.
@@ -112,23 +178,35 @@ def signale_backtest(frame: pd.DataFrame, build_strategy) -> list:
     arrays = frame_to_arrays(frame)
     indicators = strategy.prepare(frame)
 
-    signale = []
+    # Exakt die Grenze der Engine: ``start = max(warmup_bars, 1)``, und der
+    # Balken ``warmup_bars`` wird **mitgerechnet**.
+    #
+    # Hier stand einmal ``i <= warmup_bars``, also ein Balken zu spaet - und
+    # der Vergleich meldete prompt eine Abweichung, die es im Produktivcode
+    # gar nicht gab. Ein Pruefwerkzeug, das die Grenze anders zieht als das
+    # Gepruefte, findet Fehler, die keine sind, und verdeckt die echten
+    # dahinter.
+    start = max(strategy.warmup_bars, 1)
+
+    ergebnis = []
     for i in range(len(frame)):
-        if i <= strategy.warmup_bars:
-            signale.append(None)
+        if i < start:
+            ergebnis.append(NICHTS)
             continue
-        signale.append(strategy.on_bar(BarContext(frame, arrays, indicators, i)))
-    return signale
+        ergebnis.append(
+            _entscheiden(strategy, BarContext(frame, arrays, indicators, i))
+        )
+    return ergebnis
 
 
-def signale_livebetrieb(
+def entscheidungen_livebetrieb(
     frame: pd.DataFrame, build_strategy, *, buffer_bars: int = BUFFER_BARS
-) -> list:
-    """Signale so, wie der Livebetrieb sie erzeugt.
+) -> list[Entscheidung]:
+    """Entscheidungen so, wie der Livebetrieb sie trifft.
 
     Je Balken ein frischer Ausschnitt der letzten ``buffer_bars`` Kerzen, ein
     ``prepare`` darueber, und der Index am Ende des Ausschnitts - genau das,
-    was ``LiveTrader._look_for_entry`` tut.
+    was ``LiveTrader._context`` tut.
 
     Deutlich langsamer als der Backtest, weil die Indikatoren je Balken neu
     gerechnet werden. Das ist der Preis dafuer, den Betrieb nachzustellen
@@ -136,18 +214,42 @@ def signale_livebetrieb(
     """
     strategy = build_strategy()
 
-    signale = []
+    ergebnis = []
     for i in range(len(frame)):
         beginn = max(0, i - buffer_bars + 1)
         puffer = frame.iloc[beginn : i + 1].reset_index(drop=True)
-        if len(puffer) <= strategy.warmup_bars:
-            signale.append(None)
+        # Die Bedingung aus ``LiveTrader._context`` - unveraendert
+        # uebernommen. Der erste Balken bleibt aussen vor, weil die Engine
+        # mit ``max(warmup_bars, 1)`` ebenfalls bei 1 beginnt; ohne das
+        # wichen beide bei Strategien ohne Aufwaermzeit um einen Balken ab.
+        if len(puffer) <= strategy.warmup_bars or i < 1:
+            ergebnis.append(NICHTS)
             continue
         arrays = frame_to_arrays(puffer)
         indicators = strategy.prepare(puffer)
         ctx = BarContext(puffer, arrays, indicators, len(puffer) - 1)
-        signale.append(strategy.on_bar(ctx))
-    return signale
+        ergebnis.append(_entscheiden(strategy, ctx))
+    return ergebnis
+
+
+def signale_backtest(frame: pd.DataFrame, build_strategy) -> list:
+    """Nur die Einstiegssignale - fuer Aufrufer, die den Rest nicht brauchen."""
+    return [
+        None if e.signal == "-" else e.signal
+        for e in entscheidungen_backtest(frame, build_strategy)
+    ]
+
+
+def signale_livebetrieb(
+    frame: pd.DataFrame, build_strategy, *, buffer_bars: int = BUFFER_BARS
+) -> list:
+    """Nur die Einstiegssignale aus Sicht des Betriebs."""
+    return [
+        None if e.signal == "-" else e.signal
+        for e in entscheidungen_livebetrieb(
+            frame, build_strategy, buffer_bars=buffer_bars
+        )
+    ]
 
 
 def vergleiche(
@@ -163,24 +265,24 @@ def vergleiche(
     Ergebnis ist die Aussage, auf die es ankommt: Der Backtest misst das, was
     im Betrieb passieren wird.
     """
-    a = signale_backtest(frame, build_strategy)
-    b = signale_livebetrieb(frame, build_strategy, buffer_bars=buffer_bars)
+    a = entscheidungen_backtest(frame, build_strategy)
+    b = entscheidungen_livebetrieb(frame, build_strategy, buffer_bars=buffer_bars)
 
     ergebnis = Vergleich(balken=len(frame))
-    ergebnis.signale_backtest = sum(1 for s in a if s is not None)
-    ergebnis.signale_livebetrieb = sum(1 for s in b if s is not None)
+    ergebnis.signale_backtest = sum(1 for e in a if e.signal != "-")
+    ergebnis.signale_livebetrieb = sum(1 for e in b if e.signal != "-")
 
     zeiten = frame["open_time"]
     for i, (links, rechts) in enumerate(zip(a, b, strict=True)):
-        if _beschreibe(links) == _beschreibe(rechts):
+        if links == rechts:
             continue
         if len(ergebnis.abweichungen) < max_abweichungen:
             ergebnis.abweichungen.append(
                 Abweichung(
                     index=i,
                     zeit=zeiten.iloc[i],
-                    backtest=_beschreibe(links),
-                    livebetrieb=_beschreibe(rechts),
+                    backtest=str(links),
+                    livebetrieb=str(rechts),
                 )
             )
 

@@ -11,6 +11,7 @@ schon einmal passiert ist.
 
 from __future__ import annotations
 
+from decimal import Decimal
 from itertools import pairwise
 
 import numpy as np
@@ -212,3 +213,91 @@ class TestVergleichMeldetWasErFindet:
         assert len(a) == len(b) == len(frame)
         with pytest.raises(ValueError):
             list(zip(a, b[:-1], strict=True))
+
+
+class TestDerVergleichFaengtAlleDreiFehlerarten:
+    """Ein Signalvergleich allein haette zwei von drei Fehlern durchgelassen.
+
+    Deshalb vergleicht ``Entscheidung`` die ganze Flaeche: Einstiegssignal,
+    Ausstiegsbedingung, Kapitalanteil. Dieser Test weist nach, dass jede der
+    drei Spalten wirklich anschlaegt - sonst waere die Erweiterung nur
+    Dekoration.
+    """
+
+    class Fest:
+        """Eine Strategie, deren drei Antworten sich einzeln verstellen lassen."""
+
+        strategy_id = "fest"
+        warmup_bars = 5
+
+        def __init__(self, *, anteil=None, raus=False, signal=False) -> None:
+            self._anteil = anteil
+            self._raus = raus
+            self._signal = signal
+            self.equity_fraction = anteil
+
+        def prepare(self, frame):
+            return {}
+
+        def fraction_at(self, index):
+            return self._anteil
+
+        def should_exit(self, ctx, side) -> bool:
+            return self._raus
+
+        def on_bar(self, ctx):
+            from core.models import Side, Signal
+
+            if not self._signal:
+                return None
+            return Signal(
+                timestamp=ctx.time, symbol="X", side=Side.BUY,
+                entry_price=Decimal("100"), stop_loss=Decimal("99"),
+                strategy_id="fest", reason="Test",
+            )
+
+    def _vergleich_zwischen(self, links, rechts):
+        """Zwei verschiedene Strategien gegeneinander - stellt eine Abweichung nach."""
+        from backtest.replay import entscheidungen_backtest
+
+        frame = kerzen(60)
+        a = entscheidungen_backtest(frame, lambda: links)
+        b = entscheidungen_backtest(frame, lambda: rechts)
+        return [x for x, y in zip(a, b, strict=True) if x != y]
+
+    def test_unterschiedliches_signal_faellt_auf(self):
+        unterschiede = self._vergleich_zwischen(
+            self.Fest(signal=True), self.Fest(signal=False)
+        )
+        assert unterschiede
+
+    def test_unterschiedliche_ausstiegsbedingung_faellt_auf(self):
+        """Der Fehler, der im Livebetrieb fehlte."""
+        unterschiede = self._vergleich_zwischen(
+            self.Fest(raus=True), self.Fest(raus=False)
+        )
+        assert unterschiede, (
+            "Die Ausstiegsbedingung wird nicht verglichen - genau dieser "
+            "Fehler ist im Livebetrieb monatelang unbemerkt geblieben"
+        )
+
+    def test_unterschiedlicher_kapitalanteil_faellt_auf(self):
+        """Der teuerste Fehler: 3,0 statt 0,26 - zehnfache Positionen."""
+        unterschiede = self._vergleich_zwischen(
+            self.Fest(anteil=Decimal("3.0")), self.Fest(anteil=Decimal("0.26"))
+        )
+        assert unterschiede, (
+            "Der Kapitalanteil wird nicht verglichen - so blieb die "
+            "zehnfache Positionsgroesse unentdeckt"
+        )
+
+    def test_kein_anteil_und_null_sind_nicht_dasselbe(self):
+        """``None`` heisst "nicht handeln", 0,0 heisst "Groesse null".
+
+        Als Zahl gespeichert waeren beide 0,0 und der Vergleich blind fuer
+        den Unterschied.
+        """
+        unterschiede = self._vergleich_zwischen(
+            self.Fest(anteil=None), self.Fest(anteil=Decimal("0"))
+        )
+        assert unterschiede
