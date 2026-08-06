@@ -146,6 +146,60 @@ Die Uhr des Officers zeigt dabei auf die verarbeitete Kerze. Zeigte sie auf
 die Wirklichkeit, laegen alle 2830 Kerzen an einem Tag und die Tagesgrenze
 griffe nie.
 
+## Der fuenfte Befund: Die 50 steht auf einer Kante
+
+Das Parameter-Plateau ist seit dem 06.08.2026 offen. Bevor ich daraus etwas
+schliesse, habe ich das Gate selbst geprueft - und dort einen Fehler
+gefunden.
+
+**Die "Nachbarn" waren keine.** ``_vary_periods`` verschob nur
+``entry_long``, ``entry_short`` und ``filters``. Beim Spitzenkandidaten -
+Einstieg ueber dem 50-Tage-Schnitt, Ausstieg darunter - entstand daraus:
+
+    Kandidat    ein SMA(50)   aus SMA(50)   Konfluenz 50/200/90/14
+    Nachbar 1   ein SMA(40)   aus SMA(50)   Konfluenz 50/200/90/14
+    Nachbar 2   ein SMA(60)   aus SMA(50)   Konfluenz 50/200/90/14
+
+Eine Regel, die bei 40 einsteigt und bei 50 aussteigt, widerspricht sich
+selbst - das ist kein Nachbar, sondern eine halb verstellte Strategie. Und
+die Konfluenz, die beim Kandidaten die **Positionsgroesse** bestimmt, wurde
+ueberhaupt nie variiert. Der Docstring behauptete die ganze Zeit "alle
+Indikatorperioden".
+
+Behoben: Alle Abschnitte werden mit demselben Faktor verschoben, das
+Vola-Messfenster eingeschlossen. Die Nachbarn sehen jetzt so aus:
+
+    Nachbar 1   ein SMA(40)   aus SMA(40)   Konfluenz 40/160/72/11   vol 24
+    Nachbar 2   ein SMA(60)   aus SMA(60)   Konfluenz 60/240/100/17  vol 36
+
+**Am Ergebnis aendert das nichts.** Weiterhin 1 von 2. Gemessen auf beiden
+Maerkten, damit nicht der Einzelmarkt-Zuschnitt des Gates die Antwort gibt:
+
+                   BTC allein   ETH allein        Korb
+    Kandidat (50)     +109,62      +842,08     +475,85   profitabel
+    Nachbar   (40)   +1138,08       -58,67     +539,70   profitabel
+    Nachbar   (60)      -33,28       -76,58      -54,93   VERLUST
+
+Der Befund steht also, und er ist unangenehm: **SMA 40 gewinnt, SMA 50
+gewinnt, SMA 60 verliert.** Das ist kein Plateau, das ist ein Abhang. Die
+Regelfamilie ist gegen ihre eigene Periodenwahl nicht robust.
+
+Auffaellig ist auch die Streuung von Nachbar 1: zehnfacher Gewinn auf BTC,
+Verlust auf ETH. Wo dieselbe Regel auf zwei verwandten Maerkten so weit
+auseinanderlaeuft, traegt die Periodenwahl mehr zum Ergebnis bei als der
+gemessene Vorteil.
+
+**Was ich nicht getan habe.** Naheliegend waere, das Gate mit mehr
+Stuetzpunkten zu rechnen - bei nur zwei Nachbarn ist die Schwelle 0,6
+faktisch binaer, denn 1 von 2 ergibt 0,5 und es gibt keinen Mittelwert
+dazwischen. Naehere Nachbarn (plus/minus 10 %) wuerden die Quote
+systematisch heben und der Kandidat bestuende. Das waere eine Lockerung mit
+Begruendung hinterher, und danach misst das System nur noch sich selbst.
+
+Ebenso wenig habe ich SMA 40 zum neuen Kandidaten erklaert, obwohl er auf
+dem Korb besser abschneidet. Den besten Nachbarn zu nehmen ist genau die
+Ueberanpassung, gegen die das Gate gebaut wurde.
+
 ## Der beste Kandidat
 
     Trend-Beteiligung 50 Tage auf BTC + ETH

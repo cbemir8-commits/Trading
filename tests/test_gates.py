@@ -471,6 +471,99 @@ class TestParameterVariation:
                     assert condition.right.params["period"] <= 400
 
 
+class TestNachbarnSindEchteNachbarn:
+    """Ein Nachbar muss dieselbe Strategie mit anderen Zahlen sein.
+
+    Hier wurden lange nur ``entry_long``, ``entry_short`` und ``filters``
+    variiert. Beim Spitzenkandidaten - Einstieg ueber dem 50-Tage-Schnitt,
+    Ausstieg darunter - erzeugte das einen "Nachbarn" mit Einstieg bei
+    SMA(40) und Ausstieg weiterhin bei SMA(50): eine Regel, die sich selbst
+    widerspricht und die niemand handeln wuerde.
+
+    Das Gate soll pruefen, ob die Strategie auf einem Plateau steht. Dafuer
+    muss der Nachbar die Strategie sein.
+    """
+
+    def _kandidat(self):
+        from research.seeds import spitzenkandidat
+
+        return spitzenkandidat()
+
+    def _perioden(self, genome, abschnitt: str) -> list[int]:
+        return [
+            wert
+            for bedingung in getattr(genome, abschnitt)
+            for seite in (bedingung.left, bedingung.right)
+            if seite.kind == "indicator"
+            for wert in seite.params.values()
+        ]
+
+    def test_ausstieg_wird_mitverschoben(self) -> None:
+        genome = self._kandidat()
+
+        for nachbar in _vary_periods(genome, 0.2):
+            assert self._perioden(nachbar, "entry_long") == self._perioden(
+                nachbar, "exit_long"
+            ), (
+                "Einstieg und Ausstieg haben dieselbe Periode - ein Nachbar, "
+                "der nur eine von beiden verschiebt, ist keine Nachbarschaft"
+            )
+
+    def test_konfluenz_wird_mitverschoben(self) -> None:
+        """Sie bestimmt die Positionsgroesse und blieb bisher ungeprueft."""
+        genome = self._kandidat()
+        vorher = self._perioden(genome, "konfluenz")
+        assert vorher, "Der Kandidat muss Konfluenzbedingungen haben"
+
+        for nachbar in _vary_periods(genome, 0.2):
+            assert self._perioden(nachbar, "konfluenz") != vorher
+
+    def test_das_vola_fenster_wird_mitverschoben(self) -> None:
+        genome = self._kandidat()
+
+        for nachbar in _vary_periods(genome, 0.2):
+            assert nachbar.sizing.vol_period != genome.sizing.vol_period
+
+    def test_alles_zeigt_in_dieselbe_richtung(self) -> None:
+        """Ein Nachbar ist entweder durchweg schneller oder durchweg langsamer.
+
+        Waeren die Faktoren gemischt, entstuende eine Regel mit voellig
+        anderem Charakter statt einer verschobenen.
+        """
+        genome = self._kandidat()
+
+        for nachbar in _vary_periods(genome, 0.2):
+            schneller = [
+                n < a
+                for n, a in zip(
+                    self._perioden(nachbar, "konfluenz"),
+                    self._perioden(genome, "konfluenz"),
+                    strict=True,
+                )
+            ]
+            assert all(schneller) or not any(schneller), (
+                f"gemischte Richtungen: {schneller}"
+            )
+
+    def test_grenzen_kommen_aus_dem_genom(self) -> None:
+        """Nicht danebengeschrieben - sonst laufen sie auseinander."""
+        from research.gates import _feldgrenzen
+        from strategy.genome import SizingSpec
+
+        feld = SizingSpec.model_fields["vol_period"]
+        unten, oben = _feldgrenzen(feld, standard=(0, 0))
+
+        assert (unten, oben) == (5, 200)
+        # Und die Schranken werden auch eingehalten:
+        genome = self._kandidat().model_copy(
+            update={"sizing": self._kandidat().sizing.model_copy(
+                update={"vol_period": 200}
+            )}
+        )
+        for nachbar in _vary_periods(genome, 0.2):
+            assert 5 <= nachbar.sizing.vol_period <= 200
+
+
 # ---------------------------------------------------------------------------
 #  Der entscheidende Test
 # ---------------------------------------------------------------------------

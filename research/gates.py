@@ -50,7 +50,7 @@ from backtest.walkforward import (
 from core.models import Trade
 from research.benchmark import buy_and_hold_over_windows, scaled_hold
 from strategy.compiler import compile_genome
-from strategy.genome import Genome
+from strategy.genome import Genome, SizingSpec
 
 log = structlog.get_logger(__name__)
 
@@ -946,12 +946,45 @@ def _regime_at(regimes: pd.DataFrame, moment) -> str | None:
     return str(matches["regime"].iloc[-1])
 
 
+def _feldgrenzen(feld, *, standard: tuple[int, int]) -> tuple[int, int]:
+    """Untere und obere Schranke eines Pydantic-Feldes auslesen.
+
+    ``standard`` greift nur, wenn das Feld gar keine Schranken traegt. Wer
+    die Grenzen im Genom aendert, aendert sie damit auch hier - genau das ist
+    der Zweck.
+    """
+    unten, oben = standard
+    for regel in feld.metadata:
+        if (wert := getattr(regel, "ge", None)) is not None:
+            unten = int(wert)
+        if (wert := getattr(regel, "le", None)) is not None:
+            oben = int(wert)
+    return unten, oben
+
+
 def _vary_periods(genome: Genome, variation: float):
     """Erzeugt Nachbar-Genome mit variierten Indikatorperioden.
 
     Jede Periode wird einmal nach oben und einmal nach unten verschoben. Werte
     ausserhalb der erlaubten Grenzen werden uebersprungen - dort haette das
     Genom ohnehin nicht validiert.
+
+    **Alle** Abschnitte, und zwar mit demselben Faktor. Hier standen einmal
+    nur ``entry_long``, ``entry_short`` und ``filters``, und das machte die
+    Nachbarn zu etwas, das die Strategie nie war: Der Spitzenkandidat steigt
+    ueber dem 50-Tage-Schnitt ein und darunter wieder aus. Sein "Nachbar"
+    hatte Einstieg bei SMA(40) und Ausstieg weiterhin bei SMA(50) - eine
+    Regel, die sich selbst widerspricht und die niemand handeln wuerde.
+
+    Geprueft werden soll, ob die Strategie auf einem Plateau steht. Dafuer
+    muss der Nachbar **dieselbe Strategie mit anderen Zahlen** sein, nicht
+    eine halb verstellte. Die Konfluenz gehoert aus demselben Grund dazu: Sie
+    bestimmt beim Spitzenkandidaten die Positionsgroesse und blieb bisher
+    voellig ungeprueft.
+
+    Das Messfenster der Vola-Steuerung (``sizing.vol_period``) wird
+    mitverschoben. Es ist eine Periode wie jede andere und laesst sich
+    genauso ueberanpassen.
     """
     from strategy.indicators import REGISTRY
 
@@ -961,7 +994,10 @@ def _vary_periods(genome: Genome, variation: float):
         payload = genome.model_dump(mode="json")
         changed = False
 
-        for section in ("entry_long", "entry_short", "filters"):
+        for section in (
+            "entry_long", "entry_short", "exit_long", "exit_short",
+            "filters", "konfluenz",
+        ):
             for condition in payload.get(section, []):
                 for side in ("left", "right"):
                     operand = condition[side]
@@ -980,6 +1016,18 @@ def _vary_periods(genome: Genome, variation: float):
             candidate = max(low, min(high, round(payload["stop"]["atr_period"] * factor)))
             if candidate != payload["stop"]["atr_period"]:
                 payload["stop"]["atr_period"] = candidate
+                changed = True
+
+        sizing = payload.get("sizing") or {}
+        if sizing.get("vol_period"):
+            # Grenzen aus dem Genom holen, nicht danebenschreiben. Zwei
+            # Stellen mit derselben Zahl laufen frueher oder spaeter
+            # auseinander - in diesem Projekt schon viermal geschehen.
+            feld = SizingSpec.model_fields["vol_period"]
+            low, high = _feldgrenzen(feld, standard=(5, 200))
+            candidate = max(low, min(high, round(sizing["vol_period"] * factor)))
+            if candidate != sizing["vol_period"]:
+                sizing["vol_period"] = candidate
                 changed = True
 
         if not changed:
