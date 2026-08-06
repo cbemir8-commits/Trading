@@ -34,6 +34,7 @@ import structlog
 from backtest.costs import CostModel, FundingSchedule
 from core.config import RiskSettings
 from core.models import Instrument, LiquidityRole, Side, Signal, Trade
+from execution.risk import RiskOfficer, TradingState
 from execution.sizing import SizedPosition, SizingRejected, size_position
 from strategy.base import BarContext, Strategy, frame_to_arrays, wants_exit
 
@@ -49,6 +50,10 @@ class ExitReason(StrEnum):
 
     MAX_HOLD = "max_hold"
     END_OF_DATA = "end_of_data"
+    KILL_SWITCH = "kill_switch"
+    """Der Risk-Officer hat den Not-Aus ausgeloest - Rueckgang ueber der
+    Grenze. Im Betrieb ist danach nur noch manuell weiterzumachen; im
+    Backtest bleibt das Fenster ab hier ohne neue Einstiege."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +80,37 @@ class BacktestConfig:
     """Positionsgroesse am aktuellen Kapital bemessen (Zinseszins) statt am
     Startkapital. Realistisch, macht die Equity-Kurve aber exponentiell -
     Kennzahlen wie der maximale Drawdown sind dann in Prozent zu lesen."""
+
+    enforce_risk_limits: bool = True
+    """Die Verlustgrenzen des Risk-Officers auch im Backtest durchsetzen.
+
+    Ohne das misst der Backtest eine Strategie, die es so nie geben wird: Im
+    Betrieb sperrt der Officer nach 3 % Tagesverlust fuer 24 Stunden, nach
+    7 % Wochenverlust bis zur manuellen Freigabe, und bei 15 % Rueckgang
+    faellt der Kill-Switch. Der Backtest kannte keine dieser Grenzen und
+    handelte munter weiter.
+
+    Gemessen ueber August 2017 bis August 2026 auf BTC + ETH, je Testfenster
+    einzeln gerechnet:
+
+        schlimmster Tag                        -3,25 %
+        Fenster mit einem Tag unter -3 %        1 von 31
+        Wochenlimit ausgeloest in               3 Fenstern
+        Kill-Switch ausgeloest                  nie
+
+    Auf den Spitzenkandidaten selbst wirkt sich das **nicht** aus: Kein
+    einziges seiner 156 Signale fiel in eine Sperrzeit, die Kennzahlen sind
+    auf zwei Nachkommastellen dieselben. Was sich aendert, ist das Gate
+    **Parameter-Plateau**: Ein Nachbarparameter, der ohne Grenzen profitabel
+    war, ist es mit ihnen nicht mehr. Der Kandidat faellt damit von 9 auf 8
+    von 11 - die Strategie steht auf einer schmaleren Kante, als bisher
+    gemessen.
+
+    Die Richtung ist eindeutig: Der Backtest war zu **optimistisch**, und das
+    Einschalten macht ihn strenger, nicht milder. Deshalb ist der Vorgabewert
+    ``True``. Wer ihn ausschaltet, misst wieder die schoenere Zahl - dafuer
+    gibt es einen legitimen Grund (den Vergleich mit alten Ergebnissen) und
+    keinen guten fuer die Zulassung."""
 
 
 @dataclass(slots=True)
@@ -115,6 +151,14 @@ class BacktestResult:
     equity_curve: pd.DataFrame = field(default_factory=pd.DataFrame)
     rejections: dict[str, int] = field(default_factory=dict)
     signals_generated: int = 0
+    signals_vetoed: int = 0
+    veto_reasons: dict[str, int] = field(default_factory=dict)
+    """Womit der Risk-Officer Einstiege verhindert hat, nach Grund gezaehlt.
+
+    Leer, solange ``enforce_risk_limits`` aus ist. Steht hier etwas, ist die
+    gehandelte Strategie eine andere als die signalisierte - und zwar
+    zulaessigerweise: Die Verlustgrenzen gelten im Betrieb genauso."""
+
     entries_filled: int = 0
     entries_expired: int = 0
     initial_equity: Decimal = Decimal(0)
@@ -171,6 +215,34 @@ class Backtester:
     def __init__(self, config: BacktestConfig) -> None:
         self.config = config
 
+    def _officer(self, arrays) -> RiskOfficer | None:
+        """Den Risk-Officer fuer diesen Lauf anlegen - mit der Kerzenuhr.
+
+        Gibt ``None`` zurueck, wenn die Grenzen abgeschaltet sind.
+
+        Die Uhr ist der springende Punkt. Der Officer misst Tages- und
+        Wochenverluste an ``datetime.now()``; im Backtest muss sie auf die
+        gerade verarbeitete Kerze zeigen, sonst faenden alle 2830 Kerzen am
+        selben Tag statt und die Tagesgrenze griffe nie.
+
+        Kein ``state_path``: Jeder Lauf beginnt frei. Im Walk-Forward heisst
+        das, dass jedes Testfenster mit einem frischen Officer startet - was
+        der Annahme entspricht, dass der Nutzer einen ausgeloesten Not-Aus
+        zwischen den Fenstern manuell freigibt. Ohne diese Annahme bliebe
+        jedes Fenster nach dem ersten Not-Aus fuer immer stumm, und der
+        Backtest waere in der anderen Richtung falsch.
+        """
+        if not self.config.enforce_risk_limits:
+            return None
+
+        self._jetzt = _to_datetime(arrays["open_time"][0])
+        return RiskOfficer(
+            self.config.risk,
+            self.config.instrument,
+            state_path=None,
+            clock=lambda: self._jetzt,
+        )
+
     def run(
         self,
         frame: pd.DataFrame,
@@ -216,9 +288,17 @@ class Backtester:
         n = len(frame)
         start = max(strategy.warmup_bars, 1)
 
+        # Der **echte** Risk-Officer, nicht eine Nachbildung seiner Regeln.
+        # Die Uhr zeigt auf die Kerze, sonst rechnete er mit der Wirklichkeit
+        # statt mit dem Backtest. Kein ``state_path``: Der Lauf soll nichts
+        # von einem frueheren erben.
+        officer = self._officer(arrays)
+
         for i in range(start, n):
             bar_time = arrays["open_time"][i]
             bar_end = _bar_end(arrays["open_time"], i)
+            if officer is not None:
+                self._jetzt = _to_datetime(bar_time)
 
             # 1. Bestehende Orders gegen diese Kerze abarbeiten.
             self._process_bar(state, result, arrays, i, bar_time, bar_end, sub_index)
@@ -244,10 +324,31 @@ class Backtester:
 
             if signal is not None:
                 result.signals_generated += 1
-                anteil = (
-                    hole_anteil(i) if hole_anteil is not None else statischer_anteil
-                )
-                self._consider_entry(state, result, signal, i, anteil)
+                # Der Officer entscheidet **vor** der Groessenrechnung, ob
+                # ueberhaupt eingestiegen werden darf. Ohne diese Frage misst
+                # der Backtest eine Strategie, die im Betrieb an 21 Stellen
+                # gesperrt gewesen waere - siehe ``enforce_risk_limits``.
+                # ``open_positions=0`` mit Absicht: Ob schon eine Position
+                # offen ist, prueft die Engine gleich selbst in
+                # ``_consider_entry`` - und sie weiss dabei mehr, naemlich
+                # auch von wartenden Einstiegsorders.
+                #
+                # Wuerde der Officer hier mitpruefen, gaebe es dieselbe Regel
+                # zweimal, und die Ablehnung landete je nach Reihenfolge mal
+                # in ``rejections``, mal in ``veto_reasons``. Der Officer
+                # steuert hier genau das bei, was die Engine **nicht** weiss:
+                # die Verlustgrenzen.
+                gesperrt = officer.blockade(open_positions=0) if officer else None
+                if gesperrt is not None:
+                    result.signals_vetoed += 1
+                    result.veto_reasons[gesperrt.reason.value] = (
+                        result.veto_reasons.get(gesperrt.reason.value, 0) + 1
+                    )
+                else:
+                    anteil = (
+                        hole_anteil(i) if hole_anteil is not None else statischer_anteil
+                    )
+                    self._consider_entry(state, result, signal, i, anteil)
 
             # 3. Kapitalkurve fortschreiben.
             mark = Decimal(str(arrays["close"][i]))
@@ -276,6 +377,27 @@ class Backtester:
 
             state.equity_times.append(bar_time)
             state.equity_values.append(float(equity))
+
+            # 4. Kapitalstand melden - **nach** dem Fortschreiben, damit der
+            # Officer den Stand dieser Kerze sieht. Er fuehrt daraus Tages-,
+            # Wochen- und Hoechststand und loest gegebenenfalls den
+            # Kill-Switch aus.
+            #
+            # Bewusst bei **jeder** Kerze, nicht nur bei Signalen: Genau so
+            # macht es der Livebetrieb, und der Kill-Switch soll auch dann
+            # greifen, wenn eine offene Position ins Minus laeuft und gerade
+            # kein Signal ansteht.
+            if officer is not None:
+                officer.observe_equity(equity)
+                if (
+                    officer.state.trading_state is TradingState.KILLED
+                    and state.position is not None
+                ):
+                    self._close_position(
+                        state, result, state.position.qty, mark,
+                        _to_datetime(bar_time), ExitReason.KILL_SWITCH,
+                        role=LiquidityRole.TAKER, is_stop=True,
+                    )
 
         # Offene Position am Ende zum letzten Schlusskurs glattstellen.
         if state.position is not None:

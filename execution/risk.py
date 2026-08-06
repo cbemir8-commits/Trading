@@ -315,20 +315,24 @@ class RiskOfficer:
         return -change if negative_only else change
 
     # -- Signalpruefung ------------------------------------------------------
-    def evaluate(
-        self,
-        signal: Signal,
-        *,
-        equity: Decimal,
-        open_positions: int = 0,
-        equity_fraction: Decimal | None = None,
-    ) -> Decision:
-        """Darf dieses Signal gehandelt werden - und wenn ja, wie gross?
+    def blockade(self, *, open_positions: int = 0) -> Vetoed | None:
+        """Spricht gerade etwas gegen einen **neuen** Einstieg?
 
-        ``equity_fraction`` reicht die Betriebsart der Strategie durch. Sie muss
-        hier ankommen und nicht nur im Backtest: Rechnete der Betrieb nach der
-        Risikoformel, waehrend die Zulassung nach Kapitalanteil gerechnet hat,
-        haette die gehandelte Strategie mit der geprueften nichts mehr zu tun."""
+        ``None`` heisst frei. Alles andere ist der Grund, aus dem gerade nicht
+        eingestiegen wird - Kill-Switch, Verlustgrenze, Pause, Sperrfrist bei
+        Terminen, oder schlicht: Es ist schon eine Position offen.
+
+        Warum das eine eigene Methode ist und nicht in ``evaluate`` steht:
+        Der **Backtest** braucht genau diese Pruefung und rechnet die
+        Positionsgroesse selbst. Ohne diese Trennung muesste er die Regeln
+        nachbauen - und die Erfahrung mit diesem Projekt sagt, wohin das
+        fuehrt: Drei Abweichungen zwischen Backtest und Betrieb sind bereits
+        gefunden worden, alle drei entstanden aus zwei Umsetzungen derselben
+        Sache (siehe ``strategies/BEFUND.md``).
+
+        Eine Umsetzung, zwei Aufrufer. ``evaluate`` ruft diese Methode
+        ebenfalls auf, damit sie nicht auseinanderlaufen koennen.
+        """
         now = self.clock()
 
         if self.state.trading_state is TradingState.KILLED:
@@ -370,6 +374,26 @@ class RiskOfficer:
                 f"{open_positions} von maximal "
                 f"{self.settings.max_concurrent_positions} Positionen offen",
             )
+
+        return None
+
+    def evaluate(
+        self,
+        signal: Signal,
+        *,
+        equity: Decimal,
+        open_positions: int = 0,
+        equity_fraction: Decimal | None = None,
+    ) -> Decision:
+        """Darf dieses Signal gehandelt werden - und wenn ja, wie gross?
+
+        ``equity_fraction`` reicht die Betriebsart der Strategie durch. Sie muss
+        hier ankommen und nicht nur im Backtest: Rechnete der Betrieb nach der
+        Risikoformel, waehrend die Zulassung nach Kapitalanteil gerechnet hat,
+        haette die gehandelte Strategie mit der geprueften nichts mehr zu tun."""
+        blockade = self.blockade(open_positions=open_positions)
+        if blockade is not None:
+            return blockade
 
         sized = size_position(
             signal,

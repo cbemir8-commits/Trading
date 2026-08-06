@@ -792,3 +792,208 @@ class TestEquityFloor:
         result = Backtester(config).run(frame, ScriptedStrategy(signals))
 
         assert not result.is_ruined
+
+
+class TestVerlustgrenzenImBacktest:
+    """Die vierte Abweichung zwischen Backtest und Betrieb.
+
+    Anders als die drei vorigen war das kein Codefehler, sondern eine
+    **fehlende Modellierung**: Der Betrieb sperrt nach 3 % Tagesverlust fuer
+    24 Stunden, nach 7 % Wochenverlust bis zur manuellen Freigabe, und bei
+    15 % Rueckgang faellt der Kill-Switch. Der Backtest kannte keine dieser
+    Grenzen und handelte weiter - er mass damit eine Strategie, die es so
+    nicht geben kann.
+
+    Die Grenzen kommen vom **echten** ``RiskOfficer``, nicht von einer
+    Nachbildung. Genau daran sind die drei vorigen Fehler entstanden.
+    """
+
+    def _fallende_kerzen(self, count: int, *, prozent_je_kerze: float) -> list[Candle]:
+        """Eine Reihe, die stetig faellt - damit die Grenzen sicher greifen."""
+        kerzen = []
+        preis = Decimal("100000")
+        for i in range(count):
+            naechster = preis * (Decimal(1) - Decimal(str(prozent_je_kerze)) / 100)
+            kerzen.append(
+                bar(i, o=f"{preis:.2f}", h=f"{preis:.2f}",
+                    low=f"{naechster:.2f}", c=f"{naechster:.2f}")
+            )
+            preis = naechster
+        return kerzen
+
+    def test_ohne_grenzen_wird_weitergehandelt(
+        self, btcusdt: Instrument, risk: RiskSettings, no_funding: FundingSchedule
+    ) -> None:
+        """Die Gegenprobe - sonst zeigte der Test unten nichts."""
+        kerzen = self._fallende_kerzen(200, prozent_je_kerze=0.5)
+        signals = {i: long_signal_at(i, entry=f"{kerzen[i].close:.2f}")
+                   for i in range(2, 200, 10)}
+        cfg = BacktestConfig(
+            instrument=btcusdt, risk=risk, funding=no_funding,
+            initial_equity=Decimal("500"), enforce_risk_limits=False,
+        )
+
+        ergebnis = Backtester(cfg).run(
+            candles_to_frame(kerzen), ScriptedStrategy(signals)
+        )
+
+        assert ergebnis.signals_vetoed == 0
+        assert not ergebnis.veto_reasons
+
+    def test_mit_grenzen_sperrt_der_officer(
+        self, btcusdt: Instrument, risk: RiskSettings, no_funding: FundingSchedule
+    ) -> None:
+        kerzen = self._fallende_kerzen(200, prozent_je_kerze=0.5)
+        signals = {i: long_signal_at(i, entry=f"{kerzen[i].close:.2f}")
+                   for i in range(2, 200, 10)}
+        cfg = BacktestConfig(
+            instrument=btcusdt, risk=risk, funding=no_funding,
+            initial_equity=Decimal("500"), enforce_risk_limits=True,
+        )
+
+        ergebnis = Backtester(cfg).run(
+            candles_to_frame(kerzen), ScriptedStrategy(signals)
+        )
+
+        assert ergebnis.signals_vetoed > 0, (
+            "In einem stetig fallenden Markt muss der Officer irgendwann "
+            "sperren - sonst greifen die Grenzen im Backtest gar nicht"
+        )
+        assert ergebnis.veto_reasons
+
+    class GrossePosition:
+        """Handelt nach Kapitalanteil, mit weitem Stop.
+
+        Noetig, um den Not-Aus ueberhaupt ausloesen zu koennen: Nach der
+        Risikoformel ist der Verlust je Trade auf 0,75 % gedeckelt, und der
+        Stop greift lange vor jeder Rueckgangsgrenze. Erst eine grosse
+        Position mit fernem Stop laesst das Kapital weit genug fallen,
+        waehrend sie **offen** ist - und genau darum geht es hier.
+        """
+
+        strategy_id = "gross"
+        warmup_bars = 1
+        equity_fraction = Decimal("2.0")
+
+        def prepare(self, frame):
+            return {}
+
+        def fraction_at(self, index):
+            return self.equity_fraction
+
+        def on_bar(self, ctx):
+            if ctx.index != 2:
+                return None
+            preis = Decimal(str(ctx.close()))
+            return Signal(
+                timestamp=ctx.time, symbol="BTCUSDT", side=Side.BUY,
+                entry_price=preis,
+                # Stop 10 % entfernt. Weiter geht nicht: Der Sizer verlangt
+                # einen Mindestabstand der Liquidation zum Stop und lehnt
+                # sonst mit ``liquidation_too_close`` ab. Bei 1 % Kursverfall
+                # je Kerze und doppeltem Kapital reisst der Rueckgang die
+                # 5-%-Grenze nach gut zwei Kerzen - lange bevor der Stop
+                # erreicht ist.
+                stop_loss=preis * Decimal("0.9"),
+                strategy_id="gross", reason="Test",
+            )
+
+    def test_der_kill_switch_schliesst_die_offene_position(
+        self, btcusdt: Instrument, no_funding: FundingSchedule
+    ) -> None:
+        """Der Not-Aus wartet nicht auf den Stop.
+
+        Im Betrieb stellt er sofort glatt. Ohne das liefe die Position im
+        Backtest weiter, und der gemessene Rueckgang waere kleiner als der
+        wirkliche - genau falsch herum.
+        """
+        eng = RiskSettings(
+            risk_per_trade_pct=Decimal("0.75"),
+            max_drawdown_pct=Decimal("5"),
+            daily_loss_limit_pct=Decimal("2"),
+            weekly_loss_limit_pct=Decimal("3"),
+            max_leverage=Decimal("10"),
+        )
+        kerzen = self._fallende_kerzen(60, prozent_je_kerze=1.0)
+        cfg = BacktestConfig(
+            instrument=btcusdt, risk=eng, funding=no_funding,
+            initial_equity=Decimal("500"), enforce_risk_limits=True,
+        )
+
+        ergebnis = Backtester(cfg).run(
+            candles_to_frame(kerzen), self.GrossePosition()
+        )
+
+        gruende = [str(t.exit_reason) for t in ergebnis.trades]
+        assert ExitReason.KILL_SWITCH.value in gruende, (
+            f"Der Not-Aus hat nicht geschlossen - Ausstiege waren {gruende}"
+        )
+
+    def test_ohne_grenzen_laeuft_dieselbe_position_weiter(
+        self, btcusdt: Instrument, no_funding: FundingSchedule
+    ) -> None:
+        """Die Gegenprobe zum Not-Aus."""
+        eng = RiskSettings(
+            risk_per_trade_pct=Decimal("0.75"),
+            max_drawdown_pct=Decimal("5"),
+            daily_loss_limit_pct=Decimal("2"),
+            weekly_loss_limit_pct=Decimal("3"),
+            max_leverage=Decimal("10"),
+        )
+        kerzen = self._fallende_kerzen(60, prozent_je_kerze=1.0)
+        cfg = BacktestConfig(
+            instrument=btcusdt, risk=eng, funding=no_funding,
+            initial_equity=Decimal("500"), enforce_risk_limits=False,
+        )
+
+        ergebnis = Backtester(cfg).run(
+            candles_to_frame(kerzen), self.GrossePosition()
+        )
+
+        gruende = [str(t.exit_reason) for t in ergebnis.trades]
+        assert ExitReason.KILL_SWITCH.value not in gruende
+
+    def test_die_grenzen_kommen_vom_echten_officer(self) -> None:
+        """Kein Nachbau - eine Umsetzung, zwei Aufrufer.
+
+        Wuerde die Engine die Regeln nachbauen, waere das genau das Muster,
+        aus dem die drei vorigen Abweichungen entstanden sind.
+        """
+        import inspect
+
+        from backtest import engine
+        from execution.risk import RiskOfficer
+
+        quelle = inspect.getsource(engine)
+        assert "RiskOfficer(" in quelle, "Die Engine muss den echten Officer bauen"
+        assert "blockade(" in quelle, "und seine Sperrpruefung aufrufen"
+        assert hasattr(RiskOfficer, "blockade")
+
+    def test_die_uhr_zeigt_auf_die_kerze(
+        self, btcusdt: Instrument, risk: RiskSettings, no_funding: FundingSchedule
+    ) -> None:
+        """Sonst faenden alle Kerzen am selben Tag statt.
+
+        Der Officer misst Tages- und Wochenverluste an seiner Uhr. Zeigte sie
+        auf die Wirklichkeit statt auf den Backtest, lagen alle 2830 Kerzen
+        an einem Tag - und die Tagesgrenze griffe nie.
+        """
+        kerzen = self._fallende_kerzen(100, prozent_je_kerze=0.5)
+        cfg = BacktestConfig(
+            instrument=btcusdt, risk=risk, funding=no_funding,
+            initial_equity=Decimal("500"), enforce_risk_limits=True,
+        )
+        tester = Backtester(cfg)
+        tester.run(candles_to_frame(kerzen), ScriptedStrategy({}))
+
+        # Nach dem Lauf steht die Uhr auf der letzten Kerze, nicht auf heute.
+        assert tester._jetzt == kerzen[-1].open_time
+
+    def test_vorgabe_ist_eingeschaltet(self, btcusdt: Instrument, risk: RiskSettings) -> None:
+        """Der Vorgabewert entscheidet, was gemessen wird.
+
+        Waere er aus, misst jeder Zulassungslauf weiterhin die schoenere Zahl -
+        und die Korrektur waere Dekoration.
+        """
+        cfg = BacktestConfig(instrument=btcusdt, risk=risk)
+        assert cfg.enforce_risk_limits is True

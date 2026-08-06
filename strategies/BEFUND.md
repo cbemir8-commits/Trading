@@ -4,11 +4,16 @@ Diese Datei haelt fest, was gemessen wurde und welche Wege damit
 ausgeschlossen sind. Sie ist kein Champion - `champion.json` entsteht nur,
 wenn alle elf Gates bestanden sind.
 
-**Stand: 9 von 11. Nach 81 gepruefen Hypothesen.**
+**Stand: 8 von 11. Nach 81 gepruefen Hypothesen.**
 
-**Wichtige Einschraenkung, gemessen am 05.08.2026:** Diese 9 von 11 gelten
+Bis zum 06.08.2026 stand hier 9 von 11. Der Rueckschritt kommt nicht von
+einer neuen Hypothese, sondern davon, dass der Backtest jetzt die
+**Verlustgrenzen des Betriebs** durchsetzt (siehe unten). Er war vorher zu
+optimistisch; die Zahl ist gefallen, weil die Messung ehrlicher wurde.
+
+**Wichtige Einschraenkung, gemessen am 05.08.2026:** Diese Zahlen gelten
 fuer den Zeitraum ab August 2017. Laesst man die ersten zweieinhalb Jahre
-weg, sind es 8 von 11 und 7,4 % im Jahr statt 11,2 %. Siehe
+weg, faellt die Jahresrendite von 11,2 % auf 7,4 %. Siehe
 "Wie viel haengt am Zeitraum" weiter unten.
 
 ## Drei Fehler, die den Backtest wertlos gemacht haetten
@@ -90,6 +95,57 @@ und verdeckt die echten dahinter. Auch das ist behoben.
 der Boerse, Neustart mitten in einer Position. Dafuer gibt es die Testsuite
 und den Demobetrieb.
 
+## Der vierte Befund: Der Backtest kannte die Verlustgrenzen nicht
+
+Anders als die drei vorigen war das kein Codefehler, sondern eine **fehlende
+Modellierung**. Im Betrieb sperrt der Risk-Officer
+
+    nach  3 % Tagesverlust    fuer 24 Stunden
+    nach  7 % Wochenverlust   bis zur manuellen Freigabe
+    bei  15 % Rueckgang       Not-Aus, alles glatt
+
+Die Engine kannte keine dieser Grenzen - der Name ``RiskOfficer`` kam in
+``backtest/engine.py`` kein einziges Mal vor. Sie mass damit eine Strategie,
+die es so nicht geben kann.
+
+Gemessen, je Testfenster einzeln gerechnet:
+
+    schlimmster Tag                     -3,25 %
+    Fenster mit einem Tag unter -3 %     1 von 31
+    Wochenlimit ausgeloest in            3 Fenstern
+    Not-Aus ausgeloest                   nie
+
+**Auf den Spitzenkandidaten selbst wirkt sich das nicht aus.** Keines seiner
+156 Signale fiel in eine Sperrzeit; Rendite, Rueckgang und Sharpe sind auf
+zwei Nachkommastellen dieselben. Was sich aendert, ist das Gate
+**Parameter-Plateau**: Ein Nachbarparameter, der ohne Grenzen profitabel war,
+ist es mit ihnen nicht mehr. Damit steht der Kandidat bei
+
+    ohne Grenzen   9 von 11    Messlatte, Deflated Sharpe offen
+    mit Grenzen    8 von 11    zusaetzlich Parameter-Plateau
+
+Das Gate misst, ob die Strategie auf einem Plateau steht oder auf einer
+Kante. Mit den Grenzen zeigt sich: auf einer schmaleren Kante als gedacht.
+Das ist ein echter Befund und kein Messfehler - die Nachbarn muessen die
+Grenzen ebenso einhalten wie der Kandidat.
+
+**Ein Fehler in meiner eigenen Messung, bevor ich sie richtig gemacht habe.**
+Zuerst hatte ich den schlimmsten Tag mit **-17,98 %** gemessen und daraus
+geschlossen, der Not-Aus haette allein davon ausgeloest. Das war falsch: Ich
+hatte die 31 Fensterkurven aneinandergehaengt, und jede beginnt wieder bei
+500. Der Sprung am Fensterwechsel sah wie ein Tagesverlust aus. Je Fenster
+einzeln gerechnet sind es -3,25 %.
+
+**Wie es gebaut ist.** Die Engine benutzt den **echten** ``RiskOfficer``, nicht
+eine Nachbildung seiner Regeln - genau aus dieser Doppelung sind die drei
+vorigen Abweichungen entstanden. Dafuer wurde die Zustandspruefung aus
+``evaluate`` in eine eigene Methode ``blockade()`` gezogen, die beide
+aufrufen: der Betrieb und der Backtest. Eine Umsetzung, zwei Aufrufer.
+
+Die Uhr des Officers zeigt dabei auf die verarbeitete Kerze. Zeigte sie auf
+die Wirklichkeit, laegen alle 2830 Kerzen an einem Tag und die Tagesgrenze
+griffe nie.
+
 ## Der beste Kandidat
 
     Trend-Beteiligung 50 Tage auf BTC + ETH
@@ -114,7 +170,12 @@ nicht zwei Staende nebeneinander stehen:
 | Gate | Wert | Schwelle |
 |---|---|---|
 | Messlatte | 11,22 % p.a. | 15 % p.a. |
-| Deflated Sharpe | 0,830 | 0,95 |
+| Deflated Sharpe | 0,820 | 0,95 |
+| Parameter-Plateau | 0,500 | 0,600 |
+
+Das Parameter-Plateau ist seit dem 06.08.2026 offen - nicht weil sich die
+Strategie geaendert haette, sondern weil der Backtest jetzt die
+Verlustgrenzen des Betriebs durchsetzt.
 
 Monte-Carlo besteht seit der Gewichtungskorrektur (siehe unten) mit 9,72 %
 gegen 15 %.
