@@ -4,7 +4,7 @@ Diese Datei haelt fest, was gemessen wurde und welche Wege damit
 ausgeschlossen sind. Sie ist kein Champion - `champion.json` entsteht nur,
 wenn alle elf Gates bestanden sind.
 
-**Stand: 8 von 11. Nach 92 gepruefen Hypothesen.**
+**Stand: 8 von 11. Nach 93 gepruefen Hypothesen.**
 
 Bis zum 06.08.2026 stand hier 9 von 11. Der Rueckschritt kommt nicht von
 einer neuen Hypothese, sondern davon, dass der Backtest jetzt die
@@ -253,6 +253,61 @@ Begruendung hinterher, und danach misst das System nur noch sich selbst.
 Ebenso wenig habe ich SMA 40 zum neuen Kandidaten erklaert, obwohl er auf
 dem Korb besser abschneidet. Den besten Nachbarn zu nehmen ist genau die
 Ueberanpassung, gegen die das Gate gebaut wurde.
+
+## Der siebte Befund: Die Periode im Training zu waehlen hilft nicht
+
+Das war die letzte substanzielle Idee, die ich hatte, und sie ist widerlegt.
+
+Der Gedanke war sauber: Die Landschaftskarte zeigt, dass schnellere Perioden
+mehr Trades bei hoeherem Gewinn liefern - genau das, was dem Deflated Sharpe
+fehlt. Den besten Punkt aus der Karte zu nehmen waere Ueberanpassung, weil
+sie auf denselben Daten entstand. Also: die Periode in **jedem
+Trainingsfenster neu bestimmen** und im Testfenster verwenden. Dann kennt die
+Wahl die Testdaten nicht.
+
+Die Auswahlregel stand **vor** der Messung fest, damit ich hinterher nicht
+diejenige nehme, die am besten aussieht: gewaehlt wird die **Mitte des
+laengsten zusammenhaengenden profitablen Bereichs**, nicht der Punkt mit dem
+hoechsten Gewinn. Begruendung: Der Spitzenwert wandert von Fenster zu
+Fenster, der tragfaehige Bereich nicht.
+
+Gemessen auf denselben 31 Fenstern, BTC + ETH:
+
+                          Trades    p.a.       DD     Sharpe     DSR   Gates
+    fester Parameter (50)    156   11,22 %   9,74 %    1,50    0,800   8/11
+    im Training gewaehlt     166   10,06 %  10,72 %    1,28    0,624   7/11
+
+**Schlechter in jeder Hinsicht ausser der Trade-Zahl.** Die Diagnose zeigt,
+warum:
+
+    fester Parameter      156 Trades   Erwartung +1,043 R   Sharpe/Trade 0,242
+    im Training gewaehlt  166 Trades   Erwartung +0,850 R   Sharpe/Trade 0,211
+
+Sechs Prozent mehr Trades, aber achtzehn Prozent weniger Erwartung je Trade.
+Das Produkt, an dem der Deflated Sharpe haengt, faellt von 3,01 auf 2,71.
+
+Der Grund steht in der Wahltabelle: Ueber 31 Fenster wurden **sechs
+verschiedene Faktoren** gewaehlt, Spanne 0,60 bis 1,10, und in vier Fenstern
+fand sich im Training gar kein tragfaehiger Bereich. Die Periode springt
+also, und bei jedem Sprung entstehen Ein- und Ausstiege, die keinen Vorteil
+tragen.
+
+Damit ist auch die allgemeinere Frage beantwortet: **Der beste Bereich im
+Trainingsfenster sagt zu wenig ueber das Testfenster.** Das ist kein
+Umsetzungsfehler, sondern eine Eigenschaft dieser Daten - und es erklaert
+nebenbei, warum die Landschaftskarte so flach ist: Wo 0,60 bis 1,10 alle
+aehnlich gut sind, ist auch im Training kaum zu erkennen, welcher gewinnt.
+
+Was ich **nicht** getan habe: die Auswahlregel gewechselt, bis eine
+funktioniert ("nimm den besten statt der Mitte", "glaette ueber mehrere
+Fenster"). Die Regel stand vorab fest, das Ergebnis ist negativ, und das
+Nachreichen einer besseren Regel waere dieselbe Ueberanpassung eine Ebene
+hoeher.
+
+Der Versuchszaehler steigt um **eins**, nicht um zwoelf: Die einzelnen
+Faktoren wurden nur im Training angesehen und nie am Testergebnis gemessen -
+die Auswahl ist Teil der Strategie geworden. Genau darin lag der methodische
+Vorteil, auch wenn er sich nicht ausgezahlt hat.
 
 ## Der beste Kandidat
 

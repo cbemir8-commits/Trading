@@ -245,6 +245,7 @@ def run_walkforward(
     splitter: WalkForwardSplitter,
     *,
     sub_frame: pd.DataFrame | None = None,
+    strategie_je_fenster=None,
 ) -> WalkForwardReport:
     """Strategie ueber alle Testfenster auswerten.
 
@@ -252,6 +253,16 @@ def run_walkforward(
     Das ist notwendig, weil eine Strategie internen Zustand halten darf
     (Sperrfrist, letzter Einstieg) - eine wiederverwendete Instanz wuerde
     Zustand ueber Fenstergrenzen hinweg schleppen.
+
+    ``strategie_je_fenster`` erlaubt eine Strategie, die sich **aus dem
+    Trainingsfenster** bestimmt: Statt ``build_strategy()`` wird dann
+    ``strategie_je_fenster(window)`` gerufen, und der Aufrufer darf die
+    Trainingsdaten dieses Fensters ansehen.
+
+    Das ist die einzige Stelle, an der ein Parameter aus Daten gewaehlt
+    werden darf, ohne dass es Ueberanpassung ist - die Wahl kennt das
+    Testfenster nicht. Wer hier **Testdaten** hereinreicht, hebelt den
+    ganzen Walk-Forward aus; siehe ``research/adaptiv.py``.
     """
     if frame.empty:
         return WalkForwardReport()
@@ -272,7 +283,11 @@ def run_walkforward(
     report = WalkForwardReport()
 
     for window in windows:
-        strategy: Strategy = build_strategy()
+        strategy: Strategy = (
+            strategie_je_fenster(window)
+            if strategie_je_fenster is not None
+            else build_strategy()
+        )
         window_result = _run_window(frame, strategy, config, window, sub_frame)
         if window_result is not None:
             report.windows.append(window_result)

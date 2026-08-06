@@ -104,6 +104,7 @@ def run_portfolio_walkforward(
     *,
     weights: dict[str, float] | None = None,
     initial_equity: Decimal | None = None,
+    strategie_je_fenster=None,
 ) -> WalkForwardReport:
     """Mehrere Beine zu einem Walk-Forward-Ergebnis zusammenlegen.
 
@@ -144,7 +145,8 @@ def run_portfolio_walkforward(
     einzeln: dict[str, WalkForwardReport] = {}
     for name, frame in zugeschnitten.items():
         bericht = run_walkforward(
-            frame, bauplan_fuer(name), config_fuer(name), splitter
+            frame, bauplan_fuer(name), config_fuer(name), splitter,
+            strategie_je_fenster=strategie_je_fenster,
         )
         if bericht.windows:
             einzeln[name] = bericht
