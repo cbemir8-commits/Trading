@@ -1139,3 +1139,96 @@ nicht begruenden. Ich haette diese Regel frueher gebraucht.
 Der Stand bleibt **8 von 11**. Offen sind unveraendert Messlatte (11,28 % gegen
 15 %), Deflated Sharpe (0,804 gegen 0,95) und Parameter-Plateau (0,50 gegen
 0,60).
+
+## Vierzehn. Der Tageskerzen-Weg ist ausgereizt - gerechnet, nicht vermutet
+
+Bisher hiess es "der Deflated Sharpe fehlt noch". Wie viel genau, stand
+nirgends. Jetzt schon (``cli abstand``):
+
+    Deflated Sharpe 0,802 (noetig 0,95) bei 154 Trades, Sharpe je Trade 0,244
+    Bei gleicher Qualitaet je Trade: 207 Trades noetig - es fehlen 53.
+    Bei gleicher Trade-Zahl:         Sharpe je Trade 0,278 noetig (Faktor 1,14)
+
+Der Abstand ist also **klein**: 53 Trades oder 14 % mehr Qualitaet je Trade.
+Das klang nach einer loesbaren Aufgabe. Zwei Messungen sagen etwas anderes.
+
+### Die weggeschnittene Historie reicht nicht
+
+BTC liegt seit **2012** im Speicher, 5331 Tageskerzen. Der Portfoliolauf
+schneidet auf den gemeinsamen Bereich mit ETH zu und beginnt deshalb erst
+2017-08 - 5,6 Jahre BTC werden weggeworfen. Das ist keine Hypothese, sondern
+eine Abschneidung; sie auszuschoepfen kostet **keinen Versuch**.
+
+    Datenbasis                       n    SR/Trade    DSR
+    gemeinsamer Bereich ab 2017    154      0,244    0,802
+    BTC voll allein (ab 2012)      117      0,207    0,319
+    ETH voll allein (ab 2017)       80      0,248    0,303
+    BTC voll + ETH voll            197      0,224    0,852
+
+197 statt 154 Trades - fast die noetigen 207. Aber die aeltere BTC-Historie ist
+fuer diese Regel schwaecher (0,207 gegen 0,248), der Sharpe je Trade faellt auf
+0,224, **und damit steigt die Anforderung auf 245 Trades.** Der Abstand wird
+groesser, nicht kleiner. Mehr Vergangenheit hilft hier nicht.
+
+### Keine Marktkombination besteht
+
+Alle fuenfzehn Kombinationen der vier vorhandenen Maerkte, echte
+Portfoliolaeufe, dieselben Gates:
+
+    Kombination           n      p.a.       DD      DSR    Gates
+    ETH                  80    11,08 %   11,51 %   0,303    8/11
+    BTC+ETH             154    11,28 %    9,74 %   0,802    8/11
+    BTC+ETH+LTC         260     9,03 %   11,15 %   0,873    6/11
+    BTC+ETH+XRP         262     8,79 %   10,03 %   0,794    8/11
+    BTC+ETH+LTC+XRP     368     7,73 %   10,71 %   0,875    7/11
+
+**Keine einzige besteht.** Und die Zahlen zeigen, warum: Die beiden offenen
+Gates ziehen gegeneinander. Mehr Maerkte bringen Trades (DSR steigt auf 0,875)
+und kosten Rendite (7,73 % gegen die 15 % der Messlatte). Weniger Maerkte
+bringen Rendite (11,28 %) und kosten Trades (DSR faellt auf 0,80). Das Optimum
+der einen Achse ist das Minimum der anderen.
+
+Mit diesem Genom, auf Tageskerzen, mit diesen Maerkten ist **kein Punkt
+erreichbar, an dem alle elf Gates halten.** Das ist kein Zwischenstand, sondern
+ein Ergebnis.
+
+### Was jeder weitere Einfall kostet
+
+Die unangenehmste Zahl des Projekts steht in derselben Rechnung:
+
+    Versuche      DSR    noetige Trades
+        10      0,992         112
+        50      0,893         180
+        95      0,802         207   <- heute
+       200      0,666         237
+       500      0,481         275
+
+Derselbe Kandidat, dieselben Daten, dieselbe Rechnung. Nur die Suche davor war
+laenger. **Die Huerde waechst mit jedem getesteten Einfall** - die Zahl der
+Versuche steht in der Huerde selbst, nicht bloss in der Buchhaltung. Bei zehn
+Versuchen haette dieser Kandidat mit 112 Trades bestanden; heute braeuchte er
+207.
+
+Ein weiterer Versuch kostet zurzeit 0,0017 DSR-Punkte, zehn kosten 0,0167. Wer
+zwanzig Einfaelle durchprobiert, um den Sharpe je Trade um 3 % zu heben, hat
+danach weniger als vorher. Das laesst sich **vorher** ausrechnen, und ab jetzt
+wird es das: ``research/erreichbarkeit.py`` und ``cli abstand``.
+
+Die Reihenfolge, die daraus folgt: **Erst die Datenbasis ausschoepfen, dann
+suchen.** Mehr Daten kosten keinen Versuch, eine neue Idee schon.
+
+### Was daraus fuer den Plan folgt
+
+Der einzige Hebel, der Trades bringt, **ohne** die Rendite je Trade zu
+verwaessern, ist eine hoehere Handelsfrequenz - nicht mehr Maerkte und nicht
+mehr Vergangenheit. Damit ist der naechste Schritt der, der ohnehin auf der
+Liste steht und den ich nicht selbst gehen kann:
+
+    python -m cli backfill --intervall 15 --von 2020-03-30
+    python -m cli wettbewerb -i 15
+
+Auf 15-Minuten-Kerzen liegen in denselben sechs Jahren rund hundertmal so viele
+Kerzen. Ob dort ein Vorteil steckt, ist offen - die Messung im Maerz
+(Mean-Reversion auf 15 Minuten, kein Bruttovorteil) spricht dagegen, betraf
+aber eine andere Regelfamilie. Was feststeht: Auf Tageskerzen ist der Weg zu
+Ende gerechnet.

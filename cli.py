@@ -2278,6 +2278,104 @@ def korb(
 
 
 @app.command()
+def abstand(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Was fehlt zum Deflated-Sharpe-Gate - und was kostet Weitersuchen?
+
+    Die haerteste Huerde im System hat eine Eigenschaft, die man leicht
+    uebersieht: Sie waechst mit jedem getesteten Einfall. Die Zahl der
+    Versuche steht in der Huerde selbst, nicht nur in der Buchhaltung.
+    Derselbe Kandidat, dieselben Daten:
+
+        10 Versuche  -> DSR 0,994
+        95 Versuche  -> DSR 0,837
+       500 Versuche  -> DSR 0,535
+
+    Wer breit sucht, entwertet rechnerisch, was er findet. Dieser Befehl sagt
+    vorher, was ein weiterer Versuch kostet und was er bringen muesste -
+    damit die Suche budgetiert wird statt geraten.
+    """
+    from decimal import Decimal
+
+    from rich.table import Table
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.erreichbarkeit import bewerte, kennzahlen_aus_pnl
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    frames = common_range(roh)
+    genome = spitzenkandidat()
+    configs = {
+        x: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            kalender=_terminkalender(settings) or None,
+        )
+        for x in symbole
+    }
+
+    report = run_portfolio_walkforward(
+        frames, lambda: compile_genome(genome), configs
+    )
+    if not report.windows:
+        console.print("[red]Keine Fenster - zu wenig gemeinsame Historie.[/]")
+        raise typer.Exit(2)
+
+    trials = load_trials(Path(settings.paths.state) / "trials.json")
+    n, sharpe, schiefe, woelbung = kennzahlen_aus_pnl(
+        [t.net_pnl for t in report.all_trades]
+    )
+    ergebnis = bewerte(
+        trades=n, sharpe=sharpe, trials=trials, skew=schiefe, kurtosis=woelbung
+    )
+
+    console.print(f"\n[bold]Abstand zum Gate[/] {' + '.join(symbole)} "
+                  f"{interval_obj.label}\n")
+    console.print(ergebnis.bericht())
+
+    tabelle = Table(header_style="bold", title="Was die Suche kostet")
+    tabelle.add_column("Versuche", justify="right")
+    tabelle.add_column("DSR", justify="right")
+    tabelle.add_column("noetige Trades", justify="right")
+    for t in sorted({10, 50, trials, trials + 10, trials + 50, 200, 500}):
+        e = bewerte(trades=n, sharpe=sharpe, trials=t, skew=schiefe, kurtosis=woelbung)
+        marke = " <-- heute" if t == trials else ""
+        tabelle.add_row(
+            f"{t}{marke}", f"{e.dsr:.3f}",
+            "-" if e.trades_noetig is None else str(e.trades_noetig),
+        )
+    console.print()
+    console.print(tabelle)
+    console.print(
+        "\n[dim]Mehr Daten kosten keinen Versuch, eine neue Idee schon. "
+        "Die Reihenfolge folgt daraus.[/]\n"
+    )
+
+
+@app.command()
 def evidenz(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
