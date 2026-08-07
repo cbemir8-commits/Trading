@@ -39,13 +39,15 @@ import pandas as pd
 import structlog
 
 from core.config import BybitSettings, RiskSettings
-from core.models import Candle, Instrument, Interval, Position, Side, Trade
+from core.models import Candle, Instrument, Interval, Position, Side, Signal, Trade
 from data.bybit.adapter import AccountSource, MarketDataSource
 from data.bybit.trading import TradingGateway
 from data.bybit.ws import KlineStream
 from data.store import CandleStore, candles_to_frame
+from execution.invarianten import pruefe
 from execution.risk import Approved, RiskOfficer, TradingState, Vetoed
 from execution.router import Bracket, BracketState, MarketKind, OrderRouter
+from execution.sizing import SizedPosition
 from strategy.base import BarContext, Strategy, frame_to_arrays, wants_exit
 from web.journal import CommandAction, EventKind, LiveJournal
 
@@ -60,6 +62,10 @@ BUFFER_BARS = 2000
 #: "nimm die Risikoformel" bedeutet - zwei verschiedene Dinge, die sich mit
 #: ``None`` allein nicht auseinanderhalten liessen.
 _KEIN_HANDEL = object()
+
+#: Wie oft der Not-Aus das Stornieren wiederholt, bevor er aufgibt. Drei, weil
+#: gleich danach ``stop()`` kommt - eine spaetere Gelegenheit gibt es nicht.
+STORNO_VERSUCHE = 3
 
 Notifier = Callable[[str], Awaitable[None]]
 
@@ -77,17 +83,31 @@ class LiveStats:
     veto_reasons: dict[str, int] = field(default_factory=dict)
     started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
+    #: Kerzen, deren Verarbeitung mit einer Ausnahme endete. Steht bewusst im
+    #: Dashboard: Ein System, das leise Fehler frisst, sieht von aussen aus wie
+    #: eines, das nichts zu tun hat.
+    candle_errors: int = 0
+    last_error: str = ""
+    #: Verletzte Sicherheitsinvarianten (siehe ``execution/invarianten.py``).
+    invariant_breaches: int = 0
+    last_breach: str = ""
+
     def count_veto(self, reason: str) -> None:
         self.signals_vetoed += 1
         self.veto_reasons[reason] = self.veto_reasons.get(reason, 0) + 1
 
     def describe(self) -> str:
         runtime = datetime.now(UTC) - self.started_at
-        return (
+        text = (
             f"{self.candles_seen} Kerzen, {self.signals_generated} Signale, "
             f"{self.entries_filled} Einstiege, {self.signals_vetoed} abgelehnt "
             f"({runtime.total_seconds() / 3600:.1f} h Laufzeit)"
         )
+        if self.candle_errors:
+            text += f", {self.candle_errors} Fehler"
+        if self.invariant_breaches:
+            text += f", {self.invariant_breaches} Invariantenbrueche"
+        return text
 
 
 class LiveTrader:
@@ -136,6 +156,9 @@ class LiveTrader:
         self._frame: pd.DataFrame = pd.DataFrame()
         self._bars_since_entry_placed = 0
         self._stream: KlineStream | None = None
+        #: Grund eines fehlgeschlagenen Stornos. Solange gesetzt, koennen noch
+        #: Restorders im Buch stehen - dann wird nicht neu eroeffnet.
+        self._aufraeumen_offen: str | None = None
 
     # -- Start ---------------------------------------------------------------
     async def start(self) -> None:
@@ -183,8 +206,11 @@ class LiveTrader:
         """
         position = self._first_position()
         if position is None:
-            # Verwaiste Orders aus einem frueheren Lauf entfernen.
-            self.router.close_all("Aufraeumen beim Start - keine offene Position")
+            # Verwaiste Orders aus einem frueheren Lauf entfernen. Geht das
+            # schief, wird vor dem ersten Einstieg erneut aufgeraeumt statt in
+            # ein moeglicherweise volles Buch hinein zu handeln.
+            if not self.router.close_all("Aufraeumen beim Start - keine offene Position"):
+                self._aufraeumen_offen = "Aufraeumen beim Start"
             return
 
         log.warning(
@@ -210,18 +236,179 @@ class LiveTrader:
                 "live.position_ohne_stop",
                 massnahme="Wird geschlossen - ungeschuetzte Position ist nicht tragbar",
             )
-            self.router.gateway.place_market(
-                symbol=self.instrument.symbol,
-                side=position.side.opposite,
-                qty=position.size,
-                reduce_only=True,
-            )
+            try:
+                self.router.gateway.place_market(
+                    symbol=self.instrument.symbol,
+                    side=position.side.opposite,
+                    qty=position.size,
+                    reduce_only=True,
+                )
+            except Exception as exc:
+                # **Hier flog die Ausnahme frueher aus ``start()`` heraus.**
+                #
+                # Der Prozess startete also gar nicht - und liess ausgerechnet
+                # eine Position ohne Stop zurueck. Der gefaehrlichste Zustand
+                # ueberhaupt, kombiniert mit einem System, das nicht mehr
+                # hinsieht. Zwei Zufallsfolgen des Fuzzers sind genau darauf
+                # gelaufen.
+                #
+                # Schliessen ist die erste Wahl, aber nicht die einzige.
+                await self._notfallabsicherung(position, exc)
+                return
             self.router.close_all("Ungeschuetzte Position geschlossen")
             return
 
+        self.bracket = self._bracket_aus_position(position)
+        self.equity_at_entry = self._current_equity()
         await self._notify(
             f"Offene Position uebernommen: {position.side.value} {position.size} "
-            f"@ {position.entry_price}, Stop {position.stop_loss}"
+            f"@ {position.entry_price}, Stop {position.stop_loss}\n"
+            "Die urspruenglichen Ziele sind nicht wiederherstellbar - sie laeuft "
+            "bis zum Stop oder bis die Ausstiegsbedingung greift."
+        )
+        self._report(
+            EventKind.WARNING,
+            f"Position uebernommen: {position.side.value} {position.size} @ "
+            f"{position.entry_price}, Stop {position.stop_loss}. Ohne Ziele - "
+            f"die urspruenglichen Stufen sind nach einem Neustart nicht bekannt.",
+            side=position.side.value,
+            qty=position.size,
+            entry_price=position.entry_price,
+            stop_price=position.stop_loss,
+        )
+
+    async def _notfallabsicherung(self, position: Position, exc: Exception) -> None:
+        """Die Position ohne Stop liess sich nicht schliessen. Was jetzt?
+
+        Nicht: aufgeben. Frueher flog die Ausnahme aus ``start()`` heraus - der
+        Prozess startete nicht und liess die ungeschuetzte Position stehen.
+        Schlechter geht es kaum: der gefaehrlichste Zustand ueberhaupt, und
+        niemand mehr, der hinsieht.
+
+        Zweitbeste Wahl ist deshalb, sie wenigstens **abzusichern**: ein Stop
+        im maximal zulaessigen Abstand. Der ist nicht der, den eine Strategie
+        gewaehlt haette - ihre Begruendung ist nach einem Neustart nicht mehr
+        bekannt -, aber er begrenzt den Schaden auf einen bekannten Betrag.
+
+        Klappt auch das nicht, wird die Position trotzdem uebernommen. Ein
+        Bracket ohne Stop ist ein schlechter Zustand, aber ein **gesehener**:
+        Die Schleife kennt sie dann, die Ausstiegsbedingung greift, der Not-Aus
+        greift, und die Invariantenpruefung meldet sie bei jeder Kerze.
+        """
+        log.critical(
+            "live.notschliessung_fehlgeschlagen",
+            fehler=str(exc),
+            massnahme="Versuche stattdessen einen Stop zu setzen",
+        )
+
+        abstand = self.risk_settings.max_stop_distance_pct / Decimal(100)
+        richtung = Decimal(-1) if position.side is Side.BUY else Decimal(1)
+        notstop = self.instrument.round_price(
+            position.entry_price * (Decimal(1) + richtung * abstand),
+            side=position.side.opposite,
+        )
+
+        gesetzt = False
+        if self.router.market_kind.has_position_stop:
+            try:
+                self.router.gateway.set_position_stop(
+                    symbol=self.instrument.symbol, stop_loss=notstop
+                )
+                gesetzt = True
+            except Exception as zweiter:
+                log.critical("live.notstop_fehlgeschlagen", fehler=str(zweiter))
+
+        ersatz = position.model_copy(
+            update={"stop_loss": notstop if gesetzt else None}
+        )
+        self.bracket = self._bracket_aus_position(ersatz)
+        self.equity_at_entry = self._current_equity()
+
+        if gesetzt:
+            text = (
+                f"WARNUNG: Position ohne Stop gefunden ({position.side.value} "
+                f"{position.size}). Sie liess sich nicht schliessen ({exc}), "
+                f"deshalb wurde ein Notstop bei {notstop} gesetzt - der maximal "
+                f"zulaessige Abstand, nicht der einer Strategie. Bitte "
+                f"nachsehen."
+            )
+        else:
+            text = (
+                f"DRINGEND: Position ohne Stop gefunden ({position.side.value} "
+                f"{position.size}). Sie liess sich weder schliessen ({exc}) "
+                f"noch absichern. Sie wird ueberwacht, ist aber ungeschuetzt - "
+                f"bitte sofort bei Bybit eingreifen."
+            )
+        self._report(EventKind.WARNING, text, qty=position.size)
+        await self._notify(text)
+
+    def _bracket_aus_position(self, position: Position) -> Bracket:
+        """Aus einer uebernommenen Position ein Bracket bauen.
+
+        Vorher passierte hier nichts: Die Position wurde uebernommen, aber kein
+        Bracket angelegt. Damit lief sie **ohne jede Verwaltung** weiter -
+        ``_manage_open_position`` steigt bei ``bracket is None`` sofort aus,
+        ``_check_signal_exit`` ebenso. Die Ausstiegsbedingung, ueber die 38,5 %
+        aller Trades enden, galt fuer sie nicht mehr; sie lief bis zum Stop.
+
+        Ein Neustart mitten in einer Position ist kein Randfall - er steht als
+        Pflichttest im Plan, und genau der Test haette die Luecke nicht gezeigt:
+        Der Stop haengt an der Position und ueberlebt, es sieht also alles
+        richtig aus. Aufgefallen ist es erst, als die Invariantenpruefung
+        anfing, diese Lage als "unbeaufsichtigte Position" zu melden.
+
+        **Was sich nicht wiederherstellen laesst, sind die Ziele.** Welche
+        Stufen das Signal hatte, steht nirgends mehr. Die Position laeuft
+        deshalb bis zum Stop oder bis die Ausstiegsbedingung greift - das wird
+        gemeldet, nicht stillschweigend hingenommen.
+        """
+        stop = position.stop_loss or Decimal(0)
+        # Der Signal-Bauplan verlangt einen Stop **echt** unterhalb (Long) bzw.
+        # oberhalb (Short) des Einstiegs. Nach einem Nachzug auf Einstand liegt
+        # er aber genau darauf. Fuer den Bauplan wird er dann um einen Tick
+        # verschoben; die Bremse an der Boerse bleibt davon unberuehrt, und
+        # ``bracket.stop_price`` traegt weiterhin den echten Wert.
+        tick = self.instrument.tick_size
+        if position.side is Side.BUY:
+            plausibel = min(stop, position.entry_price - tick)
+        else:
+            plausibel = max(stop, position.entry_price + tick)
+
+        signal = Signal(
+            timestamp=datetime.now(UTC),
+            symbol=self.instrument.symbol,
+            side=position.side,
+            entry_price=position.entry_price,
+            stop_loss=plausibel,
+            take_profits=[],
+            strategy_id=self.strategy.strategy_id,
+            reason="nach Neustart uebernommen",
+        )
+        sized = SizedPosition(
+            qty=position.size,
+            notional=position.size * position.entry_price,
+            leverage=position.leverage,
+            exchange_leverage=position.leverage,
+            risk_amount=abs(position.entry_price - plausibel) * position.size,
+            risk_pct_of_equity=Decimal(0),
+            stop_distance=abs(position.entry_price - plausibel),
+            stop_distance_pct=Decimal(0),
+            liquidation_price=Decimal(0),
+            liquidation_distance_pct=Decimal(0),
+            take_profit_legs=[],
+        )
+        return Bracket(
+            signal=signal,
+            sized=sized,
+            state=BracketState.PROTECTED,
+            entry_price=position.entry_price,
+            filled_qty=position.size,
+            remaining_qty=position.size,
+            # Der echte Wert, nicht der fuer den Bauplan verschobene - und
+            # ``None``, wenn wirklich keiner gesetzt ist. Eine 0 saehe auf dem
+            # Bildschirm aus wie ein Stop bei null statt wie gar keiner.
+            stop_price=position.stop_loss,
+            opened_at=datetime.now(UTC),
         )
 
     def _load_history(self) -> None:
@@ -249,10 +436,44 @@ class LiveTrader:
 
     # -- Hauptschleife -------------------------------------------------------
     async def _on_candle(self, candle: Candle, interval: Interval) -> None:
-        """Eine bestaetigte Kerze ist eingetroffen."""
+        """Eine bestaetigte Kerze ist eingetroffen.
+
+        Diese Huelle laesst **keine** Ausnahme nach aussen. Der Grund ist der
+        Aufrufer: ``KlineStream.run`` faengt alles, was aus dem Kerzen-Handler
+        kommt, als ``ws.verbindung_verloren`` und baut die Verbindung neu auf.
+        Ein fehlgeschlagener Orderaufruf sah damit aus wie ein Netzproblem -
+        falsche Diagnose im Protokoll, und waehrend des Backoffs fehlen Kerzen.
+
+        Gefressen wird der Fehler trotzdem nicht: Er wird gezaehlt, gemeldet und
+        beim ersten Auftreten aufs Telefon geschickt. Ein System, das leise
+        Fehler verschluckt, sieht von aussen aus wie eines, das nichts zu tun
+        hat - das ist der Unterschied, den der Zaehler sichtbar macht.
+        """
         if interval is not self.interval:
             return
+        try:
+            await self._verarbeite_kerze(candle, interval)
+        except Exception as exc:
+            await self._kerze_fehlgeschlagen(exc)
 
+    async def _kerze_fehlgeschlagen(self, exc: Exception) -> None:
+        text = f"{type(exc).__name__}: {exc}"
+        erstmalig = text != self.stats.last_error
+        self.stats.candle_errors += 1
+        self.stats.last_error = text
+
+        log.critical("live.kerze_fehlgeschlagen", fehler=text, anzahl=self.stats.candle_errors)
+        self._report(EventKind.WARNING, f"Fehler bei der Kerzenverarbeitung: {text}")
+        # Nur beim ersten Mal aufs Telefon. Ein dauerhaft kaputter Aufruf wuerde
+        # sonst alle 15 Minuten klingeln, bis niemand mehr hinsieht.
+        if erstmalig:
+            await self._notify(
+                f"Fehler bei der Kerzenverarbeitung: {text}\n"
+                "Der Handel laeuft weiter, aber diese Kerze wurde nicht "
+                "vollstaendig verarbeitet."
+            )
+
+    async def _verarbeite_kerze(self, candle: Candle, interval: Interval) -> None:
         self.stats.candles_seen += 1
         # Ein Schreibfehler im Datenspeicher darf den Handel nicht stoppen -
         # Kerzen lassen sich jederzeit nachladen, eine offene Position nicht.
@@ -292,10 +513,53 @@ class LiveTrader:
         # PENDING_ENTRY ist zwar nicht ``is_open`` - es wartet ja noch auf den
         # Fill -, aber es liegt bereits eine Einstiegsorder im Markt. Wer hier
         # auf ``is_open`` prueft, legt bei jedem Signal eine zweite dazu.
-        if self.bracket is None and context is not None:
+        if self.bracket is None and context is not None and self._nacharbeit_erledigt():
             await self._look_for_entry(context)
 
+        await self._pruefe_invarianten()
         self._publish(assessment, candle=candle)
+
+    async def _pruefe_invarianten(self) -> None:
+        """Die Sicherheitsaussagen gegen die Boerse pruefen - einmal je Kerze.
+
+        Geprueft wird **hier am Ende**, nicht zwischendurch: Zwischen zwei
+        Kerzen darf unsere Sicht von der Boerse abweichen; eine Order kann in
+        genau diesem Moment fuellen. Der Abgleich ist gerade gelaufen, ab jetzt
+        muessen die Aussagen halten.
+
+        Gemeldet wird, nicht gehandelt. Die Stellen, die eingreifen, kennen
+        ihren Fall genau; eine Pruefung, die im Betrieb noch nie angeschlagen
+        hat, automatisch Positionen schliessen zu lassen, hiesse einem
+        Fehlalarm Geld anzuvertrauen. Der Weg aufs Telefon ist der richtige.
+        """
+        try:
+            verletzungen = pruefe(
+                bracket=self.bracket,
+                position=self._first_position(),
+                orders=self.router.gateway.open_orders(self.instrument.symbol),
+                market_kind=self.router.market_kind,
+            )
+        except Exception as exc:
+            # Die Pruefung ist Beobachtung. Scheitert sie, ist das eine Notiz
+            # wert - aber sie darf den Handel nicht anhalten.
+            log.warning("live.invariantenpruefung_fehlgeschlagen", fehler=str(exc))
+            return
+
+        if not verletzungen:
+            return
+
+        text = "; ".join(str(v) for v in verletzungen)
+        erstmalig = text != self.stats.last_breach
+        self.stats.invariant_breaches += len(verletzungen)
+        self.stats.last_breach = text
+        log.critical("live.invariante_verletzt", verletzungen=text)
+        self._report(EventKind.WARNING, f"Sicherheitsinvariante verletzt: {text}")
+        if erstmalig:
+            await self._notify(
+                f"WARNUNG: Der Zustand an der Boerse passt nicht zum "
+                f"Handelssystem.\n{text}\n"
+                "Bitte bei Bybit nachsehen. Der Handel laeuft weiter."
+            )
 
     # -- Dashboard -----------------------------------------------------------
     def _report(self, kind: EventKind, message: str, **data) -> None:
@@ -370,6 +634,10 @@ class LiveTrader:
                 "entries_expired": self.stats.entries_expired,
                 "veto_reasons": self.stats.veto_reasons,
                 "started_at": self.stats.started_at,
+                "candle_errors": self.stats.candle_errors,
+                "last_error": self.stats.last_error,
+                "invariant_breaches": self.stats.invariant_breaches,
+                "last_breach": self.stats.last_breach,
                 "summary": self.stats.describe(),
             },
         }
@@ -470,11 +738,32 @@ class LiveTrader:
             )
 
     async def _close_everything(self, reason: str) -> None:
-        if self.bracket is not None and self.bracket.is_open:
-            self.router.emergency_close(self.bracket, reason=reason)
-        else:
-            self.router.close_all(reason)
-        self.bracket = None
+        storniert = self._alles_glattstellen(reason)
+        self._bracket_abschliessen(reason, storniert=storniert)
+
+    def _alles_glattstellen(self, grund: str) -> bool:
+        """Schliessen, was **an der Boerse** steht - nicht, was wir glauben.
+
+        Der Unterschied ist der Fund aus einer Zufallsfolge: Fuellt die
+        Einstiegsorder, waehrend das Bracket noch auf sie wartet, ist die
+        Position da, aber ``bracket.is_open`` ist ``False``. Der Not-Aus
+        stornierte dann nur die Orders und meldete Vollzug - die Position lief
+        weiter. Dasselbe gilt fuer eine nach einem Neustart uebernommene
+        Position, die gar kein Bracket hat.
+
+        Rueckgabe: ob das Stornieren durchging.
+        """
+        position = self._first_position()
+        if position is None:
+            return self.router.close_all(grund)
+
+        storniert = self.router.flatten(
+            side=position.side, qty=position.size, reason=grund
+        )
+        if self.bracket is not None:
+            self.bracket.state = BracketState.CLOSED
+            self.bracket.remaining_qty = Decimal(0)
+        return storniert
 
     def _append(self, candle: Candle) -> None:
         row = candles_to_frame([candle])
@@ -505,19 +794,63 @@ class LiveTrader:
         return balance.equity
 
     async def _handle_kill_switch(self) -> None:
-        if self.bracket is not None and self.bracket.is_open:
-            self.router.emergency_close(self.bracket, reason="Kill-Switch")
-        else:
-            self.router.close_all("Kill-Switch")
+        """Not-Aus: alles glattstellen, melden, anhalten.
 
+        **Die Meldung geht raus, auch wenn das Glattstellen scheitert.** Vorher
+        stand das Schliessen ungeschuetzt am Anfang; ein zufaelliger Lauf des
+        Ausfuehrungs-Fuzzers hat einen Fehler auf ``cancel_all`` gelegt, und
+        damit fiel der ganze Rest aus: keine Nachricht, kein ``stop()``, und der
+        Kerzenstrom deutete die Ausnahme als Verbindungsabbruch. Der Kill-Switch
+        hatte ausgeloest, und das Telefon blieb still.
+
+        Wenn ueberhaupt eine Nachricht wichtig ist, dann diese - und sie ist
+        genau dann am wichtigsten, wenn gerade etwas nicht funktioniert.
+        """
+        fehlschlag: str | None = None
+        geschlossen = True
+        storniert = False
+        try:
+            storniert = self._alles_glattstellen("Kill-Switch")
+        except Exception as exc:
+            fehlschlag = str(exc)
+            geschlossen = False
+            log.critical(
+                "live.notausstieg_fehlgeschlagen",
+                fehler=str(exc),
+                hinweis="Position kann noch offen sein - von Hand bei Bybit pruefen",
+            )
+
+        # **Wiederholen, solange noch jemand da ist.** Der Not-Aus ist die
+        # letzte Handlung dieses Prozesses - gleich danach haelt er an. Ein
+        # einmal misslungenes Storno bekaeme also nie eine zweite Gelegenheit,
+        # und die Restorders lagen im Buch, bis jemand von Hand nachsieht.
+        for _ in range(STORNO_VERSUCHE - 1):
+            if storniert:
+                break
+            storniert = self.router.close_all("Kill-Switch (Wiederholung)")
+        if not storniert and fehlschlag is None:
+            fehlschlag = "Orders liessen sich nicht stornieren"
+
+        if geschlossen:
+            self._bracket_abschliessen("Kill-Switch", storniert=storniert)
+        # Sonst bleibt das Bracket stehen: Die Position ist womoeglich noch
+        # offen, und ein weggeworfenes Bracket hiesse, dass niemand mehr
+        # hinsieht.
+
+        nachsatz = (
+            "Alles glattgestellt. Handel gestoppt bis zur manuellen Freigabe."
+            if fehlschlag is None
+            else f"ACHTUNG: Glattstellen fehlgeschlagen ({fehlschlag}). "
+            "Position kann noch offen sein - bitte sofort bei Bybit nachsehen."
+        )
         self._report(
             EventKind.KILL,
-            f"KILL-SWITCH: {self.officer.state.kill_reason}",
+            f"KILL-SWITCH: {self.officer.state.kill_reason}. {nachsatz}",
             equity=self.last_equity,
+            glattstellen_ok=fehlschlag is None,
         )
         await self._notify(
-            f"KILL-SWITCH AUSGELOEST\n{self.officer.state.kill_reason}\n"
-            "Alles glattgestellt. Handel gestoppt bis zur manuellen Freigabe."
+            f"KILL-SWITCH AUSGELOEST\n{self.officer.state.kill_reason}\n{nachsatz}"
         )
         self.stop()
 
@@ -538,7 +871,7 @@ class LiveTrader:
         if not self.bracket.is_open:
             # CLOSED oder EXPIRED - der Platz ist wieder frei. Wird das
             # vergessen, blockiert ein erledigtes Bracket jeden weiteren Trade.
-            self.bracket = None
+            self._bracket_abschliessen("Bracket erledigt")
             return
 
         position = self._first_position()
@@ -559,7 +892,7 @@ class LiveTrader:
                 f"Position geschlossen. {self.bracket.targets_hit} Ziele erreicht."
             )
             self.bracket.state = BracketState.CLOSED
-            self.bracket = None
+            self._bracket_abschliessen("Position an der Boerse geschlossen")
             return
 
         if position.size > self.bracket.remaining_qty:
@@ -583,7 +916,7 @@ class LiveTrader:
             )
             # Die **tatsaechliche** Menge schliessen, nicht die vermerkte -
             # sonst bliebe genau der ungeschuetzte Rest stehen.
-            self.router.emergency_close(
+            storniert = self.router.emergency_close(
                 self.bracket,
                 reason="Position groesser als abgesichert",
                 qty=position.size,
@@ -601,7 +934,9 @@ class LiveTrader:
                 "Sofort geschlossen."
             )
             self.bracket.state = BracketState.CLOSED
-            self.bracket = None
+            self._bracket_abschliessen(
+                "Position groesser als abgesichert", storniert=storniert
+            )
             return
 
         if position.size < self.bracket.remaining_qty:
@@ -620,6 +955,65 @@ class LiveTrader:
                 f"Ziel {self.bracket.targets_hit} erreicht ({filled} verkauft). "
                 f"Stop steht bei {self.bracket.stop_price}."
             )
+
+    def _nacharbeit_erledigt(self) -> bool:
+        """Ein fehlgeschlagenes Aufraeumen wiederholen. ``True`` heisst: frei.
+
+        Der Fuzzer hat die Luecke gezeigt: Schlaegt das Storno beim Abschluss
+        eines Trades fehl - ein Netzwackler genuegt -, bleiben die Restziele im
+        Buch, und **niemand kommt je darauf zurueck**. Der naechste Einstieg
+        laeuft dann in die alten Verkaufslimits.
+
+        Solange das Aufraeumen nicht durchgegangen ist, wird kein neuer Trade
+        eroeffnet. Das ist die richtige Richtung: Ein verpasster Einstieg
+        kostet eine Gelegenheit, ein Einstieg in ein unaufgeraeumtes Buch
+        kostet Geld.
+        """
+        if self._aufraeumen_offen is None:
+            return True
+        if self.router.close_all(f"Nachholen: {self._aufraeumen_offen}"):
+            log.info("live.aufraeumen_nachgeholt", grund=self._aufraeumen_offen)
+            self._aufraeumen_offen = None
+            return True
+        log.warning(
+            "live.aufraeumen_offen",
+            grund=self._aufraeumen_offen,
+            hinweis="Keine neuen Einstiege, solange Restorders im Buch stehen koennen",
+        )
+        return False
+
+    def _bracket_abschliessen(self, grund: str, *, storniert: bool | None = None) -> None:
+        """Bracket ablegen - und die uebrigen Orders aus dem Buch nehmen.
+
+        ``storniert`` sagt, ob die Orders schon weg sind: ``None`` heisst
+        "bitte selbst stornieren", ein Wahrheitswert ist das Ergebnis eines
+        Stornos, das der Aufrufer bereits ausgeloest hat (``emergency_close``
+        storniert selbst). So laeuft jeder Abschluss durch **eine** Stelle, und
+        ein misslungenes Storno bleibt an genau einem Ort vermerkt.
+
+        Der zweite Teil fehlte, und der Ausfuehrungs-Fuzzer hat gezeigt, was
+        das bedeutet: Greift der Stop an der Boerse oder faellt das erste Ziel,
+        ist die Position weg - die **restlichen** Ziele bleiben aber als
+        Reduce-Only-Limits liegen. Gemessen in einer Zufallsfolge: 0,002 an
+        Zielen im Buch bei 0 Position.
+
+        Reduce-Only verhindert, dass daraus eine Gegenposition wird. Es
+        verhindert nicht, dass sie den **naechsten** Trade sofort anschneiden:
+        Ein neuer Long laeuft in genau die alten Verkaufslimits, die noch ueber
+        dem Markt haengen - und wird verkleinert, bevor er ueberhaupt angefangen
+        hat. Der Backtest kennt so etwas nicht, also waere die Abweichung als
+        schwaechere Rendite erschienen, nicht als Fehler.
+
+        Ob Bybit Reduce-Only-Orders beim Schliessen einer Position von selbst
+        raeumt, laesst sich aus diesem Container nicht pruefen. Darauf zu
+        vertrauen waere eine Annahme, und Annahmen sind in diesem Projekt
+        bereits mehrfach teuer geworden. Ein Storno kostet einen API-Aufruf je
+        beendetem Trade.
+        """
+        self.bracket = None
+        if storniert is None:
+            storniert = self.router.close_all(grund)
+        self._aufraeumen_offen = None if storniert else grund
 
     def _track_excursion(self, candle: Candle) -> None:
         """Groessten Gegen- und Vorlauf mitschreiben, solange die Position lebt.
@@ -730,16 +1124,34 @@ class LiveTrader:
                 self.bracket, filled_qty=position.size, fill_price=position.entry_price
             )
         except Exception as exc:
-            # ``protect`` schliesst die Position selbst, bevor es weiterwirft.
-            # Hier bleibt nur, es zu melden und den Platz freizugeben - der
-            # Fehler darf die Schleife nicht beenden.
+            # Hier stand "``protect`` schliesst die Position selbst" - und
+            # daraufhin wurde das Bracket weggeworfen. Der Fuzzer hat gezeigt,
+            # dass die Annahme nicht traegt: Wenn ein **Ziel** nicht platziert
+            # werden konnte, war der Stop laengst gesetzt und die Position lief
+            # weiter - ohne Bracket, also ohne Ziele, ohne Nachzug auf Einstand
+            # und ohne Ausstiegsbedingung.
+            #
+            # Deshalb wird jetzt nachgesehen statt angenommen. Nachsehen kostet
+            # einen Aufruf; die Annahme kostete die Kontrolle ueber eine offene
+            # Position.
             log.error("live.absicherung_fehlgeschlagen", fehler=str(exc))
-            await self._notify(
-                f"Stop konnte nicht gesetzt werden - Position wurde sofort "
-                f"geschlossen: {exc}"
-            )
-            self.bracket = None
+            await self._handle_protect_failure(exc)
             return
+
+        if self.bracket.failed_targets:
+            self._report(
+                EventKind.WARNING,
+                f"{self.bracket.failed_targets} von "
+                f"{len(self.bracket.signal.take_profits)} Zielen liessen sich "
+                f"nicht platzieren. Stop steht, aber die Position hat weniger "
+                f"Ausstiege als geplant.",
+                failed_targets=self.bracket.failed_targets,
+            )
+            await self._notify(
+                f"Hinweis: {self.bracket.failed_targets} Ziel(e) konnten nicht "
+                f"platziert werden (meist, weil der Kurs schon daran vorbei "
+                f"ist). Stop steht."
+            )
 
         self.stats.entries_filled += 1
         self._bars_since_entry_placed = 0
@@ -765,6 +1177,67 @@ class LiveTrader:
             f"Hebel {self.bracket.sized.leverage:.2f}x | "
             f"Risiko {self.bracket.sized.risk_amount:.2f}"
         )
+
+    async def _handle_protect_failure(self, exc: Exception) -> None:
+        """Die Absicherung ist gescheitert - was steht jetzt wirklich im Markt?
+
+        Drei Faelle, und sie brauchen drei verschiedene Antworten:
+
+        1. **Keine Position mehr.** ``protect`` hat sie beim fehlgeschlagenen
+           Stop selbst geschlossen. Aufraeumen, Platz freigeben, fertig.
+        2. **Position da, Schliessen geht.** Der gefaehrliche Fall: Sie hat
+           womoeglich keinen Stop. Sofort glattstellen - ein unnoetiger
+           Ausstieg kostet Gebuehren, eine ungeschuetzte Position das Konto.
+        3. **Position da, Schliessen geht auch nicht.** Dann bleibt das Bracket
+           **stehen**. Es wegzuwerfen waere das Schlimmste: Die Position liefe
+           weiter, und niemand sieht mehr hin. So versucht es die naechste
+           Kerze erneut, und die Invariantenpruefung meldet den Zustand aufs
+           Telefon.
+        """
+        assert self.bracket is not None
+        rest = self._first_position()
+
+        if rest is None:
+            await self._notify(
+                f"Stop konnte nicht gesetzt werden - Position wurde sofort "
+                f"geschlossen: {exc}"
+            )
+            self._bracket_abschliessen("Absicherung fehlgeschlagen")
+            return
+
+        log.critical(
+            "live.absicherung_unvollstaendig",
+            groesse=str(rest.size),
+            stop=str(rest.stop_loss) if rest.stop_loss else None,
+            massnahme="Position wird geschlossen",
+        )
+        try:
+            storniert = self.router.emergency_close(
+                self.bracket, reason="Absicherung fehlgeschlagen", qty=rest.size
+            )
+        except Exception as zweiter:
+            log.critical(
+                "live.notausstieg_fehlgeschlagen",
+                fehler=str(zweiter),
+                hinweis="Bracket bleibt stehen - naechste Kerze versucht es erneut",
+            )
+            self._report(
+                EventKind.WARNING,
+                f"Position {rest.size} liess sich weder absichern noch "
+                f"schliessen ({zweiter}). Bitte sofort bei Bybit nachsehen.",
+            )
+            await self._notify(
+                f"DRINGEND: Position {rest.size} konnte weder abgesichert noch "
+                f"geschlossen werden.\n{exc}\n{zweiter}\n"
+                "Bitte sofort bei Bybit nachsehen."
+            )
+            return
+
+        await self._notify(
+            f"Absicherung fehlgeschlagen ({exc}) - Position {rest.size} wurde "
+            "sofort geschlossen."
+        )
+        self._bracket_abschliessen("Absicherung fehlgeschlagen", storniert=storniert)
 
     def _equity_fraction(self, index: int):
         """Kapitalanteil fuer **diesen** Balken - so, wie die Engine ihn holt.
@@ -853,7 +1326,9 @@ class LiveTrader:
             seite=bracket.signal.side.value,
             preis=str(candle.close),
         )
-        self.router.emergency_close(bracket, reason="Ausstiegsbedingung erfuellt")
+        storniert = self.router.emergency_close(
+            bracket, reason="Ausstiegsbedingung erfuellt"
+        )
         self._record_trade(exit_price=candle.close, reason="signal_exit")
         self._report(
             EventKind.EXIT,
@@ -867,7 +1342,7 @@ class LiveTrader:
             f"Ausstiegsbedingung erfuellt. Position geschlossen bei {candle.close}."
         )
         bracket.state = BracketState.CLOSED
-        self.bracket = None
+        self._bracket_abschliessen("Ausstiegsbedingung", storniert=storniert)
 
     async def _look_for_entry(self, context: BarContext) -> None:
         """Strategie fragen, Risk-Officer fragen, gegebenenfalls handeln."""

@@ -103,6 +103,10 @@ class Bracket:
     take_profit_orders: list[Order] = field(default_factory=list)
     targets_hit: int = 0
     moved_to_breakeven: bool = False
+    #: Ziele, die sich nicht platzieren liessen - meist PostOnly-Ablehnung,
+    #: weil der Kurs schon daran vorbei ist. Gehoert ins Dashboard: Die
+    #: Position laeuft dann mit weniger Ausstiegen als geplant.
+    failed_targets: int = 0
 
     opened_at: datetime | None = None
     placed_at: datetime | None = None
@@ -358,7 +362,7 @@ class OrderRouter:
         anteil = self._fuellungsanteil(bracket)
 
         gesamt = Decimal(0)
-        for price, qty in bracket.sized.take_profit_legs:
+        for nummer, (price, qty) in enumerate(bracket.sized.take_profit_legs, start=1):
             menge = self.instrument.round_qty(qty * anteil) if anteil != 1 else qty
             # Nie mehr als noch da ist. Die Rundung je Bein kann sich sonst
             # aufaddieren, bis die Ziele die Position uebersteigen.
@@ -367,15 +371,43 @@ class OrderRouter:
                 continue
 
             rounded = self.instrument.round_price(price, side=bracket.signal.side)
-            order = self.gateway.place_limit(
-                symbol=self.instrument.symbol,
-                side=bracket.signal.side.opposite,
-                qty=menge,
-                price=rounded,
-                reduce_only=True,
-                post_only=True,
-                order_link_id=new_order_link_id("tp"),
-            )
+            try:
+                order = self.gateway.place_limit(
+                    symbol=self.instrument.symbol,
+                    side=bracket.signal.side.opposite,
+                    qty=menge,
+                    price=rounded,
+                    reduce_only=True,
+                    post_only=True,
+                    order_link_id=new_order_link_id("tp"),
+                )
+            except Exception as exc:
+                # **Ein misslungenes Ziel darf die Absicherung nicht umwerfen.**
+                #
+                # Hier flog der Fehler bis nach ``LiveTrader._protect`` durch,
+                # und das hielt ihn - dem Kommentar dort folgend - fuer "die
+                # Position wurde bereits geschlossen". Sie war es nicht: Der
+                # Stop stand, die Position lief, das Bracket wurde weggeworfen.
+                # Danach gab es keine Ziele, keinen Nachzug auf Einstand und
+                # keine Ausstiegsbedingung mehr - nur noch den Stop.
+                #
+                # Gefunden hat es der Fuzzer mit dem naheliegendsten Fall
+                # ueberhaupt: PostOnly-Ablehnung, weil der Kurs zwischen Order
+                # und Fill schon am ersten Ziel vorbeigelaufen war. Dann ist das
+                # Ziel sofort ausfuehrbar, und Bybit lehnt genau das ab.
+                #
+                # Der Stop ist zu diesem Zeitpunkt gesetzt. Ein fehlendes Ziel
+                # kostet Ertrag, ein verlorenes Bracket kostet die Kontrolle.
+                bracket.failed_targets += 1
+                log.error(
+                    "router.ziel_nicht_platziert",
+                    ziel=nummer,
+                    preis=str(rounded),
+                    menge=str(menge),
+                    fehler=str(exc),
+                    hinweis="Stop steht - Position bleibt unter Aufsicht",
+                )
+                continue
             bracket.take_profit_orders.append(order)
             gesamt += menge
 
@@ -443,7 +475,7 @@ class OrderRouter:
     # -- Notausstieg ---------------------------------------------------------
     def emergency_close(
         self, bracket: Bracket, *, reason: str, qty: Decimal | None = None
-    ) -> None:
+    ) -> bool:
         """Alles glattstellen. Market-Order, Taker-Gebuehr, sofort.
 
         Hier zaehlt Ausfuehrungssicherheit mehr als die Gebuehr. Wird vom
@@ -456,30 +488,81 @@ class OrderRouter:
         und liesse den Rest ungeschuetzt stehen - im Notfall das Letzte, was
         man will. Gemessen: Bei einer auf 0,012 gewachsenen Position schloss
         er 0,006 und meldete Vollzug.
+
+        Rueckgabe: ob das Stornieren durchging. Das Schliessen selbst wirft im
+        Fehlerfall - eine Position, die nicht zugeht, darf nicht als erledigt
+        gelten. Ein fehlgeschlagenes **Storno** dagegen ist kein Grund
+        abzubrechen, hinterlaesst aber Restorders im Buch. Der Aufrufer muss
+        das wissen: Der Fuzzer hat gezeigt, dass sie sonst liegen bleiben und
+        den naechsten Trade anschneiden.
         """
         menge = bracket.remaining_qty if qty is None else qty
-        log.critical("router.notausstieg", grund=reason, menge=str(menge))
+        storniert = self.flatten(
+            side=bracket.signal.side, qty=menge, reason=reason
+        )
+        bracket.state = BracketState.CLOSED
+        bracket.remaining_qty = Decimal(0)
+        return storniert
 
+    def flatten(self, *, side: Side, qty: Decimal, reason: str) -> bool:
+        """Glattstellen ohne Bracket - nur aus Seite und Menge.
+
+        Der Not-Aus darf nicht davon abhaengen, dass unser Gedaechtnis die Lage
+        kennt. Der Fuzzer hat gezeigt, warum: Fuellt die Einstiegsorder,
+        waehrend das Bracket noch auf sie wartet, ist die Position da - aber
+        ``bracket.is_open`` ist ``False``. Der Not-Aus stornierte dann nur die
+        Orders, meldete "alles glattgestellt" und liess die Position stehen.
+
+        Ebenso nach einem Neustart: Eine uebernommene Position hat gar kein
+        Bracket. Auch die muss der Not-Aus schliessen koennen.
+
+        ``side`` ist die Seite der **Position**; geschlossen wird gegen sie.
+        Rueckgabe: ob das Stornieren durchging - das Schliessen selbst wirft im
+        Fehlerfall, denn eine Position, die nicht zugeht, darf nicht als
+        erledigt gelten.
+        """
+        log.critical("router.notausstieg", grund=reason, menge=str(qty))
+
+        storniert = True
         try:
             self.gateway.cancel_all(self.instrument.symbol)
         except Exception as exc:
             log.error("router.stornieren_fehlgeschlagen", fehler=str(exc))
+            storniert = False
 
-        if menge > 0:
+        if qty > 0:
             self.gateway.place_market(
                 symbol=self.instrument.symbol,
-                side=bracket.signal.side.opposite,
-                qty=menge,
+                side=side.opposite,
+                qty=qty,
                 reduce_only=True,
             )
-        bracket.state = BracketState.CLOSED
-        bracket.remaining_qty = Decimal(0)
+        return storniert
 
-    def close_all(self, reason: str) -> None:
+    def close_all(self, reason: str) -> bool:
         """Alle Orders stornieren - ohne bekannte Position.
 
         Fuer den Fall, dass der Prozess ohne Kenntnis offener Brackets startet
         und aufraeumen soll.
+
+        **Wirft nicht.** Hier stand ein blanker Aufruf, und ein zufaelliger
+        Lauf des Ausfuehrungs-Fuzzers hat gezeigt, was das kostet: Der
+        Not-Aus ruft diese Methode, ein fehlgeschlagenes ``cancel_all`` flog
+        durch ``_handle_kill_switch`` hindurch, und damit ging **die
+        Not-Aus-Meldung nicht raus**. Der Kill-Switch hatte ausgeloest, und das
+        Telefon blieb still. Genau umgekehrt, als es sein muss.
+
+        ``emergency_close`` machte es an derselben Stelle laengst richtig -
+        dieselbe Sache, zwei Umsetzungen, eine davon falsch. Das ist in diesem
+        Projekt inzwischen das haeufigste Fehlermuster.
+
+        Rueckgabe: ob das Stornieren durchging. Der Aufrufer entscheidet, was
+        ein Fehlschlag bedeutet - beim Not-Aus: den Menschen holen.
         """
-        cancelled = self.gateway.cancel_all(self.instrument.symbol)
+        try:
+            cancelled = self.gateway.cancel_all(self.instrument.symbol)
+        except Exception as exc:
+            log.error("router.stornieren_fehlgeschlagen", grund=reason, fehler=str(exc))
+            return False
         log.warning("router.alles_storniert", grund=reason, orders=cancelled)
+        return True

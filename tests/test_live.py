@@ -240,12 +240,17 @@ class TestStartupReconciliation:
         assert any("uebernommen" in m for m in rig.messages)
 
     async def test_adopted_position_blocks_a_second_entry(self, rig: Rig) -> None:
-        """Nach der Uebernahme kennt die Schleife kein Bracket - aber der
-        Risk-Officer sieht die Position am Konto und lehnt ab.
+        """Keine zweite Position neben der uebernommenen.
 
-        Das ist die zweite Verteidigungslinie: Selbst wenn die Schleife den
-        Ueberblick verliert, verhindert die Positionszaehlung eine zweite
-        Position.
+        Hier stand frueher, die Schleife kenne nach der Uebernahme kein
+        Bracket und der Risk-Officer sei die Bremse. Das war die Beschreibung
+        einer Luecke, nicht eines Entwurfs: Ohne Bracket lief die uebernommene
+        Position ganz ohne Verwaltung weiter - ohne Ausstiegsbedingung, ohne
+        Wachstumspruefung. Sie bekommt jetzt eines
+        (``_bracket_aus_position``), und damit greift schon die erste Bremse.
+
+        Der Risk-Officer bleibt die zweite Linie - siehe
+        ``tests/test_risk_officer.py``.
         """
         rig.exchange.position = _position(rig, stop=Decimal("98900"))
         await rig.trader._reconcile()
@@ -254,9 +259,62 @@ class TestStartupReconciliation:
         await rig.feed()
 
         assert rig.entry_orders == []
-        assert rig.trader.stats.veto_reasons.get(
-            VetoReason.POSITION_ALREADY_OPEN.value
-        ) == 1
+        assert rig.trader.bracket is not None
+        assert rig.trader.bracket.remaining_qty == rig.exchange.position.size
+
+    async def test_adopted_position_is_managed_again(self, rig: Rig) -> None:
+        """Die Ausstiegsbedingung muss auch nach einem Neustart gelten.
+
+        Ueber sie enden 38,5 % aller Trades. Ohne Bracket galt sie fuer eine
+        uebernommene Position nicht mehr - die lief bis zum Stop.
+        """
+        rig.exchange.position = _position(rig, stop=Decimal("98900"))
+        await rig.trader._reconcile()
+
+        class Aussteiger:
+            strategy_id = "aussteiger"
+            warmup_bars = 5
+
+            def prepare(self, frame):
+                return {}
+
+            def on_bar(self, ctx):
+                return None
+
+            def should_exit(self, ctx, side) -> bool:
+                return True
+
+        rig.trader.strategy = Aussteiger()  # type: ignore[assignment]
+        await rig.feed()
+
+        assert rig.exchange.position is None
+        assert rig.trader.bracket is None
+
+    async def test_adopted_position_reports_missing_targets(self, rig: Rig) -> None:
+        """Was nicht wiederherstellbar ist, wird gesagt statt verschwiegen."""
+        rig.exchange.position = _position(rig, stop=Decimal("98900"))
+
+        await rig.trader._reconcile()
+
+        assert any("Ziele" in m for m in rig.messages)
+        assert rig.trader.bracket is not None
+        assert rig.trader.bracket.signal.take_profits == []
+
+    async def test_adopted_position_at_breakeven_stop(self, rig: Rig) -> None:
+        """Nach einem Nachzug auf Einstand liegt der Stop **auf** dem Einstieg.
+
+        Der Signal-Bauplan verlangt ihn echt darunter. Ohne Behandlung wirft
+        die Uebernahme genau dann - also ausgerechnet bei einem Trade, der
+        schon im Gewinn lag.
+        """
+        rig.exchange.position = _position(rig, stop=Decimal("99500"))  # == Einstieg
+
+        await rig.trader._reconcile()
+
+        bracket = rig.trader.bracket
+        assert bracket is not None
+        assert bracket.stop_price == Decimal("99500"), "Der echte Stop bleibt erhalten"
+        assert bracket.signal.stop_loss < bracket.signal.entry_price
 
 
 # ---------------------------------------------------------------------------

@@ -776,3 +776,195 @@ Sie beantworten nur nicht die Frage, ob der Vorteil echt ist. Wer nach 30
 Tagen Demo echtes Geld einsetzt, tut das auf Grundlage des **Backtests** -
 der Demobetrieb hat daran nichts hinzugefuegt. Das ist vertretbar, solange
 man es weiss.
+
+## Elf. Acht Ausfuehrungsfehler, die nicht durch Nachdenken gefunden wurden
+
+Die bisherigen Funde zur Ausfuehrung sind mir eingefallen. Das ist kein
+Verfahren, und beim vorletzten Mal steckte hinter dem geratenen Fehler ein
+anderer, den ich erst beim Nachpruefen sah. Wer so sucht, findet, woran er
+gerade denkt.
+
+Deshalb die Umkehrung: nicht mehr jeden Ablauf einzeln pruefen, sondern
+**sieben Aussagen** formulieren, die in jedem Zustand gelten muessen
+(``execution/invarianten.py``), und zufaellige Ereignisfolgen dagegen laufen
+lassen (``tests/test_fuzz_ausfuehrung.py``). Teilfuellungen, Nachfuellungen,
+Zielausfuehrungen, Stops an der Boerse, Preisspruenge, abgelehnte Orders,
+Verbindungsabbrueche, Neustart mitten in einer Position, Kill-Switch - in
+zufaelliger Reihenfolge, mit fester Saat, also wiederholbar.
+
+Ergebnis: **acht Fehler, alle in Pfaden, die als getestet galten.** Jeder
+hat jetzt einen eigenen Test, der faellt, wenn man die Korrektur zuruecknimmt
+(``tests/test_ausfuehrung_robustheit.py``) - einzeln nachgeprueft, nachdem
+frueher in diesem Projekt ein Test beim Zuruecknehmen der Korrektur gruen
+blieb und damit nichts bewiesen hatte.
+
+### 1. Der Not-Aus verstummte, wenn das Stornieren fehlschlug
+
+``close_all`` rief ``cancel_all`` ungeschuetzt auf. Ein Verbindungsfehler
+genuegte, und die Ausnahme flog durch ``_handle_kill_switch`` hindurch:
+**keine Nachricht aufs Telefon, kein ``stop()``.** Der Kill-Switch hatte
+ausgeloest, und der Nutzer erfuhr es nicht.
+
+``emergency_close`` machte es an derselben Stelle laengst richtig - dieselbe
+Sache, zwei Umsetzungen, eine davon falsch. Inzwischen das haeufigste
+Fehlermuster in diesem Projekt.
+
+Dazu kam eine falsche Diagnose: ``KlineStream.run`` faengt alles aus dem
+Kerzen-Handler als ``ws.verbindung_verloren`` und baut die Verbindung neu
+auf. Ein fehlgeschlagener Orderaufruf sah damit aus wie ein Netzproblem - und
+waehrend des Backoffs fehlen Kerzen.
+
+### 2. Der ernsteste: Der Not-Aus uebersah eine gerade gefuellte Position
+
+Fuellt die Einstiegsorder, waehrend das Bracket noch auf sie wartet, ist die
+Position da - aber ``bracket.is_open`` ist ``False``. Der Not-Aus fragte das
+Bracket, nicht die Boerse. Er stornierte die Orders, meldete "alles
+glattgestellt" und **liess die Position stehen**.
+
+Das heisst: System aus, Position laeuft weiter, Meldung sagt das Gegenteil.
+Dasselbe galt fuer eine nach einem Neustart uebernommene Position, die gar
+kein Bracket hat.
+
+Gefragt wird jetzt die Boerse (``OrderRouter.flatten``).
+
+### 3. Ein abgelehntes Ziel riss das ganze Bracket mit
+
+Laeuft der Kurs zwischen Order und Fill am ersten Ziel vorbei, ist dieses
+Ziel sofort ausfuehrbar - und Bybit lehnt PostOnly genau dafuer ab. Der
+haeufigste denkbare Fall, kein Randfall.
+
+Der Fehler flog bis in ``LiveTrader._protect``, wo ein Kommentar behauptete,
+``protect`` habe die Position bereits geschlossen. Sie war es nicht: Der Stop
+stand, die Position lief, das Bracket wurde weggeworfen. Danach gab es keine
+Ziele mehr, keinen Nachzug auf Einstand und **keine Ausstiegsbedingung** -
+und ueber die enden 38,5 % aller Trades.
+
+Ein einzelnes Ziel weniger kostet Ertrag. Ein verlorenes Bracket kostet die
+Kontrolle.
+
+### 4. Nach fehlgeschlagener Absicherung wurde die Position vergessen
+
+Derselbe Kommentar, dieselbe Annahme. Jetzt wird nachgesehen statt
+angenommen: Ist die Position noch da, wird sie geschlossen; geht auch das
+nicht, bleibt das Bracket **stehen**, damit ueberhaupt noch jemand hinsieht,
+und die Meldung geht als "DRINGEND" raus.
+
+### 5. Restziele blieben nach dem Schliessen im Buch liegen
+
+Greift der Stop an der Boerse oder faellt das erste Ziel, ist die Position
+weg - die uebrigen Reduce-Only-Limits nicht. Gemessen in einer Zufallsfolge:
+0,002 an Zielen im Buch bei 0 Position.
+
+Reduce-Only verhindert eine Gegenposition. Es verhindert nicht, dass die
+alten Verkaufslimits den **naechsten** Long sofort anschneiden - der Backtest
+kennt so etwas nicht, die Abweichung waere als schwaechere Rendite erschienen,
+nicht als Fehler.
+
+Ob Bybit solche Orders von selbst raeumt, laesst sich aus diesem Container
+nicht pruefen. Die simulierte Boerse ist deshalb absichtlich die
+unfreundlichere Variante: Dort verschwinden sie nicht.
+
+### 6. Ein misslungenes Aufraeumen bekam nie eine zweite Gelegenheit
+
+Schlaegt das Storno beim Abschluss eines Trades fehl, blieben die Restziele
+liegen, und niemand kam darauf zurueck. Jetzt wird es vermerkt, bei der
+naechsten Kerze wiederholt - und solange es offen ist, **kein neuer Einstieg**.
+Ein verpasster Einstieg kostet eine Gelegenheit, ein Einstieg in ein
+unaufgeraeumtes Buch kostet Geld.
+
+Beim Not-Aus geht das nicht, denn danach haelt der Prozess an. Dort wird
+sofort dreimal versucht.
+
+### 7. Nach einem Neustart lief die Position ohne jede Verwaltung weiter
+
+Diesen hat **nicht der Fuzzer** gefunden, sondern die Invariante selbst: Sie
+fing an, eine uebernommene Position dauerhaft als "unbeaufsichtigt" zu melden.
+Zu Recht.
+
+``_reconcile`` uebernahm eine offene Position beim Start - protokollierte sie,
+meldete sie, und legte **kein Bracket** an. Damit stieg ``_manage_open_position``
+bei jeder Kerze sofort wieder aus, und ``_check_signal_exit`` ebenso. Die
+Ausstiegsbedingung, ueber die 38,5 % aller Trades enden, galt fuer diese
+Position nicht mehr. Sie lief bis zum Stop.
+
+Der Neustart mitten in einer Position steht als **Pflichttest im Plan** - und
+genau dieser Test haette die Luecke nicht gezeigt: Der Stop haengt an der
+Position und ueberlebt, es sieht also alles richtig aus. Der Schaden ist
+still: ein Trade, der schlechter ausgeht, als er muesste.
+
+Jetzt wird ein Bracket aus der Position gebaut (``_bracket_aus_position``):
+Seite, Groesse, Einstieg und Stop kommen von der Boerse. **Die Ziele lassen
+sich nicht wiederherstellen** - welche Stufen das urspruengliche Signal hatte,
+steht nirgends mehr. Das wird gemeldet, nicht verschwiegen: Die Position laeuft
+bis zum Stop oder bis die Ausstiegsbedingung greift.
+
+Ein Detail, das ohne Test durchgerutscht waere: Nach einem Nachzug auf Einstand
+liegt der Stop **auf** dem Einstiegspreis. Der Signal-Bauplan verlangt ihn echt
+darunter - die Uebernahme haette also ausgerechnet bei einem Trade geworfen, der
+schon im Gewinn lag.
+
+### 8. Der Start scheiterte an seiner gefaehrlichsten Stelle
+
+Findet der Abgleich beim Start eine Position **ohne Stop**, schliesst er sie -
+richtig so, ihre Begruendung ist nach einem Neustart nicht mehr bekannt.
+Schlug der Marktausstieg fehl, flog die Ausnahme aber aus ``start()`` heraus:
+**Der Prozess startete nicht und liess die ungeschuetzte Position stehen.**
+
+Schlechter geht es kaum. Der gefaehrlichste Zustand ueberhaupt, kombiniert mit
+einem System, das nicht mehr hinsieht - und der Ausloeser ist ein einzelner
+fehlgeschlagener Aufruf.
+
+Jetzt gibt es eine Reihenfolge: schliessen; wenn das nicht geht, wenigstens
+einen Stop im maximal zulaessigen Abstand setzen; wenn auch das nicht geht, die
+Position trotzdem uebernehmen. Ein Bracket ohne Stop ist ein schlechter
+Zustand, aber ein **gesehener**: Die Ausstiegsbedingung greift, der Not-Aus
+greift, und die Invariantenpruefung meldet ihn bei jeder Kerze aufs Telefon.
+
+### Eine Praezisierung, die nach dem ersten grossen Lauf noetig war
+
+Bei 400 Zufallsfolgen fielen drei. Zwei davon waren Befund 8 - ein echter
+Fehler. Die dritte meldete eine gewachsene Position, die im Bracket nicht
+vermerkt war; die Meldung stimmte, aber die Ursache war nicht die, die sie
+nahelegte: Der Marktausstieg der Wachstumspruefung war auf einen simulierten
+Ausfall gelaufen, und der Abgleich brach ab, **bevor er fertig war**.
+
+Der Unterschied war nicht offensichtlich - ich habe erst alle drei einzeln
+nachgestellt, statt vom ersten auf die anderen zu schliessen. Haette ich es
+nicht getan, waeren zwei echte Fehler als Messartefakt durchgegangen.
+
+Die Invarianten gelten nach dem Abgleich, nicht waehrend eines abgebrochenen.
+Der Fuzzer prueft deshalb nur noch Kerzen, die durchgelaufen sind. Das ist
+keine gelockerte Huerde: Der Anspruch bleibt, dass die naechste
+**vollstaendige** Kerze den Zustand geradezieht, und die Schleife laeuft
+weiter - eine Verletzung, die bestehen bleibt, faellt beim naechsten sauberen
+Durchlauf auf. Dazu kommen zwei Bedingungen, die eine leere Runde verhindern:
+Mindestens die Haelfte der Kerzen muss durchgelaufen sein, und **jede Ausnahme,
+die kein simulierter Boersenausfall ist** - ein ``AttributeError`` etwa - laesst
+den Lauf fallen.
+
+Die Erholung selbst ist nicht behauptet, sondern gemessen: Ein eigener Test
+laesst die Position auf 0,004 wachsen, den Notausstieg scheitern, und prueft,
+dass die Folgekerze schliesst.
+
+### Was das gekostet und was es gebracht hat
+
+Der Fuzzer ist keine Strategiehypothese: **Der Versuchszaehler bleibt bei 93.**
+Er darf deshalb beliebig oft laufen. In der Suite laufen 25 Folgen, fuer eine
+gruendliche Runde ``FUZZ_SAATEN=600 pytest tests/test_fuzz_ausfuehrung.py``.
+
+Dieselben sieben Aussagen laufen jetzt **im Betrieb** mit, einmal je Kerze
+(``LiveTrader._pruefe_invarianten``). Sie melden, sie greifen nicht ein: Eine
+Pruefung, die im Betrieb noch nie angeschlagen hat, automatisch Positionen
+schliessen zu lassen, hiesse einem Fehlalarm Geld anzuvertrauen. Verletzungen
+und Verarbeitungsfehler stehen im Dashboard und gehen einmalig aufs Telefon.
+
+### Was er nicht kann
+
+Er prueft die Ausfuehrung gegen eine **simulierte** Boerse. Ob Bybit sich so
+verhaelt wie ``FakeExchange``, prueft er nicht - das kann nur der Demobetrieb.
+Der Fuzzer verschiebt die Frage also von "ist der Code richtig" zu "ist die
+Simulation richtig". Das ist ein Fortschritt, aber kein Beweis.
+
+Die Reihenfolge bleibt damit unveraendert: Erst ``cli healthcheck`` auf dem
+Rechner des Nutzers - er entscheidet, ob Perpetuals auf dem Konto ueberhaupt
+verfuegbar sind -, dann Demobetrieb, dann echtes Geld.
