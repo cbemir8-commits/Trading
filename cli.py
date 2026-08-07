@@ -2278,6 +2278,96 @@ def korb(
 
 
 @app.command()
+def scan(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("15", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Steckt in dieser Zeitreihe ueberhaupt ein Vorteil? Vor jeder Suche.
+
+    **Kostet keinen Versuch.** Geprueft wird nicht eine handelbare Regel,
+    sondern die Struktur des Marktes: Sagt die Vergangenheit etwas ueber die
+    Zukunft, und ist das mehr als die Gebuehren?
+
+    Der Grund fuer diese Reihenfolge steht in ``cli abstand``: Jede gepruefte
+    Hypothese hebt die Huerde des Deflated-Sharpe-Gates dauerhaft. Erst
+    schauen, ob etwas da ist - dann Versuche ausgeben.
+
+    Eine Zelle zaehlt erst als Fund, wenn sie auffaellt (|t| >= 2), in
+    **beiden Haelften** des Zeitraums dasselbe Vorzeichen hat und nach
+    Gebuehren etwas uebrig laesst. Die mittlere Huerde ist die, an der der
+    erste 15-Minuten-Fund gescheitert ist.
+    """
+    from research.vorteilsscan import (
+        KOSTEN_MAKER_MAKER,
+        pruefe_stabilitaet,
+        scanne,
+        urteil,
+    )
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    # Rueckblick und Haltedauer in Balken. Bewusst ein grobes Raster ueber
+    # mehrere Groessenordnungen: Es geht um die Frage, **ob** irgendwo etwas
+    # ist, nicht um den besten Parameter. Ein feines Raster waere schon der
+    # Anfang einer Ueberanpassung.
+    raster = [4, 8, 16, 32, 48, 96, 192, 480, 960]
+
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            continue
+        close = frame["close"].to_numpy(dtype=float)
+        zellen = scanne(close, raster, raster)
+        if not zellen:
+            console.print(f"[red]{symbol}: zu wenig Daten.[/]")
+            continue
+
+        console.print(
+            f"\n[bold]{symbol}[/] {interval_obj.label}, {len(frame)} Kerzen "
+            f"({frame['open_time'].iloc[0]:%Y-%m-%d} bis "
+            f"{frame['open_time'].iloc[-1]:%Y-%m-%d})"
+        )
+        tabelle = Table(header_style="bold")
+        tabelle.add_column("Rueckblick", justify="right")
+        tabelle.add_column("Halten", justify="right")
+        tabelle.add_column("n", justify="right")
+        tabelle.add_column("Spanne", justify="right")
+        tabelle.add_column("t", justify="right")
+        tabelle.add_column("in Kosten", justify="right")
+        tabelle.add_column("netto/Trade", justify="right")
+        for z in zellen[:6]:
+            netto = z.netto_pct()
+            tabelle.add_row(
+                str(z.rueckblick), str(z.halten), str(z.beobachtungen),
+                f"{z.spanne_pct:+.4f}%", f"{z.t_wert:+.2f}",
+                f"{z.kosten_vielfaches():.2f}x",
+                f"[{'green' if netto > 0 else 'red'}]{netto:+.4f}%[/]",
+            )
+        console.print(tabelle)
+
+        beste = zellen[0]
+        stabil = pruefe_stabilitaet(close, beste.rueckblick, beste.halten)
+        console.print(
+            urteil(beste, stabil, KOSTEN_MAKER_MAKER, gepruefte_zellen=len(zellen))
+        )
+
+    console.print(
+        f"\n[dim]Kosten je Roundtrip: {0.04:.2f} % vom Nominalwert "
+        f"(beide Seiten Limit). Die Spanne ist der Unterschied zwischen zwei "
+        f"Zustaenden - eine Regel erntet davon grob die Haelfte.[/]\n"
+    )
+
+
+@app.command()
 def abstand(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",

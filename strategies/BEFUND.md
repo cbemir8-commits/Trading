@@ -1232,3 +1232,110 @@ Kerzen. Ob dort ein Vorteil steckt, ist offen - die Messung im Maerz
 (Mean-Reversion auf 15 Minuten, kein Bruttovorteil) spricht dagegen, betraf
 aber eine andere Regelfamilie. Was feststeht: Auf Tageskerzen ist der Weg zu
 Ende gerechnet.
+
+## Fuenfzehn. Auf 15 Minuten ist nichts zu holen - und eine Korrektur an mir
+
+**Zuerst der Fehler.** Im vorigen Abschnitt steht, der naechste Schritt sei der,
+"den ich nicht selbst gehen kann": 15-Minuten-Kerzen holen. Das war falsch.
+Die Daten liegen seit einem frueheren Lauf im Speicher - **222.700 Kerzen** je
+Markt fuer BTC und ETH, 2020-03-30 bis 2026-08-05. Ich habe sie selbst geholt
+und es dann vergessen.
+
+Dasselbe Muster steht schon einmal weiter oben ("Selbst auferlegte Blockade").
+Zweimal derselbe Fehler: eine Aufgabe an den Nutzer weiterreichen, die ich
+haette erledigen koennen. Der Nutzer braucht den Backfill weiterhin auf seinem
+Rechner, um ``cli wettbewerb`` dort laufen zu lassen - fuer die **Messung**
+brauchte ich ihn nicht.
+
+### Der Scan, der keinen Versuch kostet
+
+Bevor Versuche in 15-Minuten-Regeln fliessen, die Frage davor: Steckt dort
+ueberhaupt etwas? Das laesst sich messen, ohne eine handelbare Regel zu pruefen
+- und kostet deshalb keinen Versuch (``research/vorteilsscan.py``, ``cli scan``).
+
+Gemessen wird die **Spanne**: mittlere Vorwaertsrendite nach steigendem
+Rueckblick minus nach fallendem. Benchmarkfrei, denn der Grundtrend steht in
+beiden Zustaenden und faellt heraus. Der erste Anlauf mass die bedingte
+Rendite selbst und fand ueberall grosse Zahlen - das war der Drift eines
+Marktes, der sich vervielfacht hat, und kein Vorteil.
+
+Beobachtet wird nur alle ``Halten`` Balken einmal. Ueberlappende Fenster waeren
+nicht unabhaengig, und der t-Wert daraus um den Faktor Wurzel(Halten) zu gross
+- der bequemste Weg, sich einen Vorteil herbeizurechnen.
+
+### Das Ergebnis
+
+    BTC 15m   bester Treffer  Rueckblick 4 h / Halten 4 h
+              Spanne -0,0883 %   t = -4,11   bei 13.917 Beobachtungen
+    ETH 15m   dieselbe Zelle
+              Spanne -0,0778 %   t = -2,75
+
+Eine kurzfristige **Gegenbewegung**, marktuebergreifend bestaetigt. Das sah
+nach einem Fund aus. Drei Gegenproben:
+
+**Zeitlich.** Erste Haelfte t = -2,90, zweite Haelfte **t = +0,29**. Nach
+Jahren: 2021 und 2024 tragen alles (t = -2,76 und -3,08), 2020, 2022, 2023,
+2025 und 2026 zeigen nichts. Der Effekt ist in der juengeren Haelfte des
+Zeitraums vollstaendig verschwunden - wegarbitriert oder nie da gewesen.
+
+**Wirtschaftlich.** Die Spanne ist der Unterschied zwischen zwei Zustaenden;
+eine Regel handelt eine Seite und erntet grob die Haelfte:
+
+    halbe Spanne              0,0441 %
+    Kosten Maker/Maker        0,0400 %   -> netto +0,0041 %
+    Kosten Maker/Taker        0,0750 %   -> netto -0,0309 %
+
+Vier Tausendstel Prozent je Trade im **guenstigsten** Fall, in dem beide Seiten
+als Limit-Order fuellen. Ein einziger Ausstieg zum Marktpreis kippt es.
+
+**Mehrfachtestung - und hier hatte ich denselben Fehler eingebaut, gegen den
+das Werkzeug schuetzen soll.** Der Scan prueft 81 Zellen je Markt. Bei ``|t| >= 2``
+sind darunter rein zufaellig vier auffaellige zu erwarten. Wer die beste nimmt
+und fuer einen Fund haelt, misst nur die Zahl seiner Versuche - dasselbe
+Problem wie beim Deflated Sharpe, eine Ebene tiefer. Korrigiert nach Bonferroni
+liegt die Schwelle bei 81 Zellen nicht bei 2,00, sondern bei **3,42**.
+
+Damit faellt ETHs bester 15-Minuten-Treffer (t = +3,04) durch. BTCs -4,11
+haelt der Korrektur stand und scheitert an der Stabilitaet. Beide Huerden sind
+noetig, und sie sind unabhaengig.
+
+### Die Kontrolle - und was sie ueber den Kandidaten sagt
+
+Ein Scan, der nirgends etwas findet, koennte auch schlicht kaputt sein. Deshalb
+laufen die Tageskerzen als Kontrolle mit, wo ein Vorteil bekannt ist:
+
+    BTC Tageskerzen   bester Treffer  t = +3,64,  Spanne +1,54 %,  38x Kosten
+    ETH Tageskerzen   bester Treffer  t = +2,80,  Spanne +1,73 %,  43x Kosten
+
+Der Scan findet den Tagesvorteil, und er ist um Groessenordnungen groesser als
+die Kosten - anders als auf 15 Minuten. Das Werkzeug funktioniert.
+
+Zwei Dinge daran sind unbequem und gehoeren gesagt:
+
+* **ETH faellt durch die Mehrfachtestungs-Korrektur** (t = +2,80 gegen eine
+  Schwelle von 3,23 bei 40 Zellen).
+* **BTC ist in der zweiten Haelfte schwaecher**: erste Haelfte t = +3,26,
+  zweite Haelfte t = +1,40.
+
+Beides ist ein Warnzeichen, aber **kein Beweis**. Die Tagesreihe hat 5331
+Balken; halbiert bleiben 2665, und die Trennschaerfe ist dort gering - ein
+eigener Test haelt genau das fest (derselbe eingebaute Vorteil wird bei 6000
+Balken verworfen und bei 20.000 gefunden). Ausserdem misst der Scan ein grobes
+Vorzeichen-Signal, nicht den Kandidaten mit seinen drei Konfluenzbedingungen
+und der Vola-Zielgroesse. Der Walk-Forward misst den Kandidaten selbst, und der
+liefert 11,28 % im Jahr ausserhalb der Stichprobe.
+
+Die vorsichtige Lesart: Der Vorteil auf Tageskerzen ist echt, aber **duenn und
+moeglicherweise abnehmend**. Das passt zu einem Deflated Sharpe, der bei 0,80
+haengenbleibt.
+
+### Was daraus folgt
+
+Der Versuchszaehler bleibt bei **95**. Es wurde keine Regel geprueft, sondern
+die Struktur des Marktes - genau dafuer ist der Scan da.
+
+Und die Reihenfolge steht jetzt fest: **erst scannen, dann Versuche ausgeben.**
+Waere der Scan vor den acht widerlegten Richtungen dagewesen, haetten mehrere
+davon nie einen Versuch gekostet. Fuer 15 Minuten ist die Antwort damit
+gegeben, ohne einen einzigen Versuch verbraucht zu haben: **Dort ist nach
+Kosten nichts zu holen.**
