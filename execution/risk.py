@@ -34,6 +34,7 @@ import structlog
 
 from core.config import RiskSettings
 from core.models import Instrument, Signal
+from data.termine import Terminkalender
 from execution.sizing import SizedPosition, SizingRejected, size_position
 
 log = structlog.get_logger(__name__)
@@ -188,12 +189,21 @@ class RiskOfficer:
         *,
         state_path: Path | str | None = None,
         clock=None,
+        kalender: Terminkalender | None = None,
+        kerzenspanne: timedelta = timedelta(0),
     ) -> None:
         self.settings = settings
         self.instrument = instrument
         self.state_path = Path(state_path) if state_path else None
         self.clock = clock or (lambda: datetime.now(UTC))
         self.state = self._load_state()
+        #: Termine, an denen nicht eingestiegen wird. ``None`` heisst: keine
+        #: Sperre - das System handelt dann wie bisher.
+        self.kalender = kalender
+        #: Laenge einer Kerze. Wird gebraucht, damit ein Termin **innerhalb**
+        #: der Kerze, auf die gehandelt wird, sperrt - siehe
+        #: ``Terminkalender.sperre``.
+        self.kerzenspanne = kerzenspanne
 
     # -- Zustandshaltung -----------------------------------------------------
     def _load_state(self) -> RiskState:
@@ -367,6 +377,29 @@ class RiskOfficer:
                 f"Wichtiges Ereignis steht bevor, Sperre noch "
                 f"{remaining.total_seconds() / 60:.0f} min",
             )
+
+        # Der Terminkalender - und zwar **hier**, in ``blockade``, nicht in der
+        # Live-Schleife. Genau dieselbe Pruefung sieht damit der Backtest.
+        #
+        # Der Grund steht weiter oben schon einmal und ist der teuerste in
+        # diesem Projekt: Jede Regel, die es zweimal gibt, laeuft irgendwann
+        # auseinander. Ein Termin-Overlay, das nur im Betrieb sperrt, waere
+        # eine sechste Abweichung zwischen Backtest und Handel - und die
+        # unangenehmste, weil sie nur an ein paar Tagen im Jahr auftritt und
+        # deshalb lange unauffaellig bliebe.
+        if self.kalender is not None:
+            termin = self.kalender.sperre(
+                now,
+                spanne=self.kerzenspanne,
+                vorlauf=timedelta(minutes=int(self.settings.news_blackout_before_min)),
+                nachlauf=timedelta(minutes=int(self.settings.news_blackout_after_min)),
+            )
+            if termin is not None:
+                return Vetoed(
+                    VetoReason.NEWS_BLACKOUT,
+                    f"{termin.beschreibung} am "
+                    f"{termin.zeitpunkt:%Y-%m-%d %H:%M} UTC",
+                )
 
         if open_positions >= self.settings.max_concurrent_positions:
             return Vetoed(

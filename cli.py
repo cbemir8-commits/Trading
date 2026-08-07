@@ -259,6 +259,59 @@ def healthcheck() -> None:
 
 
 @app.command()
+def termine(
+    von: int = typer.Option(2012, "--von", help="Erstes Jahr der FOMC-Historie"),
+    bis: int = typer.Option(0, "--bis", help="Letztes Jahr (0 = aktuelles)"),
+) -> None:
+    """Termin-Overlay holen: Fed-Entscheidungen und Bitcoin-Halbierungen.
+
+    Laeuft **nicht** im Handel mit - der Kalender wird einmal geholt und liegt
+    danach als Datei vor. Ein Handelssystem, das vor jeder Order eine fremde
+    Webseite fragt, faellt genau dann aus, wenn es hektisch wird.
+
+    Quellen: federalreserve.gov (Entscheidungen, inklusive der
+    ausserplanmaessigen) und mempool.space (Blockzeit der Halbierungen).
+    CPI-Termine fehlen: bls.gov antwortet dem Entwicklungscontainer mit 403.
+    Von einem normalen Anschluss aus ist die Seite erreichbar - dort laesst
+    sich die Luecke schliessen.
+    """
+    import httpx
+
+    from data.termine import hole_termine
+
+    settings = get_settings()
+    ziel = Path(settings.paths.referenz) / "termine.json"
+
+    with httpx.Client(timeout=30, follow_redirects=True) as client:
+        def text(url: str) -> str:
+            antwort = client.get(url)
+            antwort.raise_for_status()
+            return antwort.text
+
+        def js(url: str):
+            antwort = client.get(url)
+            antwort.raise_for_status()
+            return antwort.json()
+
+        kalender = hole_termine(text, js, von_jahr=von, bis_jahr=bis or None)
+
+    if not kalender:
+        console.print("[red]Keine Termine geholt.[/red] Quellen nicht erreichbar?")
+        raise typer.Exit(1)
+
+    kalender.speichern(ziel)
+    console.print(f"[green]{kalender.bericht()}[/green]")
+    console.print(f"Gespeichert in {ziel}")
+
+    naechster = kalender.naechster(datetime.now(UTC))
+    if naechster is not None:
+        console.print(
+            f"Naechster Termin: {naechster.beschreibung} am "
+            f"{naechster.zeitpunkt:%Y-%m-%d %H:%M} UTC"
+        )
+
+
+@app.command()
 def backfill(
     von: str = typer.Option("2020-03-30", help="Startdatum (YYYY-MM-DD)."),
     bis: str | None = typer.Option(None, help="Enddatum. Standard: jetzt."),
@@ -523,7 +576,10 @@ def wettbewerb(
         instrument = _fallback_instrument(settings.bybit.symbol)
 
     config = BacktestConfig(
-        instrument=instrument, risk=settings.risk, initial_equity=Decimal("500")
+        instrument=instrument,
+        risk=settings.risk,
+        initial_equity=Decimal("500"),
+        kalender=_terminkalender(settings) or None,
     )
 
     state = Path(settings.paths.state)
@@ -1319,6 +1375,21 @@ _KONTRAKTE = {
 }
 
 
+def _terminkalender(settings):
+    """Den Kalender laden - fuer Backtest und Handel derselbe.
+
+    An **einer** Stelle, damit nicht der Backtest ohne Sperre rechnet und der
+    Handel mit. Genau diese Sorte Abweichung ist in diesem Projekt fuenfmal
+    aufgetreten, jedes Mal aus zwei Umsetzungen derselben Sache.
+
+    Fehlt die Datei, ist der Kalender leer und es wird nichts gesperrt - das
+    System handelt dann wie vor Phase 7. Geholt wird er mit ``cli termine``.
+    """
+    from data.termine import Terminkalender
+
+    return Terminkalender.laden(Path(settings.paths.referenz) / "termine.json")
+
+
 def _bybit_kontrakt(symbol: str) -> str:
     """Zum Kursdatensymbol den Kontrakt finden, auf dem gehandelt wird."""
     return _KONTRAKT_ZU_SYMBOL.get(symbol, symbol)
@@ -1539,7 +1610,16 @@ def trade(
         console.print(f"[red]Boerse nicht erreichbar:[/] {exc}")
         raise typer.Exit(2) from exc
 
-    officer = RiskOfficer(settings.risk, instrument, state_path=state_path)
+    kalender = _terminkalender(settings)
+    if kalender:
+        console.print(f"[dim]Termin-Overlay: {kalender.bericht()}[/dim]")
+    officer = RiskOfficer(
+        settings.risk,
+        instrument,
+        state_path=state_path,
+        kalender=kalender or None,
+        kerzenspanne=interval_obj.duration,
+    )
 
     last = store.last_candle_time(settings.bybit.symbol, interval_obj)
     if last is None:
@@ -2266,6 +2346,7 @@ def evidenz(
         s: BacktestConfig(
             instrument=_fallback_instrument(_bybit_kontrakt(s)),
             risk=settings.risk, initial_equity=Decimal("500"),
+            kalender=_terminkalender(settings) or None,
         )
         for s in symbole
     }
@@ -2456,6 +2537,7 @@ def landschaft(
         s: BacktestConfig(
             instrument=_fallback_instrument(_bybit_kontrakt(s)),
             risk=settings.risk, initial_equity=Decimal("500"),
+            kalender=_terminkalender(settings) or None,
         )
         for s in symbole
     }

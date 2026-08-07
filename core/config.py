@@ -162,6 +162,15 @@ class RiskSettings(BaseModel):
     min_stop_distance_pct: Decimal = Field(Decimal("0.15"), gt=0)
     max_stop_distance_pct: Decimal = Field(Decimal("3.0"), gt=0)
 
+    # --- Termin-Sperre ---
+    # Wie lange vor und nach einem Termin (Fed-Entscheidung, Halbierung) nicht
+    # eingestiegen wird. Dazu kommt immer die Kerze, in die der Termin faellt -
+    # siehe ``Terminkalender.sperre``. 60/60 ist bewusst rund und **vor** der
+    # ersten Messung festgelegt: Eine Zahl, die zum Ergebnis passend gewaehlt
+    # wird, misst nur noch sich selbst.
+    news_blackout_before_min: int = Field(60, ge=0, le=1440)
+    news_blackout_after_min: int = Field(60, ge=0, le=1440)
+
     # --- Verlustbremsen ---
     daily_loss_limit_pct: Decimal = Field(Decimal("3.0"), gt=0)
     weekly_loss_limit_pct: Decimal = Field(Decimal("7.0"), gt=0)
@@ -325,6 +334,15 @@ class PathSettings(BaseModel):
 
     strategies: str = "strategies"
     """Zugelassene Genome. Was hier liegt, hat die neun Gates bestanden."""
+
+    referenz: str = "referenz"
+    """Nachgeschlagene Daten aus kanonischen Quellen - eingecheckt.
+
+    Bewusst **nicht** unter ``state``: Der Betriebszustand ist
+    maschinenspezifisch und deshalb nicht im Repository. Referenzdaten sind das
+    Gegenteil - der Terminkalender muss auf jedem Rechner derselbe sein, sonst
+    rechnet der Backtest hier ein anderes Ergebnis als beim Nutzer. Genau diese
+    Sorte Abweichung hat dieses Projekt schon fuenfmal Geld gekostet."""
 
 
 class Settings(BaseSettings):

@@ -968,3 +968,91 @@ Simulation richtig". Das ist ein Fortschritt, aber kein Beweis.
 Die Reihenfolge bleibt damit unveraendert: Erst ``cli healthcheck`` auf dem
 Rechner des Nutzers - er entscheidet, ob Perpetuals auf dem Konto ueberhaupt
 verfuegbar sind -, dann Demobetrieb, dann echtes Geld.
+
+## Zwoelf. Das Termin-Overlay - gebaut, gemessen, und es bewegt nichts
+
+Phase 7 war nie gebaut worden. Der Risk-Officer kannte das Veto
+``NEWS_BLACKOUT`` und die Methode ``set_news_blackout`` von Anfang an; was
+fehlte, war die Quelle.
+
+**Was jetzt drinsteht** (``data/termine.py``, geholt mit ``cli termine``):
+
+    138 Termine, 2012-01-25 bis 2027-12-08
+    134 FOMC-Entscheidungen, 4 Bitcoin-Halbierungen
+    davon 5 ausserplanmaessig
+
+Nur Nachpruefbares. Die FOMC-Termine kommen von federalreserve.gov - gelesen
+wird der Dateiname der Erklaerungs-Pressemitteilung, nicht die Sitzungsangabe
+im Text. Das ist der Tag der Veroeffentlichung und damit der Moment, an dem
+sich der Kurs bewegt. Die Halbierungen sind die **Blockzeit** von
+mempool.space, kein Schaetzwert.
+
+**Was fehlt:** CPI-Termine. bls.gov antwortet diesem Container mit 403. Ein
+geschaetztes Datum waere schlimmer als keines - es wuerde den falschen Tag
+sperren und den echten offenlassen. Vom Rechner des Nutzers aus ist die Seite
+erreichbar; ``cli termine`` laeuft dort und kann die Luecke schliessen.
+
+### Die Regel, bevor gemessen wurde
+
+    60 Minuten Vorlauf, 60 Minuten Nachlauf
+    plus: die Kerze, in die der Termin faellt
+
+Der zweite Teil ist der wichtige und der einzige, der ohne Einstellung
+auskommt. Eine Fed-Entscheidung um 18:00 UTC liegt sechs Stunden vor dem
+Tagesschluss - mit 60 Minuten Vorlauf allein wuerde sie auf Tageskerzen
+**nie** greifen. Mit der Kerzenregel sperrt sie den Einstieg am naechsten
+Mitternachtsschluss, auf 15-Minuten-Kerzen die Stunde davor und danach.
+Dieselbe Regel, jedes Intervall, keine Zahl, die sich passend drehen laesst.
+
+### Das Ergebnis
+
+BTC + ETH, Tageskerzen, Walk-Forward, nach Gebuehren:
+
+    Lauf                 Trades    p.a.      DD      Sharpe   DSR     Gates
+    ohne Termin-Sperre      156   11,22 %   9,74 %    1,50   0,798    8/11
+    mit Termin-Sperre       154   11,28 %   9,74 %    1,51   0,804    8/11
+
+    Signale wegen Termin abgelehnt: 2 von 156
+
+**Zwei Einstiege in neun Jahren.** Das ist Rauschen, kein Effekt. Kein Gate
+bewegt sich, und das war vorher absehbar: Der Kandidat haelt eine Position im
+Schnitt sechs Wochen. Ein Overlay hindert am *Einstieg*, nicht am Halten - eine
+laufende Position wird nicht wegen einer Fed-Sitzung geschlossen. Bei acht bis
+zwoelf Terminen im Jahr und acht Einstiegen je Markt und Jahr treffen sich die
+beiden schlicht fast nie.
+
+Gebraucht wird es fuer die **15-Minuten-Generationen**: Dort wuerde eine
+Position auch mal zwei Stunden vor einer Fed-Entscheidung eroeffnet, und dort
+ist der Ausschlag nicht mehr im Rauschen.
+
+Der Versuchszaehler steht damit auf **94**. Die Messung war eine Hypothese auf
+denselben Daten, also zaehlt sie - auch wenn das Ergebnis "kein Unterschied"
+lautet und die Sperre aus Risikogruenden bleibt, nicht wegen der Zahlen. Wer
+nur die Versuche zaehlt, die etwas gebracht haben, rechnet sich die Huerde
+klein.
+
+### Zwei Fehler beim Bauen, beide beim Nachzaehlen gefunden
+
+**Der Kalender endete bei Juli 2026.** Der erste Abruf las nur die
+Pressemitteilungen - und eine Sitzung, die noch nicht stattgefunden hat, hat
+keine. Ein Termin-Overlay, das nur vergangene Termine kennt, sperrt im Betrieb
+**nie**. Im Backtest waere es nicht aufgefallen, dort ist alles Vergangenheit.
+Jetzt werden beide Lesarten derselben Seite zusammengefuehrt.
+
+**Der Parser haette jeden Termin ab August 2025 um Wochen verschoben.** Monate
+und Datumsangaben als zwei parallele Listen zu lesen ist naheliegend und auf
+echten Daten falsch: Das Jahr 2025 hat eine August-Zeile **ohne** Datum. Neun
+Monate, acht Daten - ab dort bekam September den Oktobertermin.
+
+    naiv        September 2025 -> 28./29.
+    zeilenweise September 2025 -> 16./17.
+
+Gefunden nur, weil die Zahlen nicht zusammenpassten. Der Test dazu benutzt
+einen unveraenderten Ausschnitt der echten Fed-Seite - ein selbst erfundenes
+Beispiel haette genau die Eigenheit nicht gehabt, um die es geht.
+
+Dazu eine dritte Korrektur an mir: Ob eine Sitzung ausserplanmaessig war,
+hatte ich geschaetzt (weniger als drei Wochen Abstand zur vorigen). Der Test
+fiel durch, und zu Recht - der 3. Maerz 2020 liegt 34 Tage nach dem 29. Januar
+und war trotzdem eine Notfallsitzung. Die Fed-Seite schreibt ``(unscheduled)``
+daneben. Jetzt wird das gelesen statt gerechnet.

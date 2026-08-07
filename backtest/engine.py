@@ -23,7 +23,7 @@ Take-Profit, verraet OHLC nicht, was zuerst kam. Zwei Wege:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from enum import StrEnum
 
@@ -34,6 +34,7 @@ import structlog
 from backtest.costs import CostModel, FundingSchedule
 from core.config import RiskSettings
 from core.models import Instrument, LiquidityRole, Side, Signal, Trade
+from data.termine import Terminkalender
 from execution.risk import RiskOfficer, TradingState
 from execution.sizing import SizedPosition, SizingRejected, size_position
 from strategy.base import BarContext, Strategy, frame_to_arrays, wants_exit
@@ -80,6 +81,14 @@ class BacktestConfig:
     """Positionsgroesse am aktuellen Kapital bemessen (Zinseszins) statt am
     Startkapital. Realistisch, macht die Equity-Kurve aber exponentiell -
     Kennzahlen wie der maximale Drawdown sind dann in Prozent zu lesen."""
+
+    kalender: Terminkalender | None = None
+    """Termine, an denen nicht eingestiegen wird (Fed, Halbierung).
+
+    ``None`` heisst: keine Sperre. Der Kalender geht denselben Weg wie im
+    Betrieb - durch ``RiskOfficer.blockade`` -, damit die Regel nicht zweimal
+    existiert und auseinanderlaufen kann. Wirkt nur bei
+    ``enforce_risk_limits``; ohne Officer gibt es keine Sperre."""
 
     enforce_risk_limits: bool = True
     """Die Verlustgrenzen des Risk-Officers auch im Backtest durchsetzen.
@@ -241,7 +250,23 @@ class Backtester:
             self.config.instrument,
             state_path=None,
             clock=lambda: self._jetzt,
+            kalender=self.config.kalender,
+            kerzenspanne=self._kerzenspanne(arrays),
         )
+
+    @staticmethod
+    def _kerzenspanne(arrays) -> timedelta:
+        """Wie lang ist eine Kerze in dieser Reihe?
+
+        Gemessen statt konfiguriert - der Abstand zweier Oeffnungszeiten. Eine
+        zusaetzliche Einstellung waere eine zusaetzliche Gelegenheit, dass
+        Backtest und Betrieb auseinanderlaufen: Wer sie falsch setzt, sperrt im
+        Backtest andere Kerzen als im Handel.
+        """
+        zeiten = arrays["open_time"]
+        if len(zeiten) < 2:
+            return timedelta(0)
+        return _to_datetime(zeiten[1]) - _to_datetime(zeiten[0])
 
     def run(
         self,
