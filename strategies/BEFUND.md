@@ -1056,3 +1056,86 @@ hatte ich geschaetzt (weniger als drei Wochen Abstand zur vorigen). Der Test
 fiel durch, und zu Recht - der 3. Maerz 2020 liegt 34 Tage nach dem 29. Januar
 und war trotzdem eine Notfallsitzung. Die Fed-Seite schreibt ``(unscheduled)``
 daneben. Jetzt wird das gelesen statt gerechnet.
+
+## Dreizehn. Die Gegenrichtung traegt nicht - und ich haette es fast anders gemeldet
+
+Der Kandidat ist **long-only**: ``entry_short`` ist leer. Da der Deflated
+Sharpe dominant an ``sqrt(n-1)`` haengt und 156 Trades zu wenig sind (fuer 0,95
+braeuchte es rund 220 bei gleicher Qualitaet), war die Short-Seite der einzige
+ungemessene Hebel, der die Zahl verdoppeln koennte, ohne die Datenbasis zu
+verwaessern.
+
+Die Spiegelung ist woertlich: Einstieg, wenn der Kurs unter den SMA(50) faellt,
+Ausstieg, wenn er darueber zurueckkehrt. Kein neuer Indikator, kein neuer
+Parameter.
+
+### Das Ergebnis sah nach Fortschritt aus
+
+    Variante          Trades   Short    p.a.      DD      SR/Trade   DSR    Gates
+    long-only            154       0   11,28 %   9,74 %    0,242    0,804   8/11
+    long + short         302     148   12,50 %   8,74 %    0,160    0,852   9/11
+
+Mehr Rendite, weniger Rueckgang, ein Gate mehr - **auf jeder Achse besser.**
+Ich war eine Zeile davon entfernt, "9 von 11" zu melden.
+
+### Drei Gegenproben, und alle drei sagen nein
+
+**Erstens: die Short-Seite allein.** 148 Trades, Erwartungswert **-0,002 R**,
+Trefferquote 21,6 %. Kein Vorteil, sondern eine Null.
+
+**Zweitens: haette Rauschen dasselbe gebracht?** Im echten Lauf wurden nur die
+Short-Trades durch Zufallszahlen mit demselben Mittelwert und derselben
+Streuung ersetzt - alles andere blieb, dieselben Long-Trades, dieselbe
+Rechnung, dieselbe Versuchszahl. Gerechnet auf ``net_pnl`` in Euro und mit
+denselben Momenten wie im Gate:
+
+    500 Rausch-Ziehungen: DSR im Mittel 0,821, Spanne 0,458 bis 0,998
+    echte Shorts:         DSR 0,852
+    Anteil der Ziehungen, die mindestens so gut sind: 46,4 %
+
+**Fast die Haelfte reinen Rauschens schneidet mindestens so gut ab.** Der
+DSR-Gewinn von 0,841 auf 0,852 ist kein Nachweis, sondern eine Zahl aus dem
+Rauschband.
+
+Beruhigend ist dabei ein Nebenbefund: Blosses Anhaengen nutzloser Trades
+*verschlechtert* den DSR normalerweise deutlich (154 Trades mit SR 0,242 plus
+148 Nulltrades gleicher Streuung ergibt DSR 0,31). Das Gate ist also nicht
+beliebig aufblasbar - es ist nur unempfindlich gegen ein **leises** Nullbein,
+weil das den Mittelwert verduennt und die Streuung zugleich senkt.
+
+**Drittens - und das ist die Gegenprobe, die auch die Wirtschaftlichkeit
+kippt: fensterweise statt im Aggregat.**
+
+    31 Fenster: 12 besser, 18 schlechter, 1 unveraendert
+    geringerer Rueckgang in nur 5 von 31 Fenstern
+    mittlere Differenz +1,33 EUR je Fenster bei einer Streuung von 9,91
+    Vorzeichentest: p = 0,90
+
+Die **Mehrzahl der Fenster wird schlechter.** Die besseren Aggregatzahlen
+kommen aus wenigen guenstigen Fenstern - genau die Pfadabhaengigkeit, gegen die
+der Walk-Forward gebaut ist und die im Gesamtergebnis trotzdem verschwindet,
+weil ein starkes Fenster achtzehn schwache ueberdecken kann.
+
+Versuchszaehler: **95**. Achte gemessene und widerlegte Richtung.
+
+### Was bleibt: ein Werkzeug gegen genau diesen Fehler
+
+``research/fenstervergleich.py``. Zwei Laeufe fensterweise gegeneinander,
+Vorzeichentest, und ein Urteil, das sich weigert, eine Verbesserung
+auszurufen, wenn nur das Aggregat besser ist:
+
+    Urteil: NICHT belastbar - die Mehrzahl der Fenster wird SCHLECHTER.
+
+Der Vorzeichentest ist absichtlich das schwaechste denkbare Verfahren: Er
+benutzt nur die Richtung, nicht die Groesse. Damit kann ein einzelnes
+Ausreisserfenster das Urteil nicht kippen - und genau darum ging es hier.
+
+**Die Regel, die ab jetzt gilt:** Eine Verbesserung, die sich nicht in der
+Mehrzahl der Fenster zeigt, ist keine. Das Aggregat darf sie bestaetigen, aber
+nicht begruenden. Ich haette diese Regel frueher gebraucht.
+
+### Was daraus fuer die Gates folgt
+
+Der Stand bleibt **8 von 11**. Offen sind unveraendert Messlatte (11,28 % gegen
+15 %), Deflated Sharpe (0,804 gegen 0,95) und Parameter-Plateau (0,50 gegen
+0,60).
