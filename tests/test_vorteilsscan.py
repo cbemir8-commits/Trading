@@ -194,8 +194,8 @@ class TestUrteil:
 
         text = urteil(z, s)
 
-        assert "nicht stabil" in text
-        assert "wegarbitriert" in text
+        assert "verschwunden" in text
+        assert "haette einen Effekt dieser Groesse gesehen" in text
 
     def test_stabil_aber_zu_klein(self) -> None:
         z = Zelle(16, 16, 14000, 0.05, 3.0)
@@ -265,3 +265,90 @@ class TestMehrfachtestung:
         z = Zelle(16, 16, 13917, -0.0883, -4.11)
 
         assert z.ueber_schwelle(schwelle_fuer(81))
+
+
+class TestTrennschaerfe:
+    """"Nicht stabil" heisst zweierlei - und der Unterschied entscheidet.
+
+    Entweder der Vorteil ist verschwunden, oder die zweite Haelfte war zu
+    kurz, um ihn zu sehen. Ohne diese Unterscheidung liest man aus einer
+    fehlenden Messung einen Befund heraus.
+    """
+
+    def test_grosse_stichprobe_erkennt_kleine_effekte(self) -> None:
+        from research.vorteilsscan import erkennbare_spanne
+
+        # 15 Minuten: Standardfehler 0,0215 % (aus Spanne/t der echten Messung)
+        gross = Zelle(16, 16, 7000, 0.007, 0.29)
+        klein = Zelle(48, 4, 660, 0.30, 0.50)
+
+        assert erkennbare_spanne(gross) < erkennbare_spanne(klein)
+
+    def test_verschwunden_wird_von_unentscheidbar_getrennt(self) -> None:
+        """**Der echte Fall.**
+
+        BTC 15m: erste Haelfte -0,104 % bei t = -2,90, zweite Haelfte
+        +0,007 % bei t = +0,29. Der Standardfehler der zweiten Haelfte ist
+        0,0241 % - ein Effekt von 0,104 % waere dort klar aufgefallen. Also
+        ist er wirklich weg.
+        """
+        s = Stabilitaet(
+            erste=Zelle(16, 16, 7000, -0.104, -2.90),
+            zweite=Zelle(16, 16, 7000, 0.007, 0.29),
+        )
+
+        assert not s.haelt
+        assert s.aussagekraeftig, "7000 Beobachtungen je Haelfte reichen"
+        assert "verschwunden" in s.beschreibe()
+
+    def test_die_echten_tageszahlen_sind_gerade_noch_entscheidbar(self) -> None:
+        """**Eine Korrektur an mir, festgehalten als Test.**
+
+        Ich hatte behauptet, die Tagesreihe sei mit 660 Beobachtungen je
+        Haelfte zu kurz, um "verschwunden" von "nie da" zu trennen.
+        Nachgerechnet stimmt das nicht: Der Standardfehler der zweiten
+        Haelfte ist 0,50 %, erkennbar waere ab 1,40 % - und die erste Haelfte
+        zeigte 1,54 %. Die Trennschaerfe reichte also, wenn auch knapp.
+
+        Das macht den Befund unangenehmer, nicht harmloser: Die zweite
+        Haelfte haette den Effekt mit rund vier Fuenfteln Wahrscheinlichkeit
+        gesehen und hat ihn nicht gesehen.
+        """
+        s = Stabilitaet(
+            erste=Zelle(48, 4, 660, 1.54, 3.26),
+            zweite=Zelle(48, 4, 660, 0.70, 1.40),
+        )
+
+        assert not s.haelt
+        assert s.aussagekraeftig, "Knapp, aber ausreichend"
+        assert "verschwunden" in s.beschreibe()
+
+    def test_zu_kleiner_effekt_ist_nicht_entscheidbar(self) -> None:
+        """Waere der Effekt der ersten Haelfte kleiner gewesen, koennte die
+        zweite ihn nicht mehr ausschliessen - dann ist "nicht stabil" kein
+        Befund, sondern eine fehlende Messung."""
+        s = Stabilitaet(
+            erste=Zelle(48, 4, 660, 0.90, 1.90),
+            zweite=Zelle(48, 4, 660, 0.20, 0.40),
+        )
+
+        assert not s.haelt
+        assert not s.aussagekraeftig
+        assert "nicht entscheidbar" in s.beschreibe()
+
+    def test_stabiler_fall_beschreibt_sich_als_stabil(self) -> None:
+        s = Stabilitaet(Zelle(16, 16, 7000, 0.10, 3.0),
+                        Zelle(16, 16, 7000, 0.09, 2.5))
+
+        assert "stabil" in s.beschreibe()
+
+    def test_ohne_streuung_ist_nichts_erkennbar(self) -> None:
+        from research.vorteilsscan import erkennbare_spanne
+
+        assert erkennbare_spanne(Zelle(16, 16, 100, 0.0, 0.0)) == float("inf")
+
+    def test_urteil_uebernimmt_die_unterscheidung(self) -> None:
+        z = Zelle(48, 4, 1320, 0.90, 2.10)
+        s = Stabilitaet(Zelle(48, 4, 660, 0.90, 1.90), Zelle(48, 4, 660, 0.20, 0.40))
+
+        assert "nicht entscheidbar" in urteil(z, s, gepruefte_zellen=1)

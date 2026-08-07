@@ -153,6 +153,37 @@ def scanne(
     return sorted(zellen, key=lambda z: -abs(z.t_wert))
 
 
+#: Geforderte Trennschaerfe der Stabilitaetspruefung. Dieselbe Zahl wie in
+#: ``research/live_evidenz.py`` - dort gilt sie fuer den Demobetrieb, hier fuer
+#: die zweite Haelfte des Zeitraums. Die Frage ist beide Male dieselbe.
+TRENNSCHAERFE = 0.8
+
+
+def erkennbare_spanne(
+    zelle: Zelle, *, trennschaerfe: float = TRENNSCHAERFE, irrtum: float = 0.05
+) -> float:
+    """Welche Spanne haette in dieser Haelfte ueberhaupt auffallen koennen?
+
+    Die Zahl, die einem gescheiterten Stabilitaetstest erst seine Bedeutung
+    gibt. Ohne sie heisst "nicht stabil" zweierlei: **Der Vorteil ist weg**
+    oder **ich haette ihn hier gar nicht sehen koennen**. Der Unterschied
+    entscheidet, ob man weitersucht oder aufhoert.
+
+    Gerechnet aus dem beobachteten Standardfehler - der steckt in ``spanne``
+    und ``t_wert`` bereits drin (``SE = spanne / t``), es braucht keine
+    zusaetzliche Annahme ueber die Streuung.
+    """
+    from statistics import NormalDist
+
+    if zelle.t_wert == 0:
+        return float("inf")
+    standardfehler = abs(zelle.spanne_pct / zelle.t_wert)
+    normal = NormalDist()
+    return standardfehler * (
+        normal.inv_cdf(1 - irrtum / 2) + normal.inv_cdf(trennschaerfe)
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class Stabilitaet:
     """Haelt eine Zelle in beiden Haelften des Zeitraums?"""
@@ -174,6 +205,46 @@ class Stabilitaet:
             self.zweite.spanne_pct > 0
         )
         return gleiches_vorzeichen and self.erste.auffaellig and self.zweite.auffaellig
+
+    @property
+    def aussagekraeftig(self) -> bool:
+        """Haette die zweite Haelfte den Effekt der ersten sehen koennen?
+
+        ``False`` heisst: Der Test hat nichts gefunden, aber er konnte auch
+        nichts finden - die Haelfte ist zu kurz fuer einen Effekt dieser
+        Groesse. Dann ist "nicht stabil" **kein Befund**, sondern eine
+        fehlende Messung.
+
+        Genau hier lag die Gefahr beim Abtasten der Intervalle: Auf 15 Minuten
+        stehen je Haelfte 7.000 Beobachtungen, auf Tageskerzen nur 660. Beide
+        Male stand "nicht stabil" da - und es bedeutete etwas voellig anderes.
+        """
+        if self.erste is None or self.zweite is None:
+            return False
+        return abs(self.erste.spanne_pct) >= erkennbare_spanne(self.zweite)
+
+    def beschreibe(self) -> str:
+        if self.erste is None or self.zweite is None:
+            return "Zu wenig Daten fuer eine Haelfte."
+        if self.haelt:
+            return (
+                f"stabil: erste Haelfte t = {self.erste.t_wert:+.2f}, "
+                f"zweite t = {self.zweite.t_wert:+.2f}"
+            )
+        if not self.aussagekraeftig:
+            return (
+                f"nicht entscheidbar: Die zweite Haelfte haette erst eine "
+                f"Spanne ab {erkennbare_spanne(self.zweite):.4f} % erkannt, "
+                f"die erste zeigte {abs(self.erste.spanne_pct):.4f} %. Zu "
+                f"wenig Beobachtungen, um 'verschwunden' von 'nie da' zu "
+                f"trennen."
+            )
+        return (
+            f"verschwunden: erste Haelfte t = {self.erste.t_wert:+.2f}, "
+            f"zweite t = {self.zweite.t_wert:+.2f} - und die zweite haette "
+            f"einen Effekt dieser Groesse gesehen "
+            f"(Grenze {erkennbare_spanne(self.zweite):.4f} %)"
+        )
 
 
 def pruefe_stabilitaet(
@@ -215,12 +286,9 @@ def urteil(
             f"holen."
         )
     if not stabilitaet.haelt:
-        erste = f"{stabilitaet.erste.t_wert:+.2f}" if stabilitaet.erste else "-"
-        zweite = f"{stabilitaet.zweite.t_wert:+.2f}" if stabilitaet.zweite else "-"
         return (
-            f"Auffaellig (t = {zelle.t_wert:+.2f}), aber nicht stabil: erste "
-            f"Haelfte t = {erste}, zweite Haelfte t = {zweite}. Entweder "
-            f"wegarbitriert oder nie da gewesen."
+            f"Auffaellig (t = {zelle.t_wert:+.2f}), aber "
+            f"{stabilitaet.beschreibe()}."
         )
     netto = zelle.netto_pct(kosten)
     if netto <= 0:

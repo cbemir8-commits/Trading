@@ -1339,3 +1339,89 @@ Waere der Scan vor den acht widerlegten Richtungen dagewesen, haetten mehrere
 davon nie einen Versuch gekostet. Fuer 15 Minuten ist die Antwort damit
 gegeben, ohne einen einzigen Versuch verbraucht zu haben: **Dort ist nach
 Kosten nichts zu holen.**
+
+## Sechzehn. Zwoelf Scans, null Funde - und die Grenze ist immer dieselbe Zahl
+
+Der Scan aus dem vorigen Abschnitt kostet keinen Versuch. Also wurde er auf
+alles angewandt, was da ist: vier Maerkte, vier Intervalle. Die
+Zwischenintervalle entstehen durch Verdichten der 15-Minuten-Kerzen
+(``data/resample.py``), decken also 2020-03-30 bis 2026-08-05 ab.
+
+    Markt   Iv    Kerzen   Zelle    Spanne      t   Schwelle    netto   Urteil
+    BTC    15m    222700   16/16   -0,0883%  -4,11    3,42    +0,0041%  verschwunden
+    BTC     1h     55675    960/8  +0,1131%  +2,68    3,39    +0,0165%  unauffaellig
+    BTC     4h     13918    192/8  +0,4331%  +2,48    3,33    +0,1765%  unauffaellig
+    ETH    15m    222700    8/96   -0,4167%  -2,48    3,42    +0,1684%  unauffaellig
+    ETH     1h     55675   96/192  +3,4574%  +2,62    3,39    +1,6887%  unauffaellig
+    ETH     4h     13918    192/4  +0,3320%  +2,98    3,34    +0,1260%  unauffaellig
+    BTC     1d      5331     48/4  +1,5432%  +3,64    3,23    +0,7316%  verschwunden
+    ETH     1d      3277     32/4  +1,7330%  +2,80    3,23    +0,8265%  unauffaellig
+    LTC     1d      3338   480/32 -11,3068%  -2,37    3,23    +5,6134%  unauffaellig
+    XRP     1d      3504      4/8  +5,1543%  +2,86    3,24    +2,5372%  unauffaellig
+
+**Zwoelf Kombinationen, kein einziger Fund.** Zehn liegen unter ihrer
+mehrfachtestungs-korrigierten Schwelle. Die zwei, die sie schaffen, sind beide
+in der zweiten Haelfte des Zeitraums verschwunden.
+
+### Was "verschwunden" jetzt bedeutet - und eine Korrektur an mir
+
+Im vorigen Abschnitt steht, der schwaechere zweite Teil der Tagesreihe sei ein
+"Warnzeichen, aber kein Beweis", weil bei 2665 Balken je Haelfte "die
+Trennschaerfe gering" sei. **Das war eine Vermutung, und sie ist falsch.**
+
+Nachgerechnet (``erkennbare_spanne``): Der Standardfehler der zweiten Haelfte
+betraegt 0,50 %; erkennbar waere mit vier Fuenftel Wahrscheinlichkeit ein
+Effekt ab 1,40 %. Die erste Haelfte zeigte 1,54 %. **Die Trennschaerfe
+reichte** - knapp, aber sie reichte. Die zweite Haelfte haette den Effekt also
+mit rund 80 % Wahrscheinlichkeit gesehen und hat ihn nicht gesehen.
+
+Das macht den Befund unangenehmer, nicht harmloser. Und es ist genau der
+Fehler, den der Scan verhindern soll, nur von der anderen Seite: Ich hatte aus
+"nicht stabil" auf "zu wenig Daten" geschlossen, ohne nachzurechnen. Der
+Unterschied steht jetzt im Werkzeug (``Stabilitaet.aussagekraeftig``) und wird
+im Urteil ausgesprochen - "verschwunden" oder "nicht entscheidbar" sind zwei
+verschiedene Aussagen.
+
+### Der Kandidat selbst - und warum darueber nichts zu erfahren ist
+
+Der Scan misst ein grobes Vorzeichen-Signal, nicht den Kandidaten mit seinen
+drei Konfluenzbedingungen. Also direkt gefragt: die 31 Testfenster halbiert.
+
+    Haelfte             Zeitraum                Trades   Mittel     SR/Trade    t
+    erste     2018-08 bis 2022-05                  75   +4,30 EUR    0,268   +2,32
+    zweite    2022-05 bis 2026-05                  79   +2,47 EUR    0,221   +1,97
+    gesamt    2018-08 bis 2026-05                 154   +3,36 EUR    0,244   +3,03
+
+Der Vorteil ist in der zweiten Haelfte kleiner - und der Unterschied ist
+**nicht nachweisbar** (t = -0,82).
+
+Der entscheidende Satz steht daneben: Bei 79 Trades waere erst ein Rueckgang um
+**111 %** erkennbar gewesen (``research/live_evidenz.py``, mit der gemessenen
+Schiefe simuliert). Also mehr als der vollstaendige Verlust des Vorteils. Die
+Messung sagt nicht "kein Abfall", sie sagt "hier ist nichts zu erfahren".
+
+    beobachtete Trades    erkennbarer Rueckgang
+                    14           245 %   (30 Tage Demo)
+                    79           111 %   (zweite Haelfte)
+                   154            80 %
+                   600            41 %
+                  2500            21 %
+
+### Die Grenze ist immer dieselbe Zahl
+
+Drei Fragen, drei Male dieselbe Antwort:
+
+* **Besteht die Strategie das DSR-Gate?** Nein - es fehlen 53 Trades.
+* **Laesst der Vorteil nach?** Unbekannt - bei 79 Trades je Haelfte waere erst
+  ein Totalverlust sichtbar.
+* **Beweist der Demobetrieb etwas?** Nein - bei 14 Trades braeuchte es 245 %.
+
+Die Zahl der Trades begrenzt nicht nur die **Zulassung**, sondern auch das
+**Wissen**. 154 Trades in acht Jahren sind zu wenig, um zu bestehen, und zu
+wenig, um zu wissen, ob es noch funktioniert. Das sind nicht zwei Probleme,
+sondern eines.
+
+Und dieses eine Problem ist jetzt an drei Stellen unabhaengig gemessen und an
+allen dreien gleich beantwortet: Mehr Maerkte verwaessern, mehr Vergangenheit
+verwaessert, hoehere Frequenz traegt nach Kosten nicht. Der Versuchszaehler
+bleibt bei **95** - keine dieser Messungen hat eine Regel geprueft.
