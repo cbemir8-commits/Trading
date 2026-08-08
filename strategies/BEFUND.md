@@ -2221,3 +2221,115 @@ erkennen - nur daran, dass man nachsieht, wie die Zahlen entstehen.
 
 Versuchszaehler unveraendert bei **102**: Fehlerbehebung an der Messung, kein
 neuer Einfall.
+
+---
+
+## Vierundzwanzig. Der Backtest hat den Not-Aus alle drei Monate zurueckgesetzt
+
+Der angekuendigte Umbau: ein **durchgehender** Lauf ueber die ganze
+Teststrecke statt eines Backtests je Fenster. Anlass war die Messung aus
+Nummer dreiundzwanzig - die Haelfte aller Fenster beginnt mitten im Trend,
+flach, und wartet auf ein Kreuzen, das nicht mehr kommt (26,3 % der Testtage).
+
+Der Umbau hat etwas ganz anderes freigelegt, und es ist der schwerste Befund
+dieses Projekts.
+
+### Die Zahlen
+
+    Lauf            Trades   SR/Trade    p.a.       DD     DSR   Gates
+    fensterweise       152     0,2597  13,47 %  10,64 %   0,863    7/11
+    durchgehend         86     0,2339   8,40 %   8,24 %   0,296    7/11
+
+**Der Deflated Sharpe faellt von 0,863 auf 0,296.** Nicht wegen des
+Umbaus - sondern weil der Umbau zeigt, was ohne ihn nie sichtbar war.
+
+### Die Ursache: der Risk-Officer wurde 31-mal neu geboren
+
+Erste Vermutung war der Mechanismus selbst. Die Gegenprobe widerlegt sie:
+
+    Lauf                        Trades
+    fensterweise, Limits an        152
+    durchgehend,  Limits an         86
+    fensterweise, Limits aus       156
+    durchgehend,  Limits aus       156   <- identisch
+
+**Ohne Risikolimits liefern beide Wege exakt dieselben 156 Trades.** Der
+ganze Unterschied kommt vom Risk-Officer. Und die Vetos sagen, wie gross er
+ist:
+
+    fensterweise:  trading_paused     6
+    durchgehend:   trading_paused  1891
+
+Jedes Fenster war ein eigener Backtest mit **eigenem, frischem
+Risikozustand**. Verlustgrenzen, Hoechststand, Pausen - alles auf null, 31
+Mal hintereinander. Der Backtest hat damit genau die Sicherung, die im
+Betrieb ueber dem Konto haengt, viermal im Jahr entschaerft.
+
+### Was durchgehend passiert
+
+    Trades je Jahr
+    fensterweise   2018: 7  2019: 20  2020: 18  2021: 21  2022: 20
+                   2023: 19  2024: 22  2025: 17  2026: 8
+    durchgehend    2018: 7  2019: 20  2020: 17  2021: 13  2022: 8
+                   2023: 12  2024: 9   2025: 0   2026: 0
+
+**Der Handel endet 2024 und kommt nicht wieder.** Ueber den ganzen Lauf feuert
+das Wochenlimit einmal und der Kill-Switch einmal. Beide sind so gebaut, dass
+sie **nicht von selbst aufgehen**:
+
+    Wochenlimit (-7 %)   paused_until = None   "bis zur manuellen Freigabe"
+    Kill-Switch (15 %)   TradingState.KILLED   nur mit ausdruecklicher
+                                               Bestaetigung rueckholbar
+
+Das ist genau so gewollt und richtig - ein Mensch soll nachsehen, bevor es
+weitergeht. Nur hat der Backtest es nie gezeigt, weil das naechste Fenster den
+Zustand wegwarf.
+
+### Was das bedeutet
+
+Die Zahl, die zaehlt, ist nicht 0,863, sondern **0,296**. Alles, was in diesem
+Dokument ueber den Abstand zum Deflated-Sharpe-Gate steht - 32 fehlende Trades,
+Faktor 1,08 auf die Qualitaet -, galt fuer einen Lauf, der die Sicherung
+regelmaessig zurueckgesetzt hat.
+
+Und die praktische Seite ist noch wichtiger als die statistische: **Waere
+dieses System die letzten Jahre gelaufen, stuende es heute still** und wartete
+auf eine Freigabe. Der Backtest hat davon nichts gesagt.
+
+### Was nicht getan wird
+
+Das Wochenlimit automatisch auslaufen zu lassen waere die naheliegende
+Reparatur - und genau die Sorte Aenderung, die dieses Projekt nicht macht. Es
+ist eine **Sicherheitsgrenze**, kein Messparameter. Sie zu lockern, damit die
+Zahlen besser aussehen, waere das Gegenteil dessen, wofuer sie da ist.
+
+Ob eine Pause nach einer Verlustwoche von Hand freigegeben werden soll oder
+nach einer festen Frist von selbst aufgeht, ist eine **Betriebsentscheidung**
+und gehoert dem Nutzer, nicht mir. Beides ist vertretbar; unbemerkt bleiben
+darf keines von beiden. Fuer den Betrieb heisst es konkret: Es wird
+Telegram-Meldungen geben, nach denen das System steht, bis jemand es wieder
+freigibt.
+
+### Zum Umbau selbst
+
+``durchgehend=True`` laeuft einen Backtest ueber die ganze Teststrecke; die
+Fenster ordnen nur noch zu, welcher Trade zu welchem Abschnitt gehoert. Vor
+dem ersten Testfenster wird nicht gehandelt. Nicht kombinierbar mit
+``strategie_je_fenster`` - eine Position ueber die Grenze zu tragen hiesse,
+sie unter einer Regel zu eroeffnen und unter einer anderen zu schliessen; der
+Aufruf wird abgelehnt statt still umgangen.
+
+Erreichbar ueber ``cli machbarkeit --durchgehend``.
+
+Zwei Entwurfsfehler beim Bauen, beide von Tests gefangen:
+
+* Der Fenstergewinn wurde gegen das **Startkapital** gerechnet statt gegen den
+  Kontostand bei Fensterbeginn. Im fensterweisen Lauf ist das richtig, hier
+  haette es jedem Fenster den gesamten bisher aufgelaufenen Gewinn noch einmal
+  gutgeschrieben.
+* Die erste Testreihe war eine Zufallsreihe, in der gar keine Position eine
+  Fenstergrenze ueberspannte - beide Wege lieferten dasselbe, und der Test war
+  gruen und wertlos. Jetzt steht eine deterministische Trendreihe daneben.
+
+Versuchszaehler unveraendert bei **102**: Fehlerbehebung an der Messung, kein
+neuer Einfall.

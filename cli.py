@@ -2905,6 +2905,12 @@ def machbarkeit(
         True, "--zaehlen/--nicht-zaehlen",
         help="Die gemessenen Stufen auf den Versuchszaehler addieren.",
     ),
+    durchgehend: bool = typer.Option(
+        False, "--durchgehend",
+        help="Ein Lauf ueber die ganze Strecke statt einer je Fenster. "
+             "Positionen und Risikozustand ueberleben die Fenstergrenze - so "
+             "wie im Betrieb.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Gibt es eine Vola-Einstellung, bei der alle elf Gates zugleich halten?
@@ -2985,6 +2991,7 @@ def machbarkeit(
         f"  Zeitraum   {erster['open_time'].iloc[0]:%Y-%m} bis "
         f"{erster['open_time'].iloc[-1]:%Y-%m}\n"
         f"  Regler     Vola-Ziel, Ausgangswert {ausgang:g} %\n"
+        f"  Lauf       {'durchgehend' if durchgehend else 'fensterweise'}\n"
         f"  Versuche   {trials} bisher\n"
     )
 
@@ -2994,7 +3001,8 @@ def machbarkeit(
         for ziel in ziele:
             genome = mit_vola(ziel)
             report = run_portfolio_walkforward(
-                frames, lambda g=genome: compile_genome(g), configs
+                frames, lambda g=genome: compile_genome(g), configs,
+                durchgehend=durchgehend,
             )
             if not report.windows:
                 console.print(f"[yellow]Vola-Ziel {ziel:g}: keine Fenster.[/]")

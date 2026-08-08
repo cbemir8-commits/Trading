@@ -107,6 +107,7 @@ def run_portfolio_walkforward(
     initial_equity: Decimal | None = None,
     strategie_je_fenster=None,
     kapital_teilen: bool = False,
+    durchgehend: bool = False,
 ) -> WalkForwardReport:
     """Mehrere Beine zu einem Walk-Forward-Ergebnis zusammenlegen.
 
@@ -173,6 +174,7 @@ def run_portfolio_walkforward(
         bericht = run_walkforward(
             frame, bauplan_fuer(name), konfiguration, splitter,
             strategie_je_fenster=strategie_je_fenster,
+            durchgehend=durchgehend,
         )
         if bericht.windows:
             einzeln[name] = bericht
