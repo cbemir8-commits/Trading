@@ -2368,6 +2368,115 @@ def scan(
 
 
 @app.command()
+def nullprobe(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    laeufe: int = typer.Option(40, "--laeufe", "-n", help="Gemischte Reihen."),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Findet die Maschine einen Vorteil, wo garantiert keiner ist?
+
+    Die Frage, die unter allen anderen liegt. Alle Zahlen dieses Projekts
+    kommen aus derselben Zulassungsstrecke. Erzeugt die selbst einen Vorteil -
+    durch Lookahead, durch einen Fehler in der Fensterlogik -, ist jede
+    Messung wertlos, ohne dass irgendetwas nach einem Fehler aussieht.
+
+    Geprueft wird mit gemischten Renditen: dieselbe Verteilung, dieselbe
+    Schwankungsbreite, derselbe Drift - aber keine zeitliche Struktur mehr.
+    Auf so einer Reihe **muss** eine Trendfolge verlieren.
+
+    Zwei Ergebnisse, beide noetig: Auf gemischten Reihen darf nichts verdient
+    werden, und die echte Reihe muss sich abheben.
+
+    Kostet keinen Versuch - geprueft wird die Maschine, keine Regel.
+    """
+    from decimal import Decimal
+
+    import numpy as np
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.nullprobe import (
+        Nullergebnis,
+        Nullverteilung,
+        kaufen_und_halten_pct,
+        mische_renditen,
+    )
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    frames = common_range(roh)
+    genome = spitzenkandidat()
+    configs = {
+        x: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            kalender=_terminkalender(settings) or None,
+        )
+        for x in symbole
+    }
+
+    def lauf(reihen) -> Nullergebnis:
+        bericht = run_portfolio_walkforward(
+            reihen, lambda: compile_genome(genome), configs
+        )
+        if not bericht.windows:
+            return Nullergebnis(0, 0.0, 0.0, 0.0)
+        r = [
+            float(t.r_multiple)
+            for t in bericht.all_trades
+            if t.r_multiple is not None
+        ]
+        return Nullergebnis(
+            trades=len(bericht.all_trades),
+            erwartung_r=float(np.mean(r)) if r else 0.0,
+            ertrag_pct=float(bericht.combined.total_return_pct),
+            kaufen_halten_pct=float(
+                np.mean([kaufen_und_halten_pct(f) for f in reihen.values()])
+            ),
+        )
+
+    console.print(
+        f"\n[bold]Nullprobe[/] {' + '.join(symbole)} {interval_obj.label}, "
+        f"{laeufe} gemischte Reihen\n"
+    )
+    echt = lauf(frames)
+    gemischt = []
+    with console.status("mische...") as status:
+        for i in range(laeufe):
+            gemischt.append(
+                lauf({
+                    m: mische_renditen(f, saat=20260808 + i * 97)
+                    for m, f in frames.items()
+                })
+            )
+            status.update(f"mische... {i + 1}/{laeufe}")
+
+    verteilung = Nullverteilung(echt=echt, gemischt=gemischt)
+    console.print(verteilung.bericht())
+    console.print()
+    if not verteilung.maschine_sauber:
+        raise typer.Exit(1)
+
+
+@app.command()
 def abstand(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",

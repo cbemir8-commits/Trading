@@ -1589,3 +1589,85 @@ Strenge, sondern eine Muenze; wer sie einbaut, misst nicht mehr die Strategie.
 
 Versuchszaehler unveraendert bei **96** - geprueft wurde ein Werkzeug, keine
 Regel.
+
+## Neunzehn. Die Frage unter allen anderen: Erzeugt die Maschine selbst den Vorteil?
+
+Neun Richtungen sind gemessen und widerlegt, der Deflated Sharpe haengt bei
+0,80, und **alle diese Zahlen kommen aus derselben Zulassungsstrecke**. Wenn
+die selbst einen Vorteil erzeugt - durch Lookahead, durch einen Fehler in der
+Fensterlogik, durch eine Kerze zu frueh -, ist jede Messung der letzten Wochen
+wertlos. Und zwar ohne dass irgendetwas nach einem Fehler aussieht.
+
+Diese Frage war nie beantwortet. Es gab einen Test, der prueft, dass die
+**Gates** auf einem Zufallspfad niemanden zulassen - aber keinen, der prueft,
+ob der **Walk-Forward** auf strukturlosen Daten einen Ertrag ausweist. Das sind
+zwei verschiedene Dinge: Ein Lookahead koennte einen fetten Ertrag erzeugen,
+den die Gates aus einem ganz anderen Grund ablehnen. Der Test bliebe gruen.
+
+### Das Verfahren: Renditen mischen
+
+Aus den echten Tagesrenditen wird eine neue Preisreihe gebaut, in der die
+Reihenfolge zerstoert ist. Erhalten bleibt alles, was nichts mit
+Vorhersagbarkeit zu tun hat - Verteilung, Schwankungsbreite, Groessenordnung,
+sogar der Drift. Weg ist jede Struktur, auf die eine Trendfolge angewiesen ist.
+
+Auf so einer Reihe **muss** eine Trendfolge verlieren. Tut sie es nicht, liegt
+es an der Maschine. Kostet keinen Versuch: Geprueft wird die Maschine, keine
+Regel.
+
+### Das Ergebnis
+
+    echte Reihe                154 Trades,  +160,7 % Ertrag
+    40 gemischte Reihen        158 Trades im Mittel
+                               Ertrag im Median -22,0 %
+                               Spanne -43,6 % bis +14,2 %
+    gemischte Laeufe mindestens so gut wie die echte:  0 von 40
+
+Beide noetigen Antworten sind da:
+
+* **Die Maschine ist sauber.** Auf strukturlosen Daten verliert die Strategie
+  im Median 22 % - genau das, was eine Trendfolge ohne Trend tun muss: Stops
+  bezahlen und Gebuehren. Es gibt keinen Lookahead, der aus dem Nichts Ertrag
+  macht.
+* **Die echte Reihe hebt sich ab.** Kein einziger von vierzig Zufallslaeufen
+  kommt an +160,7 % heran, bei praktisch identischer Trade-Zahl (154 gegen 158
+  im Mittel). Der Unterschied kommt also nicht daher, dass mehr oder weniger
+  gehandelt wird, sondern **wann**.
+
+Das ist die erste Aussage ueber den Vorteil, die **ohne die
+Deflated-Sharpe-Formel** auskommt - kein E[maxSR], keine Schiefekorrektur,
+keine Versuchszahl. Nur: Was die Strategie auf echten Daten leistet, leistet
+sie auf gemischten nicht.
+
+### Und wieder ein Fehler in meiner eigenen Kennzahl
+
+Der erste Anlauf verglich nicht den Ertrag, sondern den **Abstand zu
+Kaufen-und-Halten** - und meldete prompt einen Maschinenfehler:
+
+    WARNUNG: Auf strukturlosen Daten entsteht im Mittel ein Vorteil.
+
+Falscher Alarm, und die Ursache ist eine Eigenschaft, die ich haette kennen
+muessen: **Das Mischen erhaelt die Gesamtrendite exakt.** Das Produkt der
+Renditen haengt nicht von ihrer Reihenfolge ab. Kaufen-und-Halten betraegt auf
+jeder gemischten Reihe dieselben +945,8 % - eine Konstante, keine Verteilung.
+Ein Abstand dazu misst nur noch, wie viel Zeit die Strategie im Markt
+verbringt, und ist als Vergleichsgroesse wertlos.
+
+Das ist innerhalb von drei Tagen der dritte Fall, in dem eine Kennzahl von mir
+selbst das Falsche gemessen hat - nach dem Bootstrap-Rauschen und der
+Blocksummen-Verwechslung. Alle drei fielen auf, weil die Zahl gegen etwas
+gehalten wurde, dessen Antwort feststand. Ohne diese Gegenproben waeren alle
+drei durchgegangen.
+
+Die Eigenschaft steht jetzt als Test fest
+(``test_mischen_erhaelt_die_gesamtrendite``), damit sie niemandem noch einmal
+als Vergleichsgroesse durchgeht.
+
+### Was das aendert
+
+Am Stand nichts: weiterhin **8 von 11**, weiterhin 53 fehlende Trades. Was sich
+aendert, ist das Vertrauen in alles Vorherige. Die neun widerlegten Richtungen
+sind widerlegt, nicht wegdefiniert; die 11,28 % im Jahr sind gemessen, nicht
+erzeugt. Das war bis heute nicht belegt.
+
+Zu pruefen mit ``cli nullprobe``. Versuchszaehler unveraendert bei **96**.
