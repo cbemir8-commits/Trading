@@ -3199,5 +3199,186 @@ def kontorisiko(
         )
 
 
+@app.command()
+def nachpruefung(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    generation: int = typer.Option(
+        0, "--generation", "-g", help="Nur diese Generation. 0 = alle."
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Den ganzen Katalog noch einmal messen - mit dem korrigierten Instrument.
+
+    **Wozu.** Der Leaderboard traegt Stand vom 05.08.2026 und zaehlt noch zehn
+    Gates. Seither sind zwei Fehler im Messgeraet gefunden worden:
+
+    * Der **Nachlauf** - offene Positionen wurden am Fensterende zwangsweise
+      glattgestellt. Beim Spitzenkandidaten traf das 25 von 154 Trades, und
+      diese 25 trugen den gesamten Vorteil. Betroffen ist jeder Kandidat, am
+      staerksten die langsamen.
+    * Die **Aufwaermphase** - die Konfluenz wurde nicht mitgezaehlt.
+      Nachgemessen betrifft das im Katalog fast nur den Spitzenkandidaten.
+
+    Ein Urteil ueber eine Strategie ist nur so gut wie das Geraet, mit dem es
+    zustande kam. Aendert sich das Geraet, ist das Urteil neu zu faellen.
+
+    **Kostet keinen Versuch.** Dieselben Regeln auf denselben Daten; gesehen
+    wurden sie alle schon und stehen laengst im Zaehler. Der Deflated Sharpe
+    korrigiert dafuer, dass man bei genug Einfaellen etwas findet - nicht
+    dafuer, dass man einen alten Einfall richtiger misst.
+
+    Wer hier weit kommt, ist damit **nicht** zugelassen: Er ist einer aus 53,
+    und genau dafuer steht die Huerde da, wo sie steht.
+    """
+    from decimal import Decimal
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from core.report import write_report
+    from research.admission import load_trials
+    from research.gates import evaluate_gates
+    from research.leaderboard import Leaderboard
+    from research.nachpruefung import Ergebnis, Nachpruefung
+    from research.seeds import GENERATIONS, spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    frames = common_range(roh)
+    erster = next(iter(frames.values()))
+    configs = {
+        x: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+        )
+        for x in symbole
+    }
+
+    kandidaten: list[tuple[int, object]] = []
+    for nummer, liste in sorted(GENERATIONS.items()):
+        if generation and nummer != generation:
+            continue
+        for eintrag in liste:
+            kandidaten.append((nummer, eintrag() if callable(eintrag) else eintrag))
+    if not generation:
+        kandidaten.append((0, spitzenkandidat()))
+
+    trials = load_trials(Path(settings.paths.state) / "trials.json")
+    console.print(
+        f"\n[bold]Nachpruefung[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Kandidaten {len(kandidaten)}\n"
+        f"  Zeitraum   {erster['open_time'].iloc[0]:%Y-%m} bis "
+        f"{erster['open_time'].iloc[-1]:%Y-%m}\n"
+        f"  Versuche   {trials} (unveraendert - Nachmessen ist kein Versuch)\n"
+    )
+
+    lauf = Nachpruefung()
+    for i, (nummer, genome) in enumerate(kandidaten, start=1):
+        try:
+            bericht = run_portfolio_walkforward(
+                frames, lambda g=genome: compile_genome(g), configs
+            )
+        # Ein einzelner Kandidat darf den ganzen Lauf nicht kippen.
+        except Exception as fehler:
+            console.print(f"[yellow]  {genome.name[:44]:46} Fehler: {fehler}[/]")
+            continue
+        if not bericht.windows:
+            console.print(f"[dim]  {genome.name[:44]:46} keine Fenster[/]")
+            continue
+
+        gates = evaluate_gates(
+            genome, bericht, erster, configs[symbole[0]], trials_so_far=trials
+        )
+        k = bericht.combined
+        ergebnis = Ergebnis(
+            genome_id=genome.genome_id,
+            name=genome.name,
+            generation=nummer,
+            bestanden=sum(1 for r in gates.results if r.passed),
+            gesamt=len(gates.results),
+            offen=tuple(r.name for r in gates.results if not r.passed),
+            trades=len(bericht.all_trades),
+            cagr_pct=k.cagr_pct if k else 0.0,
+            rueckgang_pct=k.max_drawdown_pct if k else 0.0,
+            dsr=next(
+                (r.value for r in gates.results if r.name == "Deflated Sharpe"), 0.0
+            ),
+        )
+        lauf.ergebnisse.append(ergebnis)
+        console.print(
+            f"[dim]  {i:>2}/{len(kandidaten)} {genome.name[:42]:44} "
+            f"{ergebnis.bestanden:>2}/{ergebnis.gesamt:<2} "
+            f"{ergebnis.trades:>4} Trades  DSR {ergebnis.dsr:.3f}[/]"
+        )
+
+    if not lauf.ergebnisse:
+        console.print("[red]Kein einziger Kandidat lieferte ein Ergebnis.[/]")
+        raise typer.Exit(2)
+
+    console.print("\n" + lauf.tabelle())
+
+    state = Path(settings.paths.state)
+    board = Leaderboard(state / "leaderboard.json")
+    vorher = {
+        kennung: eintrag.gates_bestanden
+        for kennung, eintrag in board.entries.items()
+    }
+    geaendert = lauf.veraenderungen(vorher)
+    if geaendert:
+        console.print(
+            f"\n[bold]{len(geaendert)} Kandidat(en) stehen anders da als "
+            f"im Leaderboard[/]"
+        )
+        for v in geaendert:
+            console.print(f"  {v}")
+        console.print(
+            "[dim]Vorsicht beim Lesen: Damals waren es zehn Gates, heute elf. "
+            "Die Rohzahlen sind ein Hinweis, kein Beweis.[/]"
+        )
+
+    farbe = "green" if lauf.zugelassen else "yellow"
+    console.print(f"\n[{farbe}]{lauf.urteil()}[/]\n")
+
+    ziel = write_report(
+        {
+            "maerkte": symbole,
+            "intervall": interval_obj.label,
+            "versuche": trials,
+            "ergebnisse": [
+                {
+                    "genome_id": e.genome_id, "name": e.name,
+                    "generation": e.generation, "bestanden": e.bestanden,
+                    "gesamt": e.gesamt, "offen": list(e.offen), "trades": e.trades,
+                    "cagr_pct": round(e.cagr_pct, 4),
+                    "rueckgang_pct": round(e.rueckgang_pct, 4),
+                    "dsr": round(e.dsr, 4),
+                }
+                for e in lauf.rangfolge
+            ],
+            "urteil": lauf.urteil(),
+        },
+        root=Path.cwd(), kind="nachpruefung",
+    )
+    console.print(f"[dim]Vollstaendig: {ziel}[/]")
+
+
 if __name__ == "__main__":
     app()

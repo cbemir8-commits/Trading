@@ -2429,3 +2429,92 @@ erzwungenen Grenzen mit Vorsicht zu lesen - und ``cli kontorisiko`` sagt, wie
 viel Vorsicht noetig ist.
 
 Versuchszaehler unveraendert bei **102**.
+
+---
+
+## Sechsundzwanzig. Der ganze Katalog, noch einmal gemessen
+
+Zwei Fehler im Messinstrument sind gefunden worden - der Nachlauf am
+Fensterende und die Aufwaermphase der Konfluenz. Der Leaderboard traegt aber
+Stand vom 05.08.2026 und zaehlt noch **zehn** Gates. Jedes Urteil ueber jeden
+Kandidaten stammt also aus einem Geraet, das seither zweimal repariert wurde.
+
+**Ein Urteil ist nur so gut wie das Geraet, mit dem es zustande kam.** Also
+alle 54 Kandidaten noch einmal durch die volle Zulassungsstrecke -
+``cli nachpruefung``, ohne einen einzigen neuen Versuch.
+
+### Zuerst eine Vermutung, gemessen und widerlegt
+
+Erwartet hatte ich, dass die Aufwaermphasen-Korrektur viele Kandidaten
+betrifft. Nachgerechnet, alter gegen neuer Schaetzer:
+
+    54 Kandidaten geprueft
+    15 bekamen zu wenig Aufwaermkerzen - davon 14 um genau **eine** Kerze
+     1 wirklich betroffen: der Spitzenkandidat (150 statt 201)
+
+Nur er traegt seinen laengsten Indikator in der Konfluenz. Die Vermutung
+"viele Kandidaten falsch bewertet" ist damit erledigt, und zwar in fuenf
+Minuten statt in einer Behauptung. Der **Nachlauf** dagegen trifft jeden.
+
+### Das Ergebnis
+
+    Kandidat                                Gates  Trades     p.a.      DD     DSR
+    Trend mit Vola-Ziel 22 %                 8/11      51    6,67 %   8,83 %  0,486
+    Vola-Ziel, kurzes Messfenster            8/11      51    5,75 %   7,78 %  0,476
+    Trend mit Vola-Ziel 20 %                 8/11      51    5,61 %   8,03 %  0,422
+    Trend 50 Tage mit Konfluenz              7/11     152   13,47 %  10,64 %  0,864
+    Vola-Ziel, langes Messfenster            7/11      51    4,79 %   6,97 %  0,322
+    Donchian-Ausbruch 55/20                  6/11      55   16,38 %  19,45 %  0,118
+
+**Kein Kandidat besteht alle Gates.** Drei kommen auf 8 von 11 und damit ein
+Gate weiter als der bisherige Spitzenkandidat.
+
+### Warum das trotzdem kein Fortschritt ist
+
+Die drei Achtel-Kandidaten haben 51 Trades und einen Deflated Sharpe zwischen
+0,42 und 0,49. Der Spitzenkandidat hat 152 Trades und **0,864**. Gefordert
+sind 0,95.
+
+    Kandidat                     Gates    Abstand zum DSR-Gate
+    Trend mit Vola-Ziel 22 %      8/11    0,464
+    Trend 50 Tage mit Konfluenz   7/11    0,086
+
+**Die Zahl bestandener Gates ist ein schlechtes Mass fuer Naehe.** Wer nach
+ihr liest, haelt den Aussichtsreicheren fuer den Schwaecheren - der Erste ist
+fuenfmal so weit vom haertesten Gate entfernt wie der Vierte. Und das
+haerteste Gate ist genau dasjenige, das sich mit keinem Regler bewegen laesst
+(Nummer einundzwanzig).
+
+Dagegen hilft **keine** zusammengesetzte Kennzahl. Die waere nur ein neuer
+Ersatzmassstab, an dem man sich wieder vorbeioptimiert. Genannt wird deshalb
+beides, und das Urteil sagt es von sich aus, wenn Gate-Zahl und Deflated
+Sharpe auf verschiedene Kandidaten zeigen.
+
+### Was noch auffiel
+
+33 der 54 Kandidaten liefern auf BTC + ETH Tageskerzen **keinen einzigen
+Trade**. Verteilt auf die Generationen:
+
+    Generation      1    2    4    6    7    8    9   10
+    ohne Trades     4    5    3    3    8    8    0    0
+
+Das ist kein Befund, sondern die bekannte Zuordnung: Die Generationen 6 und 7
+gehoeren auf 15-Minuten-Kerzen, und die fruehen Generationen waren
+kurzfristige Ideen. Die neuesten - 9 und 10 - handeln alle. Festgehalten,
+damit niemand die Zahl fuer einen Fehler haelt.
+
+### Was daraus folgt
+
+Der Spitzenkandidat bleibt der weiteste, und zwar deutlich - auf dem einzigen
+Gate, an dem es haengt. Am Stand aendert die Nachpruefung nichts: **7 von 11**,
+offen bleiben Messlatte, Schlechtestes Jahr, Deflated Sharpe und
+Parameter-Plateau.
+
+Was sie bringt, ist etwas anderes: Ab jetzt gibt es einen Befehl, der nach
+jeder Aenderung am Messgeraet den ganzen Katalog neu bewertet. Beide
+Instrumentenfehler dieser Woche haetten die Rangfolge verschieben koennen, und
+niemand haette es gemerkt.
+
+Versuchszaehler unveraendert bei **102**: Dieselben Regeln auf denselben Daten.
+Der Deflated Sharpe korrigiert dafuer, dass man bei genug **Einfaellen** etwas
+findet - nicht dafuer, dass man einen alten Einfall richtiger misst.
