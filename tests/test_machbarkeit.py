@@ -467,3 +467,90 @@ def test_gemessene_lage_des_spitzenkandidaten() -> None:
 
     # Und weil ein Gate ausser Reichweite ist, hilft feineres Messen nicht.
     assert m.verfeinerung() == []
+
+
+class TestRegler:
+    """Die Stellschrauben, an denen abgetastet wird.
+
+    Ihre Stufen stehen in der Liste und nicht im Aufruf: Solange jede
+    Abtastung ihre eigenen Messpunkte mitbringt, misst jede etwas anderes -
+    und wer die Punkte waehlt, waehlt am Ende das Ergebnis.
+    """
+
+    def test_bekannte_regler(self) -> None:
+        from research.machbarkeit import REGLER
+
+        assert set(REGLER) == {"vola", "stop", "konviktion"}
+        for name, r in REGLER.items():
+            assert r.stufen, name
+            assert len(set(r.stufen)) == len(r.stufen), f"{name}: doppelte Stufe"
+            assert list(r.stufen) == sorted(r.stufen), f"{name}: unsortiert"
+
+    def test_stelle_ein_veraendert_nur_die_stellschraube(self) -> None:
+        from research.machbarkeit import REGLER, stelle_ein
+        from research.seeds import spitzenkandidat
+
+        vorlage = spitzenkandidat()
+
+        neu = stelle_ein(vorlage, REGLER["stop"], 8.0)
+
+        assert neu.stop.percent == 8.0
+        assert neu.entry_long == vorlage.entry_long
+        assert neu.sizing.target_vol_pct == vorlage.sizing.target_vol_pct
+
+    def test_die_vorlage_bleibt_unangetastet(self) -> None:
+        """Sonst traegt die naechste Stufe die Aenderung der vorigen mit."""
+        from research.machbarkeit import REGLER, stelle_ein
+        from research.seeds import spitzenkandidat
+
+        vorlage = spitzenkandidat()
+        vorher = vorlage.stop.percent
+
+        stelle_ein(vorlage, REGLER["stop"], 12.0)
+
+        assert vorlage.stop.percent == vorher
+
+    def test_neue_kennung_je_stufe(self) -> None:
+        """**Sonst zaehlt der Versuchszaehler zwei Regeln als eine.**"""
+        from research.machbarkeit import REGLER, stelle_ein
+        from research.seeds import spitzenkandidat
+
+        vorlage = spitzenkandidat()
+
+        a = stelle_ein(vorlage, REGLER["stop"], 6.0)
+        b = stelle_ein(vorlage, REGLER["stop"], 8.0)
+
+        assert a.genome_id != b.genome_id != vorlage.genome_id
+
+    def test_verschachtelter_pfad(self) -> None:
+        from research.machbarkeit import REGLER, ausgangswert, stelle_ein
+        from research.seeds import spitzenkandidat
+
+        vorlage = spitzenkandidat()
+
+        neu = stelle_ein(vorlage, REGLER["vola"], 25.0)
+
+        assert neu.sizing.target_vol_pct == 25.0
+        assert ausgangswert(neu, REGLER["vola"]) == 25.0
+
+    def test_unerlaubte_stufe_wird_abgelehnt(self) -> None:
+        """Das Schema gilt auch fuer eine Abtastung - ein Wert ausserhalb der
+        Spanne muss auffallen und nicht still gerechnet werden."""
+        import pydantic
+
+        from research.machbarkeit import REGLER, stelle_ein
+        from research.seeds import spitzenkandidat
+
+        with pytest.raises(pydantic.ValidationError):
+            stelle_ein(spitzenkandidat(), REGLER["stop"], 99.0)
+
+    def test_ausgangswert_liest_den_kandidaten(self) -> None:
+        from research.machbarkeit import REGLER, ausgangswert
+        from research.seeds import spitzenkandidat
+
+        vorlage = spitzenkandidat()
+
+        assert ausgangswert(vorlage, REGLER["stop"]) == vorlage.stop.percent
+        assert ausgangswert(vorlage, REGLER["konviktion"]) == (
+            vorlage.sizing.konviktion_bonus
+        )

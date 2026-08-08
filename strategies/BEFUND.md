@@ -2597,3 +2597,96 @@ ist. Nicht mehr Trades - bessere.
 
 Stand unveraendert: **BTC + ETH, 7 von 11**, Deflated Sharpe 0,864 gegen 0,95.
 Versuchszaehler unveraendert bei **102**.
+
+---
+
+## Achtundzwanzig. Der Stop steht richtig - meine Vermutung war falsch
+
+Nach Nummer siebenundzwanzig ist klar: Mehr Zeilen helfen nicht, nur bessere.
+Der erste Verdacht fiel auf den **Stop**, und er kam aus dem Quelltext selbst.
+``StopSpec.percent`` sagt ueber investierte Strategien:
+
+> Fuer eine investierte Strategie ist der Stop **Notbremse und nicht
+> Ausstieg**: Ausgestiegen wird ueber eine Bedingung, der Stop faengt nur den
+> Fall ab, in dem der Markt ohne Zwischenschritt wegbricht. Er gehoert dann
+> weit genug hinaus, dass normales Rauschen ihn nicht erreicht.
+
+Der Spitzenkandidat steht auf 4 % - und dieser Stop beendet **44,7 % aller
+Trades**. Nach der eigenen Beschreibung des Codes ist er damit kein Notausgang,
+sondern der Ausstieg. Die Vermutung lag also nahe: zu eng, und deshalb bleibt
+Qualitaet je Trade liegen.
+
+**Gemessen ist das Gegenteil richtig.**
+
+    Stop  Trades     p.a.       DD     schl. Jahr    DSR   Plateau  Gates
+     2 %     152    7,23 %   6,55 %      -4,33 %   0,553    0,50     8/11
+     3 %     152   10,33 %   9,15 %      -8,82 %   0,670    0,50     8/11
+     4 %     152   13,47 %  10,64 %     -10,32 %   0,863    0,50     7/11  <- Kandidat
+     6 %     154   12,93 %  13,07 %     -12,76 %   0,201    1,00     7/11
+     8 %     154   12,11 %  14,11 %     -13,81 %   0,057    1,00     7/11
+    12 %     154   11,67 %  15,65 %     -15,35 %   0,008    1,00     7/11
+    16 %     154   11,86 %  14,18 %     -13,88 %   0,011    1,00     7/11
+
+Die 4 % sind ein **Maximum**, kein Versehen. Enger ist schlechter, weiter ist
+vernichtend.
+
+### Warum - und es ist kein Kippschalter
+
+Ein Sturz von 0,863 auf 0,201 bei einer einzigen Stufe sieht nach dem
+Kippschalter aus, den ich in Nummer vierundzwanzig gefunden habe. Ist es aber
+nicht:
+
+    Stop   roh   effektiv       p   SR/Trade   Schiefe   Woelbung   Stop-Ausstiege
+     2 %   152        152   0,128     0,2138     3,197     12,670       73,7 %
+     3 %   152        152   0,239     0,2295     3,323     13,725       58,6 %
+     4 %   152        152   0,072     0,2597     3,473     15,951       44,7 %
+     6 %   154         87   0,025     0,2231     4,764     30,637       27,9 %
+     8 %   154         80   0,021     0,1960     6,275     50,761       16,9 %
+    12 %   154         73   0,016     0,1730     7,643     69,971        5,8 %
+
+Der p-Wert faellt **monoton** von 0,072 auf 0,016 - ein Trend, kein Muenzwurf.
+Und beide Groessen gehen gleichzeitig in die falsche Richtung:
+
+* **Die Qualitaet je Trade hat bei 4 % ein echtes Maximum** (0,2597), auf
+  beiden Seiten faellt sie ab.
+* **Die effektive Stichprobe bricht bei weitem Stop ein** (152 auf 73). Der
+  Grund ist einsichtig, sobald man ihn sieht: Wo der Stop nicht mehr
+  dazwischengeht, laufen die Trades eines Fensters gemeinsam durch dieselbe
+  Marktbewegung. Aus vielen Beobachtungen wird eine.
+* Die Woelbung steigt von 16 auf 70, die Schiefe von 3,5 auf 7,6: Wenige
+  riesige Gewinner tragen alles - genau die Verteilung, bei der ein Sharpe
+  wenig aussagt und der Deflated Sharpe das auch sagt.
+
+### Was der Code an sich selbst lernt
+
+Der Docstring von ``StopSpec`` beschreibt ein Ideal - Stop als Notbremse -,
+das **fuer diese Regel nachweislich schlechter ist**. Bei 12 % beendet der
+Stop nur noch 5,8 % der Trades, ist also genau die Notbremse, die dort
+gefordert wird, und liefert einen Deflated Sharpe von 0,008.
+
+Das Ideal ist damit nicht falsch, aber es ist keine Regel: Es gilt fuer
+Strategien, deren Ausstiegsbedingung schnell genug greift. Der 50-Tage-Schnitt
+tut das nicht - bis er reisst, ist der Verlust groesser als der Stop erlaubt.
+Bei dieser Regel **ist** der Stop ein Teil des Ausstiegs, und das ist nicht zu
+beheben, sondern hinzunehmen.
+
+### Was noch auffiel
+
+Das **Parameter-Plateau** wird ab 6 % Stop bestanden (1,00 statt 0,50). Es ist
+also erreichbar - nur an Stellen, an denen der Deflated Sharpe bei 0,2 liegt.
+Wieder zwei Gates, die gegeneinander ziehen: Drawdown haelt bis 4 %,
+Parameter-Plateau erst ab 6 %.
+
+### Gebaut
+
+``cli machbarkeit`` tastet jetzt **jeden** hinterlegten Regler ab, nicht nur
+das Vola-Ziel: ``--regler vola|stop|konviktion``. Die Stufen stehen bei der
+Stellschraube und nicht im Aufruf - solange jede Abtastung ihre eigenen
+Messpunkte mitbringt, misst jede etwas anderes, und wer die Punkte waehlt,
+waehlt am Ende das Ergebnis.
+
+Versuchszaehler **102 -> 108**: sechs neue Stopstufen, ehrlich gezaehlt. Der
+Ausgangswert von 4 % war bereits drin. Das hebt die Huerde um 0,007 Punkte -
+der Preis dafuer, eine Vermutung ausgeraeumt statt mitgeschleppt zu haben.
+
+Stand unveraendert: **7 von 11**, Deflated Sharpe 0,863 gegen 0,95.

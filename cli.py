@@ -2892,9 +2892,13 @@ def machbarkeit(
         help="Symbole, durch Komma getrennt.",
     ),
     intervall: str = typer.Option("D", "--intervall", "-i"),
+    regler: str = typer.Option(
+        "vola", "--regler", "-r",
+        help="Welche Stellschraube abgetastet wird: vola, stop, konviktion.",
+    ),
     stufen: str = typer.Option(
-        "14,16,19.3,22,25,28,32", "--stufen",
-        help="Vola-Ziele in Prozent, durch Komma getrennt.",
+        "", "--stufen",
+        help="Stufen, durch Komma getrennt. Leer = die des Reglers.",
     ),
     verfeinern: int = typer.Option(
         0, "--verfeinern",
@@ -2943,10 +2947,15 @@ def machbarkeit(
     from core.report import write_report
     from research.admission import load_trials, save_trials
     from research.gates import evaluate_gates
-    from research.machbarkeit import Machbarkeit, aus_gate_report
+    from research.machbarkeit import (
+        REGLER,
+        Machbarkeit,
+        aus_gate_report,
+        ausgangswert,
+        stelle_ein,
+    )
     from research.seeds import spitzenkandidat
     from strategy.compiler import compile_genome
-    from strategy.genome import Genome
 
     _configure_logging(verbose)
     settings = get_settings()
@@ -2974,38 +2983,45 @@ def machbarkeit(
         for x in symbole
     }
 
+    if regler not in REGLER:
+        console.print(
+            f"[red]Unbekannter Regler '{regler}'. "
+            f"Bekannt: {', '.join(sorted(REGLER))}.[/]"
+        )
+        raise typer.Exit(2)
+    schraube = REGLER[regler]
+
     vorlage = spitzenkandidat()
-    ausgang = float(vorlage.sizing.target_vol_pct or 0.0)
+    ausgang = ausgangswert(vorlage, schraube)
     trials_path = Path(settings.paths.state) / "trials.json"
     trials = load_trials(trials_path)
-
-    def mit_vola(ziel: float) -> Genome:
-        daten = vorlage.model_dump()
-        daten["sizing"]["target_vol_pct"] = ziel
-        daten.pop("genome_id", None)
-        return Genome.model_validate(daten)
 
     console.print(
         f"\n[bold]Machbarkeit[/] {' + '.join(symbole)} {interval_obj.label}\n"
         f"  Strategie  {vorlage.name} ({vorlage.genome_id})\n"
         f"  Zeitraum   {erster['open_time'].iloc[0]:%Y-%m} bis "
         f"{erster['open_time'].iloc[-1]:%Y-%m}\n"
-        f"  Regler     Vola-Ziel, Ausgangswert {ausgang:g} %\n"
+        f"  Regler     {schraube.name}, Ausgangswert {ausgang:g} "
+        f"{schraube.einheit}\n"
         f"  Lauf       {'durchgehend' if durchgehend else 'fensterweise'}\n"
         f"  Versuche   {trials} bisher\n"
     )
 
-    analyse = Machbarkeit(regler="Vola-Ziel", punkte=[], einheit="%")
+    analyse = Machbarkeit(
+        regler=schraube.name, punkte=[], einheit=schraube.einheit
+    )
 
     def messen(ziele: list[float]) -> None:
         for ziel in ziele:
-            genome = mit_vola(ziel)
+            genome = stelle_ein(vorlage, schraube, ziel)
             report = run_portfolio_walkforward(
                 frames, lambda g=genome: compile_genome(g), configs,
                 durchgehend=durchgehend,
             )
             if not report.windows:
-                console.print(f"[yellow]Vola-Ziel {ziel:g}: keine Fenster.[/]")
+                console.print(
+                    f"[yellow]{schraube.name} {ziel:g}: keine Fenster.[/]"
+                )
                 continue
             gates = evaluate_gates(
                 genome, report, erster, configs[symbole[0]], trials_so_far=trials
@@ -3024,7 +3040,7 @@ def machbarkeit(
                 )
             )
             console.print(
-                f"[dim]  Vola-Ziel {ziel:>6g} %  "
+                f"[dim]  {schraube.name} {ziel:>6g} {schraube.einheit}  "
                 f"{len(report.all_trades):>4} Trades  "
                 f"{kombiniert.cagr_pct if kombiniert else 0:>6.2f} % p.a.  "
                 f"Rueckgang "
@@ -3033,7 +3049,8 @@ def machbarkeit(
                 f"Gates[/]"
             )
 
-    messen([float(x.strip()) for x in stufen.split(",") if x.strip()])
+    gewaehlt = [float(x.strip()) for x in stufen.split(",") if x.strip()]
+    messen(gewaehlt or list(schraube.stufen))
     if not analyse.punkte:
         console.print("[red]Keine einzige Stufe lieferte Fenster.[/]")
         raise typer.Exit(2)

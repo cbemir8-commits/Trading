@@ -493,6 +493,91 @@ class Machbarkeit:
         return " ".join(t.strip() for t in teile)
 
 
+@dataclass(frozen=True, slots=True)
+class Regler:
+    """Eine Stellschraube, an der sich abtasten laesst.
+
+    Der Sinn dieser Liste ist nicht Bequemlichkeit, sondern Vergleichbarkeit:
+    Solange jede Abtastung ihre eigenen Stufen mitbringt, misst jede etwas
+    anderes, und zwei Ergebnisse lassen sich nicht nebeneinanderlegen.
+    """
+
+    name: str
+    einheit: str
+    pfad: tuple[str, ...]
+    stufen: tuple[float, ...]
+    begruendung: str = ""
+
+
+#: Die bekannten Regler. Wer einen neuen aufnimmt, legt seine Stufen **hier**
+#: fest und nicht im Aufruf - sonst waehlt am Ende die Auswertung ihre eigenen
+#: Messpunkte, und das ist der kurze Weg zur Ueberanpassung.
+REGLER: dict[str, Regler] = {
+    "vola": Regler(
+        name="Vola-Ziel",
+        einheit="%",
+        pfad=("sizing", "target_vol_pct"),
+        stufen=(14.0, 16.0, 19.3, 22.0, 25.0, 28.0, 32.0),
+        begruendung=(
+            "Skaliert jede Position mit demselben Faktor. Gemessen: bewegt "
+            "den Deflated Sharpe um 0,011 - also gar nicht."
+        ),
+    ),
+    "stop": Regler(
+        name="Stop",
+        einheit="%",
+        pfad=("stop", "percent"),
+        stufen=(2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0),
+        begruendung=(
+            "Beim Spitzenkandidaten steht er auf 4 % und faengt 43,5 % aller "
+            "Trades ab. Der Docstring von StopSpec verlangt fuer eine "
+            "investierte Strategie das Gegenteil: 'Notbremse und nicht "
+            "Ausstieg ... weit genug hinaus, dass normales Rauschen ihn nicht "
+            "erreicht.' Ein Stop, der jeden zweiten Trade beendet, ist der "
+            "Ausstieg - und dann entscheidet nicht mehr die Regel."
+        ),
+    ),
+    "konviktion": Regler(
+        name="Konviktions-Bonus",
+        einheit="",
+        pfad=("sizing", "konviktion_bonus"),
+        stufen=(0.0, 0.5, 1.0, 1.5, 2.0),
+        begruendung=(
+            "Wie stark der Einsatz zwischen schwachen und starken Setups "
+            "spreizt. Bei 0 ist die Konfluenz wirkungslos."
+        ),
+    ),
+}
+
+
+def stelle_ein(genome, regler: Regler, wert: float):
+    """Eine Kopie des Genoms mit veraenderter Stellschraube.
+
+    Ueber ``model_dump`` und erneute Validierung, nicht ueber ein Setzen am
+    Objekt: Das Genom ist eingefroren, und die Pruefungen des Schemas sollen
+    auch fuer die Abtastung gelten. Wer eine Stufe ausserhalb der erlaubten
+    Spanne verlangt, bekommt einen Fehler statt eines stillen Ergebnisses.
+
+    Die Kennung faellt weg und wird neu gebildet - sonst traegt eine andere
+    Regel dieselbe Kennung, und der Versuchszaehler zaehlt sie als dieselbe.
+    """
+    daten = genome.model_dump()
+    ziel = daten
+    for teil in regler.pfad[:-1]:
+        ziel = ziel[teil]
+    ziel[regler.pfad[-1]] = wert
+    daten.pop("genome_id", None)
+    return type(genome).model_validate(daten)
+
+
+def ausgangswert(genome, regler: Regler) -> float:
+    """Wo die Stellschraube beim uebergebenen Genom gerade steht."""
+    wert = genome
+    for teil in regler.pfad:
+        wert = getattr(wert, teil)
+    return float(wert)
+
+
 def aus_gate_report(stellung: float, report, kennzahlen=None) -> Punkt:
     """Einen ``GateReport`` in einen Punkt uebersetzen.
 
