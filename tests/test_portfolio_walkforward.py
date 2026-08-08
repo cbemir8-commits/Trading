@@ -477,3 +477,118 @@ class TestTradesTragenIhrGewicht:
         assert skaliert.stop_loss == original.stop_loss
         assert skaliert.entry_time == original.entry_time
         assert skaliert.symbol == original.symbol
+
+
+# ---------------------------------------------------------------------------
+#  Kapital je Bein - die Mindestmenge laesst sich nicht halbieren
+# ---------------------------------------------------------------------------
+class TestKapitalTeilen:
+    """Jedes Bein rechnet normalerweise mit dem **vollen** Startkapital, und
+    erst das Ergebnis wird gewichtet.
+
+    Fuer Gewinne ist das richtig - sie kuerzen sich heraus. Fuer die
+    **Mindestmenge der Boerse** ist es falsch, denn die laesst sich nicht
+    halbieren. Gemessen am Spitzenkandidaten, 500 EUR auf zwei Maerkte ueber
+    den gemeinsamen Zeitraum:
+
+        je Bein 500 EUR   154 Trades,  18 auf der Mindestmenge,   11,01 % p.a.
+        je Bein 250 EUR   136 Trades,  45 auf der Mindestmenge,   10,11 % p.a.
+                                       18 gar nicht handelbar
+
+    Das ist kein Strategieproblem, sondern ein Kontogroessenproblem - aber es
+    gehoert gemessen, bevor echtes Geld darauf gesetzt wird.
+    """
+
+    @pytest.fixture
+    def risk(self) -> RiskSettings:
+        return RiskSettings()
+
+    def _konfiguration(self, symbol: str, risk: RiskSettings) -> BacktestConfig:
+        return BacktestConfig(
+            instrument=_instrument(symbol), risk=risk,
+            initial_equity=Decimal("500"),
+        )
+
+    def test_geteiltes_kapital_handelt_kleiner(self, risk: RiskSettings) -> None:
+        """Halbes Kapital, halbe Positionen - und damit stoesst die
+        Mindestmenge oefter an."""
+        frames = {"A": _tage(1100, seed=3), "B": _tage(1100, seed=11)}
+        configs = {
+            "A": self._konfiguration("AAAUSDT", risk),
+            "B": self._konfiguration("BBBUSDT", risk),
+        }
+        genome = _trendfolger()
+        splitter = WalkForwardSplitter(train_months=12, test_months=3)
+
+        ohne = run_portfolio_walkforward(
+            frames, lambda: compile_genome(genome), configs, splitter
+        )
+        mit = run_portfolio_walkforward(
+            frames, lambda: compile_genome(genome), configs, splitter,
+            kapital_teilen=True,
+        )
+
+        assert ohne.all_trades and mit.all_trades
+        groesse_ohne = sum(t.qty for t in ohne.all_trades) / len(ohne.all_trades)
+        groesse_mit = sum(t.qty for t in mit.all_trades) / len(mit.all_trades)
+        assert groesse_mit < groesse_ohne, (
+            "Mit geteiltem Kapital muessen die Positionen kleiner sein"
+        )
+
+    def test_nie_mehr_trades_als_ohne_teilen(self, risk: RiskSettings) -> None:
+        """Weniger Kapital kann Trades unmoeglich machen, nie zusaetzliche
+        ermoeglichen."""
+        frames = {"A": _tage(1100, seed=3), "B": _tage(1100, seed=11)}
+        configs = {
+            "A": self._konfiguration("AAAUSDT", risk),
+            "B": self._konfiguration("BBBUSDT", risk),
+        }
+        genome = _trendfolger()
+        splitter = WalkForwardSplitter(train_months=12, test_months=3)
+
+        ohne = run_portfolio_walkforward(
+            frames, lambda: compile_genome(genome), configs, splitter
+        )
+        mit = run_portfolio_walkforward(
+            frames, lambda: compile_genome(genome), configs, splitter,
+            kapital_teilen=True,
+        )
+
+        assert len(mit.all_trades) <= len(ohne.all_trades)
+
+    def test_ein_einzelnes_bein_bekommt_alles(self, risk: RiskSettings) -> None:
+        """Bei einem Bein gibt es nichts zu teilen - das Ergebnis muss
+        identisch bleiben."""
+        frames = {"A": _tage(1100, seed=3)}
+        configs = {"A": self._konfiguration("AAAUSDT", risk)}
+        genome = _trendfolger()
+        splitter = WalkForwardSplitter(train_months=12, test_months=3)
+
+        ohne = run_portfolio_walkforward(
+            frames, lambda: compile_genome(genome), configs, splitter
+        )
+        mit = run_portfolio_walkforward(
+            frames, lambda: compile_genome(genome), configs, splitter,
+            kapital_teilen=True,
+        )
+
+        assert len(mit.all_trades) == len(ohne.all_trades)
+
+    def test_gewichte_bestimmen_den_anteil(self, risk: RiskSettings) -> None:
+        """Dreifaches Gewicht heisst dreifaches Kapital - nicht die Haelfte."""
+        frames = {"A": _tage(1100, seed=3), "B": _tage(1100, seed=11)}
+        configs = {
+            "A": self._konfiguration("AAAUSDT", risk),
+            "B": self._konfiguration("BBBUSDT", risk),
+        }
+        genome = _trendfolger()
+        splitter = WalkForwardSplitter(train_months=12, test_months=3)
+
+        bericht = run_portfolio_walkforward(
+            frames, lambda: compile_genome(genome), configs, splitter,
+            weights={"A": 3.0, "B": 1.0}, kapital_teilen=True,
+        )
+
+        a = [t for t in bericht.all_trades if t.symbol == "AAAUSDT"]
+        b = [t for t in bericht.all_trades if t.symbol == "BBBUSDT"]
+        assert a and b, "Beide Beine muessen handeln"

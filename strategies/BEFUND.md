@@ -1671,3 +1671,77 @@ sind widerlegt, nicht wegdefiniert; die 11,28 % im Jahr sind gemessen, nicht
 erzeugt. Das war bis heute nicht belegt.
 
 Zu pruefen mit ``cli nullprobe``. Versuchszaehler unveraendert bei **96**.
+
+## Zwanzig. Die 500 Euro sind das Nadeloehr - nicht die Strategie
+
+Eine Frage war nie gestellt worden: **Sind die 154 Trades auf einem echten
+500-Euro-Konto ueberhaupt handelbar?**
+
+Der Portfoliolauf rechnet jedes Bein mit dem **vollen** Startkapital und
+gewichtet erst das Ergebnis. Fuer Gewinne ist das richtig - sie kuerzen sich
+heraus. Fuer die **Mindestmenge der Boerse** ist es falsch, denn die laesst
+sich nicht halbieren. Ein echtes Konto mit 500 Euro auf zwei Maerkten hat je
+Markt 250, und Bybits Mindestmenge von 0,001 BTC entspricht bei 100.000 Dollar
+schon 100 Dollar Nominalwert.
+
+Gemessen, gemeinsamer Zeitraum, durch den Produktivpfad
+(``kapital_teilen=True``):
+
+    Lauf                      Trades  auf Minimum   p.a.      DD      DSR
+    je Bein 500 EUR (bisher)     154       49      11,28 %  9,74 %   0,801
+    je Bein 250 EUR (echt)       136       70      10,33 %  7,88 %   0,770
+
+**18 Trades fallen ganz weg** - die Boerse laesst sie nicht zu. Von den
+verbleibenden 136 laufen **70, also die Haelfte, auf der Mindestmenge**: Die
+Groessenlogik wollte weniger, kleiner geht es nicht. Dort ist das Risiko je
+Trade nicht mehr steuerbar, sondern von der Boerse vorgegeben.
+
+Die Kennzahl bestaetigt sich auf zwei unabhaengigen Wegen: einmal ueber den
+Portfoliopfad (10,33 %), einmal ueber zwei getrennt gerechnete Beine, deren
+Kurven addiert werden (10,11 %). Der Unterschied ist gemeinsames gegen
+getrenntes Aufzinsen.
+
+### Ab wann verschwindet die Beschraenkung?
+
+    Startkapital   je Markt   Trades   auf Minimum   Anteil    p.a.
+        500 EUR     250 EUR      136        70        51 %   10,33 %
+       1000 EUR     500 EUR      154        49        32 %   11,28 %
+       2000 EUR    1000 EUR      152         7         5 %   11,33 %
+       5000 EUR    2500 EUR      152         0         0 %   11,48 %
+      10000 EUR    5000 EUR      152         0         0 %   11,56 %
+
+Ab rund **2000 Euro** ist die Mindestmenge praktisch kein Thema mehr, und die
+Rendite laeuft in ihre Saettigung. Zwischen 2000 und 10000 Euro liegen noch
+0,23 Prozentpunkte - das ist Rauschen.
+
+### Was daran wichtig ist
+
+**Das ist kein Strategieproblem, sondern ein Kontogroessenproblem.** Die Regel
+ist dieselbe; sie laesst sich mit 500 Euro nur nicht sauber ausdruecken. Der
+Unterschied von 11,28 % zu 10,33 % ist nicht der Preis einer schlechteren
+Strategie, sondern der Preis der Stueckelung.
+
+Und er faellt nicht dorthin, wo man ihn erwartet: Der **Rueckgang** wird sogar
+besser (9,74 % auf 7,88 %), weil die erzwungen kleineren Positionen weniger
+Schaden anrichten. Was schlechter wird, ist die Zahl der Trades - und damit
+ausgerechnet das, woran das Deflated-Sharpe-Gate haengt (0,801 auf 0,770).
+
+**Der Vorgabewert bleibt unveraendert.** ``kapital_teilen`` ist ein Schalter,
+kein neuer Standard. Zwei Gruende: Die Gates sollen die **Strategie** messen,
+nicht die Kontogroesse - und die Kontogroesse ist eine Entscheidung des
+Nutzers, keine Messgroesse. Was ihm zusteht, ist die Zahl, nicht meine
+Auslegung davon.
+
+Am Stand aendert sich nichts: **8 von 11** in beiden Faellen, dieselben drei
+offenen Gates. Versuchszaehler unveraendert bei **96** - gemessen wurde
+dieselbe Regel unter ehrlicheren Annahmen, keine neue.
+
+### Eine Entscheidung, die beim Nutzer liegt
+
+Zu den 15 % Mindestrendite kommt damit eine zweite Zahl auf den Tisch: **Mit
+500 Euro laeuft die Haelfte aller Trades auf einer Groesse, die nicht die
+Strategie gewaehlt hat, sondern die Boerse.** Wer das nicht will, braucht rund
+2000 Euro - oder muss akzeptieren, dass die Risikosteuerung bei der Haelfte der
+Trades nicht greift.
+
+Beides ist vertretbar. Nur unbemerkt bleiben darf es nicht.

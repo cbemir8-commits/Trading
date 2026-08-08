@@ -61,6 +61,7 @@ Beobachtungen nicht.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from decimal import Decimal
 
 import pandas as pd
@@ -105,6 +106,7 @@ def run_portfolio_walkforward(
     weights: dict[str, float] | None = None,
     initial_equity: Decimal | None = None,
     strategie_je_fenster=None,
+    kapital_teilen: bool = False,
 ) -> WalkForwardReport:
     """Mehrere Beine zu einem Walk-Forward-Ergebnis zusammenlegen.
 
@@ -130,6 +132,11 @@ def run_portfolio_walkforward(
     def config_fuer(name: str) -> BacktestConfig:
         return configs[name] if isinstance(configs, dict) else configs
 
+    gewichte = weights or {name: 1.0 for name in zugeschnitten}
+    summe = sum(gewichte.get(name, 0.0) for name in zugeschnitten)
+    if summe <= 0:
+        raise ValueError("Die Gewichte summieren sich auf null")
+
     def bauplan_fuer(name: str):
         if isinstance(build_strategy, dict):
             if name not in build_strategy:
@@ -137,15 +144,34 @@ def run_portfolio_walkforward(
             return build_strategy[name]
         return build_strategy
 
-    gewichte = weights or {name: 1.0 for name in zugeschnitten}
-    summe = sum(gewichte.get(name, 0.0) for name in zugeschnitten)
-    if summe <= 0:
-        raise ValueError("Die Gewichte summieren sich auf null")
-
     einzeln: dict[str, WalkForwardReport] = {}
     for name, frame in zugeschnitten.items():
+        konfiguration = config_fuer(name)
+        if kapital_teilen:
+            # **Jedes Bein bekommt seinen Anteil am Kapital, nicht alles.**
+            #
+            # Sonst rechnet die Groessenlogik mit Geld, das dem Bein gar nicht
+            # zur Verfuegung steht. Fuer Gewinne faellt das nicht auf - die
+            # werden hinterher gewichtet und kuerzen sich heraus. Fuer die
+            # **Mindestmenge der Boerse** faellt es sehr wohl auf, denn die
+            # laesst sich nicht halbieren.
+            #
+            # Gemessen am Spitzenkandidaten, 500 EUR auf zwei Maerkte:
+            #
+            #     je Bein 500 EUR   154 Trades,  18 auf der Mindestmenge
+            #     je Bein 250 EUR   136 Trades,  45 auf der Mindestmenge,
+            #                                    18 gar nicht handelbar
+            #
+            # Der Unterschied ist kein Strategieproblem, sondern ein
+            # Kontogroessenproblem - aber er gehoert gemessen, bevor echtes
+            # Geld darauf gesetzt wird.
+            anteil = gewichte.get(name, 0.0) / summe
+            konfiguration = replace(
+                konfiguration,
+                initial_equity=konfiguration.initial_equity * Decimal(str(anteil)),
+            )
         bericht = run_walkforward(
-            frame, bauplan_fuer(name), config_fuer(name), splitter,
+            frame, bauplan_fuer(name), konfiguration, splitter,
             strategie_je_fenster=strategie_je_fenster,
         )
         if bericht.windows:
