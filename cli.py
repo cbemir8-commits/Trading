@@ -3380,5 +3380,171 @@ def nachpruefung(
     console.print(f"[dim]Vollstaendig: {ziel}[/]")
 
 
+@app.command()
+def marktkombinationen(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP,LTCUSD_BITSTAMP,XRPUSD_BITSTAMP",
+        "--maerkte", "-m", help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    mindestens: int = typer.Option(
+        1, "--mindestens", help="Kleinste Zahl Maerkte je Kombination."
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Jede Marktkombination durch die volle Zulassungsstrecke.
+
+    **Wozu noch einmal.** Diese Tabelle gab es schon - gemessen mit einem
+    Backtest, der offene Positionen am Fensterende zwangsweise glattstellte.
+    Beim Spitzenkandidaten kostete das 0,078 Punkte am Deflated Sharpe, und
+    genau dieses Gate entscheidet hier:
+
+        Kombination        alt (defekt)   noetig
+        BTC+ETH+LTC+XRP          0,875     0,95
+        BTC+ETH+LTC              0,873     0,95
+
+    Beide lagen keine 0,08 unter der Schwelle - also in genau der
+    Groessenordnung, um die der Fehler die Zahl gedrueckt hat. Ob das reicht,
+    ist eine Messung und keine Rechnung.
+
+    **Kostet keinen Versuch.** Mehr Maerkte sind mehr *Daten*, nicht mehr
+    Einfaelle - dieselbe Regel auf einer breiteren Grundlage. Der Deflated
+    Sharpe korrigiert dafuer, dass man bei genug Einfaellen etwas findet.
+
+    Was die Tabelle nicht loest, sagt sie mit: Mehr Maerkte bringen Trades und
+    kosten Rendite. Steigt der Deflated Sharpe ueber die Schwelle, faellt
+    womoeglich die Messlatte darunter - beide Gates zugleich zu halten ist die
+    eigentliche Frage.
+    """
+    from decimal import Decimal
+    from itertools import combinations
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from core.report import write_report
+    from research.admission import load_trials
+    from research.gates import evaluate_gates
+    from research.nachpruefung import Ergebnis, Nachpruefung
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    genome = spitzenkandidat()
+    trials = load_trials(Path(settings.paths.state) / "trials.json")
+
+    kombinationen = [
+        k
+        for groesse in range(max(1, mindestens), len(symbole) + 1)
+        for k in combinations(symbole, groesse)
+    ]
+    console.print(
+        f"\n[bold]Marktkombinationen[/] {interval_obj.label}\n"
+        f"  Strategie    {genome.name}\n"
+        f"  Kombinationen {len(kombinationen)} aus {len(symbole)} Maerkten\n"
+        f"  Versuche     {trials} (unveraendert - mehr Daten sind kein Versuch)\n"
+    )
+
+    lauf = Nachpruefung()
+    for nummer, kombination in enumerate(kombinationen, start=1):
+        frames = common_range({m: roh[m] for m in kombination})
+        configs = {
+            m: BacktestConfig(
+                instrument=_fallback_instrument(_bybit_kontrakt(m)),
+                risk=settings.risk, initial_equity=Decimal("500"),
+                enforce_risk_limits=True,
+                kalender=_terminkalender(settings) or None,
+            )
+            for m in kombination
+        }
+        bericht = run_portfolio_walkforward(
+            frames, lambda: compile_genome(genome), configs
+        )
+        if not bericht.windows:
+            console.print(f"[dim]  {'+'.join(kombination)}: keine Fenster[/]")
+            continue
+
+        erster = next(iter(frames.values()))
+        gates = evaluate_gates(
+            genome, bericht, erster, configs[kombination[0]], trials_so_far=trials
+        )
+        k = bericht.combined
+        kurz = "+".join(m.split("USD")[0] for m in kombination)
+        ergebnis = Ergebnis(
+            genome_id=kurz,
+            name=kurz,
+            generation=len(kombination),
+            bestanden=sum(1 for r in gates.results if r.passed),
+            gesamt=len(gates.results),
+            offen=tuple(r.name for r in gates.results if not r.passed),
+            trades=len(bericht.all_trades),
+            cagr_pct=k.cagr_pct if k else 0.0,
+            rueckgang_pct=k.max_drawdown_pct if k else 0.0,
+            dsr=next(
+                (r.value for r in gates.results if r.name == "Deflated Sharpe"), 0.0
+            ),
+        )
+        lauf.ergebnisse.append(ergebnis)
+        console.print(
+            f"[dim]  {nummer:>2}/{len(kombinationen)} {kurz:22} "
+            f"{ergebnis.bestanden:>2}/{ergebnis.gesamt:<2} "
+            f"{ergebnis.trades:>4} Trades  DSR {ergebnis.dsr:.3f}[/]"
+        )
+
+    if not lauf.ergebnisse:
+        console.print("[red]Keine Kombination lieferte ein Ergebnis.[/]")
+        raise typer.Exit(2)
+
+    console.print("\n" + lauf.tabelle(hoechstens=len(lauf.ergebnisse)))
+
+    farbe = "green" if lauf.zugelassen else "yellow"
+    console.print(f"\n[{farbe}]{lauf.urteil()}[/]\n")
+
+    ueber = [e for e in lauf.ergebnisse if e.dsr >= 0.95]
+    if ueber:
+        console.print(
+            "[bold]Ueber der Deflated-Sharpe-Schwelle:[/] "
+            + ", ".join(f"{e.name} ({e.dsr:.3f})" for e in ueber)
+        )
+        console.print(
+            "[dim]Damit ist das haerteste Gate erreichbar - was fehlt, steht "
+            "in der Spalte 'offen'. Beide Gates zugleich zu halten ist die "
+            "eigentliche Frage.[/]"
+        )
+
+    ziel = write_report(
+        {
+            "intervall": interval_obj.label,
+            "versuche": trials,
+            "kombinationen": [
+                {
+                    "maerkte": e.name, "anzahl": e.generation,
+                    "bestanden": e.bestanden, "gesamt": e.gesamt,
+                    "offen": list(e.offen), "trades": e.trades,
+                    "cagr_pct": round(e.cagr_pct, 4),
+                    "rueckgang_pct": round(e.rueckgang_pct, 4),
+                    "dsr": round(e.dsr, 4),
+                }
+                for e in lauf.rangfolge
+            ],
+            "urteil": lauf.urteil(),
+        },
+        root=Path.cwd(), kind="marktkombinationen",
+    )
+    console.print(f"[dim]Vollstaendig: {ziel}[/]")
+
+
 if __name__ == "__main__":
     app()

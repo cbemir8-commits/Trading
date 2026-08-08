@@ -278,3 +278,56 @@ class TestGateNutzung:
 def test_schwellen_sind_festgehalten() -> None:
     assert MIND_BLOECKE == 8
     assert SIGNIFIKANZ == 0.05
+
+
+class TestMehrBeineMehrTradesGleicheInformation:
+    """**Die gemessene Form, um die es geht.**
+
+    Auf echten Daten, derselbe Kandidat, nur mehr Maerkte:
+
+        Kombination        roh   effektiv    ICC       p   SR/Trade
+        BTC+ETH            152        152  0,112   0,072     0,2597
+        BTC+ETH+XRP        260        146  0,105   0,021     0,2006
+        BTC+ETH+LTC+XRP    366        151  0,132   0,001     0,1757
+
+    Die rohe Zahl waechst um das Zweieinhalbfache, die **unabhaengige** bleibt
+    bei rund 150. Genau dafuer ist dieses Modul da: Wer korrelierte Maerkte
+    dazunimmt, bekommt mehr Trades und nicht mehr Information.
+    """
+
+    def test_doppelte_beine_verdoppeln_die_stichprobe_nicht(self) -> None:
+        rng = np.random.default_rng(17)
+
+        # Ein gemeinsamer Marktfaktor je Fenster, dazu etwas Eigenleben -
+        # so sehen zwei Kryptomaerkte in denselben Fenstern aus.
+        einzeln, doppelt = [], []
+        for _ in range(31):
+            gemeinsam = float(rng.normal(0, 9))
+            a = [gemeinsam + float(rng.normal(0, 6)) for _ in range(5)]
+            b = [gemeinsam + float(rng.normal(0, 6)) for _ in range(5)]
+            einzeln.append(a)
+            doppelt.append(a + b)
+
+        ein_bein = effektive_stichprobe(sum(len(x) for x in einzeln), None, einzeln)
+        zwei_beine = effektive_stichprobe(sum(len(x) for x in doppelt), None, doppelt)
+
+        assert zwei_beine.roh == 2 * ein_bein.roh
+        assert zwei_beine.effektiv < 1.5 * ein_bein.effektiv, (
+            f"Rohe Zahl verdoppelt ({ein_bein.roh} -> {zwei_beine.roh}), "
+            f"effektive von {ein_bein.effektiv} auf {zwei_beine.effektiv}"
+        )
+
+    def test_die_abhaengigkeit_wird_mit_mehr_beinen_deutlicher(self) -> None:
+        """p faellt von 0,072 auf 0,001, wenn Beine dazukommen - kein
+        Grenzfall mehr, sondern eindeutig."""
+        rng = np.random.default_rng(23)
+        bloecke = []
+        for _ in range(31):
+            gemeinsam = float(rng.normal(0, 9))
+            bloecke.append([gemeinsam + float(rng.normal(0, 6)) for _ in range(15)])
+
+        e = designeffekt(bloecke)
+
+        assert e is not None
+        assert e.nachgewiesen
+        assert e.p_wert < 0.01

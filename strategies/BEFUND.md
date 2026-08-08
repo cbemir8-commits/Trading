@@ -2518,3 +2518,82 @@ niemand haette es gemerkt.
 Versuchszaehler unveraendert bei **102**: Dieselben Regeln auf denselben Daten.
 Der Deflated Sharpe korrigiert dafuer, dass man bei genug **Einfaellen** etwas
 findet - nicht dafuer, dass man einen alten Einfall richtiger misst.
+
+---
+
+## Siebenundzwanzig. Mehr Maerkte bringen Trades, aber keine Information
+
+Die Marktkombinationen standen schon einmal in diesem Dokument - gemessen mit
+einem Backtest, der offene Positionen am Fensterende glattstellte, und **bevor
+es die Korrektur fuer abhaengige Beobachtungen gab.** Beides ist seither
+behoben, also gehoerte die Tabelle neu gemessen. Sie kostet keinen Versuch:
+Mehr Maerkte sind mehr *Daten*, nicht mehr Einfaelle.
+
+### Erwartung und Ergebnis
+
+Erwartet hatte ich einen Anstieg. Die alte Tabelle zeigte den Deflated Sharpe
+bei vier Maerkten auf 0,875, also keine 0,08 unter der Schwelle - und genau um
+diese Groessenordnung hatte der Nachlauf-Fehler die Zahl gedrueckt.
+
+Gemessen kam das Gegenteil heraus:
+
+    Kombination         Gates  Trades      p.a.       DD     DSR
+    BTC+ETH              7/11     152   13,47 %  10,64 %   0,864
+    ETH+LTC              5/11     186    9,15 %  16,22 %   0,515
+    ETH+XRP              4/11     188    8,84 %  12,53 %   0,458
+    ETH                  7/11      80   13,33 %  13,15 %   0,455
+    BTC+ETH+XRP          7/11     260   10,43 %  10,63 %   0,422
+    BTC+ETH+LTC          6/11     258   10,64 %  12,00 %   0,393
+    BTC+ETH+LTC+XRP      5/11     366    9,07 %  12,51 %   0,275
+    BTC                  5/11     117    9,35 %  19,96 %   0,190
+    BTC+LTC              4/11     180    9,64 %  13,52 %   0,080
+    LTC+XRP              3/11     214    6,77 %  20,35 %   0,016
+
+**Zweieinhalbmal so viele Trades, und der Deflated Sharpe faellt von 0,864 auf
+0,275.** Keine einzige Kombination schlaegt BTC + ETH.
+
+### Warum - nachgemessen statt vermutet
+
+    Kombination        roh   effektiv    ICC       p   SR/Trade
+    BTC+ETH            152        152  0,112   0,072     0,2597
+    BTC+ETH+XRP        260        146  0,105   0,021     0,2006
+    BTC+ETH+LTC+XRP    366        151  0,132   0,001     0,1757
+
+**Die effektive Stichprobe bleibt bei rund 150 - egal wie viele Maerkte
+dazukommen.** Die rohe Zahl waechst um das Zweieinhalbfache, die Zahl
+unabhaengiger Beobachtungen um nichts. Gleichzeitig faellt die Qualitaet je
+Trade von 0,26 auf 0,18, weil die zusaetzlichen Maerkte schlechter sind.
+
+Dieselbe Information, schlechtere Qualitaet - deshalb der Absturz.
+
+Bemerkenswert ist auch die dritte Spalte: Der p-Wert faellt von 0,072 ueber
+0,021 auf 0,001. Mit jedem Bein wird die Abhaengigkeit **eindeutiger**. Bei
+zwei Maerkten ist sie ein Grenzfall (und wird als solcher angesagt), bei vier
+ist sie kein Grenzfall mehr.
+
+### Was das ueber den alten Befund sagt
+
+Die alte Tabelle - "mehr Maerkte bringen Trades, DSR steigt auf 0,875" - war
+**der Ensemble-Schlupfloch in anderer Gestalt.** Sie zaehlte rohe Trades und
+hielt vier korrelierte Kryptomaerkte fuer vier unabhaengige Informationsquellen.
+Genau dafuer ist ``research/unabhaengigkeit.py`` gebaut worden; dass es
+inzwischen greift, sieht man hier zum ersten Mal an echten Daten und nicht an
+einem konstruierten Beispiel.
+
+Damit ist die Richtung "mehr Maerkte" nicht nur widerlegt, sondern **umgekehrt
+belegt**: Sie schadet. Und zwar nicht, weil die Maerkte schlecht waeren,
+sondern weil sie dasselbe sagen.
+
+### Was daraus folgt
+
+Der Abstand zum Deflated-Sharpe-Gate ist damit haerter als gedacht. Er laesst
+sich **nicht** durch Verbreitern schliessen - nicht ueber Maerkte, nicht ueber
+Perioden-Ensembles, nicht ueber feinere Kerzen. Alles, was mehr Zeilen
+erzeugt, ohne mehr zu wissen, wird von der Korrektur wieder eingesammelt, und
+das ist richtig so.
+
+Was bleibt, ist die schwierige Richtung: eine Regel, die **je Trade** besser
+ist. Nicht mehr Trades - bessere.
+
+Stand unveraendert: **BTC + ETH, 7 von 11**, Deflated Sharpe 0,864 gegen 0,95.
+Versuchszaehler unveraendert bei **102**.
