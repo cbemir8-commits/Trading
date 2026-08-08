@@ -3081,5 +3081,123 @@ def machbarkeit(
     )
 
 
+@app.command()
+def kontorisiko(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    kapital: float = typer.Option(
+        500.0, "--kapital", help="Kontogroesse insgesamt, nicht je Bein."
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Haette das **Konto** ausgeloest - oder nur ein einzelnes Bein?
+
+    Der Portfolio-Backtest laesst jedes Bein als eigenen Backtest laufen.
+    Jedes bekommt damit ein eigenes Konto **und einen eigenen Risk-Officer**:
+    bei zwei Maerkten zwei Kill-Switches auf je halber Kapitalbasis. Die
+    loesen aus, wo ein einziges Konto nichts gemerkt haette.
+
+    Gemessen am Spitzenkandidaten, durchgehend, je Bein 250 EUR:
+
+        BTC-Bein          Rueckgang 12,74 %   pausiert am 03.09.2020
+        ETH-Bein          Rueckgang 14,90 %
+        Konto (500 EUR)   Rueckgang 10,72 %   loest **nichts** aus
+
+    Die Sperre des BTC-Beins kostet 58 von 76 Trades - und beschreibt zwei
+    getrennte Konten, nicht das eine, das es gibt.
+
+    Dieser Befehl legt die Kapitalkurven aller Beine zu einer Kontokurve
+    zusammen und fuehrt den **echten** Risk-Officer darueber. Er rechnet den
+    Backtest **nicht** neu: Wo das Konto frueher gebremst haette, haetten die
+    Beine danach anders gehandelt. Beantwortet wird genau eine Frage - haette
+    das Konto ueberhaupt ausgeloest?
+
+    Kostet keinen Versuch: Geprueft wird die Kontofuehrung, keine Regel.
+    """
+    from decimal import Decimal
+
+    import pandas as pd
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range
+    from backtest.walkforward import WalkForwardSplitter, run_walkforward
+    from research.kontorisiko import kontokurve, pruefe
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    frames = common_range(roh)
+    genome = spitzenkandidat()
+    je_bein = Decimal(str(kapital)) / Decimal(len(frames))
+
+    console.print(
+        f"\n[bold]Kontorisiko[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Strategie  {genome.name}\n"
+        f"  Konto      {kapital:.0f} EUR, je Bein {je_bein:.2f} EUR\n"
+    )
+
+    kurven = {}
+    for markt, frame in frames.items():
+        cfg = BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(markt)),
+            risk=settings.risk, initial_equity=je_bein,
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+        )
+        bericht = run_walkforward(
+            frame, lambda: compile_genome(genome), cfg,
+            WalkForwardSplitter(), durchgehend=True,
+        )
+        teile = [
+            w.result.equity_curve for w in bericht.windows
+            if not w.result.equity_curve.empty
+        ]
+        kurven[markt] = (
+            pd.concat(teile, ignore_index=True) if teile else pd.DataFrame()
+        )
+        lauf = pruefe(
+            kurven[markt], risk=settings.risk,
+            instrument=_fallback_instrument(_bybit_kontrakt(markt)),
+        )
+        wann = (
+            f"{lauf.erstes.zeit:%Y-%m-%d}" if lauf.erstes else "nie"
+        )
+        console.print(
+            f"  [dim]{markt:22} {len(bericht.all_trades):>4} Trades, "
+            f"Rueckgang {lauf.hoechster_rueckgang_pct:>6.2f} %, "
+            f"erstes Ereignis {wann}[/]"
+        )
+
+    konto = pruefe(
+        kontokurve(kurven), risk=settings.risk,
+        instrument=_fallback_instrument(_bybit_kontrakt(symbole[0])),
+    )
+    farbe = "yellow" if konto.haette_ausgeloest else "green"
+    console.print(f"\n[{farbe}]{konto.bericht()}[/]\n")
+
+    if not konto.haette_ausgeloest and len(frames) > 1:
+        console.print(
+            "[dim]Sperren einzelner Beine sind damit Artefakte der Aufteilung. "
+            "Die Trade-Zahlen aus so einem Lauf beschreiben zwei getrennte "
+            "Konten, nicht das eine, das es gibt.[/]"
+        )
+
+
 if __name__ == "__main__":
     app()

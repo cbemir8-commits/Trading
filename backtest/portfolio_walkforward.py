@@ -130,6 +130,38 @@ def run_portfolio_walkforward(
     zugeschnitten = common_range(frames)
     splitter = splitter or WalkForwardSplitter()
 
+    # **Die Risikogrenzen greifen hier je Bein, nicht je Konto.**
+    #
+    # Jedes Bein ist ein eigener Backtest und bekommt damit ein eigenes Konto
+    # *und einen eigenen Risk-Officer*. Bei zwei Maerkten sind das zwei
+    # Kill-Switches auf je halber Kapitalbasis - und die loesen aus, wo ein
+    # einziges Konto nichts gemerkt haette. Gemessen am Spitzenkandidaten,
+    # durchgehend, je Bein 250 EUR:
+    #
+    #     BTC-Bein          Rueckgang 12,74 %   pausiert am 03.09.2020
+    #     ETH-Bein          Rueckgang 14,90 %
+    #     Konto (500 EUR)   Rueckgang 10,72 %   loest **nichts** aus
+    #
+    # Die Sperre des BTC-Beins kostet 58 von 76 Trades und ist ein Artefakt der
+    # Aufteilung. Wer diese Zahlen als Kontozahlen liest, liest sie falsch -
+    # deshalb steht der Hinweis im Protokoll statt nur in einem Kommentar.
+    # ``research/kontorisiko.py`` prueft, ob das Konto ueberhaupt ausgeloest
+    # haette; ``cli kontorisiko`` fuehrt es aus.
+    erzwingt = any(
+        (configs[name] if isinstance(configs, dict) else configs).enforce_risk_limits
+        for name in zugeschnitten
+    )
+    if erzwingt and len(zugeschnitten) > 1:
+        log.warning(
+            "portfolio.risiko_je_bein",
+            beine=len(zugeschnitten),
+            hinweis=(
+                "Die Verlustgrenzen greifen je Bein auf eigener Kapitalbasis, "
+                "nicht je Konto. Mit 'cli kontorisiko' pruefen, ob das Konto "
+                "ueberhaupt ausgeloest haette."
+            ),
+        )
+
     def config_fuer(name: str) -> BacktestConfig:
         return configs[name] if isinstance(configs, dict) else configs
 

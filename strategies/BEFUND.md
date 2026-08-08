@@ -2333,3 +2333,99 @@ Zwei Entwurfsfehler beim Bauen, beide von Tests gefangen:
 
 Versuchszaehler unveraendert bei **102**: Fehlerbehebung an der Messung, kein
 neuer Einfall.
+
+---
+
+## Fuenfundzwanzig. Zwei Korrekturen an meinem eigenen Bericht von gestern
+
+Der Befund aus Nummer vierundzwanzig - "der Backtest hat den Not-Aus alle drei
+Monate zurueckgesetzt", Deflated Sharpe in Wahrheit 0,296 statt 0,863 - war in
+der Richtung richtig und in zwei Punkten falsch. Beide gehoeren hierher.
+
+### Erstens: Es war keine uebersehene Luecke, sondern eine dokumentierte Annahme
+
+Ich habe den Reset je Fenster als unbemerkten Fehler dargestellt. Er steht seit
+jeher im Docstring von ``Backtester._officer``, mit Begruendung:
+
+> Kein ``state_path``: Jeder Lauf beginnt frei. Im Walk-Forward heisst das,
+> dass jedes Testfenster mit einem frischen Officer startet - was der Annahme
+> entspricht, dass der Nutzer einen ausgeloesten Not-Aus zwischen den Fenstern
+> manuell freigibt. Ohne diese Annahme bliebe jedes Fenster nach dem ersten
+> Not-Aus fuer immer stumm, und der Backtest waere in der anderen Richtung
+> falsch.
+
+Das ist eine bewusste Entscheidung mit einem echten Argument dahinter. Wertvoll
+bleibt die **Messung**, wie stark diese Annahme wiegt - nicht die Behauptung,
+sie sei niemandem aufgefallen. Sie war aufgeschrieben; ich hatte sie nicht
+gelesen.
+
+### Zweitens: Die 0,296 stammen aus einem Modellfehler, nicht aus der Wirklichkeit
+
+Der durchgehende Lauf meldete 8,24 % Rueckgang - und gleichzeitig feuerte der
+Kill-Switch, der bei 15 % greift. Beides kann nicht stimmen. Nachgemessen, je
+Bein 250 EUR (was ein 500-EUR-Konto auf zwei Maerkten wirklich hat):
+
+    Bein                      Trades   Rueckgang   erstes Ereignis
+    BTC                           18     12,74 %   pausiert 03.09.2020
+    ETH                           80     14,90 %   nie
+    KONTO (beide, 500 EUR)         --     10,72 %   **nichts**
+
+**Das Konto haette nichts ausgeloest.** Weder Kill-Switch noch Wochenlimit.
+Ohne Limits gerechnet liegt der Kontorueckgang bei 13,03 % - immer noch unter
+15 %.
+
+Der Grund ist ein Modellfehler, und er ist meiner: Der Portfolio-Walk-Forward
+laesst jedes Bein als **eigenen Backtest** laufen. Jedes bekommt damit ein
+eigenes Konto *und einen eigenen Risk-Officer* - bei zwei Maerkten also zwei
+Kill-Switches auf je halber Kapitalbasis. Die loesen aus, wo ein einziges Konto
+nichts gemerkt haette.
+
+Die Sperre des BTC-Beins am 03.09.2020 kostet **58 von 76 Trades**. Sie
+beschreibt zwei getrennte 250-EUR-Konten, nicht das eine 500-EUR-Konto, das es
+gibt.
+
+Damit ist die gestrige Schlagzeile - "waere dieses System die letzten Jahre
+gelaufen, stuende es heute still" - **nicht belegt**. Auf Kontoebene bindet
+keine einzige Grenze. Was bleibt, ist die schwaechere und immer noch wichtige
+Aussage: Der fensterweise Lauf setzt den Risikozustand regelmaessig zurueck,
+und wie stark das wiegt, war bis jetzt ungemessen.
+
+### Was gebaut wurde
+
+``research/kontorisiko.py`` legt die Kapitalkurven aller Beine zu **einer**
+Kontokurve zusammen und fuehrt den **echten** ``RiskOfficer`` darueber - Kerze
+fuer Kerze, mit der Kerzenuhr. Keine Nachbildung seiner Regeln: Zwei
+Umsetzungen derselben Sache laufen auseinander, und genau das ist in diesem
+Projekt schon fuenfmal passiert.
+
+Erreichbar ueber ``cli kontorisiko``. Kostet keinen Versuch - geprueft wird die
+Kontofuehrung, keine Regel.
+
+Zwei Grenzen des Werkzeugs, ausgesprochen:
+
+* Es rechnet den Backtest **nicht** neu. Wo das Konto frueher gebremst haette,
+  haetten die Beine danach anders gehandelt; diese Rueckwirkung fehlt. Dafuer
+  braeuchte es einen Backtest, der alle Maerkte im Gleichschritt durchlaeuft,
+  mit einem Konto und einem Officer.
+* Es beantwortet deshalb genau eine Frage: **Haette das Konto ueberhaupt
+  ausgeloest?** Lautet die Antwort nein - wie hier -, sind alle Sperren
+  einzelner Beine Artefakte, und mehr muss man nicht wissen.
+
+Dazu meldet ``run_portfolio_walkforward`` ab jetzt im Protokoll, wenn es die
+Grenzen bei mehreren Beinen je Bein erzwingt. Ein Kommentar im Quelltext hat
+nicht gereicht - ich habe die Zahlen selbst falsch gelesen.
+
+### Wo der Kandidat damit steht
+
+Unveraendert bei **7 von 11** aus Nummer dreiundzwanzig: Messlatte,
+Schlechtestes Jahr, Deflated Sharpe, Parameter-Plateau. Die 0,296 aus gestern
+sind zurueckzunehmen; die belastbare Zahl bleibt die aus dem fensterweisen Lauf
+mit korrekter Aufwaermphase, **0,863**.
+
+Was offen bleibt und ehrlich offen bleiben muss: Ein Backtest, der mehrere
+Maerkte auf **einem** Konto mit **einem** Risk-Officer im Gleichschritt
+durchlaeuft, gibt es noch nicht. Bis dahin sind Mehrmarkt-Laeufe mit
+erzwungenen Grenzen mit Vorsicht zu lesen - und ``cli kontorisiko`` sagt, wie
+viel Vorsicht noetig ist.
+
+Versuchszaehler unveraendert bei **102**.
