@@ -23,6 +23,7 @@ from core.models import Side, Trade
 from research.unabhaengigkeit import (
     MIND_BLOECKE,
     SIGNIFIKANZ,
+    Effektivwert,
     designeffekt,
     effektive_stichprobe,
     mittlere_korrelation,
@@ -170,6 +171,52 @@ class TestEffektiveStichprobe:
 
         assert "keine nachweisbare Abhaengigkeit" in text
         assert "Das heisst nicht, dass keine da ist" in text
+
+
+class TestKnappeEntscheidung:
+    """**Die dritte Schwaeche dieses Moduls - und die unangenehmste.**
+
+    Die Schwelle ist hart, die Groesse darunter stetig. Beim Abtasten des
+    Vola-Reglers ergab derselbe Kandidat auf denselben Daten einen ICC von
+    0,120 bis 0,128 - praktisch konstant - aber p-Werte von 0,030 bis 0,085.
+    Bei der einen Stufe unter 0,05 fiel die Stichprobe von 153 auf 100 und der
+    Deflated Sharpe von 0,87 auf 0,53.
+    """
+
+    def test_knapp_darunter_wird_angesagt(self) -> None:
+        e = Effektivwert(roh=153, effektiv=100, icc=0.128, p_wert=0.030,
+                         nachgewiesen=True, bloecke=31)
+
+        assert e.knapp
+        assert "ACHTUNG" in e.bericht()
+        assert "kehrt die Entscheidung um" in e.bericht()
+
+    def test_knapp_darueber_ebenso(self) -> None:
+        """Knapp verfehlt ist genauso wenig eine Messung wie knapp erreicht."""
+        e = Effektivwert(roh=154, effektiv=154, icc=0.121, p_wert=0.060,
+                         nachgewiesen=False, bloecke=31)
+
+        assert e.knapp
+        assert "ACHTUNG" in e.bericht()
+
+    def test_eindeutig_wird_nicht_angesagt(self) -> None:
+        for p in (0.001, 0.5, 0.9):
+            e = Effektivwert(roh=150, effektiv=150, icc=0.05, p_wert=p, bloecke=31)
+            assert not e.knapp, f"p={p} ist nicht knapp"
+            assert "ACHTUNG" not in e.bericht()
+
+    def test_ohne_genug_bloecke_keine_ansage(self) -> None:
+        """Wo gar keine Aussage moeglich ist, ist auch keine knapp."""
+        e = Effektivwert(roh=20, effektiv=20, p_wert=0.05, bloecke=3)
+
+        assert not e.knapp
+
+    def test_mehr_permutationen_gegen_das_rauschen(self) -> None:
+        """200 Ziehungen geben nahe 5 % einen Standardfehler von rund 0,015 -
+        die Schwelle liegt innerhalb eines einzigen davon."""
+        from research.unabhaengigkeit import PERMUTATIONEN
+
+        assert PERMUTATIONEN >= 2000
 
 
 class TestMittlereKorrelation:

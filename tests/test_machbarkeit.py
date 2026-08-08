@@ -224,6 +224,35 @@ class TestHebelwirkung:
         assert w.haelt_irgendwo
         assert not w.aussichtslos  # und wird trotzdem richtig entschieden
 
+    def test_eine_einzige_stellung_belegt_nichts(self) -> None:
+        """**Der zweite falsche Bericht, und der lehrreichere.**
+
+        Bei einem Messpunkt ist die Spanne null - damit waere jedes gerissene
+        Gate automatisch "ausser Reichweite des Reglers", obwohl an dem Regler
+        nie gedreht wurde. Ein Werkzeug, das aus einem Punkt eine Schranke
+        ableitet, sagt mehr, als es weiss.
+        """
+        m = Machbarkeit(regler="Vola-Ziel", punkte=[punkt(19.3, g=(False, 0.869, 0.95))])
+
+        w = m.hebelwirkung("g")
+
+        assert w is not None
+        assert w.spanne == 0.0 and w.abstand > 0  # die rohe Bedingung greift
+        assert w.stellungen == 1
+        assert not w.aussichtslos
+        assert "ausser Reichweite" not in m.urteil()
+
+    def test_zwei_stellungen_genuegen(self) -> None:
+        m = Machbarkeit(
+            regler="x",
+            punkte=[punkt(1.0, g=(False, 0.869, 0.95)), punkt(2.0, g=(False, 0.870, 0.95))],
+        )
+
+        w = m.hebelwirkung("g")
+
+        assert w is not None and w.stellungen == 2
+        assert w.aussichtslos
+
     def test_unbekanntes_gate(self) -> None:
         assert Machbarkeit(regler="x", punkte=[punkt(1.0, a=True)]).hebelwirkung(
             "b"

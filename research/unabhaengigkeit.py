@@ -59,9 +59,32 @@ MIND_BLOECKE = 8
 #: Permutationsziehungen, die mindestens so stark aussehen wie die Messung.
 SIGNIFIKANZ = 0.05
 
-#: Wie viele Permutationen fuer die Null. 200 genuegen fuer eine Schwelle bei
-#: 5 % und bleiben schnell genug fuer den Wettbewerb.
-PERMUTATIONEN = 200
+#: Wie viele Permutationen fuer die Null.
+#:
+#: **Hier standen 200, und das war zu wenig - gemessen, nicht vermutet.** Beim
+#: Abtasten des Vola-Reglers ergab derselbe Kandidat auf denselben Daten:
+#:
+#:     Vola-Ziel    ICC       p     gekuerzt
+#:          14    0,123   0,085     nein
+#:          16    0,128   0,030     JA, 153 -> 100
+#:        19,3    0,121   0,060     nein
+#:          22    0,124   0,075     nein
+#:          25    0,120   0,085     nein
+#:
+#: Die Abhaengigkeit selbst ist ueber den ganzen Regler konstant - der ICC
+#: schwankt um 0,008. Nur der p-Wert wandert ueber die Schwelle, und bei einer
+#: Stufe faellt er darunter. Dort stuerzt der Deflated Sharpe von 0,87 auf
+#: 0,53: **ein Drittel des wichtigsten Gates, entschieden von Rauschen im
+#: Permutationstest.**
+#:
+#: Bei 200 Ziehungen betraegt der Standardfehler des p-Werts nahe 5 % rund
+#: 0,015. Die Schwelle liegt damit innerhalb eines einzigen Standardfehlers -
+#: die Entscheidung war ein Muenzwurf. 2000 Ziehungen druecken ihn auf 0,005.
+#:
+#: Das behebt die Klippe nicht, es macht sie nur reproduzierbar: Eine harte
+#: Schwelle auf eine stetige Groesse bleibt eine harte Schwelle. Was daraus
+#: folgt, steht in ``Effektivwert.knapp``.
+PERMUTATIONEN = 2000
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,20 +102,46 @@ class Effektivwert:
     def faktor(self) -> float:
         return self.effektiv / self.roh if self.roh else 1.0
 
+    @property
+    def knapp(self) -> bool:
+        """Liegt die Entscheidung auf der Kippe?
+
+        **Der Grund, warum es diese Eigenschaft gibt.** Die Schwelle ist hart,
+        die Groesse darunter ist stetig - also gibt es einen Bereich, in dem
+        eine winzige Aenderung an den Daten das Ergebnis umschlagen laesst.
+        Gemessen auf dem Spitzenkandidaten: Bei Vola-Ziel 16 fiel p auf 0,030,
+        die Stichprobe wurde von 153 auf 100 gekuerzt und der Deflated Sharpe
+        von 0,87 auf 0,53 - bei einem ICC, der sich gegenueber den Nachbarn um
+        0,008 unterschied.
+
+        Wo das zutrifft, ist die Zahl kein Messwert mehr, sondern eine
+        Muenzseite. Sie wird deshalb nicht stillschweigend weitergereicht,
+        sondern angesagt.
+        """
+        return self.bloecke >= MIND_BLOECKE and SIGNIFIKANZ / 2 <= self.p_wert <= SIGNIFIKANZ * 2
+
     def bericht(self) -> str:
         if self.bloecke < MIND_BLOECKE:
             return f"{self.roh} Trades - zu wenige Bloecke fuer eine Aussage."
+        hinweis = (
+            f" ACHTUNG: p liegt dicht an der Schwelle von {SIGNIFIKANZ:.2f} - "
+            f"eine kleine Aenderung an den Daten kehrt die Entscheidung um, "
+            f"und mit ihr die Stichprobengroesse."
+            if self.knapp
+            else ""
+        )
         if self.nachgewiesen:
             return (
                 f"{self.roh} rohe Trades entsprechen {self.effektiv} "
                 f"unabhaengigen ({self.faktor:.0%}). Abhaengigkeit "
                 f"nachgewiesen: ICC {self.icc:.3f}, p = {self.p_wert:.3f}."
+                + hinweis
             )
         return (
             f"{self.roh} Trades, keine nachweisbare Abhaengigkeit "
             f"(ICC {self.icc:.3f}, p = {self.p_wert:.3f}) - es bleibt bei der "
             f"rohen Zahl. Das heisst nicht, dass keine da ist: Bei "
-            f"{self.bloecke} Bloecken faellt erst eine deutliche auf."
+            f"{self.bloecke} Bloecken faellt erst eine deutliche auf." + hinweis
         )
 
 

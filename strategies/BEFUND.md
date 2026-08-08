@@ -1901,3 +1901,202 @@ Versuchszaehler **96 -> 102** (sechs neue Stellungen; 19,3 war bereits
 gezaehlt). Die zweite Messung derselben sieben Stufen zaehlt nicht mit - es
 wurde nichts Neues gesehen, nur festgehalten, was hinter den Zeichen stand
 (``reports/machbarkeit/``).
+
+---
+
+## Zweiundzwanzig. Ein Sechstel der Trades wurde vom Kalender beendet
+
+Der Befund davor sagte: Was fehlt, ist Qualitaet je Trade, und kein Regler
+liefert sie. Auf der Suche danach habe ich zuerst nachgesehen, wo der
+Sharpe je Trade eigentlich herkommt - und bin auf einen Fehler in der
+**Messung** gestossen, nicht in der Strategie.
+
+### Der Befund
+
+Der Backtest lief in jedem Walk-Forward-Fenster exakt bis zum Fensterende.
+Eine dort noch offene Position wurde zwangsweise glattgestellt
+(``END_OF_DATA``). Aufgeschluesselt nach Ausstiegsgrund:
+
+    Grund             Trades   Anteil   Ergebnis im Mittel   Haltedauer
+    stop_loss             67    43,5 %        -2,11 EUR         6 Tage
+    signal_exit           58    37,7 %        -0,59 EUR         6 Tage
+    end_of_data           25    16,2 %       +19,62 EUR        26 Tage
+    take_profit            4     2,6 %       +50,56 EUR
+
+**Die 25 kalenderbeendeten Trades trugen den gesamten Vorteil.** Ohne sie
+faellt der Sharpe je Trade von 0,244 auf **0,021** - die Strategie waere
+nichts weiter als Rauschen.
+
+Damit wurde zu einem Sechstel der Kalender gemessen, und zwar genau an der
+Stelle, an der eine Trendfolge ihr Geld verdient: beim Ausstieg aus den
+Gewinnern. Im Betrieb gibt es keinen Kalender, der eine Position schliesst.
+
+### Die Korrektur
+
+Jedes Fenster bekommt einen **Nachlauf**: Der Backtest laeuft ueber das
+Fensterende hinaus, bis die im Fenster eroeffneten Trades ihren Ausstieg
+**nach Regel** gefunden haben. Gezaehlt werden weiterhin nur Trades, die im
+Testfenster eroeffnet wurden.
+
+Wie lang der Nachlauf sein muss, ist gemessen und nicht gewaehlt:
+
+    Nachlauf     Trades   SR/Trade   Ergebnis   am Kalender beendet
+         0 Tage     154     0,2444    1034 EUR    25 (16,2 %)
+        30 Tage     154     0,2495    1232 EUR    12 ( 7,8 %)
+        90 Tage     154     0,2584    1388 EUR     0 ( 0,0 %)
+       180 Tage     154     0,2584    1388 EUR     0 ( 0,0 %)
+       365 Tage     154     0,2584    1388 EUR     0 ( 0,0 %)
+
+Ab einer Testfensterlaenge aendert sich **nichts mehr** - die Signatur einer
+Groesse, die lang genug ist. Gebunden wird der Nachlauf deshalb an die
+Fensterlaenge, nicht an feste Tage: Auf 15-Minuten-Kerzen waeren drei Monate
+je Fenster ein Vielfaches der Testdaten selbst.
+
+Und die Trade-Zahl bleibt ueber den ganzen Bereich bei 154. Das ist kein
+Nebenbefund, sondern der Beleg, dass hier nicht in die Zukunft gesehen wird:
+**Der Nachlauf verschiebt keinen einzigen Einstieg.** Er liegt hinter dem
+Testfenster, also erst recht hinter dem Training, und die Regel entscheidet
+auf jeder Kerze ohnehin nur aus der Vergangenheit. Ein Test haelt das fest.
+
+### Was sich dadurch aendert
+
+    Kennzahl                      vorher     nachher
+    Sharpe je Trade                0,244       0,258
+    Deflated Sharpe                0,791       0,869
+    fehlende Trades zum Gate          56          32
+    noetiger Faktor auf SR/Trade    1,14        1,08
+    Jahresrendite                 13,17 %     13,17 %
+    Rueckgang                      9,74 %      9,74 %
+    Gates                           8/11        8/11
+
+Der Abstand zum haertesten Gate hat sich **halbiert**. Rendite und Rueckgang
+bleiben unveraendert, und das ist beabsichtigt: Die Kapitalkurve bleibt auf
+das Fenster begrenzt. Sonst ueberlappten sich die Kurven benachbarter Fenster,
+und die Verkettung zaehlte dieselbe Bewegung zweimal. Am Fensterende steht dort
+weiterhin der Marktwert einer womoeglich offenen Position - genau das, was ein
+Kontoauszug an dem Tag zeigte.
+
+### Der Interessenkonflikt, ausgesprochen
+
+**Diese Korrektur macht den Kandidaten besser, und ich habe sie gefunden,
+waehrend ich nach etwas suchte, das ihn besser macht.** Das ist genau die Lage,
+in der man sich selbst nicht glauben soll. Deshalb steht sie hier mit allem,
+was gegen sie sprechen koennte:
+
+* Sie wurde nicht behauptet, sondern durchgerechnet - fuenf Nachlauflaengen,
+  mit Konvergenz.
+* Sie aendert keinen Einstieg. Wenn sie es taete, waere sie ein Blick nach
+  vorn; ein Test vergleicht alle Einstiegszeitpunkte und -preise.
+* Sie kostet **keinen Versuch**. Es ist dieselbe Regel auf denselben Daten,
+  nur ohne den Messfehler. Der Zaehler bleibt bei 102.
+* Ein Umkehr-Nachweis faellt um, sobald jemand den Nachlauf wieder entfernt.
+
+Und die unangenehme Seite gleich dazu: Dass ein Sechstel der Trades vom
+Kalender beendet wurde, stand seit dem ersten Walk-Forward in den Daten. Es ist
+niemandem aufgefallen, mir am wenigsten - in **zweiundzwanzig** Untersuchungen
+nicht, von denen mehrere den Sharpe je Trade zum Gegenstand hatten. Gefunden
+wurde es erst, als ich die Ausstiegsgruende einzeln ausgezaehlt habe.
+
+Damit das nicht wieder passiert, zaehlt der Bericht die kalenderbeendeten
+Trades ab jetzt selbst und nennt sie in seiner Zusammenfassung. Eine Annahme
+haette genau den Fehler wieder eingebaut, den der Nachlauf behebt.
+
+### Was das nicht loest
+
+**8 von 11 bleiben 8 von 11.** Offen sind dieselben drei: Messlatte, Deflated
+Sharpe, Parameter-Plateau. Der Deflated Sharpe ist von 0,791 auf 0,869
+gestiegen und braucht 0,95 - es fehlen jetzt 32 Trades statt 56, oder 8 %
+mehr Qualitaet je Trade statt 14 %.
+
+Naeher, aber nicht da. Und der Befund davor gilt unveraendert: Der Vola-Regler
+liefert diese 8 % nicht.
+
+### Eine zweite Korrektur an meinem eigenen Werkzeug
+
+Beim Nachmessen mit einer einzigen Reglerstellung meldete ``cli machbarkeit``
+prompt drei Gates als "ausser Reichweite des Reglers". Bei einem Messpunkt ist
+die Spanne aber null, und damit ist die Bedingung ``Spanne < Abstand``
+automatisch erfuellt - eine Aussage ueber einen Regler, an dem nie gedreht
+wurde. Das Werkzeug verlangt jetzt mindestens zwei Stellungen, bevor es eine
+Schranke behauptet.
+
+Zwei falsche Berichte aus demselben Werkzeug in zwei Tagen. Beide sind es wert,
+festgehalten zu werden: Ein Werkzeug, das Schranken ableitet, muss zuerst
+wissen, wann seine Datenlage fuer eine Schranke nicht reicht.
+
+### Und ein zweiter Fehler, den erst die Korrektur sichtbar gemacht hat
+
+Nach dem Nachlauf habe ich den Vola-Regler neu vermessen - und das Werkzeug
+widersprach dem Befund von gestern: Der Deflated Sharpe sei **nicht** ausser
+Reichweite. Die Spanne, ueber die der Regler ihn bewegt, war ploetzlich 0,343
+statt 0,024.
+
+Der Grund stand in einer einzigen Zeile:
+
+    Vola-Ziel      14     16    19.3     22     25     28     32
+    DSR         0,863  0,528  0,869  0,863  0,870  0,860  0,871
+
+Ein Ausreisser bei 16, und die ganze Schranke haengt daran. Nachgemessen, wo er
+herkommt - die Trade-Verteilungen sind an allen Stufen praktisch gleich
+(Sharpe je Trade 0,258 bis 0,263, Schiefe 3,5, Woelbung 17). Der Sprung kam
+nicht von den Trades, sondern aus der **Effektivstichprobe**:
+
+    Vola-Ziel    ICC       p     Stichprobe
+         14    0,123   0,085     148 (ungekuerzt)
+         16    0,128   0,030     153 -> 100   <- gekuerzt
+       19,3    0,121   0,060     154 (ungekuerzt)
+         22    0,124   0,075     152 (ungekuerzt)
+
+**Die Abhaengigkeit selbst ist ueber den ganzen Regler konstant** - der ICC
+schwankt um 0,008. Nur der p-Wert des Permutationstests wandert, und bei einer
+Stufe faellt er unter 0,05. Dort wird die Stichprobe um ein Drittel gekuerzt
+und der Deflated Sharpe stuerzt von 0,87 auf 0,53.
+
+Bei 200 Permutationen betraegt der Standardfehler des p-Werts nahe 5 % rund
+0,015 - die Schwelle liegt innerhalb eines einzigen davon. Die Entscheidung
+war ein **Muenzwurf**. Mit 2000 Ziehungen:
+
+    Vola-Ziel     14     16    19.3     22     25     28     32
+    p          0,065  0,051  0,066  0,058  0,065  0,059  0,061
+
+Der Ausreisser ist weg, alle Stufen bleiben ungekuerzt, und die Spanne des
+Reglers faellt auf 0,011. **Der Befund von gestern steht damit wieder - jetzt
+auf Zahlen ohne Rauschen.**
+
+### Die unangenehme Zahl daran
+
+Alle sieben p-Werte liegen zwischen 0,051 und 0,066. **Jeder einzelne liegt
+dicht an der Schwelle.** Der Deflated Sharpe von 0,869 beruht also auf einer
+Entscheidung - die Stichprobe nicht zu kuerzen -, die um Haaresbreite anders
+ausfallen koennte. Bei Vola-Ziel 16 steht sie auf 0,051.
+
+Das ist keine Zahl, die man wegdiskutiert, und sie wird auch nicht in die eine
+oder andere Richtung gedreht. Sie wird **angesagt**: ``Effektivwert.knapp``
+meldet jede Entscheidung im Bereich 0,025 bis 0,10 als das, was sie ist, und
+``cli abstand`` zeigt den Hinweis jetzt auch dann, wenn **nicht** gekuerzt
+wurde. Vorher lief es genau andersherum - gemeldet wurde nur die vollzogene
+Kuerzung, also alles ausser dem Fall, in dem die Zahl am wenigsten belastbar
+ist.
+
+Damit ist dies die **dritte** Schwaeche in ``research/unabhaengigkeit.py``,
+nach dem zu verrauschten Block-Bootstrap und der vertauschten Blocksumme. Alle
+drei hatten dieselbe Form: eine Zahl, die entschieden hat, ohne dass ihre
+eigene Unsicherheit mitgerechnet wurde. Was bleibt, ist eine harte Schwelle auf
+einer stetigen Groesse - eine Klippe, die reproduzierbar geworden ist, aber
+keine Klippe weniger. Eine stetige Kuerzung waere der richtige Weg; sie gehoert
+gebaut, wenn sie durchgerechnet ist, nicht wenn sie plausibel klingt.
+
+### Stand nach beiden Korrekturen
+
+    Vola-Ziel  Trades     p.a.       DD     DSR   Gates
+        14       148    9,06 %   6,67 %   0,863    8/11
+        16       153   10,59 %   7,17 %   0,868    8/11
+      19,3       154   13,17 %   9,74 %   0,869    8/11   <- Kandidat
+        22       152   14,52 %  11,83 %   0,863    7/11
+        25       152   16,77 %  12,93 %   0,870    7/11
+        28       152   18,51 %  15,02 %   0,860    7/11
+        32       152   21,70 %  17,06 %   0,871    5/11
+
+Versuchszaehler unveraendert bei **102**: Beide Korrekturen sind Fehlerbehebung
+an der Messung, keine neuen Einfaelle. Es ist dieselbe Regel auf denselben
+Daten - nur richtig gemessen.

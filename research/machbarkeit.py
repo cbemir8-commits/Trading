@@ -119,6 +119,7 @@ class Hebelwirkung:
     abstand: float
     naechste_stellung: float
     haelt_irgendwo: bool = False
+    stellungen: int = 0
 
     @property
     def aussichtslos(self) -> bool:
@@ -129,13 +130,23 @@ class Hebelwirkung:
         ihn im gemessenen Bereich nicht. Vorausgesetzt ist dabei, dass der
         Wert zwischen den Stufen nicht aus dieser Spanne ausbricht.
 
-        **Wer irgendwo haelt, ist nie ausser Reichweite.** Ohne diese Klausel
-        stand im Bericht ``Stichprobengroesse: aussichtslos`` - ein Gate, das
-        an jeder Stellung mit grossem Abstand bestand. Der Abstand zur Schwelle
-        ist eben in beide Richtungen gross, und ``spanne < abstand`` allein
-        unterscheidet nicht, auf welcher Seite man steht.
+        Zwei Klauseln, beide aus einem falschen Bericht gelernt:
+
+        **Wer irgendwo haelt, ist nie ausser Reichweite.** Sonst stand dort
+        ``Stichprobengroesse: aussichtslos`` - ein Gate, das an jeder Stellung
+        mit grossem Abstand bestand. Der Abstand zur Schwelle ist eben in beide
+        Richtungen gross, und ``spanne < abstand`` allein unterscheidet nicht,
+        auf welcher Seite man steht.
+
+        **Eine einzige Stellung belegt gar nichts.** Bei einem Messpunkt ist
+        die Spanne null, und damit waere jedes gerissene Gate automatisch
+        "ausser Reichweite" - eine Aussage ueber einen Regler, an dem nie
+        gedreht wurde. Ein Werkzeug, das aus einem Punkt eine Schranke
+        ableitet, sagt mehr, als es weiss.
         """
-        return not self.haelt_irgendwo and self.spanne < self.abstand
+        if self.stellungen < 2 or self.haelt_irgendwo:
+            return False
+        return self.spanne < self.abstand
 
     def beschreibung(self) -> str:
         return (
@@ -295,6 +306,7 @@ class Machbarkeit:
             abstand=abs(naechster.wert - naechster.schwelle),
             naechste_stellung=stellung,
             haelt_irgendwo=bool(self.haelt_bei(gate)),
+            stellungen=len({s for s, _ in staende}),
         )
 
     # -- Was als naechstes zu messen waere ----------------------------------

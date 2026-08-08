@@ -2556,7 +2556,11 @@ def abstand(
         getattr(report, "beine", None),
         [[float(x.net_pnl) for x in w.trades] for w in report.windows],
     )
-    if stichprobe.effektiv != n:
+    # **Auch dann anzeigen, wenn nicht gekuerzt wurde, die Entscheidung aber
+    # auf der Kippe stand.** Vorher lief es genau andersherum: Gemeldet wurde
+    # nur die vollzogene Kuerzung - also alles ausser dem Fall, in dem die
+    # Zahl am wenigsten belastbar ist.
+    if stichprobe.effektiv != n or stichprobe.knapp:
         console.print(f"[dim]{stichprobe.bericht()}[/dim]")
     n = stichprobe.effektiv
     ergebnis = bewerte(

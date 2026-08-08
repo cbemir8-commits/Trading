@@ -20,6 +20,34 @@ gezaehlt, die im Testfenster eroeffnet wurden**.
 Luecke. Ein Trade, der kurz vor dem Schnitt eroeffnet wurde, laeuft sonst in
 den Testzeitraum hinein und verbindet beide - genau die Vermischung, die der
 Walk-Forward verhindern soll.
+
+**Nachlauf am Fensterende.** Eine dritte, und sie ist teuer erkauft. Der
+Backtest lief frueher exakt bis ``test_end``; eine dort noch offene Position
+wurde zwangsweise glattgestellt (``END_OF_DATA``). Beim Spitzenkandidaten traf
+das **25 von 154 Trades**, und diese 25 trugen den gesamten Vorteil:
+
+    am Kalender beendet   25 Trades   +19,62 EUR im Mittel   26 Tage gehalten
+    nach Regel beendet   129 Trades    -0,59 bis -2,11 EUR    6 Tage gehalten
+
+Der Ausstieg der Gewinner kam also vom **Kalender**, nicht von der Regel - und
+im Betrieb gibt es keinen Kalender, der eine Position schliesst. Gemessen
+wurde etwas, das so nie gehandelt wuerde.
+
+Deshalb bekommt jedes Fenster einen Nachlauf: Der Backtest laeuft ueber
+``test_end`` hinaus, bis die im Fenster eroeffneten Trades ihren Ausstieg nach
+Regel gefunden haben. **Gezaehlt werden weiterhin nur Trades, die im
+Testfenster eroeffnet wurden** - der Nachlauf verschiebt keinen einzigen
+Einstieg, er laesst nur zu Ende laufen, was begonnen hat.
+
+Kein Blick in die Zukunft: Die Regel entscheidet auf jeder Kerze nur aus der
+Vergangenheit, und der Nachlauf liegt **hinter** dem Testfenster, also erst
+recht hinter dem Training. Was er kostet, ist nichts; was er aendert, ist die
+Ehrlichkeit der Ausstiege.
+
+Die **Kapitalkurve** bleibt auf das Fenster begrenzt. Sonst ueberlappten sich
+die Kurven benachbarter Fenster, und die Verkettung zaehlte dieselbe Bewegung
+zweimal. Am Fensterende steht dort also weiterhin der Marktwert einer
+womoeglich offenen Position - genau das, was ein Kontoauszug an dem Tag zeigte.
 """
 
 from __future__ import annotations
@@ -137,12 +165,35 @@ class WalkForwardReport:
             return None
         return min(self.windows, key=lambda w: w.metrics.net_profit)
 
+    @property
+    def kalender_ausstiege(self) -> int:
+        """Trades, die nicht die Regel beendet hat, sondern das Datenende.
+
+        **Steht hier etwas, ist die Messung in diesem Umfang unbrauchbar.** Der
+        Ausstieg entscheidet bei einer Trendfolge ueber das Ergebnis; wer ihn
+        vom Kalender setzen laesst, misst den Kalender mit. Beim
+        Spitzenkandidaten waren es einmal 25 von 154, und diese 25 trugen den
+        gesamten Vorteil.
+
+        Der Nachlauf soll das auf null bringen. Dass es dabei bleibt, wird
+        nicht angenommen, sondern hier gezaehlt - eine Annahme haette genau
+        den Fehler wieder eingebaut, den der Nachlauf behebt. Ein Rest bleibt
+        legitim, wo die Daten selbst enden.
+        """
+        return sum(1 for t in self.all_trades if t.exit_reason == "end_of_data")
+
     def summary(self) -> str:
         if not self.windows or self.combined is None:
             return "Walk-Forward ohne Ergebnis"
+        kalender = self.kalender_ausstiege
+        zusatz = (
+            f" | {kalender} Trades am Datenende beendet, nicht nach Regel"
+            if kalender
+            else ""
+        )
         return (
             f"{self.window_count} Fenster, davon {self.profitable_windows} profitabel "
-            f"({self.consistency:.0%}) | {self.combined.summary()}"
+            f"({self.consistency:.0%}) | {self.combined.summary()}{zusatz}"
         )
 
 
@@ -251,6 +302,30 @@ def worst_rolling_return(curve: np.ndarray, months: int, total_months: float) ->
     return float(np.min(renditen) * 100.0)
 
 
+def nachlauf_fuer(window: Window) -> timedelta:
+    """Wie lange ein Fenster ueber sein Ende hinaus laufen darf.
+
+    **Eine Testfensterlaenge**, und diese Zahl ist gemessen, nicht gewaehlt.
+    Auf dem Spitzenkandidaten (BTC + ETH, Tageskerzen, Testfenster drei Monate)
+    verschwinden die kalenderbeendeten Trades genau dort:
+
+        Nachlauf     Trades   SR/Trade   Ergebnis   am Kalender beendet
+             0 Tage     154     0,2444    1034 EUR    25 (16,2 %)
+            30 Tage     154     0,2495    1232 EUR    12 ( 7,8 %)
+            90 Tage     154     0,2584    1388 EUR     0 ( 0,0 %)
+           180 Tage     154     0,2584    1388 EUR     0 ( 0,0 %)
+           365 Tage     154     0,2584    1388 EUR     0 ( 0,0 %)
+
+    Ab einer Fensterlaenge aendert sich nichts mehr - das ist die Signatur
+    einer Groesse, die lang genug ist. Und die Trade-Zahl bleibt ueber den
+    ganzen Bereich bei 154: Der Nachlauf verschiebt keinen Einstieg.
+
+    An die Fensterlaenge gebunden statt an eine feste Zahl Tage, damit es auf
+    15-Minuten-Kerzen nicht ploetzlich drei Monate Daten je Fenster sind.
+    """
+    return window.test_end - window.test_start
+
+
 def run_walkforward(
     frame: pd.DataFrame,
     build_strategy,
@@ -301,7 +376,10 @@ def run_walkforward(
             if strategie_je_fenster is not None
             else build_strategy()
         )
-        window_result = _run_window(frame, strategy, config, window, sub_frame)
+        window_result = _run_window(
+            frame, strategy, config, window, sub_frame,
+            nachlauf=nachlauf_fuer(window),
+        )
         if window_result is not None:
             report.windows.append(window_result)
             report.all_trades.extend(window_result.trades)
@@ -319,19 +397,23 @@ def _run_window(
     config: BacktestConfig,
     window: Window,
     sub_frame: pd.DataFrame | None,
+    nachlauf: timedelta = timedelta(0),
 ) -> WindowResult | None:
     """Ein Fenster auswerten.
 
-    Der Backtest laeuft ueber [Testbeginn - Aufwaermphase, Testende], gezaehlt
-    werden aber nur Trades, die **im Testfenster** eroeffnet wurden. Ohne die
-    Aufwaermdaten waere der Anfang jedes Fensters signallos.
+    Der Backtest laeuft ueber [Testbeginn - Aufwaermphase, Testende +
+    Nachlauf], gezaehlt werden aber nur Trades, die **im Testfenster**
+    eroeffnet wurden. Ohne die Aufwaermdaten waere der Anfang jedes Fensters
+    signallos; ohne den Nachlauf beendete der Kalender die offenen Positionen
+    statt der Regel.
     """
     warmup_bars = getattr(strategy, "warmup_bars", 30)
     bar_step = _infer_step(frame)
     run_start = window.test_start - bar_step * warmup_bars
+    lauf_ende = pd.Timestamp(window.test_end) + nachlauf
 
     mask = (frame["open_time"] >= pd.Timestamp(run_start)) & (
-        frame["open_time"] < pd.Timestamp(window.test_end)
+        frame["open_time"] < lauf_ende
     )
     window_frame = frame.loc[mask].reset_index(drop=True)
 
@@ -341,14 +423,34 @@ def _run_window(
     window_subs = None
     if sub_frame is not None:
         sub_mask = (sub_frame["open_time"] >= pd.Timestamp(run_start)) & (
-            sub_frame["open_time"] < pd.Timestamp(window.test_end)
+            sub_frame["open_time"] < lauf_ende
         )
         window_subs = sub_frame.loc[sub_mask].reset_index(drop=True)
 
     result = Backtester(config).run(window_frame, strategy, sub_frame=window_subs)
 
     # Nur Trades zaehlen, die im eigentlichen Testfenster eroeffnet wurden.
-    in_window = [t for t in result.trades if t.entry_time >= window.test_start]
+    #
+    # **Die obere Grenze ist neu und notwendig.** Ohne Nachlauf endeten die
+    # Daten am Fensterende, und ein Einstieg danach war unmoeglich; mit
+    # Nachlauf waere er es nicht. Fehlte die Schranke, wanderten Trades aus
+    # dem Nachlauf in die Zaehlung - und benachbarte Fenster zaehlten
+    # dieselben Trades doppelt.
+    in_window = [
+        t
+        for t in result.trades
+        if window.test_start <= t.entry_time < window.test_end
+    ]
+
+    # Die Kapitalkurve bleibt auf das Fenster begrenzt, damit sich die Kurven
+    # benachbarter Fenster nicht ueberlappen. Beschnitten wird an der Quelle:
+    # ``_combine`` und ``chained_curve`` lesen beide ``result.equity_curve``,
+    # und zwei Stellen mit derselben Regel sind eine Stelle zu viel.
+    if not result.equity_curve.empty:
+        result.equity_curve = result.equity_curve.loc[
+            result.equity_curve["time"] < pd.Timestamp(window.test_end)
+        ].reset_index(drop=True)
+
     equity = result.equity_curve
     if not equity.empty:
         equity = equity.loc[equity["time"] >= pd.Timestamp(window.test_start)].reset_index(
