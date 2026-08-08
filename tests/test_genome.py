@@ -286,6 +286,109 @@ class TestCompiler:
         )
         assert compile_genome(genome).warmup_bars >= 600
 
+    def test_konfluenz_zaehlt_fuer_die_aufwaermphase(self) -> None:
+        """**Der Fehler, der ueber Monate unbemerkt lief.**
+
+        ``konfluenz`` kam spaeter dazu und wurde in der Schaetzung nie
+        nachgetragen. Der Spitzenkandidat traegt seinen laengsten Indikator
+        genau dort: Einstieg auf sma(50), Konfluenz auf sma(200). Er bekam
+        150 Kerzen Vorlauf statt 200 - und der sma(200) war damit an 56 % aller
+        Testtage undefiniert. Die Bedingung galt dort still als nicht erfuellt
+        und die Konviktion dimensionierte jede Position zu klein.
+        """
+        genome = Genome(
+            name="Konfluenz lang",
+            rationale="Kurzer Einstieg, langer Trendfilter als Groessensignal.",
+            entry_long=[Condition(left=price("close"), op=Operator.CROSS_ABOVE,
+                                  right=ind("sma", period=50))],
+            konfluenz=[Condition(left=ind("sma", period=50), op=Operator.GT,
+                                 right=ind("sma", period=200))],
+            targets=[TargetSpec(rr=2.0, portion=1.0)],
+        )
+
+        assert compile_genome(genome).warmup_bars > 200
+
+    def test_ausstieg_zaehlt_ebenfalls(self) -> None:
+        """Er entscheidet keinen Einstieg, aber wann eine Position endet -
+        bei einer Trendfolge dasselbe Gewicht."""
+        genome = Genome(
+            name="Langer Ausstieg",
+            rationale="Kurzer Einstieg, langsamer Ausstieg.",
+            entry_long=[Condition(left=price("close"), op=Operator.GT,
+                                  right=ind("sma", period=20))],
+            exit_long=[Condition(left=price("close"), op=Operator.LT,
+                                 right=ind("sma", period=300))],
+            targets=[TargetSpec(rr=2.0, portion=1.0)],
+        )
+
+        assert compile_genome(genome).warmup_bars > 300
+
+    def test_gleitender_schnitt_braucht_keinen_zuschlag(self) -> None:
+        """``rolling(period, min_periods=period)`` ist nach ``period`` Kerzen
+        exakt - die Vorgeschichte davor spielt keine Rolle mehr.
+
+        Der pauschale Faktor war nach oben ungefaehrlich, nach unten aber
+        teuer: Ein sma(200) haette 600 Kerzen Vorlauf verlangt, mehr als vor
+        dem ersten Testfenster ueberhaupt vorhanden sind.
+        """
+        genome = Genome(
+            name="Nur SMA",
+            rationale="Ein einfacher gleitender Durchschnitt, sonst nichts.",
+            entry_long=[Condition(left=price("close"), op=Operator.GT,
+                                  right=ind("sma", period=200))],
+            targets=[TargetSpec(rr=2.0, portion=1.0)],
+        )
+
+        warmup = compile_genome(genome).warmup_bars
+
+        assert 200 < warmup <= 210, f"Erwartet knapp ueber 200, gemessen {warmup}"
+
+    def test_rekursive_glaettung_behaelt_den_zuschlag(self) -> None:
+        """EMA und Wilder tragen den Startwert unbegrenzt mit.
+
+        Periode 40, weil das Genom ``rsi`` und ``adx`` auf 5..50 begrenzt.
+        Ohne Zuschlag laege die Aufwaermphase bei 41 oder - vom
+        Standard-Stop ATR(14) - bei 43; mit Zuschlag bei 121.
+        """
+        for name in ("ema", "rsi", "atr", "adx"):
+            genome = Genome(
+                name=f"Rekursiv {name}",
+                rationale=f"Nutzt {name} als Bedingung.",
+                entry_long=[Condition(left=price("close"), op=Operator.GT,
+                                      right=ind(name, period=40))],
+                targets=[TargetSpec(rr=2.0, portion=1.0)],
+            )
+
+            assert compile_genome(genome).warmup_bars >= 121, name
+
+    def test_bandbreite_ist_keine_periode(self) -> None:
+        """``deviations`` steht neben ``period`` in denselben Parametern und
+        darf die Aufwaermphase nicht bestimmen.
+
+        Die Schranke liegt bei 61: So viel verlangte die Periode 20, wenn sie
+        faelschlich den Zuschlag fuer rekursive Glaettungen bekaeme. Was
+        uebrig bleibt (43), kommt vom Standard-Stop ATR(14).
+        """
+        genome = Genome(
+            name="Bollinger",
+            rationale="Unteres Band als Einstiegssignal.",
+            entry_long=[Condition(left=price("close"), op=Operator.LT,
+                                  right=ind("bollinger_lower", period=20,
+                                            deviations=2))],
+            targets=[TargetSpec(rr=2.0, portion=1.0)],
+        )
+
+        assert compile_genome(genome).warmup_bars < 61
+
+    def test_spitzenkandidat_sieht_seinen_langen_schnitt(self) -> None:
+        """Der Fall, um den es wirklich geht - am echten Genom gemessen."""
+        from research.seeds import spitzenkandidat
+
+        strategie = compile_genome(spitzenkandidat())
+
+        # Der sma(200) muss am ersten Testbalken bereits definiert sein.
+        assert strategie.warmup_bars >= 201
+
     def test_shared_indicators_are_computed_once(self, frame: pd.DataFrame) -> None:
         """Zwei Bedingungen auf demselben EMA(50) teilen sich eine Reihe."""
         genome = Genome(

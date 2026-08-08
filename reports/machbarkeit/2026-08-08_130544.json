@@ -1,0 +1,650 @@
+{
+  "regler": "Vola-Ziel",
+  "einheit": "%",
+  "fenster": [],
+  "nie_erfuellt": [
+    "Deflated Sharpe",
+    "Parameter-Plateau"
+  ],
+  "aufloesung": 3.3000000000000007,
+  "urteil": "Ausser Reichweite des Reglers: Deflated Sharpe: der Regler bewegt den Wert um 0.009, zur Schwelle fehlen bei 22 noch 0.080 - mit diesem Regler nicht erreichbar. Haelt an keiner gemessenen Stellung, ohne harte Schranke: Parameter-Plateau. Konflikt: Drawdown haelt bis 19.3, Messlatte erst ab 22 - dazwischen keines von beiden. Ungeprueft bleibt der Bereich 19.3 bis 22 (1 Zwischenraum, breitester 2.7). Konflikt: Schlechtestes Jahr haelt bis 16, Messlatte erst ab 22 - dazwischen keines von beiden. Ungeprueft bleibt der Bereich 16 bis 22 (2 Zwischenraeume, breitester 3.3). Kein Fenster - und feiner abzutasten hilft nicht, weil der Regler mindestens ein Gate gar nicht erreicht.",
+  "hebelwirkung": {
+    "Stichprobengroesse": {
+      "spanne": 64.0,
+      "abstand": 1850.0,
+      "naechste_stellung": 14.0,
+      "aussichtslos": false
+    },
+    "Messlatte": {
+      "spanne": 274.033,
+      "abstand": 71.418,
+      "naechste_stellung": 14.0,
+      "aussichtslos": false
+    },
+    "Out-of-Sample-Sharpe": {
+      "spanne": 0.028295,
+      "abstand": 0.448182,
+      "naechste_stellung": 28.0,
+      "aussichtslos": false
+    },
+    "Drawdown": {
+      "spanne": 10.436293,
+      "abstand": 0.81799,
+      "naechste_stellung": 22.0,
+      "aussichtslos": false
+    },
+    "Schlechtestes Jahr": {
+      "spanne": 10.17,
+      "abstand": 0.32,
+      "naechste_stellung": 19.3,
+      "aussichtslos": false
+    },
+    "Bestaendigkeit": {
+      "spanne": 0.0,
+      "abstand": 0.033333,
+      "naechste_stellung": 14.0,
+      "aussichtslos": false
+    },
+    "Monte-Carlo": {
+      "spanne": 9.2717,
+      "abstand": 0.606745,
+      "naechste_stellung": 28.0,
+      "aussichtslos": false
+    },
+    "Regime-Aufteilung": {
+      "spanne": 0.192942,
+      "abstand": 3.059421,
+      "naechste_stellung": 22.0,
+      "aussichtslos": false
+    },
+    "Deflated Sharpe": {
+      "spanne": 0.009114,
+      "abstand": 0.079543,
+      "naechste_stellung": 22.0,
+      "aussichtslos": true
+    },
+    "Kosten-Stress": {
+      "spanne": 671.66608,
+      "abstand": 67.650359,
+      "naechste_stellung": 32.0,
+      "aussichtslos": false
+    },
+    "Parameter-Plateau": {
+      "spanne": 0.5,
+      "abstand": 0.1,
+      "naechste_stellung": 14.0,
+      "aussichtslos": false
+    }
+  },
+  "konflikte": [
+    {
+      "gates": [
+        "Messlatte",
+        "Drawdown"
+      ],
+      "uebergang": [
+        19.3,
+        22.0
+      ],
+      "breiteste_luecke": 2.6999999999999993
+    },
+    {
+      "gates": [
+        "Messlatte",
+        "Schlechtestes Jahr"
+      ],
+      "uebergang": [
+        16.0,
+        22.0
+      ],
+      "breiteste_luecke": 3.3000000000000007
+    }
+  ],
+  "punkte": [
+    {
+      "stellung": 14.0,
+      "bestanden": 8,
+      "kennzahlen": {
+        "trades": 149.0,
+        "cagr": 9.4703,
+        "rueckgang": 7.7463
+      },
+      "gates": {
+        "Stichprobengroesse": {
+          "bestanden": true,
+          "wert": 2100.0,
+          "schwelle": 250.0,
+          "uebersprungen": false
+        },
+        "Messlatte": {
+          "bestanden": false,
+          "wert": 101.541,
+          "schwelle": 30.123,
+          "uebersprungen": false
+        },
+        "Out-of-Sample-Sharpe": {
+          "bestanden": true,
+          "wert": 1.469412,
+          "schwelle": 1.0,
+          "uebersprungen": false
+        },
+        "Drawdown": {
+          "bestanden": true,
+          "wert": 7.746349,
+          "schwelle": 12.0,
+          "uebersprungen": false
+        },
+        "Schlechtestes Jahr": {
+          "bestanden": true,
+          "wert": -7.5,
+          "schwelle": -10.0,
+          "uebersprungen": false
+        },
+        "Bestaendigkeit": {
+          "bestanden": true,
+          "wert": 0.533333,
+          "schwelle": 0.5,
+          "uebersprungen": false
+        },
+        "Monte-Carlo": {
+          "bestanden": true,
+          "wert": 7.478027,
+          "schwelle": 15.0,
+          "uebersprungen": false
+        },
+        "Regime-Aufteilung": {
+          "bestanden": true,
+          "wert": 3.984771,
+          "schwelle": 0.9,
+          "uebersprungen": false
+        },
+        "Deflated Sharpe": {
+          "bestanden": false,
+          "wert": 0.869777,
+          "schwelle": 0.95,
+          "uebersprungen": false
+        },
+        "Kosten-Stress": {
+          "bestanden": true,
+          "wert": 604.015721,
+          "schwelle": 0.0,
+          "uebersprungen": false
+        },
+        "Parameter-Plateau": {
+          "bestanden": false,
+          "wert": 0.5,
+          "schwelle": 0.6,
+          "uebersprungen": false
+        }
+      }
+    },
+    {
+      "stellung": 16.0,
+      "bestanden": 8,
+      "kennzahlen": {
+        "trades": 154.0,
+        "cagr": 10.98,
+        "rueckgang": 8.461
+      },
+      "gates": {
+        "Stichprobengroesse": {
+          "bestanden": true,
+          "wert": 2164.0,
+          "schwelle": 250.0,
+          "uebersprungen": false
+        },
+        "Messlatte": {
+          "bestanden": false,
+          "wert": 124.098,
+          "schwelle": 33.334,
+          "uebersprungen": false
+        },
+        "Out-of-Sample-Sharpe": {
+          "bestanden": true,
+          "wert": 1.476477,
+          "schwelle": 1.0,
+          "uebersprungen": false
+        },
+        "Drawdown": {
+          "bestanden": true,
+          "wert": 8.460955,
+          "schwelle": 12.0,
+          "uebersprungen": false
+        },
+        "Schlechtestes Jahr": {
+          "bestanden": true,
+          "wert": -8.18,
+          "schwelle": -10.0,
+          "uebersprungen": false
+        },
+        "Bestaendigkeit": {
+          "bestanden": true,
+          "wert": 0.533333,
+          "schwelle": 0.5,
+          "uebersprungen": false
+        },
+        "Monte-Carlo": {
+          "bestanden": true,
+          "wert": 8.37544,
+          "schwelle": 15.0,
+          "uebersprungen": false
+        },
+        "Regime-Aufteilung": {
+          "bestanden": true,
+          "wert": 4.009734,
+          "schwelle": 0.9,
+          "uebersprungen": false
+        },
+        "Deflated Sharpe": {
+          "bestanden": false,
+          "wert": 0.865856,
+          "schwelle": 0.95,
+          "uebersprungen": false
+        },
+        "Kosten-Stress": {
+          "bestanden": true,
+          "wert": 92.489651,
+          "schwelle": 0.0,
+          "uebersprungen": false
+        },
+        "Parameter-Plateau": {
+          "bestanden": false,
+          "wert": 0.5,
+          "schwelle": 0.6,
+          "uebersprungen": false
+        }
+      }
+    },
+    {
+      "stellung": 19.3,
+      "bestanden": 7,
+      "kennzahlen": {
+        "trades": 152.0,
+        "cagr": 13.4713,
+        "rueckgang": 10.6401
+      },
+      "gates": {
+        "Stichprobengroesse": {
+          "bestanden": true,
+          "wert": 2163.0,
+          "schwelle": 250.0,
+          "uebersprungen": false
+        },
+        "Messlatte": {
+          "bestanden": false,
+          "wert": 166.143,
+          "schwelle": 43.639,
+          "uebersprungen": false
+        },
+        "Out-of-Sample-Sharpe": {
+          "bestanden": true,
+          "wert": 1.473454,
+          "schwelle": 1.0,
+          "uebersprungen": false
+        },
+        "Drawdown": {
+          "bestanden": true,
+          "wert": 10.640095,
+          "schwelle": 12.0,
+          "uebersprungen": false
+        },
+        "Schlechtestes Jahr": {
+          "bestanden": false,
+          "wert": -10.32,
+          "schwelle": -10.0,
+          "uebersprungen": false
+        },
+        "Bestaendigkeit": {
+          "bestanden": true,
+          "wert": 0.533333,
+          "schwelle": 0.5,
+          "uebersprungen": false
+        },
+        "Monte-Carlo": {
+          "bestanden": true,
+          "wert": 10.271388,
+          "schwelle": 15.0,
+          "uebersprungen": false
+        },
+        "Regime-Aufteilung": {
+          "bestanden": true,
+          "wert": 4.152363,
+          "schwelle": 0.9,
+          "uebersprungen": false
+        },
+        "Deflated Sharpe": {
+          "bestanden": false,
+          "wert": 0.863495,
+          "schwelle": 0.95,
+          "uebersprungen": false
+        },
+        "Kosten-Stress": {
+          "bestanden": true,
+          "wert": 109.637438,
+          "schwelle": 0.0,
+          "uebersprungen": false
+        },
+        "Parameter-Plateau": {
+          "bestanden": false,
+          "wert": 0.5,
+          "schwelle": 0.6,
+          "uebersprungen": false
+        }
+      }
+    },
+    {
+      "stellung": 22.0,
+      "bestanden": 7,
+      "kennzahlen": {
+        "trades": 152.0,
+        "cagr": 15.1584,
+        "rueckgang": 12.818
+      },
+      "gates": {
+        "Stichprobengroesse": {
+          "bestanden": true,
+          "wert": 2163.0,
+          "schwelle": 250.0,
+          "uebersprungen": false
+        },
+        "Messlatte": {
+          "bestanden": true,
+          "wert": 198.371,
+          "schwelle": 54.755,
+          "uebersprungen": false
+        },
+        "Out-of-Sample-Sharpe": {
+          "bestanden": true,
+          "wert": 1.458249,
+          "schwelle": 1.0,
+          "uebersprungen": false
+        },
+        "Drawdown": {
+          "bestanden": false,
+          "wert": 12.81799,
+          "schwelle": 12.0,
+          "uebersprungen": false
+        },
+        "Schlechtestes Jahr": {
+          "bestanden": false,
+          "wert": -12.44,
+          "schwelle": -10.0,
+          "uebersprungen": false
+        },
+        "Bestaendigkeit": {
+          "bestanden": true,
+          "wert": 0.533333,
+          "schwelle": 0.5,
+          "uebersprungen": false
+        },
+        "Monte-Carlo": {
+          "bestanden": true,
+          "wert": 11.630496,
+          "schwelle": 15.0,
+          "uebersprungen": false
+        },
+        "Regime-Aufteilung": {
+          "bestanden": true,
+          "wert": 3.959421,
+          "schwelle": 0.9,
+          "uebersprungen": false
+        },
+        "Deflated Sharpe": {
+          "bestanden": false,
+          "wert": 0.870457,
+          "schwelle": 0.95,
+          "uebersprungen": false
+        },
+        "Kosten-Stress": {
+          "bestanden": true,
+          "wert": 123.074932,
+          "schwelle": 0.0,
+          "uebersprungen": false
+        },
+        "Parameter-Plateau": {
+          "bestanden": false,
+          "wert": 0.5,
+          "schwelle": 0.6,
+          "uebersprungen": false
+        }
+      }
+    },
+    {
+      "stellung": 25.0,
+      "bestanden": 7,
+      "kennzahlen": {
+        "trades": 152.0,
+        "cagr": 17.2291,
+        "rueckgang": 14.7805
+      },
+      "gates": {
+        "Stichprobengroesse": {
+          "bestanden": true,
+          "wert": 2163.0,
+          "schwelle": 250.0,
+          "uebersprungen": false
+        },
+        "Messlatte": {
+          "bestanden": true,
+          "wert": 242.536,
+          "schwelle": 65.528,
+          "uebersprungen": false
+        },
+        "Out-of-Sample-Sharpe": {
+          "bestanden": true,
+          "wert": 1.454109,
+          "schwelle": 1.0,
+          "uebersprungen": false
+        },
+        "Drawdown": {
+          "bestanden": false,
+          "wert": 14.780525,
+          "schwelle": 12.0,
+          "uebersprungen": false
+        },
+        "Schlechtestes Jahr": {
+          "bestanden": false,
+          "wert": -14.37,
+          "schwelle": -10.0,
+          "uebersprungen": false
+        },
+        "Bestaendigkeit": {
+          "bestanden": true,
+          "wert": 0.533333,
+          "schwelle": 0.5,
+          "uebersprungen": false
+        },
+        "Monte-Carlo": {
+          "bestanden": true,
+          "wert": 13.196582,
+          "schwelle": 15.0,
+          "uebersprungen": false
+        },
+        "Regime-Aufteilung": {
+          "bestanden": true,
+          "wert": 3.975772,
+          "schwelle": 0.9,
+          "uebersprungen": false
+        },
+        "Deflated Sharpe": {
+          "bestanden": false,
+          "wert": 0.867013,
+          "schwelle": 0.95,
+          "uebersprungen": false
+        },
+        "Kosten-Stress": {
+          "bestanden": true,
+          "wert": 137.046645,
+          "schwelle": 0.0,
+          "uebersprungen": false
+        },
+        "Parameter-Plateau": {
+          "bestanden": false,
+          "wert": 0.0,
+          "schwelle": 0.6,
+          "uebersprungen": false
+        }
+      }
+    },
+    {
+      "stellung": 28.0,
+      "bestanden": 7,
+      "kennzahlen": {
+        "trades": 152.0,
+        "cagr": 19.0462,
+        "rueckgang": 16.6492
+      },
+      "gates": {
+        "Stichprobengroesse": {
+          "bestanden": true,
+          "wert": 2163.0,
+          "schwelle": 250.0,
+          "uebersprungen": false
+        },
+        "Messlatte": {
+          "bestanden": true,
+          "wert": 285.875,
+          "schwelle": 76.502,
+          "uebersprungen": false
+        },
+        "Out-of-Sample-Sharpe": {
+          "bestanden": true,
+          "wert": 1.448182,
+          "schwelle": 1.0,
+          "uebersprungen": false
+        },
+        "Drawdown": {
+          "bestanden": false,
+          "wert": 16.649227,
+          "schwelle": 12.0,
+          "uebersprungen": false
+        },
+        "Schlechtestes Jahr": {
+          "bestanden": false,
+          "wert": -16.2,
+          "schwelle": -10.0,
+          "uebersprungen": false
+        },
+        "Bestaendigkeit": {
+          "bestanden": true,
+          "wert": 0.533333,
+          "schwelle": 0.5,
+          "uebersprungen": false
+        },
+        "Monte-Carlo": {
+          "bestanden": true,
+          "wert": 14.393255,
+          "schwelle": 15.0,
+          "uebersprungen": false
+        },
+        "Regime-Aufteilung": {
+          "bestanden": true,
+          "wert": 3.986874,
+          "schwelle": 0.9,
+          "uebersprungen": false
+        },
+        "Deflated Sharpe": {
+          "bestanden": false,
+          "wert": 0.861343,
+          "schwelle": 0.95,
+          "uebersprungen": false
+        },
+        "Kosten-Stress": {
+          "bestanden": true,
+          "wert": 153.406207,
+          "schwelle": 0.0,
+          "uebersprungen": false
+        },
+        "Parameter-Plateau": {
+          "bestanden": false,
+          "wert": 0.0,
+          "schwelle": 0.6,
+          "uebersprungen": false
+        }
+      }
+    },
+    {
+      "stellung": 32.0,
+      "bestanden": 5,
+      "kennzahlen": {
+        "trades": 152.0,
+        "cagr": 22.3024,
+        "rueckgang": 18.1826
+      },
+      "gates": {
+        "Stichprobengroesse": {
+          "bestanden": true,
+          "wert": 2163.0,
+          "schwelle": 250.0,
+          "uebersprungen": false
+        },
+        "Messlatte": {
+          "bestanden": true,
+          "wert": 375.574,
+          "schwelle": 86.062,
+          "uebersprungen": false
+        },
+        "Out-of-Sample-Sharpe": {
+          "bestanden": true,
+          "wert": 1.462288,
+          "schwelle": 1.0,
+          "uebersprungen": false
+        },
+        "Drawdown": {
+          "bestanden": false,
+          "wert": 18.182642,
+          "schwelle": 12.0,
+          "uebersprungen": false
+        },
+        "Schlechtestes Jahr": {
+          "bestanden": false,
+          "wert": -17.67,
+          "schwelle": -10.0,
+          "uebersprungen": false
+        },
+        "Bestaendigkeit": {
+          "bestanden": true,
+          "wert": 0.533333,
+          "schwelle": 0.5,
+          "uebersprungen": false
+        },
+        "Monte-Carlo": {
+          "bestanden": false,
+          "wert": 16.749727,
+          "schwelle": 15.0,
+          "uebersprungen": false
+        },
+        "Regime-Aufteilung": {
+          "bestanden": true,
+          "wert": 3.967167,
+          "schwelle": 0.9,
+          "uebersprungen": false
+        },
+        "Deflated Sharpe": {
+          "bestanden": false,
+          "wert": 0.866095,
+          "schwelle": 0.95,
+          "uebersprungen": false
+        },
+        "Kosten-Stress": {
+          "bestanden": false,
+          "wert": -67.650359,
+          "schwelle": 0.0,
+          "uebersprungen": false
+        },
+        "Parameter-Plateau": {
+          "bestanden": false,
+          "wert": 0.0,
+          "schwelle": 0.6,
+          "uebersprungen": false
+        }
+      }
+    }
+  ],
+  "maerkte": [
+    "BTCUSD_BITSTAMP",
+    "ETHUSD_BITSTAMP"
+  ],
+  "intervall": "1d",
+  "versuche": 102
+}

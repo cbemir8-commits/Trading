@@ -2177,13 +2177,30 @@ def spitzenkandidat() -> Genome:
     abtippt, ist keine, auf die man Geld setzen sollte.
 
     Gemessen ueber August 2017 bis August 2026 auf BTC + ETH, Walk-Forward,
-    nach Gebuehren: 11,22 % im Jahr, 9,74 % Rueckgang, Sharpe 1,50, 156
-    Trades zu je +1,043 R. Offen bleiben Messlatte (15 % gefordert) und
-    Deflated Sharpe (0,830 gegen 0,95).
+    nach Gebuehren: 13,47 % im Jahr, 10,64 % Rueckgang, 152 Trades, Deflated
+    Sharpe 0,863 gegen 0,95. **Stand: 7 von 11 Gates.**
 
-    Das Vola-Ziel steht hier auf 19,3 - der Punkt, an dem Rueckgang und
-    schlechtestes Jahr gerade noch innerhalb der Grenzen liegen. Wer daran
-    dreht, verschiebt nur, welches Gate reisst (siehe ``betriebspunkt``).
+    Zum Vola-Ziel von 19,3 - und warum es dort bleibt
+    -------------------------------------------------
+    Hier stand einmal: "der Punkt, an dem Rueckgang und schlechtestes Jahr
+    gerade noch innerhalb der Grenzen liegen". Das stimmt nicht mehr, und der
+    Grund ist unangenehm: Die Zahl wurde unter einem Messfehler gewaehlt. Der
+    Compiler zaehlte die Konfluenz nicht in die Aufwaermphase, der sma(200) war
+    an 56 % aller Testtage undefiniert, und die Konviktion dimensionierte jede
+    Position kleiner, als die Regel es verlangt.
+
+    Mit richtiger Aufwaermphase reisst das schlechteste Jahr bei 19,3 mit
+    -10,32 % gegen -10 %. Ein Teil der scheinbaren Risikokontrolle kam also
+    aus dem Fehler, nicht aus der Regel.
+
+    **Der Wert wird trotzdem nicht nachgezogen.** Die 19,3 auf 16 zu senken,
+    weil dort wieder 8 von 11 stehen, waere eine Anpassung an die Gates - und
+    genau die Sorte Entscheidung, gegen die die ganze Zulassungsstrecke gebaut
+    ist. Der Kandidat steht bei 7 von 11, und das ist die ehrliche Zahl.
+
+    Am Ergebnis aendert die Wahl ohnehin nichts: Der Deflated Sharpe liegt
+    ueber den ganzen Regler bei 0,861 bis 0,870 und muss 0,95 erreichen
+    (siehe ``cli machbarkeit``).
     """
     return Genome(
         name="Trend 50 Tage mit Konfluenz",

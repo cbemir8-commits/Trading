@@ -30,6 +30,24 @@ from strategy.genome import Condition, Genome, Operand, Operator
 WARMUP_FACTOR = 3
 MIN_WARMUP = 30
 
+#: Indikatoren mit rekursiver Glaettung - nur sie brauchen den Zuschlag.
+#:
+#: Der Unterschied steht in ``indicators.py``: ``rolling(period,
+#: min_periods=period)`` ist nach genau ``period`` Kerzen **exakt**, die
+#: Vorgeschichte davor spielt keine Rolle mehr. ``ewm(adjust=False)`` traegt
+#: den Startwert dagegen unbegrenzt mit; dort ist der Zuschlag noetig.
+#:
+#: Vorher galt der Faktor pauschal fuer alles. Das war nach oben ungefaehrlich,
+#: nach unten aber teuer: Ein SMA(200) verlangte damit 600 Kerzen Vorlauf -
+#: mehr, als vor dem ersten Testfenster ueberhaupt vorhanden sind.
+REKURSIV = frozenset(
+    {"ema", "rsi", "atr", "atr_pct", "adx", "macd", "macd_signal"}
+)
+
+#: Parameter, die keine Periode sind und deshalb nicht in die Aufwaermphase
+#: eingehen duerfen.
+KEINE_PERIODE = frozenset({"deviations"})
+
 
 class CompiledStrategy:
     """Ein Genom als lauffaehige Strategie."""
@@ -393,20 +411,59 @@ def _atr_key(period: int) -> str:
 
 
 def _estimate_warmup(genome: Genome) -> int:
-    """Aufwaermphase aus den groessten verwendeten Perioden ableiten.
+    """Aufwaermphase aus den verwendeten Indikatorperioden ableiten.
 
     Zu kurz angesetzt entscheidet die Strategie auf ``nan``-Werten. Der
     Compiler wertet die dann zwar sicherheitshalber als 'Bedingung nicht
     erfuellt', aber das verschiebt still die ersten Signale - und im
     Walk-Forward, wo jedes Fenster neu anfaengt, faellt das nicht auf.
+
+    **Genau das ist passiert, und zwar ueber Monate.** Diese Funktion sah nur
+    ``filters``, ``entry_long`` und ``entry_short`` an. Als ``konfluenz``
+    spaeter dazukam - Zusatzbedingungen, die die Positionsgroesse bestimmen -,
+    wurde sie hier nie nachgetragen. Der Spitzenkandidat traegt seinen
+    laengsten Indikator genau dort:
+
+        entry_long    sma(50)     -> gezaehlt
+        konfluenz     sma(200)    -> nicht gezaehlt
+        konfluenz     roc(90)     -> nicht gezaehlt
+
+    Ergebnis: 150 Kerzen Vorlauf statt der noetigen 200. Der SMA(200) war
+    damit an **56 % aller Testtage** undefiniert - in jedem Fenster die ersten
+    50 von 89 Tagen. Die Bedingung ``sma50 > sma200`` galt dort still als nicht
+    erfuellt, und die Konviktion dimensionierte jede Position kleiner, als die
+    Regel es verlangt.
+
+    Der Ausstieg fehlte aus demselben Grund. Er entscheidet zwar keinen
+    Einstieg, aber er entscheidet, wann eine Position endet - was bei einer
+    Trendfolge dasselbe Gewicht hat.
     """
     longest = 0
-    for condition in [*genome.filters, *genome.entry_long, *genome.entry_short]:
+    for condition in [
+        *genome.filters,
+        *genome.entry_long,
+        *genome.entry_short,
+        *genome.exit_long,
+        *genome.exit_short,
+        *genome.konfluenz,
+    ]:
         for operand in (condition.left, condition.right):
             if operand.kind != "indicator":
                 continue
-            for value in operand.params.values():
-                longest = max(longest, value)
+            perioden = [
+                value
+                for name, value in operand.params.items()
+                if name not in KEINE_PERIODE
+            ]
+            if not perioden:
+                continue
+            noetig = max(perioden)
+            if operand.name in REKURSIV:
+                noetig *= WARMUP_FACTOR
+            # Eine Kerze mehr, damit auch ein Kreuzen am ersten Testbalken
+            # erkennbar ist - dafuer braucht es den Vorgaengerwert.
+            longest = max(longest, noetig + 1)
+
     if genome.stop.kind == "atr":
-        longest = max(longest, genome.stop.atr_period)
-    return max(MIN_WARMUP, longest * WARMUP_FACTOR)
+        longest = max(longest, genome.stop.atr_period * WARMUP_FACTOR + 1)
+    return max(MIN_WARMUP, longest)

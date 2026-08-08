@@ -2100,3 +2100,124 @@ gebaut, wenn sie durchgerechnet ist, nicht wenn sie plausibel klingt.
 Versuchszaehler unveraendert bei **102**: Beide Korrekturen sind Fehlerbehebung
 an der Messung, keine neuen Einfaelle. Es ist dieselbe Regel auf denselben
 Daten - nur richtig gemessen.
+
+---
+
+## Dreiundzwanzig. Die Konfluenz war an der Haelfte aller Testtage blind
+
+Der Nachlauf-Befund hat gezeigt, dass am Messinstrument mehr zu holen ist als
+an der Strategie. Also weiter dort gesucht - und diesmal ist der Fund
+unangenehm.
+
+### Zuerst eine widerlegte Vermutung
+
+Verdacht war, dass ``chained_curve`` die Aufwaermphase mitzaehlt, waehrend
+``_combine`` sie abschneidet - zwei Funktionen, dieselbe Kurve, verschiedene
+Grenzen. Gemessen: **2830 von 2830 Punkten liegen im Testfenster, 100 %.** Die
+Engine schreibt die Kapitalkurve erst ab dem ersten handelbaren Balken. Kein
+Fehler. Zwei Minuten, sauber widerlegt.
+
+### Der eigentliche Fund
+
+``_estimate_warmup`` im Compiler leitet die Aufwaermphase aus den verwendeten
+Indikatorperioden ab. Sie sah an:
+
+    filters, entry_long, entry_short
+
+Nicht angesehen hat sie ``konfluenz`` - und die kam erst spaeter dazu. Beim
+Spitzenkandidaten steht der laengste Indikator genau dort:
+
+    entry_long    sma(50)     gezaehlt
+    exit_long     sma(50)     nicht gezaehlt
+    konfluenz     sma(200)    nicht gezaehlt
+    konfluenz     roc(90)     nicht gezaehlt
+
+Ergebnis: 150 Kerzen Vorlauf, gebraucht wurden 200. Der sma(200) war damit an
+**56,2 % aller Testtage undefiniert** - in jedem einzelnen Fenster die ersten
+50 von 89 Tagen. Der Compiler wertet ``nan`` sicherheitshalber als "Bedingung
+nicht erfuellt", also galt ``sma50 > sma200`` dort still als falsch, und die
+Konviktion dimensionierte jede Position kleiner, als die Regel es verlangt.
+
+Der Docstring dieser Funktion warnt woertlich vor genau diesem Fall: "Zu kurz
+angesetzt entscheidet die Strategie auf nan-Werten ... und im Walk-Forward, wo
+jedes Fenster neu anfaengt, faellt das nicht auf." Er hat recht behalten, an
+sich selbst.
+
+### Die Korrektur, und warum sie den Zuschlag differenziert
+
+Gezaehlt werden jetzt alle Bedingungen, auch Konfluenz und Ausstieg. Dazu ein
+zweiter Punkt, der aus der Mathematik kommt und nicht aus der Bequemlichkeit:
+
+    rolling(period, min_periods=period)   nach period Kerzen exakt
+    ewm(adjust=False)                     traegt den Startwert unbegrenzt mit
+
+Der pauschale Zuschlag von 3x war fuer die zweite Gruppe gedacht - EMA, RSI,
+ATR, ADX. Auf einen gleitenden Durchschnitt angewandt verlangte er 600 Kerzen
+fuer einen sma(200): mehr, als vor dem ersten Testfenster ueberhaupt vorhanden
+sind. Der Zuschlag gilt jetzt nur noch fuer die rekursiven Glaettungen.
+
+Nach der Korrektur: **0,0 % blinde Testtage.**
+
+### Was das kostet - und es kostet
+
+    Kennzahl                vorher     nachher
+    Trades                     154         152
+    Jahresrendite          13,17 %     13,47 %
+    Rueckgang               9,74 %     10,64 %
+    Schlechtestes Jahr      -9,41 %    -10,32 %   <- Schwelle -10 %
+    Deflated Sharpe          0,869       0,863
+    Gates                     8/11        7/11
+
+**Der Kandidat faellt von 8 auf 7 von 11.** Die Konfluenz feuert jetzt
+richtig, die Konviktion vergroessert die Positionen bei steigendem
+Langfristtrend - das bringt Rendite (13,17 auf 13,47 %) und kostet Rueckgang
+(9,74 auf 10,64 %). Das schlechteste Jahr reisst mit -10,32 % gegen -10 %.
+
+Damit steht die unangenehme Erkenntnis: **Ein Teil der scheinbaren
+Risikokontrolle des Kandidaten kam aus einem Messfehler, nicht aus der Regel.**
+Er sah ruhiger aus, als er ist, weil eine kaputte Aufwaermphase seine
+Positionen verkleinert hat.
+
+### Was nicht getan wird
+
+Bei Vola-Ziel 16 stuenden wieder 8 von 11. Die 19,3 dorthin zu senken waere
+eine Anpassung an die Gates - genau die Sorte Entscheidung, gegen die die ganze
+Zulassungsstrecke gebaut ist. **Der Wert bleibt, der Stand ist 7 von 11.**
+
+Der Docstring des Kandidaten behauptete, die 19,3 sei "der Punkt, an dem
+Rueckgang und schlechtestes Jahr gerade noch innerhalb der Grenzen liegen".
+Das war unter dem Messfehler gewaehlt und stimmt nicht mehr; es steht jetzt
+richtig dort.
+
+### Der Regler nach der Korrektur
+
+    Vola-Ziel  Trades     p.a.       DD    schlecht. Jahr    DSR   Gates
+        14       149    9,47 %   7,75 %       -7,50 %      0,870   8/11
+        16       154   10,98 %   8,46 %       -8,18 %      0,866   8/11
+      19,3       152   13,47 %  10,64 %      -10,32 %      0,863   7/11  <- Kandidat
+        22       152   15,16 %  12,82 %      -12,44 %      0,870   7/11
+        25       152   17,23 %  14,78 %      -14,37 %      0,867   7/11
+        28       152   19,05 %  16,65 %      -16,20 %      0,861   7/11
+        32       152   22,30 %  18,18 %      -17,67 %      0,866   5/11
+
+Der Befund aus Nummer einundzwanzig **haelt**, er ist nur eine Reglerstufe
+nach unten gerutscht: Der Deflated Sharpe liegt ueber den ganzen Regler
+zwischen 0,861 und 0,870 - eine Spanne von 0,009 bei einer Luecke von 0,080.
+Ausser Reichweite. Und Messlatte gegen Rueckgangsgrenzen bleibt ein Konflikt
+ohne Fenster, jetzt zwischen 16 und 22 statt zwischen 19,3 und 25.
+
+### Bilanz der drei Messfehler
+
+    Fund                          Wirkung auf den Kandidaten
+    Nachlauf am Fensterende       DSR 0,791 -> 0,869   besser
+    Aufwaermphase der Konfluenz   8/11 -> 7/11         schlechter
+    verkettete Kurve              kein Fehler          --
+
+Zwei echte Fehler in zwei Laeufen, einer zu meinen Gunsten, einer zu meinen
+Ungunsten. Das ist der Grund, warum das Instrument vor der Strategie geprueft
+gehoert: Beide waren seit Monaten drin, beide haben jede Zahl dieses Projekts
+verschoben, und keiner von beiden war an einem auffaelligen Ergebnis zu
+erkennen - nur daran, dass man nachsieht, wie die Zahlen entstehen.
+
+Versuchszaehler unveraendert bei **102**: Fehlerbehebung an der Messung, kein
+neuer Einfall.
