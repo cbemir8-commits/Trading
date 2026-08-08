@@ -186,6 +186,13 @@ def run_portfolio_walkforward(
         report.all_trades.extend(zusammengelegt.trades)
 
     report.combined = _combine(report.windows, start)
+    # Die Fenstergewinne je Bein mitgeben. Ohne sie kann das
+    # Deflated-Sharpe-Gate nicht erkennen, dass drei fast gleiche Regeln keine
+    # drei unabhaengigen Beobachtungsreihen sind.
+    report.beine = {
+        name: [float(_fenster(b, i).metrics.net_profit) for i in gemeinsame]
+        for name, b in einzeln.items()
+    }
     log.info(
         "portfolio.fertig",
         maerkte=sorted(einzeln),

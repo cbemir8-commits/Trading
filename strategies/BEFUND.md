@@ -1425,3 +1425,88 @@ Und dieses eine Problem ist jetzt an drei Stellen unabhaengig gemessen und an
 allen dreien gleich beantwortet: Mehr Maerkte verwaessern, mehr Vergangenheit
 verwaessert, hoehere Frequenz traegt nach Kosten nicht. Der Versuchszaehler
 bleibt bei **95** - keine dieser Messungen hat eine Regel geprueft.
+
+## Siebzehn. Ein Loch im haertesten Gate - gefunden beim Versuch, es zu nutzen
+
+Die Engine kann dieselbe Regel mit mehreren Perioden gleichzeitig handeln, je
+Bein ein Anteil. Der Zweck steht seit dem ersten Tag im Docstring: "Wer eine
+Trendfolge mit 30, 50 und 80 Tagen gleichzeitig handelt, bekommt drei leicht
+verschobene Einstiegszeitpunkte statt eines einzigen. Genau daran haengt, wie
+stark das Gesamtergebnis von wenigen Trades abhaengt."
+
+Das ist die bindende Grenze des Projekts. Also gemessen, mit **vorab
+festgelegten** Faktoren 0,7 / 1,0 / 1,3 - symmetrisch um den Kandidaten, gleich
+gewichtet. Der Faktor 1,3 liegt ausserhalb des gemessenen Plateaus; das macht
+die Probe strenger, nicht milder.
+
+    Lauf                   Trades    p.a.      DD     SR/Trade    DSR (roh)
+    einzeln (1,0)             154   11,28 %   9,74 %   0,244        0,802
+    Ensemble 0,7/1,0/1,3      481    8,86 %   8,37 %   0,211        0,999
+
+**Das Gate waere bestanden gewesen.** 0,999 gegen eine Huerde von 0,95, mit
+einer Regel, die nichts Neues kann.
+
+### Warum das nicht stimmen konnte
+
+Die Formel von Bailey und Lopez de Prado setzt **unabhaengige** Beobachtungen
+voraus. Das Gate zaehlte rohe Trades. Nachgemessen an den Fenstergewinnen:
+
+    BTC@0,7 / BTC@1,0    Korrelation 0,069
+    BTC@1,0 / BTC@1,3    Korrelation 0,007
+    ETH@0,7 / ETH@1,0    Korrelation 0,884
+    ETH@0,7 / ETH@1,3    Korrelation 0,585
+
+Auf BTC liefern verschiedene Perioden tatsaechlich verschiedene Trades. Auf ETH
+sind es fast dieselben. Damit liesse sich das haerteste Gate des Systems
+umgehen, ohne die Strategie zu verbessern: Position dritteln, dreimal zaehlen.
+Wer die Perioden enger waehlt (0,9 / 1,0 / 1,1), treibt die Zahl weiter hoch und
+den Informationsgehalt gegen null.
+
+Ich habe es nicht ausgenutzt, sondern geschlossen
+(``research/unabhaengigkeit.py``).
+
+### Die Korrektur wurde gemessen, nicht behauptet
+
+Zuerst stand dort eine Formel: Bei ``k`` Beinen mit Korrelation ``rho``
+entsprechen sie ``k / (1 + (k-1) * rho)`` unabhaengigen. Eine Formel ist aber
+eine Annahme, und diese Korrektur aendert **jede Zahl im Projekt**. Also
+gegengemessen mit einem Block-Bootstrap ueber die Fenster - der setzt nichts
+voraus:
+
+    Streuung des Mittelwerts, Trades einzeln gezogen:  1,1118
+    Streuung des Mittelwerts, Fenster gezogen:         1,2782
+    effektive Stichprobe (Bootstrap):  117 von 154  (76 %)
+    effektive Stichprobe (Formel):     107 von 154  (69 %)
+
+Beide nah beieinander, die Formel leicht konservativer. Das Gate benutzt jetzt
+den **Bootstrap**, wo Fensterdaten vorliegen, und faellt sonst auf die Formel
+zurueck. Negative Korrelation gibt keinen Bonus - die Korrektur darf nur
+strenger machen, nie milder.
+
+### Was das kostet - und es ist viel
+
+    Kandidat, roher Trade-Zaehlung       DSR 0,802
+    Kandidat, effektive Stichprobe       DSR 0,534
+
+**Der Deflated Sharpe des Spitzenkandidaten war die ganze Zeit ueberschaetzt.**
+Nicht weil jemand getrickst haette, sondern weil 154 Trades auf zwei Maerkten,
+die mit 0,440 gleichlaufen, keine 154 unabhaengigen Belege sind.
+
+Der Abstand zum Gate ist damit deutlich groesser als die "53 fehlenden Trades"
+aus Abschnitt vierzehn. Bei zehn Versuchen haette dieser Kandidat mit 112
+Trades bestanden; bei 95 braeuchte er 207 **effektive** - also rund 270 rohe.
+
+### Und das Ensemble? Widerlegt, dreifach
+
+    fensterweise      12 Fenster besser, 19 schlechter, Vorzeichentest p = 0,925
+    Rendite           11,28 % -> 8,86 %, die Messlatte rueckt weiter weg
+    Gates             8 von 11 -> 7 von 11 (Regime-Aufteilung faellt zusaetzlich)
+    DSR korrigiert    0,566 statt 0,999
+
+Neunte gemessene und widerlegte Richtung. Versuchszaehler: **96**.
+
+### Was bleibt
+
+Ein Gate, das sich nicht mehr durch Zerlegen einer Position ueberlisten laesst
+- und eine ehrlichere Zahl fuer den Kandidaten. Beides macht die Lage
+schlechter und die Messung besser. In dieser Reihenfolge gehoert es berichtet.

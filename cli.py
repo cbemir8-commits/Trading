@@ -2400,6 +2400,7 @@ def abstand(
     from research.admission import load_trials
     from research.erreichbarkeit import bewerte, kennzahlen_aus_pnl
     from research.seeds import spitzenkandidat
+    from research.unabhaengigkeit import effektive_stichprobe
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -2438,6 +2439,17 @@ def abstand(
     n, sharpe, schiefe, woelbung = kennzahlen_aus_pnl(
         [t.net_pnl for t in report.all_trades]
     )
+    # **Effektive** Stichprobe, genau wie im Gate. Ohne das wuerde dieses
+    # Werkzeug einen kleineren Abstand melden, als das Gate tatsaechlich
+    # verlangt - und die Suche in die Irre schicken.
+    stichprobe = effektive_stichprobe(
+        n,
+        getattr(report, "beine", None),
+        [[float(x.net_pnl) for x in w.trades] for w in report.windows],
+    )
+    if stichprobe.effektiv != n:
+        console.print(f"[dim]{stichprobe.bericht()}[/dim]")
+    n = stichprobe.effektiv
     ergebnis = bewerte(
         trades=n, sharpe=sharpe, trials=trials, skew=schiefe, kurtosis=woelbung
     )

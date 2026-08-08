@@ -49,6 +49,7 @@ from backtest.walkforward import (
 )
 from core.models import Trade
 from research.benchmark import buy_and_hold_over_windows, scaled_hold
+from research.unabhaengigkeit import effektive_stichprobe
 from strategy.compiler import compile_genome
 from strategy.genome import Genome, SizingSpec
 
@@ -788,7 +789,11 @@ def gate_parameter_plateau(
 
 
 def gate_deflated_sharpe(
-    trades: list[Trade], trials: int, t: GateThresholds
+    trades: list[Trade],
+    trials: int,
+    t: GateThresholds,
+    beine: dict[str, list[float]] | None = None,
+    bloecke: list[list[float]] | None = None,
 ) -> GateResult:
     """Korrektur fuer die Zahl der Versuche.
 
@@ -835,10 +840,23 @@ def gate_deflated_sharpe(
     skew = float(np.mean(centred**3))
     kurtosis = float(np.mean(centred**4))
 
+    # **Effektive** Stichprobe, nicht rohe Trade-Zahl.
+    #
+    # Die Formel setzt unabhaengige Beobachtungen voraus. Wer dieselbe Regel
+    # mit drei Perioden gleichzeitig handelt, verdreifacht die Zahl der Trades,
+    # ohne dreimal so viel zu wissen: Gemessen korrelierten die Fenstergewinne
+    # zweier ETH-Perioden mit 0,884. Ohne diese Korrektur liesse sich das
+    # haerteste Gate des Systems umgehen, indem man eine Position in drei fast
+    # gleiche Teile zerlegt - gemessen sprang der Wert dabei von 0,802 auf
+    # 0,999, ohne dass die Strategie besser geworden waere.
+    #
+    # Bei einem einzelnen Bein aendert sich nichts.
+    stichprobe = effektive_stichprobe(len(pnls), beine, bloecke)
+
     dsr = deflated_sharpe_ratio(
         observed_sharpe=per_trade_sharpe,
         trials=max(trials, 1),
-        sample_size=len(pnls),
+        sample_size=stichprobe.effektiv,
         skew=skew,
         kurtosis=kurtosis,
     )
@@ -851,7 +869,13 @@ def gate_deflated_sharpe(
         threshold=t.min_deflated_sharpe,
         message=(
             f"Wahrscheinlichkeit {dsr:.1%}, dass der Vorteil nach {trials} "
-            f"Versuchen echt ist (Sharpe je Trade {per_trade_sharpe:.3f})"
+            f"Versuchen echt ist (Sharpe je Trade {per_trade_sharpe:.3f}"
+            + (
+                f", {stichprobe.effektiv} von {stichprobe.roh} Trades "
+                f"unabhaengig)"
+                if stichprobe.effektiv != stichprobe.roh
+                else ")"
+            )
             if passed
             else f"Nach {trials} getesteten Hypothesen ist der Vorteil nur zu "
             f"{dsr:.1%} echt (Sharpe je Trade {per_trade_sharpe:.3f}, Schiefe "
@@ -1091,7 +1115,13 @@ def evaluate_gates(
     report.results.append(gate_regime_split(walkforward.all_trades, frame, thresholds))
 
     report.results.append(
-        gate_deflated_sharpe(walkforward.all_trades, trials_so_far, thresholds)
+        gate_deflated_sharpe(
+            walkforward.all_trades,
+            trials_so_far,
+            thresholds,
+            getattr(walkforward, "beine", None),
+            [[float(x.net_pnl) for x in w.trades] for w in walkforward.windows],
+        )
     )
 
     if run_expensive:

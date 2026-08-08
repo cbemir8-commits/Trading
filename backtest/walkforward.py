@@ -78,6 +78,19 @@ class WalkForwardReport:
     combined: Metrics | None = None
     all_trades: list[Trade] = field(default_factory=list)
 
+    beine: dict[str, list[float]] = field(default_factory=dict)
+    """Fenstergewinne je Bein - noetig, um die **effektive** Stichprobe zu
+    bestimmen.
+
+    Das Deflated-Sharpe-Gate zaehlte rohe Trades. Wer dieselbe Regel mit drei
+    Perioden gleichzeitig handelt, verdreifacht die Zahl, ohne dreimal so viel
+    zu wissen: Auf ETH korrelierten die Fenstergewinne zweier Perioden mit
+    0,884. Ohne diese Aufschluesselung laesst sich das haerteste Gate des
+    Systems umgehen, indem man eine Position in drei fast gleiche Teile
+    zerlegt. Siehe ``research/unabhaengigkeit.py``.
+
+    Leer bei einem einzelnen Bein - dann gibt es nichts zu korrigieren."""
+
     @property
     def window_count(self) -> int:
         return len(self.windows)
