@@ -2881,5 +2881,193 @@ def landschaft(
     )
 
 
+@app.command()
+def machbarkeit(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    stufen: str = typer.Option(
+        "14,16,19.3,22,25,28,32", "--stufen",
+        help="Vola-Ziele in Prozent, durch Komma getrennt.",
+    ),
+    verfeinern: int = typer.Option(
+        0, "--verfeinern",
+        help="So viele Runden zusaetzlich messen, um ungeprueften "
+             "Zwischenraeumen nachzugehen. 0 = nur die angegebenen Stufen.",
+    ),
+    zaehlen: bool = typer.Option(
+        True, "--zaehlen/--nicht-zaehlen",
+        help="Die gemessenen Stufen auf den Versuchszaehler addieren.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Gibt es eine Vola-Einstellung, bei der alle elf Gates zugleich halten?
+
+    Eine Stufe darueber als "welche Einstellung ist die beste" - und billiger
+    zu beantworten. Der Kandidat hat genau einen freien Regler; wenn dieser
+    Regler das Ziel nicht erreichen **kann**, erspart das jede weitere Runde
+    daran.
+
+    Drei Ausgaenge mit sehr verschiedener Bedeutung:
+
+    * **Fenster** - es gibt Stellungen, an denen alles haelt.
+    * **Konflikt** - jedes Gate haelt irgendwo, nie zwei zugleich. Der Regler
+      enthaelt keine Loesung, und das ist ein Beweis, kein "knapp daneben".
+    * **Ausser Reichweite** - ein Gate haelt nirgends. Dann muss sich etwas
+      anderes aendern, und der Befund sagt, welche Groesse sich um wie viel
+      bewegen muesste.
+
+    Zwischen zwei Stufen ist nichts gemessen. Ein leeres Fenster gilt deshalb
+    nur so weit, wie die Aufloesung reicht - ``--verfeinern`` verkleinert die
+    Zwischenraeume, und das Urteil nennt die verbliebenen.
+
+    Jede gemessene Stufe zaehlt als Versuch und hebt die Huerde des Deflated
+    Sharpe. Der Zaehler wird deshalb erhoeht.
+    """
+    from decimal import Decimal
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from core.report import write_report
+    from research.admission import load_trials, save_trials
+    from research.gates import evaluate_gates
+    from research.machbarkeit import Machbarkeit, aus_gate_report
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+    from strategy.genome import Genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    frames = common_range(roh)
+    erster = next(iter(frames.values()))
+    configs = {
+        x: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+        )
+        for x in symbole
+    }
+
+    vorlage = spitzenkandidat()
+    ausgang = float(vorlage.sizing.target_vol_pct or 0.0)
+    trials_path = Path(settings.paths.state) / "trials.json"
+    trials = load_trials(trials_path)
+
+    def mit_vola(ziel: float) -> Genome:
+        daten = vorlage.model_dump()
+        daten["sizing"]["target_vol_pct"] = ziel
+        daten.pop("genome_id", None)
+        return Genome.model_validate(daten)
+
+    console.print(
+        f"\n[bold]Machbarkeit[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Strategie  {vorlage.name} ({vorlage.genome_id})\n"
+        f"  Zeitraum   {erster['open_time'].iloc[0]:%Y-%m} bis "
+        f"{erster['open_time'].iloc[-1]:%Y-%m}\n"
+        f"  Regler     Vola-Ziel, Ausgangswert {ausgang:g} %\n"
+        f"  Versuche   {trials} bisher\n"
+    )
+
+    analyse = Machbarkeit(regler="Vola-Ziel", punkte=[], einheit="%")
+
+    def messen(ziele: list[float]) -> None:
+        for ziel in ziele:
+            genome = mit_vola(ziel)
+            report = run_portfolio_walkforward(
+                frames, lambda g=genome: compile_genome(g), configs
+            )
+            if not report.windows:
+                console.print(f"[yellow]Vola-Ziel {ziel:g}: keine Fenster.[/]")
+                continue
+            gates = evaluate_gates(
+                genome, report, erster, configs[symbole[0]], trials_so_far=trials
+            )
+            kombiniert = report.combined
+            analyse.punkte.append(
+                aus_gate_report(
+                    ziel, gates,
+                    {
+                        "trades": float(len(report.all_trades)),
+                        "cagr": kombiniert.cagr_pct if kombiniert else 0.0,
+                        "rueckgang": (
+                            kombiniert.max_drawdown_pct if kombiniert else 0.0
+                        ),
+                    },
+                )
+            )
+            console.print(
+                f"[dim]  Vola-Ziel {ziel:>6g} %  "
+                f"{len(report.all_trades):>4} Trades  "
+                f"{kombiniert.cagr_pct if kombiniert else 0:>6.2f} % p.a.  "
+                f"Rueckgang "
+                f"{kombiniert.max_drawdown_pct if kombiniert else 0:>5.2f} %  "
+                f"{analyse.punkte[-1].bestanden}/{len(analyse.punkte[-1].gates)} "
+                f"Gates[/]"
+            )
+
+    messen([float(x.strip()) for x in stufen.split(",") if x.strip()])
+    if not analyse.punkte:
+        console.print("[red]Keine einzige Stufe lieferte Fenster.[/]")
+        raise typer.Exit(2)
+
+    for runde in range(verfeinern):
+        naechste = analyse.verfeinerung()
+        if not naechste:
+            break
+        console.print(f"\n[bold]Verfeinerung {runde + 1}[/]")
+        messen(naechste)
+
+    console.print("\n" + analyse.tabelle())
+    console.print(
+        "\n[dim]+ gehalten   - gerissen   o uebersprungen[/]\n"
+    )
+
+    farbe = "green" if analyse.fenster else "yellow"
+    console.print(f"[{farbe}]{analyse.urteil()}[/]\n")
+
+    # Die Werte hinter den Zeichen festhalten. Ohne das muesste man die
+    # Abtastung wiederholen, um an sie heranzukommen - und jede Wiederholung
+    # verleitet dazu, dieselben Stufen noch einmal auf den Versuchszaehler zu
+    # addieren, obwohl nichts Neues gesehen wurde.
+    nutzlast = analyse.als_payload()
+    nutzlast["maerkte"] = symbole
+    nutzlast["intervall"] = interval_obj.label
+    nutzlast["versuche"] = trials
+    ziel = write_report(nutzlast, root=Path.cwd(), kind="machbarkeit")
+    console.print(f"[dim]Werte hinter den Zeichen: {ziel}[/]")
+
+    if zaehlen:
+        # Der Ausgangswert des Kandidaten ist bereits gezaehlt - alles andere
+        # ist neu gerechnet und gesehen.
+        neue = sum(1 for p in analyse.punkte if abs(p.stellung - ausgang) > 1e-9)
+        save_trials(trials_path, trials + neue)
+        console.print(
+            f"[dim]Versuchszaehler {trials} -> {trials + neue} "
+            f"({neue} neue Stellungen).[/]"
+        )
+
+    console.print(
+        "[dim]Dieser Befehl waehlt keine Einstellung aus. Er beantwortet nur, "
+        "ob es eine geben kann - wer die beste Stufe herauspickt, hat die "
+        "Ueberanpassung begangen, gegen die das Plateau-Gate gebaut wurde.[/]"
+    )
+
+
 if __name__ == "__main__":
     app()

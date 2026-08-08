@@ -1745,3 +1745,159 @@ Strategie gewaehlt hat, sondern die Boerse.** Wer das nicht will, braucht rund
 Trades nicht greift.
 
 Beides ist vertretbar. Nur unbemerkt bleiben darf es nicht.
+
+---
+
+## Einundzwanzig. Der letzte freie Regler enthaelt keine Loesung
+
+Nach zwanzig gemessenen und widerlegten Richtungen hatte der Spitzenkandidat
+noch genau eine freie Stellschraube: das **Vola-Ziel**. Statt weiter daran zu
+drehen, ist diesmal die Frage eine Stufe darueber gestellt worden - und sie ist
+billiger zu beantworten als jede einzelne Drehung:
+
+> **Gibt es ueberhaupt eine Stellung, bei der alle elf Gates zugleich halten?**
+
+Gemessen wurde in einem Zug: sieben Stellungen von 14 bis 32 %, je mit
+**vollstaendiger** Gate-Auswertung. BTC + ETH, Tageskerzen, Walk-Forward, nach
+Gebuehren, Risikolimits scharf, Terminkalender aktiv.
+
+    Vola-Ziel                 14      16    19.3      22      25      28      32
+    ----------------------------------------------------------------------------
+    Stichprobengroesse         +       +       +       +       +       +       +
+    Messlatte                  -       -       -       -       +       +       +
+    Out-of-Sample-Sharpe       +       +       +       +       +       +       +
+    Drawdown                   +       +       +       +       -       -       -
+    Schlechtestes Jahr         +       +       +       -       -       -       -
+    Bestaendigkeit             +       +       +       +       +       +       +
+    Monte-Carlo                +       +       +       +       +       +       -
+    Regime-Aufteilung          +       +       +       +       +       +       +
+    Deflated Sharpe            -       -       -       -       -       -       -
+    Kosten-Stress              +       +       +       +       +       +       -
+    Parameter-Plateau          -       -       -       -       -       -       -
+    ----------------------------------------------------------------------------
+    bestanden               8/11    8/11    8/11    7/11    7/11    7/11    5/11
+
+**Die Antwort ist nein, und zwar aus zwei voneinander unabhaengigen Gruenden.**
+
+### Grund eins: Der Deflated Sharpe folgt dem Regler nicht
+
+    Vola-Ziel    14     16    19.3     22     25     28     32
+    DSR       0,767  0,783  0,791  0,780  0,784  0,771  0,791
+
+Ueber den ganzen Regelweg - Rendite von 9,1 auf 21,7 % p.a., Rueckgang von 6,7
+auf 17,1 % - bewegt sich der Deflated Sharpe um **0,024**. Zur Schwelle von
+0,95 fehlen an der besten Stelle **0,159**.
+
+Das ist keine knappe Sache, sondern eine Schranke: Der Regler muesste den Wert
+siebenmal weiter bewegen, als er ihn ueberhaupt bewegt. Feiner abzutasten
+aendert daran nichts - und wuerde die Lage sogar verschlechtern, weil jede
+zusaetzliche Stufe als Versuch zaehlt und die Huerde weiter hebt.
+
+Der Grund dahinter ist einfach, sobald man ihn sieht: Das Vola-Ziel skaliert
+**jede** Position mit demselben Faktor. Rendite und Schwankung wachsen
+gemeinsam, das Verhaeltnis bleibt. Ein Hebel veraendert nicht, wie gut die
+Regel den Markt trifft.
+
+### Grund zwei: Rendite und Rueckgang schliessen sich hier aus
+
+Selbst wenn der Deflated Sharpe nicht im Weg staende, ist das Fenster leer:
+
+    Gate                  haelt bei        Grenze
+    Schlechtestes Jahr    bis 19,3         -9,41 % bei 19,3, -11,45 % bei 22
+    Drawdown              bis 22           11,83 % bei 22, 12,93 % bei 25
+    Messlatte             ab 25            14,52 % p.a. bei 22, 16,77 % bei 25
+
+Die Messlatte verlangt nach oben, die beiden Rueckgangs-Gates nach unten. Es
+gibt keine Stellung dazwischen, die beides erfuellt.
+
+### Wobei die Messlatte durchfaellt - und wobei nicht
+
+Das ist der Punkt, an dem ich beim ersten Durchgang zu schnell war. Die
+Messlatte prueft **zwei** Bedingungen, und die Zeichen in der Tabelle sagen
+nicht, welche gerissen ist. Nachgemessen:
+
+    Vola-Ziel   Ertrag   Messlatte   risikobereinigt   p.a.    >= 15 %
+        14       95,8       25,4            ja        9,06 %    nein
+      19,3      160,7       39,3            ja       13,17 %    nein
+        22      185,8       49,6            ja       14,52 %    nein
+        25      232,2       55,3            ja       16,77 %      ja
+
+**Risikobereinigt schlaegt die Strategie das Halten an jeder einzelnen
+Stellung** - um das Drei- bis Vierfache. Durchgefallen ist die Messlatte
+ausschliesslich an der zweiten Bedingung: den **15 % Mindestrendite**.
+
+Und die sind, wie in ``gates.py`` seit jeher vermerkt, **kein statistisches
+Kriterium, sondern eine wirtschaftliche Entscheidung**. Der gemessene Konflikt
+lautet damit genauer:
+
+> 15 % Mindestrendite gegen 12 % Rueckgangsgrenze und -10 % schlechtestes Jahr.
+
+Drei Zahlen, die ein Mensch gesetzt hat, und die zusammen kein Fenster lassen.
+Das ist etwas grundlegend anderes als eine Strategie, die nicht funktioniert -
+und es gehoert dem Nutzer auf den Tisch, nicht in eine stille Anpassung.
+
+**Gelockert wird nichts.** Das bleibt die Regel. Aber wer eine Schwelle setzt,
+soll wissen, was sie ausschliesst.
+
+### Das Parameter-Plateau wird nach oben schlechter, nicht besser
+
+    Vola-Ziel      14     16   19.3     22     25     28     32
+    Plateau      0,50   0,50   0,50   0,50   0,00   0,00   0,00
+                 (Schwelle 0,60 - also muessen beide Nachbarn halten)
+
+Von den zwei geprueften Nachbarn haelt unten einer, oben keiner. Auch dieses
+Gate laesst sich mit dem Regler nicht einsammeln; es bewegt sich, aber in die
+falsche Richtung.
+
+### Was gemessen ist und was nicht
+
+Eine Abtastung misst Punkte, keine Strecken. Zwischen 22 und 25 liegt ein
+ungeprueftes Stueck von 3 Prozentpunkten, in dem theoretisch ein schmales
+Fenster fuer Rendite und Drawdown stecken koennte - fuer das schlechteste Jahr
+nicht, das ist bei 22 bereits mit -11,45 % gerissen.
+
+**Gemessen wird es trotzdem nicht,** und das ist eine bewusste Entscheidung:
+Der Deflated Sharpe ist nachweislich ausser Reichweite, ein Fenster kann es
+also ohnehin nicht geben. Zwei weitere Stufen zu rechnen kostete zwei Versuche
+und haette die Huerde fuer alles Kuenftige gehoben, ohne die Antwort zu
+aendern. Das Werkzeug sagt das von sich aus - siehe unten.
+
+### Das Werkzeug: ``cli machbarkeit``
+
+Der Befund ist nicht als Notiz abgelegt, sondern als pruefbares Werkzeug
+(``research/machbarkeit.py``). Es unterscheidet drei Ausgaenge, die sehr
+verschieden viel bedeuten:
+
+* **Fenster** - es gibt Stellungen, an denen alles haelt.
+* **Konflikt** - jedes Gate haelt irgendwo, nie zwei zugleich. Das ist ein
+  Beweis, dass diese Achse keine Loesung enthaelt, kein "knapp daneben".
+* **Ausser Reichweite** - ein Gate haelt nirgends, und die Spanne, ueber die
+  der Regler es bewegt, ist kleiner als der Abstand zur Schwelle.
+
+Dazu die Ehrlichkeitsschranke: Das Urteil nennt die ungeprueften
+Zwischenraeume und die Stellungen, mit denen man sie schliesst - und es sagt
+"feiner messen hilft nicht", wenn eine harte Schranke die Frage bereits
+entschieden hat. Ein "nicht machbar" traegt genau so weit, wie die Aufloesung
+reicht, und die Aufloesung steht im Urteil.
+
+**Ein Fehler im ersten Bericht, gleich mitkorrigiert:** ``Stichprobengroesse``
+wurde als "ausser Reichweite" ausgewiesen - ein Gate, das an jeder Stellung mit
+grossem Abstand bestand. Die Bedingung ``Spanne < Abstand`` allein unterscheidet
+nicht, auf welcher Seite der Schwelle man steht. Wer irgendwo haelt, ist nie
+ausser Reichweite; der Test dazu haelt es fest.
+
+### Was daraus folgt
+
+Der Spitzenkandidat ist nicht "nah dran". Er ist auf seiner einzigen freien
+Achse **nachweislich nicht zulassungsfaehig**, und zwar doppelt abgesichert.
+Damit ist auch die einundzwanzigste Richtung geschlossen - die letzte, die sich
+ohne neue Regel haette gehen lassen.
+
+Was bleibt, ist keine Stellschraube, sondern eine andere Regel: eine, die den
+Sharpe je Trade hebt statt die Positionsgroesse. Der Regler war die billige
+Hoffnung, und sie ist jetzt ausgeraeumt statt weiter mitgeschleppt.
+
+Versuchszaehler **96 -> 102** (sechs neue Stellungen; 19,3 war bereits
+gezaehlt). Die zweite Messung derselben sieben Stufen zaehlt nicht mit - es
+wurde nichts Neues gesehen, nur festgehalten, was hinter den Zeichen stand
+(``reports/machbarkeit/``).
