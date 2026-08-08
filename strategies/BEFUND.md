@@ -1493,8 +1493,11 @@ Nicht weil jemand getrickst haette, sondern weil 154 Trades auf zwei Maerkten,
 die mit 0,440 gleichlaufen, keine 154 unabhaengigen Belege sind.
 
 Der Abstand zum Gate ist damit deutlich groesser als die "53 fehlenden Trades"
-aus Abschnitt vierzehn. Bei zehn Versuchen haette dieser Kandidat mit 112
-Trades bestanden; bei 95 braeuchte er 207 **effektive** - also rund 270 rohe.
+aus Abschnitt vierzehn.
+
+> **Nachtrag vom Folgetag: Dieser Absatz war falsch.** Die Kuerzung auf 0,534
+> hielt der Gegenprobe nicht stand - siehe Abschnitt achtzehn. Der Wert des
+> Kandidaten steht wieder bei 0,802, und die 53 fehlenden Trades gelten.
 
 ### Und das Ensemble? Widerlegt, dreifach
 
@@ -1510,3 +1513,79 @@ Neunte gemessene und widerlegte Richtung. Versuchszaehler: **96**.
 Ein Gate, das sich nicht mehr durch Zerlegen einer Position ueberlisten laesst
 - und eine ehrlichere Zahl fuer den Kandidaten. Beides macht die Lage
 schlechter und die Messung besser. In dieser Reihenfolge gehoert es berichtet.
+
+## Achtzehn. Die Korrektur an der Korrektur - meine gestrige Zahl war falsch
+
+Gestern habe ich die wichtigste Zahl des Projekts geaendert: Der Deflated
+Sharpe des Spitzenkandidaten fiel von 0,802 auf 0,534, weil das Gate nicht mehr
+rohe Trades zaehlte, sondern eine per Block-Bootstrap geschaetzte effektive
+Stichprobe (111 von 154).
+
+**Diese Zahl hielt der Gegenprobe nicht stand.**
+
+Der Test, den ich haette zuerst machen muessen: dieselbe Rechnung auf Daten, bei
+denen die Antwort feststeht. Also die echten Trade-Ergebnisse durchmischen -
+damit ist jede Abhaengigkeit zerstoert - und in Bloecke **derselben
+Groessenverteilung** legen wie die echten Fenster.
+
+    echte Messung                     n_eff = 106 von 154
+    Null, unabhaengige Werte   Mittel n_eff = 143, Spanne 78 bis 154
+    Anteil der Null unter 106                  6,0 %
+
+Zwei Dinge stehen darin. Erstens: Das Verfahren kuerzt schon **ohne jede
+Abhaengigkeit** auf 93 % - allein weil die Fenster zwischen 1 und 12 Trades
+enthalten. Zweitens, und schlimmer: Bei dreissig Bloecken streut der Schaetzer
+so stark, dass er auf unabhaengigen Daten bis auf 78 faellt. Der beobachtete
+Wert liegt im sechsten Perzentil dieser Null - **nicht von Zufall zu
+unterscheiden.**
+
+Ich hatte eine Muenze geworfen und das Ergebnis als Messung ins Gate geschrieben.
+
+### Was jetzt dort steht
+
+Der verrauschte Bootstrap ist raus. An seiner Stelle steht der uebliche Weg der
+Stichprobentheorie - der Designeffekt ueber die Intraklassen-Korrelation, in
+geschlossener Form und damit bei jedem Aufruf identisch:
+
+    m0    = (N - sum(n_i^2)/N) / (k-1)
+    ICC   = (MSB - MSW) / (MSB + (m0-1) * MSW)
+    deff  = 1 + (N/k - 1) * ICC
+
+Und davor die Regel, die gestern fehlte: **Gekuerzt wird nur bei nachgewiesener
+Abhaengigkeit.** Der Designeffekt wird gegen dieselbe Permutationsnull
+gehalten; erst wenn hoechstens 5 % der Ziehungen mindestens so abhaengig
+aussehen, greift die Korrektur - und dann gegen den Median der Null kalibriert,
+damit der Anteil aus den ungleichen Blockgroessen herausfaellt.
+
+Das Ergebnis trennt genau die beiden Faelle, um die es geht:
+
+    Kandidat (2 Maerkte, 154 Trades)   ICC 0,111, p = 0,06   keine Kuerzung
+    Ensemble (6 Beine, 481 Trades)     deutlich, p < 0,05    Kuerzung greift
+
+    Kandidat   DSR 0,802  (gestern faelschlich 0,534)
+    Ensemble   DSR 0,626  (roh gezaehlt waeren es 0,999)
+
+Das Loch ist geschlossen, wo es echt ist. Der Kandidat wird nicht mehr fuer
+Rauschen bestraft. **Die 53 fehlenden Trades aus Abschnitt vierzehn gelten
+wieder.**
+
+### Ein zweiter Fehler, den ein Test aufgedeckt hat
+
+Die Funktion ersetzte die Trade-Zahl durch die **Summe der Bloecke**. Decken die
+Bloecke nur einen Teil der Trades ab - etwa weil ein Trade ausserhalb aller
+Fenster liegt -, schoebe das still eine ganz andere Stichprobengroesse ins
+Gate. Uebernommen wird jetzt der Faktor, nicht die Summe.
+
+### Was ich daraus mitnehme
+
+Die Regel gegen Ueberanpassung gilt auch fuer die Werkzeuge, die vor
+Ueberanpassung schuetzen sollen. Ein Schaetzer, der ueber Zulassung
+mitentscheidet, gehoert gegen eine bekannte Null gehalten, **bevor** er
+eingebaut wird - nicht am Tag danach.
+
+Dass die Korrektur in die mildere Richtung geht, aendert daran nichts. Eine
+Strafe, die reines Rauschen in sechs von hundert Faellen erzeugt, ist keine
+Strenge, sondern eine Muenze; wer sie einbaut, misst nicht mehr die Strategie.
+
+Versuchszaehler unveraendert bei **96** - geprueft wurde ein Werkzeug, keine
+Regel.

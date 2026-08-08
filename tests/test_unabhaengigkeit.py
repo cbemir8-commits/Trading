@@ -1,21 +1,29 @@
-"""Effektive statt roher Stichprobe - das Loch im Deflated-Sharpe-Gate.
+"""Effektive statt roher Stichprobe - und die Korrektur an der Korrektur.
 
-Gefunden beim Ausmessen eines Hebels, den ich nutzen wollte: Dieselbe Regel mit
-drei Perioden gleichzeitig gehandelt, verdreifacht die Zahl der Trades und hob
-den Deflated Sharpe von 0,802 auf 0,999 - ohne dass die Strategie besser
-geworden waere. Auf ETH korrelierten die Fenstergewinne zweier Perioden mit
-0,884.
+Zwei Tests tragen diese Datei:
 
-``test_drei_gleiche_beine_zaehlen_wie_eines`` ist der Test, um den es geht.
+* ``test_drei_gleiche_beine_werden_gekuerzt`` - das Loch, um das es geht. Wer
+  eine Position in drei fast gleiche Teile zerlegt, verdreifacht die
+  Trade-Zahl und weiss keinen Deut mehr.
+* ``test_unabhaengige_bloecke_werden_nicht_gekuerzt`` - der Gegenpol, und der
+  Grund, warum die erste Fassung falsch war. Bei dreissig Bloecken ungleicher
+  Groesse kuerzt jeder Schaetzer auch reines Rauschen; ohne Permutationsnull
+  waere aus dem Zufall eine Strafe geworden.
 """
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
+
 import numpy as np
 import pytest
 
+from core.models import Side, Trade
 from research.unabhaengigkeit import (
-    MIND_FENSTER,
+    MIND_BLOECKE,
+    SIGNIFIKANZ,
+    designeffekt,
     effektive_stichprobe,
     mittlere_korrelation,
 )
@@ -25,13 +33,20 @@ def reihe(n: int = 30, saat: int = 1) -> list[float]:
     return list(np.random.default_rng(saat).normal(5.0, 20.0, n))
 
 
-def handelsreihe(anzahl: int, *, saat: int = 4) -> list:
-    """Trades mit einem echten, aber massvollen Vorteil."""
-    from datetime import UTC, datetime, timedelta
-    from decimal import Decimal
+def unabhaengige_bloecke(
+    anzahl: int = 30, *, saat: int = 3, groessen: list[int] | None = None
+) -> list[list[float]]:
+    """Bloecke ohne jede Abhaengigkeit - aber mit ungleichen Groessen.
 
-    from core.models import Side, Trade
+    Die ungleichen Groessen sind Absicht: Genau sie ziehen jeden Schaetzer
+    nach unten, auch wenn nichts zusammenhaengt.
+    """
+    rng = np.random.default_rng(saat)
+    gr = groessen or list(rng.integers(1, 12, anzahl))
+    return [list(rng.normal(3.0, 12.0, int(g))) for g in gr]
 
+
+def handelsreihe(anzahl: int, *, saat: int = 4) -> list[Trade]:
     rng = np.random.default_rng(saat)
     t0 = datetime(2020, 1, 1, tzinfo=UTC)
     return [
@@ -53,208 +68,166 @@ def handelsreihe(anzahl: int, *, saat: int = 4) -> list:
     ]
 
 
+class TestDesigneffekt:
+    def test_unabhaengige_bloecke_werden_nicht_gekuerzt(self) -> None:
+        """**Der Test, der die erste Fassung widerlegt hat.**
+
+        Ungleiche Blockgroessen allein liessen den Bootstrap auf 78 von 154
+        fallen - ohne dass irgendetwas zusammenhing. Ohne Permutationsnull
+        waere daraus eine Strafe geworden.
+        """
+        e = designeffekt(unabhaengige_bloecke())
+
+        assert e is not None
+        assert not e.nachgewiesen
+        assert e.effektiv == e.roh
+        assert e.p_wert > SIGNIFIKANZ
+
+    def test_drei_gleiche_beine_werden_gekuerzt(self) -> None:
+        """**Das Loch, um das es geht.**
+
+        Jeder Block besteht aus identischen Werten - drei Kopien derselben
+        Beobachtung sind eine Beobachtung.
+        """
+        rng = np.random.default_rng(5)
+        bloecke = [[float(w)] * 5 for w in rng.normal(3.0, 12.0, 30)]
+
+        e = designeffekt(bloecke)
+
+        assert e is not None
+        assert e.nachgewiesen
+        assert e.p_wert <= SIGNIFIKANZ
+        assert e.effektiv < e.roh * 0.5, f"Erwartet rund 30, gemessen {e.effektiv}"
+
+    def test_teilweise_abhaengig_liegt_dazwischen(self) -> None:
+        """Schwacher gemeinsamer Anteil je Block - nachweisbar, aber nicht
+        vernichtend."""
+        rng = np.random.default_rng(8)
+        bloecke = []
+        for _ in range(40):
+            gemeinsam = float(rng.normal(0, 4))
+            bloecke.append([gemeinsam + float(rng.normal(0, 12)) for _ in range(5)])
+
+        e = designeffekt(bloecke)
+
+        assert e is not None
+        assert e.nachgewiesen
+        assert e.roh * 0.4 < e.effektiv < e.roh
+
+    def test_zu_wenige_bloecke(self) -> None:
+        assert designeffekt([[1.0, 2.0]] * 3) is None
+
+    def test_ergebnis_ist_reproduzierbar(self) -> None:
+        """Eine Groesse, die ueber Zulassung entscheidet, darf nicht bei jedem
+        Aufruf anders ausfallen."""
+        bloecke = unabhaengige_bloecke(saat=12)
+
+        a, b = designeffekt(bloecke), designeffekt(bloecke)
+
+        assert a is not None and b is not None
+        assert a.effektiv == b.effektiv
+        assert a.p_wert == b.p_wert
+
+    def test_effektiv_nie_ueber_roh(self) -> None:
+        for saat in range(6):
+            e = designeffekt(unabhaengige_bloecke(saat=saat))
+            assert e is not None and e.effektiv <= e.roh
+
+
+class TestEffektiveStichprobe:
+    def test_ohne_bloecke_bleibt_alles_wie_es_war(self) -> None:
+        """Eine Korrektur ohne Messung waere genau der Fehler, den dieses
+        Modul verhindern soll."""
+        assert effektive_stichprobe(154).effektiv == 154
+        assert effektive_stichprobe(154, {"a": reihe(31)}).effektiv == 154
+        assert effektive_stichprobe(154, None, []).effektiv == 154
+
+    def test_teilweise_bloecke_veraendern_die_zahl_nicht(self) -> None:
+        """**Der Entwurfsfehler, den ein Test aufgedeckt hat.**
+
+        Die Funktion ersetzte die Trade-Zahl durch die Summe der Bloecke.
+        Decken die Bloecke nur einen Teil ab, schoebe das still eine ganz
+        andere Stichprobengroesse ins Gate. Uebernommen wird deshalb der
+        Faktor, nicht die Summe.
+        """
+        e = effektive_stichprobe(154, None, unabhaengige_bloecke(saat=21))
+
+        assert e.roh == 154
+        assert e.effektiv == 154
+
+    def test_bericht_bei_nachweis(self) -> None:
+        rng = np.random.default_rng(5)
+        bloecke = [[float(w)] * 5 for w in rng.normal(3.0, 12.0, 30)]
+
+        text = effektive_stichprobe(150, None, bloecke).bericht()
+
+        assert "nachgewiesen" in text
+        assert "ICC" in text
+
+    def test_bericht_ohne_nachweis_nennt_die_grenze(self) -> None:
+        """Kein Nachweis heisst nicht 'keine Abhaengigkeit'."""
+        text = effektive_stichprobe(154, None, unabhaengige_bloecke()).bericht()
+
+        assert "keine nachweisbare Abhaengigkeit" in text
+        assert "Das heisst nicht, dass keine da ist" in text
+
+
 class TestMittlereKorrelation:
     def test_identische_beine_geben_eins(self) -> None:
         r = reihe()
 
         assert mittlere_korrelation({"a": r, "b": list(r)}) == pytest.approx(1.0)
 
-    def test_unabhaengige_beine_geben_ungefaehr_null(self) -> None:
-        k = mittlere_korrelation({"a": reihe(200, 1), "b": reihe(200, 2)})
-
-        assert abs(k) < 0.2
-
     def test_negative_korrelation_wird_bei_null_gekappt(self) -> None:
-        """**Kein Bonus fuer gegenlaeufige Beine.**
-
-        Sonst liesse sich die effektive Zahl ueber die rohe heben - dieselbe
-        Umgehung von der anderen Seite. Die Korrektur darf nur strenger
-        machen, nie milder.
-        """
         r = reihe(100)
-        gegen = [-x for x in r]
 
-        assert mittlere_korrelation({"a": r, "b": gegen}) == 0.0
-
-    def test_ein_bein_ohne_streuung_gilt_als_abhaengig(self) -> None:
-        """Ein Bein, das immer dasselbe liefert, traegt keine eigene
-        Information - im Zweifel gegen die Strategie."""
-        k = mittlere_korrelation({"a": reihe(50), "b": [1.0] * 50})
-
-        assert k == pytest.approx(1.0)
+        assert mittlere_korrelation({"a": r, "b": [-x for x in r]}) == 0.0
 
     def test_zu_kurze_reihen_werden_uebergangen(self) -> None:
         assert mittlere_korrelation({"a": [1.0, 2.0], "b": [1.0, 3.0]}) == 0.0
 
 
-class TestEffektiveStichprobe:
-    def test_ein_bein_bleibt_unveraendert(self) -> None:
-        """Der heutige Spitzenkandidat darf von der Korrektur nicht beruehrt
-        werden - er hat je Markt genau ein Bein."""
-        e = effektive_stichprobe(154, {"BTC": reihe(31)})
-
-        assert e.effektiv == 154
-        assert e.faktor == 1.0
-        assert "keine Korrektur" in e.bericht()
-
-    def test_ohne_angaben_bleibt_alles_wie_es_war(self) -> None:
-        assert effektive_stichprobe(154, None).effektiv == 154
-        assert effektive_stichprobe(154, {}).effektiv == 154
-
-    def test_drei_gleiche_beine_zaehlen_wie_eines(self) -> None:
-        """**Der Test, um den es geht.**
-
-        Wer eine Position in drei fast gleiche Teile zerlegt, verdreifacht die
-        Trade-Zahl und weiss keinen Deut mehr.
-        """
-        r = reihe(31)
-        e = effektive_stichprobe(481, {"a": r, "b": list(r), "c": list(r)})
-
-        assert e.korrelation == pytest.approx(1.0)
-        assert e.effektiv == pytest.approx(481 / 3, rel=0.02)
-
-    def test_drei_unabhaengige_beine_zaehlen_voll(self) -> None:
-        e = effektive_stichprobe(
-            481, {"a": reihe(200, 1), "b": reihe(200, 2), "c": reihe(200, 3)}
-        )
-
-        assert e.effektiv > 481 * 0.75
-
-    def test_teilweise_korreliert_liegt_dazwischen(self) -> None:
-        """Die gemessene Lage: BTC-Beine unkorreliert, ETH-Beine bei 0,88."""
-        basis = np.asarray(reihe(60, 7))
-        rng = np.random.default_rng(9)
-        aehnlich = list(basis + rng.normal(0, 5, 60))
-        anders = reihe(60, 11)
-
-        e = effektive_stichprobe(
-            481, {"a": list(basis), "b": aehnlich, "c": anders}
-        )
-
-        assert 481 / 3 < e.effektiv < 481
-
-    def test_zu_wenige_fenster_rechnen_konservativ(self) -> None:
-        """Ohne belastbare Schaetzung im Zweifel gegen die Strategie."""
-        kurz = [1.0, 2.0, 3.0]
-        e = effektive_stichprobe(300, {"a": kurz, "b": kurz, "c": kurz})
-
-        assert e.korrelation == 1.0
-        assert e.effektiv == 100
-
-    def test_effektiv_nie_ueber_roh(self) -> None:
-        """Die Korrektur darf nur nach unten wirken."""
-        for saat in range(5):
-            e = effektive_stichprobe(
-                400,
-                {
-                    "a": reihe(40, saat),
-                    "b": [-x for x in reihe(40, saat)],
-                    "c": reihe(40, saat + 100),
-                },
-            )
-            assert e.effektiv <= 400
-
-    def test_bericht_nennt_die_zahlen(self) -> None:
-        r = reihe(31)
-        text = effektive_stichprobe(481, {"a": r, "b": list(r), "c": list(r)}).bericht()
-
-        assert "481 rohe Trades" in text
-        assert "3 Beinen" in text
-
-
 class TestGateNutzung:
-    """Das Gate rechnet mit der effektiven Zahl - und sagt es dazu."""
-
-    def test_gate_wertet_korrelierte_beine_ab(self) -> None:
-        from backtest.walkforward import WalkForwardReport
+    def test_gate_kuerzt_bei_nachgewiesener_abhaengigkeit(self) -> None:
         from research.gates import GateThresholds, gate_deflated_sharpe
 
-        trades = handelsreihe(300)
+        trades = handelsreihe(150)
+        t = GateThresholds()
+        rng = np.random.default_rng(5)
+        abhaengig = [[float(w)] * 5 for w in rng.normal(3.0, 12.0, 30)]
+
+        ohne = gate_deflated_sharpe(trades, 96, t, None, None)
+        mit = gate_deflated_sharpe(trades, 96, t, None, abhaengig)
+
+        assert mit.value < ohne.value
+
+    def test_gate_kuerzt_nicht_ohne_nachweis(self) -> None:
+        """Der Spitzenkandidat darf nicht fuer Rauschen bestraft werden."""
+        from research.gates import GateThresholds, gate_deflated_sharpe
+
+        trades = handelsreihe(150)
         t = GateThresholds()
 
-        roh = gate_deflated_sharpe(trades, 95, t, None)
-        r = reihe(31)
-        korreliert = gate_deflated_sharpe(
-            trades, 95, t, {"a": r, "b": list(r), "c": list(r)}
-        )
+        # Bloecke, die genau diese 150 Trades abdecken - unabhaengig verteilt.
+        werte = [float(x.net_pnl) for x in trades]
+        bloecke, i = [], 0
+        for groesse in [3, 7, 2, 9, 5, 4, 11, 6, 8, 1] * 3:
+            if i >= len(werte):
+                break
+            bloecke.append(werte[i : i + groesse])
+            i += groesse
 
-        assert korreliert.value < roh.value, (
-            "Drei gleiche Beine duerfen den Wert nicht heben"
-        )
+        ohne = gate_deflated_sharpe(trades, 96, t, None, None)
+        mit = gate_deflated_sharpe(trades, 96, t, None, bloecke)
+
+        assert mit.value == pytest.approx(ohne.value)
+
+    def test_report_traegt_die_beine(self) -> None:
+        from backtest.walkforward import WalkForwardReport
+
         assert isinstance(WalkForwardReport().beine, dict)
 
-    def test_ein_bein_aendert_nichts_am_gate(self) -> None:
-        from research.gates import GateThresholds, gate_deflated_sharpe
 
-        trades = handelsreihe(300)
-        t = GateThresholds()
-
-        assert gate_deflated_sharpe(trades, 95, t, None).value == pytest.approx(
-            gate_deflated_sharpe(trades, 95, t, {"nur_eines": reihe(31)}).value
-        )
-
-
-def test_mindestfenster_ist_festgehalten() -> None:
-    assert MIND_FENSTER == 8
-
-
-class TestBootstrap:
-    """Der Bootstrap misst, die Formel schaetzt. Deshalb hat er Vorrang."""
-
-    def test_unabhaengige_bloecke_verlieren_kaum_etwas(self) -> None:
-        from research.unabhaengigkeit import bootstrap_stichprobe
-
-        rng = np.random.default_rng(3)
-        bloecke = [list(rng.normal(3.0, 12.0, 5)) for _ in range(30)]
-
-        n_eff = bootstrap_stichprobe(bloecke, ziehungen=1500)
-
-        assert n_eff is not None
-        assert n_eff > 150 * 0.8
-
-    def test_gleichlaufende_bloecke_verlieren_viel(self) -> None:
-        """Wenn innerhalb eines Fensters alle Trades dasselbe machen, ist ein
-        Fenster eine Beobachtung - nicht fuenf."""
-        from research.unabhaengigkeit import bootstrap_stichprobe
-
-        rng = np.random.default_rng(5)
-        bloecke = [[float(w)] * 5 for w in rng.normal(3.0, 12.0, 30)]
-
-        n_eff = bootstrap_stichprobe(bloecke, ziehungen=1500)
-
-        assert n_eff is not None
-        assert n_eff < 150 * 0.35, f"Erwartet rund 30, gemessen {n_eff}"
-
-    def test_zu_wenige_bloecke_geben_none(self) -> None:
-        from research.unabhaengigkeit import bootstrap_stichprobe
-
-        assert bootstrap_stichprobe([[1.0, 2.0]] * 3) is None
-
-    def test_ohne_streuung_gibt_none(self) -> None:
-        from research.unabhaengigkeit import bootstrap_stichprobe
-
-        assert bootstrap_stichprobe([[5.0] * 5 for _ in range(20)]) is None
-
-    def test_nie_mehr_als_roh(self) -> None:
-        from research.unabhaengigkeit import bootstrap_stichprobe
-
-        rng = np.random.default_rng(11)
-        bloecke = [list(rng.normal(0.0, 1.0, 4)) for _ in range(40)]
-
-        n_eff = bootstrap_stichprobe(bloecke, ziehungen=1000)
-
-        assert n_eff is not None and n_eff <= 160
-
-    def test_bootstrap_schlaegt_die_formel(self) -> None:
-        """Liegen Bloecke vor, wird gemessen statt geschaetzt."""
-        rng = np.random.default_rng(7)
-        bloecke = [list(rng.normal(3.0, 12.0, 5)) for _ in range(30)]
-        r = reihe(30)
-
-        e = effektive_stichprobe(150, {"a": r, "b": list(r)}, bloecke)
-
-        assert e.effektiv > 150 * 0.7, (
-            "Die Formel haette wegen Korrelation 1,0 auf 75 gekuerzt - "
-            "der Bootstrap sieht, dass die Trades unabhaengig sind"
-        )
-        assert "Block-Bootstrap" in e.bericht()
+def test_schwellen_sind_festgehalten() -> None:
+    assert MIND_BLOECKE == 8
+    assert SIGNIFIKANZ == 0.05

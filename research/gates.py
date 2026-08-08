@@ -844,13 +844,14 @@ def gate_deflated_sharpe(
     #
     # Die Formel setzt unabhaengige Beobachtungen voraus. Wer dieselbe Regel
     # mit drei Perioden gleichzeitig handelt, verdreifacht die Zahl der Trades,
-    # ohne dreimal so viel zu wissen: Gemessen korrelierten die Fenstergewinne
-    # zweier ETH-Perioden mit 0,884. Ohne diese Korrektur liesse sich das
-    # haerteste Gate des Systems umgehen, indem man eine Position in drei fast
-    # gleiche Teile zerlegt - gemessen sprang der Wert dabei von 0,802 auf
-    # 0,999, ohne dass die Strategie besser geworden waere.
+    # ohne dreimal so viel zu wissen - gemessen sprang der Wert dabei von 0,802
+    # auf 0,999, ohne dass die Strategie besser geworden waere.
     #
-    # Bei einem einzelnen Bein aendert sich nichts.
+    # Gekuerzt wird aber **nur bei nachgewiesener** Abhaengigkeit: Bei dreissig
+    # Bloecken ungleicher Groesse kuerzt jeder Schaetzer auch reines Rauschen,
+    # und eine Strafe, die der Zufall mit sechsprozentiger Wahrscheinlichkeit
+    # erzeugt, misst nicht mehr die Strategie. Siehe
+    # ``research/unabhaengigkeit.py``.
     stichprobe = effektive_stichprobe(len(pnls), beine, bloecke)
 
     dsr = deflated_sharpe_ratio(
