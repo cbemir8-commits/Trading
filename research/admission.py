@@ -235,6 +235,34 @@ def pick_champion(admitted: list[Candidate]) -> Candidate | None:
     return max(admitted, key=lambda c: (round(c.consistency, 2), c.sharpe))
 
 
+def ist_zugelassen(genome: Genome, path: Path | str) -> bool:
+    """Ist **dieses** Genom der zugelassene Champion?
+
+    Verglichen wird die ``genome_id``, nicht der Dateiname. Das ist der ganze
+    Punkt: Eine Datei laesst sich umbenennen und kopieren, die Kennung nicht -
+    sie ist der Hash ueber die Regeln. Ein Genom, das die elf Gates nie
+    gesehen hat, kann sich damit nicht als Champion ausgeben, indem es an der
+    richtigen Stelle liegt.
+
+    Gebraucht wird das, seit es einen Weg gibt, einen **nicht** zugelassenen
+    Kandidaten als Datei abzulegen (``cli anlagentest``). Ohne diese Pruefung
+    haette ``cli trade --echtgeld --strategie anlagentest.json`` echtes Geld
+    auf eine Strategie gesetzt, die vier Gates nicht bestanden hat.
+
+    ``name`` und ``rationale`` fliessen nicht in die Kennung ein - der Warnhinweis
+    im Namen aendert also nichts an der Identitaet.
+    """
+    file = Path(path)
+    if not file.exists():
+        return False
+    try:
+        champion = Genome.model_validate(json.loads(file.read_text()))
+    except Exception:
+        log.warning("zulassung.champion_unlesbar", pfad=str(file))
+        return False
+    return champion.genome_id == genome.genome_id
+
+
 def write_champion(candidate: Candidate, path: Path | str) -> Path:
     """Den Champion dorthin schreiben, wo ``cli trade`` ihn sucht."""
     file = Path(path)

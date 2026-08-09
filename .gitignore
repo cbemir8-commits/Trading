@@ -48,3 +48,8 @@ runtime/
 .DS_Store
 .idea/
 .vscode/
+
+# Vom Anlagentest erzeugt - ein Genom, das die Gates nicht bestanden hat.
+# Wird mit "cli anlagentest" in einer Sekunde neu geschrieben; eingecheckt
+# waere es eine Datei, die still veraltet und trotzdem massgeblich aussieht.
+strategies/anlagentest.json

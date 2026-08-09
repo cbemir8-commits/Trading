@@ -291,3 +291,27 @@ class TestControlEndpoints:
         body = client.post("/api/control/kill").json()
 
         assert "naechsten Kerze" in body["hinweis"]
+
+
+def test_die_meldung_nennt_den_schluessel_den_es_wirklich_gibt(
+    open_client: TestClient,
+) -> None:
+    """**Eine Fehlermeldung, die im Kreis schickt, ist schlimmer als keine.**
+
+    Hier stand zweimal ``WEB__PASSWORD_HASH``. Der Schluessel heisst aber
+    ``WEB__PASSWORD``. Wer der Meldung folgte, trug den falschen Namen in die
+    ``.env`` ein, startete neu - und bekam dieselbe Meldung wieder. Genau auf
+    diesem Weg liegt der Not-Aus.
+
+    Geprueft wird, was der Nutzer zu sehen bekommt, und der erwartete Name
+    kommt aus dem Einstellungsmodell: Wer das Feld umbenennt, faellt hier auf.
+    """
+    assert "password" in WebSettings.model_fields
+    schluessel = f"WEB__{'password'.upper()}"
+
+    antwort = open_client.post("/api/control/kill")
+
+    assert antwort.status_code == 403
+    text = antwort.json()["detail"]
+    assert schluessel in text
+    assert f"{schluessel}_HASH" not in text

@@ -1629,6 +1629,43 @@ def trade(
     genome = Genome.model_validate(json.loads(path.read_text()))
     strategy = compile_genome(genome)
 
+    # -- 2b. Echtes Geld nur fuer ein zugelassenes Genom ---------------------
+    #
+    # Die Sperre oben fragt nach der *Umgebung*, diese nach der **Strategie**.
+    # Beides ist noetig, seit ``cli anlagentest`` einen nicht zugelassenen
+    # Kandidaten als Datei ablegen kann: Ohne diese Pruefung wuerde
+    # ``--echtgeld --strategie anlagentest.json`` echtes Geld auf etwas
+    # setzen, das vier Gates nicht bestanden hat.
+    #
+    # Verglichen wird die Kennung gegen champion.json, nicht der Dateiname -
+    # eine Datei laesst sich umbenennen, der Hash ueber die Regeln nicht.
+    from research.admission import ist_zugelassen
+
+    zugelassen = ist_zugelassen(
+        genome, Path(settings.paths.strategies) / "champion.json"
+    )
+    if settings.bybit.environment.is_real_money and not zugelassen:
+        console.print(
+            "[red]Dieses Genom ist nicht zugelassen - kein echtes Geld.[/]\n"
+            f"  {genome.name} [{genome.genome_id}]\n"
+            "Echtgeld gibt es nur fuer den Champion aus champion.json, und der "
+            "entsteht erst, wenn alle elf Gates bestanden sind.\n"
+            "[dim]Auf Demo laeuft dieses Genom - dort wird die Technik "
+            "geprueft, nicht die Strategie.[/]"
+        )
+        raise typer.Exit(2)
+
+    if not zugelassen:
+        console.print(
+            "\n[yellow]ANLAGENTEST - dieses Genom ist nicht zugelassen.[/]\n"
+            f"  {genome.name} [{genome.genome_id}]\n"
+            "[dim]Geprueft wird die Technik: Orders, Stops, Neustart mitten in "
+            "einer Position, Meldungen, Not-Aus.\n"
+            "**Die dreissig Tage Demo aus dem Plan beginnen hiermit nicht** - "
+            "die pruefen eine Strategie gegen ihre Backtest-Erwartung, und "
+            "diese hier hat ihre Gates noch nicht bestanden.[/]\n"
+        )
+
     # -- 3. Kill-Switch ------------------------------------------------------
     # Vor jeder Verbindung: Ein abgeschaltetes System soll sich nicht erst
     # noch bei der Boerse anmelden.
@@ -3664,6 +3701,85 @@ def marktkombinationen(
         root=Path.cwd(), kind="marktkombinationen",
     )
     console.print(f"[dim]Vollstaendig: {ziel}[/]")
+
+
+@app.command()
+def anlagentest(
+    ziel: str = typer.Option(
+        "", "--ziel", help="Zieldatei. Standard: <strategies>/anlagentest.json"
+    ),
+) -> None:
+    """Den Spitzenkandidaten als Datei ablegen - fuer den Technik-Test auf Demo.
+
+    **Was das ist und was nicht.** Es gibt zwei Dinge, die beide "Demo"
+    heissen, und sie pruefen Verschiedenes:
+
+        Anlagentest      Orders, Stops, Neustart mitten in einer Position,
+                         Telegram, Not-Aus  ->  prueft die **Technik**
+        Dreissig Tage    Live-Kennzahlen gegen die Backtest-Erwartung
+                         ->  prueft die **Strategie**
+
+    Der Anlagentest geht heute. Die dreissig Tage nicht: Sie vergleichen eine
+    zugelassene Strategie mit dem, was der Backtest versprochen hat, und
+    dieser Kandidat hat seine Gates noch nicht bestanden. Wie weit er kommt,
+    sagt ``cli stand`` - gemessen, nicht hier hineingeschrieben.
+
+    Damit das nirgends verwechselt werden kann, traegt die Datei den Hinweis
+    **im Namen** der Strategie. Der taucht dann ueberall auf, wo sie genannt
+    wird: im Dashboard, in den Telegram-Meldungen, im Journal. Die Kennung
+    bleibt davon unberuehrt - ``name`` und ``rationale`` fliessen nicht in den
+    Hash ein.
+
+    Echtes Geld ist auf dieser Datei gesperrt. ``cli trade --echtgeld``
+    vergleicht die Kennung gegen ``champion.json`` und bricht ab, wenn sie
+    nicht uebereinstimmt.
+    """
+    import json
+    from pathlib import Path
+
+    from research.seeds import spitzenkandidat
+
+    settings = get_settings()
+    genome = spitzenkandidat()
+    markiert = genome.model_copy(
+        update={"name": f"NICHT ZUGELASSEN (Anlagentest) - {genome.name}"}
+    )
+    pfad = Path(ziel) if ziel else Path(settings.paths.strategies) / "anlagentest.json"
+    pfad.parent.mkdir(parents=True, exist_ok=True)
+    pfad.write_text(json.dumps(markiert.model_dump(mode="json"), indent=2))
+
+    console.print(
+        f"\n[bold]Anlagentest-Genom geschrieben[/] {pfad}\n"
+        f"  Strategie  {markiert.name}\n"
+        f"  Kennung    {markiert.genome_id}  (unveraendert - der Hinweis steht "
+        f"nur im Namen)\n"
+    )
+    console.print(
+        "[yellow]Das ist keine zugelassene Strategie.[/]\n"
+        "[dim]Geprueft wird damit die Technik, nicht die Strategie - und "
+        "echtes Geld ist darauf gesperrt. Wie weit der Kandidat kommt, sagt "
+        "'python -m cli stand'.[/]\n"
+    )
+    console.print(
+        "[bold]So laeuft der Test[/] - drei Schritte, alle auf deinem Rechner:\n"
+        "  1  python -m cli healthcheck"
+        "          [dim]bietet das Konto ueberhaupt Perpetuals?[/]\n"
+        "  2  python -m cli backfill --intervall 15"
+        "   [dim]Kerzen laden[/]\n"
+        "  3  ./start.sh --anlagentest"
+        "             [dim]Website und Handel zusammen[/]\n"
+    )
+    console.print(
+        "[dim]Fuer den Not-Aus auf der Website muss WEB__PASSWORD in der .env "
+        "stehen. Ohne das bleibt die Ansicht, aber Pause, Glattstellen und "
+        "Not-Aus sind gesperrt.[/]\n"
+    )
+    console.print(
+        "[bold]Der eigentliche Test[/] ist unbequem, und genau der zaehlt: "
+        "Den Prozess mitten in einer offenen Position hart abschiessen und bei "
+        "Bybit nachsehen, ob der Stop noch an der Position haengt. Dafuer wird "
+        "er dort gesetzt und nicht im Arbeitsspeicher gehalten.\n"
+    )
 
 
 @app.command()

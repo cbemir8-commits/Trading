@@ -3624,3 +3624,87 @@ die Blockvariante je weg, faellt dieser Test.
 
 Der Versuchszaehler bleibt bei **130**: Hier wurde kein Backtest gerechnet,
 sondern eine vorhandene Trade-Liste geteilt. Stand unveraendert: **7 von 11**.
+
+## Vierzig. Der Weg zum Demo-Handel - und eine Fehlermeldung, die im Kreis schickte
+
+Der Nutzer will anfangen zu handeln. Nachgesehen statt geschaetzt: Die Website
+laeuft (HTTP 200, die API antwortet mit ``"alive": false, "status_text": "nie
+gestartet"``), aber ``strategies/`` enthaelt nur dieses Laborbuch. ``start.sh``
+bricht ab, mit gutem Grund.
+
+### Zwei Dinge heissen "Demo" und pruefen Verschiedenes
+
+    Anlagentest    Orders, Stops, Neustart mitten in einer Position,
+                   Telegram, Not-Aus            ->  prueft die **Technik**
+    Dreissig Tage  Live-Kennzahlen gegen die Backtest-Erwartung
+                                                ->  prueft die **Strategie**
+
+Der Anlagentest geht heute und ist genau das, was von hier aus nicht geht -
+der Entwicklungscontainer ist regionsgesperrt. Die dreissig Tage gehen nicht:
+Sie vergleichen eine zugelassene Strategie mit dem, was der Backtest
+versprochen hat, und es gibt keine zugelassene.
+
+``cli anlagentest`` legt den Spitzenkandidaten als Datei ab. Der Hinweis steht
+**im Namen** der Strategie, nicht in einem Kommentar:
+
+    NICHT ZUGELASSEN (Anlagentest) - Trend 50 Tage mit Konfluenz
+
+Damit taucht er ueberall auf, wo die Strategie genannt wird - Dashboard,
+Telegram-Meldungen, Journal. Die Kennung bleibt unveraendert bei
+``111cc2ecd5d53968``: ``name`` und ``rationale`` fliessen nicht in den Hash
+ein, und das ist hier keine Kleinigkeit, sondern die Voraussetzung dafuer,
+dass alle bisherigen Messungen weiter zu dieser Datei gehoeren.
+
+### Die Sperre, die dieser Bequemlichkeit vorausgehen muss
+
+Bisher pruefte ``cli trade`` beim Echtgeld nur die **Umgebung** - steht
+``BYBIT__ENVIRONMENT`` auf mainnet, dann bitte ``--echtgeld`` dazu. Welche
+*Strategie* dabei laeuft, war egal: ``--strategie`` nahm jede Datei. Solange
+es keinen einfachen Weg gab, ein nicht zugelassenes Genom abzulegen, fiel das
+nicht auf. Mit ``cli anlagentest`` gibt es ihn.
+
+Deshalb zuerst die Bremse, dann die Bequemlichkeit:
+
+    Echtgeld gibt es nur, wenn die genome_id mit champion.json uebereinstimmt.
+
+Verglichen wird die **Kennung**, nicht der Dateiname. Eine Datei laesst sich
+umbenennen und an die richtige Stelle legen, der Hash ueber die Regeln nicht.
+Ein Test schiebt genau das unter und verlangt den Abbruch; ein zweiter prueft
+die Gegenrichtung, denn eine Sperre, die auch den Champion aufhaelt, waere ein
+Fehler und keine Sperre.
+
+Auf Demo laeuft das Genom - mit einem Banner, das sagt, was gerade geprueft
+wird und was nicht.
+
+### Und der Fehler, der schon laenger dalag
+
+Das Dashboard meldet ohne Passwort: *"Kein WEB__PASSWORD_HASH gesetzt -
+Steuerung ist gesperrt."* Der Schluessel heisst aber **WEB__PASSWORD**. Ein
+Hash waere hier ohnehin Sicherheitstheater - wer die ``.env`` lesen kann, hat
+die API-Zugangsdaten, und die sind mehr wert; so steht es auch in
+``core/config.py``.
+
+Wer der Meldung folgte, trug den falschen Namen ein, startete neu und bekam
+dieselbe Meldung wieder. Auf genau diesem Weg liegt der **Not-Aus**: Ohne
+Passwort bleibt die Ansicht, aber Pause, Glattstellen und Not-Aus sind
+gesperrt. Zwei Zeichenketten, und sie standen zwischen dem Nutzer und dem
+Knopf, den er im Ernstfall braucht.
+
+Der Test dazu prueft nicht den Quelltext, sondern die Antwort, die der Nutzer
+bekommt - HTTP 403 mit dem Namen der Einstellung, und der Name kommt aus dem
+Einstellungsmodell statt danebengeschrieben.
+
+### Was der Nutzer jetzt tun kann
+
+    1  python -m cli healthcheck    bietet das Konto ueberhaupt Perpetuals?
+    2  python -m cli backfill --intervall 15
+    3  ./start.sh --anlagentest     Website und Handel zusammen
+
+``--anlagentest`` ist ein eigener Schalter und kein stiller Rueckfall: Wer ihn
+tippt, weiss, dass die Klempnerei geprueft wird. Der eigentliche Test ist
+unbequem und zaehlt am meisten - den Prozess mitten in einer offenen Position
+hart abschiessen und bei Bybit nachsehen, ob der Stop noch an der Position
+haengt.
+
+Versuchszaehler unveraendert bei **130** - hier wurde nichts gemessen, was
+eine Strategie betrifft. Stand: **7 von 11**.

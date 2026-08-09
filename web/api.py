@@ -107,7 +107,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     if read_only:
         log.warning(
             "dashboard.nur_lesen",
-            hinweis="Kein WEB__PASSWORD_HASH gesetzt - Steuerung ist gesperrt. "
+            # **Der Schluessel heisst WEB__PASSWORD, nicht ..._HASH.**
+            # Hier stand zweimal der falsche Name. Wer der Meldung folgte,
+            # trug WEB__PASSWORD_HASH in die .env ein, startete neu - und
+            # bekam dieselbe Meldung wieder. Eine Fehlermeldung, die im Kreis
+            # schickt, ist schlimmer als keine.
+            hinweis="Kein WEB__PASSWORD gesetzt - Steuerung ist gesperrt. "
             "Ein Not-Aus-Knopf ohne Passwort waere schlimmer als keiner.",
         )
 
@@ -119,7 +124,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(
                 403,
                 "Steuerung gesperrt: kein Passwort gesetzt. "
-                "In der .env WEB__PASSWORD_HASH setzen und neu starten.",
+                "In der .env WEB__PASSWORD setzen und neu starten.",
             )
         if not sessions.valid(session):
             raise HTTPException(401, "Nicht angemeldet")

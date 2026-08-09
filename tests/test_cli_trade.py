@@ -41,6 +41,19 @@ GENOME = {
     "targets": [{"rr": 1.5, "portion": 0.5}, {"rr": 3.0, "portion": 0.5}],
 }
 
+#: Ein zweites Genom mit anderen Regeln - fuer die Frage, ob die Zulassung an
+#: der Kennung haengt oder nur am Dateinamen.
+ANDERES_GENOME = {
+    **GENOME,
+    "entry_long": [
+        {
+            "left": {"kind": "indicator", "name": "ema", "params": {"period": 11}},
+            "op": "gt",
+            "right": {"kind": "indicator", "name": "ema", "params": {"period": 30}},
+        }
+    ],
+}
+
 
 @pytest.fixture
 def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -178,6 +191,148 @@ class TestArgumentValidation:
 
         # Scheitert danach an der fehlenden Boersenverbindung, nicht am Argument.
         assert "perpetual oder spot" not in result.output
+
+
+class TestZulassungsSperre:
+    """**Echtes Geld nur fuer das Genom, das die elf Gates bestanden hat.**
+
+    Die Sperre eine Klasse weiter oben fragt nach der *Umgebung*, diese nach
+    der **Strategie**. Beides ist noetig, seit ``cli anlagentest`` einen nicht
+    zugelassenen Kandidaten als Datei ablegen kann: Ohne diese Pruefung
+    wuerde ``--echtgeld -s anlagentest.json`` echtes Geld auf etwas setzen,
+    das vier Gates nicht bestanden hat.
+    """
+
+    def test_echtgeld_verlangt_den_champion(
+        self, workspace: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("BYBIT__ENVIRONMENT", "mainnet")
+        get_settings.cache_clear()
+        fremd = workspace / "anlagentest.json"
+        fremd.write_text(json.dumps(GENOME))
+
+        result = runner.invoke(
+            app, ["trade", "--trocken", "--echtgeld", "-s", str(fremd)]
+        )
+
+        assert result.exit_code == 2
+        assert "nicht zugelassen" in result.output
+        assert "champion.json" in result.output
+
+    def test_der_dateiname_hilft_nicht(
+        self, workspace: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """**Der Kern der Pruefung.**
+
+        Ein Genom, das die Gates nie gesehen hat, darf sich nicht dadurch als
+        Champion ausgeben, dass es an der richtigen Stelle liegt. Verglichen
+        wird die Kennung, nicht der Pfad.
+        """
+        monkeypatch.setenv("BYBIT__ENVIRONMENT", "mainnet")
+        get_settings.cache_clear()
+        strategien = workspace / "strategies"
+        strategien.mkdir(exist_ok=True)
+        (strategien / "champion.json").write_text(json.dumps(ANDERES_GENOME))
+        untergeschoben = workspace / "untergeschoben.json"
+        untergeschoben.write_text(json.dumps(GENOME))
+
+        result = runner.invoke(
+            app, ["trade", "--trocken", "--echtgeld", "-s", str(untergeschoben)]
+        )
+
+        assert result.exit_code == 2
+        assert "nicht zugelassen" in result.output
+
+    def test_der_champion_darf_echtes_geld_sehen(
+        self, workspace: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Die Gegenprobe: Eine Sperre, die auch den Champion aufhaelt, waere
+        keine Sperre, sondern ein Fehler."""
+        monkeypatch.setenv("BYBIT__ENVIRONMENT", "mainnet")
+        get_settings.cache_clear()
+        write_genome(workspace)
+
+        result = runner.invoke(app, ["trade", "--trocken", "--echtgeld"])
+
+        assert "nicht zugelassen" not in result.output
+
+    def test_ein_umbenanntes_genom_bleibt_zugelassen(self, workspace: Path) -> None:
+        """``name`` und ``rationale`` fliessen nicht in die Kennung ein - der
+        Warnhinweis im Namen darf die Identitaet nicht veraendern."""
+        from research.admission import ist_zugelassen
+        from strategy.genome import Genome
+
+        write_genome(workspace)
+        champion = workspace / "strategies" / "champion.json"
+        umbenannt = Genome.model_validate(GENOME).model_copy(
+            update={"name": "NICHT ZUGELASSEN (Anlagentest) - Testgenom"}
+        )
+
+        assert ist_zugelassen(umbenannt, champion)
+
+    def test_auf_demo_laeuft_es_mit_lautem_hinweis(self, workspace: Path) -> None:
+        """Auf Demo soll der Anlagentest gehen - aber niemand soll ihn fuer
+        die dreissig Tage aus dem Plan halten."""
+        fremd = workspace / "anlagentest.json"
+        fremd.write_text(json.dumps(GENOME))
+
+        result = runner.invoke(app, ["trade", "--trocken", "-s", str(fremd)])
+
+        assert "ANLAGENTEST" in result.output
+        assert "dreissig Tage" in result.output
+
+
+class TestIstZugelassen:
+    def test_ohne_champion_ist_nichts_zugelassen(self, tmp_path: Path) -> None:
+        from research.admission import ist_zugelassen
+        from strategy.genome import Genome
+
+        assert not ist_zugelassen(
+            Genome.model_validate(GENOME), tmp_path / "gibtsnicht.json"
+        )
+
+    def test_kaputte_champion_datei_gilt_als_nicht_zugelassen(
+        self, tmp_path: Path
+    ) -> None:
+        """Die sichere Richtung: Wer die Datei nicht lesen kann, weiss nicht,
+        ob sie passt - und darf dann kein echtes Geld freigeben."""
+        from research.admission import ist_zugelassen
+        from strategy.genome import Genome
+
+        kaputt = tmp_path / "champion.json"
+        kaputt.write_text("{nicht mal JSON")
+
+        assert not ist_zugelassen(Genome.model_validate(GENOME), kaputt)
+
+
+class TestAnlagentestBefehl:
+    def test_schreibt_eine_datei_mit_warnung_im_namen(self, workspace: Path) -> None:
+        """Der Hinweis gehoert in den **Namen**: Der taucht dann ueberall auf,
+        wo die Strategie genannt wird - Dashboard, Telegram, Journal."""
+        from research.seeds import spitzenkandidat
+        from strategy.genome import Genome
+
+        result = runner.invoke(app, ["anlagentest"])
+
+        assert result.exit_code == 0
+        datei = workspace / "strategies" / "anlagentest.json"
+        geschrieben = Genome.model_validate(json.loads(datei.read_text()))
+        assert "NICHT ZUGELASSEN" in geschrieben.name
+        # Und die Kennung bleibt die gemessene - sonst waeren alle Zahlen,
+        # die zu diesem Kandidaten gehoeren, ploetzlich die eines anderen.
+        assert geschrieben.genome_id == spitzenkandidat().genome_id
+
+    def test_die_datei_ist_kein_champion(self, workspace: Path) -> None:
+        from research.admission import ist_zugelassen
+        from strategy.genome import Genome
+
+        runner.invoke(app, ["anlagentest"])
+        datei = workspace / "strategies" / "anlagentest.json"
+        geschrieben = Genome.model_validate(json.loads(datei.read_text()))
+
+        assert not ist_zugelassen(
+            geschrieben, workspace / "strategies" / "champion.json"
+        )
 
 
 def test_trade_command_is_registered() -> None:
