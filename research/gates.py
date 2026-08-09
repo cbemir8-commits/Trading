@@ -803,9 +803,30 @@ def gate_parameter_plateau(
     mit ihm profitabel ist - nicht jedes Bein einzeln. Die Frage lautet, ob die
     gehandelte Aufstellung auf einem Plateau steht, und gehandelt wird die
     Summe.
+
+    **Gewertet wird die schwaechste Dimension, nicht der Durchschnitt.**
+
+    Das ist der Punkt, an dem ein groesserer Nachbarschaftsbereich sonst zur
+    Schoenfaerberei wird. Gemessen am Spitzenkandidaten auf BTC + ETH:
+
+        alle gemeinsam    1 von 2      sma(200)         2 von 2
+        sma(50)           1 von 2      roc(90)          2 von 2
+        rsi(14)           2 von 2      Vola-Fenster     2 von 2
+
+    Zehn von zwoelf Nachbarn sind profitabel - das klingt nach Plateau. Es
+    heisst aber nur, dass vier Perioden nichts bewirken: Ob ``rsi(14)`` auf 11
+    oder 17 steht, aendert das Ergebnis um weniger als ein Prozent. Vier
+    wirkungslose Regler stimmen die eine Dimension nieder, an der die
+    Strategie tatsaechlich haengt.
+
+    Ein Plateau ist man in **jeder** Richtung oder gar nicht. Deshalb ist der
+    Wert des Gates das Minimum ueber die Stellgroessen. Nebenwirkung, und eine
+    erwuenschte: Weil die gemeinsame Verschiebung eine der Stellgroessen ist,
+    liegt das Minimum nie ueber dem alten Zwei-Punkte-Wert - das Gate kann
+    durch den groesseren Bereich nirgends milder werden, nur strenger.
     """
-    neighbours = list(_vary_periods(genome, variation))
-    if not neighbours:
+    nachbarn = list(nachbarschaft(genome, variation))
+    if not nachbarn:
         return GateResult(
             name="Parameter-Plateau",
             status=GateStatus.SKIP,
@@ -815,8 +836,9 @@ def gate_parameter_plateau(
         )
 
     beine = _beine(frames, configs, frame, config)
-    profitable = 0
-    for neighbour in neighbours:
+    je_stellgroesse: dict[str, list[bool]] = {}
+    namen: dict[str, str] = {}
+    for stellgroesse, neighbour in nachbarn:
         gewinn = sum(
             Backtester(cfg)
             .run(
@@ -827,11 +849,21 @@ def gate_parameter_plateau(
             .net_profit
             for teil, cfg in beine
         )
-        if gewinn > 0:
-            profitable += 1
+        je_stellgroesse.setdefault(stellgroesse.kennung, []).append(gewinn > 0)
+        namen[stellgroesse.kennung] = stellgroesse.name
 
-    ratio = profitable / len(neighbours)
+    quoten = {
+        kennung: sum(werte) / len(werte) for kennung, werte in je_stellgroesse.items()
+    }
+    schwaechste = min(quoten, key=lambda k: (quoten[k], namen[k]))
+    ratio = quoten[schwaechste]
     passed = ratio >= t.min_plateau_ratio
+
+    gesamt = sum(sum(w) for w in je_stellgroesse.values())
+    uebersicht = ", ".join(
+        f"{namen[k]} {sum(je_stellgroesse[k])}/{len(je_stellgroesse[k])}"
+        for k in sorted(quoten, key=lambda k: (quoten[k], namen[k]))
+    )
 
     return GateResult(
         name="Parameter-Plateau",
@@ -839,10 +871,13 @@ def gate_parameter_plateau(
         value=ratio,
         threshold=t.min_plateau_ratio,
         message=(
-            f"{profitable} von {len(neighbours)} Nachbar-Varianten profitabel"
+            f"Schwaechste Richtung {namen[schwaechste]} mit {ratio:.0%} "
+            f"({gesamt} von {len(nachbarn)} Nachbarn insgesamt profitabel). "
+            f"{uebersicht}"
             if passed
-            else f"Nur {profitable} von {len(neighbours)} Nachbarn profitabel - "
-            "die Strategie steht auf einer Nadelspitze, nicht auf einem Plateau."
+            else f"{namen[schwaechste]} traegt nur {ratio:.0%} - in dieser "
+            f"Richtung steht die Strategie auf einer Nadelspitze, nicht auf "
+            f"einem Plateau. {uebersicht}"
         ),
     )
 
@@ -1046,8 +1081,74 @@ def _feldgrenzen(feld, *, standard: tuple[int, int]) -> tuple[int, int]:
     return unten, oben
 
 
-def skaliere_perioden(genome: Genome, faktor: float) -> Genome | None:
+@dataclass(frozen=True, slots=True)
+class Stellgroesse:
+    """Eine Periode, die sich fuer sich allein verstellen laesst.
+
+    Die Einheit ist **nicht** die einzelne Zahl im Genom, sondern der
+    *Operand*: ``sma(50)`` kommt beim Spitzenkandidaten dreimal vor - im
+    Einstieg, im Ausstieg und in der Konfluenz - und ist trotzdem eine
+    Stellgroesse. Wer nur eines der drei Vorkommen verschiebt, baut eine Regel,
+    die ueber dem 50-Tage-Schnitt einsteigt und unter dem 40-Tage-Schnitt
+    aussteigt: kein Nachbar, sondern eine andere Strategie.
+
+    Zwei *verschiedene* Operanden duerfen dagegen sehr wohl einzeln wandern.
+    ``sma(50) > sma(200)`` mit 160 statt 200 ist ein voellig normaler
+    Trendfilter - und die Frage, ob die 200 eine Zauberzahl ist, laesst sich
+    anders gar nicht stellen.
+    """
+
+    name: str
+    kennung: str
+
+
+#: Kennung fuer die gemeinsame Verschiebung aller Perioden.
+GEMEINSAM = "*"
+
+
+def _operand_kennung(operand: dict) -> str:
+    teile = ",".join(f"{k}={v}" for k, v in sorted(operand["params"].items()))
+    return f"{operand['name']}({teile})"
+
+
+def stellgroessen(genome: Genome) -> tuple[Stellgroesse, ...]:
+    """Alle einzeln verstellbaren Perioden eines Genoms, ohne Doppelte."""
+    payload = genome.model_dump(mode="json")
+    gefunden: dict[str, Stellgroesse] = {}
+
+    for section in _PERIODEN_ABSCHNITTE:
+        for condition in payload.get(section, []):
+            for side in ("left", "right"):
+                operand = condition[side]
+                if operand["kind"] != "indicator" or not operand["params"]:
+                    continue
+                kennung = _operand_kennung(operand)
+                gefunden.setdefault(kennung, Stellgroesse(kennung, kennung))
+
+    if payload["stop"]["kind"] == "atr":
+        gefunden.setdefault("stop", Stellgroesse("Stop-ATR", "stop"))
+    if (payload.get("sizing") or {}).get("vol_period"):
+        gefunden.setdefault("sizing", Stellgroesse("Vola-Fenster", "sizing"))
+
+    return tuple(gefunden.values())
+
+
+#: Die Abschnitte, in denen Perioden stehen. **Alle** - siehe
+#: ``skaliere_perioden``.
+_PERIODEN_ABSCHNITTE = (
+    "entry_long", "entry_short", "exit_long", "exit_short", "filters", "konfluenz",
+)
+
+
+def skaliere_perioden(
+    genome: Genome, faktor: float, *, nur: str | None = None
+) -> Genome | None:
     """Alle Perioden eines Genoms mit demselben Faktor verschieben.
+
+    Mit ``nur`` wird stattdessen genau **eine** Stellgroesse verschoben - jedes
+    Vorkommen desselben Operanden, und sonst nichts. Beides laeuft durch
+    dieselbe Funktion, damit Karte, Gate und Machbarkeit nicht drei leicht
+    verschiedene Nachbarschaften vergleichen.
 
     Gibt ``None`` zurueck, wenn dabei nichts anderes herauskaeme - etwa weil
     der Faktor zu nah an 1 liegt oder alle Perioden schon an ihren Grenzen
@@ -1075,14 +1176,18 @@ def skaliere_perioden(genome: Genome, faktor: float) -> Genome | None:
     payload = genome.model_dump(mode="json")
     changed = False
 
-    for section in (
-        "entry_long", "entry_short", "exit_long", "exit_short",
-        "filters", "konfluenz",
-    ):
+    for section in _PERIODEN_ABSCHNITTE:
         for condition in payload.get(section, []):
             for side in ("left", "right"):
                 operand = condition[side]
                 if operand["kind"] != "indicator":
+                    continue
+                # Die Kennung wird aus den **urspruenglichen** Werten dieses
+                # Vorkommens gebildet - jedes Vorkommen ist ein eigenes Dict,
+                # also erkennen auch das zweite und dritte ihren Operanden
+                # noch. Genau daran haengt, dass Einstieg, Ausstieg und
+                # Konfluenz gemeinsam wandern.
+                if nur is not None and _operand_kennung(operand) != nur:
                     continue
                 _, spec = REGISTRY[operand["name"]]
                 for key, value in list(operand["params"].items()):
@@ -1092,7 +1197,7 @@ def skaliere_perioden(genome: Genome, faktor: float) -> Genome | None:
                         operand["params"][key] = candidate
                         changed = True
 
-    if payload["stop"]["kind"] == "atr":
+    if payload["stop"]["kind"] == "atr" and nur in (None, "stop"):
         low, high = 5, 50
         candidate = max(low, min(high, round(payload["stop"]["atr_period"] * faktor)))
         if candidate != payload["stop"]["atr_period"]:
@@ -1100,7 +1205,7 @@ def skaliere_perioden(genome: Genome, faktor: float) -> Genome | None:
             changed = True
 
     sizing = payload.get("sizing") or {}
-    if sizing.get("vol_period"):
+    if sizing.get("vol_period") and nur in (None, "sizing"):
         # Grenzen aus dem Genom holen, nicht danebenschreiben. Zwei
         # Stellen mit derselben Zahl laufen frueher oder spaeter
         # auseinander - in diesem Projekt schon viermal geschehen.
@@ -1119,15 +1224,44 @@ def skaliere_perioden(genome: Genome, faktor: float) -> Genome | None:
         return None
 
 
-def _vary_periods(genome: Genome, variation: float):
-    """Die beiden direkten Nachbarn: einmal schneller, einmal langsamer."""
+def nachbarschaft(genome: Genome, variation: float):
+    """Die Nachbarschaft eines Genoms: jede Stellgroesse einzeln, dazu beide
+    gemeinsamen Verschiebungen.
+
+    **Warum nicht nur gemeinsam.** Bis hierher waren es genau zwei Nachbarn -
+    alles langsamer, alles schneller. Das ist eine Gerade durch den
+    Parameterraum, und auf einer Geraden mit zwei Punkten laesst sich kein
+    Plateau von einer Nadelspitze unterscheiden. Schlimmer: Die eigene
+    Begruendung des Gates - "EMA(47) gewinnt, EMA(46) und EMA(48) verlieren" -
+    beschreibt eine Nadel in **einer** Dimension, und genau die konnte der
+    Zwei-Punkte-Test nie sehen. Er verschob immer alle Perioden zugleich.
+
+    Geliefert wird ``(Stellgroesse, Genom)``. Doppelte fallen raus: Hat ein
+    Genom nur eine Stellgroesse, ist ihre Verschiebung dieselbe wie die
+    gemeinsame, und dann bleiben es zwei Nachbarn.
+    """
     seen: set[str] = {genome.genome_id}
+    gemeinsam = Stellgroesse("alle gemeinsam", GEMEINSAM)
 
     for faktor in (1 - variation, 1 + variation):
         neighbour = skaliere_perioden(genome, faktor)
         if neighbour is None or neighbour.genome_id in seen:
             continue
         seen.add(neighbour.genome_id)
+        yield gemeinsam, neighbour
+
+    for stellgroesse in stellgroessen(genome):
+        for faktor in (1 - variation, 1 + variation):
+            neighbour = skaliere_perioden(genome, faktor, nur=stellgroesse.kennung)
+            if neighbour is None or neighbour.genome_id in seen:
+                continue
+            seen.add(neighbour.genome_id)
+            yield stellgroesse, neighbour
+
+
+def _vary_periods(genome: Genome, variation: float):
+    """Nur die Genome der Nachbarschaft, ohne die Stellgroessen dazu."""
+    for _, neighbour in nachbarschaft(genome, variation):
         yield neighbour
 
 

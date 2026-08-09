@@ -211,7 +211,7 @@ class TestDieselbeSkalierungWieDasGate:
 
         assert "skaliere_perioden" in inspect.getsource(landschaft)
         assert "skaliere_perioden(genome, faktor)" in inspect.getsource(
-            gates._vary_periods
+            gates.nachbarschaft
         )
 
     def test_gate_nachbar_und_kartenpunkt_stimmen_ueberein(self):

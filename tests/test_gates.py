@@ -452,9 +452,20 @@ class TestParameterVariation:
         )
         neighbours = list(_vary_periods(genome, 0.2))
 
-        assert len(neighbours) == 2  # einmal nach oben, einmal nach unten
+        # **Jede Stellgroesse einzeln, dazu beide gemeinsamen Verschiebungen.**
+        #
+        # Hier standen lange zwei Nachbarn - alles langsamer, alles schneller.
+        # Das ist eine Gerade durch den Parameterraum, und auf einer Geraden
+        # mit zwei Punkten laesst sich kein Plateau von einer Nadelspitze
+        # unterscheiden. Vier Stellgroessen (ema 20, ema 60, Stop-ATR,
+        # Vola-Fenster) mal zwei Richtungen, plus die gemeinsame Verschiebung.
+        from research.gates import stellgroessen
+
+        assert len(stellgroessen(genome)) == 4
+        assert len(neighbours) == 10
         for neighbour in neighbours:
             assert neighbour.genome_id != genome.genome_id
+        assert len({n.genome_id for n in neighbours}) == len(neighbours)
 
     def test_neighbours_stay_within_bounds(self) -> None:
         """Perioden am Rand des erlaubten Bereichs duerfen nicht darueber hinaus."""
@@ -510,40 +521,77 @@ class TestNachbarnSindEchteNachbarn:
             )
 
     def test_konfluenz_wird_mitverschoben(self) -> None:
-        """Sie bestimmt die Positionsgroesse und blieb bisher ungeprueft."""
+        """Sie bestimmt die Positionsgroesse und blieb bisher ungeprueft.
+
+        Seit die Nachbarschaft jede Stellgroesse einzeln verschiebt, laesst
+        **jeder einzelne** Nachbar den groesseren Teil des Genoms in Ruhe -
+        das ist der Zweck. Gefordert ist deshalb nicht mehr, dass jeder
+        Nachbar die Konfluenz bewegt, sondern dass die Nachbarschaft sie
+        ueberhaupt erreicht.
+        """
         genome = self._kandidat()
         vorher = self._perioden(genome, "konfluenz")
         assert vorher, "Der Kandidat muss Konfluenzbedingungen haben"
 
-        for nachbar in _vary_periods(genome, 0.2):
-            assert self._perioden(nachbar, "konfluenz") != vorher
+        beruehrt = [
+            n for n in _vary_periods(genome, 0.2)
+            if self._perioden(n, "konfluenz") != vorher
+        ]
+
+        assert len(beruehrt) >= len(vorher), (
+            "Jede Konfluenz-Periode braucht mindestens einen eigenen Nachbarn"
+        )
 
     def test_das_vola_fenster_wird_mitverschoben(self) -> None:
         genome = self._kandidat()
 
-        for nachbar in _vary_periods(genome, 0.2):
-            assert nachbar.sizing.vol_period != genome.sizing.vol_period
+        beruehrt = [
+            n for n in _vary_periods(genome, 0.2)
+            if n.sizing.vol_period != genome.sizing.vol_period
+        ]
 
-    def test_alles_zeigt_in_dieselbe_richtung(self) -> None:
-        """Ein Nachbar ist entweder durchweg schneller oder durchweg langsamer.
+        assert len(beruehrt) >= 2, "nach oben und nach unten"
 
-        Waeren die Faktoren gemischt, entstuende eine Regel mit voellig
-        anderem Charakter statt einer verschobenen.
+    def test_gleiche_operanden_wandern_gemeinsam(self) -> None:
+        """**Die Bedingung, die die Nachbarschaft ueberhaupt zulaessig macht.**
+
+        Frueher hiess die Regel "alle Perioden bewegen sich zugleich". Das war
+        strenger als noetig und machte das Gate blind fuer die Nadel in einer
+        einzelnen Dimension - dabei ist genau die sein Namensgeber.
+
+        Noetig ist nur: **Derselbe** Operand muss ueberall gleich wandern. Der
+        Spitzenkandidat steigt ueber ``sma(50)`` ein und darunter aus; ein
+        Nachbar mit Einstieg bei 40 und Ausstieg bei 50 waere keine
+        verschobene Regel, sondern eine widerspruechliche.
         """
         genome = self._kandidat()
 
         for nachbar in _vary_periods(genome, 0.2):
-            schneller = [
-                n < a
-                for n, a in zip(
-                    self._perioden(nachbar, "konfluenz"),
-                    self._perioden(genome, "konfluenz"),
-                    strict=True,
-                )
-            ]
-            assert all(schneller) or not any(schneller), (
-                f"gemischte Richtungen: {schneller}"
+            assert self._perioden(nachbar, "entry_long") == self._perioden(
+                nachbar, "exit_long"
             )
+            # Und der Einstiegswert kommt auch in der Konfluenz vor:
+            assert (
+                self._perioden(nachbar, "entry_long")[0]
+                in self._perioden(nachbar, "konfluenz")
+            )
+
+    def test_verschiedene_operanden_duerfen_einzeln_wandern(self) -> None:
+        """Die Gegenprobe. ``sma(50) > sma(200)`` mit 160 statt 200 ist ein
+        voellig normaler Trendfilter - und die Frage, ob die 200 eine
+        Zauberzahl ist, laesst sich anders gar nicht stellen."""
+        genome = self._kandidat()
+
+        nur_die_200 = [
+            n for n in _vary_periods(genome, 0.2)
+            if self._perioden(n, "entry_long") == self._perioden(genome, "entry_long")
+            and self._perioden(n, "konfluenz") != self._perioden(genome, "konfluenz")
+        ]
+
+        assert nur_die_200, (
+            "Kein Nachbar verschiebt eine Konfluenz-Periode allein - dann "
+            "misst das Gate wieder nur eine Gerade durch den Parameterraum"
+        )
 
     def test_grenzen_kommen_aus_dem_genom(self) -> None:
         """Nicht danebengeschrieben - sonst laufen sie auseinander."""

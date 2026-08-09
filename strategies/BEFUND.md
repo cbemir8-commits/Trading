@@ -3387,3 +3387,77 @@ mit zwei Wuerfen. Gemessen an den Beinen:
     Nachbar 2   BTC   -29,68   ETH  -75,00   Summe  -104,68   nicht
 
 Das ist der naechste Schritt: die Aufloesung des Gates, nicht seine Schwelle.
+
+## Siebenunddreissig. Das Plateau-Gate stand selbst auf einer Nadel
+
+Das Gate fragt, ob eine Strategie auf einem Plateau steht oder auf einer
+Nadelspitze. Seine eigene Begruendung nennt das Beispiel: *"EMA(47) gewinnt,
+EMA(46) und EMA(48) verlieren."* Gemessen hat es genau das nie.
+
+Es kannte **zwei** Nachbarn: alle Perioden um 20 % kuerzer, alle um 20 %
+laenger. Das ist eine Gerade durch den Parameterraum, mit zwei Punkten darauf.
+Zwei Folgen:
+
+* Der Anteil konnte nur 0, 0,5 oder 1 sein. Bei einer Schwelle von 0,6 hiess
+  das in Wahrheit **beide muessen halten** - eine 100-%-Regel, die so nirgends
+  aufgeschrieben stand.
+* Eine Nadel in *einer* Dimension war unsichtbar, weil nie eine Periode allein
+  bewegt wurde. Der Namensgeber des Gates war sein blinder Fleck.
+
+### Warum es nicht einfach mehr Nachbarn sein durften
+
+Der naheliegende Schritt - jede Periode einzeln verschieben - haette einen
+Fehler wiederholt, der hier schon einmal stand: Der Spitzenkandidat steigt
+ueber ``sma(50)`` ein und darunter aus. Wer nur den Einstieg auf 40 zieht, baut
+eine Regel, die sich selbst widerspricht.
+
+Die Einheit ist deshalb der **Operand**, nicht die Zahl: ``sma(50)`` kommt
+dreimal vor - Einstieg, Ausstieg, Konfluenz - und wandert als eines. Zwei
+*verschiedene* Operanden duerfen dagegen einzeln wandern; ``sma(50) > sma(160)``
+statt ``> sma(200)`` ist ein voellig normaler Trendfilter, und die Frage, ob
+die 200 eine Zauberzahl ist, laesst sich anders gar nicht stellen.
+
+Aus 2 Nachbarn werden so 12: fuenf Stellgroessen mal zwei Richtungen, plus die
+gemeinsame Verschiebung.
+
+### Und warum der Durchschnitt daraus die falsche Zahl ist
+
+Der Spitzenkandidat auf BTC + ETH, Tageskerzen, 12 Nachbarn:
+
+    alle gemeinsam    1 von 2      sma(200)         2 von 2
+    sma(50)           1 von 2      roc(90)          2 von 2
+    rsi(14)           2 von 2      Vola-Fenster     2 von 2
+
+Zehn von zwoelf profitabel - **0,833, das Gate haette bestanden.** Nur heisst
+das nichts: Ob ``rsi(14)`` auf 11 oder 17 steht, aendert das Ergebnis um
+weniger als ein Prozent. Vier wirkungslose Regler haetten die eine Dimension
+niedergestimmt, an der die Strategie haengt. Je mehr belanglose Zahlen ein
+Genom traegt, desto leichter waere das Gate geworden.
+
+Gewertet wird deshalb die **schwaechste Richtung**, nicht der Durchschnitt. Ein
+Plateau ist man in jeder Richtung oder gar nicht.
+
+Das hat eine Eigenschaft, auf die es hier ankommt: Die gemeinsame Verschiebung
+- der komplette alte Test - ist eine der Stellgroessen. Ein Minimum ueber eine
+Menge, die sie enthaelt, liegt nie ueber ihr. **Das Gate kann durch den
+groesseren Bereich nirgends milder werden, nur strenger.** Ein Test haelt das
+an drei Datensaetzen fest; ein zweiter zeigt einen Fall, in dem der alte Test
+bestanden haette und der neue durchfaellt.
+
+### Ergebnis
+
+    Parameter-Plateau   vorher  0,500  fail
+                        jetzt   0,500  fail
+
+Dasselbe Urteil, dieselbe Zahl - aber jetzt mit einer Adresse:
+
+    alle gemeinsam 1/2, sma(period=50) 1/2, Vola-Fenster 2/2,
+    roc(period=90) 2/2, rsi(period=14) 2/2, sma(period=200) 2/2
+
+**Der gesamte Vorteil des Kandidaten haengt an der 50, und nur nach einer
+Seite.** Auf 40 verkuerzt bleibt er profitabel (+838 gegen +930 im Original),
+auf 60 verlaengert kippt er ins Minus (-106). Die anderen vier Perioden sind
+austauschbar. Das ist kein Plateau, das ist eine Kante - und es ist die erste
+konkrete Auskunft darueber, *woran* dieser Kandidat haengt.
+
+Stand unveraendert: **7 von 11**, Versuchszaehler 119.

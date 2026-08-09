@@ -37,10 +37,10 @@ from research.admission import run_admission
 from research.gates import (
     GateStatus,
     GateThresholds,
-    _vary_periods,
     evaluate_gates,
     gate_cost_stress,
     gate_parameter_plateau,
+    nachbarschaft,
 )
 from research.seeds import trend_following
 from strategy.compiler import compile_genome
@@ -177,16 +177,23 @@ class TestPlateau:
         beine = {"stark": stark, "schwach": schwach}
         configs = {"stark": config, "schwach": config}
 
-        nachbarn = list(_vary_periods(genome, 0.2))
-        gewinne = [
-            [
-                Backtester(configs[name]).run(f, compile_genome(n)).net_profit
-                for name, f in beine.items()
-            ]
-            for n in nachbarn
-        ]
-        als_summe = sum(1 for g in gewinne if sum(g) > 0) / len(nachbarn)
-        als_und = sum(1 for g in gewinne if all(x > 0 for x in g)) / len(nachbarn)
+        je_richtung: dict[str, list[list[float]]] = {}
+        for s, n in nachbarschaft(genome, 0.2):
+            je_richtung.setdefault(s.kennung, []).append(
+                [
+                    Backtester(configs[name]).run(f, compile_genome(n)).net_profit
+                    for name, f in beine.items()
+                ]
+            )
+
+        def schwaechste(bewertung) -> float:
+            return min(
+                sum(1 for g in werte if bewertung(g)) / len(werte)
+                for werte in je_richtung.values()
+            )
+
+        als_summe = schwaechste(lambda g: sum(g) > 0)
+        als_und = schwaechste(lambda g: all(x > 0 for x in g))
 
         assert als_summe != als_und, (
             "Auf diesen Daten fallen beide Lesarten zusammen - der Test "
