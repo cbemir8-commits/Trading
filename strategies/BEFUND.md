@@ -2776,3 +2776,102 @@ Eine Vorauswahl kann jetzt nichts zulassen, und ein Test haelt es fest.
 
 Stand unveraendert: **BTC + ETH auf Tageskerzen, 7 von 11**, Deflated Sharpe
 0,863 gegen 0,95. Versuchszaehler unveraendert bei **108**.
+
+---
+
+## Dreissig. Alle drei Groessenregler gemessen - und warum keiner hilft
+
+Der Konviktions-Bonus war der letzte hinterlegte Regler, der nie abgetastet
+wurde. Damit sind es jetzt alle drei:
+
+    Regler         Spanne des Deflated Sharpe   Abstand zur Schwelle
+    Vola-Ziel                        0,011                  0,080
+    Stop                             0,855*                 0,087
+    Konviktion                       0,017                  0,088
+
+    * die Spanne beim Stop entsteht durch den Absturz nach oben, nicht durch
+      eine Verbesserung - das Maximum liegt beim Ausgangswert (Nummer
+      achtundzwanzig).
+
+**Kein Groessenregler bewegt das harte Gate.** Bei Vola-Ziel und Stop ist das
+einsichtig, sobald man es sieht: Sie skalieren jede Position mit demselben
+Faktor, und ein Verhaeltnis aendert sich davon nicht.
+
+### Die Konviktion tut etwas - nur nicht das
+
+    Bonus  Trades      p.a.       DD   schl. Jahr     DSR   Messlatte  Gates
+      0       152   16,20 %  13,72 %    -13,15 %    0,862       +       7/11
+    0,5       152   14,23 %  11,77 %    -11,36 %    0,862       -       7/11
+    1,0       152   13,47 %  10,64 %    -10,32 %    0,856       -       7/11
+    1,5       152   13,08 %  10,10 %     -9,81 %    0,853       -       8/11
+    2,0       151   12,65 %   9,58 %     -9,34 %    0,845       -       8/11
+
+Die Konviktion ist ein **Risikoregler**: Je staerker sie spreizt, desto
+niedriger Rendite *und* Rueckgang. Bei 1,5 und 2,0 halten Drawdown und
+schlechtestes Jahr, dafuer reisst die Messlatte. Bei 0 - Konfluenz komplett
+aus - haelt die Messlatte mit 16,20 %, dafuer reissen die Rueckgangsgrenzen.
+
+Wieder derselbe Konflikt, dieselbe leere Menge. Und der Deflated Sharpe bleibt
+bei 0,845 bis 0,862.
+
+Nebenbei bestaetigt das die alte Messung, statt ihr zu widersprechen: Je
+Einheit Rueckgang bringt die Konfluenz 1,27 gegen 1,18 ohne sie. Sie ist also
+nicht wirkungslos - der Deflated Sharpe fragt nur nach etwas anderem.
+
+### Die Frage, die daraus folgte
+
+Die Konviktion skaliert **nicht** gleichmaessig. Sie verschiebt Gewichte
+zwischen Trades. Dass auch sie den Deflated Sharpe nicht bewegt, muss also
+einen anderen Grund haben - und der liegt in der Annahme, auf der sie ruht:
+*Je mehr Zusatzbedingungen erfuellt sind, desto besser der Trade.*
+
+**Diese Annahme ist nie geprueft worden.** Gemessen wurde immer nur die
+Wirkung der Groessenlogik auf das Gesamtergebnis, nie die Ordnung, nach der
+sie verteilt. Also gemessen, an den 152 Trades des Kandidaten selbst:
+
+    erfuellte Bedingungen   Trades   Mittel R   Median R   Trefferquote
+                        0       14      0,194     -1,030        14,3 %
+                        1       60      1,534     -0,969        21,7 %
+                        2       27     -0,427     -1,030         3,7 %
+                        3       51      2,688     -0,383        35,3 %
+
+    Rangkorrelation rho = +0,150, p = 0,062 (Permutationsnull, 2000 Ziehungen)
+
+Drei Dinge stehen da, und alle drei zaehlen:
+
+* **Die volle Konfluenz traegt.** 3 von 3 liefert +2,688 R im Mittel bei 35 %
+  Trefferquote - deutlich das beste Feld.
+* **Die Reihenfolge stimmt nicht.** Zwei erfuellte Bedingungen sind das
+  *schlechteste* Feld ueberhaupt (-0,427 R, 3,7 % Treffer) - schlechter als
+  eine, schlechter als keine. Die Groessenlogik verteilt den Einsatz entlang
+  einer Ordnung, die so nicht gilt.
+* **Belegt ist der Zusammenhang nicht.** p = 0,062 gegen die Permutationsnull.
+  Er kann da sein; aus 152 Trades laesst er sich nicht von Zufall
+  unterscheiden.
+
+Damit ist erklaert, warum der Konviktions-Regler nichts bewegt: Er spreizt den
+Einsatz nach einem Signal, das den Ausgang nur schwach und nicht der Reihe nach
+vorhersagt.
+
+### Was daraus ausdruecklich nicht folgt
+
+"Handle nur bei voller Konfluenz" waere **keine** Schlussfolgerung, sondern die
+Auswahl des besten Eimers nach Ansicht der Daten - genau die Ueberanpassung,
+gegen die die ganze Strecke gebaut ist. Dazu kommt: Der Bestaetigungsfilter ist
+fuer diese Regelfamilie bereits gemessen und widerlegt (Generation 2), und die
+kleinen Felder (14 und 27 Trades) tragen ohnehin kein Urteil.
+
+Festgehalten wird die Messung trotzdem - als ``research/konfluenzwirkung.py``
+und ``cli konfluenz``, mit derselben Bedingungsauswertung, die auch der
+Backtest fuer die Groesse benutzt. Wer die Annahme spaeter fuer eine andere
+Regel braucht, misst sie, statt sie zu glauben.
+
+### Stand
+
+    Versuchszaehler   108 -> 112   (vier neue Konviktionsstufen)
+    Kandidat          BTC + ETH, Tageskerzen, 7 von 11
+    Deflated Sharpe   0,863 gegen 0,95
+
+Alle Groessenregler sind ausgemessen. Was den Deflated Sharpe bewegen kann,
+sind nur noch die **Entscheidungen** - wann ein- und ausgestiegen wird -, nicht
+wie viel dabei auf dem Tisch liegt.

@@ -3577,5 +3577,110 @@ def marktkombinationen(
     console.print(f"[dim]Vollstaendig: {ziel}[/]")
 
 
+@app.command()
+def konfluenz(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Sagt die Konfluenz etwas ueber den Ausgang - oder nur ueber die Groesse?
+
+    Die Konviktions-Groessenlogik ruht auf einem Satz: **Je mehr
+    Zusatzbedingungen erfuellt sind, desto besser der Trade.** Danach richtet
+    sich der Einsatz. Gemessen wurde bisher nur die Wirkung dieser Logik auf
+    das Gesamtergebnis, nie die Annahme selbst.
+
+    Das ist ein Unterschied: Eine Groessenlogik kann funktionieren, weil sie in
+    schlechten Phasen kleiner handelt, ohne dass die Reihenfolge stimmt, nach
+    der sie das tut.
+
+    Der Anlass: Alle drei Groessenregler - Vola-Ziel, Stop, Konviktion -
+    bewegen den Deflated Sharpe um weniger als 0,02. Bei den ersten beiden ist
+    das einsichtig, sie skalieren alles gleich. Die Konviktion tut das nicht -
+    sie verschiebt Gewichte zwischen Trades. Dass auch sie nichts bewegt, muss
+    einen anderen Grund haben.
+
+    **Kostet keinen Versuch:** Geprueft wird eine Annahme des Kandidaten an
+    seinen eigenen, bereits gerechneten Trades - keine neue Regel.
+    """
+    from decimal import Decimal
+
+    import pandas as pd
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.konfluenzwirkung import messe, zaehle_bedingungen
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    frames = common_range(roh)
+    genome = spitzenkandidat()
+    if not genome.konfluenz:
+        console.print("[yellow]Dieser Kandidat hat keine Konfluenz.[/]")
+        raise typer.Exit(0)
+
+    configs = {
+        x: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+        )
+        for x in symbole
+    }
+
+    console.print(
+        f"\n[bold]Konfluenz[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Strategie   {genome.name}\n"
+        f"  Bedingungen {len(genome.konfluenz)}\n"
+    )
+
+    bericht = run_portfolio_walkforward(
+        frames, lambda: compile_genome(genome), configs
+    )
+    if not bericht.all_trades:
+        console.print("[red]Keine Trades - nichts zu pruefen.[/]")
+        raise typer.Exit(2)
+
+    strategie = compile_genome(genome)
+    zaehlung = {
+        markt: pd.Series(
+            zaehle_bedingungen(strategie, frame),
+            index=pd.to_datetime(frame["open_time"]),
+        )
+        for markt, frame in frames.items()
+    }
+
+    wirkung = messe(bericht.all_trades, zaehlung)
+    console.print(wirkung.tabelle())
+
+    farbe = "green" if wirkung.belegt and wirkung.monoton else "yellow"
+    console.print(f"\n[{farbe}]{wirkung.urteil()}[/]\n")
+    console.print(
+        "[dim]Was daraus **nicht** folgt: Traegt nur die volle Konfluenz, ist "
+        "'handle nur bei voller Konfluenz' keine Schlussfolgerung, sondern die "
+        "Auswahl des besten Eimers nach Ansicht der Daten. Der "
+        "Bestaetigungsfilter ist fuer diese Regelfamilie ohnehin schon "
+        "gemessen und widerlegt.[/]"
+    )
+
+
 if __name__ == "__main__":
     app()
