@@ -3231,3 +3231,85 @@ Jetzt steht dort: *"Dafuer muesste die Qualitaet je Trade um 10 % steigen:
                       Parameter-Plateau
     Abstand           10 % mehr Qualitaet je Trade
     Versuche          119 - unveraendert, Nachmessen ist kein Versuch
+
+---
+
+## Fuenfunddreissig. Die Suchmaschine hat die Haelfte ihrer Versuche verschwendet
+
+Alle Regler sind ausgemessen, alle Richtungen geschlossen. Was bleibt, ist die
+Suche selbst - also habe ich zum ersten Mal nachgesehen, **was der Wettbewerb
+eigentlich variiert**.
+
+### Was er kann, und was nicht
+
+``research/mutation.py`` wandelt immer nur eine Sache auf einmal ab: eine
+Periode, eine Schwelle, die Stopweite, ein Ziel. Er erfindet **keine neue
+Regel** - kein neuer Indikator, keine neue Bedingung. Er verschiebt Zahlen.
+
+Damit ist eine unangenehme Sache gesagt: Genau diese Zahlen habe ich in den
+Nummern einundzwanzig bis zweiunddreissig als Regler ausgemessen, und bei
+dreien davon ist der Wert des Kandidaten **das Optimum**. Der Wettbewerb
+durchsucht einen Raum, dessen bester Punkt bereits bekannt ist.
+
+Die Research-KI koennte strukturell Neues vorschlagen. Sie bleibt ohne
+API-Schluessel unpruefbar - erneut nachgesehen, weiterhin keiner gesetzt.
+
+### Und dann der Befund
+
+Beim Nachsehen fiel etwas auf, das schwerer wiegt. ``mutate`` variiert
+``entry`` **oder** ``exit``, jeweils einzeln. Beim Spitzenkandidaten stehen
+beide auf demselben SMA(50):
+
+    Original     Einstieg SMA(50)   Ausstieg SMA(50)
+    Variante     Einstieg SMA(40)   Ausstieg SMA(50)
+
+Eine Regel, die bei 40 einsteigt und bei 50 aussteigt, widerspricht sich
+selbst. Gemessen an 300 Varianten des Spitzenkandidaten:
+
+    300 Varianten, davon 150 mit Einstieg != Ausstieg   (50 %)
+
+**Die Haelfte aller je erzeugten Varianten war eine Regel, die niemand handeln
+wuerde** - und jede hat einen Versuch gekostet und die Zulassungshuerde fuer
+alle gehoben.
+
+Genau dieser Fehler steckte einmal in den Nachbarn des Plateau-Gates und ist
+dort seit langem behoben (Nummer fuenf). In der Mutation stand er noch.
+
+### Dazu die dritte Stelle mit demselben Muster
+
+``SCHRAUBEN`` kannte ``entry``, ``filter``, ``exit``, ``stop``, ``targets``,
+``cooldown``, ``hold`` - aber **kein** ``konfluenz``. Sie kam spaeter dazu und
+wurde nirgends nachgetragen. Beim Spitzenkandidaten steuert sie die
+Positionsgroesse und war damit **ueber die gesamte Suche eingefroren**.
+
+Das ist die dritte Stelle mit derselben Ursache: vorher in
+``_estimate_warmup`` (Nummer dreiundzwanzig) und in den Plateau-Nachbarn
+(Nummer fuenf). Eine Erweiterung, die an drei Stellen haette nachgetragen
+werden muessen, wurde an keiner nachgetragen.
+
+### Behoben
+
+* Wird ein Operand variiert, der auf der **Gegenseite identisch** vorkommt,
+  wandert er dort mit. Kein Widerspruch mehr - gemessen: 0 von 300.
+* Wo Einstieg und Ausstieg **verschiedene** Groessen meinen, bleibt die
+  Asymmetrie erhalten. Ein Test haelt beide Richtungen fest; die Korrektur
+  darf nicht zu weit greifen.
+* ``konfluenz`` steht in den Schrauben. Von 300 Varianten betreffen jetzt 55
+  die Konfluenz.
+
+    vorher   stop 85, entry 77, exit 73, targets 34, cooldown 31
+    jetzt    stop 72, entry 67, konfluenz 55, exit 53, cooldown 28, targets 25
+
+### Was das erklaert und was nicht
+
+Es erklaert einen Teil der Trefferquote von 0 aus 53: Ein erheblicher Anteil
+der Versuche ging an Regeln, die sich selbst widersprachen. Es erklaert
+**nicht**, warum kein Kandidat naeher kam - dafuer ist der Raum, den die
+Mutation absucht, schlicht zu klein.
+
+Der Versuchszaehler bleibt bei **119**. Die verschwendeten Versuche sind
+verschwendet; sie nachtraeglich abzuziehen waere genau die Sorte Buchhaltung,
+die der Deflated Sharpe verhindern soll. Was sie gekostet haben, steht damit
+weiter in der Huerde - und das ist richtig so.
+
+Stand unveraendert: **7 von 11**, Deflated Sharpe 0,843 gegen 0,95.

@@ -34,7 +34,6 @@ waren**. Wild zu streuen kostet Versuche und bringt nichts.
 from __future__ import annotations
 
 import random
-from dataclasses import replace as _replace
 
 import structlog
 
@@ -91,7 +90,13 @@ def _operand_varianten(operand: Operand, rng: random.Random) -> Operand | None:
 
 def _vary_conditions(
     conditions: list[Condition], rng: random.Random
-) -> list[Condition] | None:
+) -> tuple[list[Condition], Operand, Operand] | None:
+    """Eine Bedingung abwandeln - und **sagen, was ersetzt wurde**.
+
+    Der Rueckgabewert traegt das alte und das neue Operandenpaar, weil der
+    Aufrufer dieselbe Ersetzung auf der Gegenseite nachziehen muss. Ohne diese
+    Auskunft entstuenden Regeln, die bei 40 einsteigen und bei 50 aussteigen.
+    """
     if not conditions:
         return None
     index = rng.randrange(len(conditions))
@@ -103,9 +108,37 @@ def _vary_conditions(
         neu = _operand_varianten(operand, rng)
         if neu is None:
             continue
-        ersetzt = _replace(ziel, **{seite: neu}) if hasattr(ziel, "__dataclass_fields__") else ziel.model_copy(update={seite: neu})
-        return [*conditions[:index], ersetzt, *conditions[index + 1 :]]
+        ersetzt = ziel.model_copy(update={seite: neu})
+        return (
+            [*conditions[:index], ersetzt, *conditions[index + 1 :]],
+            operand,
+            neu,
+        )
     return None
+
+
+def _ersetze_operand(
+    conditions: list[Condition], alt: Operand, neu: Operand
+) -> list[Condition] | None:
+    """Dieselbe Groesse ueberall ersetzen, wo sie **identisch** vorkommt.
+
+    ``None``, wenn sie dort gar nicht vorkommt - dann gibt es nichts
+    nachzuziehen und die Gegenseite bleibt unberuehrt.
+    """
+    geaendert = False
+    ergebnis = []
+    for bedingung in conditions:
+        aenderung = {}
+        if bedingung.left == alt:
+            aenderung["left"] = neu
+        if bedingung.right == alt:
+            aenderung["right"] = neu
+        if aenderung:
+            geaendert = True
+            ergebnis.append(bedingung.model_copy(update=aenderung))
+        else:
+            ergebnis.append(bedingung)
+    return ergebnis if geaendert else None
 
 
 def _vary_stop(stop: StopSpec, rng: random.Random) -> StopSpec | None:
@@ -141,7 +174,33 @@ def _vary_targets(targets: list[TargetSpec], rng: random.Random) -> list[TargetS
 
 
 #: Die Stellschrauben, je eine Aenderung. Reihenfolge egal - es wird gewuerfelt.
-SCHRAUBEN = ("entry", "filter", "exit", "stop", "targets", "cooldown", "hold")
+#:
+#: ``konfluenz`` hat lange gefehlt, und das war die dritte Stelle im Projekt
+#: mit demselben Muster: Die Konfluenz kam spaeter dazu und wurde nirgends
+#: nachgetragen (vorher in ``_estimate_warmup`` und in den Nachbarn des
+#: Plateau-Gates). Beim Spitzenkandidaten steuert sie die Positionsgroesse -
+#: sie war ueber die gesamte Suche eingefroren.
+SCHRAUBEN = (
+    "entry", "filter", "exit", "konfluenz", "stop", "targets", "cooldown", "hold",
+)
+
+#: Welche Abschnitte dieselbe Groesse meinen und deshalb gemeinsam wandern.
+#:
+#: **Der Grund, gemessen.** Beim Spitzenkandidaten stehen Einstieg und Ausstieg
+#: auf demselben SMA(50). Wurde nur einer variiert, entstand eine Regel, die
+#: bei 40 einsteigt und bei 50 aussteigt - sie widerspricht sich selbst, und
+#: niemand wuerde sie handeln. **Die Haelfte aller Varianten sah so aus**: 150
+#: von 300. Jede davon hat einen Versuch gekostet und die Zulassungshuerde fuer
+#: alle gehoben.
+#:
+#: Derselbe Fehler steckte einmal in den Nachbarn des Plateau-Gates und ist
+#: dort seit langem behoben. Hier stand er noch.
+GEGENSTUECK = {
+    "entry_long": "exit_long",
+    "exit_long": "entry_long",
+    "entry_short": "exit_short",
+    "exit_short": "entry_short",
+}
 
 
 def mutate(genome: Genome, rng: random.Random | None = None) -> Genome | None:
@@ -158,20 +217,32 @@ def mutate(genome: Genome, rng: random.Random | None = None) -> Genome | None:
     for schraube in schrauben:
         aenderung: dict = {}
 
-        if schraube == "entry":
-            seite = "entry_long" if genome.entry_long else "entry_short"
-            neu = _vary_conditions(getattr(genome, seite), rng)
-            if neu:
-                aenderung = {seite: neu}
+        if schraube in ("entry", "exit"):
+            if schraube == "entry":
+                seite = "entry_long" if genome.entry_long else "entry_short"
+            else:
+                seite = "exit_long" if genome.exit_long else "exit_short"
+            ergebnis = _vary_conditions(getattr(genome, seite), rng)
+            if ergebnis:
+                bedingungen, vorher, nachher = ergebnis
+                aenderung = {seite: bedingungen}
+                # **Die Gegenseite mitziehen, wo sie dieselbe Groesse meint.**
+                # Sonst steigt die Regel bei 40 ein und bei 50 aus.
+                gegen = GEGENSTUECK.get(seite)
+                if gegen:
+                    mit = _ersetze_operand(
+                        getattr(genome, gegen), vorher, nachher
+                    )
+                    if mit is not None:
+                        aenderung[gegen] = mit
         elif schraube == "filter":
-            neu = _vary_conditions(genome.filters, rng)
-            if neu:
-                aenderung = {"filters": neu}
-        elif schraube == "exit":
-            seite = "exit_long" if genome.exit_long else "exit_short"
-            neu = _vary_conditions(getattr(genome, seite), rng)
-            if neu:
-                aenderung = {seite: neu}
+            ergebnis = _vary_conditions(genome.filters, rng)
+            if ergebnis:
+                aenderung = {"filters": ergebnis[0]}
+        elif schraube == "konfluenz":
+            ergebnis = _vary_conditions(genome.konfluenz, rng)
+            if ergebnis:
+                aenderung = {"konfluenz": ergebnis[0]}
         elif schraube == "stop":
             neu = _vary_stop(genome.stop, rng)
             if neu:
