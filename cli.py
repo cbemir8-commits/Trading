@@ -3667,6 +3667,97 @@ def marktkombinationen(
 
 
 @app.command()
+def trennschaerfe(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Trennt irgendetwas die guten Trades von den schlechten?
+
+    Der Kandidat scheitert an vier Gates, und drei davon verlangen dasselbe:
+    mehr Qualitaet je Trade. Mehr Trades hilft dem Deflated Sharpe nur, wenn
+    sie unabhaengig sind - und alle Wege dorthin sind gemessen und
+    geschlossen.
+
+    Bleibt: dieselben Trades, besser gewichtet. Genau dafuer ist die
+    Konviktions-Groessenlogik gebaut, und genau die haengt an Bedingungen, die
+    nichts sagen (``cli konfluenz``). Diese Messung sucht Bedingungen, die
+    etwas sagen wuerden.
+
+    **Gegen die richtige Null.** Wer zwoelf Merkmale prueft, findet mit
+    Sicherheit eines, das trennt. Geprueft wird deshalb gegen "das Beste aus
+    zwoelf trennt nicht", nicht gegen "dieses eine trennt nicht".
+
+    Der Versuchszaehler bleibt unberuehrt: Hier wird kein Backtest gerechnet,
+    sondern werden Trades aufgeteilt, die ohnehin gelaufen sind. Wer ein
+    gefundenes Merkmal **einbaut**, hat dagegen einen neuen Kandidaten gebaut
+    - ein Versuch mehr, und durch alle elf Gates.
+    """
+    from decimal import Decimal
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.seeds import spitzenkandidat
+    from research.trennschaerfe import messe, reihen_je_markt
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    frames = common_range(roh)
+    genome = spitzenkandidat()
+    configs = {
+        x: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+        )
+        for x in symbole
+    }
+
+    console.print(
+        f"\n[bold]Trennschaerfe[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Strategie   {genome.name}\n"
+    )
+
+    bericht = run_portfolio_walkforward(
+        frames, lambda: compile_genome(genome), configs
+    )
+    if not bericht.all_trades:
+        console.print("[red]Keine Trades - nichts zu pruefen.[/]")
+        raise typer.Exit(2)
+
+    strategie = compile_genome(genome)
+    merkmale = {
+        markt: reihen_je_markt(strategie, frame) for markt, frame in frames.items()
+    }
+
+    ergebnis = messe(bericht.all_trades, merkmale)
+    console.print(ergebnis.tabelle())
+    farbe = "green" if ergebnis.belegt else "yellow"
+    console.print(f"\n[{farbe}]{ergebnis.urteil()}[/]\n")
+    console.print(
+        "[dim]Der Versuchszaehler bleibt unveraendert - hier wurde kein "
+        "Backtest gerechnet, sondern eine vorhandene Trade-Liste geteilt.[/]"
+    )
+
+
+@app.command()
 def konfluenz(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",

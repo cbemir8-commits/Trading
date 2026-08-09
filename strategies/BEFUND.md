@@ -3534,3 +3534,93 @@ Wiederholungen fuer die Fehlersuche liefen ausserhalb des Zaehlers - dieselben
 Punkte zweimal zu rechnen ist keine zweite Hypothese.
 
 Stand unveraendert: **7 von 11**.
+
+## Neununddreissig. Ich haette hier fast einen Befund berichtet, den es nicht gibt
+
+Zwei Messungen zuvor stand die Vermutung, die Konfluenz des Kandidaten sei
+"fast immer erfuellt". **Das war falsch**, und ``cli konfluenz`` sagt es
+deutlich:
+
+    0 Bedingungen   14 Trades   +0,194 R
+    1 Bedingung     60 Trades   +1,534 R
+    2 Bedingungen   27 Trades   -0,427 R
+    3 Bedingungen   51 Trades   +2,688 R    rho +0,150, p = 0,062
+
+Die Bedingungen wechseln also durchaus. Sie sind nur nicht **der Reihe nach**
+besser, und der Zusammenhang ist nicht belegt. Der Grund, warum das Verstellen
+ihrer Perioden nichts bewirkt, ist damit ein anderer als vermutet: nicht "immer
+an", sondern "an in einem Muster, das nichts bedeutet". Die
+Konviktions-Groessenlogik verteilt den Einsatz entlang einer Ordnung, die es
+nicht gibt.
+
+### Also gesucht: gibt es irgendeine Ordnung?
+
+Der Mechanismus ist gebaut und wirkungslos, weil er an den falschen
+Bedingungen haengt. Neu ist deshalb ``cli trennschaerfe``: zwoelf **vorab
+festgelegte** Merkmale, je Trade am Einstiegsbalken ausgewertet, verglichen
+ueber Wilcoxon-Rangsummen statt Mittelwerte - bei R-Verteilungen mit einzelnen
++20-R-Treffern sagt ein Mittelwertvergleich mehr ueber den groessten Gewinner
+als ueber die Trennung.
+
+Das Ergebnis auf BTC + ETH, 152 Trades:
+
+    Bollinger-Breite hoch     59 / 93    +0,167 gegen +2,263    z = -2,91
+    Umsatz hoch               75 / 77    +0,916 gegen +1,970    z = -1,73
+    Volatilitaet hoch         64 / 88    +0,455 gegen +2,174    z = -1,73
+    ADX(14) ueber 25          38 / 114   +0,975 gegen +1,608    z = -1,56
+    Realisierte Vola hoch     70 / 82    +1,002 gegen +1,832    z = -1,52
+
+Fuenf Volatilitaetsmasse, alle in dieselbe Richtung: Wer in bereits weite
+Baender hinein einsteigt, faehrt schlechter. Wirtschaftlich einleuchtend - ein
+Ausbruch nach einer Ruhephase ist der klassische Aufbau, einer in schon hohe
+Bewegung hinein ist spaet.
+
+**Die freie Permutationsnull haette das durchgewinkt:** Schranke fuer das Beste
+aus zwoelf bei 2,80, beobachtet 2,91. Belegt, haette dort gestanden.
+
+### Warum es trotzdem nichts ist
+
+Die Merkmale sind ueber die Zeit nicht gleichmaessig verteilt. "Bollinger-
+Breite hoch" faellt 2021 auf 18 von 21 Trades und 2025 auf 2 von 17:
+
+    Jahr    breit  eng    R breit   R eng
+    2018      4     4      -1,08    -0,81
+    2019      9    11      -0,76    +2,81
+    2020      4    14      +6,03    +4,87
+    2021     18     3      +0,15   +12,77
+    2022     14     6      -0,89    -0,79
+    2023      3    16      +1,52    +2,37
+    2024      5    18      -1,07    +1,67
+    2025      2    15      +3,79    +1,12
+
+In 6 von 8 Jahren zeigt es in dieselbe Richtung - das spricht gegen einen
+reinen Kalendereffekt. Aber ein Merkmal, das ueberwiegend **schlechte Jahre
+markiert**, sieht in einer freien Permutation aus wie eine Trennung, ohne eine
+zu sein.
+
+Gemischt wird deshalb **innerhalb der Jahre**: Die Zusammensetzung jedes Jahres
+bleibt, nur die Zuordnung Ergebnis-zu-Trade faellt weg. Wer damit noch trennt,
+trennt innerhalb der Jahre.
+
+    Schranke frei gemischt        2,80      beobachtet 2,91  -> belegt
+    Schranke blockweise           3,83      beobachtet 2,91  -> nicht belegt
+
+**Nicht belegt.** Der Unterschied zwischen den beiden Zahlen ist genau das,
+was die Jahre erklaeren.
+
+### Was das heisst
+
+Kein Merkmal aus diesem Katalog trennt die Trades dieses Kandidaten, sobald man
+beides beruecksichtigt: dass zwoelf geprueft wurden und dass sie sich in den
+Jahren zusammenballen. Die Konviktions-Groessenlogik hat nichts, woran sie sich
+halten koennte - nicht, weil nicht gesucht wurde.
+
+Und der eigentliche Ertrag dieses Abschnitts ist unangenehmer: Ohne die
+Blockvariante haette hier ein Befund gestanden, und der naechste Schritt waere
+gewesen, einen Kandidaten darauf zu bauen. Der Test, der das festhaelt, steht in
+``tests/test_trennschaerfe.py`` und verlangt ausdruecklich, dass die freie Null
+das erfundene Jahres-Merkmal durchwinkt und die blockweise es ablehnt. Faellt
+die Blockvariante je weg, faellt dieser Test.
+
+Der Versuchszaehler bleibt bei **130**: Hier wurde kein Backtest gerechnet,
+sondern eine vorhandene Trade-Liste geteilt. Stand unveraendert: **7 von 11**.
