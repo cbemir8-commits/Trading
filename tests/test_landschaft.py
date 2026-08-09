@@ -183,6 +183,70 @@ class TestKartieren:
         leitperioden = [p.leitperiode for p in karte.punkte]
         assert len(leitperioden) == len(set(leitperioden))
 
+    def test_eine_einzelne_stellgroesse_bewegt_nur_sich(self, welt):
+        """**Der Punkt der ganzen Uebung.**
+
+        Ohne ``nur`` wandern alle Perioden zugleich, und die Karte kann nicht
+        sagen, *welche* den Ausschlag gibt. Genau das war die offene Frage:
+        Das Plateau-Gate hatte gezeigt, dass alles am 50-Tage-Schnitt haengt
+        und die anderen vier Perioden nichts bewirken.
+        """
+        frames, configs = welt
+        genome = spitzenkandidat()
+
+        karte = kartieren(
+            genome, frames, configs, faktoren=(0.6, 1.0, 1.4), nur="sma(period=50)"
+        )
+
+        assert karte.regler == "sma(period=50)"
+        assert [p.wert for p in karte.punkte] == [30, 50, 70]
+        # Die 200 bleibt stehen - sonst waere es wieder eine gemeinsame
+        # Verschiebung mit anderem Namen.
+        assert {p.leitperiode for p in karte.punkte} == {200}
+
+    def test_die_punkte_werden_am_genom_unterschieden_nicht_an_der_leitperiode(
+        self, welt
+    ):
+        """**Der Fehler, der diese Karte fast unbrauchbar gemacht haette.**
+
+        Als Schluessel stand hier die Leitperiode. Beim Abtasten einer
+        einzelnen Stellgroesse bleibt die konstant - jeder Punkt ausser dem
+        ersten haette wie ein Duplikat ausgesehen, und die Karte haette aus
+        genau einem Punkt bestanden, ohne dass es aufgefallen waere.
+        """
+        frames, configs = welt
+
+        karte = kartieren(
+            spitzenkandidat(), frames, configs,
+            faktoren=(0.5, 0.7, 0.9, 1.1, 1.4), nur="sma(period=50)",
+        )
+
+        assert len(karte.punkte) == 5
+
+    def test_der_kandidat_traegt_seinen_eigenen_wert(self, welt):
+        """Beim Faktor 1,0 wird nicht skaliert - der abgelesene Wert muss
+        trotzdem stimmen, sonst steht in der Tabelle eine Luecke."""
+        frames, configs = welt
+
+        karte = kartieren(
+            spitzenkandidat(), frames, configs, faktoren=(1.0,), nur="sizing"
+        )
+
+        assert karte.punkte[0].wert == spitzenkandidat().sizing.vol_period
+
+    def test_die_spalte_nennt_die_abgetastete_groesse(self, welt):
+        frames, configs = welt
+
+        gemeinsam = kartieren(
+            spitzenkandidat(), frames, configs, faktoren=(1.0,)
+        ).tabelle()
+        einzeln = kartieren(
+            spitzenkandidat(), frames, configs, faktoren=(1.0,), nur="rsi(period=14)"
+        ).tabelle()
+
+        assert "Leitperiode" in gemeinsam
+        assert "rsi(period=1" in einzeln
+
     def test_gewinn_ist_der_mittelwert_ueber_die_maerkte(self, welt):
         """Gleich gewichtet - so, wie der Korb gehandelt wuerde."""
         frames, configs = welt
@@ -194,6 +258,28 @@ class TestKartieren:
         p = karte.punkte[0]
         assert set(p.je_markt) == {"A", "B"}
         assert p.gewinn == pytest.approx(sum(p.je_markt.values()) / 2)
+
+
+class TestReglerAuswahl:
+    def test_ein_tippfehler_listet_die_vorhandenen_auf(self) -> None:
+        """Ein stiller Ruecksprung auf "alle gemeinsam" waere das
+        Unangenehmste: Die Karte liefe durch, saehe richtig aus und
+        beantwortete eine andere Frage."""
+        from typer.testing import CliRunner
+
+        from cli import app
+
+        ergebnis = CliRunner().invoke(app, ["landschaft", "--regler", "sma(50)"])
+
+        assert ergebnis.exit_code == 2
+        assert "sma(period=50)" in ergebnis.output
+
+    def test_die_hilfe_nennt_die_option(self) -> None:
+        from typer.testing import CliRunner
+
+        from cli import app
+
+        assert "--regler" in CliRunner().invoke(app, ["landschaft", "--help"]).output
 
 
 class TestDieselbeSkalierungWieDasGate:

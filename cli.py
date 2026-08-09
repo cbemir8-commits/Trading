@@ -2865,6 +2865,12 @@ def landschaft(
         help="Symbole, durch Komma getrennt.",
     ),
     intervall: str = typer.Option("D", "--intervall", "-i"),
+    regler: str = typer.Option(
+        "", "--regler", "-r",
+        help="Nur diese eine Stellgroesse abtasten, z.B. 'sma(period=50)'. "
+             "Leer = alle Perioden gemeinsam. Ohne Wert werden die "
+             "verfuegbaren Stellgroessen aufgelistet.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Plateau oder Grat - wie sieht die Gegend um den Kandidaten aus?
@@ -2918,14 +2924,30 @@ def landschaft(
 
     genome = spitzenkandidat()
     erster = next(iter(frames.values()))
+
+    # **Welche Stellgroesse?** Ohne Angabe wandern alle Perioden gemeinsam -
+    # und dann sagt die Karte nicht, welche den Ausschlag gibt. Beim
+    # Spitzenkandidaten hat das Plateau-Gate gezeigt, dass vier von fuenf
+    # Perioden nichts bewirken und alles an der 50 haengt.
+    from research.gates import stellgroessen
+
+    verfuegbar = {s.kennung: s.name for s in stellgroessen(genome)}
+    if regler and regler not in verfuegbar:
+        console.print(
+            f"[red]Unbekannte Stellgroesse '{regler}'.[/] Vorhanden sind:\n"
+            + "\n".join(f"  {k}" for k in verfuegbar)
+        )
+        raise typer.Exit(2)
+
     console.print(
         f"\n[bold]Landschaft[/] {' + '.join(symbole)} {interval_obj.label}\n"
         f"  Strategie  {genome.name}\n"
+        f"  Regler     {verfuegbar.get(regler, 'alle Perioden gemeinsam')}\n"
         f"  Zeitraum   {erster['open_time'].iloc[0]:%Y-%m} bis "
         f"{erster['open_time'].iloc[-1]:%Y-%m}\n"
     )
 
-    karte = kartieren(genome, frames, configs)
+    karte = kartieren(genome, frames, configs, nur=regler or None)
     console.print(karte.tabelle())
 
     trials_path = Path(settings.paths.state) / "trials.json"

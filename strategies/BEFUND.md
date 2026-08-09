@@ -3461,3 +3461,76 @@ austauschbar. Das ist kein Plateau, das ist eine Kante - und es ist die erste
 konkrete Auskunft darueber, *woran* dieser Kandidat haengt.
 
 Stand unveraendert: **7 von 11**, Versuchszaehler 119.
+
+## Achtunddreissig. Vier von fuenf Perioden bewirken nichts
+
+Die vorige Messung hatte den Kandidaten auf eine Dimension eingegrenzt: Der
+Vorteil haengt am 50-Tage-Schnitt, und nur nach einer Seite. Offen blieb die
+Frage, die die Landschaftskarte in ihrer eigenen Einleitung stellt:
+
+* Nur 50 funktioniert, 40 und 60 nicht - dann war der Treffer Zufall.
+* 30 bis 55 funktionieren, ab 60 nicht mehr - dann gibt es einen echten
+  Bereich, und die 50 sitzt nur unguenstig an dessen Kante.
+
+Die Karte konnte das nicht beantworten, weil sie **alle** Perioden zugleich
+verschob. Jetzt kann sie eine einzelne abtasten (``cli landschaft --regler``).
+BTC + ETH, Tageskerzen, halber bis doppelter Wert:
+
+    sma(50)      25   30   35   40   45   50   55   62   70   80   90  100
+                +294 +730 +524 +419 +486 +478 +228  -47   +5   -8   -9  -36
+                  +    +    +    +    +    +    +    -    +    -    -    -
+                                      ^Kandidat
+
+**Es ist der zweite Fall.** Von 25 bis 55 traegt die Regel durchgehend - sieben
+Punkte am Stueck, der Kandidat mittendrin. Ab 62 kippt sie. Die 50 sitzt am
+**oberen Rand** ihres eigenen Plateaus, und deshalb faellt der Nachbar bei
++20 % durch, waehrend der bei -20 % haelt.
+
+### Der eigentliche Befund: die Konfluenz ist Zierat
+
+Dieselbe Karte fuer die vier uebrigen Stellgroessen, jeweils ueber den halben
+bis doppelten Wert:
+
+    sma(200)     100 bis 400      +461 bis +478      12 von 12 profitabel
+    roc(90)       45 bis 100      +459 bis +479       8 von 8
+    rsi(14)        7 bis  28      +455 bis +513      12 von 12
+    Vola-Fenster  15 bis  60      +338 bis +738      12 von 12
+
+Ueber den **vierfachen** Wertebereich aendert sich beim 200er-Schnitt das
+Ergebnis um 3 %, beim ROC um 4 %, beim RSI um 12 %. Die Trade-Zahl bleibt bei
+allen dreien praktisch konstant (93 gegen 86). Diese drei Bedingungen bilden
+zusammen die Konfluenz, die die Positionsgroesse steuern soll - und sie
+steuern nichts. Sie sind offenbar fast immer erfuellt, der Konviktions-Bonus
+liegt praktisch dauerhaft an.
+
+Der Kandidat hat also nicht fuenf Parameter, sondern **einen**: die 50. Die
+uebrigen vier sind Verzierung. Das ist keine gute Nachricht und keine
+schlechte, sondern eine Auskunft darueber, was hier eigentlich gemessen wird -
+eine einzelne Trendfolge, kein Zusammenspiel.
+
+### Ein Fehler, gefunden beim Bauen
+
+Die Karte unterschied ihre Punkte an der **Leitperiode**, der laengsten
+Periode im Genom. Beim Abtasten einer einzelnen Stellgroesse bleibt die
+konstant: Wer nur die 50 verschiebt, laesst die 200 stehen. Jeder Punkt ausser
+dem ersten waere als Duplikat verworfen worden, und die Karte haette aus genau
+einem Punkt bestanden - ohne Fehlermeldung, ohne dass es aufgefallen waere.
+Unterschieden wird jetzt am Genom selbst. Ein Test haelt es fest.
+
+Dazu ein zweiter, kleinerer: Die Beschriftung suchte den Operanden in der
+**Variante** statt im Original. Dort heisst er laengst ``sma(period=25)`` und
+passt auf nichts mehr - die Tabelle zeigte fuer jeden Punkt ausser dem
+Kandidaten die 200. Beim ersten Durchlauf auf echten Daten sofort sichtbar.
+
+### Was daraus nicht folgt
+
+Der beste Punkt der Karte liegt bei 30 (+730 gegen +478). Ihn zum neuen
+Kandidaten zu erklaeren waere genau die Ueberanpassung, gegen die das
+Plateau-Gate gebaut ist - mit dem Zusatz, dass die Karte selbst elf Versuche
+gekostet hat und die Huerde entsprechend hoeher liegt.
+
+Versuchszaehler **119 -> 130**: die elf Punkte der ersten Karte. Die
+Wiederholungen fuer die Fehlersuche liefen ausserhalb des Zaehlers - dieselben
+Punkte zweimal zu rechnen ist keine zweite Hypothese.
+
+Stand unveraendert: **7 von 11**.

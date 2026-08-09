@@ -47,7 +47,7 @@ import pandas as pd
 import structlog
 
 from backtest.engine import BacktestConfig, Backtester
-from research.gates import skaliere_perioden
+from research.gates import _operand_kennung, skaliere_perioden
 from strategy.compiler import compile_genome
 from strategy.genome import Genome
 
@@ -76,6 +76,14 @@ class Punkt:
     trades: int
     je_markt: dict[str, float] = field(default_factory=dict)
 
+    wert: int = 0
+    """Der Wert der **abgetasteten** Stellgroesse an diesem Punkt.
+
+    Bei der gemeinsamen Verschiebung ist das die Leitperiode. Wird eine
+    einzelne Stellgroesse abgetastet, steht hier ihr Wert - die Leitperiode
+    bliebe dort konstant und taugte nicht als Beschriftung.
+    """
+
     @property
     def profitabel(self) -> bool:
         return self.gewinn > 0
@@ -87,6 +95,8 @@ class Landschaft:
 
     punkte: list[Punkt] = field(default_factory=list)
     mitte: float = 1.0
+    regler: str = "alle gemeinsam"
+    """Welche Stellgroesse abgetastet wurde."""
 
     @property
     def profitabel(self) -> list[Punkt]:
@@ -144,15 +154,22 @@ class Landschaft:
         )
 
     def tabelle(self) -> str:
-        zeilen = [f"{'Faktor':>7} {'Leitperiode':>12} {'Trades':>7} {'Gewinn':>11}  "]
+        spalte = "Leitperiode" if self.regler == "alle gemeinsam" else self.regler[:12]
+        zeilen = [f"{'Faktor':>7} {spalte:>12} {'Trades':>7} {'Gewinn':>11}  "]
         for p in self.punkte:
             marke = "  <== Kandidat" if abs(p.faktor - self.mitte) < 1e-9 else ""
             zeichen = "+" if p.profitabel else "-"
             zeilen.append(
-                f"{p.faktor:>7.2f} {p.leitperiode:>12} {p.trades:>7} "
+                f"{p.faktor:>7.2f} {p.wert or p.leitperiode:>12} {p.trades:>7} "
                 f"{p.gewinn:>11.2f} {zeichen}{marke}"
             )
         return "\n".join(zeilen)
+
+
+#: Die Abschnitte, in denen Perioden stehen.
+ABSCHNITTE = (
+    "entry_long", "entry_short", "exit_long", "exit_short", "filters", "konfluenz",
+)
 
 
 def leitperiode(genome: Genome) -> int:
@@ -163,10 +180,7 @@ def leitperiode(genome: Genome) -> int:
     """
     werte = [
         wert
-        for abschnitt in (
-            "entry_long", "entry_short", "exit_long", "exit_short",
-            "filters", "konfluenz",
-        )
+        for abschnitt in ABSCHNITTE
         for bedingung in getattr(genome, abschnitt, [])
         for seite in (bedingung.left, bedingung.right)
         if seite.kind == "indicator"
@@ -175,12 +189,50 @@ def leitperiode(genome: Genome) -> int:
     return max(werte) if werte else 0
 
 
+def stellwert(original: Genome, variante: Genome, kennung: str | None) -> int:
+    """Der Wert der abgetasteten Stellgroesse - die Beschriftung eines Punktes.
+
+    Ohne ``kennung`` ist das die Leitperiode. Mit ``kennung`` waere sie
+    nutzlos: Wer nur ``sma(50)`` verschiebt, laesst die 200 stehen, und alle
+    Punkte truegen dieselbe Zahl.
+
+    **Gesucht wird im Original, abgelesen in der Variante.** Der erste Anlauf
+    suchte die Kennung in der Variante - dort heisst der Operand aber laengst
+    ``sma(period=25)`` und passt auf nichts mehr. Die Tabelle zeigte deshalb
+    fuer jeden Punkt ausser dem Kandidaten die Leitperiode 200, als waere
+    nichts verschoben worden.
+    """
+    if kennung is None:
+        return leitperiode(variante)
+    if kennung == "stop":
+        return int(variante.stop.model_dump().get("atr_period") or 0)
+    if kennung == "sizing":
+        return int(variante.sizing.vol_period or 0)
+
+    alt = original.model_dump(mode="json")
+    neu = variante.model_dump(mode="json")
+    for abschnitt in ABSCHNITTE:
+        for i, bedingung in enumerate(alt.get(abschnitt, [])):
+            for seite in ("left", "right"):
+                operand = bedingung[seite]
+                if operand["kind"] != "indicator" or not operand["params"]:
+                    continue
+                if _operand_kennung(operand) != kennung:
+                    continue
+                # Dieselbe Stelle in der Variante ablesen - die Struktur ist
+                # identisch, nur die Zahlen sind andere.
+                params = neu[abschnitt][i][seite]["params"]
+                return int(next(iter(params.values())))
+    return 0
+
+
 def kartieren(
     genome: Genome,
     frames: dict[str, pd.DataFrame],
     configs: dict[str, BacktestConfig],
     *,
     faktoren: tuple[float, ...] = FAKTOREN,
+    nur: str | None = None,
 ) -> Landschaft:
     """Die Gegend um ``genome`` abtasten.
 
@@ -193,19 +245,32 @@ def kartieren(
     ist die **Form** der Landschaft, nicht die Zulassungsfaehigkeit jedes
     Punktes. Ein Walk-Forward ueber zwoelf Punkte und zwei Maerkte dauerte
     Minuten und aenderte an der Form wenig.
+
+    **``nur`` tastet eine einzelne Stellgroesse ab.** Ohne das verschiebt sich
+    immer alles zugleich, und die Karte kann nicht sagen, *welche* Periode den
+    Ausschlag gibt. Beim Spitzenkandidaten ist genau das die offene Frage: Das
+    Plateau-Gate hat gezeigt, dass vier seiner fuenf Perioden nichts bewirken
+    und alles an der 50 haengt.
     """
-    landschaft = Landschaft()
-    gesehen: dict[int, Punkt] = {}
+    landschaft = Landschaft(regler=nur or "alle gemeinsam")
+    gesehen: set[str] = set()
 
     for faktor in faktoren:
-        variante = genome if faktor == 1.0 else skaliere_perioden(genome, faktor)
+        variante = (
+            genome if faktor == 1.0 else skaliere_perioden(genome, faktor, nur=nur)
+        )
         if variante is None:
             continue
 
-        leit = leitperiode(variante)
-        if leit in gesehen and faktor != 1.0:
-            # Zwei Faktoren, dieselben gerundeten Perioden - kein neuer Punkt.
+        # **Nach dem Genom unterscheiden, nicht nach der Leitperiode.**
+        #
+        # Frueher stand hier die Leitperiode als Schluessel. Beim Abtasten
+        # einer einzelnen Stellgroesse bleibt sie konstant - der zweite Punkt
+        # haette wie ein Duplikat ausgesehen, und die Karte haette aus einem
+        # einzigen Punkt bestanden, ohne dass es aufgefallen waere.
+        if variante.genome_id in gesehen:
             continue
+        gesehen.add(variante.genome_id)
 
         je_markt: dict[str, float] = {}
         trades = 0
@@ -216,12 +281,12 @@ def kartieren(
 
         punkt = Punkt(
             faktor=faktor,
-            leitperiode=leit,
+            leitperiode=leitperiode(variante),
             gewinn=sum(je_markt.values()) / len(je_markt),
             trades=trades,
             je_markt=je_markt,
+            wert=stellwert(genome, variante, nur),
         )
-        gesehen[leit] = punkt
         landschaft.punkte.append(punkt)
 
     landschaft.punkte.sort(key=lambda p: p.faktor)
