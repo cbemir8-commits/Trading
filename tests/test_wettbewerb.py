@@ -609,3 +609,49 @@ class TestRangfolgeBelohntKeineRisikoreduktion:
         )
 
         assert board.ranked()[0].deflated_sharpe == 0.0
+
+
+class TestStartpunktDerSuche:
+    """**Wo die Suche anfaengt, entscheidet, wofuer die Versuche draufgehen.**
+
+    Aus einem Katalog heraus verbringt sie die ersten Runden damit, sich an
+    ein Niveau heranzuarbeiten, das laengst bekannt ist. Jeder dieser Versuche
+    hebt die Huerde des Deflated Sharpe fuer alle spaeteren - die Suche macht
+    sich also selbst das Ziel schwerer, um dorthin zu kommen, wo sie schon war.
+    """
+
+    def test_die_option_ist_verdrahtet(self) -> None:
+        from typer.testing import CliRunner
+
+        from cli import app
+
+        assert "--von-spitze" in CliRunner().invoke(
+            app, ["wettbewerb", "--help"]
+        ).output
+
+    def test_varianten_der_spitze_sind_nicht_die_spitze(self) -> None:
+        """Der Spitzenkandidat selbst wird nicht noch einmal geprueft: Sein
+        Ergebnis steht, und ein zweiter Lauf desselben Genoms waere keine
+        zweite Hypothese - wuerde aber wie eine gezaehlt."""
+        from research.seeds import spitzenkandidat
+
+        spitze = spitzenkandidat()
+        varianten = breed([spitze], 8, seed=0)
+
+        assert varianten
+        assert all(v.genome_id != spitze.genome_id for v in varianten)
+
+    def test_die_varianten_bleiben_in_der_familie(self) -> None:
+        """Sie sollen den bekannten Punkt umkreisen, nicht ersetzen - sonst
+        waere der Startpunkt gleichgueltig."""
+        from research.seeds import spitzenkandidat
+
+        spitze = spitzenkandidat()
+        varianten = breed([spitze], 8, seed=0)
+
+        gleiche_richtung = [
+            v for v in varianten
+            if v.sizing.kind == spitze.sizing.kind
+            and len(v.entry_long) == len(spitze.entry_long)
+        ]
+        assert len(gleiche_richtung) >= len(varianten) // 2

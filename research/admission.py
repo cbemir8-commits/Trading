@@ -211,6 +211,34 @@ def run_admission(
             frames=frames,
             configs=configs,
         )
+
+        # **Ein Champion entsteht nie aus einer Vorauswahl.**
+        #
+        # Der Wettbewerb laeuft im Standardfall schnell, also ohne
+        # Kosten-Stress und Parameter-Plateau. Bis hierher hiess "alle
+        # bestanden" damit "alle neun bestanden" - und der Kandidat landete
+        # als Champion in champion.json, ohne die beiden teuersten Gates je
+        # gesehen zu haben. Genau an dieser Datei haengt das echte Geld.
+        #
+        # Wer die Vorauswahl besteht, bekommt deshalb hier den Nachschlag mit
+        # allen elf. Das kostet nur fuer die wenigen Kandidaten Rechenzeit,
+        # die ueberhaupt so weit kommen, und es zaehlt **nicht** als neuer
+        # Versuch: Dasselbe Genom genauer zu messen ist keine zweite
+        # Hypothese.
+        if not run_expensive and gates.geprueftes_bestanden:
+            log.info("zulassung.nachschlag", genome=genome.genome_id)
+            gates = evaluate_gates(
+                genome,
+                walkforward,
+                frame,
+                config,
+                trials_so_far=trials,
+                thresholds=thresholds,
+                sub_frame=sub_frame,
+                run_expensive=True,
+                frames=frames,
+                configs=configs,
+            )
         candidate = Candidate(genome=genome, walkforward=walkforward, gates=gates)
         report.candidates.append(candidate)
         log.info("zulassung.kandidat", ergebnis=candidate.describe())

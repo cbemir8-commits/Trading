@@ -3708,3 +3708,97 @@ haengt.
 
 Versuchszaehler unveraendert bei **130** - hier wurde nichts gemessen, was
 eine Strategie betrifft. Stand: **7 von 11**.
+
+## Einundvierzig. Ein Champion haette aus neun Gates entstehen koennen
+
+Beim Durchgehen des Plans, kurz vor dem ersten Wettbewerbslauf, an der Stelle
+nachgesehen, an der es zaehlt. Der Hilfetext von ``cli wettbewerb`` sagt:
+
+    --schnell/--vollstaendig
+    "Vorauswahl mit 7 Gates. Die Zulassung laeuft am Ende mit allen."
+
+**Es lief nie etwas mit allen.** Die Schleife reicht ``run_expensive=not
+schnell`` in jede Runde durch, und danach kommt nichts mehr. Im Standardfall -
+und das ist der Fall, in dem dieser Befehl benutzt wird - laufen Kosten-Stress
+und Parameter-Plateau kein einziges Mal.
+
+Der Rest ergab sich aus einer einzigen Zeile:
+
+    GateReport.passed = all(r.passed for r in self.results)
+
+Bei neun Ergebnissen heisst das neun von neun. Ein Kandidat, der die neun
+schnellen Gates besteht, galt damit als zugelassen, wurde Champion und landete
+in ``champion.json`` - ohne die beiden teuersten Gates je gesehen zu haben.
+
+An genau dieser Datei haengt seit dem vorigen Abschnitt das **echte Geld**:
+``cli trade`` gibt Mainnet nur frei, wenn die Kennung mit ``champion.json``
+uebereinstimmt. Eine Sperre, die eine Datei schuetzt, welche selbst nicht
+vollstaendig geprueft wurde, schuetzt nichts. Die beiden Fehler zusammen waren
+gefaehrlicher als jeder fuer sich.
+
+### Behoben
+
+* ``GateReport`` weiss jetzt, ob es eine Vorauswahl war. ``passed`` verlangt
+  eine **vollstaendige** Pruefung; fuer die schwaechere Frage gibt es
+  ``geprueftes_bestanden``.
+* Wer die Vorauswahl besteht, bekommt in ``run_admission`` sofort den
+  Nachschlag mit allen elf. Das kostet nur fuer die wenigen Kandidaten
+  Rechenzeit, die so weit kommen - und **nicht** einen zweiten Versuch:
+  Dasselbe Genom genauer zu messen ist keine zweite Hypothese.
+* Der Hilfetext sagt jetzt, was passiert.
+
+Dieselbe Luecke war in ``cli nachpruefung`` schon einmal aufgetreten und dort
+mit ``Ergebnis.vorauswahl`` geschlossen worden (Abschnitt vierundzwanzig). Sie
+im Wettbewerb stehenzulassen, war ein halber Fix - und der gefaehrlichere
+Zweig war der, der uebrig blieb.
+
+## Zweiundvierzig. Sechzehn Versuche, kein Fortschritt - und was das kostet
+
+Der Plan sieht vor, den Wettbewerb auf **derselben Aufstellung** laufen zu
+lassen, auf der geprueft wird. Das ist seit Abschnitt sechsunddreissig
+moeglich und war nie gelaufen.
+
+Dazu ein zweiter Startpunkt: ``--von-spitze`` beginnt mit Varianten des besten
+bekannten Kandidaten statt mit einem Katalog. Aus einem Katalog heraus
+verbringt die Suche die ersten Runden damit, sich an ein Niveau
+heranzuarbeiten, das laengst bekannt ist - und jeder dieser Versuche hebt die
+Huerde fuer alle spaeteren. Der Spitzenkandidat selbst wird dabei nicht noch
+einmal geprueft; sein Ergebnis steht.
+
+    cli wettbewerb -i D -m BTCUSD_BITSTAMP,ETHUSD_BITSTAMP --von-spitze
+                   --runden 2 --varianten 8
+
+Sechzehn Varianten, BTC + ETH, Tageskerzen. Ergebnis, nach Deflated Sharpe:
+
+       DSR  Gates  Trades   Erw. R   offen
+     0,829   6/9     152    +1,450   Messlatte, Schlechtestes Jahr, DSR
+     0,824   6/9     152    +1,232   Messlatte, Schlechtestes Jahr, DSR
+     0,787   7/9     136    +1,517   Messlatte, DSR
+     0,761   7/9     136    +1,517   Messlatte, DSR
+
+**Kein Kandidat besser als der Ausgangspunkt.** Der Spitzenkandidat stand bei
+0,830; die beste Variante erreicht 0,829.
+
+Zwei Beobachtungen sind trotzdem etwas wert:
+
+* Es **gibt** Varianten, die das Gate "Schlechtestes Jahr" bestehen - der
+  Spitzenkandidat scheitert daran. Sie erkaufen es mit 136 statt 152 Trades,
+  und weniger Trades heissen niedrigeren Deflated Sharpe. Die beiden Gates
+  ziehen gegeneinander.
+* Die Varianten, die nur die **Konfluenz** aendern, kommen auf exakt dieselben
+  152 Trades und praktisch denselben Wert. Das ist Abschnitt achtunddreissig
+  aus einer unabhaengigen Richtung bestaetigt: Die Konfluenz bewirkt nichts.
+
+### Was der Lauf gekostet hat
+
+Versuchszaehler **130 -> 146**. Sechzehn Versuche heben die noetige Qualitaet
+je Trade um 16 x 0,00021 = 0,0034. Der Lauf hat also nichts gefunden und das
+Ziel ein Stueck weiter weggeschoben.
+
+Das ist kein Argument gegen Suchen - es ist das Argument dafuer, **gezielt** zu
+suchen. Die Mutation variiert Zahlen, und die Zahlen-Richtungen sind
+ausgemessen. Was fehlt, ist eine Regel mit anderer Struktur, und dafuer gibt es
+genau ein Werkzeug im Haus: ``research/analyst.py``. Sie braucht einen
+API-Schluessel, der nicht gesetzt ist.
+
+Stand unveraendert: **7 von 11**, jetzt bei 146 Versuchen.

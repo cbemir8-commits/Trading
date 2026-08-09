@@ -90,9 +90,31 @@ class GateReport:
     genome_id: str
     results: list[GateResult] = field(default_factory=list)
 
+    vorauswahl: bool = False
+    """Sind die teuren Gates ausgelassen worden?
+
+    **Dann ist "alles bestanden" keine Zulassung.** Ohne dieses Feld hiess
+    neun von neun dasselbe wie elf von elf - und ``cli wettbewerb`` laeuft im
+    Standardfall genau so. Ein Kandidat haette damit Kosten-Stress und
+    Parameter-Plateau nie gesehen und trotzdem als Champion in
+    ``champion.json`` gestanden. Das ist die Datei, an der seit kurzem das
+    echte Geld haengt.
+    """
+
     @property
     def passed(self) -> bool:
-        return all(r.passed for r in self.results)
+        """Zugelassen - und zwar nur nach einer **vollstaendigen** Pruefung."""
+        return not self.vorauswahl and all(r.passed for r in self.results)
+
+    @property
+    def geprueftes_bestanden(self) -> bool:
+        """Hat bestanden, was tatsaechlich gelaufen ist?
+
+        Die schwaechere Frage, und die richtige fuer eine Vorauswahl: Wer sie
+        mit Ja beantwortet, hat den Nachschlag mit allen Gates verdient - mehr
+        aber auch nicht.
+        """
+        return bool(self.results) and all(r.passed for r in self.results)
 
     @property
     def failures(self) -> list[GateResult]:
@@ -101,6 +123,11 @@ class GateReport:
     def summary(self) -> str:
         if self.passed:
             return f"{self.genome_id}: alle {len(self.results)} Gates bestanden"
+        if self.vorauswahl and self.geprueftes_bestanden:
+            return (
+                f"{self.genome_id}: {len(self.results)} von {len(self.results)} "
+                f"in der Vorauswahl - die teuren Gates fehlen noch"
+            )
         names = ", ".join(r.name for r in self.failures)
         return (
             f"{self.genome_id}: durchgefallen bei {len(self.failures)} von "
@@ -1297,7 +1324,7 @@ def evaluate_gates(
     beziehen sich auf einen Markt, und das ist richtig so.
     """
     thresholds = thresholds or GateThresholds()
-    report = GateReport(genome_id=genome.genome_id)
+    report = GateReport(genome_id=genome.genome_id, vorauswahl=not run_expensive)
 
     report.results.append(gate_sample_size(walkforward, thresholds, genome=genome))
     report.results.append(gate_benchmark(walkforward, frame, thresholds))

@@ -29,6 +29,7 @@ from backtest.walkforward import WalkForwardReport, WalkForwardSplitter
 from core.config import RiskSettings
 from core.models import Instrument
 from research.admission import (
+    AdmissionReport,
     Candidate,
     load_trials,
     pick_champion,
@@ -384,3 +385,170 @@ class TestGeneration2:
         second = {g.genome_id for g in load_seeds(generation=2)}
 
         assert not (first & second)
+
+
+# ---------------------------------------------------------------------------
+#  Ein Champion entsteht nie aus einer Vorauswahl
+# ---------------------------------------------------------------------------
+class TestVorauswahlIstKeineZulassung:
+    """**Der gefaehrlichste Fehler, den dieses Projekt hatte.**
+
+    ``cli wettbewerb`` laeuft im Standardfall schnell, also ohne Kosten-Stress
+    und Parameter-Plateau. ``GateReport.passed`` hiess bis hierher schlicht
+    "alle Ergebnisse in der Liste sind gut" - bei neun Eintraegen also neun von
+    neun. Ein Kandidat konnte damit Champion werden und in ``champion.json``
+    landen, ohne die beiden teuersten Gates je gesehen zu haben.
+
+    An genau dieser Datei haengt seit kurzem das echte Geld: ``cli trade``
+    gibt Mainnet nur frei, wenn die Kennung mit ``champion.json``
+    uebereinstimmt. Eine Sperre, die eine Datei schuetzt, die selbst nicht
+    vollstaendig geprueft wurde, schuetzt nichts.
+    """
+
+    def _bericht(self, *, vorauswahl: bool, anzahl: int = 9) -> GateReport:
+        return GateReport(
+            genome_id="abc",
+            vorauswahl=vorauswahl,
+            results=[
+                GateResult(
+                    name=f"Gate {i}",
+                    status=GateStatus.PASS,
+                    value=1.0,
+                    threshold=0.0,
+                    message="gut",
+                )
+                for i in range(anzahl)
+            ],
+        )
+
+    def test_alles_bestanden_ist_in_der_vorauswahl_keine_zulassung(self) -> None:
+        bericht = self._bericht(vorauswahl=True)
+
+        assert bericht.geprueftes_bestanden
+        assert not bericht.passed
+
+    def test_ohne_vorauswahl_gilt_alles_bestanden(self) -> None:
+        assert self._bericht(vorauswahl=False, anzahl=11).passed
+
+    def test_die_zusammenfassung_nennt_die_vorauswahl_beim_namen(self) -> None:
+        """"Durchgefallen" waere falsch und "alle bestanden" waere
+        gefaehrlich. Es ist weder das eine noch das andere."""
+        text = self._bericht(vorauswahl=True).summary()
+
+        assert "Vorauswahl" in text
+        assert "durchgefallen" not in text
+
+    def test_ein_vorauswahl_kandidat_wird_nicht_champion(
+        self, config: BacktestConfig
+    ) -> None:
+        report = AdmissionReport()
+        genome = trend_following()
+        report.candidates.append(
+            Candidate(
+                genome=genome,
+                walkforward=WalkForwardReport(),
+                gates=self._bericht(vorauswahl=True),
+            )
+        )
+
+        assert report.admitted == []
+        assert pick_champion(report.admitted) is None
+
+    def test_wer_die_vorauswahl_besteht_bekommt_den_nachschlag(
+        self, config: BacktestConfig, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """**Die Zusage aus dem Hilfetext, jetzt eingeloest.**
+
+        Dort stand seit jeher "die Zulassung laeuft am Ende mit allen" - und
+        es lief nie etwas mit allen. Wer die schnellen Gates besteht, wird
+        jetzt sofort mit allen elf nachgeprueft.
+        """
+        from research import admission as modul
+
+        aufrufe: list[bool] = []
+
+        def falsches_gate(genome, walkforward, frame, config, **kw):
+            aufrufe.append(kw["run_expensive"])
+            return GateReport(
+                genome_id=genome.genome_id,
+                vorauswahl=not kw["run_expensive"],
+                results=[
+                    GateResult(
+                        name="Alles gut", status=GateStatus.PASS,
+                        value=1.0, threshold=0.0, message="",
+                    )
+                ],
+            )
+
+        monkeypatch.setattr(modul, "evaluate_gates", falsches_gate)
+
+        report = run_admission(
+            [trend_following()], noise_frame(months=20), config,
+            trials_so_far=0, run_expensive=False,
+        )
+
+        assert aufrufe == [False, True], (
+            "Erst die Vorauswahl, dann der Nachschlag mit allen Gates"
+        )
+        assert report.champion is not None
+        assert not report.champion.gates.vorauswahl
+
+    def test_der_nachschlag_zaehlt_nicht_als_neuer_versuch(
+        self, config: BacktestConfig, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Dasselbe Genom genauer zu messen ist keine zweite Hypothese - sonst
+        wuerde ausgerechnet der aussichtsreichste Kandidat seine eigene
+        Huerde anheben."""
+        from research import admission as modul
+
+        def immer_gut(genome, walkforward, frame, config, **kw):
+            return GateReport(
+                genome_id=genome.genome_id,
+                vorauswahl=not kw["run_expensive"],
+                results=[
+                    GateResult(
+                        name="Alles gut", status=GateStatus.PASS,
+                        value=1.0, threshold=0.0, message="",
+                    )
+                ],
+            )
+
+        monkeypatch.setattr(modul, "evaluate_gates", immer_gut)
+
+        report = run_admission(
+            [trend_following()], noise_frame(months=20), config,
+            trials_so_far=7, run_expensive=False,
+        )
+
+        assert report.trials_after == 8
+
+    def test_wer_die_vorauswahl_reisst_bekommt_keinen_nachschlag(
+        self, config: BacktestConfig, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Sonst waere die Vorauswahl sinnlos: Sie soll Rechenzeit sparen,
+        indem die teuren Gates nur laufen, wo sie etwas entscheiden."""
+        from research import admission as modul
+
+        aufrufe: list[bool] = []
+
+        def durchgefallen(genome, walkforward, frame, config, **kw):
+            aufrufe.append(kw["run_expensive"])
+            return GateReport(
+                genome_id=genome.genome_id,
+                vorauswahl=not kw["run_expensive"],
+                results=[
+                    GateResult(
+                        name="Zu wenig", status=GateStatus.FAIL,
+                        value=0.0, threshold=1.0, message="",
+                    )
+                ],
+            )
+
+        monkeypatch.setattr(modul, "evaluate_gates", durchgefallen)
+
+        run_admission(
+            [trend_following()], noise_frame(months=20), config,
+            trials_so_far=0, run_expensive=False,
+        )
+
+        assert aufrufe == [False]

@@ -492,6 +492,12 @@ def wettbewerb(
         8, "--generation", "-g",
         help="Startkatalog. 7 = Scalp-Setups, 8 = Abfolge-Modell und Short-Seite."
     ),
+    von_spitze: bool = typer.Option(
+        False, "--von-spitze",
+        help="Statt eines Katalogs mit Varianten des besten bekannten "
+             "Kandidaten beginnen. Spart die Runden, in denen die Suche "
+             "erst wieder dorthin finden muss.",
+    ),
     runden: int = typer.Option(
         0, help="Anzahl Runden. 0 = Dauerlauf bis Strg-C oder bis einer besteht."
     ),
@@ -500,7 +506,9 @@ def wettbewerb(
     ),
     schnell: bool = typer.Option(
         True, "--schnell/--vollstaendig",
-        help="Vorauswahl mit 7 Gates. Die Zulassung laeuft am Ende mit allen.",
+        help="Vorauswahl ohne die beiden teuren Gates. Wer sie besteht, wird "
+             "sofort mit allen elf nachgeprueft - ein Champion entsteht nie "
+             "aus einer Vorauswahl.",
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
@@ -639,8 +647,27 @@ def wettbewerb(
     )
 
     runde = 0
-    aktuell = load_seeds(generation)
-    herkunft = "Katalog"
+    # **Wo die Suche anfaengt, entscheidet, wofuer die Versuche draufgehen.**
+    #
+    # Aus einem Katalog heraus verbringt sie die ersten Runden damit, sich an
+    # das Niveau heranzuarbeiten, das laengst bekannt ist - und jeder dieser
+    # Versuche hebt die Huerde des Deflated Sharpe fuer alle spaeteren. Mit
+    # --von-spitze beginnt sie bei Varianten des besten Kandidaten.
+    #
+    # Der Spitzenkandidat selbst wird dabei **nicht** noch einmal geprueft:
+    # Sein Ergebnis steht, und ein zweiter Lauf desselben Genoms waere keine
+    # zweite Hypothese, wuerde aber wie eine gezaehlt.
+    if von_spitze:
+        from research.seeds import spitzenkandidat
+
+        aktuell = breed([spitzenkandidat()], varianten, seed=0)
+        herkunft = "Variante der Spitze"
+        if not aktuell:
+            console.print("[red]Keine Varianten des Spitzenkandidaten moeglich.[/]")
+            raise typer.Exit(2)
+    else:
+        aktuell = load_seeds(generation)
+        herkunft = "Katalog"
 
     try:
         while runden == 0 or runde < runden:
