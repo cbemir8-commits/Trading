@@ -2690,3 +2690,89 @@ Ausgangswert von 4 % war bereits drin. Das hebt die Huerde um 0,007 Punkte -
 der Preis dafuer, eine Vermutung ausgeraeumt statt mitgeschleppt zu haben.
 
 Stand unveraendert: **7 von 11**, Deflated Sharpe 0,863 gegen 0,95.
+
+---
+
+## Neunundzwanzig. Generation 6 und 7 auf 15 Minuten - alle vierzehn tot
+
+Ein Punkt stand seit Wochen offen: *"Generation 6/7 gehoeren auf
+15-Minuten-Kerzen."* Sie wurden dort nie gemessen. In der Nachpruefung von
+Nummer sechsundzwanzig lieferten sie auf Tageskerzen fast keinen Trade - was
+niemanden ueberraschte, denn dafuer waren sie nie gedacht.
+
+Die Daten liegen laengst im Speicher: **222.700 Fuenfzehnminutenkerzen** je
+Markt fuer BTC und ETH, ab dem 30.03.2020. Also gemessen.
+
+### Das Ergebnis
+
+Alle vierzehn Kandidaten der Generationen 6 und 7, Walk-Forward auf BTC + ETH,
+15 Minuten:
+
+    Kandidat                          Trades      p.a.        DD   Gates
+    Bollinger-Ruecksetzer im Trend      1969   -24,5 %    81,2 %    1/9
+    Ausbruch nach Volatilitaetsenge     1447   -38,6 %    92,4 %    1/9
+    VWAP-Rueckkehr                      2940   -39,2 %    92,8 %    1/9
+    Liquiditaets-Abgriff                2682   -39,5 %    93,0 %    1/9
+    Keltner-Enge mit Ausbruch           2601   -43,6 %    95,2 %    1/9
+    Stochastik-Ruecksetzer im Trend     3068   -32,7 %    88,2 %    1/9
+    MACD-Beschleunigung                 3047   -33,7 %    88,8 %    1/9
+    ... alle uebrigen ebenso            233-3068  -9 bis -44 %      1/9
+
+**Vierzehn von vierzehn: 1 von 9 Gates.** Jahresrenditen zwischen -9 % und
+-44 %, Rueckgaenge zwischen 68 % und 95 %.
+
+Und es ist ausdruecklich **kein** Stichprobenproblem: Diese Regeln liefern
+zwischen 233 und 3068 Trades - das Zwanzigfache des Spitzenkandidaten. Von
+Trades allein wird nichts besser.
+
+### Es liegt nicht an den Gebuehren
+
+Der naheliegende Verdacht bei 15 Minuten sind die Kosten. Aufgeschluesselt:
+
+    Kandidat                          Trades    brutto   Gebuehren   Funding    netto
+    Bollinger-Ruecksetzer im Trend      1969   -347,0     -434,3    -341,0   -1122,3
+    Grosse Kerze mit Volumen            2307    -26,3     -396,6    -277,5    -700,4
+    Stochastik-Ruecksetzer im Trend     3068   -232,4     -496,3    -248,0    -976,7
+    Keltner-Enge mit Ausbruch           2601   -672,3     -563,7    -160,6   -1396,6
+    VWAP-Rueckkehr                      2940   -669,6     -387,2    -168,8   -1225,6
+
+**Alle vierzehn verlieren schon brutto.** Bei Gebuehren von null und Funding
+von null bliebe jede einzelne Regel im Minus. Die Kosten machen es schlimmer -
+sie verdoppeln bis verzwanzigfachen den Verlust -, aber sie sind nicht die
+Ursache.
+
+Damit ist die Aussage schaerfer als die uebliche: Es ist nicht so, dass hier
+ein Vorteil von den Kosten aufgefressen wuerde. **Es ist keiner da.**
+
+(Zum Funding: Es wird nach Perpetual-Bedingungen modelliert, weil dort
+gehandelt wuerde - die Bitstamp-Kerzen selbst sind Kassamarkt und kennen
+keines. Das ist die richtige Annahme fuer den Zielmarkt, aber es ist eine
+Annahme, und auf 15 Minuten faellt sie ins Gewicht.)
+
+### Was damit erledigt ist
+
+Die Fuenfzehnminuten-Richtung war zweimal offen: einmal fuer den
+Spitzenkandidaten (gemessen in Nummer fuenfzehn, nichts zu holen), einmal fuer
+die Generationen, die eigens dafuer entworfen wurden. **Beide sind jetzt
+gemessen und beide sind tot.** Der Punkt kann von der Liste.
+
+Kostet keinen Versuch: dieselben Regeln auf anderen Daten, und ausgewaehlt
+wurde nichts - es gab nichts auszuwaehlen.
+
+### Ein Fehler in der eigenen Erweiterung, vor dem Ausliefern gefangen
+
+Fuer diesen Lauf hat ``cli nachpruefung`` zwei Schalter bekommen: mehrere
+Generationen auf einmal und ``--schnell``, das die beiden teuren Gates
+(Parameter-Plateau, Kosten-Stress) auslaesst - 33 Sekunden je Kandidat statt
+Minuten.
+
+Dabei waere fast etwas durchgerutscht: ``Ergebnis.zugelassen`` prueft
+``bestanden == gesamt``. Mit ``--schnell`` ist ``gesamt`` neun, also haette ein
+Kandidat mit 9 von 9 im Bericht als **"alle Gates bestanden"** gestanden -
+waehrend zwei Gates gar nicht gelaufen sind. Genau die Sorte stiller
+Aufwertung, gegen die die ganze Zulassungsstrecke gebaut ist.
+
+Eine Vorauswahl kann jetzt nichts zulassen, und ein Test haelt es fest.
+
+Stand unveraendert: **BTC + ETH auf Tageskerzen, 7 von 11**, Deflated Sharpe
+0,863 gegen 0,95. Versuchszaehler unveraendert bei **108**.

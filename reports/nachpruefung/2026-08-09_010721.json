@@ -1,0 +1,305 @@
+{
+  "maerkte": [
+    "BTCUSD_BITSTAMP",
+    "ETHUSD_BITSTAMP"
+  ],
+  "intervall": "15m",
+  "versuche": 108,
+  "ergebnisse": [
+    {
+      "genome_id": "bc8a57c3648bafa3",
+      "name": "Bollinger-Ruecksetzer im Trend",
+      "generation": 6,
+      "bestanden": 1,
+      "gesamt": 9,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe"
+      ],
+      "trades": 1969,
+      "cagr_pct": -36.5203,
+      "rueckgang_pct": 90.9171,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "d90f9707d9de30e0",
+      "name": "Sitzungs-Ausbruch mit Volumen",
+      "generation": 6,
+      "bestanden": 1,
+      "gesamt": 9,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe"
+      ],
+      "trades": 1722,
+      "cagr_pct": -25.5804,
+      "rueckgang_pct": 79.0564,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "7ac4e83b57a5c9f1",
+      "name": "Ausbruch nach Volatilitaetsenge",
+      "generation": 6,
+      "bestanden": 1,
+      "gesamt": 9,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe"
+      ],
+      "trades": 1447,
+      "cagr_pct": -38.583,
+      "rueckgang_pct": 92.3482,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "f494355ca82e1c80",
+      "name": "RSI-Ruecksetzer im Trend",
+      "generation": 6,
+      "bestanden": 1,
+      "gesamt": 9,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe"
+      ],
+      "trades": 233,
+      "cagr_pct": -8.9857,
+      "rueckgang_pct": 39.865,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "8d543294b07a583c",
+      "name": "VWAP-Rueckkehr",
+      "generation": 7,
+      "bestanden": 1,
+      "gesamt": 9,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe"
+      ],
+      "trades": 2940,
+      "cagr_pct": -39.2157,
+      "rueckgang_pct": 92.7922,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "9a38dc5614758223",
+      "name": "VWAP-Fortsetzung",
+      "generation": 7,
+      "bestanden": 1,
+      "gesamt": 9,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe"
+      ],
+      "trades": 1846,
+      "cagr_pct": -34.1545,
+      "rueckgang_pct": 88.8818,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "1b41a798684c0adb",
+      "name": "Liquiditaets-Abgriff",
+      "generation": 7,
+      "bestanden": 1,
+      "gesamt": 9,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe"
+      ],
+      "trades": 2682,
+      "cagr_pct": -39.5315,
+      "rueckgang_pct": 92.9897,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "03a780dc9b9ce16e",
+      "name": "Liquiditaets-Abgriff (Gegenprobe short)",
+      "generation": 7,
+      "bestanden": 1,
+      "gesamt": 9,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe"
+      ],
+      "trades": 2672,
+      "cagr_pct": -23.0756,
+      "rueckgang_pct": 78.4514,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "22384b081081a19e",
+      "name": "Keltner-Enge mit Ausbruch",
+      "generation": 7,
+      "bestanden": 1,
+      "gesamt": 9,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe"
+      ],
+      "trades": 2601,
+      "cagr_pct": -43.551,
+      "rueckgang_pct": 95.1786,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "edcbb5e3f566b188",
+      "name": "Grosse Kerze mit Volumen",
+      "generation": 7,
+      "bestanden": 1,
+      "gesamt": 9,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe"
+      ],
+      "trades": 2307,
+      "cagr_pct": -24.7472,
+      "rueckgang_pct": 80.12,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "8a775ad4784ec8d1",
+      "name": "Stochastik-Ruecksetzer im Trend",
+      "generation": 7,
+      "bestanden": 1,
+      "gesamt": 9,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe"
+      ],
+      "trades": 3068,
+      "cagr_pct": -32.664,
+      "rueckgang_pct": 88.2076,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "b381d9bb9347e6c9",
+      "name": "MACD-Beschleunigung",
+      "generation": 7,
+      "bestanden": 1,
+      "gesamt": 9,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe"
+      ],
+      "trades": 3047,
+      "cagr_pct": -33.7071,
+      "rueckgang_pct": 88.7967,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "0b7867ff5338f236",
+      "name": "Ruecksetzer an den EMA(50)",
+      "generation": 7,
+      "bestanden": 1,
+      "gesamt": 9,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe"
+      ],
+      "trades": 1214,
+      "cagr_pct": -19.4454,
+      "rueckgang_pct": 67.9664,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "f38f89fc869e6efc",
+      "name": "Randhandel im Seitwaertsmarkt",
+      "generation": 7,
+      "bestanden": 1,
+      "gesamt": 9,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe"
+      ],
+      "trades": 2576,
+      "cagr_pct": -36.6884,
+      "rueckgang_pct": 91.3239,
+      "dsr": 0.0
+    }
+  ],
+  "urteil": "Kein Kandidat besteht alle Gates. Am weitesten kommt 'Bollinger-Ruecksetzer im Trend' mit 1 von 9; offen bleiben: Messlatte, Out-of-Sample-Sharpe, Drawdown, Schlechtestes Jahr, Bestaendigkeit, Monte-Carlo, Regime-Aufteilung, Deflated Sharpe."
+}

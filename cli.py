@@ -3223,8 +3223,14 @@ def nachpruefung(
         help="Symbole, durch Komma getrennt.",
     ),
     intervall: str = typer.Option("D", "--intervall", "-i"),
-    generation: int = typer.Option(
-        0, "--generation", "-g", help="Nur diese Generation. 0 = alle."
+    generation: str = typer.Option(
+        "", "--generation", "-g",
+        help="Nur diese Generationen, durch Komma getrennt. Leer = alle.",
+    ),
+    schnell: bool = typer.Option(
+        False, "--schnell",
+        help="Die teuren Gates (Plateau, Kosten-Stress) auslassen. Vorauswahl, "
+             "keine Zulassung - die Zahl der Gates sinkt entsprechend.",
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
@@ -3289,19 +3295,25 @@ def nachpruefung(
         for x in symbole
     }
 
+    gewuenscht = {int(x) for x in generation.replace(" ", "").split(",") if x}
     kandidaten: list[tuple[int, object]] = []
     for nummer, liste in sorted(GENERATIONS.items()):
-        if generation and nummer != generation:
+        if gewuenscht and nummer not in gewuenscht:
             continue
         for eintrag in liste:
             kandidaten.append((nummer, eintrag() if callable(eintrag) else eintrag))
-    if not generation:
+    if not gewuenscht:
         kandidaten.append((0, spitzenkandidat()))
+    if not kandidaten:
+        console.print(f"[red]Keine Kandidaten fuer Generation {generation}.[/]")
+        raise typer.Exit(2)
 
     trials = load_trials(Path(settings.paths.state) / "trials.json")
     console.print(
         f"\n[bold]Nachpruefung[/] {' + '.join(symbole)} {interval_obj.label}\n"
-        f"  Kandidaten {len(kandidaten)}\n"
+        f"  Kandidaten {len(kandidaten)}"
+        + ("  [Vorauswahl: teure Gates ausgelassen]" if schnell else "")
+        + "\n"
         f"  Zeitraum   {erster['open_time'].iloc[0]:%Y-%m} bis "
         f"{erster['open_time'].iloc[-1]:%Y-%m}\n"
         f"  Versuche   {trials} (unveraendert - Nachmessen ist kein Versuch)\n"
@@ -3322,7 +3334,8 @@ def nachpruefung(
             continue
 
         gates = evaluate_gates(
-            genome, bericht, erster, configs[symbole[0]], trials_so_far=trials
+            genome, bericht, erster, configs[symbole[0]], trials_so_far=trials,
+            run_expensive=not schnell,
         )
         k = bericht.combined
         ergebnis = Ergebnis(
@@ -3338,6 +3351,7 @@ def nachpruefung(
             dsr=next(
                 (r.value for r in gates.results if r.name == "Deflated Sharpe"), 0.0
             ),
+            vorauswahl=schnell,
         )
         lauf.ergebnisse.append(ergebnis)
         console.print(

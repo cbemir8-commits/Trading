@@ -54,10 +54,28 @@ class Ergebnis:
     cagr_pct: float = 0.0
     rueckgang_pct: float = 0.0
     dsr: float = 0.0
+    vorauswahl: bool = False
+    """Wurde nur eine **Vorauswahl** gerechnet, ohne die teuren Gates?
+
+    Dann sagt "alle bestanden" nichts: Es sind neun von elf, und die beiden
+    fehlenden - Parameter-Plateau und Kosten-Stress - sind ausgerechnet die,
+    die zusaetzliche Backtests brauchen und deshalb ausgelassen wurden.
+    """
 
     @property
     def zugelassen(self) -> bool:
-        return self.gesamt > 0 and self.bestanden == self.gesamt
+        """**Eine Vorauswahl kann nichts zulassen.**
+
+        Ohne diese Klausel haette ein Kandidat, der neun von neun besteht, als
+        "alle Gates bestanden" im Bericht gestanden - waehrend zwei Gates gar
+        nicht gelaufen sind. Das ist genau die Sorte stiller Aufwertung, gegen
+        die die ganze Zulassungsstrecke gebaut ist.
+        """
+        return (
+            not self.vorauswahl
+            and self.gesamt > 0
+            and self.bestanden == self.gesamt
+        )
 
 
 @dataclass(frozen=True, slots=True)

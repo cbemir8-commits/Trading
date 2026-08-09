@@ -203,3 +203,40 @@ class TestGateZahlIstKeinAbstand:
         )
 
         assert "Den hoechsten Deflated Sharpe" not in lauf.urteil()
+
+
+class TestVorauswahl:
+    """**Eine Vorauswahl kann nichts zulassen.**
+
+    ``--schnell`` laesst die teuren Gates aus - Parameter-Plateau und
+    Kosten-Stress, also ausgerechnet die, die zusaetzliche Backtests brauchen.
+    Wer dann neun von neun besteht, hat neun von elf bestanden.
+    """
+
+    def test_vollstaendige_neun_gelten_nicht_als_zugelassen(self) -> None:
+        vorab = Ergebnis(
+            genome_id="x", name="Schnell", generation=6,
+            bestanden=9, gesamt=9, vorauswahl=True,
+        )
+
+        assert not vorab.zugelassen
+
+    def test_ohne_vorauswahl_zaehlt_es(self) -> None:
+        voll = Ergebnis(
+            genome_id="x", name="Voll", generation=6, bestanden=11, gesamt=11
+        )
+
+        assert voll.zugelassen
+
+    def test_urteil_meldet_keine_zulassung_aus_der_vorauswahl(self) -> None:
+        lauf = Nachpruefung(
+            [
+                Ergebnis(
+                    genome_id="x", name="Schnell", generation=6,
+                    bestanden=9, gesamt=9, vorauswahl=True, dsr=0.9,
+                )
+            ]
+        )
+
+        assert lauf.zugelassen == []
+        assert "Kein Kandidat besteht alle Gates" in lauf.urteil()
