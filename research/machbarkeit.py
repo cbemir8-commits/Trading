@@ -59,6 +59,7 @@ sie alle. Der Aufrufer addiert die Zahl der neuen Stellungen auf den Zaehler;
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from itertools import combinations, pairwise
 
@@ -508,6 +509,19 @@ class Regler:
     stufen: tuple[float, ...]
     begruendung: str = ""
 
+    wandler: Callable[[object, float], object] | None = None
+    """Statt eines Pfades eine Umformung des ganzen Genoms.
+
+    Gebraucht fuer Groessen, die an vielen Stellen zugleich stehen - die
+    Indikatorperiode etwa steckt in Einstieg, Ausstieg, Konfluenz und im
+    Messfenster der Vola-Steuerung. Nur eine davon zu verschieben ergaebe eine
+    Regel, die sich selbst widerspricht; ``research/gates.skaliere_perioden``
+    beschreibt genau diesen Fehler und hat ihn behoben.
+
+    Wo ein Wandler steht, ist ``pfad`` nur noch fuer ``ausgangswert`` da und
+    zeigt auf nichts.
+    """
+
 
 #: Die bekannten Regler. Wer einen neuen aufnimmt, legt seine Stufen **hier**
 #: fest und nicht im Aufruf - sonst waehlt am Ende die Auswertung ihre eigenen
@@ -537,6 +551,20 @@ REGLER: dict[str, Regler] = {
             "Ausstieg - und dann entscheidet nicht mehr die Regel."
         ),
     ),
+    "periode": Regler(
+        name="Perioden-Faktor",
+        einheit="x",
+        pfad=(),
+        stufen=(0.4, 0.5, 0.6, 0.8, 1.0, 1.25, 1.6, 2.0),
+        wandler=lambda genome, faktor: _skaliere(genome, faktor),
+        begruendung=(
+            "Die einzige verbliebene Richtung aus Nummer einunddreissig: mehr "
+            "**Entscheidungen** auf demselben Markt. Ein schnellerer Schnitt "
+            "kreuzt oefter - die Frage ist, ob die Qualitaet je Trade das "
+            "aushaelt. Skaliert werden **alle** Perioden zugleich, sonst "
+            "entstuende eine Regel, die bei 40 einsteigt und bei 50 aussteigt."
+        ),
+    ),
     "konviktion": Regler(
         name="Konviktions-Bonus",
         einheit="",
@@ -550,6 +578,27 @@ REGLER: dict[str, Regler] = {
 }
 
 
+def _skaliere(genome, faktor: float):
+    """Alle Perioden mit demselben Faktor - ueber die Funktion des Gates.
+
+    Bewusst dieselbe wie im Plateau-Gate und in der Landschaftskarte. Wuerde
+    jeder Aufrufer seine eigene Skalierung mitbringen, verglichen sie
+    verschiedene Dinge - der Fehler, der in diesem Projekt schon viermal
+    aufgetreten ist.
+    """
+    from research.gates import skaliere_perioden
+
+    if faktor == 1.0:
+        return genome
+    skaliert = skaliere_perioden(genome, faktor)
+    if skaliert is None:
+        raise ValueError(
+            f"Faktor {faktor} aendert nichts - alle Perioden stehen bereits an "
+            f"ihren Grenzen."
+        )
+    return skaliert
+
+
 def stelle_ein(genome, regler: Regler, wert: float):
     """Eine Kopie des Genoms mit veraenderter Stellschraube.
 
@@ -561,6 +610,9 @@ def stelle_ein(genome, regler: Regler, wert: float):
     Die Kennung faellt weg und wird neu gebildet - sonst traegt eine andere
     Regel dieselbe Kennung, und der Versuchszaehler zaehlt sie als dieselbe.
     """
+    if regler.wandler is not None:
+        return regler.wandler(genome, wert)
+
     daten = genome.model_dump()
     ziel = daten
     for teil in regler.pfad[:-1]:
@@ -571,7 +623,14 @@ def stelle_ein(genome, regler: Regler, wert: float):
 
 
 def ausgangswert(genome, regler: Regler) -> float:
-    """Wo die Stellschraube beim uebergebenen Genom gerade steht."""
+    """Wo die Stellschraube beim uebergebenen Genom gerade steht.
+
+    Bei einem Wandler ist der Ausgangswert per Bauart **1,0**: Der Regler
+    beschreibt dort keine Groesse, sondern eine Verschiebung gegenueber dem
+    Genom, das hereingegeben wird.
+    """
+    if regler.wandler is not None:
+        return 1.0
     wert = genome
     for teil in regler.pfad:
         wert = getattr(wert, teil)

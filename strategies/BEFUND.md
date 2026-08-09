@@ -2972,3 +2972,98 @@ Kostet keinen Versuch: gemessen werden bereits gerechnete Regeln, ohne Gates,
 und ausgewaehlt wird nichts.
 
 Stand unveraendert: **7 von 11**, Versuchszaehler **112**.
+
+---
+
+## Zweiunddreissig. Die letzte offene Richtung: schneller handeln
+
+Nummer einunddreissig hatte zwei Wege ueber die Grenzlinie benannt. Der eine -
+mehr Qualitaet bei gleicher Frequenz - ist die schwere Richtung. Der andere sah
+leichter aus:
+
+> 300 Trades mit Sharpe 0,2112 - das kann der Kandidat je Trade heute schon
+> (0,2597). Es fehlt allein die Frequenz.
+
+Mehr Maerkte und feinere Kerzen liefern diese Trades nicht (Nummern
+siebenundzwanzig und neunundzwanzig). Bleibt: **mehr Entscheidungen auf
+demselben Markt** - ein schnellerer Schnitt kreuzt oefter. Dafuer bekam
+``cli machbarkeit`` einen Perioden-Regler, der **alle** Perioden zugleich
+skaliert: Einstieg, Ausstieg, Konfluenz und das Messfenster der
+Vola-Steuerung. Nur eine davon zu verschieben ergaebe eine Regel, die bei 40
+einsteigt und bei 50 aussteigt - der Fehler, den das Plateau-Gate schon einmal
+gemacht hat.
+
+### Das Ergebnis
+
+    Faktor  Trades   SR/Trade   noetig   Faktor    p.a.       DD     Gates
+       0,4     305     0,1774   0,2108     1,19  18,94 %  14,85 %    6/11
+       0,5     265     0,1803   0,2242     1,24  15,17 %  16,85 %    7/11
+       0,6     226     0,2053   0,2404     1,17  13,80 %  13,56 %    6/11
+       0,8     175     0,2169   0,2688     1,24  10,30 %  10,31 %    8/11
+       1,0     152     0,2597   0,2857     1,10  13,47 %  10,64 %    7/11  <-
+      1,25     132     0,1703   0,3038     1,78   6,21 %   9,56 %    6/11
+       1,6     113     0,1400   0,3250     2,32   3,69 %   9,98 %    5/11
+       2,0     106     0,1326   0,3342     2,52   2,79 %   8,95 %    4/11
+
+**Der Mechanismus funktioniert genau wie vorhergesagt - und hilft trotzdem
+nicht.** Ein doppelt so schneller Schnitt liefert doppelt so viele Trades (305
+gegen 152), und die geforderte Qualitaet faellt entsprechend von 0,286 auf
+0,211. Nur faellt die **erreichte** Qualitaet schneller: von 0,2597 auf 0,1774.
+
+Der Abstand zur Linie waechst dadurch von 1,10 auf 1,19. Und nach oben ist es
+noch klarer: Bei Faktor 2 steht der Abstand bei 2,52.
+
+**Der Perioden-Wert des Kandidaten ist also auch auf dieser Achse das
+Optimum** - der dritte Regler in Folge, bei dem das so ist (Stop, Konviktion,
+Periode). Das ist bemerkenswert und verdient eine nuechterne Einordnung: Es
+spricht dafuer, dass die 50 Tage kein Zufallstreffer sind. Es heisst aber
+nicht, dass sie gut genug waeren - sie sind nur das Beste in einer Familie, die
+nicht reicht.
+
+### Und ein Befund ueber das Messwerkzeug
+
+Die Deflated-Sharpe-Werte entlang dieses Reglers springen wild: 0,795 - 0,703 -
+0,467 - 0,344 - **0,851** - 0,071 - 0,018 - 0,006. Ein Wert von 0,851 zwischen
+0,344 und 0,071 ist keine Kurve, das ist ein Schalter. Nachgemessen:
+
+    Faktor   roh   effektiv    ICC       p    knapp
+       0,4   305        305  0,053   0,054     ja
+       0,5   265        265  0,059   0,059     ja
+       0,6   226        151  0,079   0,040     ja   <- gekuerzt
+       0,8   175        115  0,109   0,049     ja   <- gekuerzt
+       1,0   152        152  0,112   0,072     ja
+      1,25   132         81  0,187   0,040     ja   <- gekuerzt
+       1,6   113         53  0,375   0,009     nein
+       2,0   106         36  0,629   0,001     nein
+
+**Sechs von acht Stellungen liegen im Grenzbereich**, und drei davon fallen
+knapp unter 0,05 - dort wird die Stichprobe um ein Drittel gekuerzt, bei
+p-Werten, die sich von den Nachbarn um Hundertstel unterscheiden. Das ist die
+Klippe aus Nummer vierundzwanzig, diesmal nicht als einzelner Ausreisser,
+sondern ueber einen ganzen Regler sichtbar.
+
+Darunter liegt aber ein echter, sauberer Trend: **Der ICC steigt monoton von
+0,053 auf 0,629.** Je langsamer die Regel, desto staerker haengen ihre Trades
+zusammen - was einleuchtet, weil weniger Trades laenger durch dieselbe
+Marktbewegung laufen.
+
+Daraus folgt eine Leseregel, die ab jetzt gilt: **Entlang eines Reglers ist der
+Abstand zur Grenzlinie die verlaesslichere Rangfolge als der Deflated Sharpe.**
+Er rechnet mit rohen Trades und der Qualitaet je Trade - beide stetig - statt
+mit einer Zahl, die an einer harten Schwelle haengt.
+
+Der Preis dieser Leseregel gehoert dazu: Weil sie mit rohen Trades rechnet, ist
+sie dort **zu freundlich**, wo die Abhaengigkeit stark ist. Bei Faktor 1,6 und
+2,0 mit einem ICC von 0,375 und 0,629 ist der wahre Abstand groesser als 2,32
+und 2,52. Beide Lesarten fuehren hier zum selben Schluss - nur ist die eine
+stabil und die andere nicht.
+
+### Stand
+
+    Versuchszaehler   112 -> 119   (sieben neue Perioden-Stufen)
+    Kandidat          BTC + ETH, Tageskerzen, 7 von 11
+    Abstand zur Linie 1,10 - naeher als alles andere Gemessene
+
+Damit sind beide Wege aus Nummer einunddreissig begangen. Die Frequenz ist es
+nicht. Was bleibt, ist die schwere Richtung: eine Regel, die **je Trade**
+besser ist als 0,26 - und keine der 61 gemessenen ist es.

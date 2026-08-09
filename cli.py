@@ -1375,6 +1375,21 @@ _KONTRAKTE = {
 }
 
 
+def _sharpe_je_trade(trades) -> float:
+    """Mittleres Ergebnis je Trade in Einheiten seiner Streuung.
+
+    Die zweite Groesse, an der der Deflated Sharpe haengt - die erste ist die
+    Trade-Zahl. Ohne beide laesst sich ein Messpunkt nicht an der Grenzlinie
+    einordnen (``research/suchbudget.py``).
+    """
+    import numpy as np
+
+    werte = np.array([float(t.net_pnl) for t in trades])
+    if len(werte) < 2 or werte.std(ddof=1) == 0:
+        return 0.0
+    return float(werte.mean() / werte.std(ddof=1))
+
+
 def _terminkalender(settings):
     """Den Kalender laden - fuer Backtest und Handel derselbe.
 
@@ -3036,6 +3051,10 @@ def machbarkeit(
                         "rueckgang": (
                             kombiniert.max_drawdown_pct if kombiniert else 0.0
                         ),
+                        # Fuer die Grenzlinie aus Nummer einunddreissig: Ohne
+                        # den Sharpe je Trade laesst sich ein Punkt nicht an
+                        # ihr einordnen, und genau das ist die Frage.
+                        "sharpe_je_trade": _sharpe_je_trade(report.all_trades),
                     },
                 )
             )

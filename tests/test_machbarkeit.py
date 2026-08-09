@@ -480,7 +480,7 @@ class TestRegler:
     def test_bekannte_regler(self) -> None:
         from research.machbarkeit import REGLER
 
-        assert set(REGLER) == {"vola", "stop", "konviktion"}
+        assert set(REGLER) == {"vola", "stop", "konviktion", "periode"}
         for name, r in REGLER.items():
             assert r.stufen, name
             assert len(set(r.stufen)) == len(r.stufen), f"{name}: doppelte Stufe"
@@ -554,3 +554,72 @@ class TestRegler:
         assert ausgangswert(vorlage, REGLER["konviktion"]) == (
             vorlage.sizing.konviktion_bonus
         )
+
+
+class TestPeriodenregler:
+    """**Die letzte offene Richtung: mehr Entscheidungen auf demselben Markt.**
+
+    Ein schnellerer Schnitt kreuzt oefter. Skaliert werden muessen dabei
+    **alle** Perioden zugleich - sonst entstuende eine Regel, die bei 40
+    einsteigt und bei 50 aussteigt, und die hat nie jemand gehandelt.
+    """
+
+    def test_alle_perioden_wandern_mit(self) -> None:
+        from research.machbarkeit import REGLER, stelle_ein
+        from research.seeds import spitzenkandidat
+
+        vorlage = spitzenkandidat()
+
+        halb = stelle_ein(vorlage, REGLER["periode"], 0.5)
+
+        assert halb.entry_long[0].right.params["period"] == 25
+        assert halb.exit_long[0].right.params["period"] == 25
+        assert halb.konfluenz[0].right.params["period"] == 100
+        assert halb.sizing.vol_period == 15
+
+    def test_faktor_eins_laesst_alles_stehen(self) -> None:
+        from research.machbarkeit import REGLER, ausgangswert, stelle_ein
+        from research.seeds import spitzenkandidat
+
+        vorlage = spitzenkandidat()
+
+        assert ausgangswert(vorlage, REGLER["periode"]) == 1.0
+        assert stelle_ein(vorlage, REGLER["periode"], 1.0).genome_id == (
+            vorlage.genome_id
+        )
+
+    def test_dieselbe_skalierung_wie_das_plateau_gate(self) -> None:
+        """Wuerde der Regler seine eigene mitbringen, verglichen er etwas
+        anderes als das Gate - der Fehler, der hier schon viermal auftrat."""
+        from research.gates import skaliere_perioden
+        from research.machbarkeit import REGLER, stelle_ein
+        from research.seeds import spitzenkandidat
+
+        vorlage = spitzenkandidat()
+
+        ueber_regler = stelle_ein(vorlage, REGLER["periode"], 1.6)
+        ueber_gate = skaliere_perioden(vorlage, 1.6)
+
+        assert ueber_gate is not None
+        assert ueber_regler.genome_id == ueber_gate.genome_id
+
+    def test_wirkungsloser_faktor_faellt_auf(self, monkeypatch) -> None:
+        """Ein Faktor, der nichts aendert, ist keine neue Stellung - und darf
+        nicht still als eine gezaehlt werden.
+
+        Geprueft wird der Waechter, nicht ein echtes Genom: An einem solchen
+        laesst sich der Fall gar nicht herstellen, weil ``vol_period`` in
+        **jedem** Genom steht und immer mitskaliert - auch bei Groessenarten,
+        die es nie benutzen. Ein Testgenom zu bauen, das den Zweig scheinbar
+        ausloest, waere eine vorgetaeuschte Lage.
+        """
+        import pytest
+
+        from research import gates
+        from research.machbarkeit import REGLER, stelle_ein
+        from research.seeds import spitzenkandidat
+
+        monkeypatch.setattr(gates, "skaliere_perioden", lambda genome, faktor: None)
+
+        with pytest.raises(ValueError, match="aendert nichts"):
+            stelle_ein(spitzenkandidat(), REGLER["periode"], 2.0)
