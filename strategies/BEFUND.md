@@ -3157,3 +3157,77 @@ im Quelltext nach ``if nachgewiesen`` und faellt um, sobald es wieder dasteht.
 
 Stand: **7 von 11**, Deflated Sharpe 0,843 gegen 0,95, Versuchszaehler **119**
 unveraendert - eine Korrektur am Messgeraet ist kein Versuch.
+
+---
+
+## Vierunddreissig. Der Katalog nach der stetigen Kuerzung - und ein Bericht,
+## der auf einen Bildschirm passt
+
+### Die Nachpruefung, weil sich das Messgeraet geaendert hat
+
+Nummer dreiunddreissig hat die Klippe im Deflated-Sharpe-Gate beseitigt. Damit
+gilt dieselbe Regel wie nach jeder Aenderung am Instrument: **Der ganze Katalog
+gehoert neu gemessen** - dafuer gibt es ``cli nachpruefung``, und es kostet
+keinen Versuch.
+
+Alle 54 Kandidaten, BTC + ETH, Tageskerzen:
+
+    Kandidat                          Gates   DSR vorher   DSR jetzt
+    Trend mit Vola-Ziel 22 %           8/11        0,486       0,452
+    Vola-Ziel, kurzes Messfenster      8/11        0,476       0,443
+    Trend 50 Tage mit Konfluenz        7/11        0,864       0,843
+    Momentum-Beteiligung               5/11        0,106       0,248   <-
+    Trend-Beteiligung 50 Tage          5/11        0,086       0,223   <-
+
+**Kein Kandidat wechselt den Rang, keiner besteht.** Die meisten Werte fallen
+leicht - das ist der Versuchszaehler, der von 102 auf 119 gestiegen ist.
+
+Interessant sind die drei, die um mehr als 0,05 **steigen**: Es sind genau die
+mit starker Abhaengigkeit, die die alte Klippe hart bestraft hat. Sie bekommen
+jetzt eine Kuerzung nach Mass statt einer nach Schwellenwert. Das ist die
+Bestaetigung der Korrektur an 54 Kandidaten statt an einem Regler - und sie
+faellt in die richtige Richtung: Der Spitzenkandidat gewinnt nichts, die
+vorher ueberstraften gewinnen.
+
+### Und ein Bericht, der nicht 2400 Zeilen lang ist
+
+Dieses Dokument ist ein Laborbuch: chronologisch, vollstaendig, und fuer die
+Frage *wo stehen wir* unbrauchbar. Wer entscheiden soll, braucht drei Dinge -
+was gemessen ist, was daraus folgt, und was von ihm selbst abhaengt.
+
+``cli stand`` beantwortet das in vier Teilen:
+
+1. **Der gemessene Stand.** Kandidat, Gates, Abstand zur Grenzlinie,
+   Versuchszaehler - alles gerechnet, nichts gepflegt. Es kann nicht veralten,
+   ohne dass es auffaellt.
+2. **Was untersucht und geschlossen ist.** Zehn Richtungen, jede mit ihrem
+   gemessenen Ergebnis und der Nummer im BEFUND. Ein Eintrag ohne Fundstelle
+   wird vom Datentyp abgewiesen - sonst wuerde aus einer Messung mit der Zeit
+   eine Erzaehlung.
+3. **Was nicht bei mir liegt.** Drei Punkte, benannt und beziffert, nicht
+   beantwortet: die 15 % Mindestrendite, die Kontogroesse, die
+   Wochenverlustgrenze mit ihrer manuellen Freigabe. Ein Test prueft, dass in
+   diesen Texten keine Empfehlung steht.
+4. **Was nur auf dem Rechner des Nutzers laufen kann** - der Healthcheck und
+   der Abgleich, beide durch die Regionssperre dieses Containers blockiert.
+
+### Ein Fehler in der ersten Fassung, vor dem Ausliefern gefangen
+
+Der Bericht schrieb zunaechst: *"Zum haertesten Gate fehlen 110 % der
+bisherigen Qualitaet je Trade."* Der Faktor ist 1,10 - gemeint sind **zehn
+Prozent mehr**, nicht hundertzehn. So formuliert liest es sich, als fehle mehr
+als alles Vorhandene, und in einem Bericht, dessen einziger Zweck eine klare
+Lage ist, waere das die schlimmste Sorte Fehler.
+
+Jetzt steht dort: *"Dafuer muesste die Qualitaet je Trade um 10 % steigen:
+0,2597 auf 0,2857."* Ein Test haelt die Formulierung fest.
+
+### Stand
+
+    Kandidat          Trend 50 Tage mit Konfluenz, BTC + ETH, Tageskerzen
+    Ergebnis          152 Trades, 13,47 % p.a., 10,64 % Rueckgang
+    Gates             7 von 11
+    Offen             Messlatte, Schlechtestes Jahr, Deflated Sharpe,
+                      Parameter-Plateau
+    Abstand           10 % mehr Qualitaet je Trade
+    Versuche          119 - unveraendert, Nachmessen ist kein Versuch

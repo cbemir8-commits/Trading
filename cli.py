@@ -3830,5 +3830,113 @@ def suchbudget(
             )
 
 
+@app.command()
+def stand(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Wo steht das Projekt - auf einem Bildschirm.
+
+    ``strategies/BEFUND.md`` ist ein Laborbuch: chronologisch, vollstaendig,
+    und fuer die Frage *wo stehen wir* unbrauchbar. Dieser Befehl beantwortet
+    sie in vier Teilen: der gemessene Stand, was untersucht und geschlossen
+    ist, was beim Nutzer liegt, und was nur auf seinem Rechner laufen kann.
+
+    Die Zahlen werden **gemessen**, nicht gepflegt - der Kandidat laeuft durch
+    die Gates, der Abstand kommt aus der Grenzlinie. Nichts davon kann
+    veralten, ohne dass es auffaellt.
+
+    Kostet keinen Versuch.
+    """
+    from decimal import Decimal
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.gates import evaluate_gates
+    from research.seeds import spitzenkandidat
+    from research.stand import Lage
+    from research.suchbudget import Budget, Kandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    frames = common_range(roh)
+    genome = spitzenkandidat()
+    configs = {
+        x: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+        )
+        for x in symbole
+    }
+
+    trials = load_trials(Path(settings.paths.state) / "trials.json")
+    bericht = run_portfolio_walkforward(
+        frames, lambda: compile_genome(genome), configs
+    )
+    if not bericht.windows:
+        console.print("[red]Keine Fenster - zu wenig gemeinsame Historie.[/]")
+        raise typer.Exit(2)
+
+    erster = next(iter(frames.values()))
+    gates = evaluate_gates(
+        genome, bericht, erster, configs[symbole[0]], trials_so_far=trials
+    )
+    qualitaet = _sharpe_je_trade(bericht.all_trades)
+    budget = Budget(
+        versuche=trials,
+        kandidaten=[
+            Kandidat(genome.name, len(bericht.all_trades), qualitaet)
+        ],
+    )
+    kombiniert = bericht.combined
+
+    lage = Lage(
+        kandidat=genome.name,
+        maerkte=f"{' + '.join(symbole)}, {interval_obj.label}",
+        trades=len(bericht.all_trades),
+        sharpe_je_trade=qualitaet,
+        noetiger_sharpe=budget.noetig_bei(len(bericht.all_trades)),
+        bestanden=sum(1 for r in gates.results if r.passed),
+        gesamt=len(gates.results),
+        offen=tuple(r.name for r in gates.results if not r.passed),
+        versuche=trials,
+        cagr_pct=kombiniert.cagr_pct if kombiniert else 0.0,
+        rueckgang_pct=kombiniert.max_drawdown_pct if kombiniert else 0.0,
+    )
+
+    console.print()
+    console.print(lage.bericht())
+    console.print()
+    console.print("DIE GATES IM EINZELNEN")
+    console.print("-" * 72)
+    for r in gates.results:
+        zeichen = "+" if r.passed else "-"
+        farbe = "green" if r.passed else "yellow"
+        console.print(
+            f"  [{farbe}]{zeichen}[/] {r.name:24} {r.value:>10.3f} "
+            f"gegen {r.threshold:>10.3f}"
+        )
+
+
 if __name__ == "__main__":
     app()

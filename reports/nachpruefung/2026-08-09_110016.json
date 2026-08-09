@@ -1,0 +1,1035 @@
+{
+  "maerkte": [
+    "BTCUSD_BITSTAMP",
+    "ETHUSD_BITSTAMP"
+  ],
+  "intervall": "1d",
+  "versuche": 119,
+  "ergebnisse": [
+    {
+      "genome_id": "08ad98ec4f34598b",
+      "name": "Trend mit Vola-Ziel 22 %",
+      "generation": 10,
+      "bestanden": 8,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Deflated Sharpe"
+      ],
+      "trades": 51,
+      "cagr_pct": 6.6727,
+      "rueckgang_pct": 8.8286,
+      "dsr": 0.4515
+    },
+    {
+      "genome_id": "8a30e1b7484b2e70",
+      "name": "Vola-Ziel, kurzes Messfenster",
+      "generation": 10,
+      "bestanden": 8,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Deflated Sharpe"
+      ],
+      "trades": 51,
+      "cagr_pct": 5.7545,
+      "rueckgang_pct": 7.7777,
+      "dsr": 0.4425
+    },
+    {
+      "genome_id": "f5adbcb75000119c",
+      "name": "Trend mit Vola-Ziel 20 %",
+      "generation": 10,
+      "bestanden": 8,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Deflated Sharpe"
+      ],
+      "trades": 51,
+      "cagr_pct": 5.6064,
+      "rueckgang_pct": 8.0289,
+      "dsr": 0.3888
+    },
+    {
+      "genome_id": "111cc2ecd5d53968",
+      "name": "Trend 50 Tage mit Konfluenz",
+      "generation": 0,
+      "bestanden": 7,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Schlechtestes Jahr",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 152,
+      "cagr_pct": 13.4713,
+      "rueckgang_pct": 10.6401,
+      "dsr": 0.8428
+    },
+    {
+      "genome_id": "f8ba3a0dfd70cbdf",
+      "name": "Vola-Ziel, langes Messfenster",
+      "generation": 10,
+      "bestanden": 7,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Deflated Sharpe"
+      ],
+      "trades": 51,
+      "cagr_pct": 4.788,
+      "rueckgang_pct": 6.9689,
+      "dsr": 0.291
+    },
+    {
+      "genome_id": "1aada7d4c2d3d6e1",
+      "name": "Donchian-Ausbruch 55/20",
+      "generation": 9,
+      "bestanden": 6,
+      "gesamt": 11,
+      "offen": [
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Monte-Carlo",
+        "Deflated Sharpe"
+      ],
+      "trades": 55,
+      "cagr_pct": 16.3781,
+      "rueckgang_pct": 19.4487,
+      "dsr": 0.1029
+    },
+    {
+      "genome_id": "66e04da1281c8cd1",
+      "name": "Trend-Beteiligung (fair gerechnet)",
+      "generation": 5,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 46,
+      "cagr_pct": 6.8986,
+      "rueckgang_pct": 13.5419,
+      "dsr": 0.3817
+    },
+    {
+      "genome_id": "66e04da1281c8cd1",
+      "name": "Trend-Beteiligung 200 Tage",
+      "generation": 9,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 46,
+      "cagr_pct": 6.8986,
+      "rueckgang_pct": 13.5419,
+      "dsr": 0.3817
+    },
+    {
+      "genome_id": "82ee84e17bbcbe0f",
+      "name": "Momentum-Beteiligung",
+      "generation": 3,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 99,
+      "cagr_pct": 3.186,
+      "rueckgang_pct": 5.5747,
+      "dsr": 0.2479
+    },
+    {
+      "genome_id": "1670b6d3b84c5431",
+      "name": "Trend-Beteiligung 50 Tage",
+      "generation": 9,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Monte-Carlo",
+        "Deflated Sharpe",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 142,
+      "cagr_pct": 15.9687,
+      "rueckgang_pct": 29.1555,
+      "dsr": 0.2228
+    },
+    {
+      "genome_id": "64a93487522a473c",
+      "name": "Trendfolge Ausbruch",
+      "generation": 1,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "c2b3bc7250bdac89",
+      "name": "Momentum Ruecksetzer",
+      "generation": 1,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 5,
+      "cagr_pct": 0.0772,
+      "rueckgang_pct": 0.7232,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "7655707001cad924",
+      "name": "Volatilitaets-Ausbruch",
+      "generation": 1,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "6ab49086aa0a0631",
+      "name": "Mean Reversion Uebertreibung",
+      "generation": 1,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "2e0313bb402127ad",
+      "name": "EMA-Kreuzung (Messlatte)",
+      "generation": 1,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "29ce7d179da4ce1b",
+      "name": "Grosser Trendausbruch",
+      "generation": 2,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "57d7403e5ed45435",
+      "name": "Nur mit der Drift",
+      "generation": 2,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "3b68af7d3ea076e6",
+      "name": "Starker Trend, Momentum",
+      "generation": 2,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "867e042ca38e0905",
+      "name": "Seltener grosser Ausbruch",
+      "generation": 2,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "c10672900b66bae2",
+      "name": "Langsamer Kreuzer (Messlatte 2)",
+      "generation": 2,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "14ce5550a1f06057",
+      "name": "Ausbruch ohne Long-Ueberhitzung",
+      "generation": 4,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "c1fd7cd7c6d8b80a",
+      "name": "Funding-Carry Long",
+      "generation": 4,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "b6058cccf34dfdda",
+      "name": "Gegen die ueberhitzte Long-Seite",
+      "generation": 4,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "95316f8f2377690e",
+      "name": "Beteiligt, ausser es ist ueberhitzt",
+      "generation": 5,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "f59a4228647dd625",
+      "name": "Carry-Beteiligung",
+      "generation": 5,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "bc8a57c3648bafa3",
+      "name": "Bollinger-Ruecksetzer im Trend",
+      "generation": 6,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 2,
+      "cagr_pct": -0.0983,
+      "rueckgang_pct": 0.6965,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "d90f9707d9de30e0",
+      "name": "Sitzungs-Ausbruch mit Volumen",
+      "generation": 6,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "7ac4e83b57a5c9f1",
+      "name": "Ausbruch nach Volatilitaetsenge",
+      "generation": 6,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "f494355ca82e1c80",
+      "name": "RSI-Ruecksetzer im Trend",
+      "generation": 6,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "8d543294b07a583c",
+      "name": "VWAP-Rueckkehr",
+      "generation": 7,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "9a38dc5614758223",
+      "name": "VWAP-Fortsetzung",
+      "generation": 7,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "1b41a798684c0adb",
+      "name": "Liquiditaets-Abgriff",
+      "generation": 7,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 1,
+      "cagr_pct": -0.0473,
+      "rueckgang_pct": 0.3655,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "03a780dc9b9ce16e",
+      "name": "Liquiditaets-Abgriff (Gegenprobe short)",
+      "generation": 7,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "22384b081081a19e",
+      "name": "Keltner-Enge mit Ausbruch",
+      "generation": 7,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 2,
+      "cagr_pct": 0.0246,
+      "rueckgang_pct": 0.3819,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "edcbb5e3f566b188",
+      "name": "Grosse Kerze mit Volumen",
+      "generation": 7,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "8a775ad4784ec8d1",
+      "name": "Stochastik-Ruecksetzer im Trend",
+      "generation": 7,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "b381d9bb9347e6c9",
+      "name": "MACD-Beschleunigung",
+      "generation": 7,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "0b7867ff5338f236",
+      "name": "Ruecksetzer an den EMA(50)",
+      "generation": 7,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "f38f89fc869e6efc",
+      "name": "Randhandel im Seitwaertsmarkt",
+      "generation": 7,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "897e71e686f2bd83",
+      "name": "Abfolge-Modell (Abgriff, Bruch, Rueckkehr)",
+      "generation": 8,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "7de2aa7e67ea0d05",
+      "name": "Abfolge ohne Luecke",
+      "generation": 8,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "60dbd0d6d843b9f1",
+      "name": "Abfolge ohne Strukturbruch",
+      "generation": 8,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "550ae4d1f15354ca",
+      "name": "Abfolge-Modell short",
+      "generation": 8,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "0333a4df5ce107c3",
+      "name": "Abfolge zur New Yorker Eroeffnung",
+      "generation": 8,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "a934f1997d34fbd8",
+      "name": "Luecke wird geschlossen",
+      "generation": 8,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "480881d0ca4f3c84",
+      "name": "Bollinger-Ruecksetzer short",
+      "generation": 8,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 1,
+      "cagr_pct": -0.0489,
+      "rueckgang_pct": 0.3471,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "daf20b12b24fcb02",
+      "name": "VWAP-Rueckkehr short",
+      "generation": 8,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "4199328b2e8cccf6",
+      "name": "Grosse Kerze mit Volumen short",
+      "generation": 8,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "1334e436e547c4f0",
+      "name": "Trendbeteiligung mit Puffer",
+      "generation": 3,
+      "bestanden": 4,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Monte-Carlo",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 302,
+      "cagr_pct": 8.5504,
+      "rueckgang_pct": 15.0886,
+      "dsr": 0.2715
+    },
+    {
+      "genome_id": "b54206d6509ba802",
+      "name": "Trend beide Richtungen",
+      "generation": 9,
+      "bestanden": 3,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Monte-Carlo",
+        "Deflated Sharpe",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 84,
+      "cagr_pct": 5.2908,
+      "rueckgang_pct": 27.7553,
+      "dsr": 0.0692
+    },
+    {
+      "genome_id": "775d5447f098ab6c",
+      "name": "Trendbeteiligung EMA200",
+      "generation": 3,
+      "bestanden": 3,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Regime-Aufteilung",
+        "Deflated Sharpe",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 66,
+      "cagr_pct": 2.7272,
+      "rueckgang_pct": 5.3652,
+      "dsr": 0.051
+    },
+    {
+      "genome_id": "df26dc724727d17b",
+      "name": "Trend-Beteiligung voller Einsatz",
+      "generation": 9,
+      "bestanden": 3,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Monte-Carlo",
+        "Deflated Sharpe",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 43,
+      "cagr_pct": 7.6482,
+      "rueckgang_pct": 27.6654,
+      "dsr": 0.0438
+    },
+    {
+      "genome_id": "4af1c86efa9a6fbe",
+      "name": "Momentum-Beteiligung 90 Tage",
+      "generation": 9,
+      "bestanden": 3,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 94,
+      "cagr_pct": 5.1669,
+      "rueckgang_pct": 25.5625,
+      "dsr": 0.0397
+    },
+    {
+      "genome_id": "d965d5b940619e6c",
+      "name": "Trend-Beteiligung 100 Tage",
+      "generation": 9,
+      "bestanden": 2,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Deflated Sharpe",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 101,
+      "cagr_pct": 8.1583,
+      "rueckgang_pct": 18.4032,
+      "dsr": 0.1964
+    }
+  ],
+  "urteil": "Kein Kandidat besteht alle Gates. Am weitesten kommt 'Trend mit Vola-Ziel 22 %' mit 8 von 11; offen bleiben: Messlatte, Out-of-Sample-Sharpe, Deflated Sharpe. Den hoechsten Deflated Sharpe hat allerdings ein anderer: 'Trend 50 Tage mit Konfluenz' mit 0.843 gegen 0.451 - und das ist das Gate, das sich mit keinem Regler bewegen laesst. Die Zahl bestandener Gates sagt wenig darueber, wer naeher dran ist."
+}
