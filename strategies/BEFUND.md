@@ -3313,3 +3313,77 @@ die der Deflated Sharpe verhindern soll. Was sie gekostet haben, steht damit
 weiter in der Huerde - und das ist richtig so.
 
 Stand unveraendert: **7 von 11**, Deflated Sharpe 0,843 gegen 0,95.
+
+## Sechsunddreissig. Die Suche bestieg einen anderen Berg als die Pruefung
+
+Der Wettbewerb - der Dauerlauf, der Varianten bildet und prueft - lief auf
+**einem** Markt. Jede Zulassungszahl dieses Projekts stammt dagegen aus dem
+Portfolio BTC + ETH. Beide Zahlen stimmten fuer sich; zusammen ergaben sie
+eine Suche, die am Ziel vorbei optimierte.
+
+Wie weit die beiden auseinanderliegen, an demselben Kandidaten gemessen:
+
+    Spitzenkandidat auf BTC allein      5 von 11, Deflated Sharpe 0,190
+    Spitzenkandidat auf BTC + ETH       7 von 11, Deflated Sharpe 0,843
+
+Das ist kein Feinschliff. Wer auf BTC allein sucht, waehlt Varianten danach
+aus, wie sie sich dort schlagen - und misst sie dann an einer Aufstellung, in
+der die Haelfte der Trades von einem Markt kommt, der bei der Auswahl keine
+Rolle spielte.
+
+### Und dieselbe Verwechslung eine Ebene tiefer
+
+Neun der elf Gates lesen nur den Walk-Forward. Der bildete das Portfolio
+laengst ab, also sahen sie es automatisch. Die beiden **teuren** Gates rechnen
+selbst nach - und rechneten weiter auf dem Referenzmarkt allein.
+
+Am Spitzenkandidaten, BTC + ETH, Tageskerzen, nach Gebuehren:
+
+    Kosten-Stress   vorher  +109,64        (nur BTC)
+                    jetzt   +942,87        (+109,64 BTC, +833,23 ETH)
+
+ETH trug 88 % des Gewinns unter doppelten Kosten - und war fuer das Gate
+unsichtbar. Das Gate bestand vorher wie nachher; die Zahl daneben war um den
+Faktor 8,6 falsch.
+
+### Behoben
+
+* ``run_admission`` nimmt ``frames``/``configs`` und laeuft dann ueber das
+  Portfolio - im Walk-Forward **und** in den beiden Gates, die nachrechnen.
+* ``evaluate_gates`` reicht die Beine an Kosten-Stress und Plateau durch.
+  ``frame`` bleibt die Messlatte fuer Buy-and-Hold und Regime-Einteilung; das
+  sind Fragen an *einen* Markt, und das ist richtig so.
+* Beide Gates urteilen ueber die **Summe** der Beine, nicht ueber jedes
+  einzeln. Gehandelt wird die Summe. Ein Test rechnet beide Lesarten aus und
+  verlangt, dass sie sich unterscheiden - sonst pruefte er nichts.
+* ``cli wettbewerb --maerkte BTCUSD_BITSTAMP,ETHUSD_BITSTAMP`` stellt die Suche
+  auf dieselben Beine. Ohne die Option bleibt alles wie bisher.
+* Alle fuenf weiteren Stellen, die ein Portfolio berechnen und dann Gates
+  darauf werfen (``machbarkeit``, ``nachpruefung``, ``marktkombinationen``,
+  ``suchbudget``, der Vola-Abgleich), reichen die Beine jetzt mit durch.
+
+### Was sich am Stand aendert: nichts
+
+    Stichprobengroesse    pass       Monte-Carlo           pass
+    Messlatte             fail       Regime-Aufteilung     pass
+    Out-of-Sample-Sharpe  pass       Deflated Sharpe       fail   0,8373
+    Drawdown              pass       Kosten-Stress         pass   +942,87
+    Schlechtestes Jahr    fail       Parameter-Plateau     fail   0,500
+    Bestaendigkeit        pass
+
+**7 von 11, unveraendert.** Die Korrektur hat die Buchhaltung geradegezogen,
+nicht das Urteil. Das gehoert genauso berichtet wie ein Erfolg - ein Fehler in
+der Messung ist auch dann einer, wenn er zufaellig folgenlos blieb.
+
+### Nebenbefund, unbehandelt
+
+``_vary_periods`` erzeugt fuer diesen Kandidaten genau **zwei** Nachbarn. Das
+Plateau-Gate kann damit nur 0,0, 0,5 oder 1,0 zurueckgeben - bei einer Schwelle
+von 0,6 heisst das: beide Nachbarn muessen profitabel sein, sonst nichts. Ein
+Gate mit drei moeglichen Werten ist kein Plateau-Test, sondern ein Muenzwurf
+mit zwei Wuerfen. Gemessen an den Beinen:
+
+    Nachbar 1   BTC +1142,14   ETH  -58,67   Summe +1083,47   profitabel
+    Nachbar 2   BTC   -29,68   ETH  -75,00   Summe  -104,68   nicht
+
+Das ist der naechste Schritt: die Aufloesung des Gates, nicht seine Schwelle.

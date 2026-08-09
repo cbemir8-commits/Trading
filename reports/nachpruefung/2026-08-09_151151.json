@@ -1,0 +1,68 @@
+{
+  "maerkte": [
+    "BTCUSD_BITSTAMP",
+    "ETHUSD_BITSTAMP"
+  ],
+  "intervall": "1d",
+  "versuche": 119,
+  "ergebnisse": [
+    {
+      "genome_id": "66e04da1281c8cd1",
+      "name": "Trend-Beteiligung (fair gerechnet)",
+      "generation": 5,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 46,
+      "cagr_pct": 6.8986,
+      "rueckgang_pct": 13.5419,
+      "dsr": 0.3817
+    },
+    {
+      "genome_id": "95316f8f2377690e",
+      "name": "Beteiligt, ausser es ist ueberhitzt",
+      "generation": 5,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    },
+    {
+      "genome_id": "f59a4228647dd625",
+      "name": "Carry-Beteiligung",
+      "generation": 5,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Stichprobengroesse",
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 0,
+      "cagr_pct": 0.0,
+      "rueckgang_pct": 0.0,
+      "dsr": 0.0
+    }
+  ],
+  "urteil": "Kein Kandidat besteht alle Gates. Am weitesten kommt 'Trend-Beteiligung (fair gerechnet)' mit 5 von 11; offen bleiben: Messlatte, Out-of-Sample-Sharpe, Drawdown, Schlechtestes Jahr, Deflated Sharpe, Parameter-Plateau."
+}

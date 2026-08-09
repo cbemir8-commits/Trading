@@ -34,6 +34,7 @@ import pandas as pd
 import structlog
 
 from backtest.engine import BacktestConfig
+from backtest.portfolio_walkforward import run_portfolio_walkforward
 from backtest.walkforward import (
     WalkForwardReport,
     WalkForwardSplitter,
@@ -150,8 +151,26 @@ def run_admission(
     sub_frame: pd.DataFrame | None = None,
     run_expensive: bool = True,
     on_progress=None,
+    frames: dict[str, pd.DataFrame] | None = None,
+    configs: dict[str, BacktestConfig] | None = None,
 ) -> AdmissionReport:
-    """Alle Kandidaten pruefen und einen Champion bestimmen."""
+    """Alle Kandidaten pruefen und einen Champion bestimmen.
+
+    **``frames`` und ``configs`` sind kein Zusatz, sondern eine Korrektur.**
+
+    Bis hierher nahm diese Funktion genau *einen* Markt. Der Wettbewerb suchte
+    damit auf BTC allein, waehrend jede Zulassungszahl des Projekts aus dem
+    Portfolio BTC + ETH stammt - und das ist nicht dasselbe Ziel:
+
+        Spitzenkandidat auf BTC allein     5 von 11, Deflated Sharpe 0,190
+        Spitzenkandidat auf BTC + ETH      7 von 11, Deflated Sharpe 0,843
+
+    Wer auf dem einen Berg sucht und auf dem anderen prueft, findet
+    zuverlaessig das Falsche. Werden ``frames`` uebergeben, laeuft die Pruefung
+    ueber dasselbe Portfolio, an dem spaeter geurteilt wird - im Walk-Forward
+    **und** in den beiden Gates, die selbst nachrechnen. ``frame`` dient dann
+    nur noch als Messlatte fuer Buy-and-Hold und die Regime-Einteilung.
+    """
     splitter = splitter or WalkForwardSplitter()
     report = AdmissionReport(trials_before=trials_so_far)
     trials = trials_so_far
@@ -165,13 +184,21 @@ def run_admission(
         # genau der Fehler, gegen den die Korrektur gebaut ist.
         trials += 1
 
-        walkforward = run_walkforward(
-            frame,
-            lambda g=genome: compile_genome(g),
-            config,
-            splitter,
-            sub_frame=sub_frame,
-        )
+        if frames:
+            walkforward = run_portfolio_walkforward(
+                frames,
+                lambda g=genome: compile_genome(g),
+                configs or config,
+                splitter,
+            )
+        else:
+            walkforward = run_walkforward(
+                frame,
+                lambda g=genome: compile_genome(g),
+                config,
+                splitter,
+                sub_frame=sub_frame,
+            )
         gates = evaluate_gates(
             genome,
             walkforward,
@@ -181,6 +208,8 @@ def run_admission(
             thresholds=thresholds,
             sub_frame=sub_frame,
             run_expensive=run_expensive,
+            frames=frames,
+            configs=configs,
         )
         candidate = Candidate(genome=genome, walkforward=walkforward, gates=gates)
         report.candidates.append(candidate)

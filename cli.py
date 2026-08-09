@@ -481,6 +481,13 @@ def wettbewerb(
         None, "--symbol",
         help="Abweichendes Symbol, z.B. BTCUSD_BITSTAMP fuer Referenzkerzen.",
     ),
+    maerkte: str = typer.Option(
+        "", "--maerkte", "-m",
+        help="Mehrere Maerkte als Portfolio, durch Komma getrennt. Leer = "
+             "einzelner Markt. **Suchen und Pruefen gehoeren auf dieselbe "
+             "Aufstellung** - der Spitzenkandidat steht auf BTC allein bei "
+             "5 von 11, auf BTC + ETH bei 7 von 11.",
+    ),
     generation: int = typer.Option(
         8, "--generation", "-g",
         help="Startkatalog. 7 = Scalp-Setups, 8 = Abfolge-Modell und Short-Seite."
@@ -519,6 +526,7 @@ def wettbewerb(
     from pathlib import Path
 
     from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range
     from data.bybit.errors import BybitError
     from data.funding import FundingStore, attach_funding
     from research.admission import load_trials, run_admission, save_trials, write_champion
@@ -532,7 +540,8 @@ def wettbewerb(
     store = CandleStore(settings.paths.data_store)
     interval_obj = Interval(intervall)
 
-    handelssymbol = symbol or settings.bybit.symbol
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    handelssymbol = symbole[0] if symbole else (symbol or settings.bybit.symbol)
     frame = store.read(handelssymbol, interval_obj)
     if frame.empty:
         console.print(
@@ -582,12 +591,47 @@ def wettbewerb(
         kalender=_terminkalender(settings) or None,
     )
 
+    # **Gesucht wird auf der Aufstellung, auf der geurteilt wird.**
+    #
+    # Ohne ``--maerkte`` ist das ein Markt, und dann ist es dasselbe wie
+    # vorher. Mit mehreren wird der Wettbewerb auf genau die Beine gestellt,
+    # aus denen jede Zulassungszahl des Projekts stammt. Der Unterschied ist
+    # kein Detail: derselbe Spitzenkandidat kommt auf BTC allein auf 5 von 11
+    # (Deflated Sharpe 0,190), auf BTC + ETH auf 7 von 11 (0,843). Wer auf dem
+    # einen Berg sucht und auf dem anderen prueft, optimiert am Ziel vorbei.
+    frames: dict | None = None
+    configs: dict | None = None
+    if len(symbole) > 1:
+        roh = {}
+        for markt in symbole:
+            teil = store.read(markt, interval_obj)
+            if teil.empty:
+                console.print(f"[red]Keine Kerzen fuer {markt} {interval_obj.label}.[/]")
+                raise typer.Exit(2)
+            roh[markt] = teil
+        frames = common_range(roh)
+        configs = {
+            markt: BacktestConfig(
+                instrument=_fallback_instrument(_bybit_kontrakt(markt)),
+                risk=settings.risk,
+                initial_equity=Decimal("500"),
+                enforce_risk_limits=True,
+                kalender=_terminkalender(settings) or None,
+            )
+            for markt in symbole
+        }
+        # Die Messlatte gehoert auf denselben Zeitraum wie die Beine, sonst
+        # vergleicht das Benchmark-Gate ueber verschiedene Jahre.
+        frame = attach_funding(frames[handelssymbol], funding_frame)
+        sub_frame = None
+
     state = Path(settings.paths.state)
     board = Leaderboard(state / "leaderboard.json")
     trials_path = state / "trials.json"
 
     console.print(
-        f"\n[bold]Wettbewerb[/] {handelssymbol} {interval_obj.label}\n"
+        f"\n[bold]Wettbewerb[/] {' + '.join(symbole) if frames else handelssymbol} "
+        f"{interval_obj.label}\n"
         f"  Historie   {frame['open_time'].iloc[0]:%Y-%m-%d} bis "
         f"{frame['open_time'].iloc[-1]:%Y-%m-%d}\n"
         f"  Bisher     {board.summary()}\n"
@@ -614,6 +658,8 @@ def wettbewerb(
                 trials_so_far=trials_before,
                 sub_frame=sub_frame,
                 run_expensive=not schnell,
+                frames=frames,
+                configs=configs,
             )
             save_trials(trials_path, report.trials_after)
             board.record(report.candidates, generation=generation, herkunft=herkunft)
@@ -2251,7 +2297,7 @@ def korb(
         trials += 1
         gates = evaluate_gates(
             angepasst, report, erster, next(iter(configs.values())),
-            trials_so_far=trials,
+            trials_so_far=trials, frames=frames, configs=configs,
         )
         bestanden = sum(1 for r in gates.results if r.passed)
         gescheitert = ", ".join(r.name for r in gates.failures)[:44] or "-"
@@ -3039,7 +3085,8 @@ def machbarkeit(
                 )
                 continue
             gates = evaluate_gates(
-                genome, report, erster, configs[symbole[0]], trials_so_far=trials
+                genome, report, erster, configs[symbole[0]], trials_so_far=trials,
+                frames=frames, configs=configs,
             )
             kombiniert = report.combined
             analyse.punkte.append(
@@ -3354,7 +3401,7 @@ def nachpruefung(
 
         gates = evaluate_gates(
             genome, bericht, erster, configs[symbole[0]], trials_so_far=trials,
-            run_expensive=not schnell,
+            run_expensive=not schnell, frames=frames, configs=configs,
         )
         k = bericht.combined
         ergebnis = Ergebnis(
@@ -3528,7 +3575,8 @@ def marktkombinationen(
 
         erster = next(iter(frames.values()))
         gates = evaluate_gates(
-            genome, bericht, erster, configs[kombination[0]], trials_so_far=trials
+            genome, bericht, erster, configs[kombination[0]], trials_so_far=trials,
+            frames=frames, configs=configs,
         )
         k = bericht.combined
         kurz = "+".join(m.split("USD")[0] for m in kombination)
@@ -3899,7 +3947,8 @@ def stand(
 
     erster = next(iter(frames.values()))
     gates = evaluate_gates(
-        genome, bericht, erster, configs[symbole[0]], trials_so_far=trials
+        genome, bericht, erster, configs[symbole[0]], trials_so_far=trials,
+        frames=frames, configs=configs,
     )
     qualitaet = _sharpe_je_trade(bericht.all_trades)
     budget = Budget(

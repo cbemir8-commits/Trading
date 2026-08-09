@@ -42,6 +42,7 @@ import structlog
 from backtest.costs import CostModel
 from backtest.engine import BacktestConfig, Backtester
 from backtest.metrics import compute_metrics
+from backtest.portfolio_walkforward import common_range
 from backtest.walkforward import (
     WalkForwardReport,
     chained_curve,
@@ -685,6 +686,32 @@ def gate_regime_split(
     )
 
 
+def _beine(
+    frames: dict[str, pd.DataFrame] | None,
+    configs: dict[str, BacktestConfig] | None,
+    frame: pd.DataFrame,
+    config: BacktestConfig,
+) -> list[tuple[pd.DataFrame, BacktestConfig]]:
+    """Die Datensaetze, auf denen ein Einzelbacktest-Gate laufen muss.
+
+    **Ohne ``frames`` ist das ein Bein, mit ``frames`` sind es alle.** Genau
+    hier sass der Rest eines Fehlers, der eine Ebene hoeher schon behoben war:
+    Der Walk-Forward lief laengst ueber das Portfolio, waehrend Kosten-Stress
+    und Plateau weiter den ersten Markt allein massen. Zwei von elf Gates
+    urteilten damit ueber etwas anderes als die neun uebrigen.
+    """
+    if not frames:
+        return [(frame, config)]
+    zugeschnitten = common_range(frames)
+    return [
+        (
+            teil,
+            configs[name] if configs and name in configs else config,
+        )
+        for name, teil in zugeschnitten.items()
+    ]
+
+
 def gate_cost_stress(
     genome: Genome,
     frame: pd.DataFrame,
@@ -692,6 +719,8 @@ def gate_cost_stress(
     t: GateThresholds,
     *,
     sub_frame: pd.DataFrame | None = None,
+    frames: dict[str, pd.DataFrame] | None = None,
+    configs: dict[str, BacktestConfig] | None = None,
 ) -> GateResult:
     """Ueberlebt die Strategie doppelte Kosten?
 
@@ -700,37 +729,52 @@ def gate_cost_stress(
     breiter, die reale Ausfuehrung schlechter, und PostOnly-Limits fuellen
     seltener als angenommen. Wer bei doppelten Kosten in den Verlust rutscht,
     hatte nie einen Vorteil - nur ein mildes Modell.
+
+    Bei mehreren Beinen zaehlt die **Summe**: Gehandelt wird das Portfolio, und
+    ein Bein, das die doppelten Kosten allein nicht traegt, ist kein Grund zur
+    Ablehnung, solange das Ganze sie traegt. Umgekehrt genauso - ein starkes
+    Bein deckt die Frage nicht zu, es geht in dieselbe Summe ein.
     """
-    stressed_config = BacktestConfig(
-        instrument=config.instrument,
-        risk=config.risk,
-        costs=config.costs.scaled(Decimal(str(t.cost_stress_factor))),
-        funding=config.funding,
-        initial_equity=config.initial_equity,
-        allow_shorts=config.allow_shorts,
-        entry_expiry_bars=config.entry_expiry_bars,
-        max_hold_bars=config.max_hold_bars,
-    )
-    result = Backtester(stressed_config).run(frame, compile_genome(genome), sub_frame=sub_frame)
-    metrics = compute_metrics(
-        result.trades,
-        result.equity_curve,
-        initial_equity=config.initial_equity,
-        total_fees=result.total_fees,
-    )
-    passed = metrics.net_profit > 0
+    beine = _beine(frames, configs, frame, config)
+    gewinn = 0.0
+    einzeln: list[str] = []
+    for teil, cfg in beine:
+        stressed_config = BacktestConfig(
+            instrument=cfg.instrument,
+            risk=cfg.risk,
+            costs=cfg.costs.scaled(Decimal(str(t.cost_stress_factor))),
+            funding=cfg.funding,
+            initial_equity=cfg.initial_equity,
+            allow_shorts=cfg.allow_shorts,
+            entry_expiry_bars=cfg.entry_expiry_bars,
+            max_hold_bars=cfg.max_hold_bars,
+        )
+        result = Backtester(stressed_config).run(
+            teil, compile_genome(genome), sub_frame=sub_frame if len(beine) == 1 else None
+        )
+        einzelwert = compute_metrics(
+            result.trades,
+            result.equity_curve,
+            initial_equity=cfg.initial_equity,
+            total_fees=result.total_fees,
+        ).net_profit
+        gewinn += einzelwert
+        einzeln.append(f"{einzelwert:+.2f}")
+
+    passed = gewinn > 0
+    aufteilung = f" ({', '.join(einzeln)})" if len(beine) > 1 else ""
 
     return GateResult(
         name="Kosten-Stress",
         status=GateStatus.PASS if passed else GateStatus.FAIL,
-        value=metrics.net_profit,
+        value=gewinn,
         threshold=0.0,
         message=(
             f"Bei {t.cost_stress_factor:g}-fachen Kosten noch "
-            f"{metrics.net_profit:+.2f} Gewinn"
+            f"{gewinn:+.2f} Gewinn{aufteilung}"
             if passed
-            else f"Bei {t.cost_stress_factor:g}-fachen Kosten {metrics.net_profit:+.2f} - "
-            "der Vorteil war nur ein zu mildes Kostenmodell."
+            else f"Bei {t.cost_stress_factor:g}-fachen Kosten {gewinn:+.2f}"
+            f"{aufteilung} - der Vorteil war nur ein zu mildes Kostenmodell."
         ),
     )
 
@@ -743,6 +787,8 @@ def gate_parameter_plateau(
     *,
     variation: float = 0.2,
     sub_frame: pd.DataFrame | None = None,
+    frames: dict[str, pd.DataFrame] | None = None,
+    configs: dict[str, BacktestConfig] | None = None,
 ) -> GateResult:
     """Steht die Strategie auf einem Plateau oder auf einer Nadelspitze?
 
@@ -752,6 +798,11 @@ def gate_parameter_plateau(
     live wird der Markt nicht dieselbe Nadelspitze treffen.
 
     Das ist der wirksamste Einzeltest gegen Ueberanpassung.
+
+    Bei mehreren Beinen zaehlt ein Nachbar als profitabel, wenn das **Portfolio**
+    mit ihm profitabel ist - nicht jedes Bein einzeln. Die Frage lautet, ob die
+    gehandelte Aufstellung auf einem Plateau steht, und gehandelt wird die
+    Summe.
     """
     neighbours = list(_vary_periods(genome, variation))
     if not neighbours:
@@ -763,12 +814,20 @@ def gate_parameter_plateau(
             message="Genom hat keine variierbaren Perioden",
         )
 
+    beine = _beine(frames, configs, frame, config)
     profitable = 0
     for neighbour in neighbours:
-        result = Backtester(config).run(
-            frame, compile_genome(neighbour), sub_frame=sub_frame
+        gewinn = sum(
+            Backtester(cfg)
+            .run(
+                teil,
+                compile_genome(neighbour),
+                sub_frame=sub_frame if len(beine) == 1 else None,
+            )
+            .net_profit
+            for teil, cfg in beine
         )
-        if result.net_profit > 0:
+        if gewinn > 0:
             profitable += 1
 
     ratio = profitable / len(neighbours)
@@ -1085,12 +1144,23 @@ def evaluate_gates(
     thresholds: GateThresholds | None = None,
     sub_frame: pd.DataFrame | None = None,
     run_expensive: bool = True,
+    frames: dict[str, pd.DataFrame] | None = None,
+    configs: dict[str, BacktestConfig] | None = None,
 ) -> GateReport:
     """Alle Gates auf ein Genom anwenden.
 
     ``run_expensive`` schaltet die Gates ab, die weitere Backtests brauchen
     (Plateau, Kosten-Stress). Sinnvoll fuer eine schnelle Vorauswahl - fuer die
     Zulassung muessen sie laufen.
+
+    ``frames`` sind die Beine des gehandelten Portfolios. Neun der elf Gates
+    lesen ohnehin nur den ``walkforward``, der das Portfolio bereits abbildet;
+    die beiden teuren rechnen selbst nach und brauchen die Beine dafuer. Ohne
+    ``frames`` massen sie den Referenzmarkt allein - dieselbe Verwechslung wie
+    zwischen Suche und Pruefung, nur eine Ebene tiefer.
+
+    ``frame`` bleibt die **Messlatte**: Buy-and-Hold und die Regime-Einteilung
+    beziehen sich auf einen Markt, und das ist richtig so.
     """
     thresholds = thresholds or GateThresholds()
     report = GateReport(genome_id=genome.genome_id)
@@ -1127,10 +1197,16 @@ def evaluate_gates(
 
     if run_expensive:
         report.results.append(
-            gate_cost_stress(genome, frame, config, thresholds, sub_frame=sub_frame)
+            gate_cost_stress(
+                genome, frame, config, thresholds,
+                sub_frame=sub_frame, frames=frames, configs=configs,
+            )
         )
         report.results.append(
-            gate_parameter_plateau(genome, frame, config, thresholds, sub_frame=sub_frame)
+            gate_parameter_plateau(
+                genome, frame, config, thresholds,
+                sub_frame=sub_frame, frames=frames, configs=configs,
+            )
         )
 
     log.info("gates.ausgewertet", zusammenfassung=report.summary())
