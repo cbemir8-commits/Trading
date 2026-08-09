@@ -3682,5 +3682,134 @@ def konfluenz(
     )
 
 
+@app.command()
+def suchbudget(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    hoechstens: int = typer.Option(12, "--hoechstens", help="Zeilen in der Liste."),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Was muesste ein neuer Einfall koennen - und kam je etwas so weit?
+
+    Alle Groessenregler sind ausgemessen und bewegen das haerteste Gate nicht.
+    Was bleibt, sind neue Regeln - und jede kostet einen Versuch, der die
+    Huerde fuer alle hebt. Bevor man so etwas budgetiert, gehoert
+    ausgerechnet, worauf man zielt.
+
+    Der Deflated Sharpe haengt an zwei Groessen: Zahl der Trades und Qualitaet
+    je Trade. Zu jeder Trade-Zahl gehoert deshalb ein **noetiger Sharpe je
+    Trade** - und diese Linie ist der Massstab, nicht eine der beiden Zahlen
+    allein.
+
+    **Kostet keinen Versuch:** Gemessen werden bereits gerechnete Kandidaten,
+    ohne Gates. Es wird nichts ausgewaehlt und nichts vorgeschlagen.
+    """
+    from decimal import Decimal
+
+    import numpy as np
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.seeds import GENERATIONS, spitzenkandidat
+    from research.suchbudget import Budget, Kandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    frames = common_range(roh)
+    configs = {
+        x: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+        )
+        for x in symbole
+    }
+
+    genome = []
+    for liste in GENERATIONS.values():
+        for eintrag in liste:
+            genome.append(eintrag() if callable(eintrag) else eintrag)
+    genome.append(spitzenkandidat())
+
+    trials = load_trials(Path(settings.paths.state) / "trials.json")
+    console.print(
+        f"\n[bold]Suchbudget[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Kandidaten {len(genome)}\n"
+        f"  Versuche   {trials}\n"
+    )
+
+    kandidaten = []
+    for g in genome:
+        bericht = run_portfolio_walkforward(
+            frames, lambda gg=g: compile_genome(gg), configs
+        )
+        werte = np.array([float(t.net_pnl) for t in bericht.all_trades])
+        if len(werte) < 5 or werte.std(ddof=1) == 0:
+            continue
+        kandidaten.append(
+            Kandidat(
+                name=g.name,
+                trades=len(werte),
+                sharpe_je_trade=float(werte.mean() / werte.std(ddof=1)),
+            )
+        )
+
+    if not kandidaten:
+        console.print("[red]Kein Kandidat mit genug Trades.[/]")
+        raise typer.Exit(2)
+
+    budget = Budget(versuche=trials, kandidaten=kandidaten)
+
+    console.print("[bold]Die Grenzlinie[/]")
+    console.print(budget.tabelle())
+    console.print(
+        "\n[dim]Gelesen: Bei so vielen Trades braeuchte es diesen Sharpe je "
+        "Trade, damit der Deflated Sharpe 0,95 erreicht.[/]\n"
+    )
+
+    console.print(f"[bold]Wie weit die {len(kandidaten)} Kandidaten kamen[/]")
+    console.print(
+        f"{'Kandidat':38} {'Trades':>7} {'hat':>8} {'noetig':>9} {'Faktor':>8}"
+    )
+    geordnet = sorted(
+        budget.abstaende(), key=lambda a: a.faktor if a.faktor is not None else 1e9
+    )
+    for a in geordnet[:hoechstens]:
+        noetig = f"{a.noetig:.4f}" if a.noetig is not None else "unerr."
+        faktor = f"{a.faktor:.2f}" if a.faktor is not None else "  --"
+        console.print(
+            f"{a.kandidat.name[:38]:38} {a.kandidat.trades:>7} "
+            f"{a.kandidat.sharpe_je_trade:>8.4f} {noetig:>9} {faktor:>8}"
+        )
+
+    console.print(f"\n[yellow]{budget.urteil()}[/]\n")
+    console.print("[bold]Was Weitersuchen an der Linie verschiebt[/]")
+    for weitere in (0, 40, 90, 190, 390):
+        wert = budget.noetig_bei(152, versuche=trials + weitere)
+        if wert is not None:
+            console.print(
+                f"  {trials + weitere:>4} Versuche: 152 Trades braeuchten "
+                f"{wert:.4f}"
+            )
+
+
 if __name__ == "__main__":
     app()

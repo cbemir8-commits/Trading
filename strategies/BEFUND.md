@@ -2875,3 +2875,100 @@ Regel braucht, misst sie, statt sie zu glauben.
 Alle Groessenregler sind ausgemessen. Was den Deflated Sharpe bewegen kann,
 sind nur noch die **Entscheidungen** - wann ein- und ausgestiegen wird -, nicht
 wie viel dabei auf dem Tisch liegt.
+
+---
+
+## Einunddreissig. Wohin ein neuer Einfall muesste - und was Suchen kostet
+
+Alle Groessenregler sind ausgemessen. Was bleibt, sind neue **Regeln**, und
+jede kostet einen Versuch, der die Huerde fuer alle hebt. Bevor man so etwas
+budgetiert, gehoert ausgerechnet, worauf man eigentlich zielt.
+
+### Die Grenzlinie
+
+Der Deflated Sharpe haengt an zwei Groessen: Zahl unabhaengiger Trades und
+Qualitaet je Trade. Zu jeder Trade-Zahl gehoert deshalb ein noetiger Sharpe je
+Trade - und **diese Linie** ist der Massstab, nicht eine der beiden Zahlen
+allein. Bei 112 Versuchen, mit der Schiefe und Woelbung des Kandidaten:
+
+    Trades    noetiger Sharpe je Trade
+        50                      0,4705
+       100                      0,3410
+       152                      0,2843
+       200                      0,2523
+       300                      0,2112
+       500                      0,1682
+
+### Wo die Kandidaten stehen
+
+    Kandidat                            Trades      hat    noetig   Faktor
+    Trend 50 Tage mit Konfluenz            152   0,2597    0,2843     1,09
+    Trend mit Vola-Ziel 22 %                51   0,3559    0,4657     1,31
+    Vola-Ziel, kurzes Messfenster           51   0,3535    0,4657     1,32
+    Trend mit Vola-Ziel 20 %                51   0,3417    0,4657     1,36
+    Trend-Beteiligung (fair gerechnet)      46   0,3583    0,4917     1,37
+    Trend-Beteiligung 50 Tage              142   0,2005    0,2928     1,46
+    Trendbeteiligung mit Puffer            302   0,1409    0,2106     1,49
+    Momentum-Beteiligung                    99   0,2262    0,3425     1,51
+    Donchian-Ausbruch 55/20                 55   0,2372    0,4484     1,89
+
+**Der Spitzenkandidat hat die schlechteste Qualitaet je Trade der
+Spitzengruppe** - 0,2597 gegen 0,3583 - und ist trotzdem mit Abstand am
+naechsten dran. Er handelt dreimal so oft, und die Wurzel aus der Stichprobe
+schlaegt den Unterschied in der Qualitaet.
+
+Das ist die eigentliche Lehre der Tabelle: Wenige gute Trades reichen nicht
+gegen viele mittlere. Wer 46 Trades zu je 0,3583 hat, braeuchte 0,4917 - er
+ist **weiter** weg als jemand mit 152 zu je 0,2597.
+
+### Was das als Ziel bedeutet
+
+Zwei Wege fuehren ueber die Linie, und sie sind sehr verschieden schwer:
+
+* **152 Trades mit Sharpe 0,2843** - neun Prozent mehr Qualitaet bei
+  gleicher Frequenz.
+* **300 Trades mit Sharpe 0,2112** - das kann der Kandidat je Trade
+  **heute schon** (0,2597). Es fehlt allein die Frequenz.
+
+Der zweite Weg sieht leichter aus und ist es nicht: Mehr Trades muessen
+**unabhaengige** Trades sein. Mehr Maerkte liefern sie nicht (Nummer
+siebenundzwanzig: die effektive Stichprobe bleibt bei 150, egal wie viele
+Maerkte dazukommen), feinere Kerzen auch nicht (Nummer neunundzwanzig).
+Sie muessten aus mehr **Entscheidungen auf demselben Markt** kommen, ohne dass
+die Qualitaet faellt.
+
+### Was Suchen kostet - und dass es sich trotzdem lohnt
+
+    Versuche   noetiger Sharpe bei 152 Trades
+         112                           0,2843
+         152                           0,2916
+         202                           0,2982
+         302                           0,3073
+         502                           0,3185
+
+Jeder weitere Einfall hebt die Linie um **0,00021**. Hundert weitere Versuche
+kosten also rund 5 % mehr geforderte Qualitaet - waehrend die heutige Luecke
+9 % betraegt.
+
+**Damit ist die Suche nicht selbstzerstoererisch, sondern nur teuer.** Das ist
+ein Ergebnis, das ich anders erwartet hatte: Die Sorge, dass sich das Ziel beim
+Suchen schneller entfernt, als man aufholt, laesst sich ausrechnen - und sie
+trifft nicht zu. Bei diesen Groessenordnungen darf weiter gesucht werden.
+
+Was dagegen steht, ist eine andere Zahl: **In 53 gemessenen Einfaellen ist
+keiner naeher gekommen als der Spitzenkandidat.** Nicht die Huerde macht die
+Suche aussichtsarm, sondern die bisherige Trefferquote.
+
+### Gebaut
+
+``research/suchbudget.py`` und ``cli suchbudget``. Der Befehl misst alle
+Kandidaten des Katalogs ohne Gates - schnell genug fuer einen Lauf zwischendurch
+- und stellt sie an die Linie. Verglichen wird der **Faktor**, nicht die
+Differenz: Eine Luecke von 0,05 wiegt bei einem Sharpe von 0,25 schwerer als
+bei 0,8. Kandidaten mit zu kleiner Stichprobe werden als *unerreichbar*
+ausgewiesen und nicht als "sehr weit weg" - das ist eine andere Aussage.
+
+Kostet keinen Versuch: gemessen werden bereits gerechnete Regeln, ohne Gates,
+und ausgewaehlt wird nichts.
+
+Stand unveraendert: **7 von 11**, Versuchszaehler **112**.
