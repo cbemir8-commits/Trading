@@ -3802,3 +3802,84 @@ genau ein Werkzeug im Haus: ``research/analyst.py``. Sie braucht einen
 API-Schluessel, der nicht gesetzt ist.
 
 Stand unveraendert: **7 von 11**, jetzt bei 146 Versuchen.
+
+## Dreiundvierzig. Das schlechteste Jahr ist ein einziges Jahr
+
+Von den vier Gates, an denen der Spitzenkandidat scheitert, ist dieses der
+schmalste Fehlschlag im System: **-10,32 % gegen -10,00 %**. Zweiunddreissig
+Hundertstel. Bei so einem Abstand ist die Frage, woraus die Zahl besteht, mehr
+wert als jeder weitere Suchlauf - und sie kostet keinen Versuch, weil nichts
+Neues gerechnet wird.
+
+Das Gate gibt nur das Minimum ueber alle rollierenden Zwoelfmonatsfenster
+zurueck. Damit sehen zwei sehr verschiedene Lagen gleich aus: ein einzelnes
+unguenstig ausgerichtetes Fenster, oder ein Viertel aller Fenster.
+
+``cli jahresbild``, BTC + ETH, Tageskerzen:
+
+    Fenster gesamt             2465
+    davon unter Schwelle          2   (0,1 %)
+
+    schlechtestes            -10,32 %
+    zweitschlechtestes*        +0,76 %      * ohne Ueberlappung
+    Median                   +11,51 %
+    bestes                   +69,10 %
+
+    schlechtestes Jahr     2021-11-08 bis 2022-11-08
+
+**Zwei von 2465.** Es ist eine Spitze, keine Hochebene - und zwar genau das
+Jahr vom Hoch 2021 bis zum Tief 2022. Das zweitschlechteste Fenster, das sich
+damit nicht ueberschneidet, steht bei **+0,76 %**. Ausserhalb dieses einen
+Jahres gibt es keinen einzigen Zwoelfmonatszeitraum, in dem man Geld verloren
+haette.
+
+### Woraus dieses Jahr besteht
+
+    24 Trades zusammen   -21,45 R
+    groesster Einzelverlust  -1,45 R  (ETH, 26.10.2022)
+
+**Kein Ausreisser, ein Zermuerben.** Vierundzwanzig Trades, keiner davon eine
+Katastrophe, zusammen minus einundzwanzig R. Das ist die Signatur einer
+Trendfolge in einem anhaltenden Abwaertsmarkt: Sie steigt ein, wird
+ausgestoppt, steigt wieder ein. Kein engerer Stop und keine bessere
+Ausfuehrung aendern daran etwas - das ist, was diese Regelfamilie in so einem
+Jahr tut.
+
+### Was daraus ausdruecklich nicht folgt
+
+"Die Schwelle ist zu streng, es sind ja nur zwei von 2465." Das waere ein
+Missverstaendnis des Gates. Es fragt nach dem **unguenstigsten** Einstieg, und
+dessen Seltenheit ist kein Einwand, sondern seine Definition. Wer 2021 am Hoch
+angefangen haette, stuende ein Jahr spaeter bei -10,3 %, und das ist der
+Zeitpunkt, an dem Leute aufhoeren. Die Schwelle bleibt, wo sie ist.
+
+### Was daraus folgt: warum zwei Gates gegeneinander ziehen
+
+Der Wettbewerbslauf davor hatte gezeigt, dass es Varianten gibt, die
+"Schlechtestes Jahr" bestehen - mit 136 statt 152 Trades, und damit
+schlechterem Deflated Sharpe. Jetzt ist klar, warum: Beide Gates urteilen ueber
+**dasselbe Jahr**. Wer 2021/22 weniger handelt, besteht das eine und verliert
+am anderen. Die beiden Fehlschlaege sind nicht zwei Probleme, sondern eines,
+von zwei Seiten betrachtet.
+
+### Die Rechnung des Gates selbst - geprueft und in Ordnung
+
+``worst_rolling_return`` schaetzt die Fensterbreite ueber Indizes:
+``spanne = len(kurve) * 12 / gesamtmonate``. Das setzt gleichmaessig verteilte
+Kurvenpunkte voraus, und bei einem Fehlschlag um 0,32 Punkte waere eine
+Naeherung eine mogliche Ursache. Also am Kalender nachgerechnet:
+
+    ueber Indizes    -10,32 %
+    am Kalender      -10,32 %      Unterschied -0,00 Punkte
+
+**Kein Messfehler.** Die Naeherung haelt, weil die Testfenster lueckenlos
+aneinanderstossen und Tageskerzen gleichmaessig dicht liegen. Das ist ein
+Ergebnis, auch wenn nichts zu reparieren war - und die Richtung, in der ein
+Fehler bequem gewesen waere, macht es wichtiger, dass es dasteht.
+
+Zwei Umsetzungen derselben Kapitalkurve gibt es damit jetzt: die des Gates und
+die mit Zeitstempeln. Ein Test haelt sie Wert fuer Wert aneinander - das
+Auseinanderlaufen zweier Umsetzungen derselben Groesse ist in diesem Projekt
+schon viermal passiert.
+
+Versuchszaehler unveraendert bei **146**. Stand: **7 von 11**.

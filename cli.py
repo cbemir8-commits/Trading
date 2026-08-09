@@ -3810,6 +3810,101 @@ def anlagentest(
 
 
 @app.command()
+def jahresbild(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Woraus besteht das schlechteste Jahr?
+
+    Von den vier Gates, an denen der Spitzenkandidat scheitert, ist dieses der
+    schmalste Fehlschlag im System: -10,32 % gegen -10,00 %. Bei so einem
+    Abstand ist die Frage, **woraus** die Zahl besteht, mehr wert als jeder
+    weitere Suchlauf.
+
+    Zwei sehr verschiedene Lagen sehen im Gate gleich aus:
+
+        Eine Spitze     genau ein Zwoelfmonatsfenster liegt darunter
+        Eine Hochebene  ein Viertel aller Fenster liegt darunter
+
+    Im ersten Fall haengt der Fehlschlag an einer einzelnen Ausrichtung, im
+    zweiten an der Strategie. Das Gate gibt nur das Minimum zurueck und sagt
+    den Unterschied nicht.
+
+    Zusaetzlich wird die Rechnung selbst geprueft: Das Gate schaetzt die
+    Fensterbreite ueber Indizes, hier wird sie am Kalender gerechnet.
+
+    **Kostet keinen Versuch** - es wird nichts Neues gerechnet, sondern eine
+    Kurve zerlegt, die ohnehin schon da ist.
+    """
+    from decimal import Decimal
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.gates import GateThresholds, gate_worst_year
+    from research.jahresbild import zerlege
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    frames = common_range(roh)
+    genome = spitzenkandidat()
+    configs = {
+        x: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+        )
+        for x in symbole
+    }
+
+    console.print(
+        f"\n[bold]Jahresbild[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Strategie   {genome.name}\n"
+    )
+
+    bericht = run_portfolio_walkforward(
+        frames, lambda: compile_genome(genome), configs
+    )
+    if not bericht.windows:
+        console.print("[red]Keine Fenster - nichts zu zerlegen.[/]")
+        raise typer.Exit(2)
+
+    schwellen = GateThresholds()
+    gate = gate_worst_year(bericht, schwellen)
+    bild = zerlege(
+        bericht, bericht.all_trades,
+        schwelle_pct=schwellen.worst_year_pct, index_wert=gate.value,
+    )
+
+    console.print(bild.tabelle())
+    console.print(
+        f"\n[dim]Gate rechnet ueber Indizes: {gate.value:+.2f} %. "
+        f"Am Kalender: {bild.schlechtestes:+.2f} %. "
+        f"Unterschied {bild.abweichung:+.2f} Punkte.[/]"
+    )
+    farbe = "yellow" if bild.darunter else "green"
+    console.print(f"\n[{farbe}]{bild.urteil()}[/]\n")
+
+
+@app.command()
 def trennschaerfe(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
