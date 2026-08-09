@@ -3067,3 +3067,93 @@ stabil und die andere nicht.
 Damit sind beide Wege aus Nummer einunddreissig begangen. Die Frequenz ist es
 nicht. Was bleibt, ist die schwere Richtung: eine Regel, die **je Trade**
 besser ist als 0,26 - und keine der 61 gemessenen ist es.
+
+---
+
+## Dreiunddreissig. Die Klippe im haertesten Gate ist weg
+
+Dreimal ist derselbe Fehler aufgetreten, und zweimal habe ich geschrieben, die
+richtige Loesung waere eine stetige Kuerzung - "gehoert gebaut, wenn sie
+durchgerechnet ist, nicht wenn sie plausibel klingt". Jetzt ist sie
+durchgerechnet.
+
+### Was kaputt war
+
+Die effektive Stichprobe wurde gekuerzt, sobald der Permutationstest
+``p <= 0,05`` meldete, und sonst gar nicht. Eine **harte Schwelle auf einer
+stetigen Groesse**. Zuletzt sichtbar ueber einen ganzen Regler (Nummer
+zweiunddreissig):
+
+    Faktor   roh   effektiv    ICC       p    Deflated Sharpe
+       0,6   226        151  0,079   0,040              0,467
+       0,8   175        115  0,109   0,049              0,344
+       1,0   152        152  0,112   0,072              0,851
+      1,25   132         81  0,187   0,040              0,071
+
+Der ICC - die **eigentliche** Abhaengigkeit - steigt glatt an. Nur der p-Wert
+wandert ueber die Schwelle, und wo er knapp darunter faellt, verschwindet ein
+Drittel der Stichprobe. Ein Deflated Sharpe von 0,851 zwischen 0,344 und 0,071
+ist keine Kurve, sondern ein Schalter.
+
+### Die Korrektur, und warum genau so
+
+Gekuerzt wird jetzt **immer** - aber kalibriert am **95. Perzentil** der
+Permutationsnull statt an ihrem Median. Der Unterschied ist die ganze Sache:
+
+* Am **Median** liegt auf unabhaengigen Daten die Haelfte aller Ziehungen
+  darueber. Unbedingt angewandt bestrafte das die Haelfte aller sauberen
+  Messungen - deshalb brauchte die alte Fassung eine Schwelle davor, und mit
+  ihr die Klippe.
+* Am **95. Perzentil** liegt nur jede zwanzigste saubere Ziehung darueber, und
+  dann knapp. Die Kuerzung geht dort von selbst gegen null - ganz ohne ``if``.
+
+Damit verschwindet die Schwelle, ohne dass Rauschen bestraft wird. Das war die
+Bedingung, an der die erste Fassung gescheitert war.
+
+### Gegengeprueft, in beide Richtungen
+
+**An bekannter Null** (unabhaengige Bloecke ungleicher Groesse, vierzig
+Ziehungen): 95 % bleiben ungekuerzt, im Mittel bleiben 99,5 % der Stichprobe,
+im schlimmsten Fall 86,5 %. Genau die Zusage des 95. Perzentils.
+
+**An echten Daten**, dieselben Reglerstufen wie oben:
+
+    Faktor    ICC    vorher       jetzt
+       0,4  0,053   305/305     305/305
+       0,5  0,059   265/265     265/265
+       0,6  0,079   151/226     221/226
+       0,8  0,109   115/175     175/175
+       1,0  0,112   152/152     152/152
+      1,25  0,187    81/132     128/132
+       1,6  0,375    53/113      90/113
+       2,0  0,629    36/106      72/106
+
+Die Kuerzung folgt jetzt dem ICC statt dem Zufall: unter 0,12 praktisch keine,
+bei 0,375 ein Fuenftel, bei 0,629 ein Drittel. Monoton, ohne Sprung.
+
+### Was es den Kandidaten kostet
+
+    vorher    Deflated Sharpe 0,863   fehlende Trades 32
+    jetzt     Deflated Sharpe 0,843   fehlende Trades 39
+
+**Der Kandidat wird schlechter**, und das aus zwei Gruenden: Der
+Versuchszaehler ist inzwischen bei 119 statt 112, und die neue Kuerzung greift
+auch bei ihm ein wenig. Seine effektive Stichprobe bleibt zwar bei 152 von
+152 - die Verschlechterung kommt allein vom Zaehler.
+
+Das ist die richtige Richtung fuer eine Aenderung, die ich selbst vorgeschlagen
+habe: Sie haette dem Kandidaten helfen koennen (drei Reglerstufen gewinnen
+deutlich), aber ausgerechnet er gewinnt nichts.
+
+### Was bleibt
+
+``Effektivwert.knapp`` gibt es weiter, aber mit anderer Bedeutung. Frueher
+sagte es an, dass eine **Entscheidung** auf der Kippe stand. Heute gibt es
+keine Entscheidung mehr - es sagt an, dass die **Datenlage** keine Aussage
+hergibt, und dass die Kuerzung deshalb klein ausfaellt.
+
+Ein Umkehr-Nachweis haelt fest, dass die Schwelle nicht zurueckkommt: Er sucht
+im Quelltext nach ``if nachgewiesen`` und faellt um, sobald es wieder dasteht.
+
+Stand: **7 von 11**, Deflated Sharpe 0,843 gegen 0,95, Versuchszaehler **119**
+unveraendert - eine Korrektur am Messgeraet ist kein Versuch.

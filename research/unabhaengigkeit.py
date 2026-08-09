@@ -33,15 +33,45 @@ Bei dreissig Bloecken ungleicher Groesse ist der Schaetzer so verrauscht, dass
 er auch ohne jede Abhaengigkeit auf 78 fallen kann. Die beobachtete Kuerzung
 liegt im sechsten Perzentil - **nicht von Zufall zu unterscheiden.**
 
-**Daraus die Regel, die dieses Modul umsetzt:** Gekuerzt wird nur, wenn die
-Abhaengigkeit gegen die Permutationsnull nachgewiesen ist. Bei drei identischen
-Beinen ist sie das mit grossem Abstand - dort greift die Korrektur. Bei zwei
-Maerkten mit 154 Trades ist sie es nicht - dort bleibt es bei der rohen Zahl,
-und die Unsicherheit wird berichtet statt in eine Zahl gegossen.
+**Daraus die erste Regel:** Nicht kuerzen, wo die Abhaengigkeit nicht von
+Zufall zu unterscheiden ist. Eine Strafe, die reines Rauschen mit
+sechsprozentiger Wahrscheinlichkeit erzeugt, ist keine Strenge, sondern eine
+Muenze.
 
-Das ist die mildere Richtung, und sie ist trotzdem richtig: Eine Strafe, die
-reines Rauschen mit sechsprozentiger Wahrscheinlichkeit erzeugt, ist keine
-Strenge, sondern eine Muenze. Wer sie einbaut, misst nicht mehr die Strategie.
+**Und der dritte Teil: die Schwelle musste weg.**
+
+Umgesetzt war diese Regel als ``if p <= 0,05``. Das ist eine harte Schwelle auf
+einer stetigen Groesse, und sie hat dreimal Schaden angerichtet - zuletzt ueber
+einen ganzen Regler hinweg:
+
+    Faktor   roh   effektiv    ICC       p     Deflated Sharpe
+       0,6   226        151  0,079   0,040               0,467
+       0,8   175        115  0,109   0,049               0,344
+       1,0   152        152  0,112   0,072               0,851
+      1,25   132         81  0,187   0,040               0,071
+
+Der ICC - die eigentliche Abhaengigkeit - steigt dort glatt an. Nur der p-Wert
+wandert ueber die Schwelle, und wo er knapp darunter faellt, verschwindet ein
+Drittel der Stichprobe. Ein Deflated Sharpe von 0,851 zwischen 0,344 und 0,071
+ist keine Kurve, sondern ein Schalter.
+
+**Gekuerzt wird deshalb stetig, kalibriert am 95. Perzentil der Null.** Der
+Unterschied zum Median ist der Kern:
+
+* Am **Median** liegt auf unabhaengigen Daten die Haelfte aller Ziehungen
+  darueber - unbedingt angewandt bestrafte das die Haelfte aller sauberen
+  Messungen. Genau deshalb brauchte es die Schwelle davor, und mit ihr die
+  Klippe.
+* Am **95. Perzentil** liegt nur jede zwanzigste saubere Ziehung darueber, und
+  dann knapp. Die Kuerzung geht dort von selbst gegen null - ohne ``if``.
+
+Gegengeprueft an bekannter Null (unabhaengige Bloecke, vierzig Ziehungen):
+**95 % bleiben ungekuerzt**, im Mittel bleiben 99,5 % der Stichprobe, im
+schlimmsten Fall 86,5 %. An denselben Reglerstufen wie oben folgt die Kuerzung
+jetzt dem ICC statt dem Zufall:
+
+    ICC    0,053   0,079   0,112   0,187   0,375   0,629
+    bleibt  100 %    98 %   100 %    97 %    80 %    68 %
 """
 
 from __future__ import annotations
@@ -104,19 +134,18 @@ class Effektivwert:
 
     @property
     def knapp(self) -> bool:
-        """Liegt die Entscheidung auf der Kippe?
+        """Liegt die Abhaengigkeit im Graubereich?
 
-        **Der Grund, warum es diese Eigenschaft gibt.** Die Schwelle ist hart,
-        die Groesse darunter ist stetig - also gibt es einen Bereich, in dem
-        eine winzige Aenderung an den Daten das Ergebnis umschlagen laesst.
-        Gemessen auf dem Spitzenkandidaten: Bei Vola-Ziel 16 fiel p auf 0,030,
-        die Stichprobe wurde von 153 auf 100 gekuerzt und der Deflated Sharpe
-        von 0,87 auf 0,53 - bei einem ICC, der sich gegenueber den Nachbarn um
-        0,008 unterschied.
+        **Was diese Eigenschaft frueher bedeutete und heute bedeutet.** Sie
+        entstand, als eine harte Schwelle ueber die Kuerzung entschied: Dort
+        war ein p von 0,049 gegen 0,051 der Unterschied zwischen voller und
+        gedrittelter Stichprobe, und das musste angesagt werden.
 
-        Wo das zutrifft, ist die Zahl kein Messwert mehr, sondern eine
-        Muenzseite. Sie wird deshalb nicht stillschweigend weitergereicht,
-        sondern angesagt.
+        Die Schwelle gibt es nicht mehr - gekuerzt wird stetig. Der Hinweis
+        bleibt trotzdem, aber als das, was er jetzt ist: eine Auskunft ueber
+        die **Datenlage**, nicht ueber eine Entscheidung. In diesem Bereich
+        laesst sich Abhaengigkeit weder zeigen noch ausschliessen, und wer die
+        Zahl liest, soll das wissen.
         """
         return self.bloecke >= MIND_BLOECKE and SIGNIFIKANZ / 2 <= self.p_wert <= SIGNIFIKANZ * 2
 
@@ -124,21 +153,24 @@ class Effektivwert:
         if self.bloecke < MIND_BLOECKE:
             return f"{self.roh} Trades - zu wenige Bloecke fuer eine Aussage."
         hinweis = (
-            f" ACHTUNG: p liegt dicht an der Schwelle von {SIGNIFIKANZ:.2f} - "
-            f"eine kleine Aenderung an den Daten kehrt die Entscheidung um, "
-            f"und mit ihr die Stichprobengroesse."
+            f" Die Abhaengigkeit liegt im Graubereich (p nahe {SIGNIFIKANZ:.2f}) "
+            f"- sie laesst sich hier weder zeigen noch ausschliessen. Die "
+            f"Kuerzung faellt entsprechend klein aus; das ist eine Aussage "
+            f"ueber die Datenlage, nicht ueber die Strategie."
             if self.knapp
             else ""
         )
-        if self.nachgewiesen:
+        # **Nach der tatsaechlichen Kuerzung berichten, nicht nach dem
+        # p-Wert.** Seit die Kuerzung stetig ist, gibt es kein "nachgewiesen
+        # ja/nein" mehr, an dem sich der Text aufhaengen koennte.
+        if self.effektiv < self.roh:
             return (
                 f"{self.roh} rohe Trades entsprechen {self.effektiv} "
-                f"unabhaengigen ({self.faktor:.0%}). Abhaengigkeit "
-                f"nachgewiesen: ICC {self.icc:.3f}, p = {self.p_wert:.3f}."
-                + hinweis
+                f"unabhaengigen ({self.faktor:.0%}). ICC {self.icc:.3f}, "
+                f"p = {self.p_wert:.3f}." + hinweis
             )
         return (
-            f"{self.roh} Trades, keine nachweisbare Abhaengigkeit "
+            f"{self.roh} Trades, keine messbare Abhaengigkeit "
             f"(ICC {self.icc:.3f}, p = {self.p_wert:.3f}) - es bleibt bei der "
             f"rohen Zahl. Das heisst nicht, dass keine da ist: Bei "
             f"{self.bloecke} Bloecken faellt erst eine deutliche auf." + hinweis
@@ -244,17 +276,36 @@ def designeffekt(
     if not null:
         return None
 
-    # Wie oft sieht reines Rauschen mindestens so abhaengig aus?
+    # Wie oft sieht reines Rauschen mindestens so abhaengig aus? Bleibt als
+    # Auskunft erhalten - ueber die Kuerzung entscheidet er nicht mehr.
     p = float(np.mean([x >= deff for x in null]))
     nachgewiesen = p <= SIGNIFIKANZ
 
-    if nachgewiesen:
-        # Gegen den Median der Null kalibrieren - der Rest waere der Anteil,
-        # den schon die ungleichen Blockgroessen erzeugen.
-        deff_korrigiert = max(1.0, deff / float(np.median(null)))
-        effektiv = max(1, min(n, round(n / deff_korrigiert)))
-    else:
-        effektiv = n
+    # **Stetig statt binaer, und kalibriert an der oberen Schranke der Null.**
+    #
+    # Frueher stand hier ein ``if p <= 0,05``. Das war eine harte Schwelle auf
+    # einer stetigen Groesse, und sie hat dreimal Schaden angerichtet - zuletzt
+    # ueber einen ganzen Regler hinweg, wo sechs von acht Stellungen im
+    # Grenzbereich lagen und drei davon um Hundertstel eines p-Werts ein
+    # Drittel ihrer Stichprobe verloren. Der Deflated Sharpe sprang dabei
+    # zwischen 0,85 und 0,07.
+    #
+    # Kalibriert wird jetzt gegen das **95. Perzentil** der Null statt gegen
+    # ihren Median. Der Unterschied ist der Kern der Sache:
+    #
+    #   Median:      Auf unabhaengigen Daten liegt die Haelfte aller Ziehungen
+    #                darueber - unbedingt angewandt wuerde also die Haelfte
+    #                aller sauberen Messungen bestraft. Deshalb brauchte es
+    #                frueher die Schwelle davor, und mit ihr die Klippe.
+    #   95. Perzentil: Nur jede zwanzigste saubere Ziehung liegt darueber, und
+    #                dann knapp. Die Kuerzung geht dort von selbst gegen null -
+    #                ganz ohne ``if``.
+    #
+    # Damit ist die Groesse stetig: Waechst die Abhaengigkeit, waechst die
+    # Kuerzung mit, statt bei einem Schwellenwert umzuspringen.
+    schranke = float(np.quantile(null, 1.0 - SIGNIFIKANZ))
+    deff_korrigiert = max(1.0, deff / schranke) if schranke > 0 else 1.0
+    effektiv = max(1, min(n, round(n / deff_korrigiert)))
 
     return Effektivwert(
         roh=n, effektiv=effektiv, icc=icc, p_wert=p,

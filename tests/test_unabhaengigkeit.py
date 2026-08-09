@@ -162,14 +162,14 @@ class TestEffektiveStichprobe:
 
         text = effektive_stichprobe(150, None, bloecke).bericht()
 
-        assert "nachgewiesen" in text
+        assert "unabhaengigen" in text
         assert "ICC" in text
 
     def test_bericht_ohne_nachweis_nennt_die_grenze(self) -> None:
         """Kein Nachweis heisst nicht 'keine Abhaengigkeit'."""
         text = effektive_stichprobe(154, None, unabhaengige_bloecke()).bericht()
 
-        assert "keine nachweisbare Abhaengigkeit" in text
+        assert "keine messbare Abhaengigkeit" in text
         assert "Das heisst nicht, dass keine da ist" in text
 
 
@@ -188,8 +188,8 @@ class TestKnappeEntscheidung:
                          nachgewiesen=True, bloecke=31)
 
         assert e.knapp
-        assert "ACHTUNG" in e.bericht()
-        assert "kehrt die Entscheidung um" in e.bericht()
+        assert "Graubereich" in e.bericht()
+        assert "nicht ueber die Strategie" in e.bericht()
 
     def test_knapp_darueber_ebenso(self) -> None:
         """Knapp verfehlt ist genauso wenig eine Messung wie knapp erreicht."""
@@ -197,13 +197,13 @@ class TestKnappeEntscheidung:
                          nachgewiesen=False, bloecke=31)
 
         assert e.knapp
-        assert "ACHTUNG" in e.bericht()
+        assert "Graubereich" in e.bericht()
 
     def test_eindeutig_wird_nicht_angesagt(self) -> None:
         for p in (0.001, 0.5, 0.9):
             e = Effektivwert(roh=150, effektiv=150, icc=0.05, p_wert=p, bloecke=31)
             assert not e.knapp, f"p={p} ist nicht knapp"
-            assert "ACHTUNG" not in e.bericht()
+            assert "Graubereich" not in e.bericht()
 
     def test_ohne_genug_bloecke_keine_ansage(self) -> None:
         """Wo gar keine Aussage moeglich ist, ist auch keine knapp."""
@@ -331,3 +331,79 @@ class TestMehrBeineMehrTradesGleicheInformation:
         assert e is not None
         assert e.nachgewiesen
         assert e.p_wert < 0.01
+
+
+class TestStetigeKuerzung:
+    """**Die Klippe ist weg - und das ist die Eigenschaft, die zaehlt.**
+
+    Frueher entschied ``p <= 0,05`` binaer ueber die Kuerzung. Ueber einen
+    ganzen Regler hinweg sah das so aus:
+
+        Faktor   roh   effektiv    ICC       p    Deflated Sharpe
+           0,6   226        151  0,079   0,040              0,467
+           0,8   175        115  0,109   0,049              0,344
+           1,0   152        152  0,112   0,072              0,851
+          1,25   132         81  0,187   0,040              0,071
+
+    Der ICC steigt glatt, der p-Wert wandert ueber die Schwelle, und die
+    Stichprobe springt. Mit stetiger Kuerzung folgt sie dem ICC:
+
+        ICC    0,053   0,079   0,112   0,187   0,375   0,629
+        bleibt  100 %    98 %   100 %    97 %    80 %    68 %
+    """
+
+    def test_unabhaengige_daten_bleiben_fast_immer_ungekuerzt(self) -> None:
+        """**Die Gegenprobe an bekannter Null.**
+
+        Kalibriert wird am 95. Perzentil - also darf hoechstens jede zwanzigste
+        saubere Messung ueberhaupt gekuerzt werden, und dann knapp. Am Median
+        kalibriert waere es die Haelfte, und genau deshalb brauchte die alte
+        Fassung eine Schwelle davor.
+        """
+        faktoren = []
+        for saat in range(20):
+            rng = np.random.default_rng(1000 + saat)
+            groessen = rng.integers(1, 12, 30)
+            bloecke = [list(rng.normal(3.0, 12.0, int(g))) for g in groessen]
+            e = designeffekt(bloecke, permutationen=400)
+            if e is not None:
+                faktoren.append(e.faktor)
+
+        werte = np.array(faktoren)
+
+        assert len(werte) >= 15
+        assert werte.mean() > 0.95, f"im Mittel bleiben nur {werte.mean():.1%}"
+        assert werte.min() > 0.7, f"schlimmster Fall {werte.min():.1%}"
+
+    def test_staerkere_abhaengigkeit_kuerzt_staerker(self) -> None:
+        """Monoton statt sprunghaft: Mehr gemeinsamer Anteil, mehr Kuerzung."""
+        faktoren = []
+        for gemeinsam_sd in (1.0, 6.0, 14.0):
+            rng = np.random.default_rng(77)
+            bloecke = []
+            for _ in range(30):
+                gemeinsam = float(rng.normal(0, gemeinsam_sd))
+                bloecke.append(
+                    [gemeinsam + float(rng.normal(0, 10)) for _ in range(6)]
+                )
+            e = designeffekt(bloecke, permutationen=400)
+            assert e is not None
+            faktoren.append(e.faktor)
+
+        assert faktoren[0] >= faktoren[1] >= faktoren[2], faktoren
+        assert faktoren[0] > faktoren[2], "keine Wirkung ueber die ganze Spanne"
+
+    def test_keine_schwelle_mehr_im_code(self) -> None:
+        """**Umkehr-Nachweis.**
+
+        Faellt dieser Test um, ist die Klippe zurueck - und mit ihr die
+        Sprunghaftigkeit, die drei Berichte verdorben hat.
+        """
+        import inspect
+
+        from research import unabhaengigkeit
+
+        quelle = inspect.getsource(unabhaengigkeit.designeffekt)
+
+        assert "quantile" in quelle
+        assert "if nachgewiesen" not in quelle
