@@ -4165,3 +4165,84 @@ Markt hat seinen eigenen Schnitt.
 Der Zaehler bleibt bei **156** - hier wurde kein Backtest gerechnet, sondern
 eine vorhandene Trade-Liste anders gruppiert. Stand: **7 von 11**, Deflated
 Sharpe 0,7965.
+
+## Achtundvierzig. Acht von elf - und der Grund, warum es trotzdem schlechter ist
+
+``research/adaptiv.py`` war gebaut, getestet, gruendlich begruendet - und stand
+in keinem Befehl. Es taucht im ganzen BEFUND nicht auf. **Es war nie
+gemessen.** Damit war es die letzte fertige Idee im Haus, die noch nie eine
+Zahl gesehen hatte.
+
+Die Idee ist methodisch die sauberste des Projekts: Die Periode wird in
+**jedem Trainingsfenster neu** bestimmt und im Testfenster verwendet. Die Wahl
+kennt die Testdaten nicht. Gewaehlt wird die **Mitte des laengsten
+zusammenhaengenden profitablen Bereichs** - nicht der beste Punkt, und die
+Regel steht vor der Messung fest. Genau das greift auch das Plateau-Gate an,
+an dem der Spitzenkandidat scheitert, weil er am Rand seines eigenen Bereichs
+sitzt.
+
+Verdrahtet als ``cli adaptiv``, BTC + ETH, Tageskerzen, **ein** Versuch:
+
+                          fest        adaptiv
+    Trades                 152            163
+    Rendite p. a.       13,47 %        13,96 %
+    Rueckgang           10,64 %         9,33 %
+    Schlechtestes Jahr  -10,32  fail    -8,05  bestanden
+    Bestaendigkeit       0,533          0,600
+    Gates                 7/11           8/11
+    Deflated Sharpe      0,797          0,469
+
+Mehr Trades, mehr Rendite, weniger Rueckgang, ein Gate mehr - und der Deflated
+Sharpe faellt um ein Drittel. **Acht von elf, und weiter weg als vorher.** Zum
+zweiten Mal nach der Abkuehlung, und diesmal war die Zahl so gut, dass sie
+schwer zu glauben war.
+
+### Nachgerechnet, weil es nicht zusammenpasste
+
+Aus den berichteten Eingaengen - Sharpe je Trade 0,253, 163 Trades, Schiefe
+3,46, Woelbung 16,04, 157 Versuche - ergibt die Formel **0,812**, nicht 0,469.
+Also aufgeloest, welche Stichprobe zu 0,469 gehoert: **110 von 163, also 67
+Prozent.** Das Gate hatte gekuerzt.
+
+Und dann die Frage, wer kuerzt:
+
+    Kalenderfenster    31 Bloecke   ICC +0,3252   p 0,0015   107 von 162 (66 %)
+    Gleichzeitigkeit  105 Bloecke   ICC +0,0222   p 0,4860   162 von 162
+
+**Es war die Fenster-Einteilung, nicht die Gleichzeitigkeit**, die ich im
+Abschnitt davor ergaenzt habe. Fast haette ich mir das gutgeschrieben; die
+Messung sagt etwas anderes.
+
+### Der Mechanismus, und er steckt in der Bauart
+
+Der ICC springt von +0,111 (fest) auf **+0,325** (adaptiv). Das ist kein
+Zufall, sondern die Konstruktion: Alle Trades eines Fensters teilen sich
+**denselben** gewaehlten Faktor. Passt er zum Markt dieses Quartals, laufen sie
+gemeinsam gut, sonst gemeinsam schlecht.
+
+Die adaptive Wahl erzeugt also genau die Abhaengigkeit, die sie bezahlt. Die
+elf zusaetzlichen Trades sind da - aber sie sind einander aehnlicher, und
+unterm Strich bleiben **107 unabhaengige statt der 154 des festen
+Kandidaten**. Mehr Trades, weniger Information.
+
+Damit ist auch das Muster benannt, das sich jetzt viermal wiederholt hat:
+
+    Abkuehlung        weniger handeln  -> Risiko-Gates ja, DSR nein
+    Gewinnziel        laenger laufen   -> Streuung waechst, DSR nein
+    Adaptive Periode  oefter handeln   -> Aehnlichkeit waechst, DSR nein
+    Alle Groessenregler                -> Qualitaet je Trade unveraendert
+
+Jeder Weg, der eine Kennzahl verbessert, verschlechtert den Deflated Sharpe
+ueber einen anderen Kanal. Vierzehnte geschlossene Richtung.
+
+### Was bleibt
+
+Der Befehl bleibt, samt Ergebnis - eine gebaute und gemessene Idee ist mehr
+wert als eine gebaute. Drei Tests halten den Mechanismus fest: Ein gemeinsamer
+Anteil je Fenster kuerzt die Stichprobe, ohne ihn wird nicht gekuerzt, und ein
+groesserer Lauf mit aehnlicheren Trades kann weniger wert sein als ein
+kleinerer mit unabhaengigen.
+
+Versuchszaehler **156 -> 157**. Stand: **7 von 11** - der Spitzenkandidat
+bleibt der Spitzenkandidat, denn 8 von 11 bei einem Deflated Sharpe von 0,469
+ist die schlechtere Lage.

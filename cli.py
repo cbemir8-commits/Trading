@@ -3809,6 +3809,133 @@ def anlagentest(
 
 
 @app.command()
+def adaptiv(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Die Periode im Trainingsfenster waehlen statt am Schreibtisch.
+
+    **Die einzige Idee im Haus, die gebaut und nie gemessen wurde.**
+
+    Die Landschaftskarte zeigt einen breiten tragfaehigen Bereich, und die
+    schnelleren Punkte liefern deutlich mehr Trades - genau das, was dem
+    Deflated Sharpe fehlt. Den besten Punkt daraus abzulesen waere
+    Ueberanpassung: Die Karte entsteht auf denselben Daten, an denen der
+    Kandidat gemessen wird.
+
+    Hier wird die Periode stattdessen in **jedem Trainingsfenster neu**
+    bestimmt und im Testfenster verwendet. Die Wahl kennt die Testdaten nicht.
+
+    Gewaehlt wird die **Mitte des laengsten zusammenhaengenden profitablen
+    Bereichs**, nicht der beste Punkt - die Regel steht vor der Messung fest.
+    Genau das greift auch das Plateau-Gate an, an dem der Spitzenkandidat
+    scheitert, weil er am Rand seines eigenen Bereichs sitzt.
+
+    **Ein Versuch, nicht einer je Faktor.** Die einzelnen Faktoren werden nur
+    im Training angesehen und nie am Testergebnis gemessen; die Auswahl ist
+    Teil der Strategie geworden.
+    """
+    from decimal import Decimal
+    from pathlib import Path
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.adaptiv import FensterWahl
+    from research.admission import load_trials, save_trials
+    from research.gates import evaluate_gates
+    from research.seeds import spitzenkandidat
+    from research.suchbudget import Budget, Kandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+
+    frames = common_range(roh)
+    genome = spitzenkandidat()
+    configs = {
+        x: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+        )
+        for x in symbole
+    }
+
+    trials_path = Path(settings.paths.state) / "trials.json"
+    trials = load_trials(trials_path)
+    console.print(
+        f"\n[bold]Adaptive Periode[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Grundregel  {genome.name}\n"
+        f"  Versuche    {trials} bisher\n"
+    )
+
+    wahl = FensterWahl(genome, frames, configs)
+    bericht = run_portfolio_walkforward(
+        frames, lambda: compile_genome(genome), configs,
+        strategie_je_fenster=wahl,
+    )
+    if not bericht.windows:
+        console.print("[red]Keine Fenster.[/]")
+        raise typer.Exit(2)
+
+    console.print(wahl.bericht())
+
+    erster = next(iter(frames.values()))
+    # Die Wahl ist Teil der Strategie - **ein** Versuch, nicht einer je
+    # Faktor. Gezaehlt wird er trotzdem, und vor der Bewertung: Die Huerde
+    # des Deflated Sharpe soll diesen Kandidaten schon einschliessen.
+    trials += 1
+    gates = evaluate_gates(
+        genome, bericht, erster, configs[symbole[0]], trials_so_far=trials,
+        frames=frames, configs=configs,
+    )
+    save_trials(trials_path, trials)
+
+    k = bericht.combined
+    console.print(
+        f"\n  {len(bericht.all_trades)} Trades, "
+        f"{k.cagr_pct if k else 0:.2f} % p.a., "
+        f"Rueckgang {k.max_drawdown_pct if k else 0:.2f} %\n"
+    )
+    console.print("DIE GATES")
+    console.print("-" * 72)
+    for r in gates.results:
+        zeichen = "+" if r.passed else "-"
+        farbe = "green" if r.passed else "yellow"
+        console.print(
+            f"  [{farbe}]{zeichen}[/] {r.name:24} {r.value:>10.3f} "
+            f"gegen {r.threshold:>10.3f}"
+        )
+    bestanden = sum(1 for r in gates.results if r.passed)
+    console.print(f"\n  {bestanden} von {len(gates.results)} bestanden")
+
+    eintrag = Kandidat.aus_trades(genome.name, bericht.all_trades)
+    if eintrag is not None:
+        budget = Budget(versuche=trials, kandidaten=[eintrag])
+        console.print("\nWORAN DAS HAERTESTE GATE HAENGT")
+        console.print("-" * 72)
+        for h in budget.hebel(eintrag):
+            console.print(f"  {h}")
+    console.print(f"\n[dim]Versuchszaehler {trials - 1} -> {trials}.[/]\n")
+
+
+@app.command()
 def jahresbild(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",

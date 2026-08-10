@@ -293,3 +293,96 @@ class TestWaehle:
 
         assert ergebnis.genome.genome_id == genome.genome_id
         assert not ergebnis.gefunden
+
+
+class TestWarumEsNichtTraegt:
+    """**Die Wahl je Fenster erzeugt die Abhaengigkeit, die sie bezahlt.**
+
+    Gemessen am Spitzenkandidaten, BTC + ETH, Tageskerzen:
+
+        fest       152 Trades   ICC ueber Fenster +0,111   effektiv 154 von 154
+        adaptiv    163 Trades   ICC ueber Fenster +0,325   effektiv 107 von 162
+
+    Der Grund steckt in der Bauart: Alle Trades eines Fensters teilen sich
+    **denselben** gewaehlten Faktor. Passt er zum Markt dieses Quartals, laufen
+    sie gemeinsam gut, sonst gemeinsam schlecht - und genau das misst die
+    Intraklassen-Korrelation. Die zusaetzlichen Trades sind da, aber sie sind
+    einander aehnlicher als die des festen Kandidaten.
+
+    Diese Tests halten den Mechanismus fest, nicht die Zahlen: Wer die Kuerzung
+    je entfernt, sieht hier, wofuer sie da war.
+    """
+
+    def _fenster(self, *, gemeinsam: float, seed: int = 3) -> list[list[float]]:
+        """Bloecke mit einem gemeinsamen Anteil je Fenster.
+
+        ``gemeinsam`` ist die Streuung dessen, was alle Trades eines Fensters
+        teilen - bei null sind sie unabhaengig, sonst nicht.
+        """
+        rng = np.random.default_rng(seed)
+        return [
+            list(rng.normal(rng.normal(0.0, gemeinsam), 1.0, 6)) for _ in range(24)
+        ]
+
+    def test_ein_gemeinsamer_anteil_je_fenster_kuerzt_die_stichprobe(self) -> None:
+        from research.unabhaengigkeit import effektive_stichprobe
+
+        geteilt = self._fenster(gemeinsam=2.0)
+        n = sum(len(b) for b in geteilt)
+
+        assert effektive_stichprobe(n, None, geteilt).effektiv < n
+
+    def test_ohne_gemeinsamen_anteil_wird_nicht_gekuerzt(self) -> None:
+        """Die Gegenprobe: Eine Kuerzung, die immer zuschlaegt, misst nichts."""
+        from research.unabhaengigkeit import effektive_stichprobe
+
+        einzeln = self._fenster(gemeinsam=0.0)
+        n = sum(len(b) for b in einzeln)
+
+        assert effektive_stichprobe(n, None, einzeln).effektiv == n
+
+    def test_mehr_trades_koennen_weniger_wert_sein(self) -> None:
+        """**Der Kern des Befunds.**
+
+        Ein Lauf mit mehr, aber untereinander aehnlicheren Trades kann eine
+        kleinere effektive Stichprobe haben als ein kleinerer Lauf mit
+        unabhaengigen. Genau das ist zwischen fester und adaptiver Periode
+        passiert - und es ist der Grund, warum "mehr Trades" hier nicht
+        automatisch hilft.
+        """
+        from research.unabhaengigkeit import effektive_stichprobe
+
+        viel_aehnlich = self._fenster(gemeinsam=2.5, seed=5)
+        wenig_frei = self._fenster(gemeinsam=0.0, seed=8)[:16]
+        n_viel = sum(len(b) for b in viel_aehnlich)
+        n_wenig = sum(len(b) for b in wenig_frei)
+
+        assert n_viel > n_wenig
+        assert (
+            effektive_stichprobe(n_viel, None, viel_aehnlich).effektiv
+            < effektive_stichprobe(n_wenig, None, wenig_frei).effektiv
+        )
+
+
+class TestBefehl:
+    def test_der_befehl_ist_verdrahtet(self) -> None:
+        """Das Modul war gebaut, getestet - und stand in keinem Befehl. Damit
+        war es nie gemessen worden."""
+        from typer.testing import CliRunner
+
+        from cli import app
+
+        hilfe = CliRunner().invoke(app, ["adaptiv", "--help"]).output
+
+        assert "Trainingsfenster" in hilfe
+
+    def test_die_hilfe_nennt_die_zaehlweise(self) -> None:
+        """Ein Versuch, nicht einer je Faktor - und der Grund dafuer gehoert
+        dorthin, wo jemand den Befehl liest."""
+        from typer.testing import CliRunner
+
+        from cli import app
+
+        hilfe = CliRunner().invoke(app, ["adaptiv", "--help"]).output
+
+        assert "Versuch" in hilfe

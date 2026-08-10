@@ -67,6 +67,7 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     Richtung("Perioden-Ensemble", "mehr Zeilen, keine neue Information", 17),
     Richtung("Abkuehlung", "repariert zwei Gates, verschlechtert die zwei harten", 44),
     Richtung("Gewinnziel", "laengeres rechtes Ende kostet mehr, als es bringt", 46),
+    Richtung("Adaptive Periode", "mehr Trades, aber einander aehnlicher", 48),
 )
 
 
