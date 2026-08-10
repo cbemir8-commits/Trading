@@ -689,7 +689,10 @@ def wettbewerb(
                 configs=configs,
             )
             save_trials(trials_path, report.trials_after)
-            board.record(report.candidates, generation=generation, herkunft=herkunft)
+            board.record(
+                report.candidates, generation=generation, herkunft=herkunft,
+                versuche=report.trials_after,
+            )
             board.save()
 
             # Von den Besten die einzelnen Trades mitschreiben.
@@ -698,12 +701,14 @@ def wettbewerb(
             # hat: Ausgeglichene Erwartung kann viele kleine Gewinne mit
             # wenigen grossen Verlusten heissen - oder genau umgekehrt.
             # Dieselbe Zahl, gegensaetzliche Erfahrung damit.
-            spitzen_ids = {e.genome_id for e in board.best(3)}
+            spitzen_ids = {
+                e.genome_id for e in board.best(3, versuche=report.trials_after)
+            }
             for kandidat in report.candidates:
                 if kandidat.genome.genome_id in spitzen_ids:
                     _schreibe_tradelog(state, build_log(kandidat))
 
-            _zeige_bestenliste(board, limit=10)
+            _zeige_bestenliste(board, limit=10, versuche=report.trials_after)
             _send_report(
                 settings,
                 _wettbewerbs_bericht(board, runde, interval_obj, handelssymbol),
@@ -722,7 +727,13 @@ def wettbewerb(
 
             # Weiter mit Varianten der Besten. Nur aus denen, die schon nahe
             # dran waren - wild zu streuen kostet Versuche und bringt nichts.
-            spitze = board.best(5)
+            #
+            # **Auf gemeinsamer Huerde ausgewaehlt.** Ohne ``versuche`` stuende
+            # ein Eintrag aus der Vorwoche mit einem Vorteil da, den er nicht
+            # verdient hat - der Deflated Sharpe faellt mit jedem Versuch, auch
+            # wenn sich an der Regel nichts aendert. Die Suche wuerde dann aus
+            # den falschen Eltern zuechten.
+            spitze = board.best(5, versuche=report.trials_after)
             ids = {e.genome_id for e in spitze}
             basis = [c.genome for c in report.candidates if c.genome.genome_id in ids]
             if not basis:
@@ -759,26 +770,38 @@ def _schreibe_tradelog(state, log) -> None:
     )
 
 
-def _zeige_bestenliste(board, *, limit: int = 10) -> None:
+def _zeige_bestenliste(board, *, limit: int = 10, versuche: int | None = None) -> None:
     table = Table(title="Bestenliste", header_style="bold")
     table.add_column("#", justify="right")
     table.add_column("Strategie")
     table.add_column("Gates", justify="right")
     table.add_column("Trades", justify="right")
     table.add_column("Erwartung", justify="right")
+    table.add_column("DSR", justify="right")
     table.add_column("Gescheitert an")
 
-    for platz, eintrag in enumerate(board.best(limit), start=1):
+    for platz, eintrag in enumerate(board.best(limit, versuche=versuche), start=1):
         stil = "green" if eintrag.zugelassen else ""
+        # Ein Eintrag ohne bekannte Huerde traegt eine Zahl, die nicht in
+        # denselben Vergleich gehoert. Das gehoert sichtbar, nicht versteckt.
+        wert = eintrag.dsr_bei(versuche) if versuche else eintrag.deflated_sharpe
+        marke = "" if eintrag.vergleichbar or not versuche else " ?"
         table.add_row(
             str(platz),
             f"[{stil}]{eintrag.name[:38]}[/]" if stil else eintrag.name[:38],
             f"{eintrag.gates_bestanden}/{eintrag.gates_gesamt}",
             str(eintrag.trades),
             f"{eintrag.erwartung_r:+.3f} R",
+            f"{wert:.3f}{marke}",
             ", ".join(eintrag.gescheitert_an[:2]) or "-",
         )
     console.print(table)
+    if versuche and (alt := board.unvergleichbar):
+        console.print(
+            f"[dim]? bei {len(alt)} von {len(board.entries)} Eintraegen: vor "
+            f"dieser Aenderung gemessen, Huerde unbekannt. Ihr Wert steht, "
+            f"aber er gehoert nicht in denselben Vergleich.[/]"
+        )
 
 
 def _wettbewerbs_bericht(board, runde: int, interval_obj, symbol: str) -> dict:

@@ -4314,3 +4314,70 @@ an einer Stelle sichtbar, an der man ihn nicht sucht.
 
 Versuchszaehler unveraendert bei **157** - es wurde nichts gerechnet, was nicht
 schon gerechnet war. Stand: **7 von 11**.
+
+## Fuenfzig. Die Bestenliste verglich gegen verschiedene Huerden
+
+Im Abschnitt davor stand eine Nebenbeobachtung: Derselbe Kandidat taucht in
+drei Abtastungen mit **0,851 / 0,813 / 0,808** auf. Die Regel hat sich nicht
+geaendert - die Huerde ist gestiegen, weil zwischen den Laeufen Versuche
+dazukamen.
+
+Diesmal die Frage, was das anderswo anrichtet. Und es richtet etwas an:
+
+    Entry.deflated_sharpe   der gemessene Wert
+    Entry.versuche          gab es nicht
+
+Die Bestenliste sortiert **primaer** nach dem Deflated Sharpe - so begruendet
+in Abschnitt neunzehn, und die Begruendung stimmt. Nur speicherte sie nicht,
+gegen welche Huerde der Wert gemessen wurde. Ein Eintrag aus der Vorwoche stand
+damit mit einem Vorteil da, den er nicht verdient hatte.
+
+**Und das ist nicht nur eine Anzeige.** ``breed`` nimmt ``board.best(5)`` als
+Eltern der naechsten Runde. Eine verzerrte Rangfolge zuechtet aus den falschen
+Eltern - und jeder dieser Versuche hebt die Huerde fuer alle weiteren.
+
+### Wie gross die Verzerrung ist
+
+Von 40 Eintraegen stammen 24 vom 4. und 5. August, 16 vom 9. Zwischen diesen
+Zeitpunkten stieg der Zaehler um rund 45. Gerechnet an einem konstruierten,
+aber realistischen Paar:
+
+    Eintrag   gemessen bei   gespeichert   auf 157 Versuche
+    alt          50 Versuche      0,9346             0,7990
+    neu         157 Versuche      0,9017             0,9017
+
+Der **schlechtere** Eintrag steht mit 0,9346 oben, der bessere mit 0,9017
+darunter - allein, weil der eine frueher gemessen wurde. Auf gemeinsamer
+Huerde dreht sich die Reihenfolge um. Ein Test haelt beide Richtungen fest:
+erst dass die Verdrehung ohne Umrechnung eintritt, dann dass sie mit ihr
+verschwindet.
+
+Im Augenblick sitzt kein alter Eintrag in den oberen fuenf - der Fehler war
+also latent, nicht wirksam. Das macht ihn nicht kleiner, sondern nur schwerer
+zu bemerken.
+
+### Behoben
+
+* ``Entry`` traegt jetzt ``versuche`` sowie ``sharpe_je_trade``, ``schiefe``
+  und ``woelbung`` - die Eingaenge, aus denen sich der Wert auf einen anderen
+  Versuchsstand **umrechnen** laesst, statt ihn nur zu vergleichen.
+* ``ranked(versuche=...)`` und ``best(versuche=...)`` rechnen jeden Eintrag auf
+  denselben Stand, bevor sie sortieren. Der Wettbewerb ruft sie so - fuer die
+  Anzeige, fuer das Tradelog und fuer die Elternwahl.
+* Die Kennzahlen kommen aus ``Kandidat.aus_trades``, also aus derselben
+  Umsetzung wie ueberall sonst. Es waere die sechste Stelle mit derselben
+  Formel gewesen.
+
+### Was ausdruecklich nicht passiert ist
+
+Die 40 vorhandenen Eintraege wurden **nicht** nachtraeglich umgerechnet. Ihre
+Eingaenge fehlen, und eine Umrechnung zu erfinden waere schlimmer als eine
+ehrliche Luecke. Sie behalten ihren Wert und tragen in der Tabelle ein ``?``:
+
+    ? bei 40 von 40 Eintraegen: vor dieser Aenderung gemessen, Huerde
+      unbekannt. Ihr Wert steht, aber er gehoert nicht in denselben Vergleich.
+
+Mit jedem kuenftigen Lauf verschwindet das Fragezeichen von selbst.
+
+Versuchszaehler unveraendert bei **157** - es wurde nichts gerechnet, was eine
+Strategie betrifft. Stand: **7 von 11**.

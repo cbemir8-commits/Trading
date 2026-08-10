@@ -77,6 +77,49 @@ class Entry:
     Versuche. Die einzige Kennzahl hier, die sich nicht schoenrechnen laesst,
     indem man weniger riskiert."""
 
+    versuche: int = 0
+    """Der Versuchsstand, bei dem ``deflated_sharpe`` gemessen wurde.
+
+    **Ohne diese Zahl vergleicht die Liste Werte gegen verschiedene Huerden.**
+    Der Deflated Sharpe faellt mit jedem weiteren Versuch, auch wenn sich an
+    der Regel nichts aendert - derselbe Kandidat steht in drei Abtastungen bei
+    0,851 / 0,813 / 0,808, allein deshalb. Wer zwei Eintraege aus
+    verschiedenen Wochen nebeneinanderlegt, vergleicht den aelteren mit einem
+    Vorteil, den er nicht verdient hat.
+
+    Null heisst: vor dieser Aenderung eingetragen, Huerde unbekannt.
+    """
+
+    sharpe_je_trade: float = 0.0
+    schiefe: float = 0.0
+    woelbung: float = 0.0
+    """Die Eingaenge des Deflated Sharpe - damit er sich auf einen anderen
+    Versuchsstand umrechnen laesst, statt nur verglichen zu werden."""
+
+    @property
+    def vergleichbar(self) -> bool:
+        """Laesst sich der Wert auf einen anderen Versuchsstand umrechnen?"""
+        return bool(self.versuche and self.sharpe_je_trade > 0 and self.trades >= 3)
+
+    def dsr_bei(self, versuche: int) -> float:
+        """Der Deflated Sharpe, wie er bei diesem Versuchsstand aussaehe.
+
+        Ohne die noetigen Eingaenge bleibt der gespeicherte Wert stehen - eine
+        Umrechnung zu erfinden waere schlimmer als eine ehrliche Luecke. Solche
+        Eintraege sind ueber ``vergleichbar`` erkennbar.
+        """
+        if not self.vergleichbar:
+            return self.deflated_sharpe
+        from research.gates import deflated_sharpe_ratio
+
+        return deflated_sharpe_ratio(
+            observed_sharpe=self.sharpe_je_trade,
+            trials=max(versuche, 1),
+            sample_size=self.trades,
+            skew=self.schiefe,
+            kurtosis=self.woelbung,
+        )
+
     @property
     def rang_schluessel(self) -> tuple:
         """Reihenfolge der Bestenliste - absteigend zu lesen.
@@ -169,7 +212,14 @@ class Leaderboard:
         return self.path
 
     # -- Fortschreiben -------------------------------------------------------
-    def record(self, candidates, *, generation: int, herkunft: str = "Katalog") -> int:
+    def record(
+        self,
+        candidates,
+        *,
+        generation: int,
+        herkunft: str = "Katalog",
+        versuche: int = 0,
+    ) -> int:
         """Ein Laufergebnis eintragen. Gibt zurueck, wie viele sich verbessert haben.
 
         Ein schlechteres Ergebnis ueberschreibt kein besseres. Sonst wuerde
@@ -181,7 +231,10 @@ class Leaderboard:
         verbessert = 0
 
         for candidate in candidates:
-            neu = _aus_kandidat(candidate, generation=generation, herkunft=herkunft)
+            neu = _aus_kandidat(
+                candidate, generation=generation, herkunft=herkunft,
+                versuche=versuche,
+            )
             alt = self.entries.get(neu.genome_id)
 
             if alt is None:
@@ -203,11 +256,41 @@ class Leaderboard:
         return verbessert
 
     # -- Abfragen ------------------------------------------------------------
-    def ranked(self) -> list[Entry]:
-        return sorted(self.entries.values(), key=lambda e: e.rang_schluessel, reverse=True)
+    def ranked(self, *, versuche: int | None = None) -> list[Entry]:
+        """Die Liste, absteigend.
 
-    def best(self, count: int = 5) -> list[Entry]:
-        return self.ranked()[:count]
+        Mit ``versuche`` wird der Deflated Sharpe jedes Eintrags auf **diesen**
+        Versuchsstand umgerechnet, bevor verglichen wird. Ohne das vergleicht
+        die Liste Werte, die gegen verschiedene Huerden gemessen wurden - und
+        der aeltere Eintrag gewinnt mit einem Vorteil, den er nicht verdient
+        hat. Eintraege ohne die noetigen Eingaenge behalten ihren Wert; sie
+        sind ueber ``vergleichbar`` erkennbar.
+        """
+        if versuche is None:
+            return sorted(
+                self.entries.values(), key=lambda e: e.rang_schluessel, reverse=True
+            )
+        return sorted(
+            self.entries.values(),
+            key=lambda e: (
+                e.zugelassen,
+                round(e.dsr_bei(versuche), 3),
+                e.gates_bestanden,
+                e.erwartung_r,
+                e.sharpe,
+            ),
+            reverse=True,
+        )
+
+    def best(self, count: int = 5, *, versuche: int | None = None) -> list[Entry]:
+        return self.ranked(versuche=versuche)[:count]
+
+    @property
+    def unvergleichbar(self) -> list[Entry]:
+        """Eintraege, deren Huerde unbekannt ist - vor dieser Aenderung
+        eingetragen. Ihre Zahl steht, aber sie gehoert nicht in denselben
+        Vergleich."""
+        return [e for e in self.entries.values() if not e.vergleichbar]
 
     @property
     def admitted(self) -> list[Entry]:
@@ -225,7 +308,9 @@ class Leaderboard:
         )
 
 
-def _aus_kandidat(candidate, *, generation: int, herkunft: str) -> Entry:
+def _aus_kandidat(
+    candidate, *, generation: int, herkunft: str, versuche: int = 0
+) -> Entry:
     combined = candidate.walkforward.combined
     return Entry(
         genome_id=candidate.genome.genome_id,
@@ -244,7 +329,28 @@ def _aus_kandidat(candidate, *, generation: int, herkunft: str) -> Entry:
         fenster_profitabel=round(candidate.consistency, 3),
         deflated_sharpe=_deflated_sharpe(candidate),
         hypothese=candidate.genome.rationale,
+        versuche=versuche,
+        **_form(candidate),
     )
+
+
+def _form(candidate) -> dict[str, float]:
+    """Die Eingaenge des Deflated Sharpe - ueber **eine** Umsetzung.
+
+    ``Kandidat.aus_trades`` rechnet sie ohnehin; sie hier noch einmal
+    aufzuschreiben waere die sechste Stelle mit derselben Formel.
+    """
+    from research.suchbudget import Kandidat
+
+    trades = getattr(candidate.walkforward, "all_trades", None) or []
+    eintrag = Kandidat.aus_trades("", trades)
+    if eintrag is None:
+        return {}
+    return {
+        "sharpe_je_trade": round(eintrag.sharpe_je_trade, 6),
+        "schiefe": round(eintrag.schiefe or 0.0, 4),
+        "woelbung": round(eintrag.woelbung or 0.0, 4),
+    }
 
 
 def _deflated_sharpe(candidate) -> float:

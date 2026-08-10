@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from research.leaderboard import Leaderboard
+from research.leaderboard import Entry, Leaderboard
 from research.mutation import breed, mutate
 from research.seeds import load_seeds
 from strategy.compiler import compile_genome
@@ -655,3 +655,88 @@ class TestStartpunktDerSuche:
             and len(v.entry_long) == len(spitze.entry_long)
         ]
         assert len(gleiche_richtung) >= len(varianten) // 2
+
+
+class TestGemeinsameHuerde:
+    """**Die Bestenliste verglich Werte, die gegen verschiedene Huerden fielen.**
+
+    Der Deflated Sharpe sinkt mit jedem weiteren Versuch, auch wenn sich an der
+    Regel nichts aendert - derselbe Kandidat steht in drei Abtastungen bei
+    0,851 / 0,813 / 0,808, allein deshalb. Die Liste sortiert primaer nach
+    dieser Zahl, und ``breed`` nimmt die oberen fuenf als Eltern. Ein Eintrag
+    aus der Vorwoche stand damit mit einem Vorteil da, den er nicht verdient
+    hat - und die Suche zuechtete aus den falschen Eltern.
+    """
+
+    def _eintrag(self, name: str, *, dsr: float, versuche: int, sharpe: float) -> Entry:
+        return Entry(
+            genome_id=name,
+            name=name,
+            generation=5,
+            trades=152,
+            deflated_sharpe=dsr,
+            versuche=versuche,
+            sharpe_je_trade=sharpe,
+            schiefe=3.4,
+            woelbung=16.0,
+        )
+
+    def test_der_alte_eintrag_gewinnt_ohne_umrechnung(self) -> None:
+        """Der Beleg, dass es das Problem gibt - sonst pruefte der Test
+        darunter nichts."""
+        alt = self._eintrag("alt", dsr=0.9346, versuche=50, sharpe=0.26)
+        neu = self._eintrag("neu", dsr=0.9017, versuche=157, sharpe=0.28)
+
+        assert alt.deflated_sharpe > neu.deflated_sharpe
+        assert neu.sharpe_je_trade > alt.sharpe_je_trade, (
+            "Der neue Eintrag muss der bessere sein, sonst ist nichts verdreht"
+        )
+
+    def test_auf_gemeinsamer_huerde_dreht_sich_die_reihenfolge(self) -> None:
+        """**Der eigentliche Test.** Beide auf denselben Versuchsstand
+        umgerechnet, gewinnt der bessere."""
+        alt = self._eintrag("alt", dsr=0.9346, versuche=50, sharpe=0.26)
+        neu = self._eintrag("neu", dsr=0.9017, versuche=157, sharpe=0.28)
+
+        assert neu.dsr_bei(157) > alt.dsr_bei(157)
+
+    def test_die_liste_ordnet_danach(self, tmp_path: Path) -> None:
+        board = Leaderboard(tmp_path / "liste.json")
+        board.entries["alt"] = self._eintrag(
+            "alt", dsr=0.9346, versuche=50, sharpe=0.26
+        )
+        board.entries["neu"] = self._eintrag(
+            "neu", dsr=0.9017, versuche=157, sharpe=0.28
+        )
+
+        assert board.best(1)[0].name == "alt"
+        assert board.best(1, versuche=157)[0].name == "neu"
+
+    def test_ohne_eingaenge_bleibt_der_gespeicherte_wert(self) -> None:
+        """Eine Umrechnung zu erfinden waere schlimmer als eine ehrliche
+        Luecke. Solche Eintraege sind erkennbar."""
+        ohne = Entry(genome_id="x", name="Alt", generation=5, deflated_sharpe=0.88)
+
+        assert not ohne.vergleichbar
+        assert ohne.dsr_bei(157) == 0.88
+
+    def test_alte_eintraege_werden_benannt(self, tmp_path: Path) -> None:
+        board = Leaderboard(tmp_path / "liste.json")
+        board.entries["alt"] = Entry(genome_id="alt", name="Alt", generation=5)
+        board.entries["neu"] = self._eintrag(
+            "neu", dsr=0.9, versuche=157, sharpe=0.28
+        )
+
+        assert [e.name for e in board.unvergleichbar] == ["Alt"]
+
+    def test_der_versuchsstand_wird_mitgeschrieben(self, tmp_path: Path) -> None:
+        """Ohne ihn ist jeder kuenftige Eintrag wieder unvergleichbar."""
+        from research.seeds import trend_following
+
+        board = Leaderboard(tmp_path / "liste.json")
+        board.record(
+            [kandidat(trend_following(), deflated=0.8)], generation=5, versuche=157
+        )
+
+        eintrag = next(iter(board.entries.values()))
+        assert eintrag.versuche == 157
