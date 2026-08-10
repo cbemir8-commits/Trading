@@ -12,6 +12,7 @@ Zwei Tests tragen die Datei:
 
 from __future__ import annotations
 
+from research.gates import _feldgrenzen
 from research.mutation import mutate
 
 
@@ -149,3 +150,44 @@ class TestKohaerenteVarianten:
             variante = mutate(vorlage, rng)
             if variante is not None:
                 compile_genome(variante)
+
+
+class TestZielGrenzen:
+    def test_die_mutation_folgt_dem_schema(self) -> None:
+        """**Hier stand ``0.3, 20.0`` - dieselben Zahlen wie im Schema.**
+
+        Als die Obergrenze dort stieg, haette die Mutation weiter bei 20
+        abgeschnitten und still eine andere Regel befolgt als die Validierung.
+        Der Test prueft es an einem Ziel oberhalb der alten Grenze: Es darf
+        wachsen, solange das Schema es zulaesst.
+        """
+        import random
+
+        from research.mutation import _vary_targets
+        from strategy.genome import TargetSpec
+
+        _, oben = _feldgrenzen(TargetSpec.model_fields["rr"], standard=(0.3, 20.0))
+        hoch = [TargetSpec(rr=oben * 0.5, portion=1.0)]
+
+        gewachsen = []
+        for saat in range(40):
+            neu = _vary_targets(hoch, random.Random(saat))
+            if neu and neu[0].rr > hoch[0].rr:
+                gewachsen.append(neu[0].rr)
+
+        assert gewachsen, "Kein Ziel ist gewachsen - die Mutation deckelt zu frueh"
+        assert max(gewachsen) <= oben
+
+    def test_die_untere_schranke_wird_nicht_abgerundet(self) -> None:
+        """0,3 darf nicht zu 0 werden - ein Ziel bei null waere keins, und das
+        Schema lehnt es ab."""
+        import random
+
+        from research.mutation import _vary_targets
+        from strategy.genome import TargetSpec
+
+        winzig = [TargetSpec(rr=0.3, portion=1.0)]
+        for saat in range(40):
+            neu = _vary_targets(winzig, random.Random(saat))
+            if neu:
+                assert neu[0].rr >= 0.3

@@ -505,7 +505,7 @@ class Regler:
 
     name: str
     einheit: str
-    pfad: tuple[str, ...]
+    pfad: tuple[str | int, ...]
     stufen: tuple[float, ...]
     begruendung: str = ""
 
@@ -589,6 +589,31 @@ REGLER: dict[str, Regler] = {
             "abzuschliessen."
         ),
     ),
+    "ziel": Regler(
+        name="Gewinnziel",
+        einheit="R",
+        pfad=("targets", 0, "rr"),
+        stufen=(10.0, 20.0, 30.0, 50.0, 100.0, 200.0),
+        begruendung=(
+            "Der letzte unbetretene Weg innerhalb dieser Regelfamilie. Aus "
+            "Nummer fuenfundvierzig: Der Deflated Sharpe haengt an vier "
+            "Groessen, und drei davon sind ausgemessen oder unerreichbar. Die "
+            "vierte ist die **Schiefe** - die Form der Verteilung.\n\n"
+            "Sie haengt am rechten Rand, und der ist beim Spitzenkandidaten "
+            "nicht gewachsen, sondern abgeschnitten: Zehn von 154 Trades enden "
+            "am Ziel mit im Mittel +19,6 R, und die fuenf groessten Ergebnisse "
+            "des ganzen Laufs liegen alle zwischen 19,69 und 19,81 R.\n\n"
+            "Die Stufe 200 entspricht bei einem Vier-Prozent-Stop einer "
+            "Bewegung von 800 % - praktisch 'kein Ziel'. Damit ist zum ersten "
+            "Mal die uebliche Bauform einer Trendfolge ausdrueckbar: Ausstieg "
+            "nur nach Regel oder Stop.\n\n"
+            "**Und es ist der erste Regler, der die Trade-Zahl nicht "
+            "antastet.** Alle bisherigen reparierten die Risiko-Gates, indem "
+            "sie weniger handelten - und bezahlten mit dem Deflated Sharpe. "
+            "Hier bleiben die Einstiege, wo sie sind; nur zehn Ausstiege "
+            "aendern sich."
+        ),
+    ),
     "konviktion": Regler(
         name="Konviktions-Bonus",
         einheit="",
@@ -657,7 +682,10 @@ def ausgangswert(genome, regler: Regler) -> float:
         return 1.0
     wert = genome
     for teil in regler.pfad:
-        wert = getattr(wert, teil)
+        # Ein Pfad kann in eine Liste zeigen - ``targets`` etwa ist eine, und
+        # das Gewinnziel steht in ihrem ersten Eintrag. ``stelle_ein`` geht
+        # denselben Weg ueber das Dict und kennt beide Faelle laengst.
+        wert = wert[teil] if isinstance(teil, int) else getattr(wert, teil)
     return float(wert)
 
 

@@ -481,7 +481,7 @@ class TestRegler:
         from research.machbarkeit import REGLER
 
         assert set(REGLER) == {
-            "vola", "stop", "konviktion", "periode", "abkuehlung",
+            "vola", "stop", "konviktion", "periode", "abkuehlung", "ziel",
         }
         for name, r in REGLER.items():
             assert r.stufen, name
@@ -674,3 +674,48 @@ class TestAbkuehlung:
         from research.seeds import spitzenkandidat
 
         assert float(spitzenkandidat().cooldown_bars) in REGLER["abkuehlung"].stufen
+
+
+class TestGewinnziel:
+    """Der Regler, der als einziger die Trade-Zahl nicht antastet.
+
+    Alle anderen reparieren die Risiko-Gates, indem sie weniger handeln, und
+    bezahlen mit dem Deflated Sharpe. Hier bleiben die Einstiege, wo sie sind;
+    nur die Ausstiege der wenigen Trades aendern sich, die das Ziel erreichen.
+    """
+
+    def test_der_pfad_zeigt_in_eine_liste(self) -> None:
+        """``targets`` ist eine Liste, und das Ziel steht in ihrem ersten
+        Eintrag. Der Pfad muss deshalb einen Zahlenindex vertragen - beim
+        Setzen **und** beim Auslesen."""
+        from research.machbarkeit import REGLER, ausgangswert, stelle_ein
+        from research.seeds import spitzenkandidat
+
+        vorlage = spitzenkandidat()
+
+        assert ausgangswert(vorlage, REGLER["ziel"]) == vorlage.targets[0].rr
+        assert stelle_ein(vorlage, REGLER["ziel"], 50.0).targets[0].rr == 50.0
+
+    def test_nur_das_ziel_wandert(self) -> None:
+        from research.machbarkeit import REGLER, stelle_ein
+        from research.seeds import spitzenkandidat
+
+        vorlage = spitzenkandidat()
+        neu = stelle_ein(vorlage, REGLER["ziel"], 100.0)
+
+        assert neu.entry_long == vorlage.entry_long
+        assert neu.exit_long == vorlage.exit_long
+        assert neu.stop == vorlage.stop
+        assert neu.cooldown_bars == vorlage.cooldown_bars
+
+    def test_die_leiter_reicht_ueber_das_alte_limit_hinaus(self) -> None:
+        """Die Obergrenze stand auf 20 und war keine gemessene Groesse - der
+        Kandidat sass genau darauf. Ohne Stufen darueber liesse sich die Frage
+        'was, wenn die Gewinner laufen duerfen' gar nicht stellen."""
+        from research.machbarkeit import REGLER
+        from research.seeds import spitzenkandidat
+
+        stufen = REGLER["ziel"].stufen
+
+        assert float(spitzenkandidat().targets[0].rr) in stufen
+        assert max(stufen) > 20.0

@@ -936,3 +936,40 @@ class TestMesslatteSimuliert:
         ergebnis = gate_benchmark(report, frame, GateThresholds())
 
         assert ergebnis.status is GateStatus.PASS
+
+
+class TestFeldgrenzen:
+    def test_gebrochene_schranken_bleiben_gebrochen(self) -> None:
+        """**Hier stand ``int(wert)``.**
+
+        Die einzigen Nutzer waren Indikatorperioden, und dort faellt es nicht
+        auf. Beim ersten Feld mit einer gebrochenen Schranke - ``TargetSpec.rr``
+        mit ``ge=0.3`` - waeren daraus stillschweigend 0 geworden, und die
+        Mutation haette Ziele erzeugt, die das Schema anschliessend ablehnt.
+        """
+        from research.gates import _feldgrenzen
+        from strategy.genome import TargetSpec
+
+        unten, oben = _feldgrenzen(TargetSpec.model_fields["rr"], standard=(0.0, 1.0))
+
+        assert unten == pytest.approx(0.3)
+        assert oben > 20.0
+
+    def test_ganze_schranken_bleiben_ganz(self) -> None:
+        from research.gates import _feldgrenzen
+        from strategy.genome import SizingSpec
+
+        assert _feldgrenzen(
+            SizingSpec.model_fields["vol_period"], standard=(0, 0)
+        ) == (5, 200)
+
+    def test_ohne_schranken_gilt_der_standard(self) -> None:
+        from dataclasses import dataclass
+
+        from research.gates import _feldgrenzen
+
+        @dataclass
+        class Ohne:
+            metadata: tuple = ()
+
+        assert _feldgrenzen(Ohne(), standard=(1.5, 9.5)) == (1.5, 9.5)

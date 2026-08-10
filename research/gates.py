@@ -1092,19 +1092,25 @@ def _regime_at(regimes: pd.DataFrame, moment) -> str | None:
     return str(matches["regime"].iloc[-1])
 
 
-def _feldgrenzen(feld, *, standard: tuple[int, int]) -> tuple[int, int]:
+def _feldgrenzen(feld, *, standard: tuple[float, float]) -> tuple[float, float]:
     """Untere und obere Schranke eines Pydantic-Feldes auslesen.
 
     ``standard`` greift nur, wenn das Feld gar keine Schranken traegt. Wer
     die Grenzen im Genom aendert, aendert sie damit auch hier - genau das ist
     der Zweck.
+
+    **Die Werte werden nicht auf ganze Zahlen gerundet.** Hier stand einmal
+    ``int(wert)``, weil die einzigen Nutzer Indikatorperioden waren. Beim
+    ersten Feld mit einer gebrochenen Schranke - ``TargetSpec.rr`` mit
+    ``ge=0.3`` - waeren daraus stillschweigend 0 geworden, und die Mutation
+    haette Ziele erzeugt, die das Schema anschliessend ablehnt.
     """
     unten, oben = standard
     for regel in feld.metadata:
         if (wert := getattr(regel, "ge", None)) is not None:
-            unten = int(wert)
+            unten = wert
         if (wert := getattr(regel, "le", None)) is not None:
-            oben = int(wert)
+            oben = wert
     return unten, oben
 
 

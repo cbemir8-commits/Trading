@@ -161,10 +161,19 @@ def _vary_targets(targets: list[TargetSpec], rng: random.Random) -> list[TargetS
     Ziel hinter einem ferneren wird nie erreicht, und die Validierung lehnt es
     ohnehin ab.
     """
+    # **Die Grenzen kommen aus dem Schema, nicht aus dieser Zeile.**
+    #
+    # Hier stand ``0.3, 20.0`` - dieselben Zahlen wie in ``TargetSpec``, nur an
+    # einer zweiten Stelle. Als die Obergrenze dort auf 200 stieg, haette die
+    # Mutation weiter bei 20 abgeschnitten und still eine andere Regel
+    # befolgt als die Validierung.
+    from research.gates import _feldgrenzen
+
+    unten, oben = _feldgrenzen(TargetSpec.model_fields["rr"], standard=(0.3, 20.0))
     faktor = rng.choice([0.75, 1.35])
     neu = []
     for target in targets:
-        rr = round(_clamp(target.rr * faktor, 0.3, 20.0), 2)
+        rr = round(_clamp(target.rr * faktor, unten, oben), 2)
         neu.append(target.model_copy(update={"rr": rr}))
     if [t.rr for t in neu] == [t.rr for t in targets]:
         return None

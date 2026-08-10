@@ -4030,3 +4030,77 @@ dieser Regelfamilie ist, steht jetzt fest.
 
 Versuchszaehler unveraendert bei **151** - diese Messung hat keinen Backtest
 gerechnet, sondern eine Formel aufgeloest. Stand: **7 von 11**.
+
+## Sechsundvierzig. Der letzte Weg war zu - und meine Begruendung war falsch
+
+Nummer fuenfundvierzig hatte drei offene Wege gelassen und einen davon als den
+einzigen unbetretenen benannt: die **Schiefe**. Bevor man sie abtastet, gehoert
+gemessen, woran sie ueberhaupt haengt. Also erst die Ausstiege gezaehlt:
+
+    signal_exit    76  (49,4 %)   Mittel  +1,288 R   max  +12,07
+    stop_loss      68  (44,2 %)   Mittel  -1,090 R   max   -1,03
+    take_profit    10  ( 6,5 %)   Mittel +19,588 R   max  +19,81
+
+**Der rechte Rand ist nicht gewachsen, er ist abgeschnitten.** Die fuenf
+groessten Ergebnisse des ganzen Laufs liegen bei 19,69 / 19,70 / 19,72 / 19,77
+/ 19,81 R - alle am selben Deckel.
+
+### Ein Limit, das nie jemand begruendet hatte
+
+``TargetSpec.rr`` war auf ``le=20.0`` gesetzt, ohne Begruendung, und der
+Spitzenkandidat sass genau darauf. Eine Trendfolge **ohne** Gewinnziel -
+Ausstieg nur nach Regel oder Stop, die uebliche Bauform dieser Familie - war
+damit gar nicht ausdrueckbar.
+
+Das anzuheben lockert kein Gate. Gates sind Zulassungsschwellen; dies ist der
+Wortschatz, in dem Strategien formuliert werden. Die Grenze steht jetzt bei
+200 - bei einem Vier-Prozent-Stop entspraeche das einer Bewegung von 800 %,
+also praktisch "kein Ziel".
+
+### Die Messung, und sie sagt Nein
+
+Gewinnziel als Regler, BTC + ETH, Tageskerzen. **Die Trade-Zahl bleibt bei
+allen Stufen 152** - der erste Regler, der die Einstiege nicht antastet:
+
+    Ziel   Trades    CAGR   SR/Trade     DSR   Schl.Jahr   Gates
+      10      152   10,16 %   0,2640   0,736     -7,18      8/11
+      20      152   13,47 %   0,2597   0,808    -10,32      7/11
+      30      152   13,77 %   0,2349   0,557    -10,32      7/11
+      50      152   13,27 %   0,1946   0,186    -10,32      7/11
+     100      152   13,27 %   0,1863   0,048    -10,32      7/11
+     200      152   13,27 %   0,1851   0,047    -10,32      7/11
+
+**Den Deckel zu oeffnen zerstoert den Deflated Sharpe: 0,808 auf 0,047.**
+
+### Warum meine Begruendung falsch war
+
+Ich hatte argumentiert: Die Schiefe senkt den Nenner der DSR-Formel, also
+hilft ein laengeres rechtes Ende. Das stimmt - und ist trotzdem der falsche
+Schluss, weil es nur die eine Haelfte ist.
+
+Ein laengeres rechtes Ende erhoeht auch die **Streuung** der Ergebnisse, und
+der Sharpe je Trade ist ein Verhaeltnis aus Mittelwert und Streuung. Gemessen
+faellt er von 0,2597 auf 0,1851, waehrend die Rendite sogar leicht sinkt: Die
+zehn Trades, die bei 20 R ausstiegen, geben ohne Deckel wieder ab, bevor der
+Ausstieg nach Regel greift. Der Gewinn am Nenner der Formel ist weit kleiner
+als der Verlust am Zaehler.
+
+Die Kappung bei 20 R **half** dem Kandidaten also, statt ihm zu schaden - und
+dass ausgerechnet die unbegruendete Schema-Grenze an der guenstigsten Stelle
+sass, ist Zufall und kein Verdienst.
+
+Dreizehnte geschlossene Richtung, und es war die letzte innerhalb dieser
+Regelfamilie, die noch niemand betreten hatte.
+
+### Zwei Fehler, gefunden auf dem Weg dorthin
+
+* ``research/mutation.py`` schnitt Ziele bei ``0.3, 20.0`` ab - **dieselben
+  Zahlen wie im Schema, nur an einer zweiten Stelle.** Nach dem Anheben haette
+  die Mutation weiter bei 20 gedeckelt und still eine andere Regel befolgt als
+  die Validierung. Sie holt die Grenzen jetzt aus dem Schema.
+* ``_feldgrenzen`` rundete die ausgelesenen Schranken mit ``int()`` ab. Bei
+  Indikatorperioden faellt das nicht auf; beim ersten Feld mit gebrochener
+  Schranke - ``rr`` mit ``ge=0.3`` - waere daraus eine 0 geworden, und die
+  Mutation haette Ziele erzeugt, die das Schema anschliessend ablehnt.
+
+Versuchszaehler **151 -> 156**. Stand: **7 von 11**.

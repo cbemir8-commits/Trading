@@ -284,7 +284,29 @@ class TargetSpec(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    rr: float = Field(ge=0.3, le=20.0, description="Chance-Risiko-Verhaeltnis")
+    rr: float = Field(ge=0.3, le=200.0, description="Chance-Risiko-Verhaeltnis")
+    """Wie weit das Ziel vom Einstieg liegt, in Vielfachen des Risikos.
+
+    **Die Obergrenze stand auf 20 und war keine gemessene Groesse.** Sie ist
+    aufgefallen, weil sie beim Spitzenkandidaten bindet: Zehn von 154 Trades
+    (6,5 %) enden dort am Ziel, mit im Mittel +19,6 R, und die fuenf groessten
+    Ergebnisse des ganzen Laufs liegen alle zwischen 19,69 und 19,81 R. Der
+    rechte Rand der Verteilung ist also nicht gewachsen, sondern **abgeschnitten**
+    - und genau an diesem Rand haengt die Schiefe, einer der vier Eingaenge des
+    haertesten Gates.
+
+    Das Anheben lockert kein Gate. Gates sind Zulassungsschwellen; dies ist
+    der Wortschatz, in dem Strategien ueberhaupt formuliert werden koennen.
+    Eine Trendfolge ohne Gewinnziel - Ausstieg nur nach Regel oder Stop - ist
+    die uebliche Bauform dieser Familie und war bis hierher nicht ausdrueckbar.
+    Jede Strategie, die den neuen Raum nutzt, ist trotzdem ein neuer Kandidat:
+    ein Versuch mehr, und durch alle elf Gates.
+
+    Bei 200 und einem Vier-Prozent-Stop entspraeche das Ziel einer Bewegung von
+    800 % - praktisch "kein Ziel", ohne dass irgendein Codeweg damit umgehen
+    muesste, der ein Ziel voraussetzt.
+    """
+
     portion: float = Field(gt=0, le=1, description="Anteil der Position, 0..1")
 
 
