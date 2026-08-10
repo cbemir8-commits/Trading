@@ -1462,6 +1462,25 @@ def _sharpe_je_trade(trades) -> float:
     return eintrag.sharpe_je_trade if eintrag is not None else 0.0
 
 
+def _formkennzahlen(trades) -> dict[str, float]:
+    """Qualitaet je Trade und die Form der Verteilung - in einem Griff.
+
+    Alle drei gehen in den Deflated Sharpe ein, und alle drei kommen aus
+    derselben Trade-Liste. Sie getrennt zu holen hiesse, dieselbe Rechnung
+    zweimal aufzuschreiben.
+    """
+    from research.suchbudget import Kandidat
+
+    eintrag = Kandidat.aus_trades("", trades)
+    if eintrag is None:
+        return {"sharpe_je_trade": 0.0}
+    return {
+        "sharpe_je_trade": eintrag.sharpe_je_trade,
+        "schiefe": eintrag.schiefe or 0.0,
+        "woelbung": eintrag.woelbung or 0.0,
+    }
+
+
 def _terminkalender(settings):
     """Den Kalender laden - fuer Backtest und Handel derselbe.
 
@@ -3186,7 +3205,12 @@ def machbarkeit(
                         # Fuer die Grenzlinie aus Nummer einunddreissig: Ohne
                         # den Sharpe je Trade laesst sich ein Punkt nicht an
                         # ihr einordnen, und genau das ist die Frage.
-                        "sharpe_je_trade": _sharpe_je_trade(report.all_trades),
+                        #
+                        # Schiefe und Woelbung dazu, weil die Linie ohne sie
+                        # die Anforderung eines fremden Genoms nennt: Beim
+                        # Gewinnziel-Regler aendert sich die Form der
+                        # Verteilung ueber die Stufen hinweg drastisch.
+                        **_formkennzahlen(report.all_trades),
                     },
                 )
             )
@@ -3933,6 +3957,60 @@ def adaptiv(
         for h in budget.hebel(eintrag):
             console.print(f"  {h}")
     console.print(f"\n[dim]Versuchszaehler {trials - 1} -> {trials}.[/]\n")
+
+
+@app.command()
+def front(
+    hoechstens: int = typer.Option(12, "--hoechstens", "-n", help="Wie viele Zeilen."),
+) -> None:
+    """Alles, was je gemessen wurde - gegen die Linie, die es reissen muesste.
+
+    Vierzehn Richtungen sind geschlossen, und vier davon zeigen dasselbe
+    Muster: Jeder Weg, der eine Kennzahl verbessert, verschlechtert den
+    Deflated Sharpe ueber einen anderen Kanal. Vier Einzelfaelle sind ein
+    Verdacht, keine Aussage.
+
+    Die Aussage waere: **Kein Punkt dieser Regelfamilie liegt ueber seiner
+    eigenen Grenzlinie.** Diese Auskunft steht schon in den
+    Machbarkeitsberichten - sie musste nur einmal zusammengelegt werden.
+
+    **Kostet keinen Versuch.** Es wird nichts gerechnet, was nicht schon
+    gerechnet wurde.
+    """
+    from pathlib import Path
+
+    from research.admission import load_trials
+    from research.front import Front, lade
+
+    settings = get_settings()
+    trials = load_trials(Path(settings.paths.state) / "trials.json")
+    # Berichte liegen unter <cwd>/reports/<art> - dieselbe Stelle, an die
+    # ``core.report.write_report`` sie legt.
+    punkte = lade(Path.cwd() / "reports" / "machbarkeit")
+    if not punkte:
+        console.print(
+            "[yellow]Keine einordenbaren Messpunkte.[/] Erst abtasten: "
+            "python -m cli machbarkeit --regler stop"
+        )
+        raise typer.Exit(0)
+
+    lage = Front(punkte=punkte, versuche=trials)
+    console.print(
+        f"\n[bold]Die gemessene Front[/]\n"
+        f"  Punkte     {len(punkte)} aus {len({p.regler for p in punkte})} Reglern\n"
+        f"  Versuche   {trials}\n"
+    )
+    console.print(lage.tabelle(hoechstens=hoechstens))
+    farbe = "green" if lage.bestanden else "yellow"
+    console.print(f"\n[{farbe}]{lage.urteil()}[/]\n")
+    console.print(
+        "[dim]Die Spalte DSR ist der **gemessene** Gate-Wert und damit das "
+        "Urteil. ~ heisst nur, dass der Bericht die Form der Verteilung nicht "
+        "mittrug - dann ist die Uebersetzung in Sharpe-Einheiten ungenau, das "
+        "Urteil nicht.\n"
+        "Und: Das ist eine Aussage ueber die gemessenen Punkte, nicht ueber "
+        "alle denkbaren.[/]\n"
+    )
 
 
 @app.command()

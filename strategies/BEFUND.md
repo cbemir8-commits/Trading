@@ -4246,3 +4246,71 @@ kleinerer mit unabhaengigen.
 Versuchszaehler **156 -> 157**. Stand: **7 von 11** - der Spitzenkandidat
 bleibt der Spitzenkandidat, denn 8 von 11 bei einem Deflated Sharpe von 0,469
 ist die schlechtere Lage.
+
+## Neunundvierzig. Zwanzig Punkte, eine Linie, kein Treffer
+
+Vierzehn geschlossene Richtungen sind vierzehn Einzelfaelle. Vier davon zeigen
+dasselbe Muster - jeder Weg, der eine Kennzahl verbessert, verschlechtert den
+Deflated Sharpe ueber einen anderen Kanal -, aber vier Faelle sind ein
+Verdacht, keine Aussage.
+
+Die Aussage waere: **Kein Punkt dieser Regelfamilie erreicht die Schwelle.**
+Und sie steht laengst da: In ``reports/machbarkeit/`` liegen acht Abtastungen
+mit 52 Reglerstellungen, jede mit vollem Gate-Ergebnis. Sie mussten nur einmal
+zusammengelegt werden - ohne einen einzigen neuen Backtest.
+
+``cli front``, zwanzig einordenbare Punkte aus drei Reglern, 157 Versuche:
+
+    Punkt                  Trades      hat    noetig   Faktor     DSR
+    Gewinnziel 10             152   0,2640    0,2924     1,11    0,736
+    Perioden-Faktor 1         152   0,2597    0,2924     1,13    0,851
+    Abkuehlung 0              152   0,2597    0,2924     1,13    0,813
+    Gewinnziel 20             152   0,2597    0,2924     1,13    0,808
+    Abkuehlung 3              140   0,2599    0,3030     1,17    0,750
+    Perioden-Faktor 0,6       226   0,2053    0,2459     1,20    0,467
+    Perioden-Faktor 0,4       305   0,1774    0,2155     1,21    0,795
+    Gewinnziel 30             152   0,2349    0,2924     1,24    0,557
+    Abkuehlung 5              128   0,2529    0,3151     1,25    0,626
+    Perioden-Faktor 0,8       175   0,2169    0,2750     1,27    0,344
+    Perioden-Faktor 0,5       265   0,1803    0,2293     1,27    0,703
+    Gewinnziel 50             152   0,1946    0,2924     1,50    0,186
+
+**Kein einziger Punkt erreicht 0,95.** Der hoechste je gemessene Deflated
+Sharpe der ganzen Familie liegt bei **0,851**.
+
+### Was die Tabelle zeigt und eine Liste geschlossener Richtungen nicht
+
+Die Trade-Zahl laeuft von 128 bis 305, also um mehr als das Doppelte. Die
+noetige Qualitaet faellt entsprechend, von 0,3151 auf 0,2155 - und die
+vorhandene faellt **mit**, von 0,2529 auf 0,1774. Der Faktor bleibt dabei
+zwischen 1,11 und 1,27.
+
+Die Familie bewegt sich also auf einer Kurve, die neben der Grenzlinie
+herlaeuft und sie nirgends schneidet. Das ist etwas anderes als "vierzehn
+Versuche sind gescheitert": Es ist die Form des Scheiterns, und sie sagt, dass
+Weitersuchen entlang derselben Regler nichts findet.
+
+### Zwei Zahlen je Punkt, und nur eine ist das Urteil
+
+Der **gemessene** Deflated Sharpe stammt aus dem Gate, das mit der wirklichen
+Verteilung des Punktes gerechnet hat - er ist exakt. Die Grenzlinie daneben
+uebersetzt den Abstand in Sharpe-Einheiten und braucht dafuer Schiefe und
+Woelbung; die aelteren Berichte tragen sie nicht mit, dort gilt die Form des
+Spitzenkandidaten. Diese Punkte sind mit ``~`` markiert.
+
+Ein Test haelt den Unterschied fest: Ein Punkt, den die Linie durchwinken
+wuerde, dessen gemessener Wert aber unter der Schwelle liegt, gilt **nicht**
+als bestanden. Das Gate hat recht, nicht die Uebersetzung.
+
+Kuenftige Abtastungen schreiben Schiefe und Woelbung mit; die Naeherung
+verschwindet damit von selbst.
+
+### Eine Nebenbeobachtung, die zur Sache gehoert
+
+Derselbe Kandidat steht in drei Scans mit drei verschiedenen Werten: 0,851 /
+0,813 / 0,808. Die Regel hat sich nicht geaendert - die **Huerde** ist
+gestiegen, weil zwischen den Laeufen Versuche dazukamen. Der Preis des Suchens,
+an einer Stelle sichtbar, an der man ihn nicht sucht.
+
+Versuchszaehler unveraendert bei **157** - es wurde nichts gerechnet, was nicht
+schon gerechnet war. Stand: **7 von 11**.
