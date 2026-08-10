@@ -3959,3 +3959,74 @@ Zwoelfte geschlossene Richtung. Versuchszaehler **146 -> 151**. Stand:
 **7 von 11** - der Kandidat bleibt, wo er war, denn die beste Stufe
 herauszupicken waere die Ueberanpassung, gegen die die ganze Strecke gebaut
 ist.
+
+## Fuenfundvierzig. Vier Eingaenge, drei Wege, einer davon nie betreten
+
+Nach zwoelf geschlossenen Richtungen war die Frage nicht mehr "was probiere
+ich als naechstes", sondern "**woran haengt das haerteste Gate eigentlich**".
+Der Deflated Sharpe hat vier gemessene Eingaenge, und die Grenzlinie zeigte
+bisher nur einen davon.
+
+Also alle vier einzeln geloest - wo muesste jeder stehen, damit das Gate
+haelt, alles andere unveraendert? Spitzenkandidat, BTC + ETH, Tageskerzen,
+151 Versuche:
+
+    Qualitaet je Trade        0,260  ->    0,292     (+12 %)
+    unabhaengige Trades         152  ->      199     (+31 %)
+    Schiefe                   3,438  ->    4,424     (+29 %)
+    Woelbung                 15,742       unerreichbar
+
+**Die Woelbung ist keine Option**, und zwar nicht knapp: Unter 1 liegt keine
+Verteilung, und selbst bei 1 haelt das Gate nicht. Der Weg ist zu, nicht eng.
+
+**Die Schiefe hat noch nie jemand gemessen.** Alle bisherigen Richtungen
+zielten auf die ersten beiden Eingaenge - mehr Qualitaet oder mehr Trades. Die
+Form der Verteilung ist der dritte, und er stand nie auf der Liste.
+
+Was dabei sichtbar wird: Die schiefe Verteilung des Kandidaten **hilft ihm
+bereits erheblich**. Im Nenner der Formel steht 0,597 statt der 1,016 einer
+Normalverteilung - sein langes rechtes Ende senkt die Huerde um rund dreissig
+Prozent. Ohne diesen Vorteil stuende der Deflated Sharpe deutlich tiefer.
+
+### Ein Fehler, der dabei auffiel
+
+``research/suchbudget.py`` rechnete die Grenzlinie mit **festen** Konstanten:
+
+    SCHIEFE = 3.473
+    WOELBUNG = 15.951
+
+Das sind die Werte des Spitzenkandidaten. Sie galten damit fuer **jeden**
+Kandidaten, der an der Linie gemessen wurde. Fuer eine Regel mit anderer Form
+- etwa eine, die haeufiger und kleiner gewinnt - war die genannte Anforderung
+schlicht die eines fremden Genoms.
+
+Wie viel das ausmacht, zeigt derselbe Nenner: 0,597 gegen 1,016 sind siebzig
+Prozent Unterschied in dem, was verlangt wird. ``Kandidat`` traegt seine Form
+jetzt selbst; wo sie fehlt, gilt die Voreinstellung weiter, aber als benannte
+Naeherung.
+
+### Und eine dritte Umsetzung derselben Groesse
+
+"Sharpe je Trade" wurde an **drei** Stellen gerechnet: zweimal in ``cli.py``
+und einmal als ``_sharpe_je_trade``. Jetzt an einer - ``Kandidat.aus_trades``
+liefert alle vier Groessen zusammen, und der Rest reicht durch. Ein Test haelt
+fest, dass die Hilfsfunktion nicht mehr selbst rechnet.
+
+Das Auseinanderlaufen zweier Umsetzungen derselben Groesse ist in diesem
+Projekt fuenfmal aufgetreten. Diesmal ist es aufgefallen, bevor die Zahlen
+auseinandergingen.
+
+### Wohin das zeigt
+
+Von den drei offenen Wegen sind zwei ausgemessen: Qualitaet je Trade bewegt
+kein Regler (fuenffach belegt, Nummer vierundvierzig), und mehr unabhaengige
+Trades bringen weder mehr Maerkte noch mehr Historie noch feinere Kerzen noch
+Ensembles (Nummern 14, 17, 27, 29).
+
+Bleibt die **Form**. Sie haengt nicht an den Groessenreglern, sondern an
+Ausstieg und Zielen - dem einzigen Teil des Genoms, der nie abgetastet wurde.
+Ob dort etwas liegt, ist offen; dass es der letzte unbetretene Weg innerhalb
+dieser Regelfamilie ist, steht jetzt fest.
+
+Versuchszaehler unveraendert bei **151** - diese Messung hat keinen Backtest
+gerechnet, sondern eine Formel aufgeloest. Stand: **7 von 11**.

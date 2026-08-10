@@ -174,3 +174,162 @@ class TestSpitzengruppe:
 
         assert a is not None and b is not None
         assert a != pytest.approx(b)
+
+
+# ---------------------------------------------------------------------------
+#  Die Form der Verteilung
+# ---------------------------------------------------------------------------
+class FakeTrade:
+    def __init__(self, pnl: float) -> None:
+        self.net_pnl = pnl
+
+
+class TestEigeneForm:
+    """**Jeder Kandidat wird an seiner eigenen Verteilung gemessen.**
+
+    Schiefe und Woelbung gehen in den Deflated Sharpe ein, und zwar kraeftig:
+    Beim Spitzenkandidaten steht im Nenner der Formel 0,597 statt der 1,016
+    einer Normalverteilung. Bis hierher galten seine Werte fuer **alle** -
+    eine Regel mit anderer Form bekam damit die Anforderung eines fremden
+    Genoms genannt.
+    """
+
+    def _trades(self, werte: list[float]) -> list[FakeTrade]:
+        return [FakeTrade(w) for w in werte]
+
+    def test_aus_trades_misst_alle_vier_groessen(self) -> None:
+        from research.suchbudget import Kandidat
+
+        # Wenige grosse Gewinner, viele kleine Verluste - die Form des
+        # Spitzenkandidaten im Kleinen.
+        eintrag = Kandidat.aus_trades("Probe", self._trades([-1.0] * 18 + [20.0, 15.0]))
+
+        assert eintrag is not None
+        assert eintrag.trades == 20
+        assert eintrag.schiefe > 1.0
+        assert eintrag.woelbung > 3.0
+
+    def test_zu_duenne_liste_gibt_nichts(self) -> None:
+        from research.suchbudget import Kandidat
+
+        assert Kandidat.aus_trades("Wenig", self._trades([1.0, 2.0])) is None
+
+    def test_ohne_streuung_gibt_nichts(self) -> None:
+        """Ein Sharpe ohne Streuung im Nenner waere unendlich - und die
+        Grenzlinie behauptete dann, jeder Kandidat sei zugelassen."""
+        from research.suchbudget import Kandidat
+
+        assert Kandidat.aus_trades("Flach", self._trades([1.0] * 10)) is None
+
+    def test_die_form_veraendert_die_anforderung(self) -> None:
+        """**Der entscheidende Test.**
+
+        Zwei Kandidaten, gleiche Trade-Zahl, gleiche Qualitaet je Trade - nur
+        andere Verteilungsform. Wuerde die Form ignoriert, saehen beide
+        dieselbe Anforderung. Sie tun es nicht, und der Unterschied ist gross.
+        """
+        from research.suchbudget import Budget, Kandidat
+
+        schief = Kandidat("Schief", 150, 0.26, schiefe=3.5, woelbung=16.0)
+        normal = Kandidat("Normal", 150, 0.26, schiefe=0.0, woelbung=3.0)
+        budget = Budget(versuche=151, kandidaten=[schief, normal])
+
+        a, b = budget.abstaende()
+
+        assert a.noetig is not None and b.noetig is not None
+        assert a.noetig < b.noetig, (
+            "Ein langes rechtes Ende senkt die Huerde - sonst wirkt die Form "
+            "nicht"
+        )
+
+    def test_ohne_angabe_gilt_die_voreinstellung(self) -> None:
+        """Ein Kandidat ohne gemessene Form faellt auf die Voreinstellung
+        zurueck - das ist eine Naeherung, aber eine benannte."""
+        from research.suchbudget import SCHIEFE, WOELBUNG, Budget, Kandidat
+
+        ohne = Kandidat("Ohne Form", 150, 0.26)
+        mit = Kandidat("Mit Form", 150, 0.26, schiefe=SCHIEFE, woelbung=WOELBUNG)
+        budget = Budget(versuche=151, kandidaten=[ohne, mit])
+
+        a, b = budget.abstaende()
+
+        assert a.noetig == pytest.approx(b.noetig)
+
+
+class TestHebel:
+    """Woran das haerteste Gate haengt - je Eingang einzeln."""
+
+    def _kandidat(self):
+        from research.suchbudget import Kandidat
+
+        return Kandidat("Spitze", 154, 0.2569, schiefe=3.466, woelbung=15.962)
+
+    def test_alle_vier_eingaenge_kommen_vor(self) -> None:
+        from research.suchbudget import Budget
+
+        namen = [h.name for h in Budget(versuche=151).hebel(self._kandidat())]
+
+        assert namen == [
+            "Qualitaet je Trade",
+            "unabhaengige Trades",
+            "Schiefe",
+            "Woelbung",
+        ]
+
+    def test_die_woelbung_allein_reicht_nicht(self) -> None:
+        """**Sie kann nicht unter 1 - das ist keine Meinung, sondern die
+        untere Schranke jeder Verteilung.** Ein Weg, der dort endet, ist
+        geschlossen, und das muss dranstehen statt einer Zahl."""
+        from research.suchbudget import Budget
+
+        woelbung = next(
+            h for h in Budget(versuche=151).hebel(self._kandidat())
+            if h.name == "Woelbung"
+        )
+
+        assert not woelbung.moeglich
+        assert "unerreichbar" in str(woelbung)
+
+    def test_die_offenen_wege_tragen_eine_zahl(self) -> None:
+        from research.suchbudget import Budget
+
+        offen = [h for h in Budget(versuche=151).hebel(self._kandidat()) if h.moeglich]
+
+        assert len(offen) == 3
+        for h in offen:
+            assert h.noetig > h.jetzt
+            assert h.veraenderung > 0
+
+    def test_mehr_versuche_verlangen_mehr(self) -> None:
+        """Der Preis des Suchens, an derselben Stelle sichtbar."""
+        from research.suchbudget import Budget
+
+        def qualitaet(versuche: int) -> float:
+            return next(
+                h.noetig for h in Budget(versuche=versuche).hebel(self._kandidat())
+                if h.name == "Qualitaet je Trade"
+            )
+
+        assert qualitaet(300) > qualitaet(151)
+
+
+class TestEineUmsetzung:
+    def test_die_schwelle_kommt_aus_der_gate_definition(self) -> None:
+        """Nicht danebengeschrieben: Wer sie in ``gates.py`` aendert, aendert
+        sie hier mit."""
+        from research.gates import GateThresholds
+        from research.suchbudget import ZIEL
+
+        assert GateThresholds().min_deflated_sharpe == ZIEL
+
+    def test_die_cli_hilfsfunktion_rechnet_nicht_selbst(self) -> None:
+        """Dieselbe Groesse stand an drei Stellen. Jetzt an einer, und der
+        Rest reicht durch."""
+        from cli import _sharpe_je_trade
+        from research.suchbudget import Kandidat
+
+        trades = [FakeTrade(w) for w in [-1.0] * 18 + [20.0, 15.0]]
+        eintrag = Kandidat.aus_trades("Probe", trades)
+
+        assert eintrag is not None
+        assert _sharpe_je_trade(trades) == pytest.approx(eintrag.sharpe_je_trade)

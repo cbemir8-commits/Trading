@@ -1451,16 +1451,15 @@ _KONTRAKTE = {
 def _sharpe_je_trade(trades) -> float:
     """Mittleres Ergebnis je Trade in Einheiten seiner Streuung.
 
-    Die zweite Groesse, an der der Deflated Sharpe haengt - die erste ist die
-    Trade-Zahl. Ohne beide laesst sich ein Messpunkt nicht an der Grenzlinie
-    einordnen (``research/suchbudget.py``).
+    **Reicht durch an ``Kandidat.aus_trades``.** Diese Groesse stand einmal an
+    drei Stellen: hier und zweimal in den Befehlen, die die Grenzlinie
+    zeichnen. Drei Umsetzungen derselben Zahl laufen frueher oder spaeter
+    auseinander - in diesem Projekt schon viermal geschehen.
     """
-    import numpy as np
+    from research.suchbudget import Kandidat
 
-    werte = np.array([float(t.net_pnl) for t in trades])
-    if len(werte) < 2 or werte.std(ddof=1) == 0:
-        return 0.0
-    return float(werte.mean() / werte.std(ddof=1))
+    eintrag = Kandidat.aus_trades("", trades)
+    return eintrag.sharpe_je_trade if eintrag is not None else 0.0
 
 
 def _terminkalender(settings):
@@ -4127,8 +4126,6 @@ def suchbudget(
     """
     from decimal import Decimal
 
-    import numpy as np
-
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
@@ -4179,16 +4176,9 @@ def suchbudget(
         bericht = run_portfolio_walkforward(
             frames, lambda gg=g: compile_genome(gg), configs
         )
-        werte = np.array([float(t.net_pnl) for t in bericht.all_trades])
-        if len(werte) < 5 or werte.std(ddof=1) == 0:
-            continue
-        kandidaten.append(
-            Kandidat(
-                name=g.name,
-                trades=len(werte),
-                sharpe_je_trade=float(werte.mean() / werte.std(ddof=1)),
-            )
-        )
+        eintrag = Kandidat.aus_trades(g.name, bericht.all_trades)
+        if eintrag is not None:
+            kandidaten.append(eintrag)
 
     if not kandidaten:
         console.print("[red]Kein Kandidat mit genug Trades.[/]")
@@ -4301,13 +4291,9 @@ def stand(
         genome, bericht, erster, configs[symbole[0]], trials_so_far=trials,
         frames=frames, configs=configs,
     )
-    qualitaet = _sharpe_je_trade(bericht.all_trades)
-    budget = Budget(
-        versuche=trials,
-        kandidaten=[
-            Kandidat(genome.name, len(bericht.all_trades), qualitaet)
-        ],
-    )
+    eintrag = Kandidat.aus_trades(genome.name, bericht.all_trades)
+    qualitaet = eintrag.sharpe_je_trade if eintrag else 0.0
+    budget = Budget(versuche=trials, kandidaten=[eintrag] if eintrag else [])
     kombiniert = bericht.combined
 
     lage = Lage(
@@ -4315,7 +4301,9 @@ def stand(
         maerkte=f"{' + '.join(symbole)}, {interval_obj.label}",
         trades=len(bericht.all_trades),
         sharpe_je_trade=qualitaet,
-        noetiger_sharpe=budget.noetig_bei(len(bericht.all_trades)),
+        noetiger_sharpe=(
+            budget.abstaende()[0].noetig if eintrag is not None else None
+        ),
         bestanden=sum(1 for r in gates.results if r.passed),
         gesamt=len(gates.results),
         offen=tuple(r.name for r in gates.results if not r.passed),
@@ -4326,6 +4314,24 @@ def stand(
 
     console.print()
     console.print(lage.bericht())
+    if eintrag is not None:
+        console.print()
+        console.print("WORAN DAS HAERTESTE GATE HAENGT")
+        console.print("-" * 72)
+        console.print(
+            "  Je Groesse einzeln: Wo muesste sie stehen, damit der Deflated "
+            "Sharpe\n  0,95 erreicht - alles andere unveraendert?\n"
+        )
+        for h in budget.hebel(eintrag):
+            farbe = "yellow" if h.moeglich else "red"
+            console.print(f"  [{farbe}]{h}[/]")
+        console.print(
+            "\n  [dim]Die Woelbung waere ein Weg, wenn sie sich senken liesse - "
+            "sie kann es\n  nicht: Unter 1 liegt keine Verteilung. Die Schiefe "
+            "ist der einzige der\n  vier Wege, den noch nie jemand gemessen "
+            "hat.[/]"
+        )
+
     console.print()
     console.print("DIE GATES IM EINZELNEN")
     console.print("-" * 72)

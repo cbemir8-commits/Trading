@@ -41,7 +41,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from research.erreichbarkeit import noetiger_sharpe
+from research.erreichbarkeit import MAX_SHARPE, noetiger_sharpe
+from research.gates import GateThresholds, deflated_sharpe_ratio
+
+#: Die Schwelle, gegen die geloest wird - aus der Gate-Definition geholt und
+#: nicht danebengeschrieben. Wer sie dort aendert, aendert sie hier mit.
+ZIEL = GateThresholds().min_deflated_sharpe
 
 #: Schiefe und Woelbung, mit denen die Linie gerechnet wird. Voreingestellt
 #: sind die des Spitzenkandidaten: Beide gehen in den Deflated Sharpe ein, und
@@ -51,12 +56,87 @@ WOELBUNG = 15.951
 
 
 @dataclass(frozen=True, slots=True)
+class Hebel:
+    """Ein Eingang der Formel und der Wert, den er haben muesste."""
+
+    name: str
+    jetzt: float
+    noetig: float | None
+    kleiner_ist_besser: bool = False
+
+    @property
+    def moeglich(self) -> bool:
+        """Gibt es ueberhaupt einen Wert, bei dem das Gate allein daran haelt?"""
+        return self.noetig is not None
+
+    @property
+    def veraenderung(self) -> float | None:
+        if self.noetig is None or self.jetzt == 0:
+            return None
+        return self.noetig / self.jetzt - 1.0
+
+    def __str__(self) -> str:
+        if self.noetig is None:
+            return f"{self.name:22} {self.jetzt:>9.3f}   unerreichbar"
+        pfeil = "->"
+        anteil = self.veraenderung
+        zusatz = f"   ({anteil:+.0%})" if anteil is not None else ""
+        return f"{self.name:22} {self.jetzt:>9.3f} {pfeil} {self.noetig:>9.3f}{zusatz}"
+
+
+@dataclass(frozen=True, slots=True)
 class Kandidat:
     """Ein gemessener Einfall - Trade-Zahl und Qualitaet je Trade."""
 
     name: str
     trades: int
     sharpe_je_trade: float
+
+    schiefe: float | None = None
+    woelbung: float | None = None
+    """Die **eigene** Verteilungsform dieses Kandidaten.
+
+    Beide gehen in den Deflated Sharpe ein, und zwar kraeftig: Beim
+    Spitzenkandidaten steht im Nenner der Formel 0,597 statt der 1,016 einer
+    Normalverteilung - seine schiefe Verteilung mit dem langen rechten Ende
+    senkt die Huerde um dreissig Prozent.
+
+    Ohne diese Felder wurde **jeder** Kandidat an der Form des
+    Spitzenkandidaten gemessen. Fuer eine Regel mit anderer Form - etwa eine,
+    die haeufiger und kleiner gewinnt - war die genannte Anforderung damit
+    schlicht die eines anderen Genoms. Fehlen sie, gelten weiter die
+    Voreinstellungen unten; das ist eine Naeherung und keine Messung.
+    """
+
+    @classmethod
+    def aus_trades(cls, name: str, trades) -> Kandidat | None:
+        """Alle vier Groessen aus einer Trade-Liste - an **einer** Stelle.
+
+        Sie standen an dreien: zweimal in ``cli.py`` und einmal als
+        ``_sharpe_je_trade``. Drei Umsetzungen derselben Groesse laufen
+        frueher oder spaeter auseinander; in diesem Projekt ist das schon
+        viermal passiert, und jedes Mal war der Fehler erst zu sehen, als zwei
+        Berichte verschiedene Zahlen fuer denselben Kandidaten zeigten.
+
+        ``None``, wenn die Liste fuer eine Aussage zu duenn ist.
+        """
+        import numpy as np
+
+        werte = np.array([float(t.net_pnl) for t in trades], dtype=float)
+        if len(werte) < 5:
+            return None
+        streuung = float(werte.std(ddof=1))
+        if streuung == 0:
+            return None
+
+        mittig = (werte - werte.mean()) / streuung
+        return cls(
+            name=name,
+            trades=len(werte),
+            sharpe_je_trade=float(werte.mean() / streuung),
+            schiefe=float(np.mean(mittig**3)),
+            woelbung=float(np.mean(mittig**4)),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,17 +178,32 @@ class Budget:
     schiefe: float = SCHIEFE
     woelbung: float = WOELBUNG
 
-    def noetig_bei(self, trades: int, *, versuche: int | None = None) -> float | None:
+    def noetig_bei(
+        self,
+        trades: int,
+        *,
+        versuche: int | None = None,
+        schiefe: float | None = None,
+        woelbung: float | None = None,
+    ) -> float | None:
         return noetiger_sharpe(
             trades=trades,
             trials=self.versuche if versuche is None else versuche,
-            skew=self.schiefe,
-            kurtosis=self.woelbung,
+            skew=self.schiefe if schiefe is None else schiefe,
+            kurtosis=self.woelbung if woelbung is None else woelbung,
         )
 
     def abstaende(self, *, versuche: int | None = None) -> list[Abstand]:
         return [
-            Abstand(kandidat=k, noetig=self.noetig_bei(k.trades, versuche=versuche))
+            Abstand(
+                kandidat=k,
+                noetig=self.noetig_bei(
+                    k.trades,
+                    versuche=versuche,
+                    schiefe=k.schiefe,
+                    woelbung=k.woelbung,
+                ),
+            )
             for k in self.kandidaten
         ]
 
@@ -138,6 +233,78 @@ class Budget:
         if jetzt is None or spaeter is None:
             return None
         return (spaeter - jetzt) / schritte
+
+    def hebel(self, kandidat: Kandidat) -> list[Hebel]:
+        """Woran es liegt - je Eingang der Formel einzeln.
+
+        Der Deflated Sharpe haengt an vier gemessenen Groessen: Qualitaet je
+        Trade, Zahl der **unabhaengigen** Trades, Schiefe und Woelbung. Die
+        Grenzlinie zeigt nur die erste. Diese Zerlegung fragt fuer jede
+        einzeln: Wo muesste sie stehen, damit das Gate haelt - alles andere
+        unveraendert?
+
+        Das entscheidet, ob Weitersuchen ueberhaupt Sinn hat. Eine Groesse,
+        die auf einen unmoeglichen Wert muesste, schliesst ihren Weg; eine,
+        die um zehn Prozent muesste, benennt ihn.
+        """
+        schiefe = kandidat.schiefe if kandidat.schiefe is not None else self.schiefe
+        woelbung = (
+            kandidat.woelbung if kandidat.woelbung is not None else self.woelbung
+        )
+
+        def dsr(**abweichung) -> float:
+            werte = {
+                "observed_sharpe": kandidat.sharpe_je_trade,
+                "trials": max(self.versuche, 1),
+                "sample_size": kandidat.trades,
+                "skew": schiefe,
+                "kurtosis": woelbung,
+            }
+            werte.update(abweichung)
+            return deflated_sharpe_ratio(**werte)
+
+        def loese(schluessel: str, tief: float, hoch: float) -> float | None:
+            """Der kleinste Wert, bei dem das Gate haelt - oder ``None``."""
+            if dsr(**{schluessel: hoch}) < ZIEL:
+                return None
+            for _ in range(80):
+                mitte = (tief + hoch) / 2
+                if dsr(**{schluessel: mitte}) < ZIEL:
+                    tief = mitte
+                else:
+                    hoch = mitte
+            return hoch
+
+        gefunden = [
+            Hebel(
+                "Qualitaet je Trade",
+                kandidat.sharpe_je_trade,
+                loese("observed_sharpe", kandidat.sharpe_je_trade, MAX_SHARPE),
+            ),
+            Hebel(
+                "unabhaengige Trades",
+                float(kandidat.trades),
+                loese("sample_size", float(kandidat.trades), kandidat.trades * 50.0),
+            ),
+            Hebel("Schiefe", schiefe, loese("skew", schiefe, schiefe + 50.0)),
+        ]
+
+        # Die Woelbung wirkt andersherum: Weniger ist besser, und unter 1 kann
+        # keine Verteilung liegen. Deshalb von oben gesucht.
+        tief, hoch = 1.0, woelbung
+        ziel_woelbung = None if dsr(kurtosis=1.0) < ZIEL else 1.0
+        if ziel_woelbung is not None:
+            for _ in range(80):
+                mitte = (tief + hoch) / 2
+                if dsr(kurtosis=mitte) >= ZIEL:
+                    tief = mitte
+                else:
+                    hoch = mitte
+            ziel_woelbung = tief
+        gefunden.append(
+            Hebel("Woelbung", woelbung, ziel_woelbung, kleiner_ist_besser=True)
+        )
+        return gefunden
 
     def tabelle(self, trades: tuple[int, ...] = (50, 100, 152, 200, 300, 500)) -> str:
         zeilen = [
