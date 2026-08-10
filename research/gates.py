@@ -973,7 +973,20 @@ def gate_deflated_sharpe(
     # und eine Strafe, die der Zufall mit sechsprozentiger Wahrscheinlichkeit
     # erzeugt, misst nicht mehr die Strategie. Siehe
     # ``research/unabhaengigkeit.py``.
-    stichprobe = effektive_stichprobe(len(pnls), beine, bloecke)
+    # **Zwei Einteilungen, und es zaehlt die strengere.**
+    #
+    # ``bloecke`` sind die Trades je Kalenderfenster. Daneben gibt es eine
+    # zweite, ebenso zulaessige Vorstellung von Abhaengigkeit: Positionen, die
+    # **zugleich** offen waren. Das Monte-Carlo-Gate haelt genau die schon
+    # lange zusammen; hier blieb sie ungenutzt, ohne dass irgendwo stuende,
+    # warum. Gewaehlt wird die Einteilung mit der kleinsten Stichprobe - das
+    # kann die Zulassung nur erschweren.
+    gleichzeitig = [
+        [float(t.net_pnl) for t in gruppe] for gruppe in concurrent_groups(trades)
+    ]
+    stichprobe = effektive_stichprobe(
+        len(pnls), beine, bloecke, weitere=[gleichzeitig]
+    )
 
     dsr = deflated_sharpe_ratio(
         observed_sharpe=per_trade_sharpe,

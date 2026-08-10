@@ -4104,3 +4104,64 @@ Regelfamilie, die noch niemand betreten hatte.
   Mutation haette Ziele erzeugt, die das Schema anschliessend ablehnt.
 
 Versuchszaehler **151 -> 156**. Stand: **7 von 11**.
+
+## Siebenundvierzig. Ein Verdacht gegen das eigene Gate - und er war unbegruendet
+
+Nach dreizehn geschlossenen Richtungen war der naechste Schritt keine neue
+Idee, sondern eine Pruefung der Zahl, an der alles haengt. Aufgefallen war
+beim Zerlegen des Deflated Sharpe, dass die effektive Stichprobe **154 von
+154** betraegt - gar keine Kuerzung, obwohl BTC und ETH bekanntlich zusammen
+laufen.
+
+Gemessen, in der unbequemen Richtung: Wenn die Korrektur zu milde ist, steht
+der Kandidat schlechter da als berichtet.
+
+    Fenstergewinne BTC gegen ETH        Korrelation +0,405
+    Trades in gleichzeitigen Gruppen    80 von 154 (52 %)
+    ICC ueber Kalenderfenster           +0,1111   p 0,066
+    Kuerzung daraus                     keine
+
+**Der Verdacht war unbegruendet.** Die Kuerzung ist stetig und kalibriert am
+95. Perzentil der Permutationsnull - sie schaltet nicht bei p = 0,05 ab,
+sondern findet schlicht, dass ein ICC von 0,111 bei dreissig Bloecken
+ungleicher Groesse innerhalb dessen liegt, was unabhaengige Daten selbst
+erzeugen. Kein Fehler, keine Klippe. Das gehoert genauso berichtet wie ein
+Fund.
+
+### Was dabei trotzdem auffiel
+
+Die Korrektur teilt die Trades nach **Kalenderfenstern** ein. Das ist eine
+zulaessige Vorstellung von Abhaengigkeit - und nicht die einzige. Positionen,
+die **zugleich** offen waren, sind die andere, und das Monte-Carlo-Gate haelt
+genau die schon lange zusammen:
+
+    "Zwei Positionen, die gleichzeitig offen sind, sind keine zwei
+     unabhaengigen Beobachtungen. Faellt der Markt, treffen sie das Konto
+     zusammen."
+
+Zwei Vorstellungen von derselben Sache im selben Gate-System, und welche der
+Deflated Sharpe benutzt, stand nirgends begruendet. Es zaehlt jetzt die
+**strengere**: gewaehlt wird die Einteilung mit der kleinsten Stichprobe.
+Verglichen wird der Faktor, nicht die Summe - zwei Einteilungen koennen
+verschieden viele Trades abdecken, und dann waere die kleinere Zahl kein
+Zeichen groesserer Strenge, sondern eine kuerzere Liste.
+
+Das kann die Zulassung nur erschweren, nie erleichtern. Das ist die einzige
+Richtung, in die eine solche Entscheidung fallen darf, wenn man sie selbst
+trifft.
+
+### Und am Kandidaten aendert es nichts
+
+    nach Kalenderfenstern      ICC +0,1111   p 0,066   effektiv 154
+    nach Gleichzeitigkeit      ICC +0,0000   p 1,000   effektiv 154
+    Deflated Sharpe                                       0,7965
+
+Gleichzeitige Trades auf BTC und ETH aehneln sich **nicht** staerker als
+zufaellig gezogene Paare - der ICC ist an der unteren Klemme. Dass die
+Fenstergewinne der beiden Beine mit 0,405 korrelieren, heisst also nicht, dass
+die einzelnen Trades es tun: Die Ein- und Ausstiege liegen verschieden, jeder
+Markt hat seinen eigenen Schnitt.
+
+Der Zaehler bleibt bei **156** - hier wurde kein Backtest gerechnet, sondern
+eine vorhandene Trade-Liste anders gruppiert. Stand: **7 von 11**, Deflated
+Sharpe 0,7965.

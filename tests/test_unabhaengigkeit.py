@@ -407,3 +407,86 @@ class TestStetigeKuerzung:
 
         assert "quantile" in quelle
         assert "if nachgewiesen" not in quelle
+
+
+class TestStrengsteEinteilung:
+    """**Abhaengigkeit hat mehr als eine Gestalt, und keine ist die richtige.**
+
+        nach Kalenderfenstern   Trades desselben Quartals aehneln sich
+        nach Gleichzeitigkeit   Positionen, die zugleich offen waren
+
+    Bis hierher entschied allein die erste, ohne dass irgendwo stuende, warum.
+    Das Monte-Carlo-Gate haelt dagegen laengst die gleichzeitigen Trades
+    zusammen - zwei Vorstellungen im selben Gate-System, und die schaerfere
+    blieb ungenutzt.
+    """
+
+    def _abhaengig(self, *, bloecke: int = 20, je: int = 6) -> list[list[float]]:
+        """Bloecke mit deutlichem gemeinsamem Anteil - Abhaengigkeit, die man
+        finden **soll**."""
+        rng = np.random.default_rng(4)
+        return [
+            list(rng.normal(rng.normal(0, 3.0), 0.3, je)) for _ in range(bloecke)
+        ]
+
+    def _unabhaengig(self, *, bloecke: int = 20, je: int = 6) -> list[list[float]]:
+        rng = np.random.default_rng(9)
+        return [list(rng.normal(0, 1.0, je)) for _ in range(bloecke)]
+
+    def test_die_strengere_einteilung_gewinnt(self) -> None:
+        locker = self._unabhaengig()
+        streng = self._abhaengig()
+        n = sum(len(b) for b in locker)
+
+        nur_locker = effektive_stichprobe(n, None, locker)
+        mit_streng = effektive_stichprobe(n, None, locker, weitere=[streng])
+
+        assert nur_locker.effektiv == n, "Die lockere Einteilung kuerzt nicht"
+        assert mit_streng.effektiv < nur_locker.effektiv
+
+    def test_die_reihenfolge_ist_gleichgueltig(self) -> None:
+        """Sonst haenge das Ergebnis daran, welche Einteilung zuerst genannt
+        wird - und damit an nichts."""
+        locker = self._unabhaengig()
+        streng = self._abhaengig()
+        n = sum(len(b) for b in locker)
+
+        herum = effektive_stichprobe(n, None, streng, weitere=[locker])
+        zurueck = effektive_stichprobe(n, None, locker, weitere=[streng])
+
+        assert herum.effektiv == zurueck.effektiv
+
+    def test_ohne_zusatz_bleibt_alles_wie_vorher(self) -> None:
+        """Der alte Weg muss unveraendert bleiben - jede Zahl des Projekts
+        haengt daran."""
+        bloecke = self._abhaengig()
+        n = sum(len(b) for b in bloecke)
+
+        assert (
+            effektive_stichprobe(n, None, bloecke).effektiv
+            == effektive_stichprobe(n, None, bloecke, weitere=[]).effektiv
+        )
+
+    def test_leere_einteilungen_stoeren_nicht(self) -> None:
+        bloecke = self._abhaengig()
+        n = sum(len(b) for b in bloecke)
+
+        assert (
+            effektive_stichprobe(n, None, bloecke, weitere=[[], [[]]]).effektiv
+            == effektive_stichprobe(n, None, bloecke).effektiv
+        )
+
+    def test_ohne_jede_einteilung_wird_nicht_gekuerzt(self) -> None:
+        assert effektive_stichprobe(100, None, None, weitere=[]).effektiv == 100
+
+    def test_verglichen_wird_der_faktor_nicht_die_summe(self) -> None:
+        """Zwei Einteilungen koennen verschieden viele Trades abdecken. Dann
+        waere die kleinere Summe kein Zeichen groesserer Strenge, sondern nur
+        eine kuerzere Liste."""
+        streng_klein = self._abhaengig(bloecke=10, je=4)
+        locker_gross = self._unabhaengig(bloecke=30, je=6)
+        n = sum(len(b) for b in locker_gross)
+
+        ergebnis = effektive_stichprobe(n, None, locker_gross, weitere=[streng_klein])
+
+        assert ergebnis.effektiv < n

@@ -76,6 +76,7 @@ jetzt dem ICC statt dem Zufall:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import combinations
 
@@ -317,6 +318,8 @@ def effektive_stichprobe(
     roh_trades: int,
     beine: dict[str, list[float]] | None = None,
     bloecke: list[list[float]] | None = None,
+    *,
+    weitere: Sequence[list[list[float]]] = (),
 ) -> Effektivwert:
     """Wie viele unabhaengige Beobachtungen stecken in ``roh_trades``?
 
@@ -325,9 +328,30 @@ def effektive_stichprobe(
 
     Ohne Blockdaten bleibt alles, wie es war. Eine Korrektur ohne Messung waere
     genau der Fehler, den dieses Modul verhindern soll.
+
+    **``weitere`` sind andere Einteilungen derselben Trades, und es zaehlt die
+    strengste.** Abhaengigkeit hat hier naemlich mehr als eine Gestalt, und
+    keine ist die richtige:
+
+        nach Kalenderfenstern   Trades desselben Quartals aehneln sich
+        nach Gleichzeitigkeit   Positionen, die zugleich offen waren
+
+    Bis hierher entschied allein die erste Einteilung, ohne dass irgendwo
+    stuende, warum. Das Monte-Carlo-Gate haelt dagegen laengst die
+    **gleichzeitigen** Trades zusammen - zwei Vorstellungen von Abhaengigkeit
+    im selben Gate-System, und die schaerfere blieb ungenutzt.
+
+    Gewaehlt wird deshalb die Einteilung, die die kleinste Stichprobe
+    uebriglaesst. Das kann die Zulassung nur erschweren, nie erleichtern - die
+    einzige Richtung, in die eine solche Entscheidung fallen darf.
     """
-    if bloecke:
-        ergebnis = designeffekt(bloecke)
+    einteilungen = [b for b in (bloecke, *weitere) if b]
+    if einteilungen:
+        gemessen = [d for d in map(designeffekt, einteilungen) if d is not None]
+        # Verglichen wird der **Faktor**, nicht die absolute Zahl: Zwei
+        # Einteilungen koennen verschieden viele Trades abdecken, und dann
+        # waere die kleinere Summe kein Zeichen groesserer Strenge.
+        ergebnis = min(gemessen, key=lambda d: d.faktor) if gemessen else None
         if ergebnis is not None:
             # **Den Faktor uebernehmen, nicht die Blocksumme.**
             #
