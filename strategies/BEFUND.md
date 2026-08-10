@@ -4424,3 +4424,62 @@ und sie laeuft bis 230. Es ist ein Argument, die verbleibenden 73 nicht wieder
 in dieselbe Regelfamilie zu stecken.
 
 Versuchszaehler unveraendert bei **157**. Stand: **7 von 11**.
+
+## Zweiundfuenfzig. Eine Naeherung im Fundament - und sie kostet nichts
+
+Der Backtest kennt eine Unschaerfe, die in seinem eigenen Modulkopf steht:
+Liegen in einer Kerze **sowohl Stop als auch Take-Profit**, verraet OHLC nicht,
+was zuerst kam. Ohne feinere Kerzen nimmt die Engine den schlechteren Fall -
+richtig fuer eine Naeherung, aber eine Naeherung.
+
+Der Einzelmarkt-Weg konnte sie schon lange aufloesen; ``run_walkforward`` nimmt
+seit jeher ein ``sub_frame``. Der **Portfolioweg nicht** - und gemessen wird
+das Portfolio. Damit lief jede Zulassungszahl dieses Projekts auf der
+pessimistischen Annahme, obwohl 445 400 Fuenfzehnminutenkerzen fuer BTC und ETH
+im Speicher liegen.
+
+Also durchgereicht und gemessen, derselbe Kandidat, BTC + ETH, Tageskerzen:
+
+    ohne Feinkerzen   154 Trades  13,40 % p.a.  DD 10,64 %  SR 0,2569  DSR 0,7954  7/11
+    mit Feinkerzen    154 Trades  13,40 % p.a.  DD 10,64 %  SR 0,2569  DSR 0,7954  7/11
+
+**Bit fuer Bit dasselbe.** Auch die Ausstiegsgruende: 76 nach Regel, 68 am
+Stop, 10 am Ziel.
+
+### Und dann die Frage, ob die Daten ueberhaupt angefasst wurden
+
+Ein identisches Ergebnis hat zwei moegliche Ursachen, und die zweite waere ein
+Fehler: Vielleicht wurde die Feinreihe stillschweigend ignoriert. Die Engine
+warnt selbst davor - *"ein Fehler ohne Fehlermeldung, der den Backtest nur
+schlechter aussehen laesst"*.
+
+Nachgezaehlt, im Lauf mitgeschrieben:
+
+    Sub-Index gebaut        62      (31 Fenster x 2 Beine)
+    between() gerufen    11 300
+    davon mit Daten       9 128      (81 %)
+
+Die Feinkerzen wurden also benutzt. Das Ergebnis bleibt trotzdem gleich, und
+der Grund ist strukturell: Bei **4 % Stop und einem Ziel bei 20 R** - also rund
+80 % Kursbewegung - koennen beide unmoeglich in derselben Tageskerze liegen.
+Die Mehrdeutigkeit, die feinere Kerzen aufloesen, tritt bei diesem Kandidaten
+gar nicht auf.
+
+### Warum die Aenderung trotzdem bleibt
+
+Sie entfernt eine Naeherung aus **jeder kuenftigen** Messung. Fuer einen
+Kandidaten mit engerem Ziel - wo Stop und Ziel sehr wohl in einer Kerze liegen
+- waere der Unterschied da, und dann waere es zu spaet, ihn erst zu bemerken.
+
+Drei Tests halten die Verdrahtung fest: dass jedes Bein **seine eigenen**
+Feinkerzen bekommt und nicht die des anderen, dass ein Bein ohne sie auf die
+Annahme zurueckfaellt, und dass ohne Angabe alles bleibt, wie es war. Die
+Aufloesung selbst war schon getestet - was fehlte, war der Weg dorthin.
+
+Beim Schreiben des ersten Tests ein eigener Fehler: Ich unterschied die Beine
+an der Kerzenzahl. ``common_range`` schneidet sie aber auf denselben Zeitraum,
+danach sind sie gleich lang - der Test sah nur ein Bein und schlug fehl. Jetzt
+laeuft die Unterscheidung ueber das Instrument.
+
+Versuchszaehler unveraendert bei **157** - dasselbe Genom genauer zu messen ist
+keine zweite Hypothese. Stand: **7 von 11**.

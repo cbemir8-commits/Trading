@@ -592,3 +592,96 @@ class TestKapitalTeilen:
         a = [t for t in bericht.all_trades if t.symbol == "AAAUSDT"]
         b = [t for t in bericht.all_trades if t.symbol == "BBBUSDT"]
         assert a and b, "Beide Beine muessen handeln"
+
+
+class TestFeinereKerzen:
+    """**Jede Zulassungszahl dieses Projekts lief auf der pessimistischen Annahme.**
+
+    Liegen in einer Kerze sowohl Stop als auch Take-Profit, verraet OHLC nicht,
+    was zuerst kam. Ohne feinere Kerzen nimmt die Engine den schlechteren Fall -
+    die richtige Richtung fuer eine Naeherung, aber eine Naeherung. Der
+    Einzelmarkt-Weg konnte sie schon lange aufloesen; der Portfolioweg reichte
+    die Daten nicht durch, und gemessen wird das Portfolio.
+
+    Die Tests hier pruefen die **Verdrahtung**: Dass die Aufloesung selbst
+    stimmt, steht in ``test_backtest_engine.py``.
+    """
+
+    def _configs(self, frames, risk) -> dict:
+        return {
+            name: BacktestConfig(
+                instrument=_instrument(f"{name}USDT"),
+                risk=risk,
+                initial_equity=Decimal("500"),
+            )
+            for name in frames
+        }
+
+    def _mitschrift(self, monkeypatch) -> dict[str, object]:
+        """Faengt ab, welches Bein welche Feinkerzen bekommt."""
+        from backtest import portfolio_walkforward as modul
+
+        gesehen: dict[str, object] = {}
+        echt = modul.run_walkforward
+
+        def merken(frame, bauplan, konfiguration, splitter=None, **kw):
+            # Das Bein steckt nicht im Aufruf, wohl aber sein Instrument -
+            # und **nicht** die Kerzenzahl: ``common_range`` schneidet alle
+            # Beine auf denselben Zeitraum, danach sind sie gleich lang.
+            gesehen[konfiguration.instrument.symbol] = kw.get("sub_frame")
+            return echt(frame, bauplan, konfiguration, splitter, **kw)
+
+        monkeypatch.setattr(modul, "run_walkforward", merken)
+        return gesehen
+
+    def test_jedes_bein_bekommt_seine_eigenen(self, monkeypatch, risk) -> None:
+        """Nicht die des anderen und nicht zweimal dieselben - sonst waere die
+        Aufloesung schlimmer als keine."""
+        frames = {
+            "A": _tage(600, seed=1),
+            "B": _tage(700, seed=2),
+        }
+        fein = {"A": _tage(600, seed=3), "B": _tage(700, seed=4)}
+        gesehen = self._mitschrift(monkeypatch)
+
+        run_portfolio_walkforward(
+            frames, lambda: compile_genome(_trendfolger()), self._configs(frames, risk),
+            WalkForwardSplitter(train_months=6, test_months=3),
+            sub_frames=fein,
+        )
+
+        assert set(gesehen) == {"AUSDT", "BUSDT"}
+        for bein, uebergeben in gesehen.items():
+            assert uebergeben is not None, f"Bein {bein} bekam nichts"
+        # Und nicht zweimal dieselben: Die Reihen unterscheiden sich in ihren
+        # Kursen, also duerfen die uebergebenen Rahmen es auch.
+        a, b = gesehen["AUSDT"], gesehen["BUSDT"]
+        assert not a["close"].equals(b["close"])
+
+    def test_ohne_angabe_bleibt_es_bei_der_annahme(self, monkeypatch, risk) -> None:
+        """Der alte Weg muss unveraendert bleiben - jede bisherige Zahl haengt
+        daran."""
+        frames = {"A": _tage(600, seed=1)}
+        gesehen = self._mitschrift(monkeypatch)
+
+        run_portfolio_walkforward(
+            frames, lambda: compile_genome(_trendfolger()), self._configs(frames, risk),
+            WalkForwardSplitter(train_months=6, test_months=3),
+        )
+
+        assert all(wert is None for wert in gesehen.values())
+
+    def test_ein_bein_ohne_feinkerzen_faellt_zurueck(self, monkeypatch, risk) -> None:
+        """Teilweise vorhandene Feindaten sind der Normalfall - hier gibt es
+        sie erst ab 2020, die Tageskerzen ab 2017."""
+        frames = {"A": _tage(600, seed=1), "B": _tage(700, seed=2)}
+        gesehen = self._mitschrift(monkeypatch)
+
+        run_portfolio_walkforward(
+            frames, lambda: compile_genome(_trendfolger()), self._configs(frames, risk),
+            WalkForwardSplitter(train_months=6, test_months=3),
+            sub_frames={"A": _tage(600, seed=3)},
+        )
+
+        assert gesehen["AUSDT"] is not None
+        assert gesehen["BUSDT"] is None

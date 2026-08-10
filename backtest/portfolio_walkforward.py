@@ -104,6 +104,7 @@ def run_portfolio_walkforward(
     splitter: WalkForwardSplitter | None = None,
     *,
     weights: dict[str, float] | None = None,
+    sub_frames: dict[str, pd.DataFrame] | None = None,
     initial_equity: Decimal | None = None,
     strategie_je_fenster=None,
     kapital_teilen: bool = False,
@@ -123,6 +124,19 @@ def run_portfolio_walkforward(
 
     Das Ergebnis ist von einem einzelnen Markt nicht zu unterscheiden und
     laeuft durch dieselben Gates.
+
+    **``sub_frames`` sind feinere Kerzen je Bein.** Ohne sie muss die Engine
+    annehmen, dass innerhalb einer Kerze der schlechtere Fall eintritt: erst
+    Liquidation, dann Stop, dann Take-Profit. Das ist die richtige Richtung
+    fuer eine Naeherung - ein Backtest, der im Zweifel den Gewinn zuerst nimmt,
+    rechnet sich schoen -, aber es ist eine Naeherung. Der Einzelmarkt-Weg
+    konnte sie schon lange aufloesen; der Portfolioweg reichte die Daten nicht
+    durch, und damit lief **jede Zulassungszahl dieses Projekts** auf der
+    pessimistischen Annahme.
+
+    Wo keine feineren Kerzen vorliegen - hier vor dem 30.03.2020 -, faellt die
+    Engine je Kerze auf die Annahme zurueck. Das ist kein Sonderfall, sondern
+    der Normalbetrieb des Index.
     """
     if not frames:
         return WalkForwardReport()
@@ -205,6 +219,7 @@ def run_portfolio_walkforward(
             )
         bericht = run_walkforward(
             frame, bauplan_fuer(name), konfiguration, splitter,
+            sub_frame=(sub_frames or {}).get(name),
             strategie_je_fenster=strategie_je_fenster,
             durchgehend=durchgehend,
         )
