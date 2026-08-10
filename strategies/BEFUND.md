@@ -4381,3 +4381,46 @@ Mit jedem kuenftigen Lauf verschwindet das Fragezeichen von selbst.
 
 Versuchszaehler unveraendert bei **157** - es wurde nichts gerechnet, was eine
 Strategie betrifft. Stand: **7 von 11**.
+
+## Einundfuenfzig. Das Abbruchkriterium stand nur im Plan
+
+Der Plan vom 9. August legt fest: *"Erreicht nach 100 weiteren Versuchen kein
+Kandidat 11 von 11, lautet die Antwort 'diese Regelfamilie traegt nicht'."*
+Geschrieben bei Versuchsstand 130, Abbruch also bei 230.
+
+Nur wusste das System nichts davon. Der Zaehler lief, das Kriterium stand in
+einem Dokument daneben, und niemand haette bemerkt, wenn er die Grenze
+ueberschritten haette. Ein Abbruchkriterium, das nicht mitgezaehlt wird, ist
+eine Absichtserklaerung.
+
+``cli stand`` zeigt es jetzt in derselben Uebersicht wie den Rest:
+
+    Versuche   157
+    Suchbudget 27 von 100 verbraucht, 73 bleiben (Abbruch bei 230).
+
+### Warum eine Zahl und keine Bedingung
+
+Ein Kriterium wie "abbrechen, wenn sich nichts mehr verbessert" laesst sich
+nachtraeglich zurechtlegen - es findet sich immer eine Kennzahl, die noch
+Hoffnung macht. Eine vorab genannte Zahl kann das nicht. Sie ist grob, und das
+ist ihr Vorzug.
+
+Ein Test haelt fest, dass die Grenze **auf** 230 greift und nicht erst darueber
+- sonst waere sie eine Verhandlungssache.
+
+### Was der Zaehler seit dem Plan gekostet hat
+
+    130 -> 157    27 Versuche
+                  davon 16 Wettbewerb, 5 Abkuehlung, 5 Gewinnziel,
+                  1 adaptive Periode
+
+Diese 27 haben die noetige Qualitaet je Trade um 27 x 0,00021 = **0,0057**
+angehoben. Gefunden haben sie nichts: Der hoechste gemessene Deflated Sharpe
+der Familie steht weiter bei 0,851, und die Frontanalyse zeigt eine Kurve, die
+neben der Grenzlinie herlaeuft.
+
+Das ist kein Argument, das Budget vorzeitig zu beenden - es ist eine Abmachung,
+und sie laeuft bis 230. Es ist ein Argument, die verbleibenden 73 nicht wieder
+in dieselbe Regelfamilie zu stecken.
+
+Versuchszaehler unveraendert bei **157**. Stand: **7 von 11**.

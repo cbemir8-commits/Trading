@@ -15,6 +15,7 @@ import pytest
 
 from research.stand import (
     BEIM_NUTZER,
+    BUDGET,
     ENTSCHEIDUNGEN,
     GESCHLOSSEN,
     Lage,
@@ -144,3 +145,57 @@ class TestEntscheidungen:
         for befehl, warum in BEIM_NUTZER:
             assert befehl.startswith("python -m cli")
             assert len(warum) > 30, befehl
+
+
+class TestSuchbudget:
+    """**Das Abbruchkriterium stand nur im Plan, nicht im System.**
+
+    Eine Suche ohne Ende ist keine Suche, sondern Warten - und hier ist sie
+    schaedlich: Jeder Versuch hebt die Huerde des Deflated Sharpe fuer alle
+    kuenftigen. Wer weitersucht, macht das Ziel schwerer, das er sucht.
+    """
+
+    def test_es_ist_eine_zahl_und_keine_bedingung(self) -> None:
+        """**Der Vorzug der groben Zahl.**
+
+        Ein Kriterium wie "abbrechen, wenn sich nichts mehr verbessert" laesst
+        sich nachtraeglich zurechtlegen - man findet immer eine Kennzahl, die
+        noch Hoffnung macht. Eine vorab genannte Zahl kann das nicht.
+        """
+        assert BUDGET.beginn == 130
+        assert BUDGET.umfang == 100
+        assert BUDGET.grenze == 230
+
+    def test_vor_der_grenze_bleibt_es_offen(self) -> None:
+        assert not BUDGET.erschoepft(BUDGET.grenze - 1)
+        assert BUDGET.rest(BUDGET.grenze - 1) == 1
+
+    def test_auf_der_grenze_gilt_die_antwort(self) -> None:
+        """Genau auf der Zahl, nicht erst darueber - sonst waere die Grenze
+        eine Verhandlungssache."""
+        assert BUDGET.erschoepft(BUDGET.grenze)
+        assert "aufgebraucht" in BUDGET.zeile(BUDGET.grenze)
+        assert "traegt nicht" in BUDGET.zeile(BUDGET.grenze)
+
+    def test_ueberschritten_bleibt_erschoepft(self) -> None:
+        assert BUDGET.erschoepft(BUDGET.grenze + 50)
+        assert BUDGET.rest(BUDGET.grenze + 50) == 0
+
+    def test_vor_dem_beginn_ist_nichts_verbraucht(self) -> None:
+        """Der Zaehler kann nicht rueckwaerts laufen, aber die Rechnung darf
+        auch dann keine negative Zahl ausweisen."""
+        assert BUDGET.verbraucht(BUDGET.beginn - 20) == 0
+
+    def test_das_urteil_klingt_nicht_nach_scheitern(self) -> None:
+        """So steht es im Plan, und es ist keine Beschoenigung: Eine
+        Regelfamilie als untragfaehig zu belegen ist ein Ergebnis."""
+        text = BUDGET.zeile(BUDGET.grenze)
+
+        assert "Ergebnis" in text
+        assert "kein Scheitern" in text
+
+    def test_der_bericht_zeigt_den_stand(self) -> None:
+        text = _lage(versuche=157).bericht()
+
+        assert "Suchbudget" in text
+        assert "27 von 100" in text

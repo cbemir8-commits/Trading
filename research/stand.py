@@ -71,6 +71,66 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
 )
 
 
+
+@dataclass(frozen=True, slots=True)
+class Suchbudget:
+    """Das Abbruchkriterium aus dem Plan - endlich im System statt nur im Text.
+
+    Der Plan vom 9. August legt es fest: *"Erreicht nach 100 weiteren Versuchen
+    kein Kandidat 11 von 11, lautet die Antwort 'diese Regelfamilie traegt
+    nicht'. Das ist ein Ergebnis, kein Scheitern."*
+
+    **Warum das ueberhaupt aufgeschrieben gehoert.** Eine Suche ohne Ende ist
+    keine Suche, sondern Warten - und sie ist hier nicht nur unproduktiv,
+    sondern schaedlich: Jeder Versuch hebt die Huerde des Deflated Sharpe um
+    0,00021 fuer alle kuenftigen. Wer weitersucht, macht das Ziel schwerer,
+    das er sucht.
+
+    **Warum eine Zahl und keine Bedingung.** Ein Kriterium wie "abbrechen, wenn
+    sich nichts mehr verbessert" laesst sich nachtraeglich zurechtlegen - man
+    findet immer eine Kennzahl, die noch Hoffnung macht. Eine vorab genannte
+    Zahl kann das nicht. Sie ist grob, und das ist ihr Vorzug.
+
+    Der Zaehler selbst steht in ``state/trials.json`` und wird hier nur
+    eingeordnet. Beides auseinanderzuhalten ist Absicht: Das Budget ist eine
+    Abmachung, der Zaehler eine Messung.
+    """
+
+    beginn: int = 130
+    """Der Versuchsstand, als der Plan geschrieben wurde."""
+
+    umfang: int = 100
+
+    @property
+    def grenze(self) -> int:
+        return self.beginn + self.umfang
+
+    def verbraucht(self, versuche: int) -> int:
+        return max(0, versuche - self.beginn)
+
+    def rest(self, versuche: int) -> int:
+        return max(0, self.grenze - versuche)
+
+    def erschoepft(self, versuche: int) -> bool:
+        return versuche >= self.grenze
+
+    def zeile(self, versuche: int) -> str:
+        if self.erschoepft(versuche):
+            return (
+                f"{self.verbraucht(versuche)} von {self.umfang} - **aufgebraucht**. "
+                f"Damit gilt die Antwort aus dem Plan: Diese Regelfamilie traegt "
+                f"nicht. Das ist ein Ergebnis, kein Scheitern."
+            )
+        return (
+            f"{self.verbraucht(versuche)} von {self.umfang} verbraucht, "
+            f"{self.rest(versuche)} bleiben (Abbruch bei {self.grenze})."
+        )
+
+
+#: Das im Plan festgelegte Budget. Eine Abmachung, keine Messung.
+BUDGET = Suchbudget()
+
+
 @dataclass(frozen=True, slots=True)
 class Entscheidung:
     """Ein offener Punkt, der nicht bei mir liegt."""
@@ -187,6 +247,7 @@ class Lage:
             f"{self.rueckgang_pct:.2f} % Rueckgang",
             f"  Gates      {self.bestanden} von {self.gesamt}",
             f"  Versuche   {self.versuche}",
+            f"  Suchbudget {BUDGET.zeile(self.versuche)}",
             "",
             self.urteil(),
             "",
