@@ -3883,3 +3883,79 @@ Auseinanderlaufen zweier Umsetzungen derselben Groesse ist in diesem Projekt
 schon viermal passiert.
 
 Versuchszaehler unveraendert bei **146**. Stand: **7 von 11**.
+
+## Vierundvierzig. Neun von elf - und weiter weg als vorher
+
+Aus der Zerlegung des schlechtesten Jahres kam ein Verdacht mit einem Namen:
+Die 24 Verlusttrades dort sind kein Ausreisser, sondern eine Trendfolge, die im
+Abwaertsmarkt einsteigt, ausgestoppt wird und sofort wieder einsteigt. Die
+**Abkuehlung** (``cooldown_bars``) ist die einzige Stellschraube, die genau
+daran ansetzt - und sie stand beim Spitzenkandidaten auf null, ungemessen.
+
+Als Regler in die Machbarkeitsliste aufgenommen und abgetastet, BTC + ETH,
+Tageskerzen:
+
+    Kerzen  Trades   CAGR   SR/Trade    DSR   Schl.Jahr  Plateau  Gates
+         0     152  13,47 %   0,2597  0,813    -10,32     0,50     7/11
+         3     140  11,60 %   0,2599  0,750     -9,79     1,00     9/11
+         5     128   9,52 %   0,2529  0,626     -9,47     1,00     9/11
+        10     104   5,56 %   0,1652  0,055     -7,97     0,50     6/11
+        20      92   6,44 %   0,2097  0,132     -6,06     0,50     7/11
+        40      75   4,07 %   0,2066  0,064     -6,73     0,00     6/11
+
+**Neun von elf.** Die beste Gate-Zahl, die dieses Projekt je gesehen hat. Bei
+drei Kerzen Abkuehlung bestehen *Schlechtestes Jahr* **und** *Parameter-Plateau*
+- zwei der vier offenen Gates auf einmal.
+
+### Und trotzdem ist es ein Rueckschritt
+
+    Deflated Sharpe    0,813  ->  0,750     Ziel 0,95
+    Messlatte (CAGR)  13,47 % -> 11,60 %    Ziel 15 %
+
+Die beiden Gates, die uebrig bleiben, sind **weiter weg als vorher**. Neun von
+elf klingt nach Fortschritt und ist an dieser Stelle das Gegenteil.
+
+Genau davor warnt der Sortierschluessel der Bestenliste seit Abschnitt
+neunzehn: *"Die Zahl bestandener Gates ist eine irrefuehrende Rangfolge"* - wer
+weniger riskiert, besteht die Risiko-Gates und verliert am Deflated Sharpe.
+Hier steht derselbe Mechanismus noch einmal, auf einem neuen Regler und mit
+einer Zahl, die zum Selbstbetrug einlaedt. Der Deflated Sharpe steht im
+Schluessel deshalb **vor** der Gate-Zahl, und das war richtig so.
+
+### Warum eine Verfeinerung nichts brachte - ohne sie zu messen
+
+Die naheliegende Fortsetzung waere, den ungemessenen Zwischenraum zwischen 0
+und 3 abzutasten: Vielleicht liegt dort eine Stellung, die das schlechteste
+Jahr repariert, ohne so viele Trades zu kosten.
+
+Sie liegt dort nicht, und das folgt aus den gemessenen Punkten. Der Deflated
+Sharpe ist bei **null** am hoechsten (0,813) und faellt von dort monoton. Kein
+Zwischenwert kann ueber 0,813 liegen, das Ziel sind 0,95. Der Regler kann die
+Zulassung nicht herstellen - **egal, wie fein man ihn abtastet.**
+
+Das ist der Punkt, an dem eine Verfeinerung nur Versuche kosten und die Huerde
+weiter anheben wuerde. Sie unterbleibt.
+
+### Was jetzt fuenffach gemessen ist
+
+    Regler              bester SR/Trade    beim Kandidaten
+    Vola-Ziel                    0,2597           0,2597
+    Stop-Weite                   0,2597           0,2597
+    Perioden-Faktor              0,2597           0,2597
+    Konviktions-Bonus            0,2597           0,2597
+    Abkuehlung                   0,2599           0,2597
+
+**Fuenf Regler, und keiner hebt die Qualitaet je Trade.** Der beste Wert liegt
+bei allen fuenf beim Kandidaten selbst oder um 0,0002 daneben. Alles, was ein
+Regler bewegt, ist die **Menge** - Positionsgroesse, Trade-Zahl, Rueckgang. Die
+Guete einer einzelnen Entscheidung ist eine Eigenschaft der Regel, nicht ihrer
+Zahlen.
+
+Und genau diese Guete verlangt der Deflated Sharpe: 0,2597 muessten 0,2879
+werden, elf Prozent mehr. Von den fuenf Reglern kann das keiner liefern, und
+sie sind jetzt alle gemessen.
+
+Zwoelfte geschlossene Richtung. Versuchszaehler **146 -> 151**. Stand:
+**7 von 11** - der Kandidat bleibt, wo er war, denn die beste Stufe
+herauszupicken waere die Ueberanpassung, gegen die die ganze Strecke gebaut
+ist.

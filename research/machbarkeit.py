@@ -565,6 +565,30 @@ REGLER: dict[str, Regler] = {
             "entstuende eine Regel, die bei 40 einsteigt und bei 50 aussteigt."
         ),
     ),
+    "abkuehlung": Regler(
+        name="Abkuehlung",
+        einheit="Kerzen",
+        pfad=("cooldown_bars",),
+        stufen=(0.0, 3.0, 5.0, 10.0, 20.0, 40.0),
+        begruendung=(
+            "Aus der Zerlegung des schlechtesten Jahres (Nummer "
+            "dreiundvierzig): Der Verlust dort besteht nicht aus einem "
+            "Ausreisser, sondern aus 24 Trades mit zusammen -21,45 R und "
+            "keinem einzigen groesser als -1,45 R. Das ist eine Trendfolge, "
+            "die im Abwaertsmarkt einsteigt, ausgestoppt wird und sofort "
+            "wieder einsteigt.\n\n"
+            "Die Abkuehlung ist die einzige Stellschraube, die genau daran "
+            "ansetzt - und der Wettbewerbslauf davor hat gezeigt, dass eine "
+            "Variante mit anderer Abkuehlung das Gate 'Schlechtestes Jahr' "
+            "besteht, dafuer aber von 152 auf 136 Trades faellt und am "
+            "Deflated Sharpe verliert.\n\n"
+            "**Gesucht wird deshalb keine gute Stellung, sondern eine "
+            "Antwort:** Gibt es eine, an der beide Gates zugleich halten, "
+            "oder ziehen sie ueber den ganzen Bereich gegeneinander? Das "
+            "Zweite waere ein Ergebnis - und ein Grund, diese Regelfamilie "
+            "abzuschliessen."
+        ),
+    ),
     "konviktion": Regler(
         name="Konviktions-Bonus",
         einheit="",

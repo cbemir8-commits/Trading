@@ -480,7 +480,9 @@ class TestRegler:
     def test_bekannte_regler(self) -> None:
         from research.machbarkeit import REGLER
 
-        assert set(REGLER) == {"vola", "stop", "konviktion", "periode"}
+        assert set(REGLER) == {
+            "vola", "stop", "konviktion", "periode", "abkuehlung",
+        }
         for name, r in REGLER.items():
             assert r.stufen, name
             assert len(set(r.stufen)) == len(r.stufen), f"{name}: doppelte Stufe"
@@ -623,3 +625,52 @@ class TestPeriodenregler:
 
         with pytest.raises(ValueError, match="aendert nichts"):
             stelle_ein(spitzenkandidat(), REGLER["periode"], 2.0)
+
+
+class TestAbkuehlung:
+    """Der Regler, der aus der Zerlegung des schlechtesten Jahres kam.
+
+    Dort standen 24 Trades mit zusammen -21,45 R und keinem groesser als
+    -1,45 R: eine Trendfolge, die im Abwaertsmarkt einsteigt, ausgestoppt wird
+    und sofort wieder einsteigt. Die Abkuehlung ist die einzige Stellschraube,
+    die genau daran ansetzt.
+    """
+
+    def test_sie_veraendert_nur_die_abkuehlung(self) -> None:
+        from research.machbarkeit import REGLER, stelle_ein
+        from research.seeds import spitzenkandidat
+
+        vorlage = spitzenkandidat()
+        neu = stelle_ein(vorlage, REGLER["abkuehlung"], 5.0)
+
+        assert neu.cooldown_bars == 5
+        assert neu.entry_long == vorlage.entry_long
+        assert neu.stop == vorlage.stop
+        assert neu.sizing == vorlage.sizing
+
+    def test_ganze_kerzen_statt_kommazahlen(self) -> None:
+        """``cooldown_bars`` zaehlt Kerzen. Eine halbe Kerze gibt es nicht -
+        das Schema muss das abfangen, nicht ein stilles Abrunden."""
+        from pydantic import ValidationError
+
+        from research.machbarkeit import REGLER, stelle_ein
+        from research.seeds import spitzenkandidat
+
+        with pytest.raises(ValidationError):
+            stelle_ein(spitzenkandidat(), REGLER["abkuehlung"], 2.5)
+
+    def test_der_ausgangswert_ist_der_des_kandidaten(self) -> None:
+        from research.machbarkeit import REGLER, ausgangswert
+        from research.seeds import spitzenkandidat
+
+        vorlage = spitzenkandidat()
+
+        assert ausgangswert(vorlage, REGLER["abkuehlung"]) == vorlage.cooldown_bars
+
+    def test_die_stufen_beginnen_beim_kandidaten(self) -> None:
+        """Ohne den eigenen Wert in der Leiter faehrt die Abtastung an dem
+        Punkt vorbei, mit dem alles verglichen wird."""
+        from research.machbarkeit import REGLER
+        from research.seeds import spitzenkandidat
+
+        assert float(spitzenkandidat().cooldown_bars) in REGLER["abkuehlung"].stufen

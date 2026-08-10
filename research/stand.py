@@ -65,6 +65,7 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     Richtung("Termin-Overlay", "2 von 156 Signalen blockiert, kein Gate bewegt", 12),
     Richtung("Shorts", "kein Vorteil in der Gegenrichtung", 13),
     Richtung("Perioden-Ensemble", "mehr Zeilen, keine neue Information", 17),
+    Richtung("Abkuehlung", "repariert zwei Gates, verschlechtert die zwei harten", 44),
 )
 
 
