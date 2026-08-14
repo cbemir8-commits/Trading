@@ -4580,3 +4580,104 @@ denen steht, was "der Korb" ist. Er liegt jetzt in ``_korb_daten``.
 Und der Adapter zur Bestenliste war im ersten Anlauf mit falschen Feldnamen
 geschrieben (``report=``/``trades=`` statt ``walkforward=``). Er lief bis zum
 ersten echten Lauf. Dafuer gibt es jetzt ``tests/test_vorschlag.py``.
+
+## Vierundfuenfzig. Die Gegenfrage zur Nullprobe - und drei eigene Fehler dabei
+
+Die Nullprobe (Befund 33) beantwortet eine Haelfte: *Findet die Maschine einen
+Vorteil, wo garantiert keiner ist?* Nein. Die andere Haelfte stand nie da:
+**Erkennt sie einen, der wirklich da ist?**
+
+Nach 161 Versuchen und sechzehn geschlossenen Richtungen passen zwei
+Erklaerungen gleich gut auf alles Gemessene - die Regelfamilie traegt nicht,
+oder die Huerde ist bei so vielen Versuchen unerreichbar geworden. Von innen
+sehen beide identisch aus, und die Antwort entscheidet, ob die restlichen 69
+Versuche des Suchbudgets sinnvoll ausgegeben werden koennen.
+
+### Das Verfahren: einen Trend pflanzen
+
+Nicht auf einer erfundenen Preisreihe, sondern **in der echten**: Zu jeder
+Tagesrendite kommt ein Regime-Anteil, der ueber Wochen dasselbe Vorzeichen
+behaelt. Der Regler ist der Anteil der Tagesvarianz, der zum Regime gehoert.
+Bei 0 bleibt die Reihe unveraendert - dort muss das bekannte Ergebnis
+herauskommen, sonst misst die Leiter ihre eigene Erzeugung.
+
+    python -m cli teststaerke --stufen 0,0.1,0.2,0.35,0.5 --dauer 60
+
+Kostet keinen Versuch: Geprueft wird die Strecke, kein Kandidat.
+
+### Drei Fehler in meinem eigenen Aufbau
+
+Sie gehoeren hierher, weil zwei davon die Zahlen bereits verzerrt hatten und
+ich sie erst beim Nachrechnen gefunden habe.
+
+**Erstens: die Groessenlogik.** Ich hatte aus ``korb`` die Normalisierung auf
+ein gemeinsames Vola-Ziel uebernommen. Dort ist sie richtig, weil ein ganzer
+Katalog verglichen wird - hier gibt es nur ein Genom, und sie verschob still
+den Ankerpunkt: Die 0-%-Sprosse kam auf 143 Trades und 5 von 11 statt auf die
+bekannten 154 und 7 von 11.
+
+**Zweitens: der Drift.** Ich hatte ``sqrt(1-a) * r`` gerechnet, also die
+Renditen skaliert, ohne den Mittelwert herauszunehmen - und damit den Drift des
+Marktes gleich mitgedaempft. Kaufen-und-Halten fiel bei Anteil 0,5 von +1195 %
+auf +110 %. Jede gepflanzte Stufe war so zugleich ein **schwaecherer Markt**,
+und am staerksten traf das ausgerechnet das Gate mit der Mindestrendite. Der
+gepflanzte Vorteil sah aus, als koste er Rendite, obwohl ihn nur meine eigene
+Rechnung wegskaliert hatte. Richtig ist
+``r' = m + sqrt(1-a)*(r-m) + sqrt(a)*sigma*regime``.
+
+**Drittens: der abgeschnittene Regime-Ausschnitt.** Eine Reihe mit n Kerzen hat
+n-1 Renditen; das eine fehlende Element machte die mittelwertfreie Folge wieder
+mittelwertbehaftet, und ein kleiner Drift sickerte ein. Gefunden hat ihn der
+Test, der prueft, dass Kaufen-und-Halten unveraendert bleibt - mit einer
+Toleranz von 2 % waere er durchgerutscht.
+
+### Was die korrigierte Leiter zeigt
+
+BTC + ETH, Tageskerzen, Regime im Mittel 60 Kerzen, Huerde bei 161 Versuchen:
+
+    gepflanzt  Trades  je Trade   Guete     DSR   Gates
+           0%     154    0,2569    3,19   0,791   7/11
+          10%      48    0,5593    3,88   0,761   9/11
+          20%      29    0,5661    3,05   0,000  10/11
+          35%      17    0,7913    3,26   0,000   8/11
+          50%      12    1,2734    4,41   0,000   9/11
+
+Die 0-%-Sprosse trifft die Wirklichkeit (154 Trades, 7 von 11); der Anker
+stimmt.
+
+**Der Vorteil je Trade verfuenffacht sich - und der Deflated Sharpe faellt.**
+Der Grund steht in der Trade-Spalte: Ein Trend, der ueber Wochen haelt, laesst
+eine Trendfolge *seltener* handeln. Sie steigt ein und bleibt drin, statt in
+Seitwaertsphasen hin- und hergeworfen zu werden.
+
+Die Spalte ``Guete`` ist ``Vorteil je Trade * sqrt(Trades)`` - im Kern die
+Groesse, gegen die der Deflated Sharpe seine Huerde legt. Sie geht von 3,19 auf
+4,41, waehrend der Vorteil je Trade von 0,26 auf 1,27 springt. Fuenffacher
+Vorteil, ein Drittel mehr Guete.
+
+### Was daraus folgt und was nicht
+
+**Nicht** folgt: "die Gates sind zu streng". Die Messlatte-Zeilen taugen ohnehin
+nicht als Befund - sie vergleicht mit Kaufen-und-Halten ueber Dreimonats-
+fenster, und ein 60-Kerzen-Regime liegt in derselben Groessenordnung. Dann
+faellt ein ganzes Fenster in ein Regime, und der Vergleichsmassstab schwankt
+staerker als das Gemessene (Halten zwischen +1195 % und +5346 % ueber dieselben
+Fenster). Das steht im Modulkopf, damit es niemand als Ergebnis liest.
+
+**Es folgt** etwas ueber die Lage, und es ist die belastbarste Aussage, die
+dieses Projekt bisher ueber sich selbst hat: **Qualitaet und Menge sind
+gekoppelt.** Nicht bei den Regeln, die wir zufaellig probiert haben - hier war
+der Vorteil per Konstruktion echt, sauber und beliebig gross einstellbar, und
+die Kopplung blieb. Ein groesserer Trend heisst laengeres Halten heisst weniger
+Trades. Auf rund 3300 Tagen je Bein gibt es keine Einstellung, bei der beides
+zugleich reicht.
+
+Das trifft sich mit Befund 49 (zwanzig Punkte, eine Linie, kein Treffer) und
+erklaert ihn: Die Kurve lief parallel zur Grenzlinie, weil sie parallel laufen
+**muss**. Und es trifft sich mit Befund 14 - mehr Historie ist die eine
+Richtung, die das aufloesen wuerde, und die ist mit fallendem Sharpe je Trade
+geschlossen.
+
+Damit steht die Frage aus dem Plan schaerfer als vorher: Nicht "finden wir noch
+eine bessere Regel", sondern "traegt Trendfolge auf Tageskerzen ueber diese
+Historie ueberhaupt genug Ereignisse". Die Leiter sagt: nein.

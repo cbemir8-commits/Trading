@@ -155,12 +155,29 @@ def mische_renditen(frame: pd.DataFrame, saat: int) -> pd.DataFrame:
         return werte
 
     log_renditen = np.diff(np.log(close))
-    gemischt = np.random.default_rng(saat).permutation(log_renditen)
+    return baue_reihe(werte, np.random.default_rng(saat).permutation(log_renditen))
+
+
+def baue_reihe(frame: pd.DataFrame, log_renditen: np.ndarray) -> pd.DataFrame:
+    """Eine Kerzenreihe aus vorgegebenen Log-Renditen, Dochte inklusive.
+
+    **Warum die Dochte mitmuessen.** Hoch, tief und Eroeffnung werden aus dem
+    neuen Schluss im urspruenglichen Verhaeltnis rekonstruiert. Ohne das waeren
+    sie Preise aus einer anderen Zeit, und Stops griffen an Stellen, die es nie
+    gab - der Backtest liefe weiter und meldete nichts.
+
+    Getrennt von ``mische_renditen``, weil inzwischen zwei Verfahren eine
+    Reihe umbauen: das Mischen zerstoert Struktur, das Pflanzen in
+    ``research/teststaerke.py`` legt welche hinein. Beide brauchen dieselbe
+    Rekonstruktion, und zwei Umsetzungen davon waeren zwei Gelegenheiten, sie
+    verschieden falsch zu machen.
+    """
+    werte = frame.copy().reset_index(drop=True)
+    close = werte["close"].to_numpy(dtype=float)
     neu = np.empty_like(close)
     neu[0] = close[0]
-    neu[1:] = close[0] * np.exp(np.cumsum(gemischt))
+    neu[1:] = close[0] * np.exp(np.cumsum(log_renditen))
 
-    # Die Dochte im selben Verhaeltnis wie im Original.
     for spalte in ("open", "high", "low"):
         verhaeltnis = werte[spalte].to_numpy(dtype=float) / close
         werte[spalte] = neu * verhaeltnis

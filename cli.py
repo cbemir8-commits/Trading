@@ -4231,6 +4231,171 @@ def adaptiv(
 
 
 @app.command()
+def teststaerke(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    stufen: str = typer.Option(
+        "0,0.05,0.1,0.2,0.35,0.5", "--stufen",
+        help="Gepflanzte Varianzanteile, durch Komma getrennt.",
+    ),
+    dauer: int = typer.Option(60, "--dauer", help="Mittlere Regimedauer in Kerzen."),
+    saat: int = typer.Option(11, "--saat", help="Fuer eine reproduzierbare Folge."),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Liesse die Zulassungsstrecke ueberhaupt etwas durch?
+
+    Die Nullprobe fragt, ob die Maschine einen Vorteil findet, wo keiner ist.
+    Sie hat mit Nein geantwortet. Die Gegenfrage stand nie da: **Erkennt sie
+    einen, der wirklich da ist?**
+
+    Nach 161 Versuchen passen zwei Erklaerungen gleich gut auf alles
+    Gemessene - die Regelfamilie traegt nicht, oder die Huerde ist bei so
+    vielen Versuchen unerreichbar geworden. Von innen sehen beide gleich aus.
+
+    Getrennt werden sie, indem in die echte Reihe ein Trend **gepflanzt**
+    wird: ein Regime, das ueber Wochen dasselbe Vorzeichen behaelt. Die
+    Gesamtstreuung bleibt dabei gleich - die Reihe wird nicht ruhiger, nur
+    berechenbarer. Bei Anteil 0 ist es die unveraenderte Wirklichkeit, und
+    dort muss das bekannte Ergebnis herauskommen.
+
+    Der Test ist zur Strecke **freundlich**: Ein gepflanztes Regime ist
+    sauberer als jeder Markt. Kommt nichts durch, ist das belastbar - kommt
+    etwas durch, heisst es nur, dass es nicht an den Gates liegt.
+
+    Kostet keinen Versuch. Der Zaehler bleibt, wo er ist: Hier wird die
+    Strecke geprueft, kein Kandidat fuer den Livebetrieb ausgewaehlt.
+    """
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.gates import evaluate_gates
+    from research.seeds import spitzenkandidat
+    from research.suchbudget import Kandidat
+    from research.teststaerke import Leiter, Stufe, pflanze_trend, regimefolge
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
+
+    try:
+        anteile = sorted({float(x) for x in stufen.split(",") if x.strip()})
+    except ValueError:
+        console.print(f"[red]'{stufen}' sind keine Zahlen.[/]")
+        raise typer.Exit(2) from None
+
+    # **Der Kandidat unveraendert.** Der erste Anlauf stellte hier die
+    # Groessenlogik gleich, aus ``korb`` uebernommen - dort ist das richtig,
+    # weil ein ganzer Katalog verglichen wird. Hier gibt es nur ein Genom, und
+    # die Normalisierung verschob still den Ankerpunkt: Die 0-%-Sprosse kam
+    # auf 143 Trades und 5 von 11 statt auf die bekannten 152 und 7 von 11.
+    # Eine Leiter, deren unterste Sprosse nicht die Wirklichkeit ist, misst
+    # ihre eigene Erzeugung.
+    genome = spitzenkandidat()
+
+    # Der Versuchsstand wird **gelesen und nicht fortgeschrieben**. Die Huerde
+    # soll die von heute sein - aber eine Pruefung der Strecke ist kein
+    # Versuch, und wer sie mitzaehlte, machte das Messen selbst teuer.
+    versuche = load_trials(Path(settings.paths.state) / "trials.json")
+
+    laenge = max(len(f) for f in frames.values())
+    # **Ein Regime fuer alle Beine.** Getrennte Folgen je Markt waeren
+    # geschenkte Unabhaengigkeit, und genau davon lebt der Deflated Sharpe.
+    regime = regimefolge(laenge, dauer=dauer, saat=saat)
+
+    console.print(
+        f"\n[bold]Teststaerke[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Historie   {spanne} Tage gemeinsam\n"
+        f"  Regime     im Mittel {dauer} Kerzen, ein Verlauf fuer alle Beine\n"
+        f"  Huerde     {versuche} Versuche (gelesen, nicht erhoeht)\n"
+    )
+
+    leiter = Leiter(versuche=versuche)
+    with console.status("[dim]rechnet...[/]"):
+        for anteil in anteile:
+            gepflanzt = {
+                name: pflanze_trend(frame, anteil=anteil, regime=regime)
+                for name, frame in frames.items()
+            }
+            bericht = run_portfolio_walkforward(
+                gepflanzt, lambda g=genome: compile_genome(g), configs
+            )
+            if not bericht.windows:
+                continue
+            erster = next(iter(gepflanzt.values()))
+            gates = evaluate_gates(
+                genome, bericht, erster, next(iter(configs.values())),
+                trials_so_far=versuche, frames=gepflanzt, configs=configs,
+            )
+            form = Kandidat.aus_trades("", bericht.all_trades)
+            dsr = next(
+                (r.value for r in gates.results if r.name == "Deflated Sharpe"), None
+            )
+            leiter.stufen.append(
+                Stufe(
+                    anteil=anteil,
+                    trades=len(bericht.all_trades),
+                    sharpe=bericht.combined.sharpe if bericht.combined else 0.0,
+                    sharpe_je_trade=form.sharpe_je_trade if form else 0.0,
+                    dsr=dsr,
+                    bestanden=sum(1 for r in gates.results if r.passed),
+                    gesamt=len(gates.results),
+                    offen=tuple(r.name for r in gates.failures),
+                    cagr_pct=bericht.combined.cagr_pct if bericht.combined else 0.0,
+                    rueckgang_pct=(
+                        bericht.combined.max_drawdown_pct if bericht.combined else 0.0
+                    ),
+                    meldungen=tuple((r.name, r.message) for r in gates.failures),
+                )
+            )
+
+    console.print(leiter.tabelle())
+    console.print(f"\n{leiter.urteil()}\n")
+
+    if leiter.stufen:
+        console.print("WORAN ES JE STUFE HAKT")
+        console.print("-" * 72)
+        for s in leiter.geordnet:
+            console.print(
+                f"  [bold]{s.anteil:.0%}[/] gepflanzt - {s.cagr_pct:.1f} % p.a., "
+                f"{s.rueckgang_pct:.1f} % Rueckgang"
+            )
+            for name, meldung in s.meldungen:
+                console.print(f"    [red]{name:22s}[/] [dim]{meldung[:74]}[/]")
+
+    import json as _json
+    from dataclasses import asdict
+
+    ziel = Path.cwd() / "reports" / "teststaerke"
+    ziel.mkdir(parents=True, exist_ok=True)
+    datei = ziel / f"{datetime.now(UTC):%Y-%m-%d_%H%M%S}.json"
+    datei.write_text(
+        _json.dumps(
+            {
+                "erzeugt": datetime.now(UTC).isoformat(),
+                "maerkte": symbole,
+                "intervall": interval_obj.label,
+                "dauer": dauer,
+                "saat": saat,
+                "versuche": versuche,
+                "stufen": [asdict(s) for s in leiter.geordnet],
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
+    console.print(f"\n[dim]Bericht: {datei}[/]")
+    console.print(
+        "[dim]Der Versuchszaehler steht unveraendert bei "
+        f"{versuche}. Gepflanzte Reihen waehlen keinen Kandidaten aus.[/]\n"
+    )
+
+
+@app.command()
 def front(
     hoechstens: int = typer.Option(12, "--hoechstens", "-n", help="Wie viele Zeilen."),
 ) -> None:

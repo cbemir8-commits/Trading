@@ -1,0 +1,158 @@
+{
+  "erzeugt": "2026-08-14T17:12:31.768974+00:00",
+  "maerkte": [
+    "BTCUSD_BITSTAMP",
+    "ETHUSD_BITSTAMP"
+  ],
+  "intervall": "1d",
+  "dauer": 15,
+  "saat": 11,
+  "versuche": 161,
+  "stufen": [
+    {
+      "anteil": 0.0,
+      "trades": 154,
+      "sharpe": 1.4664105379870749,
+      "sharpe_je_trade": 0.2569432226955531,
+      "dsr": 0.7914238129208078,
+      "bestanden": 7,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Schlechtestes Jahr",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "cagr_pct": 13.402036726025624,
+      "rueckgang_pct": 10.640094994003437,
+      "meldungen": [
+        [
+          "Messlatte",
+          "Strategie +164.9 % bei 10.6 % Rueckgang (+13.4 % p.a.), Halten +1195.4 % bei 76.1 % (auf 10.6 % Rueckgang heruntergefahren: +43.6 %) - risikobereinigt besser, aber nur 13.4 % im Jahr. Unter 15 % lohnt der Betrieb nicht."
+        ],
+        [
+          "Schlechtestes Jahr",
+          "Wer zum unguenstigsten Zeitpunkt eingestiegen waere, stuende nach zwoelf Monaten bei -10.3 % - das haelt niemand durch."
+        ],
+        [
+          "Deflated Sharpe",
+          "Nach 161 getesteten Hypothesen ist der Vorteil nur zu 79.1% echt (Sharpe je Trade 0.257, Schiefe +3.47) - zu wahrscheinlich Zufall."
+        ],
+        [
+          "Parameter-Plateau",
+          "alle gemeinsam traegt nur 50% - in dieser Richtung steht die Strategie auf einer Nadelspitze, nicht auf einem Plateau. alle gemeinsam 1/2, sma(period=50) 1/2, Vola-Fenster 2/2, roc(period=90) 2/2, rsi(period=14) 2/2, sma(period=200) 2/2"
+        ]
+      ]
+    },
+    {
+      "anteil": 0.1,
+      "trades": 120,
+      "sharpe": 1.6452147648211735,
+      "sharpe_je_trade": 0.2203682948953665,
+      "dsr": 0.18048837441166315,
+      "bestanden": 8,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Bestaendigkeit",
+        "Deflated Sharpe"
+      ],
+      "cagr_pct": 10.662224541224719,
+      "rueckgang_pct": 6.557399922829273,
+      "meldungen": [
+        [
+          "Messlatte",
+          "Strategie +119.2 % bei 6.6 % Rueckgang (+10.7 % p.a.), Halten +686.1 % bei 90.0 % (auf 6.6 % Rueckgang heruntergefahren: +14.4 %) - risikobereinigt besser, aber nur 10.7 % im Jahr. Unter 15 % lohnt der Betrieb nicht."
+        ],
+        [
+          "Bestaendigkeit",
+          "14 von 29 gehandelten Fenstern profitabel, schlechtestes Fenster -17.20 (2 Fenster ohne Handel, zaehlen nicht mit)"
+        ],
+        [
+          "Deflated Sharpe",
+          "Nach 161 getesteten Hypothesen ist der Vorteil nur zu 18.0% echt (Sharpe je Trade 0.220, Schiefe +3.09) - zu wahrscheinlich Zufall."
+        ]
+      ]
+    },
+    {
+      "anteil": 0.2,
+      "trades": 88,
+      "sharpe": 1.8901773348628268,
+      "sharpe_je_trade": 0.2993471704852102,
+      "dsr": 0.5566485812775904,
+      "bestanden": 9,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Deflated Sharpe"
+      ],
+      "cagr_pct": 10.274904100296368,
+      "rueckgang_pct": 6.844282783470591,
+      "meldungen": [
+        [
+          "Messlatte",
+          "Strategie +113.3 % bei 6.8 % Rueckgang (+10.3 % p.a.), Halten +533.2 % bei 96.7 % (auf 6.8 % Rueckgang heruntergefahren: +8.5 %) - risikobereinigt besser, aber nur 10.3 % im Jahr. Unter 15 % lohnt der Betrieb nicht."
+        ],
+        [
+          "Deflated Sharpe",
+          "Nach 161 getesteten Hypothesen ist der Vorteil nur zu 55.7% echt (Sharpe je Trade 0.299, Schiefe +2.15) - zu wahrscheinlich Zufall."
+        ]
+      ]
+    },
+    {
+      "anteil": 0.35,
+      "trades": 64,
+      "sharpe": 2.46823977477563,
+      "sharpe_je_trade": 0.3818132523221048,
+      "dsr": 0.609002231337008,
+      "bestanden": 9,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Deflated Sharpe"
+      ],
+      "cagr_pct": 11.033026513314637,
+      "rueckgang_pct": 7.396009758771862,
+      "meldungen": [
+        [
+          "Messlatte",
+          "Strategie +124.9 % bei 7.4 % Rueckgang (+11.0 % p.a.), Halten +395.0 % bei 99.0 % (auf 7.4 % Rueckgang heruntergefahren: +5.9 %) - risikobereinigt besser, aber nur 11.0 % im Jahr. Unter 15 % lohnt der Betrieb nicht."
+        ],
+        [
+          "Deflated Sharpe",
+          "Nach 161 getesteten Hypothesen ist der Vorteil nur zu 60.9% echt (Sharpe je Trade 0.382, Schiefe +1.73) - zu wahrscheinlich Zufall."
+        ]
+      ]
+    },
+    {
+      "anteil": 0.5,
+      "trades": 47,
+      "sharpe": 2.17022255783132,
+      "sharpe_je_trade": 0.4013273148876953,
+      "dsr": 0.4990511186246884,
+      "bestanden": 8,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Bestaendigkeit",
+        "Deflated Sharpe"
+      ],
+      "cagr_pct": 8.212536444481122,
+      "rueckgang_pct": 7.911384962241684,
+      "meldungen": [
+        [
+          "Messlatte",
+          "Strategie +84.3 % bei 7.9 % Rueckgang (+8.2 % p.a.), Halten +303.2 % bei 99.6 % (auf 7.9 % Rueckgang heruntergefahren: +4.8 %) - risikobereinigt besser, aber nur 8.2 % im Jahr. Unter 15 % lohnt der Betrieb nicht."
+        ],
+        [
+          "Bestaendigkeit",
+          "10 von 23 gehandelten Fenstern profitabel, schlechtestes Fenster -12.34 (8 Fenster ohne Handel, zaehlen nicht mit)"
+        ],
+        [
+          "Deflated Sharpe",
+          "Nach 161 getesteten Hypothesen ist der Vorteil nur zu 49.9% echt (Sharpe je Trade 0.401, Schiefe +1.56) - zu wahrscheinlich Zufall."
+        ]
+      ]
+    }
+  ]
+}
