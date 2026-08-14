@@ -4516,6 +4516,47 @@ def teststaerke(
 
 
 @app.command()
+def vereinbar(
+    regler: str = typer.Option("Vola-Ziel", "--regler", "-r"),
+    rendite: float = typer.Option(15.0, "--rendite", help="Mindestrendite in %."),
+    rueckgang: float = typer.Option(12.0, "--rueckgang", help="Hoechster Rueckgang."),
+) -> None:
+    """Sind Mindestrendite und Rueckgangsgrenze zugleich erfuellbar?
+
+    In ``stand.py`` steht seit langem der Satz: *"Sie steht im Konflikt mit
+    der Rueckgangsgrenze - was die eine verlangt, reisst die andere."* Das ist
+    eine Behauptung, und sie war nie gemessen.
+
+    Hier wird sie beziffert. Ein Groessenregler ist dafuer die saubere Achse:
+    Er skaliert jede Position gleich und laesst die Qualitaet je Trade
+    unveraendert - Rendite und Rueckgang wachsen also beide mit ihm, und die
+    Frage wird geometrisch. Geht die Kurve durch das erlaubte Rechteck?
+
+    **Was hier nicht passiert: die Wahl eines Betriebspunkts.** Ein Treffer
+    waere ein Befund ueber die Schwellen, keine Empfehlung. Den Kandidaten
+    dorthin zu stellen, wo mehr Gates bestehen, ist genau die Anpassung, gegen
+    die die Zulassungsstrecke gebaut ist.
+
+    Liest nur vorhandene Berichte - kostet keinen Versuch. Neue Stellungen
+    misst ``cli machbarkeit``, und die zaehlt.
+    """
+    from research.vereinbar import Schwelle, Vereinbarkeit, lade
+
+    punkte = lade(Path.cwd() / "reports" / "machbarkeit", regler=regler)
+    lage = Vereinbarkeit(
+        regler=regler,
+        punkte=punkte,
+        a=Schwelle("Rendite", "cagr", rendite, mindestens=True),
+        b=Schwelle("Rueckgang", "rueckgang", rueckgang, mindestens=False),
+    )
+
+    console.print(f"\n[bold]Vereinbarkeit[/] auf dem Regler '{regler}'\n")
+    if punkte:
+        console.print(lage.tabelle())
+    console.print(f"\n{lage.urteil()}\n")
+
+
+@app.command()
 def front(
     hoechstens: int = typer.Option(12, "--hoechstens", "-n", help="Wie viele Zeilen."),
 ) -> None:

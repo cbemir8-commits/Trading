@@ -147,11 +147,18 @@ class Entscheidung:
 ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
     Entscheidung(
         frage="Mindestrendite von 15 % im Jahr",
-        zahl="Der Kandidat schafft 13,5 %. Risikobereinigt schlaegt er das "
-             "Halten um das Drei- bis Vierfache.",
+        zahl="Gemessen ueber zehn Stellungen des Groessenreglers: **keine** "
+             "haelt beide Schwellen. Bei 20,5 bleibt der Rueckgang mit "
+             "11,29 % unter der Grenze, die Rendite steht bei 14,11 % - es "
+             "fehlen 0,89 Punkte. Eine Stufe weiter (21,0) reisst der "
+             "Rueckgang mit 12,50 %, und die Rendite fehlt immer noch.",
         warum="Eine wirtschaftliche Schwelle, kein statistisches Kriterium - "
-              "so steht es seit jeher in gates.py. Sie steht im Konflikt mit "
-              "der Rueckgangsgrenze: Was die eine verlangt, reisst die andere.",
+              "so steht es seit jeher in gates.py. Dass sie mit der "
+              "Rueckgangsgrenze im Konflikt steht, war lange eine Behauptung "
+              "und ist seit Befund 57 beziffert: `cli vereinbar` rechnet es "
+              "jederzeit nach. Die Aufloesung ist eine Geschaeftsentscheidung "
+              "- den Kandidaten dorthin zu stellen, wo mehr Gates bestehen, "
+              "ist ausdruecklich keine.",
     ),
     Entscheidung(
         frage="Kontogroesse",

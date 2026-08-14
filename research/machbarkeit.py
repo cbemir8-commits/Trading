@@ -531,10 +531,16 @@ REGLER: dict[str, Regler] = {
         name="Vola-Ziel",
         einheit="%",
         pfad=("sizing", "target_vol_pct"),
-        stufen=(14.0, 16.0, 19.3, 22.0, 25.0, 28.0, 32.0),
+        stufen=(14.0, 16.0, 19.3, 20.5, 21.0, 21.5, 22.0, 25.0, 28.0, 32.0),
         begruendung=(
             "Skaliert jede Position mit demselben Faktor. Gemessen: bewegt "
-            "den Deflated Sharpe um 0,011 - also gar nicht."
+            "den Deflated Sharpe um 0,011 - also gar nicht. Die vier Stufen "
+            "zwischen 19,3 und 22 sind spaeter dazugekommen: Genau dort "
+            "wechselt die Kurve von 'Rendite fehlt' zu 'Rueckgang reisst', "
+            "und ob dazwischen ein Punkt liegt, der beide Schwellen haelt, "
+            "war die offene Frage aus stand.py. Sie stehen **hier** und nicht "
+            "im Aufruf, damit die Skala festliegt statt je Auswertung neu "
+            "gewaehlt zu werden."
         ),
     ),
     "stop": Regler(

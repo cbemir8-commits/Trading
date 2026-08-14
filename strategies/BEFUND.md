@@ -4853,3 +4853,89 @@ Gelegenheiten schlechter sind als die wenigen des Bestands. Beides zugleich
 hat in dieser Historie bisher nichts geliefert.
 
 Der Versuchsstand liegt bei 162, das Suchbudget bei 32 von 100.
+
+## Siebenundfuenfzig. Eine Behauptung im eigenen System, nie gemessen
+
+In ``research/stand.py`` stand seit Monaten ein Satz ueber die Mindestrendite
+von 15 % im Jahr:
+
+    "Sie steht im Konflikt mit der Rueckgangsgrenze: Was die eine verlangt,
+    reisst die andere."
+
+Das ist eine **Behauptung**. Sie klingt plausibel - und genau deshalb ist sie
+nie jemandem aufgefallen, mir am wenigsten. Einer der vier Grundsaetze dieses
+Projekts lautet, dass jede Behauptung gemessen wird und nicht geschaetzt. Diese
+hier stand ungeprueft in der Datei, die den Nutzern sagt, was sie entscheiden
+sollen.
+
+Befund 56 hatte sie zufaellig gestreift: Der Ausbruch besteht erstmals die
+Messlatte mit 16,5 % im Jahr - und reisst dabei den Rueckgang mit 21,8 %. Der
+Spitzenkandidat macht es umgekehrt: 13,5 % bei 10,6 %. Zwei Punkte sind aber
+kein Beleg, sondern zwei Punkte.
+
+### Warum der Groessenregler die saubere Achse ist
+
+Er skaliert jede Position mit demselben Faktor und laesst die Qualitaet je
+Trade unveraendert (Befund 30). Rendite und Rueckgang wachsen also **beide**
+mit ihm, und die Frage wird geometrisch: Geht die Kurve durch das erlaubte
+Rechteck - mindestens 15 % Rendite bei hoechstens 12 % Rueckgang - oder laeuft
+sie daran vorbei?
+
+Die vorhandenen Berichte gaben die Antwort fast. Zwischen 19,3 (13,47 % bei
+10,64 %) und 22,0 (15,16 % bei 12,82 %) lag ein ungemessener Sprung, und genau
+dort wechselt die Kurve von "Rendite fehlt" zu "Rueckgang reisst".
+
+Beim Zusammenlegen der Berichte fiel noch etwas auf: Fuer dieselbe Stellung
+19,3 stehen in zwei Berichten verschiedene Zahlen (13,17/9,74 gegen
+13,47/10,64). Der aeltere stammt aus der Zeit vor der Aufwaermphasen-Korrektur.
+Stumpf zusammenzulegen ergaebe eine Kurve aus zwei Messstaenden - ``lade``
+nimmt deshalb je Stellung den juengsten Bericht.
+
+### Die Luecke gemessen - und was sie kostet
+
+Drei neue Stellungen, ehrlich gezaehlt: **162 -> 165**. Sie stehen jetzt in
+``REGLER["vola"].stufen`` und nicht im Aufruf, damit die Skala festliegt statt
+je Auswertung neu gewaehlt zu werden - der Kommentar dort warnt seit jeher
+genau davor.
+
+     Stellung   Rendite  Rueckgang   Urteil
+         19,3    13,47 %    10,64 %  Rendite fehlt
+         20,5    14,11 %    11,29 %  Rendite fehlt
+         21,0    14,39 %    12,50 %  Rendite fehlt, Rueckgang reisst
+         21,5    14,69 %    12,76 %  Rendite fehlt, Rueckgang reisst
+         22,0    15,16 %    12,82 %  Rueckgang reisst
+
+**Die Kurve geht nicht durch das Rechteck.** Der letzte Punkt, der den
+Rueckgang haelt, ist 20,5 - dort fehlen 0,89 Renditepunkte. Eine halbe Stufe
+weiter reisst der Rueckgang bereits, und die Rendite fehlt immer noch. Es gibt
+kein Dazwischen: Zwischen 20,5 und 21,0 springt der Rueckgang um 1,21 Punkte,
+waehrend die Rendite um 0,28 zulegt.
+
+    python -m cli vereinbar
+
+rechnet das jederzeit nach und liest dafuer nur vorhandene Berichte - kostet
+also nichts. Die Zahlen in ``stand.py`` sind entsprechend ersetzt: aus der
+Behauptung ist eine Messung geworden.
+
+### Was ausdruecklich nicht passiert ist
+
+Bei 20,5 stuende der Kandidat besser da als bei 19,3. **Der Wert wird nicht
+nachgezogen.** ``research/seeds.py`` haelt zu genau dieser Stellschraube fest,
+dass ein Nachziehen "eine Anpassung an die Gates waere - und genau die Sorte
+Entscheidung, gegen die die ganze Zulassungsstrecke gebaut ist". Der Befehl
+gibt deshalb auch bei einem Treffer nie einen Betriebspunkt aus, und ein Test
+haelt das fest (``test_ein_treffer_ist_keine_empfehlung``).
+
+Nebenbei bestaetigt der Lauf, was ohnehin galt: Der Regler erreicht Messlatte,
+Deflated Sharpe und Parameter-Plateau gar nicht - er bewegt den DSR um 0,012,
+und es fehlen 0,142. Wer an der Groesse dreht, aendert am harten Problem
+nichts.
+
+### Der Stand
+
+Die Frage aus ``stand.py`` ist beantwortet: **Nein, mit dieser Strategie sind
+15 % Rendite und 12 % Rueckgang nicht zugleich zu haben.** Was daraus folgt -
+Schwelle senken, Rueckgangsgrenze anheben, oder beides so lassen und weiter
+suchen -, ist eine Geschaeftsentscheidung und liegt beim Nutzer.
+
+Versuchsstand 165, Suchbudget 35 von 100.
