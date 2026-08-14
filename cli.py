@@ -2286,45 +2286,26 @@ def betriebspunkt(
         console.print(f"[dim]JSON geschrieben: {json_datei}[/]")
 
 
-@app.command()
-def korb(
-    maerkte: str = typer.Option(
-        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
-        help="Symbole, durch Komma getrennt.",
-    ),
-    intervall: str = typer.Option("D", "--intervall", "-i"),
-    generation: int = typer.Option(9, "--generation", "-g", help="Startkatalog."),
-    vola_ziel: float = typer.Option(
-        50.0, help="Vola-Ziel in Prozent. Siehe `betriebspunkt` fuer die Stufen."
-    ),
-    verbose: bool = typer.Option(False, "--verbose", "-v"),
-) -> None:
-    """Mehrere Maerkte als **einen** Kandidaten durch alle elf Gates.
+def _korb_daten(symbole: list[str], interval_obj: Interval, settings):
+    """Kerzen und Kontraktdaten fuer einen Korb - fuer alle, die ihn pruefen.
 
-    Die Zulassung kannte bisher nur einen Markt. Gemessen wurde deshalb immer
-    BTC allein oder ETH allein - und beide scheiterten unter anderem am
-    Rueckgang. Das Doppel aus beiden liegt darunter, war aber nie geprueft,
-    weil es die Maschinerie dafuer nicht gab.
+    Diese vierzig Zeilen standen einmal nur in ``korb``. Als der zweite Befehl
+    denselben Korb messen musste, waere die naheliegende Loesung gewesen, sie
+    zu kopieren - und damit haette es zwei Stellen gegeben, an denen steht,
+    was "der Korb" eigentlich ist. Genau das ist in diesem Projekt schon
+    viermal auseinandergelaufen.
 
-    Das ist keine Lockerung: Gehandelt wuerde ohnehin der Korb. Geprueft wird
-    jetzt das, was tatsaechlich laufen soll, mit denselben Schwellen.
+    Der gemeinsame Zeitraum ist dabei kein Detail: ``common_range`` schneidet
+    alle Maerkte auf dieselbe Spanne, sonst vergleicht man ein Bein mit mehr
+    Historie gegen eines mit weniger und haelt den Unterschied fuer Strategie.
     """
     from decimal import Decimal
 
     from backtest.engine import BacktestConfig
-    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from backtest.portfolio_walkforward import common_range
     from data.bybit.errors import BybitError
-    from research.gates import evaluate_gates
-    from research.seeds import load_seeds
-    from strategy.compiler import compile_genome
-    from strategy.genome import SizingSpec
 
-    _configure_logging(verbose)
-    settings = get_settings()
     store = CandleStore(settings.paths.data_store)
-    interval_obj = Interval(intervall)
-
-    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
     roh = {}
     for symbol in symbole:
         frame = store.read(symbol, interval_obj)
@@ -2353,6 +2334,46 @@ def korb(
         configs[symbol] = BacktestConfig(
             instrument=instrument, risk=settings.risk, initial_equity=Decimal("500")
         )
+
+    return frames, configs, spanne
+
+
+@app.command()
+def korb(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    generation: int = typer.Option(9, "--generation", "-g", help="Startkatalog."),
+    vola_ziel: float = typer.Option(
+        50.0, help="Vola-Ziel in Prozent. Siehe `betriebspunkt` fuer die Stufen."
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Mehrere Maerkte als **einen** Kandidaten durch alle elf Gates.
+
+    Die Zulassung kannte bisher nur einen Markt. Gemessen wurde deshalb immer
+    BTC allein oder ETH allein - und beide scheiterten unter anderem am
+    Rueckgang. Das Doppel aus beiden liegt darunter, war aber nie geprueft,
+    weil es die Maschinerie dafuer nicht gab.
+
+    Das ist keine Lockerung: Gehandelt wuerde ohnehin der Korb. Geprueft wird
+    jetzt das, was tatsaechlich laufen soll, mit denselben Schwellen.
+    """
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.gates import evaluate_gates
+    from research.seeds import load_seeds
+    from strategy.compiler import compile_genome
+    from strategy.genome import SizingSpec
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
+    erster = next(iter(frames.values()))
 
     trials_path = Path(settings.paths.state) / "trials.json"
     from research.admission import load_trials, save_trials
@@ -2441,6 +2462,233 @@ def korb(
             "eine Strategie, die nur im Rueckblick funktioniert, kostet mehr "
             "als gar keine.[/]"
         )
+
+
+@app.command()
+def vorschlag(
+    datei: Path | None = typer.Option(
+        None, "--datei", "-d",
+        help="Antwortdatei statt Modellaufruf. Kostet nichts, zaehlt gleich.",
+    ),
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    vola_ziel: float = typer.Option(50.0, help="Vola-Ziel in Prozent."),
+    auftrag: bool = typer.Option(
+        False, "--auftrag",
+        help="Nur den Auftrag ausgeben, nichts messen. Fuer --datei.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Vorschlaege der Research-KI durch alle elf Gates - statt nur Varianten.
+
+    **Warum das fehlte.** Der Wettbewerb erzeugt neue Kandidaten durch
+    Mutation: Er nimmt die Besten und variiert ihre *Zahlen*. Damit bleibt die
+    Struktur, was sie ist - eine Schnittkreuzung mit anderen Perioden ist
+    dieselbe Regel mit anderen Perioden. Der Analyst kann strukturell Neues
+    vorschlagen, wurde aber nie gerufen, weil ihm der Weg in die Messung
+    fehlte. Zwei fertige Haelften ohne Verbindung.
+
+    **Was hier passiert und was ausdruecklich nicht.** Der Vorschlag geht
+    durch ``parse_proposals`` - wer die Grenzen des Genoms verletzt, wird
+    abgelehnt und nicht repariert. Wer sie einhaelt, bekommt genau das, was
+    ein von Hand geschriebener Kandidat bekommt: dieselben elf Gates,
+    dieselben Schwellen, und **einen Versuch im Zaehler**. Der letzte Punkt
+    ist der wichtigste: Ein Vorschlag aus einem Modell ist keinen Deut
+    glaubwuerdiger als einer aus einer Schleife, und er hebt die Huerde des
+    Deflated Sharpe fuer alle folgenden um dieselben 0,00021.
+
+    **Woher die Antwort kommt, steht dran.** Ohne ``--datei`` wird das Modell
+    gefragt und das Forschungsbudget belastet. Mit ``--datei`` liest der
+    ``DateiClient`` eine bereits vorliegende Antwort - der Auftrag ist
+    derselbe (``--auftrag`` zeigt ihn), der Weg danach ist derselbe, nur der
+    Aufruf entfaellt. Die Herkunft wandert in die Bestenliste, damit sich
+    spaeter niemand darauf berufen kann, "die KI" habe etwas gefunden, was
+    jemand von Hand hingeschrieben hat.
+    """
+    from research.analyst import (
+        SYSTEM_PROMPT,
+        AnthropicClient,
+        DateiClient,
+        build_prompt,
+        load_budget,
+        propose,
+        save_budget,
+    )
+    from research.gates import GateThresholds
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    state = Path(settings.paths.state)
+
+    if auftrag:
+        console.print(SYSTEM_PROMPT)
+        console.print(build_prompt(journal=[], thresholds=GateThresholds()))
+        return
+
+    from research.leaderboard import Leaderboard
+
+    board = Leaderboard(state / "leaderboard.json")
+    bekannt = set(board.entries)
+
+    budget = load_budget(
+        state / "budget.json",
+        monthly_usd=settings.cost.profile.monthly_budget_usd,
+    )
+    if datei is not None:
+        client = DateiClient(datei)
+        herkunft = f"Vorschlag ({datei.name})"
+        console.print(f"[dim]Antwort aus {datei} - kein Modellaufruf.[/]")
+    else:
+        if not settings.llm.has_credentials:
+            console.print(
+                "[yellow]Kein LLM__ANTHROPIC_API_KEY gesetzt.[/] Entweder den "
+                "Schluessel setzen oder mit [bold]--datei[/] eine Antwort "
+                "vorlegen; [bold]--auftrag[/] zeigt, was zu beantworten ist."
+            )
+            raise typer.Exit(2)
+        client = AnthropicClient(settings.llm.anthropic_api_key.get_secret_value())
+        herkunft = "Analyst"
+
+    ergebnis = propose(client, journal=[], budget=budget, already_tried=bekannt)
+    if datei is None:
+        save_budget(state / "budget.json", budget)
+    console.print(f"[dim]{ergebnis.summary()}[/]")
+    for p in ergebnis.proposals:
+        if not p.accepted:
+            console.print(f"  [red]abgelehnt[/] {p.genome.name}: {p.reason}")
+    if not ergebnis.genomes:
+        console.print("[yellow]Kein brauchbarer Vorschlag - nichts zu messen.[/]")
+        raise typer.Exit(1)
+
+    _miss_vorschlaege(
+        ergebnis.genomes,
+        maerkte=maerkte,
+        intervall=intervall,
+        vola_ziel=vola_ziel,
+        herkunft=herkunft,
+        settings=settings,
+        board=board,
+    )
+
+
+def _miss_vorschlaege(
+    genome_liste, *, maerkte, intervall, vola_ziel, herkunft, settings, board
+) -> None:
+    """Die angenommenen Vorschlaege durch den Korb und die elf Gates.
+
+    Die Groessenlogik wird fuer alle gleich gestellt - aus demselben Grund wie
+    in ``korb``: Sonst vergleicht man Hebelstufen und haelt das Ergebnis fuer
+    einen Unterschied zwischen den Regeln.
+    """
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.admission import load_trials, save_trials
+    from research.gates import evaluate_gates
+    from strategy.compiler import compile_genome
+    from strategy.genome import SizingSpec
+
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
+    erster = next(iter(frames.values()))
+
+    trials_path = Path(settings.paths.state) / "trials.json"
+    trials = load_trials(trials_path)
+    console.print(
+        f"\n[bold]Vorschlaege[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Gemeinsam  {erster['open_time'].iloc[0]:%Y-%m-%d} bis "
+        f"{erster['open_time'].iloc[-1]:%Y-%m-%d} ({spanne} Tage)\n"
+        f"  Versuche   {trials} bisher, {len(genome_liste)} kommen dazu\n"
+    )
+
+    tabelle = Table(header_style="bold")
+    tabelle.add_column("Vorschlag")
+    tabelle.add_column("Gates", justify="right")
+    tabelle.add_column("Trades", justify="right")
+    tabelle.add_column("Sharpe", justify="right")
+    tabelle.add_column("DSR", justify="right")
+    tabelle.add_column("Gescheitert an")
+
+    bester = None
+    for genome in genome_liste:
+        angepasst = genome.model_copy(
+            update={
+                "sizing": SizingSpec(
+                    kind="vola_ziel", fraction=3.0,
+                    target_vol_pct=vola_ziel, vol_period=30,
+                )
+            }
+        )
+        report = run_portfolio_walkforward(
+            frames, lambda g=angepasst: compile_genome(g), configs
+        )
+        if not report.windows:
+            tabelle.add_row(angepasst.name[:30], "-", "0", "-", "-", "kein Fenster")
+            continue
+
+        trials += 1
+        gates = evaluate_gates(
+            angepasst, report, erster, next(iter(configs.values())),
+            trials_so_far=trials, frames=frames, configs=configs,
+        )
+        bestanden = sum(1 for r in gates.results if r.passed)
+        dsr = next(
+            (r.value for r in gates.results if r.name == "Deflated Sharpe"), None
+        )
+        stil = "green" if gates.passed else ""
+        tabelle.add_row(
+            f"[{stil}]{angepasst.name[:30]}[/]" if stil else angepasst.name[:30],
+            f"{bestanden}/{len(gates.results)}",
+            str(len(report.all_trades)),
+            f"{report.combined.sharpe:.2f}" if report.combined else "-",
+            f"{dsr:.3f}" if dsr is not None else "-",
+            ", ".join(r.name for r in gates.failures)[:40] or "-",
+        )
+        board.record(
+            [_kandidat_aus_lauf(angepasst, report, gates)],
+            generation=0, herkunft=herkunft, versuche=trials,
+        )
+        if bester is None or bestanden > bester[0]:
+            bester = (bestanden, angepasst, gates)
+
+    save_trials(trials_path, trials)
+    board.save()
+    console.print(tabelle)
+
+    if bester is None:
+        console.print("[red]Kein Vorschlag liess sich rechnen.[/]")
+        raise typer.Exit(2)
+
+    anzahl, genome, gates = bester
+    console.print(f"\n[bold]Bester: {genome.name}[/] - {anzahl}/{len(gates.results)}")
+    console.print(f"[dim]{genome.rationale[:300]}[/]\n")
+    for r in gates.results:
+        farbe = {"pass": "green", "fail": "red", "skip": "dim"}[r.status.value]
+        zeichen = {"pass": "OK", "fail": "--", "skip": ".."}[r.status.value]
+        console.print(
+            f"  [{farbe}]{zeichen}[/] {r.name:22s} "
+            f"{r.value:>9.3f} / {r.threshold:>8.3f}  [dim]{r.message[:50]}[/]"
+        )
+    console.print(
+        f"\n[dim]Versuchszaehler jetzt {trials}. Ein Vorschlag aus einem "
+        f"Modell kostet denselben Versuch wie jeder andere Kandidat.[/]"
+    )
+
+
+def _kandidat_aus_lauf(genome, report, gates):
+    """Ein Laufergebnis in die Form bringen, die die Bestenliste erwartet.
+
+    Der Portfolio-Walk-Forward liefert denselben Berichtstyp wie der einzelne
+    - deshalb passt der Kandidat aus ``admission`` hier unveraendert, und die
+    Bestenliste sieht keinen Unterschied zwischen einem Vorschlag und einem
+    Kandidaten aus dem Wettbewerb. Das ist Absicht: Verglichen wird das
+    Ergebnis, nicht die Herkunft.
+    """
+    from research.admission import Candidate
+
+    return Candidate(genome=genome, walkforward=report, gates=gates)
 
 
 @app.command()

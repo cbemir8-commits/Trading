@@ -1,0 +1,56 @@
+[
+  {
+    "name": "Donchian-Ausbruch 50/25",
+    "rationale": "These: Ein Kurs, der das Hoch der letzten 50 Tage nimmt, setzt die Bewegung fort - der Ausbruch selbst ist das Signal, nicht ein Durchschnitt. Widerlegbar: Wenn Ausbrueche im Mittel zurueckfallen, verliert die Regel. Strukturell anders als eine Schnittkreuzung, weil sie auf ein Kursniveau reagiert statt auf einen geglaetteten Mittelwert - die Einstiege liegen dadurch an anderen Tagen.",
+    "entry_long": [
+      {"left": {"kind": "price", "name": "close"}, "op": "cross_above", "right": {"kind": "indicator", "name": "donchian_upper", "params": {"period": 50}}}
+    ],
+    "exit_long": [
+      {"left": {"kind": "price", "name": "close"}, "op": "cross_below", "right": {"kind": "indicator", "name": "donchian_lower", "params": {"period": 25}}}
+    ],
+    "stop": {"kind": "percent", "percent": 4.0},
+    "targets": [{"rr": 20.0, "portion": 1.0}]
+  },
+  {
+    "name": "Ausbruch mit Beteiligung",
+    "rationale": "These: Ein Ausbruch traegt nur, wenn er auf hohem Umsatz geschieht - duenne Ausbrueche sind Rauschen und fallen zurueck. Widerlegbar: Wenn die Umsatzbedingung die Trefferquote nicht hebt, ist Volumen hier ohne Information. Neu ist die Informationsquelle: Bisher wurde ausschliesslich Preis verwendet, nie Beteiligung.",
+    "entry_long": [
+      {"left": {"kind": "price", "name": "close"}, "op": "cross_above", "right": {"kind": "indicator", "name": "donchian_upper", "params": {"period": 50}}}
+    ],
+    "filters": [
+      {"left": {"kind": "indicator", "name": "volume_zscore", "params": {"period": 30}}, "op": "gt", "right": {"kind": "constant", "value": 0.5}}
+    ],
+    "exit_long": [
+      {"left": {"kind": "price", "name": "close"}, "op": "cross_below", "right": {"kind": "indicator", "name": "donchian_lower", "params": {"period": 25}}}
+    ],
+    "stop": {"kind": "percent", "percent": 4.0},
+    "targets": [{"rr": 20.0, "portion": 1.0}]
+  },
+  {
+    "name": "Rueckkehr vom unteren Band",
+    "rationale": "These: Ein Kurs, der das untere Bollinger-Band unterschreitet, ist kurzfristig uebertrieben und kehrt zum Mittel zurueck. Das ist die Gegenthese zur Trendfolge - wenn deren Vorteil ausgeschoepft ist, gehoert die Gegenrichtung gemessen statt vermutet. Widerlegbar: Wenn Unterschreitungen im Mittel weiter fallen, verliert die Regel.",
+    "entry_long": [
+      {"left": {"kind": "price", "name": "close"}, "op": "cross_below", "right": {"kind": "indicator", "name": "bollinger_lower", "params": {"period": 20, "deviations": 2}}}
+    ],
+    "exit_long": [
+      {"left": {"kind": "price", "name": "close"}, "op": "cross_above", "right": {"kind": "indicator", "name": "sma", "params": {"period": 20}}}
+    ],
+    "stop": {"kind": "percent", "percent": 4.0},
+    "targets": [{"rr": 20.0, "portion": 1.0}]
+  },
+  {
+    "name": "Rueckschlag im Aufwaertstrend",
+    "rationale": "These: In einem uebergeordneten Aufwaertstrend sind ueberverkaufte Rueckschlaege Gelegenheiten, keine Warnungen. Der Einstieg erfolgt auf Schwaeche statt auf Staerke - genau umgekehrt zur bisherigen Familie, und die Einstiegstage liegen dadurch woanders. Widerlegbar: Wenn Rueckschlaege im Aufwaertstrend im Mittel weiterlaufen, verliert die Regel.",
+    "entry_long": [
+      {"left": {"kind": "indicator", "name": "rsi", "params": {"period": 14}}, "op": "cross_above", "right": {"kind": "constant", "value": 30.0}}
+    ],
+    "filters": [
+      {"left": {"kind": "price", "name": "close"}, "op": "gt", "right": {"kind": "indicator", "name": "sma", "params": {"period": 200}}}
+    ],
+    "exit_long": [
+      {"left": {"kind": "indicator", "name": "rsi", "params": {"period": 14}}, "op": "cross_below", "right": {"kind": "constant", "value": 70.0}}
+    ],
+    "stop": {"kind": "percent", "percent": 4.0},
+    "targets": [{"rr": 20.0, "portion": 1.0}]
+  }
+]

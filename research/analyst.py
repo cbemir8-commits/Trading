@@ -400,6 +400,43 @@ def propose(
     return result
 
 
+class DateiClient:
+    """Ein ``LLMClient``, der seine Antwort aus einer Datei liest.
+
+    **Warum es das gibt.** Der Analyst war gebaut, getestet und nie benutzt -
+    weil er einen bezahlten API-Schluessel braucht, den dieses Projekt nicht
+    gesetzt hat. Damit lag der einzige Weg zu *strukturell* neuen Regeln
+    brach, waehrend die Mutation nur Zahlen variierte und alle Zahlenwege
+    ausgemessen wurden.
+
+    ``LLMClient`` ist ein Protokoll, also eine vorgesehene Erweiterungsstelle.
+    Wer den Auftrag aus ``build_prompt`` selbst beantwortet - von Hand, aus
+    einem anderen Modell, aus einem Gespraech - legt die Antwort hier ab und
+    bekommt **denselben** Weg: dieselbe Pruefung durch ``parse_proposals``,
+    dieselben elf Gates, denselben Versuchszaehler.
+
+    Was das ausdruecklich **nicht** ist: eine Abkuerzung. Ein Vorschlag von
+    Hand ist keinen Deut glaubwuerdiger als einer aus dem Modell - er kostet
+    genauso einen Versuch und muss genauso bestehen. Der einzige Unterschied
+    ist, dass er nichts kostet und dass dransteht, woher er kommt.
+    """
+
+    def __init__(self, pfad: Path | str) -> None:
+        self.pfad = Path(pfad)
+
+    def complete(self, *, system: str, prompt: str, max_tokens: int) -> LLMResponse:
+        text = self.pfad.read_text()
+        log.info(
+            "analyst.aus_datei",
+            pfad=str(self.pfad),
+            zeichen=len(text),
+            hinweis="Kein Modellaufruf - die Antwort kam aus einer Datei.",
+        )
+        # Keine Kosten, keine Token: Was nicht gerufen wurde, wird nicht
+        # abgerechnet. Das Budget bleibt unberuehrt.
+        return LLMResponse(text=text, input_tokens=0, output_tokens=0)
+
+
 class AnthropicClient:
     """Anbindung an die echte API.
 

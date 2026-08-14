@@ -2,7 +2,7 @@
 
 Warum diese Frage jetzt dran ist
 --------------------------------
-Vierzehn Richtungen sind gemessen und geschlossen, und vier davon zeigen
+Sechzehn Richtungen sind gemessen und geschlossen, und vier davon zeigen
 dasselbe Muster: Jeder Weg, der eine Kennzahl verbessert, verschlechtert den
 Deflated Sharpe ueber einen anderen Kanal.
 

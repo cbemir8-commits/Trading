@@ -1,6 +1,6 @@
 """Alles Gemessene gegen die Linie, die es reissen muesste.
 
-Vierzehn geschlossene Richtungen sind vierzehn Einzelfaelle. Die Aussage, auf
+Sechzehn geschlossene Richtungen sind sechzehn Einzelfaelle. Die Aussage, auf
 die es ankommt, ist eine andere: **Kein Punkt dieser Regelfamilie erreicht die
 Schwelle** - und die steht schon in den Machbarkeitsberichten, sie musste nur
 zusammengelegt werden.

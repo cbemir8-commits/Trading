@@ -25,6 +25,7 @@ from pathlib import Path
 from research.analyst import (
     SYSTEM_PROMPT,
     Budget,
+    DateiClient,
     LLMResponse,
     build_prompt,
     load_budget,
@@ -322,3 +323,95 @@ class TestCycle:
         propose(client, journal=journal, budget=Budget(monthly_usd=Decimal("45")))
 
         assert "Alter Versuch" in client.calls[0]["prompt"]
+
+
+# ---------------------------------------------------------------------------
+#  Die Antwort aus einer Datei
+# ---------------------------------------------------------------------------
+class TestDateiClient:
+    """Derselbe Weg, nur ohne Modellaufruf.
+
+    Der springende Punkt dieser Klasse ist ``test_der_weg_bleibt_derselbe``:
+    Eine Antwort aus einer Datei darf **nichts** ueberspringen. Waere hier
+    eine Abkuerzung eingebaut - eine mildere Pruefung, ein nicht gezaehlter
+    Versuch -, dann waere der Analyst nicht benutzbar gemacht, sondern
+    umgangen.
+    """
+
+    def test_der_weg_bleibt_derselbe(self, tmp_path: Path) -> None:
+        """Eine Datei mit einem ungueltigen Vorschlag wird genauso abgelehnt
+        wie eine Modellantwort mit demselben Fehler."""
+        kaputt = json.loads(json.dumps(VALID_GENOME))
+        kaputt["entry_long"][0]["right"]["name"] = "kristallkugel"
+        datei = tmp_path / "antwort.json"
+        datei.write_text(json.dumps([VALID_GENOME, kaputt]))
+
+        ergebnis = propose(
+            DateiClient(datei), journal=[], budget=Budget(monthly_usd=Decimal("45"))
+        )
+
+        assert len(ergebnis.genomes) == 1, "Der Unbekannte muss durchfallen"
+        assert ergebnis.genomes[0].name == VALID_GENOME["name"]
+        # Und er faellt durch, ohne repariert zu werden: Der unbekannte
+        # Indikator taucht in keinem angenommenen Genom auf.
+        assert "kristallkugel" not in ergebnis.genomes[0].model_dump_json()
+
+    def test_kein_aufruf_kostet_nichts(self, tmp_path: Path) -> None:
+        """Was nicht gerufen wurde, wird nicht abgerechnet - sonst waere das
+        Forschungsbudget nach ein paar Dateilaeufen leer, ohne dass je ein
+        Modell gefragt worden waere."""
+        datei = tmp_path / "antwort.json"
+        datei.write_text(json.dumps([VALID_GENOME]))
+        budget = Budget(monthly_usd=Decimal("45"))
+
+        ergebnis = propose(DateiClient(datei), journal=[], budget=budget)
+
+        assert ergebnis.cost_usd == Decimal(0)
+        assert budget.spent_usd == Decimal(0)
+        assert budget.remaining_usd == Decimal("45")
+
+    def test_ein_leeres_budget_haelt_die_datei_trotzdem_auf(
+        self, tmp_path: Path
+    ) -> None:
+        """Die Bremse sitzt vor dem Aufruf, nicht vor dem Bezahlen.
+
+        Das ist keine Schikane: Ein aufgebrauchtes Budget heisst "dieser Monat
+        hat genug gesucht". Wer daran vorbei will, indem er die Antwort selbst
+        hinschreibt, umgeht ein Kriterium - und die Versuche zaehlen trotzdem
+        gegen alle kuenftigen Kandidaten.
+        """
+        datei = tmp_path / "antwort.json"
+        datei.write_text(json.dumps([VALID_GENOME]))
+        leer = Budget(monthly_usd=Decimal("45"), spent_usd=Decimal("45"))
+
+        ergebnis = propose(DateiClient(datei), journal=[], budget=leer)
+
+        assert ergebnis.genomes == []
+
+    def test_eine_fehlende_datei_faellt_auf(self, tmp_path: Path) -> None:
+        """Und zwar laut. Stillschweigend "keine Vorschlaege" zu melden waere
+        von "nichts Brauchbares dabei" nicht zu unterscheiden."""
+        import pytest
+
+        with pytest.raises(OSError):
+            propose(
+                DateiClient(tmp_path / "gibtsnicht.json"),
+                journal=[],
+                budget=Budget(monthly_usd=Decimal("45")),
+            )
+
+    def test_der_auftrag_erreicht_die_datei_nicht_ungefragt(
+        self, tmp_path: Path
+    ) -> None:
+        """Der Client bekommt denselben Auftrag wie das Modell - er antwortet
+        nur schon. Das ist der Grund, warum ``--auftrag`` existiert: Wer die
+        Datei schreibt, soll dieselbe Frage vor sich haben."""
+        datei = tmp_path / "antwort.json"
+        datei.write_text(json.dumps([VALID_GENOME]))
+        client = DateiClient(datei)
+
+        antwort = client.complete(system=SYSTEM_PROMPT, prompt="egal", max_tokens=10)
+
+        assert antwort.input_tokens == 0
+        assert antwort.output_tokens == 0
+        assert json.loads(antwort.text)[0]["name"] == VALID_GENOME["name"]

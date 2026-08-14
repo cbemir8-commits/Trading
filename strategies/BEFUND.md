@@ -4483,3 +4483,100 @@ laeuft die Unterscheidung ueber das Instrument.
 
 Versuchszaehler unveraendert bei **157** - dasselbe Genom genauer zu messen ist
 keine zweite Hypothese. Stand: **7 von 11**.
+
+## Dreiundfuenfzig. Die Research-KI hat zum ersten Mal etwas vorgeschlagen
+
+Zwei fertige Haelften ohne Verbindung: ``research/analyst.py`` kann strukturell
+neue Regeln vorschlagen und war seit P6 gebaut und getestet - benutzt wurde er
+nie. Der Wettbewerb erzeugt neue Kandidaten durch **Mutation**, und die
+variiert Zahlen. Eine Schnittkreuzung mit anderen Perioden ist dieselbe Regel
+mit anderen Perioden; nach fuenfzig Befunden waren die Zahlenwege ausgemessen,
+die Strukturwege dagegen unberuehrt.
+
+Der Grund, warum er nie lief, war banal: Er braucht einen bezahlten
+API-Schluessel, den dieses Projekt nicht gesetzt hat.
+
+### Der Weg dorthin - und was er ausdruecklich nicht ist
+
+``LLMClient`` ist ein **Protokoll**, also eine vorgesehene Erweiterungsstelle.
+Wer den Auftrag aus ``build_prompt`` beantworten kann, darf antworten. Neu ist
+deshalb ein ``DateiClient``, der die Antwort aus einer Datei liest, und ein
+Befehl, der den Rest des Weges geht:
+
+    python -m cli vorschlag --auftrag              # zeigt, was zu beantworten ist
+    python -m cli vorschlag --datei antwort.json   # misst die Antwort
+
+**In dieser Runde habe ich den Auftrag selbst beantwortet.** Das gehoert
+dransteht, und es steht dran - die Bestenliste vermerkt als Herkunft
+``Vorschlag (vorschlaege.json)`` statt ``Analyst``. Ein Vorschlag von Hand ist
+keinen Deut glaubwuerdiger als einer aus einem Modell: Er geht durch dasselbe
+``parse_proposals``, das ihn ablehnt statt repariert, durch dieselben elf
+Gates, und er kostet **denselben Versuch**. Der Zaehler stand bei 157 und steht
+jetzt bei 161.
+
+### Vier Thesen, jede widerlegbar formuliert
+
+Keine Zahlenvariante war dabei; alle vier tragen denselben 4-%-Stop und
+dasselbe Ziel, damit sich nur die **Struktur** unterscheidet.
+
+1. **Donchian-Ausbruch 50/25** - reagiert auf ein Kursniveau statt auf einen
+   geglaetteten Mittelwert. Die Einstiege liegen dadurch an anderen Tagen.
+2. **Ausbruch mit Beteiligung** - derselbe Ausbruch, aber nur bei erhoehtem
+   Umsatz. Bisher wurde ausschliesslich Preis verwendet, nie Beteiligung.
+3. **Rueckkehr vom unteren Band** - die Gegenthese zur Trendfolge.
+4. **Rueckschlag im Aufwaertstrend** - Einstieg auf Schwaeche statt auf
+   Staerke, genau umgekehrt zur bisherigen Familie.
+
+### Gemessen, BTC + ETH, Tageskerzen, alle elf Gates
+
+    Vorschlag                     Gates  Trades  Sharpe    DSR
+    Donchian-Ausbruch 50/25        5/11      89    0,86  0,157
+    Ausbruch mit Beteiligung       5/11      68    0,92  0,162
+    Rueckkehr vom unteren Band     1/11     118    0,19  0,014
+    Rueckschlag im Aufwaertstrend  5/11       8    0,03  0,000
+
+    Bestand (Spitzenkandidat)      7/11     152    1,05  0,797
+
+**Alle vier sind deutlich schlechter als das, was schon da war.** An der
+Grenzlinie abgelesen, wo der Abstand vergleichbar wird:
+
+    Kandidat                     Trades      hat   noetig   Faktor
+    Ausbruch mit Beteiligung         68   0,2482   0,4192     1,69
+    Donchian-Ausbruch 50/25          89   0,2136   0,3706     1,74
+    Rueckkehr vom unteren Band      118   0,0483   0,3272     6,77
+    Spitzenkandidat                 152   0,2597   0,2929     1,13
+
+Der Bestand liegt naeher an der Linie als jeder Vorschlag - und er lag schon
+vorher dort.
+
+### Was das heisst und was nicht
+
+Drei Einzelaussagen sind sauber gemessen und schliessen ihre Richtung:
+
+* **Kanalausbruch statt Kreuzung**: strukturell anders, DSR 0,157. Die
+  Ausbruchsregel handelt weniger und schlechter.
+* **Umsatz als Filter**: die einzige bisher ungenutzte Informationsquelle. Sie
+  hebt den Sharpe je Trade auf 0,2482 - nah am Bestand -, kostet dafuer aber
+  ein Viertel der Trades. Netto DSR 0,162. Ein weiteres Beispiel fuer das
+  Muster aus Befund 49: Was die Qualitaet hebt, senkt die Zahl staerker.
+* **Rueckkehr zum Mittel**: die Gegenthese ist gemessen statt vermutet und
+  faellt mit 1 von 11 klar durch. Sharpe 0,19.
+
+Was hier **nicht** steht: "die KI taugt nichts". Vier Vorschlaege sind vier
+Vorschlaege. Der Befund ist enger und dafuer belastbar - *diese* vier
+Strukturen sind schlechter als die vorhandene, und der Weg dorthin steht jetzt
+und kostet nichts mehr.
+
+Ehrlich dazugehoert auch: Ich habe vier Versuche ausgegeben und die Huerde
+damit fuer alle kuenftigen Kandidaten um 0,00084 angehoben, ohne etwas
+Besseres zu finden. Das Suchbudget steht bei 31 von 100.
+
+### Zwei Kleinigkeiten am Rande
+
+Der Vierzigzeiler, der den Korb laedt, stand in ``korb`` und haette fuer den
+neuen Befehl kopiert werden muessen - damit haette es zwei Stellen gegeben, an
+denen steht, was "der Korb" ist. Er liegt jetzt in ``_korb_daten``.
+
+Und der Adapter zur Bestenliste war im ersten Anlauf mit falschen Feldnamen
+geschrieben (``report=``/``trades=`` statt ``walkforward=``). Er lief bis zum
+ersten echten Lauf. Dafuer gibt es jetzt ``tests/test_vorschlag.py``.

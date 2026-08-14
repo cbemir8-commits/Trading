@@ -68,6 +68,9 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     Richtung("Abkuehlung", "repariert zwei Gates, verschlechtert die zwei harten", 44),
     Richtung("Gewinnziel", "laengeres rechtes Ende kostet mehr, als es bringt", 46),
     Richtung("Adaptive Periode", "mehr Trades, aber einander aehnlicher", 48),
+    Richtung("Kanalausbruch", "strukturell neu, 5 von 11, Faktor 1,74", 53),
+    Richtung("Umsatzfilter", "neue Informationsquelle, DSR 0,162", 53),
+    Richtung("Rueckkehr zum Mittel", "Gegenthese gemessen: 1 von 11", 53),
 )
 
 
