@@ -4769,3 +4769,87 @@ Wer die Kopplung brechen will, muss an der **Einstiegsbedingung** ansetzen, und
 zwar an einer, die in starken Trends *haeufiger* ausloest statt seltener. Das
 ist eine engere und damit brauchbarere Vorgabe als "irgendeine bessere Regel" -
 und es ist eine, an der die Vorschlaege aus Befund 53 alle vorbeigingen.
+
+## Sechsundfuenfzig. Vorauswahl, die nichts kostet - und was sie nicht kann
+
+Befund 55 endete mit einer Vorgabe: Die Kopplung sitzt in der **Haeufigkeit der
+Einstiegsbedingung**, also braucht es eine, die in starken Trends haeufiger
+ausloest statt seltener. Welche das tut, laesst sich auf gepflanzten Reihen
+pruefen, bevor es Versuche kostet.
+
+    python -m cli teststaerke --regeln <datei.json> --stufen 0.1,0.35
+
+### Die Absicherung, ohne die das eine Umgehung waere
+
+Die 0-%-Sprosse der Leiter ist nicht *fast* die echte Reihe, sie **ist** sie -
+``pflanze_trend`` gibt den Rahmen bei Anteil 0 unveraendert zurueck. Wer Regeln
+danach auswaehlt, hat auf echten Daten getestet, und genau das zaehlt die
+Mehrfachtest-Korrektur. Eine Vorauswahl, die sie mitnaehme und trotzdem
+"kostet keinen Versuch" meldete, waere eine stille Umgehung des Zaehlers.
+
+Deshalb faellt die 0-%-Sprosse weg, sobald Regeln verglichen werden. Das steht
+nicht nur im Text, es ist erzwungen und getestet
+(``tests/test_vorauswahl.py``). Damit sieht die Vorauswahl die unveraenderte
+Wirklichkeit nie und kann sich nicht an ihr ueberanpassen.
+
+### Ein Fehler vorweg: null Trades in jeder Spalte
+
+Der erste Lauf lieferte ueberall Nullen - auch beim Bestand, der dort 48 Trades
+haben muss. Grund: Vorschlaege kommen mit ``risiko``-Groessenlogik, die am
+Stop-Abstand bemisst und einen 4-%-Stop als **zu weit ablehnt**. Verglichen
+wurden Groessenlogiken, nicht Einstiegsstrukturen.
+
+Dass hier gleichgestellt wird und in Befund 54 nicht, ist kein Widerspruch:
+Dort lief ein einziges Genom durch die Leiter, und das Gleichstellen verschob
+bloss den Ankerpunkt. Hier laufen mehrere verschiedene Genome gegeneinander -
+genau der Fall, fuer den ``korb`` die Normalisierung eingefuehrt hat.
+
+### Die Vorauswahl, gepflanzte Reihen, Regime 60 Kerzen
+
+     gepflanzt  Kurzer Rueckke  Neues Hoch im   Trendfolge 50
+          10%      2.32 ( 99)      5.38 (122)      4.03 ( 48)
+          35%      2.93 ( 19)      8.13 ( 86)      3.73 ( 17)
+      Steigung            2.46           10.99           -1.23
+
+Das Kriterium stand vorher fest: Steigung mindestens 0,5 **und** Stichprobe
+nicht unter die Haelfte. Genau eine Regel besteht es - der wiederholbare
+Ausbruch (neues 20-Tage-Hoch, Filter auf den 100er-Schnitt, Deckel 15 Kerzen).
+Er haelt 70 % seiner Trades, waehrend die anderen beiden auf 19 bzw. 35 %
+einbrechen.
+
+Der Bestand verhaelt sich exakt so, wie Befund 55 es vorhergesagt hat:
+Steigung **negativ**, Trades 48 auf 17. Und der kurze Rueckkehrtakt bricht
+mit ein - auch ein 10-Tage-Schnitt wird in einem starken Trend irgendwann
+nicht mehr von unten gekreuzt. Nur der Ausbruch skaliert, weil ein Trend
+laufend neue Hochs erzeugt.
+
+### Und dann der Test, der zaehlt
+
+Ein Versuch, auf echten Daten, alle elf Gates (161 -> 162):
+
+    Neues Hoch im Takt   123 Trades  SR/Trade 0,2137  Guete 2,37  DSR 0,331  5/11
+    Bestand              154 Trades  SR/Trade 0,2569  Guete 3,19  DSR 0,791  7/11
+
+**Schlechter als der Bestand, und zwar deutlich.** Er besteht zwar zum ersten
+Mal die Messlatte - 16,5 % im Jahr gegen die geforderten 15 %, was dem
+Spitzenkandidaten nie gelang -, erkauft das aber mit 21,8 % Rueckgang gegen
+10,6 %. Monte-Carlo reisst bei 28,5 %.
+
+### Was das ueber das Werkzeug sagt
+
+Die Vorauswahl hat gehalten, was sie versprochen hat, und nicht mehr. Der
+Modulkopf sagt es fuer die Leiter, und es gilt hier genauso: *Kommt etwas
+durch, heisst das nur, dass es nicht an den Gates liegt - nicht, dass ein
+solcher Vorteil existiert.* Uebertragen: Eine Struktur, die einen
+**gepflanzten** Vorteil in Guete umsetzt, kann das - sie sagt nichts darueber,
+ob der Markt einen anbietet. Auf echten Daten faellt der Sharpe je Trade von
+0,2137 gegenueber 0,2569 des Bestands ab; die Mehrzahl an Gelegenheiten war da,
+die Qualitaet nicht.
+
+Damit ist die Vorgabe aus Befund 55 abgearbeitet und ihr Ergebnis unangenehm
+klar: Die Kopplung laesst sich brechen - der wiederholbare Ausbruch tut es
+nachweislich -, und es hilft trotzdem nicht, weil die zusaetzlichen
+Gelegenheiten schlechter sind als die wenigen des Bestands. Beides zugleich
+hat in dieser Historie bisher nichts geliefert.
+
+Der Versuchsstand liegt bei 162, das Suchbudget bei 32 von 100.

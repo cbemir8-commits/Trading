@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Kurzer Rueckkehrtakt",
+    "rationale": "These aus Befund 55: Die Kopplung sitzt im Einstiegstakt, nicht in der Haltedauer. Ein 50-Tage-Schnitt wird in einem starken Trend immer seltener von unten gekreuzt - ein 10-Tage-Schnitt dagegen laufend, weil kleine Rueckschlaege haeufig bleiben. Der Filter auf den 50er haelt das Ganze im Trend. Widerlegbar: Wenn die Zahl der Trades mit staerkerem gepflanztem Trend trotzdem faellt, sitzt die Kopplung woanders.",
+    "entry_long": [
+      {"left": {"kind": "price", "name": "close"}, "op": "cross_above", "right": {"kind": "indicator", "name": "sma", "params": {"period": 10}}}
+    ],
+    "filters": [
+      {"left": {"kind": "price", "name": "close"}, "op": "gt", "right": {"kind": "indicator", "name": "sma", "params": {"period": 50}}}
+    ],
+    "exit_long": [
+      {"left": {"kind": "price", "name": "close"}, "op": "lt", "right": {"kind": "indicator", "name": "sma", "params": {"period": 10}}}
+    ],
+    "stop": {"kind": "percent", "percent": 4.0},
+    "targets": [{"rr": 20.0, "portion": 1.0}],
+    "max_hold_bars": 20
+  },
+  {
+    "name": "Neues Hoch im Takt",
+    "rationale": "These: In einem starken Trend entstehen laufend neue 20-Tage-Hochs - der Ausbruch wiederholt sich also, statt einmalig zu sein. Zusammen mit einem Haltedeckel entsteht ein wiederholter Ein- und Ausstieg im selben Trend, was ohne den reparierten Deckel aus Befund 55 gar nicht messbar gewesen waere. Widerlegbar: Wenn die Trade-Zahl mit dem gepflanzten Trend nicht steigt, liefert auch ein wiederholbarer Ausbruch keinen Takt.",
+    "entry_long": [
+      {"left": {"kind": "price", "name": "close"}, "op": "cross_above", "right": {"kind": "indicator", "name": "donchian_upper", "params": {"period": 20}}}
+    ],
+    "filters": [
+      {"left": {"kind": "price", "name": "close"}, "op": "gt", "right": {"kind": "indicator", "name": "sma", "params": {"period": 100}}}
+    ],
+    "exit_long": [
+      {"left": {"kind": "price", "name": "close"}, "op": "lt", "right": {"kind": "indicator", "name": "sma", "params": {"period": 20}}}
+    ],
+    "stop": {"kind": "percent", "percent": 4.0},
+    "targets": [{"rr": 20.0, "portion": 1.0}],
+    "max_hold_bars": 15
+  },
+  {
+    "name": "Trendfolge 50 gedeckelt",
+    "rationale": "Der Bestand als Vergleichsgroesse, damit die anderen beiden nicht gegen nichts antreten: dieselbe Einstiegsbedingung wie der Spitzenkandidat, nur mit Haltedeckel. Er muss laut Befund 55 flach bleiben - seine Trade-Zahl haengt an einer Kreuzung, die in starken Trends seltener wird, und daran aendert der Deckel nichts. Widerlegbar: Steigt seine Guete mit, war die Zuordnung aus Befund 55 falsch.",
+    "entry_long": [
+      {"left": {"kind": "price", "name": "close"}, "op": "cross_above", "right": {"kind": "indicator", "name": "sma", "params": {"period": 50}}}
+    ],
+    "exit_long": [
+      {"left": {"kind": "price", "name": "close"}, "op": "lt", "right": {"kind": "indicator", "name": "sma", "params": {"period": 50}}}
+    ],
+    "stop": {"kind": "percent", "percent": 4.0},
+    "targets": [{"rr": 20.0, "portion": 1.0}],
+    "max_hold_bars": 20
+  }
+]

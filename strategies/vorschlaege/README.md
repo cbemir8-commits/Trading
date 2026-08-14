@@ -16,6 +16,7 @@ der Frage, wer geantwortet hat.**
 | Datei | Herkunft | Befund |
 |---|---|---|
 | `2026-08-14-struktur.json` | Von mir beantwortet, nicht aus einem Modellaufruf | Nr. 53 |
+| `2026-08-14-einstiegstakt.json` | Von mir beantwortet, aus der Vorgabe von Befund 55 | Nr. 56 |
 
 > Ein Vorschlag von Hand ist keinen Deut glaubwuerdiger als einer aus einem
 > Modell. Er geht durch dieselbe Pruefung, durch dieselben elf Gates, und er

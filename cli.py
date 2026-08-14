@@ -2677,6 +2677,56 @@ def _miss_vorschlaege(
     )
 
 
+def _regeln_aus_datei(pfad: Path) -> list[tuple[str, object]]:
+    """Regelvorschlaege fuer die Vorauswahl auf gepflanzten Reihen.
+
+    **Derselbe Weg wie in ``cli vorschlag``** - dieselbe Datei, dieselbe
+    Pruefung durch ``parse_proposals``, dieselbe Ablehnung statt Reparatur.
+    Der einzige Unterschied ist, wogegen gemessen wird: dort die echte Reihe
+    und elf Gates, hier gepflanzte Reihen und die Frage, ob eine Regel einen
+    vorhandenen Vorteil ueberhaupt in Guete umsetzt.
+
+    Diese Vorauswahl kostet keinen Versuch, und das ist kein Trick, sondern
+    eine Bedingung: Sie sieht die unveraenderte Wirklichkeit nicht (die
+    0-%-Sprosse faellt weg), also kann sie sich auch nicht an ihr
+    ueberanpassen. Was hier gut aussieht, muss danach durch alle elf Gates -
+    und **dann** zaehlt es.
+    """
+    from research.analyst import parse_proposals
+
+    if not pfad.exists():
+        console.print(f"[red]{pfad} gibt es nicht.[/]")
+        raise typer.Exit(2)
+
+    from research.seeds import spitzenkandidat
+
+    vorschlaege = parse_proposals(pfad.read_text())
+    angenommen = [p.genome for p in vorschlaege if p.accepted]
+    for p in vorschlaege:
+        if not p.accepted:
+            console.print(f"  [red]abgelehnt[/] {p.genome.name}: {p.reason}")
+    if not angenommen:
+        console.print("[red]Kein brauchbarer Vorschlag in der Datei.[/]")
+        raise typer.Exit(2)
+
+    # **Alle auf die Groessenlogik des Bestands stellen - und hier ist das
+    # richtig.** In Befund 54 war genau diese Normalisierung ein Fehler: Dort
+    # lief ein einziges Genom durch die Leiter, und das Gleichstellen verschob
+    # bloss den Ankerpunkt. Hier laufen mehrere verschiedene Genome
+    # gegeneinander, und das ist der Fall, fuer den ``korb`` sie eingefuehrt
+    # hat.
+    #
+    # Ohne sie war die erste Messung wertlos: Vorschlaege kommen mit
+    # ``risiko``-Groessenlogik, die am Stop-Abstand bemisst und einen
+    # 4-%-Stop als zu weit **ablehnt**. Ergebnis waren null Trades in jeder
+    # Spalte - auch beim Bestand, der dort 48 haben muss. Verglichen wurden
+    # Groessenlogiken, nicht Einstiegsstrukturen.
+    groesse = spitzenkandidat().sizing
+    return [
+        (g.name[:14], g.model_copy(update={"sizing": groesse})) for g in angenommen
+    ]
+
+
 def _kandidat_aus_lauf(genome, report, gates):
     """Ein Laufergebnis in die Form bringen, die die Bestenliste erwartet.
 
@@ -4247,6 +4297,11 @@ def teststaerke(
         "0", "--halten",
         help="Haltedauer-Deckel in Kerzen, durch Komma. 0 = unbegrenzt.",
     ),
+    regeln: Path | None = typer.Option(
+        None, "--regeln",
+        help="Vorschlagsdatei. Vergleicht Regeln statt Deckel - ohne die "
+             "0-%-Sprosse, denn die waere die echte Reihe.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Liesse die Zulassungsstrecke ueberhaupt etwas durch?
@@ -4308,6 +4363,35 @@ def teststaerke(
     # ihre eigene Erzeugung.
     genome = spitzenkandidat()
 
+    varianten: list[tuple[str, object]] = []
+    if regeln is not None:
+        varianten = _regeln_aus_datei(regeln)
+        # Die Begruendung steht **vor** der Abbruchpruefung. Andernfalls sieht
+        # genau der Anwender sie nicht, der in die Sperre laeuft - und der
+        # braucht sie am dringendsten.
+        console.print(
+            "[yellow]Vorauswahl von Regeln - die 0-%-Sprosse faellt weg.[/]\n"
+            "[dim]Sie waere die unveraenderte echte Reihe. Wer auf ihr "
+            "auswaehlt, hat auf echten Daten getestet, und das muss der "
+            "Versuchszaehler sehen. Verglichen wird deshalb nur, wie gut eine "
+            "Regel einen gepflanzten Vorteil in Guete umsetzt.[/]\n"
+        )
+        anteile = [a for a in anteile if a > 0.0]
+        if not anteile:
+            console.print(
+                "[red]Keine gepflanzte Stufe uebrig.[/] Gib mit "
+                "[bold]--stufen[/] mindestens einen Anteil groesser 0 an."
+            )
+            raise typer.Exit(2)
+    else:
+        varianten = [
+            (
+                "unbegrenzt" if deckel == 0 else f"{deckel} Kerzen",
+                genome.model_copy(update={"max_hold_bars": deckel}),
+            )
+            for deckel in deckel_liste
+        ]
+
     # Der Versuchsstand wird **gelesen und nicht fortgeschrieben**. Die Huerde
     # soll die von heute sein - aber eine Pruefung der Strecke ist kein
     # Versuch, und wer sie mitzaehlte, machte das Messen selbst teuer.
@@ -4337,8 +4421,7 @@ def teststaerke(
 
     vergleich = Vergleich()
     with console.status("[dim]rechnet...[/]"):
-        for deckel in deckel_liste:
-            variante = genome.model_copy(update={"max_hold_bars": deckel})
+        for bezeichnung, variante in varianten:
             leiter = Leiter(versuche=versuche)
             for anteil in anteile:
                 gepflanzt = gepflanzte[anteil]
@@ -4378,9 +4461,7 @@ def teststaerke(
                         meldungen=tuple((r.name, r.message) for r in gates.failures),
                     )
                 )
-            vergleich.leitern[
-                "unbegrenzt" if deckel == 0 else f"{deckel} Kerzen"
-            ] = leiter
+            vergleich.leitern[bezeichnung] = leiter
 
     leiter = next(iter(vergleich.leitern.values()))
     console.print(leiter.tabelle())
