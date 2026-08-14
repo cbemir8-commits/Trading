@@ -37,7 +37,13 @@ from core.models import Instrument, LiquidityRole, Side, Signal, Trade
 from data.termine import Terminkalender
 from execution.risk import RiskOfficer, TradingState
 from execution.sizing import SizedPosition, SizingRejected, size_position
-from strategy.base import BarContext, Strategy, frame_to_arrays, wants_exit
+from strategy.base import (
+    BarContext,
+    Strategy,
+    frame_to_arrays,
+    hold_limit,
+    wants_exit,
+)
 
 log = structlog.get_logger(__name__)
 
@@ -301,6 +307,10 @@ class Backtester:
         hole_anteil = getattr(strategy, "fraction_at", None)
         statischer_anteil = getattr(strategy, "equity_fraction", None)
 
+        # Die Haltedauer geht denselben Weg wie die Groessenlogik: Was die
+        # Strategie mitbringt, gilt; die Konfiguration ist nur der Rueckfall.
+        halte_deckel = hold_limit(strategy, self.config.max_hold_bars)
+
         sub_index = _SubBarIndex(sub_frame) if sub_frame is not None else None
 
         state = _RunState(
@@ -326,7 +336,9 @@ class Backtester:
                 self._jetzt = _to_datetime(bar_time)
 
             # 1. Bestehende Orders gegen diese Kerze abarbeiten.
-            self._process_bar(state, result, arrays, i, bar_time, bar_end, sub_index)
+            self._process_bar(
+                state, result, arrays, i, bar_time, bar_end, sub_index, halte_deckel
+            )
 
             # 2. Strategie zur abgeschlossenen Kerze befragen.
             ctx = BarContext(frame, arrays, indicators, i)
@@ -496,6 +508,7 @@ class Backtester:
         bar_time: np.datetime64,
         bar_end: datetime,
         sub_index: _SubBarIndex | None,
+        halte_deckel: int,
     ) -> None:
         segments = self._segments(arrays, index, sub_index)
 
@@ -515,11 +528,12 @@ class Backtester:
         if state.position is not None:
             self._apply_funding(state, bar_end)
 
-        # Maximale Haltedauer.
+        # Maximale Haltedauer - der Deckel kommt aus ``hold_limit``, also
+        # vorrangig aus der Strategie und nur ersatzweise aus der Konfiguration.
         if (
             state.position is not None
-            and self.config.max_hold_bars > 0
-            and index - state.position.entry_index >= self.config.max_hold_bars
+            and halte_deckel > 0
+            and index - state.position.entry_index >= halte_deckel
         ):
             close = Decimal(str(arrays["close"][index]))
             self._close_position(

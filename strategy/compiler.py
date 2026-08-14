@@ -58,6 +58,17 @@ class CompiledStrategy:
         self.warmup_bars = _estimate_warmup(genome)
         self._fractions: np.ndarray | None = None
 
+        self.max_hold_bars = genome.max_hold_bars
+        """Zwangsschliessung nach N Kerzen, aus dem Genom. 0 = aus.
+
+        **Diese eine Zeile hat lange gefehlt.** Das Feld gab es im Genom seit
+        jeher - validiert, dokumentiert, von ``describe()`` ausgegeben - und
+        die Engine las es nie: Ihr Deckel sass allein auf ``BacktestConfig``.
+        Jedes Genom mit einer Haltedauer lief also **ohne** sie, und nichts
+        deutete darauf hin, weil ein fehlender Zwangsausstieg keinen Fehler
+        erzeugt, sondern nur andere Trades.
+        """
+
         self._last_entry_time: pd.Timestamp | None = None
         """Wann zuletzt eingestiegen wurde - als **Zeitpunkt**, nicht als Index.
 

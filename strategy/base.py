@@ -187,6 +187,33 @@ def wants_exit(strategy: object, ctx: BarContext, side: Side) -> bool:
     return bool(check(ctx, side)) if check is not None else False
 
 
+def hold_limit(strategy: object, fallback: int = 0) -> int:
+    """Nach wie vielen Kerzen die Strategie zwangsweise schliesst. 0 = aus.
+
+    **Warum das hier steht und nicht nur in der Konfiguration.** Genau wie bei
+    der Groessenlogik gilt: Wie lange man eine Position zu halten bereit ist,
+    gehoert zur Idee, nicht zum Maschinenaufbau. Eine Ausbruchsregel, die nach
+    zwanzig Kerzen aussteigt, ist eine andere Regel - nicht dieselbe Regel auf
+    einer anders eingestellten Maschine.
+
+    **Der Anlass war ein totes Feld.** ``Genome.max_hold_bars`` gab es seit
+    jeher: im Schema, mit Grenzen validiert, von ``describe()`` ausgegeben -
+    und die Engine sah es nie. Der Deckel sass ausschliesslich auf
+    ``BacktestConfig``, und niemand reichte den einen Wert an die andere
+    Stelle weiter. Jedes Genom mit einer Haltedauer wurde also **ohne** sie
+    gerechnet, ohne dass irgendwo etwas danebenging.
+
+    Die Strategie hat Vorrang, die Konfiguration ist der Rueckfall: Wer keinen
+    Deckel mitbringt, verhaelt sich unveraendert.
+    """
+    wert = getattr(strategy, "max_hold_bars", 0)
+    try:
+        eigen = int(wert)
+    except (TypeError, ValueError):
+        return fallback
+    return eigen if eigen > 0 else fallback
+
+
 def frame_to_arrays(frame: pd.DataFrame) -> dict[str, np.ndarray]:
     """Wandelt den DataFrame in numpy-Arrays um.
 

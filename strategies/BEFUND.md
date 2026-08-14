@@ -4681,3 +4681,91 @@ geschlossen.
 Damit steht die Frage aus dem Plan schaerfer als vorher: Nicht "finden wir noch
 eine bessere Regel", sondern "traegt Trendfolge auf Tageskerzen ueber diese
 Historie ueberhaupt genug Ereignisse". Die Leiter sagt: nein.
+
+## Fuenfundfuenfzig. Ein totes Feld - gefunden, weil der Regler nichts tat
+
+Aus Befund 54 folgt eine pruefbare Gegenthese. Die Kopplung dort lautete: Ein
+staerkerer Trend heisst laengeres Halten heisst weniger Trades. Wer die
+Haltedauer **deckelt**, muesste sie brechen - dann liefert ein laengerer Trend
+mehr Trades statt weniger.
+
+Also drei Deckel nebeneinander durch dieselben gepflanzten Reihen. Ergebnis des
+ersten Laufs:
+
+     gepflanzt      unbegrenzt       30 Kerzen       60 Kerzen
+           0%      3.19 (154)      3.19 (154)      3.19 (154)
+          10%      3.88 ( 48)      3.88 ( 48)      3.88 ( 48)
+          35%      3.26 ( 17)      3.26 ( 17)      3.26 ( 17)
+
+Drei identische Spalten. Ein Ergebnis, das sich nicht bewegt, wenn man am
+Regler dreht, ist keines.
+
+### Der Befund: `Genome.max_hold_bars` hat nie etwas getan
+
+Das Feld gibt es seit P3: im Schema, mit Grenzen von 0 bis 2000 validiert, von
+``describe()`` ausgegeben, vom Analysten vorschlagbar. Die Engine hat es **nie
+gelesen**. Ihr Deckel sass ausschliesslich auf ``BacktestConfig.max_hold_bars``,
+und niemand reichte den einen Wert an die andere Stelle weiter.
+
+Das ist die unangenehmste Sorte Fehler. Ein fehlender Zwangsausstieg wirft
+keine Ausnahme und schreibt keine Warnung - er erzeugt nur andere Trades. Jedes
+Genom mit einer Haltedauer wurde ohne sie gerechnet, und jede Zahl daraus galt
+fuer eine Regel, die so nie aufgeschrieben worden war. Betroffen sind unter
+anderem die vier Analysten-Vorschlaege aus Befund 53, soweit sie das Feld
+gesetzt haetten.
+
+**Der Weg der Korrektur stand schon im selben Modul.** Zur Groessenlogik steht
+in ``engine.run`` seit jeher: *"Die Betriebsart der Positionsgroesse gehoert zur
+Strategie, nicht zur Konfiguration."* Fuer die Haltedauer gilt dasselbe - wie
+lange man zu halten bereit ist, gehoert zur Idee, nicht zum Maschinenaufbau.
+Neu ist deshalb ``strategy.base.hold_limit``: Die Strategie hat Vorrang, die
+Konfiguration bleibt der Rueckfall, und wer nichts mitbringt, verhaelt sich
+unveraendert. Die ganze bestehende Suite blieb gruen - niemand hatte sich
+darauf verlassen, dass das Feld ignoriert wird.
+
+Belegt in ``tests/test_haltedauer.py``, unter anderem mit dem Test, der den
+Fehler ueberhaupt sichtbar gemacht haette: *verschiedene Deckel liefern
+verschiedene Ergebnisse*.
+
+Auch die Testreihe dafuer war im ersten Anlauf falsch: ein nur steigender
+Markt kreuzt seinen Schnitt genau einmal, es gibt eine einzige Position, und an
+einem Trade laesst sich kein Deckel ablesen. Erst mit Schwingung wird die Frage
+"handelt ein kuerzerer Deckel oefter" ueberhaupt eine Frage.
+
+### Und dann die eigentliche Messung
+
+Mit wirkendem Regler, dieselben gepflanzten Reihen:
+
+     gepflanzt      unbegrenzt       20 Kerzen       40 Kerzen
+           0%      3.19 (154)      2.79 (154)      3.40 (154)
+          10%      3.88 ( 48)      3.75 ( 48)      4.06 ( 48)
+          35%      3.26 ( 17)      3.40 ( 17)      3.26 ( 17)
+      Steigung          -0.30            1.15           -0.93
+
+**Die Gegenthese ist widerlegt, und zwar schaerfer als erwartet.** Die
+Trade-Zahlen sind ueber alle Deckel hinweg *identisch* - 154, 48, 17. Der
+Deckel veraendert, was die Trades einbringen, aber nicht, wie viele es sind.
+
+Der Grund liegt an der anderen Seite der Regel: Der Einstieg verlangt eine
+Kreuzung von unten. Wer mitten im Trend zwangsweise aussteigt, bekommt keine
+neue Kreuzung geschenkt - der Kurs liegt ja weiter ueber seinem Schnitt. Am
+Ausstieg zu drehen kann die Zahl der Gelegenheiten nicht erhoehen, weil sie am
+**Einstieg** haengt.
+
+Damit ist die Kopplung aus Befund 54 nicht nur bestaetigt, sondern genauer
+verortet: Sie sitzt nicht in der Haltedauer, sondern in der Haeufigkeit der
+Einstiegsbedingung. Und die wird in einem starken Trend seltener, nicht
+haeufiger - der Kurs hoert auf, unter seinen Schnitt zu fallen.
+
+Die Steigung von 1,15 bei '20 Kerzen' ist ausdruecklich **kein** Treffer: Sie
+kommt bei 11 % der Trades der untersten Sprosse zustande. Das Kriterium
+verlangt beides, und der Urteilstext sagt jetzt auch, welche Haelfte gerissen
+ist - der erste Anlauf meldete "1,15 gegen die geforderten 0,5" und daneben
+"keine Variante entkoppelt", was sich wie ein Widerspruch las.
+
+### Was daraus fuer die Suche folgt
+
+Wer die Kopplung brechen will, muss an der **Einstiegsbedingung** ansetzen, und
+zwar an einer, die in starken Trends *haeufiger* ausloest statt seltener. Das
+ist eine engere und damit brauchbarere Vorgabe als "irgendeine bessere Regel" -
+und es ist eine, an der die Vorschlaege aus Befund 53 alle vorbeigingen.

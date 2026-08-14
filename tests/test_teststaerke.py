@@ -20,8 +20,10 @@ import pandas as pd
 import pytest
 
 from research.teststaerke import (
+    MINDESTSTEIGUNG,
     Leiter,
     Stufe,
+    Vergleich,
     pflanze_trend,
     regimefolge,
 )
@@ -281,3 +283,116 @@ class TestVerduennung:
 
     def test_ohne_zwei_stufen_gibt_es_keine_verduennung(self) -> None:
         assert Leiter(stufen=[stufe(0.0, bestanden=7)]).verduennung is None
+
+
+def gestufte(*paare: tuple[float, float, int]) -> Leiter:
+    """Eine Leiter aus (Anteil, SR je Trade, Trades)."""
+    return Leiter(
+        stufen=[
+            Stufe(a, n, 1.0, sr, 0.5, 8, 11) for a, sr, n in paare
+        ],
+        versuche=161,
+    )
+
+
+class TestSteigung:
+    def test_eine_flache_leiter_entkoppelt_nicht(self) -> None:
+        """Der gemessene Fall aus Befund 54: Der Vorteil je Trade
+        verfuenffacht sich, die Guete steht praktisch still."""
+        leiter = gestufte((0.0, 0.2569, 154), (0.35, 0.7913, 17), (0.5, 1.2734, 12))
+
+        assert leiter.steigung is not None
+        assert not leiter.entkoppelt
+
+    def test_eine_steigende_leiter_mit_stabiler_stichprobe_entkoppelt(self) -> None:
+        leiter = gestufte((0.0, 0.26, 154), (0.25, 0.40, 150), (0.5, 0.55, 146))
+
+        assert leiter.steigung is not None and leiter.steigung > MINDESTSTEIGUNG
+        assert leiter.entkoppelt
+
+    def test_steigung_allein_reicht_nicht(self) -> None:
+        """**Der Test, der das Kriterium ehrlich haelt.**
+
+        Eine Leiter kann steil steigen und die Stichprobe trotzdem verlieren -
+        dann ist die Kopplung nicht gebrochen, sondern nur anders herum
+        durchlaufen. Ohne diesen Teil des Kriteriums haette fast jede Variante
+        "entkoppelt" gemeldet.
+        """
+        leiter = gestufte((0.0, 0.26, 154), (0.5, 2.00, 20))
+
+        assert leiter.steigung is not None and leiter.steigung > MINDESTSTEIGUNG
+        assert leiter.verduennung is not None and leiter.verduennung < 0.5
+        assert not leiter.entkoppelt
+
+    def test_eine_einzelne_stufe_hat_keine_steigung(self) -> None:
+        assert gestufte((0.2, 0.3, 100)).steigung is None
+
+
+class TestVergleich:
+    def test_die_matrix_zeigt_guete_und_trades_je_variante(self) -> None:
+        v = Vergleich(
+            leitern={
+                "unbegrenzt": gestufte((0.0, 0.2569, 154), (0.5, 1.2734, 12)),
+                "30 Kerzen": gestufte((0.0, 0.26, 150), (0.5, 0.55, 146)),
+            }
+        )
+        text = v.matrix()
+
+        assert "unbegrenzt" in text and "30 Kerzen" in text
+        assert "154" in text and "146" in text
+        assert "Steigung" in text
+
+    def test_eine_entkoppelnde_variante_wird_benannt(self) -> None:
+        v = Vergleich(
+            leitern={
+                "unbegrenzt": gestufte((0.0, 0.2569, 154), (0.5, 1.2734, 12)),
+                "30 Kerzen": gestufte((0.0, 0.26, 154), (0.5, 0.60, 150)),
+            }
+        )
+
+        assert "30 Kerzen" in v.urteil()
+        assert "Kopplung bricht" in v.urteil()
+        assert "kostet Versuche" in v.urteil() or "Versuche kostet" in v.urteil()
+
+    def test_ohne_treffer_wird_die_beste_variante_beziffert(self) -> None:
+        v = Vergleich(
+            leitern={
+                "unbegrenzt": gestufte((0.0, 0.2569, 154), (0.5, 0.2600, 152)),
+                "30 Kerzen": gestufte((0.0, 0.26, 154), (0.5, 0.28, 150)),
+            }
+        )
+        urteil = v.urteil()
+
+        assert "Keine Variante entkoppelt" in urteil
+        assert "loest die Kopplung also nicht" in urteil
+
+    def test_ohne_leitern_wird_nichts_behauptet(self) -> None:
+        assert Vergleich().urteil() == "Nichts zu vergleichen."
+
+
+class TestWelcheHaelfteRiss:
+    """Der Urteilstext muss sagen, **woran** es lag.
+
+    Der erste Anlauf meldete "Steigung 1,15 gegen die geforderten 0,5" und im
+    selben Atemzug "keine Variante entkoppelt". Das liest sich wie ein
+    Widerspruch und verschweigt den Grund: Die Steigung war erfuellt, die
+    Stichprobe war weggebrochen.
+    """
+
+    def test_erfuellte_steigung_bei_weggebrochener_stichprobe(self) -> None:
+        v = Vergleich(
+            leitern={"20 Kerzen": gestufte((0.0, 0.26, 154), (0.35, 0.83, 17))}
+        )
+        urteil = v.urteil()
+
+        assert "erreicht zwar eine Steigung" in urteil
+        assert "11% der Trades" in urteil
+        assert "anders verteilt" in urteil
+
+    def test_verfehlte_steigung_wird_als_solche_gemeldet(self) -> None:
+        v = Vergleich(
+            leitern={"40 Kerzen": gestufte((0.0, 0.26, 154), (0.35, 0.27, 150))}
+        )
+
+        assert "gegen die geforderten" in v.urteil()
+        assert "erreicht zwar" not in v.urteil()

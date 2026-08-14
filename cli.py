@@ -4243,6 +4243,10 @@ def teststaerke(
     ),
     dauer: int = typer.Option(60, "--dauer", help="Mittlere Regimedauer in Kerzen."),
     saat: int = typer.Option(11, "--saat", help="Fuer eine reproduzierbare Folge."),
+    halten: str = typer.Option(
+        "0", "--halten",
+        help="Haltedauer-Deckel in Kerzen, durch Komma. 0 = unbegrenzt.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Liesse die Zulassungsstrecke ueberhaupt etwas durch?
@@ -4273,7 +4277,13 @@ def teststaerke(
     from research.gates import evaluate_gates
     from research.seeds import spitzenkandidat
     from research.suchbudget import Kandidat
-    from research.teststaerke import Leiter, Stufe, pflanze_trend, regimefolge
+    from research.teststaerke import (
+        Leiter,
+        Stufe,
+        Vergleich,
+        pflanze_trend,
+        regimefolge,
+    )
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -4284,8 +4294,9 @@ def teststaerke(
 
     try:
         anteile = sorted({float(x) for x in stufen.split(",") if x.strip()})
+        deckel_liste = sorted({int(x) for x in halten.split(",") if x.strip()})
     except ValueError:
-        console.print(f"[red]'{stufen}' sind keine Zahlen.[/]")
+        console.print(f"[red]'{stufen}' / '{halten}' sind keine Zahlen.[/]")
         raise typer.Exit(2) from None
 
     # **Der Kandidat unveraendert.** Der erste Anlauf stellte hier die
@@ -4314,50 +4325,75 @@ def teststaerke(
         f"  Huerde     {versuche} Versuche (gelesen, nicht erhoeht)\n"
     )
 
-    leiter = Leiter(versuche=versuche)
-    with console.status("[dim]rechnet...[/]"):
-        for anteil in anteile:
-            gepflanzt = {
-                name: pflanze_trend(frame, anteil=anteil, regime=regime)
-                for name, frame in frames.items()
-            }
-            bericht = run_portfolio_walkforward(
-                gepflanzt, lambda g=genome: compile_genome(g), configs
-            )
-            if not bericht.windows:
-                continue
-            erster = next(iter(gepflanzt.values()))
-            gates = evaluate_gates(
-                genome, bericht, erster, next(iter(configs.values())),
-                trials_so_far=versuche, frames=gepflanzt, configs=configs,
-            )
-            form = Kandidat.aus_trades("", bericht.all_trades)
-            dsr = next(
-                (r.value for r in gates.results if r.name == "Deflated Sharpe"), None
-            )
-            leiter.stufen.append(
-                Stufe(
-                    anteil=anteil,
-                    trades=len(bericht.all_trades),
-                    sharpe=bericht.combined.sharpe if bericht.combined else 0.0,
-                    sharpe_je_trade=form.sharpe_je_trade if form else 0.0,
-                    dsr=dsr,
-                    bestanden=sum(1 for r in gates.results if r.passed),
-                    gesamt=len(gates.results),
-                    offen=tuple(r.name for r in gates.failures),
-                    cagr_pct=bericht.combined.cagr_pct if bericht.combined else 0.0,
-                    rueckgang_pct=(
-                        bericht.combined.max_drawdown_pct if bericht.combined else 0.0
-                    ),
-                    meldungen=tuple((r.name, r.message) for r in gates.failures),
-                )
-            )
+    # Die gepflanzten Reihen **einmal** bauen und fuer alle Varianten
+    # wiederverwenden: Wer je Variante neu pflanzt, vergleicht Ziehungen.
+    gepflanzte = {
+        anteil: {
+            name: pflanze_trend(frame, anteil=anteil, regime=regime)
+            for name, frame in frames.items()
+        }
+        for anteil in anteile
+    }
 
+    vergleich = Vergleich()
+    with console.status("[dim]rechnet...[/]"):
+        for deckel in deckel_liste:
+            variante = genome.model_copy(update={"max_hold_bars": deckel})
+            leiter = Leiter(versuche=versuche)
+            for anteil in anteile:
+                gepflanzt = gepflanzte[anteil]
+                bericht = run_portfolio_walkforward(
+                    gepflanzt, lambda g=variante: compile_genome(g), configs
+                )
+                if not bericht.windows:
+                    continue
+                erster = next(iter(gepflanzt.values()))
+                gates = evaluate_gates(
+                    variante, bericht, erster, next(iter(configs.values())),
+                    trials_so_far=versuche, frames=gepflanzt, configs=configs,
+                )
+                form = Kandidat.aus_trades("", bericht.all_trades)
+                dsr = next(
+                    (r.value for r in gates.results if r.name == "Deflated Sharpe"),
+                    None,
+                )
+                leiter.stufen.append(
+                    Stufe(
+                        anteil=anteil,
+                        trades=len(bericht.all_trades),
+                        sharpe=bericht.combined.sharpe if bericht.combined else 0.0,
+                        sharpe_je_trade=form.sharpe_je_trade if form else 0.0,
+                        dsr=dsr,
+                        bestanden=sum(1 for r in gates.results if r.passed),
+                        gesamt=len(gates.results),
+                        offen=tuple(r.name for r in gates.failures),
+                        cagr_pct=(
+                            bericht.combined.cagr_pct if bericht.combined else 0.0
+                        ),
+                        rueckgang_pct=(
+                            bericht.combined.max_drawdown_pct
+                            if bericht.combined
+                            else 0.0
+                        ),
+                        meldungen=tuple((r.name, r.message) for r in gates.failures),
+                    )
+                )
+            vergleich.leitern[
+                "unbegrenzt" if deckel == 0 else f"{deckel} Kerzen"
+            ] = leiter
+
+    leiter = next(iter(vergleich.leitern.values()))
     console.print(leiter.tabelle())
     console.print(f"\n{leiter.urteil()}\n")
 
+    if len(vergleich.leitern) > 1:
+        console.print("BRICHT EIN GEDECKELTER AUSSTIEG DIE KOPPLUNG?")
+        console.print("-" * 72)
+        console.print(vergleich.matrix())
+        console.print(f"\n{vergleich.urteil()}\n")
+
     if leiter.stufen:
-        console.print("WORAN ES JE STUFE HAKT")
+        console.print("WORAN ES JE STUFE HAKT [dim](ohne Deckel)[/]")
         console.print("-" * 72)
         for s in leiter.geordnet:
             console.print(
@@ -4382,7 +4418,10 @@ def teststaerke(
                 "dauer": dauer,
                 "saat": saat,
                 "versuche": versuche,
-                "stufen": [asdict(s) for s in leiter.geordnet],
+                "varianten": {
+                    name: [asdict(s) for s in lt.geordnet]
+                    for name, lt in vergleich.leitern.items()
+                },
             },
             indent=2,
             ensure_ascii=False,

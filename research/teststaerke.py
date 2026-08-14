@@ -82,6 +82,15 @@ from research.nullprobe import baue_reihe
 #: Trend, sondern Rauschen mit anderem Namen.
 DAUER = 60
 
+#: Ab welcher Steigung die Guete als "waechst mit dem Vorteil" gilt.
+#:
+#: **Vor der Messung festgelegt, und zwar aus der Sache heraus**: Die Guete
+#: des Kandidaten liegt bei 3,19, noetig waeren rund 3,6. Wer ueber die volle
+#: Reglerspanne nicht wenigstens diesen halben Punkt gutmacht, hat keinen Weg
+#: zum Ziel gefunden, sondern Rauschen. Eine nachtraeglich gewaehlte Schranke
+#: waere hier wertlos - man findet immer eine, unter der etwas gut aussieht.
+MINDESTSTEIGUNG = 0.5
+
 
 def regimefolge(laenge: int, *, dauer: int = DAUER, saat: int = 0) -> np.ndarray:
     """Eine Folge aus +1 und -1, die im Mittel ``dauer`` Kerzen durchhaelt.
@@ -246,6 +255,46 @@ class Leiter:
         return geordnet[-1].trades / geordnet[0].trades
 
     @property
+    def steigung(self) -> float | None:
+        """Wie stark die Guete waechst, wenn man Vorteil hinzupflanzt.
+
+        Ausgedrueckt als Zuwachs je voll gepflanzter Varianz, also ueber die
+        ganze Spanne des Reglers. Eine Leiter, auf der ein echter Vorteil
+        ankommt, hat hier eine klar positive Zahl - eine, auf der Qualitaet
+        und Menge sich gegenseitig auffressen, eine Zahl um Null.
+        """
+        geordnet = self.geordnet
+        if len(geordnet) < 2:
+            return None
+        x = np.array([s.anteil for s in geordnet], dtype=float)
+        y = np.array([s.guete for s in geordnet], dtype=float)
+        if float(np.ptp(x)) == 0.0:
+            return None
+        return float(np.polyfit(x, y, 1)[0])
+
+    @property
+    def entkoppelt(self) -> bool:
+        """Ist die Kopplung aus Befund 54 hier gebrochen?
+
+        **Das Kriterium steht vor der Messung fest**, und es hat zwei Teile,
+        weil eines allein sich immer erfuellen laesst:
+
+        * Die Guete muss mit der gepflanzten Staerke **steigen** - und zwar
+          spuerbar, nicht im Rauschen.
+        * Die Stichprobe darf dabei nicht wegbrechen: Wer den Vorteil mit der
+          Haelfte der Trades erkauft, hat nichts entkoppelt, sondern nur die
+          Kopplung anders herum durchlaufen.
+        """
+        steig = self.steigung
+        duenn = self.verduennung
+        return (
+            steig is not None
+            and steig >= MINDESTSTEIGUNG
+            and duenn is not None
+            and duenn >= 0.5
+        )
+
+    @property
     def hartnaeckigstes(self) -> tuple[str, int] | None:
         """Welches Gate haelt ueber die meisten Stufen stand?
 
@@ -339,4 +388,94 @@ class Leiter:
             f"{kopf} Das ist ein Befund ueber die Strecke, nicht ueber die "
             f"Regelfamilie: Wenn schon ein kuenstlich sauberer Trend nicht "
             f"durchkommt, kann kein echter es."
+        )
+
+
+@dataclass(slots=True)
+class Vergleich:
+    """Mehrere Varianten auf **derselben** gepflanzten Reihe.
+
+    Warum das eine eigene Klasse ist: Der Vergleich lebt davon, dass alle
+    Varianten dieselbe Regime-Folge sehen. Wer sie nacheinander mit
+    verschiedenen Ziehungen misst, vergleicht Ziehungen und haelt den
+    Unterschied fuer Wirkung.
+    """
+
+    leitern: dict[str, Leiter] = field(default_factory=dict)
+
+    def matrix(self) -> str:
+        """Die Guete je Variante und Stufe - die Zahl, um die es geht."""
+        if not self.leitern:
+            return "Nichts zu vergleichen."
+        namen = list(self.leitern)
+        anteile = sorted({s.anteil for lt in self.leitern.values() for s in lt.stufen})
+
+        kopf = f"{'gepflanzt':>10}" + "".join(f"{n:>16}" for n in namen)
+        zeilen = [kopf, "-" * len(kopf)]
+        for anteil in anteile:
+            zeile = f"{anteil:>9.0%}"
+            for name in namen:
+                treffer = next(
+                    (s for s in self.leitern[name].stufen if s.anteil == anteil), None
+                )
+                zeile += (
+                    f"{treffer.guete:>10.2f} ({treffer.trades:>3})"
+                    if treffer is not None
+                    else f"{'-':>16}"
+                )
+            zeilen.append(zeile)
+
+        zeilen.append("-" * len(kopf))
+        steig = f"{'Steigung':>10}"
+        for name in namen:
+            wert = self.leitern[name].steigung
+            steig += f"{wert:>16.2f}" if wert is not None else f"{'-':>16}"
+        zeilen.append(steig)
+        zeilen.append("[in Klammern die Trades; Guete = SR je Trade * sqrt(Trades)]")
+        return "\n".join(zeilen)
+
+    def urteil(self) -> str:
+        if not self.leitern:
+            return "Nichts zu vergleichen."
+        gebrochen = [n for n, lt in self.leitern.items() if lt.entkoppelt]
+        if gebrochen:
+            return (
+                f"**Die Kopplung bricht bei: {', '.join(gebrochen)}.** Dort "
+                f"steigt die Guete mit dem gepflanzten Vorteil um mindestens "
+                f"{MINDESTSTEIGUNG:.1f} ueber die Reglerspanne, ohne dass die "
+                f"Stichprobe wegbricht. Das ist eine Richtung, die zu pruefen "
+                f"sich lohnt - und zwar auf echten Daten, wo sie Versuche "
+                f"kostet."
+            )
+        name, beste = max(
+            self.leitern.items(),
+            key=lambda kv: kv[1].steigung if kv[1].steigung is not None else -99,
+        )
+        wert = beste.steigung
+        duenn = beste.verduennung
+
+        # **Welche Haelfte des Kriteriums gerissen ist, gehoert in den Satz.**
+        # Der erste Anlauf meldete "Steigung 1,15 gegen die geforderten 0,5"
+        # und im selben Atemzug "keine Variante entkoppelt" - das liest sich
+        # wie ein Widerspruch und verschweigt den eigentlichen Grund: Die
+        # Steigung war erfuellt, die Stichprobe war weggebrochen.
+        if wert is not None and wert >= MINDESTSTEIGUNG:
+            rest = (
+                f"bei {duenn:.0%} der Trades der untersten Sprosse"
+                if duenn is not None
+                else "bei wegbrechender Stichprobe"
+            )
+            return (
+                f"**Keine Variante entkoppelt.** '{name}' erreicht zwar eine "
+                f"Steigung von {wert:.2f} und damit die geforderten "
+                f"{MINDESTSTEIGUNG:.1f} - aber {rest}. Der Vorteil ist also "
+                f"nicht hinzugekommen, sondern nur anders verteilt: dieselbe "
+                f"Kopplung, von der anderen Seite durchlaufen."
+            )
+        return (
+            f"**Keine Variante entkoppelt.** Die beste ist '{name}' mit einer "
+            f"Steigung von {wert:.2f} gegen die geforderten "
+            f"{MINDESTSTEIGUNG:.1f}. Ein gedeckelter Ausstieg loest die "
+            f"Kopplung also nicht: Der gepflanzte Vorteil kommt auch dann "
+            f"nicht in der Groesse an, gegen die der Deflated Sharpe prueft."
         )
