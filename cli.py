@@ -666,6 +666,7 @@ def wettbewerb(
             console.print("[red]Keine Varianten des Spitzenkandidaten moeglich.[/]")
             raise typer.Exit(2)
     else:
+        _pruefe_generation(generation, interval_obj)
         aktuell = load_seeds(generation)
         herkunft = "Katalog"
 
@@ -691,7 +692,7 @@ def wettbewerb(
             save_trials(trials_path, report.trials_after)
             board.record(
                 report.candidates, generation=generation, herkunft=herkunft,
-                versuche=report.trials_after,
+                versuche=report.trials_after, intervall=interval_obj.value,
             )
             board.save()
 
@@ -1217,6 +1218,7 @@ def research(
                 "Standardkandidaten.[/]"
             )
     if not genomes:
+        _pruefe_generation(generation, interval_obj)
         genomes = load_seeds(generation)
 
     # Passt die Zeitebene zur Bauform?
@@ -2286,6 +2288,36 @@ def betriebspunkt(
         console.print(f"[dim]JSON geschrieben: {json_datei}[/]")
 
 
+def _pruefe_generation(generation: int, interval_obj) -> None:
+    """Ist dieser Katalog fuer diese Kerzenlaenge gedacht?
+
+    **Bis hierher stand die Zuordnung nur in Kommentaren.** Generation 6 heisst
+    dort "schnelles Handeln auf 15-Minuten-Kerzen", Generation 7 ist der
+    "Katalog der bekannten Scalp-Setups" - und nichts hinderte daran, sie auf
+    Tageskerzen zu fahren. Dieselben Periodenzahlen bedeuten dort
+    sechsundneunzigmal laengere Zeitraeume: eine voellig andere Regel unter
+    demselben Namen.
+
+    Abgebrochen und nicht nur gewarnt, weil so ein Lauf **Versuche kostet**.
+    Jeder hebt die Huerde des Deflated Sharpe fuer alle folgenden, und zwar
+    dauerhaft - fuer eine Messung, die nichts bedeutet.
+    """
+    from research.seeds import VORGESEHEN, passt_zum_intervall
+
+    if passt_zum_intervall(generation, interval_obj.value):
+        return
+    vorgesehen = VORGESEHEN.get(generation)
+    console.print(
+        f"[red]Generation {generation} ist fuer {vorgesehen}-Kerzen gedacht, "
+        f"nicht fuer {interval_obj.label}.[/]\n"
+        f"[dim]Dieselben Periodenzahlen bedeuten hier andere Zeitraeume - das "
+        f"waere eine andere Regel unter demselben Namen, und sie wuerde "
+        f"Versuche kosten. Mit [bold]-i {vorgesehen}[/] laufen lassen oder "
+        f"eine passende Generation waehlen.[/]"
+    )
+    raise typer.Exit(2)
+
+
 def _korb_daten(symbole: list[str], interval_obj: Interval, settings):
     """Kerzen und Kontraktdaten fuer einen Korb - fuer alle, die ihn pruefen.
 
@@ -2395,6 +2427,7 @@ def korb(
     tabelle.add_column("Rueckgang", justify="right")
     tabelle.add_column("Gescheitert an")
 
+    _pruefe_generation(generation, interval_obj)
     bester = None
     for genome in load_seeds(generation):
         # Alle Kandidaten auf dieselbe Groessenlogik stellen. Sonst
@@ -2649,6 +2682,7 @@ def _miss_vorschlaege(
         board.record(
             [_kandidat_aus_lauf(angepasst, report, gates)],
             generation=0, herkunft=herkunft, versuche=trials,
+            intervall=interval_obj.value,
         )
         if bester is None or bestanden > bester[0]:
             bester = (bestanden, angepasst, gates)

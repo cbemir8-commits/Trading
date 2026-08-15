@@ -2254,12 +2254,56 @@ GENERATIONS = {
 }
 
 
+#: Auf welcher Kerzenlaenge eine Generation gedacht ist.
+#:
+#: **Warum das aufgeschrieben gehoert.** Generation 6 heisst im Katalog
+#: "schnelles Handeln auf 15-Minuten-Kerzen, mit Hebel", Generation 7 ist der
+#: "Katalog der bekannten Scalp-Setups". Ihre Perioden sind fuer
+#: Viertelstunden gedacht; auf Tageskerzen bedeuten dieselben Zahlen
+#: sechsundneunzigmal laengere Zeitraeume - eine voellig andere Regel unter
+#: demselben Namen.
+#:
+#: Bis hierher stand das nur in Kommentaren, und nichts hinderte daran, einen
+#: Scalp-Katalog auf Tageskerzen zu fahren. Jeder solche Lauf kostet Versuche
+#: und hebt die Huerde des Deflated Sharpe fuer alle folgenden - fuer eine
+#: Messung, die nichts bedeutet.
+#:
+#: ``None`` heisst: nicht festgelegt, laeuft ueberall.
+VORGESEHEN: dict[int, str | None] = {
+    1: None,
+    2: None,
+    3: None,
+    4: None,
+    5: "D",
+    6: "15",
+    7: "15",
+    8: "D",
+    9: "D",
+    10: "D",
+}
+
+
+def passt_zum_intervall(generation: int, intervall: str) -> bool:
+    """Ist diese Generation fuer diese Kerzenlaenge gedacht?
+
+    Wahr auch dann, wenn nichts festgelegt ist - eine fehlende Angabe ist
+    keine Ablehnung.
+    """
+    vorgesehen = VORGESEHEN.get(generation)
+    return vorgesehen is None or vorgesehen == intervall
+
+
 def load_seeds(generation: int = 5) -> list[Genome]:
     """Die Kandidaten einer Generation erzeugen.
 
-    Standard ist die neueste: Was widerlegt ist, muss nicht erneut geprueft
-    werden - jeder Wiederholungsversuch zaehlt in der Mehrfachtest-Korrektur
-    und macht die Huerde fuer alle folgenden hoeher, ohne etwas beizutragen.
+    **Der Standard ist 5 und nicht die neueste.** Hier stand einmal das
+    Gegenteil - "Standard ist die neueste" -, und das war schon falsch, als
+    Generation 6 dazukam. Fuenf ist der Tageskerzen-Katalog, aus dem der
+    Spitzenkandidat stammt; wer eine andere will, nennt sie.
+
+    Was richtig bleibt: Was widerlegt ist, muss nicht erneut geprueft werden -
+    jeder Wiederholungsversuch zaehlt in der Mehrfachtest-Korrektur und macht
+    die Huerde fuer alle folgenden hoeher, ohne etwas beizutragen.
     """
     if generation not in GENERATIONS:
         raise ValueError(

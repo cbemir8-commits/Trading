@@ -5416,3 +5416,78 @@ Huerden haelt.
 
 Versuchsstand 166 unveraendert - 36 von 100 des Suchbudgets verbraucht, und
 keiner davon in diesem Lauf.
+
+## Vierundsechzig. Ein Satz aus dem Auftrag, der nirgends im Code stand
+
+Der Nutzer nennt ihn seit dem ersten Tag: *"Generation 5 gehoert auf
+Tageskerzen (-i D), Generation 6/7 auf 15-Minuten-Kerzen."* Ich habe ihn
+vierundsechzig Befunde lang als Randnotiz gelesen. Er ist keine.
+
+Im Katalog steht die Zuordnung sehr wohl - aber nur als Kommentar:
+
+    #: Sechste Generation: schnelles Handeln auf 15-Minuten-Kerzen, mit Hebel.
+    #: Siebte Generation: der Katalog der bekannten Scalp-Setups.
+
+**Nichts hinderte daran, sie auf Tageskerzen zu fahren.** Dieselben
+Periodenzahlen bedeuten dort sechsundneunzigmal laengere Zeitraeume: eine
+voellig andere Regel unter demselben Namen. Und so ein Lauf ist nicht nur
+sinnlos, er ist teuer - jeder Versuch hebt die Huerde des Deflated Sharpe
+dauerhaft fuer alle folgenden.
+
+### Die stillere Haelfte, und sie ist schlimmer
+
+Die Bestenliste ist nach ``genome_id`` geschluesselt. Dieselbe Regel hat auf
+Tageskerzen und auf Viertelstunden **dieselbe ID** - das Genom ist ja
+identisch, nur die Kerzen darunter sind andere. Zwei solche Ergebnisse
+konkurrierten deshalb um denselben Platz, und ``record`` behaelt das bessere.
+
+Das heisst: Ein 15-Minuten-Ergebnis haette ein Tageskerzen-Ergebnis
+verdraengen koennen, ohne dass irgendwo steht, dass beide gar nicht dasselbe
+gemessen haben. Der Eintrag trug die Generation mit, das Intervall nicht.
+
+### Ist es passiert?
+
+**Das laesst sich nicht mehr feststellen, und genau das ist der Punkt.** Im
+Leaderboard stehen Generationen 0, 5, 8 und 9; die 15-Minuten-Kataloge 6 und 7
+tauchen nicht auf. Auf welchem Intervall die vorhandenen Eintraege gemessen
+wurden, steht nirgends - die Information wurde nie mitgeschrieben.
+
+Ein Mangel, der sich nicht nachweisen laesst, ist trotzdem einer. Er ist nur
+schlechter zu beziffern.
+
+### Was gebaut wurde
+
+``research/seeds.VORGESEHEN`` haelt die Zuordnung jetzt als Daten statt als
+Kommentar, und ein Test besteht darauf, dass **jede** Generation dort einen
+Eintrag hat - eine neue ohne Eintrag liefe sonst stillschweigend ueberall, und
+genau diese Stille war der Fehler.
+
+``_pruefe_generation`` sitzt an allen drei Stellen, die einen Katalog laden
+(``wettbewerb``, ``research``, ``korb``). Sie **bricht ab** statt zu warnen:
+
+    Generation 6 ist fuer 15-Kerzen gedacht, nicht fuer 1d.
+    Dieselben Periodenzahlen bedeuten hier andere Zeitraeume [...] und sie
+    wuerde Versuche kosten.
+
+Und ``Entry`` traegt jetzt das Intervall. Zwei Ergebnisse verschiedener
+Kerzenlaengen gelten als nicht vergleichbar und verdraengen einander nicht
+mehr. Alte Eintraege ohne Intervall bleiben ausdruecklich vergleichbar - sonst
+wuerden sie nie mehr abgeloest, und die Liste friere an dieser Stelle ein.
+
+Nebenbei berichtigt: Der Docstring von ``load_seeds`` behauptete "Standard ist
+die neueste" bei einem Standard von 5. Das war spaetestens falsch, als
+Generation 6 dazukam.
+
+### Ein eigener Fehler beim Pruefen
+
+Fuer die Gegenprobe - laeuft die *richtige* Paarung ungehindert durch? - habe
+ich ``korb --generation 6 --intervall 15`` gestartet. Das ist ein voller
+Walk-Forward ueber 445 400 Kerzen und haette **Versuche gekostet**, fuer eine
+Frage, die der Unit-Test ``test_die_richtige_paarung_laeuft_durch`` kostenlos
+beantwortet. Abgebrochen, bevor der Zaehler geschrieben wurde; er steht
+unveraendert bei 166.
+
+Das ist derselbe Fehler in klein, gegen den dieser ganze Befund gebaut ist:
+einen Lauf starten, ohne vorher zu rechnen, was er kostet.
+
+Versuchsstand 166 unveraendert.

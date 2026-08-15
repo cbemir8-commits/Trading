@@ -52,6 +52,19 @@ class Entry:
     genome_id: str
     name: str
     generation: int
+
+    intervall: str = ""
+    """Auf welcher Kerzenlaenge dieses Ergebnis gemessen wurde.
+
+    **Es fehlte, und das war eine stille Kollision.** Die Liste ist nach
+    ``genome_id`` geschluesselt, und dieselbe Regel auf Tageskerzen und auf
+    Viertelstunden hat dieselbe ID. Zwei solche Ergebnisse konkurrierten
+    deshalb um denselben Platz, und das schlechtere verschwand - obwohl es
+    gar nicht dasselbe gemessen hatte.
+
+    Leer heisst: aus einem Lauf, der es noch nicht mitgeschrieben hat.
+    """
+
     herkunft: str = "Katalog"
     """Woher der Kandidat stammt: Katalog, Variante oder KI-Vorschlag."""
 
@@ -156,7 +169,27 @@ class Entry:
         )
 
     def besser_als(self, andere: Entry) -> bool:
-        return self.rang_schluessel > andere.rang_schluessel
+        """Ist dieses Ergebnis besser - und ueberhaupt vergleichbar?
+
+        Zwei Ergebnisse auf verschiedenen Kerzenlaengen sind **nicht**
+        vergleichbar. Sie gegeneinander zu stellen hiesse, Regeln zu
+        vergleichen, die verschiedene Zeitraeume meinen, obwohl dieselben
+        Zahlen darin stehen.
+        """
+        if self.vergleichbar_mit(andere):
+            return self.rang_schluessel > andere.rang_schluessel
+        return False
+
+    def vergleichbar_mit(self, andere: Entry) -> bool:
+        """Wurden beide auf derselben Kerzenlaenge gemessen?
+
+        Ein leeres Intervall stammt aus einem Lauf vor dieser Unterscheidung.
+        Es gilt als vergleichbar - sonst wuerde ein alter Eintrag von einem
+        neuen nie mehr abgeloest, und die Liste fror an dieser Stelle ein.
+        """
+        return not self.intervall or not andere.intervall or (
+            self.intervall == andere.intervall
+        )
 
 
 def _jetzt() -> str:
@@ -219,6 +252,7 @@ class Leaderboard:
         generation: int,
         herkunft: str = "Katalog",
         versuche: int = 0,
+        intervall: str = "",
     ) -> int:
         """Ein Laufergebnis eintragen. Gibt zurueck, wie viele sich verbessert haben.
 
@@ -233,7 +267,7 @@ class Leaderboard:
         for candidate in candidates:
             neu = _aus_kandidat(
                 candidate, generation=generation, herkunft=herkunft,
-                versuche=versuche,
+                versuche=versuche, intervall=intervall,
             )
             alt = self.entries.get(neu.genome_id)
 
@@ -309,13 +343,15 @@ class Leaderboard:
 
 
 def _aus_kandidat(
-    candidate, *, generation: int, herkunft: str, versuche: int = 0
+    candidate, *, generation: int, herkunft: str, versuche: int = 0,
+    intervall: str = "",
 ) -> Entry:
     combined = candidate.walkforward.combined
     return Entry(
         genome_id=candidate.genome.genome_id,
         name=candidate.genome.name,
         generation=generation,
+        intervall=intervall,
         herkunft=herkunft,
         zugelassen=candidate.admitted,
         gates_bestanden=sum(1 for r in candidate.gates.results if r.passed),
