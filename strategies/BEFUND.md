@@ -5031,3 +5031,75 @@ verschoben. Ob sie damit durch das Rechteck geht, ist eine **neue Messung**
 und keine Schlussfolgerung. Der Betriebspunkt wird bis dahin nicht angefasst.
 
 Versuchsstand 166, Suchbudget 36 von 100.
+
+## Neunundfuenfzig. Neun von elf haben einen Tag gehalten
+
+Befund 58 endete mit dem besten Stand, den dieses Projekt je hatte: Das
+Schock-Overlay sperrt 13 von 165 Einstiegen, und zwei Gates kippen um - von 7
+auf 9 von 11. Ich habe das berichtet, ohne die naheliegendste Gegenprobe
+gemacht zu haben. Sie fehlte, und sie kippt das Ergebnis.
+
+### Die zweite Erklaerung, die dieselben Zahlen erzeugt
+
+**Weniger Trades sind manchmal einfach besser.** Wer aus 165 Einstiegen
+irgendwelche 13 streicht, veraendert Rueckgang, schlechtestes Jahr und Sharpe
+je Trade. Bei genug Auswahlmoeglichkeiten findet man immer eine, die gut
+aussieht. Die Frage ist also nicht "hilft das Overlay", sondern **"hilft die
+Auswahl der gesperrten Einstiege oder nur ihre Anzahl"**.
+
+Die Null dazu: zweihundert Mal genauso viele Einstiegssignale zufaellig
+ziehen und sperren - je Bein einzeln, weil das Overlay ungleich trifft (6 in
+BTC, 7 in ETH). Eine Null mit anderer Verteilung misst die Verteilung mit.
+
+    python -m cli sperrprobe --ziehungen 200      # kostet keinen Versuch
+
+Entschieden wird an der Zahl bestandener Gates, und das Kriterium stand vor
+der Messung fest: hoechstens fuenf Prozent der Ziehungen duerfen mithalten.
+Ausdruecklich **nicht** "irgendeine von vier Kennzahlen ist auffaellig" - wer
+vier prueft und die beste nimmt, findet fast immer eine.
+
+### Das Ergebnis
+
+    Kennzahl               gemessen            Zufall (Median, Spanne)   Anteil
+    ---------------------------------------------------------------------------
+    Gates bestanden            7/9             7.000 [5.000 bis 7.000]   66.5 %
+    Rueckgang %                9.66          10.134 [8.021 bis 11.936]   26.0 %
+    Schlechtestes Jahr        -9.34        -9.830 [-10.630 bis -7.180]   25.5 %
+    Sharpe je Trade          0.2659            0.258 [0.213 bis 0.281]   28.0 %
+
+**Zwei Drittel der zufaelligen Sperren halten genauso viele Gates.** Keine der
+vier Kennzahlen kommt auch nur in die Naehe der fuenf Prozent. Der Gewinn kam
+nicht daher, dass die *richtigen* Einstiege gesperrt wurden, sondern daher,
+dass ueberhaupt welche gesperrt wurden.
+
+Damit ist das Schock-Overlay als Verbesserung **nicht belegt**. Der Code
+bleibt - er ist richtig, getestet, ohne Lookahead und geht denselben Weg wie
+der Terminkalender -, aber der Stand des Kandidaten bleibt bei **7 von 11**.
+
+### Was ich falsch gemacht habe
+
+Ich habe im letzten Befund "der beste Stand, den dieses Projekt je hatte"
+geschrieben und dabei genau die Pruefung ausgelassen, die dieses Projekt sonst
+an jede Zahl anlegt. Der Fehler ist nicht das Overlay - das ist sauber gebaut.
+Der Fehler ist, dass ich ein Ergebnis gemeldet habe, dessen naheliegendste
+Alternativerklaerung ich nicht ausgeschlossen hatte.
+
+Auffaellig hin oder her: Zwei gekippte Gates aus dreizehn entfernten Trades
+war von Anfang an zu gut, um es ungeprueft zu glauben.
+
+### Was bleibt
+
+Ein Werkzeug, das beim ersten Einsatz einen eigenen Fehlschluss gefunden hat.
+Es gilt ab jetzt fuer **jede** Massnahme, die Trades entfernt statt sie besser
+zu machen - und davon gab es mehrere: Die Abkuehlung aus Befund 44 gehoert
+genauso geprueft, und ihr Ergebnis steht bisher ungeprueft in der Liste der
+geschlossenen Richtungen.
+
+Ein Vorbehalt gehoert dazu: Die Kontrolle laesst Kosten-Stress und
+Parameter-Plateau aus, weil zweihundert Ziehungen davon Stunden dauerten. Das
+Parameter-Plateau ist eines der beiden Gates, die umgekippt sind, und ist
+damit **nicht** einzeln abgesichert. An der Gesamtaussage aendert das nichts:
+Schon ueber die neun guenstigen Gates halten zwei Drittel der Ziehungen mit.
+
+Versuchsstand 166 unveraendert - eine Kontrollrechnung ueber die eigene
+Messung ist keine Hypothese ueber den Markt.

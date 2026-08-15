@@ -4545,12 +4545,8 @@ def schock(
 
     Dieser Befehl selbst kostet nichts: Er bewertet keinen Kandidaten.
     """
-    import numpy as np
-
     from research.schock import Auszaehlung, gesperrt, schocks
     from research.seeds import spitzenkandidat
-    from strategy.base import BarContext, frame_to_arrays
-    from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
     settings = get_settings()
@@ -4572,15 +4568,7 @@ def schock(
         # Die Einstiegssignale des Kandidaten - dieselbe Strategie, die auch
         # gemessen wird. Ein Overlay an einer anderen Regel auszuzaehlen
         # beantwortete eine Frage, die niemand gestellt hat.
-        strategie = compile_genome(spitzenkandidat())
-        indikatoren = strategie.prepare(frame)
-        arrays = frame_to_arrays(frame)
-        signale = np.zeros(len(frame), dtype=bool)
-        for i in range(strategie.warmup_bars, len(frame)):
-            ctx = BarContext(
-                frame=frame, arrays=arrays, indicators=indikatoren, index=i
-            )
-            signale[i] = strategie.on_bar(ctx) is not None
+        signale = _signalkerzen(frame, spitzenkandidat())
 
         betroffen = int((signale & sperre).sum())
         console.print(
@@ -4603,6 +4591,149 @@ def schock(
     console.print(
         "[dim]Der Versuchszaehler bleibt unveraendert - hier wird gezaehlt, "
         "nicht bewertet.[/]\n"
+    )
+
+
+def _signalkerzen(frame, genome):
+    """Wo das Genom auf dieser Reihe einsteigen wollte.
+
+    Steht hier einmal, weil zwei Befehle es brauchen - ``schock`` zum
+    Auszaehlen und ``sperrprobe`` zum Ziehen. Zwei Umsetzungen derselben
+    Schleife waeren zwei Gelegenheiten, verschiedene Signale zu zaehlen und
+    den Unterschied fuer ein Ergebnis zu halten.
+    """
+    import numpy as np
+
+    from strategy.base import BarContext, frame_to_arrays
+    from strategy.compiler import compile_genome
+
+    strategie = compile_genome(genome)
+    indikatoren = strategie.prepare(frame)
+    arrays = frame_to_arrays(frame)
+    signale = np.zeros(len(frame), dtype=bool)
+    for i in range(strategie.warmup_bars, len(frame)):
+        ctx = BarContext(frame=frame, arrays=arrays, indicators=indikatoren, index=i)
+        signale[i] = strategie.on_bar(ctx) is not None
+    return signale
+
+
+@app.command()
+def sperrprobe(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    ziehungen: int = typer.Option(200, "--ziehungen", "-n"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Leistet das Schock-Overlay mehr, als beliebiges Streichen taete?
+
+    Befund 58 hat 13 von 165 Einstiegen gesperrt, und zwei Gates sind
+    umgekippt - von 7 auf 9 von 11. Das ist der beste Stand, den dieses
+    Projekt je hatte, und genau deshalb gehoert er geprueft.
+
+    Denn es gibt eine zweite Erklaerung fuer dieselben Zahlen: **Weniger
+    Trades sind manchmal einfach besser.** Wer aus 165 Einstiegen irgendwelche
+    13 streicht, veraendert Rueckgang und schlechtestes Jahr. Wenn zufaelliges
+    Streichen genauso oft neun von elf erzeugt, hat das Overlay nichts
+    geleistet.
+
+    Gezogen werden deshalb **Einstiegssignale**, genauso viele wie das Overlay
+    trifft, je Bein einzeln. Entschieden wird an der Zahl bestandener Gates,
+    und das Kriterium steht vor der Messung fest: hoechstens fuenf Prozent der
+    Ziehungen duerfen mithalten.
+
+    Kostet keinen Versuch - geprueft wird eine bereits gemessene Aussage, kein
+    neuer Kandidat. Die teuren Gates bleiben aussen vor; **das
+    Parameter-Plateau ist damit nicht abgesichert**, und es ist eines der
+    beiden, die umgekippt sind.
+    """
+    import numpy as np
+    import pandas as pd
+
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.gates import evaluate_gates
+    from research.schock import Schocksperre, gesperrt
+    from research.seeds import spitzenkandidat
+    from research.sperrprobe import Ergebnis, Sperrprobe, ziehe_signale
+    from research.suchbudget import Kandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, configs, _spanne = _korb_daten(symbole, interval_obj, settings)
+
+    genome = spitzenkandidat()
+    versuche = load_trials(Path(settings.paths.state) / "trials.json")
+
+    signale = {name: _signalkerzen(f, genome) for name, f in frames.items()}
+    schock_masken = {name: gesperrt(f) for name, f in frames.items()}
+    anzahl = {
+        name: int((signale[name] & schock_masken[name]).sum()) for name in frames
+    }
+    console.print(
+        f"\n[bold]Sperrprobe[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Gesperrt   {', '.join(f'{n}: {a}' for n, a in anzahl.items())}\n"
+        f"  Ziehungen  {ziehungen}\n"
+        f"  Huerde     {versuche} Versuche (gelesen, nicht erhoeht)\n"
+    )
+
+    def messe(masken: dict[str, np.ndarray]) -> Ergebnis:
+        import dataclasses
+
+        belegt = {
+            name: dataclasses.replace(
+                cfg,
+                schocksperre=Schocksperre(
+                    zeitpunkte=frozenset(
+                        pd.Timestamp(t)
+                        for t in frames[name]["open_time"].to_numpy()[masken[name]]
+                    )
+                ),
+            )
+            for name, cfg in configs.items()
+        }
+        bericht = run_portfolio_walkforward(
+            frames, lambda g=genome: compile_genome(g), belegt
+        )
+        erster = next(iter(frames.values()))
+        gates = evaluate_gates(
+            genome, bericht, erster, next(iter(belegt.values())),
+            trials_so_far=versuche, run_expensive=False,
+        )
+        form = Kandidat.aus_trades("", bericht.all_trades)
+        jahr = next(
+            (r.value for r in gates.results if r.name == "Schlechtestes Jahr"), 0.0
+        )
+        dsr = next(
+            (r.value for r in gates.results if r.name == "Deflated Sharpe"), 0.0
+        )
+        return Ergebnis(
+            trades=len(bericht.all_trades),
+            rueckgang_pct=bericht.combined.max_drawdown_pct if bericht.combined else 0.0,
+            schlechtestes_jahr_pct=jahr,
+            sharpe_je_trade=form.sharpe_je_trade if form else 0.0,
+            dsr=dsr,
+            bestanden=sum(1 for r in gates.results if r.passed),
+            gesamt=len(gates.results),
+        )
+
+    probe = Sperrprobe(echt=messe(schock_masken))
+    with console.status("[dim]zieht...[/]"):
+        for saat in range(ziehungen):
+            probe.zufall.append(messe(ziehe_signale(signale, anzahl, saat=saat)))
+
+    console.print(probe.bericht())
+    console.print(f"\n{probe.urteil()}\n")
+    console.print(
+        "[dim]Kosten-Stress und Parameter-Plateau sind hier ausgelassen - "
+        "zweihundert Ziehungen davon waeren Stunden. Das Parameter-Plateau "
+        "ist damit nicht abgesichert, und es ist eines der beiden Gates, die "
+        "in Befund 58 umgekippt sind.[/]\n"
     )
 
 

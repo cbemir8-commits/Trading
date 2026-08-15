@@ -43,6 +43,23 @@ blockiert, kein Gate bewegt. Ein Schock-Overlay trifft mehr Kerzen, aber
 dieselbe Logik gilt - bei sechs Wochen Haltedauer sind einzelne gesperrte
 Einstiegstage kaum zu spueren. Deshalb wird hier **zuerst ausgezaehlt** und
 erst danach entschieden, ob ein voller Gate-Lauf den Versuch wert ist.
+
+Was gemessen wurde - und was die Kontrolle davon uebrig liess
+-------------------------------------------------------------
+Der Gate-Lauf ergab neun von elf statt sieben (Befund 58). Das war der beste
+Stand, den dieses Projekt je hatte, und er hat **einen Tag gehalten**.
+
+Die Kontrolle in ``research/sperrprobe.py`` zieht zweihundert Mal genauso
+viele Einstiegssignale zufaellig und sperrt die: **66,5 % dieser Ziehungen
+halten genauso viele Gates.** Der Gewinn kam also nicht daher, dass die
+*richtigen* Einstiege gesperrt wurden, sondern daher, dass ueberhaupt welche
+gesperrt wurden. Dieselbe Zahl beliebiger Einstiege weniger haette es auch
+getan (Befund 59).
+
+**Damit ist dieses Overlay als Verbesserung nicht belegt.** Der Code bleibt -
+er ist richtig, getestet und geht denselben Weg wie der Terminkalender -, aber
+wer ihn einschaltet, tut das ohne Nachweis, dass die Auswahl der gesperrten
+Kerzen etwas leistet.
 """
 
 from __future__ import annotations
