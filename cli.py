@@ -5148,6 +5148,127 @@ def front(
 
 
 @app.command()
+def streuung(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Die sechste Eingabe des Deflated Sharpe - die einzige, die geraten wird.
+
+    Die Formel braucht die **Streuung der Sharpe-Schaetzer ueber die
+    Versuche**. Fuenf ihrer Eingaben werden gemessen; fuer diese springt seit
+    dem ersten Tag eine Ersatzannahme ein: die asymptotische Varianz
+    ``1/(n-1)``.
+
+    Und an ihr haengt mehr, als man denkt. Dieser Befehl rechnet aus, bei
+    welchem Wert das Urteil des Gates umschlaegt, und stellt daneben, was aus
+    den eigenen Berichten herauskaeme.
+
+    **Der gemessene Wert wird nicht eingesetzt** - und zwar nicht aus
+    Vorsicht, sondern weil er zu niedrig ist: Berichte entstehen ueber
+    Reglerscans um den Bestand herum, und die Verlierer haben nie einen
+    bekommen. Eine Huerde mit einer Zahl zu senken, von der man weiss, dass
+    sie zu klein ist, waere das Gegenteil von Messen.
+
+    Kostet keinen Versuch: Der Zaehler wird nicht angefasst.
+    """
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.gates import (
+        GateThresholds,
+        concurrent_groups,
+        gate_deflated_sharpe,
+    )
+    from research.seeds import spitzenkandidat
+    from research.streuung import Empfindlichkeit, Streuung, sammle
+    from research.suchbudget import Kandidat
+    from research.unabhaengigkeit import effektive_stichprobe
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    zustand = Path(settings.paths.state)
+    versuche = load_trials(zustand / "trials.json")
+
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
+    genome = spitzenkandidat()
+    bericht = run_portfolio_walkforward(
+        frames, lambda g=genome: compile_genome(g), configs
+    )
+    trades = list(bericht.all_trades)
+    kandidat = Kandidat.aus_trades(genome.name, trades)
+    if kandidat is None or kandidat.sharpe_je_trade <= 0:
+        console.print("[red]Keine auswertbaren Trades.[/]")
+        raise typer.Exit(2)
+
+    # Genau die Argumente, mit denen ``run_admission`` das Gate aufruft -
+    # sonst haengt die Empfindlichkeit an einer anderen Stichprobe als das
+    # Urteil, das sie erklaeren soll.
+    bloecke = [[float(t.net_pnl) for t in f.trades] for f in bericht.windows]
+    gleichzeitig = [
+        [float(t.net_pnl) for t in gruppe] for gruppe in concurrent_groups(trades)
+    ]
+    stichprobe = effektive_stichprobe(
+        len(trades), getattr(bericht, "beine", None), bloecke, weitere=[gleichzeitig]
+    )
+    gate = gate_deflated_sharpe(
+        trades, versuche, GateThresholds(), getattr(bericht, "beine", None), bloecke
+    )
+
+    empfindlichkeit = Empfindlichkeit(
+        sharpe=kandidat.sharpe_je_trade,
+        stichprobe=stichprobe.effektiv,
+        versuche=versuche,
+        schiefe=kandidat.schiefe or 0.0,
+        woelbung=kandidat.woelbung or 3.0,
+    )
+    lage = Streuung(
+        punkte=sammle(
+            berichte=Path.cwd() / "reports", bestenliste=zustand / "leaderboard.json"
+        ),
+        versuche=versuche,
+        stichprobe=stichprobe.effektiv,
+    )
+    angenommen = lage.angenommen or 0.0
+
+    console.print(
+        f"\n[bold]Streuung ueber die Versuche[/] '{genome.name}' auf "
+        f"{' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Historie   {spanne} Tage, {len(trades)} Trades "
+        f"({stichprobe.effektiv} davon unabhaengig)\n"
+        f"  Qualitaet  {kandidat.sharpe_je_trade:.4f} je Trade, Schiefe "
+        f"{kandidat.schiefe or 0:+.2f}, Woelbung {kandidat.woelbung or 0:.2f}\n"
+        f"  Versuche   {versuche}\n"
+    )
+
+    nachgerechnet = empfindlichkeit.bei(angenommen)
+    if abs(nachgerechnet - gate.value) > 1e-6:
+        console.print(
+            f"[yellow]Nachrechnung weicht vom Gate ab "
+            f"({nachgerechnet:.4f} gegen {gate.value:.4f}) - die Zahlen "
+            f"unten beziehen sich auf eine andere Stichprobe als das "
+            f"Urteil.[/]\n"
+        )
+
+    console.print(lage.tabelle())
+    console.print(f"\n{lage.urteil()}\n")
+
+    stellen = {"angenommen (Gate)": angenommen}
+    if lage.gemessen is not None:
+        stellen["aus den Versuchen"] = lage.gemessen
+    kipp = empfindlichkeit.kippunkt()
+    if kipp is not None:
+        stellen["Kippunkt"] = kipp
+    console.print(empfindlichkeit.tabelle(stellen))
+    console.print(f"\n{empfindlichkeit.urteil(angenommen)}\n")
+
+
+@app.command()
 def jahresbild(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
@@ -5668,7 +5789,11 @@ def stand(
             "\n  [dim]Die Woelbung waere ein Weg, wenn sie sich senken liesse - "
             "sie kann es\n  nicht: Unter 1 liegt keine Verteilung. Die Schiefe "
             "ist der einzige der\n  vier Wege, den noch nie jemand gemessen "
-            "hat.[/]"
+            "hat.\n"
+            "  Und es sind vier von fuenf: Die Streuung der Sharpe-Schaetzer "
+            "ueber die\n  Versuche steht hier nicht, weil sie nicht gemessen, "
+            "sondern angenommen\n  wird. Wie viel daran haengt: 'cli "
+            "streuung'.[/]"
         )
 
     console.print()

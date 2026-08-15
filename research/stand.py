@@ -162,6 +162,24 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "ist ausdruecklich keine.",
     ),
     Entscheidung(
+        frage="Die geratene Eingabe im Deflated Sharpe",
+        zahl="Das Gate braucht die Streuung der Sharpe-Schaetzer ueber die "
+             "Versuche. Gemessen wird sie nicht - es springt die "
+             "Ersatzannahme 1/(n-1) ein, hier sqrt(V) = 0,0808. Das Urteil "
+             "kippt bei 0,0657, also **23 % darunter**. Aus den 28 Versuchen, "
+             "die ihren Sharpe je Trade mittragen, kaemen 0,0608 - und damit "
+             "0,97 statt 0,79. `cli streuung` rechnet es nach.",
+        warum="Die 0,0608 werden nicht eingesetzt, und zwar nicht aus "
+              "Vorsicht: Von 166 Versuchen liegen 28 vor, und was fehlt, "
+              "fehlt am unteren Ende - Berichte entstehen ueber Reglerscans "
+              "um den Bestand herum, die Verlierer bekommen keinen. Die "
+              "Bestenliste allein streut schon mit 0,1030, also breiter als "
+              "die Annahme. Zu entscheiden ist deshalb nicht, welche Zahl ins "
+              "Gate kommt, sondern ob es die Muehe wert ist, jeden Versuch "
+              "mit seinem Sharpe je Trade aufzuschreiben. Erst dann waere die "
+              "Groesse messbar - und erst dann waere die Frage eine Frage.",
+    ),
+    Entscheidung(
         frage="Kontogroesse",
         zahl="Bei 500 Euro laufen 51 % aller Trades auf der Mindestmenge der "
              "Boerse. Ab rund 2000 Euro verschwindet die Beschraenkung.",

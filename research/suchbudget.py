@@ -237,8 +237,8 @@ class Budget:
     def hebel(self, kandidat: Kandidat) -> list[Hebel]:
         """Woran es liegt - je Eingang der Formel einzeln.
 
-        Der Deflated Sharpe haengt an vier gemessenen Groessen: Qualitaet je
-        Trade, Zahl der **unabhaengigen** Trades, Schiefe und Woelbung. Die
+        Der Deflated Sharpe haengt an vier **gemessenen** Groessen: Qualitaet
+        je Trade, Zahl der unabhaengigen Trades, Schiefe und Woelbung. Die
         Grenzlinie zeigt nur die erste. Diese Zerlegung fragt fuer jede
         einzeln: Wo muesste sie stehen, damit das Gate haelt - alles andere
         unveraendert?
@@ -246,6 +246,14 @@ class Budget:
         Das entscheidet, ob Weitersuchen ueberhaupt Sinn hat. Eine Groesse,
         die auf einen unmoeglichen Wert muesste, schliesst ihren Weg; eine,
         die um zehn Prozent muesste, benennt ihn.
+
+        **Vier von fuenf.** Die Formel hat einen fuenften Eingang - die
+        Streuung der Sharpe-Schaetzer ueber die Versuche -, und der wird nicht
+        gemessen, sondern durch ``1/(n-1)`` ersetzt. Er steht hier nicht
+        dazwischen, weil er kein Weg ist: Ihn zu bewegen hiesse, die Huerde zu
+        verstellen statt den Kandidaten. Was an ihm haengt, rechnet
+        ``research/streuung.py`` aus - beim Spitzenkandidaten kippt das Urteil
+        23 % unter der Annahme.
         """
         schiefe = kandidat.schiefe if kandidat.schiefe is not None else self.schiefe
         woelbung = (

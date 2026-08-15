@@ -5685,3 +5685,85 @@ Kombinationen sind gemessen, und mehr Beine machen es **schlechter** -
 BTC+ETH+XRP bringt 260 Trades statt 152 und faellt dabei von 0,86 auf 0,42.
 
 Versuchsstand 166 unveraendert.
+
+## Achtundsechzig. Die sechste Eingabe - die einzige, die geraten wird
+
+Der Deflated Sharpe entscheidet seit Wochen ueber dieses Projekt. Seine Formel
+hat sechs Eingaben. Fuenf davon werden gemessen: Sharpe je Trade, Stichprobe,
+Schiefe, Woelbung, Versuchszahl. Die sechste steht als Kommentar in
+``research/gates.py``:
+
+    Ist ``sharpe_variance`` nicht bekannt, wird die asymptotische Varianz
+    des Sharpe-Schaetzers ``1/(n-1)`` verwendet.
+
+``V`` ist bei Bailey und Lopez de Prado die **Streuung der Sharpe-Schaetzer
+ueber die Versuche**. Sie laesst sich erheben, wenn man aufschreibt, was man
+probiert hat. Dieses Projekt hat sie nie erhoben - und die Zerlegung in
+``cli stand`` nennt seit jeher "vier Groessen", als gaebe es die fuenfte nicht.
+
+### Wie viel daran haengt
+
+Am Spitzenkandidaten gemessen, alle anderen Eingaben unveraendert:
+
+    sqrt(V) = 0,0808   angenommen (Gate)   DSR 0,7865   durchgefallen
+    sqrt(V) = 0,0657   Kippunkt            DSR 0,9500   Grenze
+    sqrt(V) = 0,0608   aus 28 Versuchen    DSR 0,9725   bestanden
+
+**Die Annahme liegt 23 % ueber dem Kippunkt.** Das Gate, an dem seit Befund 61
+alles haengt, entscheidet sich an einer Zahl, die niemand gemessen hat - und
+die naechstliegende Schaetzung faellt auf die andere Seite.
+
+### Warum die gemessene Zahl trotzdem nicht eingesetzt wird
+
+Das waere ein Einzeiler gewesen, mit einer Literaturstelle als Deckung. Er
+haette das strengste Gate des Projekts umgedreht. Er ist trotzdem falsch:
+
+Von 166 Versuchen liegen 28 mit ihrem Sharpe je Trade vor, 17 %. Und was
+fehlt, fehlt nicht zufaellig. Berichte entstehen ueber **Reglerscans**, und ein
+Reglerscan variiert einen Knopf um den Bestand herum; die 23 Punkte aus den
+Berichten spannen 0,133 bis 0,264. Die Verlierer bekommen keinen Bericht - die
+vierzehn 15-Minuten-Kandidaten aus Befund 29 mit -9 bis -44 % im Jahr haben
+einen negativen Sharpe je Trade, der nirgends steht. Dazu zaehlt der Bestand
+mehrfach: Jeder Scan misst auf seiner neutralen Stellung denselben Punkt.
+
+Der Beleg ist keine Ueberlegung, sondern eine Messung. Nach Quelle getrennt:
+
+    Berichte        23 Punkte   Streuung 0,0428   0,133 bis 0,264
+    Bestenliste      5 Punkte   Streuung 0,1030   0,030 bis 0,248
+
+**Die fuenf Eintraege aus der Bestenliste streuen fuer sich genommen breiter
+als die Annahme.** Es sind die strukturell anderen Familien - Ausbrueche,
+Rueckkehr zum Mittel -, und sie stehen nur deshalb dort, weil das Feld
+``sharpe_je_trade`` in der Bestenliste jung ist. Nicht die Annahme ist zu hoch;
+die Zusammenlegung ist zu schmal, weil die engste Quelle die meisten Punkte
+stellt. Ein Sechstel mehr Abdeckung hat die Schaetzung schon von 0,0428 auf
+0,0608 gehoben, und die fehlenden 138 sind systematisch die schlechteren.
+
+Eine Huerde mit einem Wert zu senken, von dem man weiss, dass er zu niedrig
+ist, ist das Gegenteil von Messen. Die Annahme bleibt stehen - sie ist die
+strengere Richtung.
+
+### Was gebaut wurde
+
+``research/streuung.py`` sammelt die bekannten Versuchs-Sharpes aus Berichten
+und Bestenliste, rechnet ihre Streuung je Quelle aus und beziffert den
+Kippunkt. ``cli streuung`` zeigt beides nebeneinander; die Empfindlichkeit wird
+mit genau den Argumenten gerechnet, mit denen ``run_admission`` das Gate
+aufruft, und weicht das Ergebnis vom Gate ab, sagt der Befehl es.
+
+Zwei Tests tragen die Datei. Einer verlangt, dass das Gate **keine** gemessene
+Streuung hereinreicht - damit die Versuchung nicht eines Tages als Verbesserung
+durchgeht. Der andere haelt fest, dass der Kippunkt zwischen Annahme und
+Schaetzung liegt; laege er ausserhalb, waere die ganze Sache eine Randnotiz.
+
+``Streuung.verwendbar`` ist kein Riegel fuer immer, sondern eine Bedingung:
+90 % Abdeckung. Wer die Versuche aufschreibt, macht die Groesse messbar - und
+erst dann ist die Frage, ob das Gate sie benutzen soll, ueberhaupt eine Frage.
+Sie steht jetzt als Entscheidung in ``cli stand``, weil sie nicht mir gehoert.
+
+### Was sich am Ergebnis nicht aendert
+
+7 von 11 Gates, Versuchsstand 166, Suchbudget 36 von 100. Der Deflated Sharpe
+bleibt durchgefallen, und die noetigen 13 % mehr Qualitaet je Trade bleiben
+stehen. Was sich aendert, ist die Auskunft ueber diese Zahl: Sie ist nicht so
+fest, wie sie aussah.
