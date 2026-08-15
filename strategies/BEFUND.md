@@ -5340,3 +5340,79 @@ ist kein Verbot, dort zu suchen - es ist der Preis, den man vorher kennen
 sollte.
 
 Versuchsstand 166 unveraendert.
+
+## Dreiundsechzig. Die Uhrzeit - die Quelle, die Tageskerzen nicht kennen
+
+Befund 62 hat gerechnet, dass Fuenfzehnminutenkerzen den Deflated Sharpe
+arithmetisch tragen koennen. Was fehlt, ist ein Vorteil dieser Groesse.
+``cli scan`` hat dort gesucht und nichts Stabiles gefunden - aber er prueft
+**eine** Art Signal: Sagt die Richtung der letzten N Kerzen etwas ueber die
+naechsten M? Das ist Momentum, in beide Richtungen gelesen.
+
+Die Uhrzeit ist eine andere Quelle, und sie hat eine Eigenschaft, die keine
+andere hat: **Auf Tageskerzen ist sie prinzipiell unsichtbar.** Jede Tageskerze
+ist ein Tag; es gibt nichts, woran sich eine Stunde ablesen liesse. Alle 62
+bisherigen Befunde konnten diese Frage nicht beantworten - sie haben sie nie
+gestellt.
+
+### Warum feste Fenster
+
+Bei 96 Viertelstunden gaebe es rund 4600 moegliche Zeitfenster. Wer die alle
+prueft und das beste nimmt, hat die Zahl seiner Versuche gemessen und sonst
+nichts. Geprueft werden deshalb sieben **vorab festgelegte** Fenster aus der
+Marktstruktur - die drei Handelssitzungen, ihre zwei Ueberschneidungen, Abend
+und Nacht. Sie standen fest, bevor eine Zahl gerechnet war.
+
+    python -m cli tageszeit            # kostet keinen Versuch
+
+### Zwei Konstruktionsfehler, beide vom Test gefunden
+
+**Erstens** verglich meine Messung die *Summe* im Fenster mit der Summe
+ausserhalb - also eine Stunde gegen dreiundzwanzig. Die Differenz misst dann
+ueberwiegend die Fensterlaenge. Der Test mit einem gepflanzten Effekt bei
+14 Uhr fand prompt nicht die 14, sondern eine erfundene 21. Verglichen wird
+jetzt der Durchschnitt **je Kerze**.
+
+**Zweitens** waere der naheliegende Test "Fensterrendite gegen null" bei einem
+Markt, der sich vervielfacht hat, ueberwiegend eine Messung des Grundtrends -
+genau davor warnt der Kopf des Vorteilsscans. Verglichen wird deshalb gegen das
+Aussen, gepaart je Tag: Beide Seiten tragen denselben Marktzustand, und er
+faellt in der Differenz heraus.
+
+### Das Ergebnis: kein Fund
+
+    BTC     Fenster          UTC    je Tag       t      netto
+            Asien          00-06  -0,0794 %   -2,25   +0,0394 %
+            Abend          21-24  +0,0464 %   +2,01   +0,0064 %
+            Europa         07-16  +0,0296 %   +0,62   -0,0104 %
+
+    ETH     Abend          21-24  +0,0632 %   +2,09   +0,0232 %
+            Asien          00-06  -0,0735 %   -1,56   +0,0335 %
+
+Bei sieben geprueften Fenstern liegt die Schwelle bei **2,69**, nicht bei 2,00.
+Kein Markt erreicht sie. Auch die Landkarte der 24 Einzelstunden aendert daran
+nichts: Die staerkste ist 21 Uhr mit t = +2,90 - bei dann 31 geprueften
+Fenstern liegt die Schwelle bei 3,15.
+
+### Was auffaellt und trotzdem nichts beweist
+
+Beide Maerkte zeigen dasselbe Vorzeichenmuster: Asien negativ (-0,079 % und
+-0,074 %), Abend positiv (+0,046 % und +0,063 %). Das sieht nach einer
+marktuebergreifenden Bestaetigung aus und ist keine - **BTC und ETH laufen im
+Gleichschritt.** Zwei hochkorrelierte Maerkte sind ein Markt mit zwei Namen,
+und ihre Uebereinstimmung ist keine zweite Beobachtung.
+
+Die Schwelle nachtraeglich zu senken, weil das Muster huebsch aussieht, waere
+genau der Selbstbetrug, gegen den der Scan gebaut ist. Sie stand vorher fest,
+und sie ist gerissen.
+
+### Der Stand
+
+Damit ist die letzte Informationsquelle geprueft, die auf Tageskerzen
+prinzipiell nicht zugaenglich war. Sie liefert nichts, was die Kosten traegt.
+Zusammen mit Befund 62 heisst das: Fuenfzehn Minuten sind arithmetisch offen,
+aber weder Momentum noch Uhrzeit liefern dort einen Vorteil, der die drei
+Huerden haelt.
+
+Versuchsstand 166 unveraendert - 36 von 100 des Suchbudgets verbraucht, und
+keiner davon in diesem Lauf.

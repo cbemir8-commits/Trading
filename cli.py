@@ -4773,6 +4773,94 @@ def sperrprobe(
 
 
 @app.command()
+def tageszeit(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("15", "--intervall", "-i"),
+    stunden: bool = typer.Option(
+        False, "--stunden", help="Zusaetzlich die 24 Einzelstunden zeigen."
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Sagt die Uhrzeit etwas - die Quelle, die Tageskerzen nicht kennen.
+
+    Befund 62: Fuenfzehnminutenkerzen tragen den Deflated Sharpe arithmetisch.
+    Was fehlt, ist ein Vorteil. ``cli scan`` hat dort gesucht und nichts
+    Stabiles gefunden - aber er prueft **eine** Art Signal: Momentum.
+
+    Die Uhrzeit ist eine andere Quelle, und sie hat eine Eigenschaft, die
+    keine andere hat: **Auf Tageskerzen ist sie prinzipiell unsichtbar.** Wer
+    nur Tageskerzen ausgemessen hat, hat diese Frage nie gestellt.
+
+    Geprueft werden **vorab festgelegte** Fenster aus der Marktstruktur - die
+    drei Handelssitzungen und ihre Ueberschneidungen. Alle 4600 moeglichen
+    Fenster zu pruefen und das beste zu nehmen waere genau die Ueberanpassung,
+    gegen die dieser Scan gebaut ist.
+
+    Dieselben drei Huerden wie im Vorteilsscan: auffaellig gegen die Zahl der
+    geprueften Fenster, stabil ueber beide Haelften, nach Gebuehren etwas
+    uebrig. Kostet keinen Versuch.
+    """
+    from research.tageszeit import (
+        pruefe_stabilitaet,
+        scanne_sitzungen,
+        scanne_stunden,
+        urteil,
+    )
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+
+    for symbol in (s.strip() for s in maerkte.split(",") if s.strip()):
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[yellow]Keine Kerzen fuer {symbol}.[/]")
+            continue
+
+        console.print(
+            f"\n[bold]{symbol}[/] {interval_obj.label}, {len(frame)} Kerzen "
+            f"({frame['open_time'].iloc[0]:%Y-%m-%d} bis "
+            f"{frame['open_time'].iloc[-1]:%Y-%m-%d})"
+        )
+        fenster = scanne_sitzungen(frame)
+        if stunden:
+            fenster = fenster + scanne_stunden(frame)
+            fenster.sort(key=lambda f: -abs(f.t_wert))
+
+        tabelle = Table(header_style="bold")
+        tabelle.add_column("Fenster")
+        tabelle.add_column("UTC", justify="right")
+        tabelle.add_column("Tage", justify="right")
+        tabelle.add_column("je Tag", justify="right")
+        tabelle.add_column("t", justify="right")
+        tabelle.add_column("netto", justify="right")
+        for f in fenster[:8]:
+            netto = f.netto_pct()
+            tabelle.add_row(
+                f.name,
+                f"{f.von:02d}-{f.bis:02d}",
+                str(f.tage),
+                f"{f.spanne_pct:+.4f}%",
+                f"{f.t_wert:+.2f}",
+                f"[{'green' if netto > 0 else 'red'}]{netto:+.4f}%[/]",
+            )
+        console.print(tabelle)
+
+        bestes = fenster[0] if fenster else None
+        stabil = pruefe_stabilitaet(frame, bestes) if bestes is not None else None
+        console.print(urteil(bestes, stabil, geprueft=len(fenster)))
+
+    console.print(
+        f"\n[dim]Kosten je Roundtrip: {0.04:.2f} % vom Nominalwert. Ein "
+        f"Zeitfenster heisst ein Ein- und Ausstieg je Tag.[/]\n"
+    )
+
+
+@app.command()
 def taktung(
     symbol: str = typer.Option("BTCUSD_BITSTAMP", "--symbol", "-s"),
     intervalle: str = typer.Option(
