@@ -4807,6 +4807,68 @@ def sperrprobe(
 
 
 @app.command()
+def haelften(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Haelt der Spitzenkandidat in der zweiten Haelfte des Zeitraums?
+
+    ``cli scan`` verlangt von **jedem neuen Fund**, dass er in beiden Haelften
+    haelt - *"ein Vorteil, den es nur in der ersten Haelfte gab, ist entweder
+    wegarbitriert oder war nie da"*. An dieser Huerde ist der erste
+    15-Minuten-Fund gescheitert und in Befund 63 die Tageszeit.
+
+    **Der Spitzenkandidat ist nie daran gemessen worden.** Wir verlangen von
+    jedem Vorschlag mehr als vom Bestand - und das ist die gefaehrlichere
+    Richtung: Ein verworfener Vorschlag kostet nichts weiter, ein Bestand mit
+    demselben Mangel steht seit Wochen im Mittelpunkt jeder Messung.
+
+    Gemessen wird auf Trade-Ebene, nicht fensterweise: 31 Fenster halbiert
+    sind fuenfzehn, und der Sharpe je Trade ist ohnehin die Groesse, an der
+    der Deflated Sharpe haengt.
+
+    Mitgerechnet wird, welcher Unterschied in der zweiten Haelfte ueberhaupt
+    haette auffallen koennen. Ohne diese Zahl heisst "nicht stabil" zweierlei,
+    und bei rund 77 Trades je Haelfte ist die harmlosere Deutung die
+    wahrscheinlichere.
+
+    Kostet keinen Versuch: Zerlegt wird ein Ergebnis, das ohnehin faellt.
+    """
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.haelften import Halbierung, teile
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
+
+    genome = spitzenkandidat()
+    bericht = run_portfolio_walkforward(
+        frames, lambda g=genome: compile_genome(g), configs
+    )
+    geteilt = teile(list(bericht.all_trades))
+    if geteilt is None:
+        console.print("[red]Zu wenige Trades fuer eine Halbierung.[/]")
+        raise typer.Exit(2)
+
+    console.print(
+        f"\n[bold]Halbierung[/] '{genome.name}' auf {' + '.join(symbole)} "
+        f"{interval_obj.label}\n"
+        f"  Historie   {spanne} Tage, {len(bericht.all_trades)} Trades\n"
+    )
+    halbierung = Halbierung(erste=geteilt[0], zweite=geteilt[1])
+    console.print(halbierung.tabelle())
+    console.print(f"\n{halbierung.urteil()}\n")
+
+
+@app.command()
 def tageszeit(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",

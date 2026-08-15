@@ -5555,3 +5555,67 @@ rechnen will, braucht ihn.
 
 Beinahe waeren 14 von 64 verbliebenen Versuchen fuer nichts draufgegangen.
 Versuchsstand 166 unveraendert, Suchbudget 36 von 100.
+
+## Sechsundsechzig. Die Huerde, die nur fuer die anderen galt
+
+``research/vorteilsscan.py`` verlangt von **jedem neuen Fund** drei Dinge, und
+das zweite lautet: in beiden Haelften des Zeitraums dasselbe Vorzeichen. Der
+Kopf dort begruendet es scharf:
+
+    "Ein Vorteil, den es nur in der ersten Haelfte gab, ist entweder
+    wegarbitriert oder war nie da. Beides heisst, dass er morgen nicht zur
+    Verfuegung steht."
+
+An dieser Huerde ist der erste 15-Minuten-Fund gescheitert und in Befund 63
+die Tageszeit. **Der Spitzenkandidat ist nie daran gemessen worden.**
+
+Das ist die gefaehrlichere Richtung der Ungleichbehandlung: Ein neuer Fund, der
+die Huerde reisst, wird verworfen und kostet nichts weiter. Ein Bestand, der
+sie reissen wuerde, steht seit Wochen im Mittelpunkt jeder Messung - und die
+gesamte Diagnose aus Befund 61 haengt daran, dass ueberhaupt ein Vorteil da
+ist, der bloss zu klein ist.
+
+    python -m cli haelften        # kostet keinen Versuch
+
+### Das Ergebnis
+
+    Haelfte   Trades   Mittel R   Streuung   SR/Trade      t
+    erste         77     1,8483     6,3754     0,2899   2,54
+    zweite        77     1,0039     4,2947     0,2338   2,05
+
+**Der Vorteil haelt.** Beide Haelften positiv, die zweite mit t = +2,05 fuer
+sich genommen auffaellig - genau der Massstab, den der Scan an jeden neuen Fund
+anlegt. Die Diagnose aus Befund 61 bleibt damit stehen: Es fehlt Groesse, nicht
+Gegenwart.
+
+### Was ehrlich dazugehoert
+
+**Erstens: t = 2,05 ist knapp.** Die Schwelle ist 2,0. Ein Zehntel weniger, und
+dieser Befund haette anders gelautet.
+
+**Zweitens: Der Vorteil schwaecht sich ab.** Der Sharpe je Trade faellt von
+0,2899 auf 0,2338, also um 19 %. Ob dieser Abfall selbst mehr ist als
+Rauschen, habe ich gemessen statt vermutet: **t = 0,96.** Er ist nicht
+auffaellig - zwei Haelften zu je 77 Trades koennen so weit auseinanderliegen,
+ohne dass sich etwas geaendert haette.
+
+**Drittens, und das ist die unangenehmste Zahl:** Bei 154 Trades verlangt die
+Grenzlinie 0,3557 Sharpe je Trade. Bei 77 sind es **0,5108**. Wer also nur die
+zweite Haelfte haette, braeuchte mehr als das Doppelte dessen, was dort steht.
+Das ist keine neue Erkenntnis, sondern dieselbe Kopplung aus Befund 54 - hier
+noch einmal von der Zeitachse aus gesehen.
+
+### Die Falle, die eingebaut werden musste
+
+"Nicht stabil" heisst zweierlei: der Vorteil ist weg, oder man haette ihn hier
+gar nicht sehen koennen. Bei 77 Trades je Haelfte ist die zweite Deutung der
+wahrscheinlichere Fall, nicht die Ausnahme. Das Modul rechnet deshalb - wie
+``vorteilsscan.erkennbare_spanne`` - mit, welcher Unterschied in der zweiten
+Haelfte ueberhaupt haette auffallen koennen, und meldet ein **Unentschieden**
+statt eines Scheiterns, wenn er zu gross ist.
+
+Hier war die Auskunft nicht noetig, weil der Test bestanden wurde. Sie waere
+es gewesen, wenn er knapp gescheitert waere - und dann haette die
+Unterscheidung ueber die ganze Diagnose entschieden.
+
+Versuchsstand 166 unveraendert, Suchbudget 36 von 100.
