@@ -190,6 +190,7 @@ class RiskOfficer:
         state_path: Path | str | None = None,
         clock=None,
         kalender: Terminkalender | None = None,
+        schocksperre=None,
         kerzenspanne: timedelta = timedelta(0),
     ) -> None:
         self.settings = settings
@@ -200,6 +201,12 @@ class RiskOfficer:
         #: Termine, an denen nicht eingestiegen wird. ``None`` heisst: keine
         #: Sperre - das System handelt dann wie bisher.
         self.kalender = kalender
+        self.schocksperre = schocksperre
+        """Kerzen, in denen nach einem Marktschock nicht eingestiegen wird.
+
+        Steht hier und nicht in der Live-Schleife, aus demselben Grund wie der
+        Kalender eine Zeile darueber: Sonst gaebe es die Regel zweimal.
+        """
         #: Laenge einer Kerze. Wird gebraucht, damit ein Termin **innerhalb**
         #: der Kerze, auf die gehandelt wird, sperrt - siehe
         #: ``Terminkalender.sperre``.
@@ -400,6 +407,16 @@ class RiskOfficer:
                     f"{termin.beschreibung} am "
                     f"{termin.zeitpunkt:%Y-%m-%d %H:%M} UTC",
                 )
+
+        # Die Schocksperre - kein Vorlauf, anders als beim Kalender. Ein
+        # Termin ist vorher bekannt, ein Schock nicht; ihn vorher zu sperren
+        # waere Hellsicht statt Vorsicht.
+        if self.schocksperre is not None and self.schocksperre.gilt(now):
+            return Vetoed(
+                VetoReason.NEWS_BLACKOUT,
+                f"Marktschock in dieser Kerze ({now:%Y-%m-%d %H:%M} UTC) - "
+                f"kein neuer Einstieg",
+            )
 
         if open_positions >= self.settings.max_concurrent_positions:
             return Vetoed(

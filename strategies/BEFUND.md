@@ -4939,3 +4939,95 @@ Schwelle senken, Rueckgangsgrenze anheben, oder beides so lassen und weiter
 suchen -, ist eine Geschaeftsentscheidung und liegt beim Nutzer.
 
 Versuchsstand 165, Suchbudget 35 von 100.
+
+## Achtundfuenfzig. P7, ehrlich gebaut - und zwei Gates mehr
+
+P7 stand seit dem ersten Tag auf der Liste und ist nie angefasst worden. Die
+planbare Haelfte gab es laengst: ``data/termine.py`` holt FOMC-Entscheidungen
+und Halbierungen, der Risk-Officer kennt das Veto, Befund 12 hat es gemessen
+(2 von 156 Signalen, kein Gate bewegt). Offen war der Nachrichten-Teil.
+
+### Warum es kein Nachrichten-Overlay geworden ist
+
+Nachrichten haben eine Eigenschaft, die sie von Terminen grundsaetzlich
+trennt: **Man weiss sie erst, wenn sie da sind.** Ein Overlay, das die
+Schlagzeile vom 12. Maerz 2020 kennt und deshalb am 11. nicht einsteigt, misst
+Hellsicht statt Vorsicht - es verbessert den Backtest und leistet im Betrieb
+nichts. Das ist die teuerste Sorte Fehler, weil sie wie ein Erfolg aussieht.
+
+Gebaut ist deshalb, was davon kausal zulaessig bleibt: die Reaktion auf den
+**Abdruck** eines Schocks in bereits abgeschlossenen Kerzen. Eine Kerze gilt
+als Schock, wenn ihre wahre Spanne den Median der dreissig Kerzen davor um das
+Dreifache uebersteigt. Median statt Mittelwert, weil ein Mass, das der Schock
+mitverschiebt, den naechsten schlechter erkennt. Gesperrt wird die Schockkerze
+und die zwei danach - **kein Vorlauf**, denn vorher war nichts bekannt.
+
+Schwelle und Nachlauf standen vor der ersten Messung fest.
+
+### Erst auszaehlen, dann messen
+
+Ein Gate-Lauf kostet einen Versuch und hebt die Huerde fuer alle kuenftigen
+Kandidaten. Ob er sich lohnt, entschied eine vorab gesetzte Schwelle: fuenf
+Prozent betroffene Einstiege.
+
+    python -m cli schock          # kostet nichts, bewertet keinen Kandidaten
+
+    Kerzen           6554
+    Schockkerzen      217 (3,31 % der Reihe)
+    gesperrte Kerzen  510
+    Einstiegssignale  165
+    davon gesperrt     13 (7,9 %)
+
+7,9 % - sechsmal so viel wie beim Termin-Overlay und ueber der Schwelle. Also
+gemessen.
+
+### Das Ergebnis
+
+Ein Versuch, BTC + ETH, Tageskerzen, alle elf Gates (165 -> 166):
+
+                    Trades   CAGR   Rueckgang  SR/Trade    DSR   Gates
+    ohne Overlay       154  13,47 %    10,64 %   0,2569  0,791    7/11
+    mit Overlay        143  13,32 %     9,66 %   0,2659  0,782    9/11
+
+**Neun von elf - der beste Stand, den dieses Projekt je hatte.** Elf Einstiege
+weniger, die Rendite praktisch unveraendert, der Rueckgang von 10,64 auf
+9,66 % gefallen und der Sharpe je Trade von 0,2569 auf 0,2659 gestiegen. Neu
+bestanden: **Schlechtestes Jahr** und **Parameter-Plateau**.
+
+Das Plateau ist dabei das aussagekraeftigere von beiden. Es misst, ob die
+Strategie auf einer Kante steht; dass sie es ohne die Schock-Einstiege nicht
+mehr tut, heisst, dass ein Teil ihrer Empfindlichkeit an genau diesen
+Einstiegen hing.
+
+### Was sich damit nicht geloest hat
+
+Der Deflated Sharpe ist **gefallen** - 0,791 auf 0,782 -, obwohl der Sharpe je
+Trade gestiegen ist. Das ist die Kopplung aus Befund 54, ein weiteres Mal:
+bessere Trades, aber elf weniger davon, und ein Versuch mehr im Zaehler. Die
+harte Huerde bleibt unberuehrt, und die Messlatte ebenfalls.
+
+### Der Verdacht, der ausgeraeumt gehoerte
+
+Die Sperre wird vorab ueber den ganzen Rahmen gerechnet, Testfenster
+eingeschlossen. Das sieht nach Zukunftswissen aus. Der Verdacht waere
+begruendet, wenn eine spaetere Kerze eine fruehere aendern koennte - also
+wurde genau das geprueft: Die Sperre wird Kerze fuer Kerze aus einem
+wachsenden Ausschnitt neu berechnet, so wie sie im Betrieb entstuende, und
+ergibt **Zeichen fuer Zeichen dasselbe**. Dazu die Gegenprobe: Das Ende der
+Reihe umschreiben bewegt am Anfang nichts.
+
+Die Sperre haengt ausserdem an derselben Stelle wie der Terminkalender - in
+``RiskOfficer.blockade``, nicht in der Live-Schleife. Der Grund steht dort seit
+jeher: *"Jede Regel, die es zweimal gibt, laeuft irgendwann auseinander."*
+Backtest und Betrieb sehen dieselbe Pruefung; nur die Erzeugung unterscheidet
+sich (vorab aus der Datei, im Betrieb aus dem Puffer).
+
+### Ein Nachsatz, der einen eigenen Lauf verdient
+
+Befund 57 hat gemessen, dass 15 % Rendite und 12 % Rueckgang auf dem
+Groessenregler unvereinbar sind - bei 20,5 fehlten 0,89 Renditepunkte. Der
+Rueckgang liegt jetzt um knapp einen Punkt niedriger, also hat sich die Kurve
+verschoben. Ob sie damit durch das Rechteck geht, ist eine **neue Messung**
+und keine Schlussfolgerung. Der Betriebspunkt wird bis dahin nicht angefasst.
+
+Versuchsstand 166, Suchbudget 36 von 100.

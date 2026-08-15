@@ -96,6 +96,14 @@ class BacktestConfig:
     existiert und auseinanderlaufen kann. Wirkt nur bei
     ``enforce_risk_limits``; ohne Officer gibt es keine Sperre."""
 
+    schocksperre: object | None = None
+    """Kerzen, in denen nach einem Marktschock nicht eingestiegen wird.
+
+    Geht denselben Weg wie ``kalender`` - durch ``RiskOfficer.blockade``,
+    damit Backtest und Betrieb dieselbe Regel sehen. ``None`` heisst: keine
+    Sperre, und dann verhaelt sich der Lauf unveraendert.
+    """
+
     enforce_risk_limits: bool = True
     """Die Verlustgrenzen des Risk-Officers auch im Backtest durchsetzen.
 
@@ -257,6 +265,7 @@ class Backtester:
             state_path=None,
             clock=lambda: self._jetzt,
             kalender=self.config.kalender,
+            schocksperre=self.config.schocksperre,
             kerzenspanne=self._kerzenspanne(arrays),
         )
 

@@ -4516,6 +4516,97 @@ def teststaerke(
 
 
 @app.command()
+def schock(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    faktor: float = typer.Option(3.0, "--faktor", help="Vielfaches der Norm."),
+    nachlauf: int = typer.Option(2, "--nachlauf", help="Gesperrte Kerzen danach."),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Wie viele Einstiege ein Schock-Overlay betraefe - der Rest von P7.
+
+    **Warum es kein Nachrichten-Overlay ist.** Termine stehen vorher fest,
+    Nachrichten nicht - man weiss sie erst, wenn sie da sind. Ein Overlay, das
+    eine Schlagzeile vom 12. Maerz kennt und deshalb am 11. nicht einsteigt,
+    misst Hellsicht statt Vorsicht: Es verbessert den Backtest und leistet im
+    Betrieb nichts.
+
+    Gebaut ist deshalb, was kausal zulaessig bleibt: die Reaktion auf den
+    **Abdruck** eines Schocks in den abgeschlossenen Kerzen. Gesperrt wird der
+    Einstieg auf der Schockkerze und den Kerzen danach - kein Vorlauf.
+
+    Ausgezaehlt wird zuerst, gemessen erst danach: Ein voller Gate-Lauf kostet
+    einen Versuch und hebt die Huerde fuer alle kuenftigen Kandidaten. Ob er
+    sich lohnt, entscheidet eine vorab gesetzte Schwelle - fuenf Prozent der
+    Einstiege.
+
+    Dieser Befehl selbst kostet nichts: Er bewertet keinen Kandidaten.
+    """
+    import numpy as np
+
+    from research.schock import Auszaehlung, gesperrt, schocks
+    from research.seeds import spitzenkandidat
+    from strategy.base import BarContext, frame_to_arrays
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, _configs, spanne = _korb_daten(symbole, interval_obj, settings)
+
+    console.print(
+        f"\n[bold]Schock-Overlay[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Historie   {spanne} Tage gemeinsam\n"
+        f"  Schwelle   {faktor:g}-fache Norm, {nachlauf} Kerzen Nachlauf\n"
+    )
+
+    gesamt = {"kerzen": 0, "schocks": 0, "gesperrt": 0, "signale": 0, "davon": 0}
+    for name, frame in frames.items():
+        treffer = schocks(frame, faktor=faktor)
+        sperre = gesperrt(frame, faktor=faktor, nachlauf=nachlauf)
+
+        # Die Einstiegssignale des Kandidaten - dieselbe Strategie, die auch
+        # gemessen wird. Ein Overlay an einer anderen Regel auszuzaehlen
+        # beantwortete eine Frage, die niemand gestellt hat.
+        strategie = compile_genome(spitzenkandidat())
+        indikatoren = strategie.prepare(frame)
+        arrays = frame_to_arrays(frame)
+        signale = np.zeros(len(frame), dtype=bool)
+        for i in range(strategie.warmup_bars, len(frame)):
+            ctx = BarContext(
+                frame=frame, arrays=arrays, indicators=indikatoren, index=i
+            )
+            signale[i] = strategie.on_bar(ctx) is not None
+
+        betroffen = int((signale & sperre).sum())
+        console.print(
+            f"  [bold]{name}[/]  {int(treffer.sum())} Schocks, "
+            f"{int(sperre.sum())} gesperrte Kerzen, {int(signale.sum())} Signale, "
+            f"davon {betroffen} gesperrt"
+        )
+        gesamt["kerzen"] += len(frame)
+        gesamt["schocks"] += int(treffer.sum())
+        gesamt["gesperrt"] += int(sperre.sum())
+        gesamt["signale"] += int(signale.sum())
+        gesamt["davon"] += betroffen
+
+    zaehlung = Auszaehlung(
+        kerzen=gesamt["kerzen"], schocks=gesamt["schocks"],
+        gesperrte_kerzen=gesamt["gesperrt"], signale=gesamt["signale"],
+        betroffene_signale=gesamt["davon"],
+    )
+    console.print(f"\n[bold]Zusammen[/]\n{zaehlung.bericht()}\n")
+    console.print(
+        "[dim]Der Versuchszaehler bleibt unveraendert - hier wird gezaehlt, "
+        "nicht bewertet.[/]\n"
+    )
+
+
+@app.command()
 def vereinbar(
     regler: str = typer.Option("Vola-Ziel", "--regler", "-r"),
     rendite: float = typer.Option(15.0, "--rendite", help="Mindestrendite in %."),
