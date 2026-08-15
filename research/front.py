@@ -26,6 +26,17 @@ die dieses Projekt ueber sich selbst hat.
 
 Was dabei ehrlich bleiben muss
 ------------------------------
+**Und sie sind gegen verschiedene Huerden gerechnet.** Die Berichte reichen von
+102 bis 162 Versuchen; ein Punkt vom 8. August stand gegen eine deutlich
+mildere Schwelle als einer vom 14. Wer ihre gespeicherten Werte
+nebeneinanderlegt, vergleicht Massstaebe statt Messungen - und die aelteren
+sehen dabei systematisch besser aus. Gemessen an einem Punkt, der beides
+hergibt: 0,860 bei 112 Versuchen gegen 0,804 bei 166, dieselben Trades.
+
+Deshalb wird auf den heutigen Stand umgerechnet, wo die Angaben reichen. Wo
+nicht, bleibt der Wert des Laufs stehen und der Punkt wird markiert - eine
+erfundene Umrechnung waere schlimmer als eine sichtbare Luecke.
+
 Die aelteren Berichte tragen die **Form** der Verteilung nicht mit; dort gilt
 die Voreinstellung, also die Form des Spitzenkandidaten. Fuer Punkte derselben
 Familie ist das eine brauchbare Naeherung, aber eine Naeherung - und beim
@@ -61,17 +72,63 @@ class Messpunkt:
     """Trug der Bericht die Form der Verteilung nicht mit?"""
 
     dsr: float | None = None
-    """Der **gemessene** Deflated Sharpe dieses Punktes.
+    """Der Deflated Sharpe, **wie er im Bericht steht**.
 
-    Er ist das Urteil, und er ist exakt: Das Gate hat ihn mit der wirklichen
-    Verteilung des Punktes gerechnet. Die Grenzlinie daneben uebersetzt den
-    Abstand in Sharpe-Einheiten und ist auf die Form angewiesen - fehlt sie im
-    Bericht, ist nur diese Uebersetzung ungenau, nicht das Urteil.
+    Das Gate hat ihn mit der wirklichen Verteilung des Punktes gerechnet - und
+    gegen den Versuchsstand **jenes Laufs**. Genau daran haengt der naechste
+    Punkt.
+    """
+
+    versuche: int = 0
+    """Der Versuchsstand, gegen den ``dsr`` gerechnet wurde.
+
+    **Ohne ihn vergleicht diese Auswertung Werte gegen verschiedene Huerden.**
+    Die Berichte reichen von 102 bis 162 Versuchen; ein Punkt vom 8. August
+    steht gegen eine deutlich mildere Schwelle als einer vom 14. Genau dieser
+    Fehler wurde fuer die Bestenliste in Befund 50 behoben - in den Berichten
+    steckte er weiter, und ``cli front`` hat sie nebeneinandergelegt.
+
+    0 heisst: Der Bericht trug ihn nicht mit. Dann bleibt der gespeicherte
+    Wert stehen, und der Punkt ist ueber ``umgerechnet`` als ungenau
+    erkennbar.
     """
 
     @property
     def name(self) -> str:
         return f"{self.regler} {self.stellung:g}"
+
+    @property
+    def umrechenbar(self) -> bool:
+        """Reichen die Angaben, um den Wert auf einen anderen Stand zu holen?
+
+        Es braucht die Form der Verteilung - ohne Schiefe und Woelbung waere
+        die Umrechnung geraten, und ein geratener Wert ist schlimmer als eine
+        ehrliche Luecke.
+        """
+        return (
+            self.versuche > 0
+            and self.kandidat.schiefe is not None
+            and self.kandidat.woelbung is not None
+        )
+
+    def dsr_bei(self, versuche: int) -> float | None:
+        """Der Deflated Sharpe, wie er bei diesem Versuchsstand aussaehe.
+
+        Dieselbe Umrechnung wie ``leaderboard.Entry.dsr_bei``, und aus
+        demselben Grund: Zwei Werte gegen verschiedene Huerden sind keine zwei
+        Werte, sondern zwei Massstaebe.
+        """
+        if not self.umrechenbar:
+            return self.dsr
+        from research.gates import deflated_sharpe_ratio
+
+        return deflated_sharpe_ratio(
+            observed_sharpe=self.kandidat.sharpe_je_trade,
+            trials=max(versuche, 1),
+            sample_size=self.kandidat.trades,
+            skew=self.kandidat.schiefe or 0.0,
+            kurtosis=self.kandidat.woelbung or 3.0,
+        )
 
 
 def lade(ordner: Path | str) -> list[Messpunkt]:
@@ -108,6 +165,11 @@ def lade(ordner: Path | str) -> list[Messpunkt]:
                     ),
                     genaehert=not (schiefe and woelbung),
                     dsr=_gemessener_dsr(punkt),
+                    versuche=int(
+                        daten.get("versuche")
+                        or daten.get("analyse", {}).get("versuche")
+                        or 0
+                    ),
                 )
             )
     return gefunden
@@ -143,26 +205,49 @@ class Front:
     def naechster(self):
         return self.budget.naechster
 
+    def dsr_von(self, punkt: Messpunkt) -> float | None:
+        """Der Deflated Sharpe dieses Punktes **auf heutigem Versuchsstand**.
+
+        Der springende Punkt der ganzen Auswertung. Die Berichte reichen von
+        102 bis 162 Versuchen; wer ihre gespeicherten Werte nebeneinanderlegt,
+        vergleicht Massstaebe statt Messungen - und die aelteren sehen dabei
+        systematisch besser aus, weil sie gegen eine mildere Schwelle
+        gerechnet wurden.
+        """
+        return punkt.dsr_bei(self.versuche)
+
+    @property
+    def unvergleichbar(self) -> list[Messpunkt]:
+        """Punkte, deren Wert sich nicht auf heute holen laesst.
+
+        Ihr gespeicherter DSR bleibt stehen - eine Umrechnung zu erfinden
+        waere schlimmer als eine ehrliche Luecke. Sie sind hier abrufbar,
+        damit die Luecke nicht unsichtbar bleibt.
+        """
+        return [p for p in self.punkte if p.dsr is not None and not p.umrechenbar]
+
     @property
     def bestanden(self) -> list[Messpunkt]:
-        """Punkte, deren **gemessener** Deflated Sharpe die Schwelle erreicht.
-
-        Das ist das Urteil - exakt, weil das Gate mit der wirklichen Verteilung
-        des Punktes gerechnet hat. Die Grenzlinie sagt nur, wie weit es fehlt.
-        """
-        return [p for p in self.punkte if p.dsr is not None and p.dsr >= ZIEL]
+        """Punkte, deren Deflated Sharpe die Schwelle erreicht - auf heute
+        gerechnet, damit alle gegen dieselbe Huerde stehen."""
+        return [
+            p
+            for p in self.punkte
+            if (wert := self.dsr_von(p)) is not None and wert >= ZIEL
+        ]
 
     @property
     def bester(self) -> Messpunkt | None:
-        mit = [p for p in self.punkte if p.dsr is not None]
-        return max(mit, key=lambda p: p.dsr or 0.0) if mit else None
+        mit = [p for p in self.punkte if self.dsr_von(p) is not None]
+        return max(mit, key=lambda p: self.dsr_von(p) or 0.0) if mit else None
 
     def tabelle(self, *, hoechstens: int = 12) -> str:
         zeilen = [
             f"{'Punkt':26} {'Trades':>7} {'hat':>8} {'noetig':>9} {'Faktor':>8} "
             f"{'DSR':>7}  "
         ]
-        gemessen = {p.kandidat.name: p.dsr for p in self.punkte}
+        gemessen = {p.kandidat.name: self.dsr_von(p) for p in self.punkte}
+        ungenau = {p.kandidat.name for p in self.unvergleichbar}
         geordnet = sorted(
             self.abstaende,
             key=lambda a: a.faktor if a.faktor is not None else float("inf"),
@@ -172,6 +257,8 @@ class Front:
             noetig = f"{a.noetig:.4f}" if a.noetig is not None else "unerr."
             faktor = f"{a.faktor:.2f}" if a.faktor is not None else "  --"
             marke = " ~" if a.kandidat.name in genaehert else ""
+            if a.kandidat.name in ungenau:
+                marke += " !"
             wert = gemessen.get(a.kandidat.name)
             dsr = f"{wert:.3f}" if wert is not None else "  -"
             zeilen.append(
@@ -198,13 +285,23 @@ class Front:
                 f"Zulassung - jeder davon muss durch alle elf Gates."
             )
         bester = self.bester
-        hoechster = (
-            f" Der hoechste gemessene Deflated Sharpe der Familie liegt bei "
-            f"{bester.dsr:.3f} ('{bester.name}') gegen eine Schwelle von "
-            f"{ZIEL:.2f}."
-            if bester is not None
-            else ""
-        )
+        hoechster = ""
+        if bester is not None:
+            wert = self.dsr_von(bester)
+            hoechster = (
+                f" Der hoechste Deflated Sharpe der Familie liegt bei "
+                f"{wert:.3f} ('{bester.name}') gegen eine Schwelle von "
+                f"{ZIEL:.2f} - gerechnet auf den heutigen Stand von "
+                f"{self.versuche} Versuchen, nicht auf den des jeweiligen "
+                f"Laufs."
+            )
+        ungenau = self.unvergleichbar
+        if ungenau:
+            hoechster += (
+                f" ({len(ungenau)} Punkte tragen die Form ihrer Verteilung "
+                f"nicht mit und stehen mit dem Wert ihres Laufs da - in der "
+                f"Tabelle mit '!' markiert.)"
+            )
         return (
             f"**Kein einziger von {len(self.punkte)} gemessenen Punkten "
             f"erreicht die Schwelle.**{hoechster} Am naechsten an der "

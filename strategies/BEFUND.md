@@ -5619,3 +5619,69 @@ es gewesen, wenn er knapp gescheitert waere - und dann haette die
 Unterscheidung ueber die ganze Diagnose entschieden.
 
 Versuchsstand 166 unveraendert, Suchbudget 36 von 100.
+
+## Siebenundsechzig. Derselbe Fehler, eine Ebene tiefer
+
+Beim Nachsehen, ob "mehr Maerkte" wirklich geschlossen ist, fiel eine Zeile im
+Bericht auf: ``'versuche': 102``. Er stammt vom 8. August. Die DSR-Werte darin
+sind gegen **102** Versuche gerechnet, heute stehen wir bei 166.
+
+Das ist kein Detail. Der Deflated Sharpe faellt mit jedem Versuch, und zwar
+spuerbar. An einem Punkt gemessen, der die noetigen Angaben mitbringt -
+dieselben Trades, nur ein anderer Versuchsstand:
+
+    Vola-Ziel 20,5    bei 112 Versuchen   0,8600
+                      bei 146 Versuchen   0,8235
+                      bei 166 Versuchen   0,8042
+
+**0,056 Unterschied, ohne dass sich an der Strategie irgendetwas geaendert
+haette.** Und ``cli front`` hat genau solche Werte nebeneinandergelegt: 23
+Punkte aus Berichten zwischen 102 und 162 Versuchen, verglichen, als stuenden
+sie gegen dieselbe Schwelle. Die aelteren sehen dabei systematisch besser aus.
+
+### Warum das besonders aergerlich ist
+
+Genau dieser Fehler wurde schon einmal behoben - **Befund 50: "Die Bestenliste
+verglich gegen verschiedene Huerden."** Dort bekam ``Entry`` das Feld
+``versuche`` und eine Methode ``dsr_bei``. In den Berichten steckte er weiter,
+und die Auswertung, die sie zusammenlegt, hat ihn geerbt.
+
+Eine Ebene tiefer, dieselbe Ursache: Eine Zahl wird gespeichert, ohne die
+Bedingung, unter der sie gilt.
+
+### Was gebaut wurde
+
+``Messpunkt`` traegt jetzt den Versuchsstand seines Berichts und rechnet auf
+Wunsch um - dieselbe Umrechnung wie in der Bestenliste, aus derselben Quelle.
+``Front.bestanden``, ``bester`` und die Tabelle nutzen den umgerechneten Wert.
+
+Ein Test haelt die Richtung fest: Ein Punkt, der bei 20 Versuchen 0,97 hatte,
+gilt bei 5000 nicht mehr als bestanden.
+
+### Die Luecke, die bleibt - und sie ist groesser als die Korrektur
+
+Umrechnen braucht die **Form** der Verteilung. Nur drei der 23 Punkte tragen
+sie mit; sie stammen aus dem einzigen Bericht nach Einfuehrung von
+``_formkennzahlen``. Die anderen zwanzig behalten den Wert ihres Laufs und sind
+in der Tabelle mit ``!`` markiert.
+
+Darunter ist ausgerechnet der hoechste: **'Perioden-Faktor 1' mit 0,851 stammt
+von 112 Versuchen.** Die Zahl, die seit Befund 49 als "hoechster Deflated
+Sharpe der ganzen Familie" durch alle Berichte laeuft, ist damit zu
+optimistisch - um wie viel, laesst sich nicht sagen, weil die Form fehlt. Die
+Groessenordnung ist am Vola-Ziel-Punkt oben ablesbar.
+
+Eine Umrechnung zu erfinden waere schlimmer als die Luecke. Sie ist jetzt
+wenigstens sichtbar statt unsichtbar.
+
+### Was sich am Ergebnis nicht aendert
+
+Kein Punkt erreicht die Schwelle - vorher nicht und nachher nicht, und die
+Korrektur schiebt alle Werte in dieselbe Richtung. Die Aussage aus Befund 49
+steht; nur die Zahl daneben war freundlicher, als sie sein durfte.
+
+Nebenbei bestaetigt: "Mehr Maerkte" ist gruendlich geschlossen. Alle 15
+Kombinationen sind gemessen, und mehr Beine machen es **schlechter** -
+BTC+ETH+XRP bringt 260 Trades statt 152 und faellt dabei von 0,86 auf 0,42.
+
+Versuchsstand 166 unveraendert.

@@ -190,3 +190,97 @@ class TestMehrVersuche:
 
         assert frueh is not None and spaet is not None
         assert spaet.noetig > frueh.noetig
+
+
+class TestGemeinsameHuerde:
+    """Alle Punkte gegen **dieselbe** Huerde - sonst vergleicht man Massstaebe.
+
+    Die Berichte reichen von 102 bis 162 Versuchen. Ein Punkt vom 8. August
+    stand gegen eine deutlich mildere Schwelle als einer vom 14., und die
+    aelteren sehen deshalb systematisch besser aus. Genau dieser Fehler wurde
+    fuer die Bestenliste in Befund 50 behoben - in den Berichten steckte er
+    weiter, und diese Auswertung hat sie nebeneinandergelegt.
+
+    ``test_ein_alter_punkt_wird_auf_heute_geholt`` ist der Test dazu.
+    """
+
+    def punkt_mit_form(
+        self, tmp: Path, *, versuche: int, name: str = "a.json"
+    ) -> Path:
+        datei = tmp / name
+        datei.write_text(
+            json.dumps(
+                {
+                    "regler": "Vola-Ziel",
+                    "versuche": versuche,
+                    "punkte": [punkt(schiefe=3.4, woelbung=16.0, dsr=0.86)],
+                }
+            )
+        )
+        return datei
+
+    def test_der_versuchsstand_kommt_aus_dem_bericht(self, tmp_path: Path) -> None:
+        self.punkt_mit_form(tmp_path, versuche=112)
+
+        assert lade(tmp_path)[0].versuche == 112
+
+    def test_ein_alter_punkt_wird_auf_heute_geholt(self, tmp_path: Path) -> None:
+        """**Der Test, der diese Klasse traegt.**
+
+        Derselbe Punkt gegen mehr Versuche gerechnet muss schlechter
+        dastehen - sonst ist die Umrechnung wirkungslos, und die Auswertung
+        vergleicht weiter Massstaebe.
+        """
+        self.punkt_mit_form(tmp_path, versuche=112)
+        geladen = lade(tmp_path)[0]
+
+        assert geladen.umrechenbar
+        frueh = geladen.dsr_bei(112)
+        spaet = geladen.dsr_bei(166)
+        assert spaet < frueh, f"{spaet:.4f} muesste unter {frueh:.4f} liegen"
+
+    def test_ohne_form_bleibt_der_wert_des_laufs_stehen(self, tmp_path: Path) -> None:
+        """Eine Umrechnung zu erfinden waere schlimmer als eine Luecke - aber
+        die Luecke muss sichtbar sein."""
+        bericht(tmp_path, punkte=[punkt(dsr=0.86)])
+        geladen = lade(tmp_path)[0]
+
+        assert not geladen.umrechenbar
+        assert geladen.dsr_bei(999) == 0.86
+
+    def test_unvergleichbare_punkte_sind_abrufbar(self, tmp_path: Path) -> None:
+        self.punkt_mit_form(tmp_path, versuche=112, name="mit.json")
+        bericht(tmp_path, punkte=[punkt(stellung=8.0, dsr=0.5)], name="ohne.json")
+        front = Front(punkte=lade(tmp_path), versuche=166)
+
+        assert len(front.unvergleichbar) == 1
+        assert "!" in front.tabelle()
+
+    def test_das_urteil_nennt_den_stand_auf_den_gerechnet_wurde(
+        self, tmp_path: Path
+    ) -> None:
+        """Sonst liest sich die Zahl, als waere sie so gemessen worden."""
+        self.punkt_mit_form(tmp_path, versuche=112)
+        front = Front(punkte=lade(tmp_path), versuche=166)
+
+        urteil = front.urteil()
+        assert "heutigen Stand von 166 Versuchen" in urteil
+        assert "nicht auf den des jeweiligen Laufs" in urteil
+
+    def test_bestanden_zaehlt_den_umgerechneten_wert(self, tmp_path: Path) -> None:
+        """Ein Punkt, der bei wenigen Versuchen ueber der Schwelle lag, darf
+        heute nicht mehr als bestanden gelten."""
+        datei = tmp_path / "a.json"
+        datei.write_text(
+            json.dumps(
+                {
+                    "regler": "Vola-Ziel",
+                    "versuche": 20,
+                    "punkte": [punkt(schiefe=3.4, woelbung=16.0, dsr=0.97)],
+                }
+            )
+        )
+        front = Front(punkte=lade(tmp_path), versuche=5000)
+
+        assert front.punkte[0].dsr == 0.97, "Der gespeicherte Wert bleibt"
+        assert front.bestanden == [], "Auf heute gerechnet reicht er nicht mehr"
