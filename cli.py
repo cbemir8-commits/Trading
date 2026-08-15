@@ -4773,6 +4773,70 @@ def sperrprobe(
 
 
 @app.command()
+def taktung(
+    symbol: str = typer.Option("BTCUSD_BITSTAMP", "--symbol", "-s"),
+    intervalle: str = typer.Option(
+        "D:40,15:16,15:96", "--intervalle",
+        help="Kerzenlaenge:Haltedauer, durch Komma.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Welche Kerzenlaenge kann den Deflated Sharpe arithmetisch tragen?
+
+    Befund 61: Von vier offenen Gates ist genau eines ein ungeloestes
+    Qualitaetsproblem. Befund 54: Auf Tageskerzen ist es nicht loesbar, weil
+    Qualitaet und Menge dort gekoppelt sind - die Historie gibt nur rund 3300
+    Tage her.
+
+    Auf Fuenfzehnminutenkerzen liegen 222 700 Kerzen. Die naheliegende
+    Hoffnung: Der noetige Vorteil je Trade faellt mit ``1/sqrt(N)``, also
+    reicht bei vielen Trades ein winziger. **Der Haken ist rechenbar** - der
+    noetige Vorteil faellt mit der Wurzel, die Gebuehr je Trade bleibt
+    konstant. Irgendwo schneiden sich die Linien.
+
+    Die Streuung je Trade wird dabei **gemessen**, nicht mit der Wurzel der
+    Zeit hochgerechnet: Die Abkuerzung setzt Unabhaengigkeit voraus, die es
+    bei Kursen nicht gibt, und liefert fuer kurze Haltedauern zu kleine Zahlen
+    - also eine zu optimistische Rechnung.
+
+    Sagt **nicht**, ob dort ein Vorteil existiert - das misst ``cli scan``.
+    Nur, wie gross er sein muesste. Kostet keinen Versuch.
+    """
+    from research.admission import load_trials
+    from research.taktung import rechne
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    versuche = load_trials(Path(settings.paths.state) / "trials.json")
+
+    console.print(
+        f"\n[bold]Taktung[/] {symbol}, Huerde bei {versuche} Versuchen\n"
+        f"[dim]Gebuehr {0.04:.2f} % je Roundtrip, beide Seiten Limit.[/]\n"
+    )
+    for eintrag in intervalle.split(","):
+        roh, _, halten = eintrag.strip().partition(":")
+        if not roh or not halten.isdigit():
+            console.print(f"[red]'{eintrag}' ist kein Paar Kerzenlaenge:Haltedauer.[/]")
+            raise typer.Exit(2)
+        interval_obj = Interval(roh)
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[yellow]Keine Kerzen fuer {interval_obj.label}.[/]")
+            continue
+
+        ergebnis = rechne(
+            frame,
+            name=interval_obj.label,
+            haltedauer=int(halten),
+            versuche=versuche,
+        )
+        console.print(f"[bold]{ergebnis.name}[/]")
+        console.print(ergebnis.tabelle())
+        console.print(f"\n{ergebnis.urteil()}\n")
+
+
+@app.command()
 def gatemuster(
     hoechstens: int = typer.Option(10, "--hoechstens", "-n", help="Wie viele Paare."),
 ) -> None:

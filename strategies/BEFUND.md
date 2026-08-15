@@ -5250,3 +5250,93 @@ Das aendert nichts an der Lage - es benennt sie genauer. Die verbleibenden 64
 Versuche des Suchbudgets haben genau ein Ziel, und es heisst Deflated Sharpe.
 
 Versuchsstand 166 unveraendert.
+
+## Zweiundsechzig. Die Huerde in Prozent - und wo die Gebuehr sie einholt
+
+Befund 61 hat den Stand zugespitzt: genau ein ungeloestes Qualitaetsproblem,
+und es heisst Deflated Sharpe. Befund 54 hat gezeigt, warum es auf Tageskerzen
+nicht loesbar ist - Qualitaet und Menge sind gekoppelt, weil die Historie nur
+rund 3300 Tage hergibt.
+
+Damit liegt die naheliegende Hoffnung auf der Hand, und sie ist rechenbar. Der
+noetige Sharpe je Trade faellt mit ``1/sqrt(N)``:
+
+    150 Trades  ->  0,3606        2000 Trades  ->  0,0974
+    500 Trades  ->  0,1954       10000 Trades  ->  0,0435
+
+Zweitausend Trades zu je 0,097 ergeben dieselbe Guete wie hundertfuenfzig zu je
+0,36. Auf Fuenfzehnminutenkerzen liegen **222 700** Kerzen je Markt - der Platz
+waere da.
+
+**Der Haken ist ebenfalls rechenbar:** Der noetige Vorteil faellt mit der
+Wurzel, die **Gebuehr je Trade bleibt konstant** bei 0,04 % vom Nominalwert.
+Irgendwo schneiden sich die Linien.
+
+### Die Umrechnung
+
+Ein Sharpe je Trade ist ein Vielfaches der Streuung. Wer 0,36 braucht und
+dessen Trades um 1,24 % streuen, braucht 0,45 % Bruttobewegung - plus Gebuehr.
+Die Streuung wird dabei **gemessen**, nicht mit der Wurzel der Zeit
+hochgerechnet: Diese Abkuerzung setzt Unabhaengigkeit voraus, die es bei Kursen
+nicht gibt, und liefert fuer kurze Haltedauern zu kleine Zahlen - also eine zu
+optimistische Rechnung.
+
+    python -m cli taktung        # kostet keinen Versuch
+
+### 15 Minuten, vier Stunden Haltedauer (Streuung 1,24 %)
+
+      Trades  noetiger SR   brutto %  mit Kosten %  davon Gebuehr  passt
+         150       0,3606     0,4483        0,4883             8 %  ja
+        1000       0,1378     0,1714        0,2114            19 %  ja
+        2000       0,0974     0,1210        0,1610            25 %  ja
+       10000       0,0435     0,0541        0,0941            43 %  ja
+
+**Arithmetisch tragfaehig bis 10 000 Trades.** Bei Tageskerzen dagegen passt
+keine einzige Stufe: 5331 Kerzen bei 40 Tagen Haltedauer ergeben hoechstens 133
+Trades je Markt, und die Streuung ueber 40 Tage betraegt 47,6 %.
+
+### Und jetzt die unangenehme Zusammenfuehrung
+
+Der noetige Bruttovorteil bei 10 000 Trades ist **0,094 % je Trade**. Der
+Vorteilsscan hat auf denselben Kerzen gemessen, was tatsaechlich da ist - die
+staerkste Zelle bei BTC (16 Kerzen Rueckblick, 16 halten) hat eine Spanne von
+**0,088 %**, und eine Regel erntet davon grob die Haelfte.
+
+Das ist dieselbe Groessenordnung. Und genau diese Zelle ist die, an der der
+Scan gescheitert ist: erste Haelfte t = -2,90, zweite Haelfte t = +0,29 -
+vollstaendig verschwunden, obwohl die zweite Haelfte einen Effekt dieser
+Groesse gesehen haette.
+
+**Die Rechnung schliesst den Weg also nicht aus - sie zeigt, dass der noetige
+Vorteil genau in der Groessenordnung dessen liegt, was auf diesen Daten
+nachweislich instabiles Rauschen ist.** Wer dort sucht, sucht etwas, das von
+einem Artefakt nicht zu unterscheiden waere, und muesste 43 % davon an die
+Boerse abgeben.
+
+### Zwei eigene Fehler auf dem Weg
+
+**Erstens** waehlte meine Auswertung die Stufe mit dem *kleinsten*
+Kostenanteil - und das ist immer die mit den wenigsten Trades, weil dort der
+noetige Vorteil am groessten ist. Damit meldete die Rechnung ausgerechnet den
+Punkt, um den es nicht geht: Der ganze Sinn ist zu pruefen, ob **viele** Trades
+tragen. Gemeldet wird jetzt die groesste tragfaehige Stufe.
+
+**Zweitens** gilt ``hoechstens_trades`` fuer *einen* Markt bei durchgehendem
+Halten. Der gemessene Kandidat handelt einen Korb aus zwei Beinen und kommt
+deshalb auf 154 Trades, obwohl die Schranke fuer BTC allein bei 133 liegt. Der
+Vorbehalt steht jetzt im Kopf jeder Ausgabe.
+
+### Was daraus folgt
+
+Der Nutzer hat in jedem Auftrag ``cli backfill --intervall 15`` als offenen
+Punkt gefuehrt. **Die Daten liegen hier bereits**: 222 700 Kerzen je Markt vom
+30.03.2020 bis 05.08.2026. Der Backfill auf seinem Rechner bleibt noetig, wenn
+er selbst rechnen will - fuer diese Frage war er es nicht.
+
+Und die Frage ist beantwortet, ohne einen Versuch auszugeben: Fuenfzehn Minuten
+sind arithmetisch nicht ausgeschlossen, aber der Vorteil, den es dort braeuchte,
+ist so klein wie das, was der Scan bereits als verschwunden gemessen hat. Das
+ist kein Verbot, dort zu suchen - es ist der Preis, den man vorher kennen
+sollte.
+
+Versuchsstand 166 unveraendert.
