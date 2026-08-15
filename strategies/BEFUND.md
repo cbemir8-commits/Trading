@@ -5103,3 +5103,77 @@ Schon ueber die neun guenstigen Gates halten zwei Drittel der Ziehungen mit.
 
 Versuchsstand 166 unveraendert - eine Kontrollrechnung ueber die eigene
 Messung ist keine Hypothese ueber den Markt.
+
+## Sechzig. Zwei Wege, dieselben zwei Gates - und beide sind Zufall
+
+Befund 59 endete mit einer Ansage: Die Sperrprobe gilt fuer **jede** Massnahme,
+die Trades entfernt statt sie besser zu machen, und die Abkuehlung aus Befund
+44 steht ungeprueft in der Liste der geschlossenen Richtungen.
+
+Beim Nachlesen faellt auf, wie genau die beiden Faelle einander gleichen:
+
+    Massnahme          Trades   Gates   neu bestanden
+    Abkuehlung 3        152 -> 140   9/11   Schlechtestes Jahr, Parameter-Plateau
+    Schock-Overlay      154 -> 143   9/11   Schlechtestes Jahr, Parameter-Plateau
+
+Zwei voellig verschiedene Eingriffe - eine Sperrfrist nach jedem Trade, eine
+Reaktion auf Volatilitaetsschocks -, ungefaehr gleich viele Trades weniger, und
+**dieselben zwei Gates** kippen. Das ist kein Zufall zweier Zufaelle, das ist
+ein Muster.
+
+### Beide durch dieselbe Mechanik
+
+Die Abkuehlung wirkt im Betrieb ueber ``cooldown_bars``, das Overlay ueber eine
+Sperre. Fuer die Kontrolle wird die Abkuehlung deshalb **als Sperre
+nachgebildet** - genau die Signale, die sie blockiert haette. Sonst
+unterschieden sich echter Fall und Ziehung nicht nur in der Auswahl, sondern
+auch im Weg dorthin.
+
+    python -m cli sperrprobe --massnahme abkuehlung --kerzen 3 -n 150
+
+Gesperrt werden dabei 3 Einstiege in BTC und 9 in ETH.
+
+### Das Ergebnis
+
+    Kennzahl               gemessen            Zufall (Median, Spanne)   Anteil
+    ---------------------------------------------------------------------------
+    Gates bestanden            7/9             7.000 [5.000 bis 7.000]   70,0 %
+    Rueckgang %               10.11          10.069 [8.195 bis 12.160]   53,3 %
+    Schlechtestes Jahr        -9.79        -9.750 [-10.620 bis -7.430]   53,3 %
+    Sharpe je Trade          0.2568            0.257 [0.214 bis 0.280]   50,0 %
+
+**Die Abkuehlung liegt in jeder einzelnen Kennzahl auf dem Median.** Nicht
+knapp daneben - auf dem Median. Sie leistet exakt so viel wie das Streichen
+derselben Anzahl beliebiger Einstiege, und keinen Deut mehr. Beim
+Schock-Overlay lagen die Anteile noch bei 26 bis 28 %; hier sind es 50 bis 53.
+
+### Der allgemeine Befund
+
+Damit ist etwas belegt, das ueber beide Einzelfaelle hinausgeht: **Zwei der elf
+Gates - Schlechtestes Jahr und Parameter-Plateau - reagieren auf die Anzahl der
+Trades, nicht auf ihre Auswahl.** Wer irgendwelche zwoelf von hundertvierzig
+Einstiegen streicht, besteht sie mit ordentlicher Wahrscheinlichkeit.
+
+Befund 44 hatte das halb gesehen und aus dem falschen Grund richtig
+geschlossen. Dort stand: *"Neun von elf klingt nach Fortschritt und ist an
+dieser Stelle das Gegenteil"* - begruendet damit, dass Deflated Sharpe und
+Messlatte sich verschlechtern. Das stimmte. Was dort fehlte, ist der schaerfere
+Punkt: Die zwei reparierten Gates waren gar keine Reparatur.
+
+Die Liste der geschlossenen Richtungen ist entsprechend berichtigt. "Abkuehlung
+repariert zwei Gates" stand seit Wochen falsch darin.
+
+### Was das fuer die Suche heisst
+
+Die Gate-Zahl taugt noch weniger als Fortschrittsmass, als Abschnitt neunzehn
+schon festhielt. Dort ging es um die Rangfolge zwischen Risiko-Gates und
+Deflated Sharpe; hier kommt ein zweiter Grund dazu, und er ist unangenehmer:
+Zwei Gates lassen sich durch blosses Weglassen erreichen, ohne dass irgendetwas
+besser geworden waere.
+
+Praktisch folgt daraus eine Regel, die ab sofort gilt: **Jede Massnahme, die
+Trades entfernt, ist erst dann ein Ergebnis, wenn sie die Sperrprobe
+bestanden hat.** Bisher hat das keine getan.
+
+Versuchsstand 166 unveraendert - Kontrollrechnungen ueber die eigene Messung
+sind keine Hypothesen ueber den Markt.

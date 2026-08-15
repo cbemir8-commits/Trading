@@ -4624,10 +4624,17 @@ def sperrprobe(
         help="Symbole, durch Komma getrennt.",
     ),
     intervall: str = typer.Option("D", "--intervall", "-i"),
+    massnahme: str = typer.Option(
+        "schock", "--massnahme",
+        help="Welche Trade-Entfernung geprueft wird: schock, abkuehlung.",
+    ),
+    kerzen: int = typer.Option(
+        3, "--kerzen", help="Nur fuer abkuehlung: Laenge der Sperrfrist."
+    ),
     ziehungen: int = typer.Option(200, "--ziehungen", "-n"),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
-    """Leistet das Schock-Overlay mehr, als beliebiges Streichen taete?
+    """Leistet eine Trade-Entfernung mehr, als beliebiges Streichen taete?
 
     Befund 58 hat 13 von 165 Einstiegen gesperrt, und zwei Gates sind
     umgekippt - von 7 auf 9 von 11. Das ist der beste Stand, den dieses
@@ -4639,10 +4646,19 @@ def sperrprobe(
     Streichen genauso oft neun von elf erzeugt, hat das Overlay nichts
     geleistet.
 
-    Gezogen werden deshalb **Einstiegssignale**, genauso viele wie das Overlay
-    trifft, je Bein einzeln. Entschieden wird an der Zahl bestandener Gates,
-    und das Kriterium steht vor der Messung fest: hoechstens fuenf Prozent der
-    Ziehungen duerfen mithalten.
+    Gezogen werden deshalb **Einstiegssignale**, genauso viele wie die
+    Massnahme trifft, je Bein einzeln. Entschieden wird an der Zahl bestandener
+    Gates, und das Kriterium steht vor der Messung fest: hoechstens fuenf
+    Prozent der Ziehungen duerfen mithalten.
+
+    Die Frage gilt fuer **jede** Massnahme, die Trades entfernt statt sie
+    besser zu machen. ``--massnahme abkuehlung`` prueft die Sperrfrist aus
+    Befund 44, die dort ebenfalls neun von elf lieferte - bei zwoelf Trades
+    weniger und denselben zwei gekippten Gates.
+
+    Beide gehen dabei durch **dieselbe** Mechanik: Auch die Abkuehlung wird
+    als Sperre genau der Kerzen nachgebildet, die sie blockiert haette. Sonst
+    verglichen sich Mechanismen statt Auswahlen.
 
     Kostet keinen Versuch - geprueft wird eine bereits gemessene Aussage, kein
     neuer Kandidat. Die teuren Gates bleiben aussen vor; **das
@@ -4671,12 +4687,31 @@ def sperrprobe(
     versuche = load_trials(Path(settings.paths.state) / "trials.json")
 
     signale = {name: _signalkerzen(f, genome) for name, f in frames.items()}
-    schock_masken = {name: gesperrt(f) for name, f in frames.items()}
-    anzahl = {
-        name: int((signale[name] & schock_masken[name]).sum()) for name in frames
-    }
+    if massnahme == "schock":
+        masken = {name: signale[name] & gesperrt(f) for name, f in frames.items()}
+    elif massnahme == "abkuehlung":
+        # Die Abkuehlung als **Sperre** nachgebildet: genau die Signale, die
+        # sie blockiert haette. Sie ueber ``cooldown_bars`` laufen zu lassen
+        # und die Null ueber eine Sperre waere ein Vergleich zweier
+        # Mechanismen statt zweier Auswahlen.
+        mit = {
+            name: _signalkerzen(f, genome.model_copy(update={"cooldown_bars": kerzen}))
+            for name, f in frames.items()
+        }
+        masken = {name: signale[name] & ~mit[name] for name in frames}
+    else:
+        console.print(f"[red]Unbekannte Massnahme '{massnahme}'.[/]")
+        raise typer.Exit(2)
+
+    anzahl = {name: int(masken[name].sum()) for name in frames}
+    if not sum(anzahl.values()):
+        console.print("[red]Diese Massnahme entfernt keinen Einstieg.[/]")
+        raise typer.Exit(2)
     console.print(
         f"\n[bold]Sperrprobe[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Massnahme  {massnahme}"
+        + (f" ({kerzen} Kerzen)" if massnahme == "abkuehlung" else "")
+        + "\n"
         f"  Gesperrt   {', '.join(f'{n}: {a}' for n, a in anzahl.items())}\n"
         f"  Ziehungen  {ziehungen}\n"
         f"  Huerde     {versuche} Versuche (gelesen, nicht erhoeht)\n"
@@ -4722,7 +4757,7 @@ def sperrprobe(
             gesamt=len(gates.results),
         )
 
-    probe = Sperrprobe(echt=messe(schock_masken))
+    probe = Sperrprobe(echt=messe(masken))
     with console.status("[dim]zieht...[/]"):
         for saat in range(ziehungen):
             probe.zufall.append(messe(ziehe_signale(signale, anzahl, saat=saat)))

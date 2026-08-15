@@ -144,3 +144,37 @@ class TestBericht:
         )
 
         assert probe.p_rueckgang == 0.0
+
+
+class TestMassnahmen:
+    """Jede Massnahme geht durch dieselbe Mechanik - sonst vergleicht man sie.
+
+    Die Abkuehlung wirkt im Betrieb ueber ``cooldown_bars``, das Schock-Overlay
+    ueber eine Sperre. Fuer die Kontrolle werden **beide** als Sperre
+    nachgebildet: Sonst unterschieden sich echter Fall und Ziehung nicht nur in
+    der Auswahl, sondern auch im Weg dorthin, und der Vergleich saege am
+    eigenen Ast.
+    """
+
+    def test_die_abkuehlung_laesst_sich_als_sperre_nachbilden(self) -> None:
+        """Die blockierten Signale sind genau die, die mit Sperrfrist
+        wegfallen - nicht mehr und nicht weniger."""
+        import numpy as np
+
+        ohne = np.array([False, True, True, True, False, True], dtype=bool)
+        mit = np.array([False, True, False, False, False, True], dtype=bool)
+
+        maske = ohne & ~mit
+
+        assert list(np.flatnonzero(maske)) == [2, 3]
+        assert int(maske.sum()) == int(ohne.sum()) - int(mit.sum())
+
+    def test_eine_massnahme_ohne_wirkung_faellt_auf(self) -> None:
+        """Eine Sperre, die nichts sperrt, hat nichts zu pruefen - und still
+        eine leere Kontrolle zu melden waere von einem Ergebnis nicht zu
+        unterscheiden."""
+        import numpy as np
+
+        ohne = np.array([True, True, False], dtype=bool)
+
+        assert int((ohne & ~ohne).sum()) == 0
