@@ -4773,6 +4773,38 @@ def sperrprobe(
 
 
 @app.command()
+def gatemuster(
+    hoechstens: int = typer.Option(10, "--hoechstens", "-n", help="Wie viele Paare."),
+) -> None:
+    """Welche der elf Gates messen eigentlich verschiedene Dinge?
+
+    Aus Befund 60: Zwei Massnahmen haben dieselben zwei Gates gekippt, und
+    beide Male war es das blosse Streichen von Trades. Daraus folgt die
+    Frage, ob "sieben von elf" ueberhaupt sieben von elf unabhaengigen
+    Huerden bedeutet.
+
+    **Das ist keine Vorbereitung darauf, ein Gate zu streichen.** Ein Gate zu
+    entfernen, weil es "ohnehin dasselbe misst", waere die eleganteste Art,
+    die Latte zu senken. Der Nutzen ist ein anderer: Wer weiss, welche Huerden
+    zusammenfallen, weiss, wo eine Verbesserung ueberhaupt etwas bewirkt - und
+    wo ein Fortschritt groesser aussieht, als er ist.
+
+    Liest nur vorhandene Berichte. Kostet keinen Versuch.
+    """
+    from research.gatemuster import Gatemuster, lade
+
+    ordner = Path.cwd() / "reports"
+    muster = Gatemuster(
+        punkte=lade(ordner / "machbarkeit", ordner / "teststaerke")
+    )
+
+    console.print("\n[bold]Gatemuster[/] ueber alle vorhandenen Messpunkte\n")
+    if muster.punkte:
+        console.print(muster.tabelle(hoechstens=hoechstens))
+    console.print(f"\n{muster.urteil()}\n")
+
+
+@app.command()
 def vereinbar(
     regler: str = typer.Option("Vola-Ziel", "--regler", "-r"),
     rendite: float = typer.Option(15.0, "--rendite", help="Mindestrendite in %."),

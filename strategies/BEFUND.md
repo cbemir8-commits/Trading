@@ -5177,3 +5177,76 @@ bestanden hat.** Bisher hat das keine getan.
 
 Versuchsstand 166 unveraendert - Kontrollrechnungen ueber die eigene Messung
 sind keine Hypothesen ueber den Markt.
+
+## Einundsechzig. Elf Gates, aber nicht elf Fragen
+
+Aus Befund 60 folgt eine unangenehmere Frage, als dort gestellt wurde. Wenn
+zwei Massnahmen dieselben zwei Gates kippen und beide Male nur gestrichen
+haben - messen diese Gates dann ueberhaupt Verschiedenes? "Sieben von elf"
+liest sich wie sieben von elf unabhaengigen Huerden. Ob es das ist, stand nie
+fest.
+
+    python -m cli gatemuster      # liest nur Berichte, kostet keinen Versuch
+
+Gerechnet ueber 56 Messpunkte aus ``reports/`` - Reglerfahrten und gepflanzte
+Reihen -, je Paar die Korrelation zweier Ja-Nein-Groessen (Phi). Bewusst Phi
+und nicht die Uebereinstimmung: Zwei Gates, die praktisch immer bestehen,
+stimmen zu 100 % ueberein, ohne etwas miteinander zu tun zu haben.
+
+### Zwei Gates sagen ueber alle 56 Punkte dasselbe
+
+Und sie bedeuten das **Gegenteil** voneinander:
+
+* **Stichprobengroesse: 56 von 56.** Nie gerissen. Das Gate hat seine Arbeit
+  getan, indem es die schlechteren Kandidaten frueher aussortiert hat - die
+  tauchen in dieser Wolke gar nicht mehr auf.
+* **Deflated Sharpe: 0 von 56.** Ueber alle Messpunkte hinweg ist kein
+  einziger daran vorbeigekommen. Das ist keine Huerde mehr, an der sich
+  Fortschritt ablesen liesse - das ist die Wand.
+
+Mein erster Anlauf warf beide in einen Satz und erklaerte sie gemeinsam damit,
+die Vorauswahl habe schon gewirkt. Fuer ein nie bestandenes Gate ist das genau
+falsch herum, und der Fehler waere in der Zusammenfassung stehen geblieben,
+wenn ich die Zahlen nicht einzeln angesehen haette.
+
+### Was zusammenlaeuft
+
+    Paar                                       Phi   gleich
+    Bestaendigkeit / Out-of-Sample-Sharpe     +0,90     98 %
+    Drawdown / Messlatte                      -0,74     12 %
+    Monte-Carlo / Regime-Aufteilung           +0,64     93 %
+    Drawdown / Schlechtestes Jahr             +0,49     71 %
+    Parameter-Plateau / Regime-Aufteilung     -0,48     14 %
+
+**Bestaendigkeit und Out-of-Sample-Sharpe sind praktisch ein Gate.** In 98 %
+der Punkte fallen sie gleich aus. Wer eines von beiden bewegt, bewegt das
+andere mit - zwei Zeilen in der Gate-Liste, eine Anstrengung.
+
+**Drawdown und Messlatte laufen gegeneinander** (Phi -0,74, nur 12 % gleich).
+Das ist Befund 57 aus voellig anderen Daten: Dort wurde auf dem Groessenregler
+gemessen, dass 15 % Rendite und 12 % Rueckgang unvereinbar sind. Hier faellt
+dasselbe ueber 56 Punkte aus acht Reglerfahrten heraus, ohne dass danach
+gesucht wurde.
+
+### Was daraus folgt - und was ausdruecklich nicht
+
+**Nicht:** ein Gate zu streichen, weil es "ohnehin dasselbe misst". Das waere
+die eleganteste Art, die Latte zu senken, und der Grundsatz dagegen ist
+eindeutig. Das Urteil des Befehls sagt es an jeder Stelle selbst mit.
+
+**Wohl aber** eine schaerfere Sicht auf den eigenen Stand. Von den vier offenen
+Gates des Kandidaten sind nach den Befunden 57, 60 und diesem:
+
+    Schlechtestes Jahr   durch blosses Streichen erreichbar        (Befund 60)
+    Parameter-Plateau    durch blosses Streichen erreichbar        (Befund 60)
+    Messlatte            laeuft gegen den Drawdown, Nutzerfrage    (Befund 57, 61)
+    Deflated Sharpe      0 von 56 - die Wand                       (Befund 61)
+
+Von vier offenen Gates ist genau **eines** ein ungeloestes Qualitaetsproblem.
+Zwei sind Zaehlartefakte, eines ist eine Geschaeftsentscheidung. Wer "sieben
+von elf" liest und daraus vier Baustellen ableitet, hat drei davon zu viel.
+
+Das aendert nichts an der Lage - es benennt sie genauer. Die verbleibenden 64
+Versuche des Suchbudgets haben genau ein Ziel, und es heisst Deflated Sharpe.
+
+Versuchsstand 166 unveraendert.
