@@ -199,3 +199,69 @@ class TestSuchbudget:
 
         assert "Suchbudget" in text
         assert "27 von 100" in text
+
+
+class TestAuftragspunkte:
+    """Der Stand der Auftragspunkte - und warum er in den Code gehoert.
+
+    Der Auftrag listet in jeder Runde dieselben offenen Punkte. Zwei davon
+    waren laengst abgearbeitet - die 15-Minuten-Generationen seit Befund 29,
+    das Termin-Overlay seit Nummer zwoelf -, aber es gab keine Stelle, an der
+    das nachzulesen war. Also standen sie weiter da und wurden weiter als
+    offen gelesen.
+
+    Das ist nicht nur unordentlich, es ist **teuer**: Beinahe waeren vierzehn
+    Versuche fuer eine Messung ausgegeben worden, die es schon gab.
+    """
+
+    def test_erledigt_ohne_fundstelle_wird_abgewiesen(self) -> None:
+        """**Der Test, der diese Klasse traegt.**
+
+        "Erledigt" ohne nachlesbare Messung ist eine Behauptung - dieselbe
+        Regel wie bei den geschlossenen Richtungen, und aus demselben Grund:
+        Wer sich darauf verlaesst, misst nicht nach.
+        """
+        from research.stand import Auftragspunkt
+
+        with pytest.raises(ValueError, match="Fundstelle"):
+            Auftragspunkt(frage="Irgendwas", stand="lief gut")
+
+    def test_ein_offener_punkt_braucht_keine(self) -> None:
+        from research.stand import Auftragspunkt
+
+        offen = Auftragspunkt(
+            frage="Steht noch aus", stand="noch nicht gemessen", erledigt=False
+        )
+
+        assert not offen.erledigt
+        assert "offen" in str(offen)
+
+    def test_die_vier_punkte_des_auftrags_sind_erfasst(self) -> None:
+        from research.stand import AUFTRAG
+
+        fragen = " ".join(p.frage for p in AUFTRAG)
+        assert "P7" in fragen
+        assert "Research-KI" in fragen
+        assert "15-Minuten" in fragen
+        assert "backfill" in fragen
+
+    def test_jeder_erledigte_punkt_traegt_seine_nummer(self) -> None:
+        from research.stand import AUFTRAG
+
+        for punkt in AUFTRAG:
+            if punkt.erledigt:
+                assert punkt.befund > 0, punkt.frage
+
+    def test_der_bericht_warnt_vor_doppelten_messungen(self) -> None:
+        """Wer einen abgearbeiteten Punkt erneut misst, zahlt Versuche fuer
+        ein Ergebnis, das schon dasteht - und hebt die Huerde fuer alle."""
+        from research.stand import Lage
+
+        text = Lage(
+            kandidat="X", maerkte="BTC", trades=150, sharpe_je_trade=0.26,
+            noetiger_sharpe=0.29, bestanden=7, gesamt=11, offen=("DSR",),
+            versuche=166,
+        ).bericht()
+
+        assert "PUNKTE AUS DEM AUFTRAG" in text
+        assert "zahlt Versuche fuer ein Ergebnis, das schon dasteht" in text

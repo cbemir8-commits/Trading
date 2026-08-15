@@ -179,6 +179,73 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
 )
 
 
+@dataclass(frozen=True, slots=True)
+class Auftragspunkt:
+    """Ein Punkt aus dem Auftrag und sein gemessener Stand.
+
+    **Warum es das braucht.** Der Auftrag listet in jeder Runde dieselben
+    offenen Punkte. Zwei davon waren zu diesem Zeitpunkt laengst abgearbeitet -
+    die 15-Minuten-Generationen seit Befund 29, das Termin-Overlay seit Nummer
+    zwoelf -, aber es gab keine Stelle, an der das nachzulesen war. Also
+    standen sie weiter da, und ich habe sie weiter als offen gelesen.
+
+    Das ist nicht nur unordentlich, es ist **teuer**: Beinahe waeren vierzehn
+    Versuche fuer eine Messung ausgegeben worden, die es schon gab. Genau
+    davor warnt ``load_seeds`` seit jeher - jeder Wiederholungsversuch hebt die
+    Huerde des Deflated Sharpe fuer alle folgenden, ohne etwas beizutragen.
+
+    ``befund`` ist Pflicht, sobald ein Punkt als erledigt gilt: Erledigt ohne
+    Fundstelle ist eine Behauptung.
+    """
+
+    frage: str
+    stand: str
+    befund: int = 0
+    erledigt: bool = True
+
+    def __post_init__(self) -> None:
+        if self.erledigt and self.befund <= 0:
+            raise ValueError(
+                f"'{self.frage}' gilt als erledigt, hat aber keine Fundstelle "
+                f"im BEFUND - das waere eine Behauptung."
+            )
+
+    def __str__(self) -> str:
+        marke = f"Nr. {self.befund}" if self.befund else "offen"
+        return f"{'OK' if self.erledigt else '--'} {self.frage:34} {self.stand}  ({marke})"
+
+
+#: Die Punkte aus dem Auftrag, mit ihrem gemessenen Stand.
+AUFTRAG: tuple[Auftragspunkt, ...] = (
+    Auftragspunkt(
+        frage="P7: News- und Termin-Overlay",
+        stand="beides gebaut und gemessen; die Wirkung ist nicht belegt",
+        befund=59,
+    ),
+    Auftragspunkt(
+        frage="Research-KI im Wettbewerb nutzen",
+        stand="genutzt, vier Vorschlaege gemessen - alle schlechter",
+        befund=53,
+    ),
+    Auftragspunkt(
+        frage="Generation 6/7 auf 15-Minuten",
+        stand="alle 14 gemessen: 1 von 9 Gates, -9 bis -44 % p.a.",
+        befund=29,
+    ),
+    Auftragspunkt(
+        frage="Generation 5 auf Tageskerzen",
+        stand="Zuordnung liegt jetzt als Daten vor, Fehlpaarung wird gesperrt",
+        befund=64,
+    ),
+    Auftragspunkt(
+        frage="backfill 15m + wettbewerb beim Nutzer",
+        stand="Daten liegen hier vor; auf dem eigenen Rechner weiter noetig",
+        befund=62,
+        erledigt=False,
+    ),
+)
+
+
 #: Was nur auf dem Rechner des Nutzers laufen kann.
 #:
 #: Der Entwicklungscontainer ist von Bybit aus Regionsgruenden gesperrt. Das
@@ -266,6 +333,18 @@ class Lage:
             "-" * 72,
         ]
         zeilen.extend(f"  {r}" for r in GESCHLOSSEN)
+        zeilen += ["", "PUNKTE AUS DEM AUFTRAG", "-" * 72]
+        zeilen.extend(f"  {p}" for p in AUFTRAG)
+        offen = [p for p in AUFTRAG if not p.erledigt]
+        zeilen.append(
+            f"  -> {len(AUFTRAG) - len(offen)} von {len(AUFTRAG)} abgearbeitet."
+            + (
+                "  Wer einen davon erneut misst, zahlt Versuche fuer ein "
+                "Ergebnis, das schon dasteht."
+                if len(offen) < len(AUFTRAG)
+                else ""
+            )
+        )
         zeilen += ["", "WAS NICHT BEI MIR LIEGT", "-" * 72]
         for e in ENTSCHEIDUNGEN:
             zeilen += [f"  {e.frage}", f"    {e.zahl}", f"    {e.warum}", ""]

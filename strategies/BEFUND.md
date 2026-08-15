@@ -5491,3 +5491,67 @@ Das ist derselbe Fehler in klein, gegen den dieser ganze Befund gebaut ist:
 einen Lauf starten, ohne vorher zu rechnen, was er kostet.
 
 Versuchsstand 166 unveraendert.
+
+## Fuenfundsechzig. Fast vierzehn Versuche fuer ein Ergebnis, das schon dastand
+
+Nach Befund 64 war der Weg frei fuer den einen Auftragspunkt, der nie
+ausgefuehrt schien: Generation 6 und 7 auf 15-Minuten-Kerzen. Die Sperre steht,
+die Daten liegen vor, im Leaderboard tauchen beide Generationen nicht auf.
+
+Vor dem Lauf der Preis: Generation 6 hat vier Kandidaten, Generation 7 hat
+zehn. **Vierzehn zusammen** - und genau diese Zahl steht in Befund 29:
+
+    ## Neunundzwanzig. Generation 6 und 7 auf 15 Minuten - alle vierzehn tot
+
+Alles war schon gemessen. 1 von 9 Gates bei jedem einzelnen, Jahresrenditen
+zwischen -9 % und -44 %, Rueckgaenge bis 95 %, und sie verlieren **brutto** -
+vor jeder Gebuehr. Der Punkt stand seit Befund 29 erledigt da, und ich war
+dabei, vierzehn Versuche auszugeben, um ihn ein zweites Mal zu beantworten.
+
+### Warum das passieren konnte
+
+Der Auftrag listet in jeder Runde dieselben vier offenen Punkte. Zwei davon
+waren laengst abgearbeitet - die 15-Minuten-Generationen seit Nummer 29, das
+Termin-Overlay seit Nummer zwoelf. Es gab nur keine Stelle, an der das
+nachzulesen war.
+
+``research/stand.py`` fuehrt die geschlossenen **Richtungen**, die
+**Entscheidungen** des Nutzers und was nur auf **seinem Rechner** laeuft. Was
+fehlte, war der Stand der Punkte aus dem Auftrag selbst. Sie standen nur im
+Auftrag, und der ist keine Datei, die man nachschlagen kann.
+
+### Was gebaut wurde
+
+``Auftragspunkt`` mit derselben Regel wie ``Richtung``: **Erledigt ohne
+Fundstelle wird abgewiesen.** Ein Punkt, der als abgearbeitet gilt, ohne dass
+irgendwo die Messung steht, ist eine Behauptung - und genau die Sorte
+Behauptung hat mich hier fast vierzehn Versuche gekostet.
+
+    PUNKTE AUS DEM AUFTRAG
+    OK P7: News- und Termin-Overlay    beides gebaut und gemessen;
+                                       die Wirkung ist nicht belegt   (Nr. 59)
+    OK Research-KI im Wettbewerb       vier Vorschlaege gemessen -
+                                       alle schlechter                (Nr. 53)
+    OK Generation 6/7 auf 15-Minuten   alle 14: 1 von 9 Gates,
+                                       -9 bis -44 % p.a.              (Nr. 29)
+    OK Generation 5 auf Tageskerzen    Zuordnung liegt als Daten vor,
+                                       Fehlpaarung wird gesperrt      (Nr. 64)
+    -- backfill 15m beim Nutzer        Daten liegen hier vor; auf dem
+                                       eigenen Rechner weiter noetig  (Nr. 62)
+
+    -> 4 von 5 abgearbeitet. Wer einen davon erneut misst, zahlt Versuche
+       fuer ein Ergebnis, das schon dasteht.
+
+### Was ehrlich dazugehoert
+
+Der Stand ist **gepflegt**, nicht gemessen - genauso wie die Liste der
+geschlossenen Richtungen. Er kann veralten, und er kann falsch sein. Dagegen
+hilft nur die Fundstellenpflicht: Jede Zeile laesst sich in einer Minute
+nachpruefen, und wer eine nicht nachpruefen kann, soll ihr nicht glauben.
+
+Und ein Punkt bleibt ausdruecklich offen: Der Backfill auf dem Rechner des
+Nutzers. Hier liegen die Daten (Befund 62), dort noch nicht - wer selbst
+rechnen will, braucht ihn.
+
+Beinahe waeren 14 von 64 verbliebenen Versuchen fuer nichts draufgegangen.
+Versuchsstand 166 unveraendert, Suchbudget 36 von 100.
