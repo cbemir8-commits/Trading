@@ -40,6 +40,7 @@ from research.admission import (
 )
 from research.gates import GateReport, GateResult, GateStatus
 from research.seeds import ema_cross, load_seeds, trend_following
+from research.versuche import ZaehlerUnlesbarError
 from strategy.compiler import compile_genome
 from strategy.genome import Genome
 
@@ -156,13 +157,33 @@ class TestTrialCounter:
     def test_missing_file_starts_at_zero(self, tmp_path: Path) -> None:
         assert load_trials(tmp_path / "gibtsnicht.json") == 0
 
-    def test_corrupt_file_starts_at_zero(self, tmp_path: Path) -> None:
-        """Und das ist die **unsichere** Richtung - ein zu niedriger Zaehler
-        macht die Korrektur milder. Deshalb wird es laut protokolliert."""
+    def test_corrupt_file_stops_the_run(self, tmp_path: Path) -> None:
+        """**Frueher lieferte das hier 0**, und der Test hielt es fest.
+
+        Der Kommentar daneben benannte die Gefahr sogar - ein zu niedriger
+        Zaehler macht die Korrektur milder - und ein Protokolleintrag sollte
+        genuegen. Er genuegt nicht: Der Lauf rechnete weiter und schrieb den
+        falschen Stand danach fest.
+
+        Am Spitzenkandidaten sind es 0,79 bei 166 Versuchen und 0,996 bei elf.
+        Ein Dateifehler, gefolgt von einem Wettbewerb mit elf Genomen, haette
+        das strengste Gate des Projekts umgedreht - ohne dass jemand etwas
+        gelockert haette.
+        """
         path = tmp_path / "trials.json"
         path.write_text("{kaputt")
 
-        assert load_trials(path) == 0
+        with pytest.raises(ZaehlerUnlesbarError):
+            load_trials(path)
+
+    def test_the_counter_never_falls(self, tmp_path: Path) -> None:
+        """Ein Lauf, der weniger meldet als der vorige, hat sich verzaehlt
+        oder mit einem Ersatzwert gerechnet. Der hoehere Stand bleibt."""
+        path = tmp_path / "trials.json"
+        save_trials(path, 166)
+        save_trials(path, 11)
+
+        assert load_trials(path) == 166
 
     def test_counter_is_written_atomically(self, tmp_path: Path) -> None:
         path = tmp_path / "trials.json"

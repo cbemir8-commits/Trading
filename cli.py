@@ -1506,6 +1506,47 @@ def _formkennzahlen(trades) -> dict[str, float]:
     }
 
 
+def _versuch(kennung: str, report, *, herkunft: str):
+    """Einen geprueften Kandidaten fuer das Versuchsverzeichnis festhalten.
+
+    Der Sharpe je Trade ist der Grund, warum es das Verzeichnis gibt: Aus ihm
+    liesse sich die Streuung ueber die Versuche **messen**, statt sie durch
+    ``1/(n-1)`` zu ersetzen (Befund 68). Er wird hier mit derselben Rechnung
+    geholt wie ueberall - ``Kandidat.aus_trades`` -, damit nicht zwei
+    Umsetzungen derselben Groesse auseinanderlaufen.
+    """
+    from research.suchbudget import Kandidat
+    from research.versuche import Versuch
+
+    trades = list(report.all_trades)
+    kandidat = Kandidat.aus_trades(kennung, trades)
+    return Versuch.jetzt(
+        kennung,
+        trades=len(trades),
+        sharpe_je_trade=kandidat.sharpe_je_trade if kandidat is not None else None,
+        herkunft=herkunft,
+    )
+
+
+def _verzeichne(pfad, versuche: list, erwartet: int) -> None:
+    """Die Versuche anhaengen - und pruefen, dass die Summe stimmt.
+
+    Der lokale Zaehler und das Verzeichnis sind zwei Wege zur selben Zahl.
+    Genau diese Sorte doppelter Wahrheit ist in diesem Projekt schon mehrfach
+    auseinandergelaufen, und hier waere es besonders teuer: Der Zaehler
+    steuert die Haerte des Deflated-Sharpe-Gates.
+    """
+    from research.versuche import anhaengen
+
+    verzeichnis = anhaengen(pfad, versuche)
+    if verzeichnis.anzahl != erwartet:
+        console.print(
+            f"[yellow]Versuchszaehler weicht ab: Verzeichnis "
+            f"{verzeichnis.anzahl}, Lauf {erwartet}. Es gilt der hoehere "
+            f"Stand.[/]"
+        )
+
+
 def _terminkalender(settings):
     """Den Kalender laden - fuer Backtest und Handel derselbe.
 
@@ -2408,7 +2449,7 @@ def korb(
     erster = next(iter(frames.values()))
 
     trials_path = Path(settings.paths.state) / "trials.json"
-    from research.admission import load_trials, save_trials
+    from research.admission import load_trials
 
     trials = load_trials(trials_path)
 
@@ -2429,6 +2470,7 @@ def korb(
 
     _pruefe_generation(generation, interval_obj)
     bester = None
+    gezaehlt: list = []
     for genome in load_seeds(generation):
         # Alle Kandidaten auf dieselbe Groessenlogik stellen. Sonst
         # vergleicht man Hebelstufen statt Regeln.
@@ -2454,6 +2496,9 @@ def korb(
         # zaehlen, macht die Korrektur milder - und zwar genau dann, wenn er
         # am meisten sucht.
         trials += 1
+        gezaehlt.append(
+            _versuch(angepasst.name, report, herkunft=f"wettbewerb g{generation}")
+        )
         gates = evaluate_gates(
             angepasst, report, erster, next(iter(configs.values())),
             trials_so_far=trials, frames=frames, configs=configs,
@@ -2472,7 +2517,7 @@ def korb(
         if bester is None or bestanden > bester[0]:
             bester = (bestanden, angepasst.name, gates)
 
-    save_trials(trials_path, trials)
+    _verzeichne(trials_path, gezaehlt, trials)
     console.print(tabelle)
 
     if bester is None:
@@ -2617,7 +2662,7 @@ def _miss_vorschlaege(
     einen Unterschied zwischen den Regeln.
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
-    from research.admission import load_trials, save_trials
+    from research.admission import load_trials
     from research.gates import evaluate_gates
     from strategy.compiler import compile_genome
     from strategy.genome import SizingSpec
@@ -2645,6 +2690,7 @@ def _miss_vorschlaege(
     tabelle.add_column("Gescheitert an")
 
     bester = None
+    gezaehlt: list = []
     for genome in genome_liste:
         angepasst = genome.model_copy(
             update={
@@ -2662,6 +2708,7 @@ def _miss_vorschlaege(
             continue
 
         trials += 1
+        gezaehlt.append(_versuch(angepasst.name, report, herkunft=herkunft))
         gates = evaluate_gates(
             angepasst, report, erster, next(iter(configs.values())),
             trials_so_far=trials, frames=frames, configs=configs,
@@ -2687,7 +2734,7 @@ def _miss_vorschlaege(
         if bester is None or bestanden > bester[0]:
             bester = (bestanden, angepasst, gates)
 
-    save_trials(trials_path, trials)
+    _verzeichne(trials_path, gezaehlt, trials)
     board.save()
     console.print(tabelle)
 
@@ -5229,7 +5276,9 @@ def streuung(
     )
     lage = Streuung(
         punkte=sammle(
-            berichte=Path.cwd() / "reports", bestenliste=zustand / "leaderboard.json"
+            berichte=Path.cwd() / "reports",
+            bestenliste=zustand / "leaderboard.json",
+            verzeichnis=zustand / "trials.json",
         ),
         versuche=versuche,
         stichprobe=stichprobe.effektiv,

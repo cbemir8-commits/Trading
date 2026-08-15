@@ -5767,3 +5767,72 @@ Sie steht jetzt als Entscheidung in ``cli stand``, weil sie nicht mir gehoert.
 bleibt durchgefallen, und die noetigen 13 % mehr Qualitaet je Trade bleiben
 stehen. Was sich aendert, ist die Auskunft ueber diese Zahl: Sie ist nicht so
 fest, wie sie aussah.
+
+## Neunundsechzig. Ein Zaehler, der fallen konnte
+
+Befund 68 endete mit einem Satz ueber ``state/trials.json``: *"haelt eine
+einzige Zahl fest."* Beim Anfassen dieser Datei kam heraus, dass sie nicht nur
+duenn ist, sondern **verlierbar**.
+
+``load_trials`` gab bei einer unlesbaren Datei 0 zurueck. Der Kommentar daneben
+benannte die Gefahr selbst - *"ein zu niedriger Zaehler macht die Deflated
+Sharpe Ratio milder"* - und der Test dazu hiess
+``test_corrupt_file_starts_at_zero``. Erkannt, benannt, mit einem
+Protokolleintrag versehen und so gelassen.
+
+Ein Protokolleintrag haelt nichts auf. Der Lauf rechnet weiter, prueft alle
+Gates gegen den falschen Stand und schreibt ihn danach fest. Am
+Spitzenkandidaten gemessen:
+
+    166 Versuche   DSR 0,7865   durchgefallen
+     45 Versuche   DSR 0,9430   durchgefallen
+     22 Versuche   DSR 0,9809   **bestanden**
+     11 Versuche   DSR 0,9955   **bestanden**
+
+**Ein Dateifehler, gefolgt von einem Wettbewerb mit elf Genomen, haette das
+strengste Gate des Projekts umgedreht.** Ohne Absicht, ohne dass jemand etwas
+gelockert haette, sichtbar nur in einer Logzeile, die niemand liest. Das ist
+dieselbe Groessenordnung wie in Befund 68 - aber dort ging es um eine
+Modellannahme, hier um einen Weg, auf dem sich das Projekt selbst betruegt.
+
+### Die Regel
+
+Der Zaehler faellt nicht.
+
+* Datei **fehlt** -> 0. Das ist der erste Lauf, da stimmt die 0.
+* Datei **kaputt** -> Abbruch mit ``ZaehlerUnlesbarError``. Lieber steht das
+  Projekt, als dass es stillschweigend milder wird.
+* Ein **kleinerer** Wert wird nicht geschrieben, sondern protokolliert.
+
+Der alte Test ist nicht geloescht, sondern umgeschrieben: Er haelt jetzt fest,
+warum der Lauf stehenbleiben muss, samt der Zahlen von oben.
+
+### Und das Verzeichnis dahinter
+
+Wenn die Datei ohnehin angefasst wird, kann sie auch tragen, was Befund 68
+gefehlt hat. ``research/versuche.py`` macht aus der nackten Zahl ein
+Verzeichnis: Zu jedem neuen Versuch stehen Kennung, Zeitpunkt, Trade-Zahl,
+Herkunft und **Sharpe je Trade** darin. ``cli wettbewerb`` und ``cli
+vorschlag`` schreiben ihn mit, ``cli streuung`` liest ihn als dritte Quelle -
+und als einzige, die vollstaendig werden **kann**: Sie bekommt jeden
+geprueften Kandidaten, auch den, der nichts taugte. Berichte und Bestenliste
+sammeln beide nur, was jemand aufschreiben wollte.
+
+Das alte Format wird weiter gelesen; die 166 werden zum ``grundstock``,
+ausdruecklich **ohne** Einzelnachweis. Sie nachtraeglich zu erfinden waere eine
+Zahl ohne Messung an genau der Stelle, an der es um Messbarkeit geht.
+
+### Was das nicht loest, und das gehoert dazu
+
+Die Streuung wird dadurch **nicht** messbar. Das Suchbudget bricht bei 230
+Versuchen ab; selbst wenn ab jetzt jeder einzelne belegt wird, endet die
+Abdeckung bei rund 40 %, und ``streuung.MINDESTABDECKUNG`` verlangt 90. Die
+Ersatzannahme im Gate bleibt also stehen - auf absehbare Zeit fuer immer.
+
+Was sich aendert, ist etwas anderes: Der Versuchszaehler war bisher eine
+Behauptung ohne Beleg. 166 stand da, und niemand haette gemerkt, wenn es 154
+oder 11 gewesen waeren. Ab jetzt traegt jede neue Zahl ihre Herkunft mit, und
+der lokale Zaehler eines Laufs wird gegen das Verzeichnis geprueft - zwei Wege
+zur selben Zahl, die in diesem Projekt schon mehrfach auseinandergelaufen sind.
+
+Versuchsstand 166 unveraendert, Suchbudget 36 von 100. 1563 Tests gruen.

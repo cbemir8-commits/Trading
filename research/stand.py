@@ -174,10 +174,13 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "fehlt am unteren Ende - Berichte entstehen ueber Reglerscans "
               "um den Bestand herum, die Verlierer bekommen keinen. Die "
               "Bestenliste allein streut schon mit 0,1030, also breiter als "
-              "die Annahme. Zu entscheiden ist deshalb nicht, welche Zahl ins "
-              "Gate kommt, sondern ob es die Muehe wert ist, jeden Versuch "
-              "mit seinem Sharpe je Trade aufzuschreiben. Erst dann waere die "
-              "Groesse messbar - und erst dann waere die Frage eine Frage.",
+              "die Annahme. Aufgeschrieben wird seit Befund 69 jeder neue "
+              "Versuch mit seinem Sharpe je Trade; der Grundstock von 166 "
+              "bleibt ohne Einzelnachweis. Damit ist die Abdeckung bis zum "
+              "Abbruch des Suchbudgets bei 230 Versuchen auf hoechstens 40 % "
+              "gedeckelt - ``streuung.MINDESTABDECKUNG`` verlangt 90. Die "
+              "Annahme bleibt also stehen, und zwar auf absehbare Zeit. Zu "
+              "entscheiden bleibt nur, ob das je anders sein soll.",
     ),
     Entscheidung(
         frage="Kontogroesse",

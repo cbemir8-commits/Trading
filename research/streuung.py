@@ -163,11 +163,42 @@ def aus_bestenliste(pfad: Path | str) -> list[Versuchspunkt]:
     return gefunden
 
 
+def aus_verzeichnis(pfad: Path | str) -> list[Versuchspunkt]:
+    """Die Einzelnachweise aus ``state/trials.json``.
+
+    Die einzige Quelle, die vollstaendig werden **kann**: Sie bekommt jeden
+    geprueften Kandidaten, auch den, der nichts taugte. Berichte und
+    Bestenliste sammeln beide nur, was jemand aufschreiben wollte.
+
+    Der Grundstock von vor der Einfuehrung des Verzeichnisses steht hier
+    nicht - er hat keine Einzelnachweise, und erfundene waeren schlimmer als
+    keine.
+    """
+    from research.versuche import ZaehlerUnlesbarError, laden
+
+    try:
+        verzeichnis = laden(pfad)
+    except ZaehlerUnlesbarError:
+        return []
+    return [
+        Versuchspunkt(
+            quelle="Verzeichnis",
+            kennung=v.kennung,
+            sharpe_je_trade=float(v.sharpe_je_trade),
+        )
+        for v in verzeichnis.eintraege
+        if v.sharpe_je_trade is not None
+    ]
+
+
 def sammle(
-    *, berichte: Path | str, bestenliste: Path | str
+    *, berichte: Path | str, bestenliste: Path | str, verzeichnis: Path | str | None = None
 ) -> list[Versuchspunkt]:
     """Alles, was ueber die Versuche auf der Platte liegt."""
-    return aus_berichten(berichte) + aus_bestenliste(bestenliste)
+    gefunden = aus_berichten(berichte) + aus_bestenliste(bestenliste)
+    if verzeichnis is not None:
+        gefunden += aus_verzeichnis(verzeichnis)
+    return gefunden
 
 
 @dataclass(slots=True)

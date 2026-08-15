@@ -29,8 +29,10 @@ from research.streuung import (
     Versuchspunkt,
     aus_berichten,
     aus_bestenliste,
+    aus_verzeichnis,
     sammle,
 )
+from research.versuche import Versuch, Verzeichnis, speichern
 from tests.test_gates import make_trade
 
 #: Der Spitzenkandidat, wie er in ``reports/machbarkeit`` steht.
@@ -135,6 +137,41 @@ class TestSammeln:
             berichte=tmp_path / "r", bestenliste=tmp_path / "leaderboard.json"
         )
         assert {p.quelle for p in gesammelt} == {"Berichte", "Bestenliste"}
+
+    def test_das_verzeichnis_kommt_dazu(self, tmp_path: Path) -> None:
+        """Die einzige Quelle, die vollstaendig werden **kann**: Sie bekommt
+        jeden geprueften Kandidaten, auch den, der nichts taugte."""
+        speichern(
+            tmp_path / "trials.json",
+            Verzeichnis(
+                grundstock=166,
+                eintraege=[
+                    Versuch("A", sharpe_je_trade=0.21),
+                    Versuch("B", sharpe_je_trade=None),
+                ],
+            ),
+        )
+
+        gefunden = aus_verzeichnis(tmp_path / "trials.json")
+        assert [p.kennung for p in gefunden] == ["A"]
+        assert gefunden[0].quelle == "Verzeichnis"
+
+    def test_der_grundstock_liefert_keine_punkte(self, tmp_path: Path) -> None:
+        """166 Versuche ohne Einzelnachweis bleiben ohne Einzelnachweis -
+        Platzhalter wuerden die Luecke unsichtbar machen."""
+        (tmp_path / "trials.json").write_text(json.dumps({"trials": 166}))
+
+        assert aus_verzeichnis(tmp_path / "trials.json") == []
+
+    def test_ein_unlesbares_verzeichnis_kippt_die_auswertung_nicht(
+        self, tmp_path: Path
+    ) -> None:
+        """Hier ist ein Ausfall harmlos: Fehlende Punkte machen die Schaetzung
+        schmaler, und schmaler heisst hier "wird nicht verwendet". Im Gate
+        waere dieselbe Toleranz falsch - dort bricht der Lauf ab."""
+        (tmp_path / "trials.json").write_text("{kaputt")
+
+        assert aus_verzeichnis(tmp_path / "trials.json") == []
 
 
 class TestStreuung:

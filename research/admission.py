@@ -40,6 +40,7 @@ from backtest.walkforward import (
     WalkForwardSplitter,
     run_walkforward,
 )
+from research import versuche as versuchsverzeichnis
 from research.gates import GateReport, GateThresholds, evaluate_gates
 from strategy.compiler import compile_genome
 from strategy.genome import Genome
@@ -107,37 +108,40 @@ class AdmissionReport:
 def load_trials(path: Path | str) -> int:
     """Wie viele Kandidaten wurden insgesamt schon getestet?
 
-    Bewusst fehlertolerant: Eine fehlende oder kaputte Datei liefert 0. Das
-    ist die konservative Richtung nur auf den ersten Blick - ein zu niedriger
-    Zaehler macht die Deflated Sharpe Ratio **milder**. Deshalb wird ein
-    Lesefehler laut protokolliert.
+    Eine **fehlende** Datei liefert 0 - das ist der erste Lauf, und da stimmt
+    die 0. Eine **kaputte** Datei bricht ab (``VersucheUnlesbar``) und liefert
+    nicht mehr stillschweigend 0: Ein zu niedriger Zaehler macht die Deflated
+    Sharpe Ratio milder, und zwar drastisch. Am Spitzenkandidaten gemessen
+    sind es 0,79 bei 166 Versuchen und 0,996 bei elf - ein Dateifehler,
+    gefolgt von einem Wettbewerb, haette das strengste Gate des Projekts
+    umgedreht. Siehe ``research/versuche.py``.
     """
-    file = Path(path)
-    if not file.exists():
-        return 0
-    try:
-        return int(json.loads(file.read_text())["trials"])
-    except (json.JSONDecodeError, KeyError, ValueError, TypeError) as exc:
-        log.error(
-            "zulassung.zaehler_unlesbar",
-            fehler=str(exc),
-            pfad=str(file),
-            folge="Zaehler startet bei 0 - die Mehrfachtest-Korrektur faellt "
-            "dadurch zu milde aus",
-        )
-        return 0
+    return versuchsverzeichnis.laden(path).anzahl
 
 
 def save_trials(path: Path | str, trials: int) -> None:
-    file = Path(path)
-    file.parent.mkdir(parents=True, exist_ok=True)
-    temporary = file.with_suffix(".tmp")
-    temporary.write_text(
-        json.dumps(
-            {"trials": trials, "updated_at": datetime.now(UTC).isoformat()}, indent=2
+    """Den Stand festschreiben - **nie nach unten**.
+
+    Ein Lauf, der weniger meldet als der vorige, hat sich verzaehlt oder mit
+    einem Ersatzwert gerechnet. In beiden Faellen ist der hoehere Stand der
+    richtige, und der niedrigere waere die unsichere Richtung.
+
+    Einzelnachweise gehen ueber ``versuche.anhaengen``; diese Funktion
+    schreibt nur die Summe und laesst vorhandene Eintraege unberuehrt.
+    """
+    verzeichnis = versuchsverzeichnis.laden(path)
+    if trials < verzeichnis.anzahl:
+        log.error(
+            "zulassung.zaehler_wuerde_fallen",
+            pfad=str(path),
+            stand=verzeichnis.anzahl,
+            gemeldet=trials,
+            folge="Der hoehere Stand bleibt stehen - ein fallender Zaehler "
+            "macht die Mehrfachtest-Korrektur milder",
         )
-    )
-    temporary.replace(file)
+        return
+    verzeichnis.grundstock = trials - len(verzeichnis.eintraege)
+    versuchsverzeichnis.speichern(path, verzeichnis)
 
 
 def run_admission(
