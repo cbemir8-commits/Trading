@@ -6395,3 +6395,88 @@ Befund 72 laesst sich mit fuenf Vorschlaegen nicht beurteilen, ob sie taugt;
 noetig waeren rund 18. Das Suchbudget hat 61 Versuche uebrig.
 
 Versuchsstand 169 unveraendert, Suchbudget 39 von 100. 1659 Tests gruen.
+
+## Sechsundsiebzig. Der Analyst hat auf das falsche Ziel optimiert
+
+Befund 75 endet mit einer Spezifikation: Gesucht wird eine Regel mit
+**mindestens 120 Trades, Sharpe je Trade ueber 0,23, unabhaengig vom
+Trendfolge-Signal**. Der Katalog hat so etwas nicht. Die einzige gebaute
+Quelle fuer neue Regeln ist ``research/analyst.py``.
+
+Beim Nachsehen, was der Analyst eigentlich als Auftrag bekommt, kam heraus,
+warum seine bisherigen Vorschlaege danebenlagen.
+
+### Was im Auftrag stand - und was nicht
+
+``build_prompt`` nennt die erlaubten Indikatoren, das Journal der
+gescheiterten Versuche und fuenf Zulassungsschwellen:
+
+    - mindestens 100 Out-of-Sample-Trades
+    - Sharpe mindestens ...
+    - Drawdown hoechstens ...
+    - mindestens ... profitable Fenster
+    - ueberlebt ...-fache Gebuehren
+
+**Der Deflated Sharpe kommt darin nicht vor.** Das ist das Gate, an dem seit
+Befund 61 alles haengt, und das einzige von elf, das noch wirklich ungeloest
+ist. Der Analyst hat nie erfahren, dass es existiert - und auch nicht, dass
+die Huerde mit jedem seiner eigenen Vorschlaege steigt.
+
+Er zielt deshalb auf **100 Trades**, weil das die einzige Trade-Zahl im
+Auftrag ist. Gebraucht werden 120, und darunter genuegt selbst ein sehr hoher
+Sharpe je Trade nicht. Von fuenf belegten Analyst-Kandidaten haben vier
+zwischen 68 und 123 Trades, keiner einen Sharpe je Trade ueber 0,25 - genau
+das Profil, das der alte Auftrag verlangt und das fuer die eigentliche Luecke
+wertlos ist.
+
+Das ist derselbe Fehler wie meiner in Befund 73, eine Ebene hoeher: Nicht die
+Auswahl war nach dem falschen Merkmal getroffen, sondern der **Auftrag**.
+
+### Was jetzt dazukommt
+
+``research/auftragslage.py`` baut aus den vorhandenen Messungen einen
+Abschnitt, der vor dem eigentlichen Auftrag steht:
+
+* die Groesse, an der das Gate haengt - Guete = Sharpe je Trade mal Wurzel aus
+  den unabhaengigen Trades -, mit dem Stand des Bestands (3,215), dem noetigen
+  Wert (3,629) und der Luecke (0,413);
+* die drei Punkte, die ein brauchbarer Vorschlag erfuellen muss, mit Zahlen
+  statt Adjektiven: mindestens 120 Trades, Sharpe je Trade ueber 0,26 bei
+  dieser Zahl (bei 240 Trades genuegen 0,19), Fensterkorrelation unter 0,8;
+* die Kopplung aus Befund 75 (r = -0,533) als Erklaerung, warum das schwer
+  ist: Jede Regel im Vorrat erfuellt Punkt 1 **oder** Punkt 2, keine beide;
+* der Preis eines Versuchs - 0,00013 mehr noetige Qualitaet je Trade, fuer
+  alle folgenden, dauerhaft.
+
+**Kein gelockertes Kriterium, sondern ein schaerferes.** Die Trade-Anforderung
+steigt von 100 auf 120, und es kommt eine Bedingung dazu, die es vorher gar
+nicht gab.
+
+Nichts davon wird hier zweitgerechnet: Alle Zahlen kommen aus
+``verbund.noetige_guete``, ``partnerkarte`` und ``suchbudget``. Wer die
+Schwelle in ``gates.py`` aendert, aendert diesen Auftragstext mit; ein Test
+haelt das fest.
+
+### Die Zeile, die zuerst falsch war
+
+Der erste Entwurf schrieb zu Punkt 2: *"Sharpe je Trade ueber 0,26. Das ist
+weniger als der Bestand hat - Menge schlaegt hier Qualitaet."* Der Bestand hat
+0,2591. An der Wende ist die Anforderung **per Definition gleich** der des
+Bestands, nie darunter - der Satz war schlicht falsch.
+
+Der Hebel ist trotzdem da, nur eine Stuetzstelle weiter: bei 240 Trades
+genuegen 0,19. Der Text nennt jetzt beide Punkte, und ein Test verlangt, dass
+die falsche Behauptung nicht wiederkommt.
+
+### Was das nicht ist
+
+Ein Vorschlag ist damit nicht besser, nur besser beauftragt. Ob der Analyst
+etwas findet, das 120 Trades **und** Qualitaet **und** Unabhaengigkeit
+mitbringt, ist offen - Befund 75 sagt nur, dass es im vorhandenen Vorrat nicht
+vorkommt, nicht dass es das nicht gibt.
+
+Und der Auftrag laesst sich ohne Sprachmodell nutzen: ``cli vorschlag
+--auftrag`` gibt ihn aus, ``DateiClient`` liest eine von Hand geschriebene
+Antwort. In diesem Container ist kein Modell verdrahtet.
+
+Versuchsstand 169 unveraendert, Suchbudget 39 von 100. 1672 Tests gruen.

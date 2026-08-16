@@ -1547,6 +1547,29 @@ def _verzeichne(pfad, versuche: list, erwartet: int) -> None:
         )
 
 
+def _auftragslage(zustand: Path):
+    """Den gemessenen Stand fuer den Analysten zusammenstellen.
+
+    Ohne ihn nennt der Auftrag fuenf Zulassungsschwellen, aber nicht den
+    Deflated Sharpe - das einzige Gate, das noch offen ist. Der Analyst zielte
+    dadurch auf 100 Trades, waehrend 120 gebraucht werden.
+
+    Der Bestand steht als Zahl da und wird nicht neu gerechnet: Ein
+    Walk-Forward nur fuer den Auftragstext waere Rechenzeit fuer nichts, und
+    die Werte sind seit Befund 73 unveraendert.
+    """
+    from research.admission import load_trials
+    from research.auftragslage import aus_messungen
+
+    return aus_messungen(
+        versuche=load_trials(zustand / "trials.json"),
+        bestand_trades=154,
+        bestand_sharpe=0.2591,
+        # Aus Befund 75, ueber 14 Genome der Tageskerzen-Generationen.
+        kopplung=-0.533,
+    )
+
+
 def _terminkalender(settings):
     """Den Kalender laden - fuer Backtest und Handel derselbe.
 
@@ -2601,9 +2624,13 @@ def vorschlag(
     settings = get_settings()
     state = Path(settings.paths.state)
 
+    lage = _auftragslage(state)
+
     if auftrag:
         console.print(SYSTEM_PROMPT)
-        console.print(build_prompt(journal=[], thresholds=GateThresholds()))
+        console.print(
+            build_prompt(journal=[], thresholds=GateThresholds(), lage=lage)
+        )
         return
 
     from research.leaderboard import Leaderboard
@@ -2630,7 +2657,9 @@ def vorschlag(
         client = AnthropicClient(settings.llm.anthropic_api_key.get_secret_value())
         herkunft = "Analyst"
 
-    ergebnis = propose(client, journal=[], budget=budget, already_tried=bekannt)
+    ergebnis = propose(
+        client, journal=[], budget=budget, already_tried=bekannt, lage=lage
+    )
     if datei is None:
         save_budget(state / "budget.json", budget)
     console.print(f"[dim]{ergebnis.summary()}[/]")

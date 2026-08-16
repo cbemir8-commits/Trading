@@ -209,6 +209,7 @@ def build_prompt(
     exit_findings: list[str] | None = None,
     regime_findings: str = "",
     count: int = PROPOSALS_PER_CYCLE,
+    lage=None,
 ) -> str:
     """Den Auftrag zusammenstellen.
 
@@ -216,6 +217,13 @@ def build_prompt(
     gescheiterten Kandidaten. "Am Kosten-Stresstest gescheitert, Profitfaktor
     1,08 gegen Schwelle 1,20" laesst sich gezielt angehen; "hat nicht
     bestanden" nicht.
+
+    ``lage`` ist eine ``auftragslage.Auftragslage`` und traegt nach, was hier
+    jahrelang fehlte: **das Gate, an dem tatsaechlich alles haengt.** Der
+    Auftrag nannte fuenf Schwellen, aber nicht den Deflated Sharpe - und die
+    Trade-Schwelle darin (100) liegt unter dem, was gebraucht wird. Der
+    Analyst hat also auf das falsche Ziel optimiert, und niemand hat es ihm
+    gesagt. Ohne ``lage`` bleibt der Auftrag, wie er war.
     """
     parts: list[str] = []
 
@@ -264,6 +272,9 @@ def build_prompt(
     if regime_findings:
         parts.append("## Befunde nach Marktphase\n")
         parts.append(regime_findings + "\n")
+
+    if lage is not None:
+        parts.append(lage.als_auftrag())
 
     parts.append(f"## Auftrag\n\nSchlage {count} neue Genome vor.")
     parts.append(
@@ -367,6 +378,7 @@ def propose(
     regime_findings: str = "",
     count: int = PROPOSALS_PER_CYCLE,
     max_tokens: int = 4000,
+    lage=None,
 ) -> AnalystResult:
     """Einen Forschungszyklus durchfuehren.
 
@@ -389,6 +401,7 @@ def propose(
         exit_findings=exit_findings,
         regime_findings=regime_findings,
         count=count,
+        lage=lage,
     )
 
     response = client.complete(system=SYSTEM_PROMPT, prompt=prompt, max_tokens=max_tokens)
