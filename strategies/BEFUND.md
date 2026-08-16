@@ -6648,3 +6648,97 @@ ursaechlich eingegrenzt ist. Es gibt sie vielleicht - aber nicht dort, wo man
 an Gebuehren dreht.
 
 Versuchsstand 173 unveraendert, Suchbudget 43 von 100. 1682 Tests gruen.
+
+## Neunundsiebzig. Die Kopplung haelt der Nullprobe stand - und ein Satz aus Befund 77 nicht
+
+Vier Befunde stuetzen sich inzwischen auf dieselbe Zahl: r = -0,602 zwischen
+Trade-Zahl und Qualitaet je Trade. Befund 78 hat ihre Ursache eingegrenzt
+(nicht die Kosten). **Eine Alternativerklaerung war nie geprueft**, und sie
+haette alle vier umgeworfen.
+
+### Die Erklaerung, die zuerst zu widerlegen war
+
+Der Sharpe je Trade ist selbst geschaetzt, mit einer Streuung von
+``1/sqrt(n-1)``. Bei Trade-Zahlen von 18 bis 406 streuen die seltenen Regeln
+**viermal so breit** wie die haeufigen:
+
+    Enge vor Bewegung      18 Trades   SR 0,3405   Rauschen 0,2425   t = 1,40
+    Bollinger short        36 Trades   SR 0,0576   Rauschen 0,1690   t = 0,34
+    Donchian 55            58 Trades   SR 0,3074   Rauschen 0,1325   t = 2,32
+    Bestand               154 Trades   SR 0,2591   Rauschen 0,0808   t = 3,20
+    Abgriff               406 Trades   SR -0,1201  Rauschen 0,0497   t = -2,42
+
+Bei so ungleichen Trade-Zahlen kann eine Korrelation entstehen, **ohne dass
+irgendein Zusammenhang da waere** - allein weil die Punkte am linken Rand
+weiter ausschlagen.
+
+### Die Nullprobe
+
+Dieselben 18 Trade-Zahlen, jede Regel mit wahrem Vorteil **null**, nur ihr
+eigenes Messrauschen. 200.000 Durchlaeufe:
+
+    Nullverteilung   Mittel  -0,000   Streuung  0,193
+    5. bis 95. Perzentil     -0,317 bis +0,316
+    beobachtet               -0,602
+    Anteil der Null darunter  0,02 %
+
+**Die Kopplung haelt.** Sie liegt mehr als drei Streuungen ausserhalb dessen,
+was Rauschen hergibt. Bemerkenswert ist dabei die Breite der Nullverteilung:
+Ein r von -0,3 waere **nicht** aussagekraeftig gewesen - und genau in dieser
+Groessenordnung liegen viele Korrelationen, die man ohne Gegenprobe fuer
+Befunde haelt.
+
+### Der Satz aus Befund 77, der nicht haelt
+
+Dort stand als Beleg fuer die Kopplung: *"die seltenste Regel hat die beste
+Qualitaet (18 Trades, 0,3405), die haeufigste die schlechteste"*.
+
+Die zweite Haelfte traegt (t = -2,42). Die erste nicht: Bei 18 Trades betraegt
+das Messrauschen 0,2425, der Wert liegt **1,4 Standardfehler** ueber null. Er
+belegt gar nichts - und ich habe ihn als Beleg verwendet.
+
+Die Kopplung traegt als **Muster ueber 18 Punkte**, nicht ueber einzelne
+davon. Das ist ein Unterschied, den Befund 72 fuer Ideenquellen schon
+festgehalten hat, und ich bin ihm hier trotzdem aufgesessen.
+
+### Was die Kopplung jetzt vorhersagen kann
+
+Wenn sie echt ist, ist sie eine Vorhersage. Die Gerade durch die 18 Punkte:
+
+    SR je Trade = -0,000957 * Trades + 0,2197      Reststreuung 0,1225
+
+    bei 120 Trades erwartet   +0,105
+    bei 154 Trades erwartet   +0,072
+    bei 406 Trades erwartet   -0,169
+
+Die Spezifikation aus Befund 76 verlangt bei 120 Trades **0,265**. Das liegt
+1,31 Reststreuungen ueber der Erwartung - **9,5 % der Regeln wuerden es
+erreichen.**
+
+Bei 57 verbleibenden Versuchen waeren das 5,4 erwartete Treffer. Das klingt
+gut, und es ist zu gut.
+
+### Der Winner's Curse, beziffert
+
+Die Reststreuung von 0,1225 enthaelt das Messrauschen mit. Bei 120 Trades sind
+das 0,0917 - **56 % der Restvarianz**. Die echte Streuung der Regelguete
+betraegt nur 0,0813.
+
+    gemessen   z = 1,31   ->  9,5 %   ->  5,4 Treffer in 57 Versuchen
+    echt       z = 1,97   ->  2,4 %   ->  1,4 Treffer in 57 Versuchen
+
+Eine Regel, die die Anforderung **gemessen** erfuellt, hat sie zu mehr als der
+Haelfte zufaellig erfuellt. Genau dafuer ist der Deflated Sharpe da, und genau
+deshalb wuerde ein solcher Treffer im Verbund oft nicht halten.
+
+### Was daraus folgt
+
+Die Suche ist nicht aussichtslos, aber die Erwartung ist zu beziffern: **rund
+1,4 echte Treffer im verbleibenden Budget**, und jeder gemessene Treffer ist
+zu drei Vierteln Rauschen, bis er sich im Verbund bestaetigt.
+
+Das ist kein Grund aufzuhoeren. Es ist ein Grund, jeden Treffer als Verdacht
+zu behandeln und nicht als Fund - und die 2,4 % stehen jetzt als Zahl da,
+statt als Gefuehl.
+
+Versuchsstand 173 unveraendert, Suchbudget 43 von 100. 1687 Tests gruen.

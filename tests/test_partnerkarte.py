@@ -235,13 +235,22 @@ class TestKatalogkopplung:
         ("Bollinger-Ruecksetzer short", 36, 0.0576),
     ]
 
-    def kopplung(self):
+    #: Die vier eigens gebauten Regeln aus Befund 77. Zusammen mit dem
+    #: Katalog sind es die 18 Punkte, ueber die die Kopplung gemessen wird.
+    NEU: ClassVar[list[tuple[str, int, float]]] = [
+        ("Enge vor Bewegung", 18, 0.340522),
+        ("Volumenschock mit Fortsetzung", 114, 0.158416),
+        ("Rueckkehr zum Volumenschwerpunkt", 92, -0.120133),
+        ("Abgriff des Vortagestiefs", 406, -0.120146),
+    ]
+
+    def kopplung(self, *, vollstaendig: bool = False):
         from research.partnerkarte import Katalogkopplung
 
+        rows = [*self.KATALOG, *self.NEU] if vollstaendig else self.KATALOG
         return Katalogkopplung(
             anwaerter=[
-                Anwaerter(name=n, trades=t, sharpe_je_trade=s)
-                for n, t, s in self.KATALOG
+                Anwaerter(name=n, trades=t, sharpe_je_trade=s) for n, t, s in rows
             ]
         )
 
@@ -344,3 +353,73 @@ class TestKatalogkopplung:
         assert zusammen.t_wert == pytest.approx(-3.02, abs=0.05)
         assert zusammen.auffaellig
         assert abs(zusammen.t_wert) > 2.18, "Der Beleg ist staerker geworden"
+
+    def test_reines_rauschen_erzeugt_die_kopplung_nicht(self) -> None:
+        """**Die Alternativerklaerung, die zuerst zu widerlegen war.**
+
+        Der Sharpe je Trade ist selbst geschaetzt, mit ``1/sqrt(n-1)`` je
+        Regel. Bei Trade-Zahlen von 18 bis 406 streuen die seltenen Regeln
+        viermal so breit wie die haeufigen - daraus kann eine Korrelation
+        entstehen, ohne dass ein Zusammenhang da waere.
+
+        Gegen eine bekannte Null gezogen liegt die Verteilung bei
+        0,00 +- 0,19. Der beobachtete Wert von -0,602 ist mehr als drei
+        Streuungen davon entfernt.
+        """
+        k = self.kopplung(vollstaendig=True)
+        mittel, streuung = k.nullprobe(durchlaeufe=5_000)
+
+        assert abs(mittel) < 0.05, "Die Null muss um null liegen"
+        assert 0.1 < streuung < 0.3, f"gemessen {streuung:.3f}"
+        assert k.ueber_dem_rauschen
+
+    def test_eine_schwache_kopplung_bliebe_im_rauschen(self) -> None:
+        """Gegenprobe: Bei r um -0,3 waere nichts zu sagen - die
+        Nullverteilung reicht bis dorthin."""
+        from research.partnerkarte import Katalogkopplung
+
+        schwach = Katalogkopplung(
+            anwaerter=[
+                Anwaerter(name=f"k{i}", trades=t, sharpe_je_trade=s)
+                for i, (t, s) in enumerate(
+                    [(20, 0.20), (50, 0.18), (100, 0.19), (200, 0.15), (400, 0.14)]
+                )
+            ]
+        )
+
+        assert not schwach.ueber_dem_rauschen
+
+    def test_der_beste_einzelpunkt_ist_selbst_rauschen(self) -> None:
+        """**Was ich in Befund 77 falsch gewichtet habe.**
+
+        Dort stand: "die seltenste Regel hat die beste Qualitaet (18 Trades,
+        0,3405)" - als Beleg fuer die Kopplung. Bei 18 Trades betraegt das
+        Messrauschen aber 0,2425, der Wert liegt also 1,4 Standardfehler ueber
+        null. Er belegt gar nichts.
+
+        Die Kopplung traegt als **Muster** ueber 18 Punkte, nicht ueber
+        einzelne davon.
+        """
+        from research.aussagekraft import messrauschen
+
+        assert 0.3405 / messrauschen(18) < 2.0
+        assert 0.2591 / messrauschen(154) > 3.0, "Der Bestand dagegen schon"
+
+    def test_die_gerade_sagt_die_erwartung_voraus(self) -> None:
+        steigung, abschnitt, rest = self.kopplung(vollstaendig=True).gerade()
+
+        assert steigung < 0
+        assert steigung * 120 + abschnitt == pytest.approx(0.105, abs=0.01)
+        assert rest > 0
+
+    def test_gemessene_treffer_sind_haeufiger_als_echte(self) -> None:
+        """Der Winner's Curse in einer Zahl: Die Reststreuung um die Gerade
+        enthaelt das Messrauschen mit, und bei 120 Trades sind das 56 % der
+        Varianz."""
+        gemessen, echt = self.kopplung(vollstaendig=True).trefferquote(
+            trades=120, ziel=0.2652
+        )
+
+        assert gemessen == pytest.approx(0.095, abs=0.01)
+        assert echt == pytest.approx(0.024, abs=0.01)
+        assert echt < gemessen / 2

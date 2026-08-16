@@ -69,6 +69,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+import numpy as np
+
 #: Die aus den gemessenen Verbunden zurueckgerechneten Grade. 1,0 heisst
 #: "keine Kuerzung" und ist der unerreichbare Bestfall.
 GEMESSENE_GRADE: tuple[float, ...] = (0.50, 0.72, 0.85, 1.00)
@@ -327,3 +329,94 @@ class Katalogkopplung:
             f"Partnerkarte leer ausgeht: Sie verlangt Menge **und** Qualitaet, "
             f"und der Vorrat liefert immer nur eines."
         )
+
+    def nullprobe(
+        self, *, durchlaeufe: int = 20_000, saat: int = 20260816
+    ) -> tuple[float, float]:
+        """Erzeugt reines Messrauschen die Kopplung von allein?
+
+        **Die Alternativerklaerung, die zuerst zu widerlegen war.** Der Sharpe
+        je Trade ist selbst geschaetzt, mit einer Streuung von ``1/sqrt(n-1)``
+        je Regel. Seltene Regeln streuen also breiter - 'Enge vor Bewegung'
+        mit 18 Trades traegt ein Rauschen von 0,243, und ihr gemessener Wert
+        von 0,3405 ist nur 1,4 Standardfehler von null entfernt.
+
+        Bei so ungleichen Trade-Zahlen kann eine Korrelation entstehen, ohne
+        dass irgendein Zusammenhang da waere. Deshalb wird gegen eine
+        **bekannte Null** gezogen: dieselben Trade-Zahlen, jede Regel mit
+        wahrem Vorteil null, nur ihr eigenes Messrauschen.
+
+        Gibt Mittel und Streuung der Nullverteilung zurueck. Gemessen ergab
+        sie -0,000 +- 0,193 - der beobachtete Wert von -0,602 liegt weit
+        ausserhalb, nur 0,02 % der Durchlaeufe kommen dorthin.
+        """
+        from research.aussagekraft import messrauschen
+
+        if not self.genug:
+            return (float("nan"), float("nan"))
+        trades = np.array([float(a.trades) for a in self.anwaerter])
+        rauschen = np.array([messrauschen(a.trades) for a in self.anwaerter])
+        zufall = np.random.default_rng(saat)
+        gezogen = zufall.normal(0.0, 1.0, size=(durchlaeufe, len(trades))) * rauschen
+        mittig = trades - trades.mean()
+        norm = np.sqrt((mittig**2).sum())
+        werte = gezogen - gezogen.mean(axis=1, keepdims=True)
+        laenge = np.sqrt((werte**2).sum(axis=1))
+        laenge[laenge == 0] = np.nan
+        verteilung = (werte @ mittig) / (norm * laenge)
+        return (float(np.nanmean(verteilung)), float(np.nanstd(verteilung)))
+
+    @property
+    def ueber_dem_rauschen(self) -> bool:
+        """Liegt die gemessene Kopplung ausserhalb dessen, was Rauschen
+        hergibt? Drei Streuungen der Nullverteilung."""
+        r = self.korrelation
+        mittel, streuung = self.nullprobe()
+        if r is None or not np.isfinite(streuung) or streuung == 0:
+            return False
+        return abs(r - mittel) > 3 * streuung
+
+    def gerade(self) -> tuple[float, float, float] | None:
+        """Steigung, Achsenabschnitt und Reststreuung der Kopplung.
+
+        Damit laesst sich vorhersagen, welche Qualitaet bei einer Trade-Zahl
+        zu erwarten ist - und wie weit eine Anforderung darueber liegt.
+        """
+        if len(self.anwaerter) < 4:
+            return None
+        trades = np.array([float(a.trades) for a in self.anwaerter])
+        sharpe = np.array([a.sharpe_je_trade for a in self.anwaerter])
+        steigung, abschnitt = np.polyfit(trades, sharpe, 1)
+        rest = sharpe - (steigung * trades + abschnitt)
+        return (
+            float(steigung),
+            float(abschnitt),
+            float(np.std(rest, ddof=2)),
+        )
+
+    def trefferquote(self, *, trades: int, ziel: float) -> tuple[float, float] | None:
+        """Wie oft eine Regel diese Anforderung erreicht - gemessen und echt.
+
+        Der Unterschied ist der Winner's Curse: Die Reststreuung um die Gerade
+        enthaelt das Messrauschen mit. Eine Regel, die die Anforderung
+        **gemessen** erfuellt, hat sie deshalb oft nur zufaellig erfuellt.
+        Bei 120 Trades sind 56 % der Restvarianz Rauschen.
+        """
+        from statistics import NormalDist
+
+        from research.aussagekraft import messrauschen, zerlege
+
+        angepasst = self.gerade()
+        if angepasst is None:
+            return None
+        steigung, abschnitt, rest = angepasst
+        erwartet = steigung * trades + abschnitt
+        echt = zerlege(rest, messrauschen(trades))
+        normal = NormalDist()
+        gemessen = 1 - normal.cdf((ziel - erwartet) / rest) if rest > 0 else 0.0
+        wirklich = (
+            1 - normal.cdf((ziel - erwartet) / echt)
+            if echt is not None and echt > 0
+            else 0.0
+        )
+        return (float(gemessen), float(wirklich))
