@@ -6567,3 +6567,84 @@ inzwischen ueber 18 Punkte belegt.
 Das ist kein Grund aufzuhoeren, aber ein Grund, die Erwartung zu senken: Von
 18 gemessenen Regeln hat keine einzige beides. Wer weitersucht, sucht nach
 einer Ausnahme von einem Muster, das mit jedem Datenpunkt klarer wird.
+
+## Achtundsiebzig. Die Kopplung liegt nicht an den Kosten
+
+Ueber 18 gemessene Regeln steht die Kopplung mit r = -0,602: Wer oefter
+handelt, handelt schlechter. Sie erklaert die leere Partnerkarte und ist der
+Grund, warum das haerteste Gate nicht faellt. **Warum sie gilt, war nie
+untersucht.**
+
+Dafuer gibt es eine mechanische Erklaerung, und sie klingt zwingend: Die
+Gebuehr ist ein fester Betrag je Trade, aber die Streuung eines Trades waechst
+mit seiner Haltedauer. Wer oefter handelt, haelt kuerzer, streut weniger - und
+derselbe Betrag frisst einen groesseren Anteil.
+
+Waere das die Ursache, haette es eine Folge: **Die Kopplung waere
+verhandelbar.** Bessere Konditionen, Maker-Rebates, ein groesseres Konto -
+alles wuerde helfen.
+
+### Gemessen an zehn Regeln sehr verschiedener Taktung
+
+    Regel                            Trades  SR/Trade  Halte-d  Kosten/Str
+    -------------------------------------------------------------------
+    Donchian-Ausbruch 55/20              58    0,3074     48,5      0,0013
+    Trend-Beteiligung 200 Tage           53    0,3185     33,5      0,0023
+    Bestand                             154    0,2591     14,1      0,0028
+    Volumenschock mit Fortsetzung       114    0,1584      6,2      0,0051
+    Rueckkehr zum Volumenschwerpunkt     92   -0,1201     12,1      0,0059
+    Abgriff des Vortagestiefs           406   -0,1201      0,3      0,0170
+
+    Trades <-> Kostenanteil     +0,831
+    Kostenanteil <-> Qualitaet  -0,738
+
+**Der Mechanismus ist da**, und zwar deutlich. Nur traegt er nichts. Rechnet
+man die Gebuehr zurueck:
+
+    netto    r = -0,673
+    brutto   r = -0,663
+
+**Zehn Tausendstel.** Die Hypothese ist widerlegt.
+
+Der Grund steht in derselben Tabelle: Der Kostenanteil reicht von 0,0013 bis
+0,0170 der Trade-Streuung, waehrend die Qualitaeten von +0,34 bis -0,12
+spannen. Er ist zwei Groessenordnungen zu klein, um irgendetwas zu erklaeren.
+
+### Was an der Rechnung unvollstaendig war
+
+``net_pnl = gross_pnl - fees - funding``, und die **Slippage steckt im
+Ausfuehrungspreis** - also schon in ``gross_pnl``, nicht in ``fees``. Was ich
+zurueckgerechnet hatte, war die Gebuehr allein. Die wahren Handelskosten
+liegen hoeher, und um wie viel, laesst sich aus den Trades nicht trennen.
+
+Das ist mir beim Nachsehen aufgefallen, nachdem die erste Zahl schon dastand.
+Also wurde die Frage andersherum gestellt, und das ist ihre ehrliche Form:
+**Bei welchem Kostenfaktor wuerde die Kopplung kippen?**
+
+    Faktor  1    r = -0,663    (die tatsaechliche Gebuehr, 0,04 %)
+    Faktor  5    r = -0,618
+    Faktor 10    r = -0,542
+    Faktor 25    r = -0,144
+    Faktor 50    r = +0,511
+
+Der Kippunkt liegt bei **29-facher Gebuehr** - 1,2 % je Roundtrip. Das
+verlangt kein Handelsplatz. Selbst wenn die Slippage die Kosten verdoppelte
+oder verfuenffachte, bliebe die Kopplung stehen.
+
+### Was daraus folgt
+
+Die Kopplung ist eine Eigenschaft der **Signale**, nicht einer Reibung:
+Haeufigere Ausloeser tragen tatsaechlich weniger Vorteil je Ausloesung. Keine
+Konditionen, kein groesseres Konto, keine bessere Ausfuehrung aendert daran
+etwas.
+
+Das ist die unangenehmste Sorte Befund - er schliesst nicht eine Richtung,
+sondern eine **Hoffnung**. Die Vorstellung, das Projekt scheitere an einer
+Reibung, die sich wegoptimieren liesse, ist damit erledigt.
+
+Fuer die Suche bleibt: Wer eine Regel sucht, die oft ausloest und dabei
+Vorteil behaelt, sucht nach einer Ausnahme von einem Muster, das jetzt auch
+ursaechlich eingegrenzt ist. Es gibt sie vielleicht - aber nicht dort, wo man
+an Gebuehren dreht.
+
+Versuchsstand 173 unveraendert, Suchbudget 43 von 100. 1682 Tests gruen.
