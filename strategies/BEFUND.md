@@ -5836,3 +5836,93 @@ der lokale Zaehler eines Laufs wird gegen das Verzeichnis geprueft - zwei Wege
 zur selben Zahl, die in diesem Projekt schon mehrfach auseinandergelaufen sind.
 
 Versuchsstand 166 unveraendert, Suchbudget 36 von 100. 1563 Tests gruen.
+
+## Siebzig. Der letzte offene Weg war keiner
+
+Seit Befund 61 heisst die Diagnose: genau ein ungeloestes Problem, und es
+heisst Deflated Sharpe. ``cli stand`` zerlegt das Gate in vier Groessen und
+fragt fuer jede: *Wo muesste sie stehen - alles andere unveraendert?*
+
+    Qualitaet je Trade         0.260 ->     0.294   (+13%)
+    unabhaengige Trades      152.000 ->   202.334   (+33%)
+    Schiefe                    3.473 ->     4.530   (+30%)
+    Woelbung                  15.951   unerreichbar
+
+Darunter stand wochenlang: *"Die Schiefe ist der einzige der vier Wege, den
+noch nie jemand gemessen hat."* Qualitaet und Trade-Zahl sind durch die
+Kopplung aus Befund 54 blockiert, die Woelbung kann nicht unter 1. Die Schiefe
+war der letzte offene Weg - und niemand hat ihn angefasst, weil unklar war,
+woran man dafuer dreht.
+
+### Woran die Zerlegung scheitert
+
+**"Alles andere unveraendert" geht bei diesen beiden nicht.** Fuer jede
+Verteilung gilt
+
+    Woelbung >= Schiefe^2 + 1
+
+Das ist Cauchy-Schwarz auf ``Cov(X, X^2)`` einer standardisierten Groesse,
+kein Erfahrungswert; Gleichheit erreichen nur Zweipunktverteilungen. Der Test
+dazu behauptet die Ungleichung nicht, sondern rechnet sie an gezogenen
+Stichproben nach - normal, lognormal, exponential, Pareto, gleichverteilt und
+einer nachgebauten Trade-Verteilung.
+
+Der ausgewiesene Zielpunkt verlangt bei Schiefe 4,53 eine Woelbung von
+mindestens 21,0. Festgehalten wurden 15,7. **Es gibt keine Verteilung dieser
+Form.** Die Zerlegung hat monatelang einen Punkt als Weg ausgewiesen, den es
+nicht gibt.
+
+### Was stattdessen gilt
+
+Acht Kandidaten dieses Projekts tragen beide Formzahlen mit, aus fuenf
+Regelfamilien - von der Rueckkehr zum Mittel bis zum Donchian-Ausbruch. Sie
+liegen auf einer Geraden in ``Schiefe^2``:
+
+    Woelbung = 1,194 * Schiefe^2 + 1,691       (r = 0,9963, n = 8)
+
+Derselbe Weg, dreimal gerechnet:
+
+    Woelbung festgehalten          Max DSR 1,0000 bei 4,84   ab 4,53  (+31 %)
+    entlang der harten Schranke    Max DSR 1,0000 bei 7,34   ab 5,54  (+60 %)
+    entlang der gemessenen Linie   Max DSR 0,8724 bei 6,52   nie erreicht
+
+Selbst im mathematischen Optimum - einer Verteilung, die es praktisch nicht
+gibt - verdoppelt sich die Anforderung von +30 % auf +60 %. Auf der Linie, auf
+der alle bisherigen Kandidaten tatsaechlich lagen, **ist das Gate ueber die
+Schiefe gar nicht erreichbar**: Ab Schiefe 6,52 waechst die Woelbung schneller
+als der Vorteil, und der Wert faellt wieder.
+
+### Der Fehler, der mir dabei selbst passiert ist
+
+Der erste Anlauf suchte die noetige Schiefe mit einer Bisektion und meldete
+"unerreichbar" - fuer *beide* gekoppelten Wege. Das war falsch: ``DSR(Schiefe)``
+ist **nicht monoton**. Der Nenner lautet entlang der Schranke
+``(1 - Schiefe*SR/2)^2 + Ueberschuss*SR^2/4`` und hat sein Minimum bei
+``Schiefe = 2/SR``, hier 7,79. Die Bisektion hatte nur den Endpunkt geprueft,
+dort war die Kurve laengst wieder gefallen, und sie schloss auf "geht nie".
+
+Haette ich das nicht bemerkt, staende hier ein schaerferer Befund als der
+richtige - die harte Schranke ist erreichbar, mit +60 %. Das Modul tastet die
+Kurve deshalb ab und weist ihr Maximum aus; ein Test haelt die
+Nicht-Monotonie fest.
+
+### Was gebaut wurde
+
+``research/formgrenze.py`` mit der Schranke, der gemessenen Linie und den drei
+Wegen; ``cli form`` rechnet es auf echten Daten nach. ``suchbudget.Hebel``
+traegt jetzt ein Feld ``unmoeglich_weil``, und der Schiefe-Hebel prueft seinen
+eigenen Zielpunkt gegen die Schranke. In ``cli stand`` steht statt der Zahl
+jetzt: *"braucht Woelbung >= 21.0, hier 15.7"*.
+
+### Was das fuer den Stand heisst
+
+Von den vier Wegen zum haertesten Gate sind jetzt drei geschlossen: Woelbung
+(unter 1 gibt es nichts), Schiefe (dieser Befund), Trade-Zahl (Kopplung,
+Befund 54). **Es bleibt genau einer: die Qualitaet je Trade, +13 %.** Und
+alle Regler, die daran drehen, sind ausgemessen und geschlossen.
+
+Das ist kein Fortschritt Richtung Zulassung, sondern das Gegenteil - eine
+Moeglichkeit weniger. Aber es ist eine, die es nie gab, und sie stand als
+letzte Hoffnung in der Uebersicht.
+
+Versuchsstand 166 unveraendert, Suchbudget 36 von 100.

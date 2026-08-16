@@ -63,11 +63,21 @@ class Hebel:
     jetzt: float
     noetig: float | None
     kleiner_ist_besser: bool = False
+    unmoeglich_weil: str = ""
+    """Warum der gefundene Zielwert keiner ist.
+
+    Die Rechnung loest je Groesse einzeln, *alles andere unveraendert*. Bei
+    Schiefe und Woelbung geht das nicht: Sie sind durch
+    ``Woelbung >= Schiefe^2 + 1`` gekoppelt, und die Zerlegung hat deshalb
+    monatelang einen Zielpunkt ausgewiesen, den keine Verteilung hat
+    (Befund 70). Ein Weg, den es nicht gibt, muss als solcher dastehen -
+    sonst sucht jemand danach.
+    """
 
     @property
     def moeglich(self) -> bool:
         """Gibt es ueberhaupt einen Wert, bei dem das Gate allein daran haelt?"""
-        return self.noetig is not None
+        return self.noetig is not None and not self.unmoeglich_weil
 
     @property
     def veraenderung(self) -> float | None:
@@ -78,10 +88,39 @@ class Hebel:
     def __str__(self) -> str:
         if self.noetig is None:
             return f"{self.name:22} {self.jetzt:>9.3f}   unerreichbar"
+        if self.unmoeglich_weil:
+            return (
+                f"{self.name:22} {self.jetzt:>9.3f} -> {self.noetig:>9.3f}   "
+                f"{self.unmoeglich_weil}"
+            )
         pfeil = "->"
         anteil = self.veraenderung
         zusatz = f"   ({anteil:+.0%})" if anteil is not None else ""
         return f"{self.name:22} {self.jetzt:>9.3f} {pfeil} {self.noetig:>9.3f}{zusatz}"
+
+
+def _schiefe_hebel(schiefe: float, woelbung: float, noetig: float | None) -> Hebel:
+    """Der Schiefe-Hebel - und die Pruefung, ob sein Ziel existiert.
+
+    ``loese`` haelt die Woelbung fest, weil die Zerlegung jede Groesse einzeln
+    fragt. Bei diesen beiden geht das nicht: Fuer jede Verteilung gilt
+    ``Woelbung >= Schiefe^2 + 1``. Der so gefundene Zielpunkt hat deshalb oft
+    gar keine Verteilung - und stand trotzdem monatelang als letzter offener
+    Weg in ``cli stand`` (Befund 70).
+    """
+    from research.formgrenze import mindestwoelbung
+
+    if noetig is None or woelbung >= mindestwoelbung(noetig):
+        return Hebel("Schiefe", schiefe, noetig)
+    return Hebel(
+        "Schiefe",
+        schiefe,
+        noetig,
+        unmoeglich_weil=(
+            f"braucht Woelbung >= {mindestwoelbung(noetig):.1f}, "
+            f"hier {woelbung:.1f}"
+        ),
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -294,7 +333,9 @@ class Budget:
                 float(kandidat.trades),
                 loese("sample_size", float(kandidat.trades), kandidat.trades * 50.0),
             ),
-            Hebel("Schiefe", schiefe, loese("skew", schiefe, schiefe + 50.0)),
+            _schiefe_hebel(
+                schiefe, woelbung, loese("skew", schiefe, schiefe + 50.0)
+            ),
         ]
 
         # Die Woelbung wirkt andersherum: Weniger ist besser, und unter 1 kann

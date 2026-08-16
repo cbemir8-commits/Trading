@@ -5195,6 +5195,162 @@ def front(
 
 
 @app.command()
+def form(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Der letzte offene Weg zum Gate - und warum es ihn nicht gibt.
+
+    ``cli stand`` weist seit Wochen aus, die Schiefe muesste von 3,47 auf 4,53
+    steigen, *alles andere unveraendert*. Das geht bei diesen beiden Groessen
+    nicht: Fuer jede Verteilung gilt ``Woelbung >= Schiefe^2 + 1``, und bei
+    Schiefe 4,53 waeren das ueber 20 statt der festgehaltenen 15,95. **Der
+    ausgewiesene Zielpunkt ist keine Verteilung.**
+
+    Dieser Befehl rechnet denselben Weg dreimal: mit festgehaltener Woelbung
+    (die bisherige Zerlegung, nur zum Vergleich), entlang der harten Schranke
+    (das Optimum, praktisch unerreichbar) und entlang der Linie, auf der die
+    gemessenen Kandidaten dieses Projekts tatsaechlich liegen.
+
+    Kostet keinen Versuch: Gerechnet wird mit Zahlen, die schon dastehen.
+    """
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.formgrenze import Formlinie, mindestwoelbung, tabelle, wege
+    from research.gates import concurrent_groups
+    from research.seeds import spitzenkandidat
+    from research.suchbudget import Kandidat
+    from research.unabhaengigkeit import effektive_stichprobe
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    zustand = Path(settings.paths.state)
+    versuche = load_trials(zustand / "trials.json")
+
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
+    genome = spitzenkandidat()
+    bericht = run_portfolio_walkforward(
+        frames, lambda g=genome: compile_genome(g), configs
+    )
+    trades = list(bericht.all_trades)
+    kandidat = Kandidat.aus_trades(genome.name, trades)
+    if kandidat is None or kandidat.schiefe is None or kandidat.woelbung is None:
+        console.print("[red]Keine auswertbaren Trades.[/]")
+        raise typer.Exit(2)
+
+    bloecke = [[float(t.net_pnl) for t in f.trades] for f in bericht.windows]
+    gleichzeitig = [
+        [float(t.net_pnl) for t in gruppe] for gruppe in concurrent_groups(trades)
+    ]
+    stichprobe = effektive_stichprobe(
+        len(trades), getattr(bericht, "beine", None), bloecke, weitere=[gleichzeitig]
+    )
+
+    linie = Formlinie(punkte=_formpunkte(zustand))
+    console.print(
+        f"\n[bold]Form der Verteilung[/] '{genome.name}' auf "
+        f"{' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Historie   {spanne} Tage, {len(trades)} Trades "
+        f"({stichprobe.effektiv} davon unabhaengig)\n"
+        f"  Form       Schiefe {kandidat.schiefe:.3f}, Woelbung "
+        f"{kandidat.woelbung:.3f} - Schranke bei "
+        f"{mindestwoelbung(kandidat.schiefe):.3f}\n"
+        f"  Versuche   {versuche}\n"
+    )
+
+    if not linie.genug:
+        console.print(
+            "[yellow]Zu wenige Kandidaten mit beiden Formzahlen fuer eine "
+            "gemessene Linie.[/] Es bleiben die beiden gerechneten Wege.\n"
+        )
+    else:
+        guete = linie.guete or 0.0
+        steigung, abschnitt = linie.steigung or 0.0, linie.abschnitt or 0.0
+        console.print(
+            f"Gemessene Kopplung ueber {len(linie.punkte)} Kandidaten:\n"
+            f"  Woelbung = {steigung:.3f} * Schiefe^2 + {abschnitt:.3f}"
+            f"   (r = {guete:.4f})\n"
+            f"  Harte Schranke: Woelbung = 1.000 * Schiefe^2 + 1.000\n"
+        )
+        if not linie.ueber_der_schranke():
+            console.print(
+                "[red]Ein gemessener Punkt liegt unter der Schranke - das ist "
+                "rechnerisch unmoeglich und deutet auf einen Fehler in den "
+                "Formzahlen hin.[/]\n"
+            )
+
+    drei = wege(
+        sharpe=kandidat.sharpe_je_trade,
+        stichprobe=stichprobe.effektiv,
+        versuche=versuche,
+        woelbung_heute=kandidat.woelbung,
+        linie=linie if linie.genug else None,
+    )
+    console.print(tabelle(drei, kandidat.schiefe))
+    console.print()
+    for weg in drei[1:]:
+        console.print(f"{weg.urteil(kandidat.schiefe)}\n")
+    console.print(
+        "[dim]Die erste Zeile ist die bisherige Zerlegung und steht nur zum "
+        "Vergleich da: Ihr\nZielpunkt verlangt eine Woelbung, die keine "
+        "Verteilung mit dieser Schiefe hat.[/]\n"
+    )
+
+
+def _formpunkte(zustand: Path) -> list:
+    """Alle Kandidaten, die Schiefe **und** Woelbung mittragen.
+
+    Beide oder keine: Ein Punkt mit nur einer der beiden Zahlen sagt ueber
+    ihren Zusammenhang nichts.
+    """
+    import json
+
+    from research.formgrenze import Formpunkt
+
+    gefunden = []
+    for datei in sorted((Path.cwd() / "reports").rglob("*.json")):
+        try:
+            daten = json.loads(datei.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        regler = daten.get("regler") or daten.get("analyse", {}).get("regler") or "?"
+        punkte = daten.get("punkte") or daten.get("analyse", {}).get("punkte") or []
+        for punkt in punkte:
+            k = punkt.get("kennzahlen") or {}
+            if k.get("schiefe") and k.get("woelbung"):
+                gefunden.append(
+                    Formpunkt(
+                        quelle="Berichte",
+                        kennung=f"{regler} {float(punkt.get('stellung', 0)):g}",
+                        schiefe=float(k["schiefe"]),
+                        woelbung=float(k["woelbung"]),
+                    )
+                )
+    try:
+        eintraege = json.loads((zustand / "leaderboard.json").read_text())
+    except (OSError, json.JSONDecodeError):
+        eintraege = {}
+    for e in eintraege.get("eintraege", []):
+        if e.get("schiefe") and e.get("woelbung"):
+            gefunden.append(
+                Formpunkt(
+                    quelle="Bestenliste",
+                    kennung=str(e.get("name", "?")),
+                    schiefe=float(e["schiefe"]),
+                    woelbung=float(e["woelbung"]),
+                )
+            )
+    return gefunden
+
+
+@app.command()
 def streuung(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
@@ -5835,10 +5991,13 @@ def stand(
             farbe = "yellow" if h.moeglich else "red"
             console.print(f"  [{farbe}]{h}[/]")
         console.print(
-            "\n  [dim]Die Woelbung waere ein Weg, wenn sie sich senken liesse - "
-            "sie kann es\n  nicht: Unter 1 liegt keine Verteilung. Die Schiefe "
-            "ist der einzige der\n  vier Wege, den noch nie jemand gemessen "
-            "hat.\n"
+            "\n  [dim]'Alles andere unveraendert' geht bei den letzten beiden "
+            "nicht: Fuer jede\n  Verteilung gilt Woelbung >= Schiefe^2 + 1. "
+            "Der Schiefe-Zielpunkt hat deshalb\n  gar keine Verteilung, und "
+            "entlang der gemessenen Kopplung ist das Gate\n  ueber die Schiefe "
+            "nicht erreichbar (Befund 70). Nachrechnen: 'cli form'.\n"
+            "  Die Woelbung kann nicht unter 1 fallen. Damit bleibt von den "
+            "vier Wegen\n  einer: die Qualitaet je Trade.\n"
             "  Und es sind vier von fuenf: Die Streuung der Sharpe-Schaetzer "
             "ueber die\n  Versuche steht hier nicht, weil sie nicht gemessen, "
             "sondern angenommen\n  wird. Wie viel daran haengt: 'cli "

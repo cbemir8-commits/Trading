@@ -291,14 +291,39 @@ class TestHebel:
         assert "unerreichbar" in str(woelbung)
 
     def test_die_offenen_wege_tragen_eine_zahl(self) -> None:
+        """**Frueher waren es drei.** Der dritte war die Schiefe.
+
+        Die Rechnung loest je Groesse einzeln, *alles andere unveraendert* -
+        und genau das geht bei Schiefe und Woelbung nicht: Fuer jede
+        Verteilung gilt ``Woelbung >= Schiefe^2 + 1``. Der so gefundene
+        Schiefe-Zielpunkt verlangt eine Woelbung ueber 20 bei festgehaltenen
+        15,7; diese Form gibt es nicht (Befund 70).
+        """
         from research.suchbudget import Budget
 
         offen = [h for h in Budget(versuche=151).hebel(self._kandidat()) if h.moeglich]
 
-        assert len(offen) == 3
+        assert [h.name for h in offen] == ["Qualitaet je Trade", "unabhaengige Trades"]
         for h in offen:
             assert h.noetig > h.jetzt
             assert h.veraenderung > 0
+
+    def test_die_schiefe_meldet_ihren_grund_statt_einer_zahl(self) -> None:
+        """Ein Weg, den es nicht gibt, muss als solcher dastehen - sonst
+        sucht jemand danach. Und zwar mit dem Grund, nicht nur mit einem
+        Vermerk."""
+        from research.formgrenze import mindestwoelbung
+        from research.suchbudget import WOELBUNG, Budget
+
+        schiefe = next(
+            h for h in Budget(versuche=151).hebel(self._kandidat())
+            if h.name == "Schiefe"
+        )
+
+        assert schiefe.noetig is not None
+        assert mindestwoelbung(schiefe.noetig) > WOELBUNG, "Sonst waere er moeglich"
+        assert not schiefe.moeglich
+        assert "braucht Woelbung" in str(schiefe)
 
     def test_mehr_versuche_verlangen_mehr(self) -> None:
         """Der Preis des Suchens, an derselben Stelle sichtbar."""
