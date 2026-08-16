@@ -423,3 +423,59 @@ class TestKatalogkopplung:
         assert gemessen == pytest.approx(0.095, abs=0.01)
         assert echt == pytest.approx(0.024, abs=0.01)
         assert echt < gemessen / 2
+
+    def test_die_kopplung_deckelt_die_guete(self) -> None:
+        """**Die ernuechterndste Zahl des Projekts.**
+
+        ``(a + b*n) * sqrt(n)`` hat ein Maximum: Mehr Trades helfen nur,
+        solange der Qualitaetsverlust langsamer waechst als die Wurzel. Das
+        Maximum liegt bei 1,281 - das Gate verlangt 3,629.
+
+        Eine durchschnittliche Regel erreicht es also nicht annaehernd. Jeder
+        Kandidat, der es schafft, ist ein Ausreisser.
+        """
+        deckel = self.kopplung(vollstaendig=True).guetedeckel
+
+        assert deckel is not None
+        takt, wert = deckel
+        assert 60 <= takt <= 100, f"gemessen {takt}"
+        assert wert == pytest.approx(1.28, abs=0.05)
+        assert wert < 3.629 / 2, "Weniger als die Haelfte des Noetigen"
+
+    def test_der_bestand_ist_bereits_ein_ausreisser(self) -> None:
+        """Er liegt 1,52 Reststreuungen ueber der Geraden - und reicht
+        trotzdem nicht."""
+        k = self.kopplung(vollstaendig=True)
+        steigung, abschnitt, rest = k.gerade()
+        z = (0.2591 - (abschnitt + steigung * 154)) / rest
+
+        assert z == pytest.approx(1.52, abs=0.05)
+        assert k.noetiger_ausreisser(trades=154, ziel=3.629) > z
+
+    def test_das_echte_optimum_liegt_anderswo_als_das_gemessene(self) -> None:
+        """**Ein feiner, entscheidender Unterschied.**
+
+        Gemessen ist 153 Trades die beste Trade-Zahl - und der Bestand hat
+        154, sitzt also im Optimum. Rechnet man das Messrauschen heraus,
+        verschiebt es sich auf 197: Dort ist weniger von der Reststreuung
+        Rauschen, ein Treffer also haeufiger echt.
+        """
+        k = self.kopplung(vollstaendig=True)
+        gemessen = k.bester_takt(ziel=3.629, echt=False)
+        echt = k.bester_takt(ziel=3.629, echt=True)
+
+        assert gemessen is not None and echt is not None
+        assert echt[0] > gemessen[0], "Das echte Optimum liegt bei mehr Trades"
+        assert echt[1] < gemessen[1], "Und bei kleinerer Wahrscheinlichkeit"
+        assert gemessen[0] == pytest.approx(153, abs=10)
+
+    def test_der_verbund_ist_wirksamer_als_ein_einzelkandidat(self) -> None:
+        """Die Entscheidung zwischen den beiden Wegen, beziffert: 1,12 %
+        gegen 2,40 % echte Trefferquote je Versuch."""
+        k = self.kopplung(vollstaendig=True)
+        einzeln = k.bester_takt(ziel=3.629)
+        _, verbund = k.trefferquote(trades=120, ziel=0.2652)
+
+        assert einzeln is not None
+        assert verbund > einzeln[1], "Der Verbund muss besser sein"
+        assert verbund / einzeln[1] > 1.5

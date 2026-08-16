@@ -6742,3 +6742,86 @@ zu behandeln und nicht als Fund - und die 2,4 % stehen jetzt als Zahl da,
 statt als Gefuehl.
 
 Versuchsstand 173 unveraendert, Suchbudget 43 von 100. 1687 Tests gruen.
+
+## Achtzig. Die Kopplung deckelt die Guete - und sagt, welcher Weg der bessere ist
+
+Befund 79 hat die Kopplung als Vorhersage nutzbar gemacht:
+
+    SR je Trade = -0,000957 * Trades + 0,2197      Reststreuung 0,1225
+
+Eine Folge daraus war noch nicht gezogen, und sie ist die haerteste bisher.
+Die Groesse, an der das Gate haengt, ist nicht der Sharpe je Trade, sondern
+die **Guete** - und die laesst sich entlang der Geraden ausrechnen:
+
+    Guete(n) = (a + b*n) * sqrt(n)
+
+### Die ernuechterndste Zahl des Projekts
+
+    20 Trades  -> Guete 0,897
+    50 Trades  -> Guete 1,215
+    77 Trades  -> Guete 1,281     <- Maximum
+   100 Trades  -> Guete 1,240
+   154 Trades  -> Guete 0,897
+   406 Trades  -> Guete -3,402
+
+**Das Maximum liegt bei 1,281. Das Gate verlangt 3,629.**
+
+Die Kurve hat ein Maximum, weil mehr Trades nur helfen, solange der
+Qualitaetsverlust langsamer waechst als die Wurzel. Ab 77 Trades ueberholt
+der Verlust den Gewinn.
+
+Eine **durchschnittliche** Regel erreicht das Gate damit nicht annaehernd -
+sie liegt um den Faktor 2,8 daneben. Jeder Kandidat, der es schaffen soll,
+muss ein Ausreisser sein. Das war vorher eine Vermutung; jetzt steht die Zahl
+daneben.
+
+### Der Bestand ist bereits einer
+
+Bei 154 Trades sagt die Gerade einen Sharpe je Trade von 0,0723 voraus. Der
+Bestand hat **0,2591** - das sind 1,52 Reststreuungen darueber. Er ist kein
+Durchschnitt, sondern der groesste Ausreisser der Sammlung.
+
+Noetig waeren 1,80. Es fehlen 0,28 Reststreuungen, und das ist der ganze
+Abstand zum Gate - in einer Zahl, die nichts mit Reglern zu tun hat.
+
+### Wo ein Einzelkandidat die beste Chance hat
+
+    Trades   z gemessen   Anteil   z echt   Anteil echt
+    ----------------------------------------------------
+       100      1,95      2,56 %    3,41     0,03 %
+       153      1,80      3,62 %    2,40     0,83 %
+       197      1,82      3,44 %    2,29     1,12 %
+       400      2,81      0,25 %    3,08     0,10 %
+
+Gemessen liegt das Optimum bei **153 Trades** - und der Bestand hat 154. Er
+sitzt nicht zufaellig dort, wo er sitzt.
+
+Rechnet man das Messrauschen heraus, verschiebt sich das Optimum auf **197**:
+Dort ist weniger von der Reststreuung Rauschen, ein Treffer also haeufiger
+echt. Das ist ein feiner Unterschied mit praktischer Folge - wer nach
+Einzelkandidaten sucht, sollte etwas haeufiger handelnde Regeln bauen als die
+gemessene Bestenliste nahelegt.
+
+### Welcher Weg der bessere ist, beziffert
+
+    Einzelkandidat, optimal getaktet   1,12 % je Versuch   0,6 Treffer in 57
+    Verbund-Partner bei 120 Trades     2,40 % je Versuch   1,4 Treffer in 57
+
+**Der Verbund ist um Faktor 2,2 wirksamer.** Das ist die erste Zahl, die die
+beiden Wege gegeneinander stellt - bisher war der Verbund eine Richtung, die
+sich gut anfuehlte.
+
+Der Grund ist einfach: Ein Verbund muss die Guete nicht allein tragen. Der
+Bestand bringt 3,215 mit, der Partner muss nur den Rest liefern.
+
+### Was daraus folgt
+
+Das verbleibende Suchbudget von 57 Versuchen gehoert in **Verbund-Partner**,
+nicht in Einzelkandidaten. Erwartungswert: 1,4 echte Treffer. Das ist wenig,
+aber es ist mehr als null - und es ist doppelt so viel wie der andere Weg.
+
+Und die Erwartung bleibt, was sie ist: Eine durchschnittliche Regel schafft
+Guete 1,28 gegen noetige 3,63. Wer weitersucht, sucht nach einem Ausreisser,
+und die Zahl daneben ist 2,4 %.
+
+Versuchsstand 173 unveraendert, Suchbudget 43 von 100. 1691 Tests gruen.

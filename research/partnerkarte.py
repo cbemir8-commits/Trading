@@ -420,3 +420,78 @@ class Katalogkopplung:
             else 0.0
         )
         return (float(gemessen), float(wirklich))
+
+    def guete_bei(self, trades: int) -> float | None:
+        """Welche Guete eine **durchschnittliche** Regel dieser Taktung traegt.
+
+        ``(a + b*n) * sqrt(n)`` entlang der Kopplungsgeraden. Die Kurve hat
+        ein Maximum - mehr Trades helfen nur, solange der Qualitaetsverlust
+        langsamer waechst als die Wurzel.
+        """
+        angepasst = self.gerade()
+        if angepasst is None or trades < 1:
+            return None
+        steigung, abschnitt, _ = angepasst
+        return (abschnitt + steigung * trades) * trades**0.5
+
+    @property
+    def guetedeckel(self) -> tuple[int, float] | None:
+        """Die beste Guete, die die Kopplung im Durchschnitt hergibt.
+
+        **Die ernuechterndste Zahl des Projekts.** Gemessen liegt sie bei
+        1,281 bei 77 Trades - das Gate verlangt 3,629. Eine durchschnittliche
+        Regel erreicht es also nicht annaehernd; jeder Kandidat, der es
+        schaffen soll, muss ein Ausreisser sein.
+        """
+        angepasst = self.gerade()
+        if angepasst is None:
+            return None
+        steigung, abschnitt, _ = angepasst
+        if steigung >= 0:
+            return None
+        beste = -abschnitt / (3 * steigung)
+        n = max(1, round(beste))
+        wert = self.guete_bei(n)
+        return (n, wert) if wert is not None else None
+
+    def noetiger_ausreisser(self, *, trades: int, ziel: float) -> float | None:
+        """Wie weit ueber der Geraden ein Kandidat liegen muesste - in
+        Reststreuungen."""
+        angepasst = self.gerade()
+        if angepasst is None or trades < 1:
+            return None
+        steigung, abschnitt, rest = angepasst
+        if rest <= 0:
+            return None
+        return (ziel / trades**0.5 - abschnitt - steigung * trades) / rest
+
+    def bester_takt(
+        self, *, ziel: float, spanne: tuple[int, int] = (40, 800), echt: bool = True
+    ) -> tuple[int, float] | None:
+        """Bei welcher Trade-Zahl ein Einzelkandidat die beste Chance hat.
+
+        ``echt=True`` rechnet das Messrauschen aus der Reststreuung heraus -
+        und verschiebt das Optimum spuerbar: gemessen liegt es bei 153 Trades
+        (3,62 %), echt bei 197 (1,12 %). Der Grund ist, dass bei mehr Trades
+        weniger von der Reststreuung Rauschen ist, ein Treffer dort also
+        haeufiger echt.
+        """
+        from statistics import NormalDist
+
+        from research.aussagekraft import messrauschen, zerlege
+
+        angepasst = self.gerade()
+        if angepasst is None:
+            return None
+        steigung, abschnitt, rest = angepasst
+        normal = NormalDist()
+        beste: tuple[int, float] | None = None
+        for n in range(max(2, spanne[0]), spanne[1] + 1):
+            streuung = zerlege(rest, messrauschen(n)) if echt else rest
+            if streuung is None or streuung <= 0:
+                continue
+            z = (ziel / n**0.5 - abschnitt - steigung * n) / streuung
+            p = 1 - normal.cdf(z)
+            if beste is None or p > beste[1]:
+                beste = (n, float(p))
+        return beste
