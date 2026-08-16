@@ -13,6 +13,8 @@ Auswahl in Befund 73 war nach dem falschen Merkmal getroffen.
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import pytest
 
 from research.partnerkarte import (
@@ -209,3 +211,105 @@ class TestWiederverwendbarkeit:
         assert Entry(genome_id="x", name="y", generation=0).genom is None, (
             "Alte Eintraege bleiben ohne Regeln - erfundene waeren schlimmer"
         )
+
+
+class TestKatalogkopplung:
+    """Gilt die Kopplung aus Befund 54 auch **ueber** die Regeln hinweg?"""
+
+    #: Die 14 verschiedenen Genome der Tageskerzen-Generationen, wie sie in
+    #: Befund 75 vermessen wurden.
+    KATALOG: ClassVar[list[tuple[str, int, float]]] = [
+        ("Luecke wird geschlossen", 258, -0.0368),
+        ("VWAP-Rueckkehr short", 185, -0.1113),
+        ("Trend-Beteiligung 50 Tage", 156, 0.1894),
+        ("Abfolge ohne Strukturbruch", 124, -0.0469),
+        ("Trend-Beteiligung 100 Tage", 109, 0.2231),
+        ("Trend beide Richtungen", 106, 0.2160),
+        ("Momentum-Beteiligung 90 Tage", 101, 0.1649),
+        ("Abfolge-Modell short", 67, 0.0833),
+        ("Donchian-Ausbruch 55/20", 58, 0.3074),
+        ("Abfolge-Modell", 56, 0.1067),
+        ("Vola-Ziel, langes Messfenster", 53, 0.3185),
+        ("Grosse Kerze mit Volumen short", 51, 0.1342),
+        ("Abfolge ohne Luecke", 50, 0.1377),
+        ("Bollinger-Ruecksetzer short", 36, 0.0576),
+    ]
+
+    def kopplung(self):
+        from research.partnerkarte import Katalogkopplung
+
+        return Katalogkopplung(
+            anwaerter=[
+                Anwaerter(name=n, trades=t, sharpe_je_trade=s)
+                for n, t, s in self.KATALOG
+            ]
+        )
+
+    def test_wer_viel_handelt_handelt_schlechter(self) -> None:
+        """**Der Befund von Lauf 75.**
+
+        Befund 54 hat die Kopplung an **einem** Kandidaten gemessen - durch
+        Verstellen seiner Regler. Ueber 14 verschiedene Genome gemessen gilt
+        sie auch: r = -0,533. Sie ist damit eine Eigenschaft des Vorrats und
+        nicht jener Regel.
+        """
+        k = self.kopplung()
+
+        assert k.korrelation == pytest.approx(-0.533, abs=0.01)
+        assert k.t_wert == pytest.approx(-2.18, abs=0.05)
+        assert k.auffaellig
+
+    def test_kein_einziger_anwaerter_taugt(self) -> None:
+        """Das Ergebnis der Bestandsaufnahme, und der Grund dafuer: Die Karte
+        verlangt Menge **und** Qualitaet, der Katalog liefert immer nur
+        eines."""
+        karte_ = karte()
+        tauglich = [
+            a
+            for a in self.kopplung().anwaerter
+            if karte_.reicht(a, 0.72)
+        ]
+
+        assert tauglich == []
+
+    def test_zu_wenige_anwaerter_liefern_nichts(self) -> None:
+        from research.partnerkarte import Katalogkopplung
+
+        duenn = Katalogkopplung(
+            anwaerter=[Anwaerter(name="a", trades=100, sharpe_je_trade=0.2)]
+        )
+
+        assert not duenn.genug
+        assert duenn.korrelation is None
+        assert "nichts sagen" in duenn.urteil()
+
+    def test_das_urteil_nennt_richtung_und_staerke(self) -> None:
+        urteil = self.kopplung().urteil()
+
+        assert "Wer viel handelt, handelt schlechter" in urteil
+        assert "nicht eine Eigenschaft jener Regel" in urteil or "des Vorrats" in urteil
+
+    def test_ohne_auffaelligkeit_keine_schlussfolgerung(self) -> None:
+        """**Ein Scheinbefund, der im ersten Anlauf drinstand.**
+
+        ``cli partner`` liest nur die fuenf Bestenlisten-Eintraege und kam
+        damit auf r = +0,359 bei t = +0,67 - das **Gegenteil** des Befunds
+        ueber 14 Genome. Das Urteil zog trotzdem denselben Schluss.
+        """
+        from research.partnerkarte import Katalogkopplung
+
+        schwach = Katalogkopplung(
+            anwaerter=[
+                Anwaerter(name=n, trades=t, sharpe_je_trade=s)
+                for n, t, s in [
+                    ("a", 123, 0.2137), ("b", 118, 0.0483), ("c", 89, 0.2136),
+                    ("d", 68, 0.2482), ("e", 8, 0.0300),
+                ]
+            ]
+        )
+
+        assert not schwach.auffaellig
+        urteil = schwach.urteil()
+        assert "sagen diese 5 Anwaerter nichts" in urteil
+        assert "Eigenschaft des Vorrats" not in urteil
+        assert "dreht ein einzelner" in urteil

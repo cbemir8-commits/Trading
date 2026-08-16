@@ -67,7 +67,7 @@ Kostet keinen Versuch: Gerechnet wird ueber Partner, nicht mit ihnen.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 #: Die aus den gemessenen Verbunden zurueckgerechneten Grade. 1,0 heisst
 #: "keine Kuerzung" und ist der unerreichbare Bestfall.
@@ -233,4 +233,97 @@ class Partnerkarte:
             f"Die Naeherung ist dabei die freundliche Richtung: Wo sich die "
             f"Verteilungen unterscheiden, waechst die Streuung der Mischung, "
             f"und der wirkliche Wert liegt darunter."
+        )
+
+
+@dataclass(slots=True)
+class Katalogkopplung:
+    """Gilt die Kopplung aus Befund 54 auch **ueber** die Regeln hinweg?
+
+    Befund 54 hat sie an **einem** Kandidaten gemessen: Wer den
+    Spitzenkandidaten oefter handeln laesst, verliert an Qualitaet, was er an
+    Menge gewinnt. Ob das eine Eigenschaft jener Regel ist oder des ganzen
+    Regelvorrats, war damit nicht entschieden.
+
+    Ueber 14 verschiedene Genome der Tageskerzen-Generationen gemessen:
+    **r = -0,533**. Die Kopplung ist keine Eigenschaft des Spitzenkandidaten,
+    sondern des Katalogs - und sie erklaert, warum die Partnerkarte leer
+    ausgeht: Sie verlangt Menge **und** Qualitaet, und der Vorrat liefert
+    immer nur eines von beidem.
+
+    Mit t = -2,18 liegt es knapp ueber der Schwelle, die dieses Projekt
+    ueberall verwendet (|t| >= 2). Knapp heisst knapp: Bei 14 Punkten haette
+    ein einzelnes anderes Genom das Vorzeichen der Aussage nicht gedreht, wohl
+    aber ihre Auffaelligkeit. Es ist ein Befund am Rand, und er steht hier als
+    solcher.
+    """
+
+    anwaerter: list[Anwaerter] = field(default_factory=list)
+
+    @property
+    def genug(self) -> bool:
+        return len(self.anwaerter) >= 4
+
+    @property
+    def korrelation(self) -> float | None:
+        """Zwischen Trade-Zahl und Qualitaet je Trade."""
+        if not self.genug:
+            return None
+        trades = [float(a.trades) for a in self.anwaerter]
+        sharpe = [a.sharpe_je_trade for a in self.anwaerter]
+        n = len(trades)
+        mt, ms = sum(trades) / n, sum(sharpe) / n
+        oben = sum((t - mt) * (s - ms) for t, s in zip(trades, sharpe, strict=True))
+        unten = (
+            sum((t - mt) ** 2 for t in trades) * sum((s - ms) ** 2 for s in sharpe)
+        ) ** 0.5
+        return oben / unten if unten > 0 else None
+
+    @property
+    def t_wert(self) -> float | None:
+        """Wie weit die Korrelation von null entfernt ist, in Standardfehlern."""
+        r = self.korrelation
+        if r is None or abs(r) >= 1.0:
+            return None
+        n = len(self.anwaerter)
+        return r * ((n - 2) / (1 - r**2)) ** 0.5
+
+    @property
+    def auffaellig(self) -> bool:
+        """``|t| >= 2`` - die uebliche Schwelle dieses Projekts."""
+        t = self.t_wert
+        return t is not None and abs(t) >= 2.0
+
+    def urteil(self) -> str:
+        r = self.korrelation
+        if r is None:
+            return "Zu wenige Anwaerter - ueber die Kopplung laesst sich nichts sagen."
+        t = self.t_wert or 0.0
+        if not self.auffaellig:
+            # **Ohne Auffaelligkeit keine Schlussfolgerung.** Der erste Anlauf
+            # zog sie trotzdem - und lieferte an fuenf Bestenlisten-Eintraegen
+            # r = +0,359, also das Gegenteil des Befunds ueber 14 Genome, mit
+            # demselben Begleittext. Eine Korrelation ohne Deckung darf nicht
+            # klingen wie eine mit.
+            return (
+                f"**Ueber die Kopplung sagen diese {len(self.anwaerter)} "
+                f"Anwaerter nichts.** Gemessen r = {r:+.3f} bei t = {t:+.2f} - "
+                f"unter der Schwelle von 2, ab der dieses Projekt von einem "
+                f"Befund spricht. Bei so wenigen Punkten dreht ein einzelner "
+                f"das Vorzeichen."
+            )
+        richtung = (
+            "Wer viel handelt, handelt schlechter"
+            if r < 0
+            else "Menge und Qualitaet gehen zusammen"
+        )
+        return (
+            f"**Die Kopplung gilt auch ueber die Regeln hinweg: r = {r:+.3f}.** "
+            f"{richtung}, ueber {len(self.anwaerter)} Genome mit "
+            f"t = {t:+.2f}.\n\n"
+            f"Befund 54 hatte sie an **einem** Kandidaten gemessen, durch "
+            f"Verstellen seiner Regler. Sie ist damit keine Eigenschaft jener "
+            f"Regel, sondern des Vorrats - und sie erklaert, warum die "
+            f"Partnerkarte leer ausgeht: Sie verlangt Menge **und** Qualitaet, "
+            f"und der Vorrat liefert immer nur eines."
         )

@@ -5195,6 +5195,116 @@ def front(
 
 
 @app.command()
+def anwaerter(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    vola_ziel: float = typer.Option(19.3, "--vola-ziel"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Welches Genom im Katalog taugt als Verbund-Partner?
+
+    Befund 74 hat die Anforderung beziffert: mindestens rund 120 Trades und
+    moeglichst wenig Fensterkorrelation zum Bestand. Dieser Befehl misst
+    beides fuer jedes Genom der Generationen, die auf dieses Intervall
+    gehoeren, und haelt sie gegen die Partnerkarte.
+
+    **Kostet keinen Versuch.** Gemessen werden Trade-Zahl, Qualitaet je Trade
+    und Korrelation - keine Gates, kein Deflated Sharpe, keine Auswahl. Wer
+    danach einen dieser Anwaerter tatsaechlich als Verbund prueft, muss die
+    Durchmusterung allerdings mitzaehlen: Dann ist sie eine Auswahl ueber
+    viele Hypothesen geworden.
+    """
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.partnerkarte import Anwaerter, Katalogkopplung, Partnerkarte
+    from research.seeds import VORGESEHEN, load_seeds, spitzenkandidat
+    from research.suchbudget import Kandidat
+    from research.verbund import fensterkorrelation, noetige_guete
+    from strategy.compiler import compile_genome
+    from strategy.genome import SizingSpec
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    versuche = load_trials(Path(settings.paths.state) / "trials.json")
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
+
+    def lauf(genome):
+        angepasst = genome.model_copy(
+            update={
+                "sizing": SizingSpec(
+                    kind="vola_ziel", fraction=3.0,
+                    target_vol_pct=vola_ziel, vol_period=30,
+                )
+            }
+        )
+        return run_portfolio_walkforward(
+            frames, lambda g=angepasst: compile_genome(g), configs
+        )
+
+    bestand = spitzenkandidat()
+    spitze = lauf(bestand)
+    eigen = Kandidat.aus_trades(bestand.name, list(spitze.all_trades))
+    if eigen is None:
+        console.print("[red]Der Bestand liefert keine Trades.[/]")
+        raise typer.Exit(2)
+
+    passende = [g for g, iv in VORGESEHEN.items() if iv == interval_obj.value]
+    console.print(
+        f"\n[bold]Anwaerter als Verbund-Partner[/] auf {' + '.join(symbole)} "
+        f"{interval_obj.label}\n"
+        f"  Bestand    '{bestand.name}': {len(spitze.all_trades)} Trades zu je "
+        f"{eigen.sharpe_je_trade:.4f}\n"
+        f"  Katalog    Generationen {', '.join(str(g) for g in sorted(passende))}\n"
+        f"  Historie   {spanne} Tage, {versuche} Versuche bisher\n"
+    )
+
+    gefunden: dict[tuple[int, float], Anwaerter] = {}
+    for gen in sorted(passende):
+        for genome in load_seeds(gen):
+            bericht = lauf(genome)
+            trades = list(bericht.all_trades)
+            kandidat = Kandidat.aus_trades(genome.name, trades)
+            if kandidat is None or not bericht.windows:
+                continue
+            rho = fensterkorrelation(spitze, bericht)
+            # Nach (Trades, Qualitaet) entdoppeln: Mehrere Generationen
+            # enthalten dasselbe Genom unter anderem Namen, und doppelte
+            # Punkte wuerden die Kopplung nach unten faelschen.
+            gefunden[(len(trades), round(kandidat.sharpe_je_trade, 4))] = Anwaerter(
+                name=f"{genome.name}  (rho {rho:+.3f})" if rho is not None
+                else genome.name,
+                trades=len(trades),
+                sharpe_je_trade=kandidat.sharpe_je_trade,
+            )
+
+    liste = list(gefunden.values())
+    if not liste:
+        console.print("[yellow]Kein Genom lieferte Fenster.[/]")
+        raise typer.Exit(0)
+
+    ziel = noetige_guete(len(spitze.all_trades), versuche)
+    karte = Partnerkarte(
+        n1=len(spitze.all_trades), sr1=eigen.sharpe_je_trade, ziel=ziel
+    )
+    console.print(karte.einordnung(liste))
+
+    tauglich = [a for a in liste if karte.reicht(a, 0.72)]
+    farbe = "green" if tauglich else "yellow"
+    console.print(
+        f"\n[{farbe}]Tauglich nach der Karte: {len(tauglich)} von "
+        f"{len(liste)}[/] (bei u = 0,72)\n"
+    )
+    kopplung = Katalogkopplung(anwaerter=liste)
+    if kopplung.genug:
+        console.print(f"{kopplung.urteil()}\n")
+
+
+@app.command()
 def partner(
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
@@ -5261,11 +5371,16 @@ def partner(
         if e.get("sharpe_je_trade") and int(e.get("trades", 0)) > 0
     ]
     if anwaerter:
+        from research.partnerkarte import Katalogkopplung
+
         console.print(
             "Die bekannten Kandidaten mit belegtem Sharpe je Trade, gegen "
             "ihre eigene\nAnforderung bei u = 0,72:\n"
         )
         console.print(karte.einordnung(anwaerter))
+        kopplung = Katalogkopplung(anwaerter=anwaerter)
+        if kopplung.genug:
+            console.print(f"\n{kopplung.urteil()}")
         console.print(
             "\n[dim]'fehlt' positiv heisst: reicht nicht. Alle bekannten "
             "Anwaerter handeln zu selten -\ndie Trade-Zahl ist das bindende "

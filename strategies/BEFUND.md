@@ -6314,3 +6314,84 @@ Verteilungen unterscheiden, waechst die Streuung der Mischung - die Karte
 nennt also eher zu niedrige Anforderungen.
 
 Versuchsstand 169 unveraendert, Suchbudget 39 von 100. 1654 Tests gruen.
+
+## Fuenfundsiebzig. Der Katalog ist als Partnerquelle erschoepft
+
+Befund 74 hat die Anforderung an einen Verbund-Partner beziffert: mindestens
+rund 120 Trades, moeglichst wenig Fensterkorrelation zum Bestand. Dieser Lauf
+haelt den ganzen Katalog dagegen.
+
+Vermessen wurden alle Genome der Tageskerzen-Generationen (5, 8, 9, 10) -
+20 Laeufe, 14 verschiedene Regeln, weil mehrere Generationen dasselbe Genom
+unter anderem Namen fuehren.
+
+    Anwaerter                        Trades       SR   noetig    fehlt     rho
+    ---------------------------------------------------------------------------
+    Luecke wird geschlossen             258  -0,0368   0,1818  +0,2186   -0,597
+    VWAP-Rueckkehr short                185  -0,1113   0,2099  +0,3212   -0,536
+    Trend-Beteiligung 50 Tage           156   0,1894   0,2269  +0,0375   +0,813
+    Abfolge ohne Strukturbruch          124  -0,0469   0,2532  +0,3002   +0,456
+    Trend-Beteiligung 100 Tage          109   0,2231   0,2702  +0,0471   +0,787
+    Trend beide Richtungen              106   0,2160   0,2741  +0,0581   +0,473
+    Momentum-Beteiligung 90 Tage        101   0,1649   0,2810  +0,1162   +0,712
+    Donchian-Ausbruch 55/20              58   0,3074   0,3855  +0,0781   +0,534
+    Vola-Ziel, langes Messfenster        53   0,3185   0,4080  +0,0895   +0,555
+    ... und fuenf weitere, alle weiter weg
+
+**Tauglich: 0 von 14.**
+
+### Warum, und das ist der eigentliche Befund
+
+Die Anwaerter, die **genug handeln**, sind genau die mit negativem oder
+schwachem Sharpe. Die mit **guter Qualitaet** handeln zu selten. Und die
+beiden mit der besten Unabhaengigkeit - 'Luecke wird geschlossen' mit
+rho = -0,597 und 258 Trades, 'VWAP-Rueckkehr short' mit -0,536 und 185 - haben
+beide einen **negativen** Sharpe je Trade. Sie haetten genau die Eigenschaft,
+auf die es ankommt, und nichts, was sich damit verbinden liesse.
+
+Ueber die 14 Genome gemessen: **r = -0,533 zwischen Trade-Zahl und Qualitaet
+je Trade** (t = -2,18).
+
+Befund 54 hatte diese Kopplung an **einem** Kandidaten gemessen, durch
+Verstellen seiner Regler. Sie ist damit keine Eigenschaft jener Regel, sondern
+**des Vorrats**. Das erklaert die leere Partnerkarte vollstaendig: Sie verlangt
+Menge und Qualitaet zugleich, und der Katalog liefert immer nur eines.
+
+Mit t = -2,18 liegt der Wert knapp ueber der Schwelle, ab der dieses Projekt
+von einem Befund spricht. Knapp heisst knapp - bei 14 Punkten haette ein
+einzelnes anderes Genom die Auffaelligkeit gekippt, wenn auch nicht das
+Vorzeichen.
+
+### Der Scheinbefund, der dabei fast entstanden waere
+
+Der erste Anlauf haengte die Kopplungsrechnung an ``cli partner``, und der
+liest nur die fuenf Bestenlisten-Eintraege. Dort kommt **r = +0,359** heraus -
+das Gegenteil - bei t = +0,67. Das Urteil zog trotzdem denselben Schluss:
+*"Sie ist damit keine Eigenschaft jener Regel, sondern des Vorrats."*
+
+Eine Korrelation ohne Deckung darf nicht klingen wie eine mit. ``urteil()``
+liefert unterhalb von |t| = 2 jetzt gar keine Schlussfolgerung mehr, sondern
+die Auskunft, dass diese Punkte nichts sagen. Ein Test haelt es fest.
+
+### Was das kostet und was nicht
+
+**Keinen Versuch.** Gemessen wurden Trade-Zahl, Qualitaet und Korrelation -
+keine Gates, kein Deflated Sharpe, keine Auswahl. Es gibt keinen ausgewaehlten
+Kandidaten, fuer den zu korrigieren waere.
+
+Das gilt aber nur, solange keiner dieser Anwaerter tatsaechlich als Verbund
+geprueft wird. Wer das tut, hat eine Auswahl ueber 14 Hypothesen getroffen und
+muss sie mitzaehlen. Der Hinweis steht im Befehl.
+
+### Wonach jetzt zu suchen waere
+
+Nach einer Regel, die es im Katalog nicht gibt: **mindestens 120 Trades,
+positiver Sharpe ueber 0,23, und moeglichst unabhaengig vom Trendfolge-Signal.**
+Die Kopplung sagt, dass so etwas im vorhandenen Vorrat nicht vorkommt - sie
+sagt nicht, dass es das nicht gibt.
+
+Die einzige gebaute Quelle fuer neue Regeln ist ``research/analyst.py``. Nach
+Befund 72 laesst sich mit fuenf Vorschlaegen nicht beurteilen, ob sie taugt;
+noetig waeren rund 18. Das Suchbudget hat 61 Versuche uebrig.
+
+Versuchsstand 169 unveraendert, Suchbudget 39 von 100. 1659 Tests gruen.
