@@ -83,6 +83,44 @@ class Auftragslage:
     wie "weniger als der Bestand hat" ist dann schlicht falsch. Der Hebel wird
     erst am zweiten Punkt sichtbar."""
 
+    bestes_ziel: int = 0
+    """Die Trade-Zahl mit der besten Trefferaussicht - das **Optimum**.
+
+    ``partner_trades`` ist die Wende und damit eine **Untergrenze**: ab dort
+    genuegt ein Partner mit der Qualitaet des Bestands. Der Auftrag hat sie
+    bis Befund 82 als Ziel genannt, und mein eigener Vorschlagszyklus in
+    Befund 77 hat danach gezielt - mit Vorschlaegen zwischen 18 und 406
+    Trades, von denen keiner in der Naehe des Optimums lag.
+
+    Zwei gegenlaeufige Kurven treffen sich hier: Die Anforderung faellt mit
+    der Wurzel der Trade-Zahl, die Erwartung aus der Kopplung faellt linear.
+    """
+
+    ziel_spanne: tuple[int, int] = (0, 0)
+    """Wie weit das Optimum wandert, wenn die Reststreuung anders liegt.
+
+    Sie ist aus 18 Punkten geschaetzt; ueber ihren Vertrauensbereich liegt
+    das Optimum zwischen 142 und 202 Trades. Die Spanne gehoert in den
+    Auftrag, weil eine einzelne Zahl dort genauer klaenge als sie ist.
+    """
+
+    quoten_spanne: tuple[float, float] = (0.0, 0.0)
+    """Die Trefferquote - und warum sie als Bereich dasteht.
+
+    Ueber denselben Vertrauensbereich schwankt sie um Faktor 48. Wer sie als
+    einzelne Zahl nennt, behauptet mehr als er weiss (Befund 81). Im Auftrag
+    steht sie trotzdem: Ein Vorschlagender, der sie nicht kennt, haelt den
+    ersten Treffer fuer einen Fund.
+    """
+
+    bedarf_am_ziel: float = 0.0
+    """Der noetige Sharpe je Trade **am Optimum**.
+
+    Punkt 2 des Auftrags nannte bis Befund 82 die Anforderung an der Wende,
+    waehrend Punkt 1 inzwischen das Optimum nennt. Zwei Zahlen aus zwei
+    verschiedenen Trade-Zahlen nebeneinander lesen sich wie ein Widerspruch.
+    """
+
     @property
     def bestand_guete(self) -> float:
         return self.bestand_sharpe * self.bestand_trades**0.5
@@ -123,12 +161,17 @@ class Auftragslage:
             "gehandelt wird. Ein Vorschlag ist dafuer brauchbar, wenn er alle",
             "drei Punkte erfuellt:",
             "",
-            f"1. **Mindestens {self.partner_trades} Trades** im selben Zeitraum.",
-            "   Darunter genuegt selbst ein sehr hoher Sharpe je Trade nicht.",
-            f"2. **Sharpe je Trade ueber {self.partner_sharpe:.2f}** bei genau",
-            "   dieser Trade-Zahl. Die Anforderung faellt schnell: bei",
-            f"   {self.partner_trades * 2} Trades genuegen {self.bedarf_bei_doppelt:.2f}.",
-            "   Mehr Trades sind der wirksamere Hebel als mehr Qualitaet.",
+            f"1. **Mindestens {self.partner_trades} Trades** im selben Zeitraum,",
+            f"   am besten rund **{self.bestes_ziel}**. Darunter genuegt selbst ein",
+            "   sehr hoher Sharpe je Trade nicht; darueber faellt die Erwartung",
+            "   schneller, als die Anforderung nachgibt.",
+            f"2. **Sharpe je Trade ueber {self.bedarf_am_ziel:.2f}** bei der "
+            f"Zahl aus Punkt 1.",
+            f"   An der Untergrenze von {self.partner_trades} waeren es "
+            f"{self.partner_sharpe:.2f}, bei {self.partner_trades * 2} nur",
+            f"   noch {self.bedarf_bei_doppelt:.2f} - mehr Trades sind der "
+            f"wirksamere Hebel als",
+            "   mehr Qualitaet, aber nur bis zum Optimum.",
             "3. **Ein anderes Marktverhalten als Trendfolge.** Der Bestand ist",
             "   long ueber dem 50-Tage-Schnitt. Ein Vorschlag, dessen Gewinne",
             "   in denselben Phasen anfallen, bringt Trades ohne Information",
@@ -150,6 +193,28 @@ class Auftragslage:
                 "Gebraucht wird ein Ausloeser, der **oft** zutrifft und dabei",
                 "trotzdem Vorteil traegt - etwa weil er auf eine andere",
                 "Ursache zielt als ein Trend.",
+                "",
+            ]
+
+        if self.quoten_spanne[1] > 0:
+            von, bis = self.ziel_spanne
+            q_von, q_bis = self.quoten_spanne
+            zeilen += [
+                "## Wie oft so ein Vorschlag trifft\n",
+                f"Zwischen {q_von:.1%} und {q_bis:.1%} - und das ist die "
+                f"ehrliche Auskunft.",
+                "Die Erwartung stammt aus einer Geraden durch 18 Punkte, und",
+                "ihre Reststreuung ist selbst unsicher; ueber deren",
+                f"Vertrauensbereich schwankt die Quote um Faktor "
+                f"{q_bis / q_von:.0f}.",
+                "",
+                "Robust ist dagegen, **wohin** zu zielen ist: Das Optimum "
+                "liegt ueber",
+                f"denselben Bereich zwischen {von} und {bis} Trades.",
+                "",
+                "Praktisch heisst das: Ein Vorschlag, der die drei Punkte",
+                "erfuellt, ist ein **Verdacht** und kein Fund. Erst der",
+                "gerechnete Verbund entscheidet.",
                 "",
             ]
 
@@ -189,6 +254,12 @@ def aus_messungen(
     wende = karte.wende or bestand_trades
     bedarf = karte.bedarf(wende, 0.72) or bestand_sharpe
     preis = Budget(versuche=versuche).kosten_je_versuch(bestand_trades) or 0.0
+    lage = _optimum(
+        versuche=versuche,
+        bestand_trades=bestand_trades,
+        bestand_sharpe=bestand_sharpe,
+        karte=karte,
+    )
     return Auftragslage(
         versuche=versuche,
         bestand_trades=bestand_trades,
@@ -199,4 +270,42 @@ def aus_messungen(
         bedarf_bei_doppelt=karte.bedarf(wende * 2, 0.72) or 0.0,
         kopplung=kopplung,
         kosten_je_versuch=preis,
+        bestes_ziel=lage[0],
+        bedarf_am_ziel=(karte.bedarf(lage[0], 0.72) or bedarf) if lage[0] else bedarf,
+        ziel_spanne=lage[1],
+        quoten_spanne=lage[2],
     )
+
+
+def _optimum(
+    *, versuche: int, bestand_trades: int, bestand_sharpe: float, karte
+) -> tuple[int, tuple[int, int], tuple[float, float]]:
+    """Das Trefferoptimum aus der gemessenen Kopplung - samt Bandbreite.
+
+    Die 18 Punkte stehen fest verdrahtet, weil sie eine **Messung** sind und
+    keine Konfiguration: Sie stammen aus Befund 75 (Katalog) und 77 (vier
+    eigens gebaute Regeln). Wer sie aendert, aendert einen Befund und soll das
+    an dieser Stelle merken.
+
+    Faellt die Rechnung aus, bleibt es beim alten Verhalten - dann nennt der
+    Auftrag nur die Untergrenze, und das ist schlechter, aber nicht falsch.
+    """
+    from research.partnerkarte import Anwaerter, Katalogkopplung
+
+    punkte = [
+        (258, -0.0368), (185, -0.1113), (156, 0.1894), (124, -0.0469),
+        (109, 0.2231), (106, 0.2160), (101, 0.1649), (67, 0.0833),
+        (58, 0.3074), (56, 0.1067), (53, 0.3185), (51, 0.1342),
+        (50, 0.1377), (36, 0.0576), (18, 0.340522), (114, 0.158416),
+        (92, -0.120133), (406, -0.120146),
+    ]
+    kopplung = Katalogkopplung(
+        anwaerter=[
+            Anwaerter(name=f"p{i}", trades=n, sharpe_je_trade=s)
+            for i, (n, s) in enumerate(punkte)
+        ]
+    )
+    bereich = kopplung.takt_bereich(ziel=karte.ziel, karte=karte)
+    if bereich is None or bereich["gemessen"] is None:
+        return (0, (0, 0), (0.0, 0.0))
+    return (bereich["gemessen"][0], bereich["takt_spanne"], bereich["quoten_spanne"])

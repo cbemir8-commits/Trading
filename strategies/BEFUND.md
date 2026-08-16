@@ -6914,3 +6914,66 @@ Trades** - nicht die 120, die in ``auftragslage`` stehen. Die Anpassung dort
 ist der naechste Schritt.
 
 Versuchsstand 173 unveraendert, Suchbudget 43 von 100. 1694 Tests gruen.
+
+## Zweiundachtzig. Der Auftrag zielte auf die Untergrenze
+
+Befund 81 hat das Optimum fuer einen Verbund-Partner gemessen: rund 165
+Trades, robust ueber den ganzen Vertrauensbereich zwischen 142 und 202. Im
+Auftrag an den Analysten stand weiter die **Wende** aus der Partnerkarte -
+120 Trades.
+
+Das ist keine Kleinigkeit. Die Wende ist die Zahl, ab der ein Partner mit der
+Qualitaet des Bestands ueberhaupt genuegt: eine **Untergrenze**. Der Auftrag
+hat sie als Ziel genannt, und mein eigener Vorschlagszyklus in Befund 77 hat
+danach gezielt - vier Regeln mit 18, 92, 114 und 406 Trades. **Keine einzige
+in der Naehe des Optimums.**
+
+Damit ist es derselbe Fehler wie in Befund 76, nur eine Runde spaeter: Der
+Auftrag nannte eine Zahl, die zwar stimmt, aber nicht die ist, auf die es
+ankommt.
+
+### Was der Auftrag jetzt sagt
+
+    1. Mindestens 120 Trades im selben Zeitraum, am besten rund 165.
+       Darunter genuegt selbst ein sehr hoher Sharpe je Trade nicht;
+       darueber faellt die Erwartung schneller, als die Anforderung nachgibt.
+    2. Sharpe je Trade ueber 0,22 bei der Zahl aus Punkt 1.
+       An der Untergrenze von 120 waeren es 0,26, bei 240 nur noch 0,19 -
+       mehr Trades sind der wirksamere Hebel als mehr Qualitaet, aber nur
+       bis zum Optimum.
+
+Der zweite Punkt musste mitwandern: Er nannte die Anforderung an der Wende,
+waehrend der erste inzwischen das Optimum nennt. Zwei Zahlen aus zwei
+verschiedenen Trade-Zahlen nebeneinander lesen sich wie ein Widerspruch.
+
+### Und die Unsicherheit steht jetzt drin
+
+Neu ist ein Abschnitt, den es vorher nicht gab:
+
+    ## Wie oft so ein Vorschlag trifft
+
+    Zwischen 0,3 % und 15,5 % - und das ist die ehrliche Auskunft. Die
+    Erwartung stammt aus einer Geraden durch 18 Punkte, und ihre
+    Reststreuung ist selbst unsicher; ueber deren Vertrauensbereich
+    schwankt die Quote um Faktor 49.
+
+    Robust ist dagegen, wohin zu zielen ist: Das Optimum liegt ueber
+    denselben Bereich zwischen 143 und 203 Trades.
+
+    Praktisch heisst das: Ein Vorschlag, der die drei Punkte erfuellt, ist
+    ein Verdacht und kein Fund. Erst der gerechnete Verbund entscheidet.
+
+Das ist der Kern von Befund 81, in die Form gebracht, in der ein
+Vorschlagender ihn braucht. Ohne diese Auskunft haelt er den ersten Treffer
+fuer einen Fund - und bei einer Quote, die zu drei Vierteln Rauschen ist,
+waere das der teuerste Irrtum, den dieses Projekt noch machen kann.
+
+### Wo die 18 Punkte stehen
+
+Fest verdrahtet in ``auftragslage._optimum``, mit einer Begruendung im
+Docstring: Sie sind eine **Messung** und keine Konfiguration. Wer sie aendert,
+aendert einen Befund und soll das an dieser Stelle merken. Faellt die Rechnung
+aus, bleibt es beim alten Verhalten - dann nennt der Auftrag nur die
+Untergrenze, was schlechter ist, aber nicht falsch.
+
+Versuchsstand 173 unveraendert, Suchbudget 43 von 100. 1699 Tests gruen.

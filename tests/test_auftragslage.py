@@ -95,7 +95,10 @@ class TestAuftragstext:
 
         assert aktuell.bedarf_bei_doppelt < aktuell.partner_sharpe
         assert "weniger als der Bestand hat" not in aktuell.als_auftrag()
-        assert f"{aktuell.partner_trades * 2} Trades" in aktuell.als_auftrag()
+        # Seit Befund 82 steht die Zahl in einem Satz, der drei Stuetzstellen
+        # vergleicht - der Hebel bleibt sichtbar, der Wortlaut hat sich
+        # geaendert.
+        assert f"bei {aktuell.partner_trades * 2}" in aktuell.als_auftrag()
 
     def test_die_unabhaengigkeit_wird_beziffert(self) -> None:
         """'Anders sein' ist kein pruefbares Kriterium - eine Korrelation
@@ -138,3 +141,66 @@ class TestEinbau:
 
         assert "Erlaubte Indikatoren" in neu
         assert "Zulassungsschwellen" in neu
+
+
+class TestOptimumImAuftrag:
+    """Der Auftrag nannte die Untergrenze, wo das Optimum hingehoert."""
+
+    def test_der_auftrag_nennt_das_optimum_nicht_nur_die_untergrenze(self) -> None:
+        """**Die Korrektur aus Befund 82.**
+
+        ``partner_trades`` ist die Wende aus der Partnerkarte - ab dort
+        genuegt ein Partner mit der Qualitaet des Bestands. Das ist eine
+        Untergrenze, und der Auftrag hat sie als Ziel genannt.
+
+        Mein eigener Vorschlagszyklus in Befund 77 hat danach gezielt und
+        Regeln zwischen 18 und 406 Trades gebaut - keine in der Naehe des
+        Optimums.
+        """
+        aktuell = lage()
+
+        assert aktuell.bestes_ziel > aktuell.partner_trades
+        assert 140 <= aktuell.bestes_ziel <= 200, f"gemessen {aktuell.bestes_ziel}"
+        assert f"am besten rund **{aktuell.bestes_ziel}**" in aktuell.als_auftrag()
+
+    def test_beide_zahlen_in_punkt_zwei_gehoeren_zusammen(self) -> None:
+        """Punkt 1 nennt das Optimum, Punkt 2 nannte die Anforderung an der
+        Wende - zwei Zahlen aus zwei Trade-Zahlen lesen sich wie ein
+        Widerspruch."""
+        aktuell = lage()
+
+        assert aktuell.bedarf_am_ziel < aktuell.partner_sharpe
+        assert f"ueber {aktuell.bedarf_am_ziel:.2f}** bei der Zahl aus Punkt 1" in (
+            aktuell.als_auftrag()
+        )
+
+    def test_die_trefferquote_steht_als_bereich_da(self) -> None:
+        """Eine einzelne Zahl waere genauer, als sie ist - ueber den
+        Vertrauensbereich der Reststreuung schwankt sie um Faktor 48."""
+        aktuell = lage()
+        von, bis = aktuell.quoten_spanne
+
+        assert 0 < von < bis
+        assert bis / von > 10
+        assert "Wie oft so ein Vorschlag trifft" in aktuell.als_auftrag()
+        assert "Verdacht" in aktuell.als_auftrag()
+
+    def test_die_zielspanne_ist_enger_als_die_quotenspanne(self) -> None:
+        """Der Kern von Befund 81: Wohin zu zielen ist, steht fest - wie oft
+        man trifft, nicht."""
+        aktuell = lage()
+        von, bis = aktuell.ziel_spanne
+        q_von, q_bis = aktuell.quoten_spanne
+
+        assert bis / von < 2.0, "Das Optimum wandert wenig"
+        assert q_bis / q_von > 10, "Die Quote sehr viel"
+
+    def test_ohne_messbares_optimum_bleibt_der_alte_text(self) -> None:
+        """Faellt die Rechnung aus, nennt der Auftrag nur die Untergrenze -
+        schlechter, aber nicht falsch."""
+        ohne = Auftragslage(
+            versuche=173, bestand_trades=154, bestand_sharpe=0.2591,
+            noetige_guete=3.6, partner_trades=120, partner_sharpe=0.26,
+        )
+
+        assert "Wie oft so ein Vorschlag trifft" not in ohne.als_auftrag()
