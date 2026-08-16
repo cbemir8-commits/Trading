@@ -479,3 +479,46 @@ class TestKatalogkopplung:
         assert einzeln is not None
         assert verbund > einzeln[1], "Der Verbund muss besser sein"
         assert verbund / einzeln[1] > 1.5
+
+    def test_das_optimum_ist_robust_die_trefferquote_nicht(self) -> None:
+        """**Die Korrektur an Befund 79 und 80.**
+
+        Dort stand die Trefferquote fuer einen Verbund-Partner mit 2,40 % -
+        gerechnet bei 120 Trades, weil ich die **Mindest**-Trade-Zahl aus der
+        Partnerkarte fuer das Optimum gehalten hatte. Es liegt bei rund 164.
+
+        Wichtiger: Die Reststreuung ist selbst aus 18 Punkten geschaetzt. Ueber
+        ihren Vertrauensbereich schwankt die Trefferquote um Faktor 48, das
+        Optimum dagegen nur zwischen 142 und 202 Trades. Die eine Aussage
+        traegt, die andere nicht.
+        """
+        k = self.kopplung(vollstaendig=True)
+        lage = k.takt_bereich(ziel=3.629, karte=karte())
+
+        assert lage is not None
+        von, bis = lage["takt_spanne"]
+        assert 130 <= von <= bis <= 220, f"gemessen {von}..{bis}"
+        assert lage["gemessen"][0] > 140, "Nicht 120, wie in Befund 79 gerechnet"
+
+        q_von, q_bis = lage["quoten_spanne"]
+        assert q_bis / q_von > 10, "Die Quote ist um Groessenordnungen unsicher"
+
+    def test_die_reststreuung_hat_einen_eigenen_vertrauensbereich(self) -> None:
+        """18 Punkte, zwei Parameter - 16 Freiheitsgrade. Der Bereich reicht
+        von 0,096 bis 0,174, und daran haengt alles Weitere."""
+        bereich = self.kopplung(vollstaendig=True).rest_bereich()
+
+        assert bereich is not None
+        unten, oben = bereich
+        assert unten == pytest.approx(0.096, abs=0.005)
+        assert oben == pytest.approx(0.174, abs=0.005)
+        assert oben / unten > 1.7
+
+    def test_das_urteil_nennt_beides_getrennt(self) -> None:
+        urteil = self.kopplung(vollstaendig=True).urteil_takt(
+            ziel=3.629, karte=karte()
+        )
+
+        assert "robust" in urteil
+        assert "ist es nicht" in urteil
+        assert "mehr als er weiss" in urteil

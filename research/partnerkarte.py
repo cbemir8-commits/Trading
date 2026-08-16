@@ -495,3 +495,101 @@ class Katalogkopplung:
             if beste is None or p > beste[1]:
                 beste = (n, float(p))
         return beste
+
+    def rest_bereich(self, *, irrtum: float = 0.10) -> tuple[float, float] | None:
+        """Wie unsicher die Reststreuung selbst ist.
+
+        **Der Vorbehalt, der zu allen Trefferquoten gehoert.** Sie ist aus 18
+        Punkten geschaetzt, mit zwei Parametern fuer die Gerade - also 16
+        Freiheitsgrade. Der 90-Prozent-Bereich reicht von 0,096 bis 0,174,
+        und die Trefferquote reagiert darauf extrem empfindlich: Bei 154
+        Trades sind es 0,11 % am unteren und 15,5 % am oberen Rand.
+
+        Wer eine Trefferquote auf zwei Stellen nennt, ohne diesen Bereich
+        danebenzustellen, behauptet mehr als er weiss - und genau das ist mir
+        in Befund 79 und 80 passiert.
+        """
+        from research.aussagekraft import chi2_quantil
+
+        angepasst = self.gerade()
+        if angepasst is None:
+            return None
+        rest = angepasst[2]
+        freiheitsgrade = len(self.anwaerter) - 2
+        if freiheitsgrade < 1 or rest <= 0:
+            return None
+        return (
+            rest * (freiheitsgrade / chi2_quantil(1 - irrtum / 2, freiheitsgrade)) ** 0.5,
+            rest * (freiheitsgrade / chi2_quantil(irrtum / 2, freiheitsgrade)) ** 0.5,
+        )
+
+    def takt_bereich(
+        self, *, ziel: float, karte, unabhaengigkeit: float = 0.72
+    ) -> dict | None:
+        """Die beste Partner-Taktung - samt der Bandbreite, die sie hat.
+
+        ``karte`` ist eine ``Partnerkarte``; sie liefert die Anforderung bei
+        einer Trade-Zahl, die Kopplung die Erwartung. Wo beide sich am
+        wenigsten widersprechen, ist die Suche am aussichtsreichsten.
+
+        Gibt Optimum und Trefferquote fuer die gemessene Reststreuung **und**
+        fuer beide Raender ihres Vertrauensbereichs. Das Optimum erweist sich
+        dabei als robust (142 bis 202 Trades), die Trefferquote nicht.
+        """
+        from statistics import NormalDist
+
+        from research.aussagekraft import messrauschen, zerlege
+
+        angepasst = self.gerade()
+        bereich = self.rest_bereich()
+        if angepasst is None or bereich is None:
+            return None
+        steigung, abschnitt, rest = angepasst
+        normal = NormalDist()
+
+        def optimum(streuung_gesamt: float) -> tuple[int, float] | None:
+            beste: tuple[int, float] | None = None
+            for n in range(60, 601):
+                echt = zerlege(streuung_gesamt, messrauschen(n))
+                noetig = karte.bedarf(n, unabhaengigkeit)
+                if echt is None or echt <= 0 or noetig is None:
+                    continue
+                p = 1 - normal.cdf(
+                    (noetig - (abschnitt + steigung * n)) / echt
+                )
+                if beste is None or p > beste[1]:
+                    beste = (n, float(p))
+            return beste
+
+        gefunden = {
+            "gemessen": optimum(rest),
+            "unten": optimum(bereich[0]),
+            "oben": optimum(bereich[1]),
+        }
+        if gefunden["gemessen"] is None:
+            return None
+        takte = [w[0] for w in gefunden.values() if w is not None]
+        quoten = [w[1] for w in gefunden.values() if w is not None]
+        return {
+            **gefunden,
+            "takt_spanne": (min(takte), max(takte)),
+            "quoten_spanne": (min(quoten), max(quoten)),
+        }
+
+    def urteil_takt(self, *, ziel: float, karte) -> str:
+        lage = self.takt_bereich(ziel=ziel, karte=karte)
+        if lage is None:
+            return "Zu wenige Punkte - ueber die beste Taktung laesst sich nichts sagen."
+        takt, quote = lage["gemessen"]
+        von, bis = lage["takt_spanne"]
+        q_von, q_bis = lage["quoten_spanne"]
+        return (
+            f"**Ein Verbund-Partner sollte rund {takt} Trades bringen.** Ueber "
+            f"den ganzen Vertrauensbereich der Reststreuung liegt das Optimum "
+            f"zwischen {von} und {bis} - die Aussage ist robust.\n\n"
+            f"**Die Trefferquote ist es nicht.** Gemessen {quote:.1%}, aber "
+            f"zwischen {q_von:.2%} und {q_bis:.1%}, je nachdem wo die "
+            f"Reststreuung wirklich liegt. Das ist ein Faktor "
+            f"{q_bis / q_von:.0f}, und wer hier eine Zahl auf zwei Stellen "
+            f"nennt, behauptet mehr als er weiss."
+        )

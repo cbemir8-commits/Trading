@@ -6825,3 +6825,92 @@ Guete 1,28 gegen noetige 3,63. Wer weitersucht, sucht nach einem Ausreisser,
 und die Zahl daneben ist 2,4 %.
 
 Versuchsstand 173 unveraendert, Suchbudget 43 von 100. 1691 Tests gruen.
+
+## Einundachtzig. Zwei Korrekturen an meinen eigenen letzten Befunden
+
+Befund 80 hat entschieden, wohin das Restbudget gehoert: in Verbund-Partner,
+mit 2,40 % echter Trefferquote je Versuch und 1,4 erwarteten Treffern. Beim
+Nachrechnen, auf welche **Trade-Zahl** ein Vorschlag zielen soll, sind an
+dieser Aussage zwei Dinge kaputtgegangen.
+
+### Erstens: die falsche Trade-Zahl
+
+Die 2,40 % waren bei **120 Trades** gerechnet. Das ist die *Wende* aus der
+Partnerkarte - die Zahl, ab der ein Partner mit der Qualitaet des Bestands
+genuegt. Ich hatte sie fuer das Optimum gehalten. Sie ist eine Untergrenze.
+
+Die Trefferquote als Funktion der Trade-Zahl:
+
+    Trades   noetig   erwartet   p gemessen   p echt
+    ------------------------------------------------
+       100   0,2826    0,1240        9,77 %   1,18 %
+       120   0,2574    0,1049       10,65 %   3,02 %
+       154   0,2283    0,0723       10,15 %   4,51 %
+       200   0,2028    0,0283        7,71 %   4,03 %
+       300   0,1708   -0,0674        2,59 %   1,37 %
+
+Das Optimum liegt bei rund **164 Trades**, nicht bei 120. Zwei gegenlaeufige
+Kurven treffen sich dort: Die Anforderung faellt mit der Wurzel, die Erwartung
+faellt linear - dazwischen ist der Abstand am kleinsten.
+
+### Zweitens, und schwerer: die Zahl selbst traegt nicht
+
+Die ganze Rechnung haengt an der Reststreuung von 0,1225. Die ist aus **18
+Punkten** geschaetzt, bei zwei Parametern fuer die Gerade - 16
+Freiheitsgrade. Ihr 90-Prozent-Bereich reicht von **0,096 bis 0,174**.
+
+Was das mit der Trefferquote bei 154 Trades macht:
+
+    Reststreuung 0,096   ->   0,11 %
+    Reststreuung 0,123   ->   4,51 %
+    Reststreuung 0,174   ->  15,52 %
+
+**Ein Faktor 140.** Die Trefferquote ist damit praktisch unbestimmt, und
+"2,40 %" oder "4,51 %" sind beides Zahlen mit zwei Stellen, wo keine einzige
+gesichert ist. Genauso "1,4 erwartete Treffer in 57 Versuchen" - der ehrliche
+Bereich reicht von 0,06 bis 8,8.
+
+Das habe ich in Befund 79 und 80 behauptet, ohne den Vorbehalt zu rechnen.
+Der Grundsatz lautet, dass jede Behauptung gemessen wird - ich hatte
+geschaetzt und es wie eine Messung aussehen lassen.
+
+### Was trotzdem traegt
+
+Das **Optimum** ist robust. Ueber den ganzen Vertrauensbereich der
+Reststreuung:
+
+    untere Grenze   ->  202 Trades
+    gemessen        ->  164 Trades
+    obere Grenze    ->  142 Trades
+
+Immer zwischen 142 und 202, nie bei 120. Die Aussage "ein Verbund-Partner
+sollte rund 150 bis 200 Trades bringen" haelt, obwohl die Trefferquote
+daneben um Groessenordnungen schwankt.
+
+Das ist der brauchbare Teil: **Wohin zu zielen ist, steht fest. Wie oft man
+trifft, nicht.**
+
+### Warum die beiden sich so verschieden verhalten
+
+Das Optimum ist die Stelle, an der eine Kurve ihr Maximum hat - Maxima sind
+gegen eine gemeinsame Skalierung unempfindlich. Die Trefferquote ist ein
+Schwanzintegral der Normalverteilung, und Schwanzintegrale reagieren
+exponentiell auf die Streuung.
+
+Dieselbe Unsicherheit trifft beide, und sie trifft sie voellig
+unterschiedlich. Das ist kein Sonderfall, sondern der Regelfall - und ein
+Grund, Aussagen ueber Lagen von Aussagen ueber Wahrscheinlichkeiten zu
+trennen.
+
+### Was gebaut wurde
+
+``Katalogkopplung.rest_bereich`` liefert den Vertrauensbereich der
+Reststreuung, ``takt_bereich`` das Optimum samt beider Raender, und
+``urteil_takt`` nennt beides getrennt. Ein Test haelt fest, dass das Optimum
+robust ist und die Quote nicht.
+
+Fuer den naechsten Vorschlagszyklus heisst das: **Ziel sind 150 bis 200
+Trades** - nicht die 120, die in ``auftragslage`` stehen. Die Anpassung dort
+ist der naechste Schritt.
+
+Versuchsstand 173 unveraendert, Suchbudget 43 von 100. 1694 Tests gruen.
