@@ -5195,6 +5195,113 @@ def front(
 
 
 @app.command()
+def quelle(
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Taugt eine Ideenquelle - oder misst man nur sein eigenes Rauschen?
+
+    Befund 71 hat den einzigen verbliebenen Hebel benannt: die **Guete** der
+    Ideen, nicht ihre Zahl. Die Suche gewinnt genau dann, wenn die Streuung
+    echter Regelideen ueber ``1/sqrt(n-1)`` liegt.
+
+    Damit wird eine neue Frage stellbar: Streuen die Vorschlaege einer
+    bestimmten Herkunft breiter, als Rauschen allein hergibt? Nur ist der
+    Sharpe je Trade selbst geschaetzt, und zwar grob - bei 68 Trades mit
+    einem Rauschen von 0,122. Wer die Streuung ueber Kandidaten misst, misst
+    beides auf einmal:
+
+        beobachtet^2 = Ideenstreuung^2 + Messrauschen^2
+
+    Dieser Befehl zieht das Rauschen ab und sagt, was uebrig bleibt - und wie
+    viele Belege es braeuchte, wenn nichts uebrig bleibt.
+
+    Kostet keinen Versuch: Gelesen wird, was auf der Platte liegt.
+    """
+    import json
+
+    from research.admission import load_trials
+    from research.aussagekraft import Beleg, Ideenquelle
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    zustand = Path(settings.paths.state)
+    versuche = load_trials(zustand / "trials.json")
+
+    try:
+        daten = json.loads((zustand / "leaderboard.json").read_text())
+    except (OSError, json.JSONDecodeError):
+        console.print("[red]Keine Bestenliste gefunden.[/]")
+        raise typer.Exit(2) from None
+
+    nach_herkunft: dict[str, list[Beleg]] = {}
+    for e in daten.get("eintraege", []):
+        if not e.get("sharpe_je_trade"):
+            continue
+        nach_herkunft.setdefault(str(e.get("herkunft") or "?"), []).append(
+            Beleg(
+                kennung=str(e.get("name", "?")),
+                sharpe_je_trade=float(e["sharpe_je_trade"]),
+                trades=int(e.get("trades", 0)),
+            )
+        )
+    # Auch das Versuchsverzeichnis - dort landen seit Befund 69 alle neuen.
+    from research.versuche import ZaehlerUnlesbarError
+    from research.versuche import laden as verzeichnis_laden
+
+    try:
+        for v in verzeichnis_laden(zustand / "trials.json").eintraege:
+            if v.sharpe_je_trade is not None:
+                nach_herkunft.setdefault(v.herkunft or "Verzeichnis", []).append(
+                    Beleg(
+                        kennung=v.kennung,
+                        sharpe_je_trade=v.sharpe_je_trade,
+                        trades=v.trades,
+                    )
+                )
+    except ZaehlerUnlesbarError:
+        pass
+
+    belegt = sum(len(b) for b in nach_herkunft.values())
+    console.print(
+        f"\n[bold]Ideenquellen[/]\n"
+        f"  Versuche   {versuche} insgesamt, {belegt} mit belegtem Sharpe je "
+        f"Trade\n"
+    )
+    if not nach_herkunft:
+        console.print(
+            "[yellow]Kein einziger Versuch traegt seinen Sharpe je Trade.[/] "
+            "Seit Befund 69 schreibt jeder neue Lauf ihn mit."
+        )
+        raise typer.Exit(0)
+
+    for name, belege in sorted(nach_herkunft.items(), key=lambda kv: -len(kv[1])):
+        quelle_ = Ideenquelle(name=name, belege=belege)
+        console.print(f"[bold]{name}[/] - {len(belege)} Belege\n")
+        console.print(quelle_.tabelle())
+        console.print(f"\n{quelle_.urteil()}\n")
+
+    # Zusaetzlich alles zusammen. Die Herkunft trennt nach **Datei**, nicht
+    # nach Quelle - 'vorschlaege.json' und 'sieger.json' kommen beide vom
+    # Analysten. Die Trennung wird trotzdem angezeigt und nicht stillschweigend
+    # aufgehoben: Wer sie zusammenlegt, trifft eine Annahme darueber, dass es
+    # dieselbe Quelle ist, und die gehoert sichtbar dazu.
+    alle = [b for belege in nach_herkunft.values() for b in belege]
+    if len(alle) > max(len(b) for b in nach_herkunft.values()):
+        zusammen = Ideenquelle(name="alle Belege zusammen", belege=alle)
+        console.print(
+            f"[bold]Alle {len(alle)} Belege zusammen[/] - die Herkunft trennt "
+            f"nach Datei, nicht nach Quelle\n"
+        )
+        console.print(f"{zusammen.urteil()}\n")
+
+    console.print(
+        "[dim]Die Nullstreuung ist dieselbe Groesse, die im Deflated Sharpe "
+        "die Huerde treibt.\nEine Quelle, die sie nicht schlaegt, kann das "
+        "Gate durch Suchen nicht einholen.[/]\n"
+    )
+
+
+@app.command()
 def rennen(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",

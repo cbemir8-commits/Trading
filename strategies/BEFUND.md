@@ -6026,3 +6026,103 @@ gerechnet, nicht schneller. Und kalibriert wird an genau **einem** Punkt; mehr
 gibt es nicht.
 
 Versuchsstand 166 unveraendert, Suchbudget 36 von 100. 1603 Tests gruen.
+
+## Zweiundsiebzig. Wer Ideenquellen misst, misst zuerst sein eigenes Rauschen
+
+Befund 71 hat den einzigen verbliebenen Hebel benannt: **die Guete der Ideen,
+nicht ihre Zahl.** Damit wurde eine Frage stellbar, die dieses Projekt nie
+gestellt hat - nicht "war dieser Vorschlag gut", sondern: **Taugt die Quelle?**
+
+Und es gibt Daten dazu. Von 45 Bestenlisten-Eintraegen tragen fuenf ihren
+Sharpe je Trade, und alle fuenf stammen aus derselben Herkunft: den
+Analyst-Vorschlaegen aus Befund 53.
+
+### Die Zwischenfolgerung, die falsch war
+
+Ihre Streuung liegt bei **0,1031**, die Nullstreuung bei 154 Trades bei
+**0,0808**. Also 27 % breiter als der Zufall - nach Befund 71 genau das
+Kriterium, das eine Quelle erfuellen muss. Der naheliegende Schluss: Der
+Analyst taugt, und 15 weitere Vorschlaege wuerden es absichern.
+
+Der Schluss ist falsch, und zwar aus einem Grund, den man sofort sieht, wenn
+man hinschaut. **Der Sharpe je Trade ist selbst geschaetzt**, mit einer
+Varianz von rund ``1/(n-1)`` je Kandidat:
+
+    Neues Hoch im Takt              123 Trades -> Rauschen 0,0905
+    Ausbruch mit Beteiligung         68 Trades -> Rauschen 0,1222
+    Donchian-Ausbruch                89 Trades -> Rauschen 0,1066
+    Rueckkehr vom unteren Band      118 Trades -> Rauschen 0,0925
+    Rueckschlag im Aufwaertstrend     8 Trades -> Rauschen 0,3780
+
+Wer die Streuung ueber Kandidaten misst, misst beides auf einmal:
+
+    beobachtet^2 = Ideenstreuung^2 + Messrauschen^2
+
+Erwartetes Messrauschen ueber die fuenf: **0,1928**. Beobachtet: **0,1031**.
+Die beobachtete Streuung liegt damit **unter** dem Rauschen - **es ist keine
+Ideenstreuung nachweisbar.** Die fuenf Vorschlaege sind vollstaendig damit
+vertraeglich, dass sie alle gleich gut sind und der Unterschied zwischen ihnen
+reine Messungenauigkeit ist.
+
+Auch ohne den 8-Trade-Fall bleibt es dabei: 0,0899 gegen 0,1037.
+
+Das heisst **nicht**, dass der Analyst nichts taugt. Es heisst, dass fuenf
+Punkte es nicht zeigen koennen - dieselbe Unterscheidung, die der
+Vorteilsscan und ``haelften`` schon fuer Mittelwerte machen, jetzt fuer
+Streuungen. Der 90-Prozent-Bereich reicht von 0,0670 bis 0,2480 und enthaelt
+die Nullstreuung. Es braeuchte rund **18 Belege statt fuenf**.
+
+### Der Versuch, der nichts beweisen konnte
+
+"Rueckschlag im Aufwaertstrend" hat **8 Trades**. Sein Sharpe je Trade traegt
+ein Rauschen von 0,378 - das Siebenfache des Abstands, um den es beim Gate
+geht. Unter 30 Trades ueberspringt ``gate_deflated_sharpe`` die Korrektur:
+Der Kandidat kann weder bestehen noch durchfallen. **Der Versuchszaehler ging
+trotzdem hoch.**
+
+Er hat die Huerde fuer jeden anderen Kandidaten gehoben, ohne selbst je eine
+Chance gehabt zu haben. Gezaehlt gehoert er trotzdem - **am Zaehler wird nicht
+gedreht.** Er ist die Kernabsicherung gegen Selbstbetrug, und wer anfaengt,
+Versuche nachtraeglich nicht zu zaehlen, oeffnet genau die Tuer, die der
+Zaehler zuhalten soll. Was gebaut wurde, ist die Auskunft, nicht der Eingriff.
+
+### Was das fuer Befund 71 heisst
+
+Dort wurde die Ideenstreuung aus dem beobachteten Bestwert kalibriert: 0,0950.
+Auch darin steckt das Messrauschen. Zerlegt:
+
+    beobachtet   0,0950
+    Rauschen     0,0808    72 % der Varianz
+    Ideen        0,0499
+
+Das widerspricht Befund 71 nicht - die beobachtete Streuung liegt immer ueber
+dem Rauschen, solange ueberhaupt eine Ideenstreuung da ist, und der dortige
+Schluss "die Suche holt sehr spaet auf" bleibt. Aber die Zahl, die zaehlt, wenn
+man fragt *"wie gut ist der wahre beste Fund"*, ist 0,0499 und nicht 0,0950.
+**Knapp drei Viertel dessen, was wie ein Vorsprung der Suche aussah, ist
+Messrauschen.**
+
+### Was gebaut wurde
+
+``research/aussagekraft.py`` mit ``messrauschen``, ``Beleg``, ``Ideenquelle``
+und der Zerlegung; ``cli quelle`` liest die Herkuenfte aus Bestenliste und
+Versuchsverzeichnis. Das Chi-Quadrat-Quantil kommt ohne ``scipy`` aus (Wilson-
+Hilferty), und ein Test misst die Genauigkeit gegen Tabellenwerte statt sie
+anzunehmen.
+
+Die Herkunft trennt nach **Datei**, nicht nach Quelle - ``vorschlaege.json``
+und ``sieger.json`` kommen beide vom Analysten. Beide Sichten stehen deshalb
+nebeneinander; wer sie zusammenlegt, trifft eine Annahme, und die gehoert
+sichtbar dazu.
+
+### Was daraus folgt
+
+Die Frage "welche Ideenquelle taugt" ist mit den vorhandenen Daten **nicht
+beantwortbar**, und sie war es nie - man haette es nur nachrechnen muessen.
+Sie zu beantworten kostet rund 13 weitere Vorschlaege. Das Suchbudget hat noch
+64. Es waere die erste Ausgabe, die Befund 71 rechtfertigt: nicht breiter
+suchen, sondern herausfinden, ob eine Quelle ueberhaupt besser als Zufall ist.
+
+Ob das die Versuche wert ist, ist eine Entscheidung und keine Rechnung.
+
+Versuchsstand 166 unveraendert, Suchbudget 36 von 100. 1622 Tests gruen.
