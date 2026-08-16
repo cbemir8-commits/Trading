@@ -39,9 +39,20 @@ web/.env*
 # Bestenliste. Zwei Rechner, die daran arbeiten, wuerden sich bei jedem Pull
 # gegenseitig ueberschreiben. Die Ergebnisse wandern ueber reports/ - dafuer
 # gibt es die.
-state/
+state/*
 logs/
 *.log
+
+# Der Versuchszaehler ist die Ausnahme, und zwar eine notwendige: Er ist keine
+# Ausgabe eines Laufs, sondern die Abmachung darueber, wie oft schon gesucht
+# wurde. Ohne ihn ist jede Deflated-Sharpe-Zahl wertlos.
+#
+# Bis Befund 73 lag er ungesichert: 'state/' war vollstaendig ignoriert, und
+# der Container wird nach Inaktivitaet abgeraeumt. Ein Neustart haette die
+# Datei verschwinden lassen - und eine **fehlende** Datei ist laut Befund 69
+# der erste Lauf, also 0. Genau der Reset, den jener Befund verhindern sollte,
+# nur ueber einen anderen Weg.
+!state/trials.json
 runtime/
 
 # --- Editor / OS ---

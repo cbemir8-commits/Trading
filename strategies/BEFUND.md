@@ -6126,3 +6126,105 @@ suchen, sondern herausfinden, ob eine Quelle ueberhaupt besser als Zufall ist.
 Ob das die Versuche wert ist, ist eine Entscheidung und keine Rechnung.
 
 Versuchsstand 166 unveraendert, Suchbudget 36 von 100. 1622 Tests gruen.
+
+## Dreiundsiebzig. Verbund verschiedener Regeln - der groesste Sprung, und er reicht nicht
+
+Sechs Laeufe in Folge waren Auswertung. Dieser misst wieder.
+
+Nach Befund 70 fuehrt genau ein Weg zum haertesten Gate: mehr **Guete**, also
+``SR/Trade * sqrt(n_eff)``. Alle Regler daran sind ausgemessen, und Befund 54
+hat die Kopplung gezeigt - wer denselben Kandidaten oefter handeln laesst,
+verliert an Qualitaet, was er an Menge gewinnt.
+
+Aber es gibt Kandidaten mit **hoeherer** Qualitaet je Trade, die nur zu selten
+handeln:
+
+    Spitzenkandidat              0,2591 je Trade   154 Trades   Guete 3,216
+    Trend-Beteiligung 200 Tage   0,3185 je Trade    53 Trades   Guete 2,318
+    Donchian-Ausbruch 55/20      0,3074 je Trade    58 Trades   Guete 2,341
+
+19 bis 23 % ueber dem Spitzenkandidaten - mehr als die noetigen 13 %. Was
+fehlt, ist Menge. Zwei verschiedene Regeln zusammen zu handeln ist nicht
+dieselbe Kopplung: Die Trades kaemen aus verschiedenen Regeln, nicht aus einer
+haeufiger ausgeloesten.
+
+### Der Fehler, der im ersten Anlauf herauskam
+
+Die erste Probe legte nur die Trades zusammen und liess die **Fensterbloecke**
+weg. Ergebnis: 207 Trades, keine Kuerzung, Guete **3,970** gegen die noetigen
+3,616. Das Gate waere bestanden gewesen.
+
+Das ist exakt das Loch aus Befund 27, nur eine Regel weiter. Dort machte
+dieselbe Regel mit drei Perioden aus 154 Trades 481 und aus DSR 0,802 einen von
+0,999 - dreimal dasselbe Signal, dreimal gezaehlt. Hier: zwei korrelierte
+Ertragsstroeme addiert, ohne die Korrelation zu messen.
+
+Mit Bloecken, so wie das Gate rechnet, bleiben von 207 rohen Trades **149
+unabhaengige** - 28 % gekuerzt.
+
+### Was tatsaechlich uebrig bleibt
+
+    Spitze allein                      Guete 3,216   DSR 0,7964
+    + Trend-Beteiligung 200 Tage       Guete 3,368   DSR 0,8602
+    + Donchian-Ausbruch 55/20          Guete 2,645   DSR 0,4490
+
+**Der erste Verbund ist der groesste Sprung, den in diesem Projekt je etwas
+gebracht hat.** Die ganze Reglerlandschaft aus 23 Messpunkten lag zwischen
+0,42 und 0,86, und jeder Regler bewegte den Wert um Hundertstel. Hier sind es
+0,064 auf einmal.
+
+Er reicht trotzdem nicht. Noetig sind 0,95; es fehlen 0,253 an Guete.
+
+### Und er hilft nicht von selbst
+
+Der zweite Fall ist der lehrreichere. Beide Partner haben praktisch dieselbe
+Einzelguete - 2,318 und 2,341. Der eine hebt den Verbund auf 0,8602, der andere
+drueckt ihn auf 0,4490. Die Fensterkorrelation zum Spitzenkandidaten ist in
+beiden Faellen aehnlich (0,555 und 0,534); den Unterschied macht die
+Blockkuerzung: 207 -> 149 gegen 212 -> 106.
+
+**Es entscheidet nicht die Qualitaet des Partners, sondern die Unabhaengigkeit
+seiner Ertraege.** Das ist eine andere Suchrichtung als alles bisherige: Nicht
+"welche Regel ist besser", sondern "welche Regel ist anders".
+
+### Was das gekostet hat
+
+Drei Verbunde gerechnet, den besten hervorgehoben - das ist eine Auswahl ueber
+drei Hypothesen, und sie gehoert gezaehlt. **Versuchsstand 166 -> 169**, und es
+sind die ersten drei Eintraege mit Einzelnachweis im Verzeichnis aus Befund 69.
+Der Verbund verliert dadurch selbst etwas: Die noetige Guete steigt von 3,616
+auf 3,621.
+
+``cli verbund`` zaehlt kuenftig von selbst mit; ``--nicht-zaehlen`` gibt es,
+aber dann ist das Ergebnis auch keine Grundlage fuer eine Auswahl.
+
+### Was nicht geprueft ist
+
+**Die uebrigen zehn Gates.** Zwei Regeln parallel teilen das Kapital; auf den
+Deflated Sharpe wirkt das nicht (Befund 30), auf Rendite und Rueckgang sehr
+wohl. Ein Verbund, der den DSR bestuende, koennte an der Messlatte oder der
+Rueckgangsgrenze scheitern - und beide sind schon heute offen.
+
+Die Richtung ist damit **nicht** geschlossen, sondern zum ersten Mal seit
+Wochen wieder offen. Sie verlangt aber etwas, das dieses Projekt bisher nicht
+gesucht hat: Regeln, die **anders** sind, nicht Regeln, die besser sind.
+
+Versuchsstand 169, Suchbudget 39 von 100. 1637 Tests gruen.
+
+### Nachtrag: Der Zaehler lag ungesichert
+
+Beim Buchen der drei Versuche fiel auf, dass ``state/`` vollstaendig in
+``.gitignore`` steht. **Der Versuchszaehler wurde nie versioniert.**
+
+Der Container wird nach Inaktivitaet abgeraeumt. Ein Neustart haette
+``state/trials.json`` verschwinden lassen - und eine **fehlende** Datei ist
+laut Befund 69 der erste Lauf, also 0. Exakt der Reset, den jener Befund
+verhindern sollte, nur ueber einen anderen Weg: nicht durch eine kaputte
+Datei, sondern durch gar keine.
+
+Die Regel dort unterscheidet zu Recht zwischen "fehlt" und "kaputt". Nur war
+"fehlt" hier nicht der erste Lauf, sondern Datenverlust - und das war von
+aussen nicht zu unterscheiden. Deshalb wird die Datei jetzt mitversioniert
+(``state/*`` statt ``state/``, mit ``!state/trials.json``); die Bestenliste
+und die Trade-Mitschnitte bleiben draussen, denn die sind Ausgaben und keine
+Abmachung.

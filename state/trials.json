@@ -1,0 +1,29 @@
+{
+  "format": 2,
+  "trials": 169,
+  "grundstock": 166,
+  "updated_at": "2026-08-16T07:07:38.907399+00:00",
+  "versuche": [
+    {
+      "kennung": "Verbund Spitze + Trend-Beteiligung 200 Tage",
+      "zeitpunkt": "2026-08-16T07:07:38.907272+00:00",
+      "trades": 207,
+      "sharpe_je_trade": 0.2759,
+      "herkunft": "verbund"
+    },
+    {
+      "kennung": "Verbund Spitze + Donchian-Ausbruch 55/20",
+      "zeitpunkt": "2026-08-16T07:07:38.907301+00:00",
+      "trades": 212,
+      "sharpe_je_trade": 0.2569,
+      "herkunft": "verbund"
+    },
+    {
+      "kennung": "Verbund Trend-Beteiligung 200 + Donchian",
+      "zeitpunkt": "2026-08-16T07:07:38.907305+00:00",
+      "trades": 111,
+      "sharpe_je_trade": 0.2956,
+      "herkunft": "verbund"
+    }
+  ]
+}

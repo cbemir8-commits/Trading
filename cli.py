@@ -5195,6 +5195,148 @@ def front(
 
 
 @app.command()
+def verbund(
+    partner: str = typer.Option(
+        ..., "--partner", "-p",
+        help="Name eines Genoms aus einer Generation, das dazukommen soll.",
+    ),
+    generation: int = typer.Option(9, "--generation", "-g"),
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    vola_ziel: float = typer.Option(19.3, "--vola-ziel"),
+    zaehlen: bool = typer.Option(
+        True, "--zaehlen/--nicht-zaehlen",
+        help="Den Verbund als Versuch buchen. Standard ja.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Zwei verschiedene Regeln zusammen - hebt das die Guete?
+
+    Nach Befund 70 fuehrt genau ein Weg zum haertesten Gate: mehr Guete, also
+    ``SR/Trade * sqrt(n_eff)``. Alle Regler daran sind ausgemessen, und
+    Befund 54 hat die Kopplung gezeigt - wer denselben Kandidaten oefter
+    handeln laesst, verliert an Qualitaet, was er an Menge gewinnt.
+
+    Es gibt aber Kandidaten mit **hoeherer** Qualitaet je Trade, die nur zu
+    selten handeln. Sie zusammen zu handeln ist nicht dieselbe Kopplung: Die
+    Trades kaemen aus verschiedenen Regeln.
+
+    **Und es ist dieselbe Gefahr wie beim Perioden-Ensemble** (Befund 27):
+    Dort wurden aus 154 Trades 481 und aus DSR 0,802 einer von 0,999 - drei
+    Beine, ein Signal. Deshalb wird die effektive Stichprobe hier genauso
+    gerechnet wie im Gate, mit Fensterbloecken und gleichzeitig offenen
+    Positionen.
+
+    **Dieser Befehl kostet einen Versuch**, weil ein Kandidat gegen den
+    Deflated Sharpe gehalten wird. Mit ``--nicht-zaehlen`` laesst sich das
+    abschalten - dann ist das Ergebnis aber auch keine Grundlage fuer eine
+    Auswahl.
+    """
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.seeds import load_seeds, spitzenkandidat
+    from research.verbund import baue, noetige_guete
+    from research.versuche import Versuch
+    from strategy.compiler import compile_genome
+    from strategy.genome import SizingSpec
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    trials_path = Path(settings.paths.state) / "trials.json"
+    versuche = load_trials(trials_path)
+
+    interval_obj = Interval(intervall)
+    _pruefe_generation(generation, interval_obj)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
+
+    gesucht = partner.strip().lower()
+    treffer = [g for g in load_seeds(generation) if gesucht in g.name.lower()]
+    if not treffer:
+        namen = ", ".join(g.name for g in load_seeds(generation))
+        console.print(f"[red]'{partner}' nicht in Generation {generation}.[/] {namen}")
+        raise typer.Exit(2)
+
+    def lauf(genome):
+        # Dieselbe Groessenlogik fuer alle - sonst vergleicht man Hebelstufen.
+        angepasst = genome.model_copy(
+            update={
+                "sizing": SizingSpec(
+                    kind="vola_ziel", fraction=3.0,
+                    target_vol_pct=vola_ziel, vol_period=30,
+                )
+            }
+        )
+        return angepasst, run_portfolio_walkforward(
+            frames, lambda g=angepasst: compile_genome(g), configs
+        )
+
+    spitze_genome, spitze = lauf(spitzenkandidat())
+    partner_genome, partner_bericht = lauf(treffer[0])
+
+    # Der Verbund ist der neue Kandidat und damit der Versuch. Die beiden
+    # Beine sind laengst gemessen; sie noch einmal zu zaehlen waere doppelt.
+    neu = versuche + (1 if zaehlen else 0)
+    lage = baue(
+        [(spitze_genome.name, spitze), (partner_genome.name, partner_bericht)],
+        versuche=neu,
+    )
+
+    console.print(
+        f"\n[bold]Verbund[/] auf {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Historie   {spanne} Tage\n"
+        f"  Versuche   {versuche}"
+        + (f" -> {neu} (dieser Verbund)" if zaehlen else " (nicht gezaehlt)")
+        + "\n"
+    )
+    if lage.korrelation is not None:
+        console.print(
+            f"  Fensterkorrelation der beiden Beine: {lage.korrelation:+.3f}"
+            + (
+                "  [yellow]- beim Perioden-Ensemble waren es 0,884[/]"
+                if lage.korrelation > 0.8
+                else ""
+            )
+            + "\n"
+        )
+    console.print(lage.tabelle())
+
+    ziel = noetige_guete(lage.stichprobe.effektiv, neu)
+    console.print(f"\n{lage.urteil(noetige_guete=ziel)}\n")
+    dsr = lage.dsr
+    if dsr is not None:
+        from research.suchbudget import ZIEL
+
+        console.print(
+            f"[dim]Deflated Sharpe des Verbunds: {dsr:.4f} gegen {ZIEL:.2f}. "
+            f"Die uebrigen zehn Gates sind damit nicht geprueft - zwei Regeln "
+            f"parallel\nteilen das Kapital, und auf Rendite und Rueckgang "
+            f"wirkt das sehr wohl.[/]\n"
+        )
+
+    if zaehlen:
+        kandidat = lage.kandidat
+        _verzeichne(
+            trials_path,
+            [
+                Versuch.jetzt(
+                    lage.name[:80],
+                    trades=lage.stichprobe.roh,
+                    sharpe_je_trade=(
+                        kandidat.sharpe_je_trade if kandidat is not None else None
+                    ),
+                    herkunft="verbund",
+                )
+            ],
+            neu,
+        )
+        console.print(f"[dim]Versuchszaehler jetzt {neu}.[/]\n")
+
+
+@app.command()
 def quelle(
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
