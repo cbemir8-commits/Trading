@@ -5195,6 +5195,90 @@ def front(
 
 
 @app.command()
+def partner(
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Was ein Verbund-Partner koennen muesste - vor dem naechsten Versuch.
+
+    Befund 73 hat den Verbund geoeffnet: Zwei verschiedene Regeln zusammen
+    hoben den Deflated Sharpe von 0,796 auf 0,860, den groessten Sprung, den
+    je etwas gebracht hat. Es fehlen 0,26 an Guete.
+
+    Der Gedanke, der zur Auswahl der beiden Partner fuehrte, war: *"Es gibt
+    Kandidaten mit hoeherer Qualitaet je Trade, die nur zu selten handeln."*
+    Diese Karte zeigt, dass er nach dem falschen Merkmal ausgewaehlt hat.
+
+    Bei 53 Trades haette der Partner 0,42 je Trade gebraucht - er hatte 0,32,
+    eine der besten Zahlen des Projekts. Bei 154 Trades haetten 0,23 genuegt,
+    also **weniger als der Bestand selbst hat**.
+
+    Gesucht ist damit keine bessere Regel, sondern eine, die **genug handelt
+    und anders ist**.
+
+    Kostet keinen Versuch: Gerechnet wird ueber Partner, nicht mit ihnen.
+    """
+    import json
+
+    from research.admission import load_trials
+    from research.partnerkarte import Anwaerter, Partnerkarte
+    from research.seeds import spitzenkandidat
+    from research.verbund import noetige_guete
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    zustand = Path(settings.paths.state)
+    versuche = load_trials(zustand / "trials.json")
+
+    # Der Bestand steht fest: aus dem letzten gemessenen Lauf, nicht neu
+    # gerechnet - die Zahlen sind seit Befund 73 unveraendert.
+    n1, sr1 = 154, 0.2591
+    ziel = noetige_guete(n1, versuche)
+    karte = Partnerkarte(n1=n1, sr1=sr1, ziel=ziel)
+
+    console.print(
+        f"\n[bold]Was ein Partner koennen muesste[/]\n"
+        f"  Bestand    '{spitzenkandidat().name}': {n1} Trades zu je "
+        f"{sr1:.4f}\n"
+        f"  Versuche   {versuche}, noetige Guete {ziel:.3f}\n"
+    )
+    console.print("Noetiges SR/Trade des Partners:\n")
+    console.print(karte.tabelle())
+    console.print(f"\n{karte.urteil()}\n")
+
+    # Die Trade-Zahlen aller Bestenlisten-Eintraege liegen laengst vor. Sie
+    # abzulesen testet nichts Neues und kostet deshalb keinen Versuch.
+    try:
+        daten = json.loads((zustand / "leaderboard.json").read_text())
+    except (OSError, json.JSONDecodeError):
+        daten = {}
+    anwaerter = [
+        Anwaerter(
+            name=str(e.get("name", "?")),
+            trades=int(e.get("trades", 0)),
+            sharpe_je_trade=float(e["sharpe_je_trade"]),
+        )
+        for e in daten.get("eintraege", [])
+        if e.get("sharpe_je_trade") and int(e.get("trades", 0)) > 0
+    ]
+    if anwaerter:
+        console.print(
+            "Die bekannten Kandidaten mit belegtem Sharpe je Trade, gegen "
+            "ihre eigene\nAnforderung bei u = 0,72:\n"
+        )
+        console.print(karte.einordnung(anwaerter))
+        console.print(
+            "\n[dim]'fehlt' positiv heisst: reicht nicht. Alle bekannten "
+            "Anwaerter handeln zu selten -\ndie Trade-Zahl ist das bindende "
+            "Merkmal, nicht die Qualitaet.[/]\n"
+        )
+    else:
+        console.print(
+            "[yellow]Kein Bestenlisten-Eintrag traegt seinen Sharpe je "
+            "Trade.[/] Seit Befund 69 schreibt jeder neue Lauf ihn mit.\n"
+        )
+
+
+@app.command()
 def verbund(
     partner: str = typer.Option(
         ..., "--partner", "-p",

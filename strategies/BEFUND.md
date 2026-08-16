@@ -6228,3 +6228,89 @@ aussen nicht zu unterscheiden. Deshalb wird die Datei jetzt mitversioniert
 (``state/*`` statt ``state/``, mit ``!state/trials.json``); die Bestenliste
 und die Trade-Mitschnitte bleiben draussen, denn die sind Ausgaben und keine
 Abmachung.
+
+## Vierundsiebzig. Die Partnerkarte - und ein Merkmal, nach dem falsch ausgewaehlt wurde
+
+Befund 73 hat den Verbund geoeffnet: DSR von 0,796 auf 0,860, es fehlen 0,26 an
+Guete. Der naechste Schritt waere, weitere Partner zu messen - und jeder kostet
+einen Versuch. Diese Karte rechnet vorher aus, welcher ueberhaupt reichen
+koennte.
+
+### Was dabei herauskam
+
+    Noetiges SR/Trade des Partners fuer Guete 3,629 (bei 169 Versuchen)
+
+    Trades       u=0,50    u=0,72    u=0,85    u=1,00
+    ------------------------------------------------
+    50           0,6679    0,4236    0,3263    0,2386
+    100          0,4189    0,2826    0,2283    0,1793
+    154          0,3257    0,2283    0,1894    0,1544
+    250          0,2530    0,1842    0,1568    0,1321
+    400          0,2022    0,1519    0,1319    0,1138
+
+Bei 53 Trades und dem gemessenen Unabhaengigkeitsgrad von 0,72 haette der
+Partner **0,4236** gebraucht. Er hatte 0,3185 - eine der besten Zahlen des
+Projekts, und trotzdem weit weg.
+
+Bei 154 Trades haetten **0,2283** genuegt, also **weniger als der
+Spitzenkandidat selbst hat**. Die Wende liegt bei 120 Trades.
+
+### Der Satz aus Befund 73, der falsch war
+
+Dort stand der Gedanke, der zur Auswahl gefuehrt hat:
+
+    *"Es gibt Kandidaten mit hoeherer Qualitaet je Trade, die nur zu selten
+    handeln. Was fehlt, ist Menge."*
+
+Der erste Teil stimmt, der Schluss daraus nicht. Ich habe die **hochwertigsten
+seltenen** Kandidaten gewaehlt - und die Karte zeigt, dass Seltenheit das
+bindende Merkmal ist, nicht Qualitaet. Ein Partner muss nicht besser sein als
+der Bestand. Er muss **genug handeln und anders sein**.
+
+Die Zahlen dafuer standen die ganze Zeit in derselben Tabelle. Ich habe die
+falsche Spalte gelesen.
+
+### Was das fuer die Suche heisst
+
+Alle fuenf bekannten Anwaerter mit belegtem Sharpe je Trade, gegen ihre eigene
+Anforderung bei u = 0,72:
+
+    Neues Hoch im Takt              123   0,2137   noetig 0,2543   fehlt +0,0406
+    Rueckkehr vom unteren Band      118   0,0483   noetig 0,2596   fehlt +0,2112
+    Donchian-Ausbruch 50/25          89   0,2136   noetig 0,3007   fehlt +0,0871
+    Ausbruch mit Beteiligung         68   0,2482   noetig 0,3503   fehlt +0,1021
+    Rueckschlag im Aufwaertstrend     8   0,0300   noetig 1,8163   fehlt +1,7863
+
+**Alle handeln zu selten.** Der naechste ist 'Neues Hoch im Takt' mit 123
+Trades und nur 0,0406 Abstand - und er wurde in Befund 73 nicht probiert, weil
+seine Qualitaet unter dem Bestand liegt. Bei einem Unabhaengigkeitsgrad von
+0,85 statt 0,72 wuerde er reichen.
+
+### Und warum das nicht zu messen war
+
+'Neues Hoch im Takt' **ist nicht mehr rechenbar.** Er stammt aus
+``sieger.json``, einer Vorschlagsdatei des Analysten, die nie versioniert
+wurde. Die Bestenliste haelt ``genome_id``, Name und Kennzahlen fest - aber
+nicht die Regeln.
+
+Ein Kandidat, der einmal gemessen wurde, war danach verloren. Das faellt erst
+auf, wenn man ihn wieder braucht, und genau jetzt ist der Fall eingetreten:
+Der aussichtsreichste Partner der Karte existiert nur noch als Zahl.
+
+``Entry`` traegt jetzt ein Feld ``genom``. Die 45 vorhandenen Eintraege bleiben
+ohne Regeln - nachtraeglich erfundene waeren schlimmer als eine sichtbare
+Luecke, dieselbe Regel wie beim ``grundstock`` in Befund 69.
+
+### Wonach jetzt zu suchen waere
+
+Nicht nach einer besseren Regel, sondern nach einer mit **mindestens 120
+Trades und moeglichst wenig Fensterkorrelation** zum Bestand. Das ist eine
+andere Suche als alles bisherige - und mit ``cli partner`` laesst sich vor
+jedem Versuch pruefen, ob ein Anwaerter ueberhaupt in Frage kommt.
+
+Die Naeherung ist dabei die freundliche Richtung: An den beiden gemessenen
+Faellen liegt sie einmal 0,6 % daneben und einmal 6 % zu hoch. Wo sich die
+Verteilungen unterscheiden, waechst die Streuung der Mischung - die Karte
+nennt also eher zu niedrige Anforderungen.
+
+Versuchsstand 169 unveraendert, Suchbudget 39 von 100. 1654 Tests gruen.

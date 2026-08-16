@@ -109,6 +109,25 @@ class Entry:
     """Die Eingaenge des Deflated Sharpe - damit er sich auf einen anderen
     Versuchsstand umrechnen laesst, statt nur verglichen zu werden."""
 
+    genom: dict | None = None
+    """Die Regeln selbst - damit ein gemessener Kandidat wieder rechenbar ist.
+
+    **Sie fehlten, und das ist teurer geworden als es aussah.** Die Liste hielt
+    ``genome_id``, Name und Kennzahlen fest, aber nicht die Regeln. Wer einen
+    Kandidaten spaeter noch einmal rechnen wollte, brauchte die Datei, aus der
+    er stammte - und die Vorschlagsdateien des Analysten (``vorschlaege.json``,
+    ``sieger.json``) sind nie versioniert worden.
+
+    Aufgefallen ist es in Befund 74: Die Partnerkarte weist 'Neues Hoch im
+    Takt' als aussichtsreichsten Verbund-Partner aus, und genau der ist nicht
+    mehr rechenbar. Ein Kandidat, der einmal gemessen wurde, war danach
+    verloren.
+
+    ``None`` heisst: aus einem Lauf vor dieser Aenderung. Die 45 vorhandenen
+    Eintraege bleiben so - nachtraeglich erfundene Regeln waeren schlimmer als
+    eine sichtbare Luecke.
+    """
+
     @property
     def vergleichbar(self) -> bool:
         """Laesst sich der Wert auf einen anderen Versuchsstand umrechnen?"""
@@ -366,6 +385,7 @@ def _aus_kandidat(
         deflated_sharpe=_deflated_sharpe(candidate),
         hypothese=candidate.genome.rationale,
         versuche=versuche,
+        genom=candidate.genome.model_dump(mode="json"),
         **_form(candidate),
     )
 
