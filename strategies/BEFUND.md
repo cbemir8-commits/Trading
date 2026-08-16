@@ -5926,3 +5926,103 @@ Moeglichkeit weniger. Aber es ist eine, die es nie gab, und sie stand als
 letzte Hoffnung in der Uebersicht.
 
 Versuchsstand 166 unveraendert, Suchbudget 36 von 100.
+
+## Einundsiebzig. Das Wettrennen mit der eigenen Huerde
+
+Nach Befund 70 ist von vier Wegen zum haertesten Gate einer uebrig - die
+Qualitaet je Trade, +13 % -, und alle Regler daran sind ausgemessen. Bleibt:
+weitersuchen. Nur hebt jeder Versuch die Latte mit, und wie sich das ausgeht,
+war nie gerechnet.
+
+### Zwei Groessen, dieselbe Formel
+
+Beide wachsen ueber dieselbe Extremwertkonstante ``c(N)`` aus
+Bailey/Lopez de Prado:
+
+    Huerde       ~ A + 1/sqrt(n-1) * c(N)     was Zufall hergibt
+    bester Fund  ~ Mittel + Streuung * c(N)   was Suchen hergibt
+
+Damit ist es keine Frage des Fleisses, sondern ein Vergleich zweier
+Vorfaktoren:
+
+    **Die Suche gewinnt genau dann, wenn die Streuung echter Regelideen
+    groesser ist als 1/sqrt(n-1) - die Streuung des reinen Zufalls.**
+
+Bei 154 Trades sind das 0,0808. Das ist kein Zufall und kein Mangel: Genau
+dafuer ist das Gate gebaut. Es neutralisiert die Zufallssuche exakt.
+
+### Der Fehler, der zuerst herauskam
+
+Der erste Anlauf schaetzte Mittel und Streuung aus den sechs Regelfamilien der
+Bestenliste: Mittel 0,1685, Streuung 0,1019. Ergebnis: Schon zehn weitere
+Versuche bringen 0,329 gegen eine Huerde von 0,293 - **Suchen lohnt sich
+sofort.**
+
+Die Schaetzung widerlegt sich selbst. Mit ihr waere der beste aus 166 Versuchen
+bei **0,4440** zu erwarten gewesen; tatsaechlich sind es 0,2569. Die sechs sind
+die Ueberlebenden aus 166 Versuchen, nicht sechs Ziehungen - ihre Streuung ist
+die der Elite, ihr Mittel viel zu hoch. Haette ich das nicht gemerkt, staende
+hier eine Aufforderung zum Weitersuchen, gestuetzt auf eine Zahl, die den
+eigenen Verlauf nicht erklaert.
+
+Ein Test haelt das jetzt fest: ``erklaert_den_verlauf`` verwirft jede
+Schaetzung, die den bisherigen Bestwert nicht hervorbringt.
+
+### Was stattdessen gilt
+
+Kalibriert am eigenen Verlauf - welche Streuung muss es gewesen sein, damit 166
+Versuche genau 0,2569 hervorbringen?
+
+    weitere    Stand    Huerde   erwartet   Abstand
+         0      166    0.2920     0.2569   -0.0351
+        64      230    0.2995     0.2671   -0.0324
+       834     1000    0.3310     0.3093   -0.0217
+      9834    10000    0.3750     0.3668   -0.0081
+
+**Die Suche gewinnt - bei rund 56.000 Versuchen.** Das Suchbudget bricht bei
+230 ab; bis dahin schliesst sich der Abstand von 0,0351 auf 0,0324. In 64
+weiteren Versuchen also 0,0027.
+
+Die Ideenstreuung liegt mit 0,0950 nur 18 % ueber dem Zufall, und weil beide
+mit ``sqrt(ln N)`` wachsen, dauert ein Vorsprung von 18 % entsprechend lange.
+
+### Wie stark das an der Annahme haengt
+
+Das Mittel einer typischen neuen Regelidee ist eine Annahme, keine Messung.
+Deshalb steht es als Schalter da:
+
+      Mittel   Streuung  ueber Zufall  Suche holt auf
+       -0.05     0.1135         +40%  2.739 Versuche
+       -0.02     0.1024         +27%  9.377 Versuche
+       +0.00     0.0950         +18%  55.891 Versuche
+       +0.02     0.0876          +8%  jenseits von 1e+09
+       +0.05     0.0765          -5%  nie
+
+Ein **niedrigeres** Mittel ist die guenstigere Annahme - es verlangt eine
+groessere Streuung, um denselben Bestwert zu erklaeren. Selbst im guenstigsten
+gerechneten Fall braeuchte es 2.739 Versuche.
+
+Auch hier war die erste Fassung zu scharf: Sie schrieb bei +0,02 "nie", obwohl
+die Streuung dort ueber dem Zufall liegt - die Suche kommt an, nur spaeter als
+bis 10^9 gerechnet. "Jenseits der gerechneten Grenze" ist etwas anderes als
+"nie", und ein eigener Test haelt den Unterschied fest.
+
+### Was daraus folgt
+
+**Mehr Versuche sind der schwache Hebel.** Der Gewinn ist logarithmisch, der
+Preis linear. Was zaehlt, ist die Guete der Ideen, nicht ihre Zahl - ein
+besserer Ausgangspunkt wirkt sofort, mehr Ziehungen wirken mit ``sqrt(ln N)``.
+
+Das Suchbudget aus dem Plan ist damit zum ersten Mal quantitativ begruendet:
+Es ist nicht zu knapp bemessen, sondern genau die Groessenordnung, in der
+Suchen ueberhaupt noch etwas aendert.
+
+### Was das Modell nicht kann
+
+Es setzt **unabhaengige Ziehungen** voraus. Die meisten Versuche dieses
+Projekts waren Reglerscans - Varianten des Bestands, die in derselben
+Nachbarschaft nachsehen. Der echte Fortschritt ist also langsamer als hier
+gerechnet, nicht schneller. Und kalibriert wird an genau **einem** Punkt; mehr
+gibt es nicht.
+
+Versuchsstand 166 unveraendert, Suchbudget 36 von 100. 1603 Tests gruen.

@@ -95,6 +95,15 @@ class Suchbudget:
     findet immer eine Kennzahl, die noch Hoffnung macht. Eine vorab genannte
     Zahl kann das nicht. Sie ist grob, und das ist ihr Vorzug.
 
+    **Und seit Befund 71 ist der Umfang auch beziffert.** Huerde und bester Fund
+    wachsen beide mit derselben Extremwertkonstante; es entscheidet allein, ob
+    die Streuung echter Regelideen ueber der des reinen Zufalls liegt. Aus dem
+    eigenen Verlauf kalibriert sind es 0,0950 gegen 0,0808 - genug, um
+    aufzuholen, aber erst bei rund 56.000 Versuchen. Bis zum Abbruch bei 230
+    schliesst sich der Abstand von 0,0351 auf 0,0324. **Das Budget ist damit
+    nicht zu knapp bemessen, sondern die Groessenordnung, in der Suchen ueber-
+    haupt noch etwas aendert.** ``cli rennen`` rechnet es nach.
+
     Der Zaehler selbst steht in ``state/trials.json`` und wird hier nur
     eingeordnet. Beides auseinanderzuhalten ist Absicht: Das Budget ist eine
     Abmachung, der Zaehler eine Messung.

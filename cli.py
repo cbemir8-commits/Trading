@@ -5195,6 +5195,112 @@ def front(
 
 
 @app.command()
+def rennen(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    mittel: float = typer.Option(
+        0.0, "--mittel",
+        help="Angenommener Sharpe je Trade einer typischen neuen Regelidee.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Suchen hebt die Huerde. Holt der beste Fund sie je ein?
+
+    Nach Befund 70 ist von vier Wegen zum haertesten Gate einer uebrig - die
+    Qualitaet je Trade, +13 % -, und alle Regler daran sind ausgemessen. Es
+    bliebe: weitersuchen. Nur hebt jeder Versuch die Latte mit.
+
+    Beide Groessen wachsen ueber dieselbe Extremwertkonstante:
+
+        Huerde       ~ A + 1/sqrt(n-1) * c(N)     was Zufall hergibt
+        bester Fund  ~ Mittel + Streuung * c(N)   was Suchen hergibt
+
+    Damit ist es keine Frage des Fleisses, sondern ein Vergleich zweier
+    Vorfaktoren: **Die Suche gewinnt genau dann, wenn die Streuung echter
+    Regelideen ueber 1/sqrt(n-1) liegt.**
+
+    Die Streuung wird aus dem eigenen Verlauf kalibriert - was muss sie
+    gewesen sein, damit so viele Versuche genau diesen Bestwert hervorbringen?
+    Das Mittel ist eine Annahme und steht deshalb als Schalter da.
+
+    Kostet keinen Versuch: Gerechnet wird ueber Versuche, nicht mit ihnen.
+    """
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.gates import concurrent_groups
+    from research.seeds import spitzenkandidat
+    from research.stand import BUDGET
+    from research.suchbudget import Kandidat
+    from research.unabhaengigkeit import effektive_stichprobe
+    from research.wettrennen import Rennen, spanne
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    versuche = load_trials(Path(settings.paths.state) / "trials.json")
+
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, configs, spanne_tage = _korb_daten(symbole, interval_obj, settings)
+    genome = spitzenkandidat()
+    bericht = run_portfolio_walkforward(
+        frames, lambda g=genome: compile_genome(g), configs
+    )
+    trades = list(bericht.all_trades)
+    kandidat = Kandidat.aus_trades(genome.name, trades)
+    if kandidat is None or kandidat.sharpe_je_trade <= 0:
+        console.print("[red]Keine auswertbaren Trades.[/]")
+        raise typer.Exit(2)
+
+    bloecke = [[float(t.net_pnl) for t in f.trades] for f in bericht.windows]
+    gleichzeitig = [
+        [float(t.net_pnl) for t in gruppe] for gruppe in concurrent_groups(trades)
+    ]
+    stichprobe = effektive_stichprobe(
+        len(trades), getattr(bericht, "beine", None), bloecke, weitere=[gleichzeitig]
+    )
+
+    lauf = Rennen(
+        bester=kandidat.sharpe_je_trade,
+        versuche=versuche,
+        trades=stichprobe.effektiv,
+        mittel=mittel,
+    )
+    abbruch = BUDGET.beginn + BUDGET.umfang
+    console.print(
+        f"\n[bold]Das Wettrennen mit der eigenen Huerde[/] '{genome.name}' auf "
+        f"{' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Historie   {spanne_tage} Tage, {len(trades)} Trades "
+        f"({stichprobe.effektiv} davon unabhaengig)\n"
+        f"  Bestwert   {kandidat.sharpe_je_trade:.4f} je Trade nach "
+        f"{versuche} Versuchen\n"
+        f"  Annahme    Mittel einer neuen Regelidee {mittel:+.3f}\n"
+    )
+    console.print(lauf.tabelle((0, 10, 64, 334, 834, 9834)))
+    console.print(f"\n{lauf.urteil(budget=abbruch)}\n")
+
+    console.print("Wie stark das an der Annahme haengt:\n")
+    console.print(
+        spanne(
+            bester=kandidat.sharpe_je_trade,
+            versuche=versuche,
+            trades=stichprobe.effektiv,
+            mittelwerte=(-0.05, -0.02, 0.0, 0.02, 0.05),
+        )
+    )
+    console.print(
+        "\n[dim]Ein niedrigeres Mittel ist die guenstigere Annahme: Es "
+        "verlangt eine groessere\nStreuung, um denselben Bestwert zu "
+        "erklaeren, und laesst die Suche schneller\naufholen. Und: Das Modell "
+        "setzt unabhaengige Ziehungen voraus - Reglerscans sind\ndas nicht, "
+        "also ist der echte Fortschritt langsamer als hier gerechnet.[/]\n"
+    )
+
+
+@app.command()
 def form(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
