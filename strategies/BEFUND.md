@@ -6480,3 +6480,90 @@ Und der Auftrag laesst sich ohne Sprachmodell nutzen: ``cli vorschlag
 Antwort. In diesem Container ist kein Modell verdrahtet.
 
 Versuchsstand 169 unveraendert, Suchbudget 39 von 100. 1672 Tests gruen.
+
+## Siebenundsiebzig. Vier Regeln gegen die Spezifikation - und das Nadeloehr
+
+Befund 76 hat den Auftrag an den Analysten geschaerft. In diesem Container ist
+kein Sprachmodell verdrahtet, aber ``DateiClient`` ist ausdruecklich dafuer
+da, dass der Auftrag von Hand beantwortet wird. Also habe ich ihn beantwortet.
+
+Vier Vorschlaege, jeder mit einer **anderen Ursache als Trend** und darauf
+angelegt, oft auszuloesen:
+
+* **Enge vor Bewegung** - Volatilitaetszyklus: Nach ruhigen Phasen folgen
+  grosse Bewegungen.
+* **Volumenschock mit Fortsetzung** - Informationsereignis: Ein Tag mit
+  weit ueberdurchschnittlichem Volumen braucht mehrere Tage zur Einpreisung.
+* **Rueckkehr zum Volumenschwerpunkt** - Preisfindung: Der Kurs kehrt zum
+  volumengewichteten Durchschnitt zurueck.
+* **Abgriff des Vortagestiefs** - Liquiditaet: Nach abgeraeumten Stopps ist
+  die Gegenseite ausgeduennt.
+
+### Was dabei herauskam
+
+    Vorschlag                         Trades  SR/Trade    noetig      rho
+    ----------------------------------------------------------------------
+    Enge vor Bewegung                     18    0,3405    0,9047   +0,417
+    Volumenschock mit Fortsetzung        114    0,1584    0,2652   +0,396
+    Rueckkehr zum Volumenschwerpunkt      92   -0,1201    0,2967   +0,063
+    Abgriff des Vortagestiefs            406   -0,1201    0,1514   +0,129
+
+**Keiner taugt.** Aber das Muster ist deutlicher als bei jeder bisherigen
+Messung - und es steht quer zu dem, was ich erwartet hatte.
+
+### Die Unabhaengigkeit war nie das Problem
+
+Alle vier liegen bei einer Fensterkorrelation zwischen **+0,06 und +0,42**,
+weit unter der Schwelle von 0,8. Punkt 3 der Spezifikation - "ein anderes
+Marktverhalten als Trendfolge" - ist **leicht** zu erfuellen. Wer nach einer
+anderen Ursache baut, bekommt auch ein anderes Ertragsmuster.
+
+Das Nadeloehr sind Punkt 1 und 2 **zusammen**. Die seltenste Regel hat die
+beste Qualitaet (18 Trades, 0,3405), die haeufigste die schlechteste (406
+Trades, -0,1201). Genau die Kopplung.
+
+### Der Beleg ist staerker geworden
+
+Befund 75 hat die Kopplung ueber den **Katalog** gemessen: r = -0,533 bei
+n = 14. Das ist eine Auswahl - jemand hat diese Regeln einmal ausgesucht, und
+die Korrelation koennte ein Artefakt davon sein.
+
+Die vier hier wurden **eigens gegen die Spezifikation gebaut**, nicht
+ausgesucht. Sie sind der unabhaengige Gegentest, und sie zeigen dasselbe:
+
+    nur Katalog        n=14   r = -0,533   t = -2,18
+    nur die vier neuen n= 4   r = -0,660   t = -1,24
+    zusammen           n=18   r = -0,602   t = -3,02
+
+Aus einem Befund am Rand ist damit ein deutlicher geworden. Die Kopplung ist
+keine Eigenschaft der Auswahl, sondern der Sache.
+
+### Was ich zuerst fuer einen Fehler hielt
+
+Zwei voellig verschiedene Regeln zeigten in der Ausgabe denselben Sharpe je
+Trade: -0,1201 und -0,1201. Bei 92 und 406 Trades ist das praktisch
+unmoeglich, also habe ich nachgesehen, bevor ich irgendetwas berichtet habe.
+Bei voller Genauigkeit sind es **-0,120133 und -0,120146** - verschiedene
+Werte, und nur die Rundung auf vier Stellen taeuschte.
+
+### Was das gekostet hat
+
+**Vier Versuche, 169 -> 173.** Neue Genome zu messen ist ein Versuch, auch
+ohne Gate-Aufruf: Der Deflated Sharpe korrigiert fuer die Zahl **getesteter
+Hypothesen**, nicht fuer die Zahl der Gate-Aufrufe. Alle vier stehen mit
+ihrem Sharpe je Trade im Verzeichnis; die Regeln selbst liegen in
+``strategies/vorschlaege/gen11_partner.json`` und sind damit - anders als
+'Neues Hoch im Takt' aus Befund 74 - wieder rechenbar.
+
+Suchbudget 43 von 100.
+
+### Wonach jetzt zu suchen waere
+
+Die Spezifikation steht, und zwei ihrer drei Punkte sind einzeln leicht zu
+treffen. Gebraucht wird eine Regel, die **oft ausloest und dabei Vorteil
+behaelt** - und die Kopplung sagt, dass genau das der schwierige Teil ist,
+inzwischen ueber 18 Punkte belegt.
+
+Das ist kein Grund aufzuhoeren, aber ein Grund, die Erwartung zu senken: Von
+18 gemessenen Regeln hat keine einzige beides. Wer weitersucht, sucht nach
+einer Ausnahme von einem Muster, das mit jedem Datenpunkt klarer wird.

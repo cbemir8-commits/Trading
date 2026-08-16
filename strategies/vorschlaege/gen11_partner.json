@@ -1,0 +1,75 @@
+[
+ {
+  "name": "Enge vor Bewegung",
+  "rationale": "Nach Phasen geringer Volatilitaet folgen ueberdurchschnittlich oft grosse Bewegungen - der Volatilitaetszyklus ist eine andere Ursache als ein Trend. Long, wenn das Band eng war und der Kurs es nach oben verlaesst. Widerlegbar: Wenn Enge nichts vorhersagt, ist die Trefferquote wie bei einem Zufallsausbruch.",
+  "entry_long": [
+   {"left": {"kind": "price", "name": "close"}, "op": "cross_above",
+    "right": {"kind": "indicator", "name": "bollinger_upper", "params": {"period": 20, "deviations": 2}}}
+  ],
+  "filters": [
+   {"left": {"kind": "indicator", "name": "bollinger_width", "params": {"period": 20, "deviations": 2}},
+    "op": "lt", "right": {"kind": "constant", "value": 8.0}}
+  ],
+  "exit_long": [
+   {"left": {"kind": "price", "name": "close"}, "op": "lt",
+    "right": {"kind": "indicator", "name": "ema", "params": {"period": 20}}}
+  ],
+  "stop": {"kind": "atr", "atr_period": 14, "multiple": 2.5, "percent": 8.0},
+  "targets": [{"rr": 20.0, "portion": 1.0}],
+  "cooldown_bars": 0, "max_hold_bars": 0
+ },
+ {
+  "name": "Volumenschock mit Fortsetzung",
+  "rationale": "Ein Handelstag mit weit ueberdurchschnittlichem Volumen und grossem Koerper zeigt an, dass neue Information verarbeitet wurde. Hypothese: Der Markt braucht mehrere Tage, sie einzupreisen. Ursache ist ein Informationsereignis, nicht die Kursrichtung der letzten Wochen. Widerlegbar: Wenn Volumen nichts traegt, ist der Vorteil null.",
+  "entry_long": [
+   {"left": {"kind": "indicator", "name": "volume_zscore", "params": {"period": 60}},
+    "op": "gt", "right": {"kind": "constant", "value": 1.5}}
+  ],
+  "filters": [
+   {"left": {"kind": "indicator", "name": "body_pct"}, "op": "gt",
+    "right": {"kind": "constant", "value": 1.5}}
+  ],
+  "exit_long": [
+   {"left": {"kind": "price", "name": "close"}, "op": "lt",
+    "right": {"kind": "indicator", "name": "ema", "params": {"period": 10}}}
+  ],
+  "stop": {"kind": "atr", "atr_period": 14, "multiple": 2.0, "percent": 8.0},
+  "targets": [{"rr": 20.0, "portion": 1.0}],
+  "cooldown_bars": 0, "max_hold_bars": 0
+ },
+ {
+  "name": "Rueckkehr zum Volumenschwerpunkt",
+  "rationale": "Faellt der Kurs deutlich unter den volumengewichteten Durchschnittspreis, handeln Kaeufer unter dem Preis, den der Markt zuletzt als fair akzeptiert hat. Hypothese: Diese Luecke schliesst sich. Ursache ist die Preisfindung selbst, nicht die Trendrichtung. Widerlegbar: Wenn der Abstand nichts vorhersagt, verliert die Regel an Gebuehren.",
+  "entry_long": [
+   {"left": {"kind": "indicator", "name": "vwap_distance_pct", "params": {"period": 30}},
+    "op": "lt", "right": {"kind": "constant", "value": -8.0}}
+  ],
+  "filters": [],
+  "exit_long": [
+   {"left": {"kind": "indicator", "name": "vwap_distance_pct", "params": {"period": 30}},
+    "op": "gt", "right": {"kind": "constant", "value": 0.0}}
+  ],
+  "stop": {"kind": "atr", "atr_period": 14, "multiple": 3.0, "percent": 12.0},
+  "targets": [{"rr": 20.0, "portion": 1.0}],
+  "cooldown_bars": 0, "max_hold_bars": 0
+ },
+ {
+  "name": "Abgriff des Vortagestiefs",
+  "rationale": "Wird ein markantes Tief kurz unterschritten und sofort zurueckerobert, wurden Stopps abgeraeumt und die Gegenseite ist ausgeduennt. Hypothese: Danach steigt der Kurs leichter. Ursache ist Liquiditaet, nicht Momentum - das Signal tritt in allen Marktphasen auf. Widerlegbar: Wenn der Abgriff nichts bedeutet, ist es ein Ausbruch nach unten wie jeder andere.",
+  "entry_long": [
+   {"left": {"kind": "indicator", "name": "bars_since_sweep_low", "params": {"period": 20}},
+    "op": "lte", "right": {"kind": "constant", "value": 2.0}}
+  ],
+  "filters": [
+   {"left": {"kind": "indicator", "name": "wick_below_pct"}, "op": "gt",
+    "right": {"kind": "constant", "value": 0.8}}
+  ],
+  "exit_long": [
+   {"left": {"kind": "price", "name": "close"}, "op": "lt",
+    "right": {"kind": "indicator", "name": "ema", "params": {"period": 20}}}
+  ],
+  "stop": {"kind": "atr", "atr_period": 14, "multiple": 2.0, "percent": 8.0},
+  "targets": [{"rr": 20.0, "portion": 1.0}],
+  "cooldown_bars": 0, "max_hold_bars": 0
+ }
+]

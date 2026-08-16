@@ -1,8 +1,8 @@
 {
   "format": 2,
-  "trials": 169,
+  "trials": 173,
   "grundstock": 166,
-  "updated_at": "2026-08-16T07:07:38.907399+00:00",
+  "updated_at": "2026-08-16T14:59:57.058350+00:00",
   "versuche": [
     {
       "kennung": "Verbund Spitze + Trend-Beteiligung 200 Tage",
@@ -24,6 +24,34 @@
       "trades": 111,
       "sharpe_je_trade": 0.2956,
       "herkunft": "verbund"
+    },
+    {
+      "kennung": "Enge vor Bewegung",
+      "zeitpunkt": "2026-08-16T14:59:57.058050+00:00",
+      "trades": 18,
+      "sharpe_je_trade": 0.340522023957203,
+      "herkunft": "gen11 partnersuche"
+    },
+    {
+      "kennung": "Volumenschock mit Fortsetzung",
+      "zeitpunkt": "2026-08-16T14:59:57.058095+00:00",
+      "trades": 114,
+      "sharpe_je_trade": 0.15841636015991017,
+      "herkunft": "gen11 partnersuche"
+    },
+    {
+      "kennung": "Rueckkehr zum Volumenschwerpunkt",
+      "zeitpunkt": "2026-08-16T14:59:57.058100+00:00",
+      "trades": 92,
+      "sharpe_je_trade": -0.12013303539298563,
+      "herkunft": "gen11 partnersuche"
+    },
+    {
+      "kennung": "Abgriff des Vortagestiefs",
+      "zeitpunkt": "2026-08-16T14:59:57.058104+00:00",
+      "trades": 406,
+      "sharpe_je_trade": -0.12014553594332096,
+      "herkunft": "gen11 partnersuche"
     }
   ]
 }

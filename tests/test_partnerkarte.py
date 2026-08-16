@@ -313,3 +313,34 @@ class TestKatalogkopplung:
         assert "sagen diese 5 Anwaerter nichts" in urteil
         assert "Eigenschaft des Vorrats" not in urteil
         assert "dreht ein einzelner" in urteil
+
+    def test_vier_neue_regeln_bestaetigen_die_kopplung(self) -> None:
+        """**Gegenprobe an Regeln, die es vorher nicht gab.**
+
+        Befund 75 mass die Kopplung ueber den Katalog - also ueber Regeln, die
+        jemand einmal ausgewaehlt hatte. Das ist eine Auswahl, und eine
+        Korrelation darueber koennte ihr Artefakt sein.
+
+        Die vier Vorschlaege aus Befund 77 wurden **eigens gegen die
+        Spezifikation gebaut**, nicht ausgewaehlt. Sie zeigen dasselbe: r
+        faellt von -0,533 auf -0,602, t von -2,18 auf -3,02.
+        """
+        from research.partnerkarte import Katalogkopplung
+
+        neu = [
+            ("Enge vor Bewegung", 18, 0.340522),
+            ("Volumenschock mit Fortsetzung", 114, 0.158416),
+            ("Rueckkehr zum Volumenschwerpunkt", 92, -0.120133),
+            ("Abgriff des Vortagestiefs", 406, -0.120146),
+        ]
+        zusammen = Katalogkopplung(
+            anwaerter=[
+                Anwaerter(name=n, trades=t, sharpe_je_trade=s)
+                for n, t, s in [*self.KATALOG, *neu]
+            ]
+        )
+
+        assert zusammen.korrelation == pytest.approx(-0.602, abs=0.01)
+        assert zusammen.t_wert == pytest.approx(-3.02, abs=0.05)
+        assert zusammen.auffaellig
+        assert abs(zusammen.t_wert) > 2.18, "Der Beleg ist staerker geworden"
