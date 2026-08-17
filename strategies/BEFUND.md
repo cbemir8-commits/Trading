@@ -7146,3 +7146,122 @@ wuerde: Er waere nicht bloss selten, sondern eine Ausnahme von einem Muster,
 das inzwischen zweifach belegt ist.
 
 Versuchsstand 177 unveraendert, Suchbudget 47 von 100. 1706 Tests gruen.
+
+## Fuenfundachtzig. Vier fallende Jahre, die ich fuer nicht vorhanden erklaert hatte
+
+Befund 84 endete mit einem Vorbehalt und einem Satz, der falsch war. Der
+Vorbehalt: Die gemessene Kopplung zwischen Aehnlichkeit zum Bestand und
+Qualitaet (r = +0,480) koennte eine Eigenschaft des **Zeitraums** sein statt
+der Regeln, weil der Markt ueber diese Jahre stark gestiegen ist. Der falsche
+Satz: "Ein Zeitraum mit anderer Marktrichtung wuerde es entscheiden; den gibt
+es in diesen Daten nicht."
+
+Den gibt es. Die Jahresrenditen von BTC in den vorhandenen Daten:
+
+    2018  -73,4 %      2022  -64,2 %
+    2019  +94,1 %      2023 +155,7 %
+    2020 +304,5 %      2024 +121,0 %
+    2021  +59,4 %      2025   -6,3 %
+                       2026  -26,5 %
+
+Vier fallende Jahre von neun, darunter zwei mit ueber 60 % Verlust. Ich habe
+eine Frage fuer unentscheidbar erklaert, ohne nachzusehen, ob sie es ist. Die
+Daten lagen die ganze Zeit auf der Platte.
+
+### Die Antwort auf die offene Frage
+
+``research/phasen.py`` und ``cli phasen`` trennen die Trades jeder Regel nach
+dem Jahr des Ausstiegs. Ueber 22 Regeln auf Tageskerzen:
+
+    rho <-> Sharpe in Aufwaertsjahren   +0,404   (t = 1,93)
+    rho <-> Sharpe in Abwaertsjahren    +0,075   (t = 0,33)
+
+Der Zusammenhang faellt auf ein Fuenftel und ist im Abwaertsmarkt nicht mehr
+nachweisbar. Er kehrt sich aber nicht um. Das spricht eher fuer die
+Zeitraum-Deutung als fuer die Regel-Deutung - entscheidet es bei 21 Punkten
+mit rho aber nicht. Wer aus t = 0,33 "kein Zusammenhang" liest, macht denselben
+Fehler wie ich in Befund 77.
+
+### Der Fehler in meiner eigenen ersten Messung
+
+Der erste Durchlauf sah **14** Regeln und fand **eine** gegenlaeufige. Er kam
+zu diesen 14, indem er den Katalog nach Namen filterte: Trend, Momentum,
+Donchian. Damit waren genau die Regeln ausgeschlossen, die die Frage
+beantworten - die short-faehigen.
+
+Ueber den vollen Katalog sind es **sechs von 22**, und alle sechs sind short
+oder beidseitig. Eine Auswahl nach Namen ist eine Auswahl, und diese hat die
+Antwort weggeschnitten, statt sie zu finden. Das ist derselbe Mechanismus wie
+in Befund 83, wo ich Filterkanten als Einstiegssignale gezaehlt hatte: eine
+Vorverarbeitung, die das Ergebnis erzeugt.
+
+### Was die Fensterkorrelation nicht misst - und das ist die Nachricht
+
+Die Partnersuche siebt seit Befund 73 nach kleiner Fensterkorrelation. Ueber
+dieselben Regeln gemessen:
+
+    rho <-> (Sharpe auf - Sharpe ab)   +0,097   (t = 0,43)
+
+Praktisch null. Die Fensterkorrelation misst, ob zwei Regeln **gleichzeitig**
+verdienen; sie sagt nichts darueber, ob die eine gerade dann verdient, wenn
+die andere verliert. Zwei Regeln koennen bei rho = 0 beide in denselben Jahren
+schwach sein - und in diesen Daten sind sie es meistens: 16 von 22 Regeln sind
+im Abwaertsmarkt schlechter, im Median um 0,37 Sharpe je Trade.
+
+Wer nach kleinem rho siebt, siebt an der Phaseneigenschaft systematisch
+vorbei. Das ist kein Fehler der Fensterkorrelation, sondern eine Grenze, die
+bisher nicht benannt war.
+
+### Was die sechs kosten
+
+Sie verdienen im Abwaertsmarkt und bezahlen dafuer im Aufwaertsmarkt:
+
+    Regel                          SR auf    SR ab   insgesamt
+    VWAP-Rueckkehr short          -0,2261  +0,3188    -0,1230
+    Luecke wird geschlossen       -0,1820  +0,2593    -0,0434
+    Bollinger-Ruecksetzer short   -0,2452  +0,2062    +0,0432
+    Abfolge-Modell short          -0,0915  +0,3332    +0,0797
+    Grosse Kerze m. Volumen short -0,1561  +0,3685    +0,1216
+    Trend beide Richtungen        +0,1794  +0,3430    +0,2334
+
+Die Verbund-Guete rechnet ueber die **ganze** Stichprobe. Eine Regel, die nur
+in einer Phase verdient, zieht den Schnitt genau so weit herunter, wie sie ihn
+in der anderen hebt. Die staerkste Gegenlaeufigkeit - VWAP-Rueckkehr short,
+Unterschied 0,54 - ist zugleich die schlechteste Regel des Feldes. Wer nur
+nach Gegenlaeufigkeit siebt, findet zuerst die Regeln, die im Aufwaertsmarkt
+am meisten verlieren.
+
+Bleibt eine: 'Trend beide Richtungen', 0,3430 abwaerts gegen 0,1794 aufwaerts,
+insgesamt +0,2334. Und auch die ist kein Fund: Von ihren 106 Trades fallen 35
+in die Abwaertsjahre, das Messrauschen dort betraegt 0,17, der Phasenunter-
+schied 0,16. Er liegt **darunter**. Dazu kommt die Auswahl ueber 22
+Hypothesen. Eine Ablesung, keine Aussage.
+
+Zum Vergleich der Bestand: 0,3473 aufwaerts, **-0,0450 abwaerts**, insgesamt
+0,2123. Er hat im Abwaertsmarkt nichts. Das ist die Zahl, die den ganzen
+Verbund-Auftrag begruendet.
+
+### Was daraus folgt
+
+1. **Der Vorbehalt aus Befund 84 ist geprueft, nicht ausgeraeumt.** Die
+   Kopplung faellt im Abwaertsmarkt deutlich - ein Hinweis auf die
+   Zeitraum-Deutung, kein Beweis.
+2. **Die Partnersuche hat eine blinde Achse.** Kleines rho und
+   Phasenkomplementaritaet sind in diesen Daten unkorreliert. Wer das eine
+   sucht, findet das andere nicht.
+3. **Phasenkomplementaritaet allein reicht nicht.** Sie ist reichlich
+   vorhanden und fast immer wertlos, weil sie in der anderen Phase bezahlt
+   wird.
+
+### Was offen bleibt - und messbar ist
+
+``verbund_guete`` nimmt an, dass Unabhaengigkeit nur die effektive Stichprobe
+verkleinert. Sie senkt dort nicht die Streuung. Bei wirklich gegenlaeufigen
+Beinen tut sie das aber - eine kombinierte Kurve aus zwei antikorrelierten
+Beinen kann einen hoeheren Sharpe haben als der gewichtete Schnitt der beiden
+Einzel-Sharpes. Ob das Modell den Wert eines gegenlaeufigen Partners deshalb
+**unterschaetzt**, ist nicht gemessen. Das ist der naechste Schritt, und er
+ist eine Pruefung der eigenen Formel, keine Kandidatensuche.
+
+Versuchsstand 177 unveraendert - zerlegt wurden Trades, die ohnehin gerechnet
+waren. Suchbudget 47 von 100. 1719 Tests gruen.

@@ -5334,6 +5334,138 @@ def anwaerter(
 
 
 @app.command()
+def phasen(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    vola_ziel: float = typer.Option(19.3, "--vola-ziel"),
+    vorschlaege: str = typer.Option(
+        "gen11_partner.json,gen12_partner.json", "--vorschlaege",
+        help="Zusaetzliche Regeldateien in strategies/vorschlaege/.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Traegt eine Regel dort, wo der Bestand nicht traegt?
+
+    Befund 84 mass: Je aehnlicher eine Regel dem Trendfolge-Signal des
+    Bestands, desto besser ihre Qualitaet - und liess offen, ob das eine
+    Eigenschaft der Regeln ist oder des stark gestiegenen Zeitraums. Dazu
+    stand dort, ein Zeitraum mit anderer Marktrichtung existiere in diesen
+    Daten nicht. **Das war falsch:** Vier der neun Jahre sind gefallen.
+
+    Dieser Befehl trennt die Trades jeder Regel nach dem Jahr des Ausstiegs
+    und rechnet beides getrennt. Und er prueft die Frage, die daran haengt: Ob
+    die Fensterkorrelation, nach der die Partnersuche siebt, ueber den
+    Phasenunterschied ueberhaupt etwas sagt.
+
+    **Kostet keinen Versuch.** Zerlegt werden Trades, die ohnehin gerechnet
+    sind - keine Gates, kein Deflated Sharpe, keine Auswahl. Wer eine hier
+    auffaellige Regel danach als Verbund-Partner prueft, hat eine Auswahl ueber
+    alle gezeigten Zeilen getroffen und muss sie zaehlen.
+    """
+    import json
+
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.phasen import ABWAERTSJAHRE, Phasenbild, Phasenvergleich
+    from research.seeds import VORGESEHEN, load_seeds, spitzenkandidat
+    from research.suchbudget import Kandidat
+    from research.verbund import fensterkorrelation
+    from strategy.compiler import compile_genome
+    from strategy.genome import Genome, SizingSpec
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
+
+    def lauf(genome):
+        angepasst = genome.model_copy(
+            update={
+                "sizing": SizingSpec(
+                    kind="vola_ziel", fraction=3.0,
+                    target_vol_pct=vola_ziel, vol_period=30,
+                )
+            }
+        )
+        return run_portfolio_walkforward(
+            frames, lambda g=angepasst: compile_genome(g), configs
+        )
+
+    bestand = spitzenkandidat()
+    kandidaten = [bestand]
+    passende = [g for g, iv in VORGESEHEN.items() if iv == interval_obj.value]
+    for gen in sorted(passende):
+        kandidaten.extend(load_seeds(gen))
+    for name in (x.strip() for x in vorschlaege.split(",") if x.strip()):
+        pfad = Path("strategies/vorschlaege") / name
+        if not pfad.exists():
+            continue
+        kandidaten.extend(
+            Genome.model_validate(roh) for roh in json.loads(pfad.read_text())
+        )
+
+    console.print(
+        f"\n[bold]Marktphasen[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Bestand      '{bestand.name}'\n"
+        f"  Kandidaten   {len(kandidaten)}\n"
+        f"  Abwaertsjahre {', '.join(str(j) for j in sorted(ABWAERTSJAHRE))}\n"
+        f"  Historie     {spanne} Tage\n"
+    )
+
+    spitze = lauf(bestand)
+    bilder: list[Phasenbild] = []
+    gesehen: set[tuple[int, int]] = set()
+    for genome in kandidaten:
+        bericht = lauf(genome)
+        trades = list(bericht.all_trades)
+        auf = [t for t in trades if t.exit_time.year not in ABWAERTSJAHRE]
+        ab = [t for t in trades if t.exit_time.year in ABWAERTSJAHRE]
+        # Unter zehn Trades je Phase ist der Sharpe je Trade keine Groesse
+        # mehr, sondern eine Anekdote - solche Zeilen taeuschen eine Trennung
+        # vor, die nur aus zwei oder drei Trades besteht.
+        if len(auf) < 10 or len(ab) < 10:
+            continue
+        eins = Kandidat.aus_trades(genome.name, auf)
+        zwei = Kandidat.aus_trades(genome.name, ab)
+        if eins is None or zwei is None:
+            continue
+        # Nach (Trades auf, Trades ab) entdoppeln - dieselbe Regel steht in
+        # mehreren Generationen, und doppelte Punkte faelschen die Korrelation.
+        schluessel = (len(auf), len(ab))
+        if schluessel in gesehen:
+            continue
+        gesehen.add(schluessel)
+        bilder.append(
+            Phasenbild(
+                name=genome.name,
+                sharpe_auf=eins.sharpe_je_trade,
+                sharpe_ab=zwei.sharpe_je_trade,
+                trades_auf=len(auf),
+                trades_ab=len(ab),
+                rho=fensterkorrelation(spitze, bericht) if bericht.windows else None,
+            )
+        )
+
+    if not bilder:
+        console.print("[red]Keine Regel hat in beiden Phasen genug Trades.[/]")
+        raise typer.Exit(2)
+
+    vergleich = Phasenvergleich(bilder=bilder)
+    console.print(vergleich.tabelle())
+    gegen = vergleich.gegenlaeufige
+    farbe = "green" if any(b.unterschied_traegt for b in gegen) else "yellow"
+    console.print(f"\n[{farbe}]{vergleich.urteil()}[/]\n")
+    console.print(
+        "[dim]Der Versuchszaehler bleibt unveraendert - hier wurde keine neue "
+        "Regel gebaut, sondern eine vorhandene Trade-Liste nach dem Jahr des "
+        "Ausstiegs geteilt.[/]"
+    )
+
+
+@app.command()
 def partner(
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
