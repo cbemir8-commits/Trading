@@ -7947,3 +7947,81 @@ Verwechslung dieses Tests.
 Versuchsstand 177 unveraendert - variiert wurden die Parameter eines
 vorhandenen Kandidaten, nichts ausgewaehlt und nichts verstellt. Suchbudget
 47 von 100. 1800 Tests gruen.
+
+## Dreiundneunzig. Das schlechteste Jahr ist der Baerenmarkt 2022
+
+Befund 91 hat zwei Gates benannt, an denen Arbeit liegt. Befund 92 nahm das
+Parameter-Plateau, dieser Lauf nimmt das zweite: **Schlechtestes Jahr**,
+-10,32 % gegen eine Grenze von -10,00 %.
+
+### Der Fehlschluss, den ich zuerst hatte
+
+Die Zahl ist das Minimum ueber alle rollierenden Zwoelfmonatsfenster - auf 93
+Testmonaten sind das 2465 Stueck. Die Verteilung:
+
+    Minimum        -10,32 %      Median         +11,51 %
+    1. Perzentil    -6,54 %      Maximum        +69,10 %
+
+**Nur 2 von 2465 Fenstern liegen unter -10 %** (0,1 %). Meine erste Lesart
+war entsprechend: ein Ausreisser, den man nicht ueberbewerten sollte.
+
+Das ist falsch, und zwar aus demselben Grund wie in Befund 88. Die 2465
+Fenster sind keine 2465 Beobachtungen - sie ueberlappen sich zu 99,7 %. In 93
+Testmonaten stecken **7,7 unabhaengige Jahresperioden**. Betroffen ist eine
+von acht, nicht eine von 2465.
+
+Dass es ein Ereignis ist und keine Streuung, zeigt die Lage: Alle Fenster
+unter -5 % starten zwischen dem 14.10.2021 und dem 08.01.2022 - ein
+zusammenhaengender Block von knapp drei Monaten.
+
+### Was dort wirklich steht
+
+Das schlechteste Fenster laeuft vom **08.11.2021 bis 08.11.2022** - vom
+Allzeithoch bis nach dem FTX-Zusammenbruch. Im selben Fenster:
+
+    Bestand      -10,3 %
+    BTC halten   -72,5 %
+    ETH halten   -72,3 %
+
+Faktor sieben Daempfung. Das klingt nach einem Argument gegen das Gate und
+ist keins: Ob die Strategie besser war als der Markt, prueft die **Messlatte**
+- dort ist sie um das 3,8-fache besser (Befund 91). Dieses Gate fragt etwas
+anderes: ob jemand das Jahr durchgehalten haette. Wer nach zwoelf Monaten
+zweistellig im Minus steht, hoert auf, unabhaengig davon, wie der Markt lief.
+
+Die Grenze von -10 % liegt bewusst innerhalb des Kill-Switch von 15 %.
+
+### Der Kreis schliesst sich zu Befund 85
+
+Dort wurde gemessen, dass der Bestand im Abwaertsmarkt nichts verdient:
+Sharpe je Trade **-0,0450** gegen +0,3473 im Aufwaertsmarkt. Hier steht
+dieselbe Eigenschaft in einer anderen Einheit.
+
+Das schlechteste Jahr ist damit kein statistisches Artefakt, sondern die
+Kehrseite dessen, was der Kandidat ist: **eine Aufwaertsmarkt-Strategie.**
+Der naechste Zyklus bringt dieselbe Phase wieder, und dann wieder rund -10 %.
+
+Damit haengen zwei der vier offenen Gates am selben Befund. Der Deflated
+Sharpe fehlt, weil die Guete nicht reicht - und der Weg dorthin waere ein
+zweites, gegenlaeufiges Bein (Befund 73 bis 86). Das schlechteste Jahr fehlt,
+weil es im Abwaertsmarkt keinen Ertrag gibt. **Es ist dieselbe Luecke.**
+
+### Ein eigener Fehler beim Testschreiben
+
+Die Testkurve fuer die Duerre legte den Einbruch zuerst auf eine von 1,0 auf
+3,0 steigende Gerade. Der Anstieg ueber ein Jahr betraegt dort +14 % und hat
+den Einbruch von 12 % vollstaendig aufgezehrt - die Kurve hatte gar keine
+Duerre, und der Test schlug fehl. Jetzt liegt der Einbruch auf einer flachen
+Kurve, und der Grund steht im Docstring.
+
+### Was das ist und was nicht
+
+**Keine Lockerung.** Die Grenze wurde nicht angefasst, und die Daempfung ist
+ausdruecklich kein Argument. ``research/duerre.py`` und ``cli duerre`` ordnen
+die Zahl ein - mehr nicht.
+
+Was sich geaendert hat: Die zwei verbleibenden Gates in meiner Hand sind
+nicht zwei Probleme, sondern eines. Wer den Abwaertsmarkt loest, loest beide.
+
+Versuchsstand 177 unveraendert - zerlegt wurde eine Kapitalkurve, die ohnehin
+gerechnet wird. Suchbudget 47 von 100. 1815 Tests gruen.

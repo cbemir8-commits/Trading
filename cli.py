@@ -5380,6 +5380,122 @@ def anwaerter(
 
 
 @app.command()
+def duerre(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Das schlechteste Jahr - ein Ausreisser oder eine Marktphase?
+
+    ``gate_worst_year`` meldet eine einzelne Zahl: das Minimum ueber alle
+    rollierenden Zwoelfmonatsfenster. Auf 93 Testmonaten sind das 2465
+    Fenster, die sich fast vollstaendig ueberlappen - eine Stichprobe ist das
+    nicht, und "nur zwei liegen darunter" ist deshalb kein Argument.
+
+    Dieser Befehl ordnet die Zahl ein: wie viele **unabhaengige** Perioden
+    darin stecken, ob die schlechten Fenster zusammenliegen oder streuen, und
+    was Halten im selben Zeitraum gebracht haette.
+
+    **Kostet keinen Versuch und aendert nichts.** Zerlegt wird eine
+    Kapitalkurve, die ohnehin gerechnet wird. Keine Schwelle wird angefasst.
+    """
+    from decimal import Decimal
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from backtest.walkforward import chained_curve
+    from research.duerre import baue
+    from research.gates import GateThresholds, _test_monate
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    store = CandleStore(settings.paths.data_store)
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+    frames = common_range(roh)
+    configs = {
+        x: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+        )
+        for x in symbole
+    }
+    genome = spitzenkandidat()
+    bericht = run_portfolio_walkforward(
+        frames, lambda: compile_genome(genome), configs
+    )
+
+    kurve = chained_curve(bericht)
+    # Die Zeitstempel in **derselben** Reihenfolge wie die verkettete Kurve -
+    # sonst zeigen die Datumsangaben auf andere Punkte als die Zahlen.
+    zeiten: list = []
+    for fenster in bericht.windows:
+        eigen = getattr(fenster.result, "equity_curve", None)
+        if eigen is None or eigen.empty:
+            continue
+        spalte = next(
+            (s for s in ("time", "timestamp", "open_time", "date") if s in eigen),
+            None,
+        )
+        zeiten.extend(eigen[spalte].tolist() if spalte else list(eigen.index))
+
+    monate = _test_monate(bericht)
+    schwellen = GateThresholds()
+    lage = baue(
+        kurve, testmonate=monate, grenze_pct=schwellen.worst_year_pct,
+        zeiten=zeiten if len(zeiten) >= len(kurve) else None,
+    )
+    if lage is None:
+        console.print("[red]Testzeitraum zu kurz fuer ein Zwoelfmonatsfenster.[/]")
+        raise typer.Exit(2)
+
+    # Was Halten im schlechtesten Fenster gebracht haette - erst jetzt, weil
+    # das Fenster vorher nicht bekannt ist.
+    markt: dict[str, float] = {}
+    if lage.beginn and lage.ende:
+        for symbol, frame in frames.items():
+            innen = (frame["open_time"] >= lage.beginn) & (
+                frame["open_time"] <= lage.ende
+            )
+            if int(innen.sum()) > 2:
+                reihe = frame.loc[innen, "close"]
+                markt[symbol] = float(reihe.iloc[-1] / reihe.iloc[0] - 1.0) * 100.0
+        lage = baue(
+            kurve, testmonate=monate, grenze_pct=schwellen.worst_year_pct,
+            zeiten=zeiten if len(zeiten) >= len(kurve) else None, markt=markt,
+        )
+
+    console.print(
+        f"\n[bold]Duerre[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Kandidat   {genome.name}\n"
+        f"  Testmonate {monate:.0f}\n"
+    )
+    console.print(lage.tabelle())
+    farbe = "green" if lage.besteht else "yellow"
+    console.print(f"\n[{farbe}]{lage.urteil()}[/]\n")
+    console.print(
+        "[dim]Der Versuchszaehler bleibt unveraendert - zerlegt wurde eine "
+        "Kapitalkurve, die ohnehin gerechnet wird. Keine Schwelle wurde "
+        "angefasst.[/]"
+    )
+
+
+@app.command()
 def plateaubild(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
