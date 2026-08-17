@@ -6977,3 +6977,85 @@ aus, bleibt es beim alten Verhalten - dann nennt der Auftrag nur die
 Untergrenze, was schlechter ist, aber nicht falsch.
 
 Versuchsstand 173 unveraendert, Suchbudget 43 von 100. 1699 Tests gruen.
+
+## Dreiundachtzig. Vier kalibrierte Regeln - die Methode traegt, die Regeln nicht
+
+Befund 82 hat den Auftrag auf das Optimum umgestellt: rund 165 Trades statt
+der Untergrenze von 120. Dieser Lauf beantwortet ihn.
+
+### Wie die Schwellen gewaehlt wurden
+
+Befund 77 hatte vier Regeln gebaut und landete bei 18, 92, 114 und 406
+Trades - keine in der Naehe des Ziels. Die Trade-Zahl ergab sich, statt
+gewaehlt zu werden.
+
+Diesmal wurde sie **vorher kalibriert**, und zwar ueber die reine
+**Signalhaeufigkeit** auf den Kursdaten: Wie oft trifft die Bedingung zu?
+Das ist eine Indikatorrechnung ohne Backtest, ohne PnL, ohne Gate - die
+Schwelle wird also nach einem Strukturmerkmal gewaehlt und nicht nach dem
+Ergebnis. Auszuege:
+
+    volume_zscore(60) > 1,2 + body_pct > 1,0    247 Flanken
+    vwap_distance_pct(30) < -5                  263 Flanken
+    rsi(14) < 40                                257 Flanken
+    bollinger_width(20,2) < 15                  126 Flanken
+
+### Was dabei herauskam
+
+    Vorschlag                            Trades  SR/Trade   noetig      rho
+    ------------------------------------------------------------------------
+    Volumenschock breit                     145    0,1387   0,2366   +0,587
+    Rueckkehr zum Volumenschwerpunkt        130   -0,1704   0,2494   +0,311
+    Ueberverkauft ohne Trendfilter          133   -0,1919   0,2467   +0,375
+    Enge vor Bewegung breit                  61    0,2238   0,3776   +0,437
+
+**Drei von vier trafen den Zielbereich** (145, 130, 133 gegen 142 bis 202).
+Die Methode traegt - das ist der eigentliche Fortschritt dieses Laufs.
+
+**Keiner taugt.** Alle drei, die genug handeln, liegen bei der Qualitaet weit
+darunter.
+
+### Wo die Kalibrierung danebenlag, und warum
+
+'Enge vor Bewegung breit' sollte den Zielbereich treffen und kam auf 61
+Trades. Der Grund ist ein Denkfehler in meiner Zaehlung: ``bollinger_width <
+15`` ist ein **Filter**, kein Einstiegssignal. Gezaehlt wurden 126 Flanken
+der Filterbedingung - eingestiegen wird aber nur, wenn **zusaetzlich** der
+Kurs das Band nach oben kreuzt. Die Schnittmenge ist viel kleiner.
+
+Die Zaehlung muss also das ganze Signal abbilden und nicht einen Teil davon.
+Fuer die drei anderen stimmte sie, weil dort die Einstiegsbedingung selbst
+gezaehlt wurde.
+
+### Was die vier mit der Kopplung machen
+
+    18 Punkte (Befund 79)   r = -0,602   t = -3,02   Rest 0,1225
+    22 Punkte (mit diesen)  r = -0,543   t = -2,89   Rest 0,1396
+
+Sie **schwaechen** sie leicht und erhoehen die Reststreuung. Das ist ehrlich
+zu vermerken: Der Beleg ist etwas duenner geworden, nicht dicker.
+
+Einzeln gegen die alte Gerade gerechnet:
+
+    145 Trades   z = +0,47      im Rahmen
+    130 Trades   z = -2,17      deutlich darunter
+    133 Trades   z = -2,32      deutlich darunter
+     61 Trades   z = +0,51      im Rahmen
+
+Die beiden Mean-Reversion-Regeln liegen weit unter der Erwartung. Sie sind
+nicht nur schwach, sie sind schwaecher als die Kopplung vorhersagt - ein
+Hinweis, dass Rueckkehr zum Mittel auf Tageskerzen ueber diesen Zeitraum
+schlicht nicht traegt, unabhaengig von der Taktung.
+
+### Was das gekostet hat
+
+**Vier Versuche, 173 -> 177.** Suchbudget 47 von 100. Die vier Punkte sind
+in ``auftragslage._optimum`` eingeflossen; das Optimum verschiebt sich damit
+von 165 auf **151 Trades** (Spanne 137 bis 175), die Trefferquote auf 1,0 bis
+14,9 %.
+
+Der Test dazu haelt jetzt einen **Bereich** fest und nicht die Zahl: Sie
+wandert mit jeder Messung, und ein Test, der nach jedem Zyklus nachgezogen
+werden muss, sagt nichts mehr.
+
+Versuchsstand 177, Suchbudget 47 von 100. 1699 Tests gruen.

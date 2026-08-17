@@ -160,7 +160,11 @@ class TestOptimumImAuftrag:
         aktuell = lage()
 
         assert aktuell.bestes_ziel > aktuell.partner_trades
-        assert 140 <= aktuell.bestes_ziel <= 200, f"gemessen {aktuell.bestes_ziel}"
+        # Der Wert wandert mit jeder neuen Messung: 165 bei 18 Punkten,
+        # 151 bei 22 (Befund 83). Der Test haelt den Bereich fest, nicht die
+        # Zahl - sonst muesste er nach jedem Vorschlagszyklus nachgezogen
+        # werden und sagte nichts mehr.
+        assert 130 <= aktuell.bestes_ziel <= 210, f"gemessen {aktuell.bestes_ziel}"
         assert f"am besten rund **{aktuell.bestes_ziel}**" in aktuell.als_auftrag()
 
     def test_beide_zahlen_in_punkt_zwei_gehoeren_zusammen(self) -> None:

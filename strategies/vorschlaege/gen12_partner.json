@@ -1,0 +1,72 @@
+[
+ {
+  "name": "Volumenschock breit",
+  "rationale": "Wie in Befund 77, aber auf die gemessene Ziel-Trade-Zahl kalibriert: Ein Tag mit deutlich ueberdurchschnittlichem Volumen und spuerbarem Koerper zeigt verarbeitete Information. Hypothese: Der Markt braucht Tage, sie einzupreisen. Die Schwelle wurde ueber die Signalhaeufigkeit gewaehlt, nicht ueber das Ergebnis. Widerlegbar: Wenn Volumen nichts traegt, ist der Vorteil null.",
+  "entry_long": [
+   {"left": {"kind": "indicator", "name": "volume_zscore", "params": {"period": 60}},
+    "op": "gt", "right": {"kind": "constant", "value": 1.2}}
+  ],
+  "filters": [
+   {"left": {"kind": "indicator", "name": "body_pct"}, "op": "gt",
+    "right": {"kind": "constant", "value": 1.0}}
+  ],
+  "exit_long": [
+   {"left": {"kind": "price", "name": "close"}, "op": "lt",
+    "right": {"kind": "indicator", "name": "ema", "params": {"period": 20}}}
+  ],
+  "stop": {"kind": "atr", "atr_period": 14, "multiple": 2.5, "percent": 8.0},
+  "targets": [{"rr": 20.0, "portion": 1.0}],
+  "cooldown_bars": 0, "max_hold_bars": 0
+ },
+ {
+  "name": "Rueckkehr zum Volumenschwerpunkt breit",
+  "rationale": "Faellt der Kurs unter den volumengewichteten Durchschnittspreis, kauft man unter dem zuletzt als fair akzeptierten Preis. Befund 77 hat -8 % probiert und kam auf 92 Trades; -5 % trifft die Ziel-Taktung. Ursache ist die Preisfindung, nicht die Trendrichtung. Widerlegbar: Wenn der Abstand nichts vorhersagt, frisst die Gebuehr den Rest.",
+  "entry_long": [
+   {"left": {"kind": "indicator", "name": "vwap_distance_pct", "params": {"period": 30}},
+    "op": "lt", "right": {"kind": "constant", "value": -5.0}}
+  ],
+  "filters": [],
+  "exit_long": [
+   {"left": {"kind": "indicator", "name": "vwap_distance_pct", "params": {"period": 30}},
+    "op": "gt", "right": {"kind": "constant", "value": 2.0}}
+  ],
+  "stop": {"kind": "atr", "atr_period": 14, "multiple": 3.0, "percent": 12.0},
+  "targets": [{"rr": 20.0, "portion": 1.0}],
+  "cooldown_bars": 0, "max_hold_bars": 0
+ },
+ {
+  "name": "Ueberverkauft ohne Trendfilter",
+  "rationale": "Ein RSI unter 40 markiert eine kurzfristige Abgabephase. Bewusst ohne Trendfilter, damit das Signal nicht am Trendfolge-Signal des Bestands haengt - das ist der dritte Punkt des Auftrags. Hypothese: Kurzfristige Uebertreibungen bilden sich zurueck, unabhaengig davon, wo der Markt langfristig steht. Widerlegbar: In einem Abwaertsmarkt ist ueberverkauft kein Kaufgrund, dann ist der Vorteil negativ.",
+  "entry_long": [
+   {"left": {"kind": "indicator", "name": "rsi", "params": {"period": 14}},
+    "op": "lt", "right": {"kind": "constant", "value": 40.0}}
+  ],
+  "filters": [],
+  "exit_long": [
+   {"left": {"kind": "indicator", "name": "rsi", "params": {"period": 14}},
+    "op": "gt", "right": {"kind": "constant", "value": 55.0}}
+  ],
+  "stop": {"kind": "atr", "atr_period": 14, "multiple": 2.5, "percent": 10.0},
+  "targets": [{"rr": 20.0, "portion": 1.0}],
+  "cooldown_bars": 0, "max_hold_bars": 0
+ },
+ {
+  "name": "Enge vor Bewegung breit",
+  "rationale": "Der Volatilitaetszyklus als Ursache: Nach ruhigen Phasen folgen grosse Bewegungen. Befund 77 hat die Enge bei 8 gefiltert und kam auf 18 Trades - viel zu selten. Bei 15 trifft die Signalhaeufigkeit den Zielbereich. Widerlegbar: Wenn Enge nichts vorhersagt, ist die Trefferquote wie bei einem beliebigen Ausbruch.",
+  "entry_long": [
+   {"left": {"kind": "price", "name": "close"}, "op": "cross_above",
+    "right": {"kind": "indicator", "name": "bollinger_upper", "params": {"period": 20, "deviations": 2}}}
+  ],
+  "filters": [
+   {"left": {"kind": "indicator", "name": "bollinger_width", "params": {"period": 20, "deviations": 2}},
+    "op": "lt", "right": {"kind": "constant", "value": 15.0}}
+  ],
+  "exit_long": [
+   {"left": {"kind": "price", "name": "close"}, "op": "lt",
+    "right": {"kind": "indicator", "name": "ema", "params": {"period": 20}}}
+  ],
+  "stop": {"kind": "atr", "atr_period": 14, "multiple": 2.5, "percent": 8.0},
+  "targets": [{"rr": 20.0, "portion": 1.0}],
+  "cooldown_bars": 0, "max_hold_bars": 0
+ }
+]
