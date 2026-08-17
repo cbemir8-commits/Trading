@@ -7859,3 +7859,91 @@ Laeufe an der richtigen Stelle ansetzen koennen - und dass eine Tabelle, die
 mich heute in die Irre gefuehrt hat, das nicht wieder tut.
 
 Versuchsstand 177 unveraendert. Suchbudget 47 von 100. 1785 Tests gruen.
+
+## Zweiundneunzig. Keine Nadelspitze, sondern eine Flanke
+
+Befund 91 hat die vier offenen Gates sortiert und zwei benannt, an denen
+Arbeit liegt: Schlechtestes Jahr und Parameter-Plateau. Beide sind in
+fuenfzehn Laeufen nie angesehen worden. Dieser Lauf nimmt das Plateau.
+
+### Warum das Gate nicht sagen kann, was es sieht
+
+``gate_parameter_plateau`` variiert jede Stellgroesse um plus/minus 20 % und
+wertet das **Minimum** ueber alle Richtungen - "ein Plateau ist man in jeder
+Richtung oder gar nicht". Das ist richtig so.
+
+Bei zwei Nachbarn je Richtung kann das Minimum aber nur 0, 0,5 oder 1,0
+annehmen. Die Schwelle von 0,6 heisst damit faktisch: **alle zwoelf Nachbarn
+muessen tragen.** Es gibt keine Zwischenstufe - und aus dem gemeldeten Wert
+0,500 ist nicht ablesbar, ob dort eine Nadel steht oder eine Kante.
+
+### Was die feinere Messung zeigt
+
+Zwoelf Faktoren von 0,70 bis 1,30, Gewinn in Konto-Einheiten (Basis 958):
+
+    Faktor            0,70  0,75  0,80  0,85  0,90  0,95  1,05  1,10  1,15  1,20
+    alle gemeinsam    1216  1226  1093  1638   799  1041   591   445   229  -104
+    sma(period=50)    1070   961   868  1473   788   989   575   422   260  -104
+    sma(period=200)    933   932   932   932   936   955   956   956   939   939
+    roc(period=90)     963   948   957   926   953   955   962   958   957   957
+    rsi(period=14)     964   964   964   964   962   962  1028  1028  1028  1025
+    Vola-Fenster       772   796   802   877   681  1094  1020  1034   991   964
+
+**Es ist keine Nadelspitze.** Die Strategie ist von 0,70 bis 1,15 durchgehend
+profitabel - Perioden von 35 bis 57 Tagen, ein Bereich von 45 Prozentpunkten.
+Was das Gate trifft, ist eine **Kante bei +20 %**, hinter der es ins Negative
+faellt.
+
+Und nur eine Stellgroesse wirkt: ``sma(period=50)``. "Alle gemeinsam" hat
+praktisch denselben Verlauf; die uebrigen vier aendern den Gewinn um 3 bis
+7 %. Dass die Strategie gegen sie unempfindlich ist, sagt nichts ueber ihre
+Robustheit - diese Regler sind schlicht nicht angeschlossen. Genau deshalb
+wertet das Gate das Minimum, und genau deshalb ist das richtig.
+
+### Die unangenehme Haelfte, und warum daraus nichts folgt
+
+Der Bestand sitzt nicht auf dem Gipfel, sondern auf der abfallenden Flanke:
+Bei Faktor 0,85 steht der Gewinn bei 1638 gegen 958 bei 1,00. Das sind 680
+mehr - es sieht aus, als waere ``sma(42)`` der bessere Parameter.
+
+**Er ist es nicht, jedenfalls nicht belegt.** Gegen die Trendlinie gerechnet
+liegt der Punkt +2,39 Reststreuungen darueber; bei zwoelf gemessenen Punkten
+erwartet man ohnehin 1,67, und der Abstand entspricht z = 1,21. Dieselbe Lage
+wie das beste Paar in Befund 86 (3,585 gegen 3,549): Ein Maximum knapp ueber
+dem Erwartungswert ist der Normalfall, kein Fund.
+
+Dazu kaeme, dass zwoelf Werte durchzuprobieren und den besten zu nehmen genau
+die Ueberanpassung ist, gegen die dieses Gate schuetzt.
+
+### Zwei eigene Fehlversuche auf dem Weg dorthin
+
+Die Pruefung "ist der beste Punkt belegt?" habe ich dreimal geschrieben. Der
+erste Anlauf verglich ihn mit dem **mittleren Nachbarsprung** (267) - zu
+schwach, und er haette den Punkt durchgewinkt. Der zweite addierte einen
+erfundenen Sicherheitsabstand von einer halben Reststreuung, damit das
+Ergebnis passt; das ist genau die Willkuer, die hier nichts zu suchen hat.
+
+Der dritte rechnet den Abstand in Einheiten der **Streuung des Maximums**,
+und die laesst sich aus der Zahl der Punkte bestimmen. Kein Regler, keine
+Wahl.
+
+### Was daraus folgt
+
+1. **Das Gate scheitert zu Recht.** Bei +20 % kippt der Kandidat ins Negative,
+   und Robustheit in beide Richtungen ist die Anforderung. Nichts an dieser
+   Schwelle wurde angefasst.
+2. **Die Botschaft "Nadelspitze" ist trotzdem falsch** und fuehrt in dieselbe
+   Richtung wie die Messlatte-Zeile aus Befund 91: Sie klingt nach einer
+   Diagnose und ist eine Fehldeutung. Der Kandidat steht am Rand eines
+   breiten Gebiets, nicht auf einem Zufallstreffer.
+3. **Aus der Landschaft ist kein Parameter abzulesen.** Wer es doch tut, zahlt
+   Versuche fuer ein Rauschen.
+
+``research/plateaubild.py`` und ``cli plateaubild`` rechnen das jederzeit
+nach. Ein Kandidat, dessen Parameter alle wirkungslos sind, wird dabei
+ausdruecklich **nicht** als robust gemeldet - das waere die gefaehrlichste
+Verwechslung dieses Tests.
+
+Versuchsstand 177 unveraendert - variiert wurden die Parameter eines
+vorhandenen Kandidaten, nichts ausgewaehlt und nichts verstellt. Suchbudget
+47 von 100. 1800 Tests gruen.

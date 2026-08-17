@@ -5380,6 +5380,122 @@ def anwaerter(
 
 
 @app.command()
+def plateaubild(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    faktoren: str = typer.Option(
+        "0.70,0.75,0.80,0.85,0.90,0.95,1.05,1.10,1.15,1.20,1.25,1.30",
+        "--faktoren", help="Skalierungen der Perioden, durch Komma.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Nadelspitze, Flanke oder Plateau - was das Gate nicht unterscheiden kann.
+
+    ``gate_parameter_plateau`` prueft je Stellgroesse zwei Nachbarn bei
+    plus/minus 20 % und wertet das Minimum. Damit kann sein Wert nur 0, 0,5
+    oder 1,0 sein - die Schwelle von 0,6 heisst faktisch "alle Nachbarn
+    muessen tragen", und aus einem Fehlschlag ist nicht ablesbar, ob dort eine
+    Nadel steht oder eine Kante.
+
+    Dieser Befehl misst dieselbe Nachbarschaft feiner und sagt, welche Form
+    die Landschaft hat, wie breit der tragfaehige Bereich ist und ob ein
+    scheinbar besserer Punkt die eigene Auswahl schlaegt.
+
+    **Kostet keinen Versuch und aendert nichts.** Variiert werden die
+    Parameter eines vorhandenen Kandidaten - dasselbe, was das Gate ohnehin
+    tut. Es wird kein Parameter verstellt und keine Schwelle angefasst; wer
+    aus der Landschaft einen Wert ablesen und einbauen wollte, haette einen
+    neuen Kandidaten gebaut und muesste ihn zaehlen.
+    """
+    from decimal import Decimal
+
+    from backtest.engine import BacktestConfig, Backtester
+    from backtest.portfolio_walkforward import common_range
+    from research.gates import skaliere_perioden, stellgroessen
+    from research.plateaubild import baue
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    store = CandleStore(settings.paths.data_store)
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+    frames = common_range(roh)
+    configs = {
+        x: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+        )
+        for x in symbole
+    }
+    beine = [(frames[x], configs[x]) for x in symbole]
+    genome = spitzenkandidat()
+
+    def gewinn(g) -> float:
+        return float(
+            sum(
+                Backtester(cfg).run(teil, compile_genome(g)).net_profit
+                for teil, cfg in beine
+            )
+        )
+
+    werte = [float(f) for f in faktoren.split(",") if f.strip()]
+    console.print(
+        f"\n[bold]Plateaubild[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Kandidat   {genome.name}\n"
+        f"  Faktoren   {len(werte)} von {min(werte):.2f} bis {max(werte):.2f}\n"
+    )
+
+    basis = gewinn(genome)
+    kurven: dict[str, list] = {}
+    # "Alle gemeinsam" zuerst, dann jede Stellgroesse einzeln - dieselbe
+    # Aufteilung wie in ``nachbarschaft``, damit die Zeilen mit denen des
+    # Gates vergleichbar bleiben.
+    aufgaben = [("alle gemeinsam", None)] + [
+        (st.name, st.kennung) for st in stellgroessen(genome)
+    ]
+    for name, kennung in aufgaben:
+        punkte = []
+        for f in werte:
+            nachbar = (
+                skaliere_perioden(genome, f)
+                if kennung is None
+                else skaliere_perioden(genome, f, nur=kennung)
+            )
+            if nachbar is None or nachbar.genome_id == genome.genome_id:
+                punkte.append((f, None))
+                continue
+            punkte.append((f, gewinn(nachbar)))
+        kurven[name] = punkte
+
+    landschaft = baue(kurven, basis=basis)
+    console.print(f"[dim]Gewinn bei Faktor 1,00: {basis:.0f}[/]\n")
+    console.print(landschaft.tabelle())
+    eng = landschaft.engste
+    farbe = "yellow" if eng is not None and eng.breite < 0.5 else "green"
+    console.print(f"\n[{farbe}]{landschaft.urteil()}[/]\n")
+    console.print(
+        "[dim]Der Versuchszaehler bleibt unveraendert - variiert wurden die "
+        "Parameter eines vorhandenen Kandidaten, nichts wurde ausgewaehlt "
+        "oder verstellt.[/]"
+    )
+
+
+@app.command()
 def zeitachse(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
