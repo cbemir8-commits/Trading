@@ -5361,6 +5361,7 @@ def zeitachse(
     gerechnet sind. Es wird nichts ausgewaehlt und kein Gate geaendert.
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.entdopplung import entdoppele
     from research.gates import concurrent_groups
     from research.seeds import VORGESEHEN, load_seeds, spitzenkandidat
     from research.suchbudget import Kandidat
@@ -5392,17 +5393,17 @@ def zeitachse(
     for gen in sorted(g for g, iv in VORGESEHEN.items() if iv == interval_obj.value):
         kandidaten.extend(load_seeds(gen))
 
-    laeufe: dict[str, list] = {}
+    roh: dict[str, list] = {}
     gate_t: dict[str, float] = {}
     for genome in kandidaten:
-        if genome.name in laeufe:
+        if genome.name in roh:
             continue
         bericht = lauf(genome)
         trades = list(bericht.all_trades)
         kandidat = Kandidat.aus_trades(genome.name, trades)
         if len(trades) < 30 or kandidat is None:
             continue
-        laeufe[genome.name] = trades
+        roh[genome.name] = trades
         # Genau die Kuerzung, die das Zulassungs-Gate rechnet - uebergeben
         # statt im Modul nachgebaut, damit es keine zweite Umsetzung gibt.
         eigene = [[float(t.net_pnl) for t in w.trades] for w in bericht.windows]
@@ -5414,6 +5415,12 @@ def zeitachse(
         )
         gate_t[genome.name] = kandidat.sharpe_je_trade * st.effektiv**0.5
 
+    # **Pflicht, kein Feinschliff.** Der Katalog enthaelt sieben Namen fuer
+    # dieselbe Regel; ohne diesen Schritt zaehlt sie siebenfach und hebt jeden
+    # t-Wert. Die erste Fassung dieses Befehls hat den Befund so erst erzeugt.
+    entdoppelt = entdoppele(roh)
+    laeufe = entdoppelt.laeufe
+
     if len(laeufe) < 3:
         console.print("[red]Zu wenige Regeln mit genug Trades.[/]")
         raise typer.Exit(2)
@@ -5424,6 +5431,8 @@ def zeitachse(
         f"  Nullprobe  {durchlaeufe} Zuege je Regel\n"
         f"  Historie   {spanne} Tage\n"
     )
+    if entdoppelt.doppel:
+        console.print(f"[dim]{entdoppelt.hinweis()}[/]\n")
 
     ergebnis = messe(laeufe, gate_t, durchlaeufe=durchlaeufe)
     console.print(ergebnis.tabelle())
@@ -5473,6 +5482,7 @@ def verbundmodell(
     prueft, hat dagegen eine Auswahl ueber alle gezeigten Paare getroffen.
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.entdopplung import entdoppele
     from research.seeds import VORGESEHEN, load_seeds, spitzenkandidat
     from research.verbundmodell import pruefe
     from strategy.compiler import compile_genome
@@ -5502,14 +5512,20 @@ def verbundmodell(
     for gen in sorted(g for g, iv in VORGESEHEN.items() if iv == interval_obj.value):
         kandidaten.extend(load_seeds(gen))
 
-    laeufe: dict[str, list] = {}
+    roh: dict[str, list] = {}
     for genome in kandidaten:
         trades = list(lauf(genome).all_trades)
         # Unter dreissig Trades traegt der t-Wert einer Wochenreihe nichts -
         # zu viele leere Perioden, und die Streuung wird von zwei Ausreissern
         # bestimmt.
-        if len(trades) >= 30 and genome.name not in laeufe:
-            laeufe[genome.name] = trades
+        if len(trades) >= 30 and genome.name not in roh:
+            roh[genome.name] = trades
+
+    # Ohne diesen Schritt stammt die Haelfte der Paare aus derselben Regel -
+    # die erste Fassung dieses Befehls mass so einen Kartenfehler von +0,238,
+    # entdoppelt sind es -0,029.
+    entdoppelt = entdoppele(roh)
+    laeufe = entdoppelt.laeufe
 
     if len(laeufe) < 3:
         console.print("[red]Zu wenige Regeln mit genug Trades.[/]")
@@ -5521,6 +5537,8 @@ def verbundmodell(
         f"  Periode    {tage} Tage\n"
         f"  Historie   {spanne} Tage\n"
     )
+    if entdoppelt.doppel:
+        console.print(f"[dim]{entdoppelt.hinweis()}[/]\n")
 
     ergebnis = pruefe(laeufe, tage=tage)
 

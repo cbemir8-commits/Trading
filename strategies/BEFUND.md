@@ -7491,3 +7491,116 @@ keiner Auswertung mit.
 
 Versuchsstand 177 unveraendert - neu aggregiert wurden Trades, die ohnehin
 gerechnet waren. Suchbudget 47 von 100. 1742 Tests gruen.
+
+## Achtundachtzig. Sieben Namen fuer eine Regel - und zwei eigene Befunde, die daran haengen
+
+Dieser Lauf begann mit einer Idee und endete mit einer Korrektur an mir selbst.
+
+### Die Idee, und warum sie fallengelassen wurde
+
+Aus Befund 87 folgte eine naheliegende Vermutung: Wenn Trades kosten, weil sie
+gehaeuft und gleichlaeufig anfallen, dann sind die Folgetrades eines Klumpens
+Redundanz. Eine Sperrfrist (``cooldown_bars`` gibt es im Genom bereits)
+muesste dann die Qualitaet heben, ohne die Stichprobe wirklich zu verkleinern.
+
+Gemessen auf vorhandenen Trades, ohne einen Versuch auszugeben - erster Trade
+eines Klumpens gegen die Folgetrades, ueber sechs Sperrfristen:
+
+    Sperrfrist   n   SR erste   SR folge     Diff       t
+       3 Tage    5    +0,2203    -0,2402   +0,4605   +1,24
+       5 Tage    6    +0,2402    +0,0877   +0,1524   +1,29
+       7 Tage    7    +0,1901    +0,1504   +0,0397   +0,58
+      10 Tage    9    +0,1291    +0,0363   +0,0928   +1,00
+      14 Tage    9    +0,1436    +0,0639   +0,0797   +1,15
+      21 Tage   10    +0,1425    +0,1091   +0,0334   +0,68
+
+Die Richtung stimmt durchgehend - Folgetrades sind tendenziell schlechter -,
+aber **kein einziger t-Wert erreicht 2**. Fuer eine Sperrfrist wird kein
+Versuch ausgegeben.
+
+Der erste Durchlauf derselben Messung sah bei 14 Tagen t = +3,04 und damit
+einen klaren Befund. Nach Entdopplung sind es +1,15. Das war der Hinweis.
+
+### Sieben Namen, eine Regel
+
+Der Katalog auf Tageskerzen enthaelt 21 Genome, von denen sechs **identische
+Trades** liefern:
+
+    Trend-Beteiligung 200 Tage        Trend mit Vola-Ziel 20 %
+    Trend-Beteiligung voller Einsatz  Trend mit Vola-Ziel 22 %
+    Vola-Ziel, kurzes Messfenster     Vola-Ziel, langes Messfenster
+
+Zusammen mit 'Trend-Beteiligung (fair gerechnet)' sind das sieben Namen fuer
+eine Regel mit 53 Trades. Sie unterscheiden sich in Feldern, die auf diesen
+Daten nichts aendern - etwa einem Vola-Messfenster, das bei dieser
+Signalhaeufigkeit nie greift.
+
+``anwaerter`` und ``phasen`` entdoppeln laengst, jeweils mit eigener
+handgeschriebener Logik. Genau daran ist es gescheitert: Ich habe zwei neue
+Befehle gebaut, und in beiden fehlte die Entdopplung, weil sie nirgends als
+Baustein stand. Jetzt steht sie in ``research/entdopplung.py`` und wird
+benutzt.
+
+### Was das an Befund 86 und 87 aendert
+
+**Befund 87, Zeitachse:**
+
+                              erste Fassung   entdoppelt
+    mittlere Luecke                  20,2 %       11,7 %
+    Deckung durch das Gate             15 %         32 %
+    r(Gate-Kuerzung, Zeit-Kuerzung)  -0,470       -0,261
+    betroffene Regeln                 11/18         5/12
+
+Die Kernaussage von Befund 87 war: "Das Gate kuerzt gegenlaeufig - es kuerzt
+dort, wo es nicht noetig ist." **Diese Aussage faellt.** Entdoppelt ist
+r = -0,261 bei zwoelf Regeln, also t = -0,86. Nicht nachweisbar.
+
+Und die Zahl kam nicht bloss verstaerkt zustande, sondern erzeugt: Die
+siebenfach gezaehlte Regel ist ausgerechnet die mit 37 % Zeit-Luecke und ohne
+jede Gate-Kuerzung.
+
+Was von Befund 87 haelt: Das Gate kuerzt weiterhin zu wenig (11,7 % gegen eine
+Schwelle von 10 %, knapp). Die Nullprobe-Kontrolle traegt. Fuenf von zwoelf
+Regeln liegen ueber der Schwelle, am staerksten die mit 53 Trades. Der Bestand
+ist mit 3,9 % kaum betroffen.
+
+**Befund 86, Verbundmodell:**
+
+                              erste Fassung   entdoppelt
+    Kartenfehler                    +0,238       -0,029
+    Topffehler                      +0,487       +0,221
+    r(rho, Kartenfehler)            +0,752       +0,440  (t = +4,97)
+    Paare                              210          105
+
+Die Ueberschrift "Beide Trade-Formeln sind zu optimistisch" ist fuer die
+**Karte falsch** - sie liegt im Mittel richtig. Damit faellt auch der Satz
+"der Auftrag aus Befund 76 war zu milde gestellt". Er stand in Befund 86 und
+war nicht belegt.
+
+Was haelt, und das ist die eigentliche Aussage jenes Befundes: Der Fehler der
+Karte faehrt auf der Fensterkorrelation (r = +0,440 ueber 105 Paare, t = 4,97),
+sie stimmt nur bei Unabhaengigkeit, und sie uebersieht Hedge-Partner - 42 von
+105 Paaren werden zu schlecht bewertet. Auch der zusammengeworfene Topf, mit
+dem ``Verbund.kandidat`` rechnet, bleibt zu optimistisch (+0,221, zu hoch in
+87 %). Und die Nullprobe bleibt unveraendert: Das beste Paar erreicht 3,585
+gegen einen Nullmedian von 3,683 - es schlaegt die eigene Auswahl nicht.
+
+### Was daraus fuer die Arbeitsweise folgt
+
+1. **Entdopplung ist Pflicht, nicht Feinschliff.** Ein Duplikat ist keine
+   zweite Beobachtung: Es senkt die Streuung und hebt jeden t-Wert, also genau
+   das, was ueber "nachweisbar" entscheidet. Als Test steht das jetzt als
+   Falsch-Positiv-Rate ueber 400 Ziehungen da.
+2. **Die |t|-Schranke gehoert in jedes Urteil.** ``partnerkarte`` hat sie seit
+   Befund 75, weil dort derselbe Fehler passiert war. ``zeitachse`` und
+   ``verbundmodell`` hatten sie nicht - jetzt schon, und beide sagen bei
+   schwachem Zusammenhang "bleibt offen" statt einen Schluss zu ziehen.
+3. **Die Ueberschrift muss den Zahlen folgen.** Das Urteil im Verbundmodell
+   behauptete "beide Formeln sind zu optimistisch" und druckte daneben -0,029.
+   Der Satz war aus der ersten Messung stehengeblieben, als die Zahl kippte.
+
+Kein Ergebnis dieses Laufs bewegt den Stand Richtung Gates. Zwei Befunde sind
+jetzt kleiner, als sie waren, und einer davon in seiner Hauptaussage
+hinfaellig.
+
+Versuchsstand 177 unveraendert. Suchbudget 47 von 100. 1752 Tests gruen.

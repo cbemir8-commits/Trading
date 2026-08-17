@@ -12,15 +12,17 @@ Positionen zusammen. Die Frage ist, ob das reicht.
 
 Was gemessen wurde
 ------------------
-Ueber 21 Regeln auf Tageskerzen, je drei t-Werte fuer dieselbe Regel:
+Ueber den **entdoppelten** Katalog - 15 Regeln, davon 12 mit positivem t-Wert
+und damit beurteilbar - je drei t-Werte fuer dieselbe Regel:
 
-                            Mittel
-    t roh (alle Trades)      1,500
-    t nach Gate-Kuerzung     1,489
-    t auf der Wochenachse    1,275
+    mittlere Luecke zwischen Zeit- und Gate-Kuerzung   11,7 %
+    davon deckt die Blockkuerzung ab                     32 %
 
-Die Kuerzung des Gates holt **elf Tausendstel** von 225, die die Zeitachse
-sieht. Sie fasst praktisch nichts an.
+Die erste Fassung dieses Moduls rechnete ueber 21 Genome und kam auf 20,2 %
+Luecke bei 15 % Deckung. Sechs dieser Genome liefern identische Trades; die
+siebenfach gezaehlte Regel ist ausgerechnet die mit 37 % Zeit-Luecke und ohne
+jede Gate-Kuerzung. Sie hat den Befund nicht verstaerkt, sondern erzeugt.
+Siehe ``research/entdopplung.py``.
 
 Warum die Wochenachse der ehrlichere Massstab ist
 -------------------------------------------------
@@ -34,11 +36,11 @@ Dieselben Trade-Ergebnisse zufaellig ueber dieselben Wochen verteilt. Dabei
 bleibt die Zahl der Trades gleich, ihre Werte bleiben gleich, nur **wann** sie
 anfallen wird zerwuerfelt.
 
-    Regel                        t Woche   Nullprobe   Anteil
-    Trend 50 Tage m. Konfluenz     3,102       3,164   -0,062
-    Trend-Beteiligung 200 Tage     1,776       2,241   -0,465
-    Trend beide Richtungen         1,756       2,201   -0,445
-    Trend-Beteiligung 100 Tage     2,108       2,299   -0,191
+    Regel                         t Woche   Nullprobe   Anteil
+    Trend 50 Tage m. Konfluenz      3,102       3,164   -0,062
+    Trend-Beteiligung (fair ger.)   1,776       2,241   -0,465
+    Trend beide Richtungen          1,756       2,201   -0,445
+    Trend-Beteiligung 100 Tage      2,108       2,299   -0,191
 
 Die Nullprobe landet jeweils dicht an der Trade-Achse - genau wie es sein
 muss. Der echte Wert liegt darunter.
@@ -56,9 +58,10 @@ sondern Haeufung plus Gleichlauf.
 Wo das wehtut
 -------------
 Am staerksten trifft es die Regeln mit **wenigen, guten** Trades - also genau
-die Hoffnungstraeger der Verbundsuche aus Befund 73:
+die Hoffnungstraeger der Verbundsuche aus Befund 73. Fuenf von zwoelf
+beurteilbaren Regeln liegen ueber der Schwelle:
 
-    'Trend-Beteiligung 200 Tage': 53 Trades, davon nach Zeitachse noch 33.
+    'Trend-Beteiligung (fair gerechnet)': 53 Trades, nach Zeitachse noch 33.
     Das Gate kuerzt dort **null**.
 
 In Befund 73 stand, der Verbund aus Spitze und dieser Regel hebe die Guete auf
@@ -218,11 +221,11 @@ class Zeitpruefung:
         und liesse sich hochskalieren. Sind sie es nicht, misst sie etwas
         anderes.
 
-        Gemessen -0,51 ueber 18 Regeln: Das Gate kuerzt tendenziell dort, wo
-        es nicht noetig ist, und laesst ungekuerzt, wo es noetig waere. Der
-        Grund liegt nahe - die Blockrechnung misst die Korrelation zwischen
-        Walk-Forward-Fenstern, also auf Jahresskala; die Zeitachse misst
-        Klumpung auf Wochenskala.
+        Auf dem entdoppelten Katalog -0,261 ueber 12 Regeln. Das ist ein
+        t-Wert von -0,86 und damit **nicht nachweisbar** - siehe
+        ``stelle_ist_belegt``. Der erste Anlauf mass -0,470 und schloss
+        daraus, das Gate kuerze gegenlaeufig; die Zahl kam aber daher, dass
+        eine Regel siebenfach im Katalog stand.
         """
         pruefbar = self.beurteilbare
         if len(pruefbar) < MINDESTREGELN:
@@ -232,6 +235,26 @@ class Zeitpruefung:
         if gate.std() == 0 or zeit.std() == 0:
             return None
         return float(np.corrcoef(gate, zeit)[0, 1])
+
+    @property
+    def stelle_ist_belegt(self) -> bool:
+        """Traegt die Stellenfrage einen Schluss - oder ist sie Rauschen?
+
+        Dieselbe Schranke wie in ``partnerkarte.urteil`` seit Befund 75:
+        unter |t| = 2 wird nichts geschlossen. Dort war es eine Korrelation
+        aus fuenf Punkten, hier eine aus zwoelf - und beide Male sah die Zahl
+        nach einer Aussage aus.
+        """
+        r = self.kuerzt_an_der_richtigen_stelle
+        n = len(self.beurteilbare)
+        if r is None or n < 4:
+            return False
+        # Ein perfekter Zusammenhang ist der staerkste Beleg, nicht der
+        # schwaechste - die Abfrage steht hier nur, weil der t-Wert bei
+        # |r| = 1 durch null teilt.
+        if abs(r) >= 1.0:
+            return True
+        return abs(r * ((n - 2) / (1 - r * r)) ** 0.5) >= 2.0
 
     @property
     def spuerbar_betroffene(self) -> list[Zeitbild]:
@@ -301,7 +324,7 @@ class Zeitpruefung:
             # Ein Mittelwert kann stimmen, waehrend jede einzelne Zeile
             # danebenliegt - der gefaehrlichere Fall, weil er wie Ordnung
             # aussieht. Deshalb steht die Stellenfrage auch hier.
-            if stelle is not None and stelle < 0.2:
+            if stelle is not None and stelle < 0.2 and self.stelle_ist_belegt:
                 teil += (
                     f"\n\n**Im Schnitt heisst aber nicht an der richtigen "
                     f"Stelle.** Was das Gate kuerzt, haengt mit dem, was die "
@@ -343,18 +366,29 @@ class Zeitpruefung:
             )
 
         if stelle is not None and stelle < 0.2:
-            richtung = (
-                "sogar gegenlaeufig" if stelle < 0 else "praktisch gar nicht"
-            )
-            teil += (
-                f"\n\n**Und es ist nicht bloss eine Frage der Staerke.** Was "
-                f"das Gate kuerzt, haengt mit dem, was die Zeitachse verlangt, "
-                f"{richtung} zusammen (r = {stelle:+.3f}). Eine zu schwach "
-                f"eingestellte Kuerzung liesse sich hochskalieren; diese "
-                f"nicht - sie misst die Korrelation zwischen Walk-Forward-"
-                f"Fenstern, also Jahresskala, und die Klumpung sitzt auf "
-                f"Wochenskala."
-            )
+            if self.stelle_ist_belegt:
+                richtung = (
+                    "sogar gegenlaeufig" if stelle < 0 else "praktisch gar nicht"
+                )
+                teil += (
+                    f"\n\n**Und es ist nicht bloss eine Frage der Staerke.** "
+                    f"Was das Gate kuerzt, haengt mit dem, was die Zeitachse "
+                    f"verlangt, {richtung} zusammen (r = {stelle:+.3f}). Eine "
+                    f"zu schwach eingestellte Kuerzung liesse sich "
+                    f"hochskalieren; diese nicht - sie misst die Korrelation "
+                    f"zwischen Walk-Forward-Fenstern, also Jahresskala, und "
+                    f"die Klumpung sitzt auf Wochenskala."
+                )
+            else:
+                teil += (
+                    f"\n\n**Ob es an der richtigen Stelle kuerzt, bleibt "
+                    f"offen.** Der Zusammenhang zwischen Gate- und "
+                    f"Zeit-Kuerzung liegt bei {stelle:+.3f}, ist bei "
+                    f"{len(pruefbar)} Regeln aber nicht nachweisbar. Ein "
+                    f"frueherer Anlauf hat daraus einen Schluss gezogen - die "
+                    f"Zahl kam von einer Regel, die siebenfach im Katalog "
+                    f"stand."
+                )
         return teil
 
 

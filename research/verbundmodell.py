@@ -45,34 +45,37 @@ Die Kontrolle traegt das ganze Modul: Fuer einzelne Beine stimmen beide Achsen
 ueberein (Bestand 3,216 gegen 3,102). Ohne sie waere jeder Unterschied beim
 Verbund genauso gut ein Artefakt der Aggregation.
 
-Was ueber 210 Paare herauskam
+Was ueber 105 Paare herauskam
 -----------------------------
-                     Mittel   Median
-    Karte             2,022    2,326
-    zusammengeworfen  2,271    2,433
-    Wochen (echt)     1,784    1,867
+Die erste Fassung rechnete ueber 210 Paare aus 21 Genomen. Sechs davon liefern
+identische Trades (``research/entdopplung.py``), also stammte die Haelfte der
+Paare aus derselben Regel. Entdoppelt bleiben 15 Regeln und 105 Paare, und
+eine der beiden Aussagen kippt:
 
-    Karte  - echt     +0,238   in 71 % der Paare zu hoch
-    Topf   - echt     +0,487   in 93 % der Paare zu hoch
+                          erste Fassung   entdoppelt
+    Karte  - echt                +0,238       -0,029
+    Topf   - echt                +0,487       +0,221
 
-Beide Trade-Formeln sind im Schnitt zu optimistisch. Der Auftrag war also zu
-**milde** gestellt, nicht zu streng - die Richtung, die zaehlt.
+**Die Karte ist im Mittel nicht zu optimistisch.** Der Satz "der Auftrag aus
+Befund 76 war zu milde gestellt" stand in der ersten Fassung und ist falsch -
+er beruhte auf der siebenfach gezaehlten Regel.
 
-Aber der Fehler ist nicht konstant. Er faehrt auf der Fensterkorrelation:
+Was haelt, ist der **zusammengeworfene Topf**: +0,221, zu hoch in 87 % der
+Paare. Das ist die Formel, mit der ``Verbund.kandidat`` rechnet.
 
-    Fehler der Karte = 1,595 * rho - 0,076        r = +0,752, t = 16,45
+Und was haelt, ist die eigentliche Aussage - der Fehler der Karte ist nicht
+konstant, sondern faehrt auf der Fensterkorrelation:
 
-    rho -0,39 bis -0,01   Fehler -0,274   (Karte zu niedrig)
-    rho -0,01 bis +0,16   Fehler +0,085
-    rho +0,16 bis +1,00   Fehler +1,000   (Karte zu hoch)
+    Fehler der Karte = 1,283 * rho - 0,112      r = +0,440, t = +4,97
 
-Die Karte stimmt bei rho = +0,05 und sonst nirgends. Das ist kein Zufall,
+Die Karte stimmt bei rho = +0,09 und sonst nirgends. Das ist kein Zufall,
 sondern genau die Annahme, die in ihr steckt: Ein trade-gewichteter Schnitt
-kennt keine Korrelation.
+kennt keine Korrelation. Der erste Anlauf mass hier +0,752 - dieselbe Aussage,
+zu grosse Zahl.
 
 Der Verdacht aus Befund 85 ist damit bestaetigt
 -----------------------------------------------
-In 28 % der Paare **unterschaetzt** die Karte, und zwar dort, wo die Beine
+In 42 von 105 Paaren **unterschaetzt** die Karte, und zwar dort, wo die Beine
 gegenlaeufig sind. Die deutlichsten Faelle:
 
     VWAP-Rueckkehr short + Donchian 55/20      Karte -0,177   echt 1,730
@@ -85,11 +88,12 @@ Hedge-Wert, den eine Rechnung ohne Zeitachse nicht sehen kann.
 
 Und warum es trotzdem keinen Weg oeffnet
 ----------------------------------------
-Das beste Paar von 210 erreicht **3,585**. Die Faustformel aus Befund 71 haette
-das beinahe zu einem Fund gemacht:
+Das beste Paar erreicht **3,585** - dieselbe Zahl vor und nach der
+Entdopplung, denn es besteht aus Bestand und Donchian und war nie doppelt. Die
+Faustformel aus Befund 71 haette es beinahe zu einem Fund gemacht:
 
     c(210) = 2,781  ->  Schranke 4,337   (alle Paare gezaehlt)
-    c(21)  = 1,922  ->  Schranke 3,549   (nur die 21 Regeln gezaehlt)
+    c(21)  = 1,922  ->  Schranke 3,549   (nur die Regeln gezaehlt)
 
 Gegen die konservative Schranke liegt 3,585 knapp **darueber** - Abstand 0,036
 bei einer Streuung von 0,918, also vier Hundertstel Standardabweichungen. Das
@@ -108,8 +112,9 @@ verdienen:
 
 Der gemessene Wert liegt nicht bloss unter dem Perzentil, sondern unter dem
 **Median**: Zufaellig gegeneinander verschobene Regeln ergeben im Schnitt ein
-besseres bestes Paar als die echten. Das Zusammenspiel dieser 21 Regeln ist
-also nicht neutral, sondern leicht schaedlich - sie verdienen zu gleichzeitig.
+besseres bestes Paar als die echten. Das Zusammenspiel dieser Regeln ist also
+nicht neutral, sondern leicht schaedlich - sie verdienen zu gleichzeitig. Die
+Entdopplung aendert daran nichts (3,683 gegen 3,682).
 
 Die Korrektur aendert also das **Bild**, nicht den Stand: Die Partnerkarte
 sortiert nach der falschen Groesse und uebersieht Hedge-Partner - aber unter
@@ -124,7 +129,7 @@ Anforderung.
 
 Kostet keinen Versuch: Neu aggregiert werden Trades, die schon gerechnet sind.
 Ausgewaehlt wird nichts. Wer eines der Paare als Kandidaten prueft, hat
-dagegen eine Auswahl ueber 210 Hypothesen getroffen und muss sie zaehlen.
+dagegen eine Auswahl ueber 105 Hypothesen getroffen und muss sie zaehlen.
 """
 
 from __future__ import annotations
@@ -272,7 +277,12 @@ class Modellpruefung:
 
         Die tragende Messung: Ein trade-gewichteter Schnitt kennt keine
         Korrelation, also muss sein Fehler an ihr haengen, wenn die Korrelation
-        wirkt. Gemessen +0,752 ueber 210 Paare.
+        wirkt.
+
+        Auf dem entdoppelten Katalog +0,440 ueber 105 Paare (t = +4,97). Der
+        erste Anlauf mass +0,752 ueber 210 Paare, von denen die Haelfte aus
+        sechs Genomen mit identischen Trades stammte - siehe
+        ``research/entdopplung.py``. Die Aussage haelt, die Zahl war zu gross.
         """
         if not self.genug:
             return None
@@ -281,6 +291,24 @@ class Modellpruefung:
         if rho.std() == 0 or f.std() == 0:
             return None
         return float(np.corrcoef(rho, f)[0, 1])
+
+    @property
+    def kopplung_ist_belegt(self) -> bool:
+        """Traegt der Zusammenhang einen Schluss - oder ist er Rauschen?
+
+        Dieselbe Schranke wie in ``partnerkarte.urteil`` seit Befund 75: unter
+        |t| = 2 wird nichts geschlossen.
+        """
+        r = self.fehler_faehrt_auf_korrelation
+        n = len(self.paare)
+        if r is None or n < 4:
+            return False
+        # Ein perfekter Zusammenhang ist der staerkste Beleg, nicht der
+        # schwaechste - die Abfrage steht hier nur, weil der t-Wert bei
+        # |r| = 1 durch null teilt.
+        if abs(r) >= 1.0:
+            return True
+        return abs(r * ((n - 2) / (1 - r * r)) ** 0.5) >= 2.0
 
     @property
     def gerade(self) -> tuple[float, float, float] | None:
@@ -425,18 +453,34 @@ class Modellpruefung:
 
         kf, kanteil = self.kartenfehler
         tf, tanteil = self.topffehler
+        # Die Ueberschrift richtet sich nach den Zahlen, nicht umgekehrt. Die
+        # erste Fassung behauptete "beide sind zu optimistisch" und druckte
+        # daneben -0,029 - der Satz stammte aus einer Stichprobe mit sieben
+        # Kopien derselben Regel und blieb stehen, als die Zahl kippte.
+        zu_hoch = [
+            name
+            for name, wert in (("die Partnerkarte", kf), ("der Topf", tf))
+            if wert > 0.1
+        ]
+        if len(zu_hoch) == 2:
+            kopf = "**Beide Trade-Formeln sind zu optimistisch.**"
+        elif zu_hoch:
+            kopf = (
+                f"**Von den beiden Trade-Formeln ist nur {zu_hoch[0]} zu "
+                f"optimistisch.**"
+            )
+        else:
+            kopf = "**Keine der beiden Trade-Formeln liegt im Schnitt zu hoch.**"
         teil = (
-            f"**Beide Trade-Formeln sind zu optimistisch.** Gegen die "
-            f"Wochenreihe gemessen liegt die Partnerkarte im Schnitt um "
-            f"{kf:+.3f} daneben (zu hoch in {kanteil:.0%} von "
+            f"{kopf} Gegen die Wochenreihe gemessen liegt die Partnerkarte im "
+            f"Schnitt um {kf:+.3f} daneben (zu hoch in {kanteil:.0%} von "
             f"{len(self.paare)} Paaren), die zusammengeworfene Trade-Liste um "
-            f"{tf:+.3f} (zu hoch in {tanteil:.0%}). Der Auftrag aus Befund 76 "
-            f"war also zu **milde** gestellt, nicht zu streng."
+            f"{tf:+.3f} (zu hoch in {tanteil:.0%})."
         )
 
         r = self.fehler_faehrt_auf_korrelation
         gerade = self.gerade
-        if r is not None and gerade is not None:
+        if r is not None and gerade is not None and self.kopplung_ist_belegt:
             steigung, _, null = gerade
             teil += (
                 f"\n\n**Der Fehler faehrt auf der Fensterkorrelation** "

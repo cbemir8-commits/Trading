@@ -288,3 +288,55 @@ class TestGrenzen:
 
         assert grenzfall.mittlere_luecke == pytest.approx(SPUERBAR)
         assert grenzfall.gate_kuerzt_genug
+
+
+class TestNachweisschwelle:
+    """Die Korrektur aus Befund 88.
+
+    Die erste Fassung schloss aus r = -0,470 ueber 18 Regeln, das Gate kuerze
+    gegenlaeufig. Entdoppelt sind es -0,261 ueber 12 Regeln, also t = -0,86 -
+    nicht nachweisbar. Dieselbe Schranke wie in ``partnerkarte.urteil`` seit
+    Befund 75: unter |t| = 2 wird nichts geschlossen.
+    """
+
+    def test_ein_schwacher_zusammenhang_traegt_keinen_schluss(self) -> None:
+        wuerfel = np.random.default_rng(88)
+        bilder = []
+        for i in range(12):
+            # Unabhaengig gezogen, damit die Korrelation schwach bleibt - und
+            # mit genug Abstand, damit der Zweig greift, der auf den echten
+            # Daten greift (Luecke 11,7 % ueber der Schwelle von 10 %).
+            gate = float(wuerfel.uniform(0.0, 0.20))
+            zeit = float(wuerfel.uniform(0.10, 0.60))
+            bilder.append(
+                Zeitbild(
+                    name=f"r{i}", trades=100, t_roh=2.0,
+                    t_gate=2.0 * (1 - gate) ** 0.5,
+                    t_woche=2.0 * (1 - zeit) ** 0.5, t_null=2.0,
+                )
+            )
+        pruefung = Zeitpruefung(bilder=bilder)
+
+        r = pruefung.kuerzt_an_der_richtigen_stelle
+        assert r is not None and abs(r) < 0.5
+        assert not pruefung.stelle_ist_belegt
+        urteil = pruefung.urteil()
+        assert "bleibt offen" in urteil
+        assert "nicht nachweisbar" in urteil
+        assert "gegenlaeufig" not in urteil
+
+    def test_ein_starker_zusammenhang_traegt_ihn_doch(self) -> None:
+        """Gegenprobe: Die Schranke blockiert nicht alles. Bei klarer
+        Gegenlaeufigkeit ueber genug Regeln faellt der Schluss."""
+        stark = [
+            bild(name=f"hoch{i}", roh=2.0, gate=1.7, woche=1.98, null=2.0)
+            for i in range(7)
+        ]
+        schwach = [
+            bild(name=f"tief{i}", roh=2.0, gate=2.0, woche=1.0, null=2.0)
+            for i in range(7)
+        ]
+        pruefung = Zeitpruefung(bilder=stark + schwach)
+
+        assert pruefung.stelle_ist_belegt
+        assert "gegenlaeufig" in pruefung.urteil()
