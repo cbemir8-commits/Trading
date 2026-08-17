@@ -82,6 +82,14 @@ class Schwelle:
 RENDITE = Schwelle("Rendite", "cagr", 15.0, mindestens=True)
 RUECKGANG = Schwelle("Rueckgang", "rueckgang", 12.0, mindestens=False)
 
+#: Die dritte, seit Befund 93. Sie gehoert dazu, sobald ueber Mischungen
+#: gerechnet wird: Eine Beimischung senkt Rendite **und** Risiko, und ob
+#: dabei etwas uebrig bleibt, entscheidet sich an allen drei Grenzen
+#: zugleich - nicht an zweien.
+SCHLECHTESTES_JAHR = Schwelle(
+    "Schlechtestes Jahr", "schlechtestes_jahr", -10.0, mindestens=True
+)
+
 
 @dataclass(frozen=True, slots=True)
 class Messpunkt:
@@ -125,6 +133,63 @@ def lade(ordner: Path | str, *, regler: str = "Vola-Ziel") -> list[Messpunkt]:
     return sorted(gefunden.values(), key=lambda p: p.stellung)
 
 
+def kennzahlen_der_kurve(kurve, *, monate: float) -> dict[str, float]:
+    """Rendite, Rueckgang und schlechtestes Jahr einer Kapitalkurve.
+
+    An **einer** Stelle, weil sonst der Reglerpfad und der Mischpfad zwei
+    Umsetzungen derselben drei Groessen haetten - genau die Sorte Abweichung,
+    die in diesem Projekt schon fuenfmal aufgetreten ist.
+    """
+    import numpy as np
+
+    werte = np.asarray(kurve, dtype=float)
+    if len(werte) < 3 or monate <= 0 or werte[0] <= 0:
+        return {}
+    hoch = np.maximum.accumulate(werte)
+    aus = {
+        "cagr": (float(werte[-1] / werte[0]) ** (12.0 / monate) - 1.0) * 100.0,
+        "rueckgang": float(np.max((hoch - werte) / hoch) * 100.0),
+    }
+    spanne = int(len(werte) * 12.0 / monate)
+    if 2 <= spanne < len(werte):
+        aus["schlechtestes_jahr"] = float(
+            np.min(werte[spanne:] / werte[:-spanne] - 1.0) * 100.0
+        )
+    return aus
+
+
+def mischpunkte(
+    basis, partner, *, monate: float, gewichte=None
+) -> list[Messpunkt]:
+    """Die Kennzahlen einer Mischung aus zwei Kapitalkurven, je Gewicht.
+
+    Das Gewicht ist hier die **Stellung** - dieselbe Achse wie beim
+    Groessenregler, nur mit anderer Bedeutung: 0,0 ist der reine Bestand,
+    1,0 der reine Partner.
+
+    Gemischt werden die **Periodenrenditen**, nicht die Kurven. Zwei Kurven
+    zu mitteln hiesse, den Zinseszins zweimal zu zaehlen; ein Portfolio
+    verteilt dagegen das Kapital und teilt sich damit die Renditen.
+    """
+    import numpy as np
+
+    a = np.asarray(basis, dtype=float)
+    b = np.asarray(partner, dtype=float)
+    if len(a) != len(b) or len(a) < 3:
+        return []
+    ra = np.diff(a) / a[:-1]
+    rb = np.diff(b) / b[:-1]
+    stufen = [0.0, 0.25, 0.5, 0.75, 1.0] if gewichte is None else list(gewichte)
+
+    punkte = []
+    for w in stufen:
+        gemischt = np.concatenate([[1.0], np.cumprod(1.0 + (1 - w) * ra + w * rb)])
+        werte = kennzahlen_der_kurve(gemischt, monate=monate)
+        if werte:
+            punkte.append(Messpunkt(stellung=float(w), werte=werte))
+    return punkte
+
+
 @dataclass(slots=True)
 class Vereinbarkeit:
     """Zwei Schwellen, eine Reglerkurve, eine Ja-Nein-Frage."""
@@ -133,21 +198,28 @@ class Vereinbarkeit:
     punkte: list[Messpunkt] = field(default_factory=list)
     a: Schwelle = RENDITE
     b: Schwelle = RUECKGANG
+    weitere: list[Schwelle] = field(default_factory=list)
+    """Zusaetzliche Schwellen, seit Befund 93. ``a`` und ``b`` bleiben, wo
+    sie sind - der Reglerfall hat zwei, und eine Umstellung haette jede
+    vorhandene Auswertung angefasst, um nichts zu gewinnen."""
+
+    @property
+    def schwellen(self) -> tuple[Schwelle, ...]:
+        return (self.a, self.b, *self.weitere)
 
     @property
     def treffer(self) -> list[Messpunkt]:
-        """Punkte, die **beide** Schwellen zugleich erfuellen."""
+        """Punkte, die **alle** Schwellen zugleich erfuellen."""
         return [
             p
             for p in self.punkte
-            if self.a.erfuellt(p.wert(self.a.kennzahl))
-            and self.b.erfuellt(p.wert(self.b.kennzahl))
+            if all(s.erfuellt(p.wert(s.kennzahl)) for s in self.schwellen)
         ]
 
     def _fehlbetrag(self, punkt: Messpunkt) -> float | None:
-        """Wie viel an beiden Schwellen zusammen fehlt. 0 = erfuellt."""
+        """Wie viel an allen Schwellen zusammen fehlt. 0 = erfuellt."""
         fehlt = 0.0
-        for schwelle in (self.a, self.b):
+        for schwelle in self.schwellen:
             abstand = schwelle.abstand(punkt.wert(schwelle.kennzahl))
             if abstand is None:
                 return None
@@ -180,23 +252,22 @@ class Vereinbarkeit:
         return None
 
     def tabelle(self) -> str:
-        zeilen = [
-            f"{'Stellung':>9} {self.a.name:>10} {self.b.name:>10}  Urteil",
-            "-" * 46,
-        ]
+        kopf = "".join(f"{s.name[:10]:>11}" for s in self.schwellen)
+        zeilen = [f"{'Stellung':>9}{kopf}  Urteil", "-" * (24 + 11 * len(self.schwellen))]
         for p in sorted(self.punkte, key=lambda x: x.stellung):
-            wert_a = p.wert(self.a.kennzahl)
-            wert_b = p.wert(self.b.kennzahl)
+            werte = ""
             marken = []
-            if not self.a.erfuellt(wert_a):
-                marken.append(f"{self.a.name} fehlt")
-            if not self.b.erfuellt(wert_b):
-                marken.append(f"{self.b.name} reisst")
+            for schwelle in self.schwellen:
+                wert = p.wert(schwelle.kennzahl)
+                werte += f"{wert if wert is not None else float('nan'):>10.2f}%"
+                if not schwelle.erfuellt(wert):
+                    marken.append(
+                        f"{schwelle.name} "
+                        + ("fehlt" if schwelle.mindestens else "reisst")
+                    )
             zeilen.append(
-                f"{p.stellung:>9g} "
-                f"{wert_a if wert_a is not None else float('nan'):>9.2f}% "
-                f"{wert_b if wert_b is not None else float('nan'):>9.2f}%  "
-                f"{', '.join(marken) or 'beide erfuellt'}"
+                f"{p.stellung:>9g}{werte}  "
+                f"{', '.join(marken) or 'alle erfuellt'}"
             )
         return "\n".join(zeilen)
 
@@ -204,10 +275,11 @@ class Vereinbarkeit:
         if not self.punkte:
             return "Keine Messpunkte - nichts zu entscheiden."
 
+        benannt = " und ".join(str(s) for s in self.schwellen)
         if self.treffer:
             stellungen = ", ".join(f"{p.stellung:g}" for p in self.treffer[:4])
             return (
-                f"**{self.a} und {self.b} sind vereinbar.** Auf dem Regler "
+                f"**{benannt} sind vereinbar.** Auf dem Regler "
                 f"'{self.regler}' erfuellen {len(self.treffer)} von "
                 f"{len(self.punkte)} gemessenen Stellungen beide zugleich "
                 f"({stellungen}).\n\n"
@@ -230,16 +302,17 @@ class Vereinbarkeit:
         naeher = ""
         if eng is not None:
             fehlt = self._fehlbetrag(eng)
+            gemessen = ", ".join(
+                f"{s.name} {eng.wert(s.kennzahl):.2f} %" for s in self.schwellen
+            )
             naeher = (
-                f" Am wenigsten fehlt bei {eng.stellung:g}: "
-                f"{self.a.name} {eng.wert(self.a.kennzahl):.2f} %, "
-                f"{self.b.name} {eng.wert(self.b.kennzahl):.2f} % - "
+                f" Am wenigsten fehlt bei {eng.stellung:g}: {gemessen} - "
                 f"zusammen {fehlt:.2f} Punkte zu wenig."
             )
         return (
-            f"**{self.a} und {self.b} sind auf diesem Regler nicht zugleich "
+            f"**{benannt} sind auf diesem Regler nicht zugleich "
             f"erfuellbar.** Keine der {len(self.punkte)} gemessenen Stellungen "
-            f"haelt beide.{wo}{naeher}\n\n"
+            f"haelt alle.{wo}{naeher}\n\n"
             f"Damit ist der Satz aus stand.py beziffert statt behauptet. Was "
             f"daraus folgt, ist eine wirtschaftliche Entscheidung und keine "
             f"statistische - sie liegt beim Nutzer."

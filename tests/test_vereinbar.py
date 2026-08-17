@@ -18,6 +18,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from research.vereinbar import (
     RENDITE,
     RUECKGANG,
@@ -194,3 +196,147 @@ class TestLaden:
 
     def test_ein_leerer_ordner_gibt_nichts(self, tmp_path: Path) -> None:
         assert lade(tmp_path) == []
+
+
+class TestDritteSchwelle:
+    """Die Erweiterung aus Befund 94.
+
+    Sobald ueber **Mischungen** gerechnet wird, reichen zwei Schwellen nicht:
+    Eine Beimischung senkt Rendite und Risiko zugleich, und ob dabei etwas
+    uebrig bleibt, entscheidet sich an allen drei Grenzen.
+    """
+
+    def punkte(self):
+        from research.vereinbar import Messpunkt
+
+        # Der Bestand und ein Partner, der das schlechteste Jahr rettet und
+        # dabei die Rendite unter die Schwelle drueckt - das gemessene Muster.
+        return [
+            Messpunkt(
+                stellung=0.0,
+                werte={"cagr": 13.47, "rueckgang": 10.64, "schlechtestes_jahr": -10.32},
+            ),
+            Messpunkt(
+                stellung=0.5,
+                werte={"cagr": 9.52, "rueckgang": 8.93, "schlechtestes_jahr": -5.08},
+            ),
+        ]
+
+    def test_zwei_schwellen_wuerden_hier_einen_treffer_melden(self) -> None:
+        """**Der Grund fuer die Erweiterung.**
+
+        Bei Gewicht 0,5 sind Rueckgang und schlechtestes Jahr erfuellt - wer
+        nur Rendite und Rueckgang prueft, sieht dort keinen Treffer, wer nur
+        die beiden Risikoschwellen prueft, sieht einen. Erst alle drei
+        zusammen sagen, was Sache ist.
+        """
+        from research.vereinbar import (
+            RUECKGANG,
+            SCHLECHTESTES_JAHR,
+            Vereinbarkeit,
+        )
+
+        nur_risiko = Vereinbarkeit(
+            regler="Verbund", punkte=self.punkte(),
+            a=RUECKGANG, b=SCHLECHTESTES_JAHR,
+        )
+
+        assert len(nur_risiko.treffer) == 1
+        assert nur_risiko.treffer[0].stellung == 0.5
+
+    def test_mit_der_renditeschwelle_bleibt_nichts(self) -> None:
+        from research.vereinbar import SCHLECHTESTES_JAHR, Vereinbarkeit
+
+        alle = Vereinbarkeit(
+            regler="Verbund", punkte=self.punkte(), weitere=[SCHLECHTESTES_JAHR]
+        )
+
+        assert len(alle.schwellen) == 3
+        assert alle.treffer == []
+        urteil = alle.urteil()
+        assert "Schlechtestes Jahr >= -10" in urteil
+        assert "haelt alle" in urteil
+
+    def test_der_fehlbetrag_summiert_ueber_alle_drei(self) -> None:
+        from research.vereinbar import SCHLECHTESTES_JAHR, Vereinbarkeit
+
+        alle = Vereinbarkeit(
+            regler="Verbund", punkte=self.punkte(), weitere=[SCHLECHTESTES_JAHR]
+        )
+        eng = alle.engste
+
+        assert eng is not None
+        # Bei 0,0 fehlen 1,53 Rendite und 0,32 schlechtestes Jahr = 1,85.
+        # Bei 0,5 fehlen 5,48 Rendite und sonst nichts.
+        assert eng.stellung == 0.0
+
+    def test_ohne_weitere_bleibt_alles_wie_vorher(self) -> None:
+        """Die Erweiterung darf den Reglerfall nicht anfassen."""
+        from research.vereinbar import RENDITE, RUECKGANG, Vereinbarkeit
+
+        zwei = Vereinbarkeit(regler="Vola-Ziel", punkte=self.punkte())
+
+        assert zwei.schwellen == (RENDITE, RUECKGANG)
+        assert zwei.treffer == []
+
+
+class TestMischpunkte:
+    def test_gemischt_werden_renditen_und_nicht_kurven(self) -> None:
+        """**Zwei Kurven zu mitteln zaehlt den Zinseszins zweimal.**
+
+        Ein Portfolio verteilt das Kapital und teilt sich die Renditen. Bei
+        zwei identischen Kurven muss jede Mischung dieselbe Kurve ergeben -
+        das ist die Probe darauf.
+        """
+        import numpy as np
+
+        from research.vereinbar import mischpunkte
+
+        kurve = np.cumprod(np.full(400, 1.002))
+        punkte = mischpunkte(kurve, kurve, monate=93.0)
+
+        assert len(punkte) == 5
+        werte = {round(p.wert("cagr"), 6) for p in punkte}
+        assert len(werte) == 1, "identische Beine muessen identisch mischen"
+
+    def test_die_stellung_ist_das_gewicht_des_partners(self) -> None:
+        import numpy as np
+
+        from research.vereinbar import mischpunkte
+
+        steigend = np.cumprod(np.full(400, 1.003))
+        flach = np.ones(400)
+        punkte = {p.stellung: p for p in mischpunkte(steigend, flach, monate=93.0)}
+
+        assert punkte[0.0].wert("cagr") > punkte[1.0].wert("cagr")
+        assert punkte[1.0].wert("cagr") == pytest.approx(0.0, abs=0.01)
+
+    def test_ungleich_lange_kurven_liefern_nichts(self) -> None:
+        import numpy as np
+
+        from research.vereinbar import mischpunkte
+
+        assert mischpunkte(np.ones(400), np.ones(300), monate=93.0) == []
+        assert mischpunkte(np.ones(2), np.ones(2), monate=93.0) == []
+
+    def test_die_kennzahlen_kommen_aus_einer_stelle(self) -> None:
+        """Reglerpfad und Mischpfad duerfen nicht zwei Umsetzungen derselben
+        drei Groessen haben."""
+        import numpy as np
+
+        from research.vereinbar import kennzahlen_der_kurve
+
+        kurve = np.concatenate([np.linspace(1.0, 1.5, 200), np.linspace(1.5, 1.2, 200)])
+        werte = kennzahlen_der_kurve(kurve, monate=93.0)
+
+        assert set(werte) == {"cagr", "rueckgang", "schlechtestes_jahr"}
+        assert werte["rueckgang"] == pytest.approx(20.0, abs=0.5)
+        assert werte["cagr"] > 0
+
+    def test_eine_entartete_kurve_liefert_nichts(self) -> None:
+        import numpy as np
+
+        from research.vereinbar import kennzahlen_der_kurve
+
+        assert kennzahlen_der_kurve(np.array([1.0, 2.0]), monate=93.0) == {}
+        assert kennzahlen_der_kurve(np.zeros(400), monate=93.0) == {}

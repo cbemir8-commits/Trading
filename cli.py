@@ -5179,6 +5179,10 @@ def vereinbar(
     regler: str = typer.Option("Vola-Ziel", "--regler", "-r"),
     rendite: float = typer.Option(15.0, "--rendite", help="Mindestrendite in %."),
     rueckgang: float = typer.Option(12.0, "--rueckgang", help="Hoechster Rueckgang."),
+    mit_jahr: bool = typer.Option(
+        False, "--mit-jahr",
+        help="Das schlechteste Jahr als dritte Schwelle mitpruefen.",
+    ),
 ) -> None:
     """Sind Mindestrendite und Rueckgangsgrenze zugleich erfuellbar?
 
@@ -5199,7 +5203,12 @@ def vereinbar(
     Liest nur vorhandene Berichte - kostet keinen Versuch. Neue Stellungen
     misst ``cli machbarkeit``, und die zaehlt.
     """
-    from research.vereinbar import Schwelle, Vereinbarkeit, lade
+    from research.vereinbar import (
+        SCHLECHTESTES_JAHR,
+        Schwelle,
+        Vereinbarkeit,
+        lade,
+    )
 
     punkte = lade(Path.cwd() / "reports" / "machbarkeit", regler=regler)
     lage = Vereinbarkeit(
@@ -5207,6 +5216,10 @@ def vereinbar(
         punkte=punkte,
         a=Schwelle("Rendite", "cagr", rendite, mindestens=True),
         b=Schwelle("Rueckgang", "rueckgang", rueckgang, mindestens=False),
+        # Die dritte Schwelle seit Befund 94. Standardmaessig aus, weil die
+        # aelteren Machbarkeitsberichte sie nicht enthalten - dort waere jeder
+        # Punkt "nicht beurteilbar" und das Urteil damit wertlos.
+        weitere=[SCHLECHTESTES_JAHR] if mit_jahr else [],
     )
 
     console.print(f"\n[bold]Vereinbarkeit[/] auf dem Regler '{regler}'\n")

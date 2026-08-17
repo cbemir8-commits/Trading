@@ -8025,3 +8025,102 @@ nicht zwei Probleme, sondern eines. Wer den Abwaertsmarkt loest, loest beide.
 
 Versuchsstand 177 unveraendert - zerlegt wurde eine Kapitalkurve, die ohnehin
 gerechnet wird. Suchbudget 47 von 100. 1815 Tests gruen.
+
+## Vierundneunzig. Kein Verbund trifft das Rechteck - 231 Kombinationen geprueft
+
+Befund 93 endete mit einem Schluss: Der Deflated Sharpe und das schlechteste
+Jahr haengen am selben Befund - der Bestand verdient im Abwaertsmarkt nichts.
+Daraus folgt eine Frage, die nie gestellt wurde: **Welche vorhandene Regel
+wuerde das schlechteste Jahr retten, und rettet dieselbe auch den Rest?**
+
+### Der erste Blick, und warum er nicht reicht
+
+Verbund aus Bestand und Partner, halbes Gewicht, schlechtestes Jahr der
+gemeinsamen Kurve. **Zehn von dreizehn Regeln heben es ueber -10 %.** Das
+sieht nach einem Durchbruch aus.
+
+Er ist keiner, und der Grund steht in derselben Rechnung: Halbes Gewicht
+halbiert auch die Rendite. Und die Rendite ist bereits das Problem - der
+Bestand steht bei 13,47 % gegen geforderte 15 %.
+
+    Partner (halbes Gewicht)         schl.Jahr    CAGR   Rueckgang
+    Donchian-Ausbruch 55/20             -10,77   15,30       12,59
+    Trend beide Richtungen               -5,08    9,52        8,93
+    Trend-Beteiligung (fair ger.)        -6,50   10,25        7,32
+    Vola-Ziel, kurzes Messfenster        -6,98    9,63        7,14
+    Trend-Beteiligung voller Einsatz     -7,79   10,77        9,75
+    Momentum-Beteiligung 90 Tage        -14,65    9,39       14,81
+    Trend-Beteiligung 50 Tage           -19,91   14,84       20,27
+
+Das Muster ist eindeutig: **Sechs Partner retten Risiko und drueecken die
+Rendite auf 9 bis 11 %. Der einzige, der die Rendite hebt, reisst beide
+Risikoschwellen.** Alle drei zugleich: null von elf.
+
+### Die Gewichtung als Ausweg - auch nicht
+
+Halbes Gewicht ist eine Wahl. Also alle Gewichte von 0,00 bis 1,00 in
+Schritten von 0,05, fuer jeden Partner:
+
+    11 Partner x 21 Gewichte = 231 Kombinationen, **kein einziger Treffer.**
+
+Am naechsten kommt der Donchian-Verbund: Rendite 15,30 %, Rueckgang 12,59 %,
+schlechtestes Jahr -10,77 % - zusammen **1,37 Punkte** zu wenig ueber die drei
+Grenzen.
+
+### Was das erweitert
+
+``cli vereinbar`` misst diesen Konflikt seit Befund 57 entlang eines
+**Groessenreglers**: Geht die Kurve durch das erlaubte Rechteck? Zehn
+Stellungen, kein Treffer, am naechsten 0,82 Punkte.
+
+Jetzt kommt eine zweite Achse dazu, und sie fuehrt zum selben Ergebnis. Der
+Konflikt ist damit nicht mehr eine Eigenschaft **einer** Kurve, sondern des
+ganzen vorhandenen Materials: weder durch Skalieren noch durch Mischen
+erreichbar.
+
+``research/vereinbar.py`` traegt deshalb jetzt beides. Erweitert wurde das
+vorhandene Modul und kein zweites gebaut - der Reglerfall und der Mischfall
+haetten sonst zwei Umsetzungen derselben drei Kennzahlen, und genau das ist
+in diesem Projekt schon fuenfmal auseinandergelaufen.
+
+### Warum die dritte Schwelle dazugehoert
+
+Mit zwei Schwellen ist die Lage nicht zu beurteilen. Bei Gewicht 0,5 mit
+'Trend beide Richtungen' sind Rueckgang **und** schlechtestes Jahr erfuellt -
+wer nur diese beiden prueft, sieht einen Treffer. Erst die Rendite zeigt, dass
+dort 9,52 % stehen.
+
+Eine Beimischung senkt Rendite und Risiko zugleich. Ob dabei etwas uebrig
+bleibt, entscheidet sich an allen drei Grenzen, nicht an zweien.
+
+### Zwei Dinge, die beim Messen fast schiefgegangen waeren
+
+**Die Groessenlogik.** Der erste Durchlauf normalisierte alle Beine auf
+``vola_ziel 19.3`` - richtig fuer den Vergleich zwischen Partnern, aber der
+Bestand stand dann bei -13,15 % statt der -10,32 % des Gates. Die
+Verbundzahlen waeren gegen einen anderen Bestand gerechnet gewesen als den,
+um den es geht. Der zweite Durchlauf laesst jedem Genom seine eigene
+Groessenlogik, und der Bestand trifft das Gate auf die zweite Stelle.
+
+**Das Mischen.** Gemischt werden die Periodenrenditen, nicht die Kurven. Zwei
+Kapitalkurven zu mitteln zaehlt den Zinseszins zweimal; ein Portfolio verteilt
+das Kapital und teilt sich die Renditen. Als Test steht die Probe da: Zwei
+identische Beine muessen in jeder Mischung dieselbe Kurve ergeben.
+
+### Was daraus folgt
+
+1. **Der Verbundweg ist auch fuer die Risikogates zu.** Befund 86 hatte ihn
+   fuer den Deflated Sharpe geschlossen (bestes Paar unter dem Nullmedian),
+   jetzt gilt dasselbe fuer Rendite, Rueckgang und schlechtestes Jahr
+   zusammen.
+2. **Der Konflikt liegt an den Schwellen, nicht an der Strategie.** Weder
+   Skalieren noch Mischen erreicht das Rechteck. Die Aufloesung ist eine
+   wirtschaftliche Entscheidung und liegt beim Nutzer - so steht es seit
+   jeher in ``gates.py``.
+3. Ein Treffer waere auch kein Betriebspunkt gewesen. 231 Kombinationen
+   durchzuprobieren und die beste zu nehmen ist genau die Anpassung, gegen
+   die die Zulassungsstrecke gebaut ist.
+
+Versuchsstand 177 unveraendert - gemischt wurden Kapitalkurven, die schon
+gerechnet waren, und kein Kandidat ausgewaehlt. Suchbudget 47 von 100. 1824
+Tests gruen.
