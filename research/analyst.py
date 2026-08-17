@@ -210,6 +210,7 @@ def build_prompt(
     regime_findings: str = "",
     count: int = PROPOSALS_PER_CYCLE,
     lage=None,
+    ausschluesse=None,
 ) -> str:
     """Den Auftrag zusammenstellen.
 
@@ -224,6 +225,12 @@ def build_prompt(
     Trade-Schwelle darin (100) liegt unter dem, was gebraucht wird. Der
     Analyst hat also auf das falsche Ziel optimiert, und niemand hat es ihm
     gesagt. Ohne ``lage`` bleibt der Auftrag, wie er war.
+
+    ``ausschluesse`` ist eine ``ausschluss.Ausschluesse`` und traegt die
+    andere Haelfte nach: **was gemessen und geschlossen ist.** Ohne sie
+    schlaegt der Analyst weiter Regelarten vor, die durchgemessen sind - in
+    Befund 83 waren zwei von vier eigenen Vorschlaegen aus einer Familie, die
+    Befund 84 dann geschlossen hat.
     """
     parts: list[str] = []
 
@@ -275,6 +282,14 @@ def build_prompt(
 
     if lage is not None:
         parts.append(lage.als_auftrag())
+
+    # Nach dem Auftrag und vor der Aufgabe: Erst was gebraucht wird, dann was
+    # dafuer ausscheidet. Umgekehrt liest sich der Prompt als Verbotsliste mit
+    # angehaengtem Ziel.
+    if ausschluesse is not None:
+        text = ausschluesse.als_auftrag()
+        if text:
+            parts.append(text)
 
     parts.append(f"## Auftrag\n\nSchlage {count} neue Genome vor.")
     parts.append(
@@ -379,6 +394,7 @@ def propose(
     count: int = PROPOSALS_PER_CYCLE,
     max_tokens: int = 4000,
     lage=None,
+    ausschluesse=None,
 ) -> AnalystResult:
     """Einen Forschungszyklus durchfuehren.
 
@@ -402,6 +418,7 @@ def propose(
         regime_findings=regime_findings,
         count=count,
         lage=lage,
+        ausschluesse=ausschluesse,
     )
 
     response = client.complete(system=SYSTEM_PROMPT, prompt=prompt, max_tokens=max_tokens)

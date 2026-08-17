@@ -7604,3 +7604,97 @@ jetzt kleiner, als sie waren, und einer davon in seiner Hauptaussage
 hinfaellig.
 
 Versuchsstand 177 unveraendert. Suchbudget 47 von 100. 1752 Tests gruen.
+
+## Neunundachtzig. Der Analyst wusste nicht, was schon zu ist
+
+Vier Laeufe hintereinander waren Diagnose oder Korrektur. Die Instrumente sind
+jetzt gut, und sie sagen alle dasselbe: Im vorhandenen Regelvorrat gibt es
+keinen Weg. Der Katalog ist als Partnerquelle durch (0 von 15), acht
+selbstgebaute Regeln sind gescheitert, alle Regler sind ausgemessen.
+
+Damit bleibt genau eine Quelle fuer neue Hypothesen: die Research-KI. Sie ist
+seit Phase 6 gebaut und laeuft in ``cli research`` - aber sie bekam einen
+Auftrag, der die Haelfte des Wissens nicht enthielt.
+
+### Zwei Punkte von der offenen Liste, ehrlich geklaert
+
+**P7 ist gebaut.** ``data/termine.py`` (21 kB), ``cli termine`` holt die
+FOMC-Historie ab 2012, und ``_terminkalender`` haengt denselben Kalender an
+Backtest **und** Handel. Der Punkt steht seit Laeufen auf der Liste und ist
+erledigt; ich habe ihn nicht neu gebaut, sondern nachgesehen.
+
+**Die Research-KI wird im Wettbewerb nicht genutzt - das stimmt.**
+``cli research`` ruft sie, ``cli wettbewerb`` nicht. Das ist aber nicht der
+Engpass: Ein zweiter Aufrufpfad wuerde dieselben untauglichen Vorschlaege
+erzeugen wie in Befund 83. Der Engpass ist der Auftrag.
+
+Dazu die harte Grenze dieses Containers: **ANTHROPIC_API_KEY ist nicht
+gesetzt.** Ich kann die KI hier nicht laufen lassen, nur den Auftrag bauen und
+ohne Netz pruefen.
+
+### Was dem Auftrag fehlte
+
+``build_prompt`` gab bisher: erlaubte Indikatoren, fuenf Zulassungsschwellen,
+die letzten sechs Journaleintraege und - seit einem frueheren Lauf - den
+gemessenen Auftrag aus ``auftragslage``. Es fehlte die andere Haelfte: **was
+gemessen und geschlossen ist.**
+
+Genau daran ist Befund 83 gescheitert. Zwei meiner vier eigenen Vorschlaege
+kamen aus der Rueckkehr-zum-Mittel-Familie - die Befund 84 dann geschlossen
+hat. Derselbe Weg stand dem Analysten offen, und nichts hielt ihn davon ab.
+
+``research/ausschluss.py`` traegt jetzt drei Dinge in den Auftrag:
+
+1. **Geschlossene Familien.** Auf den Messwerten ist genau eine zu:
+   Rueckkehr, fuenf Regeln, auch die beste liegt 0,815 unter der Geraden.
+   Struktur, Trend, Ausbruch und Volumen bleiben offen, weil dort jeweils
+   mindestens eine Regel darueber liegt.
+2. **Die acht selbstgebauten Fehlschlaege** aus Befund 77 und 83. Sie stehen
+   nicht im Journal, weil sie ausserhalb des Research-Loops entstanden sind -
+   dem Analysten fehlten sie deshalb vollstaendig.
+3. **Den Zielkonflikt.** Der Auftrag verlangt Qualitaet je Trade **und**
+   Unabhaengigkeit vom Bestand; ueber 22 Regeln laufen die beiden mit +0,480
+   gegeneinander.
+
+### Zwei Entscheidungen, die die Ausschluesse eng halten
+
+**Massgeblich ist die beste Regel einer Familie, nicht ihr Mittel.** Sonst
+schliesst ein Ausreisser nach unten eine Familie zu, in der etwas Brauchbares
+steht. Deshalb sind nur Familien zu, in denen **keine** Regel ueber der
+Geraden liegt.
+
+**Ohne bestandene Permutationsprobe wird gar nichts ausgeschlossen.** Ein
+falscher Ausschluss ist teurer als ein fehlender: Er schliesst einen Weg zu,
+den danach niemand mehr prueft. Haelt die Gruppierung dem Zufall nicht stand,
+darf sie keine Vorschlaege verhindern - auch wenn einzelne Familien
+geschlossen aussehen.
+
+Und der Zielkonflikt steht als **Begruendung, nicht als Verbot**: "Ein
+Vorschlag, der beides erfuellt, waere eine Ausnahme von einem gemessenen
+Muster - und genau danach wird gesucht." Wer das weiss, sucht anders als wer
+es nicht weiss.
+
+### Eine Wahrheit statt zwei
+
+Die Familienzuordnung lebte bisher nur in ``tests/test_familien.py``. Der
+Auftrag braucht sie im Produktivcode - und wenn beide auseinanderlaufen, sagt
+der Befund etwas anderes als der Auftrag. ``familien.familie_von`` ordnet
+jetzt ueber Schluesselwoerter zu, und ein Test verlangt, dass sie die
+handgeschriebene Zuordnung fuer alle 22 Regeln exakt trifft. Sie tut es.
+
+Regeln ohne Zuordnung fallen **heraus** statt in einen Topf "Sonstige" - das
+waere eine Familie, die keine ist, und ueber die dann eine Spannweite
+gerechnet wuerde. Betroffen sind zwei Katalogregeln.
+
+### Was das bringt und was nicht
+
+Der Prompt waechst um rund 1,5 kB. Ob die Vorschlaege dadurch besser werden,
+ist **nicht gemessen und hier nicht messbar** - dazu braeuchte es einen
+Modellaufruf, und der Schluessel fehlt in diesem Container. Was gemessen ist:
+Der Auftrag enthaelt jetzt, was er vorher nicht enthielt, in der richtigen
+Reihenfolge, und ohne Ausschluesse ist der Prompt zeichengleich mit vorher.
+
+Das verschiebt keine Schwelle und bewegt den Stand nicht. Es raeumt eine
+Ursache aus, die in Befund 83 nachweislich Versuche gekostet hat.
+
+Versuchsstand 177 unveraendert. Suchbudget 47 von 100. 1767 Tests gruen.

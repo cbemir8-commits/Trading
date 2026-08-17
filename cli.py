@@ -1436,7 +1436,11 @@ def _ask_the_analyst(settings, journal_path: Path) -> list:
                 tried.add(candidate["genome_id"])
 
     client = AnthropicClient(settings.llm.anthropic_api_key.get_secret_value())
-    result = propose(client, journal=journal, budget=budget, already_tried=tried)
+    result = propose(
+        client, journal=journal, budget=budget, already_tried=tried,
+        lage=_auftragslage(Path(settings.paths.state)),
+        ausschluesse=_ausschluesse(),
+    )
     save_budget(budget_path, budget)
 
     console.print(f"[dim]{result.summary()}[/]")
@@ -1567,6 +1571,44 @@ def _auftragslage(zustand: Path):
         bestand_sharpe=0.2591,
         # Aus Befund 75, ueber 14 Genome der Tageskerzen-Generationen.
         kopplung=-0.533,
+    )
+
+
+def _ausschluesse():
+    """Was gemessen und geschlossen ist - fuer den Auftrag an den Analysten.
+
+    Gegenstueck zu ``_auftragslage``: Die eine Haelfte sagt, was gebraucht
+    wird, diese sagt, was dafuer ausscheidet. Ohne sie schlaegt der Analyst
+    weiter Regelarten vor, die durchgemessen sind - in Befund 83 waren zwei
+    von vier eigenen Vorschlaegen aus der Rueckkehr-Familie, die Befund 84
+    dann geschlossen hat.
+
+    Die Regeln stehen als Messwerte da und werden nicht neu gerechnet: Ein
+    Walk-Forward ueber 22 Genome nur fuer den Auftragstext waere Rechenzeit
+    fuer nichts. Die Familienzuordnung kommt aus ``familien.familie_von`` und
+    nicht aus einer zweiten Liste - Regeln ohne Zuordnung fallen heraus,
+    statt in einen Topf "Sonstige" zu wandern.
+    """
+    from research.ausschluss import (
+        GEMESSENE_REGELN,
+        GESCHEITERTE_EIGENBAUTEN,
+        aus_familienbild,
+    )
+    from research.familien import Familienbild, Regel, familie_von
+
+    regeln = []
+    for name, trades, sharpe, rho in GEMESSENE_REGELN:
+        familie = familie_von(name)
+        if familie is None:
+            continue
+        regeln.append(
+            Regel(
+                name=name, trades=trades, sharpe_je_trade=sharpe,
+                familie=familie, rho=rho,
+            )
+        )
+    return aus_familienbild(
+        Familienbild(regeln=regeln), gescheiterte=GESCHEITERTE_EIGENBAUTEN
     )
 
 
@@ -2629,7 +2671,10 @@ def vorschlag(
     if auftrag:
         console.print(SYSTEM_PROMPT)
         console.print(
-            build_prompt(journal=[], thresholds=GateThresholds(), lage=lage)
+            build_prompt(
+                journal=[], thresholds=GateThresholds(), lage=lage,
+                ausschluesse=_ausschluesse(),
+            )
         )
         return
 
@@ -2658,7 +2703,8 @@ def vorschlag(
         herkunft = "Analyst"
 
     ergebnis = propose(
-        client, journal=[], budget=budget, already_tried=bekannt, lage=lage
+        client, journal=[], budget=budget, already_tried=bekannt, lage=lage,
+        ausschluesse=_ausschluesse(),
     )
     if datei is None:
         save_budget(state / "budget.json", budget)

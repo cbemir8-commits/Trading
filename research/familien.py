@@ -74,6 +74,47 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+#: Regellogik -> Familie, in **dieser Reihenfolge** geprueft.
+#:
+#: Das ist eine Einordnung und keine Messung: Welcher Familie eine Regel
+#: angehoert, steht in ihrer Logik und nicht in ihren Zahlen. Sie hier
+#: abzulegen ist trotzdem noetig, weil sonst nur der Test weiss, wie die 22
+#: gemessenen Regeln gruppiert waren - und der Auftrag an den Analysten haengt
+#: daran.
+#:
+#: Die Reihenfolge traegt: 'Rueckkehr zum Volumenschwerpunkt' enthaelt beide
+#: Schluesselwoerter und gehoert zu 'Rueckkehr'. Wer die Liste umsortiert,
+#: aendert eine Zuordnung.
+FAMILIENSCHLUESSEL: tuple[tuple[str, str], ...] = (
+    ("Rueckkehr", "Rueckkehr"),
+    ("VWAP", "Rueckkehr"),
+    ("Bollinger", "Rueckkehr"),
+    ("Ueberverkauft", "Rueckkehr"),
+    ("Donchian", "Ausbruch"),
+    ("Enge", "Ausbruch"),
+    ("Volumenschock", "Volumen"),
+    ("Kerze", "Volumen"),
+    ("Trend", "Trend"),
+    ("Momentum", "Trend"),
+    ("Vola-Ziel", "Trend"),
+    ("Luecke", "Struktur"),
+    ("Abfolge", "Struktur"),
+    ("Abgriff", "Struktur"),
+)
+
+
+def familie_von(name: str) -> str | None:
+    """Die Familie einer Regel aus ihrem Namen - oder ``None``.
+
+    ``None`` statt einer Sammelfamilie: Eine Regel, die sich nicht einordnen
+    laesst, faellt aus der Auswertung heraus. Sie in einen Topf "Sonstige" zu
+    werfen hiesse, eine Familie zu bilden, die keine ist - und genau darueber
+    wuerde dann eine Spannweite gerechnet.
+    """
+    for schluessel, familie in FAMILIENSCHLUESSEL:
+        if schluessel.lower() in name.lower():
+            return familie
+    return None
 
 @dataclass(frozen=True, slots=True)
 class Regel:
