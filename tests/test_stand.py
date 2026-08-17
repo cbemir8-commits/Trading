@@ -11,6 +11,8 @@ Zwei Tests tragen die Datei:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from research.stand import (
@@ -20,6 +22,7 @@ from research.stand import (
     GESCHLOSSEN,
     Lage,
     Richtung,
+    zahlwort,
 )
 
 
@@ -62,6 +65,79 @@ class TestRichtung:
         namen = [r.name for r in GESCHLOSSEN]
 
         assert len(namen) == len(set(namen))
+
+    def test_jede_fundstelle_gibt_es_wirklich(self) -> None:
+        """**Der Test, der aus Befund 90 kommt.**
+
+        Die Liste behauptet zu jedem geschlossenen Weg eine Fundstelle. Wenn
+        eine Nummer ins Leere zeigt, ist der Eintrag eine Behauptung - und
+        genau darauf verlaesst sich ein Lauf, der wissen will, ob eine Frage
+        schon beantwortet ist. In Befund 90 habe ich eine 15-Minuten-Messung
+        wiederholt, die unter Nr. 29 laengst dastand.
+        """
+        import re
+
+        text = Path("strategies/BEFUND.md").read_text()
+        ueberschriften = set(re.findall(r"^## ([A-Za-zaeoeueAEOEUEss]+)\.", text, re.M))
+        fehlend = sorted(
+            {r.befund for r in GESCHLOSSEN if zahlwort(r.befund) not in ueberschriften}
+        )
+
+        assert fehlend == [], (
+            f"Fundstellen ohne Abschnitt im Laborbuch: {fehlend} "
+            f"(erwartet z.B. '## {zahlwort(fehlend[0])}.')" if fehlend else ""
+        )
+
+    def test_die_liste_reicht_bis_an_die_gegenwart(self) -> None:
+        """Bis Befund 90 endete sie bei Nr. 60 - und damit sah ein Lauf, der
+        hier nachschlug, den Stand von vor zwanzig Befunden. Eine Liste
+        geschlossener Wege, die dreissig Befunde hinterherhinkt, verhindert
+        genau die Wiederholung nicht, fuer die sie da ist."""
+        import re
+
+        text = Path("strategies/BEFUND.md").read_text()
+        nummern = [
+            n for n in range(1, 100)
+            if re.search(rf"^## {zahlwort(n)}\.", text, re.M)
+        ]
+        neuester = max(nummern)
+        juengste_fundstelle = max(r.befund for r in GESCHLOSSEN)
+
+        assert neuester - juengste_fundstelle <= 6, (
+            f"Laborbuch bei {neuester}, juengster Ausschluss bei "
+            f"{juengste_fundstelle} - die Liste haengt hinterher."
+        )
+
+
+class TestZahlwort:
+    """Nur zum Nachschlagen der Fundstellen - aber dann muss es stimmen."""
+
+    def test_die_teens_sind_sonderfaelle(self) -> None:
+        """Der erste Anlauf bildete 'Dreiundzehn' statt 'Dreizehn' und fand
+        drei Fundstellen nicht, die es gibt."""
+        assert zahlwort(13) == "Dreizehn"
+        assert zahlwort(14) == "Vierzehn"
+        assert zahlwort(17) == "Siebzehn"
+
+    def test_bei_den_zwanzigern_heisst_die_eins_ein(self) -> None:
+        assert zahlwort(21) == "Einundzwanzig"
+        assert zahlwort(1) == "Eins"
+
+    def test_glatte_zehner_haben_kein_und(self) -> None:
+        assert zahlwort(60) == "Sechzig"
+        assert zahlwort(70) == "Siebzig"
+        assert zahlwort(90) == "Neunzig"
+
+    def test_zusammengesetzte(self) -> None:
+        assert zahlwort(29) == "Neunundzwanzig"
+        assert zahlwort(53) == "Dreiundfuenfzig"
+        assert zahlwort(88) == "Achtundachtzig"
+
+    def test_jenseits_der_neunundneunzig_faellt_die_suche_sichtbar_aus(self) -> None:
+        """Ein leerer String findet keine Ueberschrift - dann schlaegt der
+        Fundstellen-Test an, statt still nichts zu pruefen."""
+        assert zahlwort(100) == ""
+        assert zahlwort(0) == ""
 
     def test_darstellung_nennt_ergebnis_und_fundstelle(self) -> None:
         text = str(Richtung("Mehr Maerkte", "keine neue Information", 27))

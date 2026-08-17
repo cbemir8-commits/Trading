@@ -72,8 +72,65 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     Richtung("Kanalausbruch", "strukturell neu, 5 von 11, Faktor 1,74", 53),
     Richtung("Umsatzfilter", "neue Informationsquelle, DSR 0,162", 53),
     Richtung("Rueckkehr zum Mittel", "Gegenthese gemessen: 1 von 11", 53),
+    # Ab hier die Wege, die seit Befund 70 geschlossen wurden. Sie fehlten
+    # bis Befund 90 vollstaendig - und damit sah ein Lauf, der hier nachsah,
+    # nur den Stand von vor zwanzig Befunden.
+    Richtung("Schiefe erhoehen", "Pearson-Grenze: Woelbung >= Schiefe^2 + 1", 70),
+    Richtung("Woelbung senken", "unter 1 mathematisch unmoeglich", 70),
+    Richtung("Trade-Zahl heben", "Kopplung -0,53 ueber 22 Regeln", 75),
+    Richtung("Katalog als Partner", "0 von 15 Genomen taugen", 74),
+    Richtung("Eigenbau-Partner", "8 Regeln aus Befund 77 und 83 gescheitert", 83),
+    Richtung("Familie Rueckkehr", "alle 5 unter der Geraden, Permutation haelt", 84),
+    Richtung("Phasen-Partner", "6 von 22 gegenlaeufig, 5 davon insgesamt wertlos", 85),
+    Richtung("Verbund aus dem Katalog", "bestes Paar 3,585 unter Nullmedian 3,683", 86),
+    Richtung("Sperrfrist", "Folgetrades schlechter, aber kein t-Wert ueber 2", 88),
 )
 
+
+
+#: Die deutschen Zahlwoerter, mit denen die Abschnitte im Laborbuch
+#: ueberschrieben sind ("## Fuenfundachtzig. ..."). Ohne sie laesst sich eine
+#: Fundstelle nicht maschinell nachschlagen - und eine Liste geschlossener
+#: Wege, deren Verweise niemand prueft, driftet still von der Wirklichkeit ab.
+_EINER = (
+    "", "Ein", "Zwei", "Drei", "Vier", "Fuenf", "Sechs", "Sieben", "Acht", "Neun",
+)
+_ZEHNER = (
+    "", "Zehn", "Zwanzig", "Dreissig", "Vierzig", "Fuenfzig", "Sechzig",
+    "Siebzig", "Achtzig", "Neunzig",
+)
+#: Zahlen, die nicht nach dem Muster gebildet werden. Die Teens (13 bis 19)
+#: heissen "dreizehn" und nicht "dreiundzehn"; bei den Zwanzigern heisst die
+#: Eins "ein" und nicht "eins".
+_SONDER = {
+    1: "Eins", 11: "Elf", 12: "Zwoelf", 13: "Dreizehn", 14: "Vierzehn",
+    15: "Fuenfzehn", 16: "Sechzehn", 17: "Siebzehn", 18: "Achtzehn",
+    19: "Neunzehn",
+}
+
+
+def zahlwort(n: int) -> str:
+    """Die Ueberschrift, unter der Befund ``n`` im Laborbuch steht.
+
+    Gebraucht wird das nur zum Nachschlagen: Ein Test prueft damit, dass jede
+    Fundstelle in ``GESCHLOSSEN`` auf einen Abschnitt zeigt, den es wirklich
+    gibt. Der erste Anlauf zu diesem Modul hat eine 15-Minuten-Messung
+    wiederholt, die in Befund 29 laengst stand - die Liste war richtig, nur
+    ungeprueft und unvollstaendig.
+    """
+    if not 1 <= n <= 99:
+        # Ueber 99 gaebe es "Hundertein" und Aehnliches. Statt das zu bauen,
+        # bevor es gebraucht wird, faellt die Suche hier sichtbar aus - ein
+        # leerer String findet keine Ueberschrift, und der Test schlaegt an.
+        return ""
+    if n in _SONDER:
+        return _SONDER[n]
+    if n < 10:
+        return _EINER[n]
+    zehner, einer = divmod(n, 10)
+    if einer == 0:
+        return _ZEHNER[zehner]
+    return f"{_EINER[einer]}und{_ZEHNER[zehner].lower()}"
 
 
 @dataclass(frozen=True, slots=True)

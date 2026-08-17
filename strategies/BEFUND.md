@@ -7698,3 +7698,90 @@ Das verschiebt keine Schwelle und bewegt den Stand nicht. Es raeumt eine
 Ursache aus, die in Befund 83 nachweislich Versuche gekostet hat.
 
 Versuchsstand 177 unveraendert. Suchbudget 47 von 100. 1767 Tests gruen.
+
+## Neunzig. Ich habe eine beantwortete Frage neu gestellt
+
+Dieser Lauf begann mit einer Beobachtung, die richtig war, und einem Schluss,
+der falsch war.
+
+Richtig: Befund 54 bis 89 laufen ausnahmslos auf Tageskerzen, der Katalog
+enthaelt zwei Generationen fuer 15-Minuten-Kerzen, und die Daten liegen im
+Speicher - 222.700 Kerzen je Markt. Falsch: dass daraus eine offene Frage
+folgt.
+
+**Sie ist in Befund 15 und 16 beantwortet.** Zwoelf Scans ueber vier Maerkte
+und vier Intervalle, null Funde; auf 15 Minuten ist nach Kosten nichts zu
+holen. Und in Befund 29 stehen die 14 Kandidaten, die dort brutto verlieren.
+
+### Wie weit ich gekommen bin, bevor es auffiel
+
+Ich habe die Daten geprueft, einen Lauf getimt, alle 14 Genome im Hintergrund
+messen lassen - und dabei ``research/taktung.py`` und
+``tests/test_taktung.py`` **ueberschrieben**, ohne sie vorher zu lesen. Beide
+existierten seit Befund 61 und beantworten genau dieselbe Frage: welche
+Kerzenlaenge den Deflated Sharpe arithmetisch tragen kann.
+
+Aufgefallen ist es erst, als ``ruff`` einen doppelten Befehlsnamen meldete.
+Beide Dateien sind aus ``git`` wiederhergestellt, die Messung wurde
+abgebrochen. Verbraucht wurden Rechenzeit und ein Lauf - keine Versuche, denn
+gemessen wurde nie ein Kandidat unter Gates.
+
+### Das Werkzeug, das mich gestoppt haette, gibt es
+
+``cli stand`` braucht **zehn Sekunden** und enthaelt seit Befund 62 die Zeile
+
+    15-Minuten-Kerzen      alle 14 Kandidaten verlieren brutto      Nr. 29
+
+und darunter woertlich: "Wer einen davon erneut misst, zahlt Versuche fuer ein
+Ergebnis, das schon dasteht."
+
+Ich habe in Schritt 1 des Ablaufs die Commits und den Versuchszaehler
+angesehen und ``cli stand`` nicht ausgefuehrt. Das ist kein Werkzeugproblem.
+
+### Was am Werkzeug trotzdem fehlte
+
+Beim Nachsehen zeigte sich ein echter Mangel: **Die Liste endete bei Befund
+60.** Alles, was seit Befund 70 geschlossen wurde, stand nicht darin - ein
+Lauf, der dort nachschlug, sah den Stand von vor dreissig Befunden. Neun
+Eintraege ergaenzt:
+
+    Schiefe erhoehen        Pearson-Grenze: Woelbung >= Schiefe^2 + 1   Nr. 70
+    Woelbung senken         unter 1 mathematisch unmoeglich             Nr. 70
+    Trade-Zahl heben        Kopplung -0,53 ueber 22 Regeln              Nr. 75
+    Katalog als Partner     0 von 15 Genomen taugen                     Nr. 74
+    Eigenbau-Partner        8 Regeln aus Befund 77 und 83 gescheitert   Nr. 83
+    Familie Rueckkehr       alle 5 unter der Geraden, Permutation haelt Nr. 84
+    Phasen-Partner          6 von 22 gegenlaeufig, 5 insgesamt wertlos  Nr. 85
+    Verbund aus dem Katalog bestes Paar 3,585 unter Nullmedian 3,683    Nr. 86
+    Sperrfrist              Folgetrades schlechter, kein t-Wert ueber 2 Nr. 88
+
+Damit stehen 26 geschlossene Wege da statt 17.
+
+### Und die Verweise werden jetzt geprueft
+
+Jeder Eintrag behauptet eine Fundstelle. Zeigt eine Nummer ins Leere, ist der
+Eintrag eine Behauptung - und genau darauf verlaesst sich ein Lauf, der wissen
+will, ob eine Frage schon beantwortet ist.
+
+``stand.zahlwort`` bildet die Befundnummer auf die Ueberschrift im Laborbuch
+ab ("## Neunundzwanzig."), und zwei Tests pruefen: **jede** der 22
+Fundstellen existiert, und die juengste liegt hoechstens sechs Befunde hinter
+dem Laborbuch. Die zweite Schranke ist die wichtigere - sie schlaegt an, sobald
+die Liste wieder hinterherhaengt.
+
+Der erste Anlauf der Zahlwortfunktion bildete "Dreiundzehn" statt "Dreizehn"
+und fand drei Fundstellen nicht, die es gibt. Die Teens stehen jetzt als
+Sonderfaelle da, und ueber 99 faellt die Suche sichtbar aus statt still.
+
+### Was daraus folgt
+
+1. **Schritt 1 des Ablaufs heisst ``cli stand``**, nicht nur ``git log``. Zehn
+   Sekunden gegen einen verlorenen Lauf.
+2. **Vor dem Schreiben lesen.** Ich habe zwei Dateien ueberschrieben, weil ich
+   ihre Namen fuer frei hielt. Das Schreibwerkzeug hat "updated" gemeldet, nicht
+   "created" - der Hinweis stand da.
+3. Der Stand bewegt sich durch diesen Lauf **nicht**. Er raeumt eine Ursache
+   aus, die ihn heute einen Lauf gekostet hat.
+
+Versuchsstand 177 unveraendert - es wurde kein Kandidat unter Gates gemessen.
+Suchbudget 47 von 100. 1774 Tests gruen.
