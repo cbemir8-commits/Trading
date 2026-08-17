@@ -7265,3 +7265,131 @@ ist eine Pruefung der eigenen Formel, keine Kandidatensuche.
 
 Versuchsstand 177 unveraendert - zerlegt wurden Trades, die ohnehin gerechnet
 waren. Suchbudget 47 von 100. 1719 Tests gruen.
+
+## Sechsundachtzig. Die Formel, an der acht Regeln gemessen und verworfen wurden
+
+Befund 85 endete mit einer offenen Frage: ``verbund_guete`` nimmt an, dass
+Unabhaengigkeit nur die effektive Stichprobe verkleinert, nicht die Streuung -
+bei gegenlaeufigen Beinen tut sie das aber. Ob das Modell den Wert eines
+solchen Partners unterschaetzt, war nicht gemessen.
+
+Es gehoert geprueft, weil viel daran haengt. Der Auftrag aus Befund 76 - "ein
+Partner braucht rund 0,26 Sharpe je Trade bei 120 Trades" - steht ganz auf
+``partnerkarte.verbund_sharpe``. Acht selbstgebaute Regeln aus Befund 77 und
+83 wurden daran gemessen und verworfen. Ist die Formel schief, waren alle acht
+an der falschen Latte gemessen.
+
+### Zwei Formeln fuer dieselbe Groesse
+
+Beim Nachsehen kamen gleich zwei zum Vorschein, die nebeneinander leben:
+
+``partnerkarte.verbund_sharpe`` bildet den trade-gewichteten Schnitt der
+beiden Sharpes - damit rechnet die Karte, die den Auftrag stellt.
+``Verbund.kandidat`` nimmt den Sharpe der **zusammengeworfenen** Trade-Liste -
+damit rechnet der Verbund, der den Auftrag einloest. Bei ungleichen
+Mittelwerten oder Streuungen ist das nicht dieselbe Zahl. Genau davor warnt
+der Kommentar in ``Kandidat.aus_trades``, und genau das war wieder passiert.
+
+Beide arbeiten auf der Trade-Ebene, und dort gibt es keine Zeitachse.
+
+### Die Vergleichsgroesse und ihre Kontrolle
+
+``research/verbundmodell.py`` und ``cli verbundmodell`` legen beide Beine auf
+ein gemeinsames Wochenraster, addieren die Ertraege je Woche und nehmen davon
+den t-Wert. ``Guete = SR/Trade * sqrt(n)`` ist ein t-Wert, und
+``SR/Woche * sqrt(Wochen)`` ist derselbe t-Wert auf anderer Achse - bei
+unabhaengigen Trades sind sie identisch, und das ist nachrechenbar und nicht
+behauptet.
+
+Die Kontrolle steht deshalb im Bericht: Fuer einzelne Beine muessen beide
+Achsen uebereinstimmen. Sie tun es (Bestand 3,216 gegen 3,102; groesste
+Abweichung ueber 21 Regeln 0,54). Ohne diese Kontrolle waere jeder Unterschied
+beim Verbund genauso gut ein Artefakt der Aggregation.
+
+### Was ueber 210 Paare herauskam
+
+                         Mittel   Median
+    Karte                 2,022    2,326
+    zusammengeworfen      2,271    2,433
+    Wochen (echt)         1,784    1,867
+
+    Karte  - echt         +0,238   zu hoch in 71 % der Paare
+    Topf   - echt         +0,487   zu hoch in 93 % der Paare
+
+Beide Trade-Formeln sind im Schnitt zu optimistisch. Der Auftrag aus Befund 76
+war also zu **milde** gestellt, nicht zu streng - die Richtung, die zaehlt.
+
+Der Fehler ist aber nicht konstant, sondern faehrt auf der Fensterkorrelation:
+
+    Fehler der Karte = 1,595 * rho - 0,076     r = +0,752, t = 16,45
+
+    rho -0,39 bis -0,01   Fehler -0,274   (Karte zu niedrig)
+    rho -0,01 bis +0,16   Fehler +0,085
+    rho +0,16 bis +1,00   Fehler +1,000   (Karte zu hoch)
+
+Die Karte stimmt bei rho = +0,05 und sonst nirgends. Das ist kein Zufall,
+sondern genau die Annahme, die in ihr steckt: Ein gewichteter Schnitt kennt
+keine Korrelation.
+
+### Der Verdacht aus Befund 85 ist bestaetigt
+
+In 60 von 210 Paaren **unterschaetzt** die Karte, und zwar dort, wo die Beine
+gegenlaeufig sind:
+
+    VWAP-Rueckkehr short + Donchian 55/20      Karte -0,177   echt 1,730
+    Luecke geschlossen   + Donchian 55/20      Karte +0,469   echt 1,935
+    VWAP-Rueckkehr short + Trend 100 Tage      Karte +0,217   echt 1,595
+
+'VWAP-Rueckkehr short' hat -0,123 Sharpe je Trade. Die Karte wirft sie sofort
+weg. Als Portfolio-Bein hebt sie einen Verbund auf 1,73. Das ist der
+Hedge-Wert, den eine Rechnung ohne Zeitachse nicht sehen kann - und der Grund,
+warum die Partnersuche nach der falschen Groesse sortiert.
+
+### Der Fehler, den ich dabei fast gemacht haette
+
+Das beste Paar von 210 erreicht 3,585. Die Faustformel aus Befund 71 gibt bei
+21 unabhaengigen Ziehungen eine Schranke von 3,549 - **darunter**, und das
+Urteil sagte prompt "schlaegt die eigene Auswahl. Das gehoert gerechnet."
+
+Der Abstand betraegt 0,036 bei einer Streuung von 0,918: vier Hundertstel
+Standardabweichungen. Es ist derselbe Fehler wie in Befund 71, nur andersherum:
+Die Schranke ist der **Erwartungswert** des Maximums, und die Haelfte aller
+reinen Rauschziehungen liegt darueber. Ein Maximum knapp daneben ist der
+Normalfall.
+
+Die richtige Null hat dieselbe Struktur wie die Messung. Jede Wochenreihe wird
+zyklisch verschoben - Mittelwert, Streuung und Eigenkorrelation jeder Regel
+bleiben exakt erhalten, zerstoert wird nur, **wann** die Regeln zusammen
+verdienen:
+
+    gemessen                    3,585
+    Nullprobe, Median           3,682
+    Nullprobe, 95. Perzentil    3,731
+
+Der gemessene Wert liegt nicht bloss unter dem Perzentil, sondern unter dem
+**Median**. Zufaellig gegeneinander verschobene Regeln ergeben im Schnitt ein
+besseres bestes Paar als die echten: Das Zusammenspiel dieser 21 Regeln ist
+nicht neutral, sondern leicht schaedlich. Sie verdienen zu gleichzeitig.
+
+### Was daraus folgt
+
+1. **Die Partnerkarte sortiert nach der falschen Groesse.** Sie ist nur bei
+   Unabhaengigkeit richtig, ueberschaetzt bei Gleichlauf und uebersieht
+   Hedge-Partner vollstaendig.
+2. **Der Auftrag war zu milde, nicht zu streng.** Die acht verworfenen Regeln
+   aus Befund 77 und 83 waeren an der richtigen Latte nicht besser
+   weggekommen, sondern schlechter.
+3. **Es oeffnet trotzdem keinen Weg.** Unter den Partnern, die die Karte
+   uebersieht, ist keiner, der reicht. Die Korrektur aendert das Bild, nicht
+   den Stand.
+
+### Was das nicht zeigt
+
+Der Wochen-t-Wert ist **roh**. Die noetige Guete von 3,629 ist nach
+Blockkuerzung definiert; ein roher Wert von 3,585 waere danach kleiner. Wer
+beide Zahlen nebeneinanderstellt, vergleicht eine Obergrenze mit einer
+Anforderung - hier steht die Nullprobe fuer die Aussage, nicht der Vergleich
+mit 3,629.
+
+Versuchsstand 177 unveraendert - neu aggregiert wurden Trades, die ohnehin
+gerechnet waren. Suchbudget 47 von 100. 1730 Tests gruen.

@@ -5334,6 +5334,126 @@ def anwaerter(
 
 
 @app.command()
+def verbundmodell(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    vola_ziel: float = typer.Option(19.3, "--vola-ziel"),
+    tage: int = typer.Option(7, "--periode", help="Laenge einer Periode in Tagen."),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Stimmt die Formel, mit der seit Befund 74 Partner bewertet werden?
+
+    Der Auftrag aus Befund 76 - "ein Partner braucht rund 0,26 Sharpe je Trade
+    bei 120 Trades" - steht auf ``partnerkarte.verbund_sharpe``. Acht
+    selbstgebaute Regeln wurden daran gemessen und verworfen. Ob die Formel
+    ueberhaupt trifft, war nie geprueft.
+
+    Geprueft wird gegen die **Wochenreihe**: beide Beine auf ein gemeinsames
+    Zeitraster gelegt, Ertraege je Woche addiert, davon der t-Wert. Das ist
+    dieselbe Einheit wie die Guete, nur auf einer Achse, die Gleichzeitigkeit
+    sehen kann.
+
+    Die Kontrolle steht mit im Bericht: Bei einzelnen Beinen muessen Trade- und
+    Wochenachse uebereinstimmen. Tun sie es nicht, misst der Paarvergleich die
+    Aggregation und nichts sonst.
+
+    **Kostet keinen Versuch.** Neu aggregiert werden Trades, die schon
+    gerechnet sind; ausgewaehlt wird nichts. Wer eines der Paare als Kandidaten
+    prueft, hat dagegen eine Auswahl ueber alle gezeigten Paare getroffen.
+    """
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.seeds import VORGESEHEN, load_seeds, spitzenkandidat
+    from research.verbundmodell import pruefe
+    from strategy.compiler import compile_genome
+    from strategy.genome import SizingSpec
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
+
+    def lauf(genome):
+        angepasst = genome.model_copy(
+            update={
+                "sizing": SizingSpec(
+                    kind="vola_ziel", fraction=3.0,
+                    target_vol_pct=vola_ziel, vol_period=30,
+                )
+            }
+        )
+        return run_portfolio_walkforward(
+            frames, lambda g=angepasst: compile_genome(g), configs
+        )
+
+    bestand = spitzenkandidat()
+    kandidaten = [bestand]
+    for gen in sorted(g for g, iv in VORGESEHEN.items() if iv == interval_obj.value):
+        kandidaten.extend(load_seeds(gen))
+
+    laeufe: dict[str, list] = {}
+    for genome in kandidaten:
+        trades = list(lauf(genome).all_trades)
+        # Unter dreissig Trades traegt der t-Wert einer Wochenreihe nichts -
+        # zu viele leere Perioden, und die Streuung wird von zwei Ausreissern
+        # bestimmt.
+        if len(trades) >= 30 and genome.name not in laeufe:
+            laeufe[genome.name] = trades
+
+    if len(laeufe) < 3:
+        console.print("[red]Zu wenige Regeln mit genug Trades.[/]")
+        raise typer.Exit(2)
+
+    console.print(
+        f"\n[bold]Verbundmodell[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Regeln     {len(laeufe)}\n"
+        f"  Periode    {tage} Tage\n"
+        f"  Historie   {spanne} Tage\n"
+    )
+
+    ergebnis = pruefe(laeufe, tage=tage)
+
+    console.print("[bold]Kontrolle: dieselbe Regel auf beiden Achsen[/]")
+    console.print(f"{'Regel':<36} {'t Trades':>9} {'t Wochen':>9} {'Diff':>8}")
+    for name, (auf_trades, auf_wochen) in sorted(
+        ergebnis.einzeln.items(), key=lambda x: -abs(x[1][0] - x[1][1])
+    )[:6]:
+        console.print(
+            f"{name[:36]:<36} {auf_trades:>9.3f} {auf_wochen:>9.3f} "
+            f"{auf_wochen - auf_trades:>+8.3f}"
+        )
+    farbe = "green" if ergebnis.achsen_stimmen_ueberein else "red"
+    console.print(
+        f"  [{farbe}]Die Achsen stimmen ueberein: "
+        f"{'ja' if ergebnis.achsen_stimmen_ueberein else 'NEIN'}[/]\n"
+    )
+
+    console.print(f"[bold]Die besten Paare von {len(ergebnis.paare)}[/]")
+    console.print(ergebnis.tabelle())
+    unter = ergebnis.unterschaetzte
+    if unter:
+        console.print("\n[bold]Wo die Karte am staerksten unterschaetzt[/]")
+        console.print(
+            f"{'Bein A':<26} {'Bein B':<26} {'rho':>6} {'Karte':>7} {'echt':>7}"
+        )
+        for p in unter[:5]:
+            console.print(
+                f"{p.a[:26]:<26} {p.b[:26]:<26} {p.korrelation:>+6.2f} "
+                f"{p.karte:>7.3f} {p.echt:>7.3f}"
+            )
+
+    farbe = "green" if ergebnis.schlaegt_die_auswahl else "yellow"
+    console.print(f"\n[{farbe}]{ergebnis.urteil()}[/]\n")
+    console.print(
+        "[dim]Der Versuchszaehler bleibt unveraendert - neu aggregiert wurden "
+        "Trades, die ohnehin gerechnet waren.[/]"
+    )
+
+
+@app.command()
 def phasen(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
