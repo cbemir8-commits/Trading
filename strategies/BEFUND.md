@@ -7393,3 +7393,101 @@ mit 3,629.
 
 Versuchsstand 177 unveraendert - neu aggregiert wurden Trades, die ohnehin
 gerechnet waren. Suchbudget 47 von 100. 1730 Tests gruen.
+
+## Siebenundachtzig. Das Gate kuerzt - aber nicht dort, wo es muesste
+
+Befund 86 hat gemessen, dass die Trade-Achse systematisch zu optimistisch ist.
+Dort ging es um Verbuende. Es betrifft aber genauso einzelne Kandidaten - und
+**das Zulassungs-Gate rechnet auf der Trade-Achse.**
+
+Das Gate kuerzt bereits: ``effektive_stichprobe`` misst die Korrelation
+zwischen Walk-Forward-Fenstern und fasst gleichzeitig offene Positionen
+zusammen. Ob das reicht, war nie geprueft. Und wenn es nicht reicht, faellt
+der Fehler zugunsten des Kandidaten aus - genau die Richtung, die der oberste
+Grundsatz verbietet.
+
+### Drei Achsen fuer dieselbe Regel
+
+``research/zeitachse.py`` und ``cli zeitachse`` rechnen je Regel drei t-Werte,
+ueber 21 Regeln auf Tageskerzen:
+
+                            Mittel
+    t roh (alle Trades)      1,500
+    t nach Gate-Kuerzung     1,489
+    t auf der Wochenachse    1,275
+
+Die Kuerzung des Gates holt elf Tausendstel von den 225, die die Zeitachse
+sieht. Sie deckt **15 %** dessen ab, was noetig waere.
+
+Dass es Zeitstruktur ist und kein Rechenartefakt, sagt die Nullprobe je Regel:
+dieselben Trade-Ergebnisse zufaellig ueber dieselben Wochen verteilt. Sie
+landet jeweils dicht an der Trade-Achse - genau wie es sein muss. Der echte
+Wert liegt darunter.
+
+### Was die Tests an meiner Deutung korrigiert haben
+
+Ich hatte geschrieben, die Trades "klumpen zeitlich". Der erste Testentwurf
+verlangte daraufhin, dass Dreierklumpen in derselben Woche die Stichprobe um
+ein Drittel kuerzen - und scheiterte mit 7 %. Zu Recht: Drei **unabhaengige**
+Trades aufsummiert ergeben einen Wert mit dreifachem Mittel und
+wurzel-dreifacher Streuung. Der t-Wert bleibt exakt erhalten.
+
+Klumpung allein kostet also gar nichts. Es kostet erst, wenn die Trades
+innerhalb eines Klumpens **gemeinsam** gewinnen oder verlieren. Beide Faelle
+stehen jetzt als Tests da, und die Beschreibung im Modul ist entsprechend
+praeziser.
+
+### Wo es wehtut
+
+Am staerksten trifft es die Regeln mit wenigen, guten Trades - also genau die
+Verbund-Anwaerter aus Befund 73:
+
+    Regel                        Trades   Gate kuerzt   Zeit verlangt
+    Trend-Beteiligung 200 Tage       53           0 %          37,2 %
+    Trend beide Richtungen          106           0 %          36,3 %
+    Trend-Beteiligung 100 Tage      109         8,3 %          15,9 %
+    Trend 50 Tage mit Konfluenz     154           0 %           3,9 %
+    Trend-Beteiligung 50 Tage       156        21,2 %           2,3 %
+
+In Befund 73 stand, der Verbund aus Spitze und 'Trend-Beteiligung 200 Tage'
+hebe die Guete auf 3,368 und den Deflated Sharpe auf 0,8602 - "der groesste
+Sprung, den in diesem Projekt je etwas gebracht hat". Fuer dieses Bein beruht
+die Zahl auf einer Achse, die es um ein Fuenftel zu gut bewertet.
+
+Der Bestand selbst ist kaum betroffen: 154 Trades, nach Zeitachse 148. Sein
+t-Wert faellt von 3,216 auf 3,102. Noetig sind 3,629 - der Abstand waechst von
+0,41 auf 0,53.
+
+### Die schaerfere Aussage
+
+"Kuerzt zu wenig" waere reparierbar: Man koennte die Blockkuerzung staerker
+einstellen. Die Messung sagt aber etwas anderes:
+
+    Zusammenhang zwischen Gate-Kuerzung und Zeit-Kuerzung:  r = -0,47
+
+**Gegenlaeufig.** Das Gate kuerzt tendenziell dort, wo es nicht noetig ist, und
+laesst ungekuerzt, wo es noetig waere - siehe die letzten beiden Zeilen der
+Tabelle oben. Hochskalieren hilft dagegen nicht, denn es misst etwas anderes:
+die Korrelation zwischen Walk-Forward-Fenstern liegt auf Jahresskala, die
+Klumpung sitzt auf Wochenskala.
+
+Ein zweiter Mangel kam aus den Tests: Der erste Entwurf meldete bei
+ausgeglichenem Mittelwert nur "haelt mit" und verschwieg die Stellenfrage. Ein
+Gate kann im Schnitt richtig kuerzen und in jeder einzelnen Zeile
+danebenliegen - der gefaehrlichere Fall, weil er wie Ordnung aussieht. Das
+Urteil sagt es jetzt in beiden Zweigen.
+
+### Was das ist und was nicht
+
+**Kein neues Gate und keine Aenderung an einem bestehenden.** Es ist eine
+Messung: Eine vorhandene Kuerzung tut weniger als gedacht, und der Fehler
+zeigt zugunsten des Kandidaten. Wer daraus ein Gate machen will, muss zuerst
+zeigen, dass die Wochenlaenge der richtige Massstab ist - hier steht nur, dass
+Trade- und Zeitachse auseinanderlaufen und um wieviel.
+
+Bei verlierenden Regeln dreht sich die Deutung um: Dort ist ein kleinerer
+Betrag eine Verbesserung. Sie stehen in der Tabelle gezeichnet und zaehlen in
+keiner Auswertung mit.
+
+Versuchsstand 177 unveraendert - neu aggregiert wurden Trades, die ohnehin
+gerechnet waren. Suchbudget 47 von 100. 1742 Tests gruen.

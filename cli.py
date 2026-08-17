@@ -5334,6 +5334,114 @@ def anwaerter(
 
 
 @app.command()
+def zeitachse(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    vola_ziel: float = typer.Option(19.3, "--vola-ziel"),
+    durchlaeufe: int = typer.Option(600, "--durchlaeufe", help="Zuege der Nullprobe."),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Kuerzt das Gate genug - oder nur dort, wo es ohnehin nicht wehtut?
+
+    Befund 86 hat gemessen, dass die Trade-Achse systematisch zu optimistisch
+    ist. Das Zulassungs-Gate rechnet auf der Trade-Achse und kuerzt die
+    Stichprobe ueber Fensterkorrelation und gleichzeitige Positionen. Ob das
+    reicht, war nie geprueft.
+
+    Verglichen werden drei t-Werte je Regel: roh, nach der Kuerzung des Gates,
+    und auf der Wochenachse. Dazu eine **Nullprobe** je Regel - dieselben
+    Trade-Ergebnisse zufaellig ueber dieselben Wochen verteilt. Sie muss dicht
+    an der Trade-Achse landen; tut sie es nicht, misst der Vergleich die
+    Aggregation und nicht die Zeitstruktur, und das Urteil sagt das.
+
+    **Kostet keinen Versuch.** Neu aggregiert werden Trades, die schon
+    gerechnet sind. Es wird nichts ausgewaehlt und kein Gate geaendert.
+    """
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.gates import concurrent_groups
+    from research.seeds import VORGESEHEN, load_seeds, spitzenkandidat
+    from research.suchbudget import Kandidat
+    from research.unabhaengigkeit import effektive_stichprobe
+    from research.zeitachse import messe
+    from strategy.compiler import compile_genome
+    from strategy.genome import SizingSpec
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
+
+    def lauf(genome):
+        angepasst = genome.model_copy(
+            update={
+                "sizing": SizingSpec(
+                    kind="vola_ziel", fraction=3.0,
+                    target_vol_pct=vola_ziel, vol_period=30,
+                )
+            }
+        )
+        return run_portfolio_walkforward(
+            frames, lambda g=angepasst: compile_genome(g), configs
+        )
+
+    kandidaten = [spitzenkandidat()]
+    for gen in sorted(g for g, iv in VORGESEHEN.items() if iv == interval_obj.value):
+        kandidaten.extend(load_seeds(gen))
+
+    laeufe: dict[str, list] = {}
+    gate_t: dict[str, float] = {}
+    for genome in kandidaten:
+        if genome.name in laeufe:
+            continue
+        bericht = lauf(genome)
+        trades = list(bericht.all_trades)
+        kandidat = Kandidat.aus_trades(genome.name, trades)
+        if len(trades) < 30 or kandidat is None:
+            continue
+        laeufe[genome.name] = trades
+        # Genau die Kuerzung, die das Zulassungs-Gate rechnet - uebergeben
+        # statt im Modul nachgebaut, damit es keine zweite Umsetzung gibt.
+        eigene = [[float(t.net_pnl) for t in w.trades] for w in bericht.windows]
+        gleichzeitig = [
+            [float(t.net_pnl) for t in g] for g in concurrent_groups(trades)
+        ]
+        st = effektive_stichprobe(
+            len(trades), None, eigene, weitere=[gleichzeitig]
+        )
+        gate_t[genome.name] = kandidat.sharpe_je_trade * st.effektiv**0.5
+
+    if len(laeufe) < 3:
+        console.print("[red]Zu wenige Regeln mit genug Trades.[/]")
+        raise typer.Exit(2)
+
+    console.print(
+        f"\n[bold]Zeitachse[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Regeln     {len(laeufe)}\n"
+        f"  Nullprobe  {durchlaeufe} Zuege je Regel\n"
+        f"  Historie   {spanne} Tage\n"
+    )
+
+    ergebnis = messe(laeufe, gate_t, durchlaeufe=durchlaeufe)
+    console.print(ergebnis.tabelle())
+
+    farbe = "green" if ergebnis.nullprobe_traegt else "red"
+    console.print(
+        f"\n  [{farbe}]Die Nullprobe landet an der Trade-Achse: "
+        f"{'ja' if ergebnis.nullprobe_traegt else 'NEIN'}[/]"
+    )
+    farbe = "green" if ergebnis.gate_kuerzt_genug else "yellow"
+    console.print(f"\n[{farbe}]{ergebnis.urteil()}[/]\n")
+    console.print(
+        "[dim]Der Versuchszaehler bleibt unveraendert - neu aggregiert wurden "
+        "Trades, die ohnehin gerechnet waren. Kein Gate wurde geaendert.[/]"
+    )
+
+
+@app.command()
 def verbundmodell(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
