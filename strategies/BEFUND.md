@@ -7785,3 +7785,77 @@ Sonderfaelle da, und ueber 99 faellt die Suche sichtbar aus statt still.
 
 Versuchsstand 177 unveraendert - es wurde kein Kandidat unter Gates gemessen.
 Suchbudget 47 von 100. 1774 Tests gruen.
+
+## Einundneunzig. Die eigene Tabelle zeigte in die falsche Richtung
+
+Dieser Lauf begann, wie der vorige geendet hat: mit ``cli stand``. Zehn
+Sekunden, und der Blick faellt zuerst auf die vier offenen Gates.
+
+    - Messlatte                   166.143 gegen     43.639
+    - Schlechtestes Jahr          -10.320 gegen    -10.000
+    - Deflated Sharpe               0.783 gegen      0.950
+    - Parameter-Plateau             0.500 gegen      0.600
+
+Mein erster Schluss daraus: Die Messlatte ist mit Faktor 3,8 das am weitesten
+entfernte Gate und gehoert zuerst angesehen. **Das war falsch, und zwar genau
+verkehrt herum.**
+
+### Was die Zeile wirklich sagt
+
+Bei diesem Gate ist ``value`` die Rendite der Strategie (+166,1 %) und
+``threshold`` die des auf ihren Rueckgang heruntergefahrenen Haltens
+(+43,6 %). Risikobereinigt ist das Gate also um das **3,8-fache
+uebererfuellt**. Es faellt an einer zweiten Bedingung durch, die im
+Zahlenpaar gar nicht vorkommt:
+
+    Strategie +166,1 % bei 10,6 % Rueckgang (+13,5 % p.a.), Halten +1195,4 %
+    bei 76,1 % - risikobereinigt besser, aber nur 13,5 % im Jahr. Unter 15 %
+    lohnt der Betrieb nicht.
+
+Die Erklaerung stand die ganze Zeit in ``GateResult.message``. Sie wurde nur
+nie angezeigt. Ein Gate mit zwei Bedingungen laesst sich nicht auf ein
+Zahlenpaar zusammenziehen - und eine Zeile, die plausibel aussieht und in die
+falsche Richtung zeigt, ist schlimmer als gar keine, weil niemand nachfragt.
+
+``cli stand`` zeigt die Botschaft jetzt unter jeder nicht bestandenen Zeile.
+
+### Die zweite Sache, die dabei auffiel
+
+Beim Nachlesen der uebrigen drei Botschaften zeigte sich, dass die vier
+offenen Gates **nicht vier gleichartige Aufgaben** sind:
+
+    Messlatte           gesetzte Schwelle - Geschaeftsentscheidung, nicht meine
+    Deflated Sharpe     durchgemessen, Befund 54 bis 89, alle Wege zu
+    Schlechtestes Jahr  nie untersucht - fehlen 0,32 Punkte
+    Parameter-Plateau   nie untersucht - 1 von 2 Nachbarn in zwei Richtungen
+
+**Fuenfzehn Laeufe gingen an den Deflated Sharpe.** Zwei Gates daneben sind in
+dieser Zeit kein einziges Mal angesehen worden, und eines liegt ueberhaupt
+nicht in meiner Hand. Der Abstand in der Tabelle sagt darueber nichts: 0,32
+Punkte beim Schlechtesten Jahr sind eine Eigenschaft der Kapitalkurve, 1,5
+Punkte Jahresrendite sind eine Setzung, und beide stehen in derselben Spalte.
+
+``research/gatelage.py`` ordnet die Hindernisse jetzt nach Art statt nach
+Abstand, und ``cli stand`` schliesst mit "WORAN DIE ARBEIT LIEGT".
+
+### Was an den beiden ungeprueften Gates steht
+
+**Schlechtestes Jahr**: Wer zum unguenstigsten Zeitpunkt eingestiegen waere,
+stuende nach zwoelf Monaten bei -10,3 % gegen erlaubte -10,0 %. Das ist eine
+Eigenschaft der Kapitalkurve und keine Frage der Signalqualitaet.
+
+**Parameter-Plateau**: Von sechs geprueften Richtungen tragen vier voll
+(2 von 2 Nachbarn). Schwach sind genau zwei - "alle gemeinsam" und
+``sma(period=50)``, jeweils 1 von 2. Beide betreffen dasselbe: das
+50-Tage-Kernsignal. Bei zwei Nachbarn je Richtung ist "1 von 2" allerdings
+eine sehr duenne Grundlage; ob dort wirklich eine Nadelspitze steht oder die
+Aufloesung zu grob ist, ist offen.
+
+### Was das nicht ist
+
+Kein Fortschritt an einem Gate. Die Zahlen sind unveraendert, und keine
+Schwelle wurde angefasst. Was sich geaendert hat, ist, dass die naechsten
+Laeufe an der richtigen Stelle ansetzen koennen - und dass eine Tabelle, die
+mich heute in die Irre gefuehrt hat, das nicht wieder tut.
+
+Versuchsstand 177 unveraendert. Suchbudget 47 von 100. 1785 Tests gruen.

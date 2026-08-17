@@ -6918,6 +6918,7 @@ def stand(
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
+    from research.gatelage import ordne
     from research.gates import evaluate_gates
     from research.seeds import spitzenkandidat
     from research.stand import Lage
@@ -7021,6 +7022,20 @@ def stand(
             f"  [{farbe}]{zeichen}[/] {r.name:24} {r.value:>10.3f} "
             f"gegen {r.threshold:>10.3f}"
         )
+        # **Ohne die Botschaft zeigt die Zeile teilweise in die falsche
+        # Richtung.** Bei der Messlatte liegt der Wert um das 3,8-fache ueber
+        # der Schwelle und das Gate faellt trotzdem durch, weil es eine zweite
+        # Bedingung hat. In Befund 91 habe ich das beim Lesen der eigenen
+        # Tabelle falsch herum verstanden.
+        if not r.passed and r.message:
+            console.print(f"      [dim]{r.message}[/]")
+
+    lage = ordne(gates.results)
+    if lage.hindernisse:
+        console.print()
+        console.print("WORAN DIE ARBEIT LIEGT")
+        console.print("-" * 72)
+        console.print(lage.urteil())
 
 
 if __name__ == "__main__":
