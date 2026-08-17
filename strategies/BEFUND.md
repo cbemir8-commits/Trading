@@ -7059,3 +7059,90 @@ wandert mit jeder Messung, und ein Test, der nach jedem Zyklus nachgezogen
 werden muss, sagt nichts mehr.
 
 Versuchsstand 177, Suchbudget 47 von 100. 1699 Tests gruen.
+
+## Vierundachtzig. Familien trennen - und Unabhaengigkeit kostet Qualitaet
+
+Befund 83 endete mit einem Verdacht: Die beiden Mean-Reversion-Regeln lagen
+mit z = -2,17 und -2,32 deutlich unter der Kopplungsgeraden. Nicht die
+Taktung, sondern die **Familie**?
+
+Ueber alle 22 gemessenen Regeln, nach Regellogik gruppiert:
+
+    Familie      n   Mittel z   Spanne
+    -------------------------------------------
+    Ausbruch     3     +0,93    +0,56 .. +1,14
+    Trend        5     +0,87    +0,43 .. +1,18
+    Volumen      3     +0,30    -0,16 .. +0,57
+    Struktur     6     -0,16    -0,91 .. +0,64
+    Rueckkehr    5     -1,41    -1,89 .. -0,81
+
+**Alle fuenf Rueckkehr-Regeln liegen unter der Geraden, alle acht aus Trend
+und Ausbruch darueber.** Kein Ueberschneidungsfall.
+
+### Die Gegenprobe, die das braucht
+
+Die Familien habe ich zugeordnet, **nachdem** ich die Werte kannte. Das ist
+der klassische Weg, ein Muster in Rauschen zu finden - man gruppiert, bis die
+Gruppen sich unterscheiden. Dass die Zuordnung der Regellogik folgt und nicht
+den Zahlen, behauptet sich leicht und prueft sich schwer.
+
+Permutation, dieselben Labels zufaellig verteilt:
+
+    Spannweite beobachtet          2,34
+    Nullverteilung, Mittel         1,14
+    Nullverteilung, 95. Perzentil  1,79
+    Anteil der Null darueber       0,20 %
+
+Die Trennung haelt. Bemerkenswert ist wieder die Breite der Null: Eine
+Spannweite von 1,1 faellt bei fuenf Familien und 22 Punkten **rein
+zufaellig** an. Wer ohne diese Gegenprobe gruppiert, findet immer etwas.
+
+### Und jetzt die unangenehme Haelfte
+
+Ueber die zwanzig Regeln mit gemessener Fensterkorrelation zum Bestand:
+
+    Residuum z gegen |rho|:  r = +0,480   (n = 20, t = 2,32)
+
+**Je aehnlicher eine Regel dem Trendfolge-Signal des Bestands, desto besser
+ihre Qualitaet.** Genau die Familien ueber der Geraden - Trend und Ausbruch -
+sind die, die dem Bestand am naechsten stehen.
+
+Der Auftrag aus Befund 76 verlangt **beides**: Qualitaet und Unabhaengigkeit.
+Punkt 2 und Punkt 3 ziehen gegeneinander, und das stand bisher nirgends.
+
+Damit erklaert sich auch, warum die vier Vorschlaege aus Befund 83 so
+ausgingen: Sie waren mit rho zwischen +0,31 und +0,59 die unabhaengigsten,
+die das Projekt je gemessen hat - und drei von vier lagen bei der Qualitaet
+unter der Erwartung.
+
+### Was das nicht beweist
+
+Es muss keine Eigenschaft der Aehnlichkeit sein. Naheliegender: Der Markt ist
+ueber diesen Zeitraum massiv gestiegen. Alles, was dem Trend folgt, hat davon
+profitiert; alles, was dagegen laeuft, verloren. Dann misst ``rho`` nur, wie
+long-lastig eine Regel war, und der Zusammenhang gehoerte dem **Zeitraum** und
+nicht den Regeln.
+
+Beide Deutungen fuehren praktisch zum selben Schluss - die Suche nach
+"unabhaengig **und** gut" laeuft gegen die Daten. Aber sie sind nicht
+dasselbe, und welche stimmt, ist hier nicht entschieden. Ein Zeitraum mit
+anderer Marktrichtung wuerde es entscheiden; den gibt es in diesen Daten
+nicht.
+
+### Was daraus folgt
+
+Zwei Dinge, und beide sind unbequem:
+
+1. **Rueckkehr zum Mittel ist als Familie erledigt** - nicht wegen einer
+   einzelnen Messung, sondern weil alle fuenf geschlossen unter der Geraden
+   liegen und die Trennung der Permutation standhaelt.
+2. **Der Auftrag verlangt etwas, das die Daten nicht hergeben.** Die
+   verbleibenden 53 Versuche in Regeln zu stecken, die gleichzeitig
+   unabhaengig und gut sind, heisst gegen einen gemessenen Zusammenhang zu
+   suchen - nicht gegen Zufall.
+
+Das ist kein Grund aufzuhoeren, aber es aendert, was ein Treffer bedeuten
+wuerde: Er waere nicht bloss selten, sondern eine Ausnahme von einem Muster,
+das inzwischen zweifach belegt ist.
+
+Versuchsstand 177 unveraendert, Suchbudget 47 von 100. 1706 Tests gruen.
