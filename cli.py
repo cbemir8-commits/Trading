@@ -693,6 +693,10 @@ def wettbewerb(
             board.record(
                 report.candidates, generation=generation, herkunft=herkunft,
                 versuche=report.trials_after, intervall=interval_obj.value,
+                # Aus den Konfigurationen gelesen und nicht noch einmal
+                # hingeschrieben: Sonst kann der Eintrag von dem Lauf
+                # abweichen, den er beschreibt.
+                kapital=_startkapital(configs),
             )
             board.save()
 
@@ -772,10 +776,17 @@ def _schreibe_tradelog(state, log) -> None:
 
 
 def _zeige_bestenliste(board, *, limit: int = 10, versuche: int | None = None) -> None:
+    # Die Konto-Spalte erscheint erst, wenn ueberhaupt ein Eintrag sie
+    # mitbringt. Sonst stuende in einer Liste aus Laeufen vor Befund 96 eine
+    # Spalte voller Striche.
+    konten = board.kontostaende
+
     table = Table(title="Bestenliste", header_style="bold")
     table.add_column("#", justify="right")
     table.add_column("Strategie")
     table.add_column("Gates", justify="right")
+    if konten:
+        table.add_column("Konto", justify="right")
     table.add_column("Trades", justify="right")
     table.add_column("Erwartung", justify="right")
     table.add_column("DSR", justify="right")
@@ -787,21 +798,34 @@ def _zeige_bestenliste(board, *, limit: int = 10, versuche: int | None = None) -
         # denselben Vergleich gehoert. Das gehoert sichtbar, nicht versteckt.
         wert = eintrag.dsr_bei(versuche) if versuche else eintrag.deflated_sharpe
         marke = "" if eintrag.vergleichbar or not versuche else " ?"
-        table.add_row(
+        zeile = [
             str(platz),
             f"[{stil}]{eintrag.name[:38]}[/]" if stil else eintrag.name[:38],
             f"{eintrag.gates_bestanden}/{eintrag.gates_gesamt}",
+        ]
+        if konten:
+            zeile.append(f"{eintrag.kapital:,.0f}" if eintrag.kapital else "?")
+        zeile += [
             str(eintrag.trades),
             f"{eintrag.erwartung_r:+.3f} R",
             f"{wert:.3f}{marke}",
             ", ".join(eintrag.gescheitert_an[:2]) or "-",
-        )
+        ]
+        table.add_row(*zeile)
     console.print(table)
     if versuche and (alt := board.unvergleichbar):
         console.print(
             f"[dim]? bei {len(alt)} von {len(board.entries)} Eintraegen: vor "
             f"dieser Aenderung gemessen, Huerde unbekannt. Ihr Wert steht, "
             f"aber er gehoert nicht in denselben Vergleich.[/]"
+        )
+    if len(konten) > 1:
+        console.print(
+            f"[yellow]Achtung: {len(konten)} verschiedene Kontostaende in "
+            f"einer Liste ({', '.join(f'{k:,.0f}' for k in konten)} EUR). "
+            f"Rueckgang und schlechtestes Jahr aendern ihr Urteil damit "
+            f"(Befund 96) - die Gate-Spalten stehen nebeneinander, meinen aber "
+            f"nicht dasselbe.[/]"
         )
 
 
@@ -1475,6 +1499,23 @@ _KONTRAKTE = {
     "LTCUSDT": ("0.01", "0.1", "0.1", "200000", "LTC"),
     "XRPUSDT": ("0.0001", "1", "1", "8000000", "XRP"),
 }
+
+
+def _startkapital(configs) -> float:
+    """Das Startkapital, mit dem tatsaechlich gerechnet wurde.
+
+    Aus den Konfigurationen gelesen statt neben dem Lauf noch einmal
+    hingeschrieben. Die Zahl steht in der Bestenliste und entscheidet dort,
+    ob zwei Eintraege ueberhaupt vergleichbar sind (Befund 96) - eine
+    zweite Quelle dafuer waere genau die Stelle, an der beides auseinander
+    laeuft.
+
+    Alle Beine laufen mit demselben Kapital; kaeme je Bein ein anderes
+    heraus, waere die Zahl fuer die Liste ohnehin keine, und dann steht dort
+    0.0 - also "unbekannt".
+    """
+    werte = {float(c.initial_equity) for c in configs.values()}
+    return werte.pop() if len(werte) == 1 else 0.0
 
 
 def _sharpe_je_trade(trades) -> float:
@@ -2804,7 +2845,7 @@ def _miss_vorschlaege(
         board.record(
             [_kandidat_aus_lauf(angepasst, report, gates)],
             generation=0, herkunft=herkunft, versuche=trials,
-            intervall=interval_obj.value,
+            intervall=interval_obj.value, kapital=_startkapital(configs),
         )
         if bester is None or bestanden > bester[0]:
             bester = (bestanden, angepasst, gates)

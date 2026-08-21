@@ -8413,3 +8413,79 @@ bleibt es beim schnellen Lauf. Acht neue Tests, tragend ist
 
 Versuchsstand 177 unveraendert und in jeder Spalte derselbe. Suchbudget 47 von
 100. 1849 Tests gruen.
+
+## Siebenundneunzig. Dieselbe Kollision wie beim Intervall, nur teurer
+
+Befund 96 hat gemessen, dass zwei der elf Gates ihr Urteil aendern, wenn
+allein der Kontostand sich aendert. Damit steht in ``state/leaderboard.json``
+seit dem 14. August eine Zahl, deren Herkunft niemand mehr nachvollziehen
+kann:
+
+    "genome_id": "68cfe95c9a365ef2",
+    "gates_bestanden": 6,
+    "max_drawdown_pct": 10.64,
+
+Die 10,64 gelten fuer 500 EUR. Bei 2.000 EUR waeren es 12,56 - und
+``gates_bestanden`` waere eins niedriger. In der Datei steht nicht, welches
+von beidem gemeint ist.
+
+### Warum das genau der Fehler von damals ist
+
+``Entry.intervall`` traegt seinen eigenen Grund im Docstring:
+
+    *"Es fehlte, und das war eine stille Kollision. Die Liste ist nach
+    genome_id geschluesselt, und dieselbe Regel auf Tageskerzen und auf
+    Viertelstunden hat dieselbe ID. Zwei solche Ergebnisse konkurrierten
+    deshalb um denselben Platz, und das schlechtere verschwand - obwohl es
+    gar nicht dasselbe gemessen hatte."*
+
+Wort fuer Wort dieselbe Lage. Der Kontostand ist kein Feld des Genoms, taucht
+in der ``genome_id`` nicht auf, und veraendert trotzdem zwei Gate-Urteile. Ein
+Lauf mit 2.000 EUR und ein Lauf mit 500 EUR konkurrieren um denselben Platz -
+und das schmeichelhaftere gewinnt, weil ``besser_als`` mehr bestandene Gates
+sieht und sonst nichts.
+
+**Der Unterschied zum Intervall:** Beim Intervall faellt die Verwechslung
+frueher oder spaeter auf, weil die Zahlen wild auseinanderliegen. Hier sind es
+ein Gate und knapp zwei Punkte Rueckgang. Das sieht wie Rauschen aus und ist
+keins.
+
+### Was gebaut wurde
+
+``Entry.kapital``, nach demselben Muster wie ``intervall``:
+
+* ``vergleichbar_mit`` verlangt jetzt **beides** - gleiche Kerzenlaenge und
+  gleiches Konto. Ein Test sichert ab, dass die zweite Bedingung die erste
+  nicht aufweicht.
+* ``0.0`` heisst "unbekannt", nicht "null Euro". Ohne diese Ausnahme wuerde
+  kein Eintrag aus der Zeit davor je wieder abgeloest, und die Liste fror an
+  dieser Stelle ein - derselbe Ausweg, den das Intervall mit dem leeren String
+  nimmt.
+* ``Leaderboard.kontostaende`` nennt die verschiedenen Staende. Sind es mehr
+  als einer, warnt die Tabelle: Die Gate-Spalten stehen dann nebeneinander,
+  meinen aber nicht dasselbe.
+* Die Konto-Spalte erscheint erst, wenn ein Eintrag sie mitbringt. Sonst
+  stuende in einer Liste aus Laeufen vor Befund 96 eine Spalte voller Striche.
+
+``_startkapital(configs)`` liest die Zahl **aus den Konfigurationen des
+Laufs**, statt sie neben dem Aufruf noch einmal hinzuschreiben. Eine zweite
+Quelle waere genau die Stelle, an der Eintrag und Lauf auseinanderlaufen - in
+diesem Projekt schon fuenfmal geschehen. Kommt je Bein ein anderes Kapital
+heraus, gibt es keine Zahl fuer die Liste, und dann steht dort 0.0 statt der
+ersten, die passt.
+
+### Was das nicht ist
+
+**Keine Aenderung an den Gates.** Keine Schwelle wurde angefasst, kein Urteil
+gedreht, kein Eintrag nachtraeglich korrigiert. Die 40 Eintraege ohne
+Kontoangabe behalten ihre Zahlen; sie tragen jetzt nur ein "?" statt eines
+stillen Anspruchs auf Vergleichbarkeit.
+
+**Und keine Entscheidung darueber, welches Konto das richtige ist.** Ob die
+Zulassung kuenftig auf 500 EUR oder auf einem Konto ohne Rundungseffekt laufen
+soll, ist eine Frage mit Folgen fuer jeden Vergleich zur Vergangenheit. Sie
+steht als Punkt "Kontogroesse" in ``stand.py`` und gehoert dem Nutzer.
+
+Versuchsstand 177 unveraendert - es wurde nichts gemessen, sondern etwas
+aufgeschrieben, das schon gemessen war. Suchbudget 47 von 100. 1858 Tests
+gruen.

@@ -65,6 +65,27 @@ class Entry:
     Leer heisst: aus einem Lauf, der es noch nicht mitgeschrieben hat.
     """
 
+    kapital: float = 0.0
+    """Mit welchem Startkapital dieses Ergebnis gemessen wurde.
+
+    **Dieselbe stille Kollision wie beim Intervall, nur teurer.** Befund 96
+    hat gemessen, dass zwei der elf Gates ihr Urteil aendern, wenn allein der
+    Kontostand sich aendert: Rueckgang und schlechtestes Jahr. Derselbe
+    Kandidat steht bei 500 EUR auf 7 von 11 und ab 1500 EUR auf 6 - die
+    ``genome_id`` ist in beiden Faellen dieselbe.
+
+    Ohne dieses Feld konkurrieren beide um denselben Platz, das
+    schmeichelhaftere gewinnt, und in der Liste steht danach eine Zahl, deren
+    Herkunft niemand mehr nachvollziehen kann. Genau das ist beim Intervall
+    schon einmal passiert.
+
+    Die Ursache ist Bybits Mengenschritt: Bei kleinem Konto wird die
+    berechnete Menge merklich abgerundet, und das schoent ausgerechnet die
+    Risikomasse (Befund 95). ``cli koernung`` rechnet es nach.
+
+    0.0 heisst: aus einem Lauf, der es noch nicht mitgeschrieben hat.
+    """
+
     herkunft: str = "Katalog"
     """Woher der Kandidat stammt: Katalog, Variante oder KI-Vorschlag."""
 
@@ -193,22 +214,32 @@ class Entry:
         Zwei Ergebnisse auf verschiedenen Kerzenlaengen sind **nicht**
         vergleichbar. Sie gegeneinander zu stellen hiesse, Regeln zu
         vergleichen, die verschiedene Zeitraeume meinen, obwohl dieselben
-        Zahlen darin stehen.
+        Zahlen darin stehen. Fuer verschiedene Kontostaende gilt seit Befund
+        96 dasselbe.
         """
         if self.vergleichbar_mit(andere):
             return self.rang_schluessel > andere.rang_schluessel
         return False
 
     def vergleichbar_mit(self, andere: Entry) -> bool:
-        """Wurden beide auf derselben Kerzenlaenge gemessen?
+        """Wurden beide unter denselben Bedingungen gemessen?
 
-        Ein leeres Intervall stammt aus einem Lauf vor dieser Unterscheidung.
-        Es gilt als vergleichbar - sonst wuerde ein alter Eintrag von einem
-        neuen nie mehr abgeloest, und die Liste fror an dieser Stelle ein.
+        Zwei davon zaehlen: die Kerzenlaenge und der Kontostand. Beide
+        veraendern die Gate-Zahlen, ohne dass sich an der Strategie etwas
+        aendert, und beide teilen sich denselben Schluessel - die
+        ``genome_id``.
+
+        Ein leerer Wert stammt aus einem Lauf vor dieser Unterscheidung. Er
+        gilt als vergleichbar - sonst wuerde ein alter Eintrag von einem neuen
+        nie mehr abgeloest, und die Liste fror an dieser Stelle ein.
         """
-        return not self.intervall or not andere.intervall or (
+        gleiches_intervall = not self.intervall or not andere.intervall or (
             self.intervall == andere.intervall
         )
+        gleiches_konto = not self.kapital or not andere.kapital or (
+            self.kapital == andere.kapital
+        )
+        return gleiches_intervall and gleiches_konto
 
 
 def _jetzt() -> str:
@@ -272,6 +303,7 @@ class Leaderboard:
         herkunft: str = "Katalog",
         versuche: int = 0,
         intervall: str = "",
+        kapital: float = 0.0,
     ) -> int:
         """Ein Laufergebnis eintragen. Gibt zurueck, wie viele sich verbessert haben.
 
@@ -286,7 +318,7 @@ class Leaderboard:
         for candidate in candidates:
             neu = _aus_kandidat(
                 candidate, generation=generation, herkunft=herkunft,
-                versuche=versuche, intervall=intervall,
+                versuche=versuche, intervall=intervall, kapital=kapital,
             )
             alt = self.entries.get(neu.genome_id)
 
@@ -349,6 +381,18 @@ class Leaderboard:
     def admitted(self) -> list[Entry]:
         return [e for e in self.entries.values() if e.zugelassen]
 
+    @property
+    def kontostaende(self) -> list[float]:
+        """Die verschiedenen Startkapitalien in der Liste, aufsteigend.
+
+        Mehr als eines heisst: Hier stehen Ergebnisse nebeneinander, deren
+        Risikogates gegen verschiedene Bedingungen gemessen wurden. Das ist
+        nicht falsch - aber es gehoert sichtbar, weil zwei der elf Gates ihr
+        Urteil daran aendern (Befund 96). Die 0.0 der alten Eintraege zaehlt
+        nicht mit; sie heisst "unbekannt", nicht "null Euro".
+        """
+        return sorted({e.kapital for e in self.entries.values() if e.kapital})
+
     def summary(self) -> str:
         if not self.entries:
             return "Noch nichts geprueft."
@@ -363,7 +407,7 @@ class Leaderboard:
 
 def _aus_kandidat(
     candidate, *, generation: int, herkunft: str, versuche: int = 0,
-    intervall: str = "",
+    intervall: str = "", kapital: float = 0.0,
 ) -> Entry:
     combined = candidate.walkforward.combined
     return Entry(
@@ -371,6 +415,7 @@ def _aus_kandidat(
         name=candidate.genome.name,
         generation=generation,
         intervall=intervall,
+        kapital=kapital,
         herkunft=herkunft,
         zugelassen=candidate.admitted,
         gates_bestanden=sum(1 for r in candidate.gates.results if r.passed),
