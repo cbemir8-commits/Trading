@@ -8312,3 +8312,104 @@ Ursache belegt oder nur plausibel ist.
 Versuchsstand 177 unveraendert. Der Zaehler korrigiert das Testen vieler
 **Strategie**-Hypothesen; hier ist die Strategie in jeder Zeile dieselbe, und
 ausgewaehlt wurde nichts. Suchbudget 47 von 100. 1841 Tests gruen.
+
+## Sechsundneunzig. Zwei Gates wandern, neun stehen still
+
+Befund 95 hat zwei Kennzahlen ueber die Kontoleiter gefahren - Rendite und
+Rueckgang - und die uebrigen neun Gates nicht angesehen. Dass sie unberuehrt
+bleiben, waere eine Annahme gewesen. Der Deflated Sharpe haengt am Sharpe je
+Trade, und die Mengenrundung veraendert **jede einzelne** Trade-Rendite.
+
+Also alle elf, ueber dieselbe Leiter, mit demselben Versuchsstand (177) in
+jeder Zeile - sonst verglichen die Spalten zwei verschiedene Huerden:
+
+    Gate                      300      500    1.000    1.500    2.000  100.000
+    Stichprobengroesse     + 2097   + 2163   + 2163   + 2163   + 2163   + 2163
+    Messlatte              -150,9   -166,1   -166,6   -172,1   -171,2   -173,8
+    Out-of-Sample-Sharpe   + 1,454  + 1,473  + 1,440  + 1,441  + 1,437  + 1,426
+    Drawdown               + 9,92   + 10,64  + 11,84  - 12,36  - 12,56  - 12,95
+    Schlechtestes Jahr     - 9,60   - 10,32  - 11,51  - 12,03  - 12,23  - 12,61
+    Bestaendigkeit         + 0,533  + 0,533  + 0,533  + 0,533  + 0,533  + 0,533
+    Monte-Carlo            + 9,91   + 10,27  + 10,79  + 10,95  + 10,97  + 11,34
+    Regime-Aufteilung      + 3,975  + 4,152  + 3,965  + 3,903  + 3,903  + 3,886
+    Deflated Sharpe        - 0,772  - 0,783  - 0,775  - 0,786  - 0,782  - 0,778
+    Kosten-Stress          + 579    + 943    + 1483   + 2245   + 2990   +151511
+    Parameter-Plateau      - 0,500  - 0,500  - 0,500  - 0,500  - 0,500  - 0,500
+    ------------------------------------------------------------------------
+    bestanden                 8/11     7/11     7/11     6/11     6/11     6/11
+
+### Was da steht
+
+**Genau zwei Gates aendern ihr Urteil**, und es ist kein Zufallspaar: Es sind
+die beiden Risikomasse auf der Kapitalkurve. Beide messen dieselbe Groesse in
+verschiedenen Einheiten - den Verlust in einem zusammenhaengenden Fenster -
+und beide werden von der Mengenrundung geschoent, solange das Konto klein ist.
+
+**Neun stehen still.** Zwei davon wandern zwar im Wert, ohne zu kippen:
+Monte-Carlo laeuft von 9,91 auf 11,34 gegen eine Schwelle von 15, und
+Kosten-Stress ist eine absolute Eurogroesse und skaliert deshalb trivial mit
+dem Konto. Die uebrigen sieben ruehren sich kaum.
+
+### Das wichtigste Nein
+
+**Der Deflated Sharpe bewegt sich um 0,014** - von 0,772 auf 0,786 und zurueck
+auf 0,778. Die Huerde liegt 0,167 entfernt. Waere er betroffen gewesen, gaebe
+es dort einen Weg: sauberere Trade-Renditen, weniger Rundungsrauschen, hoehere
+Guete je Trade. Es gibt ihn nicht. **Die Koernung ist kein Weg zum haertesten
+Gate**, und das ist ein Ergebnis, kein Scheitern - es erspart die naechste
+Runde daran.
+
+### Die Falle, die dieser Befund aufstellt
+
+Bei 300 Euro halten **8 von 11** - mehr als irgendwo sonst auf der Leiter, und
+mehr als die 7, die ``cli stand`` meldet. Das sieht aus wie ein Fortschritt.
+
+Es ist keiner. Es ist dieselbe Strategie mit einer groeberen Treppe. Einen
+Kontostand danach auszuwaehlen, wie viele Gates dort halten, ist genau
+dieselbe Anpassung wie das Nachziehen eines Betriebspunktes - nur an einer
+Stelle, an der bisher niemand nachgesehen hat, weil das Konto nicht wie eine
+Stellschraube der Strategie aussieht.
+
+Deshalb heisst die Eigenschaft im Modul ``hoechster_stand`` und nicht
+``bester``: Sie ist eine Warnung, kein Ziel.
+
+**Die Zahl, die nicht am Kontostand haengt, steht am oberen Ende: 6 von 11.**
+
+### Was daraus folgt
+
+1. **Die Bilanz des Bestands ist 6 von 11, nicht 7.** Die 7 gelten fuer 500
+   Euro und nur dort. Beide offenen Risikogates - Rueckgang und schlechtestes
+   Jahr - fallen bei jedem Konto ueber rund 1.150 Euro durch.
+2. **Befund 93 bleibt richtig, wird aber schaerfer.** Dort stand, das
+   schlechteste Jahr sei die Kehrseite einer Aufwaertsmarkt-Strategie und
+   fehle um 0,32 Punkte. Ohne den Rundungseffekt fehlen **2,61 Punkte**
+   (-12,61 gegen -10,00). Die Deutung stimmt, die Groessenordnung war zu
+   milde.
+3. **Der Deflated Sharpe ist auch von hier aus nicht erreichbar.** Ein
+   weiterer geschlossener Weg, gemessen statt vermutet.
+4. Was gemessen wurde, ist eine Eigenschaft der **Messung**, nicht der
+   Strategie. Die Gates werden nicht geaendert - weder gelockert noch
+   verschaerft. Aufgeschrieben wird, dass zwei von ihnen eine Zahl mitmessen,
+   die mit der Strategie nichts zu tun hat.
+
+### Was gebaut wurde
+
+``research/koernung.py`` um ``Gatewert``, ``Gatelauf`` und ``Gateleiter``
+erweitert - **erweitert und nicht danebengestellt**, weil es dieselbe Frage
+in derselben Sache ist. Die tragenden Stellen:
+
+* ``namen`` nimmt nur Gates, die auf **jeder** Sprosse gelaufen sind. Sonst
+  ginge ein Gate, das nur einmal lief, als "fest" durch - eine Aussage ueber
+  eine einzige Messung.
+* ``hoechster_stand`` ist als Warnung dokumentiert, nicht als Betriebspunkt.
+* ``spanne(name)`` misst die Wanderung des **Werts**, auch ohne Urteilswechsel
+  - sonst waere "Deflated Sharpe steht still" nur eine Aussage ueber ein
+  Vorzeichen.
+
+``cli koernung --gates`` faehrt die Leiter mit allen elf Gates; ohne die Flagge
+bleibt es beim schnellen Lauf. Acht neue Tests, tragend ist
+``test_genau_zwei_gates_wandern``; die Gegenprobe dazu ist
+``test_das_haerteste_gate_steht_still``.
+
+Versuchsstand 177 unveraendert und in jeder Spalte derselbe. Suchbudget 47 von
+100. 1849 Tests gruen.

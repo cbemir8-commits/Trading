@@ -14,6 +14,10 @@ von der Ausgangsmessung entfernt.
 ``test_die_rendite_wandert_kaum`` - Die Gegenprobe zur bequemen Lesart. Waeren
 einfach alle Zahlen kleiner, gaebe es nichts zu erklaeren; die Rendite bewegt
 sich aber nur um ein Drittel dessen, was der Rueckgang wandert.
+
+``test_genau_zwei_gates_wandern`` - Der Kern von Befund 96. Von elf Gates
+aendern zwei ihr Urteil, wenn nur der Kontostand sich aendert - und es sind
+die beiden Risikomasse. Das haerteste Gate steht still.
 """
 
 from __future__ import annotations
@@ -26,11 +30,73 @@ from research.koernung import (
     GEMESSEN,
     SCHRITTE,
     UNERHEBLICH,
+    Gatelauf,
+    Gateleiter,
+    Gatewert,
     Koernung,
     Kontostufe,
     baue_gemessen,
     umsetzung,
 )
+
+#: Die gemessene Gate-Leiter des Bestands, Versuchsstand 177 in jeder Zeile.
+#: Nachzurechnen mit ``cli koernung --gates``. Werte je Kontostand
+#: 300 / 500 / 1.000 / 1.500 / 2.000 / 5.000 / 20.000 / 100.000 EUR.
+KONTEN = (300.0, 500.0, 1000.0, 1500.0, 2000.0, 5000.0, 20000.0, 100000.0)
+GATELEITER: dict[str, tuple[float, ...]] = {
+    "Stichprobengroesse": (2097, 2163, 2163, 2163, 2163, 2163, 2163, 2163),
+    "Messlatte": (150.914, 166.143, 166.617, 172.074, 171.241, 172.385,
+                  173.599, 173.769),
+    "Out-of-Sample-Sharpe": (1.454, 1.473, 1.440, 1.441, 1.437, 1.430,
+                             1.428, 1.426),
+    "Drawdown": (9.919, 10.640, 11.843, 12.364, 12.564, 12.704, 12.900, 12.950),
+    "Schlechtestes Jahr": (-9.600, -10.320, -11.510, -12.030, -12.230,
+                           -12.370, -12.560, -12.610),
+    "Bestaendigkeit": (0.533,) * 8,
+    "Monte-Carlo": (9.911, 10.271, 10.793, 10.950, 10.973, 11.199, 11.320,
+                    11.338),
+    "Regime-Aufteilung": (3.975, 4.152, 3.965, 3.903, 3.903, 3.893, 3.890,
+                          3.886),
+    "Deflated Sharpe": (0.772, 0.783, 0.775, 0.786, 0.782, 0.779, 0.779, 0.778),
+    "Kosten-Stress": (579.4, 942.9, 1483.4, 2245.0, 2990.0, 7523.4, 30142.9,
+                      151511.0),
+    "Parameter-Plateau": (0.500,) * 8,
+}
+#: Schwelle und Richtung je Gate - so, wie ``research.gates`` sie fuehrt.
+SCHWELLEN: dict[str, tuple[float, bool]] = {
+    "Stichprobengroesse": (250.0, True), "Messlatte": (43.639, True),
+    "Out-of-Sample-Sharpe": (1.0, True), "Drawdown": (12.0, False),
+    "Schlechtestes Jahr": (-10.0, True), "Bestaendigkeit": (0.5, True),
+    "Monte-Carlo": (15.0, False), "Regime-Aufteilung": (0.9, True),
+    "Deflated Sharpe": (0.95, True), "Kosten-Stress": (0.0, True),
+    "Parameter-Plateau": (0.6, True),
+}
+
+
+def gateleiter(**abweichung) -> Gateleiter:
+    """Die gemessene Leiter als ``Gateleiter``.
+
+    Die Messlatte steht hier als bestanden/durchgefallen fest verdrahtet auf
+    ``False``: Sie hat eine zweite Bedingung, die im Zahlenpaar nicht
+    vorkommt (Befund 91), und aus Wert und Schwelle allein liesse sich ihr
+    Urteil falsch herum ableiten.
+    """
+    laeufe = []
+    for i, kapital in enumerate(KONTEN):
+        werte = []
+        for name, reihe in GATELEITER.items():
+            grenze, mindestens = SCHWELLEN[name]
+            wert = reihe[i]
+            bestanden = (
+                False
+                if name == "Messlatte"
+                else (wert >= grenze if mindestens else wert <= grenze)
+            )
+            werte.append(Gatewert(name, bestanden, float(wert), grenze))
+        laeufe.append(Gatelauf(kapital=kapital, gates=tuple(werte)))
+    daten = {"laeufe": laeufe}
+    daten.update(abweichung)
+    return Gateleiter(**daten)
 
 
 def leiter(**abweichung) -> Koernung:
@@ -221,3 +287,106 @@ class TestRand:
         assert "haelt" in text and "reisst" in text
         assert "feiner Schritt" in text
         assert "10.64" in text and "12.95" in text
+
+
+class TestGateleiter:
+    def test_genau_zwei_gates_wandern(self) -> None:
+        """**Der Test, der Befund 96 traegt.**
+
+        Ein Gate soll eine Eigenschaft der Strategie messen. Zwei von elf tun
+        das nicht vollstaendig: Ihr Urteil kippt, obwohl die Strategie in
+        jeder Zeile dieselbe ist. Und es sind kein Zufallspaar, sondern genau
+        die beiden Risikomasse auf der Kapitalkurve.
+        """
+        bild = gateleiter()
+
+        assert bild.genug
+        assert set(bild.wandernde) == {"Drawdown", "Schlechtestes Jahr"}
+        assert len(bild.feste) == 9
+        assert "aendern ihr Urteil" in bild.urteil()
+
+    def test_das_haerteste_gate_steht_still(self) -> None:
+        """**Das wichtigste Nein dieses Befundes.**
+
+        Waere der Deflated Sharpe von der Koernung betroffen, gaebe es dort
+        einen Weg. Er bewegt sich um 0,014 - und die Huerde liegt 0,167
+        entfernt.
+        """
+        bild = gateleiter()
+
+        assert "Deflated Sharpe" in bild.feste
+        assert bild.spanne("Deflated Sharpe") < 0.02
+        assert bild.spanne("Drawdown") > 3.0
+
+    def test_die_beste_sprosse_wird_als_warnung_gefuehrt(self) -> None:
+        """**Die Falle, die dieser Befund aufstellt.**
+
+        Bei 300 EUR halten 8 von 11 - mehr als irgendwo sonst. Wer daraus
+        einen Betriebspunkt macht, waehlt einen Kontostand danach aus, wie
+        viele Gates dort halten.
+        """
+        bild = gateleiter()
+
+        spitze = bild.hoechster_stand
+        assert spitze is not None
+        assert spitze.kapital == 300.0 and spitze.bestanden == 8
+        assert bild.stand_ohne_koernung == 6
+        urteil = bild.urteil()
+        assert "keine bessere Bilanz" in urteil
+        assert "6 von 11" in urteil
+
+    def test_ein_gate_das_nur_teilweise_lief_zaehlt_nicht_als_fest(self) -> None:
+        """Sonst ginge ein Gate, das nur auf einer Sprosse gelaufen ist, als
+        bestaendig durch - eine Aussage ueber eine einzige Messung."""
+        teils = Gateleiter(
+            laeufe=[
+                Gatelauf(500.0, (Gatewert("A", True, 1.0), Gatewert("B", True, 1.0))),
+                Gatelauf(5000.0, (Gatewert("A", False, 2.0),)),
+            ]
+        )
+
+        assert teils.namen == ("A",)
+        assert teils.wandernde == ("A",)
+        assert teils.feste == ()
+
+    def test_eine_unbewegte_leiter_behauptet_nichts(self) -> None:
+        """Gegenprobe: Aendert kein Gate sein Urteil, sagt das Urteil genau
+        das - und nennt keine Warnung."""
+        starr = Gateleiter(
+            laeufe=[
+                Gatelauf(k, (Gatewert("A", True, 1.0), Gatewert("B", False, 2.0)))
+                for k in (500.0, 50000.0)
+            ]
+        )
+
+        assert starr.wandernde == ()
+        assert "Kein Gate aendert sein Urteil" in starr.urteil()
+        assert "keine bessere Bilanz" not in starr.urteil()
+
+    def test_eine_einzelne_sprosse_sagt_nichts(self) -> None:
+        einsam = Gateleiter(laeufe=[gateleiter().geordnet[0]])
+
+        assert not einsam.genug
+        assert einsam.wandernde == ()
+        assert "nichts sagen" in einsam.urteil()
+
+    def test_die_tabelle_markiert_die_wandernden(self) -> None:
+        text = gateleiter().tabelle()
+
+        assert "wandert" in text
+        assert text.count("wandert") == 2
+        assert "bestanden" in text
+        assert Gateleiter().tabelle() == "Keine Gate-Laeufe."
+
+    def test_die_bilanz_je_sprosse_stimmt_mit_der_zulassung_ueberein(self) -> None:
+        """Bei 500 EUR meldet ``cli stand`` 7 von 11 - dieselbe Zahl muss hier
+        stehen, sonst misst die Leiter etwas anderes als die Zulassung."""
+        bei_500 = next(x for x in gateleiter().geordnet if x.kapital == 500.0)
+
+        assert bei_500.bestanden == 7
+        assert bei_500.gesamt == 11
+        durchgefallen = {g.name for g in bei_500.gates if not g.bestanden}
+        assert durchgefallen == {
+            "Messlatte", "Schlechtestes Jahr", "Deflated Sharpe",
+            "Parameter-Plateau",
+        }

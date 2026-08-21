@@ -5519,6 +5519,11 @@ def koernung(
         "300,400,500,600,750,1000,1500,2000,3000,5000,10000,25000,50000,100000",
         "--konten", help="Startkapitalien, durch Komma getrennt.",
     ),
+    gates: bool = typer.Option(
+        False, "--gates",
+        help="Zusaetzlich alle elf Gates je Kontostand auswerten. Dauert "
+             "ein Vielfaches - die Gates sind der teure Teil.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Haengt das Rueckgang-Gate am Kontostand statt an der Strategie?
@@ -5533,6 +5538,10 @@ def koernung(
     kommt eine Gegenprobe mit feinem Mengenschritt: Sie aendert **nur** die
     Rundung und sonst nichts.
 
+    Mit ``--gates`` laufen zusaetzlich alle elf Gates je Sprosse. Gemessen
+    sind dann zwei Wanderer - Rueckgang und schlechtestes Jahr - und neun
+    feste, darunter der Deflated Sharpe.
+
     **Kostet keinen Versuch.** Der Zaehler korrigiert das Testen vieler
     Strategie-Hypothesen; hier ist die Strategie in jeder Zeile dieselbe, und
     ausgewaehlt wird nichts. Der Betriebspunkt wird auch nicht nachgezogen.
@@ -5543,8 +5552,16 @@ def koernung(
 
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
-    from research.gates import GateThresholds
-    from research.koernung import Koernung, Kontostufe, umsetzung
+    from research.admission import load_trials
+    from research.gates import GateThresholds, evaluate_gates
+    from research.koernung import (
+        Gatelauf,
+        Gateleiter,
+        Gatewert,
+        Koernung,
+        Kontostufe,
+        umsetzung,
+    )
     from research.seeds import spitzenkandidat
     from strategy import indicators
     from strategy.compiler import compile_genome
@@ -5565,7 +5582,14 @@ def koernung(
     frames = common_range(roh)
     genome = spitzenkandidat()
 
-    def lauf(kapital: Decimal, *, fein: bool) -> Kontostufe | None:
+    erster = next(iter(frames.values()))
+    # In **jeder** Zeile derselbe Versuchsstand. Waere er je Sprosse anders,
+    # verglichen die Spalten zwei verschiedene Huerden miteinander.
+    trials = load_trials(Path(settings.paths.state) / "trials.json")
+
+    def lauf(
+        kapital: Decimal, *, fein: bool, mit_gates: bool = False
+    ) -> tuple[Kontostufe, Gatelauf | None] | None:
         configs = {}
         for x in symbole:
             instrument = _fallback_instrument(_bybit_kontrakt(x))
@@ -5588,11 +5612,27 @@ def koernung(
         )
         if not bericht.windows or bericht.combined is None:
             return None
-        return Kontostufe(
+        stufe = Kontostufe(
             kapital=float(kapital),
             cagr=float(bericht.combined.cagr_pct),
             rueckgang=float(bericht.combined.max_drawdown_pct),
             trades=len(bericht.all_trades),
+        )
+        if not mit_gates:
+            return stufe, None
+        bericht_gates = evaluate_gates(
+            genome, bericht, erster, configs[symbole[0]],
+            trials_so_far=trials, frames=frames, configs=configs,
+        )
+        return stufe, Gatelauf(
+            kapital=float(kapital),
+            gates=tuple(
+                Gatewert(
+                    name=r.name, bestanden=bool(r.passed),
+                    wert=float(r.value), schwelle=float(r.threshold),
+                )
+                for r in bericht_gates.results
+            ),
         )
 
     kapitalien = [Decimal(x.strip()) for x in konten.split(",") if x.strip()]
@@ -5608,22 +5648,29 @@ def koernung(
     )
 
     stufen = []
+    gatelaeufe = []
     for kapital in kapitalien:
-        stufe = lauf(kapital, fein=False)
-        if stufe is None:
+        ergebnis = lauf(kapital, fein=False, mit_gates=gates)
+        if ergebnis is None:
             console.print(f"[yellow]{kapital:g} EUR: keine Fenster.[/]")
             continue
+        stufe, gatelauf = ergebnis
         stufen.append(stufe)
+        if gatelauf is not None:
+            gatelaeufe.append(gatelauf)
         console.print(
             f"[dim]  {kapital:>9g} EUR  {stufe.trades:>4} Trades  "
-            f"{stufe.cagr:>6.2f} % p.a.  Rueckgang {stufe.rueckgang:>5.2f} %[/]"
+            f"{stufe.cagr:>6.2f} % p.a.  Rueckgang {stufe.rueckgang:>5.2f} %"
+            + (f"  {gatelauf.bestanden}/{gatelauf.gesamt} Gates" if gatelauf else "")
+            + "[/]"
         )
 
     # Die Gegenprobe laeuft auf dem Referenzkonto der Zulassung, nicht auf
     # der kleinsten Sprosse: Verglichen werden darf sie nur mit dem Lauf, der
     # sich sonst in nichts von ihr unterscheidet.
     referenz = Decimal("500") if Decimal("500") in kapitalien else kapitalien[0]
-    fein = lauf(referenz, fein=True)
+    feinlauf = lauf(referenz, fein=True)
+    fein = feinlauf[0] if feinlauf is not None else None
 
     bild = Koernung(
         stufen=stufen,
@@ -5665,6 +5712,16 @@ def koernung(
         "Positionen verstuemmelt das Abrunden am staerksten. Das kleine Konto "
         "bekommt damit einen zweiten, unbeabsichtigten Vola-Filter geschenkt.[/]"
     )
+
+    if gatelaeufe:
+        console.print(f"\n[bold]Alle Gates je Kontostand[/] (Versuchsstand {trials})")
+        leiter = Gateleiter(laeufe=gatelaeufe)
+        console.print("\n" + leiter.tabelle())
+        console.print(
+            f"\n[{'yellow' if leiter.wandernde else 'green'}]"
+            f"{leiter.urteil()}[/]\n"
+        )
+
     console.print(
         "[dim]Der Versuchszaehler bleibt unveraendert: Die Strategie ist in "
         "jeder Zeile dieselbe, veraendert wird der Kontostand.[/]\n"

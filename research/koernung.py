@@ -77,6 +77,29 @@ nur, solange das Konto klein bleibt. Wer es von 500 auf 2.000 EUR vergroessert,
 aendert an der Strategie nichts und reisst das Gate trotzdem. Der Uebergang
 liegt bei rund **1.150 EUR**.
 
+Und was die uebrigen neun Gates dazu sagen (Befund 96)
+------------------------------------------------------
+Zwei Kennzahlen ueber die Leiter zu fahren und die anderen neun Gates nicht
+anzusehen waere eine Annahme gewesen. Alle elf, derselbe Versuchsstand in
+jeder Zeile:
+
+    Gate                     300 EUR   500 EUR   2.000 EUR   100.000 EUR
+    Drawdown                 + 9,92    +10,64    -12,56      -12,95
+    Schlechtestes Jahr       - 9,60    -10,32    -12,23      -12,61
+    Deflated Sharpe          - 0,772   - 0,783   - 0,782     - 0,778
+    (acht weitere)             fest      fest      fest        fest
+    ------------------------------------------------------------------
+    bestanden                  8/11      7/11      6/11        6/11
+
+**Genau zwei Gates wandern**, und es sind die beiden Risikomasse auf der
+Kapitalkurve. Neun stehen still, darunter das haerteste: Der Deflated Sharpe
+bewegt sich ueber den ganzen Bereich um 0,011 - die Koernung ist kein Weg
+dorthin.
+
+Die 8 von 11 bei 300 EUR sind **keine bessere Bilanz.** Es ist dieselbe
+Strategie mit einer groeberen Treppe. Die Zahl, die nicht am Kontostand
+haengt, ist die am oberen Ende: **6 von 11.**
+
 Kostet keinen Versuch: Der Versuchszaehler korrigiert das Testen vieler
 **Strategie**-Hypothesen. Hier ist die Strategie in jeder Zeile dieselbe;
 veraendert wird der Kontostand, und ausgewaehlt wird nichts.
@@ -362,6 +385,184 @@ class Koernung:
         return "\n\n".join(teile)
 
 
+@dataclass(frozen=True, slots=True)
+class Gatewert:
+    """Ein Gate-Ergebnis auf einer Sprosse der Kontoleiter."""
+
+    name: str
+    bestanden: bool
+    wert: float
+    schwelle: float = 0.0
+
+
+@dataclass(frozen=True, slots=True)
+class Gatelauf:
+    """Alle elf Gates bei einem Kontostand."""
+
+    kapital: float
+    gates: tuple[Gatewert, ...] = ()
+
+    @property
+    def bestanden(self) -> int:
+        return sum(1 for g in self.gates if g.bestanden)
+
+    @property
+    def gesamt(self) -> int:
+        return len(self.gates)
+
+    def gate(self, name: str) -> Gatewert | None:
+        return next((g for g in self.gates if g.name == name), None)
+
+
+@dataclass(slots=True)
+class Gateleiter:
+    """Welche Gates ihr Urteil aendern, wenn nur der Kontostand sich aendert.
+
+    Ein Gate soll eine Eigenschaft der **Strategie** messen. Aendert sein
+    Urteil sich, ohne dass an der Strategie etwas anders ist, misst es zu
+    einem Teil etwas anderes - und dann gehoert das benannt.
+    """
+
+    laeufe: list[Gatelauf] = field(default_factory=list)
+
+    @property
+    def geordnet(self) -> list[Gatelauf]:
+        return sorted(self.laeufe, key=lambda x: x.kapital)
+
+    @property
+    def genug(self) -> bool:
+        return len(self.laeufe) >= 2 and all(x.gates for x in self.laeufe)
+
+    @property
+    def namen(self) -> tuple[str, ...]:
+        """Nur Gates, die auf **jeder** Sprosse vorkommen.
+
+        Ein Gate, das nur auf einem Teil der Leiter gelaufen ist, laesst sich
+        nicht auf Bestaendigkeit pruefen - es faellt heraus, statt als
+        "fest" durchzugehen.
+        """
+        if not self.laeufe:
+            return ()
+        gemeinsam = set.intersection(
+            *({g.name for g in lauf.gates} for lauf in self.laeufe)
+        )
+        return tuple(g.name for g in self.geordnet[0].gates if g.name in gemeinsam)
+
+    def _urteile(self, name: str) -> set[bool]:
+        return {
+            g.bestanden
+            for lauf in self.laeufe
+            if (g := lauf.gate(name)) is not None
+        }
+
+    @property
+    def wandernde(self) -> tuple[str, ...]:
+        """Gates, deren Urteil ueber die Leiter kippt."""
+        if not self.genug:
+            return ()
+        return tuple(n for n in self.namen if len(self._urteile(n)) > 1)
+
+    @property
+    def feste(self) -> tuple[str, ...]:
+        if not self.genug:
+            return ()
+        return tuple(n for n in self.namen if len(self._urteile(n)) == 1)
+
+    def spanne(self, name: str) -> float:
+        """Wie weit der **Wert** eines Gates wandert - auch ohne Urteilswechsel."""
+        werte = [
+            g.wert for lauf in self.laeufe if (g := lauf.gate(name)) is not None
+        ]
+        return max(werte) - min(werte) if werte else 0.0
+
+    @property
+    def stand_ohne_koernung(self) -> int | None:
+        """Die Bilanz am oberen Ende - die Zahl, die nicht am Konto haengt."""
+        return self.geordnet[-1].bestanden if self.laeufe else None
+
+    @property
+    def hoechster_stand(self) -> Gatelauf | None:
+        """Die Sprosse mit den meisten bestandenen Gates.
+
+        Heisst so und nicht ``bester``: Sie ist eine **Warnung**, kein Ziel.
+        Wer sie als Betriebspunkt liest, waehlt einen Kontostand danach aus,
+        wie viele Gates dort halten - genau die Anpassung, gegen die die
+        Zulassungsstrecke gebaut ist.
+        """
+        if not self.laeufe:
+            return None
+        return max(self.geordnet, key=lambda x: x.bestanden)
+
+    def tabelle(self) -> str:
+        if not self.laeufe:
+            return "Keine Gate-Laeufe."
+        kopf = "".join(f"{lauf.kapital:>11,.0f}" for lauf in self.geordnet)
+        breite = 22 + 11 * len(self.laeufe)
+        zeilen = [f"{'Gate':<22}{kopf}", "-" * breite]
+        for name in self.namen:
+            spalten = ""
+            for lauf in self.geordnet:
+                g = lauf.gate(name)
+                spalten += (
+                    f"{'+' if g.bestanden else '-'}{g.wert:>10.3f}"
+                    if g is not None
+                    else f"{'?':>11}"
+                )
+            marke = "  wandert" if name in self.wandernde else ""
+            zeilen.append(f"{name[:21]:<22}{spalten}{marke}")
+        zeilen.append("-" * breite)
+        zeilen.append(
+            f"{'bestanden':<22}"
+            + "".join(f"{lauf.bestanden:>11}" for lauf in self.geordnet)
+        )
+        return "\n".join(zeilen)
+
+    def urteil(self) -> str:
+        if not self.genug:
+            return (
+                "Weniger als zwei vollstaendige Gate-Laeufe - daraus laesst "
+                "sich ueber die Abhaengigkeit vom Konto nichts sagen."
+            )
+
+        klein, gross = self.geordnet[0], self.geordnet[-1]
+        wandernd = self.wandernde
+        if not wandernd:
+            return (
+                f"**Kein Gate aendert sein Urteil.** Ueber {len(self.laeufe)} "
+                f"Kontostaende von {klein.kapital:,.0f} bis "
+                f"{gross.kapital:,.0f} EUR bleibt die Bilanz bei "
+                f"{gross.bestanden} von {gross.gesamt}."
+            )
+
+        teile = [
+            f"**{len(wandernd)} von {len(self.namen)} Gates aendern ihr "
+            f"Urteil, ohne dass sich an der Strategie etwas aendert:** "
+            + ", ".join(wandernd)
+            + f". Die Bilanz faellt von {klein.bestanden} von {klein.gesamt} "
+            f"bei {klein.kapital:,.0f} EUR auf {gross.bestanden} bei "
+            f"{gross.kapital:,.0f} EUR."
+        ]
+
+        spitze = self.hoechster_stand
+        if spitze is not None and spitze.bestanden > gross.bestanden:
+            teile.append(
+                f"**Die {spitze.bestanden} von {spitze.gesamt} bei "
+                f"{spitze.kapital:,.0f} EUR sind keine bessere Bilanz.** Es ist "
+                f"dieselbe Strategie mit einer groeberen Treppe. Einen "
+                f"Kontostand danach auszuwaehlen, wie viele Gates dort halten, "
+                f"waere genau die Anpassung, gegen die die Zulassungsstrecke "
+                f"gebaut ist. Die Zahl, die nicht am Konto haengt, steht am "
+                f"oberen Ende: **{gross.bestanden} von {gross.gesamt}.**"
+            )
+
+        fest = self.feste
+        if fest:
+            teile.append(
+                f"{len(fest)} Gates stehen still: " + ", ".join(fest) + "."
+            )
+        return "\n\n".join(teile)
+
+
 def umsetzung(anteile, preise, *, kapital: float, schritt: float) -> float:
     """Welcher Anteil der berechneten Menge nach dem Abrunden uebrig bleibt.
 
@@ -392,6 +593,9 @@ __all__ = [
     "GEMESSEN",
     "SCHRITTE",
     "UNERHEBLICH",
+    "Gatelauf",
+    "Gateleiter",
+    "Gatewert",
     "Koernung",
     "Kontostufe",
     "baue_gemessen",

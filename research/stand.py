@@ -90,6 +90,11 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",
         95,
     ),
+    Richtung(
+        "Koernung zum Deflated Sharpe",
+        "bewegt ihn ueber die ganze Kontoleiter um 0,014",
+        96,
+    ),
 )
 
 
@@ -263,7 +268,13 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
              "12,95 % (100.000 Euro) - **dieselbe Strategie**. Das "
              "Rueckgang-Gate haelt nur unterhalb von rund 1150 Euro. Ursache "
              "ist die Mengenrundung, belegt durch zwei unabhaengige "
-             "Gegenproben; `cli koernung` rechnet es nach.",
+             "Gegenproben; `cli koernung` rechnet es nach. Befund 96 hat alle "
+             "elf Gates ueber dieselbe Leiter gefahren: **Genau zwei wandern** "
+             "- Rueckgang und schlechtestes Jahr, beides Risikomasse auf der "
+             "Kapitalkurve. Neun stehen still, darunter der Deflated Sharpe "
+             "(0,772 bis 0,786 ueber den ganzen Bereich). Die Bilanz laeuft "
+             "von 8 von 11 bei 300 Euro auf **6 von 11** ab 1500 Euro; die "
+             "hier gemeldeten 7 von 11 gelten fuer 500 Euro.",
         warum="Dort bestimmt nicht mehr die Strategie die Positionsgroesse, "
               "sondern die Boerse - die Risikosteuerung greift bei der Haelfte "
               "der Trades nicht. Es ist damit auch keine reine "
