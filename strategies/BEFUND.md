@@ -8124,3 +8124,191 @@ identische Beine muessen in jeder Mischung dieselbe Kurve ergeben.
 Versuchsstand 177 unveraendert - gemischt wurden Kapitalkurven, die schon
 gerechnet waren, und kein Kandidat ausgewaehlt. Suchbudget 47 von 100. 1824
 Tests gruen.
+
+## Fuenfundneunzig. Ein bestandenes Gate, das am Kontostand haengt
+
+Befund 94 legte eine Reglertabelle vor. Beim Nachrechnen fiel etwas auf, das
+nie jemand benannt hatte: Das Verhaeltnis Rendite/Rueckgang **ruckelt**.
+
+    Vola-Ziel   Rendite   Rueckgang   Verhaeltnis
+        14        9,47       7,75        1,223
+        16       10,98       8,46        1,298
+        19,3     13,47      10,64        1,266
+        20,5     14,11      11,29        1,250
+        21       14,39      12,50        1,152
+        22       15,16      12,82        1,183
+        32       22,30      18,18        1,227
+
+Ein Groessenregler skaliert jede Position mit demselben Faktor. Rendite und
+Rueckgang muessen also beide mit ihm wachsen, und ihr Verhaeltnis darf sich
+glatt bewegen - nicht sprunghaft. Zwischen 20,5 und 21 faellt es um 0,098,
+zwischen 21 und 22 steigt es wieder. Das ist kein Verlauf, das ist ein Zaun.
+
+### Der erste Vergleich: gemessen gegen gestreckt
+
+Die Gegenrechnung dazu braucht keinen neuen Backtest. Die Kapitalkurve bei
+19,3 liefert Periodenrenditen; mit dem Faktor k = Stellung/19,3
+multipliziert entsteht die Kurve, die ein **wirklich proportionaler** Regler
+ergaebe.
+
+    Stellung      k    Rueckgang gemessen   gestreckt   Verhaeltnis ist / soll
+        19,3   1,000        10,64             10,64          1,266 / 1,266
+        20,5   1,062        11,29             11,27          1,250 / 1,272
+        21     1,088        12,50             11,53          1,152 / 1,274
+        25     1,295        14,78             13,61          1,166 / 1,294
+        32     1,658        18,18             17,15          1,227 / 1,329
+
+Zwei Dinge stehen da. Erstens: Unter reiner Streckung **steigt** das
+Verhaeltnis mit der Groesse, es faellt nicht. Die Vorstellung, hoher Hebel
+zahle sich wegen Volatilitaets-Drag nicht aus, trifft auf diese Groessen-
+ordnung nicht zu - gerechnet, nicht vermutet. Zweitens: Die Abweichung sitzt
+**ausschliesslich im Rueckgang**. Die Rendite folgt der Streckung auf 0,3
+Punkte genau, der Rueckgang laeuft ihr um bis zu 1,5 Punkte davon.
+
+Der Einbruch ist dabei immer derselbe: Gipfel bei Index 1177, Tal bei 1600 -
+der Baerenmarkt aus Befund 93. Es wechselt also nicht die Episode, sondern es
+passiert innerhalb derselben etwas anderes als eine Streckung.
+
+### Zwei Verdaechtige, beide entlastet
+
+**Die Verlustgrenzen des Risiko-Offiziers.** Im Protokoll haeuften sich
+``risk.wochenlimit``-Meldungen, und zwar mehr bei groesserer Stellung. Der
+Verdacht lag nahe: Die Grenze feuert im Einbruch, nimmt die Strategie aus den
+Gewinnern, die den Fall abgefedert haetten, und vertieft ihn dadurch.
+
+Gegenprobe: derselbe Lauf mit ``enforce_risk_limits=False``. Die Rueckgaenge
+sind **auf die zweite Stelle identisch** - 7,75 / 8,46 / 10,64 / 11,29 /
+12,50 / 12,76 / 12,82 / 14,78 / 16,65 / 18,18. Die Grenzen kosten Rendite
+(13,31 % statt 13,47 %) und bewegen den Rueckgang nicht. Verdacht erledigt.
+
+**Der Deckel in der Groessensteuerung.** ``_compute_fractions`` schliesst mit
+``np.clip(anteil, 0.0, sizing.fraction)``, und der Bestand hat
+``fraction = 3.0``. Griffe der Deckel in ruhigen Phasen, ginge jede Erhoehung
+des Vola-Ziels ueberproportional in die stuermischen - genau die Asymmetrie,
+die hier zu sehen ist.
+
+Gegenprobe: Anteil an allen Balken nachgerechnet. **Der Deckel greift an
+0,0 % der Balken.** Der mittlere Anteil waechst mit exakt 0,0196 je Punkt
+Vola-Ziel, ueber alle zehn Stufen gleich. Auch erledigt.
+
+### Die Ursache: Bybits Mengenschritt
+
+Bybit handelt BTC in Schritten von **0,001** und ETH in Schritten von
+**0,01**, und ``sizing.py`` rundet die berechnete Menge darauf **ab**. Bei
+500 Euro Konto und rund 38 % Kapitalanteil steht auf BTC eine Position von
+etwa 190 Euro - bei 60.000 USD je BTC sind das drei Mengenschritte.
+
+**Der Groessenregler hat dort eine Aufloesung von einem Drittel der
+Position.** Das ist kein Regler mehr, das ist eine Treppe.
+
+Was davon uebrig bleibt, laesst sich ohne Backtest beziffern - gerundete
+Menge geteilt durch berechnete, gemittelt ueber alle Balken:
+
+    BTC bei    500 Euro    0,893      ruhige Haelfte 0,900   Sturm 0,885
+    BTC bei 100.000 Euro   0,999      ruhige Haelfte 0,999   Sturm 0,999
+    ETH bei    500 Euro    0,936      ruhige Haelfte 0,943   Sturm 0,930
+    ETH bei 100.000 Euro   1,000      ruhige Haelfte 1,000   Sturm 1,000
+
+Elf Prozent der geplanten BTC-Position kommen bei 500 Euro gar nicht
+zustande. Und die Verstuemmelung ist **schief**: Das Vola-Ziel macht die
+Position im Sturm klein, und kleine Positionen trifft das Abrunden am
+haertesten. Das kleine Konto bekommt damit einen zweiten, unbeabsichtigten
+Vola-Filter geschenkt - und der wirkt genau im Baerenmarkt 2022.
+
+### Was das mit dem Gate macht
+
+Betriebspunkt des Bestands, sonst nichts veraendert, nur der Kontostand:
+
+    Konto        Rendite   Rueckgang   Verhaeltnis   Gate (<= 12 %)
+       300 EUR    12,61 %      9,92 %       1,271    haelt
+       400 EUR    13,21 %     10,29 %       1,284    haelt
+       500 EUR    13,47 %     10,64 %       1,266    haelt
+       750 EUR    13,78 %     11,61 %       1,186    haelt
+     1.000 EUR    13,50 %     11,84 %       1,140    haelt
+     1.500 EUR    13,79 %     12,36 %       1,116    **reisst**
+     5.000 EUR    13,81 %     12,70 %       1,087    reisst
+    50.000 EUR    13,88 %     12,94 %       1,073    reisst
+   100.000 EUR    13,89 %     12,95 %       1,072    reisst
+
+Der Rueckgang waechst mit **jeder** Sprosse - kein Rauschen, ein Verlauf. Er
+wandert 3,03 Punkte, die Rendite nur 1,27. Es ist also nicht "kleines Konto,
+kleine Zahlen": Die Rundung trifft den Rueckgang und die Rendite fast nicht.
+
+**Das Rueckgang-Gate haelt nur unterhalb von rund 1.150 Euro.**
+
+### Der Beleg, dass es wirklich die Rundung ist
+
+Zwei Eingriffe, die nichts miteinander gemein haben ausser dem, was sie
+beseitigen:
+
+1. **Feiner Mengenschritt** - dieselben 500 Euro, aber 1e-8 statt 0,001 BTC.
+2. **Grosses Konto** - Bybits echter Schritt, aber 100.000 Euro.
+
+Ergebnis **12,96 %** und **12,95 %**. Zwei unabhaengige Wege, 0,01 Punkte
+auseinander, und beide 2,3 Punkte von der Ausgangsmessung entfernt. Der
+erklaerte Anteil betraegt 100 %. Damit ist die Mengenrundung nicht eine
+plausible Erklaerung, sondern die gemessene.
+
+### Und was das fuer Befund 94 bedeutet
+
+Ohne die Rundung ist die Reglerkurve glatt, und das Verhaeltnis steigt
+monoton - so, wie es soll:
+
+    Vola-Ziel   Rendite   Rueckgang   Verhaeltnis
+        14       10,15       9,62        1,055
+        19,3     13,89      12,96        1,072
+        21       15,07      14,00        1,077
+        22       15,77      14,60        1,080
+        32       22,60      20,35        1,110
+
+Das Ruckeln aus Befund 94 war die Treppe, kein Marktbefund. Der **Schluss**
+von Befund 94 bleibt aber stehen, und zwar haerter als vorher: Das
+Verhaeltnis liegt jetzt sauber bei 1,07 bis 1,11 - gefordert sind 15/12 =
+**1,250**. Zwischen 16 und 19,3 interpoliert liegt die Grenze des
+Rueckgang-Gates bei Vola-Ziel 17,8, und dort stehen rund **12,8 % Rendite**.
+Die Decke ist damit beziffert: 12,8 % gegen geforderte 15 %.
+
+Vorher liess die zackige Tabelle offen, ob zwischen zwei Stufen noch ein
+Punkt liegt, der beide Schwellen haelt. Jetzt nicht mehr: Die Kurve ist
+glatt, monoton, und sie laeuft am Rechteck vorbei.
+
+### Was daraus folgt
+
+1. **Eines der acht bestandenen Gates haelt nur, solange das Konto klein
+   bleibt.** Wer von 500 auf 2.000 Euro aufstockt, aendert an der Strategie
+   nichts und reisst es trotzdem. Das gehoert in die Bilanz des Kandidaten,
+   nicht in eine Fussnote.
+2. **Das ist keine Empfehlung, klein zu bleiben, damit das Gate haelt.** Das
+   waere dieselbe Sorte Anpassung, gegen die die ganze Zulassungsstrecke
+   gebaut ist. Der Betriebspunkt wird nicht nachgezogen, und die 500 Euro
+   werden nicht zur Begruendung umgedeutet.
+3. **Der Groessenregler ist als Weg zum Rechteck endgueltig zu.** Nicht
+   knapp daneben, sondern um den Faktor 1,17 im Verhaeltnis.
+4. Der Punkt "Kontogroesse" stand in ``stand.py`` schon als offene
+   Entscheidung - mit der Mindestmenge als Begruendung, 51 % der Trades
+   betroffen. Er ist jetzt beziffert und um die Folge fuer das Gate
+   ergaenzt, statt einen zweiten Eintrag daneben zu setzen.
+
+### Was gebaut wurde
+
+``research/koernung.py`` mit ``Kontostufe`` und ``Koernung``. Die
+entscheidenden Stellen:
+
+* ``gegenstueck`` - die Feinmessung wird gegen die Sprosse mit **demselben**
+  Kontostand gerechnet, nicht gegen die kleinste. Sonst stuende im Zaehler
+  zusaetzlich der Kontounterschied.
+* ``koernung_erklaert_es`` - wahr nur, wenn beide Gegenproben einander naeher
+  treffen als ``UNERHEBLICH`` = 0,05 Punkte. Die Zahl ist nicht gegriffen:
+  Die Gates entscheiden gegen runde Grenzen und werden auf zwei Stellen
+  berichtet, darunter kann kein Urteil kippen.
+* ``umsetzung`` - beziffert die Rundung ohne Backtest.
+* ``steigt_durchgehend`` - Monotonie als Gegenprobe gegen Rauschen.
+
+``cli koernung`` faehrt die Leiter, die Gegenprobe und die Umsetzungszahlen.
+17 Tests in ``tests/test_koernung.py``; der tragende ist
+``test_beide_gegenproben_treffen_einander``, weil daran haengt, ob die
+Ursache belegt oder nur plausibel ist.
+
+Versuchsstand 177 unveraendert. Der Zaehler korrigiert das Testen vieler
+**Strategie**-Hypothesen; hier ist die Strategie in jeder Zeile dieselbe, und
+ausgewaehlt wurde nichts. Suchbudget 47 von 100. 1841 Tests gruen.

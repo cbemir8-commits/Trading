@@ -5509,6 +5509,169 @@ def duerre(
 
 
 @app.command()
+def koernung(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    konten: str = typer.Option(
+        "300,400,500,600,750,1000,1500,2000,3000,5000,10000,25000,50000,100000",
+        "--konten", help="Startkapitalien, durch Komma getrennt.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Haengt das Rueckgang-Gate am Kontostand statt an der Strategie?
+
+    Bybit handelt BTC in Schritten von 0,001 und ETH in Schritten von 0,01,
+    und die berechnete Menge wird darauf **abgerundet**. Bei 500 EUR Konto ist
+    eine BTC-Position knapp drei Mengenschritte gross - der Groessenregler hat
+    dort also eine Aufloesung von einem Drittel der Position.
+
+    Dieser Befehl faehrt dieselbe Strategie ueber eine Leiter von
+    Kontostaenden und misst, wie weit die Gate-Zahlen dabei wandern. Dazu
+    kommt eine Gegenprobe mit feinem Mengenschritt: Sie aendert **nur** die
+    Rundung und sonst nichts.
+
+    **Kostet keinen Versuch.** Der Zaehler korrigiert das Testen vieler
+    Strategie-Hypothesen; hier ist die Strategie in jeder Zeile dieselbe, und
+    ausgewaehlt wird nichts. Der Betriebspunkt wird auch nicht nachgezogen.
+    """
+    from decimal import Decimal
+
+    import numpy as np
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.gates import GateThresholds
+    from research.koernung import Koernung, Kontostufe, umsetzung
+    from research.seeds import spitzenkandidat
+    from strategy import indicators
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    store = CandleStore(settings.paths.data_store)
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+    frames = common_range(roh)
+    genome = spitzenkandidat()
+
+    def lauf(kapital: Decimal, *, fein: bool) -> Kontostufe | None:
+        configs = {}
+        for x in symbole:
+            instrument = _fallback_instrument(_bybit_kontrakt(x))
+            if fein:
+                # Nur die Rundung wird entfernt, sonst nichts: derselbe
+                # Kontrakt, dieselben Gebuehren, dasselbe Konto.
+                instrument = instrument.model_copy(
+                    update={
+                        "qty_step": Decimal("0.00000001"),
+                        "min_order_qty": Decimal("0.00000001"),
+                    }
+                )
+            configs[x] = BacktestConfig(
+                instrument=instrument, risk=settings.risk,
+                initial_equity=kapital, enforce_risk_limits=True,
+                kalender=_terminkalender(settings) or None,
+            )
+        bericht = run_portfolio_walkforward(
+            frames, lambda: compile_genome(genome), configs
+        )
+        if not bericht.windows or bericht.combined is None:
+            return None
+        return Kontostufe(
+            kapital=float(kapital),
+            cagr=float(bericht.combined.cagr_pct),
+            rueckgang=float(bericht.combined.max_drawdown_pct),
+            trades=len(bericht.all_trades),
+        )
+
+    kapitalien = [Decimal(x.strip()) for x in konten.split(",") if x.strip()]
+    if len(kapitalien) < 3:
+        console.print("[red]Mindestens drei Kontostaende noetig.[/]")
+        raise typer.Exit(2)
+
+    console.print(
+        f"\n[bold]Koernung[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Kandidat   {genome.name}\n"
+        f"  Konten     {len(kapitalien)} Sprossen von {kapitalien[0]:g} bis "
+        f"{max(kapitalien):g} EUR\n"
+    )
+
+    stufen = []
+    for kapital in kapitalien:
+        stufe = lauf(kapital, fein=False)
+        if stufe is None:
+            console.print(f"[yellow]{kapital:g} EUR: keine Fenster.[/]")
+            continue
+        stufen.append(stufe)
+        console.print(
+            f"[dim]  {kapital:>9g} EUR  {stufe.trades:>4} Trades  "
+            f"{stufe.cagr:>6.2f} % p.a.  Rueckgang {stufe.rueckgang:>5.2f} %[/]"
+        )
+
+    # Die Gegenprobe laeuft auf dem Referenzkonto der Zulassung, nicht auf
+    # der kleinsten Sprosse: Verglichen werden darf sie nur mit dem Lauf, der
+    # sich sonst in nichts von ihr unterscheidet.
+    referenz = Decimal("500") if Decimal("500") in kapitalien else kapitalien[0]
+    fein = lauf(referenz, fein=True)
+
+    bild = Koernung(
+        stufen=stufen,
+        grenze_pct=GateThresholds().max_oos_drawdown_pct,
+        feinmessung=fein,
+    )
+    console.print("\n" + bild.tabelle())
+    farbe = "yellow" if bild.spanne >= 0.05 else "green"
+    console.print(f"\n[{farbe}]{bild.urteil()}[/]\n")
+
+    # Die Rundung laesst sich auch ohne Backtest beziffern - und diese Zahl
+    # sagt, warum ausgerechnet der Rueckgang betroffen ist.
+    console.print("[bold]Wie viel der geplanten Menge uebrig bleibt[/]")
+    vola_ziel = genome.sizing.target_vol_pct
+    for symbol, frame in frames.items():
+        schritt = float(_fallback_instrument(_bybit_kontrakt(symbol)).qty_step)
+        vola = indicators.compute(
+            "realized_vol", frame, {"period": genome.sizing.vol_period}
+        )
+        anteile = np.clip(vola_ziel / vola, 0.0, genome.sizing.fraction)
+        preise = frame["close"].to_numpy(dtype=float)
+        mitte = float(np.nanmedian(vola))
+        ruhig = vola <= mitte
+        for kapital in (float(referenz), float(max(kapitalien))):
+            gesamt = umsetzung(anteile, preise, kapital=kapital, schritt=schritt)
+            still = umsetzung(
+                anteile[ruhig], preise[ruhig], kapital=kapital, schritt=schritt
+            )
+            sturm = umsetzung(
+                anteile[~ruhig], preise[~ruhig], kapital=kapital, schritt=schritt
+            )
+            console.print(
+                f"[dim]  {symbol[:14]:<14} {kapital:>8,.0f} EUR   "
+                f"gesamt {gesamt:.3f}   ruhig {still:.3f}   "
+                f"Sturm {sturm:.3f}[/]"
+            )
+    console.print(
+        "\n[dim]Das Vola-Ziel macht die Position im Sturm klein - und kleine "
+        "Positionen verstuemmelt das Abrunden am staerksten. Das kleine Konto "
+        "bekommt damit einen zweiten, unbeabsichtigten Vola-Filter geschenkt.[/]"
+    )
+    console.print(
+        "[dim]Der Versuchszaehler bleibt unveraendert: Die Strategie ist in "
+        "jeder Zeile dieselbe, veraendert wird der Kontostand.[/]\n"
+    )
+
+
+@app.command()
 def plateaubild(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",

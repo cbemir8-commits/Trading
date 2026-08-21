@@ -84,6 +84,12 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     Richtung("Phasen-Partner", "6 von 22 gegenlaeufig, 5 davon insgesamt wertlos", 85),
     Richtung("Verbund aus dem Katalog", "bestes Paar 3,585 unter Nullmedian 3,683", 86),
     Richtung("Sperrfrist", "Folgetrades schlechter, aber kein t-Wert ueber 2", 88),
+    Richtung("Verbund fuer die Risikogates", "231 Kombinationen, kein Treffer", 94),
+    Richtung(
+        "Groessenregler zum Rechteck",
+        "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",
+        95,
+    ),
 )
 
 
@@ -251,10 +257,20 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
     Entscheidung(
         frage="Kontogroesse",
         zahl="Bei 500 Euro laufen 51 % aller Trades auf der Mindestmenge der "
-             "Boerse. Ab rund 2000 Euro verschwindet die Beschraenkung.",
+             "Boerse. Ab rund 2000 Euro verschwindet die Beschraenkung. Und "
+             "seit Befund 95 ist beziffert, was daran haengt: Der Rueckgang "
+             "des Bestands steigt mit dem Konto von 9,92 % (300 Euro) auf "
+             "12,95 % (100.000 Euro) - **dieselbe Strategie**. Das "
+             "Rueckgang-Gate haelt nur unterhalb von rund 1150 Euro. Ursache "
+             "ist die Mengenrundung, belegt durch zwei unabhaengige "
+             "Gegenproben; `cli koernung` rechnet es nach.",
         warum="Dort bestimmt nicht mehr die Strategie die Positionsgroesse, "
               "sondern die Boerse - die Risikosteuerung greift bei der Haelfte "
-              "der Trades nicht.",
+              "der Trades nicht. Es ist damit auch keine reine "
+              "Betriebsentscheidung mehr: Eines der acht bestandenen Gates "
+              "haelt nur, solange das Konto klein bleibt. Wer auf 2000 Euro "
+              "aufstockt, aendert an der Strategie nichts und reisst es "
+              "trotzdem.",
     ),
     Entscheidung(
         frage="Wochenverlustgrenze",
