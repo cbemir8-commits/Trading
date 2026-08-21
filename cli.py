@@ -5770,6 +5770,176 @@ def koernung(
 
 
 @app.command()
+def rangprobe(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    kapital: float = typer.Option(
+        500.0, "--kapital", help="Kontostand fuer beide Laeufe."
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Haelt die Rangfolge, wenn man die Mengenrundung entfernt?
+
+    Jeder Eintrag der Bestenliste ist bei 500 EUR gemessen, also durch den
+    Rundungsfilter aus Befund 95 hindurch. Der Filter ist nicht neutral: Er
+    schneidet kleine Positionen staerker ab als grosse, und wie gross die
+    Positionen sind, ist eine Eigenschaft des Genoms.
+
+    Haengt die Rangfolge davon ab, hat die Suche nach einem verfaelschten
+    Signal gesteuert und jeder Vergleich zweier Kandidaten stand auf Sand.
+    Dieser Befehl misst jedes Genom des Katalogs zweimal - mit Bybits
+    Mengenschritt und mit einem feinen - und vergleicht die Urteile.
+
+    Genome ohne Trades bleiben aussen vor. Sie bestehen fuenf Gates, weil
+    nichts schiefgehen kann, wo nichts passiert; ein Rang unter ihnen
+    bedeutet nichts.
+
+    **Kostet keinen Versuch.** Jedes Genom ist in beiden Spalten dasselbe,
+    gemessen wird der Mengenschritt, und ausgewaehlt wird nichts.
+    """
+    from decimal import Decimal
+
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.gates import evaluate_gates
+    from research.rangprobe import Doppel, Rangprobe, schranke
+    from research.seeds import VORGESEHEN, load_seeds
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    store = CandleStore(settings.paths.data_store)
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+    frames = common_range(roh)
+    erster = next(iter(frames.values()))
+    trials = load_trials(Path(settings.paths.state) / "trials.json")
+
+    def baue_configs(*, fein: bool) -> dict:
+        aus = {}
+        for x in symbole:
+            instrument = _fallback_instrument(_bybit_kontrakt(x))
+            if fein:
+                instrument = instrument.model_copy(
+                    update={
+                        "qty_step": Decimal("0.00000001"),
+                        "min_order_qty": Decimal("0.00000001"),
+                    }
+                )
+            aus[x] = BacktestConfig(
+                instrument=instrument, risk=settings.risk,
+                initial_equity=Decimal(str(kapital)), enforce_risk_limits=True,
+                kalender=_terminkalender(settings) or None,
+            )
+        return aus
+
+    konfigurationen = {False: baue_configs(fein=False), True: baue_configs(fein=True)}
+
+    kandidaten = []
+    for generation in sorted(
+        g for g, i in VORGESEHEN.items() if i == interval_obj.value
+    ):
+        kandidaten.extend(load_seeds(generation))
+    if not kandidaten:
+        console.print(
+            f"[red]Kein Katalog fuer {interval_obj.label} vorgesehen.[/]"
+        )
+        raise typer.Exit(2)
+
+    console.print(
+        f"\n[bold]Rangprobe[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Genome     {len(kandidaten)}\n"
+        f"  Konto      {kapital:,.0f} EUR in beiden Laeufen\n"
+        f"  Versuche   {trials} in beiden Laeufen\n"
+    )
+
+    doppel = []
+    # Der Sharpe gehoert nicht in ``Doppel`` - dort steht, was fuer das
+    # Urteil gebraucht wird. Hier ist er nur eine der drei geprueften
+    # Erklaerungen und wird deshalb daneben gefuehrt.
+    sharpe_je_name: dict[str, float] = {}
+    for i, genome in enumerate(kandidaten, start=1):
+        messwerte = {}
+        for fein in (False, True):
+            configs = konfigurationen[fein]
+            bericht = run_portfolio_walkforward(
+                frames, lambda g=genome: compile_genome(g), configs
+            )
+            if not bericht.windows or bericht.combined is None:
+                break
+            gates = evaluate_gates(
+                genome, bericht, erster, configs[symbole[0]],
+                trials_so_far=trials, frames=frames, configs=configs,
+            )
+            messwerte[fein] = (
+                sum(1 for r in gates.results if r.passed),
+                len(gates.results),
+                float(bericht.combined.max_drawdown_pct),
+                len(bericht.all_trades),
+                float(bericht.combined.sharpe),
+            )
+        if len(messwerte) != 2:
+            console.print(f"[yellow]{genome.name}: kein Ergebnis.[/]")
+            continue
+        grob, fein_werte = messwerte[False], messwerte[True]
+        sharpe_je_name[genome.name] = grob[4]
+        doppel.append(
+            Doppel(
+                name=genome.name, trades=grob[3],
+                grob_bestanden=grob[0], fein_bestanden=fein_werte[0],
+                grob_rueckgang=grob[2], fein_rueckgang=fein_werte[2],
+                gesamt=grob[1],
+            )
+        )
+        console.print(
+            f"[dim]  {i:>2}/{len(kandidaten)} {genome.name[:40]:42} "
+            f"{grob[0]}/{grob[1]} -> {fein_werte[0]}/{fein_werte[1]}[/]"
+        )
+
+    probe = Rangprobe(doppel=doppel)
+    console.print("\n" + probe.tabelle())
+    farbe = "green" if probe.rangfolge_haelt else "yellow"
+    console.print(f"\n[{farbe}]{probe.urteil()}[/]\n")
+
+    if probe.genug:
+        # Drei Erklaerungen fuer die Streuung - und die Schranke steigt
+        # deshalb. Wer drei prueft und jede einzeln gegen 2,0 haelt, faellt
+        # auf genau die Falle herein, gegen die dieses Projekt gebaut ist.
+        gepruefte = 3
+        console.print("[bold]Was die Streuung der Luecken erklaert[/]")
+        for name, werte in (
+            ("Hoehe des Rueckgangs", [d.grob_rueckgang for d in probe.handelnde]),
+            ("Zahl der Trades", [d.trades for d in probe.handelnde]),
+            ("Sharpe", [sharpe_je_name[d.name] for d in probe.handelnde]),
+        ):
+            console.print(
+                f"  {probe.erklaerung(name, werte, hypothesen=gepruefte)}"
+            )
+        console.print(
+            f"\n[dim]Schranke {schranke(gepruefte):.2f} statt 2,00, weil "
+            f"{gepruefte} Erklaerungen geprueft wurden. Bei dreien reisst "
+            f"eine von sieben rein zufaellig die 2,00.[/]"
+        )
+
+    console.print(
+        "\n[dim]Der Versuchszaehler bleibt unveraendert: Jedes Genom ist in "
+        "beiden Spalten dasselbe, veraendert wird der Mengenschritt.[/]\n"
+    )
+
+
+@app.command()
 def plateaubild(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",

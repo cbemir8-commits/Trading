@@ -8489,3 +8489,121 @@ steht als Punkt "Kontogroesse" in ``stand.py`` und gehoert dem Nutzer.
 Versuchsstand 177 unveraendert - es wurde nichts gemessen, sondern etwas
 aufgeschrieben, das schon gemessen war. Suchbudget 47 von 100. 1858 Tests
 gruen.
+
+## Achtundneunzig. Die Rangfolge haelt - und eine geratene Erklaerung war falsch
+
+Nach Befund 97 blieb eine Frage offen, die schlimmer ist als alles, was die
+drei Befunde davor gefunden haben: **Jeder der 45 Eintraege in der Bestenliste
+ist bei 500 EUR gemessen, also durch den Rundungsfilter hindurch.** Der Filter
+ist nicht neutral - er schneidet kleine Positionen staerker ab als grosse, und
+wie gross die Positionen sind, ist eine Eigenschaft des Genoms.
+
+Haengt die Rangfolge davon ab, hat die Suche nach einem verfaelschten Signal
+gesteuert, und jeder Vergleich zweier Kandidaten stand auf Sand.
+
+### Die Antwort
+
+**Sie haengt nicht davon ab.** Alle 23 Tageskerzen-Genome des Katalogs
+zweimal gemessen - Bybits Mengenschritt gegen einen feinen, sonst alles
+gleich, Versuchsstand 177 in beiden Spalten:
+
+    Genom                              Trades    grob    fein  Luecke  Gates
+    Momentum-Beteiligung 90 Tage           94   25,56   27,77   +2,20   2->2
+    Trend-Beteiligung 100 Tage            101   18,40   19,91   +1,51   2->2
+    Trend-Beteiligung 50 Tage             142   29,16   30,03   +0,87   5->5
+    Donchian-Ausbruch 55/20                55   19,45   20,27   +0,82   6->6
+    Vola-Ziel, langes Messfenster          51    6,97    7,46   +0,49   7->7
+    Trend-Beteiligung voller Einsatz       43   27,67   28,12   +0,46   3->3
+    Trend mit Vola-Ziel 20 %               51    8,03    8,18   +0,15   8->8
+    Vola-Ziel, kurzes Messfenster          51    7,78    7,90   +0,12   8->8
+    Trend-Beteiligung (fair gerechnet)     46   13,54   13,65   +0,11   5->5
+    Trend-Beteiligung 200 Tage             46   13,54   13,65   +0,11   5->5
+    Trend mit Vola-Ziel 22 %               51    8,83    8,91   +0,08   8->8
+    Bollinger-Ruecksetzer short             1    0,35    0,39   +0,04   5->5
+    Trend beide Richtungen                 84   27,76   27,43   -0,32   3->3
+
+**Von 13 handelnden Genomen aendert keines seine Zahl bestandener Gates.**
+
+Zehn weitere Genome stehen nicht in der Tabelle: Sie handeln auf diesen Daten
+gar nicht und bestehen trotzdem fuenf Gates, weil nichts schiefgehen kann, wo
+nichts passiert. Sie mitzuzaehlen haette die Stabilitaetsquote von 13 auf 23
+gehoben, ohne dass etwas gemessen waere - Stillstand als Stabilitaet.
+
+### Warum der Bestand trotzdem kippt
+
+Sein Sprung von **+2,32** Punkten ist kein Ausreisser; das groesste
+Katalog-Genom liegt bei +2,20. Er ist der einzige Kandidat, dessen Rueckgang
+**nahe an seiner Schwelle** steht: 10,64 % gegen 12 %. Ueberall sonst
+verschiebt dieselbe Rundung eine Zahl, die weit von ihrer Grenze entfernt
+liegt.
+
+Das ist die Lehre in einem Satz: **Die Koernung dreht kein Urteil, ausser die
+Zahl liegt ohnehin dicht an der Schwelle. Dort dreht sie es zuverlaessig.**
+
+### Eine Erklaerung, die ich geraten und widerlegt habe
+
+Mein Verdacht war der Konviktions-Faktor des Bestands. Er laeuft von
+1/(1+Bonus) bis 1,0, halbiert also die Position in schwachen Setups, und
+kleine Positionen trifft das Abrunden am haertesten. Das klang zwingend.
+
+Gegenprobe mit Bonus 0, sonst unveraendert:
+
+    mittlerer Kapitalanteil   0,165 -> 0,330   (Position verdoppelt)
+    Luecke im Rueckgang       +2,32 -> +2,22   (praktisch unveraendert)
+
+**Falsch geraten.** Die doppelte Position aendert an der Luecke nichts. Der
+Verdacht steht hier, weil er sonst beim naechsten Mal wieder auftaucht.
+
+### Und die Stelle, an der ich die eigene Lehre fast vergessen haette
+
+Die Luecken streuen von -0,32 bis +2,20. Drei Erklaerungen dafuer geprueft,
+ueber die 13 handelnden Genome:
+
+    Hoehe des Rueckgangs   r = +0,413   t = +1,51
+    Zahl der Trades        r = +0,543   t = +2,14
+    Sharpe                 r = +0,115   t = +0,38
+
+Die mittlere reisst die uebliche Schwelle |t| >= 2. Ich war einen Satz davon
+entfernt, "mehr Trades, mehr Rundungen, groessere Luecke" aufzuschreiben.
+
+**Es ist kein Beleg.** Bei drei Pruefungen reisst eine von sieben rein
+zufaellig die 2,00; die Schranke liegt nach Bonferroni bei **2,39**. Genau
+diese Korrektur ist das Thema des ganzen Projekts - der Versuchszaehler tut
+nichts anderes, nur eine Ebene tiefer. Sie in der eigenen Auswertung zu
+vergessen waere die peinlichste Stelle, an der man sie vergessen kann.
+
+Die Zahl steht im Modul, damit jemand sie mit mehr Genomen nachpruefen kann.
+Behauptet wird sie nicht.
+
+### Was gebaut wurde
+
+``research/rangprobe.py``:
+
+* ``schranke(hypothesen)`` - die Bonferroni-korrigierte Schwelle. Bei einer
+  Pruefung bleibt es bei 2,0, bei drei sind es 2,39, bei zehn 2,81. Sie
+  waechst also, ohne ins Unerreichbare zu laufen.
+* ``Zusammenhang`` traegt seine Schranke mit sich. Ein t ohne die Zahl der
+  geprueften Hypothesen ist die Zahl, die zur Fehldeutung einlaedt - deshalb
+  steht sie in ``__str__`` daneben.
+* ``Doppel.handelt`` schliesst die stummen Genome aus.
+* ``Rangprobe.spitze_wechselt`` fragt eigens nach dem ersten Platz.
+  Uebereinstimmung im Mittelfeld nuetzt nichts, wenn oben ein anderer steht -
+  die Liste ist dafuer da, den besten zu finden.
+
+``cli rangprobe`` faehrt beide Laeufe und prueft die drei Erklaerungen mit der
+richtigen Schranke. 15 Tests; tragend sind ``test_die_rangfolge_haelt`` und
+``test_drei_hypothesen_heben_die_schranke``.
+
+### Was daraus folgt
+
+1. **Die Bestenliste steht nicht auf Sand.** Die Sorge aus Befund 97 ist
+   gemessen und erledigt - das ist ein Ergebnis, kein Nicht-Ergebnis.
+2. Der Kontostand bleibt trotzdem eine Bedingung der Messung, und
+   ``Entry.kapital`` bleibt richtig. Dass die Rundung heute keine Rangfolge
+   dreht, heisst nicht, dass sie es bei einem Kandidaten mit Rueckgang nahe
+   12 % nicht taete - beim Bestand tut sie es ja.
+3. Der Bestand ist in dieser Hinsicht kein Sonderfall, sondern ein Grenzfall.
+
+Versuchsstand 177 unveraendert: Jedes Genom ist in beiden Spalten dasselbe,
+veraendert wird der Mengenschritt, ausgewaehlt wird nichts. Suchbudget 47 von
+100. 1873 Tests gruen.
