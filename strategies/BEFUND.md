@@ -8607,3 +8607,118 @@ richtigen Schranke. 15 Tests; tragend sind ``test_die_rangfolge_haelt`` und
 Versuchsstand 177 unveraendert: Jedes Genom ist in beiden Spalten dasselbe,
 veraendert wird der Mengenschritt, ausgewaehlt wird nichts. Suchbudget 47 von
 100. 1873 Tests gruen.
+
+## Neunundneunzig. Die pessimistische Annahme kostet nichts - gemessen, nicht gehofft
+
+``backtest/engine.py`` sagt es im eigenen Docstring:
+
+    *"Beruehrt eine Kerze sowohl Stop als auch Take-Profit, verraet OHLC
+    nicht, was zuerst kam. Mit 1-Minuten-Daten wird die Reihenfolge exakt
+    aufgeloest. Ohne sie gilt die pessimistische Annahme: erst Liquidation,
+    dann Stop, dann Take-Profit."*
+
+``cli wettbewerb`` sucht nach Minutenkerzen. Die gibt es in diesem Projekt
+nicht. Vorhanden sind **Fuenfzehnminutenkerzen ab 2020-03-30** - 222.700 je
+Markt, seit dem Backfill ungenutzt fuer diesen Zweck.
+
+**Damit ist jede Zahl dieses Projekts unter der pessimistischen Annahme
+entstanden, und was sie kostet, stand nirgends.**
+
+### Das Ergebnis
+
+Derselbe Kandidat, dieselben Daten, zweimal gerechnet:
+
+    Lauf              Trades   Rendite  Rueckgang   Sharpe   Gates
+    pessimistisch        152   13,47 %    10,64 %    1,473    7/11
+    aufgeloest           152   13,47 %    10,64 %    1,473    7/11
+
+**Bitgleich.** Nicht "fast", nicht "innerhalb der Toleranz" - identisch bis auf
+die letzte gemeldete Stelle. Die Annahme kostet nichts.
+
+### Warum das kein Messfehler ist
+
+Genau hier liegt die Falle, und die Engine warnt selbst davor:
+
+    *"Ohne as_unit('ns') liegen beide Seiten um Faktor 1000 auseinander -
+    searchsorted findet dann nie etwas, und die Engine faellt still auf die
+    pessimistische Annahme zurueck. Ein Fehler ohne Fehlermeldung."*
+
+"Kein Unterschied" haette also auch heissen koennen: *die Feinkerzen sind nie
+angekommen*. Eine Aussage ueber die Datenpipeline, verkleidet als Aussage
+ueber die Strategie.
+
+Nachgezaehlt wurde deshalb, wie oft die Engine wirklich zerlegt hat -
+``Backtester._segments`` mitgezaehlt, waehrend der Lauf lief:
+
+    Segmentaufrufe   11.300
+    davon fein        9.128   (80,8 %)
+
+Ein fein aufgeloester Tag zerfaellt in 96 Abschnitte statt in einen. Die
+uebrigen 19,2 % sind Balken vor 2020-03-30, fuer die es keine Feinkerzen gibt;
+dort greift die pessimistische Annahme weiter, und das ist richtig so.
+
+### Und es gab etwas zu ordnen
+
+Die zweite Art, wie ein Nullergebnis trivial werden kann: Haette der Bestand
+gar keine Take-Profits, koennte keine Kerze beide Marken zugleich beruehren,
+und Gleichheit waere eine Selbstverstaendlichkeit. Die Ausstiege verteilen
+sich auf:
+
+    signal_exit    74
+    stop_loss      68
+    take_profit    10
+
+Beide mehrdeutigen Arten kommen reichlich vor. Das Ergebnis ist damit
+informativ: **In neun Jahren hat keine einzige Tageskerze zugleich Stop und
+Take-Profit beruehrt, waehrend eine Position offen war.**
+
+Der Grund ist die Geometrie des Kandidaten: 4 % Stop unter dem Einstieg, die
+Ziele darueber. Ein Tag, der beides schafft, muesste eine Spanne haben, die in
+neun Jahren nie mit einer offenen Position zusammenfiel.
+
+### Warum der Standard trotzdem pessimistisch bleibt
+
+Die Verlockung waere, die Feinkerzen kuenftig immer zu nutzen. Zwei Gruende
+dagegen, und beide sind Lehren aus den letzten Befunden:
+
+1. **Vergleichbarkeit.** Alle 45 Eintraege der Bestenliste sind pessimistisch
+   gerechnet. Den Fuellmodus mitten im Projekt zu wechseln erzeugt genau die
+   Kollision, die Befund 97 fuer den Kontostand behoben hat - nur waere sie
+   diesmal an gar keinem Feld ablesbar.
+2. **Richtung.** Die pessimistische Annahme kann ein Ergebnis nur schlechter
+   aussehen lassen, nie besser. Ein Haus, das lieber keine Strategie hat als
+   eine, die nur im Backtest funktioniert, laesst die konservative Annahme
+   stehen, solange sie nichts kostet. Und sie kostet nichts.
+
+### Was daraus folgt
+
+1. **Ein Verdacht weniger.** Die 10,64 % Rueckgang und die 13,47 % Rendite
+   sind nicht durch eine Fuellannahme geschoent oder verschlechtert. Nach
+   Befund 95, wo eine Messbedingung die Zahlen um 2,3 Punkte bewegte, war das
+   nicht selbstverstaendlich.
+2. **Es ist eine Probe, keine einmalige Feststellung.** Ein Kandidat mit engem
+   Stop und nahem Ziel wuerde beides oft in derselben Kerze beruehren. Wer
+   einen neuen ernst nimmt, faehrt ``cli aufloesung`` fuer ihn.
+3. Der Weg "mit feineren Daten sieht es besser aus" ist damit zu - gemessen,
+   nicht vermutet.
+
+### Was gebaut wurde
+
+``research/aufloesung.py`` mit zwei Wachen, ohne die ein Nullergebnis
+wertlos waere:
+
+* ``abdeckung_reicht`` - wurden die Feinkerzen ueberhaupt benutzt? Unter
+  ``MINDESTQUOTE`` = 0,5 sagt die Probe nichts. Die Grenze ist gesetzt und
+  nicht hergeleitet; sie steht im Modul, damit die Willkuer sichtbar ist
+  statt im Code zu verschwinden.
+* ``gibt_es_zu_ordnen`` - kommen zwei mehrdeutige Ausstiegsarten vor?
+* ``haengt_an_der_annahme`` prueft **streng gegen null**. Eine Toleranz waere
+  die falsche Frage: Es geht nicht darum, ob der Unterschied gross ist,
+  sondern ob es einen gibt.
+
+``cli aufloesung`` faehrt beide Laeufe und zaehlt die Segmentaufrufe mit. 10
+Tests; tragend ist ``test_das_ergebnis_haengt_nicht_an_der_annahme``, und die
+beiden Wachen haben je einen eigenen.
+
+Versuchsstand 177 unveraendert: derselbe Kandidat, dieselben Daten, zweimal
+gerechnet. Suchbudget 47 von 100. 1883 Tests gruen.

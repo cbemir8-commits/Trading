@@ -5770,6 +5770,154 @@ def koernung(
 
 
 @app.command()
+def aufloesung(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    fein: str = typer.Option(
+        "15", "--fein", help="Kerzenlaenge der Feindaten."
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Haengt das Ergebnis an einer Annahme, die die Engine mangels Daten trifft?
+
+    Beruehrt eine Kerze sowohl Stop als auch Take-Profit, verraet OHLC nicht,
+    was zuerst kam. Ohne feinere Kerzen gilt die pessimistische Annahme: erst
+    Liquidation, dann Stop, dann Take-Profit. ``cli wettbewerb`` sucht nach
+    Minutenkerzen - die gibt es hier nicht, wohl aber Fuenfzehnminutenkerzen.
+
+    Dieser Befehl rechnet denselben Kandidaten zweimal und zaehlt dabei mit,
+    wie oft die Engine wirklich fein aufgeloest hat. Ohne diese Zaehlung waere
+    "kein Unterschied" womoeglich nur "die Feinkerzen sind nie angekommen" -
+    ein Fehler ohne Fehlermeldung, vor dem die Engine selbst warnt.
+
+    **Der Standard bleibt pessimistisch.** Alle bisherigen Eintraege sind so
+    gerechnet, und die Annahme kann ein Ergebnis nur schlechter aussehen
+    lassen, nie besser.
+
+    **Kostet keinen Versuch.** Derselbe Kandidat, dieselben Daten, zweimal
+    gerechnet.
+    """
+    from collections import Counter
+    from decimal import Decimal
+
+    from backtest import engine as engine_modul
+    from backtest.engine import BacktestConfig, Backtester
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.aufloesung import Aufloesung, Messung
+    from research.gates import evaluate_gates
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    fein_obj = Interval(fein)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    store = CandleStore(settings.paths.data_store)
+
+    roh, feine = {}, {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+        fein_frame = store.read(symbol, fein_obj)
+        if not fein_frame.empty:
+            feine[symbol] = fein_frame
+    if not feine:
+        console.print(
+            f"[red]Keine {fein_obj.label}-Kerzen - ohne sie gibt es nichts "
+            f"aufzuloesen.[/]"
+        )
+        raise typer.Exit(2)
+
+    frames = common_range(roh)
+    erster = next(iter(frames.values()))
+    trials = load_trials(Path(settings.paths.state) / "trials.json")
+    configs = {
+        x: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+        )
+        for x in symbole
+    }
+    genome = spitzenkandidat()
+
+    console.print(
+        f"\n[bold]Aufloesung[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Kandidat   {genome.name}\n"
+        f"  Feindaten  {fein_obj.label} fuer {len(feine)} von {len(symbole)} "
+        f"Beinen\n"
+    )
+
+    # Mitzaehlen, wie oft wirklich fein aufgeloest wurde. Ohne diese Zahl
+    # laesst sich ein Nullergebnis nicht von einem stillen Fehlschlag
+    # unterscheiden.
+    zaehler: Counter = Counter()
+    original = Backtester._segments
+
+    def gezaehlt(self, arrays, index, sub_index):
+        stuecke = original(self, arrays, index, sub_index)
+        zaehler["balken"] += 1
+        if len(stuecke) > 1:
+            zaehler["fein"] += 1
+        return stuecke
+
+    messungen = {}
+    gruende: Counter = Counter()
+    for name, subs in (("pessimistisch", None), ("aufgeloest", feine)):
+        if subs is not None:
+            engine_modul.Backtester._segments = gezaehlt
+        try:
+            bericht = run_portfolio_walkforward(
+                frames, lambda: compile_genome(genome), configs, sub_frames=subs
+            )
+        finally:
+            engine_modul.Backtester._segments = original
+        if not bericht.windows or bericht.combined is None:
+            console.print(f"[red]{name}: keine Fenster.[/]")
+            raise typer.Exit(2)
+        gates = evaluate_gates(
+            genome, bericht, erster, configs[symbole[0]],
+            trials_so_far=trials, frames=frames, configs=configs,
+        )
+        k = bericht.combined
+        messungen[name] = Messung(
+            name=name, trades=len(bericht.all_trades),
+            cagr=float(k.cagr_pct), rueckgang=float(k.max_drawdown_pct),
+            sharpe=float(k.sharpe),
+            bestanden=sum(1 for r in gates.results if r.passed),
+            gesamt=len(gates.results),
+        )
+        if subs is not None:
+            gruende = Counter(t.exit_reason for t in bericht.all_trades)
+
+    probe = Aufloesung(
+        pessimistisch=messungen["pessimistisch"],
+        aufgeloest=messungen["aufgeloest"],
+        feine_balken=zaehler["fein"],
+        balken=zaehler["balken"],
+        ausstiegsgruende=dict(gruende),
+    )
+    console.print(probe.tabelle())
+    farbe = (
+        "yellow" if not probe.belastbar or probe.haengt_an_der_annahme else "green"
+    )
+    console.print(f"\n[{farbe}]{probe.urteil()}[/]\n")
+    console.print(
+        "[dim]Der Versuchszaehler bleibt unveraendert: derselbe Kandidat, "
+        "dieselben Daten, zweimal gerechnet.[/]\n"
+    )
+
+
+@app.command()
 def rangprobe(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",

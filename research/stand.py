@@ -95,6 +95,11 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         "bewegt ihn ueber die ganze Kontoleiter um 0,014",
         96,
     ),
+    Richtung(
+        "Feinere Kerzen im Fuellmodell",
+        "80,8 % der Balken aufgeloest, Ergebnis bitgleich",
+        99,
+    ),
 )
 
 
