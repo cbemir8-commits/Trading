@@ -8722,3 +8722,121 @@ beiden Wachen haben je einen eigenen.
 
 Versuchsstand 177 unveraendert: derselbe Kandidat, dieselben Daten, zweimal
 gerechnet. Suchbudget 47 von 100. 1883 Tests gruen.
+
+## Hundert. Der groesste Kostenblock steht auf einem Vorgabewert
+
+Fuenf Befunde hintereinander haben Messbedingungen geprueft: die Koernung der
+Mengen, alle elf Gates darueber, die Aufzeichnung, die Rangfolge, das
+Fuellmodell. Vier davon endeten sauber. Dieser hier nicht.
+
+**``data_store/funding/`` ist leer.**
+
+### Was das heisst
+
+Der Backtest belastet Perpetual-Positionen alle acht Stunden mit Funding, auf
+den Nominalwert. Die Rate kommt aus ``FundingSchedule``, und ohne historische
+Daten setzt sie ``default_rate = 0,0001`` ein - den Bybit-Basiswert, rund 11 %
+im Jahr fuer eine dauerhaft gehaltene Long-Position.
+
+Es gibt keine historischen Daten. **Jede Zahl dieses Projekts rechnet mit dem
+Vorgabewert**, seit dem ersten Backtest.
+
+### Die Zahl, die es einordnet
+
+Am Betriebspunkt des Bestands, ueber neun Jahre:
+
+    Handelsgebuehren     7,17 EUR
+    Funding             63,79 EUR
+
+**Das 8,9-fache.** Und 8,2 % des Bruttogewinns von 776,97 EUR.
+
+Dieses Projekt hat ein Kosten-Stress-Gate, ein Modul ``kostenanteil.py``,
+einen Befund ueber Maker- gegen Taker-Gebuehren und mehrere ueber
+Ausfuehrungsqualitaet. Der groessere Kostenblock stand die ganze Zeit daneben
+und wurde nie angesehen.
+
+### Wie viel daran haengt
+
+Derselbe Kandidat ueber eine Leiter von Saetzen, sonst alles gleich:
+
+    Satz p.a.   Funding    Anteil   Rendite   Rueckgang   Gates
+     0,0 %       0,00 EUR    0,0 %   14,83 %      9,87 %    9/11
+     5,5 %      31,90 EUR    4,1 %   14,15 %     10,25 %    9/11
+    11,0 %      63,79 EUR    8,2 %   13,47 %     10,64 %    7/11   <- Vorgabe
+    21,9 %     127,57 EUR   16,4 %   12,13 %     11,41 %    7/11
+    32,9 %     191,35 EUR   24,6 %   10,80 %     12,17 %    6/11
+    54,8 %     318,46 EUR   40,9 %    8,22 %     13,68 %    3/11
+
+Zwischen 5,5 % und 11 % kippen **zwei Gates**: Schlechtestes Jahr und
+Parameter-Plateau. Zwischen 21,9 % und 32,9 % ein drittes: Drawdown. Der
+Vorgabewert liegt genau am oberen Rand des ersten Sprungs.
+
+### In welche Richtung der Fehler zeigt
+
+``FundingSchedule`` sagt es im eigenen Docstring:
+
+    *"Eine Strategie, die Funding ignoriert, ueberschaetzt ihre Rendite
+    systematisch, und zwar besonders in Bullenmaerkten, wo die Rate meist
+    positiv ist und Longs zahlen."*
+
+Der Bestand ist eine **Long-Trendfolge**. Er ist im Markt, wenn der Trend
+steigt - also genau dann, wenn Longs am meisten zahlen. Und der Vorgabewert
+ist der **Basiswert**, nicht der Durchschnitt.
+
+**Gemessen ist diese Richtung hier nicht.** Sie steht so im Docstring der
+Engine, und nachpruefen liesse sie sich nur mit echten Bybit-Raten, die aus
+diesem Container nicht erreichbar sind. Deshalb steht hier keine Korrektur,
+sondern eine Groessenordnung: **Liegt die wahre Rate ueber der Vorgabe, steht
+der Bestand schlechter da als 7 von 11 - nicht besser.**
+
+### Die Falle, und warum sie ausdruecklich benannt gehoert
+
+Bei 0 % stuende der Bestand auf **9 von 11**. Nur Messlatte und Deflated
+Sharpe faellen dann noch durch. Das ist die beste Bilanz, die dieser Kandidat
+je gezeigt hat.
+
+Sie ist eine **Empfindlichkeit, kein Szenario.** Funding entfaellt nur im
+Spot-Handel, und dort entfaellt auch der Hebel: Die Position waere durch das
+Kapital gedeckelt, und die gemessenen Groessen kaemen gar nicht zustande. Die
+Zeile sagt, wie viel die Annahme wiegt - nicht, was erreichbar waere.
+
+Der Satz wird deshalb nicht auf den Wert gestellt, bei dem mehr Gates halten.
+Das steht so im Modul und im Urteil, weil es sonst beim naechsten Lesen
+verlockend aussieht.
+
+### Was daraus folgt
+
+1. **Ein neuer Punkt fuer den Nutzer**, und zwar ein grosser: ``python -m cli
+   funding --von 2020-03-30`` laedt die echten Raten. Der Befehl existiert
+   seit Generation vier und ist fuer diesen Zweck nie gelaufen. Er steht jetzt
+   in ``stand.py`` unter BEIM_NUTZER und als eigene Entscheidung.
+2. **Die 7 von 11 sind keine feste Zahl.** Sie stehen auf einer Kostenannahme,
+   die um den Faktor zwei bis fuenf danebenliegen kann - in beide Richtungen,
+   mit einem Docstring, der die teurere fuer wahrscheinlicher haelt.
+3. Die Reihe der Messbedingungen ist damit nicht abgeschlossen, sondern hat
+   den bisher groessten Fund geliefert - nach vier Befunden, die sauber
+   ausgingen.
+
+### Was gebaut wurde
+
+``research/finanzierung.py``. Die Stellen, an denen es hart bleibt:
+
+* ``vielfaches_der_gebuehren`` - die Zahl, die die Groessenordnung sofort
+  klarmacht. 8,9 sagt mehr als "63,79 EUR".
+* ``historie_vorhanden`` - ohne echte Raten ist die ganze Leiter eine Annahme,
+  und das steht im **ersten Satz** des Urteils, nicht in einer Fussnote.
+* Das Urteil nennt die Nullzeile ausdruecklich als Falle und schreibt dazu,
+  dass der Satz nicht auf den guenstigen Wert gestellt wird.
+* Die Richtung des Fehlers wird als **nicht gemessen** ausgewiesen, mit
+  Quelle. Sie zu behaupten waere bequem und falsch.
+
+``cli finanzierung`` faehrt die Leiter. 13 Tests; tragend sind
+``test_funding_ist_der_groesste_kostenblock`` und
+``test_die_nullzeile_wird_nicht_als_hoffnung_verkauft``.
+
+Nebenbei: ``zahlwort`` kann jetzt bis 199. Bis eben fiel die Suche ueber 99
+ausdruecklich aus, mit dem Hinweis, den Hunderterbereich zu bauen, wenn er
+gebraucht wird. Er wird gebraucht.
+
+Versuchsstand 177 unveraendert: derselbe Kandidat auf jeder Sprosse,
+veraendert wird eine Kostenannahme. Suchbudget 47 von 100. 1897 Tests gruen.

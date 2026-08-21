@@ -5770,6 +5770,137 @@ def koernung(
 
 
 @app.command()
+def finanzierung(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    saetze: str = typer.Option(
+        "0,0.00005,0.0001,0.0002,0.0003,0.0005", "--saetze",
+        help="Funding-Saetze je Achtstundenperiode, durch Komma.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Wie viel haengt am angenommenen Funding-Satz?
+
+    Der Backtest belastet Perpetual-Positionen alle acht Stunden mit Funding.
+    Ohne historische Raten setzt ``FundingSchedule`` den Bybit-Basiswert von
+    0,01 % je Periode ein - rund 11 % im Jahr fuer eine dauerhaft gehaltene
+    Long-Position. ``data_store/funding/`` ist leer; **jede Zahl dieses
+    Projekts rechnet mit diesem Vorgabewert.**
+
+    Gemessen wird, wie stark das Urteil daran haengt. Am Betriebspunkt ist
+    Funding das 8,9-fache der Handelsgebuehren - der groesste Kostenblock des
+    Systems steht auf einer Annahme.
+
+    **Kostet keinen Versuch.** Derselbe Kandidat auf jeder Sprosse; veraendert
+    wird eine Kostenannahme. Der Satz wird insbesondere **nicht** auf den Wert
+    gestellt, bei dem mehr Gates halten.
+    """
+    from decimal import Decimal
+
+    from backtest.costs import FundingSchedule
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from data.funding import FundingStore
+    from research.admission import load_trials
+    from research.finanzierung import BASISSATZ, Finanzierung, Stufe
+    from research.gates import evaluate_gates
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    store = CandleStore(settings.paths.data_store)
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+    frames = common_range(roh)
+    erster = next(iter(frames.values()))
+    trials = load_trials(Path(settings.paths.state) / "trials.json")
+    genome = spitzenkandidat()
+
+    # Gibt es ueberhaupt echte Raten? Die Antwort gehoert in den Bericht und
+    # nicht in eine Fussnote - ohne sie ist die ganze Leiter eine Annahme.
+    laden = FundingStore(settings.paths.data_store)
+    historie = any(
+        not laden.read(_bybit_kontrakt(s)).empty for s in symbole
+    )
+
+    werte = [float(x.strip()) for x in saetze.split(",") if x.strip()]
+    if len(werte) < 3:
+        console.print("[red]Mindestens drei Saetze noetig.[/]")
+        raise typer.Exit(2)
+
+    console.print(
+        f"\n[bold]Finanzierung[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Kandidat   {genome.name}\n"
+        f"  Historie   {'vorhanden' if historie else 'nicht vorhanden'}\n"
+        f"  Saetze     {len(werte)} Sprossen\n"
+    )
+
+    stufen = []
+    for satz in werte:
+        configs = {
+            x: BacktestConfig(
+                instrument=_fallback_instrument(_bybit_kontrakt(x)),
+                risk=settings.risk, initial_equity=Decimal("500"),
+                enforce_risk_limits=True,
+                kalender=_terminkalender(settings) or None,
+                funding=FundingSchedule(default_rate=Decimal(str(satz))),
+            )
+            for x in symbole
+        }
+        bericht = run_portfolio_walkforward(
+            frames, lambda: compile_genome(genome), configs
+        )
+        if not bericht.windows or bericht.combined is None:
+            console.print(f"[yellow]Satz {satz:g}: keine Fenster.[/]")
+            continue
+        gates = evaluate_gates(
+            genome, bericht, erster, configs[symbole[0]],
+            trials_so_far=trials, frames=frames, configs=configs,
+        )
+        k = bericht.combined
+        stufe = Stufe(
+            satz=satz, cagr=float(k.cagr_pct),
+            rueckgang=float(k.max_drawdown_pct),
+            bestanden=sum(1 for r in gates.results if r.passed),
+            gesamt=len(gates.results),
+            funding=sum(float(t.funding) for t in bericht.all_trades),
+            gebuehren=sum(float(t.fees) for t in bericht.all_trades),
+            brutto=sum(float(t.gross_pnl) for t in bericht.all_trades),
+            gescheitert=tuple(r.name for r in gates.results if not r.passed),
+        )
+        stufen.append(stufe)
+        console.print(
+            f"[dim]  {stufe.jahr_pct:>5.1f} % p.a.  Funding "
+            f"{stufe.funding:>7.2f} EUR  Rendite {stufe.cagr:>6.2f} %  "
+            f"Rueckgang {stufe.rueckgang:>5.2f} %  "
+            f"{stufe.bestanden}/{stufe.gesamt} Gates[/]"
+        )
+
+    bild = Finanzierung(
+        stufen=stufen, angenommen=BASISSATZ, historie_vorhanden=historie
+    )
+    console.print("\n" + bild.tabelle())
+    farbe = "yellow" if bild.haengt_daran or not historie else "green"
+    console.print(f"\n[{farbe}]{bild.urteil()}[/]\n")
+    console.print(
+        "[dim]Der Versuchszaehler bleibt unveraendert: derselbe Kandidat auf "
+        "jeder Sprosse, veraendert wird eine Kostenannahme.[/]\n"
+    )
+
+
+@app.command()
 def aufloesung(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",

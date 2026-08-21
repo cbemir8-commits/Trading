@@ -133,12 +133,20 @@ def zahlwort(n: int) -> str:
     gibt. Der erste Anlauf zu diesem Modul hat eine 15-Minuten-Messung
     wiederholt, die in Befund 29 laengst stand - die Liste war richtig, nur
     ungeprueft und unvollstaendig.
+
+    **Der Hunderterbereich kam mit Befund 100 dazu, nicht vorher.** Hier stand
+    bis dahin ausdruecklich, dass er gebaut wird, wenn er gebraucht wird - und
+    dass die Suche bis dahin sichtbar ausfaellt statt still das Falsche zu
+    liefern. Jetzt wird er gebraucht.
     """
-    if not 1 <= n <= 99:
-        # Ueber 99 gaebe es "Hundertein" und Aehnliches. Statt das zu bauen,
-        # bevor es gebraucht wird, faellt die Suche hier sichtbar aus - ein
-        # leerer String findet keine Ueberschrift, und der Test schlaegt an.
+    if not 1 <= n <= 199:
+        # Ueber 199 gaebe es "Zweihundert" und Aehnliches. Dieselbe Regel wie
+        # vorher: erst bauen, wenn es soweit ist. Ein leerer String findet
+        # keine Ueberschrift, und der Test schlaegt an.
         return ""
+    if n >= 100:
+        rest = zahlwort(n - 100)
+        return f"Hundert{rest.lower()}" if rest else "Hundert"
     if n in _SONDER:
         return _SONDER[n]
     if n < 10:
@@ -265,6 +273,28 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "entscheiden bleibt nur, ob das je anders sein soll.",
     ),
     Entscheidung(
+        frage="Funding-Satz",
+        zahl="Nie gemessen. `data_store/funding/` ist leer, und der Backtest "
+             "setzt den Bybit-Basiswert von 0,01 % je Achtstundenperiode ein "
+             "- rund 11 % im Jahr. Am Betriebspunkt sind das 63,79 Euro gegen "
+             "7,17 Euro Handelsgebuehren, also das **8,9-fache**, und 8,2 % "
+             "des Bruttogewinns. Die Bilanz reicht ueber die gemessene Leiter "
+             "von 9 von 11 (bei 0 %) bis 3 von 11 (bei 55 %); bei 11 % steht "
+             "sie auf 7. `cli finanzierung` rechnet es nach.",
+        warum="Der groesste Kostenblock des Systems steht auf einem "
+              "Vorgabewert. Zwei Gates kippen zwischen 5,5 % und 11 % - "
+              "Schlechtestes Jahr und Parameter-Plateau. Und der Vorgabewert "
+              "ist der **Basiswert**, nicht der Durchschnitt: Der Bestand ist "
+              "eine Long-Trendfolge und im Markt, wenn der Trend steigt, also "
+              "wenn Longs am meisten zahlen. Liegt die wahre Rate darueber, "
+              "steht der Kandidat schlechter da als gemeldet. Echte Raten "
+              "gibt es nur von Bybit, und die sind aus dem "
+              "Entwicklungscontainer nicht erreichbar - das ist eine Sperre "
+              "dieser Sandbox, keine des Systems. Auf dem eigenen Rechner: "
+              "`python -m cli funding --von 2020-03-30`, sofern das Konto "
+              "Perpetuals fuehrt.",
+    ),
+    Entscheidung(
         frage="Kontogroesse",
         zahl="Bei 500 Euro laufen 51 % aller Trades auf der Mindestmenge der "
              "Boerse. Ab rund 2000 Euro verschwindet die Beschraenkung. Und "
@@ -379,6 +409,12 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "python -m cli abgleich",
         "Erzeugt der Livebetrieb dieselben Signale wie der Backtest? Vor "
         "jedem Livegang auszufuehren.",
+    ),
+    (
+        "python -m cli funding --von 2020-03-30",
+        "Laedt die echten Funding-Raten. Bisher rechnet jede Zahl mit dem "
+        "Vorgabewert, und der ist der groesste Kostenblock des Systems - das "
+        "8,9-fache der Handelsgebuehren (Befund 100).",
     ),
 )
 
