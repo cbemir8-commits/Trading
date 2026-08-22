@@ -85,6 +85,7 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     Richtung("Verbund aus dem Katalog", "bestes Paar 3,585 unter Nullmedian 3,683", 86),
     Richtung("Sperrfrist", "Folgetrades schlechter, aber kein t-Wert ueber 2", 88),
     Richtung("Verbund fuer die Risikogates", "231 Kombinationen, kein Treffer", 94),
+    Richtung("Kostenannahmen", "bei Kosten null fehlen 0,0692 am DSR", 111),
     Richtung(
         "Groessenregler zum Rechteck",
         "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",

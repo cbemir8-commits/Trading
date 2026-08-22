@@ -8466,5 +8466,235 @@ def stand(
         console.print(lage.urteil())
 
 
+@app.command()
+def decke(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    fenster: bool = typer.Option(
+        False, "--fenster",
+        help="Statt der Kostendecke: dieselbe Regel auf drei Datenfenstern.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Wo ist nachweislich nichts mehr zu holen?
+
+    Befund 110 liess offen, ob sich noch eine Bedingung findet, die wie das
+    Funding wirkt - ein Wegfall, der jeden Fund gleichermassen hebt. Dieser
+    Befehl misst die **Decke** der Kostenfamilie: den Lauf, der gar nichts
+    kostet. Tiefer geht es nicht, und was dort noch fehlt, fehlt endgueltig.
+
+    Mit ``--fenster`` stattdessen die zweite Familie: dieselbe Regel auf drei
+    Datenfenstern. Berichtet werden **alle drei**, auch die schlechteren - wer
+    sich nach den Zahlen das guenstigste aussucht, lockert ein Gate, nur
+    unauffaelliger.
+
+    **Kostet keinen Versuch.** Derselbe Kandidat, dieselben Regeln; veraendert
+    werden die Handelskosten beziehungsweise der Datenausschnitt.
+    """
+    from decimal import Decimal
+
+    from backtest.costs import CostModel, FundingSchedule
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.decke import Decke, Deckenwert, Fenster, Fensterlage, Stichprobenbedarf
+    from research.gates import evaluate_gates
+    from research.seeds import spitzenkandidat
+    from research.stand import GESCHLOSSEN
+    from research.suchbudget import Kandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    store = CandleStore(settings.paths.data_store)
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+    gemeinsam = common_range(roh)
+    trials = load_trials(Path(settings.paths.state) / "trials.json")
+    basis = spitzenkandidat()
+    ohne_hebel = basis.model_copy(
+        update={"sizing": basis.sizing.model_copy(update={"fraction": 1.0})}
+    )
+
+    def configs_fuer(
+        namen, *, gebuehr: float = 1.0, rutsch: float = 1.0, funding: str = "0"
+    ) -> dict:
+        aus = {}
+        for x in namen:
+            grund = BacktestConfig(
+                instrument=_fallback_instrument(_bybit_kontrakt(x)),
+                risk=settings.risk, initial_equity=Decimal("500"),
+                enforce_risk_limits=True,
+                kalender=_terminkalender(settings) or None,
+            )
+            aus[x] = BacktestConfig(
+                instrument=grund.instrument, risk=grund.risk,
+                costs=CostModel(
+                    maker_fee_rate=grund.costs.maker_fee_rate * Decimal(str(gebuehr)),
+                    taker_fee_rate=grund.costs.taker_fee_rate * Decimal(str(gebuehr)),
+                    slippage_bps=grund.costs.slippage_bps * Decimal(str(rutsch)),
+                    stop_slippage_bps=(
+                        grund.costs.stop_slippage_bps * Decimal(str(rutsch))
+                    ),
+                ),
+                funding=FundingSchedule(default_rate=Decimal(funding)),
+                initial_equity=grund.initial_equity,
+                enforce_risk_limits=True,
+                allow_shorts=grund.allow_shorts,
+                entry_expiry_bars=grund.entry_expiry_bars,
+                max_hold_bars=grund.max_hold_bars,
+                kalender=grund.kalender,
+            )
+        return aus
+
+    def messen(frames: dict, configs: dict, *, hebel: bool = False):
+        """Ein Lauf, und heraus kommt, was beide Teile brauchen."""
+        genom = basis if hebel else ohne_hebel
+        erster = next(iter(frames.values()))
+        bericht = run_portfolio_walkforward(
+            frames, lambda: compile_genome(genom), configs
+        )
+        ergebnisse = evaluate_gates(
+            genom, bericht, erster, configs[next(iter(frames))],
+            trials_so_far=trials, frames=frames, configs=configs,
+        )
+        dsr = next(r for r in ergebnisse.results if r.name == "Deflated Sharpe")
+        eintrag = Kandidat.aus_trades("Lauf", bericht.all_trades)
+        return bericht, ergebnisse, float(dsr.value), float(dsr.threshold), eintrag
+
+    if fenster:
+        console.print(
+            f"\n[bold]Drei Datenfenster[/] {interval_obj.label}, Spot\n"
+            f"  Kandidat   {basis.name}\n"
+            f"  Versuche   {trials}\n\n"
+            "[dim]Vor dem Lauf festgelegt: Berichtet werden alle drei.[/]\n"
+        )
+
+        einzeln = symbole[0]
+        lagen = []
+        for name, ausschnitt in (
+            (" + ".join(symbole) + ", gemeinsamer Bereich", gemeinsam),
+            (f"{einzeln} allein, gemeinsamer Bereich", {einzeln: gemeinsam[einzeln]}),
+            (f"{einzeln} allein, volle Historie", {einzeln: roh[einzeln]}),
+        ):
+            configs = configs_fuer(ausschnitt)
+            bericht, ergebnisse, wert, _, eintrag = messen(ausschnitt, configs)
+            erster = next(iter(ausschnitt.values()))
+            lagen.append(
+                Fenster(
+                    name=name,
+                    von=str(erster["open_time"].min().date()),
+                    bis=str(erster["open_time"].max().date()),
+                    trades=len(bericht.all_trades),
+                    guete=eintrag.sharpe_je_trade if eintrag else 0.0,
+                    dsr=wert,
+                    bestanden=sum(1 for r in ergebnisse.results if r.passed),
+                    gesamt=len(ergebnisse.results),
+                )
+            )
+            console.print(
+                f"  [bold]{name}[/]\n"
+                f"    {lagen[-1].von} .. {lagen[-1].bis}   "
+                f"{lagen[-1].trades} Trades   Guete {lagen[-1].guete:.4f}   "
+                f"DSR {wert:.4f}   {lagen[-1].bestanden}/{lagen[-1].gesamt} Gates\n"
+            )
+
+        lage = Fensterlage(referenz=lagen[0], weitere=tuple(lagen[1:]))
+        console.print(f"[yellow]{lage.urteil()}[/]\n")
+        for f in lage.weitere:
+            console.print(
+                f"[dim]  {f.name}: {lage.abstand(f):+.4f} am Deflated Sharpe.[/]"
+            )
+        console.print()
+        return
+
+    console.print(
+        f"\n[bold]Kostendecke[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Kandidat   {basis.name}\n"
+        f"  Versuche   {trials}\n"
+    )
+
+    stufen = []
+    for name, kw, hebel in (
+        ("Perpetual wie gebaut", {"funding": "0.0001"}, True),
+        ("Spot wie gebaut", {}, False),
+        ("Spot ohne Slippage", {"rutsch": 0.0}, False),
+        ("Spot ohne Gebuehren", {"gebuehr": 0.0}, False),
+        ("Spot voellig kostenfrei", {"gebuehr": 0.0, "rutsch": 0.0}, False),
+    ):
+        configs = configs_fuer(gemeinsam, **kw)
+        bericht, ergebnisse, wert, schwelle, eintrag = messen(
+            gemeinsam, configs, hebel=hebel
+        )
+        bestanden = sum(1 for r in ergebnisse.results if r.passed)
+        stufen.append((name, wert, eintrag, bestanden, len(ergebnisse.results)))
+        console.print(
+            f"  {name:<26} DSR {wert:.4f}   "
+            f"Guete {(eintrag.sharpe_je_trade if eintrag else 0.0):.4f}   "
+            f"{bestanden}/{len(ergebnisse.results)} Gates"
+        )
+
+    schwelle_wert = schwelle
+    betriebspunkt = next(x for x in stufen if x[0] == "Spot wie gebaut")
+    anschlag = next(x for x in stufen if x[0] == "Spot voellig kostenfrei")
+
+    kosten = Deckenwert(
+        name="Kosten",
+        heute=betriebspunkt[1],
+        decke=anschlag[1],
+        anschlag="Gebuehren, Slippage und Funding auf null",
+    )
+    lage = Decke(familien=(kosten,), schwelle=schwelle_wert)
+    console.print(f"\n  [bold]{kosten.als_text(schwelle_wert)}[/]")
+
+    # **Die anderen Familien werden hier nicht nachgerechnet, sondern
+    # nachgeschlagen.** Ihre Zahlen hier zu wiederholen waere eine zweite
+    # Kopie neben der Messung - derselbe Fehler wie in den Befunden 101, 103
+    # und 109. Und sie hier ueberhaupt zu zeigen, hat einen zweiten Grund:
+    # Beim Schreiben von Befund 111 habe ich "mehr Maerkte" als offene
+    # Richtung angekuendigt, obwohl sie seit Befund 27 in genau dieser Liste
+    # steht. Ein Register nuetzt nur, wo die Frage gestellt wird.
+    verwandt = [
+        r for r in GESCHLOSSEN
+        if r.name in ("Mehr Maerkte", "Mehr Historie", "Trade-Zahl heben")
+    ]
+    if verwandt:
+        console.print(
+            "\n  [dim]Andere Wege zu mehr Beobachtungen - bereits gemessen "
+            "und geschlossen:[/]"
+        )
+        for r in verwandt:
+            console.print(f"  [dim]  {r.name:<18} {r.ergebnis:<46} Befund {r.befund}[/]")
+
+    eintrag = betriebspunkt[2]
+    if eintrag is not None and eintrag.trades:
+        bedarf = Stichprobenbedarf(
+            guete=eintrag.sharpe_je_trade,
+            versuche=trials,
+            heute=eintrag.trades,
+            schiefe=eintrag.schiefe,
+            woelbung=eintrag.woelbung,
+            schwelle=schwelle_wert,
+        )
+        console.print(f"\n  [bold]In Beobachtungen:[/] {bedarf.urteil()}")
+
+    console.print(f"\n[yellow]{lage.urteil()}[/]\n")
+    console.print(
+        "[dim]Der Versuchszaehler bleibt unveraendert: Die Strategie ist in "
+        "jeder Zeile dieselbe, veraendert werden die Handelskosten.[/]\n"
+    )
+
+
 if __name__ == "__main__":
     app()

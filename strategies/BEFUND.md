@@ -9680,3 +9680,231 @@ wichtigere, weil er erklaert, warum der Fehler nicht auffaellt.
    findet, die wie das Funding wirkt.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 1999 Tests gruen.
+
+---
+
+## Hundertelf. Die Kostendecke - und wo die fehlende Evidenz wirklich herkommt
+
+Befund 110 endete mit einer offenen Frage: Findet sich noch eine Bedingung,
+die wie das Funding wirkt? Das Funding war kein Suchergebnis, sondern eine
+Kostenannahme, die im Spot-Handel schlicht entfaellt - und sie war mehr wert
+als 198 Versuche Suche. Die Frage laesst sich beantworten, indem man nicht
+nach weiteren Bedingungen sucht, sondern die **Decke** der ganzen Familie
+misst: den Lauf, der gar nichts kostet.
+
+### Die Messung
+
+Derselbe Kandidat, dieselben Daten, nur die Kostenannahmen wandern:
+
+| Lauf | DSR | Guete | Gates |
+|---|---|---|---|
+| Perpetual wie gebaut | 0,7641 | 0,2597 | 7/11 |
+| Spot wie gebaut | 0,8640 | 0,2765 | 9/11 |
+| Spot ohne Slippage | 0,8684 | 0,2773 | 9/11 |
+| Spot ohne Gebuehren | 0,8766 | 0,2790 | 10/11 |
+| **Spot voellig kostenfrei** | **0,8808** | 0,2798 | 10/11 |
+
+**Die Kostenfamilie ist erschoepft.** Bei Kosten null steht der Kandidat bei
+0,8808, die Schwelle liegt bei 0,95. Es fehlen 0,0692, und es gibt nichts
+mehr wegzunehmen. Auf derselben Skala:
+
+    Funding (Perpetual -> Spot)   +0,0999
+    Gebuehren auf null            +0,0126
+    Slippage auf null             +0,0044
+    ------------------------------------
+    alles zusammen ohne Funding   +0,0168
+    verbleibende Luecke           -0,0692
+
+Was nach dem Funding noch im Topf lag, ist ein Sechstel dessen, was das
+Funding brachte - und ein Viertel dessen, was fehlt.
+
+### Die Slippage ist damit als Streitfall erledigt
+
+``slippage_bps = 1,0`` und ``stop_slippage_bps = 5,0`` waren nie gemessen,
+nur gewaehlt. Die Leiter darueber:
+
+| Einstieg | Stopp | DSR | Gates |
+|---|---|---|---|
+| 0,0 | 0,0 | 0,8684 | 9/11 |
+| 1,0 | 5,0 | 0,8640 | 9/11 |
+| 2,0 | 10,0 | 0,8595 | 9/11 |
+| 4,0 | 20,0 | 0,8501 | 9/11 |
+| 6,0 | 30,0 | 0,8403 | 9/11 |
+| 10,0 | 50,0 | 0,8208 | 8/11 |
+
+Die Gates halten bis zum Sechsfachen des angesetzten Werts. Die ganze
+plausible Spanne dieser Annahme ist ein Sechzehntel der Luecke. Die Zahl der
+Trades bleibt in jeder Zeile bei 152: Slippage aendert nicht, **welche**
+Trades zustandekommen, nur zu welchem Preis.
+
+### Die zweite Familie: mehr Jahre
+
+Auf der Platte liegen 5331 BTC-Tageskerzen ab 2012, aber nur 3277 gemeinsame
+ab dem ETH-Start 2017-08-16 - der Portfolio-Lauf schneidet auf den
+gemeinsamen Bereich zu. Naheliegender Gedanke: Die weggeworfenen 5,6 Jahre
+liefern die fehlenden Beobachtungen.
+
+**Vor dem Lauf festgelegt: Berichtet werden alle drei Fenster, gleich wie sie
+ausfallen.** Wer nach den Zahlen das guenstigste aussucht, betreibt dieselbe
+Sache wie ein gelockertes Gate, nur unauffaelliger.
+
+| Fenster | Zeitraum | Trades | Guete | DSR | Rendite | MaxDD | Gates |
+|---|---|---|---|---|---|---|---|
+| BTC + ETH, gemeinsam | 2017-08..2026-08 | 152 | 0,2765 | 0,8640 | 14,83 % | 9,87 % | 9/11 |
+| BTC allein, gemeinsam | 2017-08..2026-08 | 72 | 0,2655 | 0,1761 | 14,61 % | 10,71 % | 8/11 |
+| BTC allein, volle Historie | 2012-01..2026-08 | 117 | 0,2652 | 0,4198 | 11,04 % | 17,58 % | 5/11 |
+
+Die zusaetzlichen Jahre bringen 45 Trades und kosten drei Gates: Die Rendite
+faellt von 14,61 % auf 11,04 %, der Rueckgang steigt von 10,71 % auf 17,58 %.
+**Die Historienfamilie hat keine Decke ueber dem heutigen Stand.** Kein
+gemessenes Fenster schlaegt das Referenzfenster in jeder Hinsicht; es bleibt.
+
+### Die dritte Familie - und ein Irrtum, der mir dabei unterlief
+
+BTC allein im gleichen Zeitraum: DSR 0,1761. BTC und ETH zusammen: 0,8640.
+**Ein Markt mehr, und der Wert springt um 0,6879.** Die Guete bewegt sich
+dabei kaum - 0,2655 gegen 0,2765. Der Sprung kommt fast vollstaendig aus der
+Zahl der Beobachtungen: 72 gegen 152.
+
+Daraus habe ich geschlossen, n komme aus Maerkten und die Maerktefamilie sei
+die letzte offene Richtung - und genau das als naechste Messung angekuendigt.
+
+**Der Schluss war falsch. Er ist seit Befund 27 gemessen, mit mehr Maerkten
+als hier:**
+
+| Kombination | roh | effektiv | ICC | p | Guete | DSR |
+|---|---|---|---|---|---|---|
+| BTC+ETH | 152 | 152 | 0,112 | 0,072 | 0,2597 | 0,864 |
+| BTC+ETH+XRP | 260 | 146 | 0,105 | 0,021 | 0,2006 | 0,422 |
+| BTC+ETH+LTC+XRP | 366 | 151 | 0,132 | 0,001 | 0,1757 | 0,275 |
+
+Die effektive Stichprobe bleibt bei rund 150, egal wie viele Maerkte
+dazukommen. Die rohe Zahl waechst um das Zweieinhalbfache, die Zahl
+unabhaengiger Beobachtungen um nichts, und die Guete faellt von 0,26 auf 0,18.
+**Ein dritter Markt senkt die effektive Stichprobe sogar - von 152 auf 146.**
+
+Der Sprung von einem auf zwei Maerkte ist kein Anfang einer Reihe, sondern ihr
+einziges Glied. Auch die Maerktefamilie hat keine Decke ueber dem heutigen
+Stand.
+
+### Wie der Irrtum zustande kam
+
+``research/stand.py`` fuehrt seit Befund 90 eine Liste der geschlossenen
+Richtungen. Ganz oben, erste Zeile:
+
+    Richtung("Mehr Maerkte", "effektive Stichprobe bleibt bei 150", 27)
+
+Die Datei war beim Schreiben dieses Befundes offen - ich hatte sie geoeffnet,
+um den Eintrag fuer 111 zu ergaenzen. Gelesen habe ich die Liste nicht. Der
+Schluss kam aus der eigenen frischen Messung, und was seit 84 Befunden
+gemessen ist, habe ich als naechsten Schritt angekuendigt.
+
+Genau dagegen ist ``stand.py`` gebaut worden, und in Befund 90 steht der Satz,
+warum: weil ein Lauf, der nur ins Laborbuch sieht, den Stand von vor zwanzig
+Befunden findet. Der Nutzen des Registers haengt daran, hineinzusehen **bevor**
+man eine Richtung fuer offen erklaert. Deshalb zeigt ``cli decke`` die
+verwandten geschlossenen Richtungen jetzt selbst an - an der Stelle, an der
+die Frage aufkommt.
+
+### Die vierte Familie: der Versuchszaehler
+
+Die einzige, die sich bisher gegen das Projekt bewegt hat. Derselbe
+Perpetual-Lauf, dieselben 152 Trades, dieselbe Guete 0,2597 - nur der Zaehler
+wandert:
+
+    102 Versuche (Stand Befund 27)   DSR 0,8625
+    198 Versuche (heute)             DSR 0,7632
+
+**Die 96 Versuche seit Befund 27 haben 0,0993 am Deflated Sharpe gekostet -
+fast genau so viel, wie der Wegfall des Fundings einbrachte (+0,0999).** Die
+groesste Einzelmessung dieses Projekts hat zurueckgeholt, was die Suche seit
+Befund 27 ausgegeben hat.
+
+Darin enthalten sind die 21 Versuche, die ich in Befund 104 mit einem
+Rauchtest verbrannt habe. Am Spot-Betriebspunkt:
+
+    177 Versuche (ohne meinen Fehler)   DSR 0,8777   178 Beobachtungen noetig
+    198 Versuche (mit)                  DSR 0,8643   182 Beobachtungen noetig
+
+0,0134 am Deflated Sharpe und vier zusaetzliche Beobachtungen. Der Zaehler
+bleibt, wo er ist.
+
+### Wie gross die Luecke in Beobachtungen ist
+
+Bei unveraenderter Guete und 198 Versuchen:
+
+    n = 152   DSR 0,8640   <- heute
+    n = 182   DSR 0,9500   <- Schwelle haelt
+
+**Dreissig unabhaengige Beobachtungen.** Beim kostenfreien Lauf sind es 177 -
+die ganze Kostenfamilie verschiebt hier also fuenf.
+
+### Ein Irrtum beim Testschreiben, und was er zutage foerderte
+
+Im Test stand zuerst ``assert bedarf.noetig() is None`` fuer eine Guete von
+0,02 - die Annahme, ein zu kleiner Vorteil sei durch keine Datenmenge zu
+heilen. Der Test fiel durch: 47.335 Beobachtungen tragen auch diesen Vorteil
+ueber die Schwelle.
+
+Der erwartete Maximalwert unter der Nullhypothese schrumpft mit ``1/sqrt(n)``,
+die Pruefgroesse waechst mit ``sqrt(n)``. Bei **jeder** echt positiven Guete
+laeuft der Deflated Sharpe gegen 1.
+
+**Der Deflated Sharpe misst Evidenz, nicht Vorteilsgroesse.** Gegen einen zu
+kleinen Vorteil schuetzt allein die Messlatte - und die ist das zweite offene
+Gate (14,83 % gegen 15 %). Die dreissig Beobachtungen schliessen eines von
+zweien. Und auch das nur, wenn sich sonst nichts aendert; Beobachtungen kommen
+aus Maerkten oder Jahren, und beides verschiebt Rendite und Rueckgang mit. Die
+dreissig sind die untere Schranke der Aufgabe, nicht ihr Preis.
+
+### Was gebaut wurde
+
+``research/decke.py``: ``Deckenwert`` (mit ``gemessen`` als entscheidender
+Angabe - ein ungemessener Anschlag gilt nie als Ausweg), ``Decke`` mit
+``erschoepft``, ``traegt``, ``ungemessen``, ``alles_erschoepft``;
+``Stichprobenbedarf`` mit ``noetig``, ``fehlende``, ``faktor``; ``Fenster``
+und ``Fensterlage``.
+
+``Fensterlage`` hat **absichtlich keine Methode, die das beste Fenster
+zurueckgibt** - ein Test haelt das fest. Zulaessig ist nur
+``wechsel_begruendbar``: Fenster, die das Referenzfenster in **jeder**
+Hinsicht schlagen (Gates, DSR, Trades zugleich).
+
+``deflated_sharpe`` reicht ``research.gates.deflated_sharpe_ratio`` weiter,
+statt die Formel nachzubauen. Eine zweite Kopie waere derselbe Fehler, der
+hier schon dreimal auffiel (Befunde 101, 103, 109); ein Test prueft die
+Gleichheit auf die letzte Stelle.
+
+``cli decke`` misst die Kostendecke, ``cli decke --fenster`` die drei
+Datenfenster. Beide kosten keinen Versuch.
+
+### Was daraus folgt
+
+Alle vier Familien sind gemessen, und keine traegt:
+
+| Familie | Anschlag | Fundstelle |
+|---|---|---|
+| Kosten | 0,8808 bei Kosten null, es fehlen 0,0692 | hier |
+| Historie | kein Fenster ueber dem heutigen Stand | 14, hier bestaetigt |
+| Maerkte | effektive Stichprobe bleibt bei 150 | 27 |
+| Versuche | bewegt sich nur nach unten, -0,0993 seit Befund 27 | hier |
+
+1. **Die Antwort auf Befund 110 Punkt 3 ist Nein.** Es gibt keine zweite
+   Bedingung, die wie das Funding wirkt. Die Kostenfamilie ist bis an den
+   Anschlag gemessen, und dort fehlen immer noch 0,0692.
+2. **Was fehlt, muss aus einer Regel kommen, die je Trade besser ist** - genau
+   der Schluss, den Befund 27 schon gezogen hat. Neu ist nur, dass er jetzt
+   auch von der Kostenseite her beziffert ist: nicht bloss "Verbreitern hilft
+   nicht", sondern "auch bei Kosten null fehlen 0,0692".
+3. **Die Suche hat bisher mehr gekostet, als sie einbrachte.** 96 Versuche
+   seit Befund 27 stehen fuer -0,0993 am Deflated Sharpe; der groesste Fund
+   des Projekts brachte +0,0999. Zusammen mit Befund 110 - Schnittpunkt bei
+   rund 5.951 Versuchen - heisst das: Weitersuchen im bisherigen Stil ist
+   gemessen aussichtslos, nicht bloss muehsam.
+4. **Der Fehler in diesem Befund ist der lehrreichste Teil.** Ein Register
+   geschlossener Richtungen nuetzt nichts, wenn es erst nach dem Schluss
+   gelesen wird. ``cli decke`` zeigt es jetzt an der Stelle, an der die Frage
+   aufkommt - das ist die einzige Aenderung, die diesen Fehler beim naechsten
+   Mal verhindert.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2039 Tests gruen.
