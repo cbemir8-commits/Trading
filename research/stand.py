@@ -92,6 +92,11 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         112,
     ),
     Richtung(
+        "Schwacher Vorteil (5 %)",
+        "|t| = 0,74 ueber acht Saaten - keine Delle, nur Rauschen",
+        113,
+    ),
+    Richtung(
         "Groessenregler zum Rechteck",
         "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",
         95,

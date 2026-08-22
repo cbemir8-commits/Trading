@@ -2519,6 +2519,134 @@ def _marktart(configs, genome) -> str:
     return "perpetual" if (funding or hebel) else "spot"
 
 
+def _teststaerke_ueber_saaten(
+    saaten: str, anteile, frames, configs, genome, versuche: int, dauer: int,
+    spanne, symbole, interval_obj,
+) -> None:
+    """Dieselbe Leiter ueber mehrere Ziehungen - mit Streuung und t-Wert.
+
+    Der Unterschied zur einzelnen Saat ist nicht Genauigkeit, sondern
+    Zulaessigkeit: Ohne Streuung gibt es keinen Massstab, an dem ein Abstand
+    zwischen zwei Sprossen gross oder klein waere. ``research/ziehung.py``
+    setzt das durch - eine Sprosse aus einer Ziehung liefert ``None``.
+
+    **Kostet keinen Versuch.** Geprueft wird die Strecke, keine Regel.
+    """
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.gates import evaluate_gates
+    from research.suchbudget import Kandidat
+    from research.teststaerke import pflanze_trend, regimefolge
+    from research.ziehung import Leiter, Sprosse, Ziehung
+    from strategy.compiler import compile_genome
+
+    try:
+        werte = sorted({int(x) for x in saaten.split(",") if x.strip()})
+    except ValueError:
+        console.print(f"[red]'{saaten}' sind keine ganzen Zahlen.[/]")
+        raise typer.Exit(2) from None
+    if len(werte) < 2:
+        console.print(
+            "[red]Mindestens zwei Saaten.[/] Mit einer gibt es keine Streuung "
+            "zu messen - dann ist der einfache Lauf ohne --saaten ehrlicher."
+        )
+        raise typer.Exit(2)
+
+    console.print(
+        f"\n[bold]Teststaerke ueber Ziehungen[/] {' + '.join(symbole)} "
+        f"{interval_obj.label}\n"
+        f"  Historie   {spanne} Tage gemeinsam\n"
+        f"  Regime     im Mittel {dauer} Kerzen, ein Verlauf fuer alle Beine\n"
+        f"  Huerde     {versuche} Versuche (gelesen, nicht erhoeht)\n"
+        f"  Ziehungen  {len(werte)} Saaten x {len(anteile)} Sprossen\n"
+    )
+
+    laenge = max(len(f) for f in frames.values())
+    sprossen: dict[float, Sprosse] = {a: Sprosse(anteil=a) for a in anteile}
+    with console.status("[dim]rechnet...[/]"):
+        for saat_wert in werte:
+            regime = regimefolge(laenge, dauer=dauer, saat=saat_wert)
+            for anteil in anteile:
+                gepflanzt = {
+                    name: pflanze_trend(frame, anteil=anteil, regime=regime)
+                    for name, frame in frames.items()
+                }
+                bericht = run_portfolio_walkforward(
+                    gepflanzt, lambda: compile_genome(genome), configs
+                )
+                if not bericht.windows:
+                    continue
+                erster = next(iter(gepflanzt.values()))
+                gates = evaluate_gates(
+                    genome, bericht, erster, next(iter(configs.values())),
+                    trials_so_far=versuche, frames=gepflanzt, configs=configs,
+                )
+                form = Kandidat.aus_trades("", bericht.all_trades)
+                dsr = next(
+                    (r.value for r in gates.results if r.name == "Deflated Sharpe"),
+                    None,
+                )
+                sprossen[anteil].ziehungen.append(
+                    Ziehung(
+                        saat=saat_wert, anteil=anteil,
+                        trades=len(bericht.all_trades),
+                        guete=form.sharpe_je_trade if form else 0.0,
+                        dsr=float(dsr) if dsr is not None else 0.0,
+                        bestanden=sum(1 for r in gates.results if r.passed),
+                        gesamt=len(gates.results),
+                        cagr_pct=(
+                            float(bericht.combined.cagr_pct)
+                            if bericht.combined else 0.0
+                        ),
+                    )
+                )
+
+    lage = Leiter(sprossen=list(sprossen.values()))
+    console.print(
+        f"  {'Anteil':>7}  {'Trades':>14}  {'Guete':>17}  "
+        f"{'DSR':>17}  {'Gates':>11}"
+    )
+    for anteil in anteile:
+        s = sprossen[anteil]
+        if not s.ziehungen:
+            continue
+
+        def spalte(groesse: str, stellen: int, sp=s) -> str:
+            mittel, streuung = sp.mittel(groesse), sp.streuung(groesse)
+            if mittel is None:
+                return "-"
+            if streuung is None:
+                return f"{mittel:.{stellen}f}"
+            return f"{mittel:.{stellen}f} +-{streuung:.{stellen}f}"
+
+        console.print(
+            f"  {anteil:>7.0%}  {spalte('trades', 1):>14}  "
+            f"{spalte('guete', 4):>17}  {spalte('dsr', 4):>17}  "
+            f"{spalte('bestanden', 1):>11}"
+        )
+
+    # Die Schranke steigt mit der Zahl der Vergleiche - fuenf Sprossen ueber
+    # der Null sind fuenf Hypothesen, und |t| >= 2 waere dann zu milde.
+    ueber_null = [a for a in anteile if a > 0.0]
+    console.print()
+    for groesse in ("guete", "trades", "dsr"):
+        console.print(f"  [bold]{groesse}[/] gegen die 0-%-Sprosse:")
+        for anteil in ueber_null:
+            u = lage.vergleich(0.0, anteil, groesse=groesse)
+            if u is None:
+                console.print(
+                    f"    [dim]{anteil:.0%}: kein Vergleich moeglich.[/]"
+                )
+                continue
+            farbe = "green" if u.belegt(len(ueber_null)) else "dim"
+            console.print(f"    [{farbe}]{u.als_text(len(ueber_null))}[/]")
+        console.print()
+
+    console.print(
+        "[dim]Der Versuchszaehler bleibt unveraendert: Geprueft wird die "
+        "Strecke, keine Regel.[/]\n"
+    )
+
+
 def _spotpunkt(frames, symbole, genome, trials: int, settings):
     """Derselbe Kandidat unter Kassa-Bedingungen - kein Hebel, kein Funding.
 
@@ -4680,6 +4808,11 @@ def teststaerke(
     ),
     dauer: int = typer.Option(60, "--dauer", help="Mittlere Regimedauer in Kerzen."),
     saat: int = typer.Option(11, "--saat", help="Fuer eine reproduzierbare Folge."),
+    saaten: str = typer.Option(
+        "", "--saaten",
+        help="Mehrere Saaten, durch Komma. Misst die Streuung ueber Ziehungen "
+             "statt einer einzelnen - siehe Befund 113.",
+    ),
     halten: str = typer.Option(
         "0", "--halten",
         help="Haltedauer-Deckel in Kerzen, durch Komma. 0 = unbegrenzt.",
@@ -4789,11 +4922,25 @@ def teststaerke(
     # geschenkte Unabhaengigkeit, und genau davon lebt der Deflated Sharpe.
     regime = regimefolge(laenge, dauer=dauer, saat=saat)
 
+    # **Mehrere Saaten, oder eine mit Ansage.** Eine Leiter aus je einer
+    # Ziehung sagt nichts ueber Unterschiede zwischen ihren Sprossen - ein
+    # Regime ist eine Zufallsfolge, und die Streuung darueber ist gross
+    # (bei 10 % gepflanztem Anteil: DSR 0,295 +- 0,264). Befund 54 stand auf
+    # genau einer Ziehung; Befund 113 hat ihn ueber acht nachgeprueft.
+    if saaten.strip():
+        _teststaerke_ueber_saaten(
+            saaten, anteile, frames, configs, genome, versuche, dauer, spanne,
+            symbole, interval_obj,
+        )
+        return
+
     console.print(
         f"\n[bold]Teststaerke[/] {' + '.join(symbole)} {interval_obj.label}\n"
         f"  Historie   {spanne} Tage gemeinsam\n"
         f"  Regime     im Mittel {dauer} Kerzen, ein Verlauf fuer alle Beine\n"
         f"  Huerde     {versuche} Versuche (gelesen, nicht erhoeht)\n"
+        f"  [dim]Eine Ziehung (Saat {saat}). Unterschiede zwischen Sprossen "
+        f"traegt sie nicht - dafuer --saaten.[/]\n"
     )
 
     # Die gepflanzten Reihen **einmal** bauen und fuer alle Varianten

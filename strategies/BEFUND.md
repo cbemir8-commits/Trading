@@ -10022,3 +10022,139 @@ anschlaegt, misst die Umstellung und nicht die Sache.
    Befund.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2057 Tests gruen.
+
+---
+
+## Hundertdreizehn. Befund 54 stand auf einer Ziehung - und haelt
+
+Befund 54 hat die Kopplung gefunden, aus der die Absage an die Regelfamilie
+folgt:
+
+    "Qualitaet und Menge sind gekoppelt. Ein groesserer Trend heisst laengeres
+     Halten heisst weniger Trades. Auf rund 3300 Tagen je Bein gibt es keine
+     Einstellung, bei der beides zugleich reicht."
+
+Er nennt sie selbst *"die belastbarste Aussage, die dieses Projekt bisher ueber
+sich selbst hat"*. Sie steht auf **einer einzigen gepflanzten Reihe** -
+``saat=11``, eine Ziehung je Sprosse. Ein Regime ist eine Zufallsfolge; wie
+viel der Leiter das gepflanzte Signal war und wie viel die eine Ziehung, stand
+nirgends.
+
+Acht Saaten, dieselben sechs Sprossen, dieselbe Huerde von 198 Versuchen:
+
+| Anteil | Trades | Guete | DSR | Gates |
+|---|---|---|---|---|
+| 0 % | 154,0 ±0,0 | 0,2569 ±0,0000 | 0,7570 ±0,0000 | 7,0 ±0,0 |
+| 5 % | 76,2 ±22,9 | 0,2452 ±0,0450 | 0,1237 ±0,0949 | 6,9 ±1,6 |
+| 10 % | 53,5 ±19,3 | 0,3900 ±0,0847 | 0,2954 ±0,2643 | 8,4 ±0,9 |
+| 20 % | 30,5 ±10,9 | 0,4988 ±0,1397 | 0,2225 ±0,3194 | 8,5 ±1,6 |
+| 35 % | 17,5 ±4,9 | 0,6608 ±0,1779 | 0,0000 ±0,0000 | 8,4 ±0,7 |
+| 50 % | 11,8 ±2,6 | 0,9621 ±0,3558 | 0,0000 ±0,0000 | 8,6 ±0,7 |
+
+Die 0-%-Sprosse hat keine Streuung, und das ist richtig so: Dort wird nichts
+gepflanzt, es ist die unveraenderte Wirklichkeit in jeder Ziehung.
+
+### Das Urteil: Befund 54 haelt
+
+Gepaart gerechnet ueber die Differenzen je Saat, Schranke 2,58 bei fuenf
+Vergleichen (Bonferroni, ``research/rangprobe.py``):
+
+    Guete    0 -> 10 %   +0,1331   |t| = 4,44   belegt
+             0 -> 20 %   +0,2418   |t| = 4,90   belegt
+             0 -> 35 %   +0,4038   |t| = 6,42   belegt
+             0 -> 50 %   +0,7052   |t| = 5,61   belegt
+
+    Trades   0 -> 10 %   -100,5    |t| =  14,8  belegt
+             0 -> 50 %   -142,3    |t| = 154,5  belegt
+
+Beide Aeste der Kopplung sind belegt, und zwar deutlich. Die Guete steigt mit
+dem gepflanzten Vorteil um 0,71 - ueber der ``MINDESTSTEIGUNG`` von 0,5, die
+**vor** der Messung festgelegt wurde. Die Trade-Zahl faellt dabei von 154 auf
+12. Der Deflated Sharpe faellt mit: von 0,757 auf 0,000.
+
+**Die Strecke erkennt einen echten Vorteil.** Sie kann ihn nur nicht zulassen,
+weil derselbe Vorteil die Beobachtungen wegnimmt, aus denen der Nachweis
+kaeme. Das ist die Aussage von Befund 54, jetzt mit Streuung.
+
+### Was Befund 54 nicht sehen konnte
+
+**Die Streuung ist gross - und Saat 11 war durchgehend guenstig.**
+
+    Sprosse   Saat 11 allein   Mittel ueber 8 Saaten
+      5 %          0,2273           0,2452 ±0,0450
+     10 %          0,5593           0,3900 ±0,0847
+     50 %          1,2734           0,9621 ±0,3558
+
+Bei 10 % lag die Einzelziehung zwei Standardabweichungen ueber dem Mittel. Die
+Kernzahl von Befund 54 - *"der Vorteil je Trade verfuenffacht sich"* - ist im
+Mittel eine Vervierfachung. Die Richtung stimmt, die Groesse war ziehungs-
+bedingt zu guenstig.
+
+Beim Deflated Sharpe ist es kraesser: 0,2954 **±0,2643**. Die Streuung ist fast
+so gross wie der Wert. Ein Einzelwert aus dieser Verteilung sagt fast nichts -
+und Befund 54 hatte nur Einzelwerte.
+
+### Die 5-%-Delle war Rauschen
+
+Der Lauf von heute frueh (``reports/teststaerke/2026-08-22_090035.json``) hat
+eine 5-%-Sprosse, die Befund 54 nicht hatte, und sie sah nach einem Befund aus:
+Guete faellt von 0,2569 auf 0,2273, Trades halbieren sich, die Rendite bricht
+auf 2,95 % ein. Ein schwacher gepflanzter Vorteil, so schien es, macht die
+Strategie **schlechter**.
+
+Ueber acht Saaten: Guete 0,2452 ±0,0450, **|t| = 0,74** gegen eine Schranke von
+2,58. Nicht belegt. Es gibt keine Delle.
+
+Was stattdessen dasteht, ist eine **Erkennungsschwelle**: Unterhalb von rund
+10 % gepflanztem Regimeanteil unterscheidet die Strecke nicht zwischen Vorteil
+und keinem Vorteil. Das ist keine Schwaeche der Gates, sondern eine Groesse,
+die man kennen sollte, bevor man einer Leiter etwas entnimmt.
+
+### Was gebaut wurde
+
+``research/ziehung.py``: ``Ziehung``, ``Sprosse``, ``Leiter``, ``Unterschied``,
+``Nachpruefung``. Der Kern ist eine Weigerung - ``Leiter.vergleich`` gibt
+``None`` zurueck, wenn eine Sprosse nur eine Ziehung hat. Nicht aus Vorsicht,
+sondern weil es die richtige Antwort ist: Ohne Streuung gibt es keinen
+Massstab, an dem ein Abstand gross oder klein waere. ``aus_einer_ziehung``
+benennt die Lage von Befund 54.
+
+Gerechnet wird **gepaart**: Jede Saat trifft alle Sprossen, also ueber die
+Differenzen je Saat. Ein gemeinsamer Zieheffekt hebt beide Sprossen zugleich
+und gehoert herausgerechnet. Ungepaart waere hier nichts zu sehen gewesen -
+die Sprossen ueberlappen sich vollstaendig.
+
+``cli teststaerke --saaten 11,23,47,...`` misst es. Der einzelne Lauf ohne
+``--saaten`` sagt jetzt selbst dazu, was er nicht kann.
+
+### Eine Falle, die der Test aufgedeckt hat
+
+Im ersten Entwurf stand ``t = mittel / fehler if fehler > 0 else inf``. Drei
+Saaten mit derselben Differenz 0,10 ergaben aber nicht Streuung null, sondern
+**3,2e-17**: ``0,30 - 0,20`` und ``0,40 - 0,30`` sind in doppelter Genauigkeit
+nicht dieselbe Zahl. Daraus wurde ``t = 5,4e15``.
+
+Das ist ernst. Ein t-Wert aus Fliesskommaresten waere in jeder Tabelle die
+groesste Zahl und in jedem Urteil das staerkste Argument - und er ist
+Rundungsrest. Aufgeloest wird jetzt an der Groessenordnung der Differenzen und
+nicht an der Null; ein Test haelt den Fall fest.
+
+Ein zweiter Testwert war geschaetzt statt gerechnet: Ich hatte |t| = 2,14
+angenommen, gemessen waren 3,41. Der Test haette dann etwas anderes geprueft,
+als sein Name sagt. Jetzt sind die Zahlen ausgerechnet.
+
+### Was daraus folgt
+
+1. **Befund 54 traegt den eigenen Massstab.** Die Absage an die Regelfamilie
+   steht auf belegtem Grund, nicht auf einer guenstigen Ziehung. Das ist die
+   unspektakulaere Antwort, und sie war offen.
+2. **Seine Zahlen waren zu guenstig.** Vervierfachung statt Verfuenffachung,
+   und der Deflated Sharpe streut um ±0,26. Wer aus dieser Leiter eine
+   Einzelzahl zitiert, zitiert eine Ziehung.
+3. **Die Erkennungsschwelle liegt bei rund 10 %.** Darunter sieht die Strecke
+   nichts - gemessen, nicht vermutet.
+4. **Das Muster der letzten drei Befunde ist dasselbe:** Wissen lag im System,
+   aber ungeprueft (111), am falschen Bezugspunkt (112), oder auf einer
+   einzelnen Ziehung (113). Keiner davon war ein Rechenfehler.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2080 Tests gruen.
