@@ -729,7 +729,11 @@ def wettbewerb(
                     f"{report.champion.genome.name}[/]"
                 )
                 write_champion(
-                    report.champion, Path(settings.paths.strategies) / "champion.json"
+                    report.champion,
+                    Path(settings.paths.strategies) / "champion.json",
+                    bedingungen=_bedingungen(
+                        report.champion, configs, interval_obj, report.trials_after
+                    ),
                 )
                 console.print("[dim]Naechster Schritt: python -m cli trade --trocken[/]")
                 break
@@ -1370,7 +1374,11 @@ def research(
 
     if uebernehmen:
         path = write_champion(
-            report.champion, Path(settings.paths.strategies) / "champion.json"
+            report.champion,
+            Path(settings.paths.strategies) / "champion.json",
+            bedingungen=_bedingungen(
+                report.champion, config, interval_obj, report.trials_after
+            ),
         )
         console.print(f"\nGeschrieben nach [bold]{path}[/]")
         console.print("[dim]Naechster Schritt: python -m cli trade --trocken[/]")
@@ -1805,7 +1813,6 @@ def trade(
     Beenden mit Strg-C. Offene Positionen bleiben dabei bestehen - ihr Stop
     liegt an der Boerse und wirkt weiter, auch wenn dieser Prozess nicht laeuft.
     """
-    import json
     from pathlib import Path
 
     from data.bybit.adapter import BybitAccount
@@ -1815,7 +1822,6 @@ def trade(
     from execution.risk import RiskOfficer, TradingState, load_risk_state
     from execution.router import MarketKind
     from strategy.compiler import compile_genome
-    from strategy.genome import Genome
     from web.journal import LiveJournal
 
     _configure_logging(verbose)
@@ -1848,8 +1854,39 @@ def trade(
         )
         raise typer.Exit(2)
 
-    genome = Genome.model_validate(json.loads(path.read_text()))
+    from research.admission import lade_bedingungen, lade_champion
+
+    geladen = lade_champion(path)
+    if geladen is None:
+        console.print(f"[red]{path} enthaelt kein lesbares Genom.[/]")
+        raise typer.Exit(2)
+    genome = geladen
     strategy = compile_genome(genome)
+
+    # -- 2a. Wurde unter demselben Instrument zugelassen? --------------------
+    #
+    # Befund 106: Derselbe Kandidat steht auf einem Perpetual bei 7 von 11 und
+    # auf Spot bei 9 von 11. Wer hier das Instrument wechselt, handelt etwas
+    # anderes als das Gepruefte - und die Datei sagte darueber bisher nichts.
+    bedingungen = lade_bedingungen(path)
+    if bedingungen.vollstaendig and not bedingungen.passt_zu(markt):
+        console.print(
+            f"[red]Zugelassen wurde auf '{bedingungen.markt}', gehandelt "
+            f"werden soll '{markt}'.[/]\n"
+            f"  Nachweis: {bedingungen.als_text()}\n"
+            "Die Gates gelten fuer das gepruefte Instrument, nicht fuer ein "
+            "anderes. Entweder mit '--markt "
+            f"{bedingungen.markt}' fahren oder die Zulassung auf dem "
+            "gewuenschten Instrument wiederholen."
+        )
+        raise typer.Exit(2)
+    if not bedingungen.vollstaendig:
+        console.print(
+            "[yellow]Die Champion-Datei traegt keinen Zulassungsnachweis.[/] "
+            "Unter welchem Instrument, Kontostand und mit welchen Daten sie "
+            "bestanden hat, steht dort nicht - ein neuer Wettbewerbslauf "
+            "schreibt es mit.\n"
+        )
 
     # -- 2b. Echtes Geld nur fuer ein zugelassenes Genom ---------------------
     #
@@ -2438,6 +2475,48 @@ def betriebspunkt(
         json_datei.parent.mkdir(parents=True, exist_ok=True)
         json_datei.write_text(json.dumps(nutzlast, indent=2), encoding="utf-8")
         console.print(f"[dim]JSON geschrieben: {json_datei}[/]")
+
+
+def _bedingungen(candidate, configs, interval_obj, versuche: int):
+    """Der Zulassungsnachweis eines Laufs - aus dem Lauf gelesen.
+
+    Alles hier kommt aus dem, was tatsaechlich gerechnet wurde: das Instrument
+    aus Funding und Hebeldeckel, der Kontostand aus den Konfigurationen, die
+    Datenquelle aus dem Gate-Bericht. Nichts davon wird danebengeschrieben.
+    """
+    from research.admission import Zulassungsbedingungen
+
+    werte = list(configs.values()) if hasattr(configs, "values") else [configs]
+    return Zulassungsbedingungen(
+        markt=_marktart(configs, candidate.genome),
+        kapital=_startkapital(
+            configs if hasattr(configs, "values") else {"x": configs}
+        ),
+        intervall=interval_obj.value,
+        referenzdaten=bool(getattr(candidate.gates, "referenzdaten", False)),
+        versuche=versuche,
+        bestanden=sum(1 for r in candidate.gates.results if r.passed),
+        gesamt=len(candidate.gates.results),
+        funding_satz=float(werte[0].funding.default_rate) if werte else 0.0,
+        zeitpunkt=datetime.now(UTC).isoformat(),
+    )
+
+
+def _marktart(configs, genome) -> str:
+    """Welches Instrument ein Lauf tatsaechlich abgebildet hat.
+
+    Abgeleitet und nicht danebengeschrieben: Der Backtest kennt keinen
+    Schalter fuer das Instrument, er kennt Funding und einen Hebeldeckel.
+    Wird Funding belastet oder darf die Position ueber das eigene Kapital
+    hinaus, war es ein Perpetual - sonst ein Kassageschaeft.
+
+    Eine zweite Quelle waere die Stelle, an der Nachweis und Lauf
+    auseinanderlaufen; in diesem Projekt schon mehrfach geschehen.
+    """
+    werte = list(configs.values()) if hasattr(configs, "values") else [configs]
+    funding = any(float(c.funding.default_rate) > 0 for c in werte)
+    hebel = float(genome.sizing.fraction) > 1.0
+    return "perpetual" if (funding or hebel) else "spot"
 
 
 def _dauer(sekunden: float) -> str:

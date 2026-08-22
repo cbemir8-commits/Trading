@@ -26,12 +26,13 @@ Fenster sagt mehr darueber, ob eine Strategie naechsten Monat noch funktioniert.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
 import structlog
+from pydantic import ValidationError
 
 from backtest.engine import BacktestConfig
 from backtest.portfolio_walkforward import run_portfolio_walkforward
@@ -267,6 +268,92 @@ def pick_champion(admitted: list[Candidate]) -> Candidate | None:
     return max(admitted, key=lambda c: (round(c.consistency, 2), c.sharpe))
 
 
+@dataclass(frozen=True, slots=True)
+class Zulassungsbedingungen:
+    """Unter welchen Bedingungen ein Champion bestanden hat.
+
+    **Warum das in die Datei gehoert.** ``champion.json`` ist die Datei, an der
+    das echte Geld haengt - und sie trug bisher nur das Genom. Woraufhin es
+    bestanden hat, stand nirgends: nicht das Instrument, nicht der Kontostand,
+    nicht die Datenquelle, nicht der Versuchsstand.
+
+    Dass das kein theoretisches Problem ist, hat Befund 106 gezeigt: Derselbe
+    Kandidat steht auf einem Perpetual bei 7 von 11 und auf Spot bei 9 von 11.
+    Wer also ``cli trade --markt spot`` faehrt, waehrend die Zulassung auf
+    einem Perpetual gemessen wurde, handelt etwas anderes als das Gepruefte -
+    und umgekehrt genauso.
+
+    Dieselbe Sorte Kollision hat die Bestenliste schon zweimal gehabt: beim
+    Intervall und beim Kontostand (Befund 97). Hier ist sie teurer.
+
+    Leere Felder heissen "nicht aufgezeichnet" und nicht "geprueft und in
+    Ordnung" - alte Dateien tragen gar keinen Nachweis.
+    """
+
+    markt: str = ""
+    """``perpetual`` oder ``spot``. Leer = nicht aufgezeichnet."""
+    kapital: float = 0.0
+    intervall: str = ""
+    referenzdaten: bool = False
+    versuche: int = 0
+    bestanden: int = 0
+    gesamt: int = 0
+    funding_satz: float = 0.0
+    zeitpunkt: str = ""
+
+    @property
+    def vollstaendig(self) -> bool:
+        """Traegt der Nachweis genug, um ihn pruefen zu koennen?"""
+        return bool(self.markt) and self.gesamt > 0
+
+    def passt_zu(self, markt: str) -> bool:
+        """Wurde unter demselben Instrument zugelassen, das jetzt laufen soll?
+
+        Ohne aufgezeichnetes Instrument gibt es nichts zu vergleichen - dann
+        ist die Antwort **nicht** "passt schon", sondern "unbekannt", und der
+        Aufrufer muss das getrennt behandeln.
+        """
+        return bool(self.markt) and self.markt == markt
+
+    def als_text(self) -> str:
+        teile = [f"Instrument {self.markt or 'nicht aufgezeichnet'}"]
+        if self.gesamt:
+            teile.append(f"{self.bestanden}/{self.gesamt} Gates")
+        if self.kapital:
+            teile.append(f"{self.kapital:,.0f} EUR Konto")
+        if self.intervall:
+            teile.append(self.intervall)
+        if self.versuche:
+            teile.append(f"{self.versuche} Versuche")
+        if self.referenzdaten:
+            teile.append("auf Forschungskerzen")
+        return ", ".join(teile)
+
+
+def lade_bedingungen(path: Path | str) -> Zulassungsbedingungen:
+    """Den Nachweis aus einer Champion-Datei lesen.
+
+    Eine Datei im alten Format - nur das Genom - liefert einen leeren
+    Nachweis. Das ist ehrlich: Dort steht nichts, und "nichts" darf nicht wie
+    "geprueft" aussehen.
+    """
+    file = Path(path)
+    if not file.exists():
+        return Zulassungsbedingungen()
+    try:
+        roh = json.loads(file.read_text())
+    except json.JSONDecodeError:
+        log.warning("zulassung.champion_unlesbar", pfad=str(file))
+        return Zulassungsbedingungen()
+    daten = roh.get("zulassung") if isinstance(roh, dict) else None
+    if not isinstance(daten, dict):
+        return Zulassungsbedingungen()
+    bekannt = {f.name for f in fields(Zulassungsbedingungen)}
+    return Zulassungsbedingungen(
+        **{k: v for k, v in daten.items() if k in bekannt}
+    )
+
+
 def ist_zugelassen(genome: Genome, path: Path | str) -> bool:
     """Ist **dieses** Genom der zugelassene Champion?
 
@@ -288,23 +375,70 @@ def ist_zugelassen(genome: Genome, path: Path | str) -> bool:
     if not file.exists():
         return False
     try:
-        champion = Genome.model_validate(json.loads(file.read_text()))
+        champion = lade_champion(file)
     except Exception:
         log.warning("zulassung.champion_unlesbar", pfad=str(file))
         return False
-    return champion.genome_id == genome.genome_id
+    return champion is not None and champion.genome_id == genome.genome_id
 
 
-def write_champion(candidate: Candidate, path: Path | str) -> Path:
-    """Den Champion dorthin schreiben, wo ``cli trade`` ihn sucht."""
+def lade_champion(path: Path | str) -> Genome | None:
+    """Das Genom aus einer Champion-Datei - in beiden Formaten.
+
+    Alt: die Datei **ist** das Genom. Neu: ``{"genom": ..., "zulassung": ...}``.
+    Beides muss lesbar bleiben, sonst wuerde eine vorhandene Zulassung durch
+    ein Formatupdate stillschweigend ungueltig.
+
+    Eine **kaputte** Datei liefert ``None`` und keinen Stapelabzug. Das ist
+    kein stiller Standardwert: Der einzige Aufrufer, der damit weiterarbeitet,
+    bricht daraufhin mit einer Meldung ab. Ein Traceback an der Stelle, an der
+    Geld im Spiel ist, waere die schlechtere Auskunft.
+    """
+    file = Path(path)
+    if not file.exists():
+        return None
+    try:
+        roh = json.loads(file.read_text())
+    except json.JSONDecodeError:
+        log.error("zulassung.champion_unlesbar", pfad=str(file), grund="kein JSON")
+        return None
+    if isinstance(roh, dict) and "genom" in roh:
+        roh = roh["genom"]
+    try:
+        return Genome.model_validate(roh)
+    except ValidationError:
+        log.error("zulassung.champion_unlesbar", pfad=str(file), grund="kein Genom")
+        return None
+
+
+def write_champion(
+    candidate: Candidate,
+    path: Path | str,
+    *,
+    bedingungen: Zulassungsbedingungen | None = None,
+) -> Path:
+    """Den Champion dorthin schreiben, wo ``cli trade`` ihn sucht.
+
+    Mit ``bedingungen`` kommt der **Zulassungsnachweis** dazu: unter welchem
+    Instrument, welchem Kontostand und welcher Datenquelle bestanden wurde.
+    Ohne ihn bleibt es beim alten Format - eine Datei, die nur sagt *was*
+    zugelassen ist und nicht *woraufhin*.
+    """
     file = Path(path)
     file.parent.mkdir(parents=True, exist_ok=True)
-    file.write_text(json.dumps(candidate.genome.model_dump(mode="json"), indent=2))
+    genom = candidate.genome.model_dump(mode="json")
+    inhalt = (
+        {"genom": genom, "zulassung": asdict(bedingungen)}
+        if bedingungen is not None
+        else genom
+    )
+    file.write_text(json.dumps(inhalt, indent=2))
     log.info(
         "zulassung.champion_geschrieben",
         pfad=str(file),
         genom=candidate.genome.genome_id,
         name=candidate.genome.name,
+        bedingungen=bedingungen.als_text() if bedingungen else "nicht aufgezeichnet",
     )
     return file
 

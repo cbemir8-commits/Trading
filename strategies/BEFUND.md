@@ -9359,3 +9359,71 @@ Der Kandidat verliert dort nichts und gewinnt zwei Gates. Der Eintrag in
 
 Versuchszaehler 198 unveraendert: derselbe Kandidat unter anderen
 Handelsbedingungen. Suchbudget 68 von 100. 1960 Tests gruen.
+
+## Hundertsieben. champion.json sagte was zugelassen ist, nicht woraufhin
+
+``champion.json`` ist die Datei, an der laut ihrem eigenen Docstring das echte
+Geld haengt. Sie enthielt genau eines: das Genom.
+
+    file.write_text(json.dumps(candidate.genome.model_dump(mode="json"), indent=2))
+
+Unter welchem **Instrument** es bestanden hat, mit welchem **Kontostand**, auf
+welchen **Daten**, bei welchem **Versuchsstand** - nichts davon stand darin.
+
+### Warum das seit Befund 106 gefaehrlich ist
+
+Derselbe Kandidat steht auf einem Perpetual bei **7 von 11** und auf Spot bei
+**9 von 11**. Und ``cli trade`` waehlt das Instrument unabhaengig davon, auf der
+Kommandozeile:
+
+    markt: str = typer.Option("perpetual", help="perpetual oder spot.")
+
+Wer also nach Befund 106 zu Recht ``--markt spot`` faehrt, waehrend die
+Zulassung auf einem Perpetual gemessen wurde, handelt **etwas anderes als das
+Gepruefte**. Nichts im System haette widersprochen.
+
+Es ist dieselbe Kollision wie beim Intervall und beim Kontostand in der
+Bestenliste (Befund 97) - nur an der Stelle, an der es Geld kostet.
+
+### Was gebaut wurde
+
+``Zulassungsbedingungen``: Instrument, Kontostand, Intervall, Datenquelle,
+Versuchsstand, Gate-Bilanz, Funding-Satz, Zeitpunkt. ``write_champion``
+schreibt sie neben das Genom, ``cli trade`` liest sie und **verweigert den
+Dienst**, wenn das Instrument nicht passt:
+
+    Zugelassen wurde auf 'perpetual', gehandelt werden soll 'spot'.
+      Nachweis: Instrument perpetual, 11/11 Gates, 500 EUR Konto, D, 198 Versuche
+
+Drei Stellen, an denen es hart bleibt:
+
+* **Abgeleitet statt danebengeschrieben.** ``_marktart`` liest Funding und
+  Hebeldeckel aus dem Lauf, der tatsaechlich gerechnet wurde. Der Backtest
+  kennt keinen Schalter fuer das Instrument; er kennt diese beiden Groessen.
+  Eine zweite Quelle waere die Stelle, an der Nachweis und Lauf auseinander
+  laufen - in diesem Projekt schon mehrfach geschehen.
+* **Fehlender Nachweis ist nicht "in Ordnung".** ``passt_zu`` gibt bei leerem
+  Instrument ``False`` zurueck, nicht "passt schon". ``cli trade`` behandelt
+  das getrennt und sagt es: *"Die Champion-Datei traegt keinen
+  Zulassungsnachweis."*
+* **Das alte Format bleibt lesbar.** Eine Datei aus der Zeit davor **ist** das
+  Genom. Sie nicht mehr zu verstehen hiesse, eine vorhandene Zulassung durch
+  ein Formatupdate stillschweigend ungueltig zu machen. ``lade_champion``
+  versteht beide, und ein Test haelt das fest.
+
+### Und eine Kleinigkeit, die vorher haette knallen koennen
+
+``lade_champion`` liefert bei einer kaputten Datei ``None`` statt eines
+Stapelabzugs - der Aufrufer bricht daraufhin mit einer Meldung ab. Das ist
+**kein** stiller Standardwert im Sinne von ``versuche.py``: Dort ist die
+Gefahr, dass ein Ersatzwert weiterrechnet. Hier rechnet nichts weiter, es
+bricht nur lesbar ab statt unlesbar.
+
+### Was sich dadurch nicht aendert
+
+Kein Urteil kippt: Es gibt derzeit keine ``champion.json``, weil kein Kandidat
+zugelassen ist. Die Wache greift gegen einen kuenftigen Fehlgriff. Alle 1975
+Tests laufen durch.
+
+Versuchszaehler 198 unveraendert - es wurde nichts gemessen, sondern
+aufgeschrieben, was ein Lauf ohnehin weiss. Suchbudget 68 von 100.
