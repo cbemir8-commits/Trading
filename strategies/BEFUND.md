@@ -9199,3 +9199,74 @@ der Unterschied hat 21 Versuche gekostet.
 
 Versuchszaehler **198** statt 177, und die Ursache steht hier. Suchbudget 68
 von 100 statt 47. 1940 Tests gruen.
+
+## Hundertfuenf. Ein Befehl, der zwanzig Minuten schweigt, sieht aus wie einer, der haengt
+
+Der Rauchtest aus Befund 104 ist nicht durchgelaufen. Er hat ``cli sperrprobe``
+nach 900 Sekunden abgeschossen:
+
+    subprocess.TimeoutExpired: Command '['.venv/bin/python', '-m', 'cli',
+    'sperrprobe']' timed out after 900 seconds
+
+Der Befehl hing nicht. Er rechnet **200 Ziehungen zu je einem vollen
+Walk-Forward mit Gate-Auswertung** - gemessen 5,6 Sekunden je Ziehung, macht
+rund **zwanzig Minuten**. Das ist die laengste Rechnung des Projekts, und
+nichts hat es gesagt.
+
+### Was zu sehen war
+
+    with console.status("[dim]zieht...[/]"):
+        for saat in range(ziehungen):
+            probe.zufall.append(messe(...))
+
+Ein Spinner ohne Zahl. Nach zwanzig Minuten weiss niemand, ob der Befehl bei
+Ziehung 5 oder 195 steht. Und in eine Datei umgeleitet - so laeuft jeder
+Durchlauf, jede Aufzeichnung, jeder Rauchtest - ist der Spinner **ueberhaupt
+nicht zu sehen**: Dort steht dann gar nichts, zwanzig Minuten lang.
+
+Genau darauf bin ich hereingefallen. Die 900 Sekunden im Rauchtest waren
+grosszuegig gemeint.
+
+### Was gebaut wurde
+
+Zwei Zeilen, die den Unterschied machen:
+
+* Der Fortschritt wird **gezaehlt**: ``anzeige.update(f"zieht {saat+1}/
+  {ziehungen} ...")``.
+* Die erwartete Dauer steht **vorher** da, und sie wird **gemessen**: Die
+  echte Ziehung, die ohnehin als Bezugspunkt laeuft, wird gestoppt und
+  hochgerechnet.
+
+      Eine Ziehung dauert 5.6 s, 200 davon also rund 19 Minuten.
+
+  Eine feste Zahl im Code waere geraten und wuerde altern - bei anderen
+  Maerkten, anderer Historie, schnellerem Rechner steht sie sofort falsch da.
+
+Dazu ``_dauer(sekunden)``: Der erste Entwurf hat stur durch 60 geteilt und
+"rund 0 Minuten" ausgegeben. Unter einer Minute stehen jetzt Sekunden,
+darueber Minuten, ab einer Stunde Stunden und Minuten.
+
+### Der Rest des Rauchtests
+
+Mit gesetztem ``TRADING_TROCKENLAUF`` und ohne die ``sperrprobe`` sind die
+uebrigen Befehle durchgelaufen. **Kein einziger Traceback.** Drei Abbrueche mit
+Exit 2, und alle drei sind richtig:
+
+    healthcheck    prueft die Bybit-Verbindung - aus diesem Container gesperrt
+    verbund        verlangt --partner, ein Pflichtargument
+    vorschlag      verlangt --datei oder --auftrag
+
+Der Versuchszaehler steht unveraendert bei 198 - die Sperre aus Befund 104
+haelt, ueber sechzig Befehlsaufrufe hinweg.
+
+### Was daraus folgt
+
+1. **Der Fehler aus Befund 103 war ein Einzelfall.** Zwei Durchlaeufe ueber
+   alle 61 Befehle haben keinen zweiten gefunden.
+2. Der Rauchtest hat damit dreierlei geliefert: einen Selbstwiderspruch
+   (103), einen Konstruktionsfehler in mir selbst (104) und eine
+   Bedienbarkeitsluecke (105). Von den drei war nur der erste gesucht.
+3. Ein Werkzeug, das lange rechnet, muss sagen wie lange - sonst wird es
+   abgeschossen, und zwar von jemandem, der es fuer kaputt haelt.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 1944 Tests gruen.

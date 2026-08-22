@@ -2440,6 +2440,20 @@ def betriebspunkt(
         console.print(f"[dim]JSON geschrieben: {json_datei}[/]")
 
 
+def _dauer(sekunden: float) -> str:
+    """Eine Laufzeit so schreiben, dass sie etwas sagt.
+
+    "rund 0 Minuten" ist keine Auskunft. Unter einer Minute stehen Sekunden,
+    darueber Minuten, ab einer Stunde Stunden und Minuten.
+    """
+    if sekunden < 60:
+        return f"{sekunden:.0f} Sekunden"
+    if sekunden < 3600:
+        return f"{sekunden / 60:.0f} Minuten"
+    stunden, rest = divmod(int(sekunden), 3600)
+    return f"{stunden} Stunden {rest // 60} Minuten"
+
+
 def _standardintervall(generation: int) -> str:
     """Die Kerzenlaenge, fuer die eine Generation gedacht ist.
 
@@ -4980,10 +4994,29 @@ def sperrprobe(
             gesamt=len(gates.results),
         )
 
+    # Der Fortschritt wird gezaehlt und die Dauer aus der ersten Ziehung
+    # geschaetzt, nicht geraten.
+    #
+    # **Warum das noetig ist.** Zweihundert Ziehungen zu je einem vollen
+    # Walk-Forward mit Gates laufen ueber eine halbe Stunde. Hier stand nur
+    # ein Spinner ohne Zahl - nach zwanzig Minuten weiss niemand, ob der
+    # Befehl bei Ziehung 5 oder 195 ist, und in eine Datei umgeleitet ist der
+    # Spinner ueberhaupt nicht zu sehen. Ein Rauchtest hat den Befehl deshalb
+    # nach 900 Sekunden abgeschossen, in der Annahme, er haenge (Befund 105).
+    import time
+
+    begonnen = time.monotonic()
     probe = Sperrprobe(echt=messe(masken))
-    with console.status("[dim]zieht...[/]"):
+    je_ziehung = time.monotonic() - begonnen
+    console.print(
+        f"[dim]  Eine Ziehung dauert {je_ziehung:.1f} s, {ziehungen} davon "
+        f"also rund {_dauer(je_ziehung * ziehungen)}.[/]\n"
+    )
+
+    with console.status(f"[dim]zieht 0/{ziehungen} ...[/]") as anzeige:
         for saat in range(ziehungen):
             probe.zufall.append(messe(ziehe_signale(signale, anzahl, saat=saat)))
+            anzeige.update(f"[dim]zieht {saat + 1}/{ziehungen} ...[/]")
 
     console.print(probe.bericht())
     console.print(f"\n{probe.urteil()}\n")

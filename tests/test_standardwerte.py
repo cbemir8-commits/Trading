@@ -21,6 +21,11 @@ gefundenen Faelle prueft, findet den dritten nicht.
 
 ``test_das_intervall_kommt_aus_der_generation`` - Die Ursache. Der Standard
 liest die Zuordnung, statt sie zu wiederholen.
+
+``TestLaufzeit`` kam mit Befund 105 dazu: Ein Rauchtest hat ``cli sperrprobe``
+nach 900 Sekunden abgeschossen, weil der Befehl in der Annahme lief, er haenge.
+Er hing nicht - 200 Ziehungen zu je einem vollen Walk-Forward mit Gates
+dauern rund zwanzig Minuten. Zu sehen war davon nur ein Spinner ohne Zahl.
 """
 
 from __future__ import annotations
@@ -140,3 +145,58 @@ class TestHerleitung:
 
         with pytest.raises((typer.Exit, click.exceptions.Exit)):
             _pruefe_generation(8, Interval("15"))
+
+
+class TestLaufzeit:
+    """Ein Befehl, der zwanzig Minuten schweigt, sieht aus wie einer, der
+    haengt - und wird abgeschossen."""
+
+    def test_die_dauer_wird_lesbar_geschrieben(self) -> None:
+        """"rund 0 Minuten" ist keine Auskunft. Der erste Entwurf hat genau
+        das ausgegeben, weil er stur durch 60 geteilt hat."""
+        from cli import _dauer
+
+        assert _dauer(11) == "11 Sekunden"
+        assert _dauer(59) == "59 Sekunden"
+        assert _dauer(60) == "1 Minuten"
+        assert _dauer(1200) == "20 Minuten"
+        assert _dauer(3600) == "1 Stunden 0 Minuten"
+        assert _dauer(5430) == "1 Stunden 30 Minuten"
+
+    def test_null_kippt_nicht(self) -> None:
+        from cli import _dauer
+
+        assert _dauer(0) == "0 Sekunden"
+
+    def test_die_sperrprobe_zaehlt_ihre_ziehungen(self) -> None:
+        """**Der Kern dieser Klasse.**
+
+        Ein Spinner ohne Zahl sagt nach zwanzig Minuten nicht, ob der Befehl
+        bei Ziehung 5 oder 195 steht - und in eine Datei umgeleitet ist er
+        ueberhaupt nicht zu sehen.
+        """
+        from pathlib import Path
+
+        import cli
+
+        quelle = Path(cli.__file__).read_text()
+        stelle = quelle[quelle.index("def sperrprobe("):]
+        stelle = stelle[: stelle.index("@app.command()")]
+
+        assert "anzeige.update" in stelle, "der Fortschritt wird fortgeschrieben"
+        assert "{saat + 1}/{ziehungen}" in stelle, "mit Zahl, nicht nur Spinner"
+        assert "_dauer(" in stelle, "und die erwartete Dauer steht vorher da"
+
+    def test_die_dauer_wird_gemessen_und_nicht_geraten(self) -> None:
+        """Die Schaetzung kommt aus der ersten wirklich gelaufenen Ziehung.
+        Eine feste Zahl im Code waere geraten und wuerde altern."""
+        from pathlib import Path
+
+        import cli
+
+        quelle = Path(cli.__file__).read_text()
+        stelle = quelle[quelle.index("def sperrprobe("):]
+        stelle = stelle[: stelle.index("@app.command()")]
+
+        assert "time.monotonic()" in stelle
+        assert "je_ziehung = time.monotonic() - begonnen" in stelle
