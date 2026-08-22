@@ -223,3 +223,104 @@ class TestSpanne:
         text = spanne(**STAND, mittelwerte=(0.30,))
 
         assert "unvereinbar" in text
+
+
+class TestNiveauschub:
+    """Ein Gewinn, den die Suche nicht erbracht hat, darf ihr nicht
+    gutgeschrieben werden.
+
+    Befund 108 hat gemessen, dass der Wegfall des Funding die Guete je Trade
+    von 0,2597 auf 0,2765 hebt. Es liegt nahe, den besseren Wert als
+    ``bester`` einzusetzen - und genau das laesst die Suche produktiver
+    aussehen, als sie ist.
+    """
+
+    #: Der Stand nach Befund 108: 198 Versuche, 152 Trades.
+    VERSUCHE = 198
+    TRADES = 152
+    PERPETUAL = 0.2597
+    SPOT = 0.2765
+
+    def rennen(self, **abweichung):
+        from research.wettrennen import Rennen
+
+        daten = {
+            "bester": self.PERPETUAL, "versuche": self.VERSUCHE,
+            "trades": self.TRADES, "mittel": 0.0,
+        }
+        daten.update(abweichung)
+        return Rennen(**daten)
+
+    def test_der_schub_veraendert_die_streuung_nicht(self) -> None:
+        """**Der Test dieser Klasse.**
+
+        Ein Niveauschub hebt jeden Fund gleichermassen - er macht die Suche
+        nicht treffsicherer. Die Ideenstreuung bleibt die, die aus der
+        tatsaechlichen Suche kalibriert wurde.
+        """
+        ohne = self.rennen()
+        mit = self.rennen(schub=self.SPOT - self.PERPETUAL)
+
+        assert mit.streuung == pytest.approx(ohne.streuung)
+        assert mit.streuung == pytest.approx(0.0940, abs=0.0005)
+
+    def test_der_schub_hebt_den_erwarteten_fund(self) -> None:
+        mit = self.rennen(schub=self.SPOT - self.PERPETUAL)
+
+        assert mit.erwartet(self.VERSUCHE) == pytest.approx(self.SPOT, abs=0.0005)
+
+    def test_die_naive_rechnung_ist_zu_optimistisch(self) -> None:
+        """**Die Falle, beziffert.**
+
+        Wer den geschobenen Wert als ``bester`` einsetzt, bekommt eine
+        Ideenstreuung von 0,1001 statt 0,0940 - und damit einen Schnittpunkt,
+        der um mehr als das Doppelte zu frueh liegt.
+        """
+        naiv = self.rennen(bester=self.SPOT)
+        richtig = self.rennen(schub=self.SPOT - self.PERPETUAL)
+
+        assert naiv.streuung > richtig.streuung
+        assert naiv.schnittpunkt() < richtig.schnittpunkt()
+        assert richtig.schnittpunkt() / naiv.schnittpunkt() > 2.0
+
+    def test_beide_stimmen_am_heutigen_stand_ueberein(self) -> None:
+        """Der Unterschied steckt nicht im Jetzt, sondern im Wachstum -
+        deshalb faellt er beim blossen Hinsehen nicht auf."""
+        naiv = self.rennen(bester=self.SPOT)
+        richtig = self.rennen(schub=self.SPOT - self.PERPETUAL)
+
+        assert naiv.erwartet(self.VERSUCHE) == pytest.approx(
+            richtig.erwartet(self.VERSUCHE), abs=0.0005
+        )
+        assert naiv.abstand(self.VERSUCHE) == pytest.approx(
+            richtig.abstand(self.VERSUCHE), abs=0.0005
+        )
+
+    def test_der_schub_verkuerzt_das_rennen_deutlich(self) -> None:
+        """Von rund 400.000 auf rund 6.000 Versuche - immer noch weit
+        jenseits des Budgets von 230, aber keine andere Groessenordnung von
+        'nie' mehr."""
+        ohne = self.rennen()
+        mit = self.rennen(schub=self.SPOT - self.PERPETUAL)
+
+        assert ohne.schnittpunkt() > 300_000
+        assert 4_000 < mit.schnittpunkt() < 8_000
+
+    def test_ohne_schub_bleibt_alles_wie_bisher(self) -> None:
+        """Ein Standardwert von 0 darf an keiner vorhandenen Zahl ruetteln."""
+        from research.wettrennen import Rennen
+
+        alt = Rennen(bester=self.PERPETUAL, versuche=self.VERSUCHE,
+                     trades=self.TRADES)
+
+        assert alt.schub == 0.0
+        assert alt.erwartet(self.VERSUCHE) == pytest.approx(self.PERPETUAL, abs=0.0005)
+
+    def test_das_budget_reicht_auch_mit_schub_nicht(self) -> None:
+        """Die ehrliche Einordnung: 230 Versuche sind das Abbruchkriterium,
+        und 6.000 liegen weit darueber."""
+        mit = self.rennen(schub=self.SPOT - self.PERPETUAL)
+
+        assert mit.abstand(230) is not None
+        assert mit.abstand(230) < 0
+        assert mit.schnittpunkt() > 230

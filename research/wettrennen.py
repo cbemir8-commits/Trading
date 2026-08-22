@@ -138,6 +138,25 @@ class Rennen:
     Bestwert zu erklaeren, und laesst die Suche schneller aufholen.
     """
 
+    schub: float = 0.0
+    """Ein Niveauschub, der **nicht** aus der Suche stammt.
+
+    **Die Falle, gegen die dieses Feld gebaut ist.** Befund 108 hat gemessen,
+    dass der Wegfall des Funding die Guete je Trade von 0,2597 auf 0,2765 hebt.
+    Es liegt nahe, den besseren Wert einfach als ``bester`` einzusetzen - und
+    genau das waere falsch: Dann kalibriert ``streuung`` die **Ideenstreuung
+    der Suche** an einem Gewinn, den die Suche nicht erbracht hat.
+
+    Der Unterschied ist nicht klein. Fuer den Spitzenkandidaten unter Spot:
+
+        naiv (0,2765 als ``bester``)          holt auf bei   2.535 Versuchen
+        richtig (0,2597 + Schub 0,0168)       holt auf bei   5.968 Versuchen
+
+    Die naive Rechnung laesst die Suche **2,4-mal produktiver** aussehen, als
+    sie ist. Deshalb gehoert in ``bester`` das, was die Suche hervorgebracht
+    hat, und Kostenaenderungen kommen hierher.
+    """
+
     @property
     def streuung(self) -> float | None:
         return kalibriere(
@@ -180,11 +199,16 @@ class Rennen:
         return Budget(versuche=versuche).noetig_bei(self.trades)
 
     def erwartet(self, versuche: int) -> float | None:
-        """Der beste Fund, der aus so vielen Versuchen zu erwarten waere."""
+        """Der beste Fund, der aus so vielen Versuchen zu erwarten waere.
+
+        Der Niveauschub kommt **oben drauf** und geht nicht in die Streuung
+        ein: Er hebt jeden Fund gleichermassen, macht die Suche aber nicht
+        treffsicherer.
+        """
         streuung = self.streuung
         if streuung is None:
             return None
-        return self.mittel + streuung * extremwert(versuche)
+        return self.mittel + streuung * extremwert(versuche) + self.schub
 
     def abstand(self, versuche: int) -> float | None:
         huerde, erwartet = self.huerde(versuche), self.erwartet(versuche)

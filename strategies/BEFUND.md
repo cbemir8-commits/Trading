@@ -9588,3 +9588,95 @@ der alte Satz nicht zurueckkommt.
 
 Versuchszaehler 198 unveraendert - gerechnet wurde mit vorhandenen Trades.
 Suchbudget 68 von 100. 1992 Tests gruen.
+
+## Hundertzehn. Das Wettrennen unter Spot - und eine Falle, die es 2,4-mal zu gut aussehen laesst
+
+Befund 108 hat den Abstand zum Deflated Sharpe halbiert. Damit stellt sich die
+Frage, die ueber den Rest des Projekts entscheidet: **Ist die verbleibende
+Luecke ersuchbar?**
+
+Befund 71 hat den Mechanismus aufgeschrieben: Jeder Versuch hebt die Huerde,
+und der beste Fund waechst ebenfalls mit der Zahl der Versuche - beide mit
+derselben Extremwertkonstante. Es entscheidet allein, ob die Streuung echter
+Regelideen ueber der des reinen Zufalls liegt. Unter Perpetual holt die Suche
+bei rund **398.000** Versuchen auf. Das ist die Zahl, die "aussichtslos"
+bedeutet.
+
+### Die naheliegende Rechnung - und warum sie falsch ist
+
+Unter Spot steht der Bestwert bei 0,2765 statt 0,2597. Man setzt ihn als
+``bester`` ein und rechnet neu:
+
+    Spot naiv       Ideenstreuung 0,1001   holt auf bei    2.535 Versuchen
+
+Von 398.000 auf 2.535. Das sah nach dem Durchbruch aus, und es ist einer -
+aber nicht in dieser Groesse.
+
+**Der Fehler:** ``streuung`` wird aus ``bester`` kalibriert. Die Frage lautet
+"welche Ideenstreuung erklaert, dass 198 Versuche diesen Bestwert
+hervorgebracht haben". Die 198 Versuche haben aber **0,2597** hervorgebracht.
+Die 0,2765 kommen aus dem Wegfall des Funding - einer Kostenaenderung, fuer
+die kein einziger Versuch ausgegeben wurde.
+
+Wer den geschobenen Wert einsetzt, schreibt der Suche einen Gewinn gut, den
+sie nicht erbracht hat, und laesst sie **treffsicherer** aussehen, als sie ist.
+
+### Richtig gerechnet
+
+Der Wegfall des Funding ist ein **Niveauschub**: Er hebt jeden Fund um
+denselben Betrag (+0,0168), macht die Suche aber nicht besser. Also bleibt die
+Ideenstreuung bei den 0,0940 aus der tatsaechlichen Suche, und der Schub kommt
+oben drauf:
+
+    Perpetual         Streuung 0,0940   Abstand -0,0381   holt auf bei 397.809
+    Spot naiv         Streuung 0,1001   Abstand -0,0213   holt auf bei   2.535
+    Spot richtig      Streuung 0,0940   Abstand -0,0213   holt auf bei   5.951
+
+**Die naive Rechnung laesst die Suche 2,4-mal produktiver aussehen.**
+
+Das Tueckische daran: Beide Rechnungen stimmen am **heutigen** Stand ueberein -
+gleicher erwarteter Fund, gleicher Abstand. Sie unterscheiden sich nur im
+Wachstum. Beim blossen Hinsehen faellt das nicht auf; ein eigener Test haelt
+genau das fest.
+
+### Was die Zahl bedeutet - und was nicht
+
+Von **398.000 auf 5.951**. Das ist keine Kleinigkeit: "aussichtslos" ist zu
+"das 26-fache des Budgets" geworden. Aber es bleibt das 26-fache: Das
+Suchbudget bricht bei 230 Versuchen ab, und dort fehlen weiterhin 0,0198.
+
+Und die Zahl haengt an einer Annahme, die nicht gemessen ist - dem mittleren
+Sharpe je Trade einer typischen neuen Regelidee. ``cli rennen`` zeigt die
+Spanne dazu, und sie ist steil: Zwischen -0,05 und +0,05 reicht das Ergebnis
+von 6.464 Versuchen bis "nie". Die 5.951 sind ein Punkt auf einer sehr steilen
+Kurve, kein Fahrplan.
+
+Dazu kommt, was schon in Befund 71 stand: Das Modell setzt **unabhaengige
+Ziehungen** voraus. Reglerscans sind das nicht. Der echte Fortschritt ist
+langsamer als hier gerechnet.
+
+### Was gebaut wurde
+
+``Rennen.schub`` - ein Niveauschub, der ausdruecklich nicht aus der Suche
+stammt. ``erwartet()`` addiert ihn, ``streuung`` sieht ihn nicht. Der
+Docstring des Feldes benennt die Falle samt beider Zahlen, damit sie nicht
+noch einmal jemand einsetzt.
+
+Sieben Tests, darunter zwei, die die Falle festhalten:
+``test_die_naive_rechnung_ist_zu_optimistisch`` und
+``test_beide_stimmen_am_heutigen_stand_ueberein`` - der zweite ist der
+wichtigere, weil er erklaert, warum der Fehler nicht auffaellt.
+
+### Was daraus folgt
+
+1. **Die Suche allein bringt es nicht.** Auch mit dem Spot-Vorteil liegt der
+   Schnittpunkt beim 26-fachen des Budgets, und die Annahme darunter ist
+   ungemessen.
+2. **Was gewirkt hat, war keine Suche.** Der grosse Sprung dieses Projekts kam
+   aus dem Wegfall einer Kostenannahme, nicht aus 198 Versuchen. Das ist die
+   Lehre, die diese Zahl mitbringt.
+3. Die Luecke von 0,0198 bei Budgetende ist damit beziffert - und sie ist
+   kein Suchproblem mehr, sondern die Frage, ob sich noch eine Bedingung
+   findet, die wie das Funding wirkt.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 1999 Tests gruen.
