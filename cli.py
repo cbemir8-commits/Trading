@@ -8432,18 +8432,12 @@ def stand(
         for h in budget.hebel(eintrag):
             farbe = "yellow" if h.moeglich else "red"
             console.print(f"  [{farbe}]{h}[/]")
+        # Abgeleitet und nicht danebengeschrieben: Hier stand bis Befund 109
+        # ein fester Satz, der von genau einem offenen Weg sprach. Er war schon
+        # vorher falsch - es waren zwei - und mit Befund 108 zusaetzlich
+        # veraltet, weil unter Spot ein dritter dazukam.
         console.print(
-            "\n  [dim]'Alles andere unveraendert' geht bei den letzten beiden "
-            "nicht: Fuer jede\n  Verteilung gilt Woelbung >= Schiefe^2 + 1. "
-            "Der Schiefe-Zielpunkt hat deshalb\n  gar keine Verteilung, und "
-            "entlang der gemessenen Kopplung ist das Gate\n  ueber die Schiefe "
-            "nicht erreichbar (Befund 70). Nachrechnen: 'cli form'.\n"
-            "  Die Woelbung kann nicht unter 1 fallen. Damit bleibt von den "
-            "vier Wegen\n  einer: die Qualitaet je Trade.\n"
-            "  Und es sind vier von fuenf: Die Streuung der Sharpe-Schaetzer "
-            "ueber die\n  Versuche steht hier nicht, weil sie nicht gemessen, "
-            "sondern angenommen\n  wird. Wie viel daran haengt: 'cli "
-            "streuung'.[/]"
+            "\n  [dim]" + budget.hebelerklaerung(budget.hebel(eintrag)) + "[/]"
         )
 
     console.print()

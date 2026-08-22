@@ -355,6 +355,69 @@ class Budget:
         )
         return gefunden
 
+    @staticmethod
+    def hebelerklaerung(hebel: list[Hebel]) -> str:
+        """Was die Zerlegung bedeutet - **aus ihr abgeleitet**.
+
+        Hier stand der Text bis Befund 109 fest verdrahtet in ``cli.py``:
+
+            *"Die Woelbung kann nicht unter 1 fallen. Damit bleibt von den
+            vier Wegen einer: die Qualitaet je Trade."*
+
+        Das galt fuer den Perpetual-Lauf, und es hat aufgehoert zu gelten, als
+        Befund 108 das Funding wegnahm: Unter Spot ist die Woelbung erreichbar
+        (5,79 statt unter 1), und die Zahl der offenen Wege ist zwei, nicht
+        einer. Der Satz stand trotzdem weiter da, weil er neben der Rechnung
+        stand statt aus ihr zu kommen.
+
+        Dieselbe Sorte Drift wie beim Standardintervall in Befund 103 und beim
+        Gate-Docstring in Befund 101: ein fester Satz neben einer gerechneten
+        Zahl.
+        """
+        offen = [h for h in hebel if h.moeglich]
+        zu = [h for h in hebel if not h.moeglich]
+
+        if not hebel:
+            return "Keine Zerlegung - nichts zu erklaeren."
+
+        if not offen:
+            return (
+                "**Keiner der vier Wege ist offen.** Jede Groesse muesste auf "
+                "einen Wert, den es nicht gibt - das Gate ist entlang dieser "
+                "Zerlegung nicht erreichbar."
+            )
+
+        namen = ", ".join(h.name for h in offen)
+        teile = [
+            f"**{len(offen)} von {len(hebel)} Wegen sind offen:** {namen}."
+        ]
+
+        leichteste = min(
+            (h for h in offen if h.veraenderung is not None),
+            key=lambda h: abs(h.veraenderung or 0.0),
+            default=None,
+        )
+        if leichteste is not None:
+            teile.append(
+                f"Am wenigsten verlangt {leichteste.name}: "
+                f"{leichteste.veraenderung:+.0%}."
+            )
+
+        for h in zu:
+            grund = h.unmoeglich_weil or (
+                "kein Wert dieser Groesse laesst das Gate halten"
+            )
+            teile.append(f"{h.name}: {grund}.")
+
+        teile.append(
+            "Und es sind vier von fuenf: Die Streuung der Sharpe-Schaetzer "
+            "ueber die Versuche steht hier nicht, weil sie nicht gemessen, "
+            "sondern angenommen wird. Sie zu bewegen hiesse, die Huerde zu "
+            "verstellen statt den Kandidaten - 'cli streuung' rechnet nach, "
+            "wie viel daran haengt."
+        )
+        return " ".join(teile)
+
     def tabelle(self, trades: tuple[int, ...] = (50, 100, 152, 200, 300, 500)) -> str:
         zeilen = [
             f"{'Trades':>8} {'noetiger Sharpe je Trade':>26}",

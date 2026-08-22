@@ -9513,3 +9513,78 @@ statt nur die Zahl. ``cli instrument --gebuehren 1,2,2.75,3`` faehrt die
 Leiter.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 1984 Tests gruen.
+
+## Hundertneun. Ein fester Satz neben einer gerechneten Zahl - schon vorher falsch
+
+Befund 108 hat den Abstand zum Deflated Sharpe halbiert. Damit stellte sich die
+Frage, wie die **vier Wege** dorthin unter Spot aussehen - die Zerlegung, die
+``cli stand`` seit Befund 61 zeigt. Gemessen, beide Instrumente nebeneinander:
+
+    Weg                    Perpetual                Spot
+    Qualitaet je Trade     0,260 -> 0,298  (+15 %)  0,276 -> 0,299  (+8 %)
+    unabhaengige Trades      152 ->  209   (+37 %)    152 ->  181   (+19 %)
+    Schiefe                braucht Woelbung >= 21,7  braucht Woelbung >= 17,6
+                           (hier 15,7) - unmoeglich  (hier 15,5) - unmoeglich
+    Woelbung               unerreichbar             15,48 -> 5,79  (-63 %)
+
+**Drei der vier Wege sehen anders aus**, und einer kippt die Kategorie: Unter
+Perpetual muesste die Woelbung unter 1 - kein Wert, den eine Verteilung
+annehmen kann. Unter Spot sind es 5,79. Das ist ein sehr grosser Schritt, aber
+kein unmoeglicher.
+
+### Und dann stand darunter weiter das hier
+
+    "Die Woelbung kann nicht unter 1 fallen. Damit bleibt von den vier Wegen
+    einer: die Qualitaet je Trade."
+
+Fest verdrahtet in ``cli.py``, direkt unter einer Tabelle, die etwas anderes
+sagte.
+
+**Der Satz war schon vor Befund 108 falsch.** Auch im Perpetual-Lauf sind
+**zwei** Wege offen, nicht einer: Qualitaet je Trade (+15 %) und unabhaengige
+Trades (+37 %). Die Zerlegung hat das die ganze Zeit ausgegeben - direkt
+darueber, in derselben Ausgabe. Der Satz hat es trotzdem anders behauptet, und
+niemand hat die beiden nebeneinandergelegt.
+
+Mit Befund 108 kam die Veralterung obendrauf: Unter Spot sind es drei.
+
+### Dieselbe Sorte Fehler wie zweimal zuvor
+
+* **Befund 103:** Das Standardintervall stand neben ``VORGESEHEN`` statt daraus
+  zu kommen - und wurde beim Umstellen vergessen.
+* **Befund 101:** Der Docstring von ``gate_cost_stress`` behauptete, Gebuehren
+  und Slippage seien die einzigen unterschaetzten Groessen - widerlegt und
+  trotzdem stehengeblieben.
+* **Hier:** Ein Erklaersatz neben einer Rechnung, die ihm widerspricht.
+
+Das Muster ist jedes Mal dasselbe: **Was gerechnet wird, aendert sich. Was
+danebengeschrieben ist, nicht.**
+
+### Was gebaut wurde
+
+``Budget.hebelerklaerung(hebel)`` leitet den Text aus der Zerlegung ab:
+
+* zaehlt die offenen Wege, statt eine Zahl zu behaupten,
+* nennt den leichtesten mit seiner Anforderung,
+* gibt zu jedem geschlossenen Weg **seinen** Grund - ``unmoeglich_weil``, wo
+  er hinterlegt ist, sonst einen allgemeinen. Ein Weg, den es nicht gibt, muss
+  als solcher dastehen, sonst sucht jemand danach.
+* und behaelt den Hinweis auf den fuenften Eingang, die geratene Streuung: Sie
+  zu bewegen hiesse, die Huerde zu verstellen statt den Kandidaten.
+
+``cli stand`` ruft ihn auf, statt selbst zu formulieren. Ein Test prueft, dass
+der alte Satz nicht zurueckkommt.
+
+### Was daraus folgt
+
+1. **Die Bilanz der offenen Wege lautet drei von vier**, nicht einer. Der
+   leichteste verlangt +8 % Guete je Trade.
+2. Die Woelbung ist der interessanteste Neuzugang - und zugleich der
+   fragwuerdigste: -63 % heisst eine deutlich andere Verteilung der
+   Trade-Ergebnisse, und wodurch die entstehen soll, ist offen. Sie steht hier
+   als **rechnerisch moeglich**, nicht als Vorschlag.
+3. Die Schiefe bleibt in beiden Faellen zu, aber der Abstand ist geschrumpft:
+   Es fehlen 2,1 Woelbungspunkte statt 6,0.
+
+Versuchszaehler 198 unveraendert - gerechnet wurde mit vorhandenen Trades.
+Suchbudget 68 von 100. 1992 Tests gruen.

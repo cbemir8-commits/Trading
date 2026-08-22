@@ -358,3 +358,108 @@ class TestEineUmsetzung:
 
         assert eintrag is not None
         assert _sharpe_je_trade(trades) == pytest.approx(eintrag.sharpe_je_trade)
+
+
+class TestHebelerklaerung:
+    """Der Satz neben der Rechnung - abgeleitet statt festgeschrieben.
+
+    In ``cli stand`` stand bis Befund 109 fest verdrahtet:
+
+        *"Die Woelbung kann nicht unter 1 fallen. Damit bleibt von den vier
+        Wegen einer: die Qualitaet je Trade."*
+
+    Er war schon vor Befund 108 falsch - die Zahl der offenen Wege war zwei,
+    nicht einer -, und mit dem Wegfall des Funding wurde er zusaetzlich
+    veraltet. Ein fester Satz neben einer gerechneten Zahl, dieselbe Drift wie
+    beim Standardintervall (Befund 103) und beim Gate-Docstring (Befund 101).
+    """
+
+    def hebel(self, **abweichung):
+        from research.suchbudget import Hebel
+
+        daten = {
+            "qualitaet": Hebel("Qualitaet je Trade", 0.2765, 0.2987),
+            "trades": Hebel("unabhaengige Trades", 152.0, 181.4),
+            "schiefe": Hebel(
+                "Schiefe", 3.409, 4.079,
+                unmoeglich_weil="braucht Woelbung >= 17.6, hier 15.5",
+            ),
+            "woelbung": Hebel("Woelbung", 15.478, 5.791, kleiner_ist_besser=True),
+        }
+        daten.update(abweichung)
+        return list(daten.values())
+
+    def test_die_zahl_der_offenen_wege_kommt_aus_der_zerlegung(self) -> None:
+        """**Der Test dieser Klasse.**
+
+        Unter Spot sind drei Wege offen, nicht einer. Der feste Satz haette
+        weiter "einer" behauptet.
+        """
+        from research.suchbudget import Budget
+
+        text = Budget.hebelerklaerung(self.hebel())
+
+        assert "3 von 4 Wegen sind offen" in text
+        assert "Qualitaet je Trade" in text
+        assert "Woelbung" in text
+
+    def test_der_leichteste_weg_wird_benannt(self) -> None:
+        from research.suchbudget import Budget
+
+        text = Budget.hebelerklaerung(self.hebel())
+
+        assert "Am wenigsten verlangt Qualitaet je Trade: +8%" in text
+
+    def test_ein_unmoeglicher_weg_traegt_seinen_grund(self) -> None:
+        """Ein Weg, den es nicht gibt, muss als solcher dastehen - sonst sucht
+        jemand danach."""
+        from research.suchbudget import Budget
+
+        text = Budget.hebelerklaerung(self.hebel())
+
+        assert "Schiefe: braucht Woelbung >= 17.6, hier 15.5" in text
+
+    def test_ein_unerreichbarer_weg_ohne_grund_bekommt_einen(self) -> None:
+        from research.suchbudget import Budget, Hebel
+
+        text = Budget.hebelerklaerung(
+            self.hebel(woelbung=Hebel("Woelbung", 15.7, None, kleiner_ist_besser=True))
+        )
+
+        assert "2 von 4 Wegen sind offen" in text
+        assert "Woelbung: kein Wert dieser Groesse laesst das Gate halten" in text
+
+    def test_wenn_nichts_offen_ist_wird_das_gesagt(self) -> None:
+        from research.suchbudget import Budget, Hebel
+
+        text = Budget.hebelerklaerung(
+            [Hebel("A", 1.0, None), Hebel("B", 1.0, None)]
+        )
+
+        assert "Keiner der vier Wege ist offen" in text
+
+    def test_ohne_zerlegung_wird_nichts_behauptet(self) -> None:
+        from research.suchbudget import Budget
+
+        assert "nichts zu erklaeren" in Budget.hebelerklaerung([])
+
+    def test_der_fuenfte_eingang_bleibt_benannt(self) -> None:
+        """Die geratene Streuung ist kein Weg - sie zu bewegen hiesse, die
+        Huerde zu verstellen statt den Kandidaten."""
+        from research.suchbudget import Budget
+
+        text = Budget.hebelerklaerung(self.hebel())
+
+        assert "vier von fuenf" in text
+        assert "Huerde zu verstellen statt den Kandidaten" in text
+
+    def test_cli_stand_schreibt_den_satz_nicht_mehr_selbst(self) -> None:
+        """Die Ursache, nicht das Symptom."""
+        from pathlib import Path
+
+        import cli
+
+        quelle = Path(cli.__file__).read_text()
+
+        assert "hebelerklaerung(" in quelle
+        assert "bleibt von den vier Wegen" not in quelle
