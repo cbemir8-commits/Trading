@@ -9270,3 +9270,92 @@ haelt, ueber sechzig Befehlsaufrufe hinweg.
    abgeschossen, und zwar von jemandem, der es fuer kaputt haelt.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 1944 Tests gruen.
+
+## Hundertsechs. Der Kandidat braucht kein Perpetual - und ich habe das Gegenteil behauptet
+
+Der Plan des Nutzers nennt es als offene Frage:
+
+    *"Bybit EU bietet keine Perpetual Futures an ... Wenn dein Account
+    migriert wurde, kannst du keine Perpetuals handeln - und damit auch nicht
+    die Hebel-Mechanik, die ich gebaut und getestet habe."*
+
+Der ganze Backtest rechnet Perpetuals: Hebel bis 3x, Funding alle acht
+Stunden. **Ob der Kandidat das braucht, hat nie jemand gemessen.**
+
+### Die Messung
+
+Kapitalanteil der Groessensteuerung, ueber die Balken des gemeinsamen
+Zeitraums von BTC und ETH - also genau die, die der Backtest sieht:
+
+    Median      0,35
+    Maximum     1,28
+    ueber 1,0   0,2 % der Balken
+
+Und ``entry_short`` und ``exit_short`` sind **leer**: Der Kandidat ist
+long-only. Weder Hebel noch Leerverkauf, also nichts, was nur ein Perpetual
+bietet.
+
+Statt daraus zu schliessen, habe ich es gemessen. ``fraction`` von 3,0 auf 1,0,
+sonst alles gleich:
+
+    fraction 3,0   152 Trades   13,47 % p.a.   Rueckgang 10,64 %   Brutto 776,97
+    fraction 1,0   152 Trades   13,47 % p.a.   Rueckgang 10,64 %   Brutto 776,97
+
+**Bitgleich.** Keine Schwelle, keine Abwaegung - dieselben Zahlen bis auf die
+letzte Stelle. Deshalb heisst die Eigenschaft im Modul
+``deckel_kostet_nichts`` und nicht ``hebel_kaum_genutzt``: "0,2 % ist wenig"
+waere eine Grenze, die ich mir aussuche.
+
+### Was daraus wird
+
+    Lauf                       Trades   Rendite   Rueckgang   Gates
+    Perpetual                     152   13,47 %     10,64 %    7/11
+    Spot                          152   14,83 %      9,87 %    9/11
+    Spot, doppelte Gebuehren      152   14,59 %     10,10 %    9/11
+
+Spot kennt kein Funding. Es faellt weg, und mit ihm genau die beiden Gates,
+die in Befund 100 daran gekippt sind: Schlechtestes Jahr und
+Parameter-Plateau. Offen bleiben **Messlatte und Deflated Sharpe**.
+
+### Die Korrektur
+
+In Befund 100 steht ueber die Nullzeile beim Funding:
+
+    *"Sie ist eine Empfindlichkeit, kein Szenario: Funding entfaellt nur im
+    Spot-Handel, und dort entfaellt auch der Hebel - die gemessenen
+    Positionsgroessen kaemen gar nicht zustande."*
+
+**Der zweite Halbsatz ist widerlegt.** Die Positionsgroessen kommen zustande.
+Ich habe angenommen, die Strategie brauche ihren Hebel, ohne nachzusehen - und
+die Annahme in einen Befund geschrieben, in einem Absatz, der ausdruecklich vor
+zu bequemen Lesarten warnen sollte. Der Satz war nicht vorsichtig, sondern
+ungeprueft.
+
+``finanzierung.py`` traegt die Korrektur jetzt an beiden Stellen: im Docstring
+und im ``urteil()``. Ein Test haelt fest, dass sie dort bleibt.
+
+### Was ehrlich bleiben muss
+
+1. **Knapp daneben ist nicht bestanden.** 14,83 % gegen geforderte 15,00 % -
+   es fehlen 0,17 Punkte. Die Schwelle wird nicht gesenkt.
+2. **Der Deflated Sharpe bewegt sich in keinem der vier Laeufe.** Er war und
+   bleibt das Gate, an dem alles haengt.
+3. **Bybits Spot-Tarif ist nicht gemessen.** Er liegt ueber dem der
+   Perpetuals; die Zeile "doppelte Gebuehren" ist ein Stresstest und keine
+   Messung. Dass sie 9 von 11 haelt, sagt, dass es an den Gebuehren nicht
+   scheitern duerfte - nicht, wie hoch sie sind.
+4. **Befund 102 gilt weiter** - aber sein groesster Einwand faellt. Bitstamp
+   BTC/USD ist ein Kassamarkt: Fuer eine Spot-Strategie ist das nicht mehr das
+   falsche Instrument, sondern das richtige. Es bleiben andere Boerse, andere
+   Liquiditaet und USD statt USDT; der Einwand "keine Funding-Zahlungen"
+   verschwindet, weil Spot keine hat.
+
+### Was das fuer den Nutzer heisst
+
+``cli healthcheck`` klaert, ob das Konto Perpetuals fuehrt. Bisher stand
+daneben, ein Spot-Konto bedeute einen Umbau. **Es bedeutet das Gegenteil:**
+Der Kandidat verliert dort nichts und gewinnt zwei Gates. Der Eintrag in
+``stand.py`` sagt das jetzt.
+
+Versuchszaehler 198 unveraendert: derselbe Kandidat unter anderen
+Handelsbedingungen. Suchbudget 68 von 100. 1960 Tests gruen.

@@ -54,13 +54,25 @@ Container nicht erreichbar. Deshalb steht hier keine Korrektur, sondern eine
 Groessenordnung: Liegt die wahre Rate ueber der Vorgabe, steht der Bestand
 schlechter da als 7 von 11 - nicht besser.
 
-Warum die Nullzeile keine Hoffnung ist
---------------------------------------
-Bei 0 % stuende der Bestand auf 9 von 11. Diese Zeile ist eine
-Empfindlichkeit, **kein Szenario**. Funding entfaellt nur im Spot-Handel, und
-dort entfaellt auch der Hebel: Die Position waere durch das Kapital gedeckelt,
-und die gemessenen Groessen kaemen gar nicht zustande. Die Zeile sagt, wie
-viel die Annahme wiegt, nicht, was erreichbar waere.
+Warum die Nullzeile keine Hoffnung ist - **teilweise widerlegt, Befund 106**
+---------------------------------------------------------------------------
+Bei 0 % stuende der Bestand auf 9 von 11. Hier stand dazu:
+
+    *"Diese Zeile ist eine Empfindlichkeit, kein Szenario. Funding entfaellt
+    nur im Spot-Handel, und dort entfaellt auch der Hebel: Die Position waere
+    durch das Kapital gedeckelt, und die gemessenen Groessen kaemen gar nicht
+    zustande."*
+
+**Der zweite Teil ist falsch.** Befund 106 hat den Deckel gemessen: ``fraction``
+von 3,0 auf 1,0 liefert dieselben Zahlen bis auf die letzte Stelle - 152
+Trades, 13,47 %, 10,64 %. Der Kandidat nutzt seinen Hebel an 0,2 % der Balken
+und ist long-only. Die Positionsgroessen kommen also zustande, und die
+Nullzeile **ist** ein Szenario.
+
+Was davon stehen bleibt: Sie ist trotzdem keine bestandene Zulassung. Bei
+14,83 % fehlen 0,17 Punkte an der Messlatte, der Deflated Sharpe bewegt sich
+nicht, und Bybits Spot-Tarif ist nicht gemessen. Der Satz war nicht vorsichtig,
+sondern ungeprueft - ich habe angenommen, die Strategie brauche ihren Hebel.
 
 Was der Kosten-Stress-Test davon stresst (Befund 101)
 -----------------------------------------------------
@@ -276,11 +288,14 @@ class Finanzierung:
         null = next((s for s in self.geordnet if s.satz == 0), None)
         if null is not None:
             teile.append(
-                f"**Die Nullzeile ({null.bestanden} von {null.gesamt}) ist "
-                f"keine Hoffnung.** Sie ist eine Empfindlichkeit, kein "
-                f"Szenario: Funding entfaellt nur im Spot-Handel, und dort "
-                f"entfaellt auch der Hebel - die gemessenen Positionsgroessen "
-                f"kaemen gar nicht zustande. Der Satz wird auch nicht auf den "
+                f"**Die Nullzeile ({null.bestanden} von {null.gesamt}) ist der "
+                f"Spot-Fall** - Spot kennt kein Funding. Sie war hier als "
+                f"blosse Empfindlichkeit bezeichnet, mit der Begruendung, ohne "
+                f"Hebel kaemen die gemessenen Positionsgroessen gar nicht "
+                f"zustande. Befund 106 hat das widerlegt: Der Deckel auf 1,0 "
+                f"aendert die Zahlen bitgleich nicht. Was bleibt: An der "
+                f"Messlatte fehlen dort weiter 0,17 Punkte, und der Deflated "
+                f"Sharpe bewegt sich nicht. Der Satz wird auch nicht auf den "
                 f"Wert gestellt, bei dem mehr Gates halten."
             )
         return "\n\n".join(teile)

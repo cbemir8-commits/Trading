@@ -100,6 +100,16 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         "80,8 % der Balken aufgeloest, Ergebnis bitgleich",
         99,
     ),
+    Richtung(
+        "Zulassung auf Referenzkerzen",
+        "Kassamarkt statt Perpetual, kein Funding - keine Zulassung",
+        102,
+    ),
+    Richtung(
+        "Hebel als Reserve",
+        "an 0,2 % der Balken genutzt, Deckel auf 1,0 bitgleich",
+        106,
+    ),
 )
 
 
@@ -420,8 +430,13 @@ AUFTRAG: tuple[Auftragspunkt, ...] = (
 BEIM_NUTZER: tuple[tuple[str, str], ...] = (
     (
         "python -m cli healthcheck",
-        "Klaert die wichtigste offene Frage: Bietet das Konto ueberhaupt "
-        "Perpetuals an? Seit der MiCA-Migration womoeglich nur noch Spot.",
+        "Bietet das Konto Perpetuals an? Seit der MiCA-Migration womoeglich "
+        "nur noch Spot. **Und das waere kein Rueckschritt:** Befund 106 hat "
+        "gemessen, dass der Kandidat seinen Hebel an 0,2 % der Balken nutzt "
+        "und long-only ist - der Deckel auf 1,0 aendert die Zahlen bitgleich "
+        "nicht. Ohne Funding steht er bei 14,83 % statt 13,47 % und 9 von 11 "
+        "Gates statt 7. Offen blieben Messlatte (0,17 Punkte) und Deflated "
+        "Sharpe. `cli instrument` rechnet es nach.",
     ),
     (
         "python -m cli abgleich",

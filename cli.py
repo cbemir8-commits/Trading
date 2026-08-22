@@ -5829,6 +5829,151 @@ def koernung(
 
 
 @app.command()
+def instrument(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Braucht der Kandidat ein Perpetual - oder genuegt Spot?
+
+    Der Plan nennt es als offene Frage: Bybit EU bietet womoeglich nur noch
+    Spot an, und damit weder Hebel noch Funding. Der ganze Backtest rechnet
+    aber Perpetuals.
+
+    Gemessen wird, ob der Kandidat das ueberhaupt braucht: derselbe Lauf mit
+    ``fraction`` auf 1,0, und derselbe ohne Funding. Aendern sich die Zahlen
+    unter dem Deckel nicht, ist der Hebel nachweislich ungenutzt - das ist
+    eine Messung und keine Schwelle, die man sich aussucht.
+
+    **Kostet keinen Versuch.** Derselbe Kandidat, dieselben Daten, unter
+    anderen Handelsbedingungen.
+    """
+    from decimal import Decimal
+
+    import numpy as np
+
+    from backtest.costs import FundingSchedule
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.gates import evaluate_gates
+    from research.instrument import Instrumentenwahl, Lauf
+    from research.seeds import spitzenkandidat
+    from strategy import indicators
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    store = CandleStore(settings.paths.data_store)
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+    frames = common_range(roh)
+    erster = next(iter(frames.values()))
+    trials = load_trials(Path(settings.paths.state) / "trials.json")
+    basis = spitzenkandidat()
+    ohne_hebel = basis.model_copy(
+        update={"sizing": basis.sizing.model_copy(update={"fraction": 1.0})}
+    )
+
+    def messe(name: str, genome, *, funding: str, gebuehren: int) -> Lauf:
+        configs = {}
+        for x in symbole:
+            grund = BacktestConfig(
+                instrument=_fallback_instrument(_bybit_kontrakt(x)),
+                risk=settings.risk, initial_equity=Decimal("500"),
+                enforce_risk_limits=True,
+                kalender=_terminkalender(settings) or None,
+            )
+            configs[x] = BacktestConfig(
+                instrument=grund.instrument, risk=grund.risk,
+                costs=grund.costs.scaled(Decimal(gebuehren))
+                if gebuehren != 1 else grund.costs,
+                funding=FundingSchedule(default_rate=Decimal(funding)),
+                initial_equity=grund.initial_equity,
+                enforce_risk_limits=True,
+                allow_shorts=grund.allow_shorts,
+                entry_expiry_bars=grund.entry_expiry_bars,
+                max_hold_bars=grund.max_hold_bars,
+                kalender=grund.kalender,
+            )
+        bericht = run_portfolio_walkforward(
+            frames, lambda g=genome: compile_genome(g), configs
+        )
+        gates = evaluate_gates(
+            genome, bericht, erster, configs[symbole[0]],
+            trials_so_far=trials, frames=frames, configs=configs,
+        )
+        k = bericht.combined
+        lauf = Lauf(
+            name=name, trades=len(bericht.all_trades),
+            cagr=float(k.cagr_pct), rueckgang=float(k.max_drawdown_pct),
+            bestanden=sum(1 for r in gates.results if r.passed),
+            gesamt=len(gates.results),
+            gescheitert=tuple(r.name for r in gates.results if not r.passed),
+            funding=sum(float(t.funding) for t in bericht.all_trades),
+            gebuehren=sum(float(t.fees) for t in bericht.all_trades),
+            brutto=sum(float(t.gross_pnl) for t in bericht.all_trades),
+            sharpe=float(k.sharpe),
+        )
+        console.print(
+            f"[dim]  {name:<26} {lauf.trades:>4} Trades  {lauf.cagr:>6.2f} % "
+            f"p.a.  Rueckgang {lauf.rueckgang:>5.2f} %  "
+            f"{lauf.bestanden}/{lauf.gesamt} Gates[/]"
+        )
+        return lauf
+
+    # Wie oft die Groessensteuerung ueber das eigene Kapital hinaus will -
+    # auf genau den Balken, die der Backtest sieht.
+    ueber_eins = []
+    for frame in frames.values():
+        vola = indicators.compute(
+            "realized_vol", frame, {"period": basis.sizing.vol_period}
+        )
+        anteil = np.clip(
+            basis.sizing.target_vol_pct / vola, 0.0, basis.sizing.fraction
+        )
+        gut = np.isfinite(anteil)
+        ueber_eins.append(float(np.mean(anteil[gut] > 1.0)))
+
+    console.print(
+        f"\n[bold]Instrument[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Kandidat   {basis.name}\n"
+        f"  Deckel     fraction {basis.sizing.fraction:g} -> 1,0\n"
+        f"  Shorts     {len(basis.entry_short)} Einstiegs-, "
+        f"{len(basis.exit_short)} Ausstiegsregeln\n"
+    )
+
+    wahl = Instrumentenwahl(
+        mit_hebel=messe("Perpetual", basis, funding="0.0001", gebuehren=1),
+        ohne_hebel=messe("fraction 1.0", ohne_hebel, funding="0.0001", gebuehren=1),
+        spot=messe("Spot", ohne_hebel, funding="0", gebuehren=1),
+        spot_gestresst=messe(
+            "Spot, doppelte Gebuehren", ohne_hebel, funding="0", gebuehren=2
+        ),
+        short_regeln=len(basis.entry_short) + len(basis.exit_short),
+        anteil_ueber_eins=max(ueber_eins) if ueber_eins else 0.0,
+    )
+    console.print("\n" + wahl.tabelle())
+    farbe = "green" if wahl.spot_moeglich else "yellow"
+    console.print(f"\n[{farbe}]{wahl.urteil()}[/]\n")
+    console.print(
+        "[dim]Der Versuchszaehler bleibt unveraendert: derselbe Kandidat "
+        "unter anderen Handelsbedingungen.[/]\n"
+    )
+
+
+@app.command()
 def finanzierung(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",

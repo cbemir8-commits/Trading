@@ -136,18 +136,22 @@ class TestEmpfindlichkeit:
 
 
 class TestEhrlichkeit:
-    def test_die_nullzeile_wird_nicht_als_hoffnung_verkauft(self) -> None:
-        """**Die Falle dieses Befundes.**
+    def test_die_nullzeile_ist_der_spot_fall(self) -> None:
+        """**Die Falle dieses Befundes - und meine eigene Korrektur.**
 
-        9 von 11 bei 0 % sieht nach einem Durchbruch aus. Funding entfaellt
-        aber nur im Spot-Handel, und dort entfaellt auch der Hebel - die
-        gemessenen Positionsgroessen kaemen gar nicht zustande.
+        9 von 11 bei 0 % sieht nach einem Durchbruch aus. Hier stand, das sei
+        blosse Empfindlichkeit, weil ohne Hebel die Positionsgroessen gar nicht
+        zustande kaemen. Befund 106 hat den Deckel gemessen: Er aendert die
+        Zahlen bitgleich nicht. Die Zeile ist der Spot-Fall.
+
+        Was bleibt, muss trotzdem dastehen: 0,17 Punkte fehlen an der
+        Messlatte, und der Satz wird nicht auf den guenstigen Wert gestellt.
         """
         urteil = leiter().urteil()
 
-        assert "keine Hoffnung" in urteil
-        assert "Empfindlichkeit, kein" in urteil
-        assert "entfaellt auch der Hebel" in urteil
+        assert "ist der Spot-Fall" in urteil
+        assert "Befund 106 hat das widerlegt" in urteil
+        assert "0,17 Punkte" in urteil
         assert "nicht auf den Wert gestellt, bei dem mehr Gates halten" in urteil
 
     def test_die_richtung_des_fehlers_wird_nicht_behauptet(self) -> None:
