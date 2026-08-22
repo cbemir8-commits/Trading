@@ -5780,6 +5780,10 @@ def finanzierung(
         "0,0.00005,0.0001,0.0002,0.0003,0.0005", "--saetze",
         help="Funding-Saetze je Achtstundenperiode, durch Komma.",
     ),
+    stress: bool = typer.Option(
+        False, "--stress",
+        help="Statt der Leiter: Was der Kosten-Stress-Test auslaesst.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Wie viel haengt am angenommenen Funding-Satz?
@@ -5834,6 +5838,67 @@ def finanzierung(
     historie = any(
         not laden.read(_bybit_kontrakt(s)).empty for s in symbole
     )
+
+    if stress:
+        from backtest.engine import Backtester
+        from backtest.metrics import compute_metrics
+        from research.finanzierung import Stresslage
+        from research.gates import GateThresholds
+
+        faktor = Decimal(str(GateThresholds().cost_stress_factor))
+        console.print(
+            f"\n[bold]Was der Kosten-Stress stresst[/] (Faktor {faktor})\n"
+        )
+
+        def stresslauf(*, gebuehren: bool, funding: bool) -> float:
+            gewinn = 0.0
+            for x in symbole:
+                grund = BacktestConfig(
+                    instrument=_fallback_instrument(_bybit_kontrakt(x)),
+                    risk=settings.risk, initial_equity=Decimal("500"),
+                    kalender=_terminkalender(settings) or None,
+                )
+                cfg = BacktestConfig(
+                    instrument=grund.instrument, risk=grund.risk,
+                    costs=grund.costs.scaled(faktor) if gebuehren else grund.costs,
+                    funding=FundingSchedule(
+                        default_rate=grund.funding.default_rate
+                        * (faktor if funding else 1)
+                    ),
+                    initial_equity=grund.initial_equity,
+                    allow_shorts=grund.allow_shorts,
+                    entry_expiry_bars=grund.entry_expiry_bars,
+                    max_hold_bars=grund.max_hold_bars,
+                )
+                ergebnis = Backtester(cfg).run(frames[x], compile_genome(genome))
+                gewinn += float(
+                    compute_metrics(
+                        ergebnis.trades, ergebnis.equity_curve,
+                        initial_equity=cfg.initial_equity,
+                        total_fees=ergebnis.total_fees,
+                    ).net_profit
+                )
+            return gewinn
+
+        lage = Stresslage(
+            faktor=float(faktor),
+            ohne_stress=stresslauf(gebuehren=False, funding=False),
+            wie_gebaut=stresslauf(gebuehren=True, funding=False),
+            mit_funding=stresslauf(gebuehren=True, funding=True),
+        )
+        for beschriftung, wert in (
+            ("ohne Stress", lage.ohne_stress),
+            ("wie gebaut", lage.wie_gebaut),
+            ("mit Funding", lage.mit_funding),
+        ):
+            console.print(
+                f"  {beschriftung:<14} {wert:>9.2f} EUR  "
+                f"{'besteht' if wert > 0 else 'faellt durch'}"
+            )
+        console.print(
+            f"\n[{'red' if lage.urteil_kippt else 'yellow'}]{lage.urteil()}[/]\n"
+        )
+        return
 
     werte = [float(x.strip()) for x in saetze.split(",") if x.strip()]
     if len(werte) < 3:

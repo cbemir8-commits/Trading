@@ -62,6 +62,32 @@ dort entfaellt auch der Hebel: Die Position waere durch das Kapital gedeckelt,
 und die gemessenen Groessen kaemen gar nicht zustande. Die Zeile sagt, wie
 viel die Annahme wiegt, nicht, was erreichbar waere.
 
+Was der Kosten-Stress-Test davon stresst (Befund 101)
+-----------------------------------------------------
+``gate_cost_stress`` verdoppelt ``cfg.costs`` und reicht ``funding=cfg.funding``
+**unveraendert** durch. Es verdoppelt also den kleineren Posten und laesst den
+groesseren in Ruhe. Sein Docstring sagt dazu:
+
+    *"Gebuehren und Slippage sind die einzigen Groessen im Backtest, die man
+    garantiert unterschaetzt."*
+
+Seit Befund 100 stimmt dieser Satz nicht mehr.
+
+Gemessen, derselbe Stresslauf mit Faktor 2:
+
+    ohne Stress    955,76 EUR Nettogewinn
+    wie gebaut     942,87 EUR   (Gebuehren verdoppelt)
+    mit Funding    625,80 EUR   (Gebuehren und Funding verdoppelt)
+
+Die Marge faellt um **317 EUR, also 34 %** - und das Gate besteht trotzdem, denn
+es verlangt nur einen Gewinn ueber null. **Der Befund betrifft die Aussagekraft
+des Gates, nicht sein Urteil ueber diesen Kandidaten.**
+
+Der Standard wird deshalb nicht angefasst: Alle 45 Eintraege der Bestenliste
+sind unter dem schwaecheren Stress gemessen, und ob das Gate kuenftig mehr
+verlangen soll, ist eine Entscheidung mit Folgen fuer jeden Vergleich zur
+Vergangenheit. Sie steht in ``stand.py``.
+
 Kostet keinen Versuch: Derselbe Kandidat auf jeder Sprosse, veraendert wird
 eine Kostenannahme, ausgewaehlt wird nichts. Insbesondere wird der Satz
 **nicht** auf den Wert gesetzt, bei dem mehr Gates halten.
@@ -260,4 +286,83 @@ class Finanzierung:
         return "\n\n".join(teile)
 
 
-__all__ = ["BASISSATZ", "PERIODEN_JE_JAHR", "Finanzierung", "Stufe"]
+@dataclass(frozen=True, slots=True)
+class Stresslage:
+    """Was der Kosten-Stress-Test stresst - und was er auslaesst.
+
+    Drei Laeufe desselben Kandidaten: ohne Stress, mit dem gebauten Stress
+    (Gebuehren und Slippage verdoppelt) und mit einem, der auch das Funding
+    verdoppelt.
+    """
+
+    faktor: float
+    ohne_stress: float
+    wie_gebaut: float
+    mit_funding: float
+
+    @property
+    def besteht_wie_gebaut(self) -> bool:
+        return self.wie_gebaut > 0
+
+    @property
+    def besteht_mit_funding(self) -> bool:
+        return self.mit_funding > 0
+
+    @property
+    def uebersehene_marge(self) -> float:
+        """Wie viel Marge der Test nicht anfasst, in Euro."""
+        return self.wie_gebaut - self.mit_funding
+
+    @property
+    def anteil_uebersehen(self) -> float:
+        return (
+            self.uebersehene_marge / self.wie_gebaut if self.wie_gebaut else 0.0
+        )
+
+    @property
+    def urteil_kippt(self) -> bool:
+        """Die entscheidende Frage: Aendert die Luecke das Ergebnis?
+
+        Nein heisst, der Befund betrifft die **Aussagekraft** des Gates und
+        nicht sein Urteil ueber diesen Kandidaten. Das ist ein Unterschied,
+        der genannt gehoert - sonst liest sich eine Luecke wie ein
+        Durchfaller.
+        """
+        return self.besteht_wie_gebaut and not self.besteht_mit_funding
+
+    def urteil(self) -> str:
+        teile = [
+            f"**Der Kosten-Stress verdoppelt den kleineren Posten.** Mit "
+            f"Faktor {self.faktor:g} faellt der Nettogewinn von "
+            f"{self.ohne_stress:.2f} auf {self.wie_gebaut:.2f} EUR; wird das "
+            f"Funding mitverdoppelt, sind es {self.mit_funding:.2f} EUR - "
+            f"{self.uebersehene_marge:.2f} EUR oder "
+            f"{self.anteil_uebersehen:.0%} weniger."
+        ]
+        if self.urteil_kippt:
+            teile.append(
+                "**Und das Urteil kippt damit.** Was das Gate bestehen laesst, "
+                "haengt daran, dass es den groessten Kostenblock auslaesst."
+            )
+        else:
+            teile.append(
+                "**Das Urteil kippt nicht.** Der Kandidat bleibt auch unter "
+                "dem strengeren Stress im Plus; der Befund betrifft die "
+                "Aussagekraft des Gates und nicht sein Ergebnis hier."
+            )
+        teile.append(
+            "Der Standard wird nicht angefasst: Alle bisherigen Eintraege sind "
+            "unter dem schwaecheren Stress gemessen, und eine Verschaerfung "
+            "haette Folgen fuer jeden Vergleich zur Vergangenheit. Das ist "
+            "eine Entscheidung und keine Messung."
+        )
+        return "\n\n".join(teile)
+
+
+__all__ = [
+    "BASISSATZ",
+    "PERIODEN_JE_JAHR",
+    "Finanzierung",
+    "Stresslage",
+    "Stufe",
+]

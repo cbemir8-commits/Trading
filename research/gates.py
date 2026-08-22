@@ -749,13 +749,25 @@ def gate_cost_stress(
     frames: dict[str, pd.DataFrame] | None = None,
     configs: dict[str, BacktestConfig] | None = None,
 ) -> GateResult:
-    """Ueberlebt die Strategie doppelte Kosten?
+    """Ueberlebt die Strategie doppelte Gebuehren und Slippage?
 
-    Der ehrlichste aller Gates. Gebuehren und Slippage sind die einzigen
-    Groessen im Backtest, die man garantiert unterschaetzt: Der reale Spread ist
-    breiter, die reale Ausfuehrung schlechter, und PostOnly-Limits fuellen
-    seltener als angenommen. Wer bei doppelten Kosten in den Verlust rutscht,
-    hatte nie einen Vorteil - nur ein mildes Modell.
+    Gebuehren und Slippage unterschaetzt man im Backtest garantiert: Der reale
+    Spread ist breiter, die reale Ausfuehrung schlechter, und PostOnly-Limits
+    fuellen seltener als angenommen. Wer bei doppelten Kosten in den Verlust
+    rutscht, hatte nie einen Vorteil - nur ein mildes Modell.
+
+    **Was dieses Gate nicht stresst: das Funding.** ``cfg.funding`` wird
+    unveraendert durchgereicht. Hier stand bis Befund 101 der Satz, Gebuehren
+    und Slippage seien "die einzigen Groessen im Backtest, die man garantiert
+    unterschaetzt". Das ist widerlegt: Beim Bestand stehen 7,17 EUR Gebuehren
+    gegen 63,79 EUR Funding, und der Funding-Satz ist ein ungepruefter
+    Vorgabewert (Befund 100). Das Gate verdoppelt also den kleineren Posten.
+
+    Gemessen kostet die Luecke 34 % der Marge - 942,87 gegen 625,80 EUR -,
+    ohne das Urteil ueber den Bestand zu drehen. Ob der Stress kuenftig auch
+    das Funding umfassen soll, steht als Entscheidung in ``stand.py``: Alle
+    bisherigen Eintraege sind unter dem schwaecheren Stress gemessen.
+    ``cli finanzierung --stress`` rechnet die Luecke nach.
 
     Bei mehreren Beinen zaehlt die **Summe**: Gehandelt wird das Portfolio, und
     ein Bein, das die doppelten Kosten allein nicht traegt, ist kein Grund zur

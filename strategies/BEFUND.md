@@ -8840,3 +8840,85 @@ gebraucht wird. Er wird gebraucht.
 
 Versuchsstand 177 unveraendert: derselbe Kandidat auf jeder Sprosse,
 veraendert wird eine Kostenannahme. Suchbudget 47 von 100. 1897 Tests gruen.
+
+## Hunderteins. Der Kosten-Stress-Test stresst den kleineren Posten
+
+Befund 100 hat gemessen, dass Funding das 8,9-fache der Handelsgebuehren ist.
+Daraus folgt sofort eine Frage an ein Gate, das seit Generation drei besteht:
+**Was stresst der Kosten-Stress-Test eigentlich?**
+
+``gate_cost_stress`` baut seine Konfiguration so:
+
+    costs=cfg.costs.scaled(Decimal(str(t.cost_stress_factor))),
+    funding=cfg.funding,
+
+Gebuehren und Slippage werden verdoppelt. Das Funding wird **unveraendert
+durchgereicht**. Und sein Docstring sagte dazu:
+
+    *"Gebuehren und Slippage sind die einzigen Groessen im Backtest, die man
+    garantiert unterschaetzt."*
+
+Seit Befund 100 ist dieser Satz widerlegt - und stand trotzdem noch da.
+
+### Was die Luecke wiegt
+
+Derselbe Stresslauf mit Faktor 2, dreimal:
+
+    ohne Stress    955,76 EUR Nettogewinn
+    wie gebaut     942,87 EUR   Gebuehren und Slippage verdoppelt
+    mit Funding    625,80 EUR   zusaetzlich das Funding verdoppelt
+
+**317,06 EUR oder 34 % der Marge** fasst der Test nicht an. Der Grund ist
+dieselbe Groessenordnung wie in Befund 100: Verdoppelte Gebuehren kosten rund
+15 Euro, verdoppeltes Funding rund 200.
+
+Nebenbei zeigt der Lauf noch etwas: Mit doppeltem Funding sinken auch die
+Gebuehren (14,96 statt 29,06 EUR), weil das Konto langsamer waechst und die
+Positionen kleiner ausfallen. Kosten wirken ueber neun Jahre auf sich selbst
+zurueck.
+
+### Was der Befund nicht ist
+
+**Das Urteil kippt nicht.** Der Bestand bleibt auch unter dem strengeren
+Stress mit 625,80 EUR deutlich im Plus, und das Gate verlangt nur einen Gewinn
+ueber null. Betroffen ist die **Aussagekraft** des Gates, nicht sein Ergebnis
+ueber diesen Kandidaten.
+
+Das gehoert genannt, weil eine Luecke in einem Gate sich sonst wie ein
+Durchfaller liest. ``Stresslage.urteil_kippt`` trennt beides, und beide Faelle
+haben einen eigenen Test.
+
+### Warum der Standard trotzdem steht
+
+Die Versuchung ist gross, das Gate einfach zu verschaerfen - es waere die
+sichere Richtung, und der Kandidat besteht ohnehin. Zwei Gruende dagegen, und
+es sind dieselben wie in Befund 99:
+
+1. **Vergleichbarkeit.** Alle 45 Eintraege der Bestenliste sind unter dem
+   schwaecheren Stress gemessen. Eine Verschaerfung macht kuenftige Laeufe mit
+   ihnen unvergleichbar - dieselbe Kollision wie beim Kontostand.
+2. **Es ist eine Entscheidung, keine Messung.** Ob ein Gate mehr verlangen
+   soll, faellt nicht beim Messen an. Sie steht jetzt in ``stand.py`` unter
+   ENTSCHEIDUNGEN, beziffert, und gehoert dem Nutzer.
+
+Geaendert wurde nur eines: der **Docstring**. Eine widerlegte Behauptung
+weiterzutragen ist schlimmer als gar keine Erklaerung - wer das Gate liest,
+soll wissen, was es auslaesst. Ein Test haelt fest, dass der alte Satz nicht
+zurueckkommt.
+
+### Was gebaut wurde
+
+``research/finanzierung.py`` um ``Stresslage`` erweitert - **erweitert und
+nicht danebengestellt**, weil es die direkte Folge derselben Messung ist. Die
+Stellen, an denen es hart bleibt:
+
+* ``urteil_kippt`` trennt "das Gate misst nicht, was es behauptet" von "der
+  Kandidat faellt durch". Ohne diese Trennung waere der Befund alarmistisch.
+* ``anteil_uebersehen`` beziffert die Luecke statt sie zu beschreiben.
+* Das Urteil sagt in jedem Fall dazu, dass der Standard nicht angefasst wurde.
+
+``cli finanzierung --stress`` faehrt die drei Laeufe. 6 neue Tests, darunter
+einer, der den widerlegten Satz im Gate-Docstring fernhaelt.
+
+Versuchsstand 177 unveraendert: derselbe Kandidat dreimal, veraendert wird
+eine Kostenannahme. Suchbudget 47 von 100. 1903 Tests gruen.

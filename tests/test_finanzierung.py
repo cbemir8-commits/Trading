@@ -24,6 +24,7 @@ from research.finanzierung import (
     BASISSATZ,
     PERIODEN_JE_JAHR,
     Finanzierung,
+    Stresslage,
     Stufe,
 )
 
@@ -182,3 +183,81 @@ class TestEhrlichkeit:
         assert "<- Vorgabe" in text
         assert text.count("<- Vorgabe") == 1
         assert "8.9-faches" in text
+
+
+class TestStresslage:
+    """Was der Kosten-Stress-Test stresst - und was er auslaesst."""
+
+    def lage(self, **abweichung) -> Stresslage:
+        daten = {
+            "faktor": 2.0, "ohne_stress": 955.76,
+            "wie_gebaut": 942.87, "mit_funding": 625.80,
+        }
+        daten.update(abweichung)
+        return Stresslage(**daten)
+
+    def test_der_test_laesst_den_groesseren_posten_aus(self) -> None:
+        """**Der Test dieser Klasse.**
+
+        ``gate_cost_stress`` verdoppelt ``cfg.costs`` und reicht
+        ``funding=cfg.funding`` unveraendert durch. Gemessen kostet das 34 %
+        der Marge - beim Posten, der laut Befund 100 das 8,9-fache der
+        Gebuehren ist.
+        """
+        lage = self.lage()
+
+        assert lage.uebersehene_marge == pytest.approx(317.07, abs=0.02)
+        assert lage.anteil_uebersehen == pytest.approx(0.34, abs=0.01)
+        assert "verdoppelt den kleineren Posten" in lage.urteil()
+
+    def test_das_urteil_kippt_hier_nicht(self) -> None:
+        """**Der Unterschied, der genannt gehoert.**
+
+        Eine Luecke im Gate liest sich sonst wie ein Durchfaller. Der Kandidat
+        besteht auch unter dem strengeren Stress - betroffen ist die
+        Aussagekraft, nicht das Ergebnis.
+        """
+        lage = self.lage()
+
+        assert lage.besteht_wie_gebaut and lage.besteht_mit_funding
+        assert not lage.urteil_kippt
+        assert "Urteil kippt nicht" in lage.urteil()
+        assert "Aussagekraft" in lage.urteil()
+
+    def test_ein_kippendes_urteil_wird_deutlich_gesagt(self) -> None:
+        """Gegenprobe: Traegt ein Kandidat den strengeren Stress nicht, ist
+        das kein Nebensatz."""
+        knapp = self.lage(wie_gebaut=120.0, mit_funding=-45.0)
+
+        assert knapp.urteil_kippt
+        assert "Urteil kippt damit" in knapp.urteil()
+        assert "groessten Kostenblock auslaesst" in knapp.urteil()
+
+    def test_der_standard_bleibt_ausdruecklich_stehen(self) -> None:
+        """Eine Verschaerfung waere eine Entscheidung mit Folgen fuer jeden
+        Vergleich zur Vergangenheit - und keine Messung."""
+        urteil = self.lage().urteil()
+
+        assert "Standard wird nicht angefasst" in urteil
+        assert "Entscheidung und keine Messung" in urteil
+
+    def test_ohne_marge_kippt_die_verhaeltniszahl_nicht(self) -> None:
+        leer = self.lage(wie_gebaut=0.0, mit_funding=0.0)
+
+        assert leer.anteil_uebersehen == 0.0
+        assert not leer.urteil_kippt
+
+
+class TestGateDocstring:
+    def test_der_widerlegte_satz_steht_nicht_mehr_da(self) -> None:
+        """Der Docstring von ``gate_cost_stress`` behauptete, Gebuehren und
+        Slippage seien die einzigen unterschaetzten Groessen. Befund 100 hat
+        das widerlegt; ein Docstring, der eine widerlegte Behauptung
+        weitertraegt, ist schlimmer als keiner."""
+        from research.gates import gate_cost_stress
+
+        text = gate_cost_stress.__doc__ or ""
+
+        assert "die einzigen\n    Groessen" not in text
+        assert "nicht stresst: das Funding" in text
+        assert "Befund 101" in text

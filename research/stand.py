@@ -295,6 +295,24 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "Perpetuals fuehrt.",
     ),
     Entscheidung(
+        frage="Umfang des Kosten-Stress-Tests",
+        zahl="Das Gate verdoppelt Gebuehren und Slippage und laesst das "
+             "Funding unveraendert - also den kleineren Posten. Mit "
+             "mitverdoppeltem Funding faellt die Marge von 942,87 auf 625,80 "
+             "Euro, das sind **34 %**. Das Urteil kippt dabei nicht: Der "
+             "Bestand bleibt auch dann im Plus. `cli finanzierung --stress` "
+             "rechnet es nach.",
+        warum="Betroffen ist die Aussagekraft des Gates, nicht sein Ergebnis "
+              "hier - deshalb ist es keine dringende Korrektur, sondern eine "
+              "Abwaegung. Dagegen spricht die Vergleichbarkeit: Alle 45 "
+              "Eintraege der Bestenliste sind unter dem schwaecheren Stress "
+              "gemessen, und eine Verschaerfung macht kuenftige Laeufe mit "
+              "ihnen unvergleichbar - dieselbe Kollision wie beim Kontostand "
+              "in Befund 96. Dafuer spricht, dass ein Gate messen sollte, was "
+              "es zu messen behauptet. Der Standard wurde nicht angefasst; "
+              "die Entscheidung liegt beim Nutzer.",
+    ),
+    Entscheidung(
         frage="Kontogroesse",
         zahl="Bei 500 Euro laufen 51 % aller Trades auf der Mindestmenge der "
              "Boerse. Ab rund 2000 Euro verschwindet die Beschraenkung. Und "
