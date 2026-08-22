@@ -429,6 +429,14 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "jedem Livegang auszufuehren.",
     ),
     (
+        "python -m cli backfill --von 2017-08-16, dann wettbewerb",
+        "Laedt Bybit-Kerzen. **Ohne sie kann nichts zugelassen werden** - "
+        "jede Zahl dieses Projekts steht auf Bitstamp-Kassakursen, und die "
+        "sind nicht das gehandelte Instrument. Seit Befund 102 sagt das "
+        "System das auch: Ein Bericht auf Forschungskerzen gilt nie als "
+        "zugelassen, egal wie viele Gates halten.",
+    ),
+    (
         "python -m cli funding --von 2020-03-30",
         "Laedt die echten Funding-Raten. Bisher rechnet jede Zahl mit dem "
         "Vorgabewert, und der ist der groesste Kostenblock des Systems - das "

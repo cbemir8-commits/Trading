@@ -8922,3 +8922,95 @@ einer, der den widerlegten Satz im Gate-Docstring fernhaelt.
 
 Versuchsstand 177 unveraendert: derselbe Kandidat dreimal, veraendert wird
 eine Kostenannahme. Suchbudget 47 von 100. 1903 Tests gruen.
+
+## Hundertzwei. Elf von elf auf Bitstamp ist keine Zulassung auf Bybit
+
+``data/reference.py`` sagt es seit dem Tag, an dem es geschrieben wurde:
+
+    *"Fuer die **Vorauswahl** ist das gut genug: Ein Trendfilter, der auf
+    Bitstamp nichts traegt, wird es auf Bybit auch nicht tun. Fuer die
+    **Zulassung** nicht: Die endgueltige Pruefung gehoert auf die Daten der
+    Boerse, auf der gehandelt wird."*
+
+**Erzwungen hat das nichts.** Jede Gate-Zahl dieses Projekts steht auf
+Bitstamp-Kerzen - die 7 von 11, die 45 Eintraege der Bestenliste, jeder der
+101 Befunde davor. Und nichts im System hat widersprochen. Waere ein Kandidat
+morgen auf 11 von 11 gekommen, haette ``GateReport.passed`` **True** gemeldet
+und ``champion.json`` haette ihn aufgenommen - die Datei, an der laut ihrem
+eigenen Docstring das echte Geld haengt.
+
+### Das ist wortwoertlich der Fehler, den ``vorauswahl`` behoben hat
+
+Das Feld ``GateReport.vorauswahl`` traegt seinen Grund im Docstring:
+
+    *"Dann ist 'alles bestanden' keine Zulassung. Ohne dieses Feld hiess neun
+    von neun dasselbe wie elf von elf ... Ein Kandidat haette damit
+    Kosten-Stress und Parameter-Plateau nie gesehen und trotzdem als Champion
+    in champion.json gestanden."*
+
+Dieselbe Lage, eine Ebene tiefer: **Elf von elf auf Bitstamp hiess dasselbe
+wie elf von elf auf Bybit.** Es ist nicht dasselbe, und das Modul selbst zaehlt
+die Unterschiede auf:
+
+* Kassamarkt statt Perpetual - **keine Funding-Zahlungen.** Nach Befund 100
+  ist Funding der groesste Kostenblock, das 8,9-fache der Handelsgebuehren.
+  Auf Bitstamp faellt er weg.
+* Andere Boerse, andere Liquiditaet - Dochte und Spitzen weichen ab, gerade
+  in schnellen Bewegungen. Eine Strategie mit 68 Stop-Ausstiegen haengt daran.
+* USD statt USDT.
+
+Der erste Punkt allein reicht: Befund 100 hat gemessen, dass der Bestand ohne
+Funding auf **9 von 11** kommt statt auf 7. Genau diese Zahl wuerde eine
+Bitstamp-Zulassung melden.
+
+### Was gebaut wurde
+
+``GateReport.referenzdaten``, nach demselben Muster wie ``vorauswahl``:
+
+* ``passed`` verlangt jetzt **beides**: vollstaendige Pruefung **und**
+  Boersendaten.
+* Erkannt wird es aus den Symbolen der Beine, **nicht ueber einen Schalter**.
+  Die Begruendung steht schon zwei Bildschirme weiter unten in derselben
+  Datei, bei der Blockvariante der Monte-Carlo-Simulation: *"Erkannt wird das
+  an den Symbolen der Trades, nicht an einem Schalter - ein Schalter waere
+  etwas, das man vergisst."*
+* ``any`` und nicht ``all``: Ein Bein aus Forschungsmaterial macht das ganze
+  Portfolio nicht zulassungsfaehig, und eine Mischung aus Kassamarkt und
+  Perpetual waere schlechter als beides fuer sich.
+* ``Entry.referenzdaten`` in der Bestenliste, und ``vergleichbar_mit``
+  verlangt gleiche Quelle - die dritte Bedingung nach Intervall (frueher) und
+  Kontostand (Befund 97), und die schwerste. Sie wird **aus dem Gate-Bericht
+  gelesen** statt als weiterer Parameter durchgereicht: Zwei Quellen fuer
+  dieselbe Bedingung laufen frueher oder spaeter auseinander.
+* ``data.reference.ist_referenz`` als die eine Stelle, die die Frage
+  beantwortet.
+
+Nachgeprueft am echten Lauf: ``cli wettbewerb`` faehrt im Standardfall auf
+BTCUSD_BITSTAMP + ETHUSD_BITSTAMP, und der Bericht meldet dort jetzt
+``referenzdaten=True``.
+
+### Was sich dadurch **nicht** aendert
+
+Kein Urteil kippt. Es ist derzeit ohnehin kein Kandidat zugelassen - die
+Bestenliste zaehlt null. Die Wache greift gegen einen kuenftigen Fehlalarm,
+nicht gegen einen bestehenden Eintrag. Alle 1903 Tests liefen unveraendert
+durch.
+
+Und es ist **keine Verschaerfung eines Gates**. Kein Schwellenwert wurde
+angefasst, keine Messung strenger gemacht. Was sich aendert, ist allein, dass
+das Wort "zugelassen" nicht mehr auf Daten faellt, von denen der Code selbst
+seit jeher sagt, dass sie dafuer nicht taugen.
+
+### Was daraus folgt
+
+1. **Der Punkt "backfill beim Nutzer" ist kein Datenkomfort, sondern die
+   Voraussetzung fuer jede Zulassung.** Er steht seit Wochen im Auftrag; was
+   fehlte, war der Grund. Er steht jetzt in ``stand.py`` unter BEIM_NUTZER.
+2. Die Reihe der Messbedingungen (Befunde 95 bis 102) hat damit den Bogen
+   geschlossen: Koernung, Fuellmodell, Funding, Kosten-Stress - und zuletzt
+   die Daten selbst. Der groesste Fund war das Funding, der unangenehmste
+   dieser hier.
+
+Versuchsstand 177 unveraendert - es wurde nichts gemessen, sondern eine
+Bedingung erzwungen, die seit jeher aufgeschrieben war. Suchbudget 47 von 100.
+1915 Tests gruen.

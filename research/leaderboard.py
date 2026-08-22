@@ -86,6 +86,18 @@ class Entry:
     0.0 heisst: aus einem Lauf, der es noch nicht mitgeschrieben hat.
     """
 
+    referenzdaten: bool = False
+    """Lief das Ergebnis auf Forschungskerzen statt auf Boersendaten?
+
+    Die dritte Bedingung nach Intervall und Kontostand, und die schwerste:
+    Bitstamp-Kassakurse sind nicht Bybit-Perpetuals - anderes Instrument,
+    andere Boerse, keine Funding-Zahlungen. Zwei Ergebnisse darueber hinweg zu
+    vergleichen hiesse, zwei verschiedene Maerkte in einen Rang zu stellen.
+
+    ``False`` heisst hier "nicht als Forschungsmaterial erkannt", nicht
+    "geprueft und in Ordnung".
+    """
+
     herkunft: str = "Katalog"
     """Woher der Kandidat stammt: Katalog, Variante oder KI-Vorschlag."""
 
@@ -239,7 +251,12 @@ class Entry:
         gleiches_konto = not self.kapital or not andere.kapital or (
             self.kapital == andere.kapital
         )
-        return gleiches_intervall and gleiches_konto
+        # Hier gibt es keinen Ausweg fuer alte Eintraege: ``False`` heisst
+        # "nicht erkannt", und zwei nicht erkannte Eintraege stammen aus
+        # derselben Zeit. Ein Eintrag auf Forschungskerzen gehoert dagegen nie
+        # in denselben Rang wie einer von der Boerse.
+        gleiche_quelle = self.referenzdaten == andere.referenzdaten
+        return gleiches_intervall and gleiches_konto and gleiche_quelle
 
 
 def _jetzt() -> str:
@@ -416,6 +433,10 @@ def _aus_kandidat(
         generation=generation,
         intervall=intervall,
         kapital=kapital,
+        # Aus dem Gate-Bericht gelesen und nicht als weiterer Parameter
+        # durchgereicht: Dort wird es ohnehin erkannt, und zwei Quellen fuer
+        # dieselbe Bedingung laufen frueher oder spaeter auseinander.
+        referenzdaten=bool(getattr(candidate.gates, "referenzdaten", False)),
         herkunft=herkunft,
         zugelassen=candidate.admitted,
         gates_bestanden=sum(1 for r in candidate.gates.results if r.passed),

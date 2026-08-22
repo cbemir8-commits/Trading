@@ -68,6 +68,23 @@ PAIRS: dict[str, str] = {
     "XRPUSD_BITSTAMP": "xrpusd",
 }
 
+def ist_referenz(symbol: str) -> bool:
+    """Ist das Forschungsmaterial statt Handelsgrundlage?
+
+    **Die Frage, an der eine Zulassung haengt.** Der Docstring dieses Moduls
+    haelt seit jeher fest: *"Fuer die Vorauswahl ist das gut genug ... Fuer die
+    Zulassung nicht: Die endgueltige Pruefung gehoert auf die Daten der Boerse,
+    auf der gehandelt wird."* Nur hat das nichts erzwungen - jede Gate-Zahl
+    dieses Projekts steht auf Bitstamp-Kerzen, und nichts im System hat
+    widersprochen.
+
+    Genau dieselbe Luecke hatte ``GateReport.vorauswahl``: Ohne das Feld hiess
+    neun von neun dasselbe wie elf von elf. Hier heisst elf von elf auf
+    Bitstamp dasselbe wie elf von elf auf Bybit, und das ist es nicht.
+    """
+    return symbol in PAIRS
+
+
 #: Bitstamp liefert hoechstens 1000 Kerzen je Anfrage.
 PAGE_SIZE = 1000
 

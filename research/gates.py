@@ -101,10 +101,35 @@ class GateReport:
     echte Geld haengt.
     """
 
+    referenzdaten: bool = False
+    """Lief die Pruefung auf Forschungskerzen statt auf Boersendaten?
+
+    **Dieselbe Luecke wie bei ``vorauswahl``, eine Ebene tiefer.** ``data/
+    reference.py`` haelt seit jeher fest, dass Bitstamp-Kerzen fuer die
+    Vorauswahl taugen und fuer die Zulassung nicht - *"Die endgueltige
+    Pruefung gehoert auf die Daten der Boerse, auf der gehandelt wird."*
+    Erzwungen hat das nichts: Jede Gate-Zahl dieses Projekts steht auf
+    Bitstamp, und "elf von elf" haette dort dasselbe geheissen wie auf Bybit.
+
+    Es ist nicht dieselbe Zahl. Kassamarkt statt Perpetual, andere Boerse,
+    andere Dochte, USD statt USDT - und **keine Funding-Zahlungen**, obwohl
+    Funding laut Befund 100 der groesste Kostenblock ist.
+
+    ``False`` heisst "nicht als Forschungsmaterial erkannt". Erkannt wird es
+    aus den Beinen des Portfolios; wer ``evaluate_gates`` ohne ``frames``
+    aufruft, traegt die Verantwortung selbst und kann es ausdruecklich
+    mitgeben.
+    """
+
     @property
     def passed(self) -> bool:
-        """Zugelassen - und zwar nur nach einer **vollstaendigen** Pruefung."""
-        return not self.vorauswahl and all(r.passed for r in self.results)
+        """Zugelassen - und zwar nur nach einer **vollstaendigen** Pruefung
+        auf den Daten der Boerse, auf der gehandelt wird."""
+        return (
+            not self.vorauswahl
+            and not self.referenzdaten
+            and all(r.passed for r in self.results)
+        )
 
     @property
     def geprueftes_bestanden(self) -> bool:
@@ -123,6 +148,12 @@ class GateReport:
     def summary(self) -> str:
         if self.passed:
             return f"{self.genome_id}: alle {len(self.results)} Gates bestanden"
+        if self.referenzdaten and self.geprueftes_bestanden:
+            return (
+                f"{self.genome_id}: {len(self.results)} von {len(self.results)} "
+                f"auf Forschungskerzen - keine Zulassung, die gehoert auf die "
+                f"Daten der Boerse, auf der gehandelt wird"
+            )
         if self.vorauswahl and self.geprueftes_bestanden:
             return (
                 f"{self.genome_id}: {len(self.results)} von {len(self.results)} "
@@ -1338,6 +1369,7 @@ def evaluate_gates(
     run_expensive: bool = True,
     frames: dict[str, pd.DataFrame] | None = None,
     configs: dict[str, BacktestConfig] | None = None,
+    referenzdaten: bool | None = None,
 ) -> GateReport:
     """Alle Gates auf ein Genom anwenden.
 
@@ -1353,9 +1385,26 @@ def evaluate_gates(
 
     ``frame`` bleibt die **Messlatte**: Buy-and-Hold und die Regime-Einteilung
     beziehen sich auf einen Markt, und das ist richtig so.
+
+    ``referenzdaten`` sagt, ob auf Forschungskerzen gerechnet wird. Ohne
+    Angabe wird es aus den Symbolen der Beine erkannt - erkannt und nicht
+    geschaltet, aus demselben Grund wie bei der Blockvariante der
+    Monte-Carlo-Simulation ein paar Zeilen weiter unten: **Ein Schalter ist
+    etwas, das man vergisst.**
     """
     thresholds = thresholds or GateThresholds()
-    report = GateReport(genome_id=genome.genome_id, vorauswahl=not run_expensive)
+    if referenzdaten is None:
+        from data.reference import ist_referenz
+
+        # ``any`` und nicht ``all``: Ein Bein aus Forschungsmaterial macht das
+        # ganze Portfolio nicht zulassungsfaehig, und eine Mischung aus
+        # Kassamarkt und Perpetual waere sogar schlechter als beides fuer sich.
+        referenzdaten = any(ist_referenz(name) for name in frames or ())
+    report = GateReport(
+        genome_id=genome.genome_id,
+        vorauswahl=not run_expensive,
+        referenzdaten=referenzdaten,
+    )
 
     report.results.append(gate_sample_size(walkforward, thresholds, genome=genome))
     report.results.append(gate_benchmark(walkforward, frame, thresholds))
