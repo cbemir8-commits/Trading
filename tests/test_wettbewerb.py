@@ -373,7 +373,15 @@ class TestHistorienSchranke:
             "BTCUSDT", Interval.M15, candles
         )
 
-        result = CliRunner().invoke(cli_module.app, ["wettbewerb", "--runden", "1"])
+        # Generation und Intervall ausdruecklich, seit Befund 103: Ohne
+        # Angabe kommt das Intervall aus der Generation, und der Standard ist
+        # der Tageskerzen-Katalog. Der Test meint aber die Historienschranke
+        # und nicht den Standardwert - also nennt er beides und waehlt die
+        # Generation, die zu diesen Kerzen gehoert.
+        result = CliRunner().invoke(
+            cli_module.app,
+            ["wettbewerb", "--runden", "1", "-g", "6", "-i", "15"],
+        )
         get_settings.cache_clear()
 
         assert result.exit_code == 2

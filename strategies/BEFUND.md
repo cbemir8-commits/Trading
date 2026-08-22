@@ -9014,3 +9014,91 @@ seit jeher sagt, dass sie dafuer nicht taugen.
 Versuchsstand 177 unveraendert - es wurde nichts gemessen, sondern eine
 Bedingung erzwungen, die seit jeher aufgeschrieben war. Suchbudget 47 von 100.
 1915 Tests gruen.
+
+## Hundertdrei. Der Befehl, den der Auftrag nennt, brach mit seinen eigenen Voreinstellungen ab
+
+Der Auftrag nennt seit Wochen zwei Schritte fuer den Nutzer:
+
+    cli backfill --intervall 15 --von 2020-03-30
+    cli wettbewerb
+
+Der zweite laeuft nicht. Ohne Argumente aufgerufen, endet er mit **Exit 2**:
+
+    Generation 8 ist fuer D-Kerzen gedacht, nicht fuer 15m.
+
+``cli wettbewerb`` stand auf ``generation=8`` und ``intervall="15"``.
+Generation 8 ist der Tageskerzen-Katalog - und ``_pruefe_generation``, selbst
+aus einem frueheren Befund entstanden, lehnt die Paarung zu Recht ab: *"Dieselben
+Periodenzahlen bedeuten hier andere Zeitraeume - das waere eine andere Regel
+unter demselben Namen, und sie wuerde Versuche kosten."*
+
+Die Wache hat also funktioniert. Sie hat nur den eigenen Standardwert
+erwischt.
+
+### Wie das passieren konnte
+
+Dieselbe Zuordnung stand an **zwei** Stellen:
+
+* ``research.seeds.VORGESEHEN`` - seit Befund 64 als Daten, Generation zu
+  Kerzenlaenge.
+* der Standardwert von ``--intervall`` in jedem Befehl, von Hand gesetzt.
+
+Als der Katalog-Standard von 6/7 auf 8 wanderte, wurde die zweite Stelle
+vergessen. Genau das Muster, das in diesem Projekt schon fuenfmal
+aufgeschrieben wurde: **Zwei Quellen fuer dieselbe Angabe laufen auseinander.**
+
+### Und es war nicht nur einer
+
+Beim Nachsehen fiel ``cli research`` mit demselben Fehler auf:
+``generation=5`` (Tageskerzen) und ``intervall="60"``. Dort faellt es nur nicht
+auf, weil der Befehl vorher an fehlenden Stundenkerzen scheitert.
+
+Deshalb ist der Test dieser Runde nicht "die zwei sind repariert", sondern:
+
+    def test_kein_befehl_widerspricht_sich_selbst(self):
+        widersprueche = [
+            (name, generation, intervall)
+            for name, generation, intervall in paare()
+            if intervall and not passt_zum_intervall(generation, intervall)
+        ]
+        assert not widersprueche
+
+Er geht **alle** Befehle des Programms durch. Ein Test, der nur die gefundenen
+Faelle prueft, findet den dritten nicht. Dazu eine Wache gegen die
+unangenehmste Art, gruen zu sein: ``test_es_gibt_ueberhaupt_solche_befehle``
+schlaegt an, wenn die Suche nichts mehr findet.
+
+### Die Behebung
+
+``_standardintervall(generation)`` liest ``VORGESEHEN``. Die beiden Befehle
+haben jetzt ``intervall=""`` - "aus der Generation" -, und der Wert wird
+aufgeloest, sobald die Generation feststeht. Damit gibt es die zweite Quelle
+nicht mehr.
+
+Generationen ohne Vorgabe (1 bis 4) bekommen Tageskerzen. Dort steht der
+Kandidat, und dort liegen die Kataloge, die eine Vorgabe haben.
+
+Nachgeprueft: ``cli wettbewerb`` ohne Argumente meldet jetzt
+
+    Keine Kerzen fuer BTCUSDT 1d. Zuerst: python -m cli backfill --intervall D
+
+Das ist die richtige Meldung: Der Container hat keine Bybit-Kerzen, und nach
+Befund 102 ist das auch der Grund, warum hier nichts zugelassen werden kann.
+Vorher verdeckte der Selbstwiderspruch diese Auskunft.
+
+### Was das fuer den Auftrag heisst
+
+Der Auftrag nennt ``--intervall 15``. Nach Befund 29 ist auf
+Fuenfzehnminutenkerzen nichts zu holen - alle 14 Kandidaten verlieren dort
+**brutto** -, und der Spitzenkandidat lebt auf Tageskerzen. Der richtige
+Backfill fuer eine Zulassung ist
+
+    python -m cli backfill --intervall D --von 2017-08-16
+
+Das steht seit Befund 102 so in ``stand.py`` unter BEIM_NUTZER. Der
+Fuenfzehnminuten-Backfill bleibt trotzdem nuetzlich: Er liefert die Feinkerzen,
+mit denen ``cli aufloesung`` das Fuellmodell nachprueft (Befund 99).
+
+Versuchsstand 177 unveraendert - es wurde nichts gemessen, sondern ein
+Standardwert an seine Datenquelle gebunden. Suchbudget 47 von 100. 1923 Tests
+gruen.

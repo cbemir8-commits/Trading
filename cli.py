@@ -476,7 +476,10 @@ def funding(
 
 @app.command()
 def wettbewerb(
-    intervall: str = typer.Option("15", "--intervall", "-i", help="Handelsintervall."),
+    intervall: str = typer.Option(
+        "", "--intervall", "-i",
+        help="Handelsintervall. Leer = das der gewaehlten Generation.",
+    ),
     symbol: str | None = typer.Option(
         None, "--symbol",
         help="Abweichendes Symbol, z.B. BTCUSD_BITSTAMP fuer Referenzkerzen.",
@@ -546,6 +549,7 @@ def wettbewerb(
     _configure_logging(verbose)
     settings = get_settings()
     store = CandleStore(settings.paths.data_store)
+    intervall = intervall or _standardintervall(generation)
     interval_obj = Interval(intervall)
 
     symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
@@ -1086,10 +1090,10 @@ def quality(
 @app.command()
 def research(
     intervall: str = typer.Option(
-        "60",
+        "",
         "--intervall",
         "-i",
-        help="Handelsintervall. 60 = Stunde, die Zeitebene der zweiten Generation.",
+        help="Handelsintervall. Leer = das der gewaehlten Generation.",
     ),
     von: str | None = typer.Option(None, help="Startdatum der Auswertung (YYYY-MM-DD)."),
     schnell: bool = typer.Option(
@@ -1149,6 +1153,7 @@ def research(
     _configure_logging(verbose)
     settings = get_settings()
     store = CandleStore(settings.paths.data_store)
+    intervall = intervall or _standardintervall(generation)
     interval_obj = Interval(intervall)
 
     frame = store.read(
@@ -2433,6 +2438,27 @@ def betriebspunkt(
         json_datei.parent.mkdir(parents=True, exist_ok=True)
         json_datei.write_text(json.dumps(nutzlast, indent=2), encoding="utf-8")
         console.print(f"[dim]JSON geschrieben: {json_datei}[/]")
+
+
+def _standardintervall(generation: int) -> str:
+    """Die Kerzenlaenge, fuer die eine Generation gedacht ist.
+
+    **Warum das kein zweiter Standardwert sein darf.** ``cli wettbewerb`` stand
+    auf Generation 8 und Intervall 15, und Generation 8 ist der
+    Tageskerzen-Katalog: Der Befehl brach mit seinen **eigenen** Voreinstellungen
+    ab, mit Exit 2 und der Meldung von ``_pruefe_generation``. Beim Umstellen
+    des Katalog-Standards wurde die zweite Stelle vergessen - genau die Sorte
+    Drift, die entsteht, wenn dieselbe Zuordnung an zwei Orten steht.
+
+    ``VORGESEHEN`` ist die Zuordnung, seit Befund 64 als Daten. Der Standard
+    liest sie, statt sie zu wiederholen.
+
+    Generationen ohne Vorgabe (1 bis 4) bekommen Tageskerzen: Dort steht der
+    Kandidat, und dort liegen die Kataloge, die eine Vorgabe haben.
+    """
+    from research.seeds import VORGESEHEN
+
+    return VORGESEHEN.get(generation) or "D"
 
 
 def _pruefe_generation(generation: int, interval_obj) -> None:
