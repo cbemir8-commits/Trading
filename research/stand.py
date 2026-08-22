@@ -87,6 +87,11 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     Richtung("Verbund fuer die Risikogates", "231 Kombinationen, kein Treffer", 94),
     Richtung("Kostenannahmen", "bei Kosten null fehlen 0,0692 am DSR", 111),
     Richtung(
+        "Stand auf einem Betriebspunkt",
+        "zwei Gates hingen an einer ungeklaerten Tatsache",
+        112,
+    ),
+    Richtung(
         "Groessenregler zum Rechteck",
         "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",
         95,

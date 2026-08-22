@@ -134,14 +134,25 @@ class TestWache:
         ein zu niedriger Zaehler macht den Deflated Sharpe milder. Genau die
         Richtung, gegen die ``versuche.py`` gebaut ist. Deshalb nennt
         ``cli stand`` sie, solange sie steht.
+
+        Geprueft wird die Reihenfolge, nicht ein Zeichenfenster: Bis Befund
+        112 stand hier ``stelle[:4000]``, und das ist beim Einbau eines
+        Imports gerissen, ohne dass sich an der Warnung etwas geaendert
+        haette. Ein Test, der bei jeder Umstellung anschlaegt, misst die
+        Umstellung und nicht die Anforderung - und die lautet: **vor der
+        ersten Ausgabe.**
         """
         import cli
 
         quelle = Path(cli.__file__).read_text()
         stelle = quelle[quelle.index("def stand("):]
 
-        assert "trockenlauf()" in stelle[:4000]
-        assert "ACHTUNG" in stelle[:4000]
+        assert "trockenlauf()" in stelle
+        assert "ACHTUNG" in stelle
+        assert stelle.index("ACHTUNG") < stelle.index("lage.bericht()"), (
+            "Die Trockenlauf-Warnung steht nach dem Bericht - wer nur den "
+            "Stand liest, sieht sie dann womoeglich nicht."
+        )
 
     def test_der_unterdrueckte_schreibvorgang_wird_protokolliert(self) -> None:
         """Ein stiller Trockenlauf waere schlimmer als das Problem, das er

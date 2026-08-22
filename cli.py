@@ -2519,6 +2519,77 @@ def _marktart(configs, genome) -> str:
     return "perpetual" if (funding or hebel) else "spot"
 
 
+def _spotpunkt(frames, symbole, genome, trials: int, settings):
+    """Derselbe Kandidat unter Kassa-Bedingungen - kein Hebel, kein Funding.
+
+    Gemessen und nicht nachgeschlagen: Die Zahlen aus Befund 108 hier
+    hinzuschreiben waere eine zweite Kopie neben dem Lauf, und genau daran ist
+    dieses Projekt schon dreimal haengengeblieben (Befunde 101, 103, 109).
+
+    **Kostet keinen Versuch.** Dieselbe Regel, dieselben Daten, andere
+    Handelsbedingungen - kein neuer Einfall, ueber den zu buchfuehren waere.
+
+    Gibt ``None`` zurueck, wenn der Lauf nicht zustandekommt; der Bericht
+    laesst den Abschnitt dann weg, statt mit einer Luecke dazustehen.
+    """
+    from decimal import Decimal
+
+    from backtest.costs import FundingSchedule
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.betriebspunkt import Betriebspunkt
+    from research.gates import evaluate_gates
+    from research.suchbudget import Kandidat
+    from strategy.compiler import compile_genome
+
+    ohne_hebel = genome.model_copy(
+        update={"sizing": genome.sizing.model_copy(update={"fraction": 1.0})}
+    )
+    configs = {}
+    for x in symbole:
+        grund = BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+        )
+        configs[x] = BacktestConfig(
+            instrument=grund.instrument, risk=grund.risk, costs=grund.costs,
+            funding=FundingSchedule(default_rate=Decimal("0")),
+            initial_equity=grund.initial_equity, enforce_risk_limits=True,
+            allow_shorts=grund.allow_shorts,
+            entry_expiry_bars=grund.entry_expiry_bars,
+            max_hold_bars=grund.max_hold_bars, kalender=grund.kalender,
+        )
+
+    bericht = run_portfolio_walkforward(
+        frames, lambda: compile_genome(ohne_hebel), configs
+    )
+    if not bericht.windows:
+        return None
+
+    erster = next(iter(frames.values()))
+    gates = evaluate_gates(
+        ohne_hebel, bericht, erster, configs[symbole[0]], trials_so_far=trials,
+        frames=frames, configs=configs,
+    )
+    eintrag = Kandidat.aus_trades(ohne_hebel.name, bericht.all_trades)
+    kombiniert = bericht.combined
+    return Betriebspunkt(
+        name="Spot",
+        trades=len(bericht.all_trades),
+        cagr_pct=float(kombiniert.cagr_pct) if kombiniert else 0.0,
+        rueckgang_pct=float(kombiniert.max_drawdown_pct) if kombiniert else 0.0,
+        guete=eintrag.sharpe_je_trade if eintrag else 0.0,
+        dsr=float(
+            next(r.value for r in gates.results if r.name == "Deflated Sharpe")
+        ),
+        bestanden=sum(1 for r in gates.results if r.passed),
+        gesamt=len(gates.results),
+        offen=tuple(r.name for r in gates.results if not r.passed),
+    )
+
+
 def _dauer(sekunden: float) -> str:
     """Eine Laufzeit so schreiben, dass sie etwas sagt.
 
@@ -8342,6 +8413,7 @@ def stand(
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
+    from research.betriebspunkt import Betriebslage, Betriebspunkt
     from research.gatelage import ordne
     from research.gates import evaluate_gates
     from research.seeds import spitzenkandidat
@@ -8421,6 +8493,38 @@ def stand(
             f"zaehlt nicht mit, und die Huerde bleibt zu niedrig.\n"
         )
     console.print(lage.bericht())
+
+    # **Der zweite Betriebspunkt gehoert daneben, nicht in einen Befund.**
+    # Bis Befund 112 zeigte dieser Bericht allein den Perpetual-Stand - 7 von
+    # 11 - obwohl seit Befund 108 gemessen ist, dass Spot bei 9 von 11 steht.
+    # Wer hier nachsah, bekam eine Aufgabe zu sehen, die fast doppelt so gross
+    # war wie die gemessene. Berichtet wird trotzdem weiter der schlechtere:
+    # Welcher gilt, haengt an einer Tatsache, die nur der Nutzer klaeren kann.
+    zweitpunkt = _spotpunkt(frames, symbole, genome, trials, settings)
+    if zweitpunkt is not None:
+        erstpunkt = Betriebspunkt(
+            name="Perpetual", trades=len(bericht.all_trades),
+            cagr_pct=float(kombiniert.cagr_pct) if kombiniert else 0.0,
+            rueckgang_pct=(
+                float(kombiniert.max_drawdown_pct) if kombiniert else 0.0
+            ),
+            guete=qualitaet,
+            dsr=float(
+                next(r.value for r in gates.results if r.name == "Deflated Sharpe")
+            ),
+            bestanden=sum(1 for r in gates.results if r.passed),
+            gesamt=len(gates.results),
+            offen=tuple(r.name for r in gates.results if not r.passed),
+        )
+        betrieb = Betriebslage(punkte=(erstpunkt, zweitpunkt))
+        console.print()
+        console.print("DIE BEIDEN BETRIEBSPUNKTE")
+        console.print("-" * 72)
+        for p in (erstpunkt, zweitpunkt):
+            farbe = "green" if p is betrieb.massgeblich else "dim"
+            console.print(f"  [{farbe}]{p.als_zeile()}[/]")
+        console.print(f"\n  [yellow]{betrieb.urteil()}[/]")
+
     if eintrag is not None:
         console.print()
         console.print("WORAN DAS HAERTESTE GATE HAENGT")

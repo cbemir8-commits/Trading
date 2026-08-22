@@ -9908,3 +9908,117 @@ Alle vier Familien sind gemessen, und keine traegt:
    Mal verhindert.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2039 Tests gruen.
+
+---
+
+## Hundertzwoelf. Der Bericht zeigte drei Befunde lang den falschen Stand
+
+``cli stand`` beantwortet die Frage *wo stehen wir* - fuer den Nutzer und fuer
+jeden Lauf, der sich orientieren will. Sein eigener Docstring sagt, die Zahlen
+wuerden **gemessen und nicht gepflegt**, und das stimmt auch: Der Kandidat
+laeuft durch die Gates, der Abstand kommt aus der Grenzlinie, nichts davon kann
+veralten, ohne aufzufallen.
+
+Veralten konnte etwas anderes: **wogegen gemessen wird.**
+
+### Was dastand und was gemessen ist
+
+    cli stand, heute:   152 Trades, 13,47 % p.a., 10,64 % Rueckgang
+                        7 von 11 Gates, Guete 0,2597
+                        "Dafuer muesste die Qualitaet je Trade um 15% steigen"
+
+    Befund 108, gemessen:
+                        152 Trades, 14,83 % p.a.,  9,87 % Rueckgang
+                        9 von 11 Gates, Guete 0,2765
+                        noetig: +8,0 %
+
+**Zwei Gates und die Haelfte der verbleibenden Aufgabe.** Wer in den Bericht
+sah, bekam eine Aufgabe zu sehen, die fast doppelt so gross war wie die
+gemessene - und die Entscheidung ueber das Suchbudget haengt genau daran.
+
+Das ist derselbe Fehler wie in den Befunden 101, 103 und 109, eine Ebene
+hoeher: dort ein fester Satz neben einer gerechneten Zahl, hier eine
+gerechnete Zahl gegen einen ueberholten Bezugspunkt. Die Rechnung war jedes
+Mal richtig. Falsch war, was sie einsetzte.
+
+### Es fehlte keine Messung, sondern ihr Weg in den Bericht
+
+Bemerkenswert ist, wo die richtigen Zahlen die ganze Zeit standen: in
+``BEIM_NUTZER``, im selben Modul, elf Zeilen unter der Liste, die ich in
+Befund 111 nicht gelesen habe.
+
+    "Ohne Funding steht er bei 14,83 % statt 13,47 % und 9 von 11 Gates
+     statt 7."
+
+Die Messung war da, der Text war da, und der Bericht rechnete daneben weiter
+den alten Punkt. Ein zweites Beispiel derselben Sache wie gestern: Wissen, das
+im System liegt, aber nicht an der Stelle ankommt, an der es gebraucht wird.
+
+### Warum der Wechsel keine Lockerung ist - und was ihn davon abhaelt
+
+Der bequeme Schluss waere: ab jetzt Spot berichten, 9 von 11, zwei Gates
+geschenkt. Genau das waere eine Lockerung durch die Hintertuer.
+
+Spot ist **ein anderes Instrument, keine mildere Annahme** - Befund 106 hat
+gemessen, dass der Kandidat den Hebel an 0,2 % der Balken nutzt und mit
+``fraction = 1,0`` bitgleiche Zahlen liefert, Befund 13, dass er long-only
+ist. Handelbar ist es also. Nur haengt daran eine Tatsache, die aus diesem
+Container nicht zu klaeren ist: was im Bybit-Menue des Nutzers steht. Bybit EU
+fuehrt unter der MiCA-Lizenz keine Perpetuals; ob sein Konto migriert wurde,
+weiss nur er. Dazu ist Bybits Spot-Tarif ungemessen - Befund 108 hat die
+Bruchstelle bei ``x2,75`` beziffert, mehr nicht.
+
+Deshalb setzt ``research/betriebspunkt.py`` eine Regel durch:
+
+    **Solange die Voraussetzung offen ist, gilt der unguenstigere Stand.**
+
+Dieselbe Richtung wie bei ``effektive_stichprobe``: Eine Entscheidung unter
+Unklarheit darf die Zulassung nur erschweren, nie erleichtern. Der bessere
+Punkt wird maßgeblich, wenn die Tatsache **bestaetigt** ist - nicht, wenn sie
+plausibel ist, und schon gar nicht, weil er besser aussieht.
+
+``Betriebspunkt.besser_als`` haengt bewusst an den Gates und nicht an der
+Rendite: Ein Punkt mit mehr Rendite und weniger bestandenen Gates ist nicht
+der bessere, sondern der riskantere. Ein Test haelt das fest.
+
+### Was der Bericht jetzt zeigt
+
+    DIE BEIDEN BETRIEBSPUNKTE
+    ------------------------------------------------------------------
+      Perpetual   152 Trades, 13.47 % p.a., 10.64 % Rueckgang  7/11  (offen)
+      Spot        152 Trades, 14.83 % p.a.,  9.87 % Rueckgang  9/11  (offen)
+
+      Berichtet wird 'Perpetual' (7/11), weil die Voraussetzung offen ist.
+      Gemessen besser waere 'Spot' (9/11) - 2 Gates haengen daran.
+
+Der Nutzer sieht damit ohne Nachfrage, was seine zwei Minuten im Bybit-Menue
+wert sind. Beide Punkte werden im selben Lauf gemessen; die Zahlen aus Befund
+108 hier hinzuschreiben waere wieder eine zweite Kopie gewesen.
+
+### Ein sproeder Test, unterwegs repariert
+
+``test_ein_vergessener_trockenlauf_faellt_auf`` prueft, dass die
+Trockenlauf-Warnung ganz oben in ``cli stand`` steht. Geprueft hat es das an
+``stelle[:4000]`` - einem Zeichenfenster. Der zusaetzliche Import hat den Text
+um ein paar Zeichen verschoben, und der Test schlug an, ohne dass sich an der
+Warnung etwas geaendert haette.
+
+Nicht das Fenster vergroessert, sondern die Anforderung gemessen: Die Warnung
+muss **vor** ``lage.bericht()`` stehen. Ein Test, der bei jeder Umstellung
+anschlaegt, misst die Umstellung und nicht die Sache.
+
+### Was daraus folgt
+
+1. **Der berichtete Stand bleibt 7 von 11.** Nichts an diesem Befund macht den
+   Kandidaten besser; er macht sichtbar, was an einer offenen Frage haengt.
+2. **Auch der bessere Punkt ist keine Zulassung.** 9 von 11 sind nicht 11 von
+   11, und die zwei offenen - Messlatte und Deflated Sharpe - sind nach Befund
+   111 genau die, hinter denen keine gemessene Familie mehr steht.
+3. **Zwei Befunde nacheinander mit demselben Muster.** Gestern eine Liste, die
+   ich nicht gelesen habe; heute eine Messung, die den Bericht nicht erreicht
+   hat. Beide Male lag das Wissen im System. Die Lehre ist nicht "sorgfaeltiger
+   sein", sondern: Wissen gehoert an die Stelle, an der die Frage gestellt
+   wird - deshalb steht der zweite Punkt jetzt im Bericht und nicht in einem
+   Befund.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2057 Tests gruen.
