@@ -9102,3 +9102,100 @@ mit denen ``cli aufloesung`` das Fuellmodell nachprueft (Befund 99).
 Versuchsstand 177 unveraendert - es wurde nichts gemessen, sondern ein
 Standardwert an seine Datenquelle gebunden. Suchbudget 47 von 100. 1923 Tests
 gruen.
+
+## Hundertvier. Ein Test von mir hat die Huerde des haertesten Gates angehoben
+
+Nach Befund 103 - ein Befehl, der mit seinen **eigenen** Voreinstellungen
+abbrach - lag die Frage nahe, ob es weitere gibt. Also ein Rauchtest: jeden der
+61 Befehle einmal ohne Argumente aufrufen und sehen, wer stolpert.
+
+Die Idee war richtig. Die Ausfuehrung hat Schaden angerichtet.
+
+    Versuchszaehler vorher    177
+    Versuchszaehler nachher   198
+
+**Einundzwanzig Versuche, ohne dass eine einzige Hypothese geprueft wurde.**
+Zwanzig der Befehle messen und zaehlen dabei - ``machbarkeit``, ``adaptiv``,
+``landschaft``, ``konfluenz`` und andere. Ich hatte eine Ausnahmeliste gebaut,
+aber nach dem falschen Kriterium: "aendert Daten oder laeuft lange". Nicht
+danach, was den Zaehler anfasst.
+
+Was das kostet, steht in ``versuche.py``: rund 0,0002 DSR-Punkte je Versuch,
+dauerhaft und fuer jeden kuenftigen Kandidaten. Macht **0,0044** Punkte, die
+ich verschenkt habe. Der Abstand zur Huerde betraegt 0,167 - der Schaden ist
+also klein und trotzdem echt.
+
+### Warum ich den Zaehler nicht zurueckgesetzt habe
+
+Der Gedanke lag nahe: 21 Wiederholungen bereits gemessener Laeufe pruefen
+nichts Neues, also duerfte man sie abziehen. Zwei Dinge sprechen dagegen, und
+beide stehen schon im Projekt.
+
+``save_trials`` **weigert sich**, einen niedrigeren Stand zu schreiben, mit
+ausdruecklicher Begruendung: *"Ein Lauf, der weniger meldet als der vorige, hat
+sich verzaehlt ... der hoehere Stand ist der richtige, und der niedrigere waere
+die unsichere Richtung."* Und ``load_seeds`` haelt fest: *"jeder
+Wiederholungsversuch zaehlt in der Mehrfachtest-Korrektur und macht die Huerde
+fuer alle folgenden hoeher, ohne etwas beizutragen."*
+
+Wiederholungen zaehlen also **nach der eigenen Regel dieses Projekts** mit -
+und genau deshalb darf man nicht wiederholen. Diese Regel zu uebergehen, um
+meinen eigenen Fehler verschwinden zu lassen, waere die Sorte Entscheidung,
+gegen die die ganze Zulassungsstrecke gebaut ist. Der Stand bleibt bei 198.
+
+### Der Defekt, den der Vorfall sichtbar gemacht hat
+
+Nicht mein Rauchtest ist das eigentliche Problem, sondern dies:
+
+**Befehle, die wie Auswertungen aussehen, verbrauchen eine globale,
+unumkehrbare Ressource - und die Haelfte hat kein ``--nicht-zaehlen``.**
+
+Wer eine Kennzahl nachschlagen will, kann damit die Huerde fuer alle heben,
+ohne es zu merken. Der Zaehler wird an einer Stelle geschrieben
+(``versuche.speichern``), aber an zwanzig Stellen ausgeloest.
+
+### Was gebaut wurde
+
+Die Umgebungsvariable ``TRADING_TROCKENLAUF``. Steht sie, schreibt
+``versuche.speichern`` nicht - und zwar an der **einen** Stelle, durch die
+sowohl ``save_trials`` als auch ``anhaengen`` laufen. Jeden Aufrufer einzeln
+abzusichern hiesse, den naechsten zu vergessen.
+
+Warum eine Umgebungsvariable und kein Schalter je Befehl: Ein Durchlauf ruft
+die Befehle als eigene Prozesse auf. Eine Variable deckt alle auf einmal ab,
+auch die ohne eigenen Schalter.
+
+**Und warum das gefaehrlich ist.** Bleibt die Variable versehentlich stehen,
+zaehlt eine echte Suche nicht mit - ein zu niedriger Zaehler macht den Deflated
+Sharpe milder, und genau dagegen ist ``versuche.py`` gebaut (166 Versuche
+ergeben 0,79, elf ergeben 0,996). Zwei Absicherungen dagegen:
+
+* Jeder unterdrueckte Schreibvorgang protokolliert auf **Fehlerstufe**, mit
+  dem Stand, der nicht geschrieben wurde.
+* ``cli stand`` stellt eine rote Warnung an den Anfang, solange die Variable
+  steht. Ein Test prueft, dass diese Warnung dort bleibt.
+
+Die aeltere Regel bleibt unberuehrt: Der Zaehler faellt auch im Trockenlauf
+nicht. Der Trockenlauf haelt ihn an, er dreht ihn nicht zurueck.
+
+### Was der Rauchtest gefunden hat
+
+Der zweite Durchlauf - diesmal mit gesetzter Variable, Zaehler unveraendert bei
+198 - ist bei Abschluss dieses Befundes bei 45 der 61 Befehle. **Kein einziger
+Traceback.** Der einzige Abbruch ist ``healthcheck`` mit Exit 2, und der ist
+richtig: Er prueft die Bybit-Verbindung, und die ist aus diesem Container
+gesperrt.
+
+Der Fehler aus Befund 103 war also, soweit bisher zu sehen, ein Einzelfall -
+und der Test, der ihn kuenftig verhindert, steht seit derselben Runde in
+``tests/test_standardwerte.py``.
+
+### Was ich daraus mitnehme
+
+Ein Werkzeug, das Fehler suchen soll, muss zuerst gegen den Schaden gesichert
+sein, den es selbst anrichten kann. Ich habe die Ausnahmeliste nach der
+falschen Frage gebaut - "was dauert lange" statt "was ist unumkehrbar" - und
+der Unterschied hat 21 Versuche gekostet.
+
+Versuchszaehler **198** statt 177, und die Ursache steht hier. Suchbudget 68
+von 100 statt 47. 1940 Tests gruen.

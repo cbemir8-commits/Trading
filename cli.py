@@ -7969,6 +7969,7 @@ def stand(
     from research.seeds import spitzenkandidat
     from research.stand import Lage
     from research.suchbudget import Budget, Kandidat
+    from research.versuche import TROCKENLAUF, trockenlauf
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -8032,6 +8033,15 @@ def stand(
     )
 
     console.print()
+    # Ein vergessener Trockenlauf ist gefaehrlicher als das Problem, das er
+    # loest: Er haelt den Zaehler still, und ein zu niedriger Zaehler macht
+    # den Deflated Sharpe milder. Deshalb steht er ganz oben.
+    if trockenlauf():
+        console.print(
+            f"[red]ACHTUNG: {TROCKENLAUF} ist gesetzt.[/] Der Versuchszaehler "
+            f"wird nicht fortgeschrieben - jede Suche in diesem Zustand "
+            f"zaehlt nicht mit, und die Huerde bleibt zu niedrig.\n"
+        )
     console.print(lage.bericht())
     if eintrag is not None:
         console.print()

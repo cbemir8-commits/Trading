@@ -59,6 +59,7 @@ Beleg.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -69,6 +70,31 @@ log = structlog.get_logger(__name__)
 
 #: Format mit Einzelnachweis. Format 1 war ``{"trials": n}``.
 FORMAT = 2
+
+#: Umgebungsvariable, die jedes Fortschreiben des Zaehlers unterbindet.
+#:
+#: **Der Anlass, Befund 104.** Ein Rauchtest hat alle 61 Befehle einmal mit
+#: ihren Voreinstellungen aufgerufen, um Fehler wie den aus Befund 103 zu
+#: finden. Zwanzig davon messen und zaehlen dabei - der Zaehler stand danach
+#: bei 198 statt 177. **Ein Test hat die Huerde des haertesten Gates um 0,004
+#: Punkte angehoben**, ohne eine einzige Hypothese zu pruefen.
+#:
+#: Warum eine Umgebungsvariable und kein Schalter je Befehl: Ein Durchlauf
+#: ruft die Befehle als eigene Prozesse auf, und die Haelfte hat gar kein
+#: ``--nicht-zaehlen``. Eine Variable deckt alle auf einmal ab.
+#:
+#: Warum das gefaehrlich ist und trotzdem richtig: Bleibt sie versehentlich
+#: gesetzt, zaehlt eine echte Suche nicht mit - und ein zu **niedriger**
+#: Zaehler ist genau die Richtung, gegen die dieses Modul gebaut ist. Deshalb
+#: protokolliert jeder unterdrueckte Schreibvorgang auf Fehlerstufe, und
+#: ``cli stand`` zeigt die Variable an, solange sie steht.
+TROCKENLAUF = "TRADING_TROCKENLAUF"
+
+
+def trockenlauf() -> bool:
+    """Laeuft gerade etwas, das nicht zaehlen darf?"""
+    wert = os.environ.get(TROCKENLAUF, "").strip().lower()
+    return wert not in ("", "0", "nein", "false", "aus")
 
 
 class ZaehlerUnlesbarError(RuntimeError):
@@ -196,6 +222,19 @@ def speichern(pfad: Path | str, verzeichnis: Verzeichnis) -> None:
     und Eintraegen. Doppelte Wahrheiten laufen sonst auseinander - hier nicht,
     weil nur diese Funktion schreibt und sie beide aus derselben Quelle nimmt.
     """
+    if trockenlauf():
+        # Laut und auf Fehlerstufe: Ein stiller Trockenlauf waere schlimmer
+        # als das Problem, das er loest.
+        log.error(
+            "zaehler.trockenlauf",
+            pfad=str(pfad),
+            waere=verzeichnis.anzahl,
+            variable=TROCKENLAUF,
+            folge="Der Stand wird NICHT fortgeschrieben. Wer wirklich sucht, "
+            "muss die Variable loeschen - sonst zaehlt die Suche nicht mit.",
+        )
+        return
+
     datei = Path(pfad)
     datei.parent.mkdir(parents=True, exist_ok=True)
     inhalt = {

@@ -1,0 +1,170 @@
+{
+  "regler": "Vola-Ziel",
+  "einheit": "%",
+  "fenster": [],
+  "nie_erfuellt": [
+    "Messlatte",
+    "Schlechtestes Jahr",
+    "Deflated Sharpe",
+    "Parameter-Plateau"
+  ],
+  "aufloesung": 0.0,
+  "urteil": "Haelt an keiner gemessenen Stellung, ohne harte Schranke: Messlatte, Schlechtestes Jahr, Deflated Sharpe, Parameter-Plateau. Kein Fenster - und feiner abzutasten hilft nicht, weil der Regler mindestens ein Gate gar nicht erreicht.",
+  "hebelwirkung": {
+    "Stichprobengroesse": {
+      "spanne": 0.0,
+      "abstand": 1913.0,
+      "naechste_stellung": 19.3,
+      "aussichtslos": false
+    },
+    "Messlatte": {
+      "spanne": 0.0,
+      "abstand": 122.504,
+      "naechste_stellung": 19.3,
+      "aussichtslos": false
+    },
+    "Out-of-Sample-Sharpe": {
+      "spanne": 0.0,
+      "abstand": 0.473454,
+      "naechste_stellung": 19.3,
+      "aussichtslos": false
+    },
+    "Drawdown": {
+      "spanne": 0.0,
+      "abstand": 1.359905,
+      "naechste_stellung": 19.3,
+      "aussichtslos": false
+    },
+    "Schlechtestes Jahr": {
+      "spanne": 0.0,
+      "abstand": 0.32,
+      "naechste_stellung": 19.3,
+      "aussichtslos": false
+    },
+    "Bestaendigkeit": {
+      "spanne": 0.0,
+      "abstand": 0.033333,
+      "naechste_stellung": 19.3,
+      "aussichtslos": false
+    },
+    "Monte-Carlo": {
+      "spanne": 0.0,
+      "abstand": 4.728612,
+      "naechste_stellung": 19.3,
+      "aussichtslos": false
+    },
+    "Regime-Aufteilung": {
+      "spanne": 0.0,
+      "abstand": 3.252363,
+      "naechste_stellung": 19.3,
+      "aussichtslos": false
+    },
+    "Deflated Sharpe": {
+      "spanne": 0.0,
+      "abstand": 0.185948,
+      "naechste_stellung": 19.3,
+      "aussichtslos": false
+    },
+    "Kosten-Stress": {
+      "spanne": 0.0,
+      "abstand": 942.865478,
+      "naechste_stellung": 19.3,
+      "aussichtslos": false
+    },
+    "Parameter-Plateau": {
+      "spanne": 0.0,
+      "abstand": 0.1,
+      "naechste_stellung": 19.3,
+      "aussichtslos": false
+    }
+  },
+  "konflikte": [],
+  "punkte": [
+    {
+      "stellung": 19.3,
+      "bestanden": 7,
+      "kennzahlen": {
+        "trades": 152.0,
+        "cagr": 13.4713,
+        "rueckgang": 10.6401,
+        "sharpe_je_trade": 0.2597,
+        "schiefe": 3.4384,
+        "woelbung": 15.7415
+      },
+      "gates": {
+        "Stichprobengroesse": {
+          "bestanden": true,
+          "wert": 2163.0,
+          "schwelle": 250.0,
+          "uebersprungen": false
+        },
+        "Messlatte": {
+          "bestanden": false,
+          "wert": 166.143,
+          "schwelle": 43.639,
+          "uebersprungen": false
+        },
+        "Out-of-Sample-Sharpe": {
+          "bestanden": true,
+          "wert": 1.473454,
+          "schwelle": 1.0,
+          "uebersprungen": false
+        },
+        "Drawdown": {
+          "bestanden": true,
+          "wert": 10.640095,
+          "schwelle": 12.0,
+          "uebersprungen": false
+        },
+        "Schlechtestes Jahr": {
+          "bestanden": false,
+          "wert": -10.32,
+          "schwelle": -10.0,
+          "uebersprungen": false
+        },
+        "Bestaendigkeit": {
+          "bestanden": true,
+          "wert": 0.533333,
+          "schwelle": 0.5,
+          "uebersprungen": false
+        },
+        "Monte-Carlo": {
+          "bestanden": true,
+          "wert": 10.271388,
+          "schwelle": 15.0,
+          "uebersprungen": false
+        },
+        "Regime-Aufteilung": {
+          "bestanden": true,
+          "wert": 4.152363,
+          "schwelle": 0.9,
+          "uebersprungen": false
+        },
+        "Deflated Sharpe": {
+          "bestanden": false,
+          "wert": 0.764052,
+          "schwelle": 0.95,
+          "uebersprungen": false
+        },
+        "Kosten-Stress": {
+          "bestanden": true,
+          "wert": 942.865478,
+          "schwelle": 0.0,
+          "uebersprungen": false
+        },
+        "Parameter-Plateau": {
+          "bestanden": false,
+          "wert": 0.5,
+          "schwelle": 0.6,
+          "uebersprungen": false
+        }
+      }
+    }
+  ],
+  "maerkte": [
+    "BTCUSD_BITSTAMP",
+    "ETHUSD_BITSTAMP"
+  ],
+  "intervall": "1d",
+  "versuche": 198
+}
