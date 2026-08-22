@@ -237,3 +237,125 @@ def test_der_kapitalanteil_liegt_wirklich_unter_eins() -> None:
 
         assert float(np.nanmedian(anteil)) < 1.0
         assert float(np.mean(anteil[gut] > 1.0)) < 0.01
+
+
+#: Die gemessene Gebuehrenleiter unter Spot, Versuchsstand 198.
+#: Nachzurechnen mit ``cli instrument --gebuehren``.
+STUFEN = (
+    (1.0, 0.8640, 0.2765, 14.83, 9, ("Messlatte", "Deflated Sharpe")),
+    (2.0, 0.8458, 0.2731, 14.59, 9, ("Messlatte", "Deflated Sharpe")),
+    (2.25, 0.8411, 0.2722, 14.53, 9, ("Messlatte", "Deflated Sharpe")),
+    (2.5, 0.8363, 0.2714, 14.47, 9, ("Messlatte", "Deflated Sharpe")),
+    (2.75, 0.8314, 0.2705, 14.42, 9, ("Messlatte", "Deflated Sharpe")),
+    (3.0, 0.8265, 0.2697, 14.36, 8,
+     ("Messlatte", "Schlechtestes Jahr", "Deflated Sharpe")),
+)
+
+
+def tragfaehigkeit(**abweichung):
+    from research.instrument import Gebuehrenstufe, Tragfaehigkeit
+
+    daten = {
+        "stufen": [
+            Gebuehrenstufe(
+                faktor=f, dsr=d, guete=g, cagr=c, bestanden=b, gesamt=11,
+                gescheitert=offen,
+            )
+            for f, d, g, c, b, offen in STUFEN
+        ],
+        "schwelle": 0.95,
+        "dsr_perpetual": 0.7641,
+        "guete_perpetual": 0.2597,
+        "noetige_guete": 0.2987,
+        "versuche": 198,
+    }
+    daten.update(abweichung)
+    return Tragfaehigkeit(**daten)
+
+
+class TestDeflatedSharpe:
+    def test_der_wegfall_des_funding_hebt_das_haerteste_gate(self) -> None:
+        """**Der eigentliche Fund von Befund 108.**
+
+        Befund 106 hat Gate-Zahlen gemeldet. Der Wert des einen Gates, an dem
+        alles haengt, fehlte - und er steigt um 0,0999, ohne dass ein einziger
+        Versuch dafuer ausgegeben wurde.
+        """
+        t = tragfaehigkeit()
+
+        assert t.gewinn_am_dsr == pytest.approx(0.0999, abs=0.0002)
+        assert t.fehlt_am_dsr == pytest.approx(0.0860, abs=0.0002)
+        urteil = t.urteil()
+        assert "Deflated Sharpe steigt" in urteil
+        assert "Kostenaenderung, keine Suche" in urteil
+
+    def test_die_noetige_steigerung_halbiert_sich(self) -> None:
+        """Vor dem Wegfall des Funding waren +14 % noetig (Befund 91), jetzt
+        sind es +8 %."""
+        t = tragfaehigkeit()
+
+        assert t.noetige_steigerung == pytest.approx(0.080, abs=0.003)
+        assert "+8.0%" in t.urteil()
+
+    def test_ohne_vergleichswert_wird_kein_gewinn_behauptet(self) -> None:
+        ohne = tragfaehigkeit(dsr_perpetual=0.0)
+
+        assert ohne.gewinn_am_dsr == 0.0
+        assert "Deflated Sharpe steigt" not in ohne.urteil()
+
+
+class TestTragfaehigkeit:
+    def test_der_vorteil_traegt_bis_zum_zweidreiviertelfachen(self) -> None:
+        """**Die Grenze, die der Nutzer gegen seinen Tarif halten kann.**"""
+        t = tragfaehigkeit()
+
+        assert t.haelt_bis == 2.75
+        bruch = t.bruchstelle
+        assert bruch is not None
+        assert (bruch[0].faktor, bruch[1].faktor) == (2.75, 3.0)
+        assert "traegt bis zum 2.75-fachen" in t.urteil()
+
+    def test_das_kippende_gate_wird_benannt(self) -> None:
+        """Es ist das schlechteste Jahr - dasselbe, das schon in Befund 100 am
+        empfindlichsten war."""
+        assert "Schlechtestes Jahr" in tragfaehigkeit().urteil()
+
+    def test_ohne_bruch_wird_keiner_behauptet(self) -> None:
+        from research.instrument import Gebuehrenstufe
+
+        stabil = tragfaehigkeit(
+            stufen=[
+                Gebuehrenstufe(faktor=f, dsr=0.86, guete=0.27, cagr=14.0,
+                               bestanden=9, gesamt=11)
+                for f in (1.0, 2.0, 3.0)
+            ]
+        )
+
+        assert stabil.bruchstelle is None
+        assert stabil.haelt_bis == 3.0
+        assert "bleibt die Bilanz stehen" in stabil.urteil()
+
+    def test_der_faktor_wird_nicht_behauptet(self) -> None:
+        """Welcher Faktor Bybits Spot-Tarif entspricht, haengt am Fuellmix und
+        ist hier nicht gemessen. Das Urteil sagt es."""
+        urteil = tragfaehigkeit().urteil()
+
+        assert "nicht gemessen" in urteil
+        assert "Fuellmix" in urteil
+        assert "Spanne und keine Zahl" in urteil
+
+    def test_zu_wenige_stufen_sagen_nichts(self) -> None:
+        from research.instrument import Tragfaehigkeit
+
+        duenn = Tragfaehigkeit(stufen=list(tragfaehigkeit().stufen[:1]))
+
+        assert not duenn.genug
+        assert "nichts sagen" in duenn.urteil()
+        assert Tragfaehigkeit().tabelle() == "Keine Gebuehrenstufen gemessen."
+
+    def test_die_tabelle_zeigt_dsr_und_offene_gates(self) -> None:
+        text = tragfaehigkeit().tabelle()
+
+        assert "0.8640" in text and "0.8265" in text
+        assert "Schlechtestes Jahr" in text
+        assert "x2.75" in text

@@ -78,6 +78,49 @@ Was dabei ehrlich bleiben muss
    Boerse, andere Liquiditaet und USD statt USDT. Der Einwand "keine
    Funding-Zahlungen" verschwindet, weil Spot keine hat.
 
+Was das mit dem Deflated Sharpe macht (Befund 108)
+--------------------------------------------------
+Oben stehen Gate-**Zahlen**. Der Wert des einen Gates, an dem alles haengt,
+fehlte - und er ist der eigentliche Fund:
+
+    Perpetual   DSR 0,7641   Guete je Trade 0,2597
+    Spot        DSR 0,8640   Guete je Trade 0,2765   (+6,5 %)
+
+**Der Deflated Sharpe steigt um 0,0999.** Es fehlen noch 0,0860 auf die
+Schwelle von 0,95. In Gueteeinheiten: noetig sind 0,2987 statt der erreichten
+0,2765, also **+8,0 %**. Vor dem Wegfall des Funding waren es +14 %.
+
+Funding ist ein Abzug je Positionstag auf den Nominalwert - ein
+gleichmaessiger Zug an jedem Trade. Faellt er weg, steigt der mittlere Ertrag
+je Trade, waehrend die Streuung fast gleich bleibt. Genau daraus ist die Guete
+gebaut.
+
+**Und das kostet keinen Versuch:** Es ist eine Kostenaenderung, keine Suche.
+Die Haelfte des Abstands, der seit Befund 61 als "durchgemessen" galt, faellt
+weg, ohne dass die Huerde steigt.
+
+Traegt der Vorteil den Spot-Tarif?
+----------------------------------
+Der Spot-Lauf rechnet mit dem Gebuehrentarif der **Perpetuals** (Maker
+0,020 %, Taker 0,055 %). Bybits Spot-Tarif liegt darueber, und wie hoch, ist
+aus diesem Container nicht nachzuschlagen. Also gestresst statt geraten:
+
+    Gebuehren   DSR      Guete    Rendite   Gates   dann offen
+    x1          0,8640   0,2765   14,83 %    9/11   Messlatte, DSR
+    x2          0,8458   0,2731   14,59 %    9/11   Messlatte, DSR
+    x2,75       0,8314   0,2705   14,42 %    9/11   Messlatte, DSR
+    x3          0,8265   0,2697   14,36 %    8/11   + Schlechtestes Jahr
+
+**Der Vorteil traegt bis zum 2,75-fachen des Perpetual-Tarifs.** Darueber
+kippt das schlechteste Jahr - dasselbe Gate, das schon in Befund 100 am
+empfindlichsten war.
+
+Welcher Faktor gilt, entscheidet der **Fuellmix**: Einstiege und Take-Profits
+laufen als PostOnly-Limit (Maker), Stops als Taker. Ein Spot-Tarif von 0,1 %
+waere gegenueber dem Maker-Satz das Fuenffache, gegenueber dem Taker-Satz
+knapp das Doppelte. Ohne den echten Tarif und den echten Mix ist das keine
+Zahl, sondern eine Spanne - und sie schliesst die Bruchstelle ein.
+
 Kostet keinen Versuch: Derselbe Kandidat, dieselben Daten, unter anderen
 Handelsbedingungen. Es wird nichts ausgewaehlt.
 """
@@ -85,6 +128,7 @@ Handelsbedingungen. Es wird nichts ausgewaehlt.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from itertools import pairwise
 
 
 @dataclass(frozen=True, slots=True)
@@ -258,4 +302,151 @@ class Instrumentenwahl:
         return "\n\n".join(teile)
 
 
-__all__ = ["Instrumentenwahl", "Lauf"]
+@dataclass(frozen=True, slots=True)
+class Gebuehrenstufe:
+    """Ein Spot-Lauf bei einem Vielfachen des Perpetual-Tarifs."""
+
+    faktor: float
+    dsr: float
+    guete: float
+    cagr: float
+    bestanden: int
+    gesamt: int
+    gescheitert: tuple[str, ...] = ()
+    gebuehren: float = 0.0
+
+
+@dataclass(slots=True)
+class Tragfaehigkeit:
+    """Traegt der Spot-Vorteil auch den hoeheren Spot-Tarif?
+
+    Und was der eigentliche Fund ist: was der Wegfall des Funding mit dem
+    Deflated Sharpe macht - dem einen Gate, an dem alles haengt.
+    """
+
+    stufen: list[Gebuehrenstufe] = field(default_factory=list)
+    schwelle: float = 0.95
+    """Die Schwelle des Deflated-Sharpe-Gates."""
+    dsr_perpetual: float = 0.0
+    guete_perpetual: float = 0.0
+    noetige_guete: float = 0.0
+    """Welche Guete je Trade das Gate beim aktuellen Versuchsstand verlangt."""
+    versuche: int = 0
+
+    @property
+    def geordnet(self) -> list[Gebuehrenstufe]:
+        return sorted(self.stufen, key=lambda s: s.faktor)
+
+    @property
+    def genug(self) -> bool:
+        return len(self.stufen) >= 2
+
+    @property
+    def grundstufe(self) -> Gebuehrenstufe | None:
+        """Der Lauf mit dem unveraenderten Tarif."""
+        return next((s for s in self.geordnet if s.faktor == 1.0), None)
+
+    @property
+    def gewinn_am_dsr(self) -> float:
+        grund = self.grundstufe
+        if grund is None or not self.dsr_perpetual:
+            return 0.0
+        return grund.dsr - self.dsr_perpetual
+
+    @property
+    def fehlt_am_dsr(self) -> float:
+        grund = self.grundstufe
+        return self.schwelle - grund.dsr if grund else 0.0
+
+    @property
+    def noetige_steigerung(self) -> float | None:
+        """Um wie viel die Guete je Trade noch steigen muesste - als Anteil."""
+        grund = self.grundstufe
+        if grund is None or not self.noetige_guete or not grund.guete:
+            return None
+        return self.noetige_guete / grund.guete - 1.0
+
+    @property
+    def bruchstelle(self) -> tuple[Gebuehrenstufe, Gebuehrenstufe] | None:
+        """Zwischen welchen Faktoren die Gate-Zahl faellt."""
+        for links, rechts in pairwise(self.geordnet):
+            if rechts.bestanden < links.bestanden:
+                return links, rechts
+        return None
+
+    @property
+    def haelt_bis(self) -> float | None:
+        """Der hoechste Faktor, bei dem die Bilanz noch steht."""
+        bruch = self.bruchstelle
+        if bruch is not None:
+            return bruch[0].faktor
+        return self.geordnet[-1].faktor if self.stufen else None
+
+    def tabelle(self) -> str:
+        if not self.stufen:
+            return "Keine Gebuehrenstufen gemessen."
+        zeilen = [
+            f"{'Gebuehren':>10}{'DSR':>9}{'Guete':>9}{'Rendite':>10}{'Gates':>8}"
+            "  dann offen",
+            "-" * 74,
+        ]
+        for s in self.geordnet:
+            zeilen.append(
+                f"{'x' + format(s.faktor, 'g'):>10}{s.dsr:>9.4f}{s.guete:>9.4f}"
+                f"{s.cagr:>9.2f} %{f'{s.bestanden}/{s.gesamt}':>8}  "
+                + ", ".join(s.gescheitert)
+            )
+        return "\n".join(zeilen)
+
+    def urteil(self) -> str:
+        if not self.genug:
+            return (
+                "Weniger als zwei Gebuehrenstufen - daraus laesst sich ueber "
+                "die Tragfaehigkeit nichts sagen."
+            )
+
+        grund = self.grundstufe
+        teile = []
+        if grund is not None and self.dsr_perpetual:
+            teile.append(
+                f"**Der Deflated Sharpe steigt um {self.gewinn_am_dsr:+.4f}** - "
+                f"von {self.dsr_perpetual:.4f} auf {grund.dsr:.4f}. Es fehlen "
+                f"noch {self.fehlt_am_dsr:.4f} auf {self.schwelle:.2f}."
+            )
+            steigerung = self.noetige_steigerung
+            if steigerung is not None:
+                teile.append(
+                    f"In Gueteeinheiten: noetig sind {self.noetige_guete:.4f} "
+                    f"statt der erreichten {grund.guete:.4f}, also "
+                    f"**+{steigerung:.1%}** bei {self.versuche} Versuchen. "
+                    f"Und das ohne einen einzigen neuen Versuch - es ist eine "
+                    f"Kostenaenderung, keine Suche."
+                )
+
+        bruch = self.bruchstelle
+        if bruch is not None:
+            links, rechts = bruch
+            neu = set(rechts.gescheitert) - set(links.gescheitert)
+            teile.append(
+                f"**Der Vorteil traegt bis zum {links.faktor:g}-fachen des "
+                f"Perpetual-Tarifs.** Beim {rechts.faktor:g}-fachen faellt die "
+                f"Bilanz von {links.bestanden} auf {rechts.bestanden} von "
+                f"{rechts.gesamt}"
+                + (f" - es kippt: {', '.join(sorted(neu))}." if neu else ".")
+            )
+        else:
+            teile.append(
+                f"Ueber alle gemessenen Stufen bis zum "
+                f"{self.geordnet[-1].faktor:g}-fachen bleibt die Bilanz stehen."
+            )
+
+        teile.append(
+            "**Welcher Faktor gilt, ist hier nicht gemessen.** Er haengt am "
+            "Spot-Tarif und am Fuellmix: Einstiege und Take-Profits laufen als "
+            "PostOnly-Limit, Stops als Taker. Ohne beides ist es eine Spanne "
+            "und keine Zahl - und die Spanne schliesst die Bruchstelle ein."
+        )
+        return "\n\n".join(teile)
+
+
+__all__ = ["Gebuehrenstufe", "Instrumentenwahl", "Lauf", "Tragfaehigkeit"]

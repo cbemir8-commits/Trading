@@ -9427,3 +9427,89 @@ Tests laufen durch.
 
 Versuchszaehler 198 unveraendert - es wurde nichts gemessen, sondern
 aufgeschrieben, was ein Lauf ohnehin weiss. Suchbudget 68 von 100.
+
+## Hundertacht. Der Wegfall des Funding halbiert den Abstand zum haertesten Gate
+
+Befund 106 hat gemeldet, dass unter Spot **9 von 11** Gates halten statt 7. Das
+war eine Gate-**Zahl**. Der Wert des einen Gates, an dem seit Befund 61 alles
+haengt, fehlte - und er ist der eigentliche Fund:
+
+    Perpetual   DSR 0,7641   Guete je Trade 0,2597
+    Spot        DSR 0,8640   Guete je Trade 0,2765   (+6,5 %)
+
+**Der Deflated Sharpe steigt um 0,0999.** Es fehlen noch **0,0860** auf 0,95.
+
+### Was das in Arbeit umgerechnet heisst
+
+    noetige Guete je Trade bei 198 Versuchen   0,2987
+    erreicht unter Spot                        0,2765
+    fehlt                                      +8,0 %
+
+Vor dem Wegfall des Funding stand dort **+14 %** (Befund 91, bei 177
+Versuchen). **Der Abstand hat sich fast halbiert - ohne einen einzigen neuen
+Versuch.** Es ist eine Kostenaenderung, keine Suche: Die Huerde bleibt, wo sie
+ist, und der Kandidat rueckt auf.
+
+Der Mechanismus ist einfach. Funding ist ein Abzug je Positionstag auf den
+Nominalwert, also ein gleichmaessiger Zug an jedem einzelnen Trade. Faellt er
+weg, steigt der mittlere Ertrag je Trade, waehrend die Streuung fast gleich
+bleibt - und genau daraus ist die Guete gebaut.
+
+### Eine Zahl, die sich nebenbei geaendert hat
+
+Der Perpetual-DSR steht hier bei 0,7641, nicht bei den 0,783 aus frueheren
+Befunden. Der Unterschied ist **mein Rauchtest aus Befund 104**: Der
+Versuchsstand ist von 177 auf 198 gestiegen, und damit die Huerde. Das sind
+0,019 DSR-Punkte, die ich verschenkt habe - jetzt sichtbar, weil dieselbe
+Rechnung zweimal dasteht.
+
+### Traegt der Vorteil den Spot-Tarif?
+
+Der Spot-Lauf rechnet mit dem Gebuehrentarif der **Perpetuals** (Maker 0,020 %,
+Taker 0,055 %). Bybits Spot-Tarif liegt darueber, und wie hoch, ist aus diesem
+Container nicht nachzuschlagen. Also gestresst statt geraten:
+
+    Gebuehren   DSR      Guete    Rendite   Gates   dann offen
+    x1          0,8640   0,2765   14,83 %    9/11   Messlatte, DSR
+    x2          0,8458   0,2731   14,59 %    9/11   Messlatte, DSR
+    x2,25       0,8411   0,2722   14,53 %    9/11   Messlatte, DSR
+    x2,5        0,8363   0,2714   14,47 %    9/11   Messlatte, DSR
+    x2,75       0,8314   0,2705   14,42 %    9/11   Messlatte, DSR
+    x3          0,8265   0,2697   14,36 %    8/11   + Schlechtestes Jahr
+
+**Der Vorteil traegt bis zum 2,75-fachen.** Beim Dreifachen kippt das
+schlechteste Jahr - dasselbe Gate, das schon in Befund 100 am empfindlichsten
+war.
+
+### Und warum daraus keine Zahl wird
+
+Welcher Faktor Bybits Spot-Tarif entspricht, haengt am **Fuellmix**: Einstiege
+und Take-Profits laufen als PostOnly-Limit (Maker), Stops als Taker. Ein
+Spot-Satz von 0,1 % waere gegenueber dem Maker-Satz das Fuenffache, gegenueber
+dem Taker-Satz knapp das Doppelte. Ohne den echten Tarif und den echten Mix ist
+das eine **Spanne, keine Zahl** - und die Spanne schliesst die Bruchstelle ein.
+
+Das gehoert so gesagt und nicht auf einen bequemen Wert gerundet. Wer den Tarif
+hat, kann ihn gegen die 2,75 halten; hier wird er nicht erfunden.
+
+### Was daraus folgt
+
+1. **Der Deflated Sharpe ist nicht mehr "durchgemessen".** Seit Befund 61 galt
+   er als das Gate, an dem alles haengt und bei dem alle Wege zu sind. Der Weg
+   war die ganze Zeit da - er fuehrte nicht ueber eine bessere Regel, sondern
+   ueber ein anderes Instrument.
+2. **Zwei Gates bleiben offen**, und beide sind bekannt: die Messlatte (0,17
+   Punkte, eine Geschaeftsentscheidung) und der Deflated Sharpe (+8,0 % Guete).
+3. **Nichts davon ist eine Zulassung.** Gerechnet ist weiter auf
+   Bitstamp-Kerzen (Befund 102), der Spot-Tarif ist unbekannt, und knapp
+   daneben bleibt durchgefallen.
+
+### Was gebaut wurde
+
+``research/instrument.py`` um ``Gebuehrenstufe`` und ``Tragfaehigkeit``
+erweitert - dieselbe Frage, dieselbe Datei. ``bruchstelle`` sucht den ersten
+Faktor, bei dem die Gate-Zahl faellt, und ``urteil`` benennt das kippende Gate
+statt nur die Zahl. ``cli instrument --gebuehren 1,2,2.75,3`` faehrt die
+Leiter.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 1984 Tests gruen.

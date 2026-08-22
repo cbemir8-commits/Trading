@@ -5914,6 +5914,11 @@ def instrument(
         help="Symbole, durch Komma getrennt.",
     ),
     intervall: str = typer.Option("D", "--intervall", "-i"),
+    gebuehren: str = typer.Option(
+        "", "--gebuehren",
+        help="Statt der Instrumentenfrage: Spot-Laeufe bei diesen Vielfachen "
+             "des Perpetual-Tarifs, durch Komma. Beispiel: 1,2,2.75,3",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Braucht der Kandidat ein Perpetual - oder genuegt Spot?
@@ -5965,7 +5970,121 @@ def instrument(
         update={"sizing": basis.sizing.model_copy(update={"fraction": 1.0})}
     )
 
-    def messe(name: str, genome, *, funding: str, gebuehren: int) -> Lauf:
+    def baue_configs(*, funding: str, faktor) -> dict:
+        aus = {}
+        for x in symbole:
+            grund = BacktestConfig(
+                instrument=_fallback_instrument(_bybit_kontrakt(x)),
+                risk=settings.risk, initial_equity=Decimal("500"),
+                enforce_risk_limits=True,
+                kalender=_terminkalender(settings) or None,
+            )
+            aus[x] = BacktestConfig(
+                instrument=grund.instrument, risk=grund.risk,
+                costs=grund.costs.scaled(Decimal(str(faktor)))
+                if float(faktor) != 1.0 else grund.costs,
+                funding=FundingSchedule(default_rate=Decimal(funding)),
+                initial_equity=grund.initial_equity,
+                enforce_risk_limits=True,
+                allow_shorts=grund.allow_shorts,
+                entry_expiry_bars=grund.entry_expiry_bars,
+                max_hold_bars=grund.max_hold_bars,
+                kalender=grund.kalender,
+            )
+        return aus
+
+    if gebuehren:
+        # Traegt der Spot-Vorteil auch den hoeheren Spot-Tarif? Gemessen wird
+        # mit Vielfachen des Perpetual-Tarifs, weil der echte Spot-Satz aus
+        # diesem Container nicht nachzuschlagen ist.
+        from research.instrument import Gebuehrenstufe, Tragfaehigkeit
+        from research.suchbudget import Budget, Kandidat
+
+        faktoren = [float(x.strip()) for x in gebuehren.split(",") if x.strip()]
+        if len(faktoren) < 2:
+            console.print("[red]Mindestens zwei Faktoren noetig.[/]")
+            raise typer.Exit(2)
+
+        console.print(
+            f"\n[bold]Instrument - Gebuehrentragfaehigkeit[/] "
+            f"{' + '.join(symbole)} {interval_obj.label}\n"
+            f"  Kandidat   {basis.name}, Spot (kein Hebel, kein Funding)\n"
+            f"  Versuche   {trials}\n"
+        )
+
+        def spotlauf(faktor: float):
+            configs = baue_configs(funding="0", faktor=faktor)
+            bericht = run_portfolio_walkforward(
+                frames, lambda: compile_genome(ohne_hebel), configs
+            )
+            ergebnisse = evaluate_gates(
+                ohne_hebel, bericht, erster, configs[symbole[0]],
+                trials_so_far=trials, frames=frames, configs=configs,
+            )
+            dsr = next(r for r in ergebnisse.results if r.name == "Deflated Sharpe")
+            eintrag = Kandidat.aus_trades("Spot", bericht.all_trades)
+            stufe = Gebuehrenstufe(
+                faktor=faktor, dsr=float(dsr.value),
+                guete=eintrag.sharpe_je_trade if eintrag else 0.0,
+                cagr=float(bericht.combined.cagr_pct),
+                bestanden=sum(1 for r in ergebnisse.results if r.passed),
+                gesamt=len(ergebnisse.results),
+                gescheitert=tuple(
+                    r.name for r in ergebnisse.results if not r.passed
+                ),
+                gebuehren=sum(float(t.fees) for t in bericht.all_trades),
+            )
+            console.print(
+                f"[dim]  x{faktor:<5g} DSR {stufe.dsr:.4f}  "
+                f"Guete {stufe.guete:.4f}  {stufe.cagr:>6.2f} % p.a.  "
+                f"{stufe.bestanden}/{stufe.gesamt} Gates[/]"
+            )
+            return stufe, eintrag, float(dsr.threshold)
+
+        stufen, erster_eintrag, schwelle = [], None, 0.95
+        for faktor in faktoren:
+            stufe, eintrag, grenze = spotlauf(faktor)
+            stufen.append(stufe)
+            if erster_eintrag is None:
+                erster_eintrag, schwelle = eintrag, grenze
+
+        # Der Vergleichswert: derselbe Kandidat als Perpetual.
+        perp_configs = baue_configs(funding="0.0001", faktor=1)
+        perp = run_portfolio_walkforward(
+            frames, lambda: compile_genome(basis), perp_configs
+        )
+        perp_gates = evaluate_gates(
+            basis, perp, erster, perp_configs[symbole[0]],
+            trials_so_far=trials, frames=frames, configs=perp_configs,
+        )
+        perp_dsr = next(
+            r for r in perp_gates.results if r.name == "Deflated Sharpe"
+        )
+        perp_eintrag = Kandidat.aus_trades("Perpetual", perp.all_trades)
+
+        noetig = 0.0
+        if erster_eintrag is not None:
+            noetig = float(
+                Budget(versuche=trials, kandidaten=[erster_eintrag])
+                .abstaende()[0]
+                .noetig
+            )
+
+        bild = Tragfaehigkeit(
+            stufen=stufen, schwelle=schwelle,
+            dsr_perpetual=float(perp_dsr.value),
+            guete_perpetual=perp_eintrag.sharpe_je_trade if perp_eintrag else 0.0,
+            noetige_guete=noetig, versuche=trials,
+        )
+        console.print("\n" + bild.tabelle())
+        console.print(f"\n[yellow]{bild.urteil()}[/]\n")
+        console.print(
+            "[dim]Der Versuchszaehler bleibt unveraendert: derselbe Kandidat "
+            "unter anderen Kostenannahmen.[/]\n"
+        )
+        return
+
+    def messe(name: str, genome, *, funding: str, gebuehrenfaktor: int) -> Lauf:
         configs = {}
         for x in symbole:
             grund = BacktestConfig(
@@ -5977,7 +6096,7 @@ def instrument(
             configs[x] = BacktestConfig(
                 instrument=grund.instrument, risk=grund.risk,
                 costs=grund.costs.scaled(Decimal(gebuehren))
-                if gebuehren != 1 else grund.costs,
+                if gebuehrenfaktor != 1 else grund.costs,
                 funding=FundingSchedule(default_rate=Decimal(funding)),
                 initial_equity=grund.initial_equity,
                 enforce_risk_limits=True,
@@ -6034,11 +6153,13 @@ def instrument(
     )
 
     wahl = Instrumentenwahl(
-        mit_hebel=messe("Perpetual", basis, funding="0.0001", gebuehren=1),
-        ohne_hebel=messe("fraction 1.0", ohne_hebel, funding="0.0001", gebuehren=1),
-        spot=messe("Spot", ohne_hebel, funding="0", gebuehren=1),
+        mit_hebel=messe("Perpetual", basis, funding="0.0001", gebuehrenfaktor=1),
+        ohne_hebel=messe(
+            "fraction 1.0", ohne_hebel, funding="0.0001", gebuehrenfaktor=1
+        ),
+        spot=messe("Spot", ohne_hebel, funding="0", gebuehrenfaktor=1),
         spot_gestresst=messe(
-            "Spot, doppelte Gebuehren", ohne_hebel, funding="0", gebuehren=2
+            "Spot, doppelte Gebuehren", ohne_hebel, funding="0", gebuehrenfaktor=2
         ),
         short_regeln=len(basis.entry_short) + len(basis.exit_short),
         anteil_ueber_eins=max(ueber_eins) if ueber_eins else 0.0,
