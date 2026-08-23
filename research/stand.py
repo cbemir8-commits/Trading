@@ -194,6 +194,11 @@ BEHOBEN: tuple[Richtung, ...] = (
         "neun Eintraege in der falschen Liste, Reihenfolge zerfallen",
         123,
     ),
+    Richtung(
+        "Schiefe-Weg am Perpetual-Punkt",
+        "Reserve 0,0079 statt 0,1086 - cli form zeigt jetzt beide",
+        125,
+    ),
 )
 
 

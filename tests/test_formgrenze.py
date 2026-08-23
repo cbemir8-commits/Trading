@@ -245,3 +245,73 @@ class TestZusammenstellung:
 
         assert "nie erreicht" in text
         assert "ab " in text
+
+
+class TestDerZweiteBetriebspunkt:
+    """Befund 125 - derselbe Weg, die andere Guete.
+
+    ``cli form`` rechnet den Schiefe-Weg am Perpetual-Punkt (Guete 0,2569).
+    Seit Befund 108 ist Spot der bessere gemessene Punkt (0,2765), und seit
+    Befund 112 zeigt ``cli stand`` beide. Hier stand nur einer.
+
+    Die Aussage *"entlang der gemessenen Linie nie erreichbar"* haelt an
+    beiden Punkten - aber der Abstand zur Schwelle betraegt am Spot-Punkt
+    **0,0079 statt 0,1086**.
+    """
+
+    def _linie(self) -> Formlinie:
+        """Die gemessene Kopplung, wie ``cli form`` sie live findet."""
+        return Formlinie(
+            punkte=[
+                Formpunkt(quelle="t", kennung=f"p{i}", schiefe=s, woelbung=1.193 * s * s + 1.689)
+                for i, s in enumerate((1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0))
+            ]
+        )
+
+    def _hoechstwert(self, guete: float) -> tuple[float, float]:
+        from research.formgrenze import Formweg, mindestwoelbung
+
+        linie = self._linie()
+        weg = Formweg(
+            sharpe=guete, stichprobe=154, versuche=198,
+            kopplung=lambda s, li=linie: li.woelbung_bei(s) or mindestwoelbung(s),
+            name="Linie",
+        )
+        return weg.hoechstwert
+
+    def test_beide_punkte_bleiben_unter_der_schwelle(self) -> None:
+        """Die Aussage haelt - das ist die Hauptsache."""
+        for guete in (0.2569, 0.2765):
+            _, hoehe = self._hoechstwert(guete)
+            assert hoehe < 0.95
+
+    def test_der_spot_punkt_liegt_deutlich_hoeher(self) -> None:
+        _, perp = self._hoechstwert(0.2569)
+        _, spot = self._hoechstwert(0.2765)
+
+        assert spot > perp
+        assert spot - perp > 0.05, (
+            "Der Unterschied zwischen den Betriebspunkten ist der ganze Befund"
+        )
+
+    def test_die_reserve_schrumpft_um_mehr_als_das_zehnfache(self) -> None:
+        """0,1086 gegen 0,0079 - wer nur den ersten Wert sieht, haelt den Weg
+        fuer bequem ausgeschlossen."""
+        _, perp = self._hoechstwert(0.2569)
+        _, spot = self._hoechstwert(0.2765)
+
+        assert (0.95 - perp) / (0.95 - spot) > 10
+
+    def test_hoehere_guete_hebt_den_hoechstwert_monoton(self) -> None:
+        """Sonst waere der Vergleich zwischen den Punkten nicht aussagekraeftig."""
+        werte = [self._hoechstwert(g)[1] for g in (0.20, 0.25, 0.2765, 0.30)]
+
+        assert werte == sorted(werte)
+
+    def test_das_maximum_liegt_nicht_am_rand(self) -> None:
+        """``DSR(Schiefe)`` ist nicht monoton - das Maximum ist ein echtes
+        Maximum und kein Abtastende. Genau dieser Fehler ist beim Bau des
+        Moduls schon einmal passiert."""
+        bei, _ = self._hoechstwert(0.2765)
+
+        assert 4.0 < bei < 9.0

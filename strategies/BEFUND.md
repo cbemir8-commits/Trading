@@ -11288,3 +11288,80 @@ dafuer gibt es die Kostendecke und die Kopplung.
    Unsicherheit nur langsam schrumpft.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2178 Tests gruen.
+
+---
+
+## Hundertfuenfundzwanzig. Dieselbe Aussage, ein Vierzehntel der Reserve
+
+Befund 124 hat die schwaechste Saeule der Aussichtslosigkeit mit einem
+Fehlerbalken versehen und dabei gesagt, sie ruhe auf mehreren. Also die
+naechste geprueft: den Weg ueber die **Schiefe**.
+
+``cli form`` beantwortet ihn seit langem, und die Antwort steht klar da:
+
+    Weg                              Max DSR     bei  Schwelle
+    Woelbung festgehalten             1.0000    4.85  ab 4.61 (+33%)
+    entlang der harten Schranke       1.0000    7.39  ab 5.82 (+68%)
+    entlang der gemessenen Linie      0.8414    6.53  nie erreicht
+
+Die Zahlen sind **live gerechnet** - Schiefe 3,466, Woelbung 15,962, 154
+Trades, 198 Versuche, die Linie aus 29 Kandidaten mit r = 0,9976. Nichts davon
+ist abgeschrieben.
+
+### Und trotzdem der Fehler aus Befund 112
+
+Alles davon rechnet am **Perpetual**-Betriebspunkt, Guete 0,2569. Seit Befund
+108 ist Spot der bessere gemessene Punkt (0,2765), seit Befund 112 zeigt
+``cli stand`` beide nebeneinander.
+
+Hier stand nur einer. Derselbe Weg mit der Spot-Guete:
+
+    entlang der gemessenen Linie, Perpetual   0.8414  Abstand 0.1086
+    entlang der gemessenen Linie, Spot        0.9421  Abstand 0.0079
+
+**Die Aussage haelt** - 0,9421 liegt unter 0,95, der Weg fuehrt auch dort
+nicht ueber die Schwelle. Aber die Reserve ist ein **Vierzehntel**: 0,0079
+statt 0,1086.
+
+Wer die erste Zahl liest, haelt den Weg fuer bequem ausgeschlossen. Er ist es
+nicht - er liegt am tatsaechlich besseren Betriebspunkt acht Tausendstel unter
+der Schwelle, bei einer Linie, die aus 29 Punkten geschaetzt ist.
+
+### Was daraus **nicht** folgt
+
+Dass hier ein Weg waere. Zwei Gruende, beide gemessen:
+
+1. **"Schiefe erhoehen" ist seit Befund 70 geschlossen.** Die Pearson-Grenze
+   ``Woelbung >= Schiefe^2 + 1`` haengt beide Groessen aneinander, und die
+   Woelbung steht im Nenner. Man dreht an einer Verteilungsform nicht wie an
+   einem Regler.
+2. **Es ist eine Grenzbetrachtung, keine Option.** Der Weg fragt, was
+   *waere*, wenn die Schiefe stiege - nicht, wie man sie steigen laesst.
+
+Der Befund ist also keiner ueber die Aussichten, sondern einer ueber die
+Darstellung: **Eine Zahl, die eine Aussage stuetzt, darf nicht am falschen
+Betriebspunkt gerechnet sein.** Das war Befund 112 fuer ``cli stand``, und
+``cli form`` hat es nicht mitbekommen.
+
+### Was gebaut wurde
+
+``cli form`` zeigt den Weg jetzt an beiden Punkten, mit demselben
+``Formweg``-Objekt und nur anderer Guete - keine zweite Rechnung daneben.
+``_spotguete`` misst sie im selben Lauf; die Zahlen aus Befund 108 hier
+hinzuschreiben waere wieder eine Kopie gewesen.
+
+Sechs Tests halten es fest, darunter der, um den es geht:
+``test_die_reserve_schrumpft_um_mehr_als_das_zehnfache``.
+
+### Was daraus folgt
+
+1. **Die dritte Saeule haelt**, aber knapper als ausgewiesen. Nach Befund 124
+   (Fehlerbalken am Wettrennen) und dieser Pruefung stehen zwei von drei
+   Saeulen schwaecher da, als ihre Berichte auswiesen.
+2. **Die Kostendecke aus Befund 111 ist die belastbarste** - sie misst einen
+   Anschlag, keine Extrapolation: Bei Kosten null fehlen 0,0692, und tiefer
+   als null geht es nicht.
+3. **Der Betriebspunkt-Fehler war nicht auf ``cli stand`` beschraenkt.** Wo
+   sonst noch gegen Perpetual gerechnet wird, ist nicht systematisch geprueft.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2183 Tests gruen.

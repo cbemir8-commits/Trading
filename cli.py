@@ -2693,6 +2693,53 @@ def _teststaerke_ueber_saaten(
     )
 
 
+def _spotguete(frames, symbole, genome, settings) -> float | None:
+    """Die Guete desselben Kandidaten unter Kassa-Bedingungen.
+
+    Nur die eine Zahl, ohne Gate-Auswertung - fuer Berichte, die am
+    Perpetual-Punkt rechnen und den zweiten daneben zeigen sollen (Befund
+    112, hier fuer ``cli form`` nachgezogen).
+
+    **Kostet keinen Versuch.** Derselbe Kandidat, dieselben Daten, andere
+    Handelsbedingungen. ``None``, wenn der Lauf nicht zustandekommt.
+    """
+    from decimal import Decimal
+
+    from backtest.costs import FundingSchedule
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.suchbudget import Kandidat
+    from strategy.compiler import compile_genome
+
+    ohne_hebel = genome.model_copy(
+        update={"sizing": genome.sizing.model_copy(update={"fraction": 1.0})}
+    )
+    configs = {}
+    for x in symbole:
+        grund = BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+        )
+        configs[x] = BacktestConfig(
+            instrument=grund.instrument, risk=grund.risk, costs=grund.costs,
+            funding=FundingSchedule(default_rate=Decimal("0")),
+            initial_equity=grund.initial_equity, enforce_risk_limits=True,
+            allow_shorts=grund.allow_shorts,
+            entry_expiry_bars=grund.entry_expiry_bars,
+            max_hold_bars=grund.max_hold_bars, kalender=grund.kalender,
+        )
+
+    bericht = run_portfolio_walkforward(
+        frames, lambda: compile_genome(ohne_hebel), configs
+    )
+    if not bericht.windows:
+        return None
+    eintrag = Kandidat.aus_trades(genome.name, bericht.all_trades)
+    return eintrag.sharpe_je_trade if eintrag else None
+
+
 def _spotpunkt(frames, symbole, genome, trials: int, settings):
     """Derselbe Kandidat unter Kassa-Bedingungen - kein Hebel, kein Funding.
 
@@ -8046,6 +8093,50 @@ def form(
         "Vergleich da: Ihr\nZielpunkt verlangt eine Woelbung, die keine "
         "Verteilung mit dieser Schiefe hat.[/]\n"
     )
+
+    # **Derselbe Weg am zweiten Betriebspunkt** (Befund 125).
+    #
+    # Oben laeuft alles am Perpetual-Punkt - Guete 0,2597. Seit Befund 108 ist
+    # Spot der bessere gemessene Punkt (0,2765), und seit Befund 112 zeigt
+    # ``cli stand`` beide. Hier stand nur einer, und das aendert die Reserve
+    # erheblich: Auf der gemessenen Linie kommt der Perpetual-Punkt auf 0,8601,
+    # der Spot-Punkt auf 0,9357. Dieselbe Aussage - "nie erreicht" - aber mit
+    # 0,0143 statt 0,0899 Abstand zur Schwelle.
+    spot = _spotguete(frames, symbole, genome, settings)
+    if linie.genug and spot:
+        from research.formgrenze import Formweg
+
+        # Dieselbe Maschinerie, nur mit der Spot-Guete - keine zweite Rechnung
+        # daneben. Ein eigener Weg dafuer waere eine Kopie mit demselben Inhalt.
+        spotweg = Formweg(
+            sharpe=spot, stichprobe=stichprobe.effektiv, versuche=versuche,
+            kopplung=lambda s, li=linie: li.woelbung_bei(s) or mindestwoelbung(s),
+            name="entlang der gemessenen Linie (Spot)",
+        )
+        bei, hoehe = spotweg.hoechstwert
+        _, perp_hoehe = drei[-1].hoechstwert
+        schwelle = 0.95
+
+        console.print("[bold]Derselbe Weg unter Spot-Bedingungen[/]")
+        console.print(
+            f"  Guete {spot:.4f} statt {kandidat.sharpe_je_trade:.4f} "
+            f"(kein Funding, kein Hebel - Befund 108)\n"
+            f"  Hoechster DSR auf der gemessenen Linie: [bold]{hoehe:.4f}[/] "
+            f"bei Schiefe {bei:.2f}\n"
+        )
+        if hoehe >= schwelle:
+            console.print(
+                "[red]  Am Spot-Punkt waere die Schwelle auf diesem Weg "
+                "erreichbar - die Aussage oben gilt dort nicht.[/]\n"
+            )
+        else:
+            console.print(
+                f"[yellow]  Auch dort nicht erreichbar - aber der Abstand "
+                f"betraegt {schwelle - hoehe:.4f} statt "
+                f"{schwelle - perp_hoehe:.4f}. Die Aussage haelt; ihre "
+                f"Reserve ist am tatsaechlich besseren Betriebspunkt "
+                f"erheblich kleiner.[/]\n"
+            )
 
 
 def _formpunkte(zustand: Path) -> list:
