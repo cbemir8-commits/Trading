@@ -174,12 +174,30 @@ class AnalystResult:
         )
 
 
-SYSTEM_PROMPT = """Du bist Analyst in einem systematischen Handelssystem fuer BTCUSDT.
+def anzahl_gates() -> int:
+    """Wie viele Zulassungspruefungen es wirklich gibt.
+
+    **Abgeleitet und nicht hingeschrieben** (Befund 121). Die Zahl stand als
+    "neun" im Systemauftrag, waehrend derselbe Auftrag weiter unten "Von elf
+    Zulassungspruefungen" rechnete - und die README nannte acht, ``cli
+    research`` neun. Vier Stellen, drei Zahlen, eine Wahrheit.
+
+    Gezaehlt wird an der Stelle, die es entscheidet: den ``gate_``-Aufrufen in
+    ``evaluate_gates``.
+    """
+    import inspect
+
+    from research import gates
+
+    return inspect.getsource(gates.evaluate_gates).count("gate_")
+
+
+SYSTEM_PROMPT = f"""Du bist Analyst in einem systematischen Handelssystem fuer BTCUSDT.
 
 Deine Aufgabe: neue Strategie-Hypothesen als JSON vorschlagen. Du schreibst
 keinen Code und triffst keine Entscheidungen - jeder Vorschlag durchlaeuft
-danach Walk-Forward und neun Zulassungspruefungen, die du nicht beeinflussen
-kannst.
+danach Walk-Forward und {anzahl_gates()} Zulassungspruefungen, die du nicht
+beeinflussen kannst.
 
 Grundsaetze:
 
@@ -241,7 +259,13 @@ def build_prompt(
     parts.append(f"\nKursfelder: {', '.join(sorted(PRICE_FIELDS))}")
     parts.append("Operatoren: gt, lt, gte, lte, cross_above, cross_below\n")
 
-    parts.append("## Zulassungsschwellen\n")
+    # **Fuenf von elf, und das gehoert dazugesagt** (Befund 121). Die
+    # Ueberschrift las sich wie eine vollstaendige Liste; wer danach plant,
+    # plant gegen sechs Huerden, die er nicht kennt. Die wichtigste davon -
+    # der Deflated Sharpe - steht weiter unten unter "Was tatsaechlich fehlt",
+    # aber die Messlatte, das schlechteste Jahr und das Parameter-Plateau
+    # standen nirgends.
+    parts.append(f"## Zulassungsschwellen (5 der {anzahl_gates()})\n")
     parts.append(f"- mindestens {thresholds.min_oos_trades} Out-of-Sample-Trades")
     parts.append(f"- Sharpe mindestens {thresholds.min_oos_sharpe}")
     parts.append(f"- Drawdown hoechstens {thresholds.max_oos_drawdown_pct} %")
@@ -249,12 +273,43 @@ def build_prompt(
         f"- mindestens {thresholds.min_window_consistency:.0%} profitable Fenster"
     )
     parts.append(
-        f"- ueberlebt {thresholds.cost_stress_factor}-fache Gebuehren\n"
+        f"- ueberlebt {thresholds.cost_stress_factor}-fache Gebuehren"
+    )
+    # Kein Verweis auf einen anderen Abschnitt: Den gibt es nur mit ``lage``,
+    # und ein Verweis ins Leere ist schlechter als keiner. Die Gates werden
+    # deshalb hier benannt.
+    parts.append(
+        f"\nDie uebrigen {anzahl_gates() - 5} sind hier nicht als Schwelle "
+        "aufgezaehlt. Der haerteste davon ist der **Deflated Sharpe**, der "
+        "dafuer korrigiert, dass man bei genug Versuchen zufaellig etwas "
+        "Gutaussehendes findet. Die anderen betreffen Rendite gegen "
+        "Kaufen-und-Halten, das schlechteste Jahr, die Stichprobengroesse und "
+        "die Frage, ob die Parameter auf einem Plateau stehen oder auf einer "
+        "Nadelspitze.\n"
     )
 
     parts.append("## Was bereits versucht wurde\n")
     if not journal:
-        parts.append("Nichts. Dies ist die erste Generation.\n")
+        # **"Erste Generation" ist eine Behauptung ueber den Zaehlerstand**
+        # (Befund 121). Sie stand hier unbedingt, und im selben Auftrag
+        # standen darunter acht namentlich gescheiterte Regeln - ein
+        # Widerspruch auf zwei Bildschirmseiten.
+        #
+        # ``state/journal.json`` existiert nicht; die 198 Versuche liegen in
+        # ``trials.json``. Wer das Journal leer vorfindet, hat deshalb kein
+        # leeres Projekt vor sich, sondern ein anderes Verzeichnis.
+        versuche = getattr(lage, "versuche", 0) or 0
+        if versuche > 0:
+            parts.append(
+                f"Das Research-Journal ist leer, aber **{versuche} Versuche "
+                f"sind gezaehlt.** Dies ist nicht die erste Generation - die "
+                f"Nachweise liegen in einem anderen Verzeichnis und stehen "
+                f"nicht vollstaendig hier. Was bekannt ist, folgt weiter "
+                f"unten unter den geschlossenen Richtungen und den bereits "
+                f"gescheiterten Regeln.\n"
+            )
+        else:
+            parts.append("Nichts. Dies ist die erste Generation.\n")
     else:
         for entry in journal[-6:]:
             for candidate in entry.get("candidates", []):

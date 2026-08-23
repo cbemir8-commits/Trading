@@ -10891,3 +10891,103 @@ fragen - die Bilanz aus den Befunden 116 und 117.
 
 Versuchszaehler 198 unveraendert - die ganze Messung lief im Trockenlauf.
 Suchbudget 68 von 100. 2149 Tests gruen.
+
+---
+
+## Hunderteinundzwanzig. Der Auftrag widersprach sich selbst
+
+Der Dauerlauf nennt seit vielen Runden denselben offenen Punkt: die
+Research-KI. Befund 119 hat gemessen, dass ihre Belege nicht zur Kalibrierung
+taugen. Offen blieb die einfachere Frage: **Was steht eigentlich in dem
+Auftrag, den sie bekommt?**
+
+``cli vorschlag --auftrag`` zeigt ihn, ohne API-Schluessel. Drei Widersprueche
+standen darin, alle derselben Bauart - ein fester Text neben einer gerechneten
+Zahl.
+
+### Erstens: neun oder elf
+
+    Kopf:   "... durchlaeuft danach Walk-Forward und neun
+             Zulassungspruefungen, die du nicht beeinflussen kannst."
+
+    Rumpf:  "Von elf Zulassungspruefungen ist genau eine noch ungeloest:
+             der Deflated Sharpe."
+
+Beides im selben Dokument, zwei Bildschirmseiten auseinander. Der Kopf war
+fest, der Rumpf gerechnet.
+
+Dieselbe Zahl stand an vier Stellen in drei Fassungen: README "acht" (Befund
+118), ``cli research`` "neun" (Befund 120), Systemauftrag "neun", Rumpf "elf".
+``analyst.anzahl_gates()`` leitet sie jetzt aus ``evaluate_gates`` ab, und der
+Systemauftrag ist ein f-String.
+
+### Zweitens: "Nichts. Dies ist die erste Generation."
+
+Das stand unter *Was bereits versucht wurde* - bei 198 gezaehlten Versuchen
+und 120 Befunden. Zwei Bildschirmseiten darunter, im selben Auftrag:
+
+    ## Bereits selbst gebaut und gescheitert
+    - Enge vor Bewegung: 18 Trades zu je +0.3405
+    - Volumenschock mit Fortsetzung: 114 Trades zu je +0.1584
+    ... [acht Regeln]
+
+Und Grundsatz 3 des Auftrags lautet: *"LERNE AUS DEM JOURNAL. Wiederhole keine
+Idee, die schon gescheitert ist."*
+
+**Der Auftrag verlangte etwas, wofuer er die Grundlage nicht mitlieferte** -
+und behauptete im selben Atemzug, es gebe nichts zu lernen.
+
+Der Grund: ``state/journal.json`` **existiert nicht.** Die 198 Versuche liegen
+in ``trials.json``, einem anderen Verzeichnis mit anderem Format. Dazu kommt,
+dass ``cli vorschlag`` ``journal=[]`` fest uebergibt - nicht nur in der
+Vorschau, auch im echten Aufruf. Nur ``cli research --ki`` laedt es, und findet
+dann die Datei nicht.
+
+Der Satz steht jetzt unter Vorbehalt: Sind Versuche gezaehlt, sagt der Auftrag
+das - und dass die Nachweise anderswo liegen. Bei einem wirklich leeren Projekt
+bleibt "erste Generation" stehen; ein Test prueft beide Richtungen.
+
+### Drittens: fuenf Schwellen, die wie alle aussahen
+
+    ## Zulassungsschwellen
+
+    - mindestens 100 Out-of-Sample-Trades
+    - Sharpe mindestens 1.0
+    - Drawdown hoechstens 12.0 %
+    - mindestens 50% profitable Fenster
+    - ueberlebt 2.0-fache Gebuehren
+
+Fuenf von elf, ohne Hinweis darauf. Wer danach plant, plant gegen sechs
+Huerden, die er nicht kennt - darunter die Messlatte, das schlechteste Jahr und
+das Parameter-Plateau. Die Ueberschrift nennt jetzt den Anteil, und die
+fehlenden werden benannt.
+
+### Ein Fehler beim Beheben
+
+Der erste Entwurf verwies auf den Abschnitt *Was tatsaechlich fehlt*. Ein
+bestehender Test schlug an: ``test_ohne_lage_bleibt_der_auftrag_wie_er_war``
+verlangt, dass dieser Abschnitt ohne ``lage`` gar nicht vorkommt.
+
+Der Test hatte recht. Mein Verweis zeigte auf etwas, das fehlen kann - und ein
+Verweis ins Leere ist schlechter als keiner. Die Gates werden jetzt an Ort und
+Stelle benannt.
+
+Ein zweiter, kleinerer: Mein eigener Test prueft ``"erste Generation" not in
+text``, und mein neuer Text enthaelt *"nicht die erste Generation"*. Zu grob
+formuliert; jetzt wird auf den vollstaendigen alten Satz geprueft.
+
+### Was daraus folgt
+
+1. **Der Auftrag ist in sich stimmig.** Die Gate-Zahl kommt aus der Quelle,
+   der Journal-Satz aus dem Zaehlerstand, die Schwellenliste sagt, dass sie
+   ein Auszug ist.
+2. **Zwei Verzeichnisse, eine Frage.** ``journal.json`` existiert nicht,
+   ``trials.json`` hat 198 Eintraege. Der Auftrag sagt das jetzt, statt es zu
+   verschweigen - zusammenzufuehren waere ein eigener Schritt und ist hier
+   nicht gemacht.
+3. **Die Gate-Zahl war an vier Stellen in drei Fassungen falsch.** Drei davon
+   sind in drei aufeinanderfolgenden Befunden aufgefallen (118, 120, 121). Das
+   ist kein Zufall, sondern was passiert, wenn eine Zahl abgeschrieben statt
+   abgeleitet wird.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2155 Tests gruen.

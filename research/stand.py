@@ -132,6 +132,11 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         120,
     ),
     Richtung(
+        "Gate-Zahl abschreiben",
+        "vier Stellen, drei Fassungen - jetzt aus evaluate_gates abgeleitet",
+        121,
+    ),
+    Richtung(
         "Groessenregler zum Rechteck",
         "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",
         95,

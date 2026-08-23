@@ -415,3 +415,88 @@ class TestDateiClient:
         assert antwort.input_tokens == 0
         assert antwort.output_tokens == 0
         assert json.loads(antwort.text)[0]["name"] == VALID_GENOME["name"]
+
+
+class TestDerAuftragWidersprichtSichNicht:
+    """Befund 121 - drei feste Zahlen neben gerechneten.
+
+    ``cli vorschlag --auftrag`` zeigt, was die Research-KI zu sehen bekommt.
+    Darin standen nebeneinander:
+
+    * Kopf: *"neun Zulassungspruefungen"*
+    * Rumpf: *"Von elf Zulassungspruefungen ist genau eine ungeloest"*
+    * *"Was bereits versucht wurde: Nichts. Dies ist die erste Generation."*
+      - zwei Bildschirmseiten ueber acht namentlich gescheiterten Regeln
+    * Eine Schwellenliste mit fuenf Eintraegen, die wie eine vollstaendige
+      Liste aussah
+
+    Der Auftrag verlangt in Grundsatz 3 ausdruecklich *"LERNE AUS DEM
+    JOURNAL"* - und lieferte die Grundlage dafuer nicht mit.
+    """
+
+    def test_die_gate_zahl_wird_abgeleitet(self) -> None:
+        import inspect
+
+        from research import gates
+        from research.analyst import anzahl_gates
+
+        tatsaechlich = inspect.getsource(gates.evaluate_gates).count("gate_")
+        assert anzahl_gates() == tatsaechlich
+
+    def test_der_systemauftrag_nennt_keine_falsche_zahl(self) -> None:
+        """Er stand auf "neun", waehrend es elf waren."""
+        from research.analyst import SYSTEM_PROMPT, anzahl_gates
+
+        assert f"{anzahl_gates()} Zulassungspruefungen" in SYSTEM_PROMPT
+        for falsch in ("neun Zulassungspruefungen", "acht Zulassungspruefungen"):
+            assert falsch not in SYSTEM_PROMPT
+
+    def test_ohne_journal_aber_mit_versuchen_keine_erste_generation(self) -> None:
+        """Der Widerspruch, um den es geht."""
+        from research.analyst import build_prompt
+        from research.gates import GateThresholds
+
+        class Lage:
+            """Nur das, was dieser Abschnitt braucht.
+
+            ``als_auftrag`` liefert absichtlich einen kurzen Text: Geprueft
+            wird der Journal-Abschnitt, nicht die Auftragslage.
+            """
+
+            versuche = 198
+
+            def als_auftrag(self) -> str:
+                return "## Was tatsaechlich fehlt\n\n(hier nicht geprueft)\n"
+
+        text = build_prompt(
+            journal=[], thresholds=GateThresholds(), lage=Lage()
+        )
+        assert "Nichts. Dies ist die erste Generation." not in text
+        assert "198 Versuche sind gezaehlt" in text
+        assert "nicht die erste Generation" in text
+
+    def test_ohne_versuche_bleibt_es_die_erste_generation(self) -> None:
+        """Die Gegenprobe - bei einem wirklich leeren Projekt stimmt der Satz."""
+        from research.analyst import build_prompt
+        from research.gates import GateThresholds
+
+        text = build_prompt(journal=[], thresholds=GateThresholds(), lage=None)
+        assert "erste Generation" in text
+
+    def test_die_schwellenliste_sagt_dass_sie_unvollstaendig_ist(self) -> None:
+        """Wer fuenf Huerden kennt und elf nehmen muss, plant falsch."""
+        from research.analyst import anzahl_gates, build_prompt
+        from research.gates import GateThresholds
+
+        text = build_prompt(journal=[], thresholds=GateThresholds())
+        assert f"(5 der {anzahl_gates()})" in text
+        assert f"uebrigen {anzahl_gates() - 5}" in text
+
+    def test_die_ausgelassenen_gates_werden_benannt(self) -> None:
+        """Nicht nur "es gibt noch welche", sondern welche."""
+        from research.analyst import build_prompt
+        from research.gates import GateThresholds
+
+        text = build_prompt(journal=[], thresholds=GateThresholds())
+        for stichwort in ("Deflated", "schlechteste Jahr", "Plateau"):
+            assert stichwort in text
