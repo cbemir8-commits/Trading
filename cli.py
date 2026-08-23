@@ -7753,6 +7753,47 @@ def quelle(
         )
         console.print(f"{zusammen.urteil()}\n")
 
+        # **Die Probe, die vor der naheliegenden Falle schuetzt** (Befund 119).
+        #
+        # Aus Mittel und Ideenstreuung liegt es nahe, die Annahme in
+        # ``cli rennen`` zu ersetzen - dort steht "Mittel +0,000" ausdruecklich
+        # als Annahme. Genau das haette den Schnittpunkt von 786.085 auf 9.454
+        # Versuche verschoben, Faktor 83 zu guenstig.
+        #
+        # Beide Groessen zusammen sagen einen Bestwert voraus. Trifft er den
+        # tatsaechlichen nicht, sind die Belege keine Stichprobe der Suche,
+        # sondern eine Auswahl daraus - und dann taugen sie nicht.
+        from statistics import fmean
+
+        from research.aussagekraft import Vertraeglichkeit
+
+        ideen = zusammen.ideenstreuung
+        # **Der Bestwert kommt aus den beurteilbaren Belegen.** Der hoechste
+        # Wert ueberhaupt ist 0,3405 aus 18 Trades - genau der Kandidat, den
+        # dieselbe Ausgabe zwei Zeilen darueber als unbeurteilbar ausweist.
+        # Ihn als "besten Fund" zu nehmen hiesse, die Probe an einem
+        # Messausreisser aufzuhaengen.
+        beurteilbare = [b for b in alle if b.beurteilbar]
+        bester = max((b.sharpe_je_trade for b in beurteilbare), default=0.0)
+        if ideen is not None and beurteilbare:
+            probe = Vertraeglichkeit(
+                mittel=fmean(b.sharpe_je_trade for b in alle),
+                ideenstreuung=ideen,
+                versuche=versuche,
+                bester=bester,
+                belege=len(alle),
+                versuche_gesamt=versuche,
+            )
+            farbe = "green" if probe.traegt() else "red"
+            console.print(f"[{farbe}]{probe.urteil()}[/]\n")
+            if not probe.traegt():
+                console.print(
+                    "[dim]Deshalb bleibt die Annahme in 'cli rennen' stehen. "
+                    "Sie durch diese Messung zu ersetzen wuerde eine Huerde "
+                    "senken, und zwar auf einer Stichprobe, die nachweislich "
+                    "nicht die Suche abbildet.[/]\n"
+                )
+
     console.print(
         "[dim]Die Nullstreuung ist dieselbe Groesse, die im Deflated Sharpe "
         "die Huerde treibt.\nEine Quelle, die sie nicht schlaegt, kann das "

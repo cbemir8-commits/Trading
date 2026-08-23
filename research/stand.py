@@ -122,6 +122,11 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         118,
     ),
     Richtung(
+        "Belege als Kalibrierung",
+        "8 % Abdeckung, sagen 0,4130 voraus statt 0,2956 - untauglich",
+        119,
+    ),
+    Richtung(
         "Groessenregler zum Rechteck",
         "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",
         95,

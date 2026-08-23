@@ -220,3 +220,80 @@ class TestZerlegung:
 
     def test_unter_dem_rauschen_gibt_es_nichts_zu_zerlegen(self) -> None:
         assert zerlege(0.05, 0.08) is None
+
+
+class TestVertraeglichkeit:
+    """Befund 119 - die Probe, die vor der naheliegenden Falle schuetzt.
+
+    Aus Mittel und Ideenstreuung der Belege liegt es nahe, die Annahme in
+    ``cli rennen`` zu ersetzen. Genau das haette den Schnittpunkt von 786.085
+    auf 9.454 Versuche verschoben - Faktor 83 zu guenstig.
+    """
+
+    def _projekt(self, **kw):
+        from research.aussagekraft import Vertraeglichkeit
+
+        werte = dict(
+            mittel=0.1151, ideenstreuung=0.1079, versuche=198,
+            bester=0.2956, belege=16, versuche_gesamt=198,
+        )
+        werte.update(kw)
+        return Vertraeglichkeit(**werte)
+
+    def test_der_gemessene_stand_ist_unvertraeglich(self):
+        probe = self._projekt()
+        assert not probe.traegt()
+        assert probe.erwarteter_bester == pytest.approx(0.4130, abs=5e-4)
+        assert probe.abstand == pytest.approx(0.1174, abs=5e-4)
+
+    def test_das_urteil_nennt_die_richtung(self):
+        """'Zu gut' ist die Aussage - eine Auswahl der besseren Versuche."""
+        text = self._projekt().urteil()
+        assert "Unvertraeglich" in text
+        assert "zu gut" in text
+        assert "8%" in text
+
+    def test_passende_belege_tragen(self):
+        """Mittel so gewaehlt, dass die Vorhersage den Bestwert trifft."""
+        from research.wettrennen import extremwert
+
+        mittel = 0.2956 - 0.1079 * extremwert(198)
+        probe = self._projekt(mittel=mittel)
+        assert probe.traegt()
+        assert probe.abstand == pytest.approx(0.0, abs=1e-9)
+
+    def test_ein_bestehen_ist_keine_freigabe(self):
+        """Der Text muss das sagen - sonst liest es sich wie eine."""
+        from research.wettrennen import extremwert
+
+        mittel = 0.2956 - 0.1079 * extremwert(198)
+        text = self._projekt(mittel=mittel).urteil()
+        assert "keine Freigabe" in text or "nicht" in text
+        assert "Abdeckungsregel" in text
+
+    def test_zu_schlechte_belege_fallen_ebenso_auf(self):
+        """Die Probe ist zweiseitig - auch eine zu pessimistische Sammlung
+        bildet die Suche nicht ab."""
+        probe = self._projekt(mittel=-0.30)
+        assert not probe.traegt()
+        assert probe.abstand < 0
+        assert "zu schlecht" in probe.urteil()
+
+    def test_der_spielraum_ist_grosszuegig(self):
+        """Der beobachtete Bestwert streut selbst - eine enge Schranke wuerde
+        Widersprueche behaupten, wo nur Zufall ist."""
+        from research.wettrennen import extremwert
+
+        mittel = 0.2956 - 0.1079 * extremwert(198)
+        knapp = self._projekt(mittel=mittel + 0.04)
+        assert knapp.traegt()
+        deutlich = self._projekt(mittel=mittel + 0.10)
+        assert not deutlich.traegt()
+
+    def test_abdeckung_ohne_gesamtzahl_ist_none(self):
+        probe = self._projekt(versuche_gesamt=0)
+        assert probe.abdeckung is None
+        assert "16 Belege" in probe.urteil()
+
+    def test_die_abdeckung_wird_berechnet_und_nicht_gesetzt(self):
+        assert self._projekt(belege=20, versuche_gesamt=200).abdeckung == 0.1

@@ -304,3 +304,105 @@ def zerlege(beobachtet: float, rauschen: float) -> float | None:
     """
     rest = beobachtet**2 - rauschen**2
     return rest**0.5 if rest > 0 else None
+
+
+@dataclass(frozen=True, slots=True)
+class Vertraeglichkeit:
+    """Sagen die Belege den Bestwert voraus, den es wirklich gab?
+
+    Woher die Frage kommt
+    ---------------------
+    Befund 119. Aus den Belegen lassen sich Mittel und Ideenstreuung schaetzen,
+    und damit liegt es nahe, die **Annahme** in ``cli rennen`` durch die
+    Messung zu ersetzen - dort steht ``Mittel einer neuen Regelidee +0,000``,
+    ausdruecklich als Annahme.
+
+    Genau das habe ich fast getan. Die Rechnung waere gewesen: Ideenstreuung
+    0,1079 statt der rueckgerechneten 0,0930, also Mittel -0,0411, also
+    Schnittpunkt bei 9.454 statt 786.085 Versuchen. **Ein Faktor 83, und er
+    haette die Lage viel zu guenstig dargestellt.**
+
+    Die Probe, die es verhindert
+    ----------------------------
+    Beide Groessen zusammen sagen einen Bestwert voraus:
+
+        erwartet = mittel + streuung * c(versuche)
+
+    Bei den 16 Belegen dieses Projekts: ``0,1151 + 0,1079 * 2,7622 = 0,4131``.
+    Beobachtet nach 198 Versuchen sind **0,2569**. Der Abstand ist 0,156 - die
+    Belege behaupten eine Suche, die es so nicht gegeben hat.
+
+    Der Grund ist bekannt und steht in ``research/streuung.py``: Die 16 Belege
+    decken 8 % der Versuche ab, und *"was fehlt, fehlt hier nicht zufaellig,
+    sondern am unteren Ende"*. Eine Auswahl der besseren Versuche hat ein zu
+    hohes Mittel - und wer daraus auf die Grundgesamtheit schliesst, rechnet
+    sich die Suche schoen.
+
+    Warum diese Probe neben der Abdeckungsregel steht
+    -------------------------------------------------
+    ``streuung.MINDESTABDECKUNG`` verlangt 90 % und ist damit auf absehbare
+    Zeit nicht erfuellbar. Diese Probe ist billiger und misst etwas anderes:
+    nicht *wie viele* Versuche belegt sind, sondern ob die Belegten zu dem
+    passen, was herauskam. Sie kann auch bei hoher Abdeckung anschlagen - und
+    bei niedriger schweigen, wenn die Auswahl zufaellig war.
+
+    **Ein Bestehen ist keine Freigabe.** Es heisst nur, dass dieser eine
+    Widerspruch nicht vorliegt; die Abdeckungsregel gilt weiter.
+    """
+
+    mittel: float
+    ideenstreuung: float
+    versuche: int
+    bester: float
+    belege: int = 0
+    versuche_gesamt: int = 0
+
+    @property
+    def erwarteter_bester(self) -> float:
+        """Was Mittel und Streuung zusammen vorhersagen."""
+        from research.wettrennen import extremwert
+
+        return self.mittel + self.ideenstreuung * extremwert(self.versuche)
+
+    @property
+    def abstand(self) -> float:
+        """Vorhersage minus Beobachtung. Positiv = die Belege sind zu gut."""
+        return self.erwarteter_bester - self.bester
+
+    @property
+    def abdeckung(self) -> float | None:
+        if not self.versuche_gesamt:
+            return None
+        return self.belege / self.versuche_gesamt
+
+    def traegt(self, *, spielraum: float = 0.05) -> bool:
+        """Passen Vorhersage und Beobachtung zusammen?
+
+        ``spielraum`` ist bewusst grosszuegig: Der beobachtete Bestwert streut
+        selbst um seinen Erwartungswert, und zwar erheblich. Eine enge
+        Schranke wuerde eine Unvertraeglichkeit behaupten, wo nur Zufall ist.
+        """
+        return abs(self.abstand) <= spielraum
+
+    def urteil(self) -> str:
+        aus = (
+            f"{self.abdeckung:.0%} der Versuche belegt"
+            if self.abdeckung is not None
+            else f"{self.belege} Belege"
+        )
+        if self.traegt():
+            return (
+                f"Vertraeglich: Die Belege sagen einen Bestwert von "
+                f"{self.erwarteter_bester:.4f} voraus, beobachtet sind "
+                f"{self.bester:.4f} ({aus}). Das schliesst den groben "
+                f"Widerspruch aus - eine Freigabe zur Kalibrierung ist es "
+                f"nicht, dafuer gilt weiter die Abdeckungsregel."
+            )
+        richtung = "zu gut" if self.abstand > 0 else "zu schlecht"
+        return (
+            f"**Unvertraeglich.** Die Belege sagen einen Bestwert von "
+            f"{self.erwarteter_bester:.4f} voraus, beobachtet sind "
+            f"{self.bester:.4f} - ein Abstand von {abs(self.abstand):.4f}. "
+            f"Die Belege sind {richtung} fuer die Suche, die es gab ({aus}); "
+            f"als Kalibrierung taugen sie nicht."
+        )

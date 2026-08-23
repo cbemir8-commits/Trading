@@ -10676,3 +10676,115 @@ gruen ist, waere hier besonders wertlos gewesen.
    wird am Gegenstand, nicht an seiner Darstellung.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2125 Tests gruen.
+
+---
+
+## Hundertneunzehn. Eine Falle, in die ich fast gelaufen waere
+
+Der Dauerlauf nennt seit vielen Runden einen offenen Punkt: *"Die Research-KI
+wird im Wettbewerb nicht genutzt - sie koennte neue Kandidaten vorschlagen
+statt nur Varianten."* Befund 89 hat ihn bearbeitet, aber nicht abgeschlossen.
+
+Beim Nachsehen bin ich auf ``cli quelle`` gestossen - *"Taugt eine Ideenquelle,
+oder misst man nur sein eigenes Rauschen?"* - und dort auf eine Zahl, die auf
+den ersten Blick eine wichtige Annahme widerlegt.
+
+### Zwei Wege zu derselben Groesse
+
+Die Suchprognose haengt an der **Ideenstreuung**: Liegt sie ueber der
+Nullstreuung, holt die Suche die Huerde irgendwann ein. Es gibt zwei Wege,
+sie zu bekommen:
+
+    cli rennen   0,0930   rueckgerechnet aus einem Punkt (dem Bestwert)
+    cli quelle   0,1079   gemessen aus 16 Belegen, Messrauschen abgezogen
+
+``Rennen.streuung`` ist eine ``@property``: Sie kommt **immer** aus
+``kalibriere(bester, versuche, mittel)``, also aus einem einzigen Wert. Eine
+gemessene Streuung laesst sich gar nicht einsetzen.
+
+Und die Annahme dahinter steht in der Ausgabe selbst:
+
+    Annahme   Mittel einer neuen Regelidee +0.000
+
+Das ist ehrlich ausgewiesen und nirgends belegt.
+
+### Was der Wechsel bedeutet haette
+
+Setzt man die gemessene Streuung ein, folgt aus ``bester = mittel + streuung *
+c(198)`` ein Mittel von **-0,0411** statt 0. Und damit:
+
+    Mittel  0,0000, Streuung 0,0930   Schnittpunkt bei  786.085 Versuchen
+    Mittel -0,0411, Streuung 0,1079   Schnittpunkt bei    9.454 Versuchen
+
+**Faktor 83.** Aus "gemessen aussichtslos" waere "weit weg, aber vorstellbar"
+geworden - und der Weg dorthin haette wie eine Messung ausgesehen, nicht wie
+eine Annahme.
+
+### Warum es falsch gewesen waere
+
+Die dritte Zahl, die ich zuerst nicht gerechnet hatte: das **Mittel der
+Belege**. Es liegt bei **+0,1151**, nicht bei -0,0411.
+
+Mittel und Streuung zusammen sagen einen Bestwert voraus:
+
+    0,1151 + 0,1079 * 2,7622 = 0,4130
+
+Beobachtet ist unter den beurteilbaren Belegen **0,2956**. Abstand **0,1174**.
+Die Belege behaupten eine Suche, die es so nicht gegeben hat.
+
+Der Grund ist bekannt, und er steht seit langem in ``research/streuung.py``:
+
+    MINDESTABDECKUNG = 0.9
+    "Was fehlt, fehlt hier nicht zufaellig, sondern am unteren Ende."
+
+**Die 16 Belege decken 8 % der 198 Versuche ab.** Sie sind eine Auswahl der
+protokollierten, und protokolliert wurde, was der Rede wert war. Ihr Mittel ist
+nach oben verzerrt, und wer daraus auf die Grundgesamtheit schliesst, rechnet
+sich die Suche schoen.
+
+Die Regel war da. Sie steht in einem anderen Modul als die Zahl, und
+``cli quelle`` gab seine Ideenstreuung ohne sie aus.
+
+### Was gebaut wurde
+
+``aussagekraft.Vertraeglichkeit`` macht die Probe, die mich aufgehalten hat, zum
+Werkzeug: Sagen Mittel und Streuung einer Belegsammlung den Bestwert voraus,
+den es wirklich gab?
+
+Sie steht **neben** der Abdeckungsregel und ersetzt sie nicht. Die verlangt
+90 % und ist auf absehbare Zeit unerfuellbar; diese Probe ist billiger und
+misst etwas anderes - nicht wie viele Versuche belegt sind, sondern ob die
+belegten zu dem passen, was herauskam. Sie kann bei hoher Abdeckung anschlagen
+und bei niedriger schweigen, wenn die Auswahl zufaellig war.
+
+Zweiseitig, mit grosszuegigem Spielraum (0,05): Der beobachtete Bestwert
+streut selbst erheblich, und eine enge Schranke wuerde Widersprueche
+behaupten, wo nur Zufall ist. **Ein Bestehen ist ausdruecklich keine
+Freigabe** - der Text sagt es, und ein Test verlangt, dass er es sagt.
+
+``cli quelle`` fuehrt die Probe jetzt aus und schreibt das Ergebnis unter die
+Zahl, um die es geht.
+
+### Ein zweiter Fehler, unterwegs gefunden
+
+Der erste Durchlauf verglich gegen **0,3405** - den hoechsten Wert ueberhaupt.
+Er stammt von "Enge vor Bewegung" mit **18 Trades**, also genau dem Kandidaten,
+den dieselbe Ausgabe zwei Zeilen darueber als *unbeurteilbar* ausweist.
+
+Die Probe haette an einem Messausreisser gehangen. Jetzt kommt der Bestwert
+aus den beurteilbaren Belegen - eine Regel, die im Modul bereits existierte
+(``Beleg.beurteilbar``) und die ich nicht benutzt hatte.
+
+### Was daraus folgt
+
+1. **Die Annahme in ``cli rennen`` bleibt stehen.** Nicht weil sie belegt
+   waere, sondern weil das Einzige, womit man sie ersetzen koennte, die Probe
+   nicht besteht. Sie zu ersetzen wuerde eine Huerde senken, und das faellt
+   nicht nebenbei.
+2. **786.085 Versuche bleiben die Zahl.** Der Schnittpunkt rueckt nicht auf
+   9.454 - dieser Wert ist ein Artefakt einer verzerrten Stichprobe.
+3. **Die Falle war meine.** Ich hatte den Wechsel schon halb gerechnet, bevor
+   ich das Mittel nachgesehen habe. Die Probe steht jetzt im Werkzeug, damit
+   der naechste Lauf sie nicht neu finden muss.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2133 Tests gruen.
