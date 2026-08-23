@@ -10278,3 +10278,106 @@ nicht erst bei elf von elf.
    Bericht und nicht in einem Befund.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2099 Tests gruen.
+
+---
+
+## Hundertfuenfzehn. Traegt die Strecke, wenn die Daten kommen?
+
+Befund 114 hat den naechsten wirksamen Schritt benannt: ``cli backfill``, auf
+dem Rechner des Nutzers. Daraus folgt die Frage, die hier zu beantworten ist -
+**was passiert danach?** Jede Zahl dieses Projekts steht auf Bitstamp-Kerzen.
+Ob der Uebergang auf Bybit-Namen traegt, war nie geprueft, sondern
+angenommen.
+
+Geprueft wird die Maschinerie, keine Strategie. Kostet keinen Versuch.
+
+### Die Sperre faellt richtig
+
+Dieselben Kerzen, einmal unter Bitstamp-, einmal unter Bybit-Namen:
+
+    Beine: BITSTAMP (wie heute)       referenzdaten=True    7/11  passed=False
+    Beine: umbenannt auf BYBIT        referenzdaten=False   7/11  passed=False
+
+Die Sperre haengt am Namen und loest sich, sobald die Beine Handelssymbole
+tragen. ``passed`` bleibt False, aber jetzt aus dem richtigen Grund: vier
+offene Gates statt einer Sperre.
+
+**Das war eine Probe der Mechanik und ist keine Zulassung.** Es sind
+Bitstamp-Kurse mit einem anderen Etikett; geschrieben wurde nichts. Was der
+Umbenennung standhaelt, ist die Frage, ob die Sperre am Symbolnamen haengt -
+mehr nicht.
+
+### Der Fund: unbekannte Symbole erben still die BTC-Werte
+
+    _bybit_kontrakt / _fallback_instrument
+
+    BTCUSD_BITSTAMP -> BTCUSDT   Schritt 0,001  min 0,001  max 1190   BTC
+    ETHUSDT         -> ETHUSDT   Schritt 0,01   min 0,01   max 72000  ETH
+    SOLUSDT         -> SOLUSDT   Schritt 0,001  min 0,001  max 1190   BTC
+    BTC-USDT        -> BTC-USDT  Schritt 0,001  min 0,001  max 1190   BTC
+
+Ein SOL-Kontrakt mit **BTC als Basiswaehrung**, BTC-Schrittweite und
+BTC-Hoechstmenge. Der Grund stand in einer Zeile:
+
+    _KONTRAKTE.get(symbol, _KONTRAKTE["BTCUSDT"])
+
+Der Kommentar ueber ``_KONTRAKTE`` sagt selbst, warum das keine Nebensache
+ist: *"Schrittweite, Mindest- und Hoechstmenge sind hier keine Nebensache: Sie
+entscheiden, ob eine Order zustande kommt."*
+
+### Und die Lehre stand schon da
+
+Der Docstring derselben Funktion erzaehlt genau diesen Fehler - in der
+Vergangenheitsform:
+
+    "Es gab hier lange nur die BTCUSDT-Werte, die dann auch fuer ETH galten.
+     Deren Hoechstmenge von 100 Stueck ist fuer BTC nie erreichbar, fuer ETH
+     bei 80 USD Kurs und Hebel aber sehr wohl - die Orders wurden
+     stillschweigend abgelehnt, und die Ergebnisse sahen aus, als lohne sich
+     Hebel ab einem Punkt nicht mehr. **Ein falsch gesetztes Limit, das wie
+     ein Marktbefund aussah.**"
+
+Behoben wurde damals die Tabelle - vier Symbole bekamen eigene Werte. Der
+stille Rueckfall auf BTCUSDT blieb stehen, fuer jedes fuenfte Symbol. Die
+Lehre wurde als Kommentar aufgeschrieben und hat das Verhalten nicht
+gesteuert.
+
+Das ist jetzt das fuenfte Mal in fuenf Befunden, und es ist immer dieselbe
+Sache:
+
+    111   das Register der geschlossenen Richtungen, ungelesen
+    112   der Bericht, gegen einen ueberholten Bezugspunkt gerechnet
+    113   eine Aussage auf einer einzelnen Ziehung
+    114   eine Sperre, die erst sichtbar wird, wenn man sie erreicht
+    115   eine Lehre, die als Docstring dastand statt als Verhalten
+
+Keiner davon war ein Rechenfehler. Jedes Mal lag das Wissen im System.
+
+### Was geaendert wurde
+
+``_fallback_instrument`` wirft bei unbekanntem Symbol jetzt einen Fehler, der
+die bekannten Symbole und den Weg nennt. **Ein fehlender Wert laesst sich
+nachtragen; ein falscher sieht aus wie ein Marktbefund.**
+
+Dazu ``tests/test_uebergang.py``: dass die beiden Symbolmengen
+(Referenz und Kontrakt) sich nicht ueberschneiden, dass jedes Referenzsymbol
+einen Kontrakt hat - sonst kaeme der Nutzer nach dem Backfill nicht weiter -,
+und dass ein unbekanntes Symbol scheitert statt zu raten.
+
+Was dort **nicht** noch einmal steht: ob ``passed`` bei
+``referenzdaten=False`` True werden kann. Das prueft
+``tests/test_referenzdaten.py`` seit Befund 102, und eine zweite Fassung waere
+genau die Doppelung, an der dieses Projekt schon dreimal haengengeblieben ist.
+
+### Was daraus folgt
+
+1. **Der Weg nach der Sperre traegt** - gemessen, nicht vermutet. Wenn der
+   Nutzer die Bybit-Kerzen laedt, laeuft die Strecke durch und die Sperre
+   loest sich.
+2. **Eine Falle weniger auf diesem Weg.** Sie haette erst zugeschlagen, wenn
+   jemand ein fuenftes Symbol nimmt - und dann als Marktbefund ausgesehen.
+3. Der wirksame Schritt liegt weiter beim Nutzer. Was hier passiert ist, ist
+   Vorarbeit im Sinne von Befund 114: Sie aendert den Zustand nicht, macht
+   aber den Moment, in dem der Nutzer die Daten liefert, weniger fehleranfaellig.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2107 Tests gruen.

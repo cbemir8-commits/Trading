@@ -102,6 +102,11 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         114,
     ),
     Richtung(
+        "Uebergang auf Boersendaten",
+        "Sperre haengt am Namen und loest sich - Weg geprueft",
+        115,
+    ),
+    Richtung(
         "Groessenregler zum Rechteck",
         "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",
         95,

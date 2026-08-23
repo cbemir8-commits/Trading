@@ -1698,14 +1698,37 @@ def _fallback_instrument(symbol: str):
     sehr wohl - die Orders wurden stillschweigend abgelehnt, und die
     Ergebnisse sahen aus, als lohne sich Hebel ab einem Punkt nicht mehr.
     Ein falsch gesetztes Limit, das wie ein Marktbefund aussah.
+
+    **Und genau das stand danach weiter offen** (Befund 115). Die Tabelle
+    bekam je Symbol eigene Werte, aber der Zugriff blieb
+    ``_KONTRAKTE.get(symbol, _KONTRAKTE["BTCUSDT"])``: Jedes *unbekannte*
+    Symbol erbte still die BTC-Werte, ``base_coin`` eingeschlossen. Gemessen:
+
+        SOLUSDT   -> Schritt 0,001  min 0,001  max 1190  Basis BTC
+        BTC-USDT  -> Schritt 0,001  min 0,001  max 1190  Basis BTC
+
+    Ein SOL-Kontrakt mit BTC als Basiswaehrung. Die Lehre von damals stand als
+    Docstring da und hat das Verhalten nicht gesteuert - dieselbe Klasse wie
+    die Befunde 111 bis 114.
+
+    Deshalb jetzt: **Unbekanntes Symbol ist ein Fehler, keine Schaetzung.**
+    Ein fehlender Wert laesst sich nachtragen; ein falscher sieht aus wie ein
+    Marktbefund.
     """
     from decimal import Decimal
 
     from core.models import Instrument
 
-    tick, schritt, mindest, hoechst, basis = _KONTRAKTE.get(
-        symbol, _KONTRAKTE["BTCUSDT"]
-    )
+    if symbol not in _KONTRAKTE:
+        bekannt = ", ".join(sorted(_KONTRAKTE))
+        raise KeyError(
+            f"Keine Kontraktdaten fuer '{symbol}'. Bekannt sind: {bekannt}. "
+            f"Ein geratener Wert waere schlimmer als keiner - Schrittweite, "
+            f"Mindest- und Hoechstmenge entscheiden, ob eine Order zustande "
+            f"kommt. Nachtragen in cli._KONTRAKTE oder den Kontrakt von der "
+            f"Boerse laden."
+        )
+    tick, schritt, mindest, hoechst, basis = _KONTRAKTE[symbol]
     return Instrument(
         symbol=symbol,
         category="linear",
