@@ -11184,3 +11184,107 @@ hinkt hinterher".
    ueber Reparaturen.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2167 Tests gruen.
+
+---
+
+## Hundertvierundzwanzig. Ein Fehlerbalken, der von "nie" bis "jetzt" reicht
+
+Die letzten zwoelf Befunde waren fast ausschliesslich Werkzeugarbeit, und
+Befund 123 hat gerade festgehalten, dass so etwas ueber die Aussichten des
+Projekts nichts sagt. Also die Gegenprobe an der Stelle, die etwas sagt:
+**Wie belastbar ist die Zahl, auf der "gemessen aussichtslos" steht?**
+
+### Woran alles haengt
+
+Befund 110 nennt den Schnittpunkt: *"Weitersuchen holt auf - aber bei rund
+764.635 Versuchen."* Diese Zahl kommt aus ``kalibriere``, und das rechnet die
+Ideenstreuung aus **einem einzigen Wert** zurueck - dem beobachteten Bestwert:
+
+    bester = mittel + streuung * c(versuche)
+
+Der beobachtete Bestwert ist aber selbst eine Zufallsgroesse. Das Maximum von
+198 Ziehungen streut, und wie stark, stand nirgends.
+
+### Gemessen
+
+20.000 Simulationsziehungen, wahre Streuung 0,0930, 198 Versuche je Ziehung:
+
+    Der Bestwert selbst      Mittel 0,2548   Streuung 0,0371
+    Die Rueckrechnung        Mittel 0,0923   Streuung 0,0134
+                             5 %..95 %  0,0731 .. 0,1166   (0,79x .. 1,25x)
+
+**Erwartungstreu** - 0,0923 gegen wahr 0,0930, kein systematischer Fehler.
+Aber der Fehlerbalken ist gross genug, um das Urteil umzuwerfen:
+
+    unteres 5 %      Streuung 0,0757   -9,6 % unter Zufall   ->  nie
+    Punktschaetzer   Streuung 0,0930  +15,0 % ueber Zufall   ->  792.152 Versuche
+    oberes 95 %      Streuung 0,1178  +44,3 % ueber Zufall   ->  199 Versuche
+
+Der Schnittpunkt springt ueber den 90-Prozent-Bereich einer einzigen Groesse
+von **"nie" ueber 792.152 bis 199**. Das ist keine Spanne, das ist eine
+Nichtaussage.
+
+Und die schaerfere Zahl: **In 20 % der Ziehungen liegt die Rueckrechnung unter
+der Nullstreuung** - dort saehe es aus, als hole die Suche nie auf, obwohl sie
+es in Wahrheit taete.
+
+### Analytisch statt simuliert
+
+Fuer das Maximum von N Normalwerten gilt die Gumbel-Naeherung mit Skala
+``sigma / sqrt(2 ln N)``. Daraus folgt fuer die relative Streuung der
+Rueckrechnung
+
+    pi / (sqrt(6) * sqrt(2 ln N) * c(N))
+
+Bei 198 Versuchen: **14,3 %** gegen 14,4 % aus der Simulation. Der Bereich
+0,0757 bis 0,1178 gegen simulierte 0,0731 bis 0,1166 - am unteren Ende leicht
+optimistisch, und der Docstring sagt das.
+
+Gerechnet wird mit den **Gumbel-Quantilen**, nicht mit einer Normalnaeherung:
+Die Verteilung des Maximums ist rechtsschief, und ein symmetrischer Bereich
+waere am unteren Ende zu eng - also genau dort, wo das Urteil kippt.
+
+### Was das aendert und was nicht
+
+**Es aendert nichts an der Lage.** Der Punktschaetzer bleibt, wo er ist, die
+Kostendecke aus Befund 111 ist davon unberuehrt, und die Kopplung aus Befund 54
+steht auf acht Saaten (Befund 113). Die Aussichtslosigkeit ruht auf mehreren
+Saeulen; diese hier ist die schwaechste.
+
+**Es aendert die Art, wie die Zahl dasteht.** "764.635 Versuche" ohne
+Fehlerbalken liest sich wie eine Messung. ``cli rennen`` schreibt jetzt
+darunter:
+
+    Diese Kalibrierung kommt aus einem einzigen Wert - dem beobachteten
+    Bestwert - und der streut selbst. [...] Die Nullstreuung von 0.0808 liegt
+    darin. Damit ist auch 'die Suche holt nie auf' mit dem Verlauf vereinbar -
+    und ebenso, dass sie schon fast angekommen ist. Die Zahl unten ist ein
+    Punktschaetzer, keine Prognose.
+
+Der Warnsatz erscheint nur, wenn die Nullstreuung wirklich im Bereich liegt.
+Ein Fehlerbalken, der ueberall steht, sagt nichts.
+
+### Wer daraus Hoffnung zieht, macht den Fehler aus Befund 119
+
+Das obere Ende sagt 199 Versuche - also praktisch jetzt. Das ist **kein**
+Grund, weiterzusuchen: Dieselbe Rechnung sagt mit gleichem Recht "nie", und
+zwischen beiden entscheidet nichts, was gemessen waere. Wer sich das guenstige
+Ende aussucht, hat dasselbe getan wie ich in Befund 119 mit den 16 Belegen.
+
+Was aus dem Fehlerbalken folgt, ist nicht "es koennte doch gehen", sondern:
+**Diese eine Zahl traegt die Aussage nicht allein.** Sie tut es auch nicht -
+dafuer gibt es die Kostendecke und die Kopplung.
+
+### Was daraus folgt
+
+1. **Die Zahl hat jetzt einen Fehlerbalken**, und er steht dort, wo die Zahl
+   steht. Gegengeprueft an 20.000 Ziehungen.
+2. **Die schwaechste Saeule ist benannt.** Befund 110 bleibt richtig als
+   Punktschaetzung und ist als alleinige Begruendung zu duenn - das stand
+   vorher nicht da.
+3. **Mehr Versuche wuerden den Schaetzer verbessern**, und zwar mit
+   ``1/sqrt(ln N)``: Bei 2000 Versuchen waeren es 11,5 % statt 14,3 %. Das ist
+   kein Argument fuer mehr Versuche - es ist die Auskunft, dass auch diese
+   Unsicherheit nur langsam schrumpft.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2178 Tests gruen.

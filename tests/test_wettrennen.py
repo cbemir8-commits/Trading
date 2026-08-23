@@ -324,3 +324,111 @@ class TestNiveauschub:
         assert mit.abstand(230) is not None
         assert mit.abstand(230) < 0
         assert mit.schnittpunkt() > 230
+
+
+class TestKalibrierunsicherheit:
+    """Befund 124 - der Fehlerbalken an der wichtigsten Zahl des Projekts.
+
+    Die Suchprognose haengt an ``kalibriere``, und das rechnet aus **einem**
+    Wert zurueck: dem beobachteten Bestwert. Der ist selbst eine
+    Zufallsgroesse.
+
+    Gegengeprueft an 20.000 Simulationsziehungen (wahre Streuung 0,0930,
+    198 Versuche):
+
+        Rueckrechnung   Mittel 0,0923, Streuung 0,0134   -> relativ 14,4 %
+        5 %..95 %       0,0731 .. 0,1166
+        Formel          14,3 %, 0,0757 .. 0,1178
+    """
+
+    def test_die_formel_trifft_die_simulation(self) -> None:
+        from research.wettrennen import kalibrierunsicherheit
+
+        assert kalibrierunsicherheit(198) == pytest.approx(0.144, abs=0.005)
+
+    def test_sie_faellt_mit_mehr_versuchen(self) -> None:
+        """Mehr Versuche heisst ein sichererer Schaetzer - aber langsam."""
+        from research.wettrennen import kalibrierunsicherheit
+
+        assert kalibrierunsicherheit(2000) < kalibrierunsicherheit(198)
+        assert kalibrierunsicherheit(198) < kalibrierunsicherheit(50)
+
+    def test_ohne_versuche_ist_nichts_zu_sagen(self) -> None:
+        import math
+
+        from research.wettrennen import kalibrierunsicherheit
+
+        assert math.isinf(kalibrierunsicherheit(1))
+        assert math.isinf(kalibrierunsicherheit(0))
+
+    def test_der_bereich_trifft_die_simulation(self) -> None:
+        from research.wettrennen import kalibrierbereich
+
+        unten, oben = kalibrierbereich(0.0930, 198)
+        assert unten == pytest.approx(0.0757, abs=0.002)
+        assert oben == pytest.approx(0.1178, abs=0.002)
+
+    def test_er_ist_rechtsschief(self) -> None:
+        """Die Verteilung des Maximums ist es auch - ein symmetrischer
+        Bereich waere am unteren Ende zu eng, also genau dort, wo das Urteil
+        kippt."""
+        from research.wettrennen import kalibrierbereich
+
+        unten, oben = kalibrierbereich(0.0930, 198)
+        assert (oben - 0.0930) > (0.0930 - unten)
+
+    def test_ohne_streuung_kein_bereich(self) -> None:
+        import math
+
+        from research.wettrennen import kalibrierbereich
+
+        unten, oben = kalibrierbereich(0.0, 198)
+        assert unten == 0.0
+        assert math.isinf(oben)
+
+
+class TestDerFehlerbalkenStehtImUrteil:
+    def _rennen(self) -> Rennen:
+        return Rennen(bester=0.2569, versuche=198, trades=154, mittel=0.0)
+
+    def test_die_spanne_wird_genannt(self) -> None:
+        text = self._rennen().unsicherheit()
+
+        assert "14.3%" in text
+        assert "0.0757" in text and "0.1178" in text
+
+    def test_der_nullstreuung_im_bereich_wird_ausgesprochen(self) -> None:
+        """**Der Kern von Befund 124.**
+
+        Liegt die Nullstreuung im Bereich, ist auch 'nie' mit dem Verlauf
+        vereinbar - und dann ist die Zahl ein Punktschaetzer, keine Prognose.
+        Das muss dastehen, sonst liest sich '764.635 Versuche' wie eine
+        Messung.
+        """
+        text = self._rennen().unsicherheit()
+
+        assert "Punktschaetzer, keine Prognose" in text
+        assert "nie auf" in text
+
+    def test_bei_klarer_lage_bleibt_der_zusatz_weg(self) -> None:
+        """Ein Fehlerbalken, der das Urteil nicht umwirft, braucht keinen
+        Warnsatz - sonst steht er ueberall und sagt nichts."""
+        eindeutig = Rennen(bester=0.9, versuche=198, trades=154, mittel=0.0)
+        text = eindeutig.unsicherheit()
+
+        assert "Bereich der Ideenstreuung" in text
+        assert "Punktschaetzer, keine Prognose" not in text
+
+    def test_das_urteil_traegt_ihn_mit(self) -> None:
+        text = self._rennen().urteil()
+
+        assert "einem einzigen Wert" in text
+        assert "764.635" in text or "Versuche" in text
+
+    def test_ohne_streuung_kein_zusatz(self) -> None:
+        """Bei einem Bestwert unter dem angenommenen Mittel gibt es keine
+        Kalibrierung - und dann auch nichts zu bebalken."""
+        unvereinbar = Rennen(bester=0.1, versuche=198, trades=154, mittel=0.5)
+
+        assert unvereinbar.streuung is None
+        assert unvereinbar.unsicherheit() == ""

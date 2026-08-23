@@ -121,6 +121,11 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         "8 % Abdeckung, sagen 0,4130 voraus statt 0,2956 - untauglich",
         119,
     ),
+    Richtung(
+        "Schnittpunkt als Prognose",
+        "Fehlerbalken 14,3 % - von 'nie' bis 199 Versuche, Punktschaetzer",
+        124,
+    ),
 )
 
 

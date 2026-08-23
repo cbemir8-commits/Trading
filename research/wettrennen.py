@@ -192,6 +192,41 @@ class Rennen:
             return f"jenseits von {obergrenze:.0e}"
         return f"{schnitt:,} Versuche".replace(",", ".")
 
+    def unsicherheit(self, *, irrtum: float = 0.10) -> str:
+        """Der Fehlerbalken an der Kalibrierung - Befund 124.
+
+        **Ohne ihn suggeriert die Zahl eine Genauigkeit, die sie nicht hat.**
+        Die Ideenstreuung wird aus einem einzigen Wert zurueckgerechnet, und
+        der beobachtete Bestwert ist selbst eine Zufallsgroesse. Bei 198
+        Versuchen betraegt die relative Streuung der Rueckrechnung 14,3 %,
+        und ueber diesen Bereich springt der Schnittpunkt von "nie" bis
+        "jetzt".
+
+        Der Text nennt beides: die Spanne und, wenn sie das Urteil umwirft,
+        dass sie es tut.
+        """
+        streuung = self.streuung
+        if streuung is None:
+            return ""
+        unten, oben = kalibrierbereich(streuung, self.versuche, irrtum=irrtum)
+        rel = kalibrierunsicherheit(self.versuche)
+
+        satz = (
+            f"\n\n**Diese Kalibrierung kommt aus einem einzigen Wert** - dem "
+            f"beobachteten Bestwert - und der streut selbst. Bei "
+            f"{self.versuche} Versuchen liegt die relative Streuung der "
+            f"Rueckrechnung bei {rel:.1%}; der {1 - irrtum:.0%}-Bereich der "
+            f"Ideenstreuung reicht von {unten:.4f} bis {oben:.4f}."
+        )
+        if unten <= self.nullstreuung <= oben:
+            satz += (
+                f" **Die Nullstreuung von {self.nullstreuung:.4f} liegt darin.** "
+                f"Damit ist auch 'die Suche holt nie auf' mit dem Verlauf "
+                f"vereinbar - und ebenso, dass sie schon fast angekommen "
+                f"ist. Die Zahl unten ist ein Punktschaetzer, keine Prognose."
+            )
+        return satz
+
     def huerde(self, versuche: int) -> float | None:
         """Der noetige Sharpe je Trade bei diesem Versuchsstand."""
         from research.suchbudget import Budget
@@ -286,6 +321,7 @@ class Rennen:
             f"haben {self.bester:.4f} hervorgebracht, das entspricht einer "
             f"Ideenstreuung von {streuung:.4f}. Die Huerde steigt mit "
             f"{self.nullstreuung:.4f} - der Streuung des reinen Zufalls."
+            f"{self.unsicherheit()}"
         )
 
         if not self.schneller_als_die_huerde:
@@ -344,3 +380,76 @@ def spanne(
             f"{rennen.wo_holt_sie_auf()}"
         )
     return "\n".join(zeilen)
+
+
+def kalibrierunsicherheit(versuche: int) -> float:
+    """Wie stark die zurueckgerechnete Ideenstreuung selbst streut - relativ.
+
+    Woher die Frage kommt
+    ---------------------
+    Befund 124. Die ganze Suchprognose haengt an ``kalibriere``, und das
+    rechnet aus **einem** Wert zurueck: dem beobachteten Bestwert. Der ist
+    aber selbst eine Zufallsgroesse - das Maximum von N Ziehungen streut, und
+    zwar erheblich.
+
+    Die Rechnung
+    ------------
+    Fuer das Maximum von N normalverteilten Werten gilt naeherungsweise die
+    Gumbel-Verteilung mit Skala ``beta = sigma / a_N`` und
+    ``a_N = sqrt(2 ln N)``. Daraus folgt
+
+        sigma(Maximum) = sigma * pi / (sqrt(6) * a_N)
+
+    und weil ``kalibriere`` durch ``c(N) = extremwert(N)`` teilt, ist die
+    relative Streuung der Rueckrechnung
+
+        pi / (sqrt(6) * a_N * c(N))
+
+    Bei 198 Versuchen sind das **14,3 %** - gegengeprueft an 20.000
+    Simulationsziehungen, die 14,4 % ergaben.
+
+    Was das bedeutet
+    ----------------
+    Die Rueckrechnung ist erwartungstreu (simuliert 0,0923 gegen wahr 0,0930),
+    aber ihr Fehlerbalken ist gross genug, um das Urteil umzuwerfen: Bei einer
+    wahren Streuung von 0,0930 liegt die Rueckrechnung in **20 % der
+    Ziehungen** unter der Nullstreuung - dort saehe es aus, als hole die Suche
+    nie auf, obwohl sie es taete.
+    """
+    if versuche < 2:
+        return float("inf")
+    a = math.sqrt(2 * math.log(versuche))
+    c = extremwert(versuche)
+    if a <= 0 or c <= 0:
+        return float("inf")
+    return math.pi / (math.sqrt(6) * a * c)
+
+
+def kalibrierbereich(
+    streuung: float, versuche: int, *, irrtum: float = 0.10
+) -> tuple[float, float]:
+    """Der Bereich, in dem die wahre Ideenstreuung plausibel liegt.
+
+    Gerechnet mit den Gumbel-Quantilen statt einer Normalnaeherung: Die
+    Verteilung des Maximums ist rechtsschief, und ein symmetrischer Bereich
+    waere am unteren Ende zu eng - also genau dort, wo das Urteil kippt.
+
+    **Die Naeherung bleibt am unteren Ende leicht optimistisch**: Simuliert
+    ergab sich 0,0731, die Formel liefert 0,0757. Wer die Grenze braucht, um
+    etwas auszuschliessen, sollte das wissen.
+    """
+    if versuche < 2 or streuung <= 0:
+        return (0.0, float("inf"))
+
+    a = math.sqrt(2 * math.log(versuche))
+    c = extremwert(versuche)
+    if a <= 0 or c <= 0:
+        return (0.0, float("inf"))
+
+    def rand(p: float) -> float:
+        # Gumbel-Quantil, relativ zum Erwartungswert des Maximums.
+        abweichung = -math.log(-math.log(p)) - EULER_MASCHERONI
+        return streuung * (1.0 + abweichung / (a * c))
+
+    unten, oben = rand(irrtum / 2), rand(1 - irrtum / 2)
+    return (max(0.0, unten), oben)
