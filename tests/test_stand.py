@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from research.stand import (
+    BEHOBEN,
     BEIM_NUTZER,
     BUDGET,
     ENTSCHEIDUNGEN,
@@ -104,7 +105,14 @@ class TestRichtung:
             if re.search(rf"^## {zahlwort(n)}\.", text, re.M)
         ]
         neuester = max(nummern)
-        juengste_fundstelle = max(r.befund for r in GESCHLOSSEN)
+        # **Beide Listen zusammen** (Befund 123). Seit die Werkzeugbefunde in
+        # ``BEHOBEN`` stehen, waere die Pruefung auf ``GESCHLOSSEN`` allein zu
+        # streng: Ein Lauf, der nur Werkzeuge repariert hat, liesse sie
+        # anschlagen, obwohl das Register vollstaendig ist. Der Zweck war nie
+        # "eine bestimmte Liste waechst", sondern "nichts hinkt hinterher".
+        juengste_fundstelle = max(
+            r.befund for r in (*GESCHLOSSEN, *BEHOBEN)
+        )
 
         assert neuester - juengste_fundstelle <= 6, (
             f"Laborbuch bei {neuester}, juengster Ausschluss bei "
@@ -354,3 +362,76 @@ class TestAuftragspunkte:
 
         assert "PUNKTE AUS DEM AUFTRAG" in text
         assert "zahlt Versuche fuer ein Ergebnis, das schon dasteht" in text
+
+
+class TestDieTrennung:
+    """Befund 123 - zwei Fragen, zwei Listen.
+
+    Ich habe neun Werkzeugbefunde in ``GESCHLOSSEN`` eingetragen. Die Liste
+    beantwortet die Frage *"welche Suchwege sind gemessen zu"* - und wer sie
+    las, fand zwischen "Mehr Maerkte: effektive Stichprobe bleibt bei 150" auf
+    einmal "README auf dem Stand vom 1. August".
+
+    Beides Messungen mit Fundstelle. Aber ein geschlossener Suchweg heisst:
+    dort ist nichts zu holen. Ein behobener Werkzeugfehler heisst: etwas war
+    kaputt und ist repariert - das sagt ueber die Aussichten gar nichts.
+    """
+
+    def test_keine_fundstelle_steht_in_beiden(self) -> None:
+        doppelt = {r.befund for r in GESCHLOSSEN} & {r.befund for r in BEHOBEN}
+        assert doppelt == set(), f"Fundstellen in beiden Listen: {doppelt}"
+
+    def test_jede_behobene_fundstelle_steht_im_laborbuch(self) -> None:
+        """Dieselbe Pruefung wie fuer ``GESCHLOSSEN`` - ein Eintrag ohne
+        nachlesbare Messung ist auch hier eine Behauptung."""
+        import re
+        from pathlib import Path
+
+        text = Path("strategies/BEFUND.md").read_text()
+        ueberschriften = set(
+            re.findall(r"^## ([A-Za-zaeoeueAEOEUEss]+)\.", text, re.M)
+        )
+        fehlend = sorted(
+            {r.befund for r in BEHOBEN if zahlwort(r.befund) not in ueberschriften}
+        )
+        assert fehlend == [], f"Fundstellen ohne Abschnitt: {fehlend}"
+
+    def test_die_richtungen_stehen_in_der_reihenfolge_der_untersuchung(self) -> None:
+        """Der Docstring sagt "wie sie untersucht wurden".
+
+        Bis Befund 123 stand dort 111, 113, 119, dann 95, 96, 99, 102, 106 -
+        weil ich meine Eintraege vor die mehrzeiligen gesetzt habe statt ans
+        Ende. Geprueft wird nur der Schwanz ab Befund 90: Davor liegt die
+        historisch gewachsene Reihenfolge, die bewusst nicht sortiert ist.
+        """
+        schwanz = [r.befund for r in GESCHLOSSEN if r.befund >= 90]
+        assert schwanz == sorted(schwanz), (
+            f"Reihenfolge ab Befund 90 zerfallen: {schwanz}"
+        )
+
+    def test_die_behobenen_stehen_aufsteigend(self) -> None:
+        nummern = [r.befund for r in BEHOBEN]
+        assert nummern == sorted(nummern)
+
+    def test_werkzeugbefunde_stehen_nicht_unter_den_richtungen(self) -> None:
+        """Die Namen, die den Fehler ausgeloest haben - als Wache."""
+        namen = {r.name for r in GESCHLOSSEN}
+        for verirrt in (
+            "README auf dem Stand vom 1. August",
+            "git status als Pruefmass",
+            "Trockenlauf nur fuer den Zaehler",
+            "Gate-Zahl abschreiben",
+        ):
+            assert verirrt not in namen
+
+    def test_der_bericht_trennt_die_beiden_abschnitte(self) -> None:
+        text = _lage().bericht()
+        assert "GEMESSEN UND GESCHLOSSEN" in text
+        assert "BEHOBEN AN DEN WERKZEUGEN" in text
+        assert text.index("GEMESSEN UND GESCHLOSSEN") < text.index(
+            "BEHOBEN AN DEN WERKZEUGEN"
+        ), "Die Suchrichtungen gehoeren zuerst - sie sind die wichtigere Frage."
+
+    def test_der_werkzeugabschnitt_sagt_was_er_nicht_bedeutet(self) -> None:
+        """Sonst liest er sich wie Fortschritt."""
+        assert "sagt nichts ueber die Aussichten" in _lage().bericht()

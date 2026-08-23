@@ -11081,3 +11081,106 @@ worden - und dann gehoert sie erst recht weg.
    aus dem Verzeichnis, das gefuehrt wird.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2160 Tests gruen.
+
+---
+
+## Hundertdreiundzwanzig. Neun Eintraege in der falschen Liste
+
+Befund 122 endete mit einer Feststellung ueber vier Befunde in Folge: *"Jedes
+Mal gab es eine Quelle und stand eine Kopie daneben."* Der naheliegende
+naechste Schritt war, die Fehlerklasse systematisch zu suchen statt den
+fuenften Fall einzeln zu finden.
+
+### Die Suche war leer - und das ist ein Ergebnis
+
+Alle Zahlwoerter vor "Gates" und "Zulassungspruefungen" im ganzen Projekt,
+ausser dem Laborbuch:
+
+    research/stand.py:465        "1 von 9 Gates"
+    research/koernung.py:80,82   "die uebrigen neun Gates"
+    research/leaderboard.py:16   "die eine hat sechs Gates bestanden"
+    research/rangprobe.py:160    "bestehen trotzdem fuenf Gates"
+
+Fuenf Verdachtsfaelle, und **alle fuenf sind richtig**: ein historischer
+Messwert mit Fundstelle (Befund 29, als es neun Gates gab), "zwei wandern, die
+uebrigen neun stehen still" (2+9=11), ein Beispiel, ein Messwert. Nach Befund
+121 ist die Gate-Zahl bereinigt.
+
+Haette ich sie ohne Kontext gemeldet, waeren es fuenf Fehlalarme gewesen.
+
+### Was stattdessen auffiel
+
+Beim Nachsehen in ``research/stand.py``: **44 Eintraege in ``GESCHLOSSEN``**,
+und die letzten sieben sehen so aus:
+
+    Trockenlauf nur fuer den Zaehler   Rauchtest schrieb die Bestenliste fort
+    git status als Pruefmass           misst den Befehl, nicht den Zustand
+    README auf dem Stand vom 1. August 57 Befunde alt
+    Textsuche nach zaehlenden Befehlen findet 'korb' nicht
+    Gate-Zahl abschreiben              vier Stellen, drei Fassungen
+    Regelliste neben dem Verzeichnis   acht statt elf
+
+Das sind **behobene Werkzeugfehler**, keine geschlossenen Suchrichtungen. Und
+die Liste beantwortet ausdruecklich die andere Frage - ihr Docstring:
+
+    "Die Richtungen, die gemessen und abgeschlossen sind."
+
+Wer sie liest, um zu erfahren, wo das Projekt nicht weiterkommt, findet
+zwischen *"Mehr Maerkte: effektive Stichprobe bleibt bei 150"* auf einmal
+*"README auf dem Stand vom 1. August"*.
+
+**Die habe ich alle selbst eingetragen** - in den Befunden 112 bis 122, jeweils
+am Ende des Laufs, ohne zu fragen, ob sie in diese Liste gehoeren.
+
+### Und die Reihenfolge war zerfallen
+
+    ... 94, 116, 117, 118, 119, 120, 121, 122, 95, 96, 99, 102, 106
+
+Der Docstring sagt *"Reihenfolge: wie sie untersucht wurden"*. Ich habe meine
+einzeiligen Eintraege vor die mehrzeiligen gesetzt, weil das die Stelle war,
+an der der Text zufaellig passte.
+
+### Was der Unterschied ist
+
+Beides sind Messungen mit Fundstelle, und beide gehoeren ins Register. Aber sie
+beantworten verschiedene Fragen:
+
+    Ein geschlossener Suchweg heisst:  dort ist nichts zu holen.
+    Ein behobener Werkzeugfehler:      etwas war kaputt und ist repariert.
+
+Der zweite sagt ueber die Aussichten des Projekts **gar nichts**. Ihn unter die
+Suchrichtungen zu mischen laesst die Liste laenger aussehen, ohne dass eine
+Richtung mehr geschlossen waere - und das ist die unangenehmere Haelfte: Neun
+zusaetzliche Zeilen unter "GEMESSEN UND GESCHLOSSEN" lesen sich wie
+Fortschritt.
+
+### Was geaendert wurde
+
+``BEHOBEN`` traegt die neun Werkzeugbefunde, aufsteigend nach Fundstelle.
+``GESCHLOSSEN`` behaelt die 35 Suchrichtungen, und die Reihenfolge ab Befund 90
+ist wieder aufsteigend. ``cli stand`` zeigt beide getrennt, mit der Ueberschrift
+
+    BEHOBEN AN DEN WERKZEUGEN (sagt nichts ueber die Aussichten)
+
+Sechs Tests halten es: keine Fundstelle in beiden Listen, jede Fundstelle im
+Laborbuch, beide Reihenfolgen aufsteigend, die Namen der verirrten Eintraege
+als Wache, und der Bericht muss die Suchrichtungen zuerst zeigen.
+
+``test_die_liste_reicht_bis_an_die_gegenwart`` prueft jetzt **beide** Listen
+zusammen. Auf ``GESCHLOSSEN`` allein waere er zu streng geworden: Ein Lauf, der
+nur Werkzeuge repariert, liesse ihn anschlagen, obwohl das Register
+vollstaendig ist. Sein Zweck war nie "diese Liste waechst", sondern "nichts
+hinkt hinterher".
+
+### Was daraus folgt
+
+1. **Die Suche nach der Fehlerklasse war leer.** Nach Befund 121 steht die
+   Gate-Zahl ueberall richtig. Das ist ein Ergebnis und kein Nichtergebnis -
+   es beendet die Reihe.
+2. **Der Fund kam von woanders**, und er betrifft meine eigene Arbeit der
+   letzten elf Laeufe. Ich habe eine Liste verwaessert, die genau dafuer da
+   ist, Wiederholungen zu verhindern.
+3. **35 Richtungen sind gemessen zu, nicht 44.** Die Differenz war Buchhaltung
+   ueber Reparaturen.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2167 Tests gruen.

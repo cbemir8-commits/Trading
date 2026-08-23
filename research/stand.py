@@ -85,16 +85,64 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     Richtung("Verbund aus dem Katalog", "bestes Paar 3,585 unter Nullmedian 3,683", 86),
     Richtung("Sperrfrist", "Folgetrades schlechter, aber kein t-Wert ueber 2", 88),
     Richtung("Verbund fuer die Risikogates", "231 Kombinationen, kein Treffer", 94),
-    Richtung("Kostenannahmen", "bei Kosten null fehlen 0,0692 am DSR", 111),
     Richtung(
-        "Stand auf einem Betriebspunkt",
-        "zwei Gates hingen an einer ungeklaerten Tatsache",
-        112,
+        "Groessenregler zum Rechteck",
+        "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",
+        95,
     ),
+    Richtung(
+        "Koernung zum Deflated Sharpe",
+        "bewegt ihn ueber die ganze Kontoleiter um 0,014",
+        96,
+    ),
+    Richtung(
+        "Feinere Kerzen im Fuellmodell",
+        "80,8 % der Balken aufgeloest, Ergebnis bitgleich",
+        99,
+    ),
+    Richtung(
+        "Zulassung auf Referenzkerzen",
+        "Kassamarkt statt Perpetual, kein Funding - keine Zulassung",
+        102,
+    ),
+    Richtung(
+        "Hebel als Reserve",
+        "an 0,2 % der Balken genutzt, Deckel auf 1,0 bitgleich",
+        106,
+    ),
+    Richtung("Kostenannahmen", "bei Kosten null fehlen 0,0692 am DSR", 111),
     Richtung(
         "Schwacher Vorteil (5 %)",
         "|t| = 0,74 ueber acht Saaten - keine Delle, nur Rauschen",
         113,
+    ),
+    Richtung(
+        "Belege als Kalibrierung",
+        "8 % Abdeckung, sagen 0,4130 voraus statt 0,2956 - untauglich",
+        119,
+    ),
+)
+
+
+#: Behobene Fehler in den Werkzeugen - **nicht** geschlossene Suchrichtungen.
+#:
+#: Die Trennung ist Befund 123, und sie korrigiert meine eigene Arbeit: Ich
+#: habe neun Werkzeugbefunde in ``GESCHLOSSEN`` eingetragen, die dort nichts
+#: verloren haben. Die Liste beantwortet die Frage *"welche Suchwege sind
+#: gemessen zu"* - und wer sie las, fand zwischen "Mehr Maerkte: effektive
+#: Stichprobe bleibt bei 150" auf einmal "README auf dem Stand vom 1. August".
+#:
+#: Beides sind Messungen mit Fundstelle, aber sie beantworten verschiedene
+#: Fragen. Ein geschlossener Suchweg heisst: dort ist nichts zu holen. Ein
+#: behobener Werkzeugfehler heisst: etwas war kaputt und ist repariert - das
+#: sagt ueber die Aussichten des Projekts gar nichts.
+#:
+#: Reihenfolge: aufsteigend nach Fundstelle.
+BEHOBEN: tuple[Richtung, ...] = (
+    Richtung(
+        "Stand auf einem Betriebspunkt",
+        "zwei Gates hingen an einer ungeklaerten Tatsache",
+        112,
     ),
     Richtung(
         "Arbeit vor den Boersendaten",
@@ -122,11 +170,6 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         118,
     ),
     Richtung(
-        "Belege als Kalibrierung",
-        "8 % Abdeckung, sagen 0,4130 voraus statt 0,2956 - untauglich",
-        119,
-    ),
-    Richtung(
         "Textsuche nach zaehlenden Befehlen",
         "findet 'korb' nicht - nur der Trockenlauf gibt Auskunft",
         120,
@@ -142,29 +185,9 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         122,
     ),
     Richtung(
-        "Groessenregler zum Rechteck",
-        "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",
-        95,
-    ),
-    Richtung(
-        "Koernung zum Deflated Sharpe",
-        "bewegt ihn ueber die ganze Kontoleiter um 0,014",
-        96,
-    ),
-    Richtung(
-        "Feinere Kerzen im Fuellmodell",
-        "80,8 % der Balken aufgeloest, Ergebnis bitgleich",
-        99,
-    ),
-    Richtung(
-        "Zulassung auf Referenzkerzen",
-        "Kassamarkt statt Perpetual, kein Funding - keine Zulassung",
-        102,
-    ),
-    Richtung(
-        "Hebel als Reserve",
-        "an 0,2 % der Balken genutzt, Deckel auf 1,0 bitgleich",
-        106,
+        "Werkzeugbefunde unter den Richtungen",
+        "neun Eintraege in der falschen Liste, Reihenfolge zerfallen",
+        123,
     ),
 )
 
@@ -585,6 +608,18 @@ class Lage:
             "-" * 72,
         ]
         zeilen.extend(f"  {r}" for r in GESCHLOSSEN)
+        # **Getrennt, seit Befund 123.** Neun Werkzeugbefunde standen unter
+        # den Suchrichtungen; wer die Liste las, fand zwischen "Mehr Maerkte"
+        # auf einmal "README auf dem Stand vom 1. August". Beides Messungen
+        # mit Fundstelle, aber zu verschiedenen Fragen - und nur die obere
+        # sagt etwas ueber die Aussichten des Projekts.
+        if BEHOBEN:
+            zeilen += [
+                "",
+                "BEHOBEN AN DEN WERKZEUGEN (sagt nichts ueber die Aussichten)",
+                "-" * 72,
+            ]
+            zeilen.extend(f"  {r}" for r in BEHOBEN)
         zeilen += ["", "PUNKTE AUS DEM AUFTRAG", "-" * 72]
         zeilen.extend(f"  {p}" for p in AUFTRAG)
         offen = [p for p in AUFTRAG if not p.erledigt]
