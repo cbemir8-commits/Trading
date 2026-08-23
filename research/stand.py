@@ -127,6 +127,11 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         119,
     ),
     Richtung(
+        "Textsuche nach zaehlenden Befehlen",
+        "findet 'korb' nicht - nur der Trockenlauf gibt Auskunft",
+        120,
+    ),
+    Richtung(
         "Groessenregler zum Rechteck",
         "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",
         95,

@@ -1126,9 +1126,19 @@ def research(
 ) -> None:
     """Strategien pruefen und den Champion bestimmen.
 
-    Jedes Genom laeuft durch Walk-Forward und die neun Zulassungs-Gates. Wer
+    Jedes Genom laeuft durch Walk-Forward und die elf Zulassungs-Gates. Wer
     alle besteht, kommt in die Auswahl; der Bestaendigste wird Champion und
     landet in ``strategies/champion.json``. Nur der wird gehandelt.
+
+    **Dieser Befehl kostet Versuche.** Jedes gepruefte Genom ist eine getestete
+    Hypothese und wird gezaehlt; der Zaehler hebt die Huerde des
+    Deflated-Sharpe-Gates dauerhaft, fuer jeden kuenftigen Kandidaten. Zum
+    Ausprobieren ``TRADING_TROCKENLAUF=1`` setzen - dann wird nichts
+    fortgeschrieben.
+
+    Der Docstring stand bis Befund 120 ohne diesen Hinweis da, und er nannte
+    neun Gates statt elf. Genau diese Luecke hat in Befund 104 einundzwanzig
+    Versuche gekostet.
 
     Braucht Daten im Speicher - vorher ``backfill`` und ``quality`` laufen
     lassen. Ein Durchlauf ueber sechs Jahre dauert je nach Kandidatenzahl
@@ -2880,6 +2890,14 @@ def korb(
 
     Das ist keine Lockerung: Gehandelt wuerde ohnehin der Korb. Geprueft wird
     jetzt das, was tatsaechlich laufen soll, mit denselben Schwellen.
+
+    **Dieser Befehl kostet Versuche** - gemessen sieben (Befund 120). Er sagte
+    es bis dahin nicht, und eine Textsuche im Funktionskoerper fand es auch
+    nicht: Der Zaehler wird ueber eine Hilfsfunktion fortgeschrieben, nicht
+    hier. Aufgefallen ist es erst, als der Trockenlauf seinen unterdrueckten
+    Schreibvorgang meldete.
+
+    Zum Ausprobieren ``TRADING_TROCKENLAUF=1`` setzen.
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.gates import evaluate_gates

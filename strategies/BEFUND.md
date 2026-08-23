@@ -10788,3 +10788,106 @@ aus den beurteilbaren Belegen - eine Regel, die im Modul bereits existierte
    der naechste Lauf sie nicht neu finden muss.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2133 Tests gruen.
+
+---
+
+## Hundertzwanzig. Welcher Befehl kostet einen Versuch?
+
+Befund 104 ist der teuerste Fehler dieses Projekts: Ein Rauchtest ueber alle
+Befehle traf zwanzig, die **messen und dabei zaehlen**. Der Versuchszaehler
+sprang von 177 auf 198, und die Huerde des Deflated-Sharpe-Gates ist seither
+dauerhaft hoeher.
+
+Damals entstand ``TRADING_TROCKENLAUF``. Was nie entstand, ist eine Antwort auf
+die Frage, die den Fehler ausgeloest hat: **Welche Befehle kosten eigentlich
+Versuche?**
+
+Der Stand: 34 von 63 Docstrings sagen "Kostet keinen Versuch", 24 sagen gar
+nichts, und nichts prueft die Angabe gegen das Verhalten.
+
+### Erst geraten, dann gemessen
+
+Eine Textsuche nach ``save_trials`` und ``anhaengen`` im Funktionskoerper
+findet fuenf: ``adaptiv``, ``landschaft``, ``machbarkeit``, ``research``,
+``wettbewerb``.
+
+**Fuenf gegen zwanzig aus Befund 104.** Der Unterschied ist der Beweis, dass es
+indirekte Wege gibt - und die Warnung, das Ergebnis nicht als Liste zu
+berichten.
+
+Also gemessen, mit dem Werkzeug, das seit Befund 117 vollstaendig haelt: jeden
+in Frage kommenden Befehl einmal mit gesetztem Trockenlauf, und wer die Meldung
+``zaehler.trockenlauf`` ausloest, haette gezaehlt. Die Meldung nennt auch, wie
+viel: ``waere=N``.
+
+    korb              ZAEHLT   waere=205    7 Versuche
+    landschaft        ZAEHLT   waere=209   11 Versuche
+    machbarkeit       ZAEHLT   waere=207    9 Versuche
+    adaptiv           ZAEHLT   waere=199    1 Versuch
+    schock, trennschaerfe, evidenz, abstand,
+    anlagentest, betriebspunkt, kosten        zaehlen nicht
+    verbund, vorschlag, review                abgebrochen - unbekannt
+
+### Der Fund
+
+``korb`` zaehlt - **und die Textsuche findet ihn nicht.** Er schreibt den
+Zaehler ueber eine Hilfsfunktion fort, nicht im eigenen Koerper. Sein Docstring
+sagte kein Wort dazu.
+
+Sieben Versuche, jedes Mal, wenn jemand ``cli korb`` beilaeufig ausfuehrt.
+
+Und die Summe der vier gemessenen:
+
+    adaptiv        1
+    korb           7
+    machbarkeit    9
+    landschaft    11
+    ---------------
+    zusammen      28
+
+**Bei 32 verbleibenden im Suchbudget.** Vier Befehle, einmal beilaeufig
+ausgefuehrt, und das Budget waere fast leer. Genau so ist Befund 104
+entstanden.
+
+### Ein zweiter Fund im selben Zug
+
+Der Test verlangte, dass jeder zaehlende Befehl es im Docstring sagt. Er fiel
+durch - bei ``cli research``. Der Docstring erwaehnte den Zaehler nicht und
+nannte ausserdem *"die neun Zulassungs-Gates"*; es sind elf.
+
+``cli research`` steht in der README. Es ist einer der Befehle, die der Nutzer
+ausfuehren wird.
+
+### Was gebaut wurde
+
+``tests/test_versuchskosten.py`` mit zwei Ebenen:
+
+**Die statische Pruefung** schliesst die Richtung aus, die schaden kann: Kein
+Befehl, der nachweislich schreibt, darf "kostet keinen Versuch" behaupten. Die
+Gegenrichtung - schweigen, obwohl kostenlos - ist laestig und ungeprueft.
+
+**Die gemessene Liste** ist die verlaessliche. Sie enthaelt ``korb``, den die
+Textsuche nicht findet, und ein Test haelt genau diesen Unterschied fest:
+Fände die Textsuche ``korb`` eines Tages, waere die Begruendung fuer die
+gemessene Liste hinfaellig, und der Test schlaegt an.
+
+Dazu die **Luecke als Luecke**: ``verbund``, ``vorschlag`` und ``review``
+brachen beim Messen ab. Sie stehen als ``UNGEMESSEN`` da und nicht als "zaehlt
+nicht" - ein abgebrochener Lauf ist keine Auskunft.
+
+Und fuenf Tests, die festhalten, dass alle fuenf Schreibstellen den Trockenlauf
+fragen - die Bilanz aus den Befunden 116 und 117.
+
+### Was daraus folgt
+
+1. **Die Frage aus Befund 104 ist beantwortet**, soweit sie hier beantwortbar
+   ist: vier gemessen zaehlende Befehle, zusammen 28 Versuche, plus zwei, die
+   es ohnehin sagen.
+2. **Zwei Docstrings sagten es nicht** - ``korb`` und ``research``. Beide
+   sagen es jetzt, und ein Test haelt es fest.
+3. **Textsuche genuegt hier nicht, und das ist belegt.** Wer wissen will, ob
+   ein Befehl zaehlt, laesst ihn mit ``TRADING_TROCKENLAUF=1`` laufen und
+   liest die Meldung. Das ist die einzige Auskunft, die nicht raet.
+
+Versuchszaehler 198 unveraendert - die ganze Messung lief im Trockenlauf.
+Suchbudget 68 von 100. 2149 Tests gruen.
