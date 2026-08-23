@@ -112,6 +112,11 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         116,
     ),
     Richtung(
+        "git status als Pruefmass",
+        "misst den Befehl, nicht den Zustand - der Commit-Zeiger tut es",
+        117,
+    ),
+    Richtung(
         "Groessenregler zum Rechteck",
         "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",
         95,

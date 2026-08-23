@@ -10486,3 +10486,92 @@ Derselbe Rauchtest noch einmal, mit dem Fix:
    zu enger Vertrag.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2114 Tests gruen.
+
+---
+
+## Hundertsiebzehn. Die vierte Schreibstelle - und ein Fehlschluss in Befund 116
+
+Beim ``git pull`` zu Beginn dieses Laufs stand im Verlauf ein Commit, den ich
+nicht gemacht habe:
+
+    54770ec  Bericht: 54 Kandidaten, 0 zugelassen (BTCUSD_BITSTAMP 1d)
+    Author:  Claude <noreply@anthropic.com>
+    Date:    Sun Aug 23 04:59:08 2026 +0000
+
+    reports/zulassung/2026-08-23_045908.json | 858 +++++++++++++++++++
+
+**04:59:08 ist mein Rauchtest aus Befund 116.** ``cli wettbewerb`` committet
+den Bericht selbst und pusht ihn. Der Commit ist mit meinem Befund-116-Push
+mitgegangen.
+
+### Der Fehlschluss
+
+In Befund 116 habe ich drei Schreibstellen geschlossen - Bestenliste, Bericht,
+Champion - und diese vierte nicht gesehen. Der Grund steht in meiner eigenen
+Pruefung: Ich habe nach dem Rauchtest ``git status`` aufgerufen, sauber
+vorgefunden und daraus geschlossen, ``reports/`` sei nicht versioniert.
+
+Sauber war es, **weil der Befehl selbst schon committet hatte.**
+
+Das ist ein Schluss aus dem Ergebnis der eigenen Nebenwirkung - dieselbe
+Gestalt wie der Fehler, den er verdeckte. Und es ist die sichtbarste
+Schreibstelle von allen: Sie geht in die Projekthistorie und auf den Zweig.
+
+Damit steht die Reihe bei sieben:
+
+    111   das Register der geschlossenen Richtungen, ungelesen
+    112   der Bericht, gegen einen ueberholten Bezugspunkt gerechnet
+    113   eine Aussage auf einer einzelnen Ziehung
+    114   eine Sperre, die erst sichtbar wird, wenn man sie erreicht
+    115   eine Lehre, die als Docstring dastand statt als Verhalten
+    116   ein Schutz, dessen Name weiter reicht als sein Vertrag
+    117   eine Pruefung, die das eigene Ergebnis fuer den Zustand hielt
+
+### Was geaendert wurde
+
+``core.report.publish`` prueft den Trockenlauf **vor** dem ersten
+Git-Aufruf. Das ist keine Feinheit: Ein Abbruch nach ``git add`` liesse einen
+veraenderten Index zurueck - wieder etwas, das ein Trockenlauf nicht darf. Ein
+Test haelt genau das fest, indem er ``_git`` ersetzt und prueft, dass es
+**gar nicht** gerufen wird.
+
+Damit sind es vier Stellen:
+
+    research/versuche.py      speichern         zaehler.trockenlauf
+    research/leaderboard.py   Leaderboard.save  bestenliste.trockenlauf
+    core/report.py            write_report      bericht.trockenlauf
+    core/report.py            publish           senden.trockenlauf
+    research/admission.py     write_champion    champion.trockenlauf
+
+### Gegengeprueft, diesmal am richtigen Mass
+
+Nicht mehr ``git status`` - sondern der Commit-Zeiger vor und nach dem Lauf:
+
+    HEAD vorher:   82440c4
+    HEAD nachher:  82440c4        kein neuer Commit
+    Bestenliste:   unveraendert
+    Berichte:      keiner abgelegt
+    Zaehler:       198            (waere=207)
+
+Ein ``git status`` haette auch diesmal "sauber" gesagt. Der Unterschied ist,
+dass die Frage jetzt lautet *"ist ein Commit entstanden"* und nicht *"liegt
+etwas herum"*.
+
+### Der Commit bleibt stehen
+
+``54770ec`` ist gepusht. Ihn zurueckzunehmen hiesse, die Historie um die
+eigene Spur zu bereinigen - dieselbe Sache, die Befund 104 fuer den
+Versuchszaehler abgelehnt hat, und in einer geteilten Historie noch weniger
+angebracht. Er bleibt, und hier steht, was er ist.
+
+### Was daraus folgt
+
+1. **Der Trockenlauf ist jetzt vollstaendig** - und zwar gemessen, nicht
+   angenommen. Vier Stellen, alle gegengeprueft.
+2. **Eine Pruefung darf nicht das messen, was die Nebenwirkung hinterlassen
+   hat.** ``git status`` nach einem Befehl, der selbst committet, misst den
+   Befehl und nicht den Zustand. Das richtige Mass war der Commit-Zeiger.
+3. Sieben Befunde, sieben Mal dieselbe Klasse. Kein Rechenfehler darunter -
+   und diesmal hat der Fehler in der Pruefung selbst gesessen.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2116 Tests gruen.

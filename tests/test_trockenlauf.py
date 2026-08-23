@@ -286,3 +286,49 @@ class TestDerTrockenlaufHinterlaesstNichts:
         text = trockenlauf.__doc__ or ""
         assert "hinterlassen" in text.lower()
         assert "Bestenliste" in text
+
+    def test_es_wird_nicht_committet_und_nicht_gesendet(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """**Die Stelle, die Befund 116 uebersehen hat.**
+
+        ``publish`` committet **und pusht**. Ein Rauchtest landet damit in der
+        Projekthistorie, wo er wie ein Lauf aussieht - genau so ist ``54770ec``
+        entstanden. Befund 116 hat sie uebersehen, weil ``git status`` danach
+        sauber war: sauber, weil der Befehl selbst schon committet hatte.
+        """
+        from core.report import publish
+
+        monkeypatch.setenv(TROCKENLAUF, "1")
+        datei = tmp_path / "bericht.json"
+        datei.write_text("{}")
+
+        ergebnis = publish([datei], root=tmp_path, message="darf nicht passieren")
+
+        assert ergebnis.status.name == "DISABLED"
+        assert TROCKENLAUF in ergebnis.detail
+
+    def test_das_urteil_faellt_vor_jedem_git_aufruf(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Nicht 'git lief und tat nichts', sondern 'git lief gar nicht'.
+
+        Ein Trockenlauf, der ``git add`` ausfuehrt und erst danach abbricht,
+        hinterlaesst einen veraenderten Index - wieder etwas, das er nicht
+        soll.
+        """
+        import core.report as report
+
+        gerufen: list[tuple] = []
+        monkeypatch.setattr(
+            report, "_git", lambda *a, **k: gerufen.append(a) or None
+        )
+        monkeypatch.setenv(TROCKENLAUF, "1")
+        (tmp_path / ".git").mkdir()
+        datei = tmp_path / "bericht.json"
+        datei.write_text("{}")
+
+        publish_fn = report.publish
+        publish_fn([datei], root=tmp_path, message="egal")
+
+        assert gerufen == [], f"git wurde trotzdem gerufen: {gerufen}"

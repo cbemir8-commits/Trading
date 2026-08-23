@@ -207,7 +207,28 @@ def publish(
     Bewusst mit ausdruecklicher Dateiliste und niemals ``git add -A``. Ein
     automatischer Vorgang, der einsammelt was gerade herumliegt, committet
     frueher oder spaeter etwas, das niemand veroeffentlichen wollte.
+
+    **Im Trockenlauf wird nichts gesendet** (Befund 117). Das ist die
+    sichtbarste Schreibstelle von allen: Sie committet **und pusht**, und ein
+    Rauchtest landet damit in der Projekthistorie, wo er wie ein Lauf
+    aussieht. Genau das ist passiert - ``54770ec`` ist der Bericht meines
+    eigenen Rauchtests, committet um 04:59:08 und mit dem naechsten Push
+    mitgegangen.
+
+    Befund 116 hat drei Schreibstellen geschlossen und diese uebersehen, weil
+    ``git status`` danach sauber war - sauber, weil der Befehl selbst schon
+    committet hatte. Ein Schluss aus dem Ergebnis der eigenen Nebenwirkung.
     """
+    from research.versuche import TROCKENLAUF, trockenlauf
+
+    if trockenlauf():
+        log.error(
+            "senden.trockenlauf",
+            variable=TROCKENLAUF,
+            folge="Es wird NICHT committet und NICHT gesendet.",
+        )
+        return PublishResult(PublishStatus.DISABLED, f"{TROCKENLAUF} gesetzt")
+
     if not enabled:
         return PublishResult(PublishStatus.DISABLED)
 
