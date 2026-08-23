@@ -10158,3 +10158,123 @@ als sein Name sagt. Jetzt sind die Zahlen ausgerechnet.
    einzelnen Ziehung (113). Keiner davon war ein Rechenfehler.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2080 Tests gruen.
+
+---
+
+## Hundertvierzehn. Elf Befunde hinter einer Sperre
+
+Seit Befund 102 gilt im System eine Sperre, und sie ist scharf formuliert:
+
+    GateReport.passed = not vorauswahl and not referenzdaten and all(...)
+
+**Solange auf Forschungskerzen gerechnet wird, gibt es keine Zulassung - egal
+wie viele Gates halten.** Bitstamp-Kassakurse sind nicht das gehandelte
+Instrument: andere Boerse, andere Dochte, USD statt USDT, Kassa statt
+Perpetual, und keine Funding-Zahlungen.
+
+Das ist richtig so, und es war eine bewusste Entscheidung. Die Folge hat nur
+nie jemand ausgesprochen.
+
+### Die Folge
+
+Die Befunde 103 bis 113 haben gemessen, geschlossen, korrigiert und beziffert.
+Elf Stueck. **Keiner von ihnen konnte den Zustand *kein zugelassener Kandidat*
+aendern** - weil kein Ergebnis auf diesen Daten ihn aendern kann.
+
+Das ist nicht dasselbe wie "wertlos". Befund 111 hat die Kostenfamilie
+geschlossen, Befund 113 hat Befund 54 belegt, Befund 112 den Bericht
+geradegerueckt. Das gilt weiter, und es gilt der Sache nach auch auf
+Boersendaten. Was nicht gilt: dass eine davon den Bestand naeher an eine
+Zulassung gebracht haette. Sie konnten es nicht.
+
+Der Unterschied ist der ganze Punkt. Eine Arbeit kann nuetzlich sein und
+trotzdem den Zustand nicht aendern; wer beides verwechselt, arbeitet mit gutem
+Gewissen an der falschen Stelle weiter. Genau das habe ich elf Befunde lang
+getan.
+
+### Warum es nicht auffiel
+
+``GateReport.summary`` nennt die Sperre - aber nur im Zweig
+``geprueftes_bestanden``, also erst, wenn **alle** Gates halten:
+
+    if self.referenzdaten and self.geprueftes_bestanden:
+        return "... auf Forschungskerzen - keine Zulassung ..."
+
+Der Bestand steht bei 7 von 11 (Perpetual) beziehungsweise 9 von 11 (Spot).
+Der Zweig ist nie gelaufen. Die Sperre wird also genau dann sichtbar, wenn man
+sie erreicht - und dann ist die Reihenfolge der Arbeit laengst festgelegt.
+
+Dieselbe Klasse wie die drei Befunde davor. Das Wissen liegt jedes Mal im
+System, nur nicht dort, wo es die Arbeit steuern wuerde:
+
+    111   das Register der geschlossenen Richtungen, ungelesen
+    112   der Bericht, gegen einen ueberholten Bezugspunkt gerechnet
+    113   eine Aussage auf einer einzelnen Ziehung
+    114   eine Sperre, die erst sichtbar wird, wenn man sie erreicht
+
+Keiner davon war ein Rechenfehler.
+
+### Was den Zustand aendern kann
+
+Gemessen, mit Fundstelle, geordnet danach, wer es tun kann:
+
+| Art | Was | Wer | Nr. |
+|---|---|---|---|
+| Sperre | Boersendaten fehlen | Nutzer | 102 |
+| Bedingung | 30 unabhaengige Beobachtungen | niemand | 111 |
+| Bedingung | +8,0 % Guete am Spot-Punkt | Suche | 108 |
+| Klaerung | Perpetual oder Spot? | Nutzer | 112 |
+| Klaerung | Echte Funding-Raten | Nutzer | 100 |
+
+Die beiden Bedingungen sind gemessen aussichtslos: Die Quellen fuer
+Beobachtungen sind geschlossen (Maerkte Nr. 27, Historie Nr. 14), und die
+Suche braeuchte rund 5.951 Versuche bei einem Budget, das bei 230 endet
+(Nr. 110). Verbraucht sind 198.
+
+Bleiben drei Zeilen, und alle drei stehen beim Nutzer. **Aus diesem Container
+heraus laeuft nur noch die Suche - gemessen aussichtslos, und bei offener
+Sperre ohnehin ohne Wirkung auf den Zustand.**
+
+Die Bybit-Regionssperre wird nicht umgangen. Was hier laeuft, bleibt Vorarbeit.
+
+### Eine Ungenauigkeit, unterwegs korrigiert
+
+Im ersten Entwurf zaehlte ``hier_machbar`` nur ``Wer.CONTAINER``, und die
+Suche stand ausserhalb. Der Bericht sagte dann: *"Aus diesem Container heraus
+gibt es keinen Schritt mehr, der den Zustand aendert."*
+
+Das war zu viel behauptet. Die Suche laeuft hier, das Budget hat 32 Versuche
+uebrig, und sie ausdruecklich nicht zu tun ist etwas anderes, als sie nicht tun
+zu koennen. Jetzt zaehlt sie dazu, und der Satz lautet praeziser: Es gibt
+etwas, es ist nur gemessen aussichtslos.
+
+### Was gebaut wurde
+
+``research/reihenfolge.py``: ``Schritt`` mit ``Art`` (Sperre, Bedingung,
+Klaerung) und ``Wer`` (Nutzer, Container, Suche, niemand), dazu ``Lage`` mit
+der Regel, um die es geht:
+
+    Eine Sperre wirkt immer - sie aufzuheben ist die Voraussetzung fuer alles
+    andere. Alles andere wirkt nur, wenn keine Sperre mehr offen ist.
+
+``Lage.vergeblich()`` nennt beim Namen, was bei offener Sperre nichts aendert.
+Jede Zeile braucht eine Fundstelle - ein Test prueft sie gegen das Laborbuch,
+dieselbe Pruefung wie fuer ``GESCHLOSSEN``.
+
+``cli stand`` zeigt den Abschnitt jetzt **immer**, wenn eine Sperre offen ist -
+nicht erst bei elf von elf.
+
+### Was daraus folgt
+
+1. **Der naechste wirksame Schritt liegt nicht hier.** Er lautet
+   ``cli backfill --von 2017-08-16`` auf dem Rechner des Nutzers, und ohne ihn
+   ist jede weitere Messung Vorarbeit.
+2. **Die Reihenfolge war falsch, nicht die Arbeit.** Elf Befunde haben
+   Richtungen geschlossen und Fehler gefunden; das spart spaeter Zeit. Nur
+   naeher an eine Zulassung haben sie nicht gefuehrt, und das war die ganze
+   Zeit absehbar.
+3. **Ein Register nuetzt nur an der Stelle, an der die Frage aufkommt.** Das
+   ist jetzt das vierte Mal in vier Befunden. Deshalb steht die Sperre im
+   Bericht und nicht in einem Befund.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2099 Tests gruen.

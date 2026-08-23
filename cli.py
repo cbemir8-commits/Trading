@@ -8563,6 +8563,9 @@ def stand(
     from research.betriebspunkt import Betriebslage, Betriebspunkt
     from research.gatelage import ordne
     from research.gates import evaluate_gates
+    from research.reihenfolge import STAND as REIHENFOLGE
+    from research.reihenfolge import Art as Reihenfolgeart
+    from research.reihenfolge import Lage as Reihenfolgelage
     from research.seeds import spitzenkandidat
     from research.stand import Lage
     from research.suchbudget import Budget, Kandidat
@@ -8640,6 +8643,32 @@ def stand(
             f"zaehlt nicht mit, und die Huerde bleibt zu niedrig.\n"
         )
     console.print(lage.bericht())
+
+    # **Die Sperre gehoert an den Anfang, nicht ans Ende.**
+    #
+    # ``GateReport.summary`` nennt sie schon lange - aber nur im Zweig
+    # ``geprueftes_bestanden``, also erst, wenn alle Gates halten. Der Bestand
+    # steht bei 7 von 11; der Zweig ist nie gelaufen. Damit wurde die Sperre
+    # genau dann sichtbar, wenn man sie erreicht - und dann ist die
+    # Reihenfolge der Arbeit laengst festgelegt. Elf Befunde lagen dahinter
+    # (Befund 114).
+    reihenfolge = Reihenfolgelage(schritte=REIHENFOLGE)
+    if reihenfolge.gesperrt:
+        console.print()
+        console.print("[red]WAS DEN ZUSTAND AENDERN KANN[/]")
+        console.print("-" * 72)
+        for s in reihenfolge.schritte:
+            farbe = "red" if s.art is Reihenfolgeart.SPERRE else "dim"
+            console.print(f"  [{farbe}]{s.als_zeile()}[/]")
+            console.print(f"      [dim]{s.hinweis}[/]")
+        console.print(f"\n  [red]{reihenfolge.urteil()}[/]")
+        hiesige = ", ".join(s.name for s in reihenfolge.hier)
+        console.print(
+            f"  [yellow]Hier laufen wuerde: {hiesige or 'nichts davon'}. "
+            "Alles andere liegt beim Nutzer oder hat gemessen keine Quelle.[/]"
+            if reihenfolge.hier
+            else "  [yellow]Kein Schritt laeuft aus diesem Container heraus.[/]"
+        )
 
     # **Der zweite Betriebspunkt gehoert daneben, nicht in einen Befund.**
     # Bis Befund 112 zeigte dieser Bericht allein den Perpetual-Stand - 7 von
