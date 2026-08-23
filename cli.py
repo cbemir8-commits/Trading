@@ -1657,8 +1657,21 @@ def _ausschluesse():
         GEMESSENE_REGELN,
         GESCHEITERTE_EIGENBAUTEN,
         aus_familienbild,
+        aus_versuchsverzeichnis,
     )
     from research.familien import Familienbild, Regel, familie_von
+
+    # **Das Verzeichnis fuehrt, die Liste faellt zurueck** (Befund 122).
+    #
+    # ``GESCHEITERTE_EIGENBAUTEN`` war eine Abschrift von ``trials.json`` -
+    # und hatte acht Eintraege, wo das Verzeichnis elf hat. Die drei
+    # fehlenden waren die Verbuende, also genau das, worauf der Auftrag den
+    # Analysten lenkt.
+    settings = get_settings()
+    gemessen = aus_versuchsverzeichnis(
+        Path(settings.paths.state) / "trials.json"
+    )
+    gescheiterte = gemessen or GESCHEITERTE_EIGENBAUTEN
 
     regeln = []
     for name, trades, sharpe, rho in GEMESSENE_REGELN:
@@ -1672,7 +1685,7 @@ def _ausschluesse():
             )
         )
     return aus_familienbild(
-        Familienbild(regeln=regeln), gescheiterte=GESCHEITERTE_EIGENBAUTEN
+        Familienbild(regeln=regeln), gescheiterte=gescheiterte
     )
 
 

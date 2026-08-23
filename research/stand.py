@@ -137,6 +137,11 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         121,
     ),
     Richtung(
+        "Regelliste neben dem Verzeichnis",
+        "acht statt elf - die drei Verbuende fehlten dem Analysten",
+        122,
+    ),
+    Richtung(
         "Groessenregler zum Rechteck",
         "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",
         95,

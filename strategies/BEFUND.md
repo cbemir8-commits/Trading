@@ -10991,3 +10991,93 @@ formuliert; jetzt wird auf den vollstaendigen alten Satz geprueft.
    abgeleitet wird.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2155 Tests gruen.
+
+---
+
+## Hundertzweiundzwanzig. Die drei, die dem Analysten fehlten
+
+Befund 121 hat drei Widersprueche im Auftrag der Research-KI behoben und einen
+Punkt ausdruecklich offen gelassen:
+
+    "Zwei Verzeichnisse, eine Frage. journal.json existiert nicht,
+     trials.json hat 198 Eintraege. Der Auftrag sagt das jetzt, statt es zu
+     verschweigen - zusammenzufuehren waere ein eigener Schritt und ist hier
+     nicht gemacht."
+
+Beim Nachsehen, ob das ueberhaupt lohnt, kam etwas Schlimmeres heraus.
+
+### Acht gegen elf
+
+``research/ausschluss.py`` fuehrt eine Liste ``GESCHEITERTE_EIGENBAUTEN`` -
+acht Regeln mit Trade-Zahl und Guete, von Hand gepflegt. ``trials.json`` hat
+**elf** Eintraege mit Einzelnachweis. Es ist dieselbe Sache, zweimal
+aufgeschrieben, und die Abschrift ist drei Zeilen kuerzer.
+
+Die drei fehlenden:
+
+    Verbund Spitze + Trend-Beteiligung 200 Tage    207 Trades   +0,2759
+    Verbund Spitze + Donchian-Ausbruch 55/20       212 Trades   +0,2569
+    Verbund Trend-Beteiligung 200 + Donchian       111 Trades   +0,2956
+
+**Es sind die Verbuende.** Und der Auftrag, dem sie fehlten, sagt unter
+*Wonach konkret gesucht wird*:
+
+    "Der beste Kandidat kommt allein nicht ueber die Huerde. Was ihm fehlt,
+     ist ein **zweites, unabhaengiges Signal**, das parallel gehandelt wird."
+
+Der Auftrag lenkt den Analysten also ausdruecklich auf einen Verbund - und
+verschwieg ihm genau die drei, die dazu schon gemessen sind. Von allen
+moeglichen Auslassungen die unguenstigste.
+
+### Was die drei sagen - und was nicht
+
+Nicht "Verbuende taugen nicht". Ihre Guete liegt bei 0,2569 bis 0,2956, also
+auf Hoehe des Bestands (0,2597) oder darueber. Zwei von dreien sind **besser**
+als das, was heute vorn steht.
+
+Sie sagen: **Auch ein Verbund mit dieser Guete reicht nicht.** Das ist die
+schaerfere Auskunft, und sie ist fuer einen Analysten, der einen Verbund
+vorschlagen soll, die entscheidende.
+
+Deshalb heisst der Abschnitt jetzt nicht mehr *"Bereits selbst gebaut und
+gescheitert"*, sondern:
+
+    ## Bereits gemessen - und es hat nicht gereicht
+
+    Diese Regeln stehen nicht im Journal, weil sie ausserhalb des
+    Research-Loops entstanden sind. Jede hat einen Versuch gekostet. Eine
+    hohe Guete in dieser Liste heisst nicht, dass die Regel taugt - sie
+    heisst, dass selbst diese Guete nicht gereicht hat.
+
+"Gescheitert" war bei einer Guete von 0,2956 schlicht die falsche Einordnung.
+
+### Was geaendert wurde
+
+``ausschluss.aus_versuchsverzeichnis`` liest die Regeln aus ``trials.json``.
+``_ausschluesse()`` benutzt sie und faellt auf die alte Liste zurueck, wenn
+die Datei fehlt - ein leerer Auftrag waere schlechter als ein veralteter.
+
+Damit fuehrt das Verzeichnis, und die Abschrift ist Rueckfall statt Quelle.
+Es wird ohnehin bei jedem Versuch fortgeschrieben; eine Liste, die jemand
+daneben pflegen muss, laeuft frueher oder spaeter auseinander. Hier war es
+nach drei Eintraegen so weit.
+
+Ein Test haelt den Fund fest: ``test_das_echte_verzeichnis_hat_mehr_als_die_
+liste``. Faende er eines Tages Gleichstand, waere die Abschrift nachgepflegt
+worden - und dann gehoert sie erst recht weg.
+
+### Was daraus folgt
+
+1. **Der Analyst kennt jetzt alle elf gemessenen Regeln**, die Verbuende
+   eingeschlossen. Ob seine Vorschlaege dadurch besser werden, ist hier nicht
+   messbar - der Schluessel fehlt in diesem Container. Messbar ist, dass ihm
+   drei Messungen fehlten, die genau seine Aufgabe betreffen.
+2. **Vier Befunde in Folge dieselbe Ursache.** Gate-Zahl abgeschrieben (118,
+   120, 121), Regelliste abgeschrieben (122). Jedes Mal gab es eine Quelle,
+   und jedes Mal stand eine Kopie daneben.
+3. Der offene Punkt aus Befund 121 - die beiden Verzeichnisse
+   zusammenzufuehren - ist damit **nicht** erledigt, sondern kleiner geworden:
+   ``journal.json`` existiert weiterhin nicht, aber der Auftrag zieht jetzt
+   aus dem Verzeichnis, das gefuehrt wird.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2160 Tests gruen.

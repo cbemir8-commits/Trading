@@ -138,12 +138,19 @@ class TestAuftragstext:
 
     def test_die_eigenbauten_stehen_im_auftrag(self) -> None:
         """Sie stehen nicht im Journal, weil sie ausserhalb des
-        Research-Loops entstanden sind - genau deshalb fehlten sie."""
+        Research-Loops entstanden sind - genau deshalb fehlten sie.
+
+        Die Ueberschrift heisst seit Befund 122 nicht mehr "gescheitert":
+        Seit die Liste aus dem Versuchsverzeichnis kommt, stehen auch die
+        Verbuende darin, und deren Guete liegt auf Hoehe des Bestands. Sie
+        sind nicht schlecht - sie haben nicht gereicht.
+        """
         text = aus_familienbild(
             echtes_bild(), gescheiterte=GESCHEITERTE_EIGENBAUTEN
         ).als_auftrag()
 
-        assert "Bereits selbst gebaut" in text
+        assert "Bereits gemessen" in text
+        assert "nicht gereicht" in text
         assert len(GESCHEITERTE_EIGENBAUTEN) == 8
         for name, _, _ in GESCHEITERTE_EIGENBAUTEN:
             assert name in text
@@ -209,3 +216,101 @@ class TestPrompt:
         )
 
         assert len(mit) - len(ohne) == pytest.approx(1570, abs=250)
+
+
+class TestAusDemVersuchsverzeichnis:
+    """Befund 122 - die Liste war eine Abschrift und hatte drei zu wenig.
+
+    ``GESCHEITERTE_EIGENBAUTEN`` trug acht Regeln, ``state/trials.json`` elf.
+    Die drei fehlenden waren die **Verbuende** - und der Auftrag lenkt den
+    Analysten ausdruecklich auf ein *"zweites, unabhaengiges Signal, das
+    parallel gehandelt wird"*, also auf einen Verbund.
+
+    Die unguenstigste Auslassung, die denkbar war.
+    """
+
+    def test_alle_eintraege_mit_guete_kommen_mit(self, tmp_path) -> None:
+        import json
+
+        from research.ausschluss import aus_versuchsverzeichnis
+
+        datei = tmp_path / "trials.json"
+        datei.write_text(
+            json.dumps(
+                {
+                    "format": 2,
+                    "trials": 20,
+                    "grundstock": 17,
+                    "versuche": [
+                        {"kennung": "A", "trades": 100, "sharpe_je_trade": 0.25},
+                        {"kennung": "B", "trades": 200, "sharpe_je_trade": -0.1},
+                        {"kennung": "C", "trades": 50, "sharpe_je_trade": 0.3},
+                    ],
+                }
+            )
+        )
+
+        gefunden = aus_versuchsverzeichnis(datei)
+
+        assert gefunden == (("A", 100, 0.25), ("B", 200, -0.1), ("C", 50, 0.3))
+
+    def test_eintraege_ohne_guete_fallen_heraus(self, tmp_path) -> None:
+        """``None`` heisst "nicht erhoben", nicht "kein Vorteil" - ein solcher
+        Eintrag traegt nichts zum Auftrag bei."""
+        import json
+
+        from research.ausschluss import aus_versuchsverzeichnis
+
+        datei = tmp_path / "trials.json"
+        datei.write_text(
+            json.dumps(
+                {
+                    "format": 2,
+                    "trials": 2,
+                    "grundstock": 0,
+                    "versuche": [
+                        {"kennung": "mit", "trades": 100, "sharpe_je_trade": 0.25},
+                        {"kennung": "ohne", "trades": 100},
+                    ],
+                }
+            )
+        )
+
+        assert [n for n, _, _ in aus_versuchsverzeichnis(datei)] == ["mit"]
+
+    def test_ohne_datei_kein_absturz(self, tmp_path) -> None:
+        """Dann greift die alte Liste als Rueckfall - ein leerer Auftrag waere
+        schlechter als ein veralteter."""
+        from research.ausschluss import aus_versuchsverzeichnis
+
+        assert aus_versuchsverzeichnis(tmp_path / "gibtsnicht.json") == ()
+
+    def test_das_echte_verzeichnis_hat_mehr_als_die_liste(self) -> None:
+        """Der Fund selbst, als Test.
+
+        Faende diese Pruefung eines Tages Gleichstand, waere die Abschrift
+        nachgepflegt worden - und dann gehoert sie erst recht weg.
+        """
+        from pathlib import Path
+
+        from research.ausschluss import (
+            GESCHEITERTE_EIGENBAUTEN,
+            aus_versuchsverzeichnis,
+        )
+
+        echt = aus_versuchsverzeichnis(Path("state/trials.json"))
+        if not echt:  # ohne Zustandsdatei nichts zu vergleichen
+            return
+        assert len(echt) > len(GESCHEITERTE_EIGENBAUTEN)
+
+    def test_die_verbuende_sind_dabei(self) -> None:
+        """Sie fehlten, und sie sind die wichtigsten."""
+        from pathlib import Path
+
+        from research.ausschluss import aus_versuchsverzeichnis
+
+        echt = aus_versuchsverzeichnis(Path("state/trials.json"))
+        if not echt:
+            return
+        verbuende = [n for n, _, _ in echt if n.startswith("Verbund")]
+        assert len(verbuende) == 3

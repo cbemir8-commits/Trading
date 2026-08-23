@@ -45,6 +45,7 @@ Befund 70). Die betreffen nicht, was ein Analyst vorschlagen kann.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 #: Ab dieser Korrelation zwischen Aehnlichkeit und Qualitaet gilt der
 #: Zielkonflikt als gemessen und gehoert benannt.
@@ -179,10 +180,19 @@ class Ausschluesse:
             ]
 
         if self.gescheiterte:
+            # **"Gescheitert" war die falsche Einordnung** (Befund 122). Seit
+            # die Liste aus dem Versuchsverzeichnis kommt, stehen auch die
+            # drei Verbuende darin - mit Guete 0,26 bis 0,30, also auf Hoehe
+            # des Bestands oder darueber. Sie sind nicht schlecht; sie haben
+            # nicht gereicht. Das ist die schaerfere Auskunft, und fuer einen
+            # Auftrag, der auf Verbuende zielt, die entscheidende.
             zeilen += [
-                "## Bereits selbst gebaut und gescheitert\n",
+                "## Bereits gemessen - und es hat nicht gereicht\n",
                 "Diese Regeln stehen nicht im Journal, weil sie ausserhalb",
-                "des Research-Loops entstanden sind:",
+                "des Research-Loops entstanden sind. Jede hat einen Versuch",
+                "gekostet. Eine hohe Guete in dieser Liste heisst nicht, dass",
+                "die Regel taugt - sie heisst, dass selbst diese Guete nicht",
+                "gereicht hat:",
                 "",
             ]
             zeilen += [
@@ -250,3 +260,54 @@ __all__ = [
     "Sackgasse",
     "aus_familienbild",
 ]
+
+
+def aus_versuchsverzeichnis(
+    pfad: Path | str,
+) -> tuple[tuple[str, int, float], ...]:
+    """Die gemessenen Versuche aus ``trials.json`` - statt einer zweiten Liste.
+
+    Warum das noetig war
+    --------------------
+    ``GESCHEITERTE_EIGENBAUTEN`` ist eine **Abschrift** von ``trials.json``:
+    dieselben acht Namen, dieselben Zahlen auf sechs Stellen gerundet, von
+    Hand gepflegt. Befund 122 hat gemessen, was dabei herauskommt - das
+    Verzeichnis hat **elf** Eintraege, die Abschrift acht.
+
+    Die drei fehlenden sind die **Verbuende**:
+
+        Verbund Spitze + Trend-Beteiligung 200    207 Trades   +0,2759
+        Verbund Spitze + Donchian-Ausbruch 55/20  212 Trades   +0,2569
+        Verbund Trend-Beteiligung 200 + Donchian  111 Trades   +0,2956
+
+    Und das ist die unguenstigste Auslassung, die denkbar war: Der Auftrag
+    lenkt den Analysten ausdruecklich auf ein *"zweites, unabhaengiges
+    Signal, das parallel gehandelt wird"* - also auf einen Verbund - und
+    verschwieg ihm genau die drei, die dazu schon gemessen sind.
+
+    Was diese drei sagen
+    --------------------
+    Nicht "Verbuende sind schlecht". Ihre Guete liegt bei 0,26 bis 0,30, also
+    auf Hoehe des Bestands oder darueber. Sie sagen: **Auch ein Verbund mit
+    dieser Guete reicht nicht.** Das ist die schaerfere Auskunft, und sie
+    stand dem Analysten nicht zur Verfuegung.
+
+    Wer weiter fuehrt
+    -----------------
+    Ab hier das Verzeichnis. Es wird ohnehin bei jedem Versuch fortgeschrieben,
+    und eine Liste, die jemand daneben pflegen muss, laeuft frueher oder
+    spaeter auseinander - hier war es nach drei Eintraegen so weit.
+    """
+    from research.versuche import ZaehlerUnlesbarError
+    from research.versuche import laden as verzeichnis_laden
+
+    try:
+        verzeichnis = verzeichnis_laden(pfad)
+    except (ZaehlerUnlesbarError, OSError):
+        return ()
+
+    return tuple(
+        (e.kennung, e.trades, float(e.sharpe_je_trade))
+        for e in verzeichnis.eintraege
+        if e.sharpe_je_trade is not None
+    )
