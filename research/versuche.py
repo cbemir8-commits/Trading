@@ -92,7 +92,24 @@ TROCKENLAUF = "TRADING_TROCKENLAUF"
 
 
 def trockenlauf() -> bool:
-    """Laeuft gerade etwas, das nicht zaehlen darf?"""
+    """Laeuft gerade etwas, das nichts hinterlassen darf?
+
+    **Der Vertrag war zu eng, und ich bin selbst darauf hereingefallen**
+    (Befund 116). Hier stand *"Laeuft gerade etwas, das nicht zaehlen darf?"*,
+    und genau so war es gebaut: geschuetzt war der Versuchszaehler, sonst
+    nichts. Der Name verspricht mehr - und der Name ist, was man beim Benutzen
+    sieht.
+
+    Mit ``TRADING_TROCKENLAUF=1`` habe ich ``cli wettbewerb`` als Rauchtest
+    laufen lassen. Der Zaehler blieb bei 198, wie zugesagt. Fortgeschrieben
+    wurde trotzdem: die Bestenliste von 11 auf 12 Laeufe, neun Eintraege mit
+    neuem Datum, dazu ein Zulassungsbericht.
+
+    Jetzt gilt der Name: Wer die Variable setzt, hinterlaesst nichts -
+    Zaehler, Bestenliste und Berichte gleichermassen. Die Richtung ist die
+    sichere: Wird die Variable vergessen, ist die Folge "es wurde nichts
+    geschrieben" - aergerlich und wiederholbar. Umgekehrt ist sie es nicht.
+    """
     wert = os.environ.get(TROCKENLAUF, "").strip().lower()
     return wert not in ("", "0", "nein", "false", "aus")
 

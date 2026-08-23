@@ -10381,3 +10381,108 @@ genau die Doppelung, an der dieses Projekt schon dreimal haengengeblieben ist.
    aber den Moment, in dem der Nutzer die Daten liefert, weniger fehleranfaellig.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2107 Tests gruen.
+
+---
+
+## Hundertsechzehn. Ein Trockenlauf, der etwas hinterlaesst, ist keiner
+
+Nach Befund 115 lag die Frage nahe: Laeuft eigentlich ``cli wettbewerb``
+durch? Es ist der Befehl, den der Nutzer nach dem Backfill ausfuehren soll -
+wenn er abstuerzt, war der Backfill umsonst.
+
+Also ein Rauchtest, mit ``TRADING_TROCKENLAUF=1``, damit nichts passiert. Er
+lief durch, der Versuchszaehler blieb bei 198.
+
+**Und die Bestenliste ging von 11 auf 12 Laeufe.** Neun Eintraege bekamen ein
+neues Datum, ein Zulassungsbericht wurde abgelegt.
+
+### Der Vertrag war zu eng - und ich bin selbst darauf hereingefallen
+
+``research/versuche.py`` sagte es genau:
+
+    def trockenlauf() -> bool:
+        """Laeuft gerade etwas, das nicht **zaehlen** darf?"""
+
+Das ist kein gebrochenes Versprechen; so weit reichte der Vertrag, und so weit
+war er gebaut. Nur heisst die Variable ``TROCKENLAUF``, und ein Trockenlauf,
+der die Bestenliste fortschreibt, ist keiner. **Der Name verspricht mehr als
+der Docstring hielt, und der Name ist, was man beim Benutzen sieht.**
+
+Ich habe die Variable diese ganze Session als "schreibt nichts" verwendet. Bei
+``cli decke``, ``cli stand`` und ``cli teststaerke`` war das folgenlos - die
+schreiben ohnehin nichts. Bei ``cli wettbewerb`` nicht.
+
+Das ist jetzt das sechste Mal in sechs Befunden, und wieder dieselbe Sache:
+
+    111   das Register der geschlossenen Richtungen, ungelesen
+    112   der Bericht, gegen einen ueberholten Bezugspunkt gerechnet
+    113   eine Aussage auf einer einzelnen Ziehung
+    114   eine Sperre, die erst sichtbar wird, wenn man sie erreicht
+    115   eine Lehre, die als Docstring dastand statt als Verhalten
+    116   ein Schutz, dessen Name weiter reicht als sein Vertrag
+
+### Der Schaden bleibt stehen
+
+``state/leaderboard.json`` steht auf 12 Laeufen, neun Eintraege tragen das
+Datum 2026-08-23, und ``reports/zulassung/2026-08-23_045908.json`` liegt im
+Verlauf. Das bleibt so.
+
+Dieselbe Linie wie in Befund 104: Den eigenen Fehler aus der Buchhaltung zu
+nehmen ist genau das, was diese Buchhaltung verhindern soll. Ein Lauf, den es
+gab, steht drin - auch wenn er keiner war, den ich haben wollte.
+
+### Was der Trockenlauf verhindert hat
+
+Die Meldung des zweiten Laufs nennt eine Zahl, die vorher nirgends stand:
+
+    zaehler.trockenlauf  waere=207
+
+**Der Rauchtest haette neun Versuche gekostet.** Ohne die Variable stuende der
+Zaehler jetzt bei 207 statt 198, und die DSR-Huerde waere dauerhaft hoeher -
+genau der Schaden aus Befund 104, in kleinerem Massstab. Der Schutz hat an der
+teuersten Stelle gegriffen und an den billigeren nicht.
+
+### Was geaendert wurde
+
+Der Trockenlauf haelt jetzt, was sein Name sagt. Drei Schreibstellen, alle auf
+Fehlerstufe protokolliert - ein still uebergangener Schreibvorgang waere
+schlimmer als das Problem, das er loest:
+
+    research/leaderboard.py   Leaderboard.save       bestenliste.trockenlauf
+    core/report.py            write_report           bericht.trockenlauf
+    research/admission.py     write_champion         champion.trockenlauf
+
+Der Champion ist dabei die teuerste: Dort haengt das echte Geld dran, und ein
+Rauchtest, der ihn ueberschreibt, waere der schlimmste Fall von allen. Ein
+Test prueft ausdruecklich den gefaehrlicheren Weg - nicht "wird nicht
+angelegt", sondern "eine bestehende Datei bleibt unberuehrt".
+
+Die Richtung ist die sichere: Wird die Variable vergessen, ist die Folge *"es
+wurde nichts geschrieben"* - aergerlich und wiederholbar. Umgekehrt ist sie es
+nicht.
+
+### Gegengeprueft
+
+Derselbe Rauchtest noch einmal, mit dem Fix:
+
+    zaehler.trockenlauf       Der Stand wird NICHT fortgeschrieben   waere=207
+    bestenliste.trockenlauf   Die Bestenliste wird NICHT fortgeschrieben
+    bericht.trockenlauf       Es wird KEIN Bericht abgelegt
+
+    Berichte vorher/nachher:  7 / 7
+    Bestenliste:              unveraendert
+    Versuchszaehler:          198
+
+### Was daraus folgt
+
+1. **``cli wettbewerb`` laeuft durch.** Die eigentliche Frage ist beantwortet:
+   Wenn der Nutzer den Backfill gemacht hat, funktioniert der naechste Befehl.
+2. **Ein Schutz ist so gut wie sein Name.** Wer ``TROCKENLAUF`` liest, erwartet
+   nicht "ausser der Bestenliste". Der Vertrag gehoert an den Namen angepasst,
+   nicht der Leser an den Vertrag.
+3. **Sechs Befunde, sechs Mal dieselbe Klasse.** Kein Rechenfehler darunter.
+   Jedes Mal lag das Wissen im System und hat das Verhalten nicht gesteuert -
+   als ungelesene Liste, als veralteter Bezugspunkt, als Docstring, als
+   zu enger Vertrag.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2114 Tests gruen.

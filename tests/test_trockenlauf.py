@@ -9,7 +9,7 @@ Das ist keine Kleinigkeit: Jeder Versuch hebt die Huerde des Deflated Sharpe
 um rund 0,0002 Punkte, dauerhaft und fuer jeden kuenftigen Kandidaten. Ein
 Test hat sie um 0,004 angehoben, ohne eine einzige Hypothese zu pruefen.
 
-Drei Tests tragen diese Datei:
+Vier Saeulen tragen diese Datei:
 
 ``test_der_trockenlauf_haelt_den_zaehler_an`` - Der Kern. Mit gesetzter
 Variable schreibt ``speichern`` nicht, und zwar an der einen Stelle, durch die
@@ -21,6 +21,10 @@ der auch ohne Zutun wirkt, waere schlimmer als kein Schalter.
 ``test_ein_vergessener_trockenlauf_faellt_auf`` - Die Wache gegen die
 Nebenwirkung. Ein zu niedriger Zaehler macht den Deflated Sharpe milder -
 genau die Richtung, gegen die ``versuche.py`` gebaut ist.
+
+``TestDerTrockenlaufHinterlaesstNichts`` - Der erweiterte Vertrag aus Befund
+116. Der Schutz galt nur dem Zaehler; ein Rauchtest von ``cli wettbewerb``
+schrieb die Bestenliste trotzdem fort. Jetzt gilt, was der Name sagt.
 """
 
 from __future__ import annotations
@@ -177,3 +181,108 @@ class TestWache:
         save_trials(zaehlerdatei, 50)
 
         assert laden(zaehlerdatei).anzahl == 177
+
+
+class TestDerTrockenlaufHinterlaesstNichts:
+    """Der Vertrag war zu eng - Befund 116.
+
+    ``trockenlauf()`` hiess *"Laeuft gerade etwas, das nicht zaehlen darf?"*,
+    und genau so weit reichte der Schutz. Mit gesetzter Variable habe ich
+    ``cli wettbewerb`` als Rauchtest laufen lassen: Der Zaehler blieb bei 198,
+    wie zugesagt - die Bestenliste ging von 11 auf 12 Laeufe, neun Eintraege
+    bekamen ein neues Datum, und ein Zulassungsbericht wurde abgelegt.
+
+    Der Name verspricht mehr als der alte Vertrag hielt, und der Name ist,
+    was man beim Benutzen sieht. Diese Tests halten den erweiterten Vertrag
+    fest: **Wer die Variable setzt, hinterlaesst nichts.**
+    """
+
+    def test_die_bestenliste_wird_nicht_fortgeschrieben(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        from research.leaderboard import Leaderboard
+
+        ziel = tmp_path / "leaderboard.json"
+        monkeypatch.setenv(TROCKENLAUF, "1")
+        tafel = Leaderboard(path=ziel)
+        tafel.laeufe = 7
+        tafel.save()
+
+        assert not ziel.exists(), "Trockenlauf hat die Bestenliste geschrieben"
+
+    def test_ohne_variable_wird_sie_geschrieben(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Die Gegenprobe - ein Schalter, der immer wirkt, ist keiner."""
+        from research.leaderboard import Leaderboard
+
+        ziel = tmp_path / "leaderboard.json"
+        monkeypatch.delenv(TROCKENLAUF, raising=False)
+        tafel = Leaderboard(path=ziel)
+        tafel.laeufe = 7
+        tafel.save()
+
+        assert ziel.exists()
+        assert json.loads(ziel.read_text())["laeufe"] == 7
+
+    def test_kein_bericht_wird_abgelegt(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Ein Rauchtest sieht im Verlauf aus wie ein Lauf und ist keiner."""
+        from core.report import write_report
+
+        monkeypatch.setenv(TROCKENLAUF, "1")
+        write_report({"was": "auch immer"}, root=tmp_path)
+
+        ordner = tmp_path / "reports" / "zulassung"
+        assert not ordner.exists() or not list(ordner.glob("*.json"))
+
+    def test_ohne_variable_wird_er_abgelegt(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        from core.report import write_report
+
+        monkeypatch.delenv(TROCKENLAUF, raising=False)
+        datei = write_report({"was": "auch immer"}, root=tmp_path)
+
+        assert datei.exists()
+        assert json.loads(datei.read_text())["was"] == "auch immer"
+
+    def test_der_champion_wird_nicht_geschrieben(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Von allen Dateien die teuerste - hier haengt das Geld dran."""
+        from research.admission import write_champion
+        from research.seeds import spitzenkandidat
+
+        class Schein:
+            genome = spitzenkandidat()
+
+        ziel = tmp_path / "champion.json"
+        monkeypatch.setenv(TROCKENLAUF, "1")
+        write_champion(Schein(), ziel)
+
+        assert not ziel.exists(), "Trockenlauf hat den Champion ueberschrieben"
+
+    def test_ein_bestehender_champion_bleibt_unberuehrt(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Der gefaehrlichere Fall: nicht anlegen, sondern ueberschreiben."""
+        from research.admission import write_champion
+        from research.seeds import spitzenkandidat
+
+        class Schein:
+            genome = spitzenkandidat()
+
+        ziel = tmp_path / "champion.json"
+        ziel.write_text('{"genom": {"name": "der echte"}}')
+        monkeypatch.setenv(TROCKENLAUF, "1")
+        write_champion(Schein(), ziel)
+
+        assert json.loads(ziel.read_text())["genom"]["name"] == "der echte"
+
+    def test_der_docstring_nennt_den_erweiterten_vertrag(self) -> None:
+        """Sonst steht die Lehre wieder nur im Befund - siehe Befund 115."""
+        text = trockenlauf.__doc__ or ""
+        assert "hinterlassen" in text.lower()
+        assert "Bestenliste" in text

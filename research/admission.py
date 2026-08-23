@@ -423,8 +423,23 @@ def write_champion(
     Instrument, welchem Kontostand und welcher Datenquelle bestanden wurde.
     Ohne ihn bleibt es beim alten Format - eine Datei, die nur sagt *was*
     zugelassen ist und nicht *woraufhin*.
+
+    **Im Trockenlauf wird nichts geschrieben** (Befund 116). Hier haengt das
+    echte Geld dran; von allen Dateien, die ein Rauchtest anfassen koennte,
+    ist diese die teuerste.
     """
+    from research.versuche import TROCKENLAUF, trockenlauf
+
     file = Path(path)
+    if trockenlauf():
+        log.error(
+            "champion.trockenlauf",
+            variable=TROCKENLAUF,
+            pfad=str(file),
+            folge="Der Champion wird NICHT geschrieben.",
+        )
+        return file
+
     file.parent.mkdir(parents=True, exist_ok=True)
     genom = candidate.genome.model_dump(mode="json")
     inhalt = (

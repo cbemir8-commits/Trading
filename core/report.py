@@ -128,7 +128,22 @@ def write_report(payload: dict, *, root: Path | str, kind: str = "zulassung") ->
     Nichts wird ueberschrieben: Jeder Lauf bekommt eine eigene Datei. Ein
     Verlauf ueber Wochen ist der eigentliche Wert - eine einzelne Momentaufnahme
     sagt wenig darueber, ob eine Idee traegt.
+
+    **Ausser im Trockenlauf** (Befund 116). Ein Rauchtest gehoert nicht in
+    diesen Verlauf: Er sieht dort aus wie ein Lauf und ist keiner.
     """
+    from research.versuche import TROCKENLAUF, trockenlauf
+
+    if trockenlauf():
+        ziel = Path(root) / "reports" / kind
+        log.error(
+            "bericht.trockenlauf",
+            variable=TROCKENLAUF,
+            pfad=str(ziel),
+            folge="Es wird KEIN Bericht abgelegt.",
+        )
+        return ziel
+
     stamp = datetime.now(UTC).strftime("%Y-%m-%d_%H%M%S")
     ordner = Path(root) / "reports" / kind
     ordner.mkdir(parents=True, exist_ok=True)

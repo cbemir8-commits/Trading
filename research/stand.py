@@ -107,6 +107,11 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         115,
     ),
     Richtung(
+        "Trockenlauf nur fuer den Zaehler",
+        "Rauchtest schrieb die Bestenliste fort - Schutz erweitert",
+        116,
+    ),
+    Richtung(
         "Groessenregler zum Rechteck",
         "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",
         95,

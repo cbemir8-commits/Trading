@@ -296,6 +296,25 @@ class Leaderboard:
                 log.warning("bestenliste.eintrag_uebersprungen", daten=daten.get("name"))
 
     def save(self) -> Path:
+        # **Ein Trockenlauf hinterlaesst nichts** (Befund 116). Bis dahin
+        # schuetzte ``TRADING_TROCKENLAUF`` nur den Versuchszaehler, und ein
+        # Rauchtest von ``cli wettbewerb`` schrieb die Bestenliste trotzdem
+        # fort - von 11 auf 12 Laeufe, neun Eintraege mit neuem Datum.
+        #
+        # Auf Fehlerstufe und nicht als Hinweis: Ein stiller uebergangener
+        # Schreibvorgang waere schlimmer als das Problem, das er loest -
+        # dieselbe Begruendung wie in ``versuche.speichern``.
+        from research.versuche import TROCKENLAUF, trockenlauf
+
+        if trockenlauf():
+            log.error(
+                "bestenliste.trockenlauf",
+                variable=TROCKENLAUF,
+                pfad=str(self.path),
+                folge="Die Bestenliste wird NICHT fortgeschrieben.",
+            )
+            return self.path
+
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(
             json.dumps(
