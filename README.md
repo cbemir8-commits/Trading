@@ -1,11 +1,47 @@
-# Autonomes BTC-Trading-System (Bybit)
+# Autonomes Krypto-Trading-System (Bybit)
 
-Selbstlernendes Handelssystem für BTC-Perpetuals. Eine KI entwickelt und verbessert
-laufend die Strategie, eine deterministische Engine handelt sie, ein Dashboard zeigt
-live, was passiert.
+Selbstlernendes Handelssystem. Eine KI entwickelt und verbessert laufend die
+Strategie, eine deterministische Engine handelt sie, ein Dashboard zeigt live,
+was passiert.
 
-> **Status:** Phase 0 (Fundament) — Konfiguration, Bybit-Adapter, Positions-Sizer,
-> Health-Check. Handelt noch nicht.
+> **Status:** Gebaut und getestet — Datenpipeline, Backtest-Engine, elf
+> Zulassungs-Gates, Ausführung, Risk-Officer, Dashboard, Research-Loop.
+> **Es handelt nicht**, weil kein Kandidat zugelassen ist.
+
+## Wo das Projekt steht
+
+Der aktuelle Stand wird **gemessen und nicht hier gepflegt**:
+
+```bash
+python -m cli stand
+```
+
+Der Befehl rechnet den Bestand durch die Gates, zeigt beide Betriebspunkte
+(Perpetual und Spot), listet die gemessen geschlossenen Richtungen und sagt,
+was den Zustand ändern kann. Zahlen in dieser Datei würden veralten; dort
+können sie es nicht.
+
+### Der nächste Schritt liegt bei dir
+
+Solange auf Bitstamp-Referenzkerzen gerechnet wird, **kann kein Kandidat
+zugelassen werden — unabhängig davon, wie viele Gates halten** (`GateReport.
+passed` verlangt Börsendaten). Der Entwicklungscontainer ist von Bybit
+geoblockt; von deinem Rechner aus geht es:
+
+```bash
+python -m cli backfill --intervall D --von 2017-08-16   # Börsenkerzen laden
+python -m cli wettbewerb                                # Strategien suchen
+```
+
+Zwei weitere Dinge kann nur dein Konto beantworten:
+
+| Was | Womit | Warum |
+|---|---|---|
+| Perpetuals oder nur Spot? | `python -m cli healthcheck` | Bybit EU führt unter MiCA keine Perpetuals. Am gemessenen Stand hängen daran zwei Gates. |
+| Echte Funding-Raten | `python -m cli funding --von 2020-03-30` | `data_store/funding/` ist leer; bisher rechnet alles mit dem Vorgabewert, und Funding ist der größte Kostenblock. |
+
+Das vollständige Laborbuch mit allen Messungen steht in
+[`strategies/BEFUND.md`](strategies/BEFUND.md).
 
 ---
 
@@ -144,18 +180,37 @@ in die `.env` auf dem Server.
 ```bash
 python -m cli setup                       # Zugangsdaten einrichten
 python -m cli healthcheck                 # zuerst auf jedem neuen Server
-python -m cli backfill --von 2020-03-30   # Historie laden (resumierbar)
+python -m cli backfill --von 2017-08-16   # Historie laden (resumierbar)
 python -m cli status                      # was liegt im Speicher?
 python -m cli quality                     # Lücken, Duplikate, Ausreißer
 python -m cli ingest                      # Live-Kerzen mitschreiben
 python -m cli leverage --kapital 500      # Hebel-Tabelle für dein Konto
-python -m cli research                    # Strategien pruefen, Champion waehlen
-python -m cli research --ki               # KI schlaegt neue Kandidaten vor
+python -m cli stand                       # wo steht das Projekt?
+python -m cli wettbewerb                  # Strategien suchen und pruefen
+python -m cli research                    # ein einzelner Pruefdurchgang
 python -m cli review                      # laeuft die Strategie noch?
 python -m cli trade --trocken             # Handelsplan zeigen, keine Order
 python -m cli trade                       # handeln
 python -m cli dashboard                   # Website + Not-Aus
 ```
+
+Insgesamt gibt es über sechzig Befehle; die meisten sind Messwerkzeuge zu
+einzelnen Befunden. `python -m cli --help` listet sie alle.
+
+### `TRADING_TROCKENLAUF` — probieren, ohne Spuren
+
+```bash
+TRADING_TROCKENLAUF=1 python -m cli wettbewerb
+```
+
+Mit gesetzter Variable **hinterlässt kein Befehl etwas**: kein Versuchszähler,
+keine Bestenliste, kein Bericht, kein Commit, kein Champion. Gedacht für
+Rauchtests — ein Probelauf soll nicht wie ein echter Lauf aussehen.
+
+Der Versuchszähler ist dabei der wichtigste Posten: Jeder gezählte Versuch hebt
+die Hürde des Deflated-Sharpe-Gates dauerhaft, für jeden künftigen Kandidaten.
+Wer wirklich sucht, muss die Variable weglassen — sonst zählt die Suche nicht
+mit, und `cli stand` warnt so lange in roter Schrift.
 
 ## Auf dem eigenen Rechner (Windows)
 
@@ -222,15 +277,19 @@ eine Seite, der nächste Aufruf setzt hinter der letzten vollständigen Kerze an
 ## Struktur
 
 ```
-core/       Konfiguration, Domänenmodelle          [P0 ✓]
-data/       Bybit-Adapter, Store, Backfill, WS     [P0 ✓ / P1 ✓]
-strategy/   Genome, Compiler, Indikatoren          [P3]
-backtest/   Engine, Fill-Modell, Walk-Forward      [P2]
-execution/  Sizer, Risk-Officer, Order-Router      [P0 ✓ / P4]
-research/   CEO, Analyst, Gates, Champion          [P6]
-api/ web/   FastAPI + Next.js PWA                  [P5]
-scripts/    Health-Check, Wartungswerkzeuge        [P0 ✓]
+core/       Konfiguration, Domänenmodelle          ✓
+data/       Bybit-Adapter, Store, Backfill, WS     ✓
+strategy/   Genome, Compiler, Indikatoren          ✓
+backtest/   Engine, Fill-Modell, Walk-Forward      ✓
+execution/  Sizer, Risk-Officer, Order-Router      ✓
+research/   CEO, Analyst, Gates, Champion          ✓
+api/ web/   FastAPI + Next.js PWA                  ✓
+scripts/    Health-Check, Wartungswerkzeuge        ✓
 ```
+
+`research/` ist der größte Teil: neben den Gates liegen dort die Messmodule zu
+den einzelnen Befunden — Kostendecke, Körnung, Instrumentenwahl, Teststärke,
+Suchbudget und weitere. Jedes hat einen Abschnitt in `strategies/BEFUND.md`.
 
 ### Datenhaltung — bewusst zweigleisig
 
@@ -261,13 +320,17 @@ Demo/Live-Umschaltung zu einer Konfigurationsänderung und die Testsuite netzwer
 ## Tests
 
 ```bash
-pytest -q                       # ohne Netzwerk, ~3 s
+pytest -q                       # ohne Netzwerk, wenige Minuten
 RUN_NETWORK_TESTS=1 pytest      # zusätzlich echte Bybit-Aufrufe (nur auf dem VPS)
 ```
 
-Schwerpunkte der aktuellen 62 Tests: Positionsgröße und Hebel (inkl. Liquidations­schutz),
-Signierung, Fehlerklassifikation, **chronologische Sortierung der Kerzen** (Bybit liefert
-sie rückwärts — unbemerkt ergibt das einen rückwärts laufenden Backtest).
+Die Zahl der Tests steht bewusst nicht hier — sie wäre am Tag nach dem Schreiben
+falsch. `pytest -q` sagt sie am Ende selbst.
+
+Schwerpunkte: Positionsgröße und Hebel (inkl. Liquidations­schutz), Signierung,
+Fehlerklassifikation, **chronologische Sortierung der Kerzen** (Bybit liefert sie
+rückwärts — unbemerkt ergibt das einen rückwärts laufenden Backtest), die
+Zulassungs-Gates und die Messmodule aus `research/`.
 
 ---
 
@@ -297,8 +360,17 @@ des Kontos pro Monat.
 ## Warum kein Gewinnversprechen
 
 „Perfekt" gibt es im Trading nicht. Die meisten Strategien, die im Backtest glänzen,
-überleben live nicht — genau dagegen bauen wir die acht Zulassungs-Gates (P3). Sie sind
+überleben live nicht — genau dagegen stehen die elf Zulassungs-Gates. Sie sind
 ein Filter, keine Garantie.
 
 Es ist möglich, dass die KI keine Strategie findet, die alle Gates besteht. Das wäre
 kein Fehler des Systems, sondern seine ehrlichste Leistung.
+
+**Bis jetzt ist genau das der Stand.** Der beste bekannte Kandidat besteht nicht
+alle Gates, und mehrere Wege dorthin sind gemessen und geschlossen — mehr
+Märkte, mehr Historie, feinere Kerzen, günstigere Kostenannahmen. `cli stand`
+listet sie mit Fundstelle, `cli decke` zeigt, wo nachweislich nichts mehr zu
+holen ist.
+
+Die Gates werden nicht gelockert, damit etwas besteht. Lieber keine Strategie
+als eine, die nur im Backtest funktioniert.

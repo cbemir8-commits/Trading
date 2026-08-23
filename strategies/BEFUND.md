@@ -10575,3 +10575,104 @@ angebracht. Er bleibt, und hier steht, was er ist.
    und diesmal hat der Fehler in der Pruefung selbst gesessen.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2116 Tests gruen.
+
+---
+
+## Hundertachtzehn. Die aeusserste Stelle - was jemand zuerst liest
+
+Nach sieben Befunden ueber Wissen, das im System liegt und nichts steuert, die
+naheliegende Frage: **Wo ist die aeusserste Stelle, an der das passieren
+kann?** Antwort: die README. Wer das Repository oeffnet, liest sie zuerst.
+
+Sie war vom 1. August. Dazwischen lagen 57 Befunde.
+
+### Was dort stand
+
+    Status: Phase 0 (Fundament) - Konfiguration, Bybit-Adapter,
+            Positions-Sizer, Health-Check. Handelt noch nicht.
+
+    Schwerpunkte der aktuellen 62 Tests: ...
+
+    ... genau dagegen bauen wir die acht Zulassungs-Gates (P3).
+
+    pytest -q     # ohne Netzwerk, ~3 s
+
+    core/ ... [P0 ✓]    strategy/ ... [P3]    backtest/ ... [P2]
+    research/ ... [P6]  api/ web/ ... [P5]
+
+P0 bis P7 sind abgeschlossen, die Suite hat 2125 Tests statt 62 und laeuft
+zweieinhalb Minuten statt drei Sekunden, und es sind elf Gates statt acht. Die
+Strukturtabelle wies die Haelfte des Systems als unfertig aus.
+
+Vor allem aber fehlte, was der Nutzer wissen muss: **dass der naechste
+wirksame Schritt bei ihm liegt.** Kein Wort ueber die Sperre auf
+Referenzkerzen, keines ueber ``cli stand``, keines ueber ``cli wettbewerb``.
+
+### Ein Fehlalarm, unterwegs
+
+Beim Pruefen wollte ich die genannten CLI-Befehle gegen die vorhandenen
+halten. Meine erste Extraktion las den Hilfetext und stolperte ueber die
+Rahmenzeichen von Rich - Ergebnis: **elf Befehle angeblich nicht vorhanden.**
+
+Das waere ein schwerer Befund gewesen, und er war falsch. Die zweite Messung
+fragte ``cli.app.registered_commands`` statt den formatierten Text: 63 Befehle,
+alle genannten dabei. Der Fehler lag in meinem Messwerkzeug, nicht im Projekt.
+
+Es steht hier, weil ich es beinahe berichtet haette. Ein Messwerkzeug, das
+seinen Gegenstand ueber die Bildschirmausgabe befragt, misst die Formatierung
+mit.
+
+### Was geaendert wurde
+
+Die README nennt jetzt den Stand, aber **pflegt ihn nicht**: Sie verweist auf
+``cli stand``. Das ist die Lehre aus Befund 112 - eine Quelle, nicht zwei.
+Harte Zahlen stehen nur dort, wo sie sich nicht bewegen.
+
+Ganz oben steht, was der Nutzer tun kann, und warum es sonst nicht weitergeht:
+
+    python -m cli backfill --intervall D --von 2017-08-16
+    python -m cli wettbewerb
+
+Dazu die beiden Fragen, die nur sein Konto beantwortet - Perpetual oder Spot,
+und die echten Funding-Raten -, jeweils mit dem Befehl daneben. Und ein
+Abschnitt zu ``TRADING_TROCKENLAUF``, der nach den Befunden 116 und 117 sagt,
+was er wirklich tut: **nichts hinterlassen.**
+
+### Was der Test festhaelt
+
+``tests/test_readme.py`` prueft, was maschinell pruefbar ist:
+
+* Jeder genannte ``python -m cli X`` existiert. Ein Befehl, den es nicht gibt,
+  ist die teuerste Zeile einer Anleitung: Wer ihr folgt, steht vor einem
+  Fehler und weiss nicht, ob er selbst schuld ist.
+* Die genannte Gate-Zahl stimmt mit ``evaluate_gates`` ueberein - als
+  Zahlwort, weil sie im Fliesstext steht.
+* **Keine feste Testzahl.** ``pytest -q`` sagt sie selbst; eine zweite Quelle
+  veraltet, und genau so ist "62" entstanden.
+* Kein "Phase 0", keine feste Laufzeit, und die Sperre wird genannt.
+
+Gegengeprueft am richtigen Mass - naemlich an der alten Fassung:
+
+    feste Testzahl gefunden:  ['62 ']
+    Gate-Zahlwort:            ['acht']
+    Phase 0 drin:             True
+    ~3 s drin:                True
+    cli stand drin:           False
+    TROCKENLAUF drin:         False
+
+Alle sechs Pruefungen haetten die alte README abgelehnt. Ein Test, der immer
+gruen ist, waere hier besonders wertlos gewesen.
+
+### Was daraus folgt
+
+1. **Der Nutzer findet den naechsten Schritt jetzt in der ersten Datei.** Das
+   war der Zweck; Befund 114 hatte ihn benannt, aber nur im Laborbuch.
+2. **Die Reihe der acht Befunde hat ein gemeinsames Muster und ein Ende.** Von
+   innen nach aussen: Register (111), Bericht (112), Messung (113), Sperre
+   (114), Docstring (115), Vertrag (116), Pruefung (117), Anleitung (118). Die
+   aeusserste Stelle ist erreicht.
+3. **Auch dieser Befund hatte seinen Fehlalarm.** Elf angeblich fehlende
+   Befehle, entstanden aus einer Messung ueber die Bildschirmausgabe. Gemessen
+   wird am Gegenstand, nicht an seiner Darstellung.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2125 Tests gruen.

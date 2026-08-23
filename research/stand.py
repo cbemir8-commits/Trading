@@ -117,6 +117,11 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         117,
     ),
     Richtung(
+        "README auf dem Stand vom 1. August",
+        "57 Befunde alt - verweist jetzt auf 'cli stand' statt zu pflegen",
+        118,
+    ),
+    Richtung(
         "Groessenregler zum Rechteck",
         "ohne Mengenrundung glatt und monoton, Verhaeltnis 1,07 gegen 1,25",
         95,
