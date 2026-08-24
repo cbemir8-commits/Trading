@@ -8990,6 +8990,11 @@ def decke(
         help="Ist 'Kosten null' wirklich der Anschlag? Schaltet zusaetzlich "
              "die Bremsen ab, die Trades verhindern (Befund 127).",
     ),
+    historie: bool = typer.Option(
+        False, "--historie",
+        help="Wie schnell waechst die Evidenz mit der Historie? Dieselben "
+             "Regeln, wandernder Anfang (Befund 132).",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Wo ist nachweislich nichts mehr zu holen?
@@ -9167,6 +9172,106 @@ def decke(
         console.print(
             "[dim]Der Versuchszaehler bleibt unveraendert: Dieselbe Strategie, "
             "dieselben Daten.[/]\n"
+        )
+        return
+
+    if historie:
+        # **Die vierte Familie: unabhaengige Beobachtungen** (Befund 132).
+        #
+        # Alle Fenster enden am selben Tag, nur der Anfang wandert. Gesucht
+        # wird nicht der beste Ausschnitt - das laengste Fenster ist die
+        # Referenz und bleibt es -, sondern die Steigung: Wie viel Evidenz
+        # bringt ein zusaetzliches Jahr?
+        import pandas as pd
+
+        from research.gates import concurrent_groups
+        from research.historie import Historienkurve, Historienstufe
+        from research.unabhaengigkeit import effektive_stichprobe
+
+        erster_voll = next(iter(gemeinsam.values()))
+        anfang = erster_voll["open_time"].min()
+        ende = erster_voll["open_time"].max()
+        starts = [str(anfang.date())] + [
+            s
+            for s in ("2018-08-16", "2019-08-16", "2020-03-30", "2021-08-16",
+                      "2022-08-16")
+            if pd.Timestamp(s, tz="UTC") > anfang
+        ]
+
+        console.print(
+            f"\n[bold]Historienkurve[/] {interval_obj.label}, Spot\n"
+            f"  Kandidat   {basis.name}\n"
+            f"  Versuche   {trials}\n"
+            f"  Ende       {ende.date()} (fuer alle Fenster gleich)\n\n"
+            "[dim]Vor dem Lauf festgelegt: Berichtet werden alle Fenster. "
+            "Referenz ist das laengste -\nein kuerzeres weiss nie mehr. "
+            "Kostet keinen Versuch: derselbe Kandidat, anderer\nAusschnitt.[/]\n"
+        )
+        kopf = (
+            f"  {'ab':>10} {'Tage':>5} {'Trades':>6} {'eff':>5} {'Guete':>7} "
+            f"{'DSR':>7} {'Gates':>6}"
+        )
+        console.print(kopf)
+        console.print("  " + "-" * (len(kopf) - 2))
+
+        stufen: list[Historienstufe] = []
+        grenzwert, letzter_eintrag = 0.95, None
+        for start in starts:
+            grenze = pd.Timestamp(start, tz="UTC")
+            teil = {
+                k: v[v["open_time"] >= grenze].reset_index(drop=True)
+                for k, v in gemeinsam.items()
+            }
+            erster = next(iter(teil.values()))
+            if len(erster) < 400:
+                continue
+            cfgs = configs_fuer(teil)
+            bericht, ergebnisse, wert, grenze, eintrag = messen(teil, cfgs)
+            if not bericht.windows:
+                continue
+            if not stufen:
+                # Die Schwelle kommt aus dem Gate und nicht aus dem Kopf -
+                # dieselbe Regel wie in den Befunden 101, 103 und 109.
+                grenzwert, letzter_eintrag = grenze, eintrag
+            trades = bericht.all_trades
+            beine = [
+                [float(t.net_pnl) for t in trades if t.symbol == x] for x in teil
+            ]
+            bloecke = [[float(x.net_pnl) for x in w.trades] for w in bericht.windows]
+            gleich = [
+                [float(t.net_pnl) for t in g] for g in concurrent_groups(trades)
+            ]
+            eff = effektive_stichprobe(len(trades), beine, bloecke, weitere=[gleich])
+            stufen.append(
+                Historienstufe(
+                    von=start,
+                    tage=len(erster),
+                    trades=len(trades),
+                    effektiv=eff.effektiv,
+                    guete=eintrag.sharpe_je_trade if eintrag else 0.0,
+                    dsr=wert,
+                    bestanden=sum(1 for r in ergebnisse.results if r.passed),
+                    gesamt=len(ergebnisse.results),
+                )
+            )
+            console.print(f"  {stufen[-1].als_zeile()}")
+
+        ref = stufen[0] if stufen else None
+        ziel = None
+        if ref is not None and letzter_eintrag is not None:
+            bedarf = Stichprobenbedarf(
+                guete=ref.guete, versuche=trials, heute=ref.effektiv,
+                schiefe=letzter_eintrag.schiefe,
+                woelbung=letzter_eintrag.woelbung,
+                schwelle=grenzwert,
+            )
+            ziel = bedarf.noetig()
+        kurve = Historienkurve(tuple(stufen), ziel=ziel)
+        console.print(f"\n[yellow]{kurve.urteil()}[/]\n")
+        console.print(
+            f"[dim]Die Vergangenheit ist damit ausgeschoepft: Der gemeinsame "
+            f"Bereich beginnt am\n{anfang.date()}, weil dort die zweite Reihe "
+            f"beginnt. Fehlende Tage koennen nur aus\nder Zukunft kommen.[/]\n"
         )
         return
 

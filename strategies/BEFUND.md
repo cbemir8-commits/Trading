@@ -12055,3 +12055,125 @@ Befund nicht verwischen soll.
    Frage *"ist diese Richtung wirklich zu?"* beantwortet werden kann.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2295 Tests gruen.
+
+---
+
+## Hundertzweiunddreissig. Die fehlenden Tage kommen aus der Zukunft
+
+Fuenf Befunde hintereinander (127 bis 131) haben am Werkzeug gearbeitet, und
+131 hat selbst hingeschrieben: *"Am Stand aendert dieser Befund nichts."* Das
+ist ein Muster und kein Zufall, und Befund 123 hat es schon einmal benannt.
+Also diesmal die Frage aus dem Auftrag: **Was ist der wirksamste Schritt
+Richtung "eine Strategie besteht alle Gates"?**
+
+Die Antwort ist seit Befund 111 bekannt und nie zu Ende gerechnet worden. Von
+den vier Familien, aus denen Evidenz kommen kann, sind drei erschoepft -
+Kosten, Fenster, Regler. Die vierte ist die **Zahl unabhaengiger
+Beobachtungen**, und sie ist die einzige, die den Deflated Sharpe hebt, ohne
+einen Versuch zu kosten: Evidenz sammeln ist keine Suche.
+
+Davor steht ein geschlossener Weg: *"Mehr Historie - Sharpe je Trade faellt,
+Huerde steigt"* (Befund 14). Und der ist einer der 28 Eintraege, die Befund
+131 als ungeprueft ausgewiesen hat.
+
+### Gemessen
+
+Derselbe Kandidat, Spot-Punkt, 198 Versuche. Alle Fenster enden am selben Tag,
+nur der Anfang wandert. **Vor dem Lauf festgelegt:** Berichtet werden alle
+Fenster, Referenz ist das laengste - ein kuerzeres weiss nie mehr.
+
+        ab       Tage  Trades   eff    Guete     DSR   Gates
+    2017-08-16   3277     152   152   0,2765  0,8640    9/11   <- Referenz
+    2018-08-16   2912     137   136   0,2734  0,7659    9/11
+    2019-08-16   2547     111   103   0,2705  0,4792    9/11
+    2020-03-30   2320     103   103   0,2396  0,2969    8/11
+    2021-08-16   1816      72    72   0,2711  0,2209    9/11
+    2022-08-16   1451      52    52   0,2903  0,1347    9/11
+
+**Die Guete haengt nicht an der Historienlaenge.** 0,2765 / 0,2734 / 0,2705 /
+0,2396 / 0,2711 / 0,2903 - kein Trend, nur Streuung um 0,27. Wer die Historie
+kuerzt, bekommt keine bessere Regel, sondern weniger Evidenz.
+
+**Der Deflated Sharpe haengt fast nur an n.** Bei praktisch gleicher Guete
+faellt er von 0,8640 auf 0,1347, wenn die Historie von 3277 auf 1451 Tage
+schrumpft. Er misst Evidenz, nicht Vorteilsgroesse - das steht seit Befund 111
+in ``decke.Stichprobenbedarf`` und ist hier ueber sechs Fenster zu sehen.
+
+**Das ist keine Widerlegung von Befund 14.** Der hat in die andere Richtung
+gemessen - weiter zurueck -, und die gibt es hier nicht mehr: Der gemeinsame
+Bereich beginnt am 16.08.2017, weil dort die ETH-Reihe beginnt. Gemessen ist
+die Richtung, die fuer die naechste Entscheidung zaehlt.
+
+### Was daraus fuer den naechsten Schritt folgt
+
+Die Sammelrate ueber die vier laengsten Fenster: **44,7 unabhaengige
+Beobachtungen je 1000 Tage** (46,4 / 46,7 / 40,4 / 44,4). Die beiden kurzen
+Fenster liegen darunter (39,6 / 35,8), weil dort die Aufwaermphase des
+Walk-Forward einen groesseren Anteil frisst; sie gehen in die Rate nicht ein,
+und ``sammelrate(mindesttage=2000)`` sagt auch, warum.
+
+Die Schwelle traegt ab **n = 182**. Es fehlen 30 Beobachtungen. Bei der
+gemessenen Rate sind das **671 Tage, rund 1,8 Jahre**.
+
+Diese Tage koennen nicht aus der Vergangenheit kommen - die ist ausgeschoepft.
+**Sie koennen nur aus der Zukunft kommen.**
+
+### Und was das fuer den Bybit-Lauf heisst
+
+Im Auftrag steht seit langem: *"Der Nutzer braucht auf seinem PC: cli
+backfill, dann cli wettbewerb."* Das ist richtig und bleibt es - **aber nicht,
+weil es die Luecke schliesst.** Der Backfill leistet zweierlei:
+
+1. Er loest die Referenzdatensperre. Auf Bitstamp-Kerzen kann keine Zulassung
+   entstehen (``GateReport.passed`` prueft ``referenzdaten``); auf
+   Bybit-Symbolen ist eine Zulassung ueberhaupt erst moeglich.
+2. Er ersetzt Annahmen durch Messwerte - allen voran das Funding.
+
+Was er **nicht** leistet: mehr Historie. Die Zeile in der Tabelle mit dem
+Startdatum, auf das jeder Befehl dieses Projekts voreingestellt ist -
+2020-03-30 - steht bei **DSR 0,2969 und 8 von 11**. Sollte Bybit fuer BTC und
+ETH nicht weiter zurueckreichen als der gemeinsame Bitstamp-Bereich, wird der
+Lauf den Abstand nicht verkleinern, sondern vergroessern.
+
+Ob Bybit weiter zurueckreicht, weiss ich nicht und kann es hier nicht
+nachsehen - die Boerse ist aus diesem Container gesperrt, und das bleibt so.
+Deshalb steht hier eine **Kurve** und keine Prognose: Wer das Startdatum
+kennt, liest die Folge ab.
+
+### Was gebaut wurde
+
+``research/historie.py`` mit ``Historienstufe`` und ``Historienkurve``:
+``sammelrate``, ``fehlende_beobachtungen``, ``fehlende_tage``,
+``guete_haengt_an_der_laenge``. Dazu ``cli decke --historie``. Kostet keinen
+Versuch - derselbe Kandidat, anderer Ausschnitt.
+
+Zwei Sperren sind eingebaut, beide aus frueheren Fehlern:
+
+* **Keine Methode, die das beste Fenster zurueckgibt** - wie in
+  ``decke.Fensterlage``. Referenz ist das laengste, immer. Ein Test prueft,
+  dass es keine solche Methode gibt.
+* ``fehlende_tage`` **weist sich selbst als Hochrechnung aus.** Die Rate ist
+  gemessen; dass sie so weiterlaeuft, ist angenommen. Befund 124 hat gezeigt,
+  was ein Punktschaetzer ohne diesen Zusatz anrichtet.
+
+### Ein Fehler beim Bauen, gefunden vom Test
+
+Die Sammelrate stand zuerst bei 45,5 - gerechnet auf **rohen Trades**. Das
+Modul rechnet mit der **effektiven** Stichprobe, und der Test hat die
+Abweichung gemeldet: 44,7, nicht 45,5. Der Unterschied ist klein und aendert
+nichts am Schluss; die Zahl aber stand falsch da, bevor sie jemand nachrechnen
+konnte.
+
+### Was daraus folgt
+
+1. **Die vierte Familie ist offen, aber langsam.** 30 fehlende Beobachtungen
+   sind rund 1,8 Jahre Daten - kein Suchproblem, ein Wartepoblem.
+2. **Der Bybit-Lauf bleibt noetig und schliesst die Luecke nicht.** Er macht
+   eine Zulassung moeglich; ob sie eintritt, entscheidet n.
+3. **Befund 14 steht** - in der Richtung, in der er gemessen wurde. In der
+   Gegenrichtung ist die Guete flach, und das ist neu gemessen.
+4. Der Kandidat ist damit nicht besser oder schlechter geworden. Was sich
+   geaendert hat: Der Abstand zur Zulassung ist zum ersten Mal in **Tagen**
+   ausgedrueckt statt in Versuchen.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2314 Tests gruen.
