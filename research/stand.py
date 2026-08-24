@@ -204,6 +204,11 @@ BEHOBEN: tuple[Richtung, ...] = (
         "vier Stellen: stand, form, rennen, suchbudget - alle behoben",
         126,
     ),
+    Richtung(
+        "Bremsen unterhalb der Kostendecke",
+        "Kalender, Verfallsfrist, Risk-Officer - oeffnen kostet -0,0046",
+        127,
+    ),
 )
 
 

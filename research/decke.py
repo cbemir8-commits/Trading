@@ -519,3 +519,135 @@ class Fensterlage:
             "Hinsicht - das Referenzfenster bleibt, und die anderen stehen "
             "trotzdem im Bericht."
         )
+
+
+@dataclass(frozen=True, slots=True)
+class Stufe:
+    """Ein Lauf mit einer weiteren abgeschalteten Bremse."""
+
+    name: str
+    trades: int
+    guete: float
+    dsr: float
+    bestanden: int
+    gesamt: int
+    offen: tuple[str, ...] = ()
+
+    def als_zeile(self) -> str:
+        return (
+            f"{self.name:<28} {self.trades:>4} Trades  Guete {self.guete:.4f}  "
+            f"DSR {self.dsr:.4f}  {self.bestanden}/{self.gesamt}"
+            + (f"  offen: {', '.join(self.offen)}" if self.offen else "")
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class Reibungsprobe:
+    """Liegt unterhalb von "Kosten null" noch etwas? - Befund 127.
+
+    Die Frage
+    ---------
+    Befund 111 hat Gebuehren, Slippage und Funding auf null gesetzt und daraus
+    geschlossen: *"Es gibt keine Kosten mehr, die man noch wegnehmen
+    koennte."* Drei Bremsen blieben dabei an, und alle drei verhindern
+    **Trades**:
+
+        entry_expiry_bars = 3     PostOnly-Limits verfallen nach drei Balken
+        enforce_risk_limits       der Risk-Officer sperrt Einstiege
+        kalender                  das Termin-Overlay blockiert Signale
+
+    Weniger Trades heisst kleineres n heisst niedrigerer Deflated Sharpe -
+    wenn dort etwas liegt, ist die Kostendecke nicht der Anschlag, fuer den
+    sie gehalten wird.
+
+    Die Antwort
+    -----------
+    Sie liegt dort nicht. Gemessen:
+
+        Spot wie gebaut              152 Trades  Guete 0,2765  DSR 0,8640   9/11
+        + Kosten null                152 Trades  Guete 0,2798  DSR 0,8808  10/11
+        + ohne Terminkalender        154 Trades  Guete 0,2770  DSR 0,8762   9/11
+        + Limits verfallen nie       154 Trades  Guete 0,2770  DSR 0,8762   9/11
+        + ohne Risk-Officer          156 Trades  Guete 0,2741  DSR 0,8710   9/11
+
+    **Jede weitere Abschaltung macht es schlechter.** Die Bremsen sind keine
+    Kosten, sondern Filter: Wer sie oeffnet, bekommt mehr Trades von
+    schlechterer Qualitaet, und die Guete faellt schneller, als ``sqrt(n)``
+    steigt. Dieselbe Kopplung wie in Befund 54, an einer anderen Stelle.
+
+    Damit ist die Kostendecke bestaetigt - und zwar als das, was sie sein
+    sollte: ein Anschlag, unter dem nichts mehr liegt.
+
+    Ein Nebenbefund
+    ---------------
+    Der Terminkalender haelt am kostenfreien Anschlag die **Messlatte**: mit
+    ihm 10 von 11, ohne ihn 9. Befund 12 hatte ihn als wirkungslos abgelegt -
+    *"2 von 156 Signalen blockiert, kein Gate bewegt"*. Das war am
+    Perpetual-Punkt mit Kosten gemessen und bleibt dort richtig; am
+    kostenfreien Spot-Anschlag bewegt er eines.
+    """
+
+    stufen: tuple[Stufe, ...]
+
+    @property
+    def hoechster(self) -> Stufe | None:
+        return max(self.stufen, key=lambda s: s.dsr) if self.stufen else None
+
+    @property
+    def kostenanschlag(self) -> Stufe | None:
+        """Die Stufe, die Befund 111 als Anschlag ausweist."""
+        for s in self.stufen:
+            if "Kosten null" in s.name:
+                return s
+        return None
+
+    @property
+    def anschlag_haelt(self) -> bool:
+        """Ist "Kosten null" der hoechste Wert der Reihe?
+
+        Wenn ja, liegt unterhalb nichts, und Befund 111 steht. Wenn nein, gibt
+        es eine Bremse, die mehr wert ist als alle Kosten zusammen - und dann
+        war der Anschlag keiner.
+        """
+        anschlag, hoch = self.kostenanschlag, self.hoechster
+        return anschlag is not None and hoch is not None and anschlag is hoch
+
+    def gewinn_durch_oeffnen(self) -> float | None:
+        """Was die zusaetzlichen Abschaltungen bringen. Negativ = sie kosten."""
+        anschlag = self.kostenanschlag
+        if anschlag is None or len(self.stufen) < 2:
+            return None
+        danach = [s for s in self.stufen if s.dsr != anschlag.dsr]
+        spaeter = [s for s in self.stufen[self.stufen.index(anschlag) + 1 :]]
+        if not spaeter and not danach:
+            return None
+        vergleich = spaeter or danach
+        return max(s.dsr for s in vergleich) - anschlag.dsr
+
+    def urteil(self) -> str:
+        if not self.stufen:
+            return "Keine Stufen gemessen - dazu ist nichts zu sagen."
+        anschlag = self.kostenanschlag
+        if anschlag is None:
+            return "Kein Kostenanschlag in der Reihe - der Vergleich fehlt."
+        if self.anschlag_haelt:
+            gewinn = self.gewinn_durch_oeffnen()
+            zusatz = (
+                f" Die weiteren Abschaltungen bringen {gewinn:+.4f}."
+                if gewinn is not None
+                else ""
+            )
+            return (
+                f"**Der Anschlag haelt.** 'Kosten null' ist mit "
+                f"{anschlag.dsr:.4f} der hoechste Wert der Reihe; darunter "
+                f"liegt nichts.{zusatz} Die Bremsen sind keine Kosten, sondern "
+                f"Filter - wer sie oeffnet, bekommt mehr Trades von "
+                f"schlechterer Qualitaet."
+            )
+        hoch = self.hoechster
+        return (
+            f"**Der Anschlag haelt nicht.** '{hoch.name}' kommt auf "
+            f"{hoch.dsr:.4f} gegen {anschlag.dsr:.4f} bei 'Kosten null' - es "
+            f"gibt eine Bremse, die mehr wert ist als alle Kosten zusammen. "
+            f"Befund 111 gehoert entsprechend korrigiert."
+        )

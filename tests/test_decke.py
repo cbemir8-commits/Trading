@@ -19,7 +19,9 @@ from research.decke import (
     Deckenwert,
     Fenster,
     Fensterlage,
+    Reibungsprobe,
     Stichprobenbedarf,
+    Stufe,
     deflated_sharpe,
 )
 from research.gates import deflated_sharpe_ratio
@@ -343,3 +345,99 @@ class TestDieAnderenFamilienStehenImRegister:
         # Der Funding-Wegfall, auf derselben Skala: 0,7641 -> 0,8640.
         gebracht = 0.8640 - 0.7641
         assert gekostet > gebracht * 0.95
+
+
+class TestReibungsprobe:
+    """Befund 127 - ist "Kosten null" wirklich der Anschlag?
+
+    Befund 111 hat Gebuehren, Slippage und Funding abgeschaltet und
+    geschlossen, es gebe nichts mehr wegzunehmen. Drei Bremsen blieben an, und
+    alle drei verhindern **Trades**: Terminkalender, Verfallsfrist der
+    PostOnly-Limits, Risk-Officer.
+
+    Gemessen liegt dort nichts - jede weitere Abschaltung macht es schlechter.
+    """
+
+    def _gemessen(self) -> Reibungsprobe:
+        return Reibungsprobe(
+            stufen=(
+                Stufe("Spot wie gebaut", 152, 0.2765, 0.8640, 9, 11,
+                      ("Messlatte", "Deflated Sharpe")),
+                Stufe("+ Kosten null (Befund 111)", 152, 0.2798, 0.8808, 10, 11,
+                      ("Deflated Sharpe",)),
+                Stufe("+ ohne Terminkalender", 154, 0.2770, 0.8762, 9, 11,
+                      ("Messlatte", "Deflated Sharpe")),
+                Stufe("+ Limits verfallen nie", 154, 0.2770, 0.8762, 9, 11,
+                      ("Messlatte", "Deflated Sharpe")),
+                Stufe("+ ohne Risk-Officer", 156, 0.2741, 0.8710, 9, 11,
+                      ("Messlatte", "Deflated Sharpe")),
+            )
+        )
+
+    def test_der_anschlag_haelt(self) -> None:
+        """Das Ergebnis, um das es geht."""
+        probe = self._gemessen()
+
+        assert probe.anschlag_haelt
+        assert probe.kostenanschlag.dsr == pytest.approx(0.8808)
+        assert probe.hoechster is probe.kostenanschlag
+
+    def test_das_oeffnen_kostet_statt_zu_bringen(self) -> None:
+        gewinn = self._gemessen().gewinn_durch_oeffnen()
+
+        assert gewinn is not None
+        assert gewinn < 0
+
+    def test_mehr_trades_bei_geringerer_guete(self) -> None:
+        """Die Kopplung aus Befund 54, an einer anderen Stelle."""
+        stufen = self._gemessen().stufen
+        anschlag, offen = stufen[1], stufen[-1]
+
+        assert offen.trades > anschlag.trades
+        assert offen.guete < anschlag.guete
+
+    def test_der_terminkalender_haelt_die_messlatte(self) -> None:
+        """Befund 12 legte ihn als wirkungslos ab - am kostenfreien Anschlag
+        bewegt er ein Gate."""
+        stufen = self._gemessen().stufen
+        mit, ohne = stufen[1], stufen[2]
+
+        assert "Messlatte" not in mit.offen
+        assert "Messlatte" in ohne.offen
+        assert mit.bestanden > ohne.bestanden
+
+    def test_das_urteil_nennt_die_richtung(self) -> None:
+        text = self._gemessen().urteil()
+
+        assert "Anschlag haelt" in text
+        assert "keine Kosten, sondern Filter" in text
+
+    def test_ein_hoeherer_wert_unterhalb_kippt_das_urteil(self) -> None:
+        """Die Gegenprobe: Laege dort etwas, muesste Befund 111 korrigiert
+        werden - und der Text muss das sagen."""
+        probe = Reibungsprobe(
+            stufen=(
+                Stufe("+ Kosten null (Befund 111)", 152, 0.2798, 0.8808, 10, 11),
+                Stufe("+ ohne Risk-Officer", 200, 0.2900, 0.9400, 10, 11),
+            )
+        )
+
+        assert not probe.anschlag_haelt
+        assert "gehoert entsprechend korrigiert" in probe.urteil()
+
+    def test_ohne_stufen_kein_urteil(self) -> None:
+        assert "nichts zu sagen" in Reibungsprobe(stufen=()).urteil()
+
+    def test_ohne_kostenanschlag_fehlt_der_vergleich(self) -> None:
+        probe = Reibungsprobe(
+            stufen=(Stufe("irgendwas", 100, 0.2, 0.5, 5, 11),)
+        )
+
+        assert not probe.anschlag_haelt
+        assert "Vergleich fehlt" in probe.urteil()
+
+    def test_die_zeile_nennt_die_offenen_gates(self) -> None:
+        zeile = self._gemessen().stufen[0].als_zeile()
+
+        assert "152 Trades" in zeile
+        assert "Messlatte" in zeile

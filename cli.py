@@ -8985,6 +8985,11 @@ def decke(
         False, "--fenster",
         help="Statt der Kostendecke: dieselbe Regel auf drei Datenfenstern.",
     ),
+    anschlag: bool = typer.Option(
+        False, "--anschlag",
+        help="Ist 'Kosten null' wirklich der Anschlag? Schaltet zusaetzlich "
+             "die Bremsen ab, die Trades verhindern (Befund 127).",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Wo ist nachweislich nichts mehr zu holen?
@@ -9080,6 +9085,90 @@ def decke(
         dsr = next(r for r in ergebnisse.results if r.name == "Deflated Sharpe")
         eintrag = Kandidat.aus_trades("Lauf", bericht.all_trades)
         return bericht, ergebnisse, float(dsr.value), float(dsr.threshold), eintrag
+
+    if anschlag:
+        # **Ist "Kosten null" wirklich der Anschlag?** (Befund 127)
+        #
+        # Befund 111 hat Gebuehren, Slippage und Funding auf null gesetzt und
+        # geschlossen, es gebe nichts mehr wegzunehmen. Drei Bremsen blieben
+        # dabei an, und alle drei verhindern **Trades**: der Terminkalender,
+        # die Verfallsfrist der PostOnly-Limits und der Risk-Officer.
+        #
+        # Keine davon ist eine Option - der Risk-Officer bleibt, das ist die
+        # Sicherheit. Gemessen wird eine Grenze, kein Betriebspunkt.
+        from research.decke import Reibungsprobe, Stufe
+
+        console.print(
+            f"\n[bold]Ist 'Kosten null' der Anschlag?[/] "
+            f"{' + '.join(symbole)} {interval_obj.label}\n"
+            f"  Kandidat   {basis.name}\n"
+            f"  Versuche   {trials}\n\n"
+            "[dim]Keine dieser Abschaltungen ist eine Option. Gemessen wird "
+            "eine Grenze.[/]\n"
+        )
+
+        stufen = []
+        for name, kw, extra in (
+            ("Spot wie gebaut", {}, {}),
+            ("+ Kosten null (Befund 111)", {"gebuehr": 0.0, "rutsch": 0.0}, {}),
+            (
+                "+ ohne Terminkalender",
+                {"gebuehr": 0.0, "rutsch": 0.0},
+                {"kalender": None},
+            ),
+            (
+                "+ Limits verfallen nie",
+                {"gebuehr": 0.0, "rutsch": 0.0},
+                {"kalender": None, "entry_expiry_bars": 999},
+            ),
+            (
+                "+ ohne Risk-Officer",
+                {"gebuehr": 0.0, "rutsch": 0.0},
+                {
+                    "kalender": None,
+                    "entry_expiry_bars": 999,
+                    "enforce_risk_limits": False,
+                },
+            ),
+        ):
+            configs = configs_fuer(gemeinsam, **kw)
+            if extra:
+                configs = {
+                    x: c.__class__(
+                        **{
+                            **{
+                                f: getattr(c, f)
+                                for f in c.__dataclass_fields__
+                            },
+                            **extra,
+                        }
+                    )
+                    for x, c in configs.items()
+                }
+            bericht, ergebnisse, wert, _, eintrag = messen(gemeinsam, configs)
+            stufen.append(
+                Stufe(
+                    name=name,
+                    trades=len(bericht.all_trades),
+                    guete=eintrag.sharpe_je_trade if eintrag else 0.0,
+                    dsr=wert,
+                    bestanden=sum(1 for r in ergebnisse.results if r.passed),
+                    gesamt=len(ergebnisse.results),
+                    offen=tuple(
+                        r.name for r in ergebnisse.results if not r.passed
+                    ),
+                )
+            )
+            console.print(f"  {stufen[-1].als_zeile()}")
+
+        probe = Reibungsprobe(stufen=tuple(stufen))
+        farbe = "green" if probe.anschlag_haelt else "red"
+        console.print(f"\n[{farbe}]{probe.urteil()}[/]\n")
+        console.print(
+            "[dim]Der Versuchszaehler bleibt unveraendert: Dieselbe Strategie, "
+            "dieselben Daten.[/]\n"
+        )
+        return
 
     if fenster:
         console.print(

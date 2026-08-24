@@ -11452,3 +11452,85 @@ haben.** Sie misst einen Anschlag statt einer Extrapolation - und genau das
 macht sie belastbar.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2192 Tests gruen.
+
+---
+
+## Hundertsiebenundzwanzig. Der Anschlag haelt - und der Kalender auch
+
+Befund 126 endete mit einem Satz ueber die dritte Saeule: *"Die Kostendecke
+ist die einzige, an der diese Pruefungen nichts geaendert haben."* Geprueft
+hatte ich sie nicht. Das ist die Konsequenz, die dieser Lauf zieht.
+
+### Die Luecke in Befund 111
+
+Dort steht: *"Es gibt keine Kosten mehr, die man noch wegnehmen koennte."*
+Abgeschaltet waren Gebuehren, Slippage und Funding. **Drei Bremsen blieben an,
+und alle drei verhindern Trades:**
+
+    entry_expiry_bars = 3     PostOnly-Limits verfallen nach drei Balken
+    enforce_risk_limits       der Risk-Officer sperrt Einstiege
+    kalender                  das Termin-Overlay blockiert Signale
+
+Weniger Trades heisst kleineres n heisst niedrigerer Deflated Sharpe. Wenn
+dort etwas liegt, ist die Kostendecke kein Anschlag.
+
+### Gemessen
+
+    Spot wie gebaut              152 Trades  Guete 0,2765  DSR 0,8640   9/11
+    + Kosten null (Befund 111)   152 Trades  Guete 0,2798  DSR 0,8808  10/11
+    + ohne Terminkalender        154 Trades  Guete 0,2770  DSR 0,8762   9/11
+    + Limits verfallen nie       154 Trades  Guete 0,2770  DSR 0,8762   9/11
+    + ohne Risk-Officer          156 Trades  Guete 0,2741  DSR 0,8710   9/11
+
+**Jede weitere Abschaltung macht es schlechter.** Zusammen -0,0046.
+
+Der Grund ist die Kopplung aus Befund 54, an einer neuen Stelle: Die Bremsen
+sind keine Kosten, sondern **Filter**. Wer sie oeffnet, bekommt mehr Trades -
+156 statt 152 - von schlechterer Qualitaet, und die Guete faellt schneller,
+als ``sqrt(n)`` steigt.
+
+Die Verfallsfrist bindet gar nicht: 999 Balken statt 3 aendern nichts. Die
+PostOnly-Limits werden also innerhalb von drei Balken gefuellt oder nie.
+
+**Die Kostendecke ist damit bestaetigt** - als das, was sie sein soll: ein
+Anschlag, unter dem nichts mehr liegt. Nach zwei geschwaechten Saeulen (124,
+125/126) haelt die dritte.
+
+### Der Nebenbefund: der Terminkalender haelt ein Gate
+
+    + Kosten null, mit Kalender     10/11   offen: Deflated Sharpe
+    + ohne Terminkalender            9/11   offen: Messlatte, Deflated Sharpe
+
+Der Kalender haelt am kostenfreien Anschlag die **Messlatte**. Ohne ihn faellt
+sie durch.
+
+Befund 12 hatte ihn abgelegt: *"2 von 156 Signalen blockiert, kein Gate
+bewegt."* Das war am Perpetual-Punkt mit vollen Kosten gemessen und bleibt
+dort richtig. Am kostenfreien Spot-Anschlag bewegt er eines - die beiden
+blockierten Signale waren schlechter als der Durchschnitt, und bei 15,00 %
+gegen 15 % entscheidet das.
+
+Das ist kein Widerspruch, sondern derselbe Betriebspunkt-Effekt wie in den
+Befunden 112, 125 und 126: Eine Aussage, die an einem Punkt gilt, gilt am
+anderen nicht mehr.
+
+### Was gebaut wurde
+
+``research/decke.Reibungsprobe`` mit ``anschlag_haelt`` - der Vergleich, ob
+"Kosten null" der hoechste Wert der Reihe ist. Ist er es nicht, sagt das
+Urteil ausdruecklich, dass Befund 111 zu korrigieren waere; ein Test prueft
+auch diesen Zweig.
+
+``cli decke --anschlag`` misst die Reihe. Kostet keinen Versuch.
+
+### Was daraus folgt
+
+1. **Die Kostendecke traegt.** Von den drei Saeulen der Aussichtslosigkeit ist
+   sie die einzige, die die Nachpruefung unveraendert ueberstanden hat - weil
+   sie einen Anschlag misst und keine Extrapolation.
+2. **Der Terminkalender ist nicht wirkungslos**, sondern wirkungslos *am
+   Perpetual-Punkt*. Das ist der vierte Fall derselben Art.
+3. Die Bremsen bleiben, wo sie sind. Sie abzuschalten waere ohnehin keine
+   Option - und es waere, wie sich zeigt, auch kein Vorteil.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2201 Tests gruen.
