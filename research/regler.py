@@ -32,6 +32,18 @@ andere - und der Konflikt ist von "16,0 gegen 22,0 mit 19,3 mittendrin" auf
 Dieses Modul haelt fest, was aus einer solchen Messung folgen darf und was
 nicht.
 
+Welche Regler hier stehen
+-------------------------
+``ARTEN`` fuehrt die Regler, die ein Befund schon einmal abgefahren hat -
+jeweils mit **genau** seiner Stellungsreihe:
+
+    vola   Vola-Ziel in Prozent            Befund 21   7 Stellungen
+    ziel   Gewinnziel in Vielfachen von R  Befund 46   6 Stellungen
+
+Beide wurden am Perpetual-Punkt gemessen. Dass die Stellungsreihe mit im
+Register steht, ist kein Detail: Sie ist seit damals im Versuchszaehler und
+kostet deshalb nichts mehr. Jede Stellung daneben ist ein neuer Kandidat.
+
 Was hier absichtlich fehlt
 --------------------------
 **Es gibt keine Methode, die die beste Stellung zurueckgibt.** Dieselbe Regel
@@ -72,12 +84,71 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 __all__ = [
+    "ARTEN",
     "Klaerungskosten",
     "Konflikt",
+    "Reglerart",
     "Reglerleiter",
     "Reglervergleich",
     "Stellung",
 ]
+
+
+@dataclass(frozen=True, slots=True)
+class Reglerart:
+    """Ein Regler, den ein Befund schon einmal abgefahren hat.
+
+    ``leiter`` ist genau die Stellungsreihe aus jenem Befund - sie steht seit
+    damals im Versuchszaehler und kostet deshalb nichts mehr. Wer davon
+    abweicht, rechnet neue Kandidaten.
+    """
+
+    schluessel: str
+    name: str
+    einheit: str
+    leiter: str
+    befund: int
+
+    def stellungen(self) -> tuple[float, ...]:
+        return tuple(sorted(float(x) for x in self.leiter.split(",")))
+
+    def setzen(self, genom, wert: float):
+        """Denselben Bauplan mit einer anderen Reglerstellung.
+
+        Absichtlich hier und nicht im Aufrufer: Welches Feld ein Regler
+        bewegt, gehoert zu seiner Beschreibung. Steht es im Bericht, driftet
+        es von der Beschreibung ab.
+        """
+        if self.schluessel == "vola":
+            return genom.model_copy(
+                update={
+                    "sizing": genom.sizing.model_copy(
+                        update={"target_vol_pct": wert}
+                    )
+                }
+            )
+        if self.schluessel == "ziel":
+            if not genom.targets:
+                raise ValueError(
+                    f"'{genom.name}' hat kein Gewinnziel - an dem Regler ist "
+                    "bei diesem Bauplan nichts zu drehen."
+                )
+            kopf = genom.targets[0].model_copy(update={"rr": wert})
+            return genom.model_copy(update={"targets": [kopf, *genom.targets[1:]]})
+        raise ValueError(f"Unbekannter Regler: {self.schluessel}")
+
+
+#: Die Regler, die ein Befund schon einmal abgefahren hat - mit genau seiner
+#: Stellungsreihe. Beide wurden am Perpetual-Punkt gemessen, den Befund 108
+#: ueberholt hat.
+ARTEN: dict[str, Reglerart] = {
+    "vola": Reglerart(
+        "vola", "Vola-Ziel", "%", "14,16,19.3,22,25,28,32", 21
+    ),
+    "ziel": Reglerart(
+        "ziel", "Gewinnziel", "R", "10,20,30,50,100,200", 46
+    ),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,6 +168,7 @@ class Stellung:
     bestanden: int
     gesamt: int
     offen: tuple[str, ...] = ()
+    dsr: float | None = None
 
     def __post_init__(self) -> None:
         if self.gesamt <= 0:
@@ -123,7 +195,9 @@ class Stellung:
     def als_zeile(self) -> str:
         return (
             f"{self.wert:>6.1f} {self.trades:>6} {self.rendite:>7.2f}% "
-            f"{self.rueckgang:>7.2f}% {self.bestanden:>3}/{self.gesamt}"
+            f"{self.rueckgang:>7.2f}% "
+            + (f"{self.dsr:>7.4f} " if self.dsr is not None else "")
+            + f"{self.bestanden:>3}/{self.gesamt}"
             + (f"  {', '.join(self.offen)}" if self.offen else "")
         )
 
@@ -304,6 +378,40 @@ class Reglerleiter:
                 aus.append(Konflikt(unten, oben, lo, hi, mitte))
         return tuple(aus)
 
+    def hub(self) -> float | None:
+        """Wie weit der Regler den Deflated Sharpe ueber die ganze Leiter bewegt.
+
+        Das ist die Groesse, die Befund 21 als *"Grund eins"* ausgerechnet hat
+        und die dort nur im Text stand: Ein Regler, der den Wert um 0,024
+        bewegt, waehrend 0,159 fehlen, ist keine knappe Sache, sondern eine
+        Schranke. ``None``, solange keine Sprosse ihren Wert mitbringt.
+        """
+        werte = [s.dsr for s in self.stellungen if s.dsr is not None]
+        return max(werte) - min(werte) if len(werte) >= 2 else None
+
+    def reserve(self, schwelle: float = 0.95) -> float | None:
+        """Was der besten gemessenen Sprosse zur Schwelle fehlt.
+
+        **Das ist keine Stellungswahl.** Die Sprosse mit dem hoechsten Wert
+        auszurechnen sagt, wie weit der Regler ueberhaupt traegt; sie
+        auszuwaehlen waere Suche. Deshalb kommt hier eine Zahl zurueck und
+        keine ``Stellung``.
+        """
+        werte = [s.dsr for s in self.stellungen if s.dsr is not None]
+        return schwelle - max(werte) if werte else None
+
+    def traegt_der_regler(self, schwelle: float = 0.95) -> bool | None:
+        """Reicht der ganze Regelweg ueberhaupt bis zur Schwelle?
+
+        Nein, wenn der Hub kleiner ist als die Reserve: Dann muesste der
+        Regler den Wert weiter bewegen, als er ihn ueber seine ganze Spanne
+        ueberhaupt bewegt. ``None``, wenn nichts gemessen ist.
+        """
+        hub, rest = self.hub(), self.reserve(schwelle)
+        if hub is None or rest is None:
+            return None
+        return hub >= rest
+
     def selbstsperrend(
         self, zaehlerabhaengig: tuple[str, ...] = ("Deflated Sharpe",)
     ) -> tuple[str, ...]:
@@ -351,6 +459,13 @@ class Reglerleiter:
                 if selbst
                 else ""
             )
+            hub, rest = self.hub(), self.reserve()
+            if hub is not None and rest is not None and not self.traegt_der_regler():
+                zusatz += (
+                    f" Und der Regler traegt nicht so weit: Er bewegt den "
+                    f"Deflated Sharpe ueber den ganzen Weg um {hub:.4f}, "
+                    f"waehrend {rest:.4f} fehlen."
+                )
             return (
                 f"**'{self.name}' ist zu.** {', '.join(sperren)} steht an jeder "
                 f"der {len(self.stellungen)} Stellungen offen - daran kann keine "

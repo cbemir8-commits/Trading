@@ -9300,26 +9300,38 @@ def regler(
         help="Symbole, durch Komma getrennt.",
     ),
     intervall: str = typer.Option("D", "--intervall", "-i"),
+    was: str = typer.Option(
+        "vola", "--was",
+        help="Welcher Regler: 'vola' (Vola-Ziel, Befund 21) oder 'ziel' "
+             "(Gewinnziel in R, Befund 46).",
+    ),
     stellungen: str = typer.Option(
-        "14,16,19.3,22,25,28,32", "--stellungen",
-        help="Vola-Ziel in Prozent, durch Komma getrennt.",
+        "", "--stellungen",
+        help="Stellungen, durch Komma getrennt. Leer = die Leiter aus dem "
+             "urspruenglichen Befund, die keinen Versuch kostet.",
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
-    """Faehrt den Vola-Ziel-Regler an beiden Betriebspunkten ab (Befund 128).
+    """Faehrt einen Regler an beiden Betriebspunkten ab (Befunde 128, 129).
 
-    Befund 21 hat diesen Regler am **Perpetual**-Punkt abgefahren und keinen
-    Wert gefunden, an dem alles haelt. Massgeblich ist seit Befund 108 der
-    **Spot**-Punkt, an dem die Rendite hoeher und der Rueckgang kleiner ist -
-    beide Grenzen wandern in dieselbe Richtung, und das Fenster koennte sich
-    oeffnen. Dieser Befehl misst beide Leitern und stellt sie nebeneinander.
+    Zwei Befunde haben je einen Regler abgefahren und keine Stellung gefunden,
+    an der alles haelt - beide am **Perpetual**-Punkt:
+
+        --was vola   Befund 21, Vola-Ziel in Prozent
+        --was ziel   Befund 46, Gewinnziel in Vielfachen des Risikos
+
+    Massgeblich ist seit Befund 108 der **Spot**-Punkt. Dieser Befehl misst
+    beide Leitern neu - auch die alte - und stellt sie nebeneinander. Die alte
+    Tabelle abzuschreiben waere falsch: Zwischen damals und heute stehen
+    Korrekturen am Code, die die Leiter ebenfalls verschieben, und ein
+    Vergleich wuerde sie dem Betriebspunkt zuschreiben (Befund 128).
 
     Berichtet wird die **ganze Leiter**, nicht die beste Stellung. Wer sich
     nach den Zahlen eine aussucht, hat gesucht und nicht geprueft - deshalb
     kennt ``research/regler.py`` auch keine Methode dafuer.
 
-    **Kostet keinen Versuch**, solange die Stellungen aus Befund 21 stehen
-    bleiben: Dieselben sieben sind seit damals im Zaehler, gemessen werden sie
+    **Kostet keinen Versuch**, solange die Stellungen aus dem urspruenglichen
+    Befund stehen bleiben: Sie sind seit damals im Zaehler, gemessen werden sie
     unter anderen Handelsbedingungen. Wer neue Stellungen dazunimmt, rechnet
     neue Kandidaten - und die zaehlen.
     """
@@ -9331,6 +9343,7 @@ def regler(
     from research.admission import load_trials
     from research.gates import evaluate_gates
     from research.regler import (
+        ARTEN,
         Klaerungskosten,
         Reglerleiter,
         Reglervergleich,
@@ -9344,14 +9357,23 @@ def regler(
     settings = get_settings()
     interval_obj = Interval(intervall)
     symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    if was not in ARTEN:
+        console.print(
+            f"[red]--was kennt nur {', '.join(ARTEN)} - nicht '{was}'.[/]"
+        )
+        raise typer.Exit(2)
+    art = ARTEN[was]
     try:
-        werte = sorted(float(x.strip()) for x in stellungen.split(",") if x.strip())
+        werte = sorted(
+            float(x.strip()) for x in (stellungen or art.leiter).split(",") if x.strip()
+        )
     except ValueError:
         console.print("[red]--stellungen erwartet Zahlen, durch Komma getrennt.[/]")
         raise typer.Exit(2) from None
     if not werte:
         console.print("[red]Ohne Stellungen gibt es nichts zu messen.[/]")
         raise typer.Exit(2)
+    eigene = bool(stellungen.strip())
 
     store = CandleStore(settings.paths.data_store)
     roh = {}
@@ -9389,18 +9411,18 @@ def regler(
 
     def leiter(name: str, *, spot: bool) -> Reglerleiter:
         configs = configs_fuer(spot=spot)
+        # Der Spot-Punkt ist "kein Funding **und** kein Hebel" (Befund 108) -
+        # das Funding sitzt in den Configs, der Hebel im Bauplan.
+        grundgenom = (
+            basis.model_copy(
+                update={"sizing": basis.sizing.model_copy(update={"fraction": 1.0})}
+            )
+            if spot
+            else basis
+        )
         gemessen: list[Stellung] = []
         for ziel in werte:
-            genom = basis.model_copy(
-                update={
-                    "sizing": basis.sizing.model_copy(
-                        update={
-                            "target_vol_pct": ziel,
-                            **({"fraction": 1.0} if spot else {}),
-                        }
-                    )
-                }
-            )
+            genom = art.setzen(grundgenom, ziel)
             bericht = run_portfolio_walkforward(
                 frames, lambda g=genom: compile_genome(g), configs
             )
@@ -9411,6 +9433,9 @@ def regler(
                 trials_so_far=trials, frames=frames, configs=configs,
             )
             k = bericht.combined
+            wert = next(
+                (r for r in ergebnisse.results if r.name == "Deflated Sharpe"), None
+            )
             gemessen.append(
                 Stellung(
                     wert=ziel,
@@ -9420,26 +9445,36 @@ def regler(
                     bestanden=sum(1 for r in ergebnisse.results if r.passed),
                     gesamt=len(ergebnisse.results),
                     offen=tuple(r.name for r in ergebnisse.results if not r.passed),
+                    dsr=float(wert.value) if wert is not None else None,
                 )
             )
         return Reglerleiter(name, tuple(gemessen))
 
-    console.print("\n[bold]DER VOLA-ZIEL-REGLER AN BEIDEN BETRIEBSPUNKTEN[/]\n")
     console.print(
-        "[dim]Befund 21 hat diesen Regler am Perpetual-Punkt abgefahren. "
-        "Massgeblich ist\nseit Befund 108 der Spot-Punkt. Berichtet wird die "
-        "ganze Leiter.[/]\n"
+        f"\n[bold]DER {art.name.upper()}-REGLER AN BEIDEN BETRIEBSPUNKTEN[/]\n"
     )
+    console.print(
+        f"[dim]Befund {art.befund} hat diesen Regler am Perpetual-Punkt "
+        f"abgefahren. Massgeblich ist\nseit Befund 108 der Spot-Punkt. "
+        f"Berichtet wird die ganze Leiter, nicht die beste\nStellung.[/]\n"
+    )
+    if eigene:
+        console.print(
+            f"[yellow]Eigene Stellungen: Jede, die nicht in Befund "
+            f"{art.befund} steht, ist ein neuer\nKandidat und zaehlt als "
+            f"Versuch.[/]\n"
+        )
 
     beide = []
     for etikett, spot in (("Perpetual", False), ("Spot", True)):
-        gefunden = leiter(f"Vola-Ziel ({etikett})", spot=spot)
+        gefunden = leiter(f"{art.name} ({etikett})", spot=spot)
         beide.append(gefunden)
         console.print(f"[bold]{etikett}[/]")
         console.print(
-            f"  {'Ziel':>6} {'Trades':>6} {'p.a.':>8} {'MaxDD':>8} {'Gates':>7}  offen"
+            f"  {art.einheit:>6} {'Trades':>6} {'p.a.':>8} {'MaxDD':>8} "
+            f"{'DSR':>7} {'Gates':>7}  offen"
         )
-        console.print("  " + "-" * 70)
+        console.print("  " + "-" * 78)
         for s in gefunden.sortiert:
             console.print(f"  {s.als_zeile()}")
         console.print()
@@ -9502,15 +9537,19 @@ def regler(
             f"statt ihn zu heben.[/]\n"
         )
 
-    verwandt = [r for r in GESCHLOSSEN if r.befund == 21]
+    verwandt = [r for r in GESCHLOSSEN if r.befund == art.befund]
     if verwandt:
         console.print("[dim]Im Register der geschlossenen Wege:[/]")
         for r in verwandt:
             console.print(f"  [dim]{r.name:<18} {r.ergebnis:<46} Befund {r.befund}[/]")
     console.print(
-        "\n[dim]Der Versuchszaehler bleibt unveraendert, solange die sieben "
-        "Stellungen aus\nBefund 21 stehen: dieselben Kandidaten, andere "
-        "Handelsbedingungen.[/]\n"
+        f"\n[dim]Der Versuchszaehler bleibt unveraendert, solange die "
+        f"{len(art.stellungen())} Stellungen aus\nBefund {art.befund} stehen: "
+        f"dieselben Kandidaten, andere Handelsbedingungen.[/]\n"
+        if not eigene
+        else "\n[dim]Diese Leiter weicht von Befund "
+        f"{art.befund} ab - die abweichenden Stellungen\nsind neue Kandidaten "
+        "und gehoeren in den Zaehler.[/]\n"
     )
 
 

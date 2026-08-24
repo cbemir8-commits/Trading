@@ -1,9 +1,13 @@
-"""Tests fuer ``research.regler`` - Befund 128.
+"""Tests fuer ``research.regler`` - Befunde 128 und 129.
 
 Die beiden gemessenen Leitern (Vola-Ziel, BTC + ETH, Tageskerzen, 198
 Versuche) stehen in ``perpetual()`` und ``spot()``. Sie sind die Vorlage fuer
 die meisten Faelle hier; erfundene Leitern kommen nur dort vor, wo ein Zweig
 sonst ungetestet bliebe.
+
+``ARTEN`` und ``Reglerart`` kamen mit Befund 129 dazu - der zweite Regler, den
+ein Befund schon einmal am Perpetual-Punkt abgefahren hat (Befund 46, das
+Gewinnziel).
 """
 
 from __future__ import annotations
@@ -11,12 +15,15 @@ from __future__ import annotations
 import pytest
 
 from research.regler import (
+    ARTEN,
     Klaerungskosten,
     Konflikt,
+    Reglerart,
     Reglerleiter,
     Reglervergleich,
     Stellung,
 )
+from research.seeds import spitzenkandidat
 
 DSR = "Deflated Sharpe"
 LATTE = "Messlatte"
@@ -418,3 +425,137 @@ def test_vergleich_ohne_verschiebung_sagt_das_auch() -> None:
     v = Reglervergleich(alt=perpetual(), neu=perpetual())
     assert v.verschoben() == ()
     assert "keine Stellung steht anders da" in v.urteil()
+
+
+# --- Die Regler, die schon einmal abgefahren wurden --------------------------
+
+
+def test_arten_kennt_beide_befunde() -> None:
+    assert ARTEN["vola"].befund == 21
+    assert ARTEN["ziel"].befund == 46
+
+
+def test_leiter_aus_befund_21_hat_sieben_stellungen() -> None:
+    assert ARTEN["vola"].stellungen() == (14.0, 16.0, 19.3, 22.0, 25.0, 28.0, 32.0)
+
+
+def test_leiter_aus_befund_46_hat_sechs_stellungen() -> None:
+    assert ARTEN["ziel"].stellungen() == (10.0, 20.0, 30.0, 50.0, 100.0, 200.0)
+
+
+def test_vola_regler_setzt_das_vola_ziel() -> None:
+    genom = spitzenkandidat()
+    gedreht = ARTEN["vola"].setzen(genom, 25.0)
+    assert gedreht.sizing.target_vol_pct == 25.0
+    assert genom.sizing.target_vol_pct != 25.0, "das Original bleibt unberuehrt"
+
+
+def test_ziel_regler_setzt_das_gewinnziel() -> None:
+    genom = spitzenkandidat()
+    gedreht = ARTEN["ziel"].setzen(genom, 50.0)
+    assert gedreht.targets[0].rr == 50.0
+    assert gedreht.targets[0].portion == genom.targets[0].portion
+    assert genom.targets[0].rr != 50.0, "das Original bleibt unberuehrt"
+
+
+def test_ziel_regler_laesst_weitere_stufen_stehen() -> None:
+    """Gedreht wird die erste Stufe; was dahinter steht, bleibt."""
+    genom = spitzenkandidat()
+    zwei = genom.model_copy(
+        update={
+            "targets": [
+                genom.targets[0].model_copy(update={"rr": 5.0, "portion": 0.5}),
+                genom.targets[0].model_copy(update={"rr": 9.0, "portion": 0.5}),
+            ]
+        }
+    )
+    gedreht = ARTEN["ziel"].setzen(zwei, 7.0)
+    assert [t.rr for t in gedreht.targets] == [7.0, 9.0]
+
+
+def test_ziel_regler_ohne_gewinnziel_sagt_das() -> None:
+    genom = spitzenkandidat().model_copy(update={"targets": []})
+    with pytest.raises(ValueError, match="kein Gewinnziel"):
+        ARTEN["ziel"].setzen(genom, 50.0)
+
+
+def test_unbekannter_regler_wird_zurueckgewiesen() -> None:
+    erfunden = Reglerart("stopweite", "Stop-Weite", "%", "2,4,6", 28)
+    with pytest.raises(ValueError, match="Unbekannter Regler"):
+        erfunden.setzen(spitzenkandidat(), 4.0)
+
+
+# --- Was der Regler ueberhaupt bewegt (Befund 129) ---------------------------
+
+
+def mit_dsr(*paare: tuple[float, float, int, tuple[str, ...]]) -> Reglerleiter:
+    """Eine Leiter, bei der jede Sprosse ihren Deflated Sharpe mitbringt."""
+    return Reglerleiter(
+        "mit Werten",
+        tuple(
+            Stellung(w, 152, 14.0, 10.0, b, 11, offen, dsr=d)
+            for w, d, b, offen in paare
+        ),
+    )
+
+
+def test_hub_ist_die_spanne_ueber_die_ganze_leiter() -> None:
+    leiter = mit_dsr(
+        (10.0, 0.7360, 8, (DSR,)),
+        (20.0, 0.8080, 7, (DSR,)),
+        (200.0, 0.0470, 7, (DSR,)),
+    )
+    assert leiter.hub() == pytest.approx(0.8080 - 0.0470)
+
+
+def test_hub_braucht_zwei_gemessene_sprossen() -> None:
+    assert mit_dsr((10.0, 0.7360, 8, (DSR,))).hub() is None
+    assert spot().hub() is None, "die Leitern aus Befund 128 tragen keine Werte"
+
+
+def test_reserve_misst_zur_schwelle_und_waehlt_nichts_aus() -> None:
+    leiter = mit_dsr((10.0, 0.7360, 8, (DSR,)), (20.0, 0.8080, 7, (DSR,)))
+    assert leiter.reserve() == pytest.approx(0.95 - 0.8080)
+    assert leiter.reserve(schwelle=0.80) == pytest.approx(-0.0080)
+
+
+def test_reserve_ohne_werte_ist_none() -> None:
+    assert spot().reserve() is None
+
+
+def test_regler_traegt_nicht_wenn_der_hub_kleiner_ist_als_die_reserve() -> None:
+    """Der Fall aus Befund 21: bewegt 0,024, es fehlen 0,159."""
+    schmal = mit_dsr((14.0, 0.7670, 9, (DSR,)), (32.0, 0.7910, 5, (DSR,)))
+    assert schmal.hub() == pytest.approx(0.0240)
+    assert schmal.reserve() == pytest.approx(0.1590)
+    assert schmal.traegt_der_regler() is False
+
+
+def test_regler_traegt_wenn_der_hub_reicht() -> None:
+    weit = mit_dsr((10.0, 0.8080, 8, (DSR,)), (200.0, 0.0470, 7, (DSR,)))
+    assert weit.traegt_der_regler() is True
+
+
+def test_traegt_ohne_messung_ist_none() -> None:
+    assert spot().traegt_der_regler() is None
+
+
+def test_urteil_nennt_hub_und_reserve_wenn_der_regler_nicht_traegt() -> None:
+    schmal = mit_dsr((14.0, 0.7670, 9, (DSR,)), (32.0, 0.7910, 5, (DSR,)))
+    text = schmal.urteil()
+    assert "traegt nicht so weit" in text
+    assert "0.0240" in text and "0.1590" in text
+
+
+def test_urteil_ohne_werte_bleibt_beim_alten_wortlaut() -> None:
+    text = spot().urteil()
+    assert "ist zu" in text
+    assert "traegt nicht" not in text
+
+
+def test_zeile_zeigt_den_dsr_wenn_er_gemessen_ist() -> None:
+    mit = Stellung(30.0, 152, 15.15, 9.87, 9, 11, (DSR,), dsr=0.8712)
+    assert "0.8712" in mit.als_zeile()
+    ohne = Stellung(30.0, 152, 15.15, 9.87, 9, 11, (DSR,))
+    assert "0.8712" not in ohne.als_zeile()
+    assert "9/11" in ohne.als_zeile()
