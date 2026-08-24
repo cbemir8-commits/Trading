@@ -209,6 +209,11 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Kalender, Verfallsfrist, Risk-Officer - oeffnen kostet -0,0046",
         127,
     ),
+    Richtung(
+        "Alte Tabelle als Vergleichspunkt",
+        "15 Commits verschieben Befund 21 - beide Punkte neu gemessen",
+        128,
+    ),
 )
 
 

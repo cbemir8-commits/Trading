@@ -9293,5 +9293,226 @@ def decke(
     )
 
 
+@app.command()
+def regler(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    stellungen: str = typer.Option(
+        "14,16,19.3,22,25,28,32", "--stellungen",
+        help="Vola-Ziel in Prozent, durch Komma getrennt.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Faehrt den Vola-Ziel-Regler an beiden Betriebspunkten ab (Befund 128).
+
+    Befund 21 hat diesen Regler am **Perpetual**-Punkt abgefahren und keinen
+    Wert gefunden, an dem alles haelt. Massgeblich ist seit Befund 108 der
+    **Spot**-Punkt, an dem die Rendite hoeher und der Rueckgang kleiner ist -
+    beide Grenzen wandern in dieselbe Richtung, und das Fenster koennte sich
+    oeffnen. Dieser Befehl misst beide Leitern und stellt sie nebeneinander.
+
+    Berichtet wird die **ganze Leiter**, nicht die beste Stellung. Wer sich
+    nach den Zahlen eine aussucht, hat gesucht und nicht geprueft - deshalb
+    kennt ``research/regler.py`` auch keine Methode dafuer.
+
+    **Kostet keinen Versuch**, solange die Stellungen aus Befund 21 stehen
+    bleiben: Dieselben sieben sind seit damals im Zaehler, gemessen werden sie
+    unter anderen Handelsbedingungen. Wer neue Stellungen dazunimmt, rechnet
+    neue Kandidaten - und die zaehlen.
+    """
+    from decimal import Decimal
+
+    from backtest.costs import FundingSchedule
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.gates import evaluate_gates
+    from research.regler import (
+        Klaerungskosten,
+        Reglerleiter,
+        Reglervergleich,
+        Stellung,
+    )
+    from research.seeds import spitzenkandidat
+    from research.stand import GESCHLOSSEN
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    try:
+        werte = sorted(float(x.strip()) for x in stellungen.split(",") if x.strip())
+    except ValueError:
+        console.print("[red]--stellungen erwartet Zahlen, durch Komma getrennt.[/]")
+        raise typer.Exit(2) from None
+    if not werte:
+        console.print("[red]Ohne Stellungen gibt es nichts zu messen.[/]")
+        raise typer.Exit(2)
+
+    store = CandleStore(settings.paths.data_store)
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+    frames = common_range(roh)
+    trials = load_trials(Path(settings.paths.state) / "trials.json")
+    basis = spitzenkandidat()
+    erster = next(iter(frames.values()))
+
+    def configs_fuer(*, spot: bool) -> dict:
+        aus = {}
+        for x in symbole:
+            grund = BacktestConfig(
+                instrument=_fallback_instrument(_bybit_kontrakt(x)),
+                risk=settings.risk, initial_equity=Decimal("500"),
+                enforce_risk_limits=True,
+                kalender=_terminkalender(settings) or None,
+            )
+            aus[x] = BacktestConfig(
+                instrument=grund.instrument, risk=grund.risk, costs=grund.costs,
+                funding=FundingSchedule(
+                    default_rate=Decimal("0") if spot else grund.funding.default_rate
+                ),
+                initial_equity=grund.initial_equity, enforce_risk_limits=True,
+                allow_shorts=grund.allow_shorts,
+                entry_expiry_bars=grund.entry_expiry_bars,
+                max_hold_bars=grund.max_hold_bars, kalender=grund.kalender,
+            )
+        return aus
+
+    def leiter(name: str, *, spot: bool) -> Reglerleiter:
+        configs = configs_fuer(spot=spot)
+        gemessen: list[Stellung] = []
+        for ziel in werte:
+            genom = basis.model_copy(
+                update={
+                    "sizing": basis.sizing.model_copy(
+                        update={
+                            "target_vol_pct": ziel,
+                            **({"fraction": 1.0} if spot else {}),
+                        }
+                    )
+                }
+            )
+            bericht = run_portfolio_walkforward(
+                frames, lambda g=genom: compile_genome(g), configs
+            )
+            if not bericht.windows:
+                continue
+            ergebnisse = evaluate_gates(
+                genom, bericht, erster, configs[symbole[0]],
+                trials_so_far=trials, frames=frames, configs=configs,
+            )
+            k = bericht.combined
+            gemessen.append(
+                Stellung(
+                    wert=ziel,
+                    trades=len(bericht.all_trades),
+                    rendite=float(k.cagr_pct),
+                    rueckgang=float(k.max_drawdown_pct),
+                    bestanden=sum(1 for r in ergebnisse.results if r.passed),
+                    gesamt=len(ergebnisse.results),
+                    offen=tuple(r.name for r in ergebnisse.results if not r.passed),
+                )
+            )
+        return Reglerleiter(name, tuple(gemessen))
+
+    console.print("\n[bold]DER VOLA-ZIEL-REGLER AN BEIDEN BETRIEBSPUNKTEN[/]\n")
+    console.print(
+        "[dim]Befund 21 hat diesen Regler am Perpetual-Punkt abgefahren. "
+        "Massgeblich ist\nseit Befund 108 der Spot-Punkt. Berichtet wird die "
+        "ganze Leiter.[/]\n"
+    )
+
+    beide = []
+    for etikett, spot in (("Perpetual", False), ("Spot", True)):
+        gefunden = leiter(f"Vola-Ziel ({etikett})", spot=spot)
+        beide.append(gefunden)
+        console.print(f"[bold]{etikett}[/]")
+        console.print(
+            f"  {'Ziel':>6} {'Trades':>6} {'p.a.':>8} {'MaxDD':>8} {'Gates':>7}  offen"
+        )
+        console.print("  " + "-" * 70)
+        for s in gefunden.sortiert:
+            console.print(f"  {s.als_zeile()}")
+        console.print()
+
+    alt, neu = beide
+    for gefunden in beide:
+        console.print(f"[yellow]{gefunden.urteil()}[/]\n")
+
+    vergleich = Reglervergleich(alt=alt, neu=neu)
+    console.print("[bold]Was der Betriebspunkt aendert[/]")
+    console.print(f"  {vergleich.urteil()}")
+    gesamt = neu.sortiert[0].gesamt if neu.stellungen else 0
+    for wert, vorher, nachher in vergleich.verschoben():
+        console.print(
+            f"    {wert:>6.1f}   {vorher}/{gesamt} -> {nachher}/{gesamt}"
+        )
+    console.print()
+
+    # Was das Nachmessen der Luecke kosten wuerde.
+    #
+    # Gemessen und nicht geschaetzt: derselbe Kandidat, derselbe Lauf, nur ein
+    # hoeherer Zaehlerstand. Das ist genau der Preis, den zusaetzliche
+    # Stellungen kosten, **bevor** eine davon ein Ergebnis liefert.
+    streit = [k for k in neu.konflikte() if k.benachbart]
+    if streit and not neu.klaerung_lohnt():
+        k = streit[0]
+        schritte = 5
+        configs = configs_fuer(spot=True)
+        genom = basis.model_copy(
+            update={"sizing": basis.sizing.model_copy(update={"fraction": 1.0})}
+        )
+        bericht = run_portfolio_walkforward(
+            frames, lambda: compile_genome(genom), configs
+        )
+        jetzt, danach = (
+            float(
+                next(
+                    r
+                    for r in evaluate_gates(
+                        genom, bericht, erster, configs[symbole[0]],
+                        trials_so_far=n, frames=frames, configs=configs,
+                    ).results
+                    if r.name == "Deflated Sharpe"
+                ).value
+            )
+            for n in (trials, trials + schritte)
+        )
+        kosten = Klaerungskosten(
+            stellungen=schritte, versuche_jetzt=trials,
+            dsr_jetzt=jetzt, dsr_danach=danach,
+        )
+        console.print("[bold]Was die Luecke zu klaeren kostet[/]")
+        console.print(
+            f"  Zwischen {k.letzte_unten:.1f} und {k.erste_oben:.1f} ist nichts "
+            f"gemessen.\n  {kosten.als_zeile()}"
+        )
+        console.print(
+            f"  [dim]Und es wuerde nichts aendern: {', '.join(neu.immer_offen())} "
+            f"steht an jeder\n  Stellung offen. Feiner messen senkt den Wert, "
+            f"statt ihn zu heben.[/]\n"
+        )
+
+    verwandt = [r for r in GESCHLOSSEN if r.befund == 21]
+    if verwandt:
+        console.print("[dim]Im Register der geschlossenen Wege:[/]")
+        for r in verwandt:
+            console.print(f"  [dim]{r.name:<18} {r.ergebnis:<46} Befund {r.befund}[/]")
+    console.print(
+        "\n[dim]Der Versuchszaehler bleibt unveraendert, solange die sieben "
+        "Stellungen aus\nBefund 21 stehen: dieselben Kandidaten, andere "
+        "Handelsbedingungen.[/]\n"
+    )
+
+
 if __name__ == "__main__":
     app()

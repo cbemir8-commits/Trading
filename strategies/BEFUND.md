@@ -11534,3 +11534,174 @@ auch diesen Zweig.
    Option - und es waere, wie sich zeigt, auch kein Vorteil.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2201 Tests gruen.
+
+---
+
+## Hundertachtundzwanzig. Das Fenster, das sich nicht oeffnet
+
+Befund 127 endete mit dem vierten Fall derselben Sorte: Der Terminkalender ist
+nicht wirkungslos, sondern wirkungslos *am Perpetual-Punkt*. Die Frage, die
+das aufwirft, ist offensichtlich - **welche der 35 geschlossenen Richtungen
+haengen sonst noch an einem ueberholten Betriebspunkt?**
+
+Acht der 35 nennen in ihrem Ergebnis Gates oder den Deflated Sharpe. Von denen
+habe ich die genommen, bei der der Betriebspunkt am staerksten wirken muss:
+**Befund 21, den Vola-Ziel-Regler.**
+
+### Warum gerade der
+
+Befund 21 hat kein "knapp daneben" gefunden, sondern einen **Konflikt** -
+Gates, die sich ueber den Regler gegenseitig ausschliessen. Dort steht:
+
+    Messlatte            haelt ab 25 %
+    Drawdown             haelt bis 22 %
+    Schlechtestes Jahr   haelt bis 19,3 %
+
+Der Spot-Punkt bewegt beide Grenzen in **dieselbe** Richtung: Die Rendite
+steigt (13,47 -> 14,83 % p.a.), der Rueckgang faellt (10,64 -> 9,87 %). Wenn
+sich irgendwo ein zugeschlagenes Fenster wieder oeffnet, dann hier.
+
+**Vor der Messung festgelegt:** Berichtet wird die ganze Leiter, beide
+Ergebnisse, egal wie sie ausfallen. Und keine Stellung wird ausgesucht - wer
+sich nach den Zahlen eine aussucht, hat gesucht und nicht geprueft.
+
+Gemessen wird **beides neu** - auch der Perpetual-Punkt, dessen Tabelle in
+Befund 21 schon steht. Das ist die Regel aus den Befunden 101, 103 und 109,
+und sie hat sich hier sofort ausgezahlt; warum, steht weiter unten.
+
+### Gemessen
+
+BTC + ETH, Tageskerzen, 198 Versuche, dieselben sieben Stellungen wie damals.
+
+    Ziel  Trades  Perpetual                  Spot
+                  p.a.    MaxDD   Gates      p.a.    MaxDD   Gates
+    14,0     149   9,47 %   7,75 %  9/11     10,36 %   7,17 %  9/11
+    16,0     154  10,98 %   8,46 %  9/11     12,05 %   7,79 %  9/11
+    19,3     152  13,47 %  10,64 %  7/11     14,83 %   9,87 %  9/11   <-
+    22,0     152  15,16 %  12,82 %  7/11     16,73 %  11,85 %  9/11   <-
+    25,0     152  17,23 %  14,78 %  7/11     19,19 %  13,74 %  7/11
+    28,0     152  19,05 %  16,65 %  7/11     21,10 %  15,49 %  7/11
+    32,0     152  22,30 %  18,18 %  5/11     24,68 %  16,89 %  7/11   <-
+
+**Das Fenster oeffnet sich nicht.** An keiner der sieben Stellungen halten
+alle elf Gates - an beiden Betriebspunkten nicht. Befund 21 bleibt richtig.
+
+### Und dann faellt auf: die alte Tabelle stimmt auch nicht mehr
+
+Befund 21 hat 8/11, 8/11, 8/11, 7/11, 7/11, 7/11, 5/11 gemessen. Heute steht
+an denselben sieben Stellungen, **am selben Betriebspunkt**, 9, 9, 7, 7, 7, 7,
+5. Und die drei Grenzen liegen alle um genau eine Sprosse anders:
+
+    Gate                  Befund 21     heute (Perpetual)
+    Messlatte             ab 25 %       ab 22 %
+    Drawdown              bis 22 %      bis 19,3 %
+    Schlechtestes Jahr    bis 19,3 %    bis 16 %
+
+**Befund 21 ist mit dem heutigen Code nicht reproduzierbar.** Das ist kein
+Fehler in Befund 21 und keiner hier: Seit dem 8. August haben **fuenfzehn**
+Commits ``research/seeds.py``, ``research/gates.py`` oder ``backtest/``
+angefasst, darunter *"Das Plateau-Gate stand selbst auf einer Nadel"*, *"Der
+Kosten-Stress-Test stresst den kleineren Posten"* und *"Der Backtest hat den
+Not-Aus alle drei Monate zurueckgesetzt"*. Lauter Korrekturen an echten
+Fehlern, und jede davon verschiebt die Leiter ein Stueck.
+
+**Und genau hier haette dieser Lauf danebengreifen koennen.** Haette ich die
+Tabelle aus Befund 21 abgeschrieben, statt den Perpetual-Punkt neu zu messen,
+haette der Vergleich **fuenf** verschobene Stellungen ergeben statt drei
+(8/8/8/7/7/7/5 gegen 9/9/9/9/7/7/7) - und ich haette dem Betriebspunkt
+zugeschrieben, was fuenfzehn Commits an Korrekturen gemacht haben. Die Regel
+aus den Befunden 101, 103 und 109 - *gemessen und nicht nachgeschlagen* - hat
+hier nicht Doppelarbeit vermieden, sondern eine falsche Ursache.
+
+Nachschlagen bleibt trotzdem noetig, an einer Stelle: Was hier steht, ist der
+Vergleich **zweier heutiger Laeufe**. Die Zahlen in Befund 21 sind damit nicht
+falsch, sondern historisch - sie gelten fuer den Code vom 8. August.
+
+### Und die Tabelle steht auch am Spot-Punkt anders da
+
+Drei von sieben Stellungen haben sich verschoben, und der Konflikt ist ein
+anderer geworden:
+
+    Gate                   14,0   16,0   19,3   22,0   25,0   28,0   32,0
+    Perpetual
+      Schlechtestes Jahr      +      +      -      -      -      -      -
+      Messlatte               -      -      -      +      +      +      +
+    Spot
+      Schlechtestes Jahr      +      +      +      -      -      -      -
+      Messlatte               -      -      -      +      +      +      +
+
+Am Perpetual-Punkt lagen die beiden Bereiche bei 16,0 und 22,0 auseinander,
+mit der gemessenen Stellung 19,3 mittendrin, an der **beide** fallen. Am
+Spot-Punkt ist die Luecke auf 19,3 gegen 22,0 zusammengeschrumpft - und
+dazwischen ist **nichts gemessen**.
+
+### Der Punkt, an dem ich haette weitersuchen wollen
+
+Es liegt nahe, 20,0 und 21,0 nachzumessen. Genau das waere falsch, und zwar
+aus zwei Gruenden, die beide gemessen sind:
+
+**Erstens steht der Deflated Sharpe an jeder einzelnen Stellung offen** - an
+allen sieben, an beiden Betriebspunkten. Keine Zwischenstellung kann daran
+etwas aendern; das Fenster ist nicht knapp zu, sondern durch ein Gate zu, das
+der Regler ueberhaupt nicht bedient.
+
+**Zweitens haengt genau dieses Gate am Versuchszaehler.** Jede neue
+Reglerstellung ist ein gerechneter Kandidat und zaehlt
+(``research/machbarkeit.py``). Gemessen, was das anrichtet - derselbe
+Kandidat, derselbe Lauf, nur ein hoeherer Zaehlerstand:
+
+       Versuche       DSR    Luecke zu 0,95
+            198    0,8640           0,0860   Stand jetzt
+            203    0,8609           0,0891   fuenf Halbschritte
+            209    0,8572           0,0928   elf Zehntelschritte
+            230    0,8448           0,1052   das ganze Restbudget
+
+Wer die Luecke ausmisst, macht den Kandidaten **schlechter**, bevor die erste
+Zwischenstellung ein Ergebnis liefert. Das ganze Restbudget in diese eine
+Luecke gesteckt kostet 0,0192 am Deflated Sharpe und bringt bestenfalls die
+Erkenntnis, die schon dasteht.
+
+Ein zaehlerabhaengiges Gate, das ueberall offen steht, ist damit
+**selbstsperrend**: Feiner messen ist kein Weg zur Klaerung, sondern ein Weg
+nach unten.
+
+### Was gebaut wurde
+
+``research/regler.py`` - ``Stellung``, ``Reglerleiter``, ``Konflikt``,
+``Klaerungskosten``, ``Reglervergleich``. Die Regeln stecken im Modul:
+
+* **Keine Methode, die die beste Stellung zurueckgibt** - dieselbe Sperre wie
+  in ``decke.Fensterlage``. Zulaessig ist nur die Frage nach dem Fenster: Gibt
+  es eine Stellung, an der *alles* haelt?
+* ``benachbart`` heisst *so eng, wie diese Leiter gemessen hat* - und
+  ausdruecklich nicht *dazwischen liegt nichts*. Ein stetiger Regler laesst
+  sich immer weiter unterteilen; eine Leiter kann ihn nie ausschliessen.
+* ``klaerung_lohnt()`` ist falsch, sobald ein Gate an jeder Sprosse offen
+  steht - dann kostet Nachmessen Versuche fuer ein Ergebnis, das feststeht.
+* Gates mit Loechern in ihrer Haltespanne bleiben aus der Konfliktrechnung
+  draussen; ihre Spanne wuerde mehr behaupten, als gemessen wurde.
+
+``cli regler`` misst beide Leitern, stellt sie nebeneinander und rechnet vor,
+was das Klaeren der Luecke kosten wuerde. Kostet keinen Versuch, solange die
+sieben Stellungen aus Befund 21 stehen bleiben.
+
+### Was daraus folgt
+
+1. **Befund 21 haelt** - der Vola-Ziel-Regler enthaelt keine Loesung, an
+   keinem der beiden Betriebspunkte.
+2. **Seine Tabelle stimmt nicht mehr** - aus zwei getrennten Gruenden. Der
+   Betriebspunkt verschiebt drei von sieben Stellungen (bei 19,3 sind es 9 von
+   11 statt 7); das ist der **fuenfte** Fall des Betriebspunkt-Effekts nach
+   den Befunden 112, 125, 126 und 127. Fuenfzehn Commits an Korrekturen
+   verschieben zusaetzlich alle drei Gate-Grenzen um eine Sprosse.
+3. **Ein alter Befund ist keine Messung, sondern ein Protokoll.** Wer einen
+   neuen Punkt gegen eine alte Tabelle haelt, misst die Zeit dazwischen mit.
+   Vergleichen darf man nur zwei Laeufe von heute - hier waeren es sonst fuenf
+   statt drei Verschiebungen gewesen, mit der falschen Ursache daneben.
+4. Der Regler ist nicht "knapp zu", sondern zu aus einem Grund, der mit ihm
+   nichts zu tun hat: Der Deflated Sharpe steht ueberall offen - und er
+   haengt am Zaehler, was jedes Nachmessen zu einem Schritt nach unten macht.
+5. Die verbleibenden sieben der acht gate-nennenden Richtungen sind damit
+   **nicht** geprueft. Was hier gemessen wurde, gilt fuer Befund 21.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2242 Tests gruen.
