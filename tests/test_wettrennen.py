@@ -432,3 +432,65 @@ class TestDerFehlerbalkenStehtImUrteil:
 
         assert unvereinbar.streuung is None
         assert unvereinbar.unsicherheit() == ""
+
+
+class TestDerZweiteBetriebspunktImRennen:
+    """Befund 126 - der Schnittpunkt reagiert exponentiell.
+
+    ``cli rennen`` rechnete nur Perpetual. Am Spot-Punkt liegt der
+    Schnittpunkt bei 4.712 statt 764.635 Versuchen - Faktor 162.
+
+    **Und der Spot-Vorteil geht als Schub ein, nicht als Bestwert.** Wer
+    0,2765 als ``bester`` einsetzt, behauptet, 198 Versuche haetten diesen
+    Wert hervorgebracht; er kommt aber aus dem Wegfall einer Kostenannahme
+    (Befund 110).
+    """
+
+    def _perp(self) -> Rennen:
+        return Rennen(bester=0.2569, versuche=198, trades=154, mittel=0.0)
+
+    def test_der_schub_verschiebt_den_schnittpunkt_gewaltig(self) -> None:
+        mit_schub = Rennen(
+            bester=0.2569, versuche=198, trades=154, mittel=0.0, schub=0.0196
+        )
+
+        assert "nie" not in mit_schub.wo_holt_sie_auf()
+        assert mit_schub.wo_holt_sie_auf() != self._perp().wo_holt_sie_auf()
+
+    def test_naiv_gerechnet_kaeme_eine_zu_guenstige_zahl(self) -> None:
+        """Der Fehler, vor dem Befund 110 warnt - als Test.
+
+        Beide Modelle stimmen beim heutigen Stand ueberein und weichen erst im
+        Wachstum ab; genau deshalb faellt der Unterschied nicht auf.
+        """
+        naiv = Rennen(bester=0.2765, versuche=198, trades=154, mittel=0.0)
+        richtig = Rennen(
+            bester=0.2569, versuche=198, trades=154, mittel=0.0, schub=0.0196
+        )
+
+        # Beide sagen heute dasselbe voraus ...
+        assert naiv.erwartet(198) == pytest.approx(richtig.erwartet(198), abs=1e-9)
+        # ... und die Streuung ist beim naiven Modell groesser, was die Suche
+        # treffsicherer erscheinen laesst, als sie ist.
+        assert naiv.streuung > richtig.streuung
+
+    def test_der_schub_geht_nicht_in_die_streuung_ein(self) -> None:
+        ohne = self._perp()
+        mit = Rennen(
+            bester=0.2569, versuche=198, trades=154, mittel=0.0, schub=0.05
+        )
+
+        assert mit.streuung == pytest.approx(ohne.streuung, abs=1e-12)
+
+    def test_beide_zahlen_liegen_jenseits_des_budgets(self) -> None:
+        """Der Befund aendert die Lage nicht - das gehoert mitgetestet."""
+        from research.stand import BUDGET
+
+        abbruch = BUDGET.beginn + BUDGET.umfang
+        mit_schub = Rennen(
+            bester=0.2569, versuche=198, trades=154, mittel=0.0, schub=0.0196
+        )
+        text = mit_schub.wo_holt_sie_auf()
+        zahl = int(text.split()[0].replace(".", "").replace(",", ""))
+
+        assert zahl > abbruch * 10

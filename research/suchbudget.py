@@ -217,6 +217,17 @@ class Budget:
     schiefe: float = SCHIEFE
     woelbung: float = WOELBUNG
 
+    spotguete: float | None = None
+    """Die Guete desselben Bestands unter Kassa-Bedingungen (Befund 126).
+
+    Die Kandidaten stammen aus der Bestenliste und tragen Perpetual-Zahlen.
+    Ohne diesen Wert steht im Urteil ein Faktor, der eine Kostenannahme
+    mittraegt, die im Spot-Handel entfaellt - Faktor 1,15 statt 1,08.
+
+    ``None`` heisst "nicht gemessen" und nicht "kein Unterschied": Dann bleibt
+    das Urteil wie zuvor, statt einen zweiten Punkt zu erfinden.
+    """
+
     def noetig_bei(
         self,
         trades: int,
@@ -444,6 +455,19 @@ class Budget:
             f"Trades zu je {nah.kandidat.sharpe_je_trade:.4f}, noetig waeren "
             f"{nah.noetig:.4f} - Faktor {nah.faktor:.2f}."
         ]
+
+        # **Der zweite Betriebspunkt** (Befund 126). Die Kandidaten kommen aus
+        # der Bestenliste und tragen Perpetual-Zahlen. Seit Befund 108 ist Spot
+        # der bessere gemessene Punkt; ohne diesen Zusatz steht hier ein
+        # Faktor, der um die Kostenannahme zu hoch ist.
+        if self.spotguete and self.spotguete > nah.kandidat.sharpe_je_trade:
+            spotfaktor = nah.noetig / self.spotguete
+            teile.append(
+                f"Unter Spot-Bedingungen ({self.spotguete:.4f} statt "
+                f"{nah.kandidat.sharpe_je_trade:.4f}, kein Funding) ist es "
+                f"Faktor {spotfaktor:.2f} - die Zahl oben traegt eine "
+                f"Kostenannahme mit, die dort entfaellt."
+            )
 
         unerreichbar = [a for a in self.abstaende() if not a.erreichbar]
         if unerreichbar:

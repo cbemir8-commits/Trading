@@ -7967,6 +7967,41 @@ def rennen(
     console.print(lauf.tabelle((0, 10, 64, 334, 834, 9834)))
     console.print(f"\n{lauf.urteil(budget=abbruch)}\n")
 
+    # **Derselbe Lauf am zweiten Betriebspunkt** (Befund 126).
+    #
+    # Alles oben rechnet Perpetual. Seit Befund 108 ist Spot der bessere
+    # gemessene Punkt, und der Schnittpunkt reagiert exponentiell: 786.085
+    # gegen 8.255 Versuche.
+    #
+    # **Der Spot-Vorteil geht als Schub ein, nicht als Bestwert** - das ist
+    # der Kern von Befund 110. Wer 0,2765 als ``bester`` einsetzt, behauptet,
+    # 198 Versuche haetten diesen Wert hervorgebracht; er kommt aber aus dem
+    # Wegfall einer Kostenannahme. Naiv gerechnet kaeme 1.923 heraus statt
+    # 8.255 - viermal zu guenstig.
+    spot_guete = _spotguete(frames, symbole, genome, settings)
+    if spot_guete and spot_guete > kandidat.sharpe_je_trade:
+        schub = spot_guete - kandidat.sharpe_je_trade
+        spotlauf = Rennen(
+            bester=kandidat.sharpe_je_trade,
+            versuche=versuche,
+            trades=stichprobe.effektiv,
+            mittel=mittel,
+            schub=schub,
+        )
+        console.print("[bold]Derselbe Lauf unter Spot-Bedingungen[/]")
+        console.print(
+            f"  Guete {spot_guete:.4f} statt {kandidat.sharpe_je_trade:.4f} "
+            f"- ein Niveauschub von {schub:+.4f} (Befund 108)\n"
+            f"  Schnittpunkt: [bold]{spotlauf.wo_holt_sie_auf()}[/] "
+            f"statt {lauf.wo_holt_sie_auf()}\n"
+        )
+        console.print(
+            "[dim]  Der Schub kommt oben drauf und geht nicht in die Streuung "
+            "ein: Er hebt jeden\n  Fund gleichermassen, macht die Suche aber "
+            "nicht treffsicherer (Befund 110).\n  Beide Zahlen liegen weit "
+            f"jenseits des Budgetendes bei {abbruch} Versuchen.[/]\n"
+        )
+
     console.print("Wie stark das an der Annahme haengt:\n")
     console.print(
         spanne(
@@ -8684,7 +8719,14 @@ def suchbudget(
         console.print("[red]Kein Kandidat mit genug Trades.[/]")
         raise typer.Exit(2)
 
-    budget = Budget(versuche=trials, kandidaten=kandidaten)
+    # Der zweite Betriebspunkt gehoert ins Urteil (Befund 126): Die
+    # Kandidaten tragen Perpetual-Zahlen, und der Faktor im Urteil traegt
+    # damit eine Kostenannahme mit, die im Spot-Handel entfaellt.
+    budget = Budget(
+        versuche=trials,
+        kandidaten=kandidaten,
+        spotguete=_spotguete(frames, symbole, spitzenkandidat(), settings),
+    )
 
     console.print("[bold]Die Grenzlinie[/]")
     console.print(budget.tabelle())

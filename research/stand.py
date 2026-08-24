@@ -199,6 +199,11 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Reserve 0,0079 statt 0,1086 - cli form zeigt jetzt beide",
         125,
     ),
+    Richtung(
+        "Betriebspunkt in Erreichbarkeitsaussagen",
+        "vier Stellen: stand, form, rennen, suchbudget - alle behoben",
+        126,
+    ),
 )
 
 

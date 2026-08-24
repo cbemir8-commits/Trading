@@ -463,3 +463,65 @@ class TestHebelerklaerung:
 
         assert "hebelerklaerung(" in quelle
         assert "bleibt von den vier Wegen" not in quelle
+
+
+class TestDerZweiteBetriebspunkt:
+    """Befund 126 - die Kandidaten tragen Perpetual-Zahlen.
+
+    Die Bestenliste kennt nur einen Betriebspunkt. Seit Befund 108 ist Spot
+    der bessere gemessene, und ohne ihn steht im Urteil ein Faktor, der eine
+    Kostenannahme mittraegt: **1,15 statt 1,08.**
+    """
+
+    def _budget(self, **kw) -> Budget:
+        werte = dict(
+            versuche=198,
+            kandidaten=[
+                Kandidat(
+                    name="Trend 50 Tage mit Konfluenz",
+                    trades=152,
+                    sharpe_je_trade=0.2597,
+                    schiefe=3.47,
+                    woelbung=15.95,
+                )
+            ],
+        )
+        werte.update(kw)
+        return Budget(**werte)
+
+    def test_ohne_spotguete_bleibt_das_urteil_wie_zuvor(self) -> None:
+        """``None`` heisst "nicht gemessen", nicht "kein Unterschied"."""
+        text = self._budget().urteil()
+
+        assert "Am naechsten kam" in text
+        assert "Spot-Bedingungen" not in text
+
+    def test_mit_spotguete_steht_der_zweite_faktor_daneben(self) -> None:
+        text = self._budget(spotguete=0.2765).urteil()
+
+        assert "Spot-Bedingungen" in text
+        assert "0.2765" in text
+        assert "Kostenannahme" in text
+
+    def test_der_spotfaktor_ist_kleiner(self) -> None:
+        """Das ist der ganze Punkt - die Aufgabe ist dort kleiner."""
+        import re
+
+        text = self._budget(spotguete=0.2765).urteil()
+        faktoren = [float(x) for x in re.findall(r"Faktor (\d\.\d\d)", text)]
+
+        assert len(faktoren) == 2
+        assert faktoren[1] < faktoren[0]
+        assert faktoren == [pytest.approx(1.15, abs=0.01), pytest.approx(1.08, abs=0.01)]
+
+    def test_eine_schlechtere_spotguete_wird_nicht_gezeigt(self) -> None:
+        """Der Zusatz sagt "dort ist es leichter". Waere es das nicht, waere
+        er eine Behauptung ueber einen Punkt, den niemand handeln will."""
+        text = self._budget(spotguete=0.20).urteil()
+
+        assert "Spot-Bedingungen" not in text
+
+    def test_gleiche_guete_gibt_keinen_zusatz(self) -> None:
+        text = self._budget(spotguete=0.2597).urteil()
+
+        assert "Spot-Bedingungen" not in text

@@ -11365,3 +11365,90 @@ Sechs Tests halten es fest, darunter der, um den es geht:
    sonst noch gegen Perpetual gerechnet wird, ist nicht systematisch geprueft.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2183 Tests gruen.
+
+---
+
+## Hundertsechsundzwanzig. Der Betriebspunkt, systematisch gesucht
+
+Befund 125 endete mit einem offenen Punkt: *"Wo sonst noch gegen Perpetual
+gerechnet wird, ist nicht systematisch geprueft."* Nach der Lehre aus Befund
+123 - die Klasse suchen statt den naechsten Einzelfall - also gemessen.
+
+### Die Suche, und was sie taugt
+
+31 Befehle berichten einen Deflated Sharpe oder eine Guete. Drei davon zeigen
+auch den Spot-Punkt (``stand``, ``form``, ``instrument``), 28 nur Perpetual.
+
+**Diese 28 sind kein Befund.** Die meisten rechnen zu Recht gegen Perpetual:
+Suchbefehle pruefen Kandidaten fuer den Handel, ``koernung`` misst eine
+Kontoleiter, ``decke`` rechnet ohnehin beide. Eine Liste von 28 zu melden
+waere derselbe Fehlalarm wie die elf angeblich fehlenden Befehle in Befund 118.
+
+Der Fehler ist enger: **eine Aussage ueber die Erreichbarkeit des Gates,
+gerechnet am schlechteren von zwei bekannten Punkten.** Danach gesucht,
+bleiben zwei.
+
+### Erstens: cli rennen
+
+Der Schnittpunkt reagiert exponentiell, und das macht diesen Fall zum
+groessten:
+
+    Perpetual (wie der Befehl zeigte)      764.635 Versuche
+    Spot, korrekt als Niveauschub            4.712 Versuche
+
+**Faktor 162.** Und der Spot-Vorteil geht als **Schub** ein, nicht als
+Bestwert - das ist der Kern von Befund 110. Wer 0,2765 als ``bester``
+einsetzt, behauptet, 198 Versuche haetten diesen Wert hervorgebracht; er kommt
+aber aus dem Wegfall einer Kostenannahme. Naiv gerechnet stuenden dort 1.923
+statt 4.712.
+
+Der Schub wird **gemessen**, nicht gesetzt: ``_spotguete`` laeuft im selben
+Aufruf, und die Differenz zur Perpetual-Guete ist der Schub. Die 0,0168 aus
+Befund 110 hier hinzuschreiben waere wieder eine Kopie gewesen; gemessen sind
+es an diesem Lauf 0,0196.
+
+### Zweitens: cli suchbudget
+
+Kleiner in der Wirkung, aber dieselbe Sache:
+
+    Am naechsten kam 'Trend 50 Tage mit Konfluenz': 152 Trades zu je 0.2597,
+    noetig waeren 0.2984 - Faktor 1.15.
+    Unter Spot-Bedingungen (0.2765 statt 0.2597) ist es Faktor 1.08.
+
+Die Kandidaten stammen aus der Bestenliste und tragen Perpetual-Zahlen. Ohne
+den Zusatz steht dort ein Faktor, der eine Kostenannahme mittraegt.
+
+``Budget.spotguete`` ist ``None``, wenn nichts gemessen wurde - dann bleibt
+das Urteil wie zuvor, statt einen zweiten Punkt zu erfinden. Und der Zusatz
+erscheint nur, wenn die Spot-Guete **hoeher** ist; sonst waere er eine
+Behauptung ueber einen Punkt, den niemand handeln will.
+
+### Was das an der Lage aendert
+
+Nichts. Beide Zahlen liegen weit jenseits des Budgetendes bei 230 Versuchen -
+4.712 sind das Zwanzigfache. Ein Test haelt genau das fest, damit der Befund
+nicht als Fortschritt gelesen wird.
+
+Was sich aendert, ist die Groessenordnung der Aussage: "764.635 Versuche"
+liest sich als voellig aussichtslos, "4.712" als sehr weit weg. Beide
+schliessen die Suche im Budget aus, aber nur eine davon ist am tatsaechlich
+besseren Betriebspunkt gerechnet.
+
+### Die Bilanz nach drei Befunden
+
+Der Betriebspunkt-Fehler stand an **vier** Stellen: ``cli stand`` (Befund
+112), ``cli form`` (125), ``cli rennen`` und ``cli suchbudget`` (beide hier).
+Jedes Mal wurde live gerechnet, jedes Mal richtig - und jedes Mal gegen den
+Punkt, den Befund 108 ueberholt hat.
+
+Die drei Saeulen der Aussichtslosigkeit stehen damit so da:
+
+    Kostendecke (111)     Anschlag gemessen, tiefer als null geht es nicht
+    Kopplung (54/113)     acht Saaten, |t| = 4,4 bis 6,4
+    Wettrennen (110)      Fehlerbalken 14,3 % (124), Betriebspunkt (126)
+
+**Die Kostendecke ist die einzige, an der diese Pruefungen nichts geaendert
+haben.** Sie misst einen Anschlag statt einer Extrapolation - und genau das
+macht sie belastbar.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2192 Tests gruen.
