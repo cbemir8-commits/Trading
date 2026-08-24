@@ -86,8 +86,21 @@ class Richtung:
 #: Einschaetzung - die Nummer verweist auf die Stelle im BEFUND, an der die
 #: Zahlen stehen.
 GESCHLOSSEN: tuple[Richtung, ...] = (
-    Richtung("Mehr Maerkte", "effektive Stichprobe bleibt bei 150", 27),
-    Richtung("Mehr Historie", "Sharpe je Trade faellt, Huerde steigt", 14),
+    # Befund 27 hat den Weg geschlossen, Befund 133 ihn nachgemessen und die
+    # Begruendung korrigiert: Die Stichprobe waechst sehr wohl (152 -> 229),
+    # nur faellt die Guete schneller, als sqrt(n) steigt.
+    Richtung(
+        "Mehr Maerkte",
+        "Stichprobe waechst auf 229, Evidenz faellt 3,409 -> 2,917",
+        27,
+        zuletzt=133,
+    ),
+    Richtung(
+        "Mehr Historie",
+        "Guete flach ueber sechs Fenster, DSR haengt an n",
+        14,
+        zuletzt=132,
+    ),
     Richtung("15-Minuten-Kerzen", "alle 14 Kandidaten verlieren brutto", 29),
     # Befund 21 hat diese Richtung eroeffnet, Befund 23 hat sie nach zwei
     # behobenen Messfehlern neu vermessen (die Leiter rutschte um eine Stufe),

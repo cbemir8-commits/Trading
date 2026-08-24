@@ -12177,3 +12177,112 @@ konnte.
    ausgedrueckt statt in Versuchen.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2314 Tests gruen.
+
+---
+
+## Hundertdreiunddreissig. Die Breite bringt Beobachtungen und kostet mehr
+
+Befund 132 hat die Luecke zum ersten Mal in Tagen ausgedrueckt: 30 fehlende
+unabhaengige Beobachtungen, rund 1,8 Jahre, *"und sie koennen nur aus der
+Zukunft kommen"*. Das galt fuer die **Historie**. Fuer die **Breite** galt es
+nicht automatisch - und die Frage stand offen, ohne dass Befund 132 sie
+gestellt haette.
+
+### Warum sie sich stellte
+
+Im Register steht *"Mehr Maerkte - effektive Stichprobe bleibt bei 150"*
+(Befund 27), 105 Befunde alt und einer der 28, die Befund 131 als ungeprueft
+ausgewiesen hat.
+
+Der Anlass zum Nachmessen kam aus Befund 132 selbst: Dort war die effektive
+Stichprobe an **jedem** Fenster gleich der rohen Trade-Zahl - 152/152,
+103/103, 72/72. Die Korrelationsstrafe biss gar nicht. Und genau auf ihr
+beruhte Befund 27.
+
+Dazu kam ein gluecklicher Umstand: LTC und XRP liegen im Speicher und reichen
+**weiter zurueck** als ETH (16.06.2017 und 01.01.2017 gegen 16.08.2017). Der
+gemeinsame Bereich bleibt deshalb bei 3277 Tagen - Zusatzmaerkte kosten hier
+keine Historie, und der Gegeneffekt aus Befund 132 faellt weg.
+
+**Vor dem Lauf festgelegt:** Alle Aufstellungen werden berichtet. Referenz ist
+BTC + ETH - nicht die beste, sondern die, auf der jede Zahl dieses Projekts
+steht. Eine wachsende Stichprobe waere keine Zulassung, sondern der Hinweis,
+dass ein geschlossen geglaubter Weg offen ist.
+
+### Gemessen
+
+Derselbe Kandidat, Spot-Punkt, 198 Versuche, Tageskerzen, 3277 Tage.
+
+    Aufstellung             Trades   eff    Guete     DSR   Gates
+    BTC + ETH (Referenz)       152   152   0,2765  0,8640    9/11
+    BTC + ETH + LTC            258   214   0,2225  0,7882    7/11
+    BTC + ETH + XRP            260   220   0,2171  0,7758    9/11
+    BTC + ETH + LTC + XRP      366   229   0,1928  0,5956    9/11
+
+**Befund 27s Zahl ist nicht zu reproduzieren.** Die effektive Stichprobe
+bleibt nicht bei 150 - sie waechst auf 229, also um die Haelfte. Die 30
+fehlenden Beobachtungen aus Befund 132 waeren hier zweieinhalbmal da.
+
+**Und trotzdem ist der Weg zu.** Der Deflated Sharpe faellt von 0,8640 auf
+0,5956. Der Grund ist die Kopplung aus Befund 54, an einer neuen Stelle: Die
+Guete faellt schneller, als ``sqrt(n)`` steigt. Auf der Groesse, an der die
+Zulassung haengt:
+
+    Aufstellung             Guete x sqrt(eff)
+    BTC + ETH                        3,409
+    BTC + ETH + LTC                  3,255
+    BTC + ETH + XRP                  3,220
+    BTC + ETH + LTC + XRP            2,917
+
+Monoton fallend. Jeder zusaetzliche Markt bringt Beobachtungen und nimmt mehr
+Qualitaet mit, als er an Wurzel-n zurueckgibt.
+
+### Der Nebenbefund: die Strafe arbeitet, nur spaeter
+
+    BTC + ETH               152 von 152    0 % gekuerzt
+    BTC + ETH + LTC         214 von 258   17 %
+    BTC + ETH + XRP         220 von 260   15 %
+    BTC + ETH + LTC + XRP   229 von 366   37 %
+
+Bei zwei Maerkten kuerzt die Abhaengigkeitspruefung **nichts**, bei vier
+kuerzt sie mehr als ein Drittel. Das ist kein Fehler, sondern die Bauart aus
+``research/unabhaengigkeit.py``: Gekuerzt wird nur bei **nachgewiesener**
+Abhaengigkeit, und der Nachweis braucht selbst Beobachtungen. Wer nur zwei
+Beine hat, kann Abhaengigkeit nicht belegen - und bekommt deshalb keine
+Strafe, obwohl BTC und ETH bekanntlich zusammenlaufen.
+
+Das ist die unbequeme Lesart, und sie gehoert dazu: **Die 152 des Referenzlaufs
+sind vermutlich zu grosszuegig gezaehlt.** Nicht falsch - die Regel ist
+bewusst so gebaut, dass sie im Zweifel nicht straft (Befund 47) - aber die
+Zahl, auf der die ganze Rechnung steht, ist die ungestrafte.
+
+### Was daraus folgt
+
+1. **Befund 27 haelt, seine Begruendung nicht.** Die Stichprobe waechst sehr
+   wohl; was den Weg schliesst, ist die Kopplung. Register nachgezogen:
+   *"Stichprobe waechst auf 229, Evidenz faellt 3,409 -> 2,917"*, Nr. 133.
+2. **Befund 132 haelt - und jetzt gegen eine gemessene Alternative.** Die
+   fehlenden Beobachtungen sind aus der Breite nicht zu holen: Vier Maerkte
+   liefern 77 zusaetzliche und stehen 0,2684 schlechter da.
+3. **Beide Achsen sind damit vermessen.** Historie: ausgeschoepft. Breite:
+   bringt Beobachtungen, kostet mehr. Es bleibt die Zeit nach vorn.
+4. Offen und unbequem: ob die 152 des Referenzlaufs einer strengeren
+   Abhaengigkeitspruefung standhielten. Das ist keine Messung von heute,
+   sondern eine Frage fuer eine eigene.
+
+### Was gebaut wurde
+
+``research/aufstellung.py`` mit ``Marktsatz`` und ``Aufstellungsreihe``:
+``evidenz`` (``Guete x sqrt(n)``), ``kuerzung``, ``stichprobe_waechst``,
+``evidenz_waechst``, ``schlaegt_referenz``. Dazu ``cli decke --breite``.
+
+Dieselben zwei Sperren wie in den Befunden 111 und 132: **keine Methode fuer
+die beste Aufstellung** (ein Test prueft, dass es sie nicht gibt), und
+``schlaegt_referenz`` verlangt Besserung in **jeder** Hinsicht - ein Tausch,
+ein Gate mehr fuer weniger Evidenz, zaehlt ausdruecklich nicht.
+
+Kostet keinen Versuch: derselbe Kandidat, mehr Beine. Auf LTC und XRP ist er
+ausserdem nie gesucht worden - dort steht er aus dem Stand ausserhalb der
+Stichprobe.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2323 Tests gruen.

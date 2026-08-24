@@ -8995,6 +8995,11 @@ def decke(
         help="Wie schnell waechst die Evidenz mit der Historie? Dieselben "
              "Regeln, wandernder Anfang (Befund 132).",
     ),
+    breite: bool = typer.Option(
+        False, "--breite",
+        help="Bringen weitere Maerkte Evidenz? Dieselben Regeln, mehr Beine "
+             "(Befund 133).",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Wo ist nachweislich nichts mehr zu holen?
@@ -9173,6 +9178,100 @@ def decke(
             "[dim]Der Versuchszaehler bleibt unveraendert: Dieselbe Strategie, "
             "dieselben Daten.[/]\n"
         )
+        return
+
+    if breite:
+        # **Dieselbe Familie, die andere Achse** (Befund 133).
+        #
+        # Befund 132 hat die Historie ausgemessen und die Vergangenheit als
+        # ausgeschoepft befunden. Fuer die Breite galt das nicht automatisch:
+        # Im Register steht "effektive Stichprobe bleibt bei 150" (Befund 27),
+        # und genau diese Annahme wurde in Befund 132 fraglich, weil die
+        # Korrelationsstrafe dort an keinem Fenster biss.
+        from research.aufstellung import Aufstellungsreihe, Marktsatz
+        from research.gates import concurrent_groups
+        from research.unabhaengigkeit import effektive_stichprobe
+
+        zusatz = [
+            x for x in ("LTCUSD_BITSTAMP", "XRPUSD_BITSTAMP") if x not in symbole
+        ]
+        def kurz(x: str) -> str:
+            return x.split("USD")[0]
+
+        aufstellungen = [
+            (" + ".join(kurz(x) for x in symbole) + " (Referenz)", list(symbole))
+        ]
+        for x in zusatz:
+            aufstellungen.append((f"+ {kurz(x)}", [*symbole, x]))
+        if len(zusatz) > 1:
+            aufstellungen.append(
+                (f"+ {' + '.join(x.split('USD')[0] for x in zusatz)}",
+                 [*symbole, *zusatz])
+            )
+
+        console.print(
+            f"\n[bold]Marktaufstellungen[/] {interval_obj.label}, Spot\n"
+            f"  Kandidat   {basis.name}\n"
+            f"  Versuche   {trials}\n\n"
+            "[dim]Vor dem Lauf festgelegt: Berichtet werden alle Aufstellungen. "
+            "Referenz ist die\nerste - nicht die beste. Kostet keinen Versuch: "
+            "derselbe Kandidat, mehr Beine.\nAuf LTC und XRP ist er nie gesucht "
+            "worden; dort steht er aus dem Stand ausserhalb\nder Stichprobe.[/]\n"
+        )
+        kopf = (
+            f"  {'Aufstellung':<24} {'Trades':>6} {'eff':>5} {'Guete':>7} "
+            f"{'DSR':>7} {'Gates':>6}"
+        )
+        console.print(kopf)
+        console.print("  " + "-" * (len(kopf) - 2))
+
+        saetze: list[Marktsatz] = []
+        for name, satz in aufstellungen:
+            fehlend = [x for x in satz if store.read(x, interval_obj).empty]
+            if fehlend:
+                console.print(f"  [dim]{name:<24} keine Kerzen: {', '.join(fehlend)}[/]")
+                continue
+            teil = common_range({x: store.read(x, interval_obj) for x in satz})
+            erster = next(iter(teil.values()))
+            cfgs = configs_fuer(teil)
+            bericht, ergebnisse, wert, _, eintrag = messen(teil, cfgs)
+            if not bericht.windows:
+                console.print(f"  [dim]{name:<24} kein Fenster zustande gekommen[/]")
+                continue
+            trades = bericht.all_trades
+            beine = [
+                [float(t.net_pnl) for t in trades if t.symbol == x] for x in satz
+            ]
+            bloecke = [[float(x.net_pnl) for x in w.trades] for w in bericht.windows]
+            gleich = [
+                [float(t.net_pnl) for t in g] for g in concurrent_groups(trades)
+            ]
+            eff = effektive_stichprobe(len(trades), beine, bloecke, weitere=[gleich])
+            saetze.append(
+                Marktsatz(
+                    name=name, maerkte=len(satz), tage=len(erster),
+                    trades=len(trades), effektiv=eff.effektiv,
+                    guete=eintrag.sharpe_je_trade if eintrag else 0.0,
+                    dsr=wert,
+                    bestanden=sum(1 for r in ergebnisse.results if r.passed),
+                    gesamt=len(ergebnisse.results),
+                )
+            )
+            console.print(f"  {saetze[-1].als_zeile()}")
+
+        reihe = Aufstellungsreihe(tuple(saetze))
+        if len(saetze) > 1:
+            console.print(f"\n  {'Aufstellung':<24} {'Guete x sqrt(eff)':>18}")
+            console.print("  " + "-" * 42)
+            for s in saetze:
+                console.print(f"  {s.name:<24} {s.evidenz:>18.3f}")
+            console.print(
+                "\n  [dim]Kuerzung durch die Abhaengigkeitspruefung: "
+                + ", ".join(f"{s.kuerzung:.0%}" for s in saetze)
+                + " - sie setzt erst ein,\n  wenn genug Beobachtungen da sind, "
+                "um Abhaengigkeit nachzuweisen.[/]"
+            )
+        console.print(f"\n[yellow]{reihe.urteil()}[/]\n")
         return
 
     if historie:

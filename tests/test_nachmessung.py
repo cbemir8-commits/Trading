@@ -174,10 +174,12 @@ def test_nachgezogene_eintraege_melden_die_alten_stellen_nicht_mehr(
     assert 23 not in [n for n, _ in vola.offen]
 
 
-def test_acht_eintraege_tragen_eine_nachmessung() -> None:
-    """Befunde 130 und 131 zusammen - der Rest ist ungeprueft, nicht geprueft."""
+def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
+    """Befunde 130 bis 133 - der Rest ist ungeprueft, nicht geprueft."""
     nachgezogen = {r.name: r.zuletzt for r in GESCHLOSSEN if r.zuletzt}
     assert nachgezogen == {
+        "Mehr Maerkte": 133,
+        "Mehr Historie": 132,
         "Vola-Ziel": 129,
         "Gewinnziel": 129,
         "Termin-Overlay": 127,

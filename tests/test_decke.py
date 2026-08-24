@@ -308,17 +308,27 @@ class TestDieAnderenFamilienStehenImRegister:
     """
 
     def test_mehr_maerkte_ist_geschlossen(self):
+        """Der Weg ist zu - die Begruendung ist seit Befund 133 eine andere.
+
+        Hier stand ``assert "150" in eintrag.ergebnis`` und damit die Zahl aus
+        Befund 27: *"effektive Stichprobe bleibt bei 150"*. Befund 133 hat
+        nachgemessen, und sie ist nicht zu reproduzieren - die Stichprobe
+        waechst auf 229. Geschlossen ist der Weg trotzdem, nur durch die
+        Kopplung statt durch fehlende Beobachtungen.
+        """
         from research.stand import GESCHLOSSEN
 
         eintrag = next(r for r in GESCHLOSSEN if r.name == "Mehr Maerkte")
         assert eintrag.befund == 27
-        assert "150" in eintrag.ergebnis
+        assert eintrag.zuletzt == 133
+        assert "229" in eintrag.ergebnis
 
     def test_mehr_historie_ist_geschlossen(self):
         from research.stand import GESCHLOSSEN
 
         eintrag = next(r for r in GESCHLOSSEN if r.name == "Mehr Historie")
         assert eintrag.befund == 14
+        assert eintrag.zuletzt == 132
 
     def test_die_kostenfamilie_ist_jetzt_auch_darin(self):
         from research.stand import GESCHLOSSEN
