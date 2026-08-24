@@ -9493,6 +9493,63 @@ def regler(
         )
     console.print()
 
+    # **Traegt der Regler ueberhaupt?** - die Rechnung aus Befund 21, jetzt
+    # gerechnet statt erzaehlt. Zwei Regler koennen aus entgegengesetzten
+    # Gruenden zu sein: einer, weil er den Wert kaum bewegt, der andere, weil
+    # er ihn weit bewegt und sein Hoechstwert schon besetzt ist.
+    hub, rest = neu.hub(), neu.reserve()
+    if hub is not None and rest is not None:
+        console.print("[bold]Wie weit der Regler traegt[/]")
+        console.print(
+            f"  Hub ueber den ganzen Weg  {hub:>8.4f}\n"
+            f"  Reserve bis zur Schwelle  {rest:>8.4f}"
+        )
+        console.print(
+            "  [dim]" + (
+                "Der Weg reicht - aber nur nach unten; der Hoechstwert steht "
+                "unten."
+                if neu.traegt_der_regler()
+                else "Der Regler muesste weiter tragen, als er ueberhaupt "
+                     "traegt (Befund 21)."
+            ) + "[/]\n"
+        )
+
+    # Der einzige zulaessige Vergleich: gegen die Stellung, auf der der
+    # Kandidat ohnehin sitzt. Sie stand vor der Messung fest (Befund 128).
+    referenz = art.lesen(basis)
+    besser = neu.schlaegt_referenz(referenz)
+    anker = next((s for s in neu.stellungen if s.wert == referenz), None)
+    if anker is not None and anker.dsr is not None:
+        console.print(
+            f"[bold]Gegen die Stellung, auf der der Kandidat sitzt "
+            f"({referenz:g} {art.einheit})[/]"
+        )
+        if not besser:
+            console.print(
+                f"  Keine Sprosse schlaegt sie in jeder Hinsicht - "
+                f"{anker.dsr:.4f}, {anker.bestanden}/{anker.gesamt} ist der "
+                f"Hoechstwert der Leiter.\n"
+            )
+        else:
+            for s in besser:
+                console.print(
+                    f"    {s.wert:>6.1f}   {s.dsr:.4f} statt {anker.dsr:.4f} "
+                    f"({s.dsr - anker.dsr:+.4f}), {s.bestanden}/{s.gesamt}"
+                )
+            # Gemessen wird gegen die Luecke, die **von der Referenz aus**
+            # offen ist - nicht gegen die Reserve der besten Sprosse. Die
+            # waere der kleinere Nenner und wuerde den Schritt groesser
+            # aussehen lassen, als er ist.
+            luecke = 0.95 - anker.dsr
+            spitze = max(s.dsr - anker.dsr for s in besser)
+            if luecke > 0:
+                console.print(
+                    f"  [dim]Der beste Schritt schliesst {spitze / luecke:.0%} "
+                    f"der Luecke ({spitze:.4f} von {luecke:.4f}). Kein Weg zur "
+                    f"Zulassung,\n  sondern eine Zahl fuer den Bericht - und "
+                    f"die Entscheidung gehoert dem Auftraggeber.[/]\n"
+                )
+
     # Was das Nachmessen der Luecke kosten wuerde.
     #
     # Gemessen und nicht geschaetzt: derselbe Kandidat, derselbe Lauf, nur ein

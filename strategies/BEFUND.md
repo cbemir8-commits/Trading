@@ -11705,3 +11705,143 @@ sieben Stellungen aus Befund 21 stehen bleiben.
    **nicht** geprueft. Was hier gemessen wurde, gilt fuer Befund 21.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2242 Tests gruen.
+
+---
+
+## Hundertneunundzwanzig. Zwei Regler, zu aus entgegengesetzten Gruenden
+
+Befund 128 hat den Vola-Ziel-Regler am Spot-Punkt nachgemessen und dabei einen
+Satz stehen lassen: *"Die verbleibenden sieben der acht gate-nennenden
+Richtungen sind damit nicht geprueft."* Der naechste davon ist **Befund 46,
+das Gewinnziel** - und er ist der interessantere Fall.
+
+### Warum gerade der
+
+Befund 21 hatte den Vola-Ziel-Regler mit einem Argument geschlossen, das nicht
+von den Gates handelt, sondern vom Regler selbst:
+
+> Ueber den ganzen Regelweg bewegt sich der Deflated Sharpe um **0,024**. Zur
+> Schwelle fehlen **0,159**. Der Regler muesste den Wert siebenmal weiter
+> bewegen, als er ihn ueberhaupt bewegt.
+
+Beim Gewinnziel gilt dieses Argument **nicht**. Befund 46 hat gemessen, dass
+derselbe Wert dort von 0,808 auf 0,047 faellt - ein Hub, der dreissigmal
+groesser ist. Wenn ein Regler die noetigen 0,086 aufbringen kann, dann dieser.
+
+**Vor der Messung festgelegt:** Berichtet wird die ganze Leiter an beiden
+Punkten, egal was herauskommt. Keine Stellung wird ausgesucht. Verglichen wird
+nur gegen die Stellung, auf der der Kandidat ohnehin sitzt - die stand vorher
+fest.
+
+### Gemessen
+
+BTC + ETH, Tageskerzen, 198 Versuche, dieselben sechs Stellungen wie Befund
+46. Beide Punkte neu gemessen, nach der Regel aus Befund 128.
+
+    Gewinnziel        Perpetual                    Spot
+        R     p.a.    MaxDD     DSR  Gates    p.a.    MaxDD     DSR  Gates
+       10   10,16 %   8,86 %  0,6919  8/11   11,38 %   8,00 %  0,8311  9/11
+       20   13,47 %  10,64 %  0,7641  7/11   14,83 %   9,87 %  0,8640  9/11
+       30   13,77 %  10,64 %  0,4909  7/11   15,15 %   9,87 %  0,6316  9/11
+       50   13,27 %  10,64 %  0,1377  7/11   14,65 %   9,87 %  0,2175  8/11
+      100   13,27 %  10,64 %  0,0303  7/11   14,65 %   9,87 %  0,0478  8/11
+      200   13,27 %  10,64 %  0,0292  7/11   14,65 %   9,87 %  0,0462  8/11
+
+**Sechs von sechs Stellungen stehen am Spot-Punkt anders da** - beim Vola-Ziel
+waren es drei von sieben. Und der Deflated Sharpe steht wieder an jeder
+einzelnen Sprosse offen, an beiden Punkten.
+
+Befund 46 bleibt in der Sache richtig: Den Deckel zu oeffnen zerstoert den
+Deflated Sharpe, am Spot-Punkt von 0,8640 auf 0,0462.
+
+### Die Stelle, an der es kurz spannend wurde
+
+Bei **30 R haelt am Spot-Punkt die Messlatte** - 15,15 % p.a. gegen die
+geforderten 15 %. Das ist in diesem Projekt noch nie vorgekommen.
+
+Es bringt nichts. An derselben Stellung faellt das Parameter-Plateau, es
+bleibt bei 9 von 11, und der Deflated Sharpe faellt von 0,8640 auf 0,6316 -
+ein Verlust von **0,2324**, also fast das **Dreifache** der ganzen Luecke, die
+noch zur Zulassung fehlt (0,0860). Das ist kein knapper Tausch, sondern ein
+schlechtes Geschaeft mit klarem Vorzeichen.
+
+Dazu gehoert die Groessenordnung ehrlich dazu: 15,15 gegen 15,00 sind
+0,15 Prozentpunkte. Die 15 % sind, wie in ``gates.py`` seit jeher vermerkt,
+**kein statistisches Kriterium, sondern eine wirtschaftliche Entscheidung**.
+Eine Marge von einem Prozent der Huerde ueber eine Schwelle, die jemand
+gesetzt hat, ist kein Befund, sondern ein Muenzwurf.
+
+### Der eigentliche Befund: zwei Regler, zwei Gruende
+
+Mit dem Deflated Sharpe je Sprosse laesst sich die Rechnung aus Befund 21 zum
+ersten Mal fuer beide Regler ausfuehren statt sie zu erzaehlen. Am Spot-Punkt:
+
+    Regler        Hub ueber den Weg    Reserve zur Schwelle   traegt?
+    Vola-Ziel               0,0091                  0,0769     nein
+    Gewinnziel              0,8178                  0,0860     ja
+
+**Beide Regler sind zu, und zwar aus entgegengesetzten Gruenden.**
+
+Das Vola-Ziel ist zu, weil es den Wert **kaum bewegt**: 0,0091 ueber den
+ganzen Weg, waehrend 0,0769 fehlen. Es muesste achtmal weiter tragen. Das ist
+genau Befund 21s Argument, nachgerechnet und am Spot-Punkt bestaetigt.
+
+Das Gewinnziel ist zu, obwohl es den Wert **neunmal weiter bewegt als noetig**
+- aber nur nach unten, und sein Hoechstwert ist schon besetzt: Er steht bei
+20 R, und dort sitzt der Kandidat seit Befund 46.
+
+### Ein Nachtrag zu Befund 128, den ich selbst uebersehen hatte
+
+Dieselbe Rechnung auf der Vola-Ziel-Leiter foerdert etwas zutage, das Befund
+128 nicht sehen konnte, weil ihm die DSR-Spalte fehlte:
+
+    Vola-Ziel (Spot)   14,0   16,0   19,3   22,0   25,0   28,0   32,0
+    DSR              0,8666 0,8661 0,8640 0,8730 0,8731 0,8641 0,8711
+    Gates              9/11   9/11   9/11   9/11   7/11   7/11   7/11
+
+Der Kandidat sitzt auf **19,3** - und das ist der **niedrigste** der vier
+Werte, die 9 von 11 halten. Drei Sprossen schlagen ihn in jeder Hinsicht:
+14,0 mit +0,0026, 16,0 mit +0,0021 und 22,0 mit **+0,0090**, alle bei
+unveraenderten 9 von 11.
+
+Das ist kein Weg zur Zulassung: Der beste dieser Schritte schliesst **gut ein
+Zehntel** der Luecke - 0,0090 von 0,0860. Es ist auch keine Suche - die Regel
+steht seit Befund 111
+in ``decke.Fensterlage`` und heisst: gewechselt wird nur gegen eine Stellung,
+die die vorher feststehende in **jeder** Hinsicht schlaegt. 22,0 tut das.
+
+Trotzdem entscheide ich das nicht. Ein Wechsel des Betriebspunkts eines
+Kandidaten ist eine Entscheidung ueber das Produkt, keine Messung - und diese
+Zahl gehoert deshalb in den Bericht und nicht in den Bauplan.
+
+### Was gebaut wurde
+
+* ``Reglerart`` und ``ARTEN`` - die Regler, die ein Befund schon einmal
+  abgefahren hat, jeweils mit **genau** seiner Stellungsreihe. Sie steht seit
+  damals im Zaehler und kostet nichts mehr; jede Stellung daneben ist ein
+  neuer Kandidat, und ``cli regler`` sagt das, wenn man abweicht.
+* ``Stellung.dsr`` und daraus ``hub()``, ``reserve()``, ``traegt_der_regler()``
+  - die Rechnung aus Befund 21, jetzt gerechnet.
+* ``schlaegt_referenz()`` nach dem Muster von ``decke.Fensterlage``: Verglichen
+  wird nur gegen eine vorher feststehende Stellung, und ein Tausch - ein Gate
+  mehr fuer weniger Deflated Sharpe - zaehlt ausdruecklich nicht.
+* ``reserve()`` gibt eine **Zahl** zurueck und keine ``Stellung``. Auszurechnen,
+  wie weit ein Regler traegt, ist Messung; sich die hoechste Sprosse
+  auszusuchen waere Suche.
+
+### Was daraus folgt
+
+1. **Befund 46 haelt.** Das Gewinnziel enthaelt keine Loesung, an keinem der
+   beiden Betriebspunkte.
+2. **Seine Tabelle steht anders da** - an allen sechs Stellungen. Sechster Fall
+   des Betriebspunkt-Effekts nach den Befunden 112, 125, 126, 127 und 128.
+3. Befund 21s Argument - *"der Regler traegt nicht weit genug"* - ist **kein
+   allgemeines Argument**. Es gilt fuer das Vola-Ziel und ist beim Gewinnziel
+   nachweislich falsch. Was dort schliesst, ist etwas anderes: Der Hoechstwert
+   der Leiter ist schon besetzt.
+4. Die Messlatte ist am Spot-Punkt zum ersten Mal gehalten worden - fuer
+   0,15 Prozentpunkte, gegen 0,2324 am Deflated Sharpe. Wer das einen
+   Fortschritt nennt, hat ein Gate gelockert und es nur anders genannt.
+5. Sechs der acht gate-nennenden Richtungen stehen weiterhin ungeprueft.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2271 Tests gruen.

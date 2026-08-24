@@ -112,6 +112,24 @@ class Reglerart:
     def stellungen(self) -> tuple[float, ...]:
         return tuple(sorted(float(x) for x in self.leiter.split(",")))
 
+    def lesen(self, genom) -> float:
+        """Auf welcher Stellung dieser Bauplan gerade steht.
+
+        Das Gegenstueck zu ``setzen`` - und die einzige zulaessige Referenz
+        fuer ``Reglerleiter.schlaegt_referenz``: Sie stand fest, bevor die
+        Leiter gemessen wurde.
+        """
+        if self.schluessel == "vola":
+            return float(genom.sizing.target_vol_pct)
+        if self.schluessel == "ziel":
+            if not genom.targets:
+                raise ValueError(
+                    f"'{genom.name}' hat kein Gewinnziel - es gibt keine "
+                    "Stellung abzulesen."
+                )
+            return float(genom.targets[0].rr)
+        raise ValueError(f"Unbekannter Regler: {self.schluessel}")
+
     def setzen(self, genom, wert: float):
         """Denselben Bauplan mit einer anderen Reglerstellung.
 
@@ -399,6 +417,32 @@ class Reglerleiter:
         """
         werte = [s.dsr for s in self.stellungen if s.dsr is not None]
         return schwelle - max(werte) if werte else None
+
+    def schlaegt_referenz(self, referenz: float) -> tuple[Stellung, ...]:
+        """Sprossen, die die Referenzstellung in **jeder** Hinsicht schlagen.
+
+        Dieselbe Form wie ``decke.Fensterlage.wechsel_begruendbar`` und aus
+        demselben Grund: Sich die hoechste Sprosse auszusuchen waere Suche.
+        Zulaessig ist nur der Vergleich gegen eine Stellung, die vorher schon
+        feststand - hier die, auf der der Kandidat ohnehin sitzt.
+
+        *In jeder Hinsicht* heisst: kein Gate weniger und kein kleinerer
+        Deflated Sharpe, und mindestens eines davon echt besser. Ein Tausch -
+        ein Gate mehr, dafuer weniger Deflated Sharpe - zaehlt nicht, sonst
+        waere die Wahl wieder Geschmackssache.
+        """
+        anker = next((s for s in self.stellungen if s.wert == referenz), None)
+        if anker is None or anker.dsr is None:
+            return ()
+        aus = []
+        for s in self.sortiert:
+            if s is anker or s.dsr is None:
+                continue
+            nicht_schlechter = s.bestanden >= anker.bestanden and s.dsr >= anker.dsr
+            echt_besser = s.bestanden > anker.bestanden or s.dsr > anker.dsr
+            if nicht_schlechter and echt_besser:
+                aus.append(s)
+        return tuple(aus)
 
     def traegt_der_regler(self, schwelle: float = 0.95) -> bool | None:
         """Reicht der ganze Regelweg ueberhaupt bis zur Schwelle?

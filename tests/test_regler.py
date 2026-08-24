@@ -559,3 +559,119 @@ def test_zeile_zeigt_den_dsr_wenn_er_gemessen_ist() -> None:
     ohne = Stellung(30.0, 152, 15.15, 9.87, 9, 11, (DSR,))
     assert "0.8712" not in ohne.als_zeile()
     assert "9/11" in ohne.als_zeile()
+
+
+# --- Der einzige zulaessige Vergleich: gegen die Referenzstellung ------------
+
+
+def gewinnziel_spot() -> Reglerleiter:
+    """Befund 129, gemessen: das Gewinnziel am Spot-Punkt, 198 Versuche."""
+    return Reglerleiter(
+        "Gewinnziel (Spot)",
+        (
+            Stellung(10.0, 152, 11.38, 8.00, 9, 11, (LATTE, DSR), dsr=0.8311),
+            Stellung(20.0, 152, 14.83, 9.87, 9, 11, (LATTE, DSR), dsr=0.8640),
+            Stellung(30.0, 152, 15.15, 9.87, 9, 11, (DSR, PLATEAU), dsr=0.6316),
+            Stellung(50.0, 152, 14.65, 9.87, 8, 11, (LATTE, DSR, PLATEAU), dsr=0.2175),
+            Stellung(100.0, 152, 14.65, 9.87, 8, 11, (LATTE, DSR, PLATEAU), dsr=0.0478),
+            Stellung(200.0, 152, 14.65, 9.87, 8, 11, (LATTE, DSR, PLATEAU), dsr=0.0462),
+        ),
+    )
+
+
+def volaziel_spot() -> Reglerleiter:
+    """Befund 129, gemessen: das Vola-Ziel am Spot-Punkt, 198 Versuche."""
+    return Reglerleiter(
+        "Vola-Ziel (Spot)",
+        (
+            Stellung(14.0, 149, 10.36, 7.17, 9, 11, (LATTE, DSR), dsr=0.8666),
+            Stellung(16.0, 154, 12.05, 7.79, 9, 11, (LATTE, DSR), dsr=0.8661),
+            Stellung(19.3, 152, 14.83, 9.87, 9, 11, (LATTE, DSR), dsr=0.8640),
+            Stellung(22.0, 152, 16.73, 11.85, 9, 11, (JAHR, DSR), dsr=0.8730),
+            Stellung(
+                25.0, 152, 19.19, 13.74, 7, 11, (RUECK, JAHR, DSR, PLATEAU), dsr=0.8731
+            ),
+            Stellung(
+                28.0, 152, 21.10, 15.49, 7, 11, (RUECK, JAHR, DSR, PLATEAU), dsr=0.8641
+            ),
+            Stellung(
+                32.0, 152, 24.68, 16.89, 7, 11, (RUECK, JAHR, DSR, PLATEAU), dsr=0.8711
+            ),
+        ),
+    )
+
+
+def test_gewinnziel_traegt_weit_genug_aber_nur_nach_unten() -> None:
+    """Der Gegensatz zum Vola-Ziel: dieser Regler bewegt den Wert enorm."""
+    leiter = gewinnziel_spot()
+    assert leiter.hub() == pytest.approx(0.8640 - 0.0462)
+    assert leiter.reserve() == pytest.approx(0.95 - 0.8640)
+    assert leiter.traegt_der_regler() is True
+
+
+def test_volaziel_traegt_nicht_weit_genug() -> None:
+    leiter = volaziel_spot()
+    assert leiter.hub() == pytest.approx(0.8731 - 0.8640, abs=1e-9)
+    assert leiter.traegt_der_regler() is False
+
+
+def test_keine_sprosse_schlaegt_das_gewinnziel_bei_20() -> None:
+    """Der Hoechstwert der Leiter ist die Stellung, auf der der Kandidat sitzt."""
+    assert gewinnziel_spot().schlaegt_referenz(20.0) == ()
+
+
+def test_beim_volaziel_schlagen_drei_sprossen_die_referenz() -> None:
+    """Bei 19,3 sitzt der Kandidat - und 14, 16 und 22 sind dort besser."""
+    besser = volaziel_spot().schlaegt_referenz(19.3)
+    assert [s.wert for s in besser] == [14.0, 16.0, 22.0]
+    assert max(s.dsr for s in besser) == pytest.approx(0.8730)
+
+
+def test_ein_tausch_zaehlt_nicht_als_geschlagen() -> None:
+    """Ein Gate mehr, dafuer weniger Deflated Sharpe - das ist keine Verbesserung."""
+    getauscht = Reglerleiter(
+        "Tausch",
+        (
+            Stellung(20.0, 152, 14.83, 9.87, 9, 11, (LATTE, DSR), dsr=0.8640),
+            Stellung(30.0, 152, 15.15, 9.87, 10, 11, (DSR,), dsr=0.6316),
+        ),
+    )
+    assert getauscht.schlaegt_referenz(20.0) == ()
+
+
+def test_gleichstand_zaehlt_nicht_als_geschlagen() -> None:
+    gleich = Reglerleiter(
+        "Gleichstand",
+        (
+            Stellung(20.0, 152, 14.83, 9.87, 9, 11, (LATTE, DSR), dsr=0.8640),
+            Stellung(30.0, 152, 15.15, 9.87, 9, 11, (LATTE, DSR), dsr=0.8640),
+        ),
+    )
+    assert gleich.schlaegt_referenz(20.0) == ()
+
+
+def test_referenz_ausserhalb_der_leiter_gibt_nichts_zurueck() -> None:
+    assert gewinnziel_spot().schlaegt_referenz(17.0) == ()
+
+
+def test_referenz_ohne_gemessenen_wert_gibt_nichts_zurueck() -> None:
+    assert spot().schlaegt_referenz(19.3) == ()
+
+
+def test_lesen_ist_das_gegenstueck_zu_setzen() -> None:
+    genom = spitzenkandidat()
+    for schluessel, wert in (("vola", 25.0), ("ziel", 40.0)):
+        art = ARTEN[schluessel]
+        assert art.lesen(art.setzen(genom, wert)) == wert
+
+
+def test_lesen_ohne_gewinnziel_sagt_das() -> None:
+    genom = spitzenkandidat().model_copy(update={"targets": []})
+    with pytest.raises(ValueError, match="abzulesen"):
+        ARTEN["ziel"].lesen(genom)
+
+
+def test_lesen_eines_unbekannten_reglers_wird_zurueckgewiesen() -> None:
+    erfunden = Reglerart("stopweite", "Stop-Weite", "%", "2,4,6", 28)
+    with pytest.raises(ValueError, match="Unbekannter Regler"):
+        erfunden.lesen(spitzenkandidat())

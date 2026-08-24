@@ -214,6 +214,11 @@ BEHOBEN: tuple[Richtung, ...] = (
         "15 Commits verschieben Befund 21 - beide Punkte neu gemessen",
         128,
     ),
+    Richtung(
+        "'Regler traegt nicht weit genug'",
+        "gilt fuers Vola-Ziel, nicht fuers Gewinnziel - Hub 0,0091 gegen 0,8178",
+        129,
+    ),
 )
 
 
