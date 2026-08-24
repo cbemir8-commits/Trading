@@ -973,3 +973,70 @@ class TestFeldgrenzen:
             metadata: tuple = ()
 
         assert _feldgrenzen(Ohne(), standard=(1.5, 9.5)) == (1.5, 9.5)
+
+
+class TestQuartalsbloecke:
+    """Die dritte Einteilung des Deflated-Sharpe-Gates - Befund 135.
+
+    Gemessen am Spitzenkandidaten (Spot, 198 Versuche, 152 Trades) zeigt die
+    Quartalseinteilung einen ICC von 0,257 bei p = 0,0050 - nachgewiesene
+    Abhaengigkeit, wo die Walk-Forward-Fenster bei p = 0,0750 stehen. Die
+    effektive Stichprobe faellt dadurch von 152 auf 112, der Deflated Sharpe
+    von 0,8640 auf 0,6026.
+    """
+
+    def _trade(self, jahr, monat, pnl):
+        from datetime import UTC, datetime
+        from decimal import Decimal
+
+        from core.models import Trade
+
+        zeit = datetime(jahr, monat, 15, tzinfo=UTC)
+        return Trade(
+            trade_id=f"t{jahr}{monat}", symbol="BTCUSDT", side="Buy",
+            strategy_id="x", entry_time=zeit, entry_price=Decimal("100"),
+            exit_time=zeit, exit_price=Decimal("101"), qty=Decimal("1"),
+            gross_pnl=Decimal(str(pnl)), fees=Decimal("0"),
+            funding=Decimal("0"), stop_loss=Decimal("90"),
+            exit_reason="signal_exit",
+        )
+
+    def test_buendelt_nach_kalenderquartal(self):
+        from research.gates import quartalsbloecke
+
+        trades = [
+            self._trade(2020, 1, 1), self._trade(2020, 3, 2),
+            self._trade(2020, 4, 3),
+            self._trade(2020, 12, 4), self._trade(2021, 1, 5),
+        ]
+        assert quartalsbloecke(trades) == [[1.0, 2.0], [3.0], [4.0], [5.0]]
+
+    def test_reihenfolge_ist_zeitlich(self):
+        from research.gates import quartalsbloecke
+
+        trades = [self._trade(2021, 5, 9), self._trade(2020, 2, 1)]
+        assert quartalsbloecke(trades) == [[1.0], [9.0]]
+
+    def test_ohne_trades_keine_bloecke(self):
+        from research.gates import quartalsbloecke
+
+        assert quartalsbloecke([]) == []
+
+    def test_deckt_alle_trades_ab(self):
+        """Eine Einteilung, die Trades verliert, misst etwas anderes."""
+        from research.gates import quartalsbloecke
+
+        trades = [self._trade(2020, m, m) for m in range(1, 13)]
+        bloecke = quartalsbloecke(trades)
+        assert sum(len(b) for b in bloecke) == len(trades)
+        assert len(bloecke) == 4
+
+    def test_das_gate_nimmt_die_quartale_mit(self):
+        """Die Einteilung muss im Gate ankommen, nicht nur existieren."""
+        import inspect
+
+        from research import gates
+
+        quelle = inspect.getsource(gates.gate_deflated_sharpe)
+        assert "quartalsbloecke(trades)" in quelle
+        assert "weitere=[gleichzeitig, quartalsbloecke(trades)]" in quelle

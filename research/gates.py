@@ -551,6 +551,24 @@ def _test_monate(report: WalkForwardReport) -> float:
     return tage / 30.44
 
 
+def quartalsbloecke(trades: list[Trade]) -> list[list[float]]:
+    """Trade-Ergebnisse, nach Kalenderquartal des Ausstiegs gebuendelt.
+
+    Die dritte Einteilung des Deflated-Sharpe-Gates (Befund 135). Sie teilt
+    denselben Zeitraum wie die Walk-Forward-Fenster in aehnlich viele Stuecke,
+    aber **gleichmaessiger** - und eine gleichmaessige Einteilung hat bei
+    gleicher Groesse mehr Trennschaerfe, weil ihre Permutationsnull enger ist.
+
+    Gebuendelt wird nach dem **Ausstieg**: Dort steht fest, welches Ergebnis
+    der Trade hatte, und darum geht es bei der Abhaengigkeit der Ergebnisse.
+    """
+    eimer: dict[tuple[int, int], list[float]] = {}
+    for t in trades:
+        schluessel = (t.exit_time.year, (t.exit_time.month - 1) // 3)
+        eimer.setdefault(schluessel, []).append(float(t.net_pnl))
+    return [eimer[k] for k in sorted(eimer)]
+
+
 def concurrent_groups(trades: list[Trade]) -> list[list[Trade]]:
     """Trades zusammenfassen, die sich zeitlich ueberschneiden.
 
@@ -1016,19 +1034,44 @@ def gate_deflated_sharpe(
     # und eine Strafe, die der Zufall mit sechsprozentiger Wahrscheinlichkeit
     # erzeugt, misst nicht mehr die Strategie. Siehe
     # ``research/unabhaengigkeit.py``.
-    # **Zwei Einteilungen, und es zaehlt die strengere.**
+    # **Drei Einteilungen, und es zaehlt die strengste.**
     #
-    # ``bloecke`` sind die Trades je Kalenderfenster. Daneben gibt es eine
-    # zweite, ebenso zulaessige Vorstellung von Abhaengigkeit: Positionen, die
-    # **zugleich** offen waren. Das Monte-Carlo-Gate haelt genau die schon
-    # lange zusammen; hier blieb sie ungenutzt, ohne dass irgendwo stuende,
-    # warum. Gewaehlt wird die Einteilung mit der kleinsten Stichprobe - das
-    # kann die Zulassung nur erschweren.
+    # ``bloecke`` sind die Trades je Walk-Forward-Fenster. Daneben gibt es
+    # weitere, ebenso zulaessige Vorstellungen von Abhaengigkeit: Positionen,
+    # die **zugleich** offen waren (das Monte-Carlo-Gate haelt genau die schon
+    # lange zusammen), und Trades desselben **Kalenderquartals**.
+    #
+    # **Das Quartal kam mit Befund 135 dazu, und es aendert das Ergebnis.**
+    # Gemessen am Spitzenkandidaten, Spot, 198 Versuche:
+    #
+    #     Einteilung           Bloecke    ICC       p      n      DSR
+    #     Walk-Forward-Fenster      31  0,109  0,0750    152   0,8640
+    #     Kalenderquartal           32  0,257  0,0050    112   0,6026
+    #     Kalendermonat             63  0,515  0,0020    124   0,7004
+    #     Kalenderjahr               9  0,052  0,0650    152   0,8640
+    #     Gleichzeitigkeit         103  0,000  1,0000    152   0,8640
+    #
+    # Beide Zeitraeume - Fenster und Quartal - teilen dieselben 3277 Tage in gut
+    # dreissig Stuecke, und beide decken alle 152 Trades ab. Der Unterschied
+    # liegt in der **Gleichmaessigkeit**: Die Fenster tragen 0 bis 12 Trades,
+    # die Quartale 2 bis 8. Ungleiche Bloecke machen die Permutationsnull
+    # breiter, und eine breitere Null sieht weniger. Das Quartal ist also nicht
+    # zufaellig strenger, sondern bei gleicher Groesse **trennschaerfer**.
+    #
+    # Die Mehrfachtestung ist mitgerechnet: Bei vier Einteilungen liegt die
+    # Bonferroni-Schranke bei 0,05/4 = 0,0125, und Quartal (0,0050) wie Monat
+    # (0,0020) bleiben darunter. Die Abhaengigkeit ist nachgewiesen, nicht
+    # herausgesucht.
+    #
+    # Gewaehlt wird die Einteilung mit der kleinsten Stichprobe - das kann die
+    # Zulassung nur erschweren, nie erleichtern, und das ist die einzige
+    # Richtung, in die eine solche Entscheidung fallen darf.
     gleichzeitig = [
         [float(t.net_pnl) for t in gruppe] for gruppe in concurrent_groups(trades)
     ]
     stichprobe = effektive_stichprobe(
-        len(pnls), beine, bloecke, weitere=[gleichzeitig]
+        len(pnls), beine, bloecke,
+        weitere=[gleichzeitig, quartalsbloecke(trades)],
     )
 
     dsr = deflated_sharpe_ratio(

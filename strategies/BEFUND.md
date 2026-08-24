@@ -12391,3 +12391,108 @@ Test prueft, dass es sie nicht gibt.
   Auswertung.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2337 Tests gruen.
+
+---
+
+## Hundertfuenfunddreissig. Ein Gate, das strenger geworden ist
+
+Befund 134 hat gemessen, wie stark der Deflated Sharpe an der **Kalibrierung**
+der Abhaengigkeitspruefung haengt. Darunter liegt eine zweite Wahl, die
+niemand begruendet hat: die **Einteilung in Bloecke**. Heute sind es die
+Walk-Forward-Fenster. Warum die und nicht Quartale, stand nirgends.
+
+**Vor dem Lauf festgelegt** - hier wichtiger als sonst, weil das Ergebnis das
+Projekt schlechter dastehen lassen konnte:
+
+* Die Einteilungen werden **jetzt** benannt: Walk-Forward-Fenster (wie
+  gebaut), Kalenderquartal, Kalenderjahr, Kalendermonat, Gleichzeitigkeit (wie
+  gebaut). Keine wird nach dem Ergebnis hinzugenommen oder weggelassen.
+* ``effektive_stichprobe`` nimmt bereits die **strengste** Einteilung, mit
+  ausdruecklicher Begruendung im Code: *"Das kann die Zulassung nur
+  erschweren, nie erleichtern - die einzige Richtung, in die eine solche
+  Entscheidung fallen darf."* Zeigt eine neue Einteilung mehr Abhaengigkeit,
+  ist ihre Aufnahme also regelkonform und keine nachtraegliche Anpassung.
+
+### Gemessen
+
+Spot-Punkt, 198 Versuche, 152 Trades.
+
+    Einteilung             Bloecke    ICC       p      n      DSR
+    Walk-Forward-Fenster        31  0,109  0,0750    152   0,8640
+    Kalenderquartal             32  0,257  0,0050    112   0,6026
+    Kalendermonat               63  0,515  0,0020    124   0,7004
+    Kalenderjahr                 9  0,052  0,0650    152   0,8640
+    Gleichzeitigkeit           103  0,000  1,0000    152   0,8640
+
+**Beim Quartal ist die Abhaengigkeit nachgewiesen** - p = 0,0050 gegen die
+Grenze 0,05, wo die Walk-Forward-Fenster bei 0,0750 stehen und deshalb nicht
+kuerzen.
+
+### Warum das kein Zufallsfund ist
+
+Zwei Pruefungen, beide vor der Entscheidung gemacht:
+
+**Erstens die Abdeckung.** Fenster und Quartale teilen dieselben 3277 Tage in
+gut dreissig Stuecke, und beide enthalten alle 152 Trades. Kein Trade geht
+verloren, keiner wird doppelt gezaehlt - der Unterschied ist kein Messfehler.
+
+Er liegt in der **Gleichmaessigkeit**:
+
+    Blockgroessen Fenster    0, 1, 2, 2, 2, 3, ... 8, 8, 9, 9, 12
+    Blockgroessen Quartale   2, 2, 2, 2, 2, 2, ... 7, 7, 8, 8, 8
+
+Ungleiche Bloecke machen die Permutationsnull breiter - das steht im
+Modulkopf von ``unabhaengigkeit.py`` seit jeher -, und eine breitere Null
+sieht weniger. Beide Einteilungen werden gegen ihre **eigene** Null geprueft,
+haben also dieselbe Fehlerrate. Das Quartal ist nicht zufaellig strenger,
+sondern bei gleicher Groesse **trennschaerfer**.
+
+**Zweitens die Mehrfachtestung.** Wer fuenf Einteilungen prueft und die
+strengste nimmt, findet leichter etwas. Bei vier gepruefen Einteilungen liegt
+die Bonferroni-Schranke bei 0,05/4 = 0,0125:
+
+    Walk-Forward   p = 0,0750   nicht signifikant
+    Quartal        p = 0,0050   haelt der Korrektur stand
+    Jahr           p = 0,0650   nicht signifikant
+    Monat          p = 0,0020   haelt der Korrektur stand
+    Gleichzeitig   p = 1,0000   nicht signifikant
+
+Quartal und Monat bleiben deutlich darunter. **Die Abhaengigkeit ist
+nachgewiesen, nicht herausgesucht.**
+
+### Was geaendert wurde
+
+``research/gates.quartalsbloecke`` ist neu, und das Deflated-Sharpe-Gate nimmt
+die Einteilung mit. Gemessen, nach der Aenderung, am Spitzenkandidaten:
+
+    vorher   152 Trades, n = 152,  DSR 0,8640,  9/11
+    nachher  152 Trades, n = 112,  DSR 0,6026,  9/11
+
+**Die Luecke zur Schwelle waechst von 0,0860 auf 0,3474 - das Vierfache.**
+Die Gate-Zahl bleibt bei 9 von 11, weil der Deflated Sharpe ohnehin offen war.
+
+Das ist die unangenehmste Zahl, die dieses Projekt seit langem produziert hat,
+und sie ist die richtige: Ein Gate, dessen Einteilung die Abhaengigkeit nicht
+sieht, misst nicht die Strategie, sondern die Einteilung.
+
+### Was das fuer die frueheren Befunde heisst
+
+Befund 132 hat den Abstand in Tagen ausgedrueckt (30 Beobachtungen, 1,8
+Jahre), Befund 134 hat eine Spanne von 1,8 bis 6,6 Jahren daraus gemacht.
+**Beide rechneten auf n = 152.** Die Groessenordnung verschiebt sich damit
+erneut nach oben; die Richtung bleibt.
+
+Und Befund 134s Kernaussage wird staerker statt schwaecher: Der Abstand zur
+Zulassung ist kleiner als die Unsicherheit der Modellwahlen darunter. Jetzt
+sind es zwei solche Wahlen - Kalibrierung und Einteilung -, und beide bewegen
+mehr, als der Abstand gross ist.
+
+### Was offen bleibt, und zwar sichtbar
+
+**Einundzwanzig Stellen in acht Modulen nennen 0,8640.** Jede zitiert einen
+Befund und ist als Zitat richtig - aber wer sie liest, findet den Stand von
+gestern. Das ist genau die Falle aus Befund 130, diesmal in den
+Modulkoepfen statt im Register. Sie sind **nicht** nachgezogen; das gehoert in
+einen eigenen Lauf und nicht in eine Fussnote.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2342 Tests gruen.
