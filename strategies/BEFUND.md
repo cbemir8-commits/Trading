@@ -11975,3 +11975,83 @@ Gewinnziel auf 129, Termin-Overlay auf 127.
    Befund 21, bestaetigt in 23 und 129. Die Luecke ist dieselbe.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2275 Tests gruen.
+
+---
+
+## Hunderteinunddreissig. Dieselbe Falle, dreissigmal aufgestellt
+
+Befund 130 hat einen Fehler behoben und dabei einen groesseren stehen lassen.
+Behoben war der Eintrag *"Vola-Ziel ... Befund 21"*, der auf eine von Befund 23
+ersetzte Tabelle zeigte. Stehen geblieben ist die Frage, die sich unmittelbar
+anschliesst: **Bei wie vielen der 36 Eintraege steht dieselbe Falle?**
+
+Ich hatte drei Eintraege nachgezogen - die drei, deren Nachmessung ich zufaellig
+kannte, weil ich sie selbst geschrieben hatte. Das ist keine Pruefung, sondern
+ein Zufallsbefund.
+
+### Gesucht statt geschaetzt
+
+``research/nachmessung.py`` zerlegt das Laborbuch in seine Befunde und zaehlt
+je geschlossener Richtung, in welchen **spaeteren** Befunden sie noch vorkommt.
+Das Ergebnis, ``cli register``:
+
+    28 der 36 Eintraege werden nach ihrer Fundstelle noch erwaehnt.
+
+Die auffaelligsten:
+
+    Trade-Zahl heben        Nr.  75   79 (9x), 78 (6x), 77 (4x), 81, 83, 113
+    15-Minuten-Kerzen       Nr.  29   52 (4x), 64 (4x), 99 (4x), 65 (3x), 90
+    Mehr Maerkte            Nr.  27   111 (5x), 33 (2x), 28, 31, 45, 47
+    Kanalausbruch           Nr.  53   73, 86, 94, 122 (je 2x)
+    Konviktions-Bonus       Nr.  30   39 (2x), 32, 38, 44, 98
+
+### Was das Werkzeug ausdruecklich nicht tut
+
+**Es entscheidet nichts.** Erwaehnt zu werden ist nicht dasselbe wie
+nachgemessen zu werden, und der Unterschied steht im Text, nicht in der
+Trefferzahl. Deshalb heisst das Ergebnis ``Spur`` und nicht ``Nachmessung``,
+deshalb gibt es keine Funktion, die ``Richtung.zuletzt`` selbst setzt, und
+deshalb schreibt der Befehl ueber seine eigene Liste, sie bestehe aus
+Verdachtsfaellen.
+
+Die Regel dazu ist Befund 118: Dort hat eine Textsuche elf Befehle als fehlend
+gemeldet, die es gab. Eine Suche, die Verdachtsfaelle liefert, ist nuetzlich;
+eine, deren Treffer man ungeprueft uebernimmt, ist schlimmer als keine.
+
+Ebenso ausdruecklich: Eine Richtung ohne hinterlegte Suchbegriffe wird
+**gemeldet**, nicht uebersprungen. Eine sichtbare Luecke ist besser als ein
+stiller Fehlalarm. Ein Test haelt fest, dass diese Liste derzeit leer ist.
+
+### Fuenf gelesen, fuenf nachgezogen
+
+Aus den Verdachtsfaellen habe ich die fuenf mit dem staerksten Signal gelesen -
+nicht ueberflogen, gelesen - und alle fuenf waren echte Nachmessungen:
+
+    Perioden-Faktor            32 -> 49    cli front, 52 Reglerstellungen mit DSR
+    Schiefe erhoehen           70 -> 125   Spot-Punkt: Reserve 0,0079 statt 0,1086
+    Trade-Zahl heben           75 -> 113   acht Saaten statt einer Ziehung
+    Kostenannahmen            111 -> 127   Anschlag geprueft, haelt
+    Schnittpunkt als Prognose 124 -> 126   Spot-Punkt: 4.712 statt 764.635
+
+Damit tragen **acht von 36** Eintraegen eine Nachmessung. Die uebrigen 28 sind
+nicht geprueft - sie sind *ungeprueft*, und das ist ein Unterschied, den dieser
+Befund nicht verwischen soll.
+
+### Was daraus folgt
+
+1. **Die Falle war nicht der Einzelfall, den Befund 130 beschrieben hat.**
+   Fuenf weitere Eintraege zeigten auf eine ueberholte Fundstelle, und in allen
+   fuenf Faellen war die Nachmessung ein Befund, den ich zum Teil selbst
+   geschrieben habe. Zufaellig gekannt zu haben, was man haette nachschlagen
+   muessen, ist keine Methode.
+2. **Der Zaehlerstand-Anteil bleibt der gefaehrlichere.** Bei Perioden-Faktor
+   (49) und Kostenannahmen (127) sind die alten Zahlen bei 157 bzw. 198
+   Versuchen entstanden - wer sie heute vergleicht, muss den Zaehler
+   mitrechnen (Befund 130).
+3. **28 Eintraege stehen aus.** Sie durchzusehen kostet Lesezeit und keinen
+   einzigen Versuch. Was es dabei zu finden gibt, weiss ich nicht - und
+   ausdruecklich nicht, ob es den Stand der Sache beruehrt.
+4. Am Stand aendert dieser Befund nichts. Er aendert, wie verlaesslich die
+   Frage *"ist diese Richtung wirklich zu?"* beantwortet werden kann.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2295 Tests gruen.

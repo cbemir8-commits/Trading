@@ -96,7 +96,12 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     Richtung("Vola-Ziel", "Hub 0,009 bei einer Luecke von 0,077", 21, zuletzt=129),
     Richtung("Stop-Weite", "4 % ist das Maximum, beide Seiten schlechter", 28),
     Richtung("Konviktions-Bonus", "Risikoregler, kein Qualitaetsregler", 30),
-    Richtung("Perioden-Faktor", "mehr Trades, aber Qualitaet faellt schneller", 32),
+    Richtung(
+        "Perioden-Faktor",
+        "mehr Trades, aber Qualitaet faellt schneller",
+        32,
+        zuletzt=49,
+    ),
     Richtung(
         "Termin-Overlay",
         "wirkungslos mit Kosten - haelt am kostenfreien Anschlag ein Gate",
@@ -120,9 +125,19 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     # Ab hier die Wege, die seit Befund 70 geschlossen wurden. Sie fehlten
     # bis Befund 90 vollstaendig - und damit sah ein Lauf, der hier nachsah,
     # nur den Stand von vor zwanzig Befunden.
-    Richtung("Schiefe erhoehen", "Pearson-Grenze: Woelbung >= Schiefe^2 + 1", 70),
+    Richtung(
+        "Schiefe erhoehen",
+        "am Spot-Punkt bleibt eine Reserve von 0,0079",
+        70,
+        zuletzt=125,
+    ),
     Richtung("Woelbung senken", "unter 1 mathematisch unmoeglich", 70),
-    Richtung("Trade-Zahl heben", "Kopplung -0,53 ueber 22 Regeln", 75),
+    Richtung(
+        "Trade-Zahl heben",
+        "Kopplung -0,53; haelt der Nullprobe (79) und acht Saaten (113) stand",
+        75,
+        zuletzt=113,
+    ),
     Richtung("Katalog als Partner", "0 von 15 Genomen taugen", 74),
     Richtung("Eigenbau-Partner", "8 Regeln aus Befund 77 und 83 gescheitert", 83),
     Richtung("Familie Rueckkehr", "alle 5 unter der Geraden, Permutation haelt", 84),
@@ -155,7 +170,12 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         "an 0,2 % der Balken genutzt, Deckel auf 1,0 bitgleich",
         106,
     ),
-    Richtung("Kostenannahmen", "bei Kosten null fehlen 0,0692 am DSR", 111),
+    Richtung(
+        "Kostenannahmen",
+        "bei Kosten null fehlen 0,0692 - Anschlag nachgeprueft",
+        111,
+        zuletzt=127,
+    ),
     Richtung(
         "Schwacher Vorteil (5 %)",
         "|t| = 0,74 ueber acht Saaten - keine Delle, nur Rauschen",
@@ -168,8 +188,9 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     ),
     Richtung(
         "Schnittpunkt als Prognose",
-        "Fehlerbalken 14,3 % - von 'nie' bis 199 Versuche, Punktschaetzer",
+        "Fehlerbalken 14,3 %; am Spot-Punkt 4.712 statt 764.635",
         124,
+        zuletzt=126,
     ),
 )
 

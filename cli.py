@@ -9631,5 +9631,84 @@ def regler(
     )
 
 
+@app.command()
+def register(
+    alle: bool = typer.Option(
+        False, "--alle",
+        help="Auch die Eintraege zeigen, zu denen nichts Spaeteres steht.",
+    ),
+) -> None:
+    """Zeigt geschlossene Richtungen, bei denen eine Nachmessung stehen koennte.
+
+    Befund 130: Der Eintrag *"Vola-Ziel ... Befund 21"* zeigte auf eine
+    Tabelle, die Befund 23 zwei Befunde spaeter ersetzt hatte. Zwei Laeufe
+    haben dort nachgeschlagen und den Unterschied zum heutigen Stand falschen
+    Ursachen zugeschrieben - beide Male, ohne dass etwas auffaellig gewesen
+    waere, denn die Fundstelle stimmte ja.
+
+    Dieser Befehl sucht die andere Haelfte: Wo im Laborbuch wird eine
+    geschlossene Richtung **nach** ihrer massgeblichen Fundstelle noch
+    erwaehnt?
+
+    **Er entscheidet nichts.** Erwaehnt zu werden ist nicht dasselbe wie
+    nachgemessen zu werden, und der Unterschied steht im Text, nicht in der
+    Trefferzahl. Wer einen Eintrag nachzieht, hat den Befund gelesen - so wie
+    Befund 118 gezeigt hat, was eine ungeprueft uebernommene Textsuche
+    anrichtet.
+    """
+    from research.nachmessung import spuren
+    from research.stand import GESCHLOSSEN
+
+    pfad = Path("strategies/BEFUND.md")
+    if not pfad.exists():
+        console.print(f"[red]{pfad} nicht gefunden.[/]")
+        raise typer.Exit(2)
+    gefunden, ohne = spuren(pfad.read_text(encoding="utf-8"), GESCHLOSSEN)
+
+    console.print("\n[bold]GESCHLOSSENE RICHTUNGEN: STEHT DA SPAETER NOCH WAS?[/]\n")
+    nachgezogen = [s for s in gefunden if s.nachgezogen]
+    console.print(
+        f"[dim]{len(gefunden)} Eintraege durchsucht, davon {len(nachgezogen)} "
+        f"mit bekannter Nachmessung.\nDie Treffer unten sind Verdachtsfaelle "
+        f"und keine Befunde.[/]\n"
+    )
+
+    verdaechtig = [s for s in gefunden if s.offen]
+    for s in verdaechtig:
+        marke = "[green]+[/]" if s.nachgezogen else " "
+        stelle = (
+            f"Nr. {s.massgeblich} (zuerst {s.fundstelle})"
+            if s.nachgezogen
+            else f"Nr. {s.fundstelle}"
+        )
+        namen = ", ".join(f"{n} ({t}x)" for n, t in s.offen[:6])
+        console.print(f"{marke} {s.name:<30} {stelle:<24} spaeter: {namen}")
+
+    ruhig = [s for s in gefunden if not s.offen]
+    if ruhig:
+        console.print(
+            f"\n[dim]{len(ruhig)} Eintraege ohne spaetere Erwaehnung"
+            + (":" if alle else ".")
+            + "[/]"
+        )
+        if alle:
+            for s in ruhig:
+                console.print(f"  [dim]{s.name:<30} Nr. {s.massgeblich}[/]")
+
+    if ohne:
+        console.print(
+            f"\n[yellow]Ohne Suchbegriffe und damit ungeprueft "
+            f"({len(ohne)}):[/] {', '.join(ohne)}"
+        )
+        console.print(
+            "[dim]  Eine sichtbare Luecke ist besser als ein stiller "
+            "Fehlalarm - Begriffe stehen\n  in research/nachmessung.BEGRIFFE.[/]"
+        )
+    console.print(
+        f"\n[dim]{len(verdaechtig)} Eintraege haben spaetere Erwaehnungen. Jede "
+        f"davon ist zu lesen,\nbevor jemand ihre Zahlen als Stand ausgibt.[/]\n"
+    )
+
+
 if __name__ == "__main__":
     app()
