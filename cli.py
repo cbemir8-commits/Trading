@@ -9000,6 +9000,11 @@ def decke(
         help="Bringen weitere Maerkte Evidenz? Dieselben Regeln, mehr Beine "
              "(Befund 133).",
     ),
+    stichprobe: bool = typer.Option(
+        False, "--stichprobe",
+        help="Wie stark haengt n an der Kalibrierung der "
+             "Abhaengigkeitspruefung? (Befund 134).",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Wo ist nachweislich nichts mehr zu holen?
@@ -9177,6 +9182,101 @@ def decke(
         console.print(
             "[dim]Der Versuchszaehler bleibt unveraendert: Dieselbe Strategie, "
             "dieselben Daten.[/]\n"
+        )
+        return
+
+    if stichprobe:
+        # **Die Zahl unter allen Zahlen** (Befund 134).
+        #
+        # Auf n = 152 steht der Deflated Sharpe, die Luecke, die fehlenden
+        # Beobachtungen und die 1,8 Jahre aus Befund 132. Gemessen wird hier
+        # nicht, welche Kalibrierung die schoenste ist, sondern **wie stark
+        # das Ergebnis an dieser einen Wahl haengt**. Die Regel bleibt, wo sie
+        # ist.
+        import numpy as np
+
+        from research.empfindlichkeit import Empfindlichkeit, Kalibrierung
+        from research.gates import concurrent_groups, deflated_sharpe_ratio
+        from research.unabhaengigkeit import designeffekt
+
+        configs = configs_fuer(gemeinsam)
+        bericht, ergebnisse, wert, grenze, eintrag = messen(gemeinsam, configs)
+        trades = bericht.all_trades
+        nach_fenster = [[float(x.net_pnl) for x in w.trades] for w in bericht.windows]
+        nach_gleich = [
+            [float(t.net_pnl) for t in g] for g in concurrent_groups(trades)
+        ]
+
+        # Dieselben Momente, die das Gate nimmt - nur n wandert.
+        pnls = np.array([float(t.net_pnl) for t in trades], dtype=float)
+        streuung = pnls.std(ddof=1)
+        guete_wert = float(pnls.mean() / streuung)
+        zentriert = (pnls - pnls.mean()) / streuung
+        schiefe_wert = float(np.mean(zentriert**3))
+        woelbung_wert = float(np.mean(zentriert**4))
+
+        def dsr_bei(n: int) -> float:
+            return float(
+                deflated_sharpe_ratio(
+                    observed_sharpe=guete_wert, trials=trials, sample_size=n,
+                    skew=schiefe_wert, kurtosis=woelbung_wert,
+                )
+            )
+
+        console.print(
+            f"\n[bold]Empfindlichkeit der Stichprobe[/] {interval_obj.label}, Spot\n"
+            f"  Kandidat   {basis.name}\n"
+            f"  Versuche   {trials}\n"
+            f"  Trades     {len(trades)}   "
+            f"{len(nach_fenster)} Kalenderfenster, "
+            f"{len(nach_gleich)} Gleichzeitigkeitsgruppen\n\n"
+            "[dim]Vor dem Lauf festgelegt: Berichtet werden alle "
+            "Kalibrierungen, auch die\nunbequemen. Die Regel im Code bleibt "
+            "die Referenz - gemessen wird, was an ihr\nhaengt, nicht welche "
+            "Wahl das schoenste Ergebnis gibt.[/]\n"
+        )
+
+        stufen = ((0.95, "95. Perzentil (Regel)"), (0.90, "90. Perzentil"),
+                  (0.75, "75. Perzentil"), (0.50, "Median"))
+        for etikett, bloecke in (("nach Kalenderfenstern", nach_fenster),
+                                 ("nach Gleichzeitigkeit", nach_gleich)):
+            probe = designeffekt(bloecke)
+            if probe is None:
+                console.print(f"  [dim]{etikett}: zu wenige Bloecke[/]\n")
+                continue
+            console.print(
+                f"  [bold]{etikett}[/]   ICC {probe.icc:.3f}, "
+                f"p = {probe.p_wert:.4f}"
+                + ("   [dim](Abhaengigkeit nachgewiesen)[/]"
+                   if probe.nachgewiesen else "")
+            )
+            kal: list[Kalibrierung] = []
+            for q, name in stufen:
+                e = designeffekt(bloecke, kalibrierung=q)
+                if e is None:
+                    continue
+                # ``designeffekt`` rechnet auf den Bloecken; die Trade-Zahl
+                # kommt vom Aufrufer - derselbe Grund wie in
+                # ``effektive_stichprobe``.
+                faktor = e.effektiv / e.roh if e.roh else 1.0
+                n = max(1, min(len(trades), round(len(trades) * faktor)))
+                d = dsr_bei(n)
+                kal.append(
+                    Kalibrierung(name=name, quantil=q, schranke=0.0,
+                                 effektiv=n, dsr=d)
+                )
+                console.print(f"    {name:<24} n = {n:>4}   DSR {d:.4f}")
+            lage = Empfindlichkeit(
+                roh=len(trades), icc=probe.icc, designeffekt=0.0,
+                p_wert=probe.p_wert, kalibrierungen=tuple(kal),
+                schwelle=grenze,
+            )
+            console.print(f"\n  [yellow]{lage.urteil()}[/]\n")
+        console.print(
+            "[dim]Die Kalibrierung bleibt, wo sie ist. Sie zu wechseln, "
+            "nachdem man ihre Wirkung\ngesehen hat, waere das wirksamste "
+            "gelockerte Gate von allen - es liegt unter allen\nanderen "
+            "zugleich.[/]\n"
         )
         return
 

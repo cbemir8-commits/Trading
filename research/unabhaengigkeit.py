@@ -240,6 +240,7 @@ def designeffekt(
     *,
     permutationen: int = PERMUTATIONEN,
     saat: int = 20260808,
+    kalibrierung: float = 1.0 - SIGNIFIKANZ,
 ) -> Effektivwert | None:
     """Effektive Stichprobe - gekuerzt nur bei nachgewiesener Abhaengigkeit.
 
@@ -248,8 +249,19 @@ def designeffekt(
     andere gleich - insbesondere die ungleichen Blockgroessen, die den
     Schaetzer fuer sich genommen schon nach unten ziehen.
 
+    ``kalibrierung`` ist das Perzentil der Null, gegen das gekuerzt wird.
+    **Der Vorgabewert ist die Regel; der Parameter ist zum Messen da** - Befund
+    134 misst damit, wie stark die wichtigste Zahl des Projekts an dieser einen
+    Wahl haengt, ohne die Schleife ein zweites Mal nachzubauen (Befunde 101,
+    103, 109). Wer ihn im Betrieb setzt, aendert ein Gate.
+
     ``None``, wenn zu wenige Bloecke da sind.
     """
+    if not 0.0 < kalibrierung <= 1.0:
+        raise ValueError(
+            f"Kalibrierung {kalibrierung} liegt nicht in (0, 1] - das ist ein "
+            f"Perzentil der Permutationsnull."
+        )
     verwendbar = [np.asarray(b, dtype=float) for b in bloecke if len(b)]
     n = sum(len(b) for b in verwendbar)
     if len(verwendbar) < MIND_BLOECKE or n < 3:
@@ -304,7 +316,7 @@ def designeffekt(
     #
     # Damit ist die Groesse stetig: Waechst die Abhaengigkeit, waechst die
     # Kuerzung mit, statt bei einem Schwellenwert umzuspringen.
-    schranke = float(np.quantile(null, 1.0 - SIGNIFIKANZ))
+    schranke = float(np.quantile(null, kalibrierung))
     deff_korrigiert = max(1.0, deff / schranke) if schranke > 0 else 1.0
     effektiv = max(1, min(n, round(n / deff_korrigiert)))
 

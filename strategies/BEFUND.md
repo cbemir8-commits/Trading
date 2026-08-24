@@ -12286,3 +12286,108 @@ ausserdem nie gesucht worden - dort steht er aus dem Stand ausserhalb der
 Stichprobe.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2323 Tests gruen.
+
+---
+
+## Hundertvierunddreissig. Die Luecke ist kleiner als ihre Unsicherheit
+
+Befund 133 endete mit einem Satz, den ich selbst hingeschrieben und dann
+stehen gelassen habe:
+
+> Offen und unbequem: ob die 152 des Referenzlaufs einer strengeren
+> Abhaengigkeitspruefung standhielten.
+
+Auf dieser 152 steht alles: der Deflated Sharpe 0,8640, die Luecke von 0,0860,
+die 30 fehlenden Beobachtungen aus Befund 132, die 1,8 Jahre. Das ist die Zahl
+unter allen Zahlen, und sie war nie angefasst worden.
+
+### Woran sie haengt
+
+``unabhaengigkeit.designeffekt`` kuerzt gegen das **95. Perzentil** der
+Permutationsnull. Der Modulkopf begruendet das ausfuehrlich und gut: Am Median
+laege *"die Haelfte aller Ziehungen darueber - unbedingt angewandt wuerde also
+die Haelfte aller sauberen Messungen bestraft"*. Gegen bekannte Null bleiben
+95 % ungekuerzt.
+
+**Was diese Wahl fuer den Kandidaten wert ist, stand nirgends.**
+
+**Vor dem Lauf festgelegt:** Alle Kalibrierungen werden berichtet. Die Regel im
+Code bleibt die Referenz - ich wechsle sie nicht, weder zu einer milderen noch
+zu einer strengeren. Gemessen wird, **wie stark die wichtigste Zahl an einer
+Modellwahl haengt**, nicht welche Wahl das schoenste Ergebnis liefert. Faellt
+der Wert deutlich, ist das ein Ergebnis gegen das Projekt.
+
+### Gemessen
+
+Spot-Punkt, 198 Versuche, 152 Trades, 31 Kalenderfenster. Der gemessene
+Designeffekt ist **1,4422** bei einem ICC von **0,109**.
+
+    Kalibrierung          Schranke      n      DSR   Jahre bis zur Schwelle
+    95. Perzentil (Regel)   1,5262    152   0,8640                      1,8
+    90. Perzentil           1,3701    144   0,8266                      2,4
+    75. Perzentil           1,1420    120   0,6695                        -
+    Median                  1,0000    105   0,5393                      6,6
+
+Die zweite Einteilung - nach Gleichzeitigkeit, 103 Gruppen - zeigt **gar keine**
+Abhaengigkeit (ICC 0,000). Es entscheidet also allein die Einteilung nach
+Kalenderfenstern, und dort haengt alles an der Kalibrierung.
+
+### Der Befund
+
+**Die Spanne ist 0,3247. Die Luecke zur Schwelle ist 0,0860.**
+
+Die Unsicherheit aus einer einzigen Modellwahl ist fast **das Vierfache** des
+Abstands, den dieses Projekt seit Dutzenden von Befunden vermisst. Zwischen
+*"0,086 zu wenig"* und *"0,411 zu wenig"* laesst sich hier nicht
+unterscheiden.
+
+Und die 152 steht nicht mit Abstand, sondern **knapp**: Der gemessene
+Designeffekt liegt am **92,5. Perzentil** der Null, p = 0,0750 gegen die
+Grenze 0,05. Der Zaehlerstand ist nicht geraten - bei einer 0,93er Schranke
+kuerzt die Regel noch nicht, bei einer 0,90er kuerzt sie.
+
+Damit ist Befund 132s Ergebnis zu berichtigen, nicht in der Richtung, sondern
+in der Genauigkeit: **1,8 Jahre sind das optimistische Ende einer Spanne von
+1,8 bis 6,6 Jahren.**
+
+### Was das nicht heisst
+
+Dass die Regel falsch waere. Sie ist begruendet, gegen bekannte Null
+gegengeprueft und bewusst konservativ in die Richtung gebaut, in die eine
+Unsicherheit fallen darf: Sie straft nicht, wo die Abhaengigkeit nicht von
+Zufall zu unterscheiden ist. Und hier **ist** sie nicht von Zufall zu
+unterscheiden - p = 0,0750. Die Regel tut genau das, wofuer sie gebaut wurde.
+
+Dass ich die Kalibrierung wechseln sollte, heisst es erst recht nicht. Sie zu
+wechseln, **nachdem** man ihre Wirkung gesehen hat, waere das wirksamste
+gelockerte Gate von allen - es liegt unter allen anderen zugleich. Deshalb hat
+``Empfindlichkeit`` keine Methode, die eine Kalibrierung auswaehlt, und ein
+Test prueft, dass es sie nicht gibt.
+
+### Was daraus folgt
+
+1. **Der Abstand zur Zulassung ist keine belastbare Groesse.** Er ist kleiner
+   als die Unsicherheit, die unter ihm liegt. Jede Aussage der Form *"es
+   fehlen 30 Beobachtungen"* traegt diese Spanne mit.
+2. **Die Richtung bleibt dieselbe, und sie wird staerker.** Mehr Daten
+   schliessen nicht nur die Luecke, sie verkleinern auch diese Unsicherheit:
+   Mehr Bloecke machen die Permutationsnull enger, und damit haengt weniger an
+   der Kalibrierung. Was hier fehlt, ist wieder Evidenz - nicht Suche.
+3. **Der Grenzfall gehoert in jeden Bericht, der die 0,8640 nennt.** Bisher
+   stand die Zahl ohne diesen Zusatz da, und sie steht nicht mit Abstand.
+
+### Was gebaut wurde
+
+* ``unabhaengigkeit.designeffekt`` bekommt einen Parameter ``kalibrierung``
+  mit dem bisherigen Wert als Vorgabe - **kein Verhaltenswechsel**, sondern
+  die Moeglichkeit, die Empfindlichkeit zu messen, ohne die Schleife ein
+  zweites Mal nachzubauen. Genau daran ist dieses Projekt dreimal
+  haengengeblieben (Befunde 101, 103, 109). Ein Wert ausserhalb von (0, 1]
+  wird abgewiesen.
+* ``research/empfindlichkeit.py`` mit ``Kalibrierung`` und
+  ``Empfindlichkeit``: ``spanne``, ``luecke``, ``uebersteigt_die_luecke``,
+  ``knapp``.
+* ``cli decke --stichprobe``. Kostet keinen Versuch - derselbe Lauf, andere
+  Auswertung.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2337 Tests gruen.
