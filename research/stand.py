@@ -32,11 +32,26 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class Richtung:
-    """Eine untersuchte Richtung und ihr gemessenes Ergebnis."""
+    """Eine untersuchte Richtung und ihr gemessenes Ergebnis.
+
+    ``befund`` ist die Stelle, an der die Richtung **zuerst** gemessen wurde.
+    ``zuletzt`` ist die Stelle, an der sie **zuletzt** gemessen wurde - und
+    genau darauf kommt es an, wenn jemand die Zahlen nachschlaegt.
+
+    Das ist Befund 130, und es korrigiert einen Fehler, den dieses Register
+    ermoeglicht hat: Der Eintrag *"Vola-Ziel ... Befund 21"* zeigte auf eine
+    Tabelle, die Befund 23 zwei Befunde spaeter ersetzt hatte. Zwei Laeufe
+    haben dort nachgeschlagen, die alte Tabelle gefunden und den Unterschied
+    zum heutigen Stand falschen Ursachen zugeschrieben.
+
+    Wer eine Fundstelle nennt, muss die **letzte** nennen. Die erste ist
+    Geschichte, nicht Stand.
+    """
 
     name: str
     ergebnis: str
     befund: int
+    zuletzt: int | None = None
 
     def __post_init__(self) -> None:
         if self.befund <= 0:
@@ -44,9 +59,25 @@ class Richtung:
                 f"'{self.name}' ohne Fundstelle im BEFUND - eine geschlossene "
                 f"Richtung ohne nachlesbare Messung ist eine Behauptung."
             )
+        if self.zuletzt is not None and self.zuletzt <= self.befund:
+            raise ValueError(
+                f"'{self.name}': Nachmessung in Befund {self.zuletzt} liegt "
+                f"nicht nach der Erstmessung in {self.befund} - dann ist es "
+                f"keine Nachmessung."
+            )
+
+    @property
+    def massgeblich(self) -> int:
+        """Die Fundstelle, in der die gueltigen Zahlen stehen."""
+        return self.zuletzt or self.befund
 
     def __str__(self) -> str:
-        return f"{self.name:22} {self.ergebnis:40} Nr. {self.befund}"
+        stelle = (
+            f"Nr. {self.befund}"
+            if self.zuletzt is None
+            else f"Nr. {self.zuletzt} (zuerst {self.befund})"
+        )
+        return f"{self.name:22} {self.ergebnis:40} {stelle}"
 
 
 #: Die Richtungen, die gemessen und abgeschlossen sind.
@@ -58,16 +89,30 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     Richtung("Mehr Maerkte", "effektive Stichprobe bleibt bei 150", 27),
     Richtung("Mehr Historie", "Sharpe je Trade faellt, Huerde steigt", 14),
     Richtung("15-Minuten-Kerzen", "alle 14 Kandidaten verlieren brutto", 29),
-    Richtung("Vola-Ziel", "bewegt den Deflated Sharpe um 0,011", 21),
+    # Befund 21 hat diese Richtung eroeffnet, Befund 23 hat sie nach zwei
+    # behobenen Messfehlern neu vermessen (die Leiter rutschte um eine Stufe),
+    # Befund 129 am Spot-Punkt bestaetigt. Wer 21 nachschlaegt, findet eine
+    # ueberholte Tabelle - genau das ist zweimal passiert (Befund 130).
+    Richtung("Vola-Ziel", "Hub 0,009 bei einer Luecke von 0,077", 21, zuletzt=129),
     Richtung("Stop-Weite", "4 % ist das Maximum, beide Seiten schlechter", 28),
     Richtung("Konviktions-Bonus", "Risikoregler, kein Qualitaetsregler", 30),
     Richtung("Perioden-Faktor", "mehr Trades, aber Qualitaet faellt schneller", 32),
-    Richtung("Termin-Overlay", "2 von 156 Signalen blockiert, kein Gate bewegt", 12),
+    Richtung(
+        "Termin-Overlay",
+        "wirkungslos mit Kosten - haelt am kostenfreien Anschlag ein Gate",
+        12,
+        zuletzt=127,
+    ),
     Richtung("Shorts", "kein Vorteil in der Gegenrichtung", 13),
     Richtung("Perioden-Ensemble", "mehr Zeilen, keine neue Information", 17),
     Richtung("Abkuehlung", "zwei Gates - aber nur durch Streichen", 60),
     Richtung("Trades streichen", "reicht fuer zwei Gates, egal welche", 60),
-    Richtung("Gewinnziel", "laengeres rechtes Ende kostet mehr, als es bringt", 46),
+    Richtung(
+        "Gewinnziel",
+        "Hub 0,818 - aber nur nach unten, Hoechstwert besetzt",
+        46,
+        zuletzt=129,
+    ),
     Richtung("Adaptive Periode", "mehr Trades, aber einander aehnlicher", 48),
     Richtung("Kanalausbruch", "strukturell neu, 5 von 11, Faktor 1,74", 53),
     Richtung("Umsatzfilter", "neue Informationsquelle, DSR 0,162", 53),

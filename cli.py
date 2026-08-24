@@ -9310,6 +9310,12 @@ def regler(
         help="Stellungen, durch Komma getrennt. Leer = die Leiter aus dem "
              "urspruenglichen Befund, die keinen Versuch kostet.",
     ),
+    zaehlerstand: int = typer.Option(
+        0, "--zaehlerstand",
+        help="Nur zum Vergleich mit einem alten Befund: rechnet den Deflated "
+             "Sharpe so, als staende der Versuchszaehler dort. Der echte "
+             "Stand bleibt massgeblich.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Faehrt einen Regler an beiden Betriebspunkten ab (Befunde 128, 129).
@@ -9384,7 +9390,15 @@ def regler(
             raise typer.Exit(2)
         roh[symbol] = frame
     frames = common_range(roh)
-    trials = load_trials(Path(settings.paths.state) / "trials.json")
+    echt = load_trials(Path(settings.paths.state) / "trials.json")
+    # Der Zaehlerstand ist **nie** eine Stellschraube fuer ein besseres
+    # Ergebnis - er darf nur gesetzt werden, um eine alte Tabelle
+    # nachzustellen, und das Ergebnis wird als Rekonstruktion ausgewiesen.
+    if zaehlerstand < 0:
+        console.print("[red]--zaehlerstand kann nicht negativ sein.[/]")
+        raise typer.Exit(2)
+    nachgestellt = zaehlerstand > 0 and zaehlerstand != echt
+    trials = zaehlerstand or echt
     basis = spitzenkandidat()
     erster = next(iter(frames.values()))
 
@@ -9463,6 +9477,13 @@ def regler(
             f"[yellow]Eigene Stellungen: Jede, die nicht in Befund "
             f"{art.befund} steht, ist ein neuer\nKandidat und zaehlt als "
             f"Versuch.[/]\n"
+        )
+    if nachgestellt:
+        console.print(
+            f"[red bold]REKONSTRUKTION, kein aktueller Stand.[/] Gerechnet mit "
+            f"{trials} Versuchen\nstatt der tatsaechlichen {echt} - nur, um "
+            f"eine alte Tabelle vergleichbar zu machen.\nJede Zahl unten ist "
+            f"damit besser, als sie heute waere.\n"
         )
 
     beide = []

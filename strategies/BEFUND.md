@@ -11845,3 +11845,133 @@ Zahl gehoert deshalb in den Bericht und nicht in den Bauplan.
 5. Sechs der acht gate-nennenden Richtungen stehen weiterhin ungeprueft.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2271 Tests gruen.
+
+---
+
+## Hundertdreissig. Zwei Befunde lang die falsche Ursache genannt
+
+Dieser Lauf faengt mit einer Korrektur an, und zwar an meiner eigenen Arbeit
+von gestern und heute frueh.
+
+### Was ich in Befund 128 behauptet habe
+
+> **Befund 21 ist mit dem heutigen Code nicht reproduzierbar.** [...] Seit dem
+> 8. August haben **fuenfzehn** Commits ``research/seeds.py``,
+> ``research/gates.py`` oder ``backtest/`` angefasst [...] Lauter Korrekturen
+> an echten Fehlern, und jede davon verschiebt die Leiter ein Stueck.
+
+Das ist falsch. Nicht die Zahl der Commits - die stimmt - sondern der Schluss.
+
+### Was tatsaechlich der Fall ist
+
+**Befund 23** hat den Vola-Ziel-Regler zwei Befunde nach Befund 21 neu
+vermessen, nachdem er zwei Messfehler behoben hatte (Nachlauf am Fensterende,
+Aufwaermphase der Konfluenz). Dort steht:
+
+> Der Befund aus Nummer einundzwanzig **haelt**, er ist nur eine Reglerstufe
+> nach unten gerutscht [...] jetzt zwischen 16 und 22 statt zwischen 19,3 und
+> 25.
+
+Das ist genau die Verschiebung, die ich fuenfzehn Commits zugeschrieben habe.
+Sie ist am 8. August passiert, in einem einzigen Befund, mit benannter
+Ursache.
+
+Nachgeprueft, statt es dabei zu belassen - ``cli regler --zaehlerstand 102``
+stellt den Zaehlerstand von damals nach:
+
+    Vola-Ziel        14      16    19,3      22      25      28      32
+    Befund 23     0,870   0,866   0,863   0,870   0,867   0,861   0,866
+    heute @102    0,8698  0,8659  0,8635  0,8705  0,8670  0,8613  0,8661
+
+**Alle sieben stimmen auf drei Stellen.** Rendite und Rueckgang stimmen
+ohnehin ziffernweise: 9,47 / 7,75, 10,98 / 8,46, 13,47 / 10,64, 15,16 /
+12,82, 17,23 / 14,78, 19,05 / 16,65, 22,30 / 18,18 - jede Zahl aus Befund 23,
+unveraendert.
+
+Der Zaehlerstand ist dabei nicht geraten. Befund 21 vermerkt *"96 -> 102"*,
+also kamen beide Enden in Frage; gemessen wurden beide, und nur eines passt:
+
+    bei  96 Versuchen   0,8772  0,8735  0,8712  ...   passt nicht
+    bei 102 Versuchen   0,8698  0,8659  0,8635  ...   passt
+
+Die Leiter ist also **exakt reproduzierbar**. Was ich fuer Drift gehalten
+habe, zerfaellt in drei Teile:
+
+    Eine Reglerstufe nach unten     Befund 23, zwei behobene Messfehler
+    DSR 0,863 -> 0,7641 bei 19,3    allein der Zaehler, 102 -> 198 Versuche
+    8/11 -> 9/11 bei 14 und 16      der einzige echte Code-Effekt
+
+Der Zaehleranteil ist 0,0994 - und das ist keine neue Zahl, sondern die aus
+Befund 111: *"Die 96 Versuche seit Befund 27 haben 0,0993 am Deflated Sharpe
+gekostet."* Sie stand schon da.
+
+### Und der zweite Fehler: Befund 129 war in einem Punkt keine Entdeckung
+
+Befund 129 hat als Neuheit verkauft, dass sich der Hub des Vola-Ziel-Reglers
+jetzt ausrechnen lasse: *"die Rechnung aus Befund 21 [...] zum ersten Mal
+rechenbar"*, Hub 0,0091 bei einer Luecke von 0,0769.
+
+Befund 23 hat dieselbe Rechnung gemacht:
+
+> Der Deflated Sharpe liegt ueber den ganzen Regler zwischen 0,861 und 0,870 -
+> eine Spanne von **0,009** bei einer Luecke von **0,080**. Ausser Reichweite.
+
+Meine 0,0091 gegen 0,0769 sind eine **Bestaetigung**, keine Entdeckung - und
+eine bemerkenswerte: Zwischen den beiden Messungen liegen 96 Versuche und ein
+Wechsel des Betriebspunkts, und beide Zahlen sind praktisch gleich. Der
+Betriebspunkt hat genau zurueckgegeben, was der Zaehler gefressen hat. Das ist
+dieselbe Beobachtung wie in Befund 111, hier auf einer ganzen Leiter statt auf
+einem Punkt.
+
+Was an Befund 129 neu bleibt: die Gewinnziel-Leiter am Spot-Punkt, der
+Gegensatz der beiden Regler (Hub 0,009 gegen 0,818) und der Nachtrag, dass der
+Kandidat bei 19,3 auf dem niedrigsten der vier 9/11-Werte sitzt.
+
+### Warum das passiert ist - und was daran zu reparieren war
+
+Beide Male habe ich die Fundstelle nachgeschlagen, die im Register steht:
+
+    Richtung("Vola-Ziel", "bewegt den Deflated Sharpe um 0,011", 21)
+
+Die **21** ist die Stelle, an der die Richtung eroeffnet wurde. Die gueltigen
+Zahlen standen seit dem 8. August in Befund 23. Das Register hat mich also
+korrekt an eine ueberholte Tabelle verwiesen - und zwar zweimal
+hintereinander, ohne dass etwas daran auffaellig gewesen waere.
+
+Befund 90 hatte fuer ``stand.py`` schon einmal genau diese Diagnose gestellt:
+*"ein Lauf, der nur ins Laborbuch sieht, findet den Stand von vor zwanzig
+Befunden."* Die Antwort damals war das Register. Jetzt hatte das Register
+denselben Fehler in sich.
+
+**Repariert:** ``Richtung`` hat jetzt ein Feld ``zuletzt`` und eine
+Eigenschaft ``massgeblich``. Ein Eintrag nennt beide Stellen - *"Nr. 129
+(zuerst 21)"* - und die Nachmessung muss nach der Erstmessung liegen, sonst
+weist der Konstruktor sie ab. Drei Eintraege sind nachgezogen: Vola-Ziel und
+Gewinnziel auf 129, Termin-Overlay auf 127.
+
+### Was gebaut wurde
+
+* ``Richtung.zuletzt`` / ``Richtung.massgeblich`` samt Pruefung und Anzeige.
+* ``cli regler --zaehlerstand N`` - stellt den Zaehlerstand eines alten
+  Befunds nach, damit dessen Tabelle vergleichbar wird. Der Befehl schreibt
+  in Rot darueber, dass es eine **Rekonstruktion** ist und jede Zahl darunter
+  besser aussieht als der heutige Stand. Ohne diesen Schalter waere der
+  Nachweis oben nicht zu fuehren gewesen; mit ihm ist er in vier Minuten
+  gefuehrt.
+
+### Was daraus folgt
+
+1. **Der Code driftet nicht so, wie ich behauptet habe.** Eine Leiter von vor
+   107 Befunden ist ziffernweise reproduzierbar. Der einzige echte
+   Code-Effekt ueber die ganze Strecke ist ein Gate mehr an zwei Stellungen.
+2. **Die Regel aus Befund 128 bleibt trotzdem richtig** - nur mit anderer
+   Begruendung. Eine alte Tabelle darf man nicht als Vergleichspunkt nehmen,
+   nicht weil der Code driftet, sondern weil der **Zaehlerstand** ein anderer
+   war. Das ist der groessere Effekt und der leichter zu uebersehende.
+3. **Ein Register, das auf die Erstmessung zeigt, ist eine Falle.** Es hat mich
+   zweimal hintereinander erwischt, und ich habe es beide Male nicht bemerkt,
+   weil die Fundstelle ja stimmte.
+4. Am Stand der Sache aendert das nichts: Der Vola-Ziel-Regler ist zu, seit
+   Befund 21, bestaetigt in 23 und 129. Die Luecke ist dieselbe.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2275 Tests gruen.

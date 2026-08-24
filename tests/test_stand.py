@@ -435,3 +435,45 @@ class TestDieTrennung:
     def test_der_werkzeugabschnitt_sagt_was_er_nicht_bedeutet(self) -> None:
         """Sonst liest er sich wie Fortschritt."""
         assert "sagt nichts ueber die Aussichten" in _lage().bericht()
+
+
+class TestLetzteFundstelle:
+    """Befund 130: Ein Eintrag muss auf die **letzte** Messung zeigen.
+
+    Der Eintrag *"Vola-Ziel ... Befund 21"* zeigte auf eine Tabelle, die
+    Befund 23 zwei Befunde spaeter ersetzt hatte. Zwei Laeufe haben dort
+    nachgeschlagen und den Unterschied zum heutigen Stand falschen Ursachen
+    zugeschrieben.
+    """
+
+    def test_massgeblich_ist_die_nachmessung(self) -> None:
+        from research.stand import Richtung
+
+        ohne = Richtung("Etwas", "gemessen", 21)
+        assert ohne.massgeblich == 21
+        mit = Richtung("Etwas", "gemessen", 21, zuletzt=129)
+        assert mit.massgeblich == 129
+
+    def test_nachmessung_muss_nach_der_erstmessung_liegen(self) -> None:
+        from research.stand import Richtung
+
+        with pytest.raises(ValueError, match="keine Nachmessung"):
+            Richtung("Etwas", "gemessen", 129, zuletzt=21)
+        with pytest.raises(ValueError, match="keine Nachmessung"):
+            Richtung("Etwas", "gemessen", 21, zuletzt=21)
+
+    def test_zeile_nennt_beide_stellen(self) -> None:
+        from research.stand import Richtung
+
+        text = str(Richtung("Vola-Ziel", "Hub 0,009", 21, zuletzt=129))
+        assert "Nr. 129" in text
+        assert "zuerst 21" in text
+
+    def test_nachgemessene_richtungen_zeigen_auf_ihre_nachmessung(self) -> None:
+        """Die drei, die seit Befund 127 nachgemessen wurden."""
+        from research.stand import GESCHLOSSEN
+
+        nach = {r.name: r.zuletzt for r in GESCHLOSSEN}
+        assert nach["Vola-Ziel"] == 129
+        assert nach["Gewinnziel"] == 129
+        assert nach["Termin-Overlay"] == 127
