@@ -12591,3 +12591,125 @@ Ein Test, der die eigene Arbeit desselben Laufs abfaengt, ist ein besseres
 Zeugnis als einer, der gruen anlaeuft.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2427 Tests gruen.
+
+---
+
+## Hundertsiebenunddreissig. Kurve oder Schalter - die Gegenprobe zu Befund 135
+
+Befund 135 hat ein Gate geaendert: Das Deflated-Sharpe-Gate teilt seither
+zusaetzlich nach Kalenderquartalen, und der Wert des Kandidaten faellt von
+0,8640 auf 0,6026. **Geprueft war das an genau einem Kandidaten.**
+
+Der Kopf von ``unabhaengigkeit.py`` beschreibt den Fehler, der dabei entstehen
+kann - dem Projekt ist er schon einmal passiert:
+
+    Faktor   roh   effektiv    ICC       p     Deflated Sharpe
+       0,6   226        151  0,079   0,040               0,467
+       0,8   175        115  0,109   0,049               0,344
+       1,0   152        152  0,112   0,072               0,851
+      1,25   132         81  0,187   0,040               0,071
+
+> *"Der ICC - die eigentliche Abhaengigkeit - steigt dort glatt an. Nur der
+> p-Wert wandert ueber die Schwelle, und wo er knapp darunter faellt,
+> verschwindet ein Drittel der Stichprobe. Ein Deflated Sharpe von 0,851
+> zwischen 0,344 und 0,071 ist keine Kurve, sondern ein Schalter."*
+
+Wer ein Gate aendert, hat zu zeigen, dass er das nicht gebaut hat.
+
+### Gemessen
+
+Der Vola-Regler ueber seine sieben Stellungen, Spot, 198 Versuche. Kostet
+keinen Versuch - dieselben Stellungen wie in Befund 21.
+
+     Ziel  Trades |  ICC_q     p_q  n_q |  ICC_f     p_f  n_f |    n     DSR
+     14,0     149 |  0,271  0,0025  112 |  0,110  0,0730  149 |  112  0,6279
+     16,0     154 |  0,271  0,0055  111 |  0,116  0,0675  154 |  111  0,5840
+     19,3     152 |  0,257  0,0050  112 |  0,109  0,0750  152 |  112  0,6026
+     22,0     152 |  0,265  0,0045  110 |  0,113  0,0670  152 |  110  0,6002
+     25,0     152 |  0,260  0,0045  111 |  0,109  0,0745  152 |  111  0,6110
+     28,0     152 |  0,264  0,0045  110 |  0,112  0,0695  152 |  110  0,5882
+     32,0     152 |  0,256  0,0050  112 |  0,111  0,0715  152 |  112  0,6160
+
+**Kein Schalter.** Der ICC der Quartalseinteilung schwankt um 0,015, der
+p-Wert liegt an jeder Stellung zwischen 0,0025 und 0,0055 - nirgends in der
+Naehe der Grenze -, die effektive Stichprobe bleibt zwischen 110 und 112.
+
+Und ein zweites Ergebnis, das ich nicht gesucht habe: **Die alte Einteilung
+kuerzt an keiner einzigen Stellung.** ``n_f`` ist ueberall die volle
+Trade-Zahl, der p-Wert liegt immer zwischen 0,067 und 0,075 - immer knapp
+darueber, nie darunter. Die Blindheit aus Befund 135 war kein Einzelfall an
+einem Punkt, sondern gilt ueber den ganzen Regler.
+
+### Was ehrlich dazugehoert
+
+Die Leiter schwankt jetzt **staerker** als vorher. Vor Befund 135 lag der
+Deflated Sharpe zwischen 0,8640 und 0,8731 - eine Spanne von 0,0091. Jetzt
+liegt er zwischen 0,5840 und 0,6279 - eine Spanne von 0,0439, fuenfmal so
+viel.
+
+Ein Teil davon ist die Kurve selbst und keine Eigenschaft der Einteilung. Der
+Deflated Sharpe ist eine Verteilungsfunktion: in der Mitte steil, an den
+Raendern flach. Derselbe Wackler von zwei Beobachtungen bewegt ihn
+verschieden weit:
+
+    bei n = 110 -> 112 (heute)              0,5853 -> 0,6030   0,0177
+    bei n = 150 -> 152 (vor Befund 135)     0,8555 -> 0,8642   0,0087
+
+Faktor zwei. Beobachtet ist Faktor fuenf - **die Steilheit erklaert also rund
+die Haelfte, nicht alles.** Der Rest kommt daher, dass ueber den Regler auch
+Guete und Trade-Zahl wandern. Das ist keine Klippe, aber es ist mehr Unruhe
+als vorher, und das gehoert hingeschrieben statt weggerechnet.
+
+### Der Fehler beim Bauen des Kriteriums
+
+Der erste Anlauf fragte: *ruhiger ICC bei springender Strafe*. Das klang nach
+der richtigen Signatur und war falsch - im historischen Fall wandert der ICC
+von 0,079 auf 0,187, das Kriterium haette ihn **durchgelassen**. Der Modulkopf
+sagt es genauer: *"Der ICC steigt dort glatt an"*, und trotzdem springt die
+Strafe.
+
+Nicht Stillstand ist die Signatur, sondern **Bruch im Verlauf**: Nach ICC
+geordnet muss der uebrig bleibende Anteil fallen - wo mehr Abhaengigkeit ist,
+gehoert mehr gekuerzt. Steigt er stattdessen, folgt die Kuerzung nicht der
+Sache.
+
+    gemessene Leiter (heute)      groesster Anstieg  0,028   Kurve
+    historischer Fall             groesster Anstieg  0,343   Schalter
+
+Faktor zwoelf zwischen den beiden. Ein Kriterium, das sie knapp trennt, waere
+keins gewesen.
+
+Aufgefallen ist der Fehler nur, weil ich das Kriterium **gegen den
+historischen Fall** gerechnet habe statt nur gegen den heutigen. Ein
+Kriterium, das nur den Fall bestaetigt, fuer den es gebaut wurde, ist
+ungeprueft.
+
+### Und noch eine Stelle, an der ich nicht nachgeholfen habe
+
+Drei der vier historischen Sprossen liegen im Grenzband um p = 0,05. Die
+vierte - p = 0,072, genau die, an der der Deflated Sharpe auf 0,851 sprang -
+liegt mit 0,022 knapp **ausserhalb** des Vorgabebandes von 0,02.
+
+Das Band waere leicht auf 0,03 zu weiten, dann faellt sie hinein. Genau das
+habe ich nicht getan: Dann waere es an diesen Fall angepasst statt begruendet.
+Es bleibt bei 0,02, der Fall steht im Test, und wer das Band spaeter aendern
+will, findet dort beides.
+
+### Was gebaut wurde
+
+``research/empfindlichkeit.Klippenprobe`` und ``Sprosse``:
+``bruch_im_verlauf``, ``ist_schalter``, ``knapp_an_der_grenze``,
+``icc_spanne``, ``anteil_spanne``. Getestet gegen **beide** Faelle - die
+gemessene Leiter und den historischen Schalter.
+
+### Was daraus folgt
+
+1. **Befund 135 haelt.** Die Quartalseinteilung ist eine Kurve, kein Schalter,
+   und sie ist ueber den ganzen Regler die bindende - waehrend die alte
+   Einteilung nirgends kuerzt.
+2. **Der Stand bleibt, wo er ist**: 9 von 11, Deflated Sharpe 0,6026, Luecke
+   0,3474.
+3. Wer das naechste Gate aendert, hat jetzt ein Werkzeug fuer die Gegenprobe -
+   und einen Fall, an dem es scharf gestellt ist.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2436 Tests gruen.

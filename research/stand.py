@@ -319,6 +319,11 @@ BEHOBEN: tuple[Richtung, ...] = (
         "21 Stellen auf 0,8640 - Pruefung verlangt jetzt den Hinweis",
         136,
     ),
+    Richtung(
+        "Gate-Aenderung an einem Kandidaten",
+        "Quartale ueber sieben Stellungen: Bruch 0,028 - Kurve, kein Schalter",
+        137,
+    ),
 )
 
 

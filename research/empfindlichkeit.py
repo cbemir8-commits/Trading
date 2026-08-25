@@ -68,8 +68,9 @@ ihrem Tag so entstanden. Der massgebliche Stand steht in
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import pairwise
 
-__all__ = ["Empfindlichkeit", "Kalibrierung"]
+__all__ = ["Empfindlichkeit", "Kalibrierung", "Klippenprobe", "Sprosse"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -192,3 +193,140 @@ class Empfindlichkeit:
                 f"zu Recht nicht - aber sie straft auch nicht mit Abstand."
             )
         return " ".join(teile)
+
+
+@dataclass(frozen=True, slots=True)
+class Sprosse:
+    """Eine Reglerstellung mit dem, was die Abhaengigkeitspruefung dort tut."""
+
+    wert: float
+    trades: int
+    icc: float
+    p_wert: float
+    effektiv: int
+    dsr: float
+
+    def __post_init__(self) -> None:
+        if self.trades <= 0:
+            raise ValueError(f"Stellung {self.wert} ohne Trades ist keine Messung.")
+        if self.effektiv > self.trades:
+            raise ValueError(
+                f"Stellung {self.wert}: {self.effektiv} unabhaengige aus "
+                f"{self.trades} Trades - das geht nicht."
+            )
+
+    @property
+    def anteil(self) -> float:
+        """Wie viel von der Stichprobe uebrig bleibt (0 bis 1)."""
+        return self.effektiv / self.trades
+
+
+@dataclass(frozen=True, slots=True)
+class Klippenprobe:
+    """Ist eine Abhaengigkeitspruefung eine Kurve oder ein Schalter?
+
+    Der Fehler, den das findet, ist dem Projekt schon einmal passiert und
+    steht im Kopf von ``unabhaengigkeit.py``:
+
+        Faktor   roh   effektiv    ICC       p     Deflated Sharpe
+           0,6   226        151  0,079   0,040               0,467
+           0,8   175        115  0,109   0,049               0,344
+           1,0   152        152  0,112   0,072               0,851
+          1,25   132         81  0,187   0,040               0,071
+
+    *"Der ICC - die eigentliche Abhaengigkeit - steigt dort glatt an. Nur der
+    p-Wert wandert ueber die Schwelle, und wo er knapp darunter faellt,
+    verschwindet ein Drittel der Stichprobe."*
+
+    Das ist die Signatur: **Die Abhaengigkeit bleibt, die Strafe springt.**
+    Genau danach wird hier gesucht - und zwar an einer Leiter, nicht an einem
+    Punkt, denn an einem Punkt ist ein Schalter nicht von einer Kurve zu
+    unterscheiden.
+
+    Gebaut fuer die Selbstpruefung von Befund 135 (Befund 137): Wer ein Gate
+    aendert, hat es an mehr als einem Kandidaten zu zeigen.
+    """
+
+    sprossen: tuple[Sprosse, ...] = ()
+
+    @property
+    def icc_spanne(self) -> float | None:
+        if len(self.sprossen) < 2:
+            return None
+        werte = [s.icc for s in self.sprossen]
+        return max(werte) - min(werte)
+
+    @property
+    def anteil_spanne(self) -> float | None:
+        """Wie stark der uebrig bleibende Anteil ueber die Leiter schwankt."""
+        if len(self.sprossen) < 2:
+            return None
+        werte = [s.anteil for s in self.sprossen]
+        return max(werte) - min(werte)
+
+    def knapp_an_der_grenze(self, grenze: float = 0.05, rand: float = 0.02):
+        """Sprossen, deren p-Wert dicht an der Signifikanzgrenze liegt.
+
+        Dort entscheidet Rauschen im Permutationstest ueber ein Drittel der
+        Stichprobe - das ist die Stelle, an der die Klippe entsteht.
+        """
+        return tuple(
+            s for s in self.sprossen if abs(s.p_wert - grenze) <= rand
+        )
+
+    def bruch_im_verlauf(self) -> float | None:
+        """Der groesste Verstoss gegen "mehr Abhaengigkeit, mehr Strafe".
+
+        Nach ICC sortiert sollte der uebrig bleibende Anteil **fallen**: Wo
+        die Abhaengigkeit groesser ist, gehoert mehr gekuerzt. Steigt er
+        stattdessen, folgt die Kuerzung nicht der Sache.
+
+        Der erste Anlauf hier fragte nach einem *ruhigen* ICC bei springender
+        Strafe - und haette den historischen Fall **nicht** gefunden, denn
+        dort wandert der ICC von 0,079 auf 0,187. Der Modulkopf von
+        ``unabhaengigkeit.py`` sagt es genauer: *"Der ICC steigt dort glatt
+        an"*, und trotzdem springt die Strafe. Nicht Stillstand ist die
+        Signatur, sondern **Bruch im Verlauf**.
+        """
+        if len(self.sprossen) < 2:
+            return None
+        geordnet = sorted(self.sprossen, key=lambda s: s.icc)
+        return max(
+            (b.anteil - a.anteil for a, b in pairwise(geordnet)),
+            default=0.0,
+        )
+
+    def ist_schalter(self, spielraum: float = 0.05) -> bool | None:
+        """Folgt die Kuerzung der Abhaengigkeit - oder springt sie?
+
+        ``spielraum`` laesst kleine Gegenlaeufigkeiten zu; die Schaetzung des
+        ICC rauscht selbst. Gemessen trennt das die beiden Faelle deutlich:
+        Die Leiter aus Befund 137 kommt auf 0,028, der historische Fall aus
+        dem Kopf von ``unabhaengigkeit.py`` auf 0,343.
+        """
+        bruch = self.bruch_im_verlauf()
+        return None if bruch is None else bruch > spielraum
+
+    def urteil(self) -> str:
+        if len(self.sprossen) < 2:
+            return "Weniger als zwei Sprossen - ein Schalter braucht eine Leiter."
+        icc, anteil = self.icc_spanne, self.anteil_spanne
+        knapp = self.knapp_an_der_grenze()
+        dsr = [s.dsr for s in self.sprossen]
+        kopf = (
+            f"ICC schwankt um {icc:.3f}, der uebrige Anteil um {anteil:.1%}, "
+            f"der Deflated Sharpe zwischen {min(dsr):.4f} und {max(dsr):.4f}."
+        )
+        if self.ist_schalter():
+            return (
+                f"**Ein Schalter.** {kopf} Die Kuerzung folgt der Abhaengigkeit "
+                f"nicht: Nach ICC geordnet steigt der uebrige Anteil um "
+                f"{self.bruch_im_verlauf():.3f}, wo er fallen muesste."
+            )
+        wenn_knapp = (
+            f" {len(knapp)} von {len(self.sprossen)} Sprossen liegen dicht an "
+            f"der Signifikanzgrenze - dort entscheidet Rauschen."
+            if knapp
+            else " Keine Sprosse liegt dicht an der Signifikanzgrenze."
+        )
+        return f"**Eine Kurve.** {kopf}{wenn_knapp}"
