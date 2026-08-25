@@ -29,7 +29,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-__all__ = ["SPOTPUNKT", "UEBERHOLT", "Referenzpunkt", "veraltet"]
+__all__ = ["AUSSICHT", "SPOTPUNKT", "UEBERHOLT", "Aussicht", "Referenzpunkt", "veraltet"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,6 +108,68 @@ UEBERHOLT: tuple[Referenzpunkt, ...] = (
         gesamt=11,
         versuche=198,
     ),
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Aussicht:
+    """Wie weit es bis zur Schwelle ist - in Beobachtungen und in Tagen.
+
+    **Die Tage sind eine Untergrenze, keine Schaetzung.** Gerechnet wird mit
+    der effektiven Sammelrate des laengsten gemessenen Fensters, und die
+    faellt, je laenger die Historie wird (Befund 138):
+
+        Historie   Quartale      p   Anteil   eff je 1000 Tage
+         1451 d          12  1,0000    1,000               35,8
+         1816 d          16  0,2110    1,000               39,6
+         2320 d          21  0,0645    1,000               44,4
+         2547 d          24  0,0255    0,901               39,3
+         2912 d          28  0,0200    0,876               41,2
+         3277 d          32  0,0050    0,737               34,2
+
+    Mehr Historie heisst mehr Quartale, mehr Quartale heisst eine engere
+    Permutationsnull, und eine engere Null sieht mehr Abhaengigkeit. Der
+    Anteil sinkt also weiter, waehrend man wartet - und die noetige Zeit
+    waechst mit. Wie stark, ist von hier aus nicht messbar; deshalb steht hier
+    eine Untergrenze und kein Termin.
+    """
+
+    noetig: int
+    heute: int
+    rate_je_tausend_tage: float
+    befund: int
+
+    def __post_init__(self) -> None:
+        if self.rate_je_tausend_tage <= 0:
+            raise ValueError("Ohne Sammelrate laesst sich keine Zeit rechnen.")
+        if self.befund <= 0:
+            raise ValueError("Eine Aussicht ohne Fundstelle ist eine Behauptung.")
+
+    @property
+    def fehlend(self) -> int:
+        return max(self.noetig - self.heute, 0)
+
+    @property
+    def tage(self) -> int:
+        return round(1000.0 * self.fehlend / self.rate_je_tausend_tage)
+
+    @property
+    def jahre(self) -> float:
+        return self.tage / 365.25
+
+    def als_zeile(self) -> str:
+        return (
+            f"mindestens {self.tage} Tage ({self.jahre:.1f} Jahre) fuer "
+            f"{self.fehlend} fehlende Beobachtungen  (Befund {self.befund})"
+        )
+
+
+#: Der Abstand zur Schwelle, in Zeit. Untergrenze - siehe ``Aussicht``.
+AUSSICHT = Aussicht(
+    noetig=182,
+    heute=112,
+    rate_je_tausend_tage=34.2,
+    befund=138,
 )
 
 

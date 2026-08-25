@@ -324,6 +324,11 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Quartale ueber sieben Stellungen: Bruch 0,028 - Kurve, kein Schalter",
         137,
     ),
+    Richtung(
+        "Zeit bis zur Schwelle veraltet",
+        "1,8 Jahre galten fuer n = 152; jetzt mindestens 5,6",
+        138,
+    ),
 )
 
 

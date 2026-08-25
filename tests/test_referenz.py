@@ -215,3 +215,51 @@ def test_der_referenzpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
         f"referenz.py nennt n = {SPOTPUNKT.effektiv}; damit ergaebe die Formel "
         f"{aus_referenz:.4f}, das Gate liefert aber {float(dsr.value):.4f}."
     )
+
+
+# --- Die Aussicht (Befund 138) ----------------------------------------------
+
+
+def test_die_aussicht_rechnet_mit_dem_heutigen_n() -> None:
+    from research.referenz import AUSSICHT
+
+    assert AUSSICHT.heute == SPOTPUNKT.effektiv
+    assert AUSSICHT.fehlend == 182 - SPOTPUNKT.effektiv
+    assert AUSSICHT.befund == 138
+
+
+def test_die_aussicht_ist_deutlich_laenger_als_befund_132_sagte() -> None:
+    """1,8 Jahre bei n = 152; nach Befund 135 sind es mindestens 5,6."""
+    from research.referenz import AUSSICHT
+
+    assert AUSSICHT.jahre > 5.0
+    assert AUSSICHT.tage == pytest.approx(2047, abs=5)
+
+
+def test_eine_aussicht_ohne_rate_laesst_sich_nicht_rechnen() -> None:
+    from research.referenz import Aussicht
+
+    with pytest.raises(ValueError, match="keine Zeit rechnen"):
+        Aussicht(noetig=182, heute=112, rate_je_tausend_tage=0.0, befund=138)
+
+
+def test_eine_aussicht_ohne_fundstelle_ist_eine_behauptung() -> None:
+    from research.referenz import Aussicht
+
+    with pytest.raises(ValueError, match="Behauptung"):
+        Aussicht(noetig=182, heute=112, rate_je_tausend_tage=34.2, befund=0)
+
+
+def test_ein_erreichtes_ziel_braucht_keine_zeit() -> None:
+    from research.referenz import Aussicht
+
+    erreicht = Aussicht(noetig=100, heute=112, rate_je_tausend_tage=34.2, befund=138)
+    assert erreicht.fehlend == 0
+    assert erreicht.tage == 0
+
+
+def test_die_zeile_weist_die_zahl_als_untergrenze_aus() -> None:
+    from research.referenz import AUSSICHT
+
+    assert "mindestens" in AUSSICHT.als_zeile()
+    assert "Befund 138" in AUSSICHT.als_zeile()

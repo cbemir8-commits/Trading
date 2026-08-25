@@ -12713,3 +12713,92 @@ gemessene Leiter und den historischen Schalter.
    und einen Fall, an dem es scharf gestellt ist.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2436 Tests gruen.
+
+---
+
+## Hundertachtunddreissig. Aus 1,8 Jahren werden mindestens 5,6
+
+Befund 132 hat den Abstand zur Zulassung zum ersten Mal in Zeit ausgedrueckt:
+30 fehlende Beobachtungen, **1,8 Jahre**. Befund 134 hat daraus eine Spanne
+von 1,8 bis 6,6 Jahren gemacht. Befund 135 hat dann n von 152 auf 112
+gesenkt - und **niemand hat die Rechnung wiederholt.**
+
+Das ist die meistzitierte vorausschauende Zahl dieses Projekts, sie steht in
+mehreren Modulkoepfen, und sie ist seit drei Befunden falsch. Dieser Lauf
+holt das nach.
+
+### Erst die einfache Rechnung
+
+Bei Guete 0,2765, Schiefe 3,41 und Woelbung 15,48 traegt die Schwelle ab
+**n = 182**. Heute sind es 112, es fehlen also **70** statt 30.
+
+Die effektive Sammelrate ist nicht mehr 44,7: Von 152 Trades auf 3277 Tagen
+bleiben nach der Quartalseinteilung 112 uebrig, also 34,2 je 1000 Tage statt
+46,4.
+
+    70 fehlende Beobachtungen / 34,2 je 1000 Tage = **2047 Tage = 5,6 Jahre**
+
+### Und dann die Annahme darin
+
+Diese Rechnung haelt den Anteil fest, der nach der Kuerzung uebrig bleibt -
+0,737. Das ist eine **Annahme**, und sie zeigt in die unbequeme Richtung: Mehr
+Historie heisst mehr Quartale, mehr Quartale heisst eine engere
+Permutationsnull, und eine engere Null sieht mehr Abhaengigkeit.
+
+Also gemessen, an denselben sechs Fenstern wie in Befund 132:
+
+    Historie   Trades  Quartale     ICC       p   Anteil   eff/1000 d
+     1451 d        52        12   0,000  1,0000    1,000         35,8
+     1816 d        72        16   0,064  0,2110    1,000         39,6
+     2320 d       103        21   0,123  0,0645    1,000         44,4
+     2547 d       111        24   0,224  0,0255    0,901         39,3
+     2912 d       137        28   0,178  0,0200    0,876         41,2
+     3277 d       152        32   0,257  0,0050    0,737         34,2
+
+**Der Anteil faellt mit der Historie, und zwar monoton.** Unter 21 Quartalen
+kuerzt die Pruefung gar nichts - nicht weil dort keine Abhaengigkeit waere,
+sondern weil sie mit so wenigen Bloecken nicht nachweisbar ist. Der p-Wert
+wandert dabei glatt von 1,0000 auf 0,0050.
+
+Der ICC steigt in derselben Richtung (0,000 auf 0,257). Das ist mit grosser
+Wahrscheinlichkeit **kein** Zuwachs an echter Abhaengigkeit, sondern der
+Schaetzer, der mit wenigen Bloecken gegen null gezogen wird. Die eigentliche
+Abhaengigkeit duerfte ueberall bei rund 0,25 liegen - die kurzen Fenster
+sehen sie nur nicht.
+
+### Was daraus folgt
+
+**Die 5,6 Jahre sind eine Untergrenze, kein Termin.** Waehrend man wartet,
+waechst die Historie, mit ihr die Zahl der Quartale, mit ihr die
+Trennschaerfe - und der Anteil sinkt weiter. Um wie viel, ist von hier aus
+nicht messbar: Das waere genau der Punktschaetzer, vor dem Befund 124 gewarnt
+hat.
+
+Und ein zweites, unbequemeres Ergebnis liegt darin: **Befund 132s
+Historienkurve hat die effektive Stichprobe an jedem Fenster ueberschaetzt**,
+weil sie mit der alten Einteilung gerechnet hat. Die dortige Sammelrate von
+44,7 je 1000 Tagen ist zu hoch; richtig sind 34,2. Die Befunde bleiben als
+Protokoll richtig, ihre Schlussfolgerung in Tagen nicht.
+
+### Was gebaut wurde
+
+``research/referenz.Aussicht`` und die Konstante ``AUSSICHT`` - der Abstand
+in Beobachtungen und in Tagen, an derselben Stelle wie der Referenzpunkt.
+Die Klasse heisst nicht "Prognose" und ihre Zeile beginnt mit
+*"mindestens"*; der Docstring traegt die Messreihe oben, damit niemand die
+Zahl fuer einen Termin haelt.
+
+Dazu Tests, die die Aussicht an ``SPOTPUNKT.effektiv`` binden: Wandert n, muss
+die Aussicht mitwandern, sonst faellt es auf.
+
+### Was daraus folgt
+
+1. **Der Abstand ist dreimal so lang wie zuletzt berichtet** - mindestens 5,6
+   statt 1,8 Jahre, und die Untergrenze waechst mit der Wartezeit.
+2. **Der Zeitraum ist die falsche Groesse zum Planen.** Er haengt an einer
+   Kuerzung, die selbst von der Datenmenge abhaengt - eine Ruecckopplung, die
+   in keiner der frueheren Rechnungen steckte.
+3. Am Stand aendert sich nichts: 9 von 11, Deflated Sharpe 0,6026, Luecke
+   0,3474. Was sich aendert, ist die Aussicht darauf, wann das anders wird.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2442 Tests gruen.
