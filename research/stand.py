@@ -23,6 +23,12 @@ Fundstelle wird abgewiesen.
 **Was hier nicht steht: eine Empfehlung.** Zwei der offenen Punkte sind
 wirtschaftliche Entscheidungen des Nutzers, keine statistischen. Sie werden
 benannt und beziffert, nicht beantwortet.
+
+**Und nicht der Stand des Kandidaten.** Wo hier eine Kennzahl vorkommt, ist
+sie Teil eines Registereintrags und gehoert zu dessen Fundstelle - der
+massgebliche Punkt steht in ``research/referenz.py``. Ein Eintrag wie *"21
+Stellen auf 0,8640"* nennt die Zahl als Geschichte, nicht als Stand; seit
+Befund 135 sind es 0,6026 bei n = 112.
 """
 
 from __future__ import annotations
@@ -297,6 +303,21 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'Regler traegt nicht weit genug'",
         "gilt fuers Vola-Ziel, nicht fuers Gewinnziel - Hub 0,0091 gegen 0,8178",
         129,
+    ),
+    Richtung(
+        "Stichprobe ohne Fehlerbalken",
+        "Kalibrierung bewegt 0,3247, die Luecke ist 0,0860",
+        134,
+    ),
+    Richtung(
+        "Einteilung ohne Quartale",
+        "Gate sah die Abhaengigkeit nicht - n 152 auf 112, DSR auf 0,6026",
+        135,
+    ),
+    Richtung(
+        "Ueberholte Kennzahl im Modulkopf",
+        "21 Stellen auf 0,8640 - Pruefung verlangt jetzt den Hinweis",
+        136,
     ),
 )
 

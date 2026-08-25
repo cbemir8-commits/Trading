@@ -58,6 +58,7 @@ asyncio_mode = "auto"
 filterwarnings = ["error::DeprecationWarning"]
 markers = [
     "network: Test braucht echte Bybit-Verbindung (wird in CI/Sandbox uebersprungen)",
+    "langsam: Test rechnet einen vollen Walk-Forward (laeuft mit, dauert aber)",
 ]
 
 [tool.mypy]

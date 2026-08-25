@@ -12496,3 +12496,98 @@ Modulkoepfen statt im Register. Sie sind **nicht** nachgezogen; das gehoert in
 einen eigenen Lauf und nicht in eine Fussnote.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2342 Tests gruen.
+
+---
+
+## Hundertsechsunddreissig. Einundzwanzig Stellen, die den Stand von gestern trugen
+
+Befund 135 hat das Deflated-Sharpe-Gate strenger gemacht - n von 152 auf 112,
+der Deflated Sharpe von 0,8640 auf 0,6026 - und dabei etwas ausdruecklich
+liegen lassen:
+
+> **Einundzwanzig Stellen in acht Modulen nennen 0,8640.** Jede zitiert einen
+> Befund und ist als Zitat richtig - aber wer sie liest, findet den Stand von
+> gestern. [...] Sie sind **nicht** nachgezogen; das gehoert in einen eigenen
+> Lauf und nicht in eine Fussnote.
+
+Dies ist der Lauf.
+
+### Warum das kein Aufraeumen ist
+
+Es ist dieselbe Falle wie in Befund 130, eine Ebene tiefer. Dort zeigte ein
+Registereintrag auf eine ueberholte Tabelle, und **zwei Laeufe hintereinander**
+haben nachgeschlagen, die alte Zahl gefunden und daraus falsche Schluesse
+gezogen - ohne dass etwas auffaellig gewesen waere, denn die Fundstelle stimmte
+ja.
+
+Ein Laborbuch darf alte Zahlen tragen: Es ist ein Protokoll. Ein **Modulkopf**
+nicht - er wird als Stand gelesen.
+
+### Was gebaut wurde
+
+**``research/referenz.py``** haelt den massgeblichen Punkt an einer Stelle:
+
+    Spot wie gebaut           152 Trades, n = 112, Guete 0,2765,
+                              DSR 0,6026, 9/11  (Befund 135)
+
+Dazu ``UEBERHOLT`` - die Staende, die einmal massgeblich waren: 0,8640 bei
+n = 152 (vor Befund 135) und 0,7641 am Perpetual-Punkt (vor Befund 108). Wer
+eine dieser Zahlen in einem Modulkopf liest, liest Geschichte.
+
+**Die Pruefung**, und die ist der eigentliche Inhalt: Ein Test geht jedes
+Modul in ``research/`` durch und verlangt, dass jede ueberholte Kennzahl von
+einem Hinweis begleitet wird - auf ``research/referenz.py`` oder auf den
+Befund, der sie ueberholt hat.
+
+Sieben Module haben den Hinweis bekommen: ``aufstellung``, ``betriebspunkt``,
+``decke``, ``empfindlichkeit``, ``historie``, ``instrument``, ``regler``.
+``gates`` nannte Befund 135 ohnehin.
+
+### Der Fehler beim Bauen der Pruefung
+
+Der erste Anlauf suchte nach dem Wort *"Referenz"* und meldete nur **zwei**
+Module. Das sah nach wenig Arbeit aus und war falsch: Acht Module enthalten
+"Referenzfenster" oder "(Referenz)" aus ganz anderem Anlass und kamen deshalb
+durch.
+
+Das ist genau Befund 118 - eine Textsuche, deren Treffer man ungeprueft nimmt.
+Aufgefallen ist es nur, weil zwei Treffer bei einundzwanzig bekannten Stellen
+nicht zusammenpassten. Die Pruefung verlangt jetzt einen **ausdruecklichen**
+Verweis (``research.referenz`` oder ``Befund 135``), und dann waren es sieben.
+
+### Und eine zweite Pruefung, damit die Angabe nicht selbst veraltet
+
+``referenz.py`` wird **gepflegt**, nicht gemessen - und gepflegte Zahlen
+veralten, was ja der ganze Anlass war. Deshalb rechnet ein Test den Kandidaten
+am massgeblichen Punkt einmal durch und vergleicht: Trades, Deflated Sharpe,
+Gate-Zahl, Versuchszaehler. Er laeuft mit (Marke ``langsam``) und braucht acht
+Sekunden.
+
+Ein Feld war damit trotzdem ungeprueft: ``effektiv``. Es steht in keiner
+Gate-Meldung. Statt die Gate-Logik nachzubauen - der Fehler aus den Befunden
+101, 103 und 109 - wird die Zahl **ueber die Formel** an den beobachteten Wert
+gebunden: Nur das richtige n ergibt den gemessenen Deflated Sharpe. Steht in
+``referenz.py`` ein anderes, faellt der Test mit beiden Zahlen im Text.
+
+### Was daraus folgt
+
+1. **Der Stand steht jetzt an einer Stelle**, und wer eine alte Zahl liest,
+   wird weitergeschickt.
+2. **Die Falle aus Befund 130 ist maschinell zu.** Beim naechsten Gate-Wechsel
+   meldet der Test jedes Modul, das nachzuziehen ist - statt dass es zwei
+   Laeufe kostet, es zu merken.
+3. Am Stand der Sache aendert dieser Befund nichts: 9 von 11, Deflated Sharpe
+   0,6026, Luecke 0,3474. Er aendert, wie lange eine falsche Zahl unbemerkt
+   stehen bleiben kann.
+
+### Die Pruefung hat beim ersten Mal zugeschlagen
+
+Beim Nachtragen der Registereintraege fuer die Befunde 134 bis 136 hat der neue
+Test sofort angeschlagen: Der Eintrag *"21 Stellen auf 0,8640"* nennt die alte
+Zahl - und ``stand.py`` hatte keinen Hinweis. Der Eintrag ist richtig, er nennt
+sie als Geschichte; der Hinweis fehlte trotzdem. Er steht jetzt da.
+
+Ein Test, der die eigene Arbeit desselben Laufs abfaengt, ist ein besseres
+Zeugnis als einer, der gruen anlaeuft.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2427 Tests gruen.

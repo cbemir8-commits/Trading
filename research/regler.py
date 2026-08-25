@@ -78,6 +78,15 @@ eigenen Fall (Befund 128), Spot-Punkt, 152 Trades:
 Ein zaehlerabhaengiges Gate, das ueberall offen steht, ist damit
 **selbstsperrend**: Feiner messen macht es nicht besser, sondern messbar
 schlechter. Deshalb gibt es hier ``klaerung_lohnt``.
+
+Zum Stand
+---------
+Die Zahlen oben rechnen mit **n = 152** und einem Deflated Sharpe von 0,8640.
+Beides ist seit **Befund 135** ueberholt: Das Gate teilt seither zusaetzlich
+nach Kalenderquartalen, die effektive Stichprobe faellt auf 112 und der
+Deflated Sharpe auf 0,6026. Die Messungen hier bleiben richtig - sie sind an
+ihrem Tag so entstanden. Der massgebliche Stand steht in
+``research/referenz.py``.
 """
 from __future__ import annotations
 

@@ -184,6 +184,15 @@ Sache wie ein gelockertes Gate, nur unauffaelliger. ``Fensterlage`` haelt das
 fest: Es gibt keine Methode, die das beste Fenster zurueckgibt.
 ``wechsel_begruendbar`` nennt nur Fenster, die das Referenzfenster in **jeder**
 Hinsicht schlagen - hier keines.
+
+Zum Stand
+---------
+Die Zahlen oben rechnen mit **n = 152** und einem Deflated Sharpe von 0,8640.
+Beides ist seit **Befund 135** ueberholt: Das Gate teilt seither zusaetzlich
+nach Kalenderquartalen, die effektive Stichprobe faellt auf 112 und der
+Deflated Sharpe auf 0,6026. Die Messungen hier bleiben richtig - sie sind an
+ihrem Tag so entstanden. Der massgebliche Stand steht in
+``research/referenz.py``.
 """
 
 from __future__ import annotations

@@ -55,6 +55,15 @@ Was sich dadurch **nicht** aendert: Auch der bessere Stand ist keine
 Zulassung. 9 von 11 sind nicht 11 von 11, und die zwei offenen - Messlatte und
 Deflated Sharpe - sind nach Befund 111 die, hinter denen keine gemessene
 Familie mehr steht.
+
+Zum Stand
+---------
+Die Zahlen oben rechnen mit **n = 152** und einem Deflated Sharpe von 0,8640.
+Beides ist seit **Befund 135** ueberholt: Das Gate teilt seither zusaetzlich
+nach Kalenderquartalen, die effektive Stichprobe faellt auf 112 und der
+Deflated Sharpe auf 0,6026. Die Messungen hier bleiben richtig - sie sind an
+ihrem Tag so entstanden. Der massgebliche Stand steht in
+``research/referenz.py``.
 """
 
 from __future__ import annotations

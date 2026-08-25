@@ -58,6 +58,15 @@ Jahre**.
 
 Diese Tage koennen nicht aus der Vergangenheit kommen; die ist ausgeschoepft.
 Sie koennen nur aus der Zukunft kommen.
+
+Zum Stand
+---------
+Die Zahlen oben rechnen mit **n = 152** und einem Deflated Sharpe von 0,8640.
+Beides ist seit **Befund 135** ueberholt: Das Gate teilt seither zusaetzlich
+nach Kalenderquartalen, die effektive Stichprobe faellt auf 112 und der
+Deflated Sharpe auf 0,6026. Die Messungen hier bleiben richtig - sie sind an
+ihrem Tag so entstanden. Der massgebliche Stand steht in
+``research/referenz.py``.
 """
 from __future__ import annotations
 
