@@ -13022,3 +13022,125 @@ Die Pruefung findet, wonach sie sucht - nicht, was veraltet ist. Behoben ist
 das hier nicht, nur benannt.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.
+
+## Hunderteinundvierzig. Vierzehn Paare, keines reicht
+
+Befund 140 hat die Richtung aus Befund 80 bestaetigt: Der Verbund ist der
+einzige gemessene Hebel, der die effektive Stichprobe **hebt**. Dort waren es
+zwei Partner. Der Katalog hat mehr.
+
+``cli anwaerter`` laesst alle Katalog-Genome laufen, haelt sie aber gegen die
+**Formel** aus Befund 74 und wirft die Berichte weg. **Der Verbund selbst
+wurde nie gerechnet** - dabei kostet er nichts: Die Beine laufen ohnehin, und
+der Verbund ist die Vereinigung ihrer Trades.
+
+### Was hier neu ist - und was nicht
+
+**Die Richtung ist nicht neu geschlossen.** Befund 86 hat sie geschlossen:
+210 Paare auf der Wochenachse, bestes 3,585 unter einem Nullmedian von 3,683.
+Befund 74 davor: *"0 von 15 Genomen taugen"*. Ich habe das beim Planen nicht
+nachgeschlagen und diesen Befund zuerst so aufgeschrieben, als sei die
+Erschoepfung des Katalogs mein Fund. Sie ist es nicht.
+
+Neu ist die **Messgrundlage**: Befund 86 stand auf der Wochenachse gegen eine
+Permutationsnull, hier steht die Einteilung des Gates selbst - und die ist
+seit Befund 135 eine andere. Neu sind ausserdem die drei Beobachtungen unten,
+von denen zwei gegen bestehende Annahmen des Projekts laufen.
+
+Enger ist es auch: 86 hat alle 210 Paare untereinander geprueft, hier sind es
+die 14 Paare **mit dem Bestand**.
+
+### Vor dem Lauf festgelegt
+
+Die ganze Verteilung wird berichtet, der Katalog vorher entdoppelt. **Es wird
+kein Sieger benannt** - wer eines von N geprueften Paaren uebernimmt, hat eine
+Auswahl ueber N getroffen und schuldet N Versuche. Die entscheidende Frage ist
+binaer: Erreicht irgendeines die Latte? Erreicht keines sie, ist die Richtung
+fuer den vorhandenen Katalog geschlossen, und das ist ein Ergebnis gegen das
+Projekt.
+
+### Gemessen
+
+Bestand allein: n = 111, Guete 2,730, noetig 3,600 - Luecke 0,870.
+
+    Partner                        P_n   P_sr    n  halt  Guete  noetig  fehlt
+    Trend-Beteiligung (fair)        53  0,318  124  0,60  3,073   3,625  0,552
+    Abfolge-Modell short            67  0,083  191  0,86  3,032   3,725  0,692
+    Grosse Kerze mit Vol. short     51  0,134  154  0,75  2,888   3,674  0,786
+    Abfolge-Modell (Abgriff)        56  0,107  162  0,77  2,895   3,686  0,791
+    Trend beide Richtungen         106  0,216  130  0,50  2,765   3,635  0,870
+    Trend-Beteiligung 100 Tage     109  0,223  138  0,52  2,778   3,649  0,870
+    Abfolge ohne Luecke             50  0,138  139  0,68  2,753   3,650  0,898
+    Donchian-Ausbruch 55/20         58  0,307  106  0,50  2,645   3,591  0,946
+    Bollinger-Ruecksetzer short     36  0,058  127  0,67  2,631   3,630  0,999
+    Momentum-Beteiligung 90         101  0,165  175  0,69  2,680   3,704  1,024
+    Trend-Beteiligung 50 Tage      156  0,189  152  0,49  2,627   3,671  1,044
+    Luecke wird geschlossen        258 -0,037  412  1,00  2,680   3,896  1,215
+    VWAP-Rueckkehr short           185 -0,111  339  1,00  2,390   3,855  1,465
+    Abfolge ohne Strukturbruch     124 -0,047  153  0,55  2,082   3,673  1,591
+
+**Keines der vierzehn erreicht die Latte.** Der kleinste Abstand ist 0,552 -
+und das ist der Partner, der seit Befund 73 bekannt ist. Zum Vergleich: Befund
+86 kam auf der Wochenachse auf 3,585 gegen 3,683. Vier stehen klar
+besser da als der Bestand allein; zwei liegen so nah an dessen Luecke, dass
+der Unterschied in der vierten Stelle steht und nichts bedeutet.
+
+### Drei Dinge, die dabei herauskamen
+
+**1. Die Fensterkorrelation ordnet die Partner nicht.** Rangkorrelation gegen
+die gemessene Verbundguete: **+0,04**; gegen die Luecke -0,10. Der beste
+Partner hat rho = +0,56, der zweitbeste -0,41. Die Anforderung aus Befund 74 -
+*"moeglichst wenig Fensterkorrelation zum Bestand"* - traegt in diesen Daten
+nichts. Einzig die Einzelguete des Partners zeigt Signal (-0,53 gegen die
+Luecke), und auch das schwach.
+
+**2. Die Behaltequote sagt ebenfalls nichts** (+0,00 gegen die Luecke). **Das
+korrigiert meine eigene Erzaehlung aus Befund 140.** Dort steht, *warum* der
+eine Partner half: Er verteilt die Trades ueber mehr Quartale. Das stimmt fuer
+den Einzelfall - ueber vierzehn Partner hinweg sagt der Mechanismus das
+Ergebnis nicht vorher. Eine Erklaerung ist noch keine Auswahlregel, und ich
+habe sie in Befund 140 klingen lassen wie eine.
+
+**3. Die Latte steigt mit der Stichprobe** - von 3,591 bei n = 106 auf 3,896
+bei n = 412. Der Grund steht in der Formel: Die Schiefe senkt die Huerde ueber
+den Nenner, und zwar proportional zum noetigen Sharpe **je Trade**:
+
+    n = 106   noetiger SR 0,3488   Nenner 0,501   z*Nenner 0,825
+    n = 412   noetiger SR 0,1919   Nenner 0,692   z*Nenner 1,138
+
+Die Differenz 0,313 erklaert den Anstieg der Latte um 0,305. **Wer dieselbe
+Kante auf mehr Trades verteilt, verliert einen Teil des Schiefe-Bonus.** Das
+ist der rechnerische Grund, warum mehr Beobachtungen die Luecke nicht
+schliessen - und er galt die ganze Zeit, auch fuer Befund 138s Weg ueber mehr
+Historie.
+
+Deshalb wird nach der **Luecke** geordnet und nicht nach der Guete.
+'Abfolge-Modell short' hat die hoehere Guete (3,032 gegen 2,888) und trotzdem
+den groesseren Abstand, weil es gegen eine hoehere Latte antritt. Nach Guete
+sortiert waeren sieben Paare besser als der Bestand; nach Luecke sind es vier.
+
+### Was gebaut wurde
+
+``research/paarkarte.py`` mit ``Paar`` und ``Paarfeld``, dazu ``cli paare``.
+Das Gegenstueck zu ``partnerkarte`` (vorhergesagt) und ``anwaerter`` (nach
+Formel geordnet): hier wird der Verbund gebaut und gemessen.
+
+``Paarfeld.kosten_einer_auswahl`` sagt, was das Uebernehmen kostet - **14
+Versuche, nicht einen**. Der Satz steht im Urteil und nicht im Kleingedruckten,
+weil genau diese Auswahl in Befund 73 schon einmal ein bestandenes Gate
+vorgetaeuscht hat.
+
+### Was daraus folgt
+
+1. **Der vorhandene Katalog bleibt als Partnerquelle erschoepft** - jetzt
+   auch an der Einteilung des Gates gemessen. Vierzehn Paare, null Treffer,
+   kleinster Abstand 0,552 Guete. Der Registereintrag aus Befund 86 traegt
+   die Nachmessung als ``zuletzt=141``.
+2. **Das Auswahlkriterium des Restbudgets traegt nicht.** Befund 80 legt 32
+   Versuche in die Partnersuche, gesteuert von einer Groesse, deren
+   Rangkorrelation mit dem Ergebnis +0,04 betraegt.
+3. **Ein neuer Partner muesste deutlich mehr koennen als alles Gebaute.** Wie
+   viel, sagt ``cli partner`` - auf der richtigen Stichprobe seit Befund 139.
+
+Versuchszaehler 198 unveraendert: gemessen, nicht ausgewaehlt. Suchbudget 68
+von 100.

@@ -10047,5 +10047,136 @@ def register(
     )
 
 
+@app.command()
+def paare(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    vola_ziel: float = typer.Option(19.3, "--vola-ziel"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Jedes Katalog-Genom als Verbund mit dem Bestand - **gemessen**.
+
+    Das Gegenstueck zu ``cli anwaerter``: Der laesst dieselben Genome laufen,
+    haelt sie aber gegen die **Formel** aus Befund 74 und wirft die Berichte
+    weg. Hier wird der Verbund tatsaechlich gebaut - die Vereinigung der
+    Trades, mit der Einteilung des Gates.
+
+    Geordnet wird nach der **Luecke**, nicht nach der Guete: Die Latte steigt
+    mit der Stichprobe (Befund 141), zwei Paare mit verschiedenem ``n`` treten
+    also gegen verschiedene Latten an.
+
+    **Kostet keinen Versuch** - solange niemand eines der Paare uebernimmt.
+    Wer das tut, hat eine Auswahl ueber alle getroffen; der Bericht sagt am
+    Ende, was das kostet.
+    """
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.entdopplung import entdoppele
+    from research.paarkarte import Paar, Paarfeld
+    from research.seeds import VORGESEHEN, load_seeds, spitzenkandidat
+    from research.suchbudget import Kandidat
+    from research.verbund import baue, noetige_guete
+    from strategy.compiler import compile_genome
+    from strategy.genome import SizingSpec
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    versuche = load_trials(Path(settings.paths.state) / "trials.json")
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+    frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
+
+    def lauf(genome):
+        angepasst = genome.model_copy(
+            update={
+                "sizing": SizingSpec(
+                    kind="vola_ziel", fraction=3.0,
+                    target_vol_pct=vola_ziel, vol_period=30,
+                )
+            }
+        )
+        return run_portfolio_walkforward(
+            frames, lambda g=angepasst: compile_genome(g), configs
+        )
+
+    bestand = spitzenkandidat()
+    spitze = lauf(bestand)
+    allein = baue([(bestand.name, spitze)], versuche=versuche)
+    allein_k = Kandidat.aus_trades("x", allein.trades)
+    if allein_k is None or allein_k.sharpe_je_trade <= 0:
+        console.print("[red]Der Bestand liefert keine auswertbaren Trades.[/]")
+        raise typer.Exit(2)
+    allein_n = allein.stichprobe.effektiv
+    allein_g = allein_k.sharpe_je_trade * allein_n**0.5
+    allein_ziel = noetige_guete(allein_n, versuche) or 0.0
+
+    console.print(
+        f"\n[bold]Gemessene Paare[/] auf {' + '.join(symbole)} "
+        f"{interval_obj.label}\n"
+        f"  Bestand    '{bestand.name}' allein: n = {allein_n}, "
+        f"Guete {allein_g:.3f}, noetig {allein_ziel:.3f}\n"
+        f"  Historie   {spanne} Tage, {versuche} Versuche bisher\n"
+    )
+
+    # Erst alle Beine, dann entdoppeln - dasselbe Genom steht unter mehreren
+    # Namen im Katalog, und jede Dublette blaehte die Auswahl auf.
+    passende = [g for g, iv in VORGESEHEN.items() if iv == interval_obj.value]
+    roh: dict[str, list] = {bestand.name: list(spitze.all_trades)}
+    berichte = {bestand.name: spitze}
+    for gen in sorted(passende):
+        for genome in load_seeds(gen):
+            if genome.name in roh:
+                continue
+            bericht = lauf(genome)
+            trades = list(bericht.all_trades)
+            if len(trades) < 10 or not bericht.windows:
+                continue
+            roh[genome.name] = trades
+            berichte[genome.name] = bericht
+
+    namen = [n for n in entdoppele(roh).laeufe if n != bestand.name]
+    console.print(
+        f"  Katalog    {len(roh) - 1} Genome, nach Entdopplung {len(namen)}\n"
+    )
+
+    gemessen = []
+    for name in namen:
+        lage = baue([(bestand.name, spitze), (name, berichte[name])],
+                    versuche=versuche)
+        k = Kandidat.aus_trades("x", lage.trades)
+        einzeln = Kandidat.aus_trades(name, roh[name])
+        if k is None or einzeln is None or k.sharpe_je_trade <= 0:
+            continue
+        n = lage.stichprobe.effektiv
+        gemessen.append(Paar(
+            name=name, partner_trades=len(roh[name]),
+            partner_sharpe=einzeln.sharpe_je_trade,
+            roh=len(lage.trades), effektiv=n,
+            guete=k.sharpe_je_trade * n**0.5,
+            noetig=noetige_guete(n, versuche) or 0.0,
+        ))
+
+    feld = Paarfeld(bestand.name, allein_g, allein_ziel, tuple(gemessen))
+    kopf = (f"  {'Partner':<32} {'P_n':>4} {'P_sr':>6} {'roh':>4} {'n':>4} "
+            f"{'halt':>5} {'Guete':>6} {'noetig':>7} {'fehlt':>6}")
+    console.print(kopf)
+    console.print("  " + "-" * (len(kopf) - 2))
+    for p in feld.geordnet:
+        marke = "  [green]<== ueber der Latte[/]" if p.reicht else ""
+        console.print(
+            f"  {p.name[:32]:<32} {p.partner_trades:>4} "
+            f"{p.partner_sharpe:>6.3f} {p.roh:>4} {p.effektiv:>4} "
+            f"{p.behaltequote:>5.2f} {p.guete:>6.3f} {p.noetig:>7.3f} "
+            f"{p.luecke:>6.3f}{marke}"
+        )
+
+    farbe = "green" if feld.erreichen else "yellow"
+    console.print(f"\n[{farbe}]{feld.urteil()}[/]\n")
+
+
+
 if __name__ == "__main__":
     app()

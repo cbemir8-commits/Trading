@@ -161,7 +161,16 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     Richtung("Eigenbau-Partner", "8 Regeln aus Befund 77 und 83 gescheitert", 83),
     Richtung("Familie Rueckkehr", "alle 5 unter der Geraden, Permutation haelt", 84),
     Richtung("Phasen-Partner", "6 von 22 gegenlaeufig, 5 davon insgesamt wertlos", 85),
-    Richtung("Verbund aus dem Katalog", "bestes Paar 3,585 unter Nullmedian 3,683", 86),
+    # Befund 86 hat 210 Paare auf der Wochenachse gegen eine Permutationsnull
+    # gestellt. Befund 141 misst enger und strenger nach: nur die 14 Paare mit
+    # dem Bestand, dafuer mit der Einteilung des Gates selbst.
+    Richtung(
+        "Verbund aus dem Katalog",
+        "bestes Paar 3,585 unter Nullmedian 3,683; nachgemessen 3,073 "
+        "gegen eine Latte von 3,625 - 0 von 14",
+        86,
+        zuletzt=141,
+    ),
     Richtung("Sperrfrist", "Folgetrades schlechter, aber kein t-Wert ueber 2", 88),
     Richtung("Verbund fuer die Risikogates", "231 Kombinationen, kein Treffer", 94),
     Richtung(

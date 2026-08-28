@@ -175,7 +175,13 @@ def test_nachgezogene_eintraege_melden_die_alten_stellen_nicht_mehr(
 
 
 def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
-    """Befunde 130 bis 133 - der Rest ist ungeprueft, nicht geprueft."""
+    """Elf von 36 tragen eine Nachmessung - der Rest ist **ungeprueft**.
+
+    Die Liste steht ausgeschrieben da, damit jede weitere Nachmessung eine
+    bewusste Entscheidung ist und nicht nebenbei passiert. Wer hier eine Zeile
+    hinzufuegt, hat gemessen; wer sie hinzufuegt, ohne gemessen zu haben,
+    verwischt genau den Unterschied, den Befund 131 festhalten wollte.
+    """
     nachgezogen = {r.name: r.zuletzt for r in GESCHLOSSEN if r.zuletzt}
     assert nachgezogen == {
         "Mehr Maerkte": 133,
@@ -188,6 +194,8 @@ def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
         "Trade-Zahl heben": 113,
         "Kostenannahmen": 127,
         "Schnittpunkt als Prognose": 126,
+        # Befund 141: 14 Paare mit dem Bestand, an der Einteilung des Gates.
+        "Verbund aus dem Katalog": 141,
     }
 
 
