@@ -12,6 +12,12 @@ Gewaehlt wurden danach die beiden hochwertigsten seltenen Kandidaten -
 mit 0,3074. Beide liegen 19 bis 23 % ueber dem Spitzenkandidaten. Der bessere
 Verbund kam auf 3,368 Guete gegen die noetigen 3,629.
 
+**Diese beiden Zahlen sind ueberholt** (Befund 140): Sie stehen auf der
+Einteilung von vor Befund 135. Richtig gerechnet sind es 3,073 gegen 3,625 -
+die Luecke ist fast doppelt so gross. Der aktuelle Stand steht im Kopf von
+``research/verbund.py``. Die Form der Karte aendert sich dadurch nicht, ihre
+Eingangsgroessen schon.
+
 Diese Karte sagt, warum - und die Antwort steht quer zur Auswahl:
 
     Noetiges SR/Trade des Partners fuer Guete 3,629

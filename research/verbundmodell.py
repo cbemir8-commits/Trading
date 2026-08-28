@@ -45,6 +45,11 @@ Die Kontrolle traegt das ganze Modul: Fuer einzelne Beine stimmen beide Achsen
 ueberein (Bestand 3,216 gegen 3,102). Ohne sie waere jeder Unterschied beim
 Verbund genauso gut ein Artefakt der Aggregation.
 
+Beide Zahlen stehen auf der Einteilung von vor Befund 135. **Fuer diese
+Kontrolle ist das gleichgueltig** - verglichen werden zwei Achsen auf
+derselben Stichprobe, und die kuerzt beide gleich. Wer den Bestand als Stand
+lesen will, findet ihn im Kopf von ``research/verbund.py`` (Befund 140: 2,730).
+
 Was ueber 105 Paare herauskam
 -----------------------------
 Die erste Fassung rechnete ueber 210 Paare aus 21 Genomen. Sechs davon liefern

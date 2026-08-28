@@ -249,3 +249,148 @@ class TestNoetigeGuete:
         """Bei 154 Trades und 166 Versuchen sind es 3,62 - die Zahl, gegen die
         der gemessene Verbund mit 3,37 antritt."""
         assert noetige_guete(154, 166) == pytest.approx(3.62, abs=0.05)
+
+
+class TestStandNachBefund140:
+    """Die Zahlen aus dem Modulkopf - gepflegt, also pruefbar zu halten.
+
+    Befund 140 hat den Verbund mit der Einteilung des Gates neu gerechnet.
+    Die Werte stehen im Kopf von ``research/verbund.py`` und veralten dort
+    genauso still wie die aus Befund 73, wenn niemand sie festhaelt.
+    """
+
+    def test_die_luecke_des_besten_verbundes(self) -> None:
+        """Guete 3,073 gegen noetige 3,625 bei n = 124 und 198 Versuchen."""
+        ziel = noetige_guete(124, 198)
+
+        assert ziel is not None
+        assert ziel == pytest.approx(3.625, abs=0.01)
+        assert ziel - 3.073 == pytest.approx(0.552, abs=0.01)
+
+    def test_die_spitze_allein_steht_schlechter_da(self) -> None:
+        """n = 111 statt 154 - die Luecke ist dort 0,870."""
+        ziel = noetige_guete(111, 198)
+
+        assert ziel is not None
+        assert ziel - 2.730 == pytest.approx(0.870, abs=0.01)
+
+    def test_der_partner_traegt_mehr_als_befund_73_messen_konnte(self) -> None:
+        """**Der eigentliche Befund**: +0,343 statt +0,152 Guete.
+
+        Mit der alten Einteilung war der Beitrag des Partners 3,368 - 3,216;
+        mit der richtigen ist er 3,073 - 2,730. Der Verbund gewinnt durch eine
+        Korrektur, die alles andere schlechter gemacht hat.
+        """
+        alt = 3.368 - 3.216
+        neu = 3.073 - 2.730
+
+        assert neu > 2 * alt
+        assert neu == pytest.approx(0.343, abs=0.001)
+
+    def test_der_verbund_hebt_die_stichprobe(self) -> None:
+        """13 unabhaengige Beobachtungen mehr fuer 53 rohe Trades mehr.
+
+        Das ist der Grund, warum die Richtung aus Befund 80 haelt: Der
+        Verbund ist der einzige gemessene Hebel, der die effektive Stichprobe
+        **hebt** statt sie umzuverteilen.
+        """
+        allein, verbund = 111, 124
+        roh_allein, roh_verbund = 154, 207
+
+        assert verbund - allein == 13
+        anteil = (verbund - allein) / (roh_verbund - roh_allein)
+        assert anteil == pytest.approx(0.245, abs=0.01), (
+            "rund ein Viertel der zusaetzlichen Trades ist echte Information"
+        )
+
+    def test_der_modulkopf_traegt_den_neuen_stand(self) -> None:
+        """Sonst stuende die Messung im Laborbuch und der alte Wert im Kopf."""
+        import research.verbund as modul
+
+        kopf = modul.__doc__ or ""
+        assert "Befund 140" in kopf
+        assert "3,073" in kopf
+        assert "Ueberholt" in kopf, "der alte Stand muss als solcher dastehen"
+
+
+@pytest.mark.langsam
+def test_der_verbund_stimmt_mit_dem_lauf_ueberein() -> None:
+    """Die gepflegten Zahlen gegen die Messung - wie bei ``referenz.py``.
+
+    Die Tests oben rechnen mit den Zahlen aus dem Modulkopf. Sie wuerden auch
+    dann bestehen, wenn die Messung dahinter falsch waere - deshalb rechnet
+    dieser Test die drei Verbunde einmal durch.
+
+    Er dauert. Das ist der Preis dafuer, dass Befund 140 nicht dasselbe
+    Schicksal erleidet wie Befund 73.
+    """
+    from pathlib import Path
+
+    import cli as clim
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from core.config import get_settings
+    from core.models import Interval
+    from research.admission import load_trials
+    from research.seeds import load_seeds, spitzenkandidat
+    from research.suchbudget import Kandidat
+    from research.verbund import baue
+    from strategy.compiler import compile_genome
+    from strategy.genome import SizingSpec
+
+    einstellungen = get_settings()
+    versuche = load_trials(Path(einstellungen.paths.state) / "trials.json")
+    if versuche != 198:
+        pytest.skip(f"Zaehler steht bei {versuche}, Befund 140 galt bei 198")
+
+    symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
+    frames, configs, _ = clim._korb_daten(symbole, Interval("D"), einstellungen)
+    if any(f.empty for f in frames.values()):
+        pytest.skip("keine Kerzen im Speicher")
+
+    def lauf(genome):
+        angepasst = genome.model_copy(
+            update={
+                "sizing": SizingSpec(
+                    kind="vola_ziel", fraction=3.0,
+                    target_vol_pct=19.3, vol_period=30,
+                )
+            }
+        )
+        return angepasst, run_portfolio_walkforward(
+            frames, lambda g=angepasst: compile_genome(g), configs
+        )
+
+    saat = load_seeds(9)
+    spitze_genom, spitze = lauf(spitzenkandidat())
+    bestand = (spitze_genom.name, spitze)
+
+    beine = []
+    for gesucht in ("Trend-Beteiligung 200 Tage", "Donchian-Ausbruch 55/20"):
+        treffer = [g for g in saat if gesucht.lower() in g.name.lower()]
+        assert treffer, f"'{gesucht}' nicht in Generation 9"
+        genom, bericht = lauf(treffer[0])
+        beine.append((genom.name, bericht))
+
+    # (Beine des Verbundes, erwartetes n, erwartete Guete) - aus dem Modulkopf.
+    erwartet = [
+        ([bestand], 111, 2.730),
+        ([bestand, beine[0]], 124, 3.073),
+        ([bestand, beine[1]], 106, 2.645),
+    ]
+
+    for paare, n_soll, guete_soll in erwartet:
+        kombi = [n for n, _ in paare]
+        lage = baue(paare, versuche=versuche)
+        kandidat = Kandidat.aus_trades("x", lage.trades)
+        assert kandidat is not None
+        n_ist = lage.stichprobe.effektiv
+        guete_ist = kandidat.sharpe_je_trade * n_ist**0.5
+
+        assert n_ist == n_soll, (
+            f"{' + '.join(kombi)}: der Modulkopf nennt n = {n_soll}, "
+            f"gemessen sind {n_ist}."
+        )
+        assert guete_ist == pytest.approx(guete_soll, abs=0.005), (
+            f"{' + '.join(kombi)}: der Modulkopf nennt Guete {guete_soll}, "
+            f"gemessen sind {guete_ist:.3f}."
+        )

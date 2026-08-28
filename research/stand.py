@@ -340,6 +340,12 @@ BEHOBEN: tuple[Richtung, ...] = (
         "5 Kommentare versprachen 'genau wie im Gate', keiner stimmte noch",
         139,
     ),
+    Richtung(
+        "Verbund auf alter Einteilung",
+        "Befund 73 neu gerechnet: Guete 3,368 auf 3,073, Luecke 0,298 auf 0,552 - "
+        "der Beitrag des Partners waechst dabei von +0,152 auf +0,343",
+        140,
+    ),
 )
 
 

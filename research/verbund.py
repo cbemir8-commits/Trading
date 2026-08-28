@@ -44,17 +44,38 @@ Korrelation zu messen, zaehlt Information doppelt.
 
 Was tatsaechlich uebrig bleibt
 ------------------------------
-    Spitze allein                          Guete 3,216   DSR 0,7964
-    + Trend-Beteiligung 200 Tage           Guete 3,368   DSR 0,8602
-    + Donchian-Ausbruch 55/20              Guete 2,645   DSR 0,4490
+**Stand nach Befund 140**, gerechnet bei 198 Versuchen mit der Einteilung des
+Gates (also mit Quartalen, Befund 135):
+
+    Spitze allein                      n = 111   Guete 2,730   DSR 0,4707
+    + Trend-Beteiligung 200 Tage       n = 124   Guete 3,073   DSR 0,6893
+    + Donchian-Ausbruch 55/20          n = 106   Guete 2,645   DSR 0,4082
 
 Der erste Verbund ist der groesste Sprung, den in diesem Projekt je etwas
-gebracht hat - die ganze Reglerlandschaft lag zwischen 0,42 und 0,86. Er
-reicht trotzdem nicht: noetig sind 0,95.
+gebracht hat. Er reicht trotzdem nicht: noetig sind 0,95, und in Guete
+gerechnet fehlen 0,552.
 
 Und der zweite zeigt, dass es nicht von selbst hilft. Beide Partner haben
 praktisch dieselbe Einzelguete (2,32 und 2,34); der eine hebt den Verbund, der
 andere halbiert ihn. Es entscheidet allein, wie unabhaengig die Ertraege sind.
+
+**Warum der Partner mehr bringt, als Befund 73 messen konnte:** Die Trades des
+Spitzenkandidaten haeufen sich innerhalb von Quartalen - er verliert 43 seiner
+154 Beobachtungen. Der Partner loest zu anderen Zeiten aus und verteilt sie
+breiter; das Paar kommt auf 124. **Dreizehn zusaetzliche unabhaengige
+Beobachtungen fuer 53 zusaetzliche Trades**, also rund ein Viertel echte
+Information. Der Beitrag des Partners waechst dadurch von +0,152 auf +0,343
+Guete.
+
+Ueberholt (Befund 73, alte Einteilung ohne Quartale, niedrigerer Zaehler):
+
+    Spitze allein                      n = 154   Guete 3,216   DSR 0,7964
+    + Trend-Beteiligung 200 Tage       n = 149   Guete 3,368   DSR 0,8602
+    + Donchian-Ausbruch 55/20          n = 106   Guete 2,645   DSR 0,4490
+
+Die Guetewerte dieser Zeile lassen sich mit der alten Einteilung auf drei
+Stellen reproduzieren - die Zahlen waren richtig gerechnet, nur auf einer zu
+grosszuegigen Stichprobe.
 
 Zur Positionsgroesse
 --------------------

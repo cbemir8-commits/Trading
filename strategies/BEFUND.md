@@ -12933,3 +12933,92 @@ statt der Schreibweise.
 
 Versuchszaehler 198 unveraendert - gerechnet wurde nichts Neues, nur richtig.
 Suchbudget 68 von 100. 2521 Tests gruen.
+
+## Hundertvierzig. Der Verbund, richtig gerechnet - und er gewinnt dabei
+
+Befund 139 hat ``Verbund.stichprobe`` repariert: Die Rechnung dort kannte die
+Quartalseinteilung aus Befund 135 nicht. Damit stehen die Zahlen aus Befund
+73 - der **groesste Sprung, den in diesem Projekt je etwas gebracht hat** - auf
+einer zu grosszuegigen Stichprobe.
+
+Auf ihnen steht eine Richtungsentscheidung: Befund 80 hat das Restbudget in
+Verbund-Partner gelegt, weil der Verbund "um Faktor 2,2 wirksamer" sei. Also
+nachgerechnet.
+
+### Vor dem Lauf festgelegt
+
+Berichtet werden alle drei Verbunde. Gerechnet wird **beides nebeneinander**,
+alte und neue Einteilung, bei gleichem Versuchsstand - sonst vermischt sich
+die Korrektur mit dem gewachsenen Zaehler. Faellt der Verbund unter die
+Einzelspitze, ist das ein Ergebnis gegen die Richtung.
+
+Kostet keinen Versuch: dieselben Beine, dieselben Kombinationen wie in Befund
+73. Zaehler bleibt 198.
+
+### Die Gegenprobe zuerst
+
+Mit der alten Einteilung kommen exakt die Guetewerte aus Befund 73 heraus -
+3,216, 3,368 und 2,645, auf drei Stellen. Die Rechnung ist also getroffen und
+nicht bloss aehnlich nachgebaut.
+
+Der Deflated Sharpe liegt trotzdem niedriger als dort (0,8377 statt 0,8602).
+Das ist **nicht** die Stichprobe, sondern der Zaehler: Er ist seit Befund 73
+auf 198 gestiegen, und die Huerde steigt mit jedem Versuch. Deshalb steht in
+der Tabelle unten alles bei 198 - nur so misst der Vergleich die Einteilung.
+
+### Gemessen
+
+    Verbund                     n_alt  Guete  Luecke | n_neu  Guete  Luecke
+    Spitze allein                 154  3,216   0,458 |   111  2,730   0,870
+    + Trend-Beteiligung 200       149  3,368   0,298 |   124  3,073   0,552
+    + Donchian-Ausbruch 55/20     106  2,645   0,946 |   106  2,645   0,946
+
+    Deflated Sharpe bei 198 Versuchen:
+    Spitze allein              0,7681  ->  0,4707
+    + Trend-Beteiligung 200    0,8377  ->  0,6893
+    + Donchian-Ausbruch 55/20  0,4082  ->  0,4082
+
+### Was daran ueberrascht
+
+**Der Verbund gewinnt durch die Korrektur.** Der Beitrag des Partners war mit
+der alten Einteilung +0,152 Guete; mit der richtigen ist er **+0,343** - mehr
+als das Doppelte.
+
+Der Grund ist der Mechanismus, den die Quartalseinteilung ueberhaupt sichtbar
+macht: Die Trades des Spitzenkandidaten haeufen sich **innerhalb** von
+Quartalen. Er verliert deshalb 43 seiner 154 Beobachtungen. Der Partner loest
+zu anderen Zeiten aus, verteilt die Trades ueber mehr Quartale - und das Paar
+verliert relativ weniger. Von 111 unabhaengigen Beobachtungen allein geht es
+auf 124 im Verbund.
+
+**Dreizehn zusaetzliche unabhaengige Beobachtungen fuer 53 zusaetzliche
+Trades.** Ein Viertel des Zuwachses ist echte Information; der Rest ist
+dieselbe Information noch einmal. Das ist die erste Zahl im Projekt, die
+beziffert, wie viel ein zweites Signal wirklich beitraegt - Befund 73 konnte
+das nicht sehen, weil seine Einteilung den Unterschied nicht aufloest.
+
+Der dritte Verbund bleibt bei 106 unveraendert. Dort war die Gleichzeitigkeit
+schon die strengste Einteilung; die Quartale finden nichts obendrauf. Die
+Korrektur trifft also nicht pauschal, sondern dort, wo es etwas zu finden gibt.
+
+### Was daraus folgt
+
+1. **Die Richtung aus Befund 80 haelt** - und sie ist besser begruendet als
+   vorher. Der Verbund ist der einzige gemessene Hebel, der die effektive
+   Stichprobe hebt statt sie nur umzuverteilen.
+2. **Der Abstand ist trotzdem groesser geworden.** Die Luecke des besten
+   Verbundes waechst von 0,298 auf 0,552 Guete - bei gleichem Zaehler. Das
+   beste je gemessene Ergebnis des Projekts ist weiter von der Schwelle
+   entfernt als gedacht.
+3. **Ein Partner muss jetzt mehr koennen.** Was genau, sagt ``cli partner``
+   seit Befund 139 auf der richtigen Stichprobe.
+
+### Offen und unbequem
+
+Die Zahlen aus Befund 73 standen in **fuenf** Modulen, und die Pruefung aus
+Befund 136 hat keines davon gemeldet: Sie sucht nach den beiden ueberholten
+Kennzahlen des Betriebspunkts, und 0,8602 gehoert zu keinem Betriebspunkt.
+Die Pruefung findet, wonach sie sucht - nicht, was veraltet ist. Behoben ist
+das hier nicht, nur benannt.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.

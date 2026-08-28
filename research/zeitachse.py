@@ -69,6 +69,11 @@ In Befund 73 stand, der Verbund aus Spitze und dieser Regel hebe die Guete auf
 Projekt je etwas gebracht hat". Diese Zahl beruht fuer dieses Bein auf einer
 Achse, die es um ein Fuenftel zu gut bewertet.
 
+**Und sie ist inzwischen aus einem zweiten Grund ueberholt** (Befund 140):
+Die Einteilung kannte die Quartale nicht. Richtig gerechnet steht der Verbund
+bei Guete 3,073 und DSR 0,6893 - siehe den Kopf von ``research/verbund.py``.
+Beide Korrekturen zeigen in dieselbe Richtung.
+
 Der Bestand selbst ist kaum betroffen: 154 Trades, nach Zeitachse 148, das
 sind vier Prozent. Sein t-Wert faellt von 3,216 auf 3,102 - noetig sind 3,629,
 der Abstand waechst also von 0,41 auf 0,53.
