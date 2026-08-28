@@ -361,6 +361,18 @@ BEHOBEN: tuple[Richtung, ...] = (
         "+15 % auf +0,6 %; bestimmt war das Vorzeichen nie",
         142,
     ),
+    Richtung(
+        "Vermuteter Abschlag auf Feinkerzen",
+        "gemessen 0,92 statt der vermuteten Verschlechterung; die Zeitskala "
+        "haengt an der Handelsdichte, nicht an der Kerzenlaenge",
+        143,
+    ),
+    Richtung(
+        "Strengste Einteilung ungeprueft am Rand",
+        "Quartal ist ein echtes Minimum - Halbjahr 0,921, Jahr 1,000; "
+        "'am_rand' stellt die Frage jetzt von selbst",
+        143,
+    ),
 )
 
 

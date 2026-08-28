@@ -239,17 +239,34 @@ def rechne(
 
     **``trade_zahlen`` sind unabhaengige Beobachtungen, nicht rohe Trades.**
     Die Formel setzt Unabhaengigkeit voraus, und diese Rechnung gibt ihr die
-    Zahlen ungeprueft: 2000 Trades auf Fuenfzehnminutenkerzen sind mit grosser
-    Sicherheit **keine** 2000 unabhaengigen Beobachtungen. Auf Tageskerzen
-    bleiben von 152 rohen Trades 112 uebrig (Befund 135); bei kuerzeren Kerzen
-    liegen die Trades dichter beieinander, die Abhaengigkeit wird also eher
-    groesser als kleiner.
+    Zahlen ungeprueft.
 
-    Um wie viel, ist **nicht gemessen** - dafuer braeuchte es einen Lauf auf
-    Fuenfzehnminutenkerzen, den es noch nicht gibt. Deshalb steht hier keine
-    Zahl, sondern die Richtung: Die genannten Huerden sind Untergrenzen, und
-    die Schnittstelle mit der Gebuehrenlinie liegt bei mehr Trades, als diese
-    Tabelle zeigt (Befund 139).
+    Wie teuer das ist, steht seit Befund 143 fest, und zwar **guenstiger als
+    hier zuvor behauptet**. An dieser Stelle stand, bei kuerzeren Kerzen liege
+    die Abhaengigkeit "eher groesser als kleiner" und ein Lauf auf
+    Fuenfzehnminutenkerzen existiere noch nicht. Beides war falsch: Die Kerzen
+    liegen seit jeher im Speicher, und gemessen bleibt von 1985 rohen Trades
+    eine effektive Stichprobe von 1831 - **Quote 0,92 gegen 0,74 auf
+    Tageskerzen**.
+
+    Der Grund: Die Zeitskala der Abhaengigkeit haengt an der Handelsdichte,
+    nicht an der Kerzenlaenge. Wer selten handelt, traegt sie ueber Monate;
+    wer oft handelt, ueber Stunden - und dort bleibt bei vielen Trades
+    entsprechend mehr uebrig.
+
+    Ueber alle vierzehn Genome der Generationen 6 und 7 liegt die Quote
+    zwischen 0,699 und 0,992, **Median 0,903**; nur eines liegt unter der
+    Tageskerzen-Quote von 0,737.
+
+    Die Zahlen dieser Tabelle sind damit **weiterhin Untergrenzen**, aber der
+    Abschlag ist klein: Wer hier 2000 Trades liest, darf mit rund 1800
+    unabhaengigen Beobachtungen rechnen.
+
+    **Was die Tabelle weiter nicht zeigt:** Die Latte steigt mit der
+    Stichprobe (Befund 141). Bei rund 2800 unabhaengigen Beobachtungen
+    verlangt sie eine Guete von 4,18 - je Trade sind das 0,079, dreimal
+    weniger als auf Tageskerzen, aber gegen Gebuehren, die je Trade gleich
+    bleiben. Genau diese Kreuzung rechnet ``noetig_mit_kosten_pct``.
     """
     streuung = streuung_je_trade(frame, kerzen=haltedauer)
     stufen = [

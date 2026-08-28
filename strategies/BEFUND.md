@@ -13224,3 +13224,132 @@ keine Ziehungen. Ihre Streuung ist die der Elite. Der Kopf hat mich davon
 abgehalten; ohne ihn haette ich es gerechnet.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.
+
+## Hundertdreiundvierzig. Auf welcher Zeitskala sitzt die Abhaengigkeit?
+
+Befund 139 hat in ``taktung.py`` einen Vorbehalt hinterlassen. Er steht dort
+so:
+
+> *"Auf Tageskerzen bleiben von 152 rohen Trades 112 uebrig (Befund 135); bei
+> kuerzeren Kerzen liegen die Trades dichter beieinander, die Abhaengigkeit
+> wird also eher groesser als kleiner. Um wie viel, ist nicht gemessen -
+> dafuer braeuchte es einen Lauf auf Fuenfzehnminutenkerzen, den es noch nicht
+> gibt."*
+
+**Zwei Saetze, zwei Fehler.**
+
+### Der erste: die Daten gibt es
+
+    BTCUSD_BITSTAMP   15   222 700 Kerzen   2020-03-30 bis 2026-08-05
+    ETHUSD_BITSTAMP   15   222 700 Kerzen   2020-03-30 bis 2026-08-05
+
+Genau die Zahl, die ``taktung.py`` im eigenen Kopf nennt. Ich habe
+geschrieben, es brauche einen Lauf, "den es noch nicht gibt", ohne in den
+Speicher zu sehen.
+
+### Der zweite: die Richtung stimmt nicht
+
+Gemessen an 'Bollinger-Ruecksetzer im Trend' (Generation 6, fuer dieses
+Intervall vorgesehen), 1985 Trades ueber 2319 Tage, gegen den Spitzenkandidaten
+auf Tageskerzen, 152 Trades ueber 3277 Tage:
+
+    Tageskerzen                            15-Minuten-Kerzen
+    Einteilung      je Bl.   ICC  Quote    Einteilung      je Bl.   ICC  Quote
+    Gleichzeitigkeit   1,5 0,000  1,000    Gleichzeitigkeit   1,2 0,601  0,922 *
+    Kalendertag        1,1 0,956  1,000    Kalendertag        2,2 0,105  0,935
+    Kalenderwoche      1,4 0,718  0,954    Kalenderwoche      7,8 0,013  1,000
+    Kalendermonat      2,4 0,515  0,816    Kalendermonat     32,5 0,006  1,000
+    Kalenderquartal    4,8 0,257  0,737 *  Kalenderquartal   94,5 0,006  0,968
+
+    * die strengste Einteilung - die, die das Gate nimmt
+
+**Die Behaltequote ist auf Fuenfzehnminutenkerzen hoeher, nicht niedriger**:
+0,922 gegen 0,737. Die Abhaengigkeit wird also nicht groesser, wie ich
+vermutet hatte.
+
+### Was tatsaechlich dahintersteckt
+
+Die Zeitskala der Abhaengigkeit haengt nicht an der **Kerzenlaenge**, sondern
+an der **Handelsdichte**. Auf Tageskerzen sitzt sie beim Quartal und ist bei
+Tag und Woche unsichtbar; auf Fuenfzehnminutenkerzen sitzt sie bei der
+Gleichzeitigkeit und ist ab der Woche verschwunden (p = 0,12 und 0,17).
+
+Wer selten handelt, traegt Abhaengigkeit ueber Monate. Wer oft handelt, ueber
+Stunden. Es sind **gegenlaeufige Enden derselben Leiter** - und das Gate hat
+in beiden Faellen die richtige Sprosse erwischt, ohne dass jemand das je
+nachgesehen haette.
+
+### Die Sorge, die dabei aufkam - und sich nicht bestaetigt hat
+
+In der linken Spalte faellt die Quote monoton, je groeber die Einteilung wird:
+1,000 - 0,954 - 0,816 - **0,737**. Und das Quartal ist die groebste
+Einteilung, die das Gate hat. Sitzt das Minimum also nur deshalb dort, weil
+das Massband dort endet? Dann waere die wichtigste Zahl des Projekts nicht
+ausgemessen, und die Zulassung stuende auf einem Randwert.
+
+Nachgemessen:
+
+    Kalendermonat      2,4 je Block   ICC 0,515   Quote 0,816
+    Kalenderquartal    4,8            ICC 0,257   Quote 0,737
+    Halbjahr           9,5            ICC 0,087   Quote 0,921
+    Kalenderjahr      16,9            ICC 0,052   Quote 1,000
+    Zwei Jahre                        zu wenige Bloecke
+
+**Das Quartal ist ein echtes Minimum.** Halbjahr und Jahr liegen wieder
+hoeher. Befund 135 hat richtig gewaehlt, und das Gate korrigiert auf
+Tageskerzen nicht zu wenig. Die Sorge war unbegruendet - aber sie war nicht
+abwegig, und ohne Messung waere sie offen geblieben.
+
+### Was gebaut wurde
+
+``research/zeitskala.py``: ``nach_kalender``, ``Skalenstufe``,
+``Skalenleiter``. Die Leiter kann, was hier von Hand noetig war -
+und ``Skalenleiter.am_rand`` stellt die Frage von selbst: **Liegt die
+strengste Sprosse am Ende der gemessenen Leiter?** Dann ist die Zahl kein
+Minimum, sondern das Ende des Massbands.
+
+Genau diese Pruefung hat gefehlt. Befund 135 hat aus drei Einteilungen die
+strengste genommen; dass die strengste von dreien am Rand von dreien liegt,
+sagt fuer sich genommen nichts.
+
+### Was daraus folgt
+
+1. **Die Fuenfzehnminuten-Richtung ist arithmetisch nicht so teuer wie
+   befuerchtet.** Die Behaltequote liegt bei 0,92, nicht darunter. Der
+   Vorbehalt aus Befund 139 ist in dieser Form falsch und wird dort ersetzt.
+2. **Der Stand auf Tageskerzen bleibt, wo er ist.** 112 von 152, DSR 0,6026 -
+   jetzt zusaetzlich gegen zwei groebere Einteilungen geprueft.
+3. **Ueber alle vierzehn Genome der Generationen 6 und 7 gemessen** haelt
+   der Befund. Berichtet sind alle, nach Generation geordnet; ausgewaehlt ist
+   keines, und die Guete steht bewusst nicht in der Tabelle.
+
+    Genom                                Gen    roh  n_eff  Quote   Latte
+    Bollinger-Ruecksetzer im Trend         6   1985   1831  0,922   4,139
+    Sitzungs-Ausbruch mit Volumen          6   1785   1573  0,881   4,120
+    Ausbruch nach Volatilitaetsenge        6   1441   1397  0,969   4,104
+    RSI-Ruecksetzer im Trend               6    236    234  0,992   3,772
+    VWAP-Rueckkehr                         7   3185   2737  0,859   4,184
+    VWAP-Fortsetzung                       7   1915   1339  0,699   4,098
+    Liquiditaets-Abgriff                   7   2819   2606  0,924   4,179
+    Liquiditaets-Abgriff (Gegenprobe)      7   3055   2758  0,903   4,185
+    Keltner-Enge mit Ausbruch              7   2673   2426  0,908   4,171
+    Grosse Kerze mit Volumen               7   2429   2071  0,853   4,153
+    Stochastik-Ruecksetzer im Trend        7   3206   2766  0,863   4,185
+    MACD-Beschleunigung                    7   3263   2872  0,880   4,189
+    Ruecksetzer an den EMA(50)             7   1261    967  0,767   4,050
+    Randhandel im Seitwaertsmarkt          7   2596   2352  0,906   4,168
+
+   **Quote 0,699 bis 0,992, Median 0,903** gegen 0,737 auf Tageskerzen. Nur
+   eines der vierzehn liegt unter der Tageskerzen-Quote.
+
+4. **Die Latte steigt dabei mit** - von 3,600 bei n = 111 auf 3,77 bis 4,19.
+   Das ist genau der Mechanismus aus Befund 141: Der Schiefe-Bonus wirkt
+   proportional zum noetigen Sharpe je Trade, und wer dieselbe Kante auf
+   tausende Trades verteilt, verliert einen Teil davon. Bei rund 2800
+   unabhaengigen Beobachtungen entspricht eine Latte von 4,18 einem noetigen
+   Sharpe von 0,079 je Trade - dreimal weniger als die 0,340 auf Tageskerzen,
+   aber gegen Gebuehren, die je Trade gleich bleiben. Ob das aufgeht, rechnet
+   ``taktung``; **hier ist es nicht entschieden.**
+
+Versuchszaehler 198 unveraendert: gemessen wurde die Einteilung, nicht ein
+Kandidat. Suchbudget 68 von 100.
