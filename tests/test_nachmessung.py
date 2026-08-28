@@ -196,6 +196,9 @@ def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
         "Schnittpunkt als Prognose": 126,
         # Befund 141: 14 Paare mit dem Bestand, an der Einteilung des Gates.
         "Verbund aus dem Katalog": 141,
+        # Befund 145: dieselben 14 Genome, am Spot-Punkt und mit der
+        # Zerlegung in brutto und netto.
+        "15-Minuten-Kerzen": 145,
     }
 
 

@@ -107,7 +107,16 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         14,
         zuletzt=132,
     ),
-    Richtung("15-Minuten-Kerzen", "alle 14 Kandidaten verlieren brutto", 29),
+    # Befund 145 hat dasselbe noch einmal gemessen - mit der Einteilung des
+    # Gates (135), am Spot-Punkt (108) und mit der Zerlegung in brutto und
+    # netto. Ergebnis unveraendert, Zahlen neu.
+    Richtung(
+        "15-Minuten-Kerzen",
+        "alle 14 Kandidaten verlieren brutto; nachgemessen -0,059 bis -0,110 "
+        "brutto gegen noetige +0,116 - bester Abstand 8,35 Guete",
+        29,
+        zuletzt=145,
+    ),
     # Befund 21 hat diese Richtung eroeffnet, Befund 23 hat sie nach zwei
     # behobenen Messfehlern neu vermessen (die Leiter rutschte um eine Stufe),
     # Befund 129 am Spot-Punkt bestaetigt. Wer 21 nachschlaegt, findet eine

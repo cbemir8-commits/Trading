@@ -13416,3 +13416,114 @@ dieser Vorteil existiert - nur, dass die Rechnung ihn nicht von vornherein
 ausschliesst."* Die Messung dazu laeuft.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.
+
+## Hundertfuenfundvierzig. Vierzehn Regeln auf Feinkerzen, alle im Minus
+
+Befund 143 hat gemessen, dass die Einteilung des Gates auf
+Fuenfzehnminutenkerzen wenig kostet (Behaltequote Median 0,903), und die
+**Guete bewusst nicht angesehen**. Befund 144 hat die Huerde dort offengelegt.
+``cli taktung`` nennt die Rechnung arithmetisch tragfaehig und schreibt selbst
+dazu: *"Das heisst nicht, dass dieser Vorteil existiert."*
+
+Jetzt nachgesehen.
+
+### Zuerst: das wusste das Projekt schon
+
+**Befund 29 hat genau das gemessen.** Der Registereintrag lautet seit damals
+wortwoertlich *"15-Minuten-Kerzen - alle 14 Kandidaten verlieren brutto"*.
+Dieselbe Zahl, dieselbe Diagnose, und beim Planen habe ich nicht
+nachgeschlagen.
+
+**Das ist in dieser Sitzung das zweite Mal.** Befund 141 hat den
+Katalog-Verbund neu geschlossen, den Befund 86 laengst geschlossen hatte; hier
+dasselbe mit Befund 29. Beide Male gibt es ein Werkzeug dafuer - ``cli
+register`` listet genau diese Kandidaten -, und beide Male habe ich es nicht
+benutzt. Das Muster gehoert benannt, nicht nur der Einzelfall.
+
+Neu ist die Messgrundlage: Befund 29 liegt vor dem Spot-Punkt (108), vor der
+Quartalseinteilung (135) und vor der effektiven Stichprobe im Suchbudget
+(139). Die Zahlen unten sind also neu; der Schluss ist es nicht.
+
+### Vor dem Lauf festgelegt
+
+Alle vierzehn Genome der Generationen 6 und 7 werden berichtet, nach Luecke
+geordnet. **Keines wird ausgewaehlt** - wer eines uebernimmt, hat eine Auswahl
+ueber vierzehn getroffen und schuldet vierzehn Versuche. Gerechnet wird mit
+der gemessenen effektiven Stichprobe und der gemessenen Verteilungsform je
+Genom.
+
+### Gemessen
+
+    Genom                                       n       SR    Guete   Latte
+    Liquiditaets-Abgriff (Gegenprobe short)  2758  -0,0759   -3,988   4,358
+    Grosse Kerze mit Volumen                 2071  -0,1448   -6,589   4,383
+    Ruecksetzer an den EMA(50)                967  -0,2182   -6,786   4,369
+    RSI-Ruecksetzer im Trend                  234  -0,4420   -6,761   4,545
+    MACD-Beschleunigung                      2872  -0,1542   -8,265   4,382
+    Stochastik-Ruecksetzer im Trend          2766  -0,1652   -8,690   4,380
+    Sitzungs-Ausbruch mit Volumen            1573  -0,2277   -9,030   4,380
+    VWAP-Fortsetzung                         1339  -0,2709   -9,914   4,360
+    Liquiditaets-Abgriff                     2606  -0,2051  -10,471   4,354
+    VWAP-Rueckkehr                           2737  -0,2051  -10,732   4,372
+    Bollinger-Ruecksetzer im Trend           1831  -0,2598  -11,115   4,370
+    Randhandel im Seitwaertsmarkt            2352  -0,2444  -11,852   4,391
+    Ausbruch nach Volatilitaetsenge          1397  -0,3371  -12,601   4,320
+    Keltner-Enge mit Ausbruch                2426  -0,2710  -13,347   4,365
+
+**Null von vierzehn ueber der Latte - und keines auch nur ueber null.** Der
+beste steht bei Guete -3,99 gegen eine Latte von 4,36; es fehlen 8,35.
+
+Das ist kein knappes Ergebnis, das man nachrechnen muesste. Es ist ein leeres
+Feld.
+
+### Woran es scheitert - Gebuehren oder Vorteil?
+
+Vierzehn von vierzehn im Minus ist auffaellig genug, um den Aufbau zu
+verdaechtigen. Deshalb die Zerlegung in brutto und netto:
+
+    Genom                         Trades   brutto   Gebuehr    netto  SR_br  SR_net
+    Bollinger-Ruecksetzer im Trend  1985   -361,1     777,0  -1138,2 -0,085 -0,260
+    Sitzungs-Ausbruch mit Volumen   1785   -189,7     564,0   -753,7 -0,059 -0,228
+    VWAP-Rueckkehr                  3185   -681,6     615,3  -1296,9 -0,110 -0,205
+
+**Die Regeln verlieren schon brutto**, vor jeder Gebuehr. Die Gebuehren
+verdreifachen den Verlust, sie verursachen ihn nicht. Der Aufbau ist also
+nicht schuld: Waeren die Kosten null, staende immer noch ein Minus.
+
+### Was die Rechnung damit verlangt
+
+Die Gebuehr von 0,04 % je Roundtrip entspricht bei der gemessenen Streuung von
+1,24 % je Trade genau **0,0323 Sharpe je Trade**. Daraus die Schwelle:
+
+    n = 1400   netto noetig 0,1180   brutto noetig 0,1502
+    n = 1800   netto noetig 0,1040   brutto noetig 0,1363
+    n = 2800   netto noetig 0,0834   brutto noetig 0,1156
+
+Gemessen liefern die vierzehn brutto **-0,059 bis -0,110**. Gebraucht wird
++0,116 bis +0,150. Der Abstand ist nicht ein Faktor, sondern ein Vorzeichen
+plus eine Groessenordnung.
+
+### Was daraus folgt
+
+1. **Die Fuenfzehnminuten-Richtung ist arithmetisch offen und empirisch
+   leer.** Befund 144 hat gezeigt, dass die Rechnung sie nicht ausschliesst;
+   dieser Befund zeigt, dass nichts Gebautes ihr nahekommt. Beides gilt
+   gleichzeitig, und nur beides zusammen ist die Lage.
+2. **Damit ist keine gemessene Richtung mehr offen.** Historie (138),
+   Breite (133), Katalog-Partner (86/141), weiteres Suchen (142), Feinkerzen
+   (29/145) - alle vermessen, alle leer. Was bleibt, ist eine Regel, die es
+   noch nicht gibt.
+3. **Das Gate wird deswegen nicht angefasst.** Ein leeres Feld ist ein
+   Ergebnis, kein Anlass. Lieber keine Strategie als eine, die nur im
+   Backtest funktioniert.
+
+### Was ich daraus fuer mich mitnehme
+
+Zweimal in einer Sitzung eine geschlossene Richtung neu geschlossen, beide
+Male mit erheblichem Rechenaufwand. Der Registereintrag traegt jetzt
+``zuletzt=145``, wie der von Befund 86 ``zuletzt=141`` traegt. Das repariert
+die Eintraege, nicht die Gewohnheit: **``cli register`` gehoert vor den Plan,
+nicht hinter die Messung.**
+
+Versuchszaehler 198 unveraendert: gemessen, nicht ausgewaehlt. Eine Uebernahme
+haette 14 gekostet. Suchbudget 68 von 100.
