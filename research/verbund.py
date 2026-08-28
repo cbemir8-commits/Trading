@@ -71,9 +71,8 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from research.gates import concurrent_groups, deflated_sharpe_ratio
+from research.gates import deflated_sharpe_ratio
 from research.suchbudget import ZIEL, Kandidat
-from research.unabhaengigkeit import effektive_stichprobe
 
 
 def fensterbloecke(berichte: list) -> list[list[float]]:
@@ -130,13 +129,13 @@ class Verbund:
 
     @property
     def stichprobe(self):
-        gleichzeitig = [
-            [float(t.net_pnl) for t in gruppe]
-            for gruppe in concurrent_groups(self.trades)
-        ]
-        return effektive_stichprobe(
-            len(self.trades), None, self.bloecke or None, weitere=[gleichzeitig]
-        )
+        # Dieselbe Rechnung wie im Gate - und zwar durch dieselbe Funktion.
+        # Hier stand ein Nachbau ohne Quartalseinteilung, also die Fassung
+        # von vor Befund 135. Ausgerechnet in dem Modul, dessen Kopf den
+        # Fehler beschreibt, den ein zu grosszuegiges n anrichtet.
+        from research.gates import stichprobe_wie_im_gate
+
+        return stichprobe_wie_im_gate(self.trades, bloecke=self.bloecke or None)
 
     @property
     def guete(self) -> float | None:
@@ -258,13 +257,10 @@ def baue(namen_und_berichte: list[tuple[str, object]], *, versuche: int) -> Verb
         kandidat = Kandidat.aus_trades(name, trades)
         if kandidat is None:
             continue
+        from research.gates import stichprobe_wie_im_gate
+
         eigene = [[float(t.net_pnl) for t in w.trades] for w in bericht.windows]
-        gleichzeitig = [
-            [float(t.net_pnl) for t in g] for g in concurrent_groups(trades)
-        ]
-        st = effektive_stichprobe(
-            len(trades), None, eigene, weitere=[gleichzeitig]
-        )
+        st = stichprobe_wie_im_gate(trades, bloecke=eigene)
         beine.append(Bein(name=name, kandidat=kandidat, effektiv=st.effektiv))
 
     alle = [t for b in berichte for t in b.all_trades]
@@ -281,12 +277,22 @@ def baue(namen_und_berichte: list[tuple[str, object]], *, versuche: int) -> Verb
     )
 
 
-def noetige_guete(trades: int, versuche: int) -> float | None:
-    """Welche Guete die Schwelle bei dieser Trade-Zahl verlangt."""
+def noetige_guete(effektiv: int, versuche: int) -> float | None:
+    """Welche Guete die Schwelle bei dieser **effektiven** Stichprobe verlangt.
+
+    ``effektiv`` ist die effektive Stichprobe, nicht die rohe Trade-Zahl - und
+    dieses Modul weiss besser als jedes andere, warum: Der erste Anlauf oben
+    hat genau diesen Fehler gemacht und mit 207 rohen Trades eine Guete von
+    3,97 gegen eine Latte von 3,62 gestellt. Das Gate waere bestanden gewesen.
+    Mit Bloecken blieben 149 Beobachtungen und eine Guete von 3,368.
+
+    Der Fehler sass danach nicht mehr in der Rechnung, sondern im Aufruf:
+    Fuenf von sechs Stellen uebergaben weiter die rohe Zahl (Befund 139).
+    """
     from research.suchbudget import Budget
 
-    noetig = Budget(versuche=versuche).noetig_bei(trades)
-    return noetig * trades**0.5 if noetig is not None else None
+    noetig = Budget(versuche=versuche).noetig_bei(effektiv)
+    return noetig * effektiv**0.5 if noetig is not None else None
 
 
 __all__ = [

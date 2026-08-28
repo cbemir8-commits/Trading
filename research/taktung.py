@@ -235,12 +235,27 @@ def rechne(
     versuche: int,
     trade_zahlen: tuple[int, ...] = (150, 500, 1000, 2000, 5000, 10000),
 ) -> Taktung:
-    """Die Huerde in Bruttobewegung je Trade umrechnen - fuer eine Kerzenlaenge."""
+    """Die Huerde in Bruttobewegung je Trade umrechnen - fuer eine Kerzenlaenge.
+
+    **``trade_zahlen`` sind unabhaengige Beobachtungen, nicht rohe Trades.**
+    Die Formel setzt Unabhaengigkeit voraus, und diese Rechnung gibt ihr die
+    Zahlen ungeprueft: 2000 Trades auf Fuenfzehnminutenkerzen sind mit grosser
+    Sicherheit **keine** 2000 unabhaengigen Beobachtungen. Auf Tageskerzen
+    bleiben von 152 rohen Trades 112 uebrig (Befund 135); bei kuerzeren Kerzen
+    liegen die Trades dichter beieinander, die Abhaengigkeit wird also eher
+    groesser als kleiner.
+
+    Um wie viel, ist **nicht gemessen** - dafuer braeuchte es einen Lauf auf
+    Fuenfzehnminutenkerzen, den es noch nicht gibt. Deshalb steht hier keine
+    Zahl, sondern die Richtung: Die genannten Huerden sind Untergrenzen, und
+    die Schnittstelle mit der Gebuehrenlinie liegt bei mehr Trades, als diese
+    Tabelle zeigt (Befund 139).
+    """
     streuung = streuung_je_trade(frame, kerzen=haltedauer)
     stufen = [
         Stufe(
             trades=n,
-            noetiger_sharpe=noetiger_sharpe(trades=n, trials=versuche),
+            noetiger_sharpe=noetiger_sharpe(effektiv=n, trials=versuche),
             streuung_pct=streuung,
         )
         for n in trade_zahlen

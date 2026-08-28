@@ -12802,3 +12802,134 @@ die Aussicht mitwandern, sonst faellt es auf.
    0,3474. Was sich aendert, ist die Aussicht darauf, wann das anders wird.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2442 Tests gruen.
+
+## Hundertneununddreissig. Acht Nachbauten und fuenf Versprechen
+
+Befund 135 hat die effektive Stichprobe des Kandidaten von 152 auf 112
+gesenkt. Befund 136 hat danach einundzwanzig Stellen gefunden, die die alte
+**Zahl** weitertrugen, und sie an eine Stelle geholt.
+
+Dieser Befund geht eine Ebene tiefer: Nicht die Zahl stand an vielen Stellen,
+sondern die **Rechnung**. Und die Aufrufer haben ihr weiter die rohe
+Trade-Zahl gegeben.
+
+### Der Anlass
+
+Gesucht war etwas anderes. Befund 138 hat den einen Weg zur Schwelle
+vermessen - mehr Beobachtungen, mindestens 5,6 Jahre. Der andere Weg, **mehr
+Guete**, schien nie gerechnet worden zu sein, und dafuer sollte ein Modul
+entstehen.
+
+Es gab ihn schon: ``suchbudget.Budget.noetig_bei`` loest die Gate-Formel seit
+Befund 70 nach dem noetigen Sharpe je Trade auf. Der geplante Neubau waere ein
+Doppel gewesen.
+
+Beim Nachsehen stand dort aber:
+
+```python
+def noetig_bei(self, trades: int, ...)
+```
+
+**``trades``, nicht ``effektiv``.** Und das Gate urteilt seit Befund 135 nicht
+mehr ueber Trades.
+
+### Gemessen
+
+Sechs Aufrufstellen der Latte, an 198 Versuchen:
+
+    Stelle                              uebergibt          richtig?
+    cli partnersuche                    len(all_trades)    nein
+    cli partnerkarte                    154 (fest)         nein
+    cli budget                          152 (fest)         nein
+    research/wettrennen.huerde          self.trades        nein
+    research/auftragslage.aus_messungen bestand_trades     nein
+    research/verbund (via cli lage)     stichprobe.effektiv  ja
+
+Was das an der Latte ausmacht:
+
+    Lesart              Stichprobe   Latte    Guete   Faktor
+    roh (bisher)               152  0,2978   0,2597    1,147
+    effektiv (Gate)            112  0,3404   0,2765    1,231
+
+**Die Latte lag 14,3 % zu tief.** Der berichtete Abstand zur Schwelle war
+Faktor 1,15, wo das Gate 1,23 verlangt.
+
+Und die Stelle, an der das am meisten wiegt, ist ``aus_messungen``: Sie baut
+den Auftragstext fuer die Research-KI.
+
+    Auftrag an die KI      Bestand   noetig   fehlen
+    vorher (154 / 0,2591)    3,215    3,674    0,459
+    nachher (112 / 0,2765)   2,926    3,602    0,676
+
+**Der KI wurde eine Luecke genannt, die um 47 % zu klein war.** Sie sucht seit
+Befund 80 nach Verbund-Partnern, und sie hat die ganze Zeit ein zu leichtes
+Ziel bekommen.
+
+### Der zweite Fund, und er ist der schlimmere
+
+Die Rechnung selbst - welche Einteilungen das Gate uebereinanderlegt - stand
+**achtmal** im Baum. Fuenf dieser Nachbauten trugen einen Kommentar, der
+versprach, sie sei genau die des Gates:
+
+> *"Effektive Stichprobe, genau wie im Gate."* (``cli erreichbarkeit``)
+> *"Genau die Kuerzung, die das Zulassungs-Gate rechnet - uebergeben statt im
+> Modul nachgebaut, damit es keine zweite Umsetzung gibt."* (``cli
+> katalogstreuung``)
+> *"Genau die Argumente, mit denen ``run_admission`` das Gate aufruft."*
+> (``cli empfindlichkeit``)
+
+Jeder dieser Saetze war wahr, als er geschrieben wurde. Keiner davon war es
+noch: Alle acht Nachbauten nahmen die Fensterbloecke und die Gleichzeitigkeit,
+aber **kein einziger die Quartalseinteilung** aus Befund 135. Zwei davon
+stehen in ``verbund.py`` - dem Modul, dessen Kopf beschreibt, was ein zu
+grosszuegiges n anrichtet.
+
+**Ein Versprechen im Kommentar ist kein Mechanismus.** Das ist der eigentliche
+Befund; die 14 % sind nur seine Rechnung.
+
+### Was gebaut wurde
+
+``research.gates.stichprobe_wie_im_gate`` - die Einteilung an **einer** Stelle,
+so wie ``research.referenz`` die Kennzahlen an einer Stelle haelt. Alle acht
+Nachbauten rufen sie jetzt auf.
+
+Der Parameter der Latte heisst ``effektiv`` statt ``trades``. Die Umbenennung
+war das eigentliche Werkzeug: Sie hat beim Lauf der Suite einen **siebten**
+Aufrufer gefunden, den die Textsuche nicht gefunden hatte -
+``research/taktung.py``, das Modul, mit dem der Umstieg auf
+Fuenfzehnminutenkerzen begruendet wird. Es rechnet seine Huerden auf
+hypothetischen Trade-Zahlen bis 10 000 und nimmt sie als unabhaengig an. Das
+steht jetzt dort, als Untergrenze und ohne Zahl - wie stark 15-Minuten-Trades
+voneinander abhaengen, ist nicht gemessen.
+
+Wo eine Stichprobe nicht gemessen ist, rechnet ``suchbudget`` weiter auf der
+rohen Zahl - nennt das Ergebnis aber *"Faktor mindestens 1,15"* und sagt den
+Grund dazu. Eine Untergrenze ist brauchbar; eine Untergrenze, die sich als
+Messung ausgibt, nicht.
+
+Dazu ``tests/test_stichprobe.py``: Eine Pruefung ueber den Syntaxbaum aller
+Module, die anschlaegt, sobald jemand die Einteilung wieder selbst
+zusammenbaut. Gegengeprueft - ein wiedereingesetzter Nachbau laesst sie
+fallen.
+
+Der Test aus Befund 135, der die Quartale im Gate nachwies, suchte eine
+Zeichenkette im Quelltext und ist an genau dieser Umstellung zerbrochen,
+obwohl sich am Verhalten nichts geaendert hat. Er prueft jetzt die Verdrahtung
+statt der Schreibweise.
+
+### Was daraus folgt
+
+1. **Am Stand aendert sich nichts.** 152 Trades, n = 112, Deflated Sharpe
+   0,6026, 9 von 11. Der ``langsam``-Test rechnet den Punkt nach der
+   Umstellung neu durch und bekommt dieselben Zahlen - die Aenderung ist im
+   Gate verhaltensgleich.
+2. **Am Ziel aendert sich einiges.** Die Latte steht 14 % hoeher als
+   berichtet, und der Auftrag an die Research-KI nennt eine um 47 % groessere
+   Luecke.
+3. Befund 136 hat die Zahlen zusammengefuehrt und dabei die Rechnung
+   uebersehen. Das ist keine Nachlaessigkeit von damals, sondern die Grenze
+   einer Textsuche: Sie sucht nach ``0,8640`` und findet keinen Aufruf, der
+   das falsche Argument uebergibt.
+
+Versuchszaehler 198 unveraendert - gerechnet wurde nichts Neues, nur richtig.
+Suchbudget 68 von 100. 2521 Tests gruen.

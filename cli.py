@@ -1623,16 +1623,23 @@ def _auftragslage(zustand: Path):
     dadurch auf 100 Trades, waehrend 120 gebraucht werden.
 
     Der Bestand steht als Zahl da und wird nicht neu gerechnet: Ein
-    Walk-Forward nur fuer den Auftragstext waere Rechenzeit fuer nichts, und
-    die Werte sind seit Befund 73 unveraendert.
+    Walk-Forward nur fuer den Auftragstext waere Rechenzeit fuer nichts. Die
+    Zahlen kommen aus ``research.referenz``, damit sie nicht wieder
+    veralten - hier stand ``154, 0.2591`` mit dem Vermerk "seit Befund 73
+    unveraendert", und beide Werte waren seit Befund 108 und 135 falsch.
+
+    **Das hat den Analysten falsch gezielt.** Er bekam eine Guete-Luecke, die
+    auf der rohen Trade-Zahl gerechnet war, und damit ein zu leichtes Ziel
+    (Befund 139).
     """
     from research.admission import load_trials
     from research.auftragslage import aus_messungen
+    from research.referenz import SPOTPUNKT
 
     return aus_messungen(
         versuche=load_trials(zustand / "trials.json"),
-        bestand_trades=154,
-        bestand_sharpe=0.2591,
+        bestand_trades=SPOTPUNKT.effektiv,
+        bestand_sharpe=SPOTPUNKT.guete,
         # Aus Befund 75, ueber 14 Genome der Tageskerzen-Generationen.
         kopplung=-0.533,
     )
@@ -3588,8 +3595,8 @@ def abstand(
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
     from research.erreichbarkeit import bewerte, kennzahlen_aus_pnl
+    from research.gates import stichprobe_wie_im_gate
     from research.seeds import spitzenkandidat
-    from research.unabhaengigkeit import effektive_stichprobe
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -3631,10 +3638,15 @@ def abstand(
     # **Effektive** Stichprobe, genau wie im Gate. Ohne das wuerde dieses
     # Werkzeug einen kleineren Abstand melden, als das Gate tatsaechlich
     # verlangt - und die Suche in die Irre schicken.
-    stichprobe = effektive_stichprobe(
-        n,
-        getattr(report, "beine", None),
-        [[float(x.net_pnl) for x in w.trades] for w in report.windows],
+    #
+    # Der Satz stand hier schon, der Aufruf hielt ihn aber nicht mehr: Er
+    # nahm nur die Fensterbloecke, ohne Gleichzeitigkeit und ohne Quartale.
+    # "Genau wie im Gate" war damit seit Befund 135 schlicht falsch. Jetzt
+    # ruft er die Funktion auf, die das Gate selbst benutzt (Befund 139).
+    stichprobe = stichprobe_wie_im_gate(
+        report.all_trades,
+        beine=getattr(report, "beine", None),
+        bloecke=[[float(x.net_pnl) for x in w.trades] for w in report.windows],
     )
     # **Auch dann anzeigen, wenn nicht gekuerzt wurde, die Entscheidung aber
     # auf der Kippe stand.** Vorher lief es genau andersherum: Gemeldet wurde
@@ -5873,9 +5885,19 @@ def anwaerter(
         console.print("[yellow]Kein Genom lieferte Fenster.[/]")
         raise typer.Exit(0)
 
-    ziel = noetige_guete(len(spitze.all_trades), versuche)
+    # **Effektive** Stichprobe, nicht die rohe Trade-Zahl (Befund 139): Die
+    # Latte gilt fuer die Zahl, mit der das Gate rechnet. Auf der rohen Zahl
+    # waere sie eine Untergrenze - und die Partnerkarte wuerde Anwaerter fuer
+    # tauglich erklaeren, die es nicht sind.
+    from research.gates import stichprobe_wie_im_gate
+
+    eigene_stichprobe = stichprobe_wie_im_gate(
+        spitze.all_trades,
+        bloecke=[[float(x.net_pnl) for x in w.trades] for w in spitze.windows],
+    )
+    ziel = noetige_guete(eigene_stichprobe.effektiv, versuche)
     karte = Partnerkarte(
-        n1=len(spitze.all_trades), sr1=eigen.sharpe_je_trade, ziel=ziel
+        n1=eigene_stichprobe.effektiv, sr1=eigen.sharpe_je_trade, ziel=ziel
     )
     console.print(karte.einordnung(liste))
 
@@ -7151,10 +7173,9 @@ def zeitachse(
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.entdopplung import entdoppele
-    from research.gates import concurrent_groups
+    from research.gates import stichprobe_wie_im_gate
     from research.seeds import VORGESEHEN, load_seeds, spitzenkandidat
     from research.suchbudget import Kandidat
-    from research.unabhaengigkeit import effektive_stichprobe
     from research.zeitachse import messe
     from strategy.compiler import compile_genome
     from strategy.genome import SizingSpec
@@ -7193,14 +7214,14 @@ def zeitachse(
         if len(trades) < 30 or kandidat is None:
             continue
         roh[genome.name] = trades
-        # Genau die Kuerzung, die das Zulassungs-Gate rechnet - uebergeben
-        # statt im Modul nachgebaut, damit es keine zweite Umsetzung gibt.
-        eigene = [[float(t.net_pnl) for t in w.trades] for w in bericht.windows]
-        gleichzeitig = [
-            [float(t.net_pnl) for t in g] for g in concurrent_groups(trades)
-        ]
-        st = effektive_stichprobe(
-            len(trades), None, eigene, weitere=[gleichzeitig]
+        # Genau die Kuerzung, die das Zulassungs-Gate rechnet - jetzt durch
+        # dieselbe Funktion und nicht mehr durch einen nachgebauten Aufruf,
+        # der genau das versprach und es seit Befund 135 nicht mehr hielt.
+        st = stichprobe_wie_im_gate(
+            trades,
+            bloecke=[
+                [float(t.net_pnl) for t in w.trades] for w in bericht.windows
+            ],
         )
         gate_t[genome.name] = kandidat.sharpe_je_trade * st.effektiv**0.5
 
@@ -7535,16 +7556,25 @@ def partner(
     zustand = Path(settings.paths.state)
     versuche = load_trials(zustand / "trials.json")
 
-    # Der Bestand steht fest: aus dem letzten gemessenen Lauf, nicht neu
-    # gerechnet - die Zahlen sind seit Befund 73 unveraendert.
-    n1, sr1 = 154, 0.2591
+    # Der Bestand kommt aus ``research.referenz`` und nicht mehr von Hand.
+    #
+    # Hier standen ``154, 0.2591`` mit dem Vermerk "seit Befund 73
+    # unveraendert". Sie haben sich zweimal geaendert: Befund 108 hat den
+    # Betriebspunkt auf Spot gelegt (0,2765 statt 0,2591), Befund 135 die
+    # Stichprobe von 154 auf 112 gekuerzt. Der Sweep aus Befund 136 hat die
+    # Stelle nicht gefunden, weil er nach den beiden ueberholten DSR-Werten
+    # sucht und hier keiner davon steht (Befund 139).
+    from research.referenz import SPOTPUNKT
+
+    n1, sr1 = SPOTPUNKT.effektiv, SPOTPUNKT.guete
     ziel = noetige_guete(n1, versuche)
     karte = Partnerkarte(n1=n1, sr1=sr1, ziel=ziel)
 
     console.print(
         f"\n[bold]Was ein Partner koennen muesste[/]\n"
-        f"  Bestand    '{spitzenkandidat().name}': {n1} Trades zu je "
-        f"{sr1:.4f}\n"
+        f"  Bestand    '{spitzenkandidat().name}': {SPOTPUNKT.trades} Trades "
+        f"zu je {sr1:.4f}, davon {n1} unabhaengig "
+        f"(Befund {SPOTPUNKT.befund})\n"
         f"  Versuche   {versuche}, noetige Guete {ziel:.3f}\n"
     )
     console.print("Noetiges SR/Trade des Partners:\n")
@@ -7915,11 +7945,10 @@ def rennen(
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.admission import load_trials
-    from research.gates import concurrent_groups
+    from research.gates import stichprobe_wie_im_gate
     from research.seeds import spitzenkandidat
     from research.stand import BUDGET
     from research.suchbudget import Kandidat
-    from research.unabhaengigkeit import effektive_stichprobe
     from research.wettrennen import Rennen, spanne
     from strategy.compiler import compile_genome
 
@@ -7940,12 +7969,14 @@ def rennen(
         console.print("[red]Keine auswertbaren Trades.[/]")
         raise typer.Exit(2)
 
-    bloecke = [[float(t.net_pnl) for t in f.trades] for f in bericht.windows]
-    gleichzeitig = [
-        [float(t.net_pnl) for t in gruppe] for gruppe in concurrent_groups(trades)
-    ]
-    stichprobe = effektive_stichprobe(
-        len(trades), getattr(bericht, "beine", None), bloecke, weitere=[gleichzeitig]
+    # Hier stand die Einteilung des Gates **von vor Befund 135** - ohne
+    # Quartalsbloecke, also 152 statt 112 Beobachtungen. Die Rechnung lief
+    # gegen eine Huerde, die das Gate so nicht mehr stellt. Jetzt kommt die
+    # Stichprobe aus derselben Funktion wie im Gate (Befund 139).
+    stichprobe = stichprobe_wie_im_gate(
+        trades,
+        beine=getattr(bericht, "beine", None),
+        bloecke=[[float(t.net_pnl) for t in f.trades] for f in bericht.windows],
     )
 
     lauf = Rennen(
@@ -8047,10 +8078,9 @@ def form(
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.admission import load_trials
     from research.formgrenze import Formlinie, mindestwoelbung, tabelle, wege
-    from research.gates import concurrent_groups
+    from research.gates import stichprobe_wie_im_gate
     from research.seeds import spitzenkandidat
     from research.suchbudget import Kandidat
-    from research.unabhaengigkeit import effektive_stichprobe
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -8071,12 +8101,10 @@ def form(
         console.print("[red]Keine auswertbaren Trades.[/]")
         raise typer.Exit(2)
 
-    bloecke = [[float(t.net_pnl) for t in f.trades] for f in bericht.windows]
-    gleichzeitig = [
-        [float(t.net_pnl) for t in gruppe] for gruppe in concurrent_groups(trades)
-    ]
-    stichprobe = effektive_stichprobe(
-        len(trades), getattr(bericht, "beine", None), bloecke, weitere=[gleichzeitig]
+    stichprobe = stichprobe_wie_im_gate(
+        trades,
+        beine=getattr(bericht, "beine", None),
+        bloecke=[[float(t.net_pnl) for t in f.trades] for f in bericht.windows],
     )
 
     linie = Formlinie(punkte=_formpunkte(zustand))
@@ -8252,13 +8280,12 @@ def streuung(
     from research.admission import load_trials
     from research.gates import (
         GateThresholds,
-        concurrent_groups,
         gate_deflated_sharpe,
+        stichprobe_wie_im_gate,
     )
     from research.seeds import spitzenkandidat
     from research.streuung import Empfindlichkeit, Streuung, sammle
     from research.suchbudget import Kandidat
-    from research.unabhaengigkeit import effektive_stichprobe
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -8281,13 +8308,11 @@ def streuung(
 
     # Genau die Argumente, mit denen ``run_admission`` das Gate aufruft -
     # sonst haengt die Empfindlichkeit an einer anderen Stichprobe als das
-    # Urteil, das sie erklaeren soll.
+    # Urteil, das sie erklaeren soll. Genau das war seit Befund 135 der Fall:
+    # Der Satz stimmte, der Aufruf darunter nicht mehr (Befund 139).
     bloecke = [[float(t.net_pnl) for t in f.trades] for f in bericht.windows]
-    gleichzeitig = [
-        [float(t.net_pnl) for t in gruppe] for gruppe in concurrent_groups(trades)
-    ]
-    stichprobe = effektive_stichprobe(
-        len(trades), getattr(bericht, "beine", None), bloecke, weitere=[gleichzeitig]
+    stichprobe = stichprobe_wie_im_gate(
+        trades, beine=getattr(bericht, "beine", None), bloecke=bloecke
     )
     gate = gate_deflated_sharpe(
         trades, versuche, GateThresholds(), getattr(bericht, "beine", None), bloecke
@@ -8731,13 +8756,24 @@ def suchbudget(
     console.print("[bold]Die Grenzlinie[/]")
     console.print(budget.tabelle())
     console.print(
-        "\n[dim]Gelesen: Bei so vielen Trades braeuchte es diesen Sharpe je "
-        "Trade, damit der Deflated Sharpe 0,95 erreicht.[/]\n"
+        "\n[dim]Gelesen: Bei so vielen **unabhaengigen** Beobachtungen "
+        "braeuchte es diesen Sharpe je Trade, damit der Deflated Sharpe 0,95 "
+        "erreicht.[/]\n"
     )
 
     console.print(f"[bold]Wie weit die {len(kandidaten)} Kandidaten kamen[/]")
+    # Die Kandidaten kommen aus der Bestenliste und tragen nur ihre **rohe**
+    # Trade-Zahl; ihre effektive Stichprobe ist nie gemessen worden. Die
+    # Spalten "noetig" und "Faktor" sind deshalb Untergrenzen, und die
+    # Ueberschrift sagt das - sonst stuende ueber der Tabelle eine Genauigkeit,
+    # die keine Zeile darin hat (Befund 139).
     console.print(
-        f"{'Kandidat':38} {'Trades':>7} {'hat':>8} {'noetig':>9} {'Faktor':>8}"
+        "[dim]Auf rohen Trade-Zahlen gerechnet - 'noetig' und 'Faktor' sind "
+        "Untergrenzen.[/]"
+    )
+    console.print(
+        f"{'Kandidat':38} {'Trades':>7} {'hat':>8} {'min.noetig':>11} "
+        f"{'min.Faktor':>11}"
     )
     geordnet = sorted(
         budget.abstaende(), key=lambda a: a.faktor if a.faktor is not None else 1e9
@@ -8747,17 +8783,22 @@ def suchbudget(
         faktor = f"{a.faktor:.2f}" if a.faktor is not None else "  --"
         console.print(
             f"{a.kandidat.name[:38]:38} {a.kandidat.trades:>7} "
-            f"{a.kandidat.sharpe_je_trade:>8.4f} {noetig:>9} {faktor:>8}"
+            f"{a.kandidat.sharpe_je_trade:>8.4f} {noetig:>11} {faktor:>11}"
         )
 
     console.print(f"\n[yellow]{budget.urteil()}[/]\n")
     console.print("[bold]Was Weitersuchen an der Linie verschiebt[/]")
+    # Gerechnet auf der **effektiven** Stichprobe des massgeblichen Punktes.
+    # Hier stand die rohe 152; die Linie lag damit rund 14 % zu tief
+    # (Befund 139).
+    from research.referenz import SPOTPUNKT
+
     for weitere in (0, 40, 90, 190, 390):
-        wert = budget.noetig_bei(152, versuche=trials + weitere)
+        wert = budget.noetig_bei(SPOTPUNKT.effektiv, versuche=trials + weitere)
         if wert is not None:
             console.print(
-                f"  {trials + weitere:>4} Versuche: 152 Trades braeuchten "
-                f"{wert:.4f}"
+                f"  {trials + weitere:>4} Versuche: {SPOTPUNKT.effektiv} "
+                f"unabhaengige Beobachtungen braeuchten {wert:.4f}"
             )
 
 
@@ -9289,8 +9330,7 @@ def decke(
         # und genau diese Annahme wurde in Befund 132 fraglich, weil die
         # Korrelationsstrafe dort an keinem Fenster biss.
         from research.aufstellung import Aufstellungsreihe, Marktsatz
-        from research.gates import concurrent_groups
-        from research.unabhaengigkeit import effektive_stichprobe
+        from research.gates import stichprobe_wie_im_gate
 
         zusatz = [
             x for x in ("LTCUSD_BITSTAMP", "XRPUSD_BITSTAMP") if x not in symbole
@@ -9343,10 +9383,7 @@ def decke(
                 [float(t.net_pnl) for t in trades if t.symbol == x] for x in satz
             ]
             bloecke = [[float(x.net_pnl) for x in w.trades] for w in bericht.windows]
-            gleich = [
-                [float(t.net_pnl) for t in g] for g in concurrent_groups(trades)
-            ]
-            eff = effektive_stichprobe(len(trades), beine, bloecke, weitere=[gleich])
+            eff = stichprobe_wie_im_gate(trades, beine=beine, bloecke=bloecke)
             saetze.append(
                 Marktsatz(
                     name=name, maerkte=len(satz), tage=len(erster),
@@ -9383,9 +9420,8 @@ def decke(
         # bringt ein zusaetzliches Jahr?
         import pandas as pd
 
-        from research.gates import concurrent_groups
+        from research.gates import stichprobe_wie_im_gate
         from research.historie import Historienkurve, Historienstufe
-        from research.unabhaengigkeit import effektive_stichprobe
 
         erster_voll = next(iter(gemeinsam.values()))
         anfang = erster_voll["open_time"].min()
@@ -9437,10 +9473,7 @@ def decke(
                 [float(t.net_pnl) for t in trades if t.symbol == x] for x in teil
             ]
             bloecke = [[float(x.net_pnl) for x in w.trades] for w in bericht.windows]
-            gleich = [
-                [float(t.net_pnl) for t in g] for g in concurrent_groups(trades)
-            ]
-            eff = effektive_stichprobe(len(trades), beine, bloecke, weitere=[gleich])
+            eff = stichprobe_wie_im_gate(trades, beine=beine, bloecke=bloecke)
             stufen.append(
                 Historienstufe(
                     von=start,

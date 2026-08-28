@@ -329,6 +329,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "1,8 Jahre galten fuer n = 152; jetzt mindestens 5,6",
         138,
     ),
+    Richtung(
+        "Latte auf roher Trade-Zahl",
+        "6 Aufrufe uebergaben 152 statt 112 - Latte 14 % zu tief, "
+        "Auftrag an die KI 47 % zu leicht",
+        139,
+    ),
+    Richtung(
+        "Einteilung des Gates achtmal nachgebaut",
+        "5 Kommentare versprachen 'genau wie im Gate', keiner stimmte noch",
+        139,
+    ),
 )
 
 

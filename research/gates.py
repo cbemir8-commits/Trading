@@ -569,6 +569,41 @@ def quartalsbloecke(trades: list[Trade]) -> list[list[float]]:
     return [eimer[k] for k in sorted(eimer)]
 
 
+def stichprobe_wie_im_gate(
+    trades: list[Trade],
+    *,
+    beine: dict[str, list[float]] | None = None,
+    bloecke: list[list[float]] | None = None,
+):
+    """Die effektive Stichprobe - **genau so, wie das Gate sie rechnet**.
+
+    Warum das eine eigene Funktion ist
+    ----------------------------------
+    Die Rechnung stand nur im Gate. Die uebrigen Werkzeuge - Suchbudget,
+    Partnerkarte, Auftragslage, Wettrennen - bekamen deshalb die **rohe**
+    Trade-Zahl uebergeben, und niemandem war das anzusehen: Bis Befund 135
+    waren beide Zahlen fuer den Kandidaten gleich (152), jeder Aufruf war
+    richtig, und die Trennung in 152 roh und 112 effektiv hat sie alle
+    stillschweigend falsch gemacht. Die Latte lag danach 14 % zu tief, der
+    Abstand zur Schwelle wurde als Faktor 1,08 statt 1,23 gemeldet.
+
+    ``cli erreichbarkeit`` hatte die Korrektur schon - dort steht seit
+    laengerem ein Kommentar, der genau davor warnt. Sie ist nur nie zu den
+    anderen fuenf Werkzeugen gewandert. Deshalb liegt sie jetzt hier, an
+    **einer** Stelle, wie die Kennzahlen in ``research.referenz`` (Befund 139).
+
+    Wer diese Funktion aufruft, rechnet mit derselben Stichprobe wie die
+    Zulassung. Wer sie umgeht, sollte einen Grund haben.
+    """
+    gleichzeitig = [
+        [float(t.net_pnl) for t in gruppe] for gruppe in concurrent_groups(trades)
+    ]
+    return effektive_stichprobe(
+        len(trades), beine, bloecke,
+        weitere=[gleichzeitig, quartalsbloecke(trades)],
+    )
+
+
 def concurrent_groups(trades: list[Trade]) -> list[list[Trade]]:
     """Trades zusammenfassen, die sich zeitlich ueberschneiden.
 
@@ -1066,13 +1101,7 @@ def gate_deflated_sharpe(
     # Gewaehlt wird die Einteilung mit der kleinsten Stichprobe - das kann die
     # Zulassung nur erschweren, nie erleichtern, und das ist die einzige
     # Richtung, in die eine solche Entscheidung fallen darf.
-    gleichzeitig = [
-        [float(t.net_pnl) for t in gruppe] for gruppe in concurrent_groups(trades)
-    ]
-    stichprobe = effektive_stichprobe(
-        len(pnls), beine, bloecke,
-        weitere=[gleichzeitig, quartalsbloecke(trades)],
-    )
+    stichprobe = stichprobe_wie_im_gate(trades, beine=beine, bloecke=bloecke)
 
     dsr = deflated_sharpe_ratio(
         observed_sharpe=per_trade_sharpe,

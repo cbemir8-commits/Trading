@@ -508,11 +508,43 @@ class TestDerZweiteBetriebspunkt:
         import re
 
         text = self._budget(spotguete=0.2765).urteil()
-        faktoren = [float(x) for x in re.findall(r"Faktor (\d\.\d\d)", text)]
+        faktoren = [
+            float(x) for x in re.findall(r"Faktor (?:mindestens )?(\d\.\d\d)", text)
+        ]
 
         assert len(faktoren) == 2
         assert faktoren[1] < faktoren[0]
         assert faktoren == [pytest.approx(1.15, abs=0.01), pytest.approx(1.08, abs=0.01)]
+
+    def test_ohne_gemessene_stichprobe_heisst_es_mindestens(self) -> None:
+        """Der Kandidat oben traegt nur die rohe Trade-Zahl (Befund 139).
+
+        Dann ist die Latte eine Untergrenze, und **beide** Faktoren sind es
+        auch - der zweite teilt durch dieselbe Latte.
+        """
+        text = self._budget(spotguete=0.2765).urteil()
+
+        assert text.count("Faktor mindestens") == 2
+        assert "nicht gemessen" in text
+
+    def test_mit_gemessener_stichprobe_faellt_das_mindestens_weg(self) -> None:
+        """Und die Latte liegt dann hoeher - das ist der ganze Unterschied."""
+        gemessen = Budget(
+            versuche=198,
+            kandidaten=[
+                Kandidat(
+                    name="Trend 50 Tage mit Konfluenz", trades=152,
+                    sharpe_je_trade=0.2597, schiefe=3.47, woelbung=15.95,
+                    effektiv=112,
+                )
+            ],
+        )
+        text = gemessen.urteil()
+
+        assert "mindestens" not in text
+        assert "112 Beobachtungen" in text
+        # Die eigentliche Zahl: Auf 152 rohen Trades stuende hier 1,15.
+        assert "Faktor 1.31" in text
 
     def test_eine_schlechtere_spotguete_wird_nicht_gezeigt(self) -> None:
         """Der Zusatz sagt "dort ist es leichter". Waere es das nicht, waere

@@ -244,6 +244,11 @@ def aus_messungen(
     Alle Zahlen kommen aus Modulen, die sie ohnehin liefern - nichts wird
     hier zweitgerechnet. Wer die Schwelle in ``gates.py`` aendert, aendert
     diesen Auftragstext mit.
+
+    **``bestand_trades`` ist die effektive Stichprobe**, nicht die rohe
+    Trade-Zahl: Die Guete und die noetige Guete rechnen beide mit der Zahl,
+    mit der das Gate urteilt. Mit der rohen Zahl bekam der Analyst eine zu
+    kleine Luecke genannt und damit ein zu leichtes Ziel (Befund 139).
     """
     from research.partnerkarte import Partnerkarte
     from research.suchbudget import Budget

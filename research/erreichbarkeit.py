@@ -88,27 +88,38 @@ def noetige_trades(
 
 def noetiger_sharpe(
     *,
-    trades: int,
+    effektiv: int,
     trials: int,
     skew: float = 0.0,
     kurtosis: float = 3.0,
     ziel: float = 0.95,
     schritte: int = 80,
 ) -> float | None:
-    """Welchen Sharpe je Trade braeuchte es bei **unveraenderter** Trade-Zahl?
+    """Welchen Sharpe je Trade braeuchte es bei **unveraenderter** Stichprobe?
+
+    ``effektiv`` ist die **effektive** Stichprobe, nicht die rohe Trade-Zahl.
+    Der Name sagt das, seit der Parameter ``trades`` hiess und genau deshalb
+    falsch bedient wurde (Befund 139): Vor Befund 135 waren beide Zahlen fuer
+    den Kandidaten gleich - 152 -, und jeder Aufruf mit der rohen Zahl war
+    richtig. Befund 135 hat sie getrennt (152 roh, 112 effektiv), und die
+    Aufrufe blieben stehen. Die Latte lag danach 14 % zu tief.
+
+    Wer nur die rohe Zahl hat, bekommt mit ihr eine **Untergrenze** der Latte,
+    keine Latte: Die effektive Stichprobe ist hoechstens so gross wie die rohe,
+    und je kleiner sie ist, desto hoeher liegt die Latte.
 
     ``None``, wenn auch ein sehr hoher Sharpe nicht genuegt - das passiert bei
     sehr kleinen Stichproben, wo die Wurzel aus ``n-1`` alles erstickt.
     """
-    if trades < 3:
+    if effektiv < 3:
         return None
-    if _dsr(MAX_SHARPE, trades, trials, skew, kurtosis) < ziel:
+    if _dsr(MAX_SHARPE, effektiv, trials, skew, kurtosis) < ziel:
         return None
 
     tief, hoch = 0.0, MAX_SHARPE
     for _ in range(schritte):
         mitte = (tief + hoch) / 2
-        if _dsr(mitte, trades, trials, skew, kurtosis) < ziel:
+        if _dsr(mitte, effektiv, trials, skew, kurtosis) < ziel:
             tief = mitte
         else:
             hoch = mitte
@@ -206,7 +217,7 @@ def bewerte(
             sharpe=sharpe, trials=trials, skew=skew, kurtosis=kurtosis, ziel=ziel
         ),
         sharpe_noetig=noetiger_sharpe(
-            trades=trades, trials=trials, skew=skew, kurtosis=kurtosis, ziel=ziel
+            effektiv=trades, trials=trials, skew=skew, kurtosis=kurtosis, ziel=ziel
         ),
         kosten_naechster_versuch=jetzt
         - _dsr(sharpe, trades, trials + 1, skew, kurtosis),

@@ -1032,11 +1032,43 @@ class TestQuartalsbloecke:
         assert len(bloecke) == 4
 
     def test_das_gate_nimmt_die_quartale_mit(self):
-        """Die Einteilung muss im Gate ankommen, nicht nur existieren."""
-        import inspect
+        """Die Einteilung muss im Gate ankommen, nicht nur existieren.
 
+        Die erste Fassung dieses Tests suchte die Zeichenkette
+        ``quartalsbloecke(trades)`` im Quelltext des Gates - und schlug fehl,
+        sobald die Rechnung nach ``stichprobe_wie_im_gate`` umzog, obwohl sich
+        am Verhalten nichts geaendert hatte. Ein Test, der eine Umbenennung
+        fuer einen Fehler haelt, schuetzt die Zeichenkette, nicht die
+        Eigenschaft.
+
+        Geprueft wird deshalb die **Verdrahtung**: Kommt die
+        Quartalseinteilung bei der Stichprobenrechnung an? Ein Zahlenvergleich
+        auf einem Spielzeug-Datensatz taugt dafuer nicht - mit vier Quartalen
+        hat die Permutationsnull keine Trennschaerfe, und der Test wuerde
+        bestehen oder scheitern, ohne etwas ueber die Verdrahtung zu sagen.
+        """
         from research import gates
 
-        quelle = inspect.getsource(gates.gate_deflated_sharpe)
-        assert "quartalsbloecke(trades)" in quelle
-        assert "weitere=[gleichzeitig, quartalsbloecke(trades)]" in quelle
+        trades = [
+            self._trade(2024, 1 + quartal * 3, hoehe)
+            for quartal, hoehe in enumerate([1.0, -1.0, 1.0, -1.0])
+            for hoehe in (hoehe, hoehe + 0.1)
+        ]
+        bloecke = [[float(t.net_pnl) for t in trades[i::2]] for i in range(2)]
+
+        gesehen: list[list[list[float]]] = []
+        echt = gates.effektive_stichprobe
+
+        def merker(roh, beine=None, bl=None, *, weitere=()):
+            gesehen.extend(weitere)
+            return echt(roh, beine, bl, weitere=weitere)
+
+        gates.effektive_stichprobe = merker
+        try:
+            gates.stichprobe_wie_im_gate(trades, bloecke=bloecke)
+        finally:
+            gates.effektive_stichprobe = echt
+
+        assert gates.quartalsbloecke(trades) in gesehen, (
+            "Die Quartalseinteilung erreicht die Stichprobenrechnung nicht."
+        )

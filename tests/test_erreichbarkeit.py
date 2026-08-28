@@ -55,20 +55,20 @@ class TestNoetigeTrades:
 
 class TestNoetigerSharpe:
     def test_kandidat_braucht_etwas_mehr(self) -> None:
-        s = noetiger_sharpe(trades=154, trials=95, skew=3.57, kurtosis=17.4)
+        s = noetiger_sharpe(effektiv=154, trials=95, skew=3.57, kurtosis=17.4)
 
         assert s is not None
         assert 0.251 < s < 0.4
 
     def test_winzige_stichprobe_ist_nicht_zu_retten(self) -> None:
         """Bei drei Trades hilft auch ein Sharpe von 3 nicht."""
-        assert noetiger_sharpe(trades=3, trials=95) is None
+        assert noetiger_sharpe(effektiv=3, trials=95) is None
 
     def test_zu_wenige_trades_geben_none(self) -> None:
-        assert noetiger_sharpe(trades=2, trials=95) is None
+        assert noetiger_sharpe(effektiv=2, trials=95) is None
 
     def test_grenze_wird_eingehalten(self) -> None:
-        s = noetiger_sharpe(trades=200, trials=95)
+        s = noetiger_sharpe(effektiv=200, trials=95)
         assert s is None or s <= MAX_SHARPE
 
 

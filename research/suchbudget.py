@@ -147,6 +147,25 @@ class Kandidat:
     Voreinstellungen unten; das ist eine Naeherung und keine Messung.
     """
 
+    effektiv: int | None = None
+    """Die **effektive** Stichprobe, wenn sie gemessen wurde.
+
+    ``trades`` ist die rohe Zahl. Das Gate rechnet seit Befund 135 mit der
+    effektiven, und die ist kleiner: beim Kandidaten 112 statt 152. Fehlt
+    dieses Feld, wird die Latte mit der rohen Zahl gerechnet - dann ist sie
+    eine **Untergrenze** und wird auch so ausgewiesen (Befund 139).
+    """
+
+    @property
+    def stichprobe(self) -> int:
+        """Die Zahl, mit der die Latte gerechnet wird."""
+        return self.trades if self.effektiv is None else self.effektiv
+
+    @property
+    def gemessen(self) -> bool:
+        """Ist die Stichprobe gemessen - oder nur die rohe Trade-Zahl?"""
+        return self.effektiv is not None
+
     @classmethod
     def aus_trades(cls, name: str, trades) -> Kandidat | None:
         """Alle vier Groessen aus einer Trade-Liste - an **einer** Stelle.
@@ -186,8 +205,19 @@ class Abstand:
     noetig: float | None
 
     @property
+    def untergrenze(self) -> bool:
+        """Ist ``noetig`` nur eine Untergrenze der Latte?
+
+        Ja, wenn die effektive Stichprobe des Kandidaten nicht gemessen ist
+        und die Latte deshalb mit der rohen Trade-Zahl gerechnet wurde. Die
+        wirkliche Latte liegt dann hoeher, denn die effektive Stichprobe ist
+        hoechstens so gross wie die rohe (Befund 139).
+        """
+        return not self.kandidat.gemessen
+
+    @property
     def erreichbar(self) -> bool:
-        """Genuegt bei dieser Trade-Zahl ueberhaupt irgendein Sharpe?
+        """Genuegt bei dieser Stichprobe ueberhaupt irgendein Sharpe?
 
         Bei sehr kleinen Stichproben nicht: Die Wurzel aus ``n-1`` erstickt
         jeden noch so hohen Wert.
@@ -206,6 +236,28 @@ class Abstand:
         if self.noetig is None or self.kandidat.sharpe_je_trade <= 0:
             return None
         return self.noetig / self.kandidat.sharpe_je_trade
+
+    def als_satz(self) -> str:
+        """Der Abstand in Worten - mit der Lesart, die er zulaesst."""
+        if self.noetig is None:
+            return (
+                f"'{self.kandidat.name}': Bei {self.kandidat.stichprobe} "
+                f"Beobachtungen genuegt kein Sharpe."
+            )
+        wie = "mindestens " if self.untergrenze else ""
+        satz = (
+            f"'{self.kandidat.name}': {self.kandidat.sharpe_je_trade:.4f} je "
+            f"Trade, noetig waeren {wie}{self.noetig:.4f} bei "
+            f"{self.kandidat.stichprobe} Beobachtungen"
+        )
+        if self.faktor is not None:
+            satz += f" (Faktor {self.faktor:.2f})"
+        if self.untergrenze:
+            satz += (
+                " - gerechnet auf der rohen Trade-Zahl, weil die effektive "
+                "Stichprobe nicht gemessen ist; die Latte liegt hoeher"
+            )
+        return satz + "."
 
 
 @dataclass(slots=True)
@@ -230,25 +282,36 @@ class Budget:
 
     def noetig_bei(
         self,
-        trades: int,
+        effektiv: int,
         *,
         versuche: int | None = None,
         schiefe: float | None = None,
         woelbung: float | None = None,
     ) -> float | None:
+        """Die Latte bei dieser **effektiven** Stichprobe.
+
+        Wer die rohe Trade-Zahl uebergibt, bekommt eine Untergrenze - siehe
+        ``noetiger_sharpe`` und Befund 139.
+        """
         return noetiger_sharpe(
-            trades=trades,
+            effektiv=effektiv,
             trials=self.versuche if versuche is None else versuche,
             skew=self.schiefe if schiefe is None else schiefe,
             kurtosis=self.woelbung if woelbung is None else woelbung,
         )
 
     def abstaende(self, *, versuche: int | None = None) -> list[Abstand]:
+        """Jeder Kandidat an der Linie - mit seiner **eigenen** Stichprobe.
+
+        ``Kandidat.stichprobe`` liefert die effektive Zahl, wo sie gemessen
+        ist, sonst die rohe. Welche es war, steht danach in
+        ``Abstand.untergrenze`` - und wird nicht verschwiegen.
+        """
         return [
             Abstand(
                 kandidat=k,
                 noetig=self.noetig_bei(
-                    k.trades,
+                    k.stichprobe,
                     versuche=versuche,
                     schiefe=k.schiefe,
                     woelbung=k.woelbung,
@@ -269,17 +332,18 @@ class Budget:
             return None
         return min(gueltig, key=lambda a: a.faktor or float("inf"))
 
-    def linie(self, trades: tuple[int, ...]) -> list[tuple[int, float | None]]:
-        return [(n, self.noetig_bei(n)) for n in trades]
+    def linie(self, stichproben: tuple[int, ...]) -> list[tuple[int, float | None]]:
+        """Die Grenzlinie ueber mehrere **effektive** Stichprobengroessen."""
+        return [(n, self.noetig_bei(n)) for n in stichproben]
 
-    def kosten_je_versuch(self, trades: int, *, schritte: int = 10) -> float | None:
+    def kosten_je_versuch(self, effektiv: int, *, schritte: int = 10) -> float | None:
         """Um wie viel die Linie steigt, wenn ``schritte`` Versuche dazukommen.
 
         Geteilt durch ``schritte`` - also der Preis eines einzelnen Einfalls,
         ausgedrueckt in dem, was er von allen kuenftigen verlangt.
         """
-        jetzt = self.noetig_bei(trades)
-        spaeter = self.noetig_bei(trades, versuche=self.versuche + schritte)
+        jetzt = self.noetig_bei(effektiv)
+        spaeter = self.noetig_bei(effektiv, versuche=self.versuche + schritte)
         if jetzt is None or spaeter is None:
             return None
         return (spaeter - jetzt) / schritte
@@ -314,7 +378,7 @@ class Budget:
             werte = {
                 "observed_sharpe": kandidat.sharpe_je_trade,
                 "trials": max(self.versuche, 1),
-                "sample_size": kandidat.trades,
+                "sample_size": kandidat.stichprobe,
                 "skew": schiefe,
                 "kurtosis": woelbung,
             }
@@ -340,9 +404,16 @@ class Budget:
                 loese("observed_sharpe", kandidat.sharpe_je_trade, MAX_SHARPE),
             ),
             Hebel(
+                # Der Hebel heisst "unabhaengige Trades" und bekam bis
+                # Befund 139 die **rohe** Trade-Zahl. Der Name stand also
+                # gegen den Wert.
                 "unabhaengige Trades",
-                float(kandidat.trades),
-                loese("sample_size", float(kandidat.trades), kandidat.trades * 50.0),
+                float(kandidat.stichprobe),
+                loese(
+                    "sample_size",
+                    float(kandidat.stichprobe),
+                    kandidat.stichprobe * 50.0,
+                ),
             ),
             _schiefe_hebel(
                 schiefe, woelbung, loese("skew", schiefe, schiefe + 50.0)
@@ -450,11 +521,23 @@ class Budget:
                 "erreichbar waere."
             )
 
+        # **Die Lesart gehoert in den Satz.** Steht die Latte auf der rohen
+        # Trade-Zahl, ist sie eine Untergrenze - und ein Faktor, der aus einer
+        # Untergrenze kommt, ist selbst einer (Befund 139).
+        wie = "mindestens " if nah.untergrenze else ""
         teile = [
             f"Am naechsten kam '{nah.kandidat.name}': {nah.kandidat.trades} "
             f"Trades zu je {nah.kandidat.sharpe_je_trade:.4f}, noetig waeren "
-            f"{nah.noetig:.4f} - Faktor {nah.faktor:.2f}."
+            f"{wie}{nah.noetig:.4f} bei {nah.kandidat.stichprobe} "
+            f"Beobachtungen - Faktor {wie}{nah.faktor:.2f}."
         ]
+        if nah.untergrenze:
+            teile.append(
+                "Die effektive Stichprobe dieses Kandidaten ist nicht "
+                "gemessen; gerechnet ist auf der rohen Trade-Zahl. Das Gate "
+                "rechnet seit Befund 135 mit der effektiven, und die ist "
+                "kleiner - die wirkliche Latte liegt also hoeher."
+            )
 
         # **Der zweite Betriebspunkt** (Befund 126). Die Kandidaten kommen aus
         # der Bestenliste und tragen Perpetual-Zahlen. Seit Befund 108 ist Spot
@@ -462,10 +545,12 @@ class Budget:
         # Faktor, der um die Kostenannahme zu hoch ist.
         if self.spotguete and self.spotguete > nah.kandidat.sharpe_je_trade:
             spotfaktor = nah.noetig / self.spotguete
+            # Kommt die Latte aus einer rohen Trade-Zahl, ist auch dieser
+            # Faktor eine Untergrenze - er teilt durch dieselbe Latte.
             teile.append(
                 f"Unter Spot-Bedingungen ({self.spotguete:.4f} statt "
                 f"{nah.kandidat.sharpe_je_trade:.4f}, kein Funding) ist es "
-                f"Faktor {spotfaktor:.2f} - die Zahl oben traegt eine "
+                f"Faktor {wie}{spotfaktor:.2f} - die Zahl oben traegt eine "
                 f"Kostenannahme mit, die dort entfaellt."
             )
 
@@ -476,7 +561,7 @@ class Budget:
                 f"handeln so selten, dass **kein** Sharpe genuegen wuerde."
             )
 
-        preis = self.kosten_je_versuch(nah.kandidat.trades)
+        preis = self.kosten_je_versuch(nah.kandidat.stichprobe)
         if preis is not None:
             teile.append(
                 f"Jeder weitere Einfall hebt die Linie um {preis:.5f} - "
