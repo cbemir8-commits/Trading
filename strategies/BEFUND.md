@@ -13144,3 +13144,83 @@ vorgetaeuscht hat.
 
 Versuchszaehler 198 unveraendert: gemessen, nicht ausgewaehlt. Suchbudget 68
 von 100.
+
+## Hundertzweiundvierzig. Der Vorsprung der Suche vor dem Zufall: ein halbes Prozent
+
+Befund 71 hat die Frage in einen Satz gebracht:
+
+> *"Die Suche gewinnt genau dann, wenn die Streuung echter Regelideen groesser
+> ist als 1/sqrt(n-1) - die Streuung des reinen Zufalls."*
+
+Diese Schwelle haengt an ``n``. Befund 139 hat ``n`` geaendert. Die Rechnung
+ist seither nicht wiederholt worden.
+
+### Gemessen
+
+Derselbe Lauf wie ``cli rennen``: Spitzenkandidat ohne Groessenaenderung,
+154 Trades, Bestwert 0,2569 je Trade nach 198 Versuchen. Die Ideenstreuung
+haengt nur an diesen beiden Zahlen und ist damit **unveraendert 0,0930**.
+Geaendert hat sich allein, wogegen sie antritt:
+
+    Stichprobe            Nullstreuung   Vorsprung   holt auf bei
+    154 (roh, vor 139)          0,0808     +15,1 %       764.635
+    118 (effektiv, nach 139)    0,0925      +0,6 %   jenseits 1e9
+
+**Aus fuenfzehn Prozent Vorsprung ist ein halbes geworden.**
+
+### Was ich dabei zuerst falsch aufgeschrieben hatte
+
+Hier stand, der Vorsprung habe durch Befund 139 sein **Vorzeichen** verloren:
+vorher habe die Nullstreuung ausserhalb des Unsicherheitsbereichs der
+Ideenstreuung gelegen, jetzt darin. Ein Test, den ich dazu geschrieben habe,
+hat das widerlegt.
+
+Der 90-%-Bereich der Ideenstreuung reicht von 0,0757 bis 0,1178, und er haengt
+**nicht an ``n``** - nur an Bestwert und Versuchszahl. Beide Nullstreuungen
+liegen darin, 0,0808 wie 0,0925:
+
+    0,0757 |-------0,0808---------0,0925----------| 0,1178
+
+**Das Vorzeichen war also nie bestimmt.** Schon vor Befund 139 war "die Suche
+holt nie auf" mit dem Verlauf vereinbar - und der Bericht von ``cli rennen``
+sagt das seit Befund 124 auch so, in genau dem Absatz, den ich ueberlesen
+habe. Gefallen ist der Punktschaetzer, nicht die Bestimmtheit.
+
+### Was das nicht ist
+
+**Keine Prognose.** Die Zahl "holt auf bei" ist als Prognose seit Befund 124
+geschlossen und in Befund 126 nachgemessen - der Registereintrag heisst
+'Schnittpunkt als Prognose', und die Begruendung war genau der Fehlerbalken,
+der hier wieder auftaucht. Wer aus "jenseits 1e9" ein Urteil macht, wiederholt
+ihn.
+
+Belastbar waere allenfalls das Vorzeichen des Vorsprungs - und das war, siehe
+oben, nie belastbar. Was dieser Befund beitraegt, ist enger: **Der beste
+Schaetzwert des Vorsprungs ist von +15 % auf +0,6 % gefallen.** Er stand nie
+auf sicherem Grund; jetzt steht er auch nicht mehr auf freundlichem.
+
+### Was daraus folgt
+
+1. **Fuer die restlichen 32 Versuche gibt es keine gemessene Begruendung
+   mehr.** Befund 80 hat sie in die Partnersuche gelegt. Befund 141 hat
+   gezeigt, dass das Auswahlkriterium dabei nichts traegt (+0,04). Dieser
+   Befund zeigt, dass der beste Schaetzwert fuer den Vorsprung der Suche vor
+   dem Zufall bei einem halben Prozent liegt - und nachweisbar besser als
+   Zufall war sie ohnehin nie.
+2. **Das ist kein Grund, das Gate zu lockern** - es ist genau die Eigenschaft,
+   fuer die es gebaut wurde. Es neutralisiert Zufallssuche exakt, und nach der
+   strengeren Stichprobe tut es das eben auch bei dieser Suche.
+3. **Was bleibt, ist die Guete der Ideen, nicht ihre Zahl.** Diesen Satz
+   traegt ``wettrennen`` seit Befund 71 im Urteil. Er war damals eine
+   Empfehlung; jetzt ist er die einzige verbliebene Richtung.
+
+### Ehrlich dazu
+
+Ich hatte zuerst vor, die Ideenstreuung aus den vierzehn gemessenen Partnern
+aus Befund 141 zu schaetzen - endlich mehr als der eine Wert, aus dem sie
+sonst zurueckgerechnet wird. Das waere **derselbe Fehler**, den der Modulkopf
+seit Befund 71 beschreibt: Die vierzehn sind Ueberlebende aus 198 Versuchen,
+keine Ziehungen. Ihre Streuung ist die der Elite. Der Kopf hat mich davon
+abgehalten; ohne ihn haette ich es gerechnet.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.

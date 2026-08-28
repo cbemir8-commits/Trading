@@ -494,3 +494,57 @@ class TestDerZweiteBetriebspunktImRennen:
         zahl = int(text.split()[0].replace(".", "").replace(",", ""))
 
         assert zahl > abbruch * 10
+
+
+class TestNachBefund139:
+    """Die Schwelle haengt an ``n``, und ``n`` ist kleiner geworden.
+
+    Befund 142: Die Ideenstreuung ist unveraendert 0,0930 - sie haengt nur an
+    Bestwert und Versuchszahl. Gefallen ist der Vorsprung, weil die
+    Nullstreuung mit der kleineren Stichprobe steigt.
+    """
+
+    IDEEN = 0.0930
+
+    def test_die_ideenstreuung_haengt_nicht_an_der_stichprobe(self) -> None:
+        """Sonst waere der Vergleich unten keiner."""
+        wert = kalibriere(bester=0.2569, versuche=198, mittel=0.0)
+
+        assert wert == pytest.approx(self.IDEEN, abs=5e-4)
+
+    def test_die_nullstreuung_steigt_mit_der_kleineren_stichprobe(self) -> None:
+        assert nullstreuung(154) == pytest.approx(0.0808, abs=5e-4)
+        assert nullstreuung(118) == pytest.approx(0.0925, abs=5e-4)
+
+    def test_der_vorsprung_faellt_von_fuenfzehn_auf_ein_halbes_prozent(self) -> None:
+        """**Der Befund in einer Zeile.**"""
+        vorher = self.IDEEN / nullstreuung(154) - 1
+        nachher = self.IDEEN / nullstreuung(118) - 1
+
+        assert vorher == pytest.approx(0.151, abs=0.005)
+        assert nachher == pytest.approx(0.006, abs=0.005)
+
+    def test_das_vorzeichen_war_nie_bestimmt(self) -> None:
+        """**Die Korrektur an meinem eigenen ersten Anlauf.**
+
+        Ich hatte geschrieben, der Vorsprung habe durch Befund 139 sein
+        Vorzeichen verloren - vorher sei es bestimmt gewesen. Dieser Test hat
+        das widerlegt: Der 90-%-Bereich der Ideenstreuung ist derselbe (er
+        haengt an Bestwert und Versuchszahl, nicht an ``n``), und **beide**
+        Nullstreuungen liegen darin.
+
+        Gefallen ist der Punktschaetzer des Vorsprungs, nicht seine
+        Bestimmtheit. Die war nie da.
+        """
+        unten, oben = 0.0757, 0.1178
+
+        assert unten <= nullstreuung(154) <= oben
+        assert unten <= nullstreuung(118) <= oben
+
+    def test_der_modulkopf_traegt_die_neue_schwelle(self) -> None:
+        import research.wettrennen as modul
+
+        kopf = modul.__doc__ or ""
+        assert "Befund 142" in kopf
+        assert "0,0925" in kopf
+        assert "effektive" in kopf

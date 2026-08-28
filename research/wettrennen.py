@@ -27,9 +27,33 @@ Vorfaktoren:
     **Die Suche gewinnt genau dann, wenn die Streuung echter Regelideen
     groesser ist als 1/sqrt(n-1) - die Streuung des reinen Zufalls.**
 
-Bei 154 Trades sind das 0,0808. Liegt die Ideenstreuung darunter, wird der
-Abstand nie geschlossen, egal wie lange gesucht wird. Das ist kein Mangel der
-Umsetzung, sondern genau die Eigenschaft, fuer die das Gate gebaut wurde: Es
+``n`` ist die **effektive** Stichprobe, nicht die rohe Trade-Zahl - das Gate
+rechnet mit ihr, also auch dieser Vergleich.
+
+**Und daran haengt hier alles** (Befund 142). Bei den 154 rohen Trades des
+Kandidaten stuenden 0,0808; bei seinen 118 unabhaengigen Beobachtungen sind es
+0,0925. Die Ideenstreuung, aus dem Verlauf zurueckgerechnet, liegt bei 0,0930:
+
+    Stichprobe          Nullstreuung   Ideenstreuung   Vorsprung
+    154 (roh)                 0,0808          0,0930      +15,1 %
+    118 (effektiv)            0,0925          0,0930       +0,6 %
+
+Der **Punktschaetzer** des Vorsprungs faellt damit von fuenfzehn Prozent auf
+einen halben.
+
+Mehr als der Punktschaetzer ist es nicht. Der 90-%-Bereich der Ideenstreuung
+reicht von 0,0757 bis 0,1178 - er haengt an Bestwert und Versuchszahl, **nicht
+an ``n``** -, und beide Nullstreuungen liegen darin:
+
+    0,0757 |-------0,0808---------0,0925----------| 0,1178
+
+Ob Suchen ueberhaupt besser ist als Wuerfeln, war aus diesem Verlauf also auch
+vorher nicht zu entscheiden. Gefallen ist der beste Schaetzwert, nicht die
+Bestimmtheit - die gab es nie.
+
+Liegt die Ideenstreuung unter der Nullstreuung, wird der Abstand nie
+geschlossen, egal wie lange gesucht wird. Das ist kein Mangel der Umsetzung,
+sondern genau die Eigenschaft, fuer die das Gate gebaut wurde: Es
 neutralisiert die Zufallssuche exakt.
 
 Der Fehler, der beim Rechnen zuerst herauskam

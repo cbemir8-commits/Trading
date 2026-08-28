@@ -355,6 +355,12 @@ BEHOBEN: tuple[Richtung, ...] = (
         "der Beitrag des Partners waechst dabei von +0,152 auf +0,343",
         140,
     ),
+    Richtung(
+        "Wettrennen auf roher Trade-Zahl",
+        "Nullstreuung 0,0808 statt 0,0925 - Vorsprung der Suche von "
+        "+15 % auf +0,6 %; bestimmt war das Vorzeichen nie",
+        142,
+    ),
 )
 
 
