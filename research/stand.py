@@ -373,6 +373,12 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'am_rand' stellt die Frage jetzt von selbst",
         143,
     ),
+    Richtung(
+        "Verteilungsform in taktung stillschweigend normal",
+        "0,3655 gegen 0,2978 bei n = 150; Wahl bleibt, steht jetzt aber da - "
+        "und schrumpft auf -3 % bei 10.000 Trades",
+        144,
+    ),
 )
 
 

@@ -234,6 +234,8 @@ def rechne(
     haltedauer: int,
     versuche: int,
     trade_zahlen: tuple[int, ...] = (150, 500, 1000, 2000, 5000, 10000),
+    schiefe: float = 0.0,
+    woelbung: float = 3.0,
 ) -> Taktung:
     """Die Huerde in Bruttobewegung je Trade umrechnen - fuer eine Kerzenlaenge.
 
@@ -267,12 +269,39 @@ def rechne(
     verlangt sie eine Guete von 4,18 - je Trade sind das 0,079, dreimal
     weniger als auf Tageskerzen, aber gegen Gebuehren, die je Trade gleich
     bleiben. Genau diese Kreuzung rechnet ``noetig_mit_kosten_pct``.
+
+    Zur Verteilungsform
+    -------------------
+    ``schiefe`` und ``woelbung`` sind auf die **Normalverteilung** gesetzt,
+    und das ist eine Entscheidung, keine Voreinstellung aus Bequemlichkeit:
+    Gefragt wird nach einer Regel, die es noch nicht gibt, und deren Form
+    kennt niemand. Die Normalverteilung ist dabei die **unguenstigste**
+    vertretbare Annahme - eine schiefe Verteilung mit langem rechtem Ende
+    senkt die Huerde.
+
+    Der Rest des Projekts rechnet dagegen mit der gemessenen Form des
+    Spitzenkandidaten (``suchbudget.SCHIEFE``/``WOELBUNG``). Die Zahlen hier
+    liegen deshalb hoeher als dort, und wer sie nebeneinanderlegt, muss das
+    wissen (Befund 144):
+
+        n = 150    normal 0,3655   gemessene Form 0,2995   -18 %
+        n = 500    normal 0,1980   gemessene Form 0,1760   -11 %
+        n = 2000   normal 0,0987   gemessene Form 0,0928    -6 %
+        n = 10000  normal 0,0441   gemessene Form 0,0429    -3 %
+
+    **Der Unterschied schrumpft mit der Stichprobe** - aus demselben Grund,
+    aus dem die Latte mit ihr steigt: Der Schiefe-Bonus wirkt proportional zum
+    noetigen Sharpe je Trade, und der wird bei tausenden Trades winzig. Genau
+    im Bereich, fuer den diese Tabelle gebaut ist, ist die Wahl also fast
+    folgenlos.
     """
     streuung = streuung_je_trade(frame, kerzen=haltedauer)
     stufen = [
         Stufe(
             trades=n,
-            noetiger_sharpe=noetiger_sharpe(effektiv=n, trials=versuche),
+            noetiger_sharpe=noetiger_sharpe(
+                effektiv=n, trials=versuche, skew=schiefe, kurtosis=woelbung
+            ),
             streuung_pct=streuung,
         )
         for n in trade_zahlen

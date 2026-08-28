@@ -13353,3 +13353,66 @@ sagt fuer sich genommen nichts.
 
 Versuchszaehler 198 unveraendert: gemessen wurde die Einteilung, nicht ein
 Kandidat. Suchbudget 68 von 100.
+
+## Hundertvierundvierzig. Zwei Werkzeuge, zwei Verteilungen
+
+Beim Weiterrechnen an der Fuenfzehnminuten-Richtung (Befund 143) fiel eine
+Spalte auf: ``cli taktung`` nennt bei 150 Trades einen noetigen Sharpe von
+**0,3655**. Meine eigene Latte lag bei n = 152 auf **0,2978**. Dieselbe
+Formel, derselbe Versuchsstand, zwei Zahlen.
+
+### Der Grund
+
+``taktung.rechne`` ruft ``noetiger_sharpe`` ohne ``skew`` und ``kurtosis`` auf
+und bekommt damit die Vorgaben der Funktion - **Normalverteilung**. Der Rest
+des Projekts rechnet mit der gemessenen Form des Spitzenkandidaten
+(``suchbudget.SCHIEFE`` 3,473, ``WOELBUNG`` 15,951), und die senkt die Huerde
+kraeftig:
+
+    n = 150    normal 0,3655   gemessene Form 0,2995   -18 %
+    n = 500    normal 0,1980   gemessene Form 0,1760   -11 %
+    n = 2000   normal 0,0987   gemessene Form 0,0928    -6 %
+    n = 10000  normal 0,0441   gemessene Form 0,0429    -3 %
+
+### Was daran keine Schwaeche ist
+
+**Die Wahl ist richtig, sie stand nur nirgends.** ``taktung`` fragt nach einer
+Regel, die es noch nicht gibt; deren Verteilungsform kennt niemand. Die
+Normalverteilung ist dabei die **unguenstigste** vertretbare Annahme - jede
+Schiefe nach rechts senkt die Huerde. Eine noch nicht erfundene Regel mit der
+Schiefe des Spitzenkandidaten zu rechnen waere dagegen genau die Art von
+stillem Geschenk, die dieses Projekt nicht machen will.
+
+Falsch war allein, dass ein Leser die beiden Tabellen nebeneinanderlegen und
+den Unterschied nicht erklaeren konnte.
+
+### Und warum es kaum etwas aendert
+
+**Der Unterschied schrumpft mit der Stichprobe**: -18 % bei 150 Trades, -3 %
+bei 10 000. Das ist wieder der Mechanismus aus Befund 141 - der Schiefe-Bonus
+wirkt ueber den Nenner der Formel und damit **proportional zum noetigen Sharpe
+je Trade**. Wer tausende Trades hat, braucht je Trade so wenig, dass von dem
+Bonus fast nichts uebrig bleibt.
+
+Genau im Bereich, fuer den ``taktung`` gebaut ist - Fuenfzehnminutenkerzen,
+tausende Trades -, ist die Wahl der Verteilung also fast folgenlos. Das ist
+beruhigend und war vorher nicht gewusst, sondern nur nicht aufgefallen.
+
+### Was gebaut wurde
+
+``rechne`` nimmt ``schiefe`` und ``woelbung`` als Parameter, **mit
+unveraenderten Vorgaben**: aus einer Offenlegung darf keine Lockerung werden.
+Ein Test haelt das fest. Zwei weitere pruefen, dass eine schiefe Verteilung die
+Huerde senkt und dass der Effekt mit der Stichprobe schrumpft (0,82 bei
+n = 150 gegen 0,97 bei n = 10 000).
+
+Der Modulkopf traegt die Tabelle und den Grund.
+
+### Was offen bleibt
+
+Ob auf Fuenfzehnminutenkerzen ueberhaupt etwas einen Vorteil hat, ist damit
+weiter nicht beantwortet. ``taktung`` sagt selbst: *"Das heisst nicht, dass
+dieser Vorteil existiert - nur, dass die Rechnung ihn nicht von vornherein
+ausschliesst."* Die Messung dazu laeuft.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from research.taktung import KOSTEN_PCT, Stufe, Taktung, rechne, streuung_je_trade
 
@@ -174,3 +175,52 @@ class TestRechne:
         )
 
         assert "Keine Stufen gerechnet" in leer.urteil()
+
+
+class TestVerteilungsform:
+    """Die Form ist jetzt einstellbar - Befund 144.
+
+    Vorher stand sie fest auf der Normalverteilung, ohne dass das irgendwo
+    stand. Die Wahl ist verteidigbar (sie ist die unguenstigste vertretbare
+    Annahme fuer eine Regel, die es noch nicht gibt); dass sie stillschweigend
+    getroffen wurde, war es nicht.
+    """
+
+    def test_die_vorgabe_bleibt_die_normalverteilung(self) -> None:
+        """Sonst waere aus einer Offenlegung eine Lockerung geworden."""
+        ohne = rechne(reihe(50_000), name="15m", haltedauer=16, versuche=198,
+                      trade_zahlen=(2000,))
+        normal = rechne(reihe(50_000), name="15m", haltedauer=16, versuche=198,
+                        trade_zahlen=(2000,), schiefe=0.0, woelbung=3.0)
+
+        assert ohne.stufen[0].noetiger_sharpe == pytest.approx(
+            normal.stufen[0].noetiger_sharpe
+        )
+
+    def test_eine_schiefe_verteilung_senkt_die_huerde(self) -> None:
+        normal = rechne(reihe(50_000), name="15m", haltedauer=16, versuche=198,
+                        trade_zahlen=(150,))
+        schief = rechne(reihe(50_000), name="15m", haltedauer=16, versuche=198,
+                        trade_zahlen=(150,), schiefe=3.473, woelbung=15.951)
+
+        assert schief.stufen[0].noetiger_sharpe < normal.stufen[0].noetiger_sharpe
+
+    def test_der_unterschied_schrumpft_mit_der_stichprobe(self) -> None:
+        """**Der eigentliche Punkt.** Bei tausenden Trades ist die Wahl fast
+        folgenlos - derselbe Mechanismus wie in Befund 141: Der Schiefe-Bonus
+        wirkt proportional zum noetigen Sharpe je Trade.
+        """
+        def anteil(n: int) -> float:
+            normal = rechne(reihe(50_000), name="15m", haltedauer=16,
+                            versuche=198, trade_zahlen=(n,))
+            schief = rechne(reihe(50_000), name="15m", haltedauer=16,
+                            versuche=198, trade_zahlen=(n,),
+                            schiefe=3.473, woelbung=15.951)
+            return (schief.stufen[0].noetiger_sharpe
+                    / normal.stufen[0].noetiger_sharpe)
+
+        klein, gross = anteil(150), anteil(10_000)
+
+        assert klein == pytest.approx(0.82, abs=0.02), "bei n=150 rund -18 %"
+        assert gross == pytest.approx(0.97, abs=0.02), "bei n=10000 nur -3 %"
+        assert gross > klein, "der Bonus schrumpft mit der Stichprobe"
