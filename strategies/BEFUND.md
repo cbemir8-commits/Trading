@@ -14165,3 +14165,122 @@ Verlierer waren, sieht man an der Guete, die im selben Zug faellt.
 
 Versuchszaehler 198 unveraendert - eine Korrektur am Messinstrument ist kein
 Versuch, und sie geht in die strenge Richtung. Suchbudget 68 von 100.
+
+## Hundertdreiundfuenfzig. Ein Verbund kann nicht unabhaengiger sein als seine Beine
+
+Der Verbund ist laut Register der **einzige** gemessene Hebel, der die
+effektive Stichprobe hebt statt sie umzuverteilen. Gemessen war er bisher nur
+als Paar. ``baue`` nimmt seit jeher beliebig viele Beine - nachgesehen hat
+niemand.
+
+### Vorab festgelegt
+
+Vor der ersten Zahl aufgeschrieben:
+
+* Gemessen werden **alle** C(14,2) = 91 Dreier aus Bestand plus zwei Partnern.
+* Berichtet wird die ganze Verteilung, nicht der beste.
+* Die Erhebung kostet keinen Versuch. Einen davon zu uebernehmen kostete 91 -
+  bei 32 verbleibenden im Budget passiert das in diesem Lauf also nicht,
+  gleich wie es ausgeht.
+* Vergleichsmarken: bestes Paar fehlt 0,632, Bestand allein fehlt 0,916.
+
+### Das Ergebnis, und der Haken darin
+
+    Bester Dreier   Luecke wird geschlossen + Trend beide Richtungen
+                    roh 527   n 527   Guete 3,412   noetig 3,945   fehlt 0,533
+
+**roh 527, n 527.** Keine Kuerzung. Das ist wortwoertlich die Signatur, die
+der Kopf von ``verbund.py`` als eigenen ersten Fehlversuch beschreibt: *"207
+Trades, keine Kuerzung, Guete 3,97 - das Gate waere bestanden gewesen."*
+
+Zerlegt man die Abhaengigkeitsschaetzung:
+
+    Verbund                    Fenster-ICC        p    roh    n_eff
+    Bestand allein                 +0,1047   0,0765    158      114
+    + Trend-Beteiligung            +0,1290   0,0150    211      139
+    + Luecke + Trend beide R.      +0,0018   0,3975    527      527
+
+Der ICC faellt um den Faktor 24, und die Abhaengigkeit hoert auf, nachweisbar
+zu sein. **20 von 91 Dreiern bekamen gar keine Kuerzung** - und es waren die,
+die oben in der Rangliste standen.
+
+### Eine Vermutung, die meine eigene Kontrolle widerlegt hat
+
+Mein erster Verdacht: Die Beine streuen verschieden stark, das treibt die
+Streuung *innerhalb* der Bloecke hoch und drueckt den ICC. Test: jedes Bein
+vorher auf Mittel 0 und Streuung 1 normieren.
+
+    Verbund                     wie bisher        je Bein normiert
+    Bestand allein (Kontrolle)  ICC +0,1047       ICC +0,1047
+    bestes Paar                 ICC +0,1290       ICC +0,1212
+    bester Dreier               ICC +0,0018       ICC +0,0000
+    vierter Dreier              Faktor 0,9582     Faktor 1,0000
+
+Die Kontrolle sitzt: Bei einem Bein aendert sich nichts, der Test ist also
+nicht kaputt. Und trotzdem kommt die Kuerzung nicht zurueck - beim vierten
+Dreier verschwindet sie sogar. **Die Vermutung war falsch.**
+
+Der Grund ist banaler: Ein Fensterblock aus 16 gemischten Trades hat einen
+stabileren Mittelwert als einer aus 5 Trades einer Regel. Zwischen-Block-
+Streuung faellt gegen Innerhalb-Streuung, der ICC geht gegen null. Der
+Schaetzer tut, was er tun soll - er ist fuer diese Frage nur das falsche
+Werkzeug.
+
+### Was stattdessen gilt
+
+Die richtige Frage ist nicht "wie gross ist der ICC", sondern **"kann das
+ueberhaupt sein?"**:
+
+> Waeren die Beine vollkommen unabhaengig voneinander, traegt ihre Vereinigung
+> genau so viele unabhaengige Beobachtungen, wie sie einzeln mitbringen. Sind
+> sie es nicht, weniger. **Mehr koennen es nie werden.**
+
+Zusammenlegen erzeugt keine Unabhaengigkeit. Gemessen:
+
+    Verbund                              roh   zusammen   Summe der Beine
+    Luecke + Trend beide Richtungen      527        527               365
+    Luecke + VWAP-Rueckkehr short        607        607               453
+    Bestand + Luecke (Paar)              421        421               315
+
+    Paare  ueber der Summe:   3 von 14
+    Dreier ueber der Summe:  28 von 91
+    groesste Ueberschreitung: +162 Beobachtungen
+
+``Verbund.stichprobe`` deckelt jetzt auf ``Verbund.beinsumme``. Kein
+Parameter, keine Wahl - eine Rechnung. Und sie kann nur kuerzen, nie anheben.
+
+### Die Rangliste danach
+
+                                bester   Median   schlechtester   0 von 91
+    ungedeckelt                  0,533    1,064           2,039   bestehen
+    gedeckelt                    0,542    1,084           2,246   bestehen
+
+    besser als das beste Paar (0,632):   6 ungedeckelt  ->  2 gedeckelt
+
+Der vorherige Erste - ``Luecke wird geschlossen + Trend beide Richtungen`` -
+steht nicht mehr in den ersten zehn. Er war der groesste Nutzniesser der
+ausgefallenen Kuerzung. Die ehrlichen Eintraege haben sich kaum bewegt: Der
+neue Erste war vorher Zweiter und ist um 0,009 gefallen.
+
+**Der Deckel hat das Artefakt aus der Spitze entfernt, ohne die redlichen
+Zahlen anzufassen.** Das veroeffentlichte Paar war nie betroffen: 139 gegen
+eine Grenze von 153. Die ``langsam``-Tests bestaetigen es - die Zahlen im Kopf
+von ``verbund.py`` aendern sich nicht.
+
+### Was daraus folgt
+
+1. **Der Dreierverbund ist zu.** 0 von 91, bester Abstand 0,542 gegen 0,632
+   beim besten Paar. Ein drittes Bein bringt so wenig, dass nur 2 von 91
+   ueberhaupt an einem Paar vorbeikommen. Die Richtung ist gemessen und
+   geschlossen, nicht eingeschaetzt.
+2. **Es ist Befund 27 zum dritten Mal.** Erst dieselbe Regel dreimal gezaehlt,
+   dann zwei Regeln ohne Bloecke addiert, jetzt drei Regeln mit Bloecken, die
+   der Schaetzer nicht mehr sieht. Jedes Mal hiess das Ergebnis: mehr Trades,
+   mehr scheinbare Information, keine echte.
+3. Ohne den Deckel haette der beste Dreier hier als 0,533 in einem Befund
+   gestanden - besser als jedes Paar. Die Zahl waere falsch gewesen, und
+   auffallen haette sie nur koennen, weil im Kopf desselben Moduls steht,
+   worauf zu achten ist.
+
+Versuchszaehler 198 unveraendert: Die Erhebung ist nichts uebernommen worden,
+und der Deckel ist eine Korrektur am Messinstrument. Suchbudget 68 von 100.

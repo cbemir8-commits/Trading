@@ -19,6 +19,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from research.gates import stichprobe_wie_im_gate
 from research.verbund import (
     Verbund,
     baue,
@@ -439,3 +440,83 @@ def test_der_verbund_stimmt_mit_dem_lauf_ueberein() -> None:
             f"{' + '.join(kombi)}: der Modulkopf nennt Guete {guete_soll}, "
             f"gemessen sind {guete_ist:.3f}."
         )
+
+
+class TestDieObergrenze:
+    """**Befund 153.** Zusammenlegen erzeugt keine Unabhaengigkeit.
+
+    Der ICC-Schaetzer sieht die Abhaengigkeit nicht mehr, sobald genug
+    verschiedene Regeln in einem Block liegen - bei drei Beinen fiel er von
+    +0,27 auf +0,01 und die Kuerzung schaltete sich ab. Gemessen: 527 rohe
+    Trades, 527 "unabhaengige", waehrend die Beine einzeln 365 trugen.
+
+    Die Grenze ist keine gewaehlte Zahl, sondern eine Rechnung: Waeren die
+    Beine vollkommen unabhaengig voneinander, traegt ihre Vereinigung genau
+    so viele unabhaengige Beobachtungen, wie sie einzeln mitbringen. Sind sie
+    es nicht, weniger.
+    """
+
+    def test_die_summe_der_beine_ist_die_grenze(self) -> None:
+        a = bericht(blockmuster(20))
+        b = bericht(blockmuster(20), versatz=1000)
+        verbund = baue([("A", a), ("B", b)], versuche=166)
+
+        assert verbund.beinsumme == sum(bein.effektiv for bein in verbund.beine)
+        assert verbund.stichprobe.effektiv <= verbund.beinsumme
+
+    def test_ohne_beinzahlen_gibt_es_keine_grenze(self) -> None:
+        """``None`` heisst "nicht messbar", nicht "Grenze null"."""
+        verbund = Verbund(
+            name="ohne Beine", trades=[], bloecke=[], versuche=166, beine=[]
+        )
+
+        assert verbund.beinsumme is None
+
+    def test_der_deckel_greift_und_kuerzt(self) -> None:
+        """**Der eigentliche Test.** Ein Verbund, dessen Bloecke keine
+        Abhaengigkeit zeigen, bekaeme ohne Deckel die volle rohe Zahl."""
+        a = bericht(muster(16, 3.0, -1.0))
+        b = bericht(muster(16, -1.0, 3.0), versatz=1000)
+        verbund = baue([("A", a), ("B", b)], versuche=166)
+
+        ungedeckelt = stichprobe_wie_im_gate(
+            verbund.trades, bloecke=verbund.bloecke or None
+        ).effektiv
+
+        if ungedeckelt <= verbund.beinsumme:
+            pytest.skip("dieser Aufbau kuerzt schon von selbst")
+        assert verbund.stichprobe.effektiv == verbund.beinsumme
+        assert verbund.stichprobe.effektiv < ungedeckelt
+
+    def test_der_deckel_hebt_nie_an(self) -> None:
+        """Er darf nur kuerzen. Ein Verbund, der von selbst unter der Grenze
+        liegt, bleibt, wo er ist - sonst waere aus einer Schranke ein Ziel
+        geworden."""
+        a = bericht(blockmuster(20))
+        b = bericht(blockmuster(20), versatz=1000)
+        verbund = baue([("A", a), ("B", b)], versuche=166)
+
+        ungedeckelt = stichprobe_wie_im_gate(
+            verbund.trades, bloecke=verbund.bloecke or None
+        ).effektiv
+
+        assert verbund.stichprobe.effektiv == min(ungedeckelt, verbund.beinsumme)
+
+    def test_ein_einzelnes_bein_bleibt_unberuehrt(self) -> None:
+        """Bei einem Bein ist die Grenze seine eigene Zahl - der Deckel darf
+        dort nichts tun, sonst kuerzte er zweimal."""
+        a = bericht(blockmuster(20))
+        allein = baue([("A", a)], versuche=166)
+
+        assert allein.beinsumme == allein.beine[0].effektiv
+        assert allein.stichprobe.effektiv <= allein.beinsumme
+
+    def test_der_kopf_nennt_die_gemessene_lage(self) -> None:
+        import research.verbund as modul
+
+        kopf = modul.__doc__ or ""
+        assert "Befund 153" in kopf
+        assert "527" in kopf, "der ungekuerzte Dreier"
+        assert "365" in kopf, "was die Beine einzeln tragen"
+        assert "28 von 91" in kopf, "wie viele Dreier betroffen waren"
+        assert "3 von 14" in kopf, "wie viele Paare betroffen waren"

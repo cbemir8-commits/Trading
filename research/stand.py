@@ -231,6 +231,17 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         124,
         zuletzt=126,
     ),
+    # Der Verbund ist der einzige gemessene Hebel, der die effektive
+    # Stichprobe **hebt** statt sie umzuverteilen. Naheliegend also, es mit
+    # drei Beinen zu versuchen - Befund 153 hat alle 91 gemessen. Derselbe
+    # Befund hat dabei den Deckel auf die Beinsumme eingezogen, ohne den die
+    # Spitze der Rangliste ein Artefakt gewesen waere.
+    Richtung(
+        "Dreierverbund",
+        "0 von 91; bester fehlt 0,542 gegen 0,632 beim besten Paar - nur 2 "
+        "von 91 ueberhaupt besser als ein Paar. Deckel auf die Beinsumme",
+        153,
+    ),
 )
 
 

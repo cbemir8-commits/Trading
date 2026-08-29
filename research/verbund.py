@@ -45,6 +45,36 @@ die Guete faellt auf 3,368. Der Unterschied ist genau das Loch aus Befund 27,
 nur eine Regel weiter: Wer zwei korrelierte Ertragsstroeme addiert, ohne die
 Korrelation zu messen, zaehlt Information doppelt.
 
+Und derselbe Fehler noch einmal, mit Bloecken (Befund 153)
+-----------------------------------------------------------
+Die Bloecke genuegen nicht. Der ICC-Schaetzer vergleicht Streuung zwischen
+Bloecken gegen Streuung innerhalb - und je mehr verschiedene Regeln in einem
+Block liegen, desto stabiler wird dessen Mittelwert. Der ICC faellt gegen
+null, und die Kuerzung schaltet sich **ab**:
+
+    Verbund                    Fenster-ICC        p    roh    n_eff
+    Bestand allein                 +0,1047   0,0765    158      114
+    + Trend-Beteiligung            +0,1290   0,0150    211      139
+    + Luecke + Trend beide R.      +0,0018   0,3975    527      527
+
+Bei drei Beinen sind 527 rohe Trades 527 "unabhaengige" Beobachtungen. Die
+drei Beine tragen einzeln gemessen zusammen 365.
+
+**Die Obergrenze ist die Summe der Beine.** Waeren sie vollkommen unabhaengig
+voneinander, traegt ihre Vereinigung genau so viele unabhaengige
+Beobachtungen, wie sie einzeln mitbringen; sind sie es nicht, weniger. Mehr
+koennen es nie werden - Zusammenlegen erzeugt keine Unabhaengigkeit. Genau
+darauf deckelt ``Verbund.stichprobe`` jetzt.
+
+Betroffen waren **3 von 14 Paaren und 28 von 91 Dreiern**, im schlimmsten
+Fall um 162 Beobachtungen. Das veroeffentlichte Paar war nicht darunter: 139
+gegen eine Grenze von 153 - die Zahlen oben aendern sich also nicht.
+
+Eine Vermutung ist dabei widerlegt worden: Der ICC-Zusammenbruch kommt
+**nicht** daher, dass die Beine verschieden stark streuen. Normiert man jedes
+Bein vorher auf Mittel 0 und Streuung 1, aendert sich nichts (+0,0018 ->
++0,0000).
+
 Der Messfehler im Partner (Befund 151)
 ---------------------------------------
 Der Nachlauf aus Befund 22 war **eine** Testfensterlaenge lang, und diese
@@ -199,6 +229,23 @@ class Verbund:
         return Kandidat.aus_trades(self.name, self.trades)
 
     @property
+    def beinsumme(self) -> int | None:
+        """Die **Obergrenze**: Summe der effektiven Stichproben aller Beine.
+
+        Waeren die Beine vollkommen unabhaengig voneinander, traegt ihre
+        Vereinigung genau so viele unabhaengige Beobachtungen, wie sie
+        einzeln mitbringen. Sind sie es nicht, sind es weniger.
+        **Mehr koennen es nie werden** - Zusammenlegen erzeugt keine
+        Unabhaengigkeit (Befund 153).
+
+        ``None``, wenn nicht jedes Bein seine eigene Zahl kennt; dann gibt es
+        keine Grenze zu ziehen.
+        """
+        if not self.beine or any(b.effektiv is None for b in self.beine):
+            return None
+        return sum(int(b.effektiv) for b in self.beine)
+
+    @property
     def stichprobe(self):
         # Dieselbe Rechnung wie im Gate - und zwar durch dieselbe Funktion.
         # Hier stand ein Nachbau ohne Quartalseinteilung, also die Fassung
@@ -206,7 +253,19 @@ class Verbund:
         # Fehler beschreibt, den ein zu grosszuegiges n anrichtet.
         from research.gates import stichprobe_wie_im_gate
 
-        return stichprobe_wie_im_gate(self.trades, bloecke=self.bloecke or None)
+        roh = stichprobe_wie_im_gate(self.trades, bloecke=self.bloecke or None)
+
+        # **Und dann gedeckelt** (Befund 153). Der ICC-Schaetzer sieht die
+        # Abhaengigkeit nicht mehr, sobald genug verschiedene Regeln in einem
+        # Block liegen: Bei drei Beinen fiel er von +0,27 auf +0,01, und die
+        # Kuerzung schaltete sich ab - 527 rohe Trades, 527 "unabhaengige".
+        # Die Beine zusammen trugen 365.
+        grenze = self.beinsumme
+        if grenze is None or roh.effektiv <= grenze:
+            return roh
+        from dataclasses import replace
+
+        return replace(roh, effektiv=max(1, grenze))
 
     @property
     def guete(self) -> float | None:

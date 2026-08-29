@@ -131,6 +131,7 @@ class Spur:
 #: Fehlalarm (Befund 118).
 BEGRIFFE: dict[str, tuple[str, ...]] = {
     "Mehr Maerkte": ("effektive Stichprobe", "mehr Maerkte", "weitere Maerkte"),
+    "Dreierverbund": ("Dreierverbund", "Dreier", "drittes Bein", "Beinsumme"),
     "Mehr Historie": ("mehr Historie", "laengere Historie"),
     "15-Minuten-Kerzen": ("15-Minuten", "Feinkerzen"),
     "Vola-Ziel": ("Vola-Ziel", "target_vol"),
