@@ -1,4 +1,4 @@
-"""Tests fuer ``research.randschnitt`` - Befund 151."""
+"""Tests fuer ``research.randschnitt`` - Befund 151 und 152."""
 
 from __future__ import annotations
 
@@ -7,9 +7,10 @@ from types import SimpleNamespace
 import pytest
 
 from research.randschnitt import (
-    RANDPUFFER_TAGE,
     Randbefund,
     beurteile,
+    fertige,
+    ohne_zensierte,
     randtrades,
 )
 
@@ -52,7 +53,6 @@ class TestRandbefund:
         assert b.hub == pytest.approx(0.0342, abs=1e-4)
         assert b.anteil == pytest.approx(2 / 158)
         assert "freundlicher" in b.urteil()
-        assert f"{RANDPUFFER_TAGE} Tage" in b.urteil()
 
     def test_ein_ungunstiger_rand_wird_nicht_als_geschenk_gelesen(self) -> None:
         """Zoege der Rand die Zahl nach unten, waere der Hinweis falsch."""
@@ -104,6 +104,71 @@ class TestBeurteile:
         assert b.guete_mit == 0.0
 
 
+class TestFertige:
+    """Die Gegenmenge zu ``randtrades`` - **die Stichprobe, die zaehlt.**"""
+
+    def test_behaelt_die_nach_regel_beendeten(self) -> None:
+        trades = [_trade(1.0), _trade(2.0, grund="end_of_data"), _trade(-1.0)]
+
+        assert [t.net_pnl for t in fertige(trades)] == [1.0, -1.0]
+
+    def test_zusammen_ergeben_beide_das_ganze(self) -> None:
+        """Kein Trade faellt zwischen die Mengen, keiner zaehlt doppelt."""
+        trades = [
+            _trade(1.0),
+            _trade(2.0, grund="end_of_data"),
+            _trade(-1.0, grund="stop_loss"),
+            _trade(0.5, grund="take_profit"),
+        ]
+
+        assert len(fertige(trades)) + len(randtrades(trades)) == len(trades)
+
+    def test_ohne_zensierte_bleibt_alles_stehen(self) -> None:
+        trades = [_trade(1.0), _trade(-1.0)]
+
+        assert fertige(trades) == trades
+
+
+class TestOhneZensierte:
+    """Der Bericht in zwei Sichten - **ohne das Original anzufassen.**"""
+
+    @staticmethod
+    def _bericht():
+        fenster = [
+            SimpleNamespace(trades=[_trade(1.0), _trade(9.0, grund="end_of_data")]),
+            SimpleNamespace(trades=[_trade(-1.0)]),
+        ]
+        return SimpleNamespace(
+            all_trades=[t for w in fenster for t in w.trades],
+            windows=fenster,
+            equity_curve="unberuehrt",
+        )
+
+    def test_filtert_flache_liste_und_fenster(self) -> None:
+        gefiltert = ohne_zensierte(self._bericht())
+
+        assert [t.net_pnl for t in gefiltert.all_trades] == [1.0, -1.0]
+        assert [t.net_pnl for t in gefiltert.windows[0].trades] == [1.0]
+        assert [t.net_pnl for t in gefiltert.windows[1].trades] == [-1.0]
+
+    def test_das_original_bleibt_vollstaendig(self) -> None:
+        """**Der Aufrufer braucht beide Sichten.** Rendite und Rueckgang
+        rechnen mit der offenen Position, die Statistik nicht."""
+        original = self._bericht()
+
+        ohne_zensierte(original)
+
+        assert len(original.all_trades) == 3
+        assert len(original.windows[0].trades) == 2
+
+    def test_die_kapitalkurve_wird_nicht_angefasst(self) -> None:
+        """Dort gehoert die offene Position hin - sie ist zum letzten Kurs
+        bewertet und damit der Kontostand."""
+        gefiltert = ohne_zensierte(self._bericht())
+
+        assert gefiltert.equity_curve == "unberuehrt"
+
+
 class TestAlarmUndNichtErgebnis:
     """**Der Lesefehler, der in Befund 151 einmal passiert ist.**
 
@@ -130,9 +195,10 @@ class TestAlarmUndNichtErgebnis:
     def test_am_fensterende_ist_der_nachlauf_das_mittel(self) -> None:
         """Zwei Raender, zwei Antworten - und das Urteil nennt beide.
 
-        Am Serienende hilft nur Kuerzen, am Fensterende ein laengerer
-        Nachlauf. Wer nur das Kuerzen kennt, kuerzt gegen einen Fehler, der
-        mitten in der Reihe sitzt.
+        Am Fensterende hilft ein laengerer Nachlauf, am Serienende zaehlen
+        die Trades in der Statistik nicht mit. Wer nur eine der beiden
+        Antworten kennt, wendet sie auf den falschen Rand an - genau das ist
+        in Befund 151 passiert.
         """
         b = Randbefund(gesamt=53, am_rand=10, guete_mit=0.3185, guete_ohne=-0.3874)
         satz = b.urteil()
@@ -157,9 +223,21 @@ class TestDerModulkopf:
         assert "0,6026" in kopf, "und der ohne"
         assert "Befund 22" in kopf, "die Fundstelle des Fensterrand-Fehlers"
 
-    def test_der_puffer_ist_gemessen_und_nicht_gewaehlt(self) -> None:
-        """30, 60 und 90 Tage geben dasselbe - das steht im Kopf."""
+    def test_der_kopf_zeigt_alle_drei_behandlungen(self) -> None:
+        """**Befund 152.** Die Wahl zwischen ihnen ist der ganze Punkt - ohne
+        die Tabelle sieht "zensierte weglassen" wie eine Geschmacksfrage aus.
+        """
         import research.randschnitt as modul
 
-        assert RANDPUFFER_TAGE == 30
-        assert "Plateau" in (modul.__doc__ or "")
+        kopf = modul.__doc__ or ""
+        for zahl in ("0,5868", "0,4707", "0,4452"):
+            assert zahl in kopf, f"{zahl} fehlt - eine der drei Behandlungen"
+        assert "vier fertig gehandelte Trades" in kopf, (
+            "warum das Kuerzen ausgeschieden ist"
+        )
+
+    def test_es_gibt_keinen_puffer_mehr(self) -> None:
+        """Faellt das um, ist eine gewaehlte Zahl zurueck, wo keine hingehoert."""
+        import research.randschnitt as modul
+
+        assert not hasattr(modul, "RANDPUFFER_TAGE")

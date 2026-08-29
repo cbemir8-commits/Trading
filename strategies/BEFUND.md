@@ -14060,3 +14060,108 @@ Das Ergebnis steht: **0 von 14**, bestes Paar 0,613 unter seiner Latte.
 
 Versuchszaehler 198 unveraendert - eine Korrektur am Messinstrument ist kein
 Versuch, und sie geht in die strenge Richtung. Suchbudget 68 von 100.
+
+## Hundertzweiundfuenfzig. Der Puffer war die mittlere Behandlung, nicht die strenge
+
+Befund 151 hat am Serienende **dreissig Tage abgeschnitten** und das die
+strenge Behandlung genannt. Beim Verdrahten in ``cli stand`` fiel auf, dass
+das nicht stimmt.
+
+### Drei Behandlungen, und der Puffer ist die mittlere
+
+Am Spitzenkandidaten, Spot, 198 Versuche:
+
+    Behandlung                     Trades   n_eff   SR/Trade      DSR    fehlt
+    (a) zensierte mitzaehlen          160     117     0,2688   0,5868    0,705
+    (b) 30 Tage kuerzen               154     111     0,2591   0,4707    0,870
+    (c) zensierte weglassen           158     114     0,2520   0,4452    0,916
+
+**(b) wirft vier fertig gehandelte Trades mit weg** - 160 auf 154, davon nur
+zwei zensiert. Und weil die vier Verlierer waren, hebt das die Qualitaet je
+Trade. Der Puffer lag also **ueber** der strengen Behandlung, nicht darunter.
+
+Im Kopf von ``randschnitt.py`` stand es die ganze Zeit da: *"Ohne sie faellt
+die Qualitaet je Trade auf 0,2506, also unter den Wert mit dreissig Tagen
+Abstand."* Ich habe den Satz geschrieben und die Folgerung nicht gezogen.
+
+### Warum ein Puffer ueberhaupt falsch ist
+
+Drei Gruende, keiner davon eine Geschmacksfrage:
+
+1. **Er wirft Information weg.** Ein fertig gehandelter Trade ist eine
+   Beobachtung, die es gibt. Sie wegzuschneiden, weil sie zeitlich in der
+   Naehe eines anderen Problems liegt, ist keine Korrektur.
+2. **Er muss gewaehlt werden.** Das Plateau 30/60/90 aus Befund 151 ist keine
+   Struktureigenschaft - es heisst nur, dass dieser eine Kandidat in dieser
+   Strecke gerade flach war. Fuer eine andere Regel liegt es anderswo. Das ist
+   dieselbe Schwaeche wie beim Nachlauf: an **einem** Kandidaten kalibriert.
+   Ich hatte sie in Befund 151 sogar als offenen Punkt benannt.
+3. **Er behebt nichts.** Kuerzen verschiebt den Schnitt bloss; am neuen Ende
+   steht wieder eine offene Position.
+
+### Was jetzt gilt
+
+**(c)**: Ein Trade, den das Datenende glattgestellt hat, ist keine fertige
+Beobachtung und zaehlt in der Statistik nicht mit. Kein Parameter, keine Wahl,
+kein weggeworfener Trade. Rechtszensierung, wie sie in der
+Lebensdaueranalyse behandelt wird.
+
+**Nur in der Statistik.** In der Kapitalkurve bleibt die offene Position
+stehen - sie ist zum letzten Kurs bewertet und damit der Kontostand. Rendite,
+Rueckgang und schlechtestes Jahr rechnen weiter mit ihr; Deflated Sharpe,
+Qualitaet je Trade und effektive Stichprobe nicht.
+
+Gebaut: ``randschnitt.fertige`` und ``randschnitt.ohne_zensierte``.
+``RANDPUFFER_TAGE`` ist weg, und ein Test haelt fest, dass es nicht
+zurueckkommt.
+
+### Verdrahtet, nicht nur aufgeschrieben
+
+Das war der eigentliche Anlass. Befund 151 hat den Puffer in **zwei
+langsam-Tests** angewandt und sonst nirgends. ``cli stand`` - das erste, was
+ein Leser aufschlaegt - rechnete die zensierten Trades weiter mit:
+
+    vorher    158 Trades, Qualitaet 0,2677, noetiger Zuwachs 24 %
+    jetzt     156 Trades (+2 zensiert), Qualitaet 0,2535, noetiger Zuwachs 33 %
+
+Neun Prozentpunkte Unterschied in der Zahl, an der die Suche sich ausrichtet.
+Verdrahtet ist es jetzt an drei Stellen: im Deflated-Sharpe-Gate selbst, in
+``cli stand`` und in ``cli abstand``. Die Zahl der zensierten Trades steht im
+Bericht daneben, nicht in einer Fussnote.
+
+### Was sich an den Zahlen aendert
+
+Referenzpunkt (``research/referenz.py``):
+
+    vorher (Befund 135/151)   152 Trades, n = 112, Guete 0,2765, DSR 0,6026
+    jetzt  (Befund 152)       156 Trades, n = 115, Guete 0,2708, DSR 0,5881
+
+Verbunde:
+
+    Verbund                          Befund 151          Befund 152
+    Spitze allein                 n 111  Guete 2,730   n 114  Guete 2,690
+    + Trend-Beteiligung 200 T.    n 135  Guete 3,030   n 139  Guete 3,019
+    + Donchian-Ausbruch 55/20     n 105  Guete 2,636   n 109  Guete 2,641
+
+Der Abstand des besten Verbundes zur Schwelle waechst von 0,614 auf **0,631**.
+Damit sind es drei Korrekturen hintereinander - 140, 151, 152 -, und jede hat
+den Abstand vergroessert. Ein Test haelt genau das fest.
+
+Die effektive Stichprobe **steigt** dabei (111 auf 114, 135 auf 139): Die vier
+Trades, die der Puffer weggeschnitten hatte, zaehlen wieder mit. Dass es
+Verlierer waren, sieht man an der Guete, die im selben Zug faellt.
+
+### Was daraus folgt
+
+1. **Kein Kandidat kommt naeher an die Schwelle.**
+2. Der Fehler war zum dritten Mal derselbe: eine Groesse an **einem**
+   Kandidaten kalibriert. Beim Nachlauf (22 -> 151), beim Puffer (151 -> 152).
+   Diesmal war die Antwort nicht, ihn besser zu kalibrieren, sondern ihn
+   abzuschaffen - eine Behandlung ohne Parameter kann nicht falsch kalibriert
+   sein.
+3. Eine Korrektur, die nur in Tests steht, ist keine Korrektur. Befund 151 hat
+   den Puffer gebaut und in zwei ``langsam``-Tests angewandt; das Werkzeug,
+   das ein Mensch benutzt, hat er nicht angefasst.
+
+Versuchszaehler 198 unveraendert - eine Korrektur am Messinstrument ist kein
+Versuch, und sie geht in die strenge Richtung. Suchbudget 68 von 100.

@@ -434,9 +434,22 @@ BEHOBEN: tuple[Richtung, ...] = (
     ),
     Richtung(
         "Frischer Datenabzug hob den Referenzpunkt",
-        "DSR 0,6026 -> 0,7255 durch zwei Trades am Serienende; Plateau ueber "
-        "30/60/90 Tage - der Punkt steht weiter bei 0,6026",
+        "DSR 0,6026 -> 0,7255 durch zwei Trades am Serienende; nach der "
+        "Zensur (Befund 152) steht der Punkt bei 0,5881",
         151,
+        zuletzt=152,
+    ),
+    Richtung(
+        "Serienende gekuerzt statt zensiert",
+        "der Puffer warf vier fertig gehandelte Trades mit weg und lag "
+        "deshalb ueber der strengen Behandlung: DSR 0,4707 statt 0,4452",
+        152,
+    ),
+    Richtung(
+        "Zensierte Trades in der Gate-Statistik",
+        "'cli stand' rechnete sie mit - noetiger Zuwachs 24 % statt 33 %; "
+        "jetzt nur noch in Rendite und Rueckgang",
+        152,
     ),
 )
 
@@ -813,6 +826,18 @@ class Lage:
     (Befund 148).
     """
 
+    zensiert: int = 0
+    """Trades, die das Datenende glattgestellt hat statt der Regel.
+
+    Sie stecken in Rendite und Rueckgang - dort ist die offene Position zum
+    letzten Kurs bewertet und damit der Kontostand. In ``trades``,
+    ``sharpe_je_trade`` und ``effektiv`` stecken sie **nicht**: Eine nicht zu
+    Ende gehandelte Position ist keine fertige Beobachtung (Befund 152).
+
+    Wird die Zahl groesser als eine Handvoll, ist der Nachlauf zu kurz -
+    ``backtest.walkforward.nachlauf_fuer`` und ``research.randschnitt``.
+    """
+
     @property
     def zugelassen(self) -> bool:
         return self.gesamt > 0 and self.bestanden == self.gesamt
@@ -864,14 +889,25 @@ class Lage:
                 )
         return text
 
+    def _zensurhinweis(self) -> str:
+        """**Nicht in einer Fussnote.** Wer die Trade-Zahl liest, muss sehen,
+        dass eine zweite daneben steht - sonst sucht er spaeter den
+        Unterschied zwischen dieser Zeile und dem Log des Backtests."""
+        if not self.zensiert:
+            return ""
+        return (
+            f" (+{self.zensiert} am Datenende glattgestellt, in der Statistik "
+            f"nicht gezaehlt)"
+        )
+
     def bericht(self) -> str:
         zeilen = [
             "STAND",
             "=" * 72,
             f"  Kandidat   {self.kandidat}",
             f"  Gemessen   {self.maerkte}",
-            f"  Ergebnis   {self.trades} Trades, {self.cagr_pct:.2f} % p.a., "
-            f"{self.rueckgang_pct:.2f} % Rueckgang",
+            f"  Ergebnis   {self.trades} Trades{self._zensurhinweis()}, "
+            f"{self.cagr_pct:.2f} % p.a., {self.rueckgang_pct:.2f} % Rueckgang",
             f"  Gates      {self.bestanden} von {self.gesamt}",
             f"  Versuche   {self.versuche}",
             f"  Suchbudget {BUDGET.zeile(self.versuche)}",

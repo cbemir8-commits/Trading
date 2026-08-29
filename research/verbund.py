@@ -65,16 +65,17 @@ Trade-Zahl bleibt bei 53, der Nachlauf verschiebt weiterhin keinen Einstieg.
 
 Was tatsaechlich uebrig bleibt
 ------------------------------
-**Stand nach Befund 151**, gerechnet bei 198 Versuchen mit der Einteilung des
-Gates (also mit Quartalen, Befund 135) und mit dem verlaengerten Nachlauf:
+**Stand nach Befund 152**, gerechnet bei 198 Versuchen mit der Einteilung des
+Gates (also mit Quartalen, Befund 135), mit dem verlaengerten Nachlauf und
+ohne die am Datenende zensierten Trades:
 
-    Spitze allein                      n = 111   Guete 2,730   DSR 0,4707
-    + Trend-Beteiligung 200 Tage       n = 135   Guete 3,030   DSR 0,6775
-    + Donchian-Ausbruch 55/20          n = 105   Guete 2,636   DSR 0,4025
+    Spitze allein                      n = 114   Guete 2,690   DSR 0,4452
+    + Trend-Beteiligung 200 Tage       n = 139   Guete 3,019   DSR 0,6695
+    + Donchian-Ausbruch 55/20          n = 109   Guete 2,641   DSR 0,4064
 
 Der erste Verbund bleibt der groesste Sprung, den in diesem Projekt je etwas
 gebracht hat. Er reicht trotzdem nicht: noetig sind 0,95, und in Guete
-gerechnet fehlen **0,614**.
+gerechnet fehlen **0,631**.
 
 Und der zweite zeigt, dass es nicht von selbst hilft. Beide Partner haben
 praktisch dieselbe Einzelguete (2,15 und 2,35) - der schwaechere hebt den
@@ -84,14 +85,20 @@ Ertraege sind.
 **Warum der Partner mehr bringt, als Befund 73 messen konnte:** Die Trades des
 Spitzenkandidaten haeufen sich innerhalb von Quartalen - er verliert 43 seiner
 154 Beobachtungen. Der Partner loest zu anderen Zeiten aus und verteilt sie
-breiter; das Paar kommt auf 135. **Vierundzwanzig zusaetzliche unabhaengige
+breiter; das Paar kommt auf 139. **Fuenfundzwanzig zusaetzliche unabhaengige
 Beobachtungen fuer 53 zusaetzliche Trades**, also knapp die Haelfte echte
-Information. Der Beitrag des Partners waechst dadurch von +0,152 auf +0,300
+Information. Der Beitrag des Partners waechst dadurch von +0,152 auf +0,329
 Guete.
 
 Was vorher hier stand
 ---------------------
-Befund 140 (Nachlauf noch eine Fensterlaenge, sonst gleich):
+Befund 151 (Serienende um dreissig Tage gekuerzt statt zensiert):
+
+    Spitze allein                      n = 111   Guete 2,730   DSR 0,4707
+    + Trend-Beteiligung 200 Tage       n = 135   Guete 3,030   DSR 0,6775
+    + Donchian-Ausbruch 55/20          n = 105   Guete 2,636   DSR 0,4025
+
+Befund 140 (Nachlauf noch eine Fensterlaenge):
 
     Spitze allein                      n = 111   Guete 2,730   DSR 0,4707
     + Trend-Beteiligung 200 Tage       n = 124   Guete 3,073   DSR 0,6893
@@ -107,12 +114,18 @@ Die Guetewerte der letzten Zeile lassen sich mit der alten Einteilung auf drei
 Stellen reproduzieren - die Zahlen waren richtig gerechnet, nur auf einer zu
 grosszuegigen Stichprobe.
 
-Beide Korrekturen gingen in die **strenge** Richtung; der Abstand zur Schwelle
-ist von 0,552 auf 0,614 gewachsen. Die aus Befund 151 hat den Verbund nicht
-umgeworfen: Die zehn Randtrades **wegzulassen** haette ihn umgeworfen, aber
-das war die falsche Gegenprobe - sie misst, wie viel an ihnen haengt, nicht
-was ohne den Fehler herauskommt. Die richtige ist, sie zu Ende zu handeln, und
-dann traegt der Partner immer noch.
+Alle drei Korrekturen gingen in die **strenge** Richtung; der Abstand zur
+Schwelle ist von 0,552 ueber 0,614 auf 0,631 gewachsen. Keine hat den Verbund
+umgeworfen.
+
+Die aus Befund 151 haette es fast getan, aber an einer falschen Gegenprobe:
+Die zehn Randtrades **wegzulassen** misst, wie viel an ihnen haengt, nicht was
+ohne den Fehler herauskommt. Die richtige Gegenprobe ist, sie zu Ende zu
+handeln - und dann traegt der Partner immer noch.
+
+Die aus Befund 152 betrifft das **Serienende**, wo es kein Zuendehandeln gibt.
+Dort ist Weglassen richtig; das Kuerzen der Reihe, das Befund 151 dafuer
+gewaehlt hatte, warf vier fertig gehandelte Trades mit weg.
 
 Zur Positionsgroesse
 --------------------

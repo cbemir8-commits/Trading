@@ -50,6 +50,7 @@ from backtest.walkforward import (
 )
 from core.models import Trade
 from research.benchmark import buy_and_hold_over_windows, scaled_hold
+from research.randschnitt import ohne_zensierte
 from research.unabhaengigkeit import effektive_stichprobe
 from strategy.compiler import compile_genome
 from strategy.genome import Genome, SizingSpec
@@ -1498,13 +1499,19 @@ def evaluate_gates(
     )
     report.results.append(gate_regime_split(walkforward.all_trades, frame, thresholds))
 
+    # **Nur fertig gehandelte Trades** (Befund 152). Ein am Datenende
+    # glattgestellter Trade ist keine abgeschlossene Beobachtung - sein
+    # Ergebnis haengt daran, wann zuletzt Kerzen geholt wurden. Die Gates
+    # oben rechnen weiter mit dem vollen Bericht: In der Kapitalkurve gehoert
+    # die offene Position sehr wohl mit, sie ist zum letzten Kurs bewertet.
+    gehandelt = ohne_zensierte(walkforward)
     report.results.append(
         gate_deflated_sharpe(
-            walkforward.all_trades,
+            gehandelt.all_trades,
             trials_so_far,
             thresholds,
             getattr(walkforward, "beine", None),
-            [[float(x.net_pnl) for x in w.trades] for w in walkforward.windows],
+            [[float(x.net_pnl) for x in w.trades] for w in gehandelt.windows],
         )
     )
 

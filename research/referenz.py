@@ -70,14 +70,16 @@ class Referenzpunkt:
 
 
 #: Der massgebliche Punkt: Spot, kein Funding, kein Hebel (Befund 108),
-#: Deflated-Sharpe-Gate mit Quartalseinteilung (Befund 135).
+#: Deflated-Sharpe-Gate mit Quartalseinteilung (Befund 135), Nachlauf ueber
+#: vier Fensterlaengen und zensierte Trades ausserhalb der Statistik
+#: (Befund 151/152).
 SPOTPUNKT = Referenzpunkt(
     name="Spot wie gebaut",
-    befund=135,
-    trades=152,
-    effektiv=112,
-    guete=0.2765,
-    dsr=0.6026,
+    befund=152,
+    trades=156,
+    effektiv=115,
+    guete=0.2708,
+    dsr=0.5881,
     bestanden=9,
     gesamt=11,
     versuche=198,
@@ -86,6 +88,17 @@ SPOTPUNKT = Referenzpunkt(
 #: Staende, die einmal massgeblich waren und es nicht mehr sind. Wer einen
 #: dieser Werte in einem Modulkopf liest, liest Geschichte.
 UEBERHOLT: tuple[Referenzpunkt, ...] = (
+    Referenzpunkt(
+        name="Spot, vor Befund 152",
+        befund=135,
+        trades=152,
+        effektiv=112,
+        guete=0.2765,
+        dsr=0.6026,
+        bestanden=9,
+        gesamt=11,
+        versuche=198,
+    ),
     Referenzpunkt(
         name="Spot, vor Befund 135",
         befund=108,
@@ -167,7 +180,7 @@ class Aussicht:
 #: Der Abstand zur Schwelle, in Zeit. Untergrenze - siehe ``Aussicht``.
 AUSSICHT = Aussicht(
     noetig=182,
-    heute=112,
+    heute=115,
     rate_je_tausend_tage=34.2,
     befund=138,
 )

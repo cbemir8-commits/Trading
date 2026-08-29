@@ -20,14 +20,14 @@ MODULE = sorted(Path("research").glob("*.py"))
 # --- Der Referenzpunkt selbst -----------------------------------------------
 
 
-def test_der_massgebliche_punkt_stammt_aus_befund_135() -> None:
-    assert SPOTPUNKT.befund == 135
-    assert SPOTPUNKT.effektiv == 112
-    assert SPOTPUNKT.dsr == pytest.approx(0.6026)
+def test_der_massgebliche_punkt_stammt_aus_befund_152() -> None:
+    assert SPOTPUNKT.befund == 152
+    assert SPOTPUNKT.effektiv == 115
+    assert SPOTPUNKT.dsr == pytest.approx(0.5881)
 
 
 def test_die_luecke_folgt_aus_der_schwelle() -> None:
-    assert SPOTPUNKT.luecke == pytest.approx(0.95 - 0.6026)
+    assert SPOTPUNKT.luecke == pytest.approx(0.95 - 0.5881)
     assert SPOTPUNKT.luecke > 0.34, "die Luecke ist seit Befund 135 viermal so gross"
 
 
@@ -48,8 +48,8 @@ def test_die_ueberholten_staende_sind_aelter_als_der_massgebliche() -> None:
 
 
 def test_zeile_nennt_die_fundstelle() -> None:
-    assert "Befund 135" in SPOTPUNKT.als_zeile()
-    assert "0.6026" in SPOTPUNKT.als_zeile()
+    assert "Befund 152" in SPOTPUNKT.als_zeile()
+    assert "0.5881" in SPOTPUNKT.als_zeile()
 
 
 # --- Der Fund, und was er nicht ist -----------------------------------------
@@ -150,22 +150,12 @@ def test_der_referenzpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
     if any(f.empty for f in frames.values()):
         pytest.skip("keine Kerzen im Speicher")
 
-    # **Abstand zum Serienende** (Befund 151). Ohne ihn haengt der
-    # Referenzpunkt daran, wann zuletzt Kerzen geholt wurden: Bei einem Abzug
-    # bis heute wurden zwei offene Positionen am Datenende glattgestellt - die
-    # zwei groessten Gewinner des Laufs -, und der Deflated Sharpe stand bei
-    # 0,7255 statt 0,6026. Dreissig Tage genuegen, und bis neunzig aendert sich
-    # nichts mehr.
-    import pandas as pd
-
-    from research.randschnitt import RANDPUFFER_TAGE, randtrades
-
-    ende = max(f["open_time"].max() for f in frames.values())
-    grenze = ende - pd.Timedelta(days=RANDPUFFER_TAGE)
-    frames = {
-        k: v[v["open_time"] <= grenze].reset_index(drop=True)
-        for k, v in frames.items()
-    }
+    # **Kein Kuerzen mehr am Serienende** (Befund 152). Befund 151 hat hier
+    # dreissig Tage abgeschnitten; das warf vier fertig gehandelte Trades mit
+    # weg und hob dadurch die Qualitaet je Trade. Zensiert wird jetzt trade-
+    # weise und im Gate selbst: Wer am Datenende glattgestellt wurde, zaehlt
+    # in der Statistik nicht mit, der Rest bleibt vollstaendig.
+    from research.randschnitt import fertige, randtrades
 
     versuche = load_trials(Path(einstellungen.paths.state) / "trials.json")
     assert versuche == SPOTPUNKT.versuche, (
@@ -203,12 +193,17 @@ def test_der_referenzpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
     )
     dsr = next(r for r in ergebnisse.results if r.name == "Deflated Sharpe")
 
-    # Der Schnitt muss gewirkt haben - sonst prueft der Rest ein Artefakt.
-    assert not randtrades(bericht.all_trades), (
-        "Trades am Datenende beendet: Der Randpuffer greift nicht, und die "
-        "Zahlen unten haengen daran, wann zuletzt Kerzen geholt wurden."
+    # **Der Referenzpunkt zaehlt die fertigen Trades** (Befund 152). Die
+    # zensierten stehen daneben und duerfen nicht ueberhandnehmen - werden es
+    # mehr als eine Handvoll, ist der Nachlauf zu kurz und nicht der Kalender
+    # zu nah.
+    gehandelt = fertige(bericht.all_trades)
+    zensiert = randtrades(bericht.all_trades)
+    assert len(zensiert) <= 5, (
+        f"{len(zensiert)} Trades am Kalender beendet - das ist kein Rand mehr, "
+        f"sondern ein zu kurzer Nachlauf (siehe nachlauf_fuer)."
     )
-    assert len(bericht.all_trades) == SPOTPUNKT.trades
+    assert len(gehandelt) == SPOTPUNKT.trades
     assert float(dsr.value) == pytest.approx(SPOTPUNKT.dsr, abs=5e-4)
     assert sum(1 for r in ergebnisse.results if r.passed) == SPOTPUNKT.bestanden
     assert len(ergebnisse.results) == SPOTPUNKT.gesamt
@@ -221,7 +216,7 @@ def test_der_referenzpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
 
     from research.gates import deflated_sharpe_ratio
 
-    pnls = np.array([float(t.net_pnl) for t in bericht.all_trades], dtype=float)
+    pnls = np.array([float(t.net_pnl) for t in gehandelt], dtype=float)
     streuung = pnls.std(ddof=1)
     zentriert = (pnls - pnls.mean()) / streuung
     aus_referenz = float(
@@ -251,11 +246,18 @@ def test_die_aussicht_rechnet_mit_dem_heutigen_n() -> None:
 
 
 def test_die_aussicht_ist_deutlich_laenger_als_befund_132_sagte() -> None:
-    """1,8 Jahre bei n = 152; nach Befund 135 sind es mindestens 5,6."""
+    """1,8 Jahre bei n = 152; nach Befund 135 waren es 5,6, nach 152 sind es
+    5,4.
+
+    Der Weg ist **nicht** kuerzer geworden, weil etwas besser waere: Befund 151
+    hatte dreissig Tage abgeschnitten und dabei vier fertige Trades verloren.
+    Die zaehlen jetzt wieder mit (n 112 -> 115). Dass es Verlierer waren, sieht
+    man an der Guete, die im selben Zug von 0,2765 auf 0,2708 faellt.
+    """
     from research.referenz import AUSSICHT
 
     assert AUSSICHT.jahre > 5.0
-    assert AUSSICHT.tage == pytest.approx(2047, abs=5)
+    assert AUSSICHT.tage == pytest.approx(1959, abs=5)
 
 
 def test_eine_aussicht_ohne_rate_laesst_sich_nicht_rechnen() -> None:

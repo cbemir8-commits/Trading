@@ -251,70 +251,75 @@ class TestNoetigeGuete:
         assert noetige_guete(154, 166) == pytest.approx(3.62, abs=0.05)
 
 
-class TestStandNachBefund151:
+class TestStandNachBefund152:
     """Die Zahlen aus dem Modulkopf - gepflegt, also pruefbar zu halten.
 
     Befund 140 hat den Verbund mit der Einteilung des Gates neu gerechnet,
-    Befund 151 mit dem verlaengerten Nachlauf. Die Werte stehen im Kopf von
+    Befund 151 mit dem verlaengerten Nachlauf, Befund 152 ohne die am
+    Datenende zensierten Trades. Die Werte stehen im Kopf von
     ``research/verbund.py`` und veralten dort genauso still wie die aus
     Befund 73, wenn niemand sie festhaelt.
     """
 
     def test_die_luecke_des_besten_verbundes(self) -> None:
-        """Guete 3,030 gegen noetige 3,644 bei n = 135 und 198 Versuchen."""
-        ziel = noetige_guete(135, 198)
+        """Guete 3,019 gegen noetige 3,650 bei n = 139 und 198 Versuchen."""
+        ziel = noetige_guete(139, 198)
 
         assert ziel is not None
-        assert ziel == pytest.approx(3.644, abs=0.01)
-        assert ziel - 3.030 == pytest.approx(0.614, abs=0.01)
+        assert ziel == pytest.approx(3.650, abs=0.01)
+        assert ziel - 3.019 == pytest.approx(0.631, abs=0.01)
 
     def test_die_spitze_allein_steht_schlechter_da(self) -> None:
-        """n = 111 statt 154 - die Luecke ist dort 0,870."""
-        ziel = noetige_guete(111, 198)
+        """n = 114 statt 158 - die Luecke ist dort 0,916."""
+        ziel = noetige_guete(114, 198)
 
         assert ziel is not None
-        assert ziel - 2.730 == pytest.approx(0.870, abs=0.01)
+        assert ziel - 2.690 == pytest.approx(0.916, abs=0.01)
 
-    def test_die_korrektur_ging_in_die_strenge_richtung(self) -> None:
-        """**Befund 151.** Der Nachlauf war zu kurz, und der Fehler machte die
-        Zahl freundlicher - nicht strenger.
+    def test_jede_korrektur_ging_in_die_strenge_richtung(self) -> None:
+        """**Befund 140 -> 151 -> 152.** Jede Korrektur am Messinstrument hat
+        den Abstand zur Schwelle vergroessert, keine verkleinert.
 
         Waere es umgekehrt, muesste man fragen, warum ausgerechnet die
-        Korrektur den Kandidaten naeher an die Schwelle bringt.
+        Korrekturen den Kandidaten naeher an die Schwelle bringen.
         """
-        alt = noetige_guete(124, 198)
-        neu = noetige_guete(135, 198)
+        staende = [(124, 3.073), (135, 3.030), (139, 3.019)]
+        luecken = []
+        for n, guete in staende:
+            ziel = noetige_guete(n, 198)
+            assert ziel is not None
+            luecken.append(ziel - guete)
 
-        assert alt is not None and neu is not None
-        assert neu - 3.030 > alt - 3.073, "der Abstand zur Schwelle waechst"
+        assert luecken == sorted(luecken), (
+            f"die Abstaende muessen wachsen, gemessen sind {luecken}"
+        )
 
     def test_der_partner_traegt_mehr_als_befund_73_messen_konnte(self) -> None:
-        """**Der eigentliche Befund**: +0,300 statt +0,152 Guete.
+        """**Der eigentliche Befund**: +0,329 statt +0,152 Guete.
 
         Mit der alten Einteilung war der Beitrag des Partners 3,368 - 3,216;
-        mit der richtigen ist er 3,030 - 2,730. Der Verbund gewinnt durch
-        Korrekturen, die alles andere schlechter gemacht haben - auch die aus
-        Befund 151, die ihn selbst um 0,043 gedrueckt hat.
+        mit der richtigen ist er 3,019 - 2,690. Der Verbund gewinnt durch
+        Korrekturen, die alles andere schlechter gemacht haben.
         """
         alt = 3.368 - 3.216
-        neu = 3.030 - 2.730
+        neu = 3.019 - 2.690
 
-        assert neu > 2 * alt - 0.005
-        assert neu == pytest.approx(0.300, abs=0.001)
+        assert neu > 2 * alt
+        assert neu == pytest.approx(0.329, abs=0.001)
 
     def test_der_verbund_hebt_die_stichprobe(self) -> None:
-        """24 unabhaengige Beobachtungen mehr fuer 53 rohe Trades mehr.
+        """25 unabhaengige Beobachtungen mehr fuer 53 rohe Trades mehr.
 
         Das ist der Grund, warum die Richtung aus Befund 80 haelt: Der
         Verbund ist der einzige gemessene Hebel, der die effektive Stichprobe
         **hebt** statt sie umzuverteilen.
         """
-        allein, verbund = 111, 135
-        roh_allein, roh_verbund = 154, 207
+        allein, verbund = 114, 139
+        roh_allein, roh_verbund = 158, 211
 
-        assert verbund - allein == 24
+        assert verbund - allein == 25
         anteil = (verbund - allein) / (roh_verbund - roh_allein)
-        assert anteil == pytest.approx(0.453, abs=0.01), (
+        assert anteil == pytest.approx(0.472, abs=0.01), (
             "knapp die Haelfte der zusaetzlichen Trades ist echte Information"
         )
 
@@ -323,11 +328,13 @@ class TestStandNachBefund151:
         import research.verbund as modul
 
         kopf = modul.__doc__ or ""
-        assert "Befund 151" in kopf
-        assert "3,030" in kopf
-        assert "0,614" in kopf, "der Abstand zur Schwelle"
+        assert "Befund 152" in kopf
+        assert "3,019" in kopf
+        assert "0,631" in kopf, "der Abstand zur Schwelle"
         assert "Was vorher hier stand" in kopf, "der alte Stand bleibt lesbar"
-        assert "3,073" in kopf and "3,368" in kopf, "beide ueberholten Staende"
+        assert "3,030" in kopf and "3,073" in kopf and "3,368" in kopf, (
+            "alle drei ueberholten Staende"
+        )
 
 
 @pytest.mark.langsam
@@ -364,18 +371,10 @@ def test_der_verbund_stimmt_mit_dem_lauf_ueberein() -> None:
     if any(f.empty for f in frames.values()):
         pytest.skip("keine Kerzen im Speicher")
 
-    # Abstand zum Serienende, wie beim Referenzpunkt (Befund 151): Ohne ihn
-    # haengen die Zahlen daran, wann zuletzt Kerzen geholt wurden.
-    import pandas as pd
-
-    from research.randschnitt import RANDPUFFER_TAGE, randtrades
-
-    ende = max(f["open_time"].max() for f in frames.values())
-    grenze = ende - pd.Timedelta(days=RANDPUFFER_TAGE)
-    frames = {
-        k: v[v["open_time"] <= grenze].reset_index(drop=True)
-        for k, v in frames.items()
-    }
+    # **Zensierte Trades weglassen statt die Reihe kuerzen** (Befund 152).
+    # Befund 151 hat hier dreissig Tage abgeschnitten und dabei vier fertig
+    # gehandelte Trades mit verloren; gekuerzt wird jetzt trade-weise.
+    from research.randschnitt import ohne_zensierte, randtrades
 
     def lauf(genome):
         angepasst = genome.model_copy(
@@ -392,29 +391,37 @@ def test_der_verbund_stimmt_mit_dem_lauf_ueberein() -> None:
 
     saat = load_seeds(9)
     spitze_genom, spitze = lauf(spitzenkandidat())
-    bestand = (spitze_genom.name, spitze)
+    zensiert_gesamt = len(randtrades(spitze.all_trades))
+    bestand = (spitze_genom.name, ohne_zensierte(spitze))
 
     beine = []
     for gesucht in ("Trend-Beteiligung 200 Tage", "Donchian-Ausbruch 55/20"):
         treffer = [g for g in saat if gesucht.lower() in g.name.lower()]
         assert treffer, f"'{gesucht}' nicht in Generation 9"
         genom, bericht = lauf(treffer[0])
-        beine.append((genom.name, bericht))
+        zensiert_gesamt += len(randtrades(bericht.all_trades))
+        beine.append((genom.name, ohne_zensierte(bericht)))
+
+    # Werden es viele, ist nicht das Serienende schuld, sondern ein zu kurzer
+    # Nachlauf - siehe ``backtest.walkforward.nachlauf_fuer`` (Befund 151).
+    assert zensiert_gesamt <= 5, (
+        f"{zensiert_gesamt} Trades am Kalender beendet - das ist kein Rand "
+        f"mehr."
+    )
 
     # (Beine des Verbundes, erwartetes n, erwartete Guete) - aus dem Modulkopf.
     erwartet = [
-        ([bestand], 111, 2.730),
-        ([bestand, beine[0]], 135, 3.030),
-        ([bestand, beine[1]], 105, 2.636),
+        ([bestand], 114, 2.690),
+        ([bestand, beine[0]], 139, 3.019),
+        ([bestand, beine[1]], 109, 2.641),
     ]
 
     for paare, n_soll, guete_soll in erwartet:
         kombi = [n for n, _ in paare]
         lage = baue(paare, versuche=versuche)
-        # **Befund 151.** Genau diese Zusicherung fehlte, als der Partner mit
-        # 10 kalenderbeendeten Trades in die Zahlen kam. Sie deckt beide
-        # Raender ab: den der Reihe (oben gekuerzt) und den der Fenster (durch
-        # den verlaengerten Nachlauf).
+        # **Befund 151/152.** Genau diese Zusicherung fehlte, als der Partner
+        # mit 10 kalenderbeendeten Trades in die Zahlen kam. Am Fensterende
+        # sorgt der verlaengerte Nachlauf dafuer, am Serienende ``fertige``.
         assert not randtrades(lage.trades), (
             f"{' + '.join(kombi)}: Trades am Kalender beendet, nicht nach "
             f"Regel - die Zahlen darunter sind kontaminiert."

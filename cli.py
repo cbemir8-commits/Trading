@@ -3677,6 +3677,7 @@ def abstand(
     from research.admission import load_trials
     from research.erreichbarkeit import bewerte, kennzahlen_aus_pnl
     from research.gates import stichprobe_wie_im_gate
+    from research.randschnitt import ohne_zensierte, randtrades
     from research.seeds import spitzenkandidat
     from strategy.compiler import compile_genome
 
@@ -3713,8 +3714,20 @@ def abstand(
         raise typer.Exit(2)
 
     trials = load_trials(Path(settings.paths.state) / "trials.json")
+    # **Nur fertig gehandelte Trades** (Befund 152) - genau wie im Gate. Ein
+    # am Datenende glattgestellter Trade ist keine abgeschlossene Beobachtung.
+    # Ohne das meldet dieses Werkzeug einen kleineren Abstand als das Gate,
+    # und zwar jedes Mal etwas anders, je nach Alter des Datenabzugs.
+    zensiert = randtrades(report.all_trades)
+    gehandelt = ohne_zensierte(report)
+    if zensiert:
+        console.print(
+            f"[dim]{len(zensiert)} von {len(report.all_trades)} Trades wurden "
+            f"am Datenende glattgestellt und zaehlen in der Statistik nicht "
+            f"mit - in Rendite und Rueckgang sehr wohl.[/dim]"
+        )
     n, sharpe, schiefe, woelbung = kennzahlen_aus_pnl(
-        [t.net_pnl for t in report.all_trades]
+        [t.net_pnl for t in gehandelt.all_trades]
     )
     # **Effektive** Stichprobe, genau wie im Gate. Ohne das wuerde dieses
     # Werkzeug einen kleineren Abstand melden, als das Gate tatsaechlich
@@ -3725,9 +3738,9 @@ def abstand(
     # "Genau wie im Gate" war damit seit Befund 135 schlicht falsch. Jetzt
     # ruft er die Funktion auf, die das Gate selbst benutzt (Befund 139).
     stichprobe = stichprobe_wie_im_gate(
-        report.all_trades,
+        gehandelt.all_trades,
         beine=getattr(report, "beine", None),
-        bloecke=[[float(x.net_pnl) for x in w.trades] for w in report.windows],
+        bloecke=[[float(x.net_pnl) for x in w.trades] for w in gehandelt.windows],
     )
     # **Auch dann anzeigen, wenn nicht gekuerzt wurde, die Entscheidung aber
     # auf der Kippe stand.** Vorher lief es genau andersherum: Gemeldet wurde
@@ -9000,13 +9013,20 @@ def stand(
     # der wirklichen. Genau der Fehler aus Befund 139, an der Stelle, die ein
     # Leser zuerst aufschlaegt (Befund 148).
     from research.gates import stichprobe_wie_im_gate
+    from research.randschnitt import ohne_zensierte, randtrades
 
+    # **Nur fertig gehandelte Trades** (Befund 152) - genau wie im Gate. Ein
+    # am Datenende glattgestellter Trade ist keine abgeschlossene Beobachtung;
+    # sein Ergebnis haengt daran, wann zuletzt Kerzen geholt wurden. In
+    # ``kombiniert`` (Rendite, Rueckgang) bleibt er drin, dort gehoert er hin.
+    zensiert = randtrades(bericht.all_trades)
+    gehandelt = ohne_zensierte(bericht)
     stichprobe = stichprobe_wie_im_gate(
-        bericht.all_trades,
+        gehandelt.all_trades,
         beine=getattr(bericht, "beine", None),
-        bloecke=[[float(t.net_pnl) for t in w.trades] for w in bericht.windows],
+        bloecke=[[float(t.net_pnl) for t in w.trades] for w in gehandelt.windows],
     )
-    roh = Kandidat.aus_trades(genome.name, bericht.all_trades)
+    roh = Kandidat.aus_trades(genome.name, gehandelt.all_trades)
     eintrag = (
         None if roh is None
         else Kandidat(
@@ -9023,8 +9043,9 @@ def stand(
     lage = Lage(
         kandidat=genome.name,
         maerkte=f"{' + '.join(symbole)}, {interval_obj.label}",
-        trades=len(bericht.all_trades),
+        trades=len(gehandelt.all_trades),
         effektiv=stichprobe.effektiv,
+        zensiert=len(zensiert),
         sharpe_je_trade=qualitaet,
         noetiger_sharpe=(
             budget.abstaende()[0].noetig if eintrag is not None else None

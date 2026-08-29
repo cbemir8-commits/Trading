@@ -84,34 +84,89 @@ neuen Lauf mit laengerem Nachlauf, nicht aus dieser Spalte.
 Am **Serienende** gibt es diesen zweiten Lauf nicht - dort sind die Daten
 schlicht zu Ende. Nur deshalb ist Weglassen dort die richtige Antwort.
 
-Die Regel
----------
-**Dreissig Tage Abstand zum Serienende**, und dann aendert sich bis neunzig
-nichts mehr - dieselbe Plateau-Signatur wie beim Nachlauf in Befund 22. Der
-Puffer ist gemessen und nicht gewaehlt.
+Die Regel - und warum die erste falsch war (Befund 152)
+-------------------------------------------------------
+Befund 151 hat hier **dreissig Tage Abstand zum Serienende** hingeschrieben,
+mit der Plateau-Tabelle oben als Begruendung. Das war falsch. Die drei
+moeglichen Behandlungen, am Spitzenkandidaten gemessen (Spot, 198 Versuche):
 
-Er wirkt in die **strenge** Richtung: Er entfernt Trades, die guenstig
-aussehen, weil sie nicht zu Ende gehandelt wurden. Wer ihn weglaesst, bekommt
-eine freundlichere Zahl - und genau deshalb steht er hier.
+    Behandlung                     Trades   n_eff   SR/Trade      DSR    fehlt
+    (a) zensierte mitzaehlen          160     117     0,2688   0,5868    0,705
+    (b) 30 Tage kuerzen               154     111     0,2591   0,4707    0,870
+    (c) zensierte weglassen           158     114     0,2520   0,4452    0,916
+
+**(b) wirft vier fertig gehandelte Trades mit weg** - 160 auf 154, davon nur
+zwei zensiert. Und weil die vier Verlierer waren, hebt das die Qualitaet je
+Trade: (b) liegt ueber (c). Der Puffer war also nicht die strenge Behandlung,
+fuer die ich ihn gehalten habe, sondern die mittlere.
+
+Dazu kommt: Ein Puffer muss **gewaehlt** werden, und das Plateau 30/60/90 ist
+keine Struktureigenschaft, sondern heisst nur, dass dieser eine Kandidat in
+dieser Strecke gerade flach war. Fuer eine andere Regel liegt es anderswo. Das
+Kuerzen verschiebt den Schnitt ausserdem bloss - am neuen Ende steht wieder
+eine offene Position.
+
+Es gilt **(c)**: Ein Trade, der am Datenende glattgestellt wurde, ist keine
+fertige Beobachtung und zaehlt in der Statistik nicht mit. Kein Parameter,
+keine Wahl, und kein fertiger Trade wird weggeworfen. Rechtszensierung, wie
+sie in der Lebensdaueranalyse behandelt wird.
+
+**Nur in der Statistik.** In der Kapitalkurve bleibt die offene Position
+stehen - sie ist zum letzten Kurs bewertet, und das ist der Kontostand.
+Rendite, Rueckgang und schlechtestes Jahr rechnen weiter mit ihr; Deflated
+Sharpe, Qualitaet je Trade und effektive Stichprobe nicht.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-__all__ = ["RANDPUFFER_TAGE", "Randbefund", "beurteile", "randtrades"]
-
-#: Abstand zum Serienende, gemessen (siehe Tabelle oben). Auf Tageskerzen.
-#: Bei kuerzeren Kerzen gehoert er an die Haltedauer gebunden, nicht an Tage -
-#: dieselbe Ueberlegung wie beim Nachlauf, der an der Fensterlaenge haengt.
-RANDPUFFER_TAGE = 30
+__all__ = [
+    "RANDGRUND",
+    "Randbefund",
+    "beurteile",
+    "fertige",
+    "ohne_zensierte",
+    "randtrades",
+]
 
 #: Der Ausstiegsgrund, den der Backtest setzt, wenn die Daten aufhoeren.
 RANDGRUND = "end_of_data"
 
 
 def randtrades(trades: list) -> list:
-    """Die Trades, die nicht nach Regel ausgestiegen sind, sondern am Rand."""
+    """Die zensierten Trades: am Kalender glattgestellt, nicht nach Regel."""
     return [t for t in trades if str(getattr(t, "exit_reason", "")) == RANDGRUND]
+
+
+def fertige(trades: list) -> list:
+    """Die Gegenmenge - **die Stichprobe, mit der gerechnet werden darf.**
+
+    Ein Trade, dessen Ausstieg die Regel bestimmt hat, ist eine fertige
+    Beobachtung. Einer, den das Datenende glattgestellt hat, ist es nicht: Sein
+    Ergebnis haengt daran, wann zuletzt Kerzen geholt wurden.
+    """
+    return [t for t in trades if str(getattr(t, "exit_reason", "")) != RANDGRUND]
+
+
+def ohne_zensierte(bericht):
+    """Eine flache Kopie des Walk-Forward-Berichts ohne zensierte Trades.
+
+    Kopiert und aendert nicht am Original: Der Aufrufer braucht **beide**
+    Sichten. Die Kapitalkurve bleibt unangetastet - dort gehoert die offene
+    Position hin, sie ist zum letzten Kurs bewertet und damit der Kontostand.
+    Gefiltert wird nur, woraus Trade-Statistik entsteht.
+    """
+    import copy
+
+    neu = copy.copy(bericht)
+    neu.all_trades = fertige(bericht.all_trades)
+    fenster = []
+    for w in bericht.windows:
+        kopie = copy.copy(w)
+        kopie.trades = fertige(w.trades)
+        fenster.append(kopie)
+    neu.windows = fenster
+    return neu
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,9 +215,9 @@ class Randbefund:
         # trugen.
         if self.hub > 0:
             satz += (
-                f" Der Rand macht die Zahl **freundlicher**. Am Fensterende "
-                f"hilft ein laengerer Nachlauf, am Serienende nur, "
-                f"{RANDPUFFER_TAGE} Tage frueher zu enden."
+                " Der Rand macht die Zahl **freundlicher**. Am Fensterende "
+                "hilft ein laengerer Nachlauf; am Serienende zaehlen sie in "
+                "der Statistik nicht mit."
             )
         # Der Wert ohne die Randtrades ist ein **Alarm, kein Ergebnis** - er
         # sagt, wie viel daran haengt, nicht was ohne den Fehler herauskaeme.

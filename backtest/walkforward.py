@@ -381,9 +381,10 @@ def nachlauf_fuer(window: Window) -> timedelta:
     ------------------------------------------------
     Zwei Trades in ``Trend beide Richtungen`` bleiben bei jeder Laenge. Sie
     liegen am **Serienende**, und dort gibt es nichts mehr, wohin nachgelaufen
-    werden koennte. Dagegen hilft kein Nachlauf, sondern nur Abstand -
-    ``research.randschnitt.RANDPUFFER_TAGE``, und der ist am Spitzenkandidaten
-    kalibriert, also fuer lang haltende Regeln zu kurz.
+    werden koennte. Dagegen hilft kein Nachlauf: Solche Trades sind keine
+    fertigen Beobachtungen und zaehlen in der Statistik nicht mit
+    (``research.randschnitt.fertige``, Befund 152). In der Kapitalkurve
+    bleiben sie stehen - dort ist die offene Position der Kontostand.
 
     Was passen muss, ist die **Haltedauer**, nicht die Fensterlaenge; die
     Fensterlaenge war ein Stellvertreter, der fuer eine kurz haltende Regel
