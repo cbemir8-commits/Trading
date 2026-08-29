@@ -8971,7 +8971,28 @@ def stand(
         genome, bericht, erster, configs[symbole[0]], trials_so_far=trials,
         frames=frames, configs=configs,
     )
-    eintrag = Kandidat.aus_trades(genome.name, bericht.all_trades)
+    # **Die Latte gilt fuer die Stichprobe, mit der das Gate urteilt.**
+    # Hier stand ``Kandidat.aus_trades`` allein - das laesst ``effektiv``
+    # leer, und die Latte fiel auf die rohe Trade-Zahl zurueck: 0,2984 statt
+    # der wirklichen. Genau der Fehler aus Befund 139, an der Stelle, die ein
+    # Leser zuerst aufschlaegt (Befund 148).
+    from research.gates import stichprobe_wie_im_gate
+
+    stichprobe = stichprobe_wie_im_gate(
+        bericht.all_trades,
+        beine=getattr(bericht, "beine", None),
+        bloecke=[[float(t.net_pnl) for t in w.trades] for w in bericht.windows],
+    )
+    roh = Kandidat.aus_trades(genome.name, bericht.all_trades)
+    eintrag = (
+        None if roh is None
+        else Kandidat(
+            name=roh.name, trades=roh.trades,
+            sharpe_je_trade=roh.sharpe_je_trade,
+            schiefe=roh.schiefe, woelbung=roh.woelbung,
+            effektiv=stichprobe.effektiv,
+        )
+    )
     qualitaet = eintrag.sharpe_je_trade if eintrag else 0.0
     budget = Budget(versuche=trials, kandidaten=[eintrag] if eintrag else [])
     kombiniert = bericht.combined
@@ -8980,6 +9001,7 @@ def stand(
         kandidat=genome.name,
         maerkte=f"{' + '.join(symbole)}, {interval_obj.label}",
         trades=len(bericht.all_trades),
+        effektiv=stichprobe.effektiv,
         sharpe_je_trade=qualitaet,
         noetiger_sharpe=(
             budget.abstaende()[0].noetig if eintrag is not None else None

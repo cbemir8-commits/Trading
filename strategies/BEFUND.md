@@ -13681,3 +13681,70 @@ und ``cli paare`` beantwortet die Frage inzwischen direkt.
    noch nachgeladen werden sollen, liegen seit jeher im Speicher (Befund 143).
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2572 Tests gruen.
+
+## Hundertachtundvierzig. Die siebte Aufrufstelle - in der Ueberschrift
+
+Diesmal habe ich nicht nach einem Fehler gesucht, sondern nachgesehen, ob
+``cli stand`` nach hundertsiebenundvierzig Befunden noch beantwortet, wozu es
+gebaut ist. Die Liste der geschlossenen Richtungen war aktuell, bis auf
+Befund 145 hinunter. Der Satz darueber nicht:
+
+> *"Dafuer muesste die Qualitaet je Trade um **15%** steigen: 0.2597 auf
+> **0.2984**."*
+
+**0,2984 ist die Latte bei roher Trade-Zahl.** Befund 139 hat sechs
+Aufrufstellen gefunden, die das taten; dies ist die siebte - und
+ausgerechnet die, die ein Leser zuerst aufschlaegt.
+
+### Gemessen
+
+``cli stand`` baute den Kandidaten mit ``Kandidat.aus_trades``. Das setzt
+``trades`` aus der rohen Liste und laesst ``effektiv`` leer, worauf
+``Kandidat.stichprobe`` auf die rohe Zahl zurueckfaellt.
+
+    Stichprobe          Latte    noetiger Zuwachs
+    152 (roh)          0,2984              15 %
+    112 (effektiv)     0,3412              31 %
+
+**Der Befehl hat den verbleibenden Weg um die Haelfte zu klein angegeben.**
+
+### Warum es hier durchgerutscht ist
+
+Befund 139 hat nach Aufrufen von ``noetig_bei`` und ``noetige_guete``
+gesucht. ``cli stand`` ruft beide nicht - es baut ein ``Budget`` und liest
+``abstaende()[0].noetig``. Ein Umweg, der bei einer Textsuche nicht auffaellt.
+
+Die Schutzvorrichtung aus Befund 139 hat trotzdem funktioniert, nur an der
+falschen Stelle: ``Abstand.untergrenze`` war die ganze Zeit ``True``, und
+``Budget.urteil`` haette "mindestens" gesagt. ``Lage.urteil`` in ``stand.py``
+kennt aber nur die Zahl, nicht ihre Herkunft - und hat sie ohne Vorbehalt
+hingeschrieben.
+
+**Eine Warnung, die im Nachbarmodul steht, ist keine.**
+
+### Was gebaut wurde
+
+``Lage`` traegt jetzt ``effektiv``. Der Satz nennt die Stichprobe, auf die er
+sich bezieht - *"0.2597 auf 0.3412 bei 112 unabhaengigen Beobachtungen"* -,
+und ohne gemessene Stichprobe steht dort "mindestens" samt Begruendung, wie
+in ``suchbudget`` seit Befund 139.
+
+``cli stand`` misst die Stichprobe jetzt mit ``stichprobe_wie_im_gate`` und
+uebergibt sie.
+
+Ein Zuwachs ohne seine Bezugsgroesse ist keine pruefbare Aussage; ein Test
+erzwingt, dass die Stichprobe in beiden Faellen dabeisteht.
+
+### Was daraus folgt
+
+1. **Der Stand ist unveraendert, seine Darstellung war es nicht.** 152 Trades,
+   n = 112, Deflated Sharpe 0,6026. Neu ist, dass der Befehl sagt, was
+   wirklich fehlt.
+2. **Sieben Aufrufstellen in einer Sitzung.** Befund 139 hat sechs gefunden
+   und eine Pruefung gebaut, die den *Nachbau der Einteilung* verhindert -
+   nicht das Weiterreichen einer rohen Zahl. Diese Luecke ist damit benannt
+   und nicht geschlossen.
+3. Der Weg ist damit an der sichtbarsten Stelle ehrlicher geworden und
+   gleichzeitig laenger: 31 % statt 15 %.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2577 Tests gruen.

@@ -400,6 +400,12 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Befund 141); jetzt steht dort, was Signal traegt",
         147,
     ),
+    Richtung(
+        "'cli stand' auf roher Trade-Zahl",
+        "siebte Aufrufstelle nach Befund 139: 15 % statt 31 % noetiger "
+        "Zuwachs - 0,2984 bei 152 roh gegen 0,3412 bei 112 effektiv",
+        148,
+    ),
 )
 
 
@@ -766,6 +772,15 @@ class Lage:
     cagr_pct: float = 0.0
     rueckgang_pct: float = 0.0
 
+    effektiv: int | None = None
+    """Die **effektive** Stichprobe, auf die sich ``noetiger_sharpe`` bezieht.
+
+    ``trades`` ist die rohe Zahl. Das Gate urteilt seit Befund 135 ueber die
+    effektive, und die ist kleiner. Fehlt dieses Feld, steht in ``urteil``
+    eine Untergrenze - so, wie ``suchbudget`` es seit Befund 139 haelt
+    (Befund 148).
+    """
+
     @property
     def zugelassen(self) -> bool:
         return self.gesamt > 0 and self.bestanden == self.gesamt
@@ -794,11 +809,27 @@ class Lage:
             # Anlauf schrieb "es fehlen 110 %" fuer einen Faktor von 1,10 -
             # das liest sich, als fehle mehr als alles Vorhandene. Gemeint
             # sind zehn Prozent mehr.
-            text += (
-                f" Dafuer muesste die Qualitaet je Trade um "
-                f"{self.faktor - 1:.0%} steigen: {self.sharpe_je_trade:.4f} "
-                f"auf {self.noetiger_sharpe:.4f}."
+            #
+            # **Und die Stichprobe gehoert dazu.** Die Latte haengt an ihr;
+            # ohne die Zahl daneben liest sich der Zuwachs, als gaebe es nur
+            # einen (Befund 148).
+            wie = "mindestens " if self.effektiv is None else ""
+            bezug = (
+                f" bei {self.effektiv} unabhaengigen Beobachtungen"
+                if self.effektiv is not None
+                else f" bei {self.trades} rohen Trades"
             )
+            text += (
+                f" Dafuer muesste die Qualitaet je Trade um {wie}"
+                f"{self.faktor - 1:.0%} steigen: {self.sharpe_je_trade:.4f} "
+                f"auf {wie}{self.noetiger_sharpe:.4f}{bezug}."
+            )
+            if self.effektiv is None:
+                text += (
+                    " Die effektive Stichprobe ist hier nicht gemessen; das "
+                    "Gate rechnet mit ihr, und sie ist kleiner - die "
+                    "wirkliche Latte liegt also hoeher."
+                )
         return text
 
     def bericht(self) -> str:

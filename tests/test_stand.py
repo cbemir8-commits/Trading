@@ -182,7 +182,10 @@ class TestLage:
         assert "0.2597" in text and "0.2857" in text
         # Als Zuwachs, nicht als Verhaeltnis: Faktor 1,10 heisst zehn Prozent
         # mehr - "es fehlen 110 %" waere das Gegenteil einer Auskunft.
-        assert "um 10% steigen" in text
+        #
+        # Die Vorlage hat keine gemessene Stichprobe, deshalb "mindestens"
+        # (Befund 148). Geprueft wird hier weiter die Form des Zuwachses.
+        assert "um mindestens 10% steigen" in text
 
     def test_ohne_grenzlinie_kein_faktor(self) -> None:
         """Wo das Gate bei dieser Trade-Zahl unerreichbar ist, gibt es keinen
@@ -477,3 +480,55 @@ class TestLetzteFundstelle:
         assert nach["Vola-Ziel"] == 129
         assert nach["Gewinnziel"] == 129
         assert nach["Termin-Overlay"] == 127
+
+
+class TestDieStichprobeImUrteil:
+    """Befund 148: Die Latte gilt fuer die Stichprobe, die das Gate nimmt.
+
+    ``cli stand`` baute den Kandidaten mit ``Kandidat.aus_trades`` und liess
+    ``effektiv`` leer. Die Latte fiel damit auf die rohe Trade-Zahl zurueck
+    und meldete 15 % noetigen Zuwachs, wo das Gate 31 % verlangt - in dem
+    Befehl, den ein Leser zuerst aufschlaegt.
+    """
+
+    def test_ohne_gemessene_stichprobe_steht_dort_mindestens(self) -> None:
+        text = _lage(effektiv=None).urteil()
+
+        assert "mindestens" in text
+        assert "nicht gemessen" in text
+        assert "152 rohen Trades" in text
+
+    def test_mit_gemessener_stichprobe_faellt_das_mindestens_weg(self) -> None:
+        text = _lage(effektiv=112).urteil()
+
+        assert "mindestens" not in text
+        assert "112 unabhaengigen Beobachtungen" in text
+        assert "nicht gemessen" not in text
+
+    def test_die_stichprobe_steht_immer_dabei(self) -> None:
+        """Ein Zuwachs ohne seine Bezugsgroesse ist keine pruefbare Aussage."""
+        for effektiv in (None, 112):
+            text = _lage(effektiv=effektiv).urteil()
+            assert "Beobachtungen" in text or "rohen Trades" in text
+
+    def test_der_gemessene_unterschied(self) -> None:
+        """**Die Zahl, um die es geht.**
+
+        Bei 198 Versuchen verlangt das Gate am Spitzenkandidaten 0,3412 statt
+        0,2984 - aus 15 % noetigem Zuwachs werden 31 %.
+        """
+        from research.suchbudget import Budget
+
+        budget = Budget(versuche=198)
+        roh, effektiv = budget.noetig_bei(152), budget.noetig_bei(112)
+
+        assert roh is not None and effektiv is not None
+        assert roh / 0.2597 - 1 == pytest.approx(0.15, abs=0.01)
+        assert effektiv / 0.2597 - 1 == pytest.approx(0.31, abs=0.01)
+
+    def test_ohne_latte_bleibt_das_urteil_knapp(self) -> None:
+        """``None`` heisst "nicht gerechnet" - dann steht dort kein Satz dazu."""
+        text = _lage(noetiger_sharpe=None).urteil()
+
+        assert "Qualitaet je Trade um" not in text
+        assert "Kein zugelassener Kandidat" in text
