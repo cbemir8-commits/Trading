@@ -14284,3 +14284,112 @@ von ``verbund.py`` aendern sich nicht.
 
 Versuchszaehler 198 unveraendert: Die Erhebung ist nichts uebernommen worden,
 und der Deckel ist eine Korrektur am Messinstrument. Suchbudget 68 von 100.
+
+## Hundertvierundfuenfzig. Eine Sprosse war verdrahtet, die Leiter lag daneben
+
+Befund 143 hat die Zeitskala der Abhaengigkeit vermessen und ``zeitskala.py``
+gebaut: acht Sprossen von Kalendertag bis Kalenderjahr, dazu ``strengste`` und
+``am_rand``. Das Modul wird von **nichts** importiert ausser seinem eigenen
+Test. Das Gate rechnet weiter mit einer einzigen Kalenderstufe, dem Quartal,
+hart verdrahtet seit Befund 135.
+
+Das ist die Lage aus Befund 152 zum zweiten Mal: gebaut, getestet,
+nicht angeschlossen.
+
+### Vorab festgelegt
+
+* Gemessen wird fuer **jedes** Katalog-Genom und den besten Verbund die ganze
+  Leiter, jede Sprosse berichtet.
+* Mehr Einteilungen koennen die Stichprobe nur **senken** -
+  ``effektive_stichprobe`` nimmt die strengste. Es gibt hier keine Richtung,
+  in die das schmeicheln koennte.
+* Bindet das Quartal ueberall, ist die Verdrahtung richtig und nichts aendert
+  sich. Bindet es das nicht, war das Gate zu grosszuegig.
+
+### Das Quartal bindet bei 2 von 15
+
+    Welche Sprosse bindet, ueber alle Genome der Tageskerzen
+        Gleichzeitigkeit   5      Halbjahr          3
+        Kalendermonat      4      Kalenderquartal   2      Fenster   1
+
+    Genom                              roh   streng            n_eff  Quartal
+    Momentum-Beteiligung 90 Tage       103   Halbjahr             44       70
+    Trend-Beteiligung 50 Tage          160   Kalendermonat       123      160
+    Trend beide Richtungen             106   Halbjahr             45       50
+    VWAP-Rueckkehr short               186   Kalendermonat       131      147
+    Trend-Beteiligung (fair gerechnet)  53   Halbjahr             29       39
+    Grosse Kerze mit Volumen short      53   Kalendermonat        47       52
+
+**Bei 6 von 15 rechnete das Gate eine zu grosse Stichprobe**, im schlimmsten
+Fall 70 statt 44 - ein Drittel zu viel. Der Bestand selbst war nicht
+betroffen: Dort bindet das Quartal wirklich, und ``am_rand`` sagt, dass es
+ein echtes Minimum ist (Halbjahr 1,000 und Jahr 1,000 liegen daneben hoeher).
+
+Genau deshalb ist es nie aufgefallen. Die eine Regel, an der Befund 143
+gemessen hat, war die eine, bei der die Verdrahtung stimmte.
+
+### Auch das veroeffentlichte Paar
+
+    Verbund Bestand + Trend-Beteiligung 200 Tage, ganze Leiter
+      Einteilung         Bloecke  je Block     ICC  n_eff  Quote
+      Fenster                 32       6.6   0.129    181  0.858
+      Gleichzeitigkeit        78       2.7   0.000    211  1.000
+      Kalendertag            186       1.1   0.855    209  0.991
+      Kalenderwoche          144       1.5   0.837    187  0.886
+      Kalendermonat           76       2.8   0.675    136  0.645  <-- streng
+      Kalenderquartal         33       6.4   0.239    139  0.659
+      Halbjahr                17      12.4   0.108    156  0.739
+      Kalenderjahr             9      23.4   0.025    211  1.000
+
+Der **Monat** bindet, nicht das Quartal. Und er liegt zwischen zwei milderen
+Sprossen, ist also ein echtes Minimum.
+
+### Kann eine feine Sprosse falsch anschlagen?
+
+Die Sorge waere berechtigt: Beim Kalendertag hat fast jeder Block genau einen
+Trade, und ungleiche Blockgroessen ziehen den Schaetzer fuer sich genommen
+schon nach unten.
+
+Sie ist unbegruendet, und zwar aus einem Grund, der seit Befund 101 im Code
+steht: Die **Permutationsnull benutzt dieselben Blockgroessen**. Der Effekt
+ungleicher Bloecke steckt damit in der Null und ist herausgerechnet. Gemessen
+sieht man es auch: Kalendertag liefert Quote 1,000 beim Bestand und 0,991 beim
+Paar - er schlaegt gar nicht an.
+
+### Was sich aendert
+
+    Verbund                          Befund 152          Befund 154
+    Spitze allein                 n 114  Guete 2,690   unveraendert
+    + Trend-Beteiligung 200 T.    n 139  Guete 3,019   n 136  Guete 2,986
+    + Donchian-Ausbruch 55/20     n 109  Guete 2,641   unveraendert
+
+Der Abstand des besten Verbundes zur Schwelle waechst von 0,631 auf **0,659**.
+Der Referenzpunkt bleibt bei n = 115 und DSR 0,5881: In seiner Konfiguration
+bindet das Quartal ohnehin.
+
+Damit sind es **vier** Korrekturen hintereinander - 140, 151, 152, 154 - und
+jede hat den Abstand vergroessert: 0,552 -> 0,614 -> 0,631 -> 0,659. Ein Test
+haelt die Reihenfolge fest.
+
+### Ein Test, der zuerst keine Zaehne hatte
+
+Der erste Anlauf zur Absicherung baute eine dichte Reihe mit Monatsniveaus.
+Dort bindet das Quartal ohnehin, beide Seiten kamen auf 27, und der Test waere
+**auch ohne die Leiter gruen** gewesen. Ersetzt durch eine duenn handelnde
+Reihe mit Halbjahresniveaus - dort bindet das Halbjahr bei 27 gegen 44 beim
+Quartal allein. Gegengeprueft: Nimmt man die Verdrahtung heraus, fallen alle
+drei neuen Tests um.
+
+### Was daraus folgt
+
+1. **Kein Kandidat kommt naeher an die Schwelle.**
+2. Zum dritten Mal in Folge war der Fehler dieselbe Bauart: eine Groesse an
+   **einem** Kandidaten kalibriert und auf alle angewandt - Nachlauf (151),
+   Randpuffer (152), jetzt die Zeitskala. Und zum zweiten Mal war das Mittel
+   dagegen schon gebaut und nur nicht angeschlossen.
+3. Wer eine solche Groesse einfuehrt, sollte sie nicht als Konstante
+   verdrahten, sondern als **Leiter** mit einem Minimum. Die Konstante ist
+   dann nur noch eine Sprosse und kann nicht mehr die falsche sein.
+
+Versuchszaehler 198 unveraendert - eine Korrektur am Messinstrument ist kein
+Versuch, und sie geht in die strenge Richtung. Suchbudget 68 von 100.

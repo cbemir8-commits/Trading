@@ -139,3 +139,79 @@ class TestDerModulkopf:
         assert "0,737" in kopf, "die Tageskerzen-Quote"
         assert "0,922" in kopf, "die 15-Minuten-Quote"
         assert "Handelsdichte" in kopf
+
+
+class TestImGateVerdrahtet:
+    """**Befund 154.** Die Leiter war gebaut, getestet - und an nichts
+    angeschlossen.
+
+    ``stichprobe_wie_im_gate`` rechnete mit **einer** Kalenderstufe, dem
+    Quartal, hart verdrahtet seit Befund 135. Ueber den Katalog gemessen
+    bindet das Quartal bei 2 von 15 Genomen; bei 6 von 15 rechnete das Gate
+    deshalb eine zu grosse Stichprobe.
+    """
+
+    def test_das_gate_faehrt_die_ganze_leiter(self) -> None:
+        import inspect
+
+        from research.gates import stichprobe_wie_im_gate
+
+        quelle = inspect.getsource(stichprobe_wie_im_gate)
+        assert "STUFEN" in quelle and "nach_kalender" in quelle, (
+            "das Gate rechnet wieder mit einer einzelnen Stufe"
+        )
+
+    def test_die_leiter_findet_was_das_quartal_verfehlt(self) -> None:
+        """**Die eigentliche Zusicherung**, und sie hat Zaehne.
+
+        Eine duenn handelnde Regel mit Niveaus, die ein halbes Jahr halten -
+        genau die Lage von ``Trend-Beteiligung``, wo das Halbjahr bei 29
+        bindet und das Quartal bei 39. Das Quartal mittelt die Abhaengigkeit
+        zur Haelfte weg, weil beide Quartale eines Halbjahres dasselbe Niveau
+        tragen.
+
+        Ein erster Anlauf zu diesem Test benutzte eine dichte Reihe mit
+        Monatsniveaus. Dort band das Quartal ohnehin, beide Seiten kamen auf
+        27, und der Test waere auch ohne die Leiter gruen gewesen.
+        """
+        from datetime import UTC, datetime, timedelta
+        from types import SimpleNamespace
+
+        from research.gates import quartalsbloecke, stichprobe_wie_im_gate
+        from research.unabhaengigkeit import effektive_stichprobe
+
+        t0 = datetime(2016, 1, 1, tzinfo=UTC)
+        trades = []
+        for i in range(60):
+            aus = t0 + timedelta(days=i * 55)
+            halbjahr = (aus - t0).days // 183
+            trades.append(
+                SimpleNamespace(
+                    net_pnl=float(
+                        ((halbjahr % 3) - 1) * 4.0 + (0.4 if i % 2 else -0.4)
+                    ),
+                    entry_time=aus - timedelta(days=1),
+                    exit_time=aus,
+                    symbol="BTCUSDT",
+                )
+            )
+
+        nur_quartal = effektive_stichprobe(
+            len(trades), None, None, weitere=[quartalsbloecke(trades)]
+        ).effektiv
+        ganze_leiter = stichprobe_wie_im_gate(trades).effektiv
+
+        assert nur_quartal == 44, "sonst misst der Test etwas anderes"
+        assert ganze_leiter == 27, "das Halbjahr bindet"
+        assert ganze_leiter < nur_quartal, (
+            f"die Leiter ({ganze_leiter}) muss hier strenger sein als das "
+            f"Quartal allein ({nur_quartal}) - sonst ist sie nicht verdrahtet"
+        )
+
+    def test_der_kopf_nennt_die_gemessene_verteilung(self) -> None:
+        from research.gates import stichprobe_wie_im_gate
+
+        kopf = stichprobe_wie_im_gate.__doc__ or ""
+        assert "Befund 154" in kopf
+        assert "2 von 15" in kopf, "wie oft das Quartal ueberhaupt bindet"
+        assert "6 von 15" in kopf, "wie oft das Gate zu gross rechnete"

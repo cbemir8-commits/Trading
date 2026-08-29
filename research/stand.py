@@ -462,6 +462,12 @@ BEHOBEN: tuple[Richtung, ...] = (
         "jetzt nur noch in Rendite und Rueckgang",
         152,
     ),
+    Richtung(
+        "Zeitskala im Gate",
+        "nur das Kalenderquartal war verdrahtet; es bindet bei 2 von 15 "
+        "Genomen, bei 6 von 15 rechnete das Gate zu gross - ganze Leiter",
+        154,
+    ),
 )
 
 

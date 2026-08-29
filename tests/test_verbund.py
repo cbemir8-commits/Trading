@@ -252,23 +252,24 @@ class TestNoetigeGuete:
         assert noetige_guete(154, 166) == pytest.approx(3.62, abs=0.05)
 
 
-class TestStandNachBefund152:
+class TestStandNachBefund154:
     """Die Zahlen aus dem Modulkopf - gepflegt, also pruefbar zu halten.
 
     Befund 140 hat den Verbund mit der Einteilung des Gates neu gerechnet,
     Befund 151 mit dem verlaengerten Nachlauf, Befund 152 ohne die am
-    Datenende zensierten Trades. Die Werte stehen im Kopf von
+    Datenende zensierten Trades, Befund 154 mit der ganzen Zeitskala statt
+    nur dem Quartal. Die Werte stehen im Kopf von
     ``research/verbund.py`` und veralten dort genauso still wie die aus
     Befund 73, wenn niemand sie festhaelt.
     """
 
     def test_die_luecke_des_besten_verbundes(self) -> None:
-        """Guete 3,019 gegen noetige 3,650 bei n = 139 und 198 Versuchen."""
-        ziel = noetige_guete(139, 198)
+        """Guete 2,986 gegen noetige 3,645 bei n = 136 und 198 Versuchen."""
+        ziel = noetige_guete(136, 198)
 
         assert ziel is not None
-        assert ziel == pytest.approx(3.650, abs=0.01)
-        assert ziel - 3.019 == pytest.approx(0.631, abs=0.01)
+        assert ziel == pytest.approx(3.645, abs=0.01)
+        assert ziel - 2.986 == pytest.approx(0.659, abs=0.01)
 
     def test_die_spitze_allein_steht_schlechter_da(self) -> None:
         """n = 114 statt 158 - die Luecke ist dort 0,916."""
@@ -278,13 +279,13 @@ class TestStandNachBefund152:
         assert ziel - 2.690 == pytest.approx(0.916, abs=0.01)
 
     def test_jede_korrektur_ging_in_die_strenge_richtung(self) -> None:
-        """**Befund 140 -> 151 -> 152.** Jede Korrektur am Messinstrument hat
+        """**Befund 140 -> 151 -> 152 -> 154.** Jede Korrektur am Messinstrument hat
         den Abstand zur Schwelle vergroessert, keine verkleinert.
 
         Waere es umgekehrt, muesste man fragen, warum ausgerechnet die
         Korrekturen den Kandidaten naeher an die Schwelle bringen.
         """
-        staende = [(124, 3.073), (135, 3.030), (139, 3.019)]
+        staende = [(124, 3.073), (135, 3.030), (139, 3.019), (136, 2.986)]
         luecken = []
         for n, guete in staende:
             ziel = noetige_guete(n, 198)
@@ -296,32 +297,32 @@ class TestStandNachBefund152:
         )
 
     def test_der_partner_traegt_mehr_als_befund_73_messen_konnte(self) -> None:
-        """**Der eigentliche Befund**: +0,329 statt +0,152 Guete.
+        """**Der eigentliche Befund**: +0,296 statt +0,152 Guete.
 
         Mit der alten Einteilung war der Beitrag des Partners 3,368 - 3,216;
-        mit der richtigen ist er 3,019 - 2,690. Der Verbund gewinnt durch
+        mit der richtigen ist er 2,986 - 2,690. Der Verbund gewinnt durch
         Korrekturen, die alles andere schlechter gemacht haben.
         """
         alt = 3.368 - 3.216
-        neu = 3.019 - 2.690
+        neu = 2.986 - 2.690
 
-        assert neu > 2 * alt
-        assert neu == pytest.approx(0.329, abs=0.001)
+        assert neu > 1.9 * alt
+        assert neu == pytest.approx(0.296, abs=0.001)
 
     def test_der_verbund_hebt_die_stichprobe(self) -> None:
-        """25 unabhaengige Beobachtungen mehr fuer 53 rohe Trades mehr.
+        """22 unabhaengige Beobachtungen mehr fuer 53 rohe Trades mehr.
 
         Das ist der Grund, warum die Richtung aus Befund 80 haelt: Der
         Verbund ist der einzige gemessene Hebel, der die effektive Stichprobe
         **hebt** statt sie umzuverteilen.
         """
-        allein, verbund = 114, 139
+        allein, verbund = 114, 136
         roh_allein, roh_verbund = 158, 211
 
-        assert verbund - allein == 25
+        assert verbund - allein == 22
         anteil = (verbund - allein) / (roh_verbund - roh_allein)
-        assert anteil == pytest.approx(0.472, abs=0.01), (
-            "knapp die Haelfte der zusaetzlichen Trades ist echte Information"
+        assert anteil == pytest.approx(0.415, abs=0.01), (
+            "gut vier Zehntel der zusaetzlichen Trades sind echte Information"
         )
 
     def test_der_modulkopf_traegt_den_neuen_stand(self) -> None:
@@ -329,13 +330,13 @@ class TestStandNachBefund152:
         import research.verbund as modul
 
         kopf = modul.__doc__ or ""
-        assert "Befund 152" in kopf
-        assert "3,019" in kopf
-        assert "0,631" in kopf, "der Abstand zur Schwelle"
+        assert "Befund 154" in kopf
+        assert "2,986" in kopf
+        assert "0,659" in kopf, "der Abstand zur Schwelle"
         assert "Was vorher hier stand" in kopf, "der alte Stand bleibt lesbar"
-        assert "3,030" in kopf and "3,073" in kopf and "3,368" in kopf, (
-            "alle drei ueberholten Staende"
-        )
+        assert all(
+            x in kopf for x in ("3,019", "3,030", "3,073", "3,368")
+        ), "alle vier ueberholten Staende"
 
 
 @pytest.mark.langsam
@@ -413,7 +414,7 @@ def test_der_verbund_stimmt_mit_dem_lauf_ueberein() -> None:
     # (Beine des Verbundes, erwartetes n, erwartete Guete) - aus dem Modulkopf.
     erwartet = [
         ([bestand], 114, 2.690),
-        ([bestand, beine[0]], 139, 3.019),
+        ([bestand, beine[0]], 136, 2.986),
         ([bestand, beine[1]], 109, 2.641),
     ]
 

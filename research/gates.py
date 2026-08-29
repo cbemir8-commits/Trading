@@ -52,6 +52,7 @@ from core.models import Trade
 from research.benchmark import buy_and_hold_over_windows, scaled_hold
 from research.randschnitt import ohne_zensierte
 from research.unabhaengigkeit import effektive_stichprobe
+from research.zeitskala import STUFEN, nach_kalender
 from strategy.compiler import compile_genome
 from strategy.genome import Genome, SizingSpec
 
@@ -562,6 +563,12 @@ def quartalsbloecke(trades: list[Trade]) -> list[list[float]]:
 
     Gebuendelt wird nach dem **Ausstieg**: Dort steht fest, welches Ergebnis
     der Trade hatte, und darum geht es bei der Abhaengigkeit der Ergebnisse.
+
+    **Seit Befund 154 nur noch eine Sprosse von acht.** Das Quartal war hart
+    verdrahtet und bindet ueber den Katalog gemessen bei 2 von 15 Genomen;
+    ``stichprobe_wie_im_gate`` faehrt jetzt die ganze Leiter. Diese Funktion
+    bleibt als die eine Stufe, die Befund 135 eingefuehrt hat - sie ist
+    identisch mit ``zeitskala.nach_kalender`` auf der Quartalsstufe.
     """
     eimer: dict[tuple[int, int], list[float]] = {}
     for t in trades:
@@ -595,13 +602,33 @@ def stichprobe_wie_im_gate(
 
     Wer diese Funktion aufruft, rechnet mit derselben Stichprobe wie die
     Zulassung. Wer sie umgeht, sollte einen Grund haben.
+
+    Die ganze Zeitskala statt einer Sprosse (Befund 154)
+    ----------------------------------------------------
+    Hier stand ``quartalsbloecke`` - **eine** Kalenderstufe, hart verdrahtet.
+    Befund 143 hatte die Leiter vermessen und das Quartal als strengste Stufe
+    gefunden; gemessen war das an **einem** Kandidaten. Ueber den Katalog
+    gemessen bindet das Quartal bei 2 von 15 Genomen:
+
+        Gleichzeitigkeit   5      Halbjahr          3
+        Kalendermonat      4      Kalenderquartal   2      Fenster   1
+
+    Bei **6 von 15** rechnete das Gate deshalb eine zu grosse Stichprobe, im
+    schlimmsten Fall 70 statt 44. Auch das veroeffentlichte Paar war betroffen:
+    Der Monat bindet dort bei 136, das Quartal bei 139.
+
+    Jetzt laeuft die ganze Leiter aus ``research.zeitskala.STUFEN`` mit. Mehr
+    Einteilungen koennen die Stichprobe nur **senken** - ``effektive_stichprobe``
+    nimmt die strengste. Eine feine Stufe kann dabei nicht falsch anschlagen:
+    Die Permutationsnull benutzt dieselben Blockgroessen, der Effekt ungleicher
+    Bloecke ist also herausgerechnet.
     """
     gleichzeitig = [
         [float(t.net_pnl) for t in gruppe] for gruppe in concurrent_groups(trades)
     ]
+    kalender = [nach_kalender(trades, schluessel) for _, schluessel in STUFEN]
     return effektive_stichprobe(
-        len(trades), beine, bloecke,
-        weitere=[gleichzeitig, quartalsbloecke(trades)],
+        len(trades), beine, bloecke, weitere=[gleichzeitig, *kalender],
     )
 
 
