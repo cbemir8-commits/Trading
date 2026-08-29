@@ -56,14 +56,60 @@ Und die Abhaengigkeit **ist** hier nicht von Zufall zu unterscheiden - p =
 Dieses Modul wechselt die Kalibrierung deshalb **nicht**. Es misst, was an ihr
 haengt, und schreibt es hin.
 
+Nachgemessen am heutigen Punkt (Befund 156)
+-------------------------------------------
+Die Zahlen oben stammen aus Befund 134 und rechnen mit **n = 152** und einem
+Deflated Sharpe von 0,8640. Seither haben Befund 135, 151, 152, 153 und 154
+die Rezeptur veraendert - aus zwei Einteilungen sind acht geworden. Dieselbe
+Frage, heute gestellt:
+
+    Bestand allein, 158 Trades, 198 Versuche
+      Kalibrierung                n    Guete      DSR    fehlt
+      Median                     78    2,225   0,1824    1,311
+      75. Perzentil              90    2,390   0,2633    1,169
+      90. Perzentil             103    2,557   0,3603    1,028
+      95. Perzentil (Regel)     114    2,690   0,4452    0,916
+      99. Perzentil             140    2,981   0,6340    0,671
+
+    Bestand + Trend-Beteiligung 200 Tage, 211 Trades
+      Median                     92    2,456   0,2840    1,107
+      75. Perzentil             106    2,636   0,4023    0,955
+      90. Perzentil             126    2,874   0,5712    0,754
+      95. Perzentil (Regel)     136    2,986   0,6480    0,659
+      99. Perzentil             156    3,198   0,7763    0,479
+
+Auf **denselben Sprossen wie Befund 134** (Median bis 95. Perzentil):
+
+    Punkt                Spanne   Luecke   Verhaeltnis
+    Befund 134           0,3247   0,0860        3,78 x
+    Bestand heute        0,2628   0,5048        0,52 x
+    Paar heute           0,3640   0,3020        1,21 x
+
+**Das Verhaeltnis hat sich umgekehrt** - und zwar nicht, weil die Spanne
+kleiner geworden waere, sondern weil die **Luecke gewachsen ist**. Die
+Korrekturen aus 151 bis 154 haben den Deflated Sharpe gedrueckt; der Abstand
+zur Schwelle ist dadurch groesser als die Unsicherheit ueber ihn.
+
+Fuer den Bestand allein laesst sich die Aussage *"er reicht nicht"* damit
+erstmals treffen, ohne dass eine Modellwahl sie kippen koennte. **Fuer das
+veroeffentlichte Paar noch nicht:** Dort ist die Spanne weiter 1,21 mal die
+Luecke.
+
+Die Saat ist keine Modellwahl (Befund 156)
+-------------------------------------------
+Befund 134 hat sie nicht geprueft. Ueber fuenf Saaten des Zufallsgenerators:
+
+    Bestand   n zwischen 113 und 115, DSR-Spanne 0,0154
+    Paar      n zwischen 135 und 137, DSR-Spanne 0,0146
+
+Die Zahl ist also auf etwa **±0,015 im Deflated Sharpe** wiederholbar -
+verschwindend gegen die Kalibrierungsspanne, aber nicht null. Wer zwei Laeufe
+auf der vierten Stelle vergleicht, vergleicht Rauschen.
+
 Zum Stand
 ---------
-Die Zahlen oben rechnen mit **n = 152** und einem Deflated Sharpe von 0,8640.
-Beides ist seit **Befund 135** ueberholt: Das Gate teilt seither zusaetzlich
-nach Kalenderquartalen, die effektive Stichprobe faellt auf 112 und der
-Deflated Sharpe auf 0,6026. Die Messungen hier bleiben richtig - sie sind an
-ihrem Tag so entstanden. Der massgebliche Stand steht in
-``research/referenz.py``.
+Die Messungen aus Befund 134 bleiben richtig - sie sind an ihrem Tag so
+entstanden. Der massgebliche Stand steht in ``research/referenz.py``.
 """
 from __future__ import annotations
 

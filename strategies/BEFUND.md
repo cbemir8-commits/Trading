@@ -14491,3 +14491,112 @@ zu stehen.
 
 Am Stand aendert sich nichts: Guete 2,986, DSR 0,6480, es fehlen 0,659.
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.
+
+## Hundertsechsundfuenfzig. Die Fehlerbalken, zwanzig Befunde spaeter
+
+Befund 134 hat die groesste Unsicherheit des Projekts beziffert: Wie stark
+haengt der Deflated Sharpe an der **Kalibrierung** - dem Perzentil der
+Permutationsnull, gegen das gekuerzt wird? Ergebnis damals: Spanne 0,3247 bei
+einer Luecke von 0,0860. **Die Unsicherheit aus einer Modellwahl war fast das
+Vierfache des gesuchten Abstands.**
+
+Seither haben Befund 135, 151, 152, 153 und 154 die Rezeptur veraendert; aus
+zwei Einteilungen sind acht geworden. Der Registereintrag nannte weiter die
+Zahlen von damals.
+
+### Vorab festgelegt, wortgleich zu Befund 134
+
+* Alle Kalibrierungen werden berichtet.
+* **Die Regel im Code bleibt die Referenz.** Weder milder noch strenger.
+  Sollte eine Stufe eine freundlichere Zahl liefern, ist das ausdruecklich
+  **kein** Grund, sie zu nehmen.
+* Gemessen wird, wie stark die Zahl an einer Modellwahl haengt - nicht, welche
+  Wahl das schoenste Ergebnis liefert.
+* Neu gegenueber 134: die **Saat** des Zufallsgenerators. Keine Modellwahl,
+  sondern eine Frage der Wiederholbarkeit.
+
+### Gemessen
+
+    Bestand allein, 158 Trades, 198 Versuche
+      Kalibrierung                n    Guete      DSR    fehlt
+      Median                     78    2,225   0,1824    1,311
+      75. Perzentil              90    2,390   0,2633    1,169
+      90. Perzentil             103    2,557   0,3603    1,028
+      95. Perzentil (Regel)     114    2,690   0,4452    0,916
+      99. Perzentil             140    2,981   0,6340    0,671
+
+    Bestand + Trend-Beteiligung 200 Tage, 211 Trades
+      Median                     92    2,456   0,2840    1,107
+      95. Perzentil (Regel)     136    2,986   0,6480    0,659
+      99. Perzentil             156    3,198   0,7763    0,479
+
+Auf **denselben Sprossen wie Befund 134** (Median bis 95. Perzentil):
+
+    Punkt                Spanne   Luecke   Verhaeltnis
+    Befund 134           0,3247   0,0860        3,78 x
+    Bestand heute        0,2628   0,5048        0,52 x
+    Paar heute           0,3640   0,3020        1,21 x
+
+### Das Verhaeltnis hat sich umgekehrt - aus dem unangenehmen Grund
+
+Nicht, weil die Spanne wesentlich kleiner geworden waere (0,3247 auf 0,2628),
+sondern weil die **Luecke gewachsen ist** - von 0,0860 auf 0,5048. Die
+Korrekturen aus 151 bis 154 haben den Deflated Sharpe gedrueckt.
+
+Fuer den Bestand allein laesst sich der Satz *"er reicht nicht"* damit
+**erstmals treffen, ohne dass eine Modellwahl ihn kippen koennte.** Fuer das
+veroeffentlichte Paar noch nicht: Dort ist die Spanne weiter 1,21 mal die
+Luecke.
+
+Das ist die stillste Art von Fortschritt: Fuenf Laeufe haben die Zahl
+schlechter gemacht, und dadurch ist die **Aussage ueber** die Zahl belastbar
+geworden.
+
+### Die Saat
+
+    Bestand   n zwischen 113 und 115, DSR-Spanne 0,0154
+    Paar      n zwischen 135 und 137, DSR-Spanne 0,0146
+
+Wiederholbar auf etwa ±0,015 im Deflated Sharpe - verschwindend gegen die
+Kalibrierungsspanne, aber nicht null. Wer zwei Laeufe auf der vierten Stelle
+vergleicht, vergleicht Rauschen. Befund 134 hat das nie geprueft.
+
+### Wie die alte Zahl zwanzig Befunde ueberdauert hat
+
+Der Eintrag *"Kalibrierung bewegt 0,3247, die Luecke ist 0,0860"* stand in
+``stand.py``, und ``0,0860`` steht ausserdem in ``instrument.py``,
+``regler.py`` und ``empfindlichkeit.py``.
+
+Die Wache dagegen gibt es seit Befund 136: ``veraltet()`` sucht ueberholte
+Kennzahlen, und wer eine nennt, muss auf ``research.referenz`` verweisen. Sie
+hat aus zwei Gruenden nicht angeschlagen:
+
+1. **Sie kannte nur den Deflated Sharpe selbst, nicht die daraus abgeleitete
+   Luecke.** 0,0860 ist 0,95 - 0,8640; die Zahl veraltet mit, wird aber nicht
+   gesucht. Behoben: ``veraltet()`` prueft jetzt auch ``Referenzpunkt.luecke``.
+2. **Sie prueft je Datei, nicht je Eintrag.** Ein Zeiger im Modulkopf deckt
+   alles darunter - und in ``stand.py`` liegen vierzig unabhaengige
+   Registereintraege unter einem einzigen Zeiger.
+
+Fuer (2) gibt es keine saubere mechanische Regel: Ein Eintrag **darf** eine
+alte Zahl nennen, wenn er sie als Geschichte nennt (*"21 Stellen auf 0,8640"*
+ist richtig), und Geschichte von Behauptung kann ein Test nicht
+unterscheiden. Deshalb steht jetzt eine **ausgeschriebene Liste** der drei
+Eintraege, die bewusst historisch zitieren - dieselbe Bauart wie bei den
+nachgemessenen Richtungen. Jeder neue Eintrag mit einer ueberholten Zahl
+faellt auf, bis jemand hingesehen hat.
+
+Gegengeprueft: Setzt man den alten Eintrag zurueck, fallen beide neuen Tests
+um.
+
+### Was daraus folgt
+
+1. **Am Stand aendert sich nichts.** Guete 2,986, DSR 0,6480, es fehlen 0,659.
+2. Die groesste Unsicherheit des Projekts ist erstmals kleiner als der
+   Abstand, den sie betrifft - fuer den Bestand. Fuer den Verbund nicht.
+3. Der Registereintrag zur groessten Unsicherheit trug zwanzig Befunde lang
+   Zahlen aus einem ueberholten Betriebspunkt. Eine Wache, die je Datei
+   prueft, ist fuer eine Datei aus vierzig Behauptungen zu grob.
+
+Versuchszaehler 198 unveraendert - gemessen wurde die Empfindlichkeit einer
+vorhandenen Zahl, kein neuer Kandidat. Suchbudget 68 von 100.

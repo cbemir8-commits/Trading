@@ -335,10 +335,15 @@ BEHOBEN: tuple[Richtung, ...] = (
         "gilt fuers Vola-Ziel, nicht fuers Gewinnziel - Hub 0,0091 gegen 0,8178",
         129,
     ),
+    # Der Eintrag nannte zwanzig Befunde lang "die Luecke ist 0,0860" - eine
+    # Zahl aus einem Betriebspunkt, den schon Befund 135 ueberholt hatte.
+    # Nachgemessen in Befund 156, auf denselben Sprossen.
     Richtung(
         "Stichprobe ohne Fehlerbalken",
-        "Kalibrierung bewegt 0,3247, die Luecke ist 0,0860",
+        "Kalibrierung bewegt 0,2628 bei einer Luecke von 0,5048 - also 0,52x "
+        "statt 3,78x; beim veroeffentlichten Paar weiter 1,21x",
         134,
+        zuletzt=156,
     ),
     Richtung(
         "Einteilung ohne Quartale",

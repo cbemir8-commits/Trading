@@ -199,7 +199,14 @@ def veraltet(text: str) -> tuple[str, ...]:
     """
     treffer = []
     for punkt in UEBERHOLT:
-        for zahl in (f"{punkt.dsr:.4f}", f"{punkt.dsr:.4f}".replace(".", ",")):
-            if zahl in text and zahl not in treffer:
-                treffer.append(zahl)
+        # **Auch die Luecke** (Befund 156). Der Registereintrag zu Befund 134
+        # sagte zwanzig Befunde lang "die Luecke ist 0,0860" - ein Wert aus
+        # einem Betriebspunkt, den Befund 135 ueberholt hat. Er stand in vier
+        # Modulen. Die Pruefung sah ihn nicht, weil sie nur nach dem Deflated
+        # Sharpe selbst suchte; die daraus abgeleitete Zahl veraltet aber
+        # genauso still.
+        for wert in (punkt.dsr, punkt.luecke):
+            for zahl in (f"{wert:.4f}", f"{wert:.4f}".replace(".", ",")):
+                if zahl in text and zahl not in treffer:
+                    treffer.append(zahl)
     return tuple(treffer)

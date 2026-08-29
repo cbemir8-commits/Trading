@@ -532,3 +532,54 @@ class TestDieStichprobeImUrteil:
 
         assert "Qualitaet je Trade um" not in text
         assert "Kein zugelassener Kandidat" in text
+
+
+class TestUeberholteZahlenImRegister:
+    """**Befund 156.** Ein Zeiger im Modulkopf deckt die ganze Datei.
+
+    ``test_wer_eine_ueberholte_zahl_nennt_sagt_es_dazu`` prueft je **Datei**:
+    Steht irgendwo "research.referenz", darf die Datei ueberholte Werte
+    nennen. Fuer ``stand.py`` ist das zu grob - dort liegen vierzig
+    unabhaengige Registereintraege unter einem einzigen Zeiger.
+
+    Genau so hat *"Kalibrierung bewegt 0,3247, die Luecke ist 0,0860"*
+    zwanzig Befunde ueberdauert: ein Betriebspunkt, den schon Befund 135
+    ueberholt hatte, unter einem Kopf, der korrekt auf ``referenz.py``
+    verweist.
+
+    Ein Eintrag **darf** eine alte Zahl nennen, wenn er sie als Geschichte
+    nennt - *"21 Stellen auf 0,8640"* ist richtig. Was ein Test nicht
+    unterscheiden kann, ist Geschichte von Behauptung. Deshalb steht die
+    Liste hier ausgeschrieben: Jeder neue Eintrag mit einer ueberholten Zahl
+    faellt auf, bis jemand hingesehen hat.
+    """
+
+    def test_nur_bekannte_eintraege_nennen_ueberholte_zahlen(self) -> None:
+        from research.referenz import veraltet
+
+        gefunden = {
+            r.name: veraltet(r.ergebnis)
+            for r in (*GESCHLOSSEN, *BEHOBEN)
+            if veraltet(r.ergebnis)
+        }
+
+        assert gefunden == {
+            # Nennt, was Befund 135 gemessen hat - Geschichte, kein Stand.
+            "Einteilung ohne Quartale": ("0,6026",),
+            # Der Befund handelt davon, dass 21 Stellen auf 0,8640 standen.
+            "Ueberholte Kennzahl im Modulkopf": ("0,8640",),
+            # Nennt den Ausgangswert und daneben den heutigen (0,5881).
+            "Frischer Datenabzug hob den Referenzpunkt": ("0,6026",),
+        }, (
+            "Ein Registereintrag nennt eine ueberholte Kennzahl. Ist sie als "
+            "Geschichte gemeint, gehoert der Eintrag in diese Liste; ist sie "
+            "als Stand gemeint, gehoert sie nachgemessen."
+        )
+
+    def test_die_fehlerbalken_sind_nachgemessen(self) -> None:
+        """Der Eintrag, der den Test ausgeloest hat."""
+        eintrag = next(r for r in BEHOBEN if r.name == "Stichprobe ohne Fehlerbalken")
+
+        assert eintrag.zuletzt == 156
+        assert "0,0860" not in eintrag.ergebnis
+        assert "0,52x" in eintrag.ergebnis
