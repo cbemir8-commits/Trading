@@ -232,3 +232,31 @@ def test_die_kerzen_dieses_projekts_sind_forschungsmaterial() -> None:
 
     assert vorhanden, "ohne Referenzkerzen gaebe es hier gar keine Messungen"
     assert all(ist_referenz(s) for s in vorhanden)
+
+
+@pytest.mark.daten
+def test_der_gemeldete_kerzenbestand_stimmt_mit_dem_speicher_ueberein() -> None:
+    """**Befund 157.** Die Zeile in ``cli stand`` ist gemessen - hier wird
+    geprueft, dass sie es bleibt.
+
+    ``daten``-markiert aus demselben Grund wie der Test darueber: Ohne
+    Kerzenspeicher prueft er die Umgebung, nicht den Code.
+    """
+    from cli import _kerzenbestand
+    from core.config import get_settings
+    from core.models import Interval
+    from data.store import CandleStore
+
+    store = CandleStore(get_settings().paths.data_store)
+    zeile = _kerzenbestand(store)
+
+    assert zeile != "keine Kerzen", "ohne Kerzen sagt der Test nichts"
+    for symbol in PAIRS:
+        frame = store.read(symbol, Interval("D"))
+        vorhanden = frame is not None and not frame.empty
+        assert (symbol in zeile) == vorhanden, (
+            f"{symbol} steht {'nicht ' if vorhanden else ''}in der Zeile, "
+            f"liegt aber {'' if vorhanden else 'nicht '}im Speicher"
+        )
+        if vorhanden:
+            assert f"1d {len(frame)}" in zeile, "die Zahl muss die gemessene sein"

@@ -14600,3 +14600,85 @@ um.
 
 Versuchszaehler 198 unveraendert - gemessen wurde die Empfindlichkeit einer
 vorhandenen Zahl, kein neuer Kandidat. Suchbudget 68 von 100.
+
+## Hundertsiebenundfuenfzig. Das restliche Suchbudget ist billig
+
+Der Versuchszaehler steht bei 198, das Budget bricht bei 230 ab. Jeder Versuch
+hebt die Latte des Deflated Sharpe. Daraus folgt eine naheliegende Sorge, die
+nie geprueft wurde: **Hebt das Suchen die Huerde schneller, als ein Fund sie
+nehmen koennte?** Waere es so, waere weiteres Suchen sinnlos.
+
+### Vorab festgelegt
+
+* Gemessen wird die noetige Guete bei 150, 198, 210, 220, 230 und 300
+  Versuchen, bei unveraendertem Kandidaten.
+* **Der Zaehler wird nicht gesenkt.** Er kann nur steigen. Dass ein
+  niedrigerer Wert schmeichelt, ist kein Argument; die 150 steht als
+  Vergleichspunkt da, nicht als Vorschlag.
+
+### Gemessen
+
+    Bestand + Trend-Beteiligung 200 Tage, n = 136, Guete 2,986
+
+     Versuche   noetig    fehlt      DSR
+          150    3,565    0,579   0,7069
+          198    3,645    0,659   0,6480   <- jetzt
+          210    3,662    0,676   0,6352
+          220    3,675    0,689   0,6250
+          230    3,688    0,702   0,6152   <- Abbruch
+          300    3,762    0,776   0,5564
+
+**Die restlichen 32 Versuche kosten +0,042 Guete.** Die Luecke ist 0,659 -
+also das Fuenfzehnfache. Beim Bestand allein dasselbe Bild: +0,043 gegen eine
+Luecke von 0,916.
+
+### Der Befund geht in beide Richtungen
+
+Die Sorge war unbegruendet: Auf dieser Stelle der Logarithmuskurve ist Suchen
+**nicht** selbstzerstoererisch. Wer das ganze Budget ausgibt, verschiebt die
+Latte um weniger als ein Zehntel dessen, was fehlt.
+
+Und die Gegenrichtung, die genauso wichtig ist: **Auch ein niedrigerer Zaehler
+hilft nicht.** Von 198 auf 150 - achtundvierzig Versuche weniger, mehr als der
+ganze Grundstock je hergaebe - bringt 0,080 Guete gegen eine Luecke von 0,659.
+
+Damit ist eine Versuchung erledigt, die seit Befund 69 latent im Raum stand:
+Der Grundstock von 187 Versuchen liegt ohne Einzelnachweis vor, und es waere
+verlockend, ihn nachzuzaehlen. **Es wuerde nichts aendern.** Der Zaehler ist in
+keiner Richtung das Hindernis, und das ist jetzt gemessen statt vermutet.
+
+### Und ein Auftragspunkt, der geloeschte Daten behauptete
+
+``cli stand`` sagte fuenf Befunde lang:
+
+> *"backfill 15m + wettbewerb beim Nutzer - Daten liegen hier vor; auf dem
+> eigenen Rechner weiter noetig"*
+
+Der Satz stimmte, als er geschrieben wurde. Beim Behaelterwechsel in Befund
+151 sind die 15-Minuten-Kerzen verschwunden - ``data_store`` liegt nicht im
+Repository -, und ich habe nur die Tageskerzen nachgeholt. Gemessen:
+
+    BTCUSD_BITSTAMP   1d 5355 Kerzen,  15m keine
+    ETHUSD_BITSTAMP   1d 3301 Kerzen,  15m keine
+
+Das ist dieselbe Bauart wie der Registereintrag aus Befund 156: **gepflegte
+Prosa, die still falsch wird.** Nur ist dieser Fall besser zu behandeln, denn
+die Frage "liegen Kerzen im Speicher" kann eine Maschine beantworten.
+
+``cli stand`` zeigt den Bestand jetzt **gemessen**:
+
+    Im Speicher: BTCUSD_BITSTAMP (1d 5355); ETHUSD_BITSTAMP (1d 3301)
+
+Der Fall wiederholt sich bei jedem frischen Klon. Die Zeile merkt es, der
+Satz darueber nie.
+
+### Was daraus folgt
+
+1. **Am Stand aendert sich nichts.** Guete 2,986, DSR 0,6480, es fehlen 0,659.
+2. Das Suchbudget ist kein Grund, nicht zu suchen - und kein Weg zum Ziel.
+   Beides gemessen.
+3. Wo eine Behauptung messbar ist, gehoert sie gemessen. Der Auftragspunkt
+   war es, der Registereintrag aus Befund 156 nicht - dort blieb nur eine
+   ausgeschriebene Liste.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.

@@ -8929,6 +8929,32 @@ def suchbudget(
             )
 
 
+def _kerzenbestand(store) -> str:
+    """Was **wirklich** im Kerzenspeicher liegt - gemessen, nicht gepflegt.
+
+    Ein Auftragspunkt behauptete fuenf Befunde lang, die 15-Minuten-Daten
+    laegen vor; beim Behaelterwechsel in Befund 151 waren sie verschwunden.
+    ``data_store`` liegt nicht im Repository, dieser Fall wiederholt sich also
+    bei jedem frischen Klon. Prosa merkt das nicht, diese Zeile schon
+    (Befund 157).
+    """
+    from data.reference import PAIRS
+
+    gefunden = []
+    for symbol in PAIRS:
+        vorhanden = []
+        for iv in ("D", "15"):
+            try:
+                frame = store.read(symbol, Interval(iv))
+            except Exception:
+                continue
+            if frame is not None and not frame.empty:
+                vorhanden.append(f"{Interval(iv).label} {len(frame)}")
+        if vorhanden:
+            gefunden.append(f"{symbol} ({', '.join(vorhanden)})")
+    return "; ".join(gefunden) if gefunden else "keine Kerzen"
+
+
 @app.command()
 def stand(
     maerkte: str = typer.Option(
@@ -9045,6 +9071,7 @@ def stand(
         maerkte=f"{' + '.join(symbole)}, {interval_obj.label}",
         trades=len(gehandelt.all_trades),
         effektiv=stichprobe.effektiv,
+        kerzenbestand=_kerzenbestand(store),
         zensiert=len(zensiert),
         sharpe_je_trade=qualitaet,
         noetiger_sharpe=(

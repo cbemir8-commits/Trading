@@ -583,3 +583,32 @@ class TestUeberholteZahlenImRegister:
         assert eintrag.zuletzt == 156
         assert "0,0860" not in eintrag.ergebnis
         assert "0,52x" in eintrag.ergebnis
+
+
+class TestDerKerzenbestand:
+    """**Befund 157.** Ein Auftragspunkt sagte fuenf Befunde lang "Daten
+    liegen hier vor", nachdem ein Behaelterwechsel sie geloescht hatte.
+
+    ``data_store`` liegt nicht im Repository. Der Fall wiederholt sich also
+    bei jedem frischen Klon, und gepflegte Prosa merkt es nie.
+    """
+
+    def test_der_bestand_steht_im_bericht(self) -> None:
+        lage = _lage(kerzenbestand="BTCUSD_BITSTAMP (1d 5355)")
+
+        assert "Im Speicher: BTCUSD_BITSTAMP (1d 5355)" in lage.bericht()
+
+    def test_ohne_messung_steht_keine_zeile(self) -> None:
+        """Leer heisst "nicht gemessen" - und dann wird nichts behauptet."""
+        assert "Im Speicher" not in _lage().bericht()
+
+    def test_der_auftragspunkt_behauptet_keine_daten_mehr(self) -> None:
+        from research.stand import AUFTRAG
+
+        punkt = next(p for p in AUFTRAG if "backfill" in p.frage)
+
+        assert not punkt.erledigt
+        assert "Daten liegen hier vor" not in punkt.stand, (
+            "genau dieser Satz war fuenf Befunde lang falsch"
+        )
+        assert "15-Minuten" in punkt.stand

@@ -479,6 +479,18 @@ BEHOBEN: tuple[Richtung, ...] = (
         "10 schlechter, p = 0,94 - der Gewinn ist Stichprobe, nicht Qualitaet",
         155,
     ),
+    Richtung(
+        "Suchbudget als Bremse",
+        "die restlichen 32 Versuche kosten +0,042 Guete - die Luecke ist "
+        "0,659; der Zaehler ist in keiner Richtung das Hindernis",
+        157,
+    ),
+    Richtung(
+        "Auftragspunkt behauptete geloeschte Daten",
+        "'Daten liegen hier vor' galt fuenf Befunde nach dem "
+        "Behaelterwechsel weiter - 'cli stand' misst den Bestand jetzt",
+        157,
+    ),
 )
 
 
@@ -783,9 +795,15 @@ AUFTRAG: tuple[Auftragspunkt, ...] = (
         stand="Zuordnung liegt jetzt als Daten vor, Fehlpaarung wird gesperrt",
         befund=64,
     ),
+    # **Der Satz stimmte, bis der Behaelter zurueckgesetzt wurde** (Befund
+    # 151). ``data_store`` liegt nicht im Repository; die 15-Minuten-Kerzen
+    # waren danach weg, und dieser Eintrag behauptete sie fuenf Befunde lang
+    # weiter. Was hier steht, ist gepflegte Prosa - was wirklich im Speicher
+    # liegt, zeigt ``cli stand`` gemessen (Befund 157).
     Auftragspunkt(
         frage="backfill 15m + wettbewerb beim Nutzer",
-        stand="Daten liegen hier vor; auf dem eigenen Rechner weiter noetig",
+        stand="hier nur Tageskerzen; die 15-Minuten-Reihe fehlt seit dem "
+              "Behaelterwechsel und wird auf dem eigenen Rechner gebraucht",
         befund=62,
         erledigt=False,
     ),
@@ -852,6 +870,15 @@ class Lage:
     effektive, und die ist kleiner. Fehlt dieses Feld, steht in ``urteil``
     eine Untergrenze - so, wie ``suchbudget`` es seit Befund 139 haelt
     (Befund 148).
+    """
+
+    kerzenbestand: str = ""
+    """Was **wirklich** im Kerzenspeicher liegt, je Symbol und Intervall.
+
+    Gemessen und nicht gepflegt (Befund 157): Ein Auftragspunkt behauptete
+    fuenf Befunde lang, die 15-Minuten-Daten laegen vor - sie waren beim
+    Behaelterwechsel in Befund 151 verschwunden. Prosa kann veralten, diese
+    Zeile nicht.
     """
 
     zensiert: int = 0
@@ -960,6 +987,11 @@ class Lage:
             zeilen.extend(f"  {r}" for r in BEHOBEN)
         zeilen += ["", "PUNKTE AUS DEM AUFTRAG", "-" * 72]
         zeilen.extend(f"  {p}" for p in AUFTRAG)
+        if self.kerzenbestand:
+            # **Gemessen, nicht gepflegt** (Befund 157). Der Punkt oben sagte
+            # fuenf Befunde lang "Daten liegen hier vor", nachdem sie ein
+            # Behaelterwechsel geloescht hatte. Diese Zeile kann das nicht.
+            zeilen += ["", f"  Im Speicher: {self.kerzenbestand}"]
         offen = [p for p in AUFTRAG if not p.erledigt]
         zeilen.append(
             f"  -> {len(AUFTRAG) - len(offen)} von {len(AUFTRAG)} abgearbeitet."
