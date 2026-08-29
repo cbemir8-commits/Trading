@@ -13825,3 +13825,82 @@ Weg gibt, der bequemer ist als der falsche.
 3. Am Stand aendert sich nichts: 152 Trades, n = 112, Deflated Sharpe 0,6026.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2584 Tests gruen.
+
+## Hundertfuenfzig. Vierzehn Zeilen, die dieselbe Zahl dreimal zeigten
+
+In der Ausgabe von ``cli front`` aus dem letzten Zyklus stand etwas, das ich
+haette sehen muessen: "Vola-Ziel 20.5" dreimal untereinander, mit identischen
+Zahlen. Bei einem Projekt, dessen Kernlehre seit Befund 27 lautet, dieselbe
+Information nicht doppelt zu zaehlen, lohnt das eine Pruefung.
+
+### Gemessen
+
+    Punkte insgesamt         44
+    verschiedene Stellungen  30
+    mehrfach vorhanden       10 Stellungen
+
+Der Vola-Ziel-Regler steckt in drei Berichtslaeufen, andere in zweien.
+``lade`` hat jeden Lauf als eigenen Punkt gezaehlt.
+
+### Was es **nicht** ist
+
+Die Wiederholungen tragen **identische Kennzahlen** - gleiche Trade-Zahl,
+gleicher Sharpe je Trade, auf vier Stellen. Sie unterscheiden sich nur im
+Versuchsstand ihres Laufs (162, 189, 198).
+
+Damit gibt es hier **keine Rosinenpickerei**: ``naechster`` kann keinen
+Glueckslauf einer wiederholten Stellung erwischen, weil es keinen gibt. Das
+ist der Verdacht, mit dem ich hineingegangen bin, und er hat sich nicht
+bestaetigt.
+
+### Was es ist
+
+Die Tabelle zeigt zwoelf Zeilen. Bei vierzehn Dubletten hiess das:
+
+    Zeilen in der Tabelle                12
+    davon verschiedene Stellungen         6
+    Stellungen insgesamt                 30
+    unsichtbar                           24
+
+**Vier Fuenftel der Familie waren nicht zu sehen** - darunter *jede* Stellung
+von Abkuehlung, Perioden-Faktor und fast alle vom Gewinnziel. In genau dem
+Werkzeug, dessen Kopf verspricht:
+
+> *"Die Aussage waere: Kein Punkt dieser Regelfamilie liegt ueber seiner
+> eigenen Grenzlinie."*
+
+Wer das nachpruefen wollte, sah sechs Stellungen aus im Wesentlichen einem
+Regler.
+
+### Was gebaut wurde
+
+``front.entdoppelt``: jede Reglerstellung einmal, behalten wird der Lauf mit
+dem **hoechsten** Versuchsstand - der gegen die haerteste Huerde gerechnete.
+Das ist die einzige Richtung, in die eine solche Wahl fallen darf.
+
+Die Tabelle zeigt jetzt zwoelf verschiedene Stellungen aus vier Reglern, und
+der Kopf sagt, was zusammengezogen wurde: *"30 aus 4 Reglern (14 mehrfach
+gemessene Laeufe zusammengezogen)"*. Stillschweigend zusammenziehen waere die
+zweite Haelfte desselben Fehlers.
+
+### Der erste Anlauf war zu flach
+
+Ich habe zuerst in ``lade`` entdoppelt. **Ein Test hat gezeigt, dass das nicht
+reicht**: Ein ``Front``, das seine Punkte anderswoher bekommt, zeigte sie
+weiter doppelt. Die Entdopplung gehoert in die Auswertung, nicht ins Laden -
+``lade`` ist dem Inhalt der Berichte treu, ``Front`` zaehlt jede Stellung
+einmal.
+
+Das ist dieselbe Lehre wie in Befund 149, eine Ebene weiter: Eine Korrektur am
+Eingang schuetzt nur den einen Weg, der durch ihn fuehrt.
+
+### Was daraus folgt
+
+1. **Am Stand aendert sich nichts** - kein Punkt erreicht die Schwelle, vorher
+   wie nachher. Der beste steht bei Faktor ≥1,13.
+2. **An der Pruefbarkeit aendert sich viel.** Die Aussage "kein Punkt dieser
+   Familie" laesst sich jetzt an der Tabelle nachvollziehen statt nur glauben.
+3. Der Verdacht, mit dem ich angefangen habe - eine Auswahl ueber Dubletten -
+   war falsch, und das gehoert genauso berichtet wie der Fund.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2590 Tests gruen.

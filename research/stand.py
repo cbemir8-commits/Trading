@@ -412,6 +412,12 @@ BEHOBEN: tuple[Richtung, ...] = (
         "tragen 'mindestens' jetzt mit - wo es nicht rechenbar ist, steht es da",
         149,
     ),
+    Richtung(
+        "Mehrfach gemessene Reglerstellungen doppelt gezaehlt",
+        "44 Punkte fuer 30 Stellungen; Kennzahlen identisch, also keine "
+        "Auswahl - aber 24 von 30 waren in der Tabelle unsichtbar",
+        150,
+    ),
 )
 
 

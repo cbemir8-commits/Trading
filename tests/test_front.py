@@ -284,3 +284,94 @@ class TestGemeinsameHuerde:
 
         assert front.punkte[0].dsr == 0.97, "Der gespeicherte Wert bleibt"
         assert front.bestanden == [], "Auf heute gerechnet reicht er nicht mehr"
+
+
+class TestEntdoppelt:
+    """Befund 150: Dieselbe Reglerstellung stand mehrfach in der Liste.
+
+    Statistisch harmlos - die Wiederholungen tragen identische Kennzahlen und
+    unterscheiden sich nur im Versuchsstand ihres Laufs. In der Anzeige nicht:
+    Von zwoelf Zeilen waren sechs Dubletten, und **24 von 30 Stellungen waren
+    unsichtbar**, darunter ganze Regler.
+    """
+
+    def _punkt(self, name: str, versuche: int, sharpe: float = 0.26):
+        from research.front import Messpunkt
+        from research.suchbudget import Kandidat
+
+        regler, stellung = name.rsplit(" ", 1)
+        return Messpunkt(
+            regler=regler, stellung=float(stellung),
+            kandidat=Kandidat(name=name, trades=152, sharpe_je_trade=sharpe),
+            genaehert=False, dsr=0.8, versuche=versuche,
+        )
+
+    def test_dieselbe_stellung_bleibt_einmal(self) -> None:
+        from research.front import entdoppelt
+
+        uebrig = entdoppelt([
+            self._punkt("Vola-Ziel 20.5", 162),
+            self._punkt("Vola-Ziel 20.5", 189),
+            self._punkt("Vola-Ziel 20.5", 198),
+        ])
+
+        assert len(uebrig) == 1
+
+    def test_behalten_wird_die_haerteste_huerde(self) -> None:
+        """Die einzige Richtung, in die eine solche Wahl fallen darf."""
+        from research.front import entdoppelt
+
+        (uebrig,) = entdoppelt([
+            self._punkt("Vola-Ziel 20.5", 198),
+            self._punkt("Vola-Ziel 20.5", 162),
+        ])
+
+        assert uebrig.versuche == 198
+
+    def test_verschiedene_stellungen_bleiben_alle(self) -> None:
+        from research.front import entdoppelt
+
+        uebrig = entdoppelt([
+            self._punkt("Vola-Ziel 20.5", 198),
+            self._punkt("Vola-Ziel 22", 198),
+            self._punkt("Abkuehlung 3", 198),
+        ])
+
+        assert len(uebrig) == 3
+
+    def test_die_reihenfolge_haengt_am_ersten_auftreten(self) -> None:
+        """Sonst haengt die Ausgabe an der Sortierung eines dict."""
+        from research.front import entdoppelt
+
+        uebrig = entdoppelt([
+            self._punkt("Zweiter 2", 162),
+            self._punkt("Erster 1", 198),
+            self._punkt("Zweiter 2", 198),
+        ])
+
+        assert [p.name for p in uebrig] == ["Zweiter 2", "Erster 1"]
+
+    def test_eine_leere_liste_bleibt_leer(self) -> None:
+        from research.front import entdoppelt
+
+        assert entdoppelt([]) == []
+
+    def test_die_tabelle_zeigt_verschiedene_stellungen(self) -> None:
+        """**Der eigentliche Schaden war die Verdraengung.**
+
+        Zwoelf Zeilen, und bei Dubletten standen darin sechs Stellungen. Wer
+        pruefen will, ob *kein* Punkt der Familie ueber der Linie liegt, sieht
+        dann vier Fuenftel der Familie nicht.
+        """
+        from research.front import Front
+
+        punkte = [
+            self._punkt(f"Vola-Ziel {i}", 198, sharpe=0.26 + i / 1000)
+            for i in range(4)
+        ]
+        front = Front(punkte=punkte + punkte, versuche=198)
+
+        zeilen = [z for z in front.tabelle().splitlines()[1:] if z.strip()]
+        namen = [z.split("  ")[0].strip() for z in zeilen]
+
+        assert len(namen) == len(set(namen)), f"Dubletten in der Tabelle: {namen}"

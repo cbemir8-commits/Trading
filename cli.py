@@ -5855,10 +5855,21 @@ def front(
         raise typer.Exit(0)
 
     lage = Front(punkte=punkte, versuche=trials)
+    # ``lage.punkte`` ist entdoppelt, ``punkte`` nicht - gezaehlt wird, was
+    # ausgewertet wird. Wie viele Laeufe dahinterstehen, steht daneben
+    # (Befund 150).
+    mehrfach = len(punkte) - len(lage.punkte)
     console.print(
         f"\n[bold]Die gemessene Front[/]\n"
-        f"  Punkte     {len(punkte)} aus {len({p.regler for p in punkte})} Reglern\n"
-        f"  Versuche   {trials}\n"
+        f"  Punkte     {len(lage.punkte)} aus "
+        f"{len({p.regler for p in lage.punkte})} Reglern"
+        + (
+            f"  [dim]({mehrfach} mehrfach gemessene Laeufe zusammengezogen, "
+            f"behalten wurde der gegen die haerteste Huerde)[/]"
+            if mehrfach
+            else ""
+        )
+        + f"\n  Versuche   {trials}\n"
     )
     console.print(lage.tabelle(hoechstens=hoechstens))
     farbe = "green" if lage.bestanden else "yellow"

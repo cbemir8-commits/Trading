@@ -172,7 +172,45 @@ def lade(ordner: Path | str) -> list[Messpunkt]:
                     ),
                 )
             )
+    # **Roh zurueckgeben.** ``lade`` ist dem Inhalt der Berichte treu; das
+    # Zusammenziehen mehrfach gemessener Stellungen ist Sache der Auswertung
+    # und passiert in ``Front`` (Befund 150). Waere es hier, koennte ein
+    # anderer Aufrufer ``Front`` an der Entdopplung vorbei fuellen - was beim
+    # ersten Anlauf genau so war und erst ein Test gezeigt hat.
     return gefunden
+
+
+def entdoppelt(punkte: list[Messpunkt]) -> list[Messpunkt]:
+    """Dieselbe Reglerstellung nur einmal - **der Lauf gegen die haerteste
+    Huerde**.
+
+    Warum das noetig ist (Befund 150): Ein Regler steht in mehreren Berichten,
+    weil er mehrfach durchgemessen wurde. ``lade`` hat jeden Lauf als eigenen
+    Punkt gezaehlt - 44 Punkte fuer 30 Stellungen.
+
+    Statistisch war das harmlos: Die Wiederholungen tragen **identische**
+    Kennzahlen (gleiche Trade-Zahl, gleicher Sharpe je Trade) und
+    unterscheiden sich nur im Versuchsstand ihres Laufs. Es gab also nichts
+    zu picken.
+
+    In der Anzeige war es das nicht: Die Tabelle zeigt zwoelf Zeilen, und
+    davon waren sechs Dubletten. **Vierundzwanzig von dreissig Stellungen
+    waren unsichtbar**, darunter ganze Regler - in genau dem Werkzeug, dessen
+    Zweck die Breite ist.
+
+    Behalten wird der Lauf mit dem **hoechsten** Versuchsstand: Er ist gegen
+    die strengste Huerde gerechnet, und das ist die einzige Richtung, in die
+    eine solche Wahl fallen darf.
+    """
+    beste: dict[str, Messpunkt] = {}
+    for punkt in punkte:
+        vorher = beste.get(punkt.name)
+        if vorher is None or punkt.versuche > vorher.versuche:
+            beste[punkt.name] = punkt
+    # Reihenfolge des ersten Auftretens - damit die Ausgabe reproduzierbar
+    # bleibt und nicht an der Sortierung eines dict haengt.
+    reihenfolge = list(dict.fromkeys(p.name for p in punkte))
+    return [beste[name] for name in reihenfolge]
 
 
 def _gemessener_dsr(punkt: dict) -> float | None:
@@ -190,6 +228,12 @@ class Front:
 
     punkte: list[Messpunkt]
     versuche: int
+
+    def __post_init__(self) -> None:
+        # Jede Reglerstellung zaehlt einmal - siehe ``entdoppelt``. Hier und
+        # nicht in ``lade``, damit auch ein Aufrufer mit eigener Punktliste
+        # keine Dubletten in die Auswertung bekommt (Befund 150).
+        self.punkte = entdoppelt(self.punkte)
 
     @property
     def budget(self) -> Budget:
