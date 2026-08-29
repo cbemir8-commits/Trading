@@ -748,3 +748,115 @@ class TestGemeinsameHuerde:
 
         eintrag = next(iter(board.entries.values()))
         assert eintrag.versuche == 157
+
+
+def _kandidat(genome_id: str):
+    """Das Wenigste, was ``_nach_herkunft`` von einem Kandidaten liest."""
+    from types import SimpleNamespace
+
+    return SimpleNamespace(genome=SimpleNamespace(genome_id=genome_id))
+
+
+class TestDieKiImWettbewerb:
+    """Befund 146: Der Wettbewerb fragt die Research-KI - vorher tat er es nie.
+
+    ``breed`` bildet Varianten der Besten; strukturell Neues entsteht dabei
+    nicht. Nach Befund 145 ist genau das die Lage: Alle gemessenen Richtungen
+    sind leer, und was fehlt, ist eine Regel, die es noch nicht gibt.
+    """
+
+    def test_das_flag_gibt_es_und_es_ist_aus(self) -> None:
+        """Voreingestellt aus: Ein Modellaufruf kostet Geld aus dem Budget."""
+        from typer.testing import CliRunner
+
+        from cli import app
+
+        hilfe = CliRunner().invoke(app, ["wettbewerb", "--help"]).output
+
+        assert "--ki" in hilfe
+        assert "--ohne-ki" in hilfe
+        assert "ohne-ki" in hilfe.replace("\n", " "), "die Vorgabe steht dabei"
+
+    def test_die_ki_ergaenzt_die_varianten_und_ersetzt_sie_nicht(self) -> None:
+        """Der Hilfetext sagt es, und das ist keine Nebensaechlichkeit.
+
+        Wuerde die KI die Varianten **ersetzen**, verloere der Wettbewerb
+        seinen einzigen gemessenen Hebel (Befund 140: der Verbund hebt die
+        effektive Stichprobe). Sie kommt dazu.
+        """
+        from typer.testing import CliRunner
+
+        from cli import app
+
+        hilfe = CliRunner().invoke(app, ["wettbewerb", "--help"]).output
+        text = " ".join(hilfe.split())
+
+        assert "zusaetzlich" in text
+        assert "statt ihrer" in text
+
+    def test_die_herkunft_wird_getrennt_eingetragen(self) -> None:
+        """**Der Punkt, an dem es sonst still falsch wuerde.**
+
+        ``Leaderboard.record`` nimmt eine Herkunft je Aufruf. Wer Varianten
+        und KI-Vorschlaege in einem Aufruf eintraegt, schreibt beiden dieselbe
+        hin - und niemand kann spaeter nachlesen, woher der beste Kandidat
+        kam. Die Liste saehe richtig aus und waere falsch.
+        """
+        from cli import _nach_herkunft
+
+        gruppen = _nach_herkunft(
+            [_kandidat("a"), _kandidat("b"), _kandidat("c")],
+            {"b"}, "Variante",
+        )
+
+        assert [(len(g), q) for g, q in gruppen] == [
+            (2, "Variante"), (1, "KI-Vorschlag")
+        ]
+        assert [c.genome.genome_id for c in gruppen[1][0]] == ["b"]
+
+    def test_leere_gruppen_fallen_weg(self) -> None:
+        """Sonst stuende ein ``record``-Aufruf mit leerer Liste im Lauf."""
+        from cli import _nach_herkunft
+
+        ohne_ki = _nach_herkunft([_kandidat("a")], set(), "Katalog")
+        nur_ki = _nach_herkunft([_kandidat("a")], {"a"}, "Katalog")
+
+        assert [q for _, q in ohne_ki] == ["Katalog"]
+        assert [q for _, q in nur_ki] == ["KI-Vorschlag"]
+
+    def test_ohne_kandidaten_gibt_es_nichts_einzutragen(self) -> None:
+        from cli import _nach_herkunft
+
+        assert _nach_herkunft([], {"a"}, "Variante") == []
+
+    def test_die_ki_wird_nach_der_runde_gefragt(self) -> None:
+        """Sonst sieht sie im Journal nicht, woran zuletzt gescheitert wurde.
+
+        Das ist der Lernmechanismus aus dem Kopf von ``analyst.py``: Ohne die
+        Rueckmeldung schlaegt ein Modell in jedem Zyklus ungefaehr dasselbe
+        vor und hebt nur die Huerde fuer alle anderen.
+        """
+        import inspect
+
+        import cli
+
+        quelle = inspect.getsource(cli.wettbewerb)
+        nach_zucht = quelle.index("aktuell = breed(basis, varianten")
+        frage = quelle.index("zusatz = _vorschlaege()", nach_zucht)
+
+        assert frage > nach_zucht
+
+    def test_ohne_zugangsdaten_laeuft_der_wettbewerb_weiter(self) -> None:
+        """Die KI ist ein Zusatz, kein Fundament.
+
+        ``_ask_the_analyst`` gibt ohne Schluessel eine leere Liste zurueck;
+        der Wettbewerb muss damit einfach ohne Vorschlaege weitermachen.
+        """
+        import inspect
+
+        import cli
+
+        quelle = inspect.getsource(cli._ask_the_analyst)
+
+        assert "has_credentials" in quelle
+        assert "return []" in quelle

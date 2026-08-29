@@ -388,6 +388,12 @@ BEHOBEN: tuple[Richtung, ...] = (
         "und schrumpft auf -3 % bei 10.000 Trades",
         144,
     ),
+    Richtung(
+        "Research-KI nicht am Wettbewerb",
+        "hing nur an 'cli research'; der Wettbewerb konnte nur Varianten "
+        "bilden - jetzt 'cli wettbewerb --ki', Herkunft getrennt gefuehrt",
+        146,
+    ),
 )
 
 

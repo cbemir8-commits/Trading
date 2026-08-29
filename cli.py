@@ -513,6 +513,13 @@ def wettbewerb(
              "sofort mit allen elf nachgeprueft - ein Champion entsteht nie "
              "aus einer Vorauswahl.",
     ),
+    ki: bool = typer.Option(
+        False, "--ki/--ohne-ki",
+        help="Die Research-KI je Runde neue Kandidaten vorschlagen lassen - "
+             "**zusaetzlich** zu den Varianten, nicht statt ihrer. Ohne "
+             "dieses Flag bildet der Wettbewerb nur Abwandlungen dessen, was "
+             "er schon kennt.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Dauerlauf: Strategien pruefen, Beste abwandeln, wiederholen.
@@ -640,6 +647,9 @@ def wettbewerb(
     state = Path(settings.paths.state)
     board = Leaderboard(state / "leaderboard.json")
     trials_path = state / "trials.json"
+    # Dasselbe Journal, aus dem ``cli research`` die KI lernen laesst: Es
+    # traegt, woran die bisherigen Kandidaten gescheitert sind.
+    journal_path = state / "journal.json"
 
     console.print(
         f"\n[bold]Wettbewerb[/] {' + '.join(symbole) if frames else handelssymbol} "
@@ -674,13 +684,41 @@ def wettbewerb(
         aktuell = load_seeds(generation)
         herkunft = "Katalog"
 
+    # **Der Wettbewerb konnte bis hierher nur abwandeln, was er schon kennt.**
+    #
+    # ``breed`` bildet Varianten der Besten; strukturell Neues entsteht dabei
+    # nicht. Genau das ist die Lage nach Befund 145: Alle gemessenen
+    # Richtungen sind leer, und was fehlt, ist eine Regel, die es noch nicht
+    # gibt. Die Research-KI ist das einzige Bauteil, das eine vorschlagen
+    # kann - sie hing aber nur an ``cli research`` und nie am Wettbewerb
+    # (Befund 146).
+    #
+    # Sie schlaegt vor und entscheidet nichts: Ihre Genome laufen durch
+    # dieselben elf Gates und zaehlen im Versuchszaehler wie jedes andere.
+    def _vorschlaege() -> list:
+        if not ki:
+            return []
+        neu = _ask_the_analyst(settings, journal_path)
+        bekannt = {g.genome_id for g in aktuell}
+        return [g for g in neu if g.genome_id not in bekannt]
+
+    ki_ids: set[str] = set()
+    if ki:
+        zusatz = _vorschlaege()
+        if zusatz:
+            aktuell = list(aktuell) + zusatz
+            ki_ids = {g.genome_id for g in zusatz}
+
     try:
         while runden == 0 or runde < runden:
             runde += 1
             trials_before = load_trials(trials_path)
+            woher = herkunft if not ki_ids else (
+                f"{herkunft} + {len(ki_ids)} von der KI"
+            )
             console.print(
                 f"[bold]Runde {runde}[/] - {len(aktuell)} Kandidaten "
-                f"({herkunft}), {trials_before} Versuche bisher"
+                f"({woher}), {trials_before} Versuche bisher"
             )
 
             report = run_admission(
@@ -694,14 +732,19 @@ def wettbewerb(
                 configs=configs,
             )
             save_trials(trials_path, report.trials_after)
-            board.record(
-                report.candidates, generation=generation, herkunft=herkunft,
-                versuche=report.trials_after, intervall=interval_obj.value,
-                # Aus den Konfigurationen gelesen und nicht noch einmal
-                # hingeschrieben: Sonst kann der Eintrag von dem Lauf
-                # abweichen, den er beschreibt.
-                kapital=_startkapital(configs),
-            )
+            for gruppe, quelle in _nach_herkunft(
+                report.candidates, ki_ids, herkunft
+            ):
+                if not gruppe:
+                    continue
+                board.record(
+                    gruppe, generation=generation, herkunft=quelle,
+                    versuche=report.trials_after, intervall=interval_obj.value,
+                    # Aus den Konfigurationen gelesen und nicht noch einmal
+                    # hingeschrieben: Sonst kann der Eintrag von dem Lauf
+                    # abweichen, den er beschreibt.
+                    kapital=_startkapital(configs),
+                )
             board.save()
 
             # Von den Besten die einzelnen Trades mitschreiben.
@@ -754,8 +797,22 @@ def wettbewerb(
 
             aktuell = breed(basis, varianten, seed=runde)
             herkunft = "Variante"
+
+            # Die KI wird **nach** der Runde gefragt, nicht davor: Damit sieht
+            # sie im Journal, woran die letzten Kandidaten gescheitert sind.
+            # Genau das ist der Lernmechanismus, den ``analyst.py`` im Kopf
+            # beschreibt - ohne ihn schlaegt ein Modell in jedem Zyklus
+            # ungefaehr dasselbe vor und hebt nur die Huerde.
+            zusatz = _vorschlaege()
+            ki_ids = {g.genome_id for g in zusatz}
+            aktuell = list(aktuell) + zusatz
+
             if not aktuell:
-                console.print("[yellow]Keine neuen Varianten mehr moeglich.[/]")
+                console.print(
+                    "[yellow]Keine neuen Varianten mehr moeglich"
+                    + (" und kein Vorschlag der KI." if ki else ".")
+                    + "[/]"
+                )
                 break
 
     except KeyboardInterrupt:
@@ -764,6 +821,30 @@ def wettbewerb(
     board.save()
     console.print(f"\n[bold]{board.summary()}[/]")
     console.print(f"[dim]Bestenliste: {board.path}[/]")
+
+
+def _nach_herkunft(
+    kandidaten: list, ki_ids: set[str], herkunft: str
+) -> list[tuple[list, str]]:
+    """Kandidaten nach ihrer Herkunft trennen - Zucht gegen KI-Vorschlag.
+
+    **Warum das eine eigene Funktion ist.** ``Leaderboard.record`` nimmt eine
+    Herkunft je Aufruf. Wer beide Gruppen in einem Aufruf eintraegt, schreibt
+    ihnen dieselbe hin - und niemand kann spaeter nachlesen, woher der beste
+    Kandidat kam. Genau das waere ein stiller Fehler: Die Liste saehe richtig
+    aus und waere falsch.
+
+    Leere Gruppen fallen weg, damit kein Aufruf mit leerer Liste entsteht.
+    Die Reihenfolge ist fest - erst die Zucht, dann die KI -, damit die
+    Eintragung reproduzierbar bleibt (Befund 146).
+    """
+    von_ki = [c for c in kandidaten if c.genome.genome_id in ki_ids]
+    von_zucht = [c for c in kandidaten if c.genome.genome_id not in ki_ids]
+    return [
+        (gruppe, quelle)
+        for gruppe, quelle in ((von_zucht, herkunft), (von_ki, "KI-Vorschlag"))
+        if gruppe
+    ]
 
 
 def _schreibe_tradelog(state, log) -> None:

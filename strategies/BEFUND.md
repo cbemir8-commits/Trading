@@ -13527,3 +13527,81 @@ nicht hinter die Messung.**
 
 Versuchszaehler 198 unveraendert: gemessen, nicht ausgewaehlt. Eine Uebernahme
 haette 14 gekostet. Suchbudget 68 von 100.
+
+## Hundertsechsundvierzig. Der Wettbewerb fragt jetzt die KI
+
+Nach Befund 145 ist keine gemessene Richtung mehr offen: Historie, Breite,
+Katalog-Partner, weiteres Suchen, Feinkerzen - alle vermessen, alle leer. Was
+fehlt, ist eine Regel, die es noch nicht gibt.
+
+Diesmal habe ich mit ``cli register`` angefangen statt damit aufgehoert.
+Zweiunddreissig Verdachtsfaelle, keiner davon eine Richtung, die ein weiterer
+Nachmess-Zyklus lohnen wuerde. Also die Frage, die der Auftrag seit langem
+stellt.
+
+### Der Befund ist zwei Zeilen Quelltext
+
+    cli.py:1095  def research(...)   ki: bool = ...   -> _ask_the_analyst(...)
+    cli.py: 478  def wettbewerb(...) -- kein ki, kein Analyst
+
+**Die Research-KI hing nur an ``cli research``.** Der Wettbewerb - die
+Schleife, die Runde um Runde tatsaechlich sucht - hat sie nie gefragt. Er
+konnte damit ausschliesslich ``breed`` aufrufen: Varianten der fuenf Besten,
+Runde fuer Runde.
+
+Das ist genau die Kombination, die nichts mehr finden kann. Varianten einer
+Regel sind dieselbe Regel mit anderen Zahlen, und die Reglerlandschaft ist
+seit Befund 30 ausgemessen. Der Analyst ist das einzige Bauteil im System,
+das etwas **strukturell** Anderes vorschlagen kann - und es lief nie mit.
+
+### Was gebaut wurde
+
+``cli wettbewerb --ki``. Voreingestellt **aus**: Ein Modellaufruf kostet Geld
+aus dem Forschungsbudget, und ein Flag, das still Kosten verursacht, waere
+falsch gebaut.
+
+Drei Entscheidungen, die dabei zaehlen:
+
+**Die KI ergaenzt die Varianten, sie ersetzt sie nicht.** Wuerde sie sie
+ersetzen, verloere der Wettbewerb den einzigen Hebel, der die effektive
+Stichprobe nachweislich hebt (Befund 140). Beide Gruppen laufen durch dieselben
+elf Gates und zaehlen im Versuchszaehler gleich.
+
+**Gefragt wird nach der Runde, nicht davor.** Nur so sieht die KI im Journal,
+woran die letzten Kandidaten gescheitert sind. Der Kopf von ``analyst.py``
+nennt das den eigentlichen Lernmechanismus: Ohne Rueckmeldung schlaegt ein
+Modell in jedem Zyklus ungefaehr dasselbe vor und hebt nur die Huerde fuer
+alle anderen.
+
+**Die Herkunft bleibt je Kandidat erhalten.** ``Leaderboard.record`` nimmt
+eine Herkunft je Aufruf; wer beide Gruppen in einem eintraegt, schreibt ihnen
+dieselbe hin. Die Bestenliste saehe richtig aus und waere falsch - man koennte
+nicht mehr nachlesen, ob der beste Kandidat aus der Zucht oder von der KI kam.
+``_nach_herkunft`` trennt sie.
+
+### Was daran nicht geprueft ist
+
+**Der produktive Pfad ist nie gelaufen.** Dieser Container hat keine
+LLM-Zugangsdaten; gepruefte Wege sind die Verdrahtung, die Aufteilung nach
+Herkunft und der Abbruch ohne Schluessel. Dass der Wettbewerb mit
+**echten** Vorschlaegen sauber durchlaeuft, steht aus und gehoert auf den
+Rechner des Nutzers.
+
+Dass die Zugangsdaten fehlen, ist kein Mangel dieses Befundes und wird auch
+nicht umgangen.
+
+Der erste Anlauf der Tests prueft den Quelltext auf Zeichenketten - genau der
+Fehler, den Befund 143 an einem anderen Test korrigiert hat. Ersetzt durch
+Tests gegen ``_nach_herkunft`` selbst.
+
+### Was daraus folgt
+
+1. **Der Wettbewerb kann jetzt strukturell Neues pruefen**, nicht nur
+   Abwandlungen. Ob dabei etwas herauskommt, ist damit nicht gesagt.
+2. **Der Auftrag an die KI stimmt seit Befund 139.** Vorher bekam sie eine
+   Guete-Luecke, die 47 % zu klein war. Ohne diese Reparatur haette die
+   Verdrahtung auf ein zu leichtes Ziel gezielt.
+3. Am Stand aendert sich nichts: 152 Trades, n = 112, Deflated Sharpe 0,6026.
+
+Versuchszaehler 198 unveraendert - im Trockenlauf gemessen, nichts
+fortgeschrieben. Suchbudget 68 von 100. 2571 Tests gruen.
