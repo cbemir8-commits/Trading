@@ -521,3 +521,83 @@ class TestDieObergrenze:
         assert "365" in kopf, "was die Beine einzeln tragen"
         assert "28 von 91" in kopf, "wie viele Dreier betroffen waren"
         assert "3 von 14" in kopf, "wie viele Paare betroffen waren"
+
+
+class TestDieFensterprobe:
+    """**Befund 155.** Die Regel aus ``research.fenstervergleich`` war
+    aufgeschrieben und an nichts angeschlossen.
+
+    Gemessen am veroeffentlichten Paar faellt sie fuer den Qualitaetsanteil
+    negativ aus: 5 Fenster besser, 10 schlechter, 16 ohne Partnertrades.
+    Das entwertet den Verbund nicht - sein Gewinn steckt zu neun Zehnteln in
+    der effektiven Stichprobe, die es je Fenster gar nicht gibt -, aber es
+    gehoert gemessen und nicht behauptet.
+    """
+
+    def test_die_probe_wird_gerechnet(self) -> None:
+        a = bericht(blockmuster(20))
+        b = bericht(blockmuster(20), versatz=1000)
+        verbund = baue([("A", a), ("B", b)], versuche=166)
+
+        probe = verbund.fensterprobe
+
+        assert probe is not None
+        assert probe.fenster == 20
+        assert probe.besser + probe.schlechter + probe.unveraendert == 20
+
+    def test_jedes_bein_traegt_seine_eigenen_bloecke(self) -> None:
+        """Ohne sie laesst sich die Probe gar nicht rechnen.
+
+        Der erste Anlauf nahm zwei Berichte mit drei Trades. ``Kandidat``
+        liefert dort ``None``, ``beine`` blieb leer - und ``all()`` ueber eine
+        leere Liste ist wahr. Der Test war gruen und pruefte nichts.
+        """
+        werte = blockmuster(20)
+        a = bericht(werte)
+        b = bericht(blockmuster(20), versatz=1000)
+        verbund = baue([("A", a), ("B", b)], versuche=166)
+
+        assert len(verbund.beine) == 2, "sonst prueft der Test nichts"
+        assert all(bein.bloecke for bein in verbund.beine)
+        assert verbund.beine[0].bloecke == tuple(tuple(x) for x in werte)
+
+    def test_ohne_bloecke_gibt_es_keine_probe(self) -> None:
+        """``None`` heisst "nicht messbar" und nicht "bestanden"."""
+        a = bericht(blockmuster(20))
+        b = bericht(blockmuster(20), versatz=1000)
+        gebaut = baue([("A", a), ("B", b)], versuche=166)
+        nackt = Verbund(
+            name="ohne Bloecke",
+            trades=gebaut.trades,
+            bloecke=[],
+            versuche=166,
+            beine=gebaut.beine,
+        )
+
+        assert nackt.fensterprobe is None
+
+    def test_ein_partner_der_nur_einmal_gross_trifft_faellt_durch(self) -> None:
+        """**Die Lage, um die es geht.** Ein Bein, das in einem Fenster sehr
+        gut und sonst schlecht ist, hebt das Aggregat und verschlechtert die
+        Mehrzahl der Fenster."""
+        gleichmaessig = bericht([[3.0, 3.2, 2.8] for _ in range(12)])
+        einmal_gross = bericht(
+            [[40.0]] + [[-2.0] for _ in range(11)], versatz=5000
+        )
+        verbund = baue(
+            [("gleichmaessig", gleichmaessig), ("einmal gross", einmal_gross)],
+            versuche=166,
+        )
+
+        probe = verbund.fensterprobe
+
+        assert probe is not None
+        assert verbund.bestes_bein.name == "gleichmaessig", (
+            "der Vergleich muss gegen das gleichmaessige Bein laufen - sonst "
+            "misst der Test die Gegenrichtung"
+        )
+        assert probe.mehrheit_schlechter, (
+            f"{probe.besser} besser, {probe.schlechter} schlechter"
+        )
+        assert not probe.belastbar
+        assert "SCHLECHTER" in probe.bericht()

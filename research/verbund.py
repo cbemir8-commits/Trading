@@ -120,6 +120,39 @@ Beobachtungen fuer 53 zusaetzliche Trades**, also gut vier Zehntel echte
 Information. Der Beitrag des Partners waechst dadurch von +0,152 auf +0,296
 Guete.
 
+Woraus der Gewinn wirklich besteht (Befund 155)
+------------------------------------------------
+Der Sprung von 2,690 auf 2,986 ist ein Faktor von 1,110. Zerlegt:
+
+                              Mittel   Streuung   SR/Trade   n_eff   Guete
+    Spitze allein             5,3460    21,2176     0,2520     114   2,6902
+    + Trend-Beteiligung       6,9740    27,2374     0,2560     136   2,9860
+
+    aus SR/Trade   Faktor 1,0162     <- ein Sechstel des Gewinns
+    aus sqrt(n)    Faktor 1,0922     <- der Rest
+
+**Der Gewinn ist fast ganz ein Stichprobeneffekt, kein Qualitaetseffekt.**
+Mittel und Streuung steigen beide um rund 30 %; ihr Quotient bleibt fast
+stehen.
+
+Und die Qualitaet je Trade ist nicht breit getragen. Der Partner handelt in
+**15 von 32 Fenstern** ueberhaupt; in 10 dieser 15 senkt er das mittlere
+Ergebnis je Trade:
+
+    5 besser, 10 schlechter, 16 ohne Partnertrades   Vorzeichentest p = 0,94
+
+Das ist genau die Pruefung, die ``research.fenstervergleich`` verlangt - und
+sie faellt fuer den Qualitaetsanteil negativ aus. ``Verbund.fensterprobe``
+rechnet sie jetzt mit, statt dass die Regel nur im Modulkopf steht.
+
+**Was daraus folgt und was nicht.** Es entwertet den Verbund nicht: Ein
+Partner, der die Streuung staerker senkt als das Mittel, ist fuer ein
+Sharpe-Kriterium zu Recht wertvoll, und die effektive Stichprobe ist eine
+Eigenschaft der ganzen Reihe, die es je Fenster gar nicht gibt. Es heisst
+aber: Die groesste je gemessene Verbesserung dieses Projekts haengt zu neun
+Zehnteln am **Abhaengigkeitsschaetzer** - an genau der Rechnung, die in
+Befund 153 einen Deckel und in Befund 154 die ganze Zeitskala gebraucht hat.
+
 Was vorher hier stand
 ---------------------
 Befund 152 (nur das Quartal als Kalenderstufe, nicht die ganze Leiter):
@@ -214,6 +247,13 @@ class Bein:
     name: str
     kandidat: Kandidat
     effektiv: int
+    bloecke: tuple[tuple[float, ...], ...] = ()
+    """Die eigenen Trade-Ergebnisse je Fenster.
+
+    Gebraucht fuer die Fensterprobe (Befund 155): Ohne sie laesst sich nicht
+    pruefen, ob der Verbund in der **Mehrzahl** der Fenster besser ist als
+    dieses Bein allein - und genau das verlangt ``research.fenstervergleich``.
+    """
 
     @property
     def guete(self) -> float:
@@ -299,6 +339,29 @@ class Verbund:
     @property
     def bestes_bein(self) -> Bein | None:
         return max(self.beine, key=lambda b: b.guete) if self.beine else None
+
+    @property
+    def fensterprobe(self):
+        """Ist der Verbund in der **Mehrzahl der Fenster** besser als sein
+        bestes Bein - oder nur im Aggregat? (Befund 155)
+
+        ``research.fenstervergleich`` stellt die Regel auf und war an nichts
+        angeschlossen. Hier ist sie angeschlossen.
+
+        ``None``, wenn die Blockdaten fehlen. Verglichen wird die Qualitaet
+        **je Trade**, nicht der Fenstergewinn: Zwei Regeln parallel teilen das
+        Kapital.
+        """
+        bestes = self.bestes_bein
+        if bestes is None or not bestes.bloecke or not self.bloecke:
+            return None
+        if len(bestes.bloecke) != len(self.bloecke):
+            return None
+        from research.fenstervergleich import vergleiche_je_trade
+
+        return vergleiche_je_trade(
+            [list(x) for x in bestes.bloecke], list(self.bloecke)
+        )
 
     @property
     def hilft(self) -> bool:
@@ -400,7 +463,14 @@ def baue(namen_und_berichte: list[tuple[str, object]], *, versuche: int) -> Verb
 
         eigene = [[float(t.net_pnl) for t in w.trades] for w in bericht.windows]
         st = stichprobe_wie_im_gate(trades, bloecke=eigene)
-        beine.append(Bein(name=name, kandidat=kandidat, effektiv=st.effektiv))
+        beine.append(
+            Bein(
+                name=name,
+                kandidat=kandidat,
+                effektiv=st.effektiv,
+                bloecke=tuple(tuple(x) for x in eigene),
+            )
+        )
 
     alle = [t for b in berichte for t in b.all_trades]
     korrelation = (

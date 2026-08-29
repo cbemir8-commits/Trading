@@ -468,6 +468,12 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Genomen, bei 6 von 15 rechnete das Gate zu gross - ganze Leiter",
         154,
     ),
+    Richtung(
+        "Fensterprobe nur im Modulkopf",
+        "groesste Aggregatbehauptung nie fensterweise geprueft: 5 besser, "
+        "10 schlechter, p = 0,94 - der Gewinn ist Stichprobe, nicht Qualitaet",
+        155,
+    ),
 )
 
 

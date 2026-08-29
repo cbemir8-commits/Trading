@@ -14393,3 +14393,101 @@ drei neuen Tests um.
 
 Versuchszaehler 198 unveraendert - eine Korrektur am Messinstrument ist kein
 Versuch, und sie geht in die strenge Richtung. Suchbudget 68 von 100.
+
+## Hundertfuenfundfuenfzig. Der groesste Sprung des Projekts ist ein Stichprobeneffekt
+
+``research/fenstervergleich.py`` stellt eine Regel auf:
+
+> *"Eine Verbesserung, die sich nicht in der Mehrzahl der Fenster zeigt, ist
+> keine. Das Aggregat darf sie bestaetigen, aber nicht begruenden."*
+
+Entstanden ist sie an einer Messung, bei der long+short auf **jeder** Achse
+besser aussah - mehr Rendite, weniger Rueckgang, ein Gate mehr - und
+fensterweise in 18 von 31 Fenstern schlechter war.
+
+Das Modul wird von nichts importiert ausser seinem eigenen Test. Die groesste
+Aggregatbehauptung des Projekts - *"der Verbund ist der groesste Sprung, den
+in diesem Projekt je etwas gebracht hat"* - ist nie nach dieser Regel geprueft
+worden. Zum dritten Mal dieselbe Lage: gebaut, getestet, nicht angeschlossen
+(152, 154, jetzt hier).
+
+### Vorab festgelegt
+
+* Je Fenster das mittlere Ergebnis **je Trade**, nicht der Fenstergewinn: Zwei
+  Regeln parallel teilen das Kapital.
+* Vorzeichentest, Mehrheit und p <= 0,05 - der Massstab, den das Modul selbst
+  aufstellt.
+* **Was der Test nicht kann:** Der Verbundgewinn steckt groesstenteils in der
+  effektiven Stichprobe, und die ist keine Groesse je Fenster. Der Test prueft
+  die Qualitaet je Trade, nicht die Evidenz. Das stand fest, bevor die Zahl da
+  war.
+* Beide Ausgaenge werden berichtet. Kostet keinen Versuch.
+
+### Die Zerlegung
+
+                              Mittel   Streuung   SR/Trade   n_eff   Guete
+    Spitze allein             5,3460    21,2176     0,2520     114   2,6902
+    + Trend-Beteiligung       6,9740    27,2374     0,2560     136   2,9860
+
+    Faktor aus SR/Trade   1,0162      <- ein Sechstel des Gewinns
+    Faktor aus sqrt(n)    1,0922      <- der Rest
+    zusammen              1,1099
+
+**Mittel und Streuung steigen beide um rund 30 %.** Ihr Quotient bleibt fast
+stehen. Der Sprung von 2,690 auf 2,986 ist damit zu neun Zehnteln ein
+**Stichprobeneffekt**, kein Qualitaetseffekt.
+
+Das steht so nirgends. Der Modulkopf sagte "der Beitrag des Partners waechst
+von +0,152 auf +0,296 Guete" - richtig gerechnet, aber es liest sich, als
+handele der Partner besser.
+
+### Die Fensterprobe
+
+    5 besser, 10 schlechter, 16 ohne Partnertrades, 1 ohne Bestandstrades
+    Vorzeichentest p = 0,94
+
+Der Partner handelt in **15 von 32 Fenstern** ueberhaupt. In 10 dieser 15
+senkt er das mittlere Ergebnis je Trade. Die Gegenprobe mit dem Donchian-Bein,
+das den Verbund bekanntlich drueckt, faellt genauso aus: 7 besser, 18
+schlechter.
+
+Der Widerspruch zum Aggregat ist keiner, sondern die bekannte Gestalt: Der
+Partner hat ein hoeheres Mittel (11,83 gegen 5,35), weil wenige Fenster sehr
+gut laufen - fuenf seiner 53 Trades tragen 98 % der Summe. In den uebrigen
+Fenstern zieht er den Schnitt nach unten.
+
+**Konzentration allein ist hier kein Vorwurf.** Der Bestand hat dieselbe
+Gestalt (Schiefe 3,44 gegen 3,22, 21,5 % Gewinner gegen 24,5 %, beide mit
+negativem Median) - so sieht Trendfolge aus, und der Deflated Sharpe rechnet
+Schiefe und Woelbung ohnehin ein.
+
+### Was daraus folgt und was nicht
+
+**Es entwertet den Verbund nicht.** Ein Partner, der die Streuung staerker
+senkt als das Mittel, ist fuer ein Sharpe-Kriterium zu Recht wertvoll; und
+die effektive Stichprobe ist eine Eigenschaft der ganzen Reihe, die es je
+Fenster gar nicht gibt. Der Test kann den groesseren Teil des Gewinns
+gar nicht beurteilen, und das war vorher festgehalten.
+
+**Aber:** Die groesste je gemessene Verbesserung dieses Projekts haengt zu
+neun Zehnteln am **Abhaengigkeitsschaetzer** - an genau der Rechnung, die in
+Befund 153 einen Deckel und in Befund 154 die ganze Zeitskala gebraucht hat.
+Zwei Korrekturen an derselben Zahl in zwei Laeufen. Wer den Verbund als
+gesichert liest, liest mehr hinein, als gemessen ist.
+
+Gebaut: ``fenstervergleich.vergleiche_je_trade`` und
+``Verbund.fensterprobe``. Die Regel wird jetzt gerechnet, statt im Modulkopf
+zu stehen.
+
+### Zwei eigene Tests, die zuerst nichts geprueft haben
+
+* ``test_jedes_bein_traegt_seine_eigenen_bloecke`` lief mit drei Trades je
+  Bericht. ``Kandidat.aus_trades`` liefert dort ``None``, ``beine`` blieb
+  leer - und ``all()`` ueber eine leere Liste ist wahr. Gruen und wertlos.
+* ``test_ein_partner_der_nur_einmal_gross_trifft_faellt_durch`` verglich gegen
+  das **falsche** Bein: Das erratische war nach Guete das beste, also lief der
+  Vergleich in der Gegenrichtung. 8 besser statt der erwarteten Mehrheit
+  schlechter. Jetzt steht eine Zusicherung ueber ``bestes_bein`` davor.
+
+Am Stand aendert sich nichts: Guete 2,986, DSR 0,6480, es fehlen 0,659.
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.

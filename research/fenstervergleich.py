@@ -168,3 +168,61 @@ def vergleiche(a: WalkForwardReport, b: WalkForwardReport) -> Fenstervergleich:
         streuung=varianz**0.5,
         p_wert=vorzeichentest(besser, schlechter),
     )
+
+
+def vergleiche_je_trade(
+    a: list[list[float]], b: list[list[float]]
+) -> Fenstervergleich:
+    """Dieselbe Regel, aber auf das **Ergebnis je Trade** angewandt.
+
+    ``vergleiche`` nimmt den Fenstergewinn. Fuer einen Verbund taugt der
+    nicht: Zwei Regeln parallel teilen das Kapital, der Gewinn haengt also an
+    der Positionsgroesse und nicht an der Guete. Verglichen wird deshalb der
+    **Mittelwert je Trade** im Fenster.
+
+    Beide Seiten sind Listen von Fenstern, je Fenster die Trade-Ergebnisse.
+    Fenster, in denen eine Seite gar nicht handelt, tragen keine Auskunft und
+    zaehlen als ``unveraendert`` - nicht als Verbesserung.
+
+    Was der Test **nicht** kann: Er sieht die effektive Stichprobe nicht. Die
+    ist keine Groesse je Fenster, und beim Verbund steckt der groessere Teil
+    des Gewinns genau dort (Befund 155). Er prueft die Qualitaet je Trade,
+    nicht die Evidenz.
+    """
+    if len(a) != len(b):
+        raise ValueError(
+            f"Verschiedene Fensterzahl ({len(a)} gegen {len(b)}) - die Laeufe "
+            f"sind nicht vergleichbar."
+        )
+
+    besser = schlechter = unveraendert = 0
+    differenzen: list[float] = []
+    for fa, fb in zip(a, b, strict=True):
+        if not fa or not fb:
+            unveraendert += 1
+            continue
+        differenz = sum(fb) / len(fb) - sum(fa) / len(fa)
+        differenzen.append(differenz)
+        if abs(differenz) < GLEICHHEITSSCHWELLE:
+            unveraendert += 1
+        elif differenz > 0:
+            besser += 1
+        else:
+            schlechter += 1
+
+    mittel = sum(differenzen) / len(differenzen) if differenzen else 0.0
+    if len(differenzen) > 1:
+        varianz = sum((d - mittel) ** 2 for d in differenzen) / (len(differenzen) - 1)
+    else:
+        varianz = 0.0
+
+    return Fenstervergleich(
+        fenster=len(a),
+        besser=besser,
+        schlechter=schlechter,
+        unveraendert=unveraendert,
+        rueckgang_besser=0,
+        mittlere_differenz=mittel,
+        streuung=varianz**0.5,
+        p_wert=vorzeichentest(besser, schlechter),
+    )

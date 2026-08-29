@@ -166,3 +166,70 @@ def test_bericht_nennt_alle_zahlen() -> None:
     assert "12 besser" in text
     assert "18 schlechter" in text
     assert "p = 0.900" in text
+
+
+class TestJeTradeVergleich:
+    """**Befund 155.** Fuer einen Verbund taugt der Fenstergewinn nicht.
+
+    Zwei Regeln parallel teilen das Kapital; der Gewinn haengt dann an der
+    Positionsgroesse und nicht an der Guete. Verglichen wird deshalb der
+    Mittelwert je Trade.
+    """
+
+    def test_besser_wenn_die_zweite_seite_hoeher_liegt(self) -> None:
+        from research.fenstervergleich import vergleiche_je_trade
+
+        a = [[1.0, 1.0], [1.0], [1.0, 1.0]]
+        b = [[2.0, 2.0], [2.0], [2.0, 2.0]]
+
+        v = vergleiche_je_trade(a, b)
+
+        assert v.besser == 3
+        assert v.schlechter == 0
+        assert v.belastbar is False, "drei Fenster reichen fuer p <= 0,05 nicht"
+
+    def test_die_mehrheit_entscheidet_nicht_die_summe(self) -> None:
+        """**Der Kern der Datei, auf die Qualitaet uebertragen.**
+
+        Ein Fenster mit einem grossen Gewinn, sechs mit kleinen Verlusten. Die
+        Summe der Differenzen ist positiv, die Mehrzahl der Fenster trotzdem
+        schlechter - und das Urteil sagt es.
+        """
+        from research.fenstervergleich import vergleiche_je_trade
+
+        a = [[1.0] for _ in range(7)]
+        b = [[30.0]] + [[0.5] for _ in range(6)]
+
+        v = vergleiche_je_trade(a, b)
+
+        assert v.besser == 1 and v.schlechter == 6
+        assert v.mittlere_differenz > 0, "die Summe spricht fuer B"
+        assert v.mehrheit_schlechter
+        assert not v.belastbar
+        assert "SCHLECHTER" in v.bericht()
+
+    def test_fenster_ohne_trades_zaehlen_nicht_als_verbesserung(self) -> None:
+        """Wo eine Seite nicht handelt, gibt es keine Auskunft - und ein
+        leeres Fenster darf keine Stimme abgeben."""
+        from research.fenstervergleich import vergleiche_je_trade
+
+        v = vergleiche_je_trade([[1.0], [], [1.0]], [[2.0], [], []])
+
+        assert v.besser == 1
+        assert v.unveraendert == 2
+        assert v.fenster == 3
+
+    def test_ungleiche_fensterzahl_wird_abgewiesen(self) -> None:
+        from research.fenstervergleich import vergleiche_je_trade
+
+        with pytest.raises(ValueError, match="Verschiedene Fensterzahl"):
+            vergleiche_je_trade([[1.0]], [[1.0], [2.0]])
+
+    def test_der_kopf_nennt_die_grenze_des_tests(self) -> None:
+        """Er sieht die effektive Stichprobe nicht - und beim Verbund steckt
+        dort der groessere Teil des Gewinns."""
+        from research.fenstervergleich import vergleiche_je_trade
+
+        kopf = vergleiche_je_trade.__doc__ or ""
+        assert "effektive Stichprobe" in kopf
+        assert "Befund 155" in kopf
