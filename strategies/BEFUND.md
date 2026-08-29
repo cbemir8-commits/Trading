@@ -13748,3 +13748,80 @@ erzwingt, dass die Stichprobe in beiden Faellen dabeisteht.
    gleichzeitig laenger: 31 % statt 15 %.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2577 Tests gruen.
+
+## Hundertneunundvierzig. Die Lesart gehoert an die Zahl
+
+Befund 148 hat eine Luecke benannt und offen gelassen:
+
+> *"Befund 139 hat sechs Aufrufstellen gefunden und eine Pruefung gebaut, die
+> den Nachbau der Einteilung verhindert - nicht das Weiterreichen einer rohen
+> Zahl. Diese Luecke ist damit benannt und nicht geschlossen."*
+
+### Der erste Anlauf war der falsche
+
+Naheliegend waere gewesen, ``Kandidat.aus_trades`` eine Pflichtangabe zu
+verpassen - dieselbe Umbenennungs-Technik, die in Befund 139 den siebten
+Aufrufer gefunden hat. **Fuenfunddreissig Aufrufstellen**, und die meisten
+wollen nur Schiefe und Woelbung. Dreissig unbeteiligte Stellen zu belasten,
+um wenige zu schuetzen, ist der falsche Tausch.
+
+Die Luecke sitzt nicht beim **Bauen**, sondern beim **Lesen**: ``Abstand``
+weiss ueber ``untergrenze`` genau Bescheid; wer ``noetig`` als blanken
+``float`` herausnimmt, verliert die Auskunft.
+
+### Wer das tut
+
+Vier Stellen ausserhalb von ``suchbudget`` lesen ``Abstand.noetig``. Zwei
+waren nach Befund 139 und 148 in Ordnung. **Zwei hatte ich nie angesehen** -
+beide in ``research/front.py``, also auf der Uebersicht, die den Stand des
+ganzen Projekts zeigt:
+
+    Punkt                Trades      hat    noetig   Faktor
+    Gewinnziel 10           152   0.2640    0.2978     1.13
+
+Die Spalte hiess "noetig", nicht "min.noetig", und das Urteil darunter sagte
+*"noetig waeren 0.2978, also Faktor 1.13"* - ohne Vorbehalt.
+
+**Und hier laesst sich der Fehler nicht wegrechnen.** Die Messpunkte kommen
+aus gespeicherten Kennzahlen; die tragen eine rohe Trade-Zahl und sonst
+nichts. Eine effektive Stichprobe steht dort nicht und laesst sich aus
+Kennzahlen auch nicht nachrechnen. Was bleibt, ist sie zu **kennzeichnen** -
+und das ist hier das ehrliche Maximum, nicht eine Ausrede.
+
+### Was gebaut wurde
+
+``Abstand.als_zahl()`` und ``Abstand.als_faktor()``. Sie tragen die Lesart
+mit:
+
+    ohne gemessene Stichprobe    "mindestens 0.2978"   bzw. "≥0.2978"
+    mit gemessener Stichprobe    "0.3404"
+    unerreichbar                 "unerreichbar"
+
+``kurz=True`` fuer Tabellen - **weglassen laesst sich der Vorbehalt nicht**,
+nur kuerzer schreiben. Genau darum geht es: Wer die Methode benutzt, kann die
+Lesart nicht vergessen; wer sie umgeht, tut es sichtbar.
+
+Benutzt wird sie jetzt in ``front.tabelle``, ``front.urteil`` und
+``cli suchbudget``. Ein Test prueft, dass dort kein blankes ``.noetig:.4f``
+mehr steht - das ist eine Aussage ueber die **Abwesenheit** eines Musters, und
+dafuer ist der Quelltext der richtige Ort.
+
+### Was das nicht ist
+
+**Keine allgemeine Sperre.** Wer morgen ``a.noetig`` in einem neuen Modul
+formatiert, faellt weiter durch - der Test kennt drei Praesentatoren, nicht
+alle kuenftigen. Der Unterschied zu vorher ist, dass es jetzt einen richtigen
+Weg gibt, der bequemer ist als der falsche.
+
+### Was daraus folgt
+
+1. **Neun Stellen in einer Sitzung** trugen dieselbe Verwechslung: sechs in
+   Befund 139, eine in 148, zwei hier. Der gemeinsame Nenner ist nicht
+   Unachtsamkeit, sondern ein Datentyp, der zwei verschiedene Dinge als
+   dieselbe Zahl herausgibt.
+2. **Die Front zeigt jetzt Untergrenzen als solche.** Der beste je gemessene
+   Punkt steht bei Faktor ≥1,13 - mit der effektiven Stichprobe waeren es
+   rund 1,29.
+3. Am Stand aendert sich nichts: 152 Trades, n = 112, Deflated Sharpe 0,6026.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2584 Tests gruen.

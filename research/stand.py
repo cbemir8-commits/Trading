@@ -406,6 +406,12 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Zuwachs - 0,2984 bei 152 roh gegen 0,3412 bei 112 effektiv",
         148,
     ),
+    Richtung(
+        "Latte ohne ihre Lesart formatiert",
+        "achte und neunte Stelle, beide in front.py; 'als_zahl'/'als_faktor' "
+        "tragen 'mindestens' jetzt mit - wo es nicht rechenbar ist, steht es da",
+        149,
+    ),
 )
 
 

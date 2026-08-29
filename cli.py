@@ -8870,8 +8870,10 @@ def suchbudget(
         budget.abstaende(), key=lambda a: a.faktor if a.faktor is not None else 1e9
     )
     for a in geordnet[:hoechstens]:
-        noetig = f"{a.noetig:.4f}" if a.noetig is not None else "unerr."
-        faktor = f"{a.faktor:.2f}" if a.faktor is not None else "  --"
+        # Ueber ``als_zahl``/``als_faktor``, damit die Lesart an einer Stelle
+        # lebt und nicht in jedem Praesentator neu (Befund 149).
+        noetig = a.als_zahl(kurz=True)
+        faktor = a.als_faktor(kurz=True)
         console.print(
             f"{a.kandidat.name[:38]:38} {a.kandidat.trades:>7} "
             f"{a.kandidat.sharpe_je_trade:>8.4f} {noetig:>11} {faktor:>11}"

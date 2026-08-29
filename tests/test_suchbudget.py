@@ -557,3 +557,87 @@ class TestDerZweiteBetriebspunkt:
         text = self._budget(spotguete=0.2597).urteil()
 
         assert "Spot-Bedingungen" not in text
+
+
+class TestDieLesartHaengtAnDerZahl:
+    """Befund 149: ``noetig`` ist ein blanker float - die Lesart geht verloren.
+
+    Zweimal ist genau das passiert: ``cli stand`` zeigte 0,2984 statt 0,3412
+    (Befund 148), ``research/front.py`` Tabelle und Urteil ohne jeden
+    Vorbehalt. Beide Male war ``Abstand.untergrenze`` richtig und wurde nicht
+    gelesen.
+    """
+
+    def _abstand(self, *, effektiv: int | None) -> object:
+        from research.suchbudget import Abstand, Budget, Kandidat
+
+        k = Kandidat("Kandidat", 152, 0.2597, schiefe=3.47, woelbung=15.95,
+                     effektiv=effektiv)
+        return Abstand(kandidat=k, noetig=Budget(versuche=198).noetig_bei(
+            k.stichprobe, schiefe=k.schiefe, woelbung=k.woelbung
+        ))
+
+    def test_ohne_gemessene_stichprobe_traegt_die_zahl_mindestens(self) -> None:
+        a = self._abstand(effektiv=None)
+
+        assert a.als_zahl().startswith("mindestens ")
+        assert a.als_faktor().startswith("mindestens ")
+
+    def test_mit_gemessener_stichprobe_steht_die_zahl_blank_da(self) -> None:
+        a = self._abstand(effektiv=112)
+
+        assert not a.als_zahl().startswith("mindestens")
+        assert not a.als_faktor().startswith("mindestens")
+        # Und sie ist als Zahl lesbar - sonst waere der Text zwar ohne
+        # Vorbehalt, aber auch ohne Wert.
+        assert float(a.als_zahl()) > 0.33
+
+    def test_die_gemessene_stichprobe_verlangt_mehr(self) -> None:
+        """**Die Zahl, um die es geht** - 0,2978 gegen 0,3404."""
+        roh = float(self._abstand(effektiv=None).als_zahl().split()[-1])
+        eff = float(self._abstand(effektiv=112).als_zahl())
+
+        assert roh == pytest.approx(0.2978, abs=1e-3)
+        assert eff == pytest.approx(0.3404, abs=1e-3)
+
+    def test_eine_unerreichbare_latte_sagt_das(self) -> None:
+        from research.suchbudget import Abstand, Kandidat
+
+        a = Abstand(kandidat=Kandidat("winzig", 4, 0.9), noetig=None)
+
+        assert a.als_zahl() == "unerreichbar"
+        assert a.als_faktor() == "--"
+
+    def test_die_praesentatoren_benutzen_den_helfer(self) -> None:
+        """Wer ihn umgeht, tut es sichtbar - hier faellt es auf.
+
+        Geprueft wird der Quelltext, weil es um die **Abwesenheit** eines
+        Musters geht: ein blankes ``.noetig:.4f`` in einer Ausgabe.
+        """
+        import inspect
+
+        import cli
+        from research import front
+
+        for quelle in (
+            inspect.getsource(front.Front.tabelle),
+            inspect.getsource(front.Front.urteil),
+            inspect.getsource(cli.suchbudget),
+        ):
+            assert ".noetig:." not in quelle, (
+                "eine Latte wird ohne ihre Lesart formatiert"
+            )
+            assert ".faktor:." not in quelle
+
+    def test_die_kurzform_bricht_die_spalte_nicht_und_bleibt_deutlich(self) -> None:
+        """Tabellen brauchen Platz, die Lesart darf trotzdem nicht wegfallen."""
+        a = self._abstand(effektiv=None)
+
+        assert a.als_zahl(kurz=True).startswith("≥")
+        assert a.als_faktor(kurz=True).startswith("≥")
+        assert len(a.als_zahl(kurz=True)) < len(a.als_zahl())
+
+    def test_die_kurzform_schweigt_nicht_wenn_gemessen_wurde(self) -> None:
+        a = self._abstand(effektiv=112)
+
+        assert not a.als_zahl(kurz=True).startswith("≥")

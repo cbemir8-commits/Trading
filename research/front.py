@@ -242,6 +242,11 @@ class Front:
         return max(mit, key=lambda p: self.dsr_von(p) or 0.0) if mit else None
 
     def tabelle(self, *, hoechstens: int = 12) -> str:
+        # **Die Spalten sind Untergrenzen** (Befund 149). Die Messpunkte
+        # kommen aus gespeicherten Kennzahlen und tragen nur ihre rohe
+        # Trade-Zahl; die effektive Stichprobe steht dort nicht und laesst
+        # sich aus Kennzahlen auch nicht nachrechnen. Das Gate rechnet mit
+        # ihr, und sie ist kleiner - die wirkliche Latte liegt also hoeher.
         zeilen = [
             f"{'Punkt':26} {'Trades':>7} {'hat':>8} {'noetig':>9} {'Faktor':>8} "
             f"{'DSR':>7}  "
@@ -254,8 +259,10 @@ class Front:
         )
         genaehert = {p.kandidat.name for p in self.punkte if p.genaehert}
         for a in geordnet[:hoechstens]:
-            noetig = f"{a.noetig:.4f}" if a.noetig is not None else "unerr."
-            faktor = f"{a.faktor:.2f}" if a.faktor is not None else "  --"
+            # ``als_zahl``/``als_faktor`` tragen die Lesart mit; ein blankes
+            # ``a.noetig`` verliert sie (Befund 149).
+            noetig = a.als_zahl(kurz=True)
+            faktor = a.als_faktor(kurz=True)
             marke = " ~" if a.kandidat.name in genaehert else ""
             if a.kandidat.name in ungenau:
                 marke += " !"
@@ -307,5 +314,8 @@ class Front:
             f"erreicht die Schwelle.**{hoechster} Am naechsten an der "
             f"Grenzlinie lag '{nah.kandidat.name}' mit {nah.kandidat.trades} "
             f"Trades zu je {nah.kandidat.sharpe_je_trade:.4f}; noetig waeren "
-            f"{nah.noetig:.4f}, also Faktor {nah.faktor:.2f}."
+            f"{nah.als_zahl()}, also Faktor {nah.als_faktor()}. Die "
+            f"Messpunkte tragen nur ihre rohe Trade-Zahl, nicht die "
+            f"effektive Stichprobe des Gates - die Latte liegt also hoeher "
+            f"als hier steht (Befund 149)."
         )

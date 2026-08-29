@@ -237,6 +237,33 @@ class Abstand:
             return None
         return self.noetig / self.kandidat.sharpe_je_trade
 
+    def als_zahl(self, stellen: int = 4, *, kurz: bool = False) -> str:
+        """Die Latte als Text - **mit ihrer Lesart, nicht ohne**.
+
+        Warum es das gibt: ``noetig`` ist ein blanker ``float``. Wer ihn
+        herausnimmt und formatiert, verliert ``untergrenze`` - und genau das
+        ist zweimal passiert. In ``cli stand`` stand deshalb "0.2984" statt
+        "0.3412" (Befund 148), in ``research/front.py`` steht es in der
+        Tabelle und im Urteil (Befund 149).
+
+        Wer diese Methode benutzt, kann die Lesart nicht vergessen. Wer sie
+        umgeht, tut es sichtbar.
+        """
+        if self.noetig is None:
+            return "unerr." if kurz else "unerreichbar"
+        # ``kurz`` fuer Tabellen: ">=" statt "mindestens", damit die Spalte
+        # nicht bricht. **Weglassen laesst es sich nicht** - genau darum geht
+        # es.
+        wie = ("≥" if kurz else "mindestens ") if self.untergrenze else ""
+        return f"{wie}{self.noetig:.{stellen}f}"
+
+    def als_faktor(self, stellen: int = 2, *, kurz: bool = False) -> str:
+        """Der noetige Zuwachs als Text - aus einer Untergrenze folgt eine."""
+        if self.faktor is None:
+            return "--"
+        wie = ("≥" if kurz else "mindestens ") if self.untergrenze else ""
+        return f"{wie}{self.faktor:.{stellen}f}"
+
     def als_satz(self) -> str:
         """Der Abstand in Worten - mit der Lesart, die er zulaesst."""
         if self.noetig is None:
