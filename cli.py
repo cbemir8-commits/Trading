@@ -5988,6 +5988,16 @@ def anwaerter(
         f"\n[{farbe}]Tauglich nach der Karte: {len(tauglich)} von "
         f"{len(liste)}[/] (bei u = 0,72)\n"
     )
+    # **Das rho in den Namen ist Auskunft, kein Massstab** (Befund 147).
+    # Ueber vierzehn gemessene Paare ordnet die Fensterkorrelation das
+    # Ergebnis nicht (+0,04); der beste Partner lag bei +0,56. Wer hier nach
+    # kleinem rho auswaehlt, waehlt nach Rauschen.
+    console.print(
+        "[dim]Das rho hinter den Namen ordnet die Partner **nicht** "
+        "(Rangkorrelation +0,04 ueber 14 gemessene Paare, Befund 141).\n"
+        "Wer wissen will, was ein Partner wirklich bringt, misst ihn: "
+        "[/][bold]cli paare[/][dim] baut den Verbund und rechnet ihn.[/]\n"
+    )
     kopplung = Katalogkopplung(anwaerter=liste)
     if kopplung.genug:
         console.print(f"{kopplung.urteil()}\n")

@@ -13605,3 +13605,79 @@ Tests gegen ``_nach_herkunft`` selbst.
 
 Versuchszaehler 198 unveraendert - im Trockenlauf gemessen, nichts
 fortgeschrieben. Suchbudget 68 von 100. 2571 Tests gruen.
+
+## Hundertsiebenundvierzig. Wonach die KI eigentlich sucht
+
+Befund 146 hat die Research-KI an den Wettbewerb gehaengt. Damit stellt sich
+eine Frage, die vorher folgenlos war: **Wonach genau sucht sie?**
+
+Der Auftragstext kommt aus ``auftragslage.als_auftrag`` und nennt drei Punkte,
+die ein Vorschlag erfuellen soll. Punkt 3 lautete:
+
+> *"Ein anderes Marktverhalten als Trendfolge. [...] Ein Vorschlag, dessen
+> Gewinne in denselben Phasen anfallen, bringt Trades ohne Information
+> (Fensterkorrelation ueber 0,8 zaehlt als dasselbe Signal)."*
+
+**Genau diese Groesse hat Befund 141 als wertlos gemessen.** Ueber vierzehn
+gemessene Paare betraegt ihre Rangkorrelation mit dem tatsaechlichen Ergebnis
++0,04, gegen die Luecke -0,10. Der beste gemessene Partner hatte rho = +0,56,
+der zweitbeste -0,41 - nach dieser Schwelle waere der bessere aussortiert
+worden.
+
+### Warum das jetzt schadet und vorher nicht
+
+Solange die KI nur an ``cli research`` hing und niemand sie rief, war ein
+falsches Kriterium im Prompt folgenlos. Seit Befund 146 laeuft sie im
+Wettbewerb mit, und **jeder Vorschlag kostet einen Versuch, der die Huerde fuer
+alle hebt** (Befund 142: der Vorsprung der Suche vor dem Zufall liegt bei einem
+halben Prozent). Eine Suche, die auf Rauschen ausgerichtet ist, verbraucht das
+Restbudget und macht die Lage dabei schlechter.
+
+Ich habe die Verdrahtung gebaut, ohne nachzusehen, worauf sie zeigt. Der Fehler
+war in Befund 141 gemessen und aufgeschrieben; ich habe ihn beim Einbau nicht
+mitgedacht.
+
+### Was jetzt dort steht
+
+Punkt 3 behaelt seinen Gedanken - ein zweites Signal soll in anderen Phasen
+verdienen - und verliert den falschen Massstab:
+
+> *"Die Fensterkorrelation ist dafuer aber kein Massstab. [...] Ein Vorschlag
+> wird deshalb nicht danach ausgesucht und nicht danach verworfen. Was gemessen
+> zaehlt, ist Punkt 2: die eigene Qualitaet je Trade (Rangkorrelation -0,53
+> gegen die Luecke). Und was der Verbund tatsaechlich bringt, ist unabhaengige
+> Beobachtung: Der eine gemessene Partner steuerte +13 davon bei, fuer 53
+> zusaetzliche Trades (Befund 140)."*
+
+Die Anforderung an den Auftrag bleibt damit dieselbe wie zuvor - **er muss
+beziffern und darf nicht raunen**; nur die Zahl hat gewechselt. Der Test, der
+das erzwingt, prueft jetzt die neuen Zahlen.
+
+``AEHNLICH = 0,8`` bleibt als Fundstelle im Modul stehen, ausdruecklich nicht
+mehr als Massstab: Der Gedanke dahinter ist richtig (Befund 27: drei Beine bei
+rho 0,884 sind eine Information), nur misst die Fensterkorrelation ihn nicht.
+
+### Dieselbe Groesse, eine Stelle weiter
+
+``cli anwaerter`` haengt das rho hinter jeden Namen und sortiert danach ins
+Bild. Wer dort nach kleinem rho auswaehlt, waehlt nach Rauschen. Der Befehl
+sagt das jetzt unter der Tabelle und verweist auf ``cli paare``, das den
+Verbund tatsaechlich baut und rechnet.
+
+**Repariert ist damit der Text, nicht die Rangfolge.** ``anwaerter`` ordnet
+weiter nach der Formel aus Befund 74; das umzubauen waere ein eigener Schritt,
+und ``cli paare`` beantwortet die Frage inzwischen direkt.
+
+### Was daraus folgt
+
+1. **Die Verdrahtung aus Befund 146 zeigt jetzt auf etwas Gemessenes.** Vorher
+   haette sie Versuche in eine Richtung verbraucht, von der bekannt ist, dass
+   sie nichts ordnet.
+2. Am Stand aendert sich nichts: 152 Trades, n = 112, Deflated Sharpe 0,6026.
+3. **Der Auftrag im Kopf des Nutzers ist an zwei Stellen ueberholt.** P7 ist
+   fuer die Termin-Haelfte gebaut und bei Befund 127 geschlossen
+   (``data/termine.py``), die News-Haelfte gehoert zur Familie "Trades
+   streichen", geschlossen bei Befund 60. Und die 15-Minuten-Kerzen, die dort
+   noch nachgeladen werden sollen, liegen seit jeher im Speicher (Befund 143).
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2572 Tests gruen.

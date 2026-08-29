@@ -101,12 +101,34 @@ class TestAuftragstext:
         assert f"bei {aktuell.partner_trades * 2}" in aktuell.als_auftrag()
 
     def test_die_unabhaengigkeit_wird_beziffert(self) -> None:
-        """'Anders sein' ist kein pruefbares Kriterium - eine Korrelation
-        schon."""
+        """'Anders sein' ist kein pruefbares Kriterium - eine Zahl schon.
+
+        Die Anforderung bleibt, die Zahl hat gewechselt: Bis Befund 141 stand
+        hier die Fensterkorrelation. Ueber vierzehn gemessene Paare ordnet die
+        aber nichts (+0,04), und der beste Partner haette sie gerissen. Jetzt
+        steht dort, was gemessen zaehlt - und dass die alte Groesse es nicht
+        tut.
+        """
         text = lage().als_auftrag()
 
-        assert f"{AEHNLICH:.1f}" in text
         assert "Trendfolge" in text
+        assert "+0,04" in text, "die widerlegte Groesse wird beziffert"
+        assert "-0,53" in text, "und die, die Signal traegt"
+        assert "+13" in text, "was der Verbund tatsaechlich beitrug"
+
+    def test_die_fensterkorrelation_ist_kein_kriterium_mehr(self) -> None:
+        """Sonst suchte die KI nach einer Groesse, die nichts vorhersagt.
+
+        Seit Befund 146 haengt die Research-KI am Wettbewerb. Ein Auftrag, der
+        sie auf die Fensterkorrelation ansetzt, richtet damit realen Schaden
+        an: Er kostet Versuche und hebt die Huerde fuer alle.
+        """
+        # Normalisiert, weil der Auftrag umbricht: Ein Test, der ueber einen
+        # Zeilenumbruch stolpert, prueft die Formatierung statt der Aussage.
+        text = " ".join(lage().als_auftrag().split())
+
+        assert f"ueber {AEHNLICH:.1f} zaehlt" not in text
+        assert "nicht danach ausgesucht und nicht danach verworfen" in text
 
     def test_der_preis_eines_versuchs_steht_dabei(self) -> None:
         text = lage().als_auftrag()

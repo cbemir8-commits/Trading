@@ -49,9 +49,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-#: Die Fensterkorrelation, ab der ein Vorschlag als "dasselbe Signal" gilt.
-#: Beim Perioden-Ensemble aus Befund 27 waren es 0,884 - drei Beine, eine
-#: Information. Die gemessenen Verbunde lagen bei 0,53 bis 0,81.
+#: Die Fensterkorrelation, ab der ein Vorschlag als "dasselbe Signal" galt.
+#:
+#: **Ueberholt seit Befund 141 und nicht mehr im Auftrag.** Ueber vierzehn
+#: gemessene Paare betraegt die Rangkorrelation dieser Groesse mit dem
+#: tatsaechlichen Ergebnis +0,04, gegen die Luecke -0,10 - sie ordnet die
+#: Partner nicht. Der beste gemessene Partner lag bei rho = +0,56, der
+#: zweitbeste bei -0,41; nach dieser Schwelle waere der bessere aussortiert
+#: worden.
+#:
+#: Die Konstante bleibt als Fundstelle stehen, nicht als Massstab: Der
+#: Gedanke dahinter ist richtig (Befund 27: drei Beine bei rho 0,884 sind eine
+#: Information), nur misst die Fensterkorrelation ihn nicht.
 AEHNLICH = 0.8
 
 
@@ -174,9 +183,20 @@ class Auftragslage:
             "   mehr Qualitaet, aber nur bis zum Optimum.",
             "3. **Ein anderes Marktverhalten als Trendfolge.** Der Bestand ist",
             "   long ueber dem 50-Tage-Schnitt. Ein Vorschlag, dessen Gewinne",
-            "   in denselben Phasen anfallen, bringt Trades ohne Information",
-            f"   (Fensterkorrelation ueber {AEHNLICH:.1f} zaehlt als dasselbe",
-            "   Signal).",
+            "   in denselben Phasen anfallen, bringt Trades ohne Information.",
+            "",
+            "   **Die Fensterkorrelation ist dafuer aber kein Massstab.** Ueber",
+            "   vierzehn gemessene Paare betraegt ihre Rangkorrelation mit dem",
+            "   tatsaechlichen Ergebnis **+0,04** - also nichts. Der beste",
+            "   gemessene Partner hatte rho = +0,56, der zweitbeste -0,41",
+            "   (Befund 141). Ein Vorschlag wird deshalb nicht danach",
+            "   ausgesucht und nicht danach verworfen.",
+            "",
+            "   Was gemessen zaehlt, ist Punkt 2: die eigene Qualitaet je Trade",
+            "   des Vorschlags (Rangkorrelation -0,53 gegen die Luecke). Und",
+            "   was der Verbund tatsaechlich bringt, ist unabhaengige",
+            "   Beobachtung: Der eine gemessene Partner steuerte +13 davon bei,",
+            "   fuer 53 zusaetzliche Trades (Befund 140).",
             "",
         ]
 

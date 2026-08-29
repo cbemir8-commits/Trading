@@ -394,6 +394,12 @@ BEHOBEN: tuple[Richtung, ...] = (
         "bilden - jetzt 'cli wettbewerb --ki', Herkunft getrennt gefuehrt",
         146,
     ),
+    Richtung(
+        "Auftrag an die KI auf widerlegtem Kriterium",
+        "Punkt 3 nannte die Fensterkorrelation (+0,04 Rangkorrelation, "
+        "Befund 141); jetzt steht dort, was Signal traegt",
+        147,
+    ),
 )
 
 
