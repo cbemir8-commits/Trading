@@ -13904,3 +13904,159 @@ Eingang schuetzt nur den einen Weg, der durch ihn fuehrt.
    war falsch, und das gehoert genauso berichtet wie der Fund.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100. 2590 Tests gruen.
+
+## Hunderteinundfuenfzig. Der Nachlauf war an einer Regel kalibriert
+
+Der Behaelter dieser Sitzung wurde zurueckgesetzt. ``data_store`` liegt nicht
+im Repository und war weg; ``state/`` und ``reports/`` sind versioniert und
+haben ueberlebt. Neu geholt: Bitstamp-Tageskerzen, BTC ab 2012-01-01 (5355
+Kerzen), ETH ab 2017-08-16 (3301) - beide bis **2026-08-29** statt wie zuvor
+bis 2026-08-05.
+
+Dieser Befund hat drei Teile, und sie haengen zusammen: Der frische Abzug hat
+eine Zahl gehoben, die Suche nach dem Grund hat ein Werkzeug gebaut, und das
+Werkzeug hat einen Messfehler gefunden, der seit Befund 73 in den Zahlen
+stand.
+
+### Erstens: Vier Tests waren rot, und ich habe es nie erwaehnt
+
+Im frischen Klon fielen vier Tests um. Meine wiederholte Meldung "2590 Tests
+gruen" galt also unter einer Bedingung, die ich nie genannt habe - dass der
+Kerzenspeicher gefuellt ist.
+
+Drei davon (``test_landschaft``, zwei in ``test_vorauswahl``) waren
+**versehentlich** datenabhaengig: Sie pruefen, ob ein Befehl falsche Argumente
+zurueckweist, aber der Befehl starb vorher an "Keine Kerzen". Behoben, indem
+die Pruefung der Argumente in ``cli.py`` vor das Laden der Daten wandert - das
+ist ohnehin die bessere Reihenfolge, weil ein Tippfehler dann sofort auffaellt
+statt nach einem Ladevorgang.
+
+Einer (``test_referenzdaten``) ist **absichtlich** datenabhaengig und hat
+genau das getan, wofuer er da ist. Er traegt jetzt die Marke ``daten``. Wer
+ihn abwaehlt, tut das mit ``-m "not daten"`` und weiss dann, dass er ohne
+Messgrundlage geprueft hat.
+
+    frischer Klon, -m "not langsam and not daten"
+    2587 bestanden, 2 uebersprungen, 3 abgewaehlt
+
+### Zweitens: Der Referenzpunkt sprang, und der Sprung war ein Artefakt
+
+Mit den laengeren Daten stand der Spitzenkandidat bei **DSR 0,7255** statt
+0,6026. Ein Sprung von 0,123 durch drei Wochen mehr Historie waere zu schoen
+gewesen.
+
+Er kam aus zwei Trades mit dem Ausstiegsgrund ``end_of_data``: **+26,19 und
++25,48 - die zwei groessten Gewinner des Laufs.** Sie wurden nicht nach Regel
+beendet, sondern weil die Kerzen aufhoerten.
+
+Die Leiter entscheidet:
+
+    Ende gekuerzt   Tage   Trades   am Ende   n_eff   SR/Trade      DSR
+              0     3301      158         2     120     0,2848   0,7255
+             30     3271      152         0     112     0,2765   0,6026
+             60     3241      152         0     112     0,2765   0,6026
+             90     3211      152         0     112     0,2765   0,6026
+            120     3181      146         0     114     0,2828   0,6636
+
+Dreissig, sechzig und neunzig Tage geben dasselbe - dieselbe Plateau-Signatur
+wie beim Nachlauf in Befund 22. **Der Referenzpunkt steht weiter bei 0,6026.**
+Der Wert bei 120 Tagen ist kein Widerspruch: Dort fehlen 6 Trades, das ist
+schlicht weniger Historie.
+
+Je frischer der Abzug, desto wahrscheinlicher faengt das Datenende eine offene
+Position. Gebaut: ``research/randschnitt.py`` mit ``RANDPUFFER_TAGE = 30``,
+``randtrades`` und ``beurteile``. Die beiden ``langsam``-Tests kuerzen jetzt
+dreissig Tage und pruefen, dass nichts am Rand haengt.
+
+### Drittens: Und dann fand dasselbe Werkzeug den eigentlichen Fehler
+
+Der Verbund-Test blieb rot. Nicht wegen des Serienendes - die Randtrades des
+Partners lagen mitten in der Reihe, an **Fensterenden**:
+
+    Regel                          Trades   am Rand   Guete mit   Guete ohne
+    Trend 50 Tage mit Konfluenz       154         0      0,2591       0,2591
+    Trend-Beteiligung 200 Tage         53        10      0,3185      -0,3874
+    Donchian-Ausbruch 55/20            58         2      0,3074       0,2787
+
+Der Nachlauf aus Befund 22 ist **eine** Testfensterlaenge lang - und diese
+Laenge wurde an genau einer Regel gemessen, am Spitzenkandidaten, der im
+Mittel sechs Tage haelt. Eine Regel mit 200-Tage-Trend haelt laenger und
+sprengt sie.
+
+Ueber den ganzen Tageskerzen-Katalog gemessen ist es kein Einzelfall:
+
+    Nachlauf   Regeln mit Kalenderausstiegen   betroffene Trades
+        1 x            12 von 24                     103
+        2 x             8 von 24                      20
+        3 x             1 von 24                       3
+        4 x             1 von 24                       2
+        5 x             1 von 24                       2
+        6 x             1 von 24                       2
+
+**Die Haelfte des Katalogs wurde am Kalender gemessen, nicht nach Regel.** Das
+ist wortwoertlich Befund 22, nur eine Regel weiter - und es traf den Partner,
+auf dem der groesste je gemessene Sprung des Projekts steht.
+
+``NACHLAUF_FENSTER`` steht jetzt auf **4**: die kleinste Stufe, auf der es
+nicht mehr weniger wird. Dasselbe Kriterium wie in Befund 22, nur ueber den
+Katalog angewandt statt ueber eine Regel. Die Verbundzahlen sind ab 3x
+identisch - die 4 ist also nicht die guenstigste Stufe, sondern die erste ohne
+Bewegung. Die Trade-Zahl bleibt bei jeder Laenge gleich: Der Nachlauf
+verschiebt weiterhin keinen Einstieg.
+
+Der Boden von 2 geht nicht weg. Diese Trades liegen am **Serienende**, und
+dort gibt es nichts, wohin nachgelaufen werden koennte. Dagegen hilft nur
+Abstand - und der Randpuffer ist am Spitzenkandidaten kalibriert, fuer lang
+haltende Regeln also zu kurz. Steht offen.
+
+### Der Lesefehler, den ich dabei gemacht habe
+
+Aus ``Guete ohne`` = -0,3874 habe ich geschlossen, die Regel sei ohne den
+Fehler **negativ**. Das ist falsch, und mein eigenes Werkzeug hat es
+widerlegt:
+
+    Trend-Beteiligung 200 Tage             Guete je Trade
+    mit Randtrades, Nachlauf 1 x                 0,3185
+    Randtrades weggelassen                      -0,3874   <- die falsche Frage
+    zu Ende gehandelt, Nachlauf 4 x              0,2952   <- die richtige
+
+Die Trades **wegzulassen** misst, wie viel an ihnen haengt - ein Alarm, kein
+Ergebnis. Was ohne den Fehler herauskommt, sagt erst ein neuer Lauf. Beide
+Modulkoepfe tragen die Unterscheidung jetzt, und ein Test haelt sie fest.
+
+Am Serienende ist Weglassen die richtige Antwort, weil es dort keinen zweiten
+Lauf gibt. Genau diese beiden Faelle habe ich verwechselt.
+
+### Was sich an den Zahlen aendert
+
+    Verbund                          vorher (140)        jetzt (151)
+    Spitze allein                 n 111  Guete 2,730   unveraendert
+    + Trend-Beteiligung 200 T.    n 124  Guete 3,073   n 135  Guete 3,030
+    + Donchian-Ausbruch 55/20     n 106  Guete 2,645   n 105  Guete 2,636
+
+Die Korrektur geht in die **strenge** Richtung: Der Abstand des besten
+Verbundes zur Schwelle waechst von 0,552 auf **0,614**. Der Beitrag des
+Partners faellt von +0,343 auf +0,300 Guete - er traegt weiter, nur weniger.
+
+Die effektive Stichprobe steigt (124 auf 135), weil die Ausstiege sich
+verteilen, sobald sie nicht mehr auf Fensterenden zusammenfallen. Von 53
+zusaetzlichen Trades sind jetzt 24 echte Information statt 13.
+
+Alle 14 Paare aus Befund 141 sind neu gefahren worden, nicht nur das eine.
+Das Ergebnis steht: **0 von 14**, bestes Paar 0,613 unter seiner Latte.
+
+### Was daraus folgt
+
+1. **Kein Kandidat kommt naeher an die Schwelle** - im Gegenteil.
+2. **Ein Messfehler, der seit Befund 73 in den Zahlen stand, ist weg.** Er
+   machte sie freundlicher, nicht strenger, und er traf die Halfte des
+   Katalogs.
+3. Der Fehler war zweimal derselbe: eine Groesse an **einem** Kandidaten
+   kalibriert und auf alle angewandt. Erst Befund 22, jetzt hier. Der
+   Randpuffer aus Teil zwei hat genau dieselbe Schwaeche und ist der naechste
+   Kandidat dafuer.
+4. Ich habe die falsche Gegenprobe fuer ein Ergebnis gehalten und daraus fast
+   einen Befund geschrieben, der den Partner erledigt haette.
+
+Versuchszaehler 198 unveraendert - eine Korrektur am Messinstrument ist kein
+Versuch, und sie geht in die strenge Richtung. Suchbudget 68 von 100.

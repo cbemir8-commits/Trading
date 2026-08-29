@@ -17,6 +17,8 @@ schlechter als beides fuer sich, nicht besser als eines davon.
 
 from __future__ import annotations
 
+import pytest
+
 from data.reference import PAIRS, ist_referenz
 from research.gates import GateReport, GateResult, GateStatus
 from research.leaderboard import Entry
@@ -203,9 +205,20 @@ class TestBestenliste:
         assert board.entries[genome.genome_id].referenzdaten is True
 
 
+@pytest.mark.daten
 def test_die_kerzen_dieses_projekts_sind_forschungsmaterial() -> None:
     """Der Satz, um den es geht: **Jede Gate-Zahl dieses Projekts** steht auf
-    Bitstamp-Kerzen. Ein Test, der anschlaegt, sobald das nicht mehr stimmt."""
+    Bitstamp-Kerzen. Ein Test, der anschlaegt, sobald das nicht mehr stimmt.
+
+    ``daten``-markiert seit Befund 151: Der Kerzenspeicher liegt nicht im
+    Repository, in einem frischen Klon fehlt er. Dieser Test prueft dort die
+    **Umgebung**, nicht den Code - und ist damit rot, ohne dass am Projekt
+    etwas kaputt waere.
+
+    Uebersprungen wird er trotzdem nicht stillschweigend: Wer ihn abwaehlt,
+    tut das mit ``-m "not daten"`` und weiss dann, dass er ohne Messgrundlage
+    geprueft hat.
+    """
     from core.config import get_settings
     from core.models import Interval
     from data.store import CandleStore

@@ -150,6 +150,23 @@ def test_der_referenzpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
     if any(f.empty for f in frames.values()):
         pytest.skip("keine Kerzen im Speicher")
 
+    # **Abstand zum Serienende** (Befund 151). Ohne ihn haengt der
+    # Referenzpunkt daran, wann zuletzt Kerzen geholt wurden: Bei einem Abzug
+    # bis heute wurden zwei offene Positionen am Datenende glattgestellt - die
+    # zwei groessten Gewinner des Laufs -, und der Deflated Sharpe stand bei
+    # 0,7255 statt 0,6026. Dreissig Tage genuegen, und bis neunzig aendert sich
+    # nichts mehr.
+    import pandas as pd
+
+    from research.randschnitt import RANDPUFFER_TAGE, randtrades
+
+    ende = max(f["open_time"].max() for f in frames.values())
+    grenze = ende - pd.Timedelta(days=RANDPUFFER_TAGE)
+    frames = {
+        k: v[v["open_time"] <= grenze].reset_index(drop=True)
+        for k, v in frames.items()
+    }
+
     versuche = load_trials(Path(einstellungen.paths.state) / "trials.json")
     assert versuche == SPOTPUNKT.versuche, (
         f"Der Versuchszaehler steht bei {versuche}, referenz.py nennt "
@@ -186,6 +203,11 @@ def test_der_referenzpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
     )
     dsr = next(r for r in ergebnisse.results if r.name == "Deflated Sharpe")
 
+    # Der Schnitt muss gewirkt haben - sonst prueft der Rest ein Artefakt.
+    assert not randtrades(bericht.all_trades), (
+        "Trades am Datenende beendet: Der Randpuffer greift nicht, und die "
+        "Zahlen unten haengen daran, wann zuletzt Kerzen geholt wurden."
+    )
     assert len(bericht.all_trades) == SPOTPUNKT.trades
     assert float(dsr.value) == pytest.approx(SPOTPUNKT.dsr, abs=5e-4)
     assert sum(1 for r in ergebnisse.results if r.passed) == SPOTPUNKT.bestanden

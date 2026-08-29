@@ -331,12 +331,20 @@ def worst_rolling_return(curve: np.ndarray, months: int, total_months: float) ->
     return float(np.min(renditen) * 100.0)
 
 
+#: Wie viele Testfensterlaengen der Nachlauf betraegt. Gemessen, siehe
+#: ``nachlauf_fuer``. Stand Befund 151 - vorher stand hier eine 1.
+NACHLAUF_FENSTER = 4
+
+
 def nachlauf_fuer(window: Window) -> timedelta:
     """Wie lange ein Fenster ueber sein Ende hinaus laufen darf.
 
-    **Eine Testfensterlaenge**, und diese Zahl ist gemessen, nicht gewaehlt.
+    **Vier Testfensterlaengen**, und diese Zahl ist gemessen, nicht gewaehlt.
+
+    Die Messung, die eine Fensterlaenge ergab (Befund 22)
+    -----------------------------------------------------
     Auf dem Spitzenkandidaten (BTC + ETH, Tageskerzen, Testfenster drei Monate)
-    verschwinden die kalenderbeendeten Trades genau dort:
+    verschwinden die kalenderbeendeten Trades genau bei einer Fensterlaenge:
 
         Nachlauf     Trades   SR/Trade   Ergebnis   am Kalender beendet
              0 Tage     154     0,2444    1034 EUR    25 (16,2 %)
@@ -345,14 +353,49 @@ def nachlauf_fuer(window: Window) -> timedelta:
            180 Tage     154     0,2584    1388 EUR     0 ( 0,0 %)
            365 Tage     154     0,2584    1388 EUR     0 ( 0,0 %)
 
-    Ab einer Fensterlaenge aendert sich nichts mehr - das ist die Signatur
-    einer Groesse, die lang genug ist. Und die Trade-Zahl bleibt ueber den
-    ganzen Bereich bei 154: Der Nachlauf verschiebt keinen Einstieg.
+    Warum das zu kurz war (Befund 151)
+    ----------------------------------
+    **Diese Leiter lief ueber eine einzige Regel** - und die haelt sechs Tage
+    im Mittel. Ueber den ganzen Tageskerzen-Katalog gemessen (24 Genome, BTC +
+    ETH, Serienende um den Randpuffer gekuerzt) sieht es anders aus:
+
+        Nachlauf   Regeln mit Kalenderausstiegen   betroffene Trades
+            1 x            12 von 24                     103
+            2 x             8 von 24                      20
+            3 x             1 von 24                       3
+            4 x             1 von 24                       2
+            5 x             1 von 24                       2
+            6 x             1 von 24                       2
+
+    **Die Haelfte des Katalogs wurde am Kalender gemessen, nicht nach Regel.**
+    Am schwersten traf es ``Trend-Beteiligung 200 Tage`` mit 10 von 53 Trades
+    - und das ist der Partner, auf dem der groesste je gemessene Sprung des
+    Projekts steht (Befund 73/140).
+
+    Gewaehlt wird die **kleinste** Stufe, auf der es nicht mehr weniger wird -
+    genau das Kriterium aus Befund 22, nur auf den Katalog angewandt statt auf
+    eine Regel. Das ist 4x. Die Verbundzahlen sind ab 3x identisch; die 4 ist
+    also nicht die guenstigste Stufe, sondern die erste ohne Bewegung.
+
+    Der Boden von 2 ist kein Rest, der noch wegginge
+    ------------------------------------------------
+    Zwei Trades in ``Trend beide Richtungen`` bleiben bei jeder Laenge. Sie
+    liegen am **Serienende**, und dort gibt es nichts mehr, wohin nachgelaufen
+    werden koennte. Dagegen hilft kein Nachlauf, sondern nur Abstand -
+    ``research.randschnitt.RANDPUFFER_TAGE``, und der ist am Spitzenkandidaten
+    kalibriert, also fuer lang haltende Regeln zu kurz.
+
+    Was passen muss, ist die **Haltedauer**, nicht die Fensterlaenge; die
+    Fensterlaenge war ein Stellvertreter, der fuer eine kurz haltende Regel
+    zufaellig genuegte. Wer eine Regel aufnimmt, die laenger haelt als viermal
+    ein Testfenster, misst wieder am Kalender - der Bericht zeigt es in
+    ``kalender_ausstiege``, und ``research.randschnitt`` beziffert, was daran
+    haengt.
 
     An die Fensterlaenge gebunden statt an eine feste Zahl Tage, damit es auf
-    15-Minuten-Kerzen nicht ploetzlich drei Monate Daten je Fenster sind.
+    15-Minuten-Kerzen nicht ploetzlich ein Jahr Daten je Fenster sind.
     """
-    return window.test_end - window.test_start
+    return (window.test_end - window.test_start) * NACHLAUF_FENSTER
 
 
 def run_walkforward(

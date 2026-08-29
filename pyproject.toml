@@ -59,6 +59,15 @@ filterwarnings = ["error::DeprecationWarning"]
 markers = [
     "network: Test braucht echte Bybit-Verbindung (wird in CI/Sandbox uebersprungen)",
     "langsam: Test rechnet einen vollen Walk-Forward (laeuft mit, dauert aber)",
+    # Der Kerzenspeicher liegt **nicht** im Repository - er ist zu gross und
+    # steht in .gitignore. In einem frischen Klon fehlt er also, und Tests,
+    # die ihn brauchen, pruefen dort die Umgebung statt den Code.
+    #
+    # Sie zu ueberspringen waere falsch: Ohne Kerzen gibt es keine Messungen,
+    # und das soll auffallen. Deshalb ein eigener Name statt eines stillen
+    # skip - wer "Suite gruen" sagt, muss dazusagen, welche Auswahl er
+    # gelaufen ist (Befund 151).
+    "daten: Test braucht den Kerzenspeicher (fehlt im frischen Klon)",
 ]
 
 [tool.mypy]

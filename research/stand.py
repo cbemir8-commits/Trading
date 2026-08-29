@@ -172,13 +172,15 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     Richtung("Phasen-Partner", "6 von 22 gegenlaeufig, 5 davon insgesamt wertlos", 85),
     # Befund 86 hat 210 Paare auf der Wochenachse gegen eine Permutationsnull
     # gestellt. Befund 141 misst enger und strenger nach: nur die 14 Paare mit
-    # dem Bestand, dafuer mit der Einteilung des Gates selbst.
+    # dem Bestand, dafuer mit der Einteilung des Gates selbst. Befund 151 hat
+    # alle 14 noch einmal gefahren, nachdem der Nachlauf verlaengert war -
+    # das Ergebnis steht, die Zahlen sind neu.
     Richtung(
         "Verbund aus dem Katalog",
-        "bestes Paar 3,585 unter Nullmedian 3,683; nachgemessen 3,073 "
-        "gegen eine Latte von 3,625 - 0 von 14",
+        "bestes Paar 3,585 unter Nullmedian 3,683; nachgemessen 3,030 "
+        "gegen eine Latte von 3,644 - 0 von 14",
         86,
-        zuletzt=141,
+        zuletzt=151,
     ),
     Richtung("Sperrfrist", "Folgetrades schlechter, aber kein t-Wert ueber 2", 88),
     Richtung("Verbund fuer die Risikogates", "231 Kombinationen, kein Treffer", 94),
@@ -417,6 +419,24 @@ BEHOBEN: tuple[Richtung, ...] = (
         "44 Punkte fuer 30 Stellungen; Kennzahlen identisch, also keine "
         "Auswahl - aber 24 von 30 waren in der Tabelle unsichtbar",
         150,
+    ),
+    Richtung(
+        "Nachlauf an einer Regel kalibriert",
+        "12 von 24 Katalogregeln endeten am Kalender, 103 Trades; auf vier "
+        "Fensterlaengen verlaengert - bester Verbund 3,073 -> 3,030",
+        151,
+    ),
+    Richtung(
+        "Vier Tests brauchten den Kerzenspeicher",
+        "in einem frischen Klon rot, ohne dass etwas kaputt war - drei "
+        "pruefen jetzt vor dem Laden, einer traegt die Marke 'daten'",
+        151,
+    ),
+    Richtung(
+        "Frischer Datenabzug hob den Referenzpunkt",
+        "DSR 0,6026 -> 0,7255 durch zwei Trades am Serienende; Plateau ueber "
+        "30/60/90 Tage - der Punkt steht weiter bei 0,6026",
+        151,
     ),
 )
 

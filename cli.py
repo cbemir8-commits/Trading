@@ -4016,6 +4016,26 @@ def landschaft(
     interval_obj = Interval(intervall)
     symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
 
+    # **Welche Stellgroesse?** Ohne Angabe wandern alle Perioden gemeinsam -
+    # und dann sagt die Karte nicht, welche den Ausschlag gibt. Beim
+    # Spitzenkandidaten hat das Plateau-Gate gezeigt, dass vier von fuenf
+    # Perioden nichts bewirken und alles an der 50 haengt.
+    #
+    # **Vor dem Laden geprueft** (Befund 151): Die Pruefung haengt nur am
+    # Genom. Stand sie hinter dem Laden, bekam ein Tippfehler auf einem
+    # Rechner ohne Kerzen die Meldung "Keine Kerzen" - und der Nutzer jagte
+    # das falsche Problem.
+    from research.gates import stellgroessen
+
+    genome = spitzenkandidat()
+    verfuegbar = {s.kennung: s.name for s in stellgroessen(genome)}
+    if regler and regler not in verfuegbar:
+        console.print(
+            f"[red]Unbekannte Stellgroesse '{regler}'.[/] Vorhanden sind:\n"
+            + "\n".join(f"  {k}" for k in verfuegbar)
+        )
+        raise typer.Exit(2)
+
     roh = {}
     for symbol in symbole:
         frame = store.read(symbol, interval_obj)
@@ -4034,22 +4054,7 @@ def landschaft(
         for s in symbole
     }
 
-    genome = spitzenkandidat()
     erster = next(iter(frames.values()))
-
-    # **Welche Stellgroesse?** Ohne Angabe wandern alle Perioden gemeinsam -
-    # und dann sagt die Karte nicht, welche den Ausschlag gibt. Beim
-    # Spitzenkandidaten hat das Plateau-Gate gezeigt, dass vier von fuenf
-    # Perioden nichts bewirken und alles an der 50 haengt.
-    from research.gates import stellgroessen
-
-    verfuegbar = {s.kennung: s.name for s in stellgroessen(genome)}
-    if regler and regler not in verfuegbar:
-        console.print(
-            f"[red]Unbekannte Stellgroesse '{regler}'.[/] Vorhanden sind:\n"
-            + "\n".join(f"  {k}" for k in verfuegbar)
-        )
-        raise typer.Exit(2)
 
     console.print(
         f"\n[bold]Landschaft[/] {' + '.join(symbole)} {interval_obj.label}\n"
@@ -5059,8 +5064,11 @@ def teststaerke(
     settings = get_settings()
     interval_obj = Interval(intervall)
     symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
-    frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
 
+    # **Argumente vor Daten** (Befund 151). Alles bis zur Variantenliste
+    # haengt nur an den Optionen; stand es hinter ``_korb_daten``, bekam ein
+    # Tippfehler auf einem Rechner ohne Kerzen die Meldung "Keine Kerzen" -
+    # und der Nutzer suchte den Fehler an der falschen Stelle.
     try:
         anteile = sorted({float(x) for x in stufen.split(",") if x.strip()})
         deckel_liste = sorted({int(x) for x in halten.split(",") if x.strip()})
@@ -5105,6 +5113,8 @@ def teststaerke(
             )
             for deckel in deckel_liste
         ]
+
+    frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
 
     # Der Versuchsstand wird **gelesen und nicht fortgeschrieben**. Die Huerde
     # soll die von heute sein - aber eine Pruefung der Strecke ist kein

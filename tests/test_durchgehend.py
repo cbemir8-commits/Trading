@@ -12,7 +12,14 @@ BTC + ETH ueber 62 Fenster:
     Testtage ohne Position, obwohl die
     Regel investiert waere                 26,3 %
 
-Zwei Tests tragen die Datei:
+**Diese Zahlen sind vor Befund 151 gemessen**, als der Nachlauf eine
+Fensterlaenge lang war. Seit er vier lang ist, laufen beide Wege auf den
+Reihen dieser Datei **gleich** - der Unterschied, den der aeltere Test hier
+zeigte, war ein abgeschnittener Trade und kein verpasster Einstieg. Ob von den
+26,3 % etwas uebrig bleibt, ist nicht nachgemessen; solange das offen ist,
+traegt der durchgehende Lauf hier nur noch die Ueberlappung.
+
+Drei Tests tragen die Datei:
 
 * ``test_positionen_ueberlappen_sich_nicht_mehr`` - die Sache selbst.
 * ``test_kein_fenster_rechnet_den_alten_gewinn_noch_einmal`` - der
@@ -20,6 +27,9 @@ Zwei Tests tragen die Datei:
   aus der Kapitalkurve; wer als Bezug das Startkapital nimmt statt des
   Kontostands bei Fensterbeginn, schreibt jedem Fenster den gesamten
   bisherigen Gewinn noch einmal gut.
+* ``test_der_lange_trend_wird_nicht_mehr_abgeschnitten`` - die Wache ueber die
+  Nachlauflaenge. Wird sie wieder kuerzer, laufen die beiden Wege auseinander,
+  und zwar genau an den kalenderbeendeten Trades.
 """
 
 from __future__ import annotations
@@ -199,26 +209,54 @@ class TestGrundverhalten:
                     f"{a.exit_time}, {b.trade_id} ab {b.entry_time}"
                 )
 
-    def test_fensterweise_verpasst_den_laufenden_trend(
+    def test_der_lange_trend_wird_nicht_mehr_abgeschnitten(
         self, konfig: BacktestConfig
     ) -> None:
-        """Der Schaden, in Fenstern gezaehlt.
+        """**Umgeschrieben in Befund 151, weil er etwas anderes mass, als
+        seine Ueberschrift sagte.**
 
-        Im ununterbrochenen Aufwaertstrend gibt es nach dem ersten Kreuzen
-        kein weiteres Signal mehr. Der fensterweise Lauf steht deshalb in den
-        Folgefenstern **ohne Position** da, obwohl die Regel investiert waere.
+        Er hiess ``test_fensterweise_verpasst_den_laufenden_trend`` und
+        verglich die Tage im Markt beider Wege - 402 gegen weniger. Das klang
+        nach verpassten Einstiegen. Nachgemessen war es das nicht: Auf dieser
+        Reihe eroeffnen **beide** Wege genau einen Trade, es wird gar nichts
+        verpasst. Der ganze Unterschied war, dass der fensterweise Trade mit
+        ``end_of_data`` endete, weil der Nachlauf von einer Fensterlaenge ihn
+        abschnitt.
+
+            Nachlauf   trendkerzen        zufaellige Reihe
+                1 x    verschieden        identisch
+                       (1 x end_of_data)
+                4 x    identisch          identisch
+
+        Damit ist die Sache hier der **Nachlauf**, nicht der durchgehende
+        Lauf. Genau das wird jetzt geprueft.
+
+        Was der durchgehende Lauf loest, steht in
+        ``test_positionen_ueberlappen_sich_nicht_mehr``: zwei gleichzeitig
+        offene Positionen, weil das naechste Fenster flach startet. Die
+        26,3 % positionslosen Testtage aus dem Modulkopf sind auf BTC + ETH
+        gemessen worden, und zwar **vor** der Verlaengerung - sie gehoeren
+        nachgemessen.
         """
-        kerzen = _trendkerzen()
-        durch = _lauf(konfig, durchgehend=True, kerzen=kerzen)
-        fenster = _lauf(konfig, durchgehend=False, kerzen=kerzen)
+        for kerzen in (_trendkerzen(), _kerzen()):
+            fenster = _lauf(konfig, durchgehend=False, kerzen=kerzen)
+            durch = _lauf(konfig, durchgehend=True, kerzen=kerzen)
 
-        def tage_im_markt(bericht) -> float:
-            return sum(
-                (t.exit_time - t.entry_time).total_seconds() / 86400
-                for t in bericht.all_trades
+            assert fenster.all_trades, "Ohne Trades sagt der Test nichts"
+            assert all(
+                t.exit_reason != "end_of_data" for t in fenster.all_trades
+            ), "der Nachlauf reicht nicht mehr bis zum Ausstieg nach Regel"
+
+            def schluessel(bericht):
+                return sorted(
+                    (t.entry_time, t.exit_time, str(t.exit_reason))
+                    for t in bericht.all_trades
+                )
+
+            assert schluessel(durch) == schluessel(fenster), (
+                "mit ausreichendem Nachlauf laufen beide Wege auf diesen "
+                "Reihen gleich - weicht das ab, ist der Nachlauf zu kurz"
             )
-
-        assert tage_im_markt(durch) > tage_im_markt(fenster)
 
     def test_beide_wege_liefern_dieselben_fenster(
         self, konfig: BacktestConfig

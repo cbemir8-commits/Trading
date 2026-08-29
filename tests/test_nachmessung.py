@@ -195,7 +195,9 @@ def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
         "Kostenannahmen": 127,
         "Schnittpunkt als Prognose": 126,
         # Befund 141: 14 Paare mit dem Bestand, an der Einteilung des Gates.
-        "Verbund aus dem Katalog": 141,
+        # Befund 151: dieselben 14 noch einmal, mit verlaengertem Nachlauf -
+        # bestes Paar 3,030 gegen eine Latte von 3,644, weiter 0 von 14.
+        "Verbund aus dem Katalog": 151,
         # Befund 145: dieselben 14 Genome, am Spot-Punkt und mit der
         # Zerlegung in brutto und netto.
         "15-Minuten-Kerzen": 145,

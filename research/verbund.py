@@ -11,13 +11,16 @@ Aber es gibt Kandidaten mit **hoeherer** Qualitaet je Trade, die nur zu selten
 handeln:
 
     Spitzenkandidat                 0,2591 je Trade   154 Trades   Guete 3,22
-    Trend-Beteiligung 200 Tage      0,3185 je Trade    53 Trades   Guete 2,32
-    Donchian-Ausbruch 55/20         0,3074 je Trade    58 Trades   Guete 2,34
+    Trend-Beteiligung 200 Tage      0,2952 je Trade    53 Trades   Guete 2,15
+    Donchian-Ausbruch 55/20         0,3091 je Trade    58 Trades   Guete 2,35
 
-Ihre Qualitaet liegt 19 bis 23 % ueber dem Spitzenkandidaten - deutlich mehr
-als die noetigen 13 %. Was fehlt, ist Menge. Sie **zusammen** zu handeln waere
-also nicht dieselbe Kopplung: Die Trades kaemen aus verschiedenen Regeln, nicht
-aus einer haeufiger ausgeloesten.
+Ihre Qualitaet liegt 14 bis 19 % ueber dem Spitzenkandidaten. Was fehlt, ist
+Menge. Sie **zusammen** zu handeln waere also nicht dieselbe Kopplung: Die
+Trades kaemen aus verschiedenen Regeln, nicht aus einer haeufiger
+ausgeloesten.
+
+Die Zahlen des Partners standen bis Befund 151 hoeher (0,3185, Guete 2,32).
+Der Unterschied war ein Messfehler und ist unten aufgeschrieben.
 
 Warum das nicht das Ensemble-Loch von Befund 27 ist
 ----------------------------------------------------
@@ -42,40 +45,74 @@ die Guete faellt auf 3,368. Der Unterschied ist genau das Loch aus Befund 27,
 nur eine Regel weiter: Wer zwei korrelierte Ertragsstroeme addiert, ohne die
 Korrelation zu messen, zaehlt Information doppelt.
 
+Der Messfehler im Partner (Befund 151)
+---------------------------------------
+Der Nachlauf aus Befund 22 war **eine** Testfensterlaenge lang, und diese
+Laenge war an genau einer Regel kalibriert - am Spitzenkandidaten, der im
+Mittel sechs Tage haelt. ``Trend-Beteiligung 200 Tage`` haelt laenger. Zehn
+seiner 53 Trades erreichten das Fensterende offen und wurden dort
+glattgestellt, nicht nach Regel: **19 % der Trades**, und es waren die
+groessten Gewinner (im Mittel +50,34 gegen -1,80 bei den uebrigen).
+
+Das ist wortwoertlich der Fehler aus Befund 22, eine Regel weiter. Er stand
+seit Befund 73 in den Zahlen dieses Moduls - und er traf **12 der 24 Regeln
+im Tageskerzen-Katalog**, nicht nur diese.
+
+Der Nachlauf ist deshalb auf **vier** Fensterlaengen verlaengert - gemessen,
+mit demselben Plateau-Kriterium wie damals, nur ueber den Katalog statt ueber
+eine Regel; die Leiter steht in ``backtest.walkforward.nachlauf_fuer``. Die
+Trade-Zahl bleibt bei 53, der Nachlauf verschiebt weiterhin keinen Einstieg.
+
 Was tatsaechlich uebrig bleibt
 ------------------------------
-**Stand nach Befund 140**, gerechnet bei 198 Versuchen mit der Einteilung des
-Gates (also mit Quartalen, Befund 135):
+**Stand nach Befund 151**, gerechnet bei 198 Versuchen mit der Einteilung des
+Gates (also mit Quartalen, Befund 135) und mit dem verlaengerten Nachlauf:
+
+    Spitze allein                      n = 111   Guete 2,730   DSR 0,4707
+    + Trend-Beteiligung 200 Tage       n = 135   Guete 3,030   DSR 0,6775
+    + Donchian-Ausbruch 55/20          n = 105   Guete 2,636   DSR 0,4025
+
+Der erste Verbund bleibt der groesste Sprung, den in diesem Projekt je etwas
+gebracht hat. Er reicht trotzdem nicht: noetig sind 0,95, und in Guete
+gerechnet fehlen **0,614**.
+
+Und der zweite zeigt, dass es nicht von selbst hilft. Beide Partner haben
+praktisch dieselbe Einzelguete (2,15 und 2,35) - der schwaechere hebt den
+Verbund, der staerkere drueckt ihn. Es entscheidet allein, wie unabhaengig die
+Ertraege sind.
+
+**Warum der Partner mehr bringt, als Befund 73 messen konnte:** Die Trades des
+Spitzenkandidaten haeufen sich innerhalb von Quartalen - er verliert 43 seiner
+154 Beobachtungen. Der Partner loest zu anderen Zeiten aus und verteilt sie
+breiter; das Paar kommt auf 135. **Vierundzwanzig zusaetzliche unabhaengige
+Beobachtungen fuer 53 zusaetzliche Trades**, also knapp die Haelfte echte
+Information. Der Beitrag des Partners waechst dadurch von +0,152 auf +0,300
+Guete.
+
+Was vorher hier stand
+---------------------
+Befund 140 (Nachlauf noch eine Fensterlaenge, sonst gleich):
 
     Spitze allein                      n = 111   Guete 2,730   DSR 0,4707
     + Trend-Beteiligung 200 Tage       n = 124   Guete 3,073   DSR 0,6893
     + Donchian-Ausbruch 55/20          n = 106   Guete 2,645   DSR 0,4082
 
-Der erste Verbund ist der groesste Sprung, den in diesem Projekt je etwas
-gebracht hat. Er reicht trotzdem nicht: noetig sind 0,95, und in Guete
-gerechnet fehlen 0,552.
-
-Und der zweite zeigt, dass es nicht von selbst hilft. Beide Partner haben
-praktisch dieselbe Einzelguete (2,32 und 2,34); der eine hebt den Verbund, der
-andere halbiert ihn. Es entscheidet allein, wie unabhaengig die Ertraege sind.
-
-**Warum der Partner mehr bringt, als Befund 73 messen konnte:** Die Trades des
-Spitzenkandidaten haeufen sich innerhalb von Quartalen - er verliert 43 seiner
-154 Beobachtungen. Der Partner loest zu anderen Zeiten aus und verteilt sie
-breiter; das Paar kommt auf 124. **Dreizehn zusaetzliche unabhaengige
-Beobachtungen fuer 53 zusaetzliche Trades**, also rund ein Viertel echte
-Information. Der Beitrag des Partners waechst dadurch von +0,152 auf +0,343
-Guete.
-
-Ueberholt (Befund 73, alte Einteilung ohne Quartale, niedrigerer Zaehler):
+Befund 73 (alte Einteilung ohne Quartale, niedrigerer Zaehler):
 
     Spitze allein                      n = 154   Guete 3,216   DSR 0,7964
     + Trend-Beteiligung 200 Tage       n = 149   Guete 3,368   DSR 0,8602
     + Donchian-Ausbruch 55/20          n = 106   Guete 2,645   DSR 0,4490
 
-Die Guetewerte dieser Zeile lassen sich mit der alten Einteilung auf drei
+Die Guetewerte der letzten Zeile lassen sich mit der alten Einteilung auf drei
 Stellen reproduzieren - die Zahlen waren richtig gerechnet, nur auf einer zu
 grosszuegigen Stichprobe.
+
+Beide Korrekturen gingen in die **strenge** Richtung; der Abstand zur Schwelle
+ist von 0,552 auf 0,614 gewachsen. Die aus Befund 151 hat den Verbund nicht
+umgeworfen: Die zehn Randtrades **wegzulassen** haette ihn umgeworfen, aber
+das war die falsche Gegenprobe - sie misst, wie viel an ihnen haengt, nicht
+was ohne den Fehler herauskommt. Die richtige ist, sie zu Ende zu handeln, und
+dann traegt der Partner immer noch.
 
 Zur Positionsgroesse
 --------------------

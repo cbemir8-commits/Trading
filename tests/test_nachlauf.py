@@ -32,6 +32,7 @@ import pytest
 
 from backtest.engine import BacktestConfig
 from backtest.walkforward import (
+    NACHLAUF_FENSTER,
     WalkForwardReport,
     WalkForwardSplitter,
     _run_window,
@@ -154,17 +155,17 @@ def _lauf(nachlauf: timedelta, frame: pd.DataFrame, config: BacktestConfig):
 
 
 class TestNachlaufLaenge:
-    def test_eine_testfensterlaenge(self) -> None:
+    def test_vier_testfensterlaengen(self) -> None:
         """An die Fensterlaenge gebunden, nicht an feste Tage.
 
-        Auf 15-Minuten-Kerzen waeren drei Monate Nachlauf je Fenster ein
+        Auf 15-Minuten-Kerzen waere ein Jahr Nachlauf je Fenster ein
         Vielfaches der Testdaten selbst.
         """
         for w in WalkForwardSplitter(train_months=12, test_months=3).split(
             datetime(2020, 1, 1, tzinfo=UTC), datetime(2024, 1, 1, tzinfo=UTC)
         ):
-            assert nachlauf_fuer(w) == w.test_end - w.test_start
-            assert timedelta(days=88) <= nachlauf_fuer(w) <= timedelta(days=93)
+            assert nachlauf_fuer(w) == (w.test_end - w.test_start) * 4
+            assert timedelta(days=352) <= nachlauf_fuer(w) <= timedelta(days=372)
 
     def test_kurze_testfenster_bekommen_kurzen_nachlauf(self) -> None:
         fenster = WalkForwardSplitter(train_months=6, test_months=1).split(
@@ -172,7 +173,34 @@ class TestNachlaufLaenge:
         )
 
         assert fenster
-        assert all(nachlauf_fuer(w) <= timedelta(days=31) for w in fenster)
+        assert all(nachlauf_fuer(w) <= timedelta(days=124) for w in fenster)
+
+    def test_eine_fensterlaenge_genuegte_nur_der_einen_regel(self) -> None:
+        """**Der Grund fuer die 4** (Befund 151).
+
+        Befund 22 hat die Laenge an einer Regel kalibriert, die im Mittel
+        sechs Tage haelt. Ueber den ganzen Tageskerzen-Katalog gemessen waren
+        bei einer Fensterlaenge **12 von 24 Regeln** betroffen, zusammen 103
+        Trades; am schwersten ``Trend-Beteiligung 200 Tage`` mit 10 von 53.
+
+        Faellt dieser Test um, ist die Verlaengerung verlorengegangen und der
+        Fehler aus Befund 22 fuer lang haltende Regeln zurueck.
+        """
+        assert NACHLAUF_FENSTER == 4
+
+        w = WalkForwardSplitter(train_months=12, test_months=3).split(
+            datetime(2020, 1, 1, tzinfo=UTC), datetime(2024, 1, 1, tzinfo=UTC)
+        )[0]
+        assert nachlauf_fuer(w) > w.test_end - w.test_start
+
+    def test_die_leiter_steht_im_kopf(self) -> None:
+        """Die Katalog-Leiter ist die Begruendung - sie gehoert dokumentiert,
+        sonst sieht die 4 wie eine gewaehlte Zahl aus."""
+        kopf = nachlauf_fuer.__doc__ or ""
+
+        assert "12 von 24" in kopf, "wie viele Regeln bei 1x betroffen waren"
+        assert "103" in kopf, "und wie viele Trades"
+        assert "Serienende" in kopf, "der Boden von 2 und woher er kommt"
 
 
 def _trade(kennung: str, grund: str) -> Trade:
