@@ -665,10 +665,8 @@ class TestDieAussichtImBericht:
         ).bericht()
 
         assert "Die Zeit loest 1 von 4 offenen Gates" in bericht
+        assert "bricht ein weiteres" in bericht
         assert "Messlatte" in bericht and "Parameter-Plateau" in bericht
-        assert "Ueberlegung, keine Messung" in bericht, (
-            "die Einordnung ist keine Messung und muss es sagen"
-        )
 
     def test_ohne_das_stichprobengate_wird_nichts_eingeordnet(self) -> None:
         """Ist der Deflated Sharpe bestanden, sagt die Einordnung nichts -
@@ -676,3 +674,56 @@ class TestDieAussichtImBericht:
         bericht = _lage(bestanden=9, gesamt=11, offen=("Messlatte",)).bericht()
 
         assert "Die Zeit loest" not in bericht
+
+
+class TestWasDieZeitBricht:
+    """**Befund 161.** Befund 160 hat in den Bericht geschrieben, dass
+    'Schlechtestes Jahr' mit jedem Jahr eine Gelegenheit mehr bekommt
+    durchzufallen - als **Ueberlegung**, ausdruecklich nicht gemessen.
+
+    Gemessen ist es jetzt, ueber sechs Historienlaengen, und es ist schaerfer
+    als die Ueberlegung: Das Gate hat bei 2547 Tagen die Schwelle gerissen und
+    liegt seither bei -10,3 gegen -10,00.
+
+        1451 d  +5,97      2547 d  -10,30   <- ab hier durchgefallen
+        1816 d  +5,44      2912 d  -10,30
+        2320 d  -8,82      3300 d  -10,32
+    """
+
+    def test_die_gemessene_leiter_steht_im_bericht(self) -> None:
+        bericht = _lage(
+            bestanden=7,
+            gesamt=11,
+            offen=(
+                "Messlatte",
+                "Schlechtestes Jahr",
+                "Deflated Sharpe",
+                "Parameter-Plateau",
+            ),
+        ).bericht()
+
+        for wert in ("+5,97", "-8,82", "-10,30", "-10,32"):
+            assert wert in bericht, f"{wert} fehlt in der Leiter"
+        assert "ab hier durchgefallen" in bericht
+        assert "Befund 161" in bericht
+
+    def test_der_mechanismus_steht_dabei(self) -> None:
+        """Die Zahlen allein liessen offen, ob das Zufall ist. Der Grund ist
+        mechanisch: ein Minimum ueber Zwoelfmonatsfenster."""
+        bericht = _lage(
+            bestanden=7, gesamt=11,
+            offen=("Schlechtestes Jahr", "Deflated Sharpe"),
+        ).bericht()
+
+        assert "Minimum" in bericht
+        assert "geht nicht wieder heraus" in bericht
+
+    def test_ohne_das_gate_steht_die_leiter_nicht_da(self) -> None:
+        """Sie gehoert zu diesem einen Gate - wo es nicht offen ist, waere sie
+        nur Beiwerk."""
+        bericht = _lage(
+            bestanden=9, gesamt=11, offen=("Messlatte", "Deflated Sharpe")
+        ).bericht()
+
+        assert "Die Zeit loest" in bericht
+        assert "ab hier durchgefallen" not in bericht

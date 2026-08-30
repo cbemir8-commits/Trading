@@ -14919,3 +14919,87 @@ nicht in Prosa.** Dort veraltet sie, und zwar still.
    gibt es kein Modul mehr ohne Produktivstelle.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.
+
+## Hunderteinundsechzig. Warten loest ein Gate und bricht ein anderes
+
+Befund 160 hat in den Bericht geschrieben:
+
+> *"'Schlechtestes Jahr' bekommt mit jedem Jahr sogar eine Gelegenheit mehr,
+> durchzufallen. (Ueberlegung, keine Messung.)"*
+
+In diesem Projekt gehoeren Ueberlegungen gemessen. Diese hier ist messbar,
+denn die Historie laesst sich kuerzen.
+
+### Vorab festgelegt
+
+* Dieselbe Fensterleiter wie in Befund 138 und 158: die letzten 1451, 1816,
+  2320, 2547, 2912 und 3300 Tage.
+* Jedes Gate an jeder Sprosse, nicht nur das erwartete.
+* **Beide Ausgaenge sind Ergebnisse.** Zeigt sich kein Verfall, war die
+  Ueberlegung falsch und wird in 160 korrigiert.
+* Es ist eine **Beobachtung an einer Reihe**, keine Vorhersage: Kuerzere
+  Historien sind andere Marktphasen, nicht nur weniger davon.
+* Kostet keinen Versuch - derselbe Kandidat, keine neue Hypothese.
+
+### Gemessen
+
+    Historie   Trades   Schlechtestes Jahr    Deflated Sharpe
+     1451 d       53      +5,97   bestanden      0,10
+     1816 d       72      +5,44   bestanden      0,15
+     2320 d      106      -8,82   bestanden      0,09
+     2547 d      112     -10,30   DURCHGEFALLEN  0,18
+     2912 d      135     -10,30   DURCHGEFALLEN  0,49
+     3300 d      158     -10,32   DURCHGEFALLEN  0,46
+
+    Schwelle: -10,00
+
+**Die Ueberlegung war richtig und zu vorsichtig.** Es geht nicht darum, dass
+das Gate mehr Gelegenheiten bekommt - es ist bereits gefallen, bei 2547 Tagen,
+und liegt seither fest.
+
+Der Grund ist mechanisch und steht in ``gate_worst_year``: Die Kennzahl ist
+das **Minimum** ueber alle Zwoelfmonatsfenster der Kapitalkurve. Ein
+schlechtes Jahr, das einmal in der Reihe steht, geht nicht wieder heraus. Mehr
+Historie kann diese Zahl nicht heben, nur senken.
+
+Der Deflated Sharpe geht in die Gegenrichtung (0,10 auf 0,46), aber nicht
+monoton - bei 2320 Tagen steht er bei 0,09, tiefer als bei 1816. Sein Zuwachs
+ist real und verrauscht.
+
+### Was das fuer die Entfernung heisst
+
+``cli stand`` nennt seit Befund 160 mindestens 4,8 Jahre bis zur Schwelle des
+Deflated Sharpe. Diese Messung sagt: **Am Ende dieser Zeit ist ein anderes
+Gate weiterhin durchgefallen**, und zwar nicht wegen fehlender Evidenz,
+sondern weil die Kennzahl ein Minimum ist.
+
+    Die Zeit loest 1 von 4 offenen Gates - und bricht ein weiteres.
+
+Das steht jetzt so im Bericht, mit der Leiter darunter. Wer die 4,8 Jahre
+liest, liest im selben Absatz, was sie nicht bringen.
+
+### Ein Anlauf auf der falschen Konfiguration
+
+Der erste Durchgang nahm ``fraction=1.0`` - die Konfiguration des
+Referenztests, nicht die von ``cli stand``. Dort bestand 'Schlechtestes Jahr'
+an **jeder** Sprosse (-9,61 gegen -10,00 am Ende), und ich haette beinahe
+berichtet, die Ueberlegung sei widerlegt.
+
+Der Unterschied ist die Positionsgroesse: Der Referenzpunkt rechnet mit
+einfachem Einsatz, der Betriebspunkt mit dem Vola-Ziel des Genoms. Aufgefallen
+ist es nur, weil ``cli stand`` das Gate als offen meldet und meine Tabelle es
+als bestanden - ein Widerspruch, der nach einer Erklaerung verlangte.
+
+**Zwei Betriebspunkte, zwei Antworten.** Wer die Konfiguration nicht
+mitnennt, misst irgendetwas.
+
+### Was daraus folgt
+
+1. **Am Stand aendert sich nichts.** Guete 2,986, DSR 0,6480, es fehlen 0,659.
+2. Warten ist kein Weg zur Zulassung, sondern nur zu **einem** von vier
+   offenen Gates. Das war eine Ueberlegung und ist jetzt eine Messung.
+3. Ein Gate, dessen Kennzahl ein Minimum ueber die Historie ist, kann durch
+   mehr Historie nur schlechter werden. Ob das so gewollt ist, ist eine
+   Entscheidung ueber die Schwelle - und die faellt nicht hier.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.

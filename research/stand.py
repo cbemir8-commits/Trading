@@ -515,6 +515,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'cli stand' zeigt sie jetzt, fuer beide Kandidaten",
         160,
     ),
+    # Befund 160 hat die Einordnung als Ueberlegung in den Bericht
+    # geschrieben. Befund 161 hat sie gemessen - und sie faellt schaerfer aus.
+    Richtung(
+        "Warten hilft nur einem Gate",
+        "'Schlechtestes Jahr' riss die Schwelle bei 2547 Tagen und steht "
+        "seither bei -10,3 gegen -10,00 - ein Minimum kehrt nicht zurueck",
+        161,
+    ),
 )
 
 
@@ -988,7 +996,10 @@ class Lage:
         getestet und unsichtbar im Modul.
 
         Dazu gehoert die unbequeme Haelfte: Von den offenen Gates haengt
-        **eines** an der Stichprobe. Wer wartet, loest dieses eine.
+        **eines** an der Stichprobe. Wer wartet, loest dieses eine - und
+        verliert ein anderes. 'Schlechtestes Jahr' ist ein Minimum ueber
+        Zwoelfmonatsfenster und hat die Schwelle bei 2547 Tagen Historie
+        gerissen; seither steht es bei -10,3 gegen -10,00 (Befund 161).
         """
         from research.referenz import AUSSICHT, AUSSICHT_VERBUND
 
@@ -1004,9 +1015,8 @@ class Lage:
             "  Untergrenzen, keine Termine - die Sammelrate ist die des",
             "  laengsten gemessenen Fensters (siehe research/referenz.py).",
         ]
-        # **Die Einordnung ist eine Ueberlegung, keine Messung** - und sie
-        # steht als solche da. Ob 'Schlechtestes Jahr' in fuenf Jahren haelt,
-        # kann niemand messen, bevor die Jahre da sind.
+        # Befund 160 hat das hier als **Ueberlegung** hingeschrieben. Befund
+        # 161 hat es gemessen, und es ist schlimmer als die Ueberlegung.
         if self.offen:
             zeitgates = [g for g in self.offen if "Deflated Sharpe" in g]
             andere = [g for g in self.offen if g not in zeitgates]
@@ -1014,12 +1024,24 @@ class Lage:
                 zeilen += [
                     "",
                     f"  **Die Zeit loest {len(zeitgates)} von {len(self.offen)} "
-                    f"offenen Gates.** Nur der Deflated Sharpe ist eine",
-                    "  Funktion der Stichprobe. Offen bleiben: "
-                    + ", ".join(andere) + ".",
-                    "  'Schlechtestes Jahr' bekommt mit jedem Jahr sogar eine",
-                    "  Gelegenheit mehr, durchzufallen. (Ueberlegung, keine Messung.)",
+                    f"offenen Gates** - und bricht ein weiteres.",
+                    "  Nur der Deflated Sharpe ist eine Funktion der Stichprobe.",
+                    "  Offen bleiben: " + ", ".join(andere) + ".",
                 ]
+                if any("Schlechtestes Jahr" in g for g in andere):
+                    zeilen += [
+                        "",
+                        "  Gemessen ueber sechs Historienlaengen (Befund 161):",
+                        "     1451 d  +5,97    2547 d  -10,30  <- ab hier "
+                        "durchgefallen",
+                        "     1816 d  +5,44    2912 d  -10,30",
+                        "     2320 d  -8,82    3300 d  -10,32   (Schwelle -10,00)",
+                        "",
+                        "  'Schlechtestes Jahr' nimmt das **Minimum** ueber alle",
+                        "  Zwoelfmonatsfenster. Ein schlechtes Jahr, das einmal in",
+                        "  der Reihe steht, geht nicht wieder heraus. Warten kann",
+                        "  dieses Gate also nicht zurueckgewinnen.",
+                    ]
         return zeilen
 
     def bericht(self) -> str:
