@@ -242,41 +242,42 @@ def test_die_aussicht_rechnet_mit_dem_heutigen_n() -> None:
 
     assert AUSSICHT.heute == SPOTPUNKT.effektiv
     assert AUSSICHT.fehlend == SPOTPUNKT.noetiges_n() - SPOTPUNKT.effektiv
-    assert AUSSICHT.befund == 158
+    assert AUSSICHT.befund == 159
 
 
 def test_die_aussicht_ist_deutlich_laenger_als_befund_132_sagte() -> None:
-    """1,8 Jahre bei n = 152; nach Befund 135 waren es 5,6, nach 158 sind es
-    6,0.
+    """1,8 Jahre bei n = 152; nach Befund 135 waren es 5,6, heute 5,9.
 
     Zwischendurch standen hier 5,4 Jahre, und das war **zu optimistisch**:
-    Befund 152 hat ``heute`` nachgezogen und ``noetig`` vergessen, obwohl
-    dieselbe Korrektur die Guete gesenkt hatte (siehe ``TestNoetigesN``).
+    Befund 152 hat ``heute`` nachgezogen und ``noetig`` vergessen (Befund
+    158), Befund 158 dann die Sammelrate (Befund 159). Drei gepflegte Felder,
+    zwei Laeufe, zweimal eines vergessen - siehe ``TestNoetigesN`` und
+    ``TestDieSammelrate``.
     """
     from research.referenz import AUSSICHT
 
     assert AUSSICHT.jahre > 5.0
-    assert AUSSICHT.tage == pytest.approx(2193, abs=5)
+    assert AUSSICHT.tage == pytest.approx(2152, abs=5)
 
 
-def test_eine_aussicht_ohne_rate_laesst_sich_nicht_rechnen() -> None:
+def test_eine_aussicht_ohne_historie_laesst_sich_nicht_rechnen() -> None:
     from research.referenz import Aussicht
 
-    with pytest.raises(ValueError, match="keine Zeit rechnen"):
-        Aussicht(noetig=182, heute=112, rate_je_tausend_tage=0.0, befund=138)
+    with pytest.raises(ValueError, match="keine Sammelrate"):
+        Aussicht(noetig=182, heute=112, historie_tage=0, befund=138)
 
 
 def test_eine_aussicht_ohne_fundstelle_ist_eine_behauptung() -> None:
     from research.referenz import Aussicht
 
     with pytest.raises(ValueError, match="Behauptung"):
-        Aussicht(noetig=182, heute=112, rate_je_tausend_tage=34.2, befund=0)
+        Aussicht(noetig=182, heute=112, historie_tage=3277, befund=0)
 
 
 def test_ein_erreichtes_ziel_braucht_keine_zeit() -> None:
     from research.referenz import Aussicht
 
-    erreicht = Aussicht(noetig=100, heute=112, rate_je_tausend_tage=34.2, befund=138)
+    erreicht = Aussicht(noetig=100, heute=112, historie_tage=3277, befund=138)
     assert erreicht.fehlend == 0
     assert erreicht.tage == 0
 
@@ -285,9 +286,9 @@ def test_die_zeile_weist_die_zahl_als_untergrenze_aus() -> None:
     from research.referenz import AUSSICHT
 
     assert "mindestens" in AUSSICHT.als_zeile()
-    assert "Befund 158" in AUSSICHT.als_zeile(), (
+    assert "Befund 159" in AUSSICHT.als_zeile(), (
         "die Fundstelle ist die **letzte** Messung, nicht die erste - "
-        "Befund 158 hat noetig von 182 auf 190 nachgezogen"
+        "Befund 159 hat die Sammelrate zur Rechnung gemacht"
     )
 
 
@@ -351,3 +352,45 @@ class TestNoetigesN:
         kopf = Aussicht.__doc__ or ""
         assert "Monoton ist das nicht mehr" in kopf
         assert "0,841" in kopf, "die Sprosse, an der es bricht"
+
+
+class TestDieSammelrate:
+    """**Befund 159, und es ist derselbe Fehler wie 158.**
+
+    ``Aussicht`` hatte drei gepflegte Felder: ``noetig``, ``heute`` und die
+    Sammelrate. Befund 152 zog ``heute`` nach und vergass ``noetig``. Befund
+    158 holte ``noetig`` nach - und liess die Sammelrate auf 34,2 stehen, dem
+    Wert aus Befund 138 (112 auf 3277 Tagen). Bei ``heute = 115`` auf 3300
+    Tagen sind es 34,8.
+
+    Und zwar im selben Lauf, in dem der Satz stand: *"Ein Test, der die eine
+    Haelfte einer Rechnung bindet, sichert nicht die andere."*
+
+    Deshalb ist die Rate jetzt keine Zahl mehr, sondern eine Rechnung.
+    """
+
+    def test_die_rate_folgt_aus_beobachtungen_und_historie(self) -> None:
+        from research.referenz import AUSSICHT
+
+        assert AUSSICHT.rate_je_tausend_tage == pytest.approx(
+            1000.0 * AUSSICHT.heute / AUSSICHT.historie_tage
+        )
+        assert AUSSICHT.rate_je_tausend_tage == pytest.approx(34.8, abs=0.1)
+
+    def test_sie_kann_nicht_mehr_von_heute_abweichen(self) -> None:
+        """Der Kern: Wer ``heute`` aendert, aendert die Rate zwangslaeufig
+        mit. Genau das ging zweimal schief."""
+        from dataclasses import replace
+
+        from research.referenz import AUSSICHT
+
+        mehr = replace(AUSSICHT, heute=AUSSICHT.heute + 20)
+
+        assert mehr.rate_je_tausend_tage > AUSSICHT.rate_je_tausend_tage
+
+    def test_beide_aussichten_teilen_dieselbe_historie(self) -> None:
+        """Sie messen denselben Zeitraum - waeren die Spannen verschieden,
+        waeren die Raten nicht vergleichbar."""
+        from research.referenz import AUSSICHT, AUSSICHT_VERBUND
+
+        assert AUSSICHT.historie_tage == AUSSICHT_VERBUND.historie_tage

@@ -208,14 +208,34 @@ class Aussicht:
 
     noetig: int
     heute: int
-    rate_je_tausend_tage: float
+    historie_tage: int
     befund: int
 
     def __post_init__(self) -> None:
-        if self.rate_je_tausend_tage <= 0:
-            raise ValueError("Ohne Sammelrate laesst sich keine Zeit rechnen.")
+        if self.historie_tage <= 0:
+            raise ValueError("Ohne Historie laesst sich keine Sammelrate rechnen.")
+        if self.heute <= 0:
+            raise ValueError("Ohne Beobachtungen gibt es keine Rate.")
         if self.befund <= 0:
             raise ValueError("Eine Aussicht ohne Fundstelle ist eine Behauptung.")
+
+    @property
+    def rate_je_tausend_tage(self) -> float:
+        """Effektive Beobachtungen je 1000 Tage - **gerechnet, nicht gepflegt.**
+
+        Das ist genau die Rate am laengsten gemessenen Fenster, denn dort ist
+        die Historie die ganze Reihe: ``heute`` Beobachtungen auf
+        ``historie_tage`` Tagen. Befund 138 hat sie so gebildet (112 auf 3277
+        Tagen = 34,2), nur stand sie danach als Zahl da.
+
+        **Warum sie jetzt eine Rechnung ist.** Befund 158 hat ``noetig`` und
+        ``heute`` nachgezogen und diese dritte Zahl stehen lassen - im selben
+        Lauf, in dem der Satz stand, dass eine Wache ueber die eine Haelfte
+        einer Rechnung die andere nicht sichert. Drei gepflegte Felder,
+        zwei nachgezogen. Jetzt sind es zwei gepflegte, und eines davon
+        (``historie_tage``) haengt an den Daten und wird geprueft.
+        """
+        return 1000.0 * self.heute / self.historie_tage
 
     @property
     def fehlend(self) -> int:
@@ -240,8 +260,8 @@ class Aussicht:
 AUSSICHT = Aussicht(
     noetig=190,
     heute=115,
-    rate_je_tausend_tage=34.2,
-    befund=158,
+    historie_tage=3300,
+    befund=159,
 )
 
 #: Dieselbe Rechnung fuer den **besten gemessenen Kandidaten** - den Verbund
@@ -257,8 +277,8 @@ AUSSICHT = Aussicht(
 AUSSICHT_VERBUND = Aussicht(
     noetig=208,
     heute=136,
-    rate_je_tausend_tage=41.2,
-    befund=158,
+    historie_tage=3300,
+    befund=159,
 )
 
 

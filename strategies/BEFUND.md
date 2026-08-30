@@ -14768,3 +14768,80 @@ Messung mehr. Das steht jetzt so im Kopf.
    andere. Er sah aus wie eine Wache und war eine halbe.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.
+
+## Hundertneunundfuenfzig. Derselbe Fehler, einen Lauf spaeter
+
+Befund 158 endete mit dem Satz:
+
+> *"Ein Test, der die eine Haelfte einer Rechnung bindet, sichert nicht die
+> andere. Er sah aus wie eine Wache und war eine halbe."*
+
+Im selben Lauf habe ich es noch einmal gemacht.
+
+### Was passiert ist
+
+``Aussicht`` hatte **drei** gepflegte Felder: ``noetig``, ``heute`` und
+``rate_je_tausend_tage``.
+
+    Befund 152   zog 'heute' nach (112 -> 115), liess 'noetig' stehen
+    Befund 158   holte 'noetig' nach (182 -> 190), liess die Rate stehen
+
+Die Rate stand auf **34,2** - das ist Befund 138s Wert, 112 Beobachtungen auf
+3277 Tagen. Bei den heutigen 115 auf 3300 Tagen sind es **34,8**. Ich habe die
+Leiter, die genau diese Rate misst, in Befund 158 selbst aufgeschrieben (34,5
+in der Verbund-Konfiguration) und die Konstante daneben nicht angefasst.
+
+    mit 34,2:   75 / 34,2 * 1000 = 2193 Tage = 6,0 Jahre
+    mit 34,8:   75 / 34,8 * 1000 = 2152 Tage = 5,9 Jahre
+
+Der Unterschied ist klein. Der Fehler ist es nicht: Es ist derselbe, direkt
+nachdem ich ihn benannt hatte.
+
+### Die Lehre, diesmal baulich statt sprachlich
+
+Zwei Laeufe hintereinander habe ich ein Feld nachgezogen und ein verwandtes
+vergessen. Ein dritter Satz darueber haette denselben Wert wie die ersten
+beiden. Also ist die Rate **keine Zahl mehr, sondern eine Rechnung**:
+
+    rate_je_tausend_tage = 1000 * heute / historie_tage
+
+Damit kann sie von ``heute`` nicht mehr abweichen - wer das eine aendert,
+aendert das andere zwangslaeufig mit. Ein Test haelt genau diese Kopplung
+fest.
+
+Uebrig bleiben zwei gepflegte Eingaben: ``historie_tage`` und die Frage,
+welchen Kandidaten die Aussicht beschreibt. Die erste haengt an den Daten und
+hat jetzt einen ``daten``-markierten Test gegen den Kerzenspeicher; die zweite
+ist eine Entscheidung, keine Zahl.
+
+Der Stand der Felder in ``Aussicht``:
+
+    noetig       gerechnet aus SPOTPUNKT (Befund 158), Test bindet es
+    heute        gebunden an SPOTPUNKT.effektiv, Test bindet es
+    Sammelrate   gerechnet aus heute und historie_tage (dieser Befund)
+    historie     gepflegt, aber gegen den Speicher geprueft
+
+### Und der Test hat sofort meinen naechsten Fehler gefangen
+
+Der neue ``daten``-Test verglich ``historie_tage`` mit der Spanne des
+Kerzenspeichers - und meldete **5354 statt 3300**. Ich hatte die *Vereinigung*
+beider Reihen genommen: BTC reicht bis 2012 zurueck, ETH erst bis 2017. Der
+Walk-Forward schneidet auf die **gemeinsame** Spanne (``common_range``), und
+darauf ist die Sammelrate gerechnet.
+
+Der Test war also im ersten Anlauf falsch und hat es selbst gezeigt. So soll
+es sein.
+
+### Was daraus folgt
+
+1. **Am Stand aendert sich nichts.** Guete 2,986, DSR 0,6480, es fehlen 0,659.
+   Die Entfernung fuer den Bestand faellt von 6,0 auf 5,9 Jahre, die fuer den
+   Verbund bleibt bei 4,8.
+2. Drei Laeufe in Folge fanden eine Zahl, die gepflegt war, obwohl sie
+   ableitbar ist - 157 (Kerzenbestand), 158 (noetiges n), 159 (Sammelrate).
+   Die Ausbeute dieser Suche laesst nach; ``Aussicht`` hat jetzt kein
+   ableitbares gepflegtes Feld mehr.
+3. Wer sich beim Nachziehen zweimal hintereinander verzaehlt, sollte aufhoeren
+   nachzuziehen und anfangen zu rechnen. Das ist hier geschehen.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.

@@ -260,3 +260,38 @@ def test_der_gemeldete_kerzenbestand_stimmt_mit_dem_speicher_ueberein() -> None:
         )
         if vorhanden:
             assert f"1d {len(frame)}" in zeile, "die Zahl muss die gemessene sein"
+
+
+@pytest.mark.daten
+def test_die_historie_der_aussicht_stimmt_mit_dem_speicher_ueberein() -> None:
+    """**Befund 159.** ``historie_tage`` ist das letzte gepflegte Feld der
+    Aussichtsrechnung - und das einzige, das an den Daten haengt.
+
+    Waechst die Reihe, waechst die Spanne, und die Sammelrate aendert sich.
+    Ohne diese Pruefung faende das niemand, bis jemand nachrechnet.
+    """
+    from backtest.portfolio_walkforward import common_range
+    from core.config import get_settings
+    from core.models import Interval
+    from data.store import CandleStore
+    from research.referenz import AUSSICHT
+
+    store = CandleStore(get_settings().paths.data_store)
+    roh = {
+        s: f for s in PAIRS
+        if (f := store.read(s, Interval("D"))) is not None and not f.empty
+    }
+    assert roh, "ohne Kerzen sagt der Test nichts"
+
+    # **Die gemeinsame Spanne, nicht die Vereinigung.** BTC reicht bis 2012
+    # zurueck, ETH erst bis 2017; der Walk-Forward schneidet auf die kuerzere
+    # (``common_range``), und genau darauf ist die Sammelrate gerechnet. Der
+    # erste Anlauf dieses Tests nahm die Vereinigung und kam auf 5354 Tage.
+    rahmen = common_range(roh)
+    erster = next(iter(rahmen.values()))
+    spanne = (erster["open_time"].iloc[-1] - erster["open_time"].iloc[0]).days
+
+    assert AUSSICHT.historie_tage == pytest.approx(spanne, abs=40), (
+        f"referenz.py nennt {AUSSICHT.historie_tage} Tage Historie, gemessen "
+        f"sind {spanne} - die Sammelrate haengt daran."
+    )

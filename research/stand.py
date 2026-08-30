@@ -503,6 +503,12 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Kandidat ist der Verbund mit 4,8 - jetzt beide da",
         158,
     ),
+    Richtung(
+        "Dritte Zahl derselben Rechnung",
+        "Befund 158 zog 'noetig' nach und liess die Sammelrate auf 34,2 - "
+        "bei 115 auf 3300 Tagen sind es 34,8; jetzt eine Rechnung",
+        159,
+    ),
 )
 
 
