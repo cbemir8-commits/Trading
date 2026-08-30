@@ -612,3 +612,67 @@ class TestDerKerzenbestand:
             "genau dieser Satz war fuenf Befunde lang falsch"
         )
         assert "15-Minuten" in punkt.stand
+
+
+class TestDieAussichtImBericht:
+    """**Befund 160.** ``AUSSICHT`` rechnet die Entfernung seit Befund 132 und
+    war an keiner Stelle angezeigt.
+
+    Gepflegt, getestet, unsichtbar - die meistzitierte vorausschauende Zahl
+    des Projekts stand nur im Modul. Dieselbe Bauart wie 152 (Randpuffer nur
+    in Tests), 154 (Zeitskala) und 155 (Fenstervergleich): gebaut und nicht
+    angeschlossen.
+    """
+
+    def test_beide_kandidaten_stehen_im_bericht(self) -> None:
+        from research.referenz import AUSSICHT, AUSSICHT_VERBUND
+
+        bericht = _lage(bestanden=7, gesamt=11, offen=("Deflated Sharpe",)).bericht()
+
+        assert "WIE WEIT ES NOCH IST" in bericht
+        assert AUSSICHT.als_zeile() in bericht
+        assert AUSSICHT_VERBUND.als_zeile() in bericht
+
+    def test_die_zahl_steht_nur_dort_und_nicht_in_der_prosa(self) -> None:
+        """**Die Lehre aus 156 bis 159.** Eine gerechnete Zahl gehoert nicht
+        als Text in einen Registereintrag - dort veraltet sie."""
+        from research.referenz import AUSSICHT
+
+        jahre = f"{AUSSICHT.jahre:.1f}"
+        for r in (*GESCHLOSSEN, *BEHOBEN):
+            assert jahre not in r.ergebnis, (
+                f"'{r.name}' nennt die Jahreszahl im Text - sie wird "
+                f"gerechnet und veraltet dort still"
+            )
+
+    def test_ein_zugelassener_kandidat_braucht_keine_entfernung(self) -> None:
+        fertig = _lage(bestanden=11, gesamt=11, offen=())
+
+        assert "WIE WEIT ES NOCH IST" not in fertig.bericht()
+
+    def test_die_einordnung_nennt_was_die_zeit_nicht_loest(self) -> None:
+        """**Die unbequeme Haelfte.** Von vier offenen Gates haengt eines an
+        der Stichprobe; wer wartet, loest genau dieses."""
+        bericht = _lage(
+            bestanden=7,
+            gesamt=11,
+            offen=(
+                "Messlatte",
+                "Schlechtestes Jahr",
+                "Deflated Sharpe",
+                "Parameter-Plateau",
+            ),
+        ).bericht()
+
+        assert "Die Zeit loest 1 von 4 offenen Gates" in bericht
+        assert "Messlatte" in bericht and "Parameter-Plateau" in bericht
+        assert "Ueberlegung, keine Messung" in bericht, (
+            "die Einordnung ist keine Messung und muss es sagen"
+        )
+
+    def test_ohne_das_stichprobengate_wird_nichts_eingeordnet(self) -> None:
+        """Ist der Deflated Sharpe bestanden, sagt die Einordnung nichts -
+        dann loest die Zeit gar nichts mehr."""
+        bericht = _lage(bestanden=9, gesamt=11, offen=("Messlatte",)).bericht()
+
+        assert "Die Zeit loest" not in bericht

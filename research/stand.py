@@ -499,8 +499,8 @@ BEHOBEN: tuple[Richtung, ...] = (
     ),
     Richtung(
         "Entfernung galt dem falschen Kandidaten",
-        "AUSSICHT beschreibt den Bestand (6,0 Jahre); der beste gemessene "
-        "Kandidat ist der Verbund mit 4,8 - jetzt beide da",
+        "AUSSICHT beschreibt den Bestand, der beste gemessene Kandidat ist "
+        "der Verbund - jetzt beide da, und die Jahre stehen nur noch dort",
         158,
     ),
     Richtung(
@@ -508,6 +508,12 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Befund 158 zog 'noetig' nach und liess die Sammelrate auf 34,2 - "
         "bei 115 auf 3300 Tagen sind es 34,8; jetzt eine Rechnung",
         159,
+    ),
+    Richtung(
+        "Entfernung nirgends angezeigt",
+        "AUSSICHT rechnet sie seit Befund 132 und stand in keinem Bericht - "
+        "'cli stand' zeigt sie jetzt, fuer beide Kandidaten",
+        160,
     ),
 )
 
@@ -973,6 +979,49 @@ class Lage:
             f"nicht gezaehlt)"
         )
 
+    def _aussichtszeilen(self) -> list[str]:
+        """Wie weit es noch ist - **und was die Zeit ueberhaupt loest.**
+
+        ``research.referenz.AUSSICHT`` rechnet die Entfernung seit Befund 132
+        und ist bis Befund 160 an **keiner** Stelle angezeigt worden. Die
+        meistzitierte vorausschauende Zahl des Projekts stand gepflegt,
+        getestet und unsichtbar im Modul.
+
+        Dazu gehoert die unbequeme Haelfte: Von den offenen Gates haengt
+        **eines** an der Stichprobe. Wer wartet, loest dieses eine.
+        """
+        from research.referenz import AUSSICHT, AUSSICHT_VERBUND
+
+        if self.zugelassen:
+            return []
+        zeilen = [
+            "",
+            "WIE WEIT ES NOCH IST",
+            "-" * 72,
+            f"  Bestand allein   {AUSSICHT.als_zeile()}",
+            f"  bester Verbund   {AUSSICHT_VERBUND.als_zeile()}",
+            "",
+            "  Untergrenzen, keine Termine - die Sammelrate ist die des",
+            "  laengsten gemessenen Fensters (siehe research/referenz.py).",
+        ]
+        # **Die Einordnung ist eine Ueberlegung, keine Messung** - und sie
+        # steht als solche da. Ob 'Schlechtestes Jahr' in fuenf Jahren haelt,
+        # kann niemand messen, bevor die Jahre da sind.
+        if self.offen:
+            zeitgates = [g for g in self.offen if "Deflated Sharpe" in g]
+            andere = [g for g in self.offen if g not in zeitgates]
+            if zeitgates and andere:
+                zeilen += [
+                    "",
+                    f"  **Die Zeit loest {len(zeitgates)} von {len(self.offen)} "
+                    f"offenen Gates.** Nur der Deflated Sharpe ist eine",
+                    "  Funktion der Stichprobe. Offen bleiben: "
+                    + ", ".join(andere) + ".",
+                    "  'Schlechtestes Jahr' bekommt mit jedem Jahr sogar eine",
+                    "  Gelegenheit mehr, durchzufallen. (Ueberlegung, keine Messung.)",
+                ]
+        return zeilen
+
     def bericht(self) -> str:
         zeilen = [
             "STAND",
@@ -986,6 +1035,7 @@ class Lage:
             f"  Suchbudget {BUDGET.zeile(self.versuche)}",
             "",
             self.urteil(),
+            *self._aussichtszeilen(),
             "",
             "GEMESSEN UND GESCHLOSSEN",
             "-" * 72,

@@ -14845,3 +14845,77 @@ es sein.
    nachzuziehen und anfangen zu rechnen. Das ist hier geschehen.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.
+
+## Hundertsechzig. Die Entfernung stand nirgends
+
+``research.referenz.AUSSICHT`` rechnet seit Befund 132, wie weit es bis zur
+Zulassung noch ist. Befund 138 hat sie nachgemessen, 158 korrigiert, 159 zur
+Rechnung gemacht - und **angezeigt wurde sie nie.**
+
+    grep AUSSICHT ausserhalb von referenz.py und den Tests:
+    genau ein Treffer, und der steht in einem Registereintrag als Prosa.
+
+Gepflegt, getestet, unsichtbar. Das ist dieselbe Bauart wie der Randpuffer in
+152 (nur in zwei Tests), die Zeitskala in 154 und der Fenstervergleich in 155:
+gebaut und nicht angeschlossen. Nur trifft es diesmal die Zahl, die ein Mensch
+am ehesten wissen will.
+
+### Was jetzt im Bericht steht
+
+    WIE WEIT ES NOCH IST
+    ------------------------------------------------------------------------
+      Bestand allein   mindestens 2152 Tage (5.9 Jahre) fuer 75 fehlende
+                       Beobachtungen  (Befund 159)
+      bester Verbund   mindestens 1747 Tage (4.8 Jahre) fuer 72 fehlende
+                       Beobachtungen  (Befund 159)
+
+      Untergrenzen, keine Termine - die Sammelrate ist die des
+      laengsten gemessenen Fensters.
+
+### Und die unbequeme Haelfte
+
+Die Zahl allein waere irrefuehrend, denn sie beantwortet nur **ein** Gate:
+
+      **Die Zeit loest 1 von 4 offenen Gates.** Nur der Deflated Sharpe ist
+      eine Funktion der Stichprobe. Offen bleiben: Messlatte, Schlechtestes
+      Jahr, Parameter-Plateau.
+      'Schlechtestes Jahr' bekommt mit jedem Jahr sogar eine Gelegenheit
+      mehr, durchzufallen. (Ueberlegung, keine Messung.)
+
+Der Deflated Sharpe haengt an ``n`` - das ist seine Definition. Die drei
+anderen tun es nicht:
+
+* **Messlatte** ist eine gesetzte Rendite-Schwelle, und sie steht seit Befund
+  57 im Konflikt mit der Rueckgangsgrenze. Warten aendert daran nichts.
+* **Parameter-Plateau** misst Robustheit in der Nachbarschaft der Parameter.
+  Keine Funktion der Stichprobe.
+* **Schlechtestes Jahr** nimmt das schwaechste Kalenderjahr. Mehr Jahre heisst
+  mehr Ziehungen aus derselben Verteilung - die Chance auf ein schlechtes
+  steigt, sie faellt nicht.
+
+**Das ist ausdruecklich eine Ueberlegung und keine Messung**, und es steht so
+im Bericht. Ob 'Schlechtestes Jahr' in fuenf Jahren haelt, kann niemand
+messen, bevor die Jahre da sind. Was sich sagen laesst: Es gibt keinen
+Mechanismus, durch den Warten dieses Gate leichter macht.
+
+### Die Zahl steht jetzt nur noch an einer Stelle
+
+Der eine Registereintrag, der sie als Prosa nannte ("6,0 Jahre"), war nach
+**einem** Lauf falsch - Befund 159 hat 5,9 daraus gemacht. Die Zahl ist aus
+dem Text heraus, und ein Test haelt fest, dass keine Registerzeile die
+Jahreszahl mehr nennt.
+
+Das ist die Lehre aus 156 bis 159 als Regel: **Eine gerechnete Zahl gehoert
+nicht in Prosa.** Dort veraltet sie, und zwar still.
+
+### Was daraus folgt
+
+1. **Am Stand aendert sich nichts.** Guete 2,986, DSR 0,6480, es fehlen 0,659.
+2. Wer ``cli stand`` liest, sieht jetzt die Entfernung - und daneben, dass sie
+   nur eines von vier offenen Gates betrifft. Beides gehoert zusammen; die
+   Jahreszahl allein liest sich wie ein Fahrplan.
+3. Vier Laeufe in Folge hat ein gebautes Werkzeug an nichts gehangen (152,
+   154, 155, 160). Die Suche danach ist damit erschoepft: In ``research/``
+   gibt es kein Modul mehr ohne Produktivstelle.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.
