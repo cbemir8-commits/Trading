@@ -29,7 +29,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-__all__ = ["AUSSICHT", "SPOTPUNKT", "UEBERHOLT", "Aussicht", "Referenzpunkt", "veraltet"]
+__all__ = [
+    "AUSSICHT",
+    "AUSSICHT_VERBUND",
+    "SPOTPUNKT",
+    "UEBERHOLT",
+    "Aussicht",
+    "Referenzpunkt",
+    "veraltet",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +55,21 @@ class Referenzpunkt:
     versuche: int
     schwelle: float = 0.95
 
+    schiefe: float | None = None
+    woelbung: float | None = None
+    """Die Verteilungsform der Trades - **damit ``noetiges_n`` rechenbar ist.**
+
+    Ohne sie war die Zahl der noch fehlenden Beobachtungen von Hand gepflegt,
+    und genau das ist schiefgegangen: In Befund 152 habe ich ``AUSSICHT.heute``
+    nachgezogen und ``noetig`` stehen lassen, obwohl dieselbe Korrektur auch
+    ``guete`` gesenkt hatte. Ein niedrigerer Sharpe je Trade verlangt aber ein
+    **groesseres** n. Die genannte Entfernung war dadurch sechs Befunde lang
+    zu kurz (Befund 158).
+
+    ``None`` bei den ueberholten Staenden: Dort ist die Form nie festgehalten
+    worden, und ``noetiges_n`` sagt dann ehrlich nichts.
+    """
+
     def __post_init__(self) -> None:
         if self.effektiv > self.trades:
             raise ValueError(
@@ -60,6 +83,28 @@ class Referenzpunkt:
     def luecke(self) -> float:
         """Was zur Schwelle fehlt."""
         return self.schwelle - self.dsr
+
+    def noetiges_n(self, *, hoechstens: int = 3000) -> int | None:
+        """Die kleinste effektive Stichprobe, bei der die Schwelle traegt.
+
+        Gerechnet, nicht gepflegt. ``None``, wenn die Verteilungsform fehlt -
+        eine Entfernung ohne Verteilungsform waere geraten.
+        """
+        if self.schiefe is None or self.woelbung is None:
+            return None
+        from research.gates import deflated_sharpe_ratio
+
+        for n in range(max(self.effektiv, 10), hoechstens):
+            wert = deflated_sharpe_ratio(
+                observed_sharpe=self.guete,
+                trials=self.versuche,
+                sample_size=n,
+                skew=self.schiefe,
+                kurtosis=self.woelbung,
+            )
+            if float(wert) >= self.schwelle:
+                return n
+        return None
 
     def als_zeile(self) -> str:
         return (
@@ -83,6 +128,8 @@ SPOTPUNKT = Referenzpunkt(
     bestanden=9,
     gesamt=11,
     versuche=198,
+    schiefe=3.4646,
+    woelbung=15.9173,
 )
 
 #: Staende, die einmal massgeblich waren und es nicht mehr sind. Wer einen
@@ -129,22 +176,34 @@ class Aussicht:
     """Wie weit es bis zur Schwelle ist - in Beobachtungen und in Tagen.
 
     **Die Tage sind eine Untergrenze, keine Schaetzung.** Gerechnet wird mit
-    der effektiven Sammelrate des laengsten gemessenen Fensters, und die
-    faellt, je laenger die Historie wird (Befund 138):
+    der effektiven Sammelrate des **laengsten** gemessenen Fensters. Befund 138
+    hat sie ueber sechs Fenster vermessen und gefunden, dass der Anteil mit der
+    Historie monoton faellt - mehr Quartale, engere Permutationsnull, mehr
+    sichtbare Abhaengigkeit.
 
-        Historie   Quartale      p   Anteil   eff je 1000 Tage
-         1451 d          12  1,0000    1,000               35,8
-         1816 d          16  0,2110    1,000               39,6
-         2320 d          21  0,0645    1,000               44,4
-         2547 d          24  0,0255    0,901               39,3
-         2912 d          28  0,0200    0,876               41,2
-         3277 d          32  0,0050    0,737               34,2
+    Nachgemessen mit der heutigen Rezeptur (Befund 158, acht Einteilungen
+    statt zwei):
 
-    Mehr Historie heisst mehr Quartale, mehr Quartale heisst eine engere
-    Permutationsnull, und eine engere Null sieht mehr Abhaengigkeit. Der
-    Anteil sinkt also weiter, waehrend man wartet - und die noetige Zeit
-    waechst mit. Wie stark, ist von hier aus nicht messbar; deshalb steht hier
-    eine Untergrenze und kein Termin.
+        Historie    roh   n_eff   Anteil   eff je 1000 Tage
+         1451 d      54      54    1,000               37,2
+         1816 d      73      73    1,000               40,2
+         2320 d     106     106    1,000               45,7
+         2547 d     113      95    0,841               37,3
+         2912 d     136     125    0,919               42,9
+         3300 d     158     114    0,722               34,5
+
+    **Monoton ist das nicht mehr** - bei 2547 Tagen faellt der Anteil auf
+    0,841 und steigt danach wieder auf 0,919. Die Begruendung aus 138 traegt
+    also schwaecher, als sie dort formuliert war.
+
+    Was bleibt: Das laengste Fenster hat weiter den kleinsten Anteil (0,722),
+    und darauf ist gerechnet. Die Zahl ist damit die vorsichtige Wahl unter den
+    gemessenen, aber nicht mehr das Ende einer monotonen Reihe. Ein Termin ist
+    sie ohnehin nicht.
+
+    Beim Verbund liegt der Anteil ueber die ganze Leiter flacher (0,539 bis
+    0,688) und am laengsten Fenster hoeher als beim Bestand - er sammelt
+    schneller, siehe ``AUSSICHT_VERBUND``.
     """
 
     noetig: int
@@ -179,10 +238,27 @@ class Aussicht:
 
 #: Der Abstand zur Schwelle, in Zeit. Untergrenze - siehe ``Aussicht``.
 AUSSICHT = Aussicht(
-    noetig=182,
+    noetig=190,
     heute=115,
     rate_je_tausend_tage=34.2,
-    befund=138,
+    befund=158,
+)
+
+#: Dieselbe Rechnung fuer den **besten gemessenen Kandidaten** - den Verbund
+#: aus Bestand und 'Trend-Beteiligung 200 Tage' (Befund 73, zuletzt 154).
+#:
+#: ``AUSSICHT`` beschreibt den Bestand allein, weil der der massgebliche
+#: Betriebspunkt ist. Wer wissen will, wie weit das Projekt **wirklich** noch
+#: ist, muss hierher sehen: Der Verbund braucht weniger zusaetzliche
+#: Beobachtungen und sammelt sie schneller.
+#:
+#: Gemessen in Befund 158, Methode wortgleich zu 138: noetiges n aus den
+#: eigenen Momenten, Sammelrate am laengsten Fenster.
+AUSSICHT_VERBUND = Aussicht(
+    noetig=208,
+    heute=136,
+    rate_je_tausend_tage=41.2,
+    befund=158,
 )
 
 

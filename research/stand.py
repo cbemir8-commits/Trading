@@ -491,6 +491,18 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Behaelterwechsel weiter - 'cli stand' misst den Bestand jetzt",
         157,
     ),
+    Richtung(
+        "Halbe Rechnung nachgezogen",
+        "Befund 152 hob 'heute' und liess 'noetig' stehen, obwohl dieselbe "
+        "Korrektur die Guete senkte - 5,4 statt 6,0 Jahre, sechs Befunde lang",
+        158,
+    ),
+    Richtung(
+        "Entfernung galt dem falschen Kandidaten",
+        "AUSSICHT beschreibt den Bestand (6,0 Jahre); der beste gemessene "
+        "Kandidat ist der Verbund mit 4,8 - jetzt beide da",
+        158,
+    ),
 )
 
 

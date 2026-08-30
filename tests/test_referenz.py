@@ -241,23 +241,22 @@ def test_die_aussicht_rechnet_mit_dem_heutigen_n() -> None:
     from research.referenz import AUSSICHT
 
     assert AUSSICHT.heute == SPOTPUNKT.effektiv
-    assert AUSSICHT.fehlend == 182 - SPOTPUNKT.effektiv
-    assert AUSSICHT.befund == 138
+    assert AUSSICHT.fehlend == SPOTPUNKT.noetiges_n() - SPOTPUNKT.effektiv
+    assert AUSSICHT.befund == 158
 
 
 def test_die_aussicht_ist_deutlich_laenger_als_befund_132_sagte() -> None:
-    """1,8 Jahre bei n = 152; nach Befund 135 waren es 5,6, nach 152 sind es
-    5,4.
+    """1,8 Jahre bei n = 152; nach Befund 135 waren es 5,6, nach 158 sind es
+    6,0.
 
-    Der Weg ist **nicht** kuerzer geworden, weil etwas besser waere: Befund 151
-    hatte dreissig Tage abgeschnitten und dabei vier fertige Trades verloren.
-    Die zaehlen jetzt wieder mit (n 112 -> 115). Dass es Verlierer waren, sieht
-    man an der Guete, die im selben Zug von 0,2765 auf 0,2708 faellt.
+    Zwischendurch standen hier 5,4 Jahre, und das war **zu optimistisch**:
+    Befund 152 hat ``heute`` nachgezogen und ``noetig`` vergessen, obwohl
+    dieselbe Korrektur die Guete gesenkt hatte (siehe ``TestNoetigesN``).
     """
     from research.referenz import AUSSICHT
 
     assert AUSSICHT.jahre > 5.0
-    assert AUSSICHT.tage == pytest.approx(1959, abs=5)
+    assert AUSSICHT.tage == pytest.approx(2193, abs=5)
 
 
 def test_eine_aussicht_ohne_rate_laesst_sich_nicht_rechnen() -> None:
@@ -286,4 +285,69 @@ def test_die_zeile_weist_die_zahl_als_untergrenze_aus() -> None:
     from research.referenz import AUSSICHT
 
     assert "mindestens" in AUSSICHT.als_zeile()
-    assert "Befund 138" in AUSSICHT.als_zeile()
+    assert "Befund 158" in AUSSICHT.als_zeile(), (
+        "die Fundstelle ist die **letzte** Messung, nicht die erste - "
+        "Befund 158 hat noetig von 182 auf 190 nachgezogen"
+    )
+
+
+# --- Die Entfernung, gerechnet statt gepflegt (Befund 158) -------------------
+
+
+class TestNoetigesN:
+    """**Der Fehler, den diese Klasse verhindert.**
+
+    In Befund 152 habe ich ``AUSSICHT.heute`` von 112 auf 115 nachgezogen und
+    ``noetig=182`` stehen lassen. Dieselbe Korrektur hatte aber auch ``guete``
+    gesenkt, und ein niedrigerer Sharpe je Trade verlangt ein **groesseres**
+    n. Die genannte Entfernung war sechs Befunde lang zu kurz: 5,4 Jahre statt
+    6,0.
+
+    Der bestehende Test band ``heute`` an den Referenzpunkt - die zweite
+    Haelfte derselben Rechnung war ungeprueft.
+    """
+
+    def test_die_aussicht_rechnet_mit_dem_gemessenen_n(self) -> None:
+        """**Die Wache.** ``noetig`` ist ableitbar; wer ``guete`` aendert und
+        ``noetig`` vergisst, faellt hier auf."""
+        from research.referenz import AUSSICHT
+
+        assert AUSSICHT.noetig == SPOTPUNKT.noetiges_n()
+
+    def test_der_massgebliche_punkt_traegt_seine_verteilungsform(self) -> None:
+        assert SPOTPUNKT.schiefe == pytest.approx(3.4646)
+        assert SPOTPUNKT.woelbung == pytest.approx(15.9173)
+        assert SPOTPUNKT.noetiges_n() == 190
+
+    def test_ohne_form_wird_nichts_behauptet(self) -> None:
+        """Die ueberholten Staende tragen keine Momente - dann sagt die
+        Rechnung ``None`` statt zu raten."""
+        assert all(p.noetiges_n() is None for p in UEBERHOLT)
+
+    def test_ein_schlechterer_sharpe_verlangt_mehr_beobachtungen(self) -> None:
+        """Die Richtung, die in Befund 152 uebersehen wurde."""
+        from dataclasses import replace
+
+        schwaecher = replace(SPOTPUNKT, guete=SPOTPUNKT.guete * 0.9)
+
+        assert schwaecher.noetiges_n() > SPOTPUNKT.noetiges_n()
+
+    def test_der_verbund_ist_naeher_dran(self) -> None:
+        """**Warum das ueberhaupt zaehlt.** ``AUSSICHT`` beschreibt den
+        Bestand allein; der beste gemessene Kandidat ist der Verbund, und der
+        braucht weniger Zeit."""
+        from research.referenz import AUSSICHT, AUSSICHT_VERBUND
+
+        assert AUSSICHT_VERBUND.fehlend < AUSSICHT.fehlend
+        assert AUSSICHT_VERBUND.rate_je_tausend_tage > AUSSICHT.rate_je_tausend_tage
+        assert AUSSICHT_VERBUND.jahre < AUSSICHT.jahre
+        assert AUSSICHT_VERBUND.jahre == pytest.approx(4.8, abs=0.1)
+
+    def test_der_kopf_sagt_dass_es_nicht_mehr_monoton_ist(self) -> None:
+        """Befund 138 hat die Monotonie als Begruendung benutzt. Mit acht
+        Einteilungen gilt sie nicht mehr, und das gehoert dazu."""
+        from research.referenz import Aussicht
+
+        kopf = Aussicht.__doc__ or ""
+        assert "Monoton ist das nicht mehr" in kopf
+        assert "0,841" in kopf, "die Sprosse, an der es bricht"

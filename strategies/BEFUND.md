@@ -14682,3 +14682,89 @@ Satz darueber nie.
    ausgeschriebene Liste.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.
+
+## Hundertachtundfuenfzig. Die halbe Rechnung, sechs Befunde lang
+
+``AUSSICHT`` beziffert, wie weit es bis zur Zulassung noch ist - die
+meistzitierte vorausschauende Zahl des Projekts. Sie sagte **5,4 Jahre**.
+
+Beides daran war falsch.
+
+### Der Fehler, und er ist meiner
+
+Die Rechnung hat zwei Teile: ``noetig`` (bei welchem n die Schwelle traegt)
+und ``heute`` (wo wir stehen). In **Befund 152** habe ich ``heute`` von 112
+auf 115 nachgezogen, weil die Zensur die Stichprobe verschoben hatte. Und
+``noetig=182`` stehen gelassen.
+
+Dieselbe Korrektur hatte aber auch die **Guete** gesenkt - von 0,2765 auf
+0,2708. Ein niedrigerer Sharpe je Trade verlangt ein **groesseres** n. Ich
+habe die eine Haelfte der Rechnung angefasst und die andere nicht.
+
+    noetig, nachgerechnet aus den heutigen Momenten:   190  (nicht 182)
+    heute:                                             115
+    es fehlen:                                          75  (nicht 67)
+    bei 34,2 je 1000 Tagen:                    2193 Tage = 6,0 Jahre
+
+Der bestehende Test band ``heute`` an den Referenzpunkt. Die zweite Haelfte
+derselben Rechnung war ungeprueft - deshalb ist es sechs Befunde lang
+niemandem aufgefallen, mir am wenigsten.
+
+**Behoben, wo es hingehoert:** ``Referenzpunkt`` traegt jetzt Schiefe und
+Woelbung, und ``noetiges_n()`` rechnet die Zahl aus, statt sie zu pflegen. Ein
+Test bindet ``AUSSICHT.noetig`` daran. Wer kuenftig die Guete aendert und
+``noetig`` vergisst, faellt auf.
+
+### Und sie galt dem falschen Kandidaten
+
+``AUSSICHT`` beschreibt den **Bestand allein**. Der beste gemessene Kandidat
+ist seit Befund 73 der Verbund. Dieselbe Rechnung fuer ihn, Methode wortgleich
+zu Befund 138:
+
+    Kandidat            n_eff   noetig   fehlt   Rate   Tage   Jahre
+    Bestand allein        115      190      75   34,5   2193     6,0
+    Bestand + Partner     136      208      72   41,2   1748     4,8
+
+Der Verbund braucht **weniger** zusaetzliche Beobachtungen und sammelt sie
+**schneller** - 41,2 gegen 34,5 je 1000 Tage. Beides steht jetzt da, als
+``AUSSICHT`` und ``AUSSICHT_VERBUND``.
+
+Dass der massgebliche Punkt der Bestand bleibt, ist richtig: Ein Verbund ist
+fuer die uebrigen Gates nicht gerechnet (siehe ``verbund.py``). Aber wer nach
+der Entfernung fragt, bekommt jetzt beide Zahlen statt nur der schlechteren.
+
+### Eine Begruendung aus Befund 138 traegt nicht mehr
+
+Befund 138 hat die Zeit als **Untergrenze** ausgewiesen, mit dem Argument: Der
+Anteil, der nach der Kuerzung uebrig bleibt, faellt mit der Historie *monoton*
+- also wird die Sammelrate weiter sinken. Nachgemessen mit acht Einteilungen
+statt zwei:
+
+    Historie    roh   n_eff   Anteil   eff je 1000 Tage
+     1451 d      54      54    1,000               37,2
+     1816 d      73      73    1,000               40,2
+     2320 d     106     106    1,000               45,7
+     2547 d     113      95    0,841               37,3
+     2912 d     136     125    0,919               42,9
+     3300 d     158     114    0,722               34,5
+
+**Monoton ist das nicht mehr.** Bei 2547 Tagen faellt der Anteil auf 0,841 und
+steigt wieder auf 0,919. Beim Verbund ist es noch flacher (0,539 bis 0,688),
+und dort hat das laengste Fenster nicht einmal den kleinsten Anteil.
+
+Was bleibt: Beim Bestand hat das laengste Fenster weiter den kleinsten Anteil,
+und darauf ist gerechnet - die vorsichtige Wahl unter den gemessenen. Aber der
+Satz "sie faellt weiter, waehrend man wartet" ist eine Vermutung, keine
+Messung mehr. Das steht jetzt so im Kopf.
+
+### Was daraus folgt
+
+1. **Die Entfernung war zu kurz angegeben**, um 0,6 Jahre beim Bestand. Am
+   Stand selbst aendert sich nichts: Guete 2,986, DSR 0,6480, es fehlen 0,659.
+2. Wo eine Zahl aus anderen folgt, gehoert sie **gerechnet**. ``noetig`` war
+   gepflegt, obwohl es ableitbar ist - genau wie der Kerzenbestand in Befund
+   157 und der Registereintrag in 156. Dreimal dasselbe in drei Laeufen.
+3. Ein Test, der die eine Haelfte einer Rechnung bindet, sichert nicht die
+   andere. Er sah aus wie eine Wache und war eine halbe.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.
