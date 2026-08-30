@@ -660,6 +660,33 @@ class Entscheidung:
 #: Was der Nutzer entscheiden muss - benannt und beziffert, nicht beantwortet.
 ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
     Entscheidung(
+        frage="Feste Schwellen auf laufenden Extrema",
+        zahl="Drei der elf Gates messen ein Extrem ueber die ganze Historie, "
+             "und alle drei werden mit mehr Daten schlechter (Befund 162, "
+             "gemessen ueber sechs Historienlaengen von 1451 bis 3300 Tagen):"
+             "\n      Drawdown            8,29 -> 10,64   Schwelle 12,00"
+             "\n      Schlechtestes Jahr  5,97 -> -10,32   Schwelle -10,00"
+             "\n      Monte-Carlo         7,83 ->   9,69   Schwelle 15,00"
+             "\n    'Schlechtestes Jahr' ist bei 2547 Tagen gerissen. Der "
+             "Rueckgang ist bereits um 2,35 Punkte gewachsen und hat noch "
+             "1,36 Reserve - eine Wiederholung des bereits Gemessenen "
+             "genuegt, um auch ihn zu reissen.",
+        warum="Ein Maximum kann nicht fallen und ein Minimum nicht steigen. "
+              "Wer laenger misst, misst zwangslaeufig ein groesseres Extrem - "
+              "unabhaengig davon, ob die Strategie besser oder schlechter "
+              "geworden ist. Gleichzeitig braucht der Deflated Sharpe mehr "
+              "Historie: Er steht bei 0,46 und verlangt 0,95. **Die Gates "
+              "ziehen also gegeneinander**, und Warten ist kein Weg, der sie "
+              "alle erreicht.\n    Zu entscheiden ist, ob eine feste Schwelle "
+              "auf einem laufenden Extrem gemeint ist - dann ist das kein "
+              "Fehler, sondern die Aussage 'so viel Verlust nie, egal wie "
+              "lange wir zusehen'. Die Alternative waere eine Schwelle, die "
+              "sich auf einen festen Zeitraum bezieht. Beides ist "
+              "vertretbar; das eine zu waehlen, ist eine Geschaeftsfrage und "
+              "faellt nicht hier. **Gelockert wird nichts**, solange sie "
+              "nicht gefallen ist.",
+    ),
+    Entscheidung(
         frage="Mindestrendite von 15 % im Jahr",
         zahl="Gemessen ueber zehn Stellungen des Groessenreglers: **keine** "
              "haelt beide Schwellen. Bei 20,5 bleibt der Rueckgang mit "

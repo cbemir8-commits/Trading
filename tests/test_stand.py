@@ -727,3 +727,52 @@ class TestWasDieZeitBricht:
 
         assert "Die Zeit loest" in bericht
         assert "ab hier durchgefallen" not in bericht
+
+
+class TestGatesAufLaufendenExtrema:
+    """**Befund 162.** Drei der elf Gates messen ein Extrem ueber die ganze
+    Historie: Drawdown (laufendes Maximum), Schlechtestes Jahr (Minimum ueber
+    Zwoelfmonatsfenster) und Monte-Carlo.
+
+    Ein Maximum kann nicht fallen und ein Minimum nicht steigen. Wer laenger
+    misst, misst ein groesseres Extrem - unabhaengig davon, ob die Strategie
+    besser geworden ist. Gleichzeitig **braucht** der Deflated Sharpe mehr
+    Historie. Die Gates ziehen gegeneinander.
+
+    Das ist keine Lockerung und kein Vorschlag: Die Frage steht in
+    ``ENTSCHEIDUNGEN``, wo die Entscheidungen des Nutzers stehen.
+    """
+
+    def test_die_frage_steht_unter_den_entscheidungen(self) -> None:
+        frage = next(
+            (e for e in ENTSCHEIDUNGEN if "laufenden Extrema" in e.frage), None
+        )
+
+        assert frage is not None, (
+            "die Frage gehoert dorthin, wo die Entscheidungen des Nutzers "
+            "stehen - nicht in eine geschlossene Richtung"
+        )
+        assert "Befund 162" in frage.zahl
+
+    def test_alle_drei_gemessenen_werte_stehen_da(self) -> None:
+        frage = next(e for e in ENTSCHEIDUNGEN if "laufenden Extrema" in e.frage)
+
+        for wert in ("8,29", "10,64", "5,97", "-10,32", "7,83", "9,69"):
+            assert wert in frage.zahl, f"{wert} fehlt in der Leiter"
+        for schwelle in ("12,00", "-10,00", "15,00"):
+            assert schwelle in frage.zahl, f"Schwelle {schwelle} fehlt"
+
+    def test_es_wird_nichts_vorgeschlagen(self) -> None:
+        """**Der Kern der Trennung.** Beide Lesarten sind vertretbar, und die
+        Wahl faellt nicht hier - so steht es seit jeher im Modulkopf."""
+        frage = next(e for e in ENTSCHEIDUNGEN if "laufenden Extrema" in e.frage)
+
+        assert "Gelockert wird nichts" in frage.warum
+        assert "faellt nicht hier" in frage.warum
+
+    def test_die_gegenlaeufigkeit_ist_benannt(self) -> None:
+        """Ohne sie liest sich der Eintrag wie eine Kleinigkeit."""
+        frage = next(e for e in ENTSCHEIDUNGEN if "laufenden Extrema" in e.frage)
+
+        assert "gegeneinander" in frage.warum
+        assert "Deflated Sharpe" in frage.warum

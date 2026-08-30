@@ -15003,3 +15003,88 @@ mitnennt, misst irgendetwas.
    Entscheidung ueber die Schwelle - und die faellt nicht hier.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.
+
+## Hundertzweiundsechzig. Drei Gates messen Extrema - und Extrema wachsen
+
+Befund 161 hat gezeigt, dass 'Schlechtestes Jahr' mit mehr Historie
+zwangslaeufig schlechter wird, weil die Kennzahl ein **Minimum** ist. Die
+naheliegende Frage: Ist das ein Einzelfall oder eine Eigenschaft der
+Gate-Batterie?
+
+### Vorab festgelegt
+
+* Alle elf Gates werden auf derselben Fensterleiter gemessen (1451 bis 3300
+  Tage), soweit sie ohne den teuren Pfad laufen.
+* Berichtet wird jedes Gate, nicht nur die auffaelligen.
+* Was dabei herauskommt, ist eine **Beobachtung ueber die Bauart der Gates**,
+  keine Aufforderung, eine Schwelle zu senken. Wo es eine Entscheidung gibt,
+  gehoert sie in ``ENTSCHEIDUNGEN`` und nicht in einen Befund.
+
+### Gemessen
+
+    Historie  Trades  Stichpr.  Messlatte  OoS-Sh  Drawdown  Schl.Jahr  Bestaend.  MC    Regime  DSR
+     1451 d     53    +911      +69,90     +2,02   +8,29     +5,97      +0,55      +7,83  +2,98  0,10
+     1816 d     72   +1235      +80,64     +1,56   +8,91     +5,44      +0,53     +10,04  +3,44  0,15
+     2320 d    106   +1548      -29,63     -0,64  +10,76     -8,82      -0,38     +11,36  +2,66  0,09
+     2547 d    112   +1699     +160,82     +1,65  +10,62    -10,30      +0,61      +9,69  +2,68  0,18
+     2912 d    135   +2026     +234,48     +1,69  +10,62    -10,30      +0,63      +9,81  +2,68  0,49
+     3300 d    158   +2250     -164,84     +1,44  +10,64    -10,32      +0,52      +9,69  +4,47  0,46
+
+### Die Einteilung
+
+**Drei Gates messen ein Extrem ueber die ganze Historie**, und alle drei
+werden mit mehr Daten schlechter:
+
+    Gate                 1451 d    3300 d   Schwelle   Reserve
+    Drawdown               8,29     10,64      12,00      1,36
+    Schlechtestes Jahr    +5,97    -10,32     -10,00   gerissen
+    Monte-Carlo            7,83      9,69      15,00      5,31
+
+**Zwei werden mit mehr Daten besser:** Stichprobengroesse (911 auf 2250) und
+Deflated Sharpe (0,10 auf 0,46, verrauscht - bei 2320 Tagen steht er tiefer
+als bei 1816).
+
+**Der Rest ist weder das eine noch das andere**, sondern schwankt mit der
+Marktphase: Messlatte, Out-of-Sample-Sharpe, Bestaendigkeit,
+Regime-Aufteilung. Die beiden teuren Gates (Kosten-Stress, Parameter-Plateau)
+sind hier nicht gemessen.
+
+### Warum das mehr ist als eine Beobachtung
+
+Ein Maximum kann nicht fallen, ein Minimum nicht steigen. Wer laenger misst,
+misst ein groesseres Extrem - **unabhaengig davon, ob die Strategie besser
+oder schlechter geworden ist.** Gleichzeitig verlangt der Deflated Sharpe
+genau das Gegenteil: mehr Historie.
+
+Damit ziehen die Gates gegeneinander, und der Satz aus Befund 160 - *"die Zeit
+loest 1 von 4 offenen Gates"* - hat eine zweite Haelfte: Sie bricht andere.
+
+Der Rueckgang ist dafuer die schaerfste Zahl. Er ist ueber die gemessene
+Historie um **2,35 Punkte gewachsen** und hat noch **1,36 Reserve**. Eine
+Wiederholung dessen, was bereits gemessen wurde, genuegt, um auch ihn zu
+reissen. Das ist keine Hochrechnung - es ist der Vergleich zweier gemessener
+Zahlen.
+
+### Was das nicht ist
+
+**Kein Argument, eine Schwelle zu senken.** Eine feste Grenze auf einem
+laufenden Extrem kann genau so gemeint sein: *"So viel Verlust nie, egal wie
+lange wir zusehen."* Das ist eine strenge und vertretbare Lesart. Die
+Alternative - eine Schwelle, die sich auf einen festen Zeitraum bezieht - ist
+ebenso vertretbar.
+
+Welche gilt, ist eine Geschaeftsfrage. Sie steht jetzt in ``ENTSCHEIDUNGEN``,
+beziffert und unbeantwortet, neben der Mindestrendite und dem Funding-Satz.
+**Gelockert wird nichts**, solange die Entscheidung nicht gefallen ist.
+
+### Was daraus folgt
+
+1. **Am Stand aendert sich nichts.** Guete 2,986, DSR 0,6480, es fehlen 0,659.
+2. Die Frage "wie lange muessen wir warten" hat keine Antwort, die alle Gates
+   erreicht - das ist jetzt an der Batterie gemessen und nicht mehr nur am
+   einen Gate aus Befund 161.
+3. Wer eine Schwelle auf ein laufendes Extrem setzt, setzt eine Schwelle, die
+   mit der Beobachtungsdauer strenger wird. Das kann gewollt sein. Gewusst
+   werden sollte es.
+
+Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.
