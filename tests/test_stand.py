@@ -776,3 +776,103 @@ class TestGatesAufLaufendenExtrema:
 
         assert "gegeneinander" in frage.warum
         assert "Deflated Sharpe" in frage.warum
+
+
+class TestDerVergleichIstGemessen:
+    """Die Zahlen beider Betriebspunkte stehen nur noch an einer Stelle.
+
+    Der Auftragstext zum ``healthcheck`` trug sie bis Befund 165 als Prosa -
+    eine zweite Kopie neben der gemessenen Gegenueberstellung im selben
+    Bericht. Sie ist stehengeblieben, waehrend die Messung weiterlief:
+
+        behauptet   14,83 % statt 13,47 %, Messlatte 0,17 Punkte
+        gemessen    14,34 % statt 12,95 %, Messlatte 0,66 Punkte
+
+    Die Gate-Zahlen (9 von 11 statt 7) stimmten noch - deshalb fiel es nicht
+    auf. Wer nur die Haelfte prueft, die stimmt, prueft nichts.
+    """
+
+    @staticmethod
+    def _punkt(**abweichung):
+        from research.betriebspunkt import Betriebspunkt
+
+        daten = {
+            "name": "Spot", "trades": 158, "cagr_pct": 14.34,
+            "rueckgang_pct": 9.87, "guete": 0.2708, "dsr": 0.5881,
+            "bestanden": 9, "gesamt": 11,
+            "offen": ("Messlatte", "Deflated Sharpe"),
+        }
+        daten.update(abweichung)
+        return Betriebspunkt(**daten)
+
+    def test_die_zahlen_kommen_aus_der_messung(self) -> None:
+        text = _lage(cagr_pct=12.95, bestanden=7, zweitpunkt=self._punkt()).bericht()
+
+        assert "14.34 % statt 12.95 %" in text
+        assert "9 von 11 Gates statt 7" in text
+
+    def test_die_messlatten_luecke_wird_gerechnet(self) -> None:
+        """**Die Zahl, die am weitesten abgewichen ist.**
+
+        15,00 - 14,34 = 0,66. Der alte Text sagte 0,17 - viermal naeher, als
+        es gemessen ist, und ausgerechnet beim Gate, das dem Bestehen am
+        naechsten steht.
+
+        Geprueft wird der **Auftragsteil**, nicht der ganze Bericht: Im
+        Register steht 0,17 weiterhin, und dort gehoert die Zahl auch hin -
+        als Geschichte des Eintrags, nicht als Stand.
+        """
+        text = _lage(cagr_pct=12.95, zweitpunkt=self._punkt()).bericht()
+        auftrag = text.split("NUR AUF DEINEM RECHNER")[1]
+
+        assert "die Messlatte um 0.66 Punkte" in auftrag
+        assert "0,17" not in auftrag
+
+    def test_andere_zahlen_ergeben_andere_saetze(self) -> None:
+        """Sonst koennte der Satz fest verdrahtet sein und der Test es nicht
+        merken."""
+        text = _lage(
+            cagr_pct=11.00, bestanden=6, zweitpunkt=self._punkt(cagr_pct=16.50,
+                                                                bestanden=10),
+        ).bericht()
+
+        assert "16.50 % statt 11.00 %" in text
+        assert "10 von 11 Gates statt 6" in text
+        # Ueber der Schwelle: die Luecke ist negativ und wird trotzdem genannt,
+        # weil 'Messlatte' offen gemeldet ist.
+        assert "die Messlatte um -1.50 Punkte" in text
+
+    def test_ohne_messung_wird_nichts_erfunden(self) -> None:
+        """**Der Fall, der aus einer Luecke eine Behauptung machen wuerde.**
+
+        Kommt der zweite Punkt nicht zustande, steht dort ein Verweis - keine
+        Naeherung und keine gepflegte Zahl.
+        """
+        text = _lage(zweitpunkt=None).bericht()
+
+        assert "DIE BEIDEN BETRIEBSPUNKTE" in text
+        assert "statt" not in text.split("NUR AUF DEINEM RECHNER")[1]
+        assert "{vergleich}" not in text
+
+    def test_ohne_offene_gates_faellt_der_zusatz_weg(self) -> None:
+        text = _lage(zweitpunkt=self._punkt(bestanden=11, offen=())).bericht()
+
+        assert "11 von 11 Gates" in text
+        assert "Offen bleiben dort" not in text
+
+    def test_der_platzhalter_bleibt_nirgends_stehen(self) -> None:
+        for punkt in (None, self._punkt()):
+            assert "{vergleich}" not in _lage(zweitpunkt=punkt).bericht()
+
+    def test_keine_gepflegten_betriebspunkt_zahlen_mehr_im_auftragstext(
+        self,
+    ) -> None:
+        """**Die Wache gegen den Rueckfall.**
+
+        Ein Satz der Form "14,83 % statt 13,47 %" im Auftragstext waere wieder
+        eine zweite Kopie - und die naechste, die stehenbleibt.
+        """
+        import re
+
+        for _, warum in BEIM_NUTZER:
+            assert not re.search(r"\d+,\d+ %\s*statt", warum), warum

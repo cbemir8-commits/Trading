@@ -9066,9 +9066,16 @@ def stand(
     budget = Budget(versuche=trials, kandidaten=[eintrag] if eintrag else [])
     kombiniert = bericht.combined
 
+    # **Vor dem Bericht, nicht danach.** Der Auftragstext zum healthcheck
+    # trug die Zahlen beider Punkte bis Befund 165 als gepflegte Prosa, weil
+    # die Messung erst spaeter im Kommando lief. Sie ist stehengeblieben,
+    # waehrend die Messung weiterlief.
+    zweitpunkt = _spotpunkt(frames, symbole, genome, trials, settings)
+
     lage = Lage(
         kandidat=genome.name,
         maerkte=f"{' + '.join(symbole)}, {interval_obj.label}",
+        zweitpunkt=zweitpunkt,
         trades=len(gehandelt.all_trades),
         effektiv=stichprobe.effektiv,
         kerzenbestand=_kerzenbestand(store),
@@ -9129,7 +9136,9 @@ def stand(
     # Wer hier nachsah, bekam eine Aufgabe zu sehen, die fast doppelt so gross
     # war wie die gemessene. Berichtet wird trotzdem weiter der schlechtere:
     # Welcher gilt, haengt an einer Tatsache, die nur der Nutzer klaeren kann.
-    zweitpunkt = _spotpunkt(frames, symbole, genome, trials, settings)
+    # Gemessen wird er weiter oben - der Auftragstext braucht ihn schon dort
+    # (Befund 165), und zweimal rechnen waere derselbe Lauf zum doppelten
+    # Preis.
     if zweitpunkt is not None:
         erstpunkt = Betriebspunkt(
             name="Perpetual", trades=len(bericht.all_trades),

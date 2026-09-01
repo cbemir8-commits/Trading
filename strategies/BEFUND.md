@@ -15294,3 +15294,74 @@ ausgewiesen - eine Aussage ueber eine Messung, die nicht stattgefunden hat.
 
 Versuchszaehler 198 unveraendert - derselbe Kandidat, dieselben Daten, keine
 neue Hypothese. Suchbudget 68 von 100.
+
+## Hundertfuenfundsechzig. Die Haelfte, die stimmte
+
+Befund 164 hat gezeigt, dass die wirksamste offene Frage des Projekts keine
+Messung ist, sondern zwei Minuten im Bybit-Handelsmenue: Fuehrt das Konto
+Perpetuals oder nur Spot? Dieser Lauf sieht sich den Text an, der dem Nutzer
+genau das nahelegt - den Auftragspunkt zum `healthcheck`.
+
+### Was dort stand
+
+    Ohne Funding steht er bei 14,83 % statt 13,47 % und 9 von 11 Gates
+    statt 7. Offen blieben Messlatte (0,17 Punkte) und Deflated Sharpe.
+
+### Was gemessen ist
+
+    Punkt        p.a.    Gates   Messlatte-Luecke
+    Perpetual   12,95 %   7/11        2,05
+    Spot        14,34 %   9/11        0,66
+
+| Behauptet             | Gemessen  | Stand |
+|-----------------------|-----------|-------|
+| 14,83 % (Spot)        | 14,34 %   | veraltet |
+| 13,47 % (Perpetual)   | 12,95 %   | veraltet |
+| 9 von 11 statt 7      | 9/11, 7/11 | **stimmt** |
+| Messlatte 0,17 Punkte | 0,66      | veraltet, viermal zu nah |
+
+Nicht nachgemessen: *"Hebel an 0,2 % der Balken"* (Befund 106) - dafuer
+muesste der Backtest instrumentiert werden. Das steht hier, statt still als
+geprueft mitzulaufen.
+
+### Warum es nicht auffiel
+
+**Die Haelfte, die man prueft, war richtig.** Die Gate-Zahlen sind das, woran
+man einen solchen Satz zuerst misst - und sie stimmen bis heute. Die Prozente
+daneben sind mit dem Datenabzug aus Befund 151 und dem laengeren Nachlauf
+gewandert, ohne dass jemand die Zeile noch einmal las.
+
+Ausgerechnet die Messlatten-Luecke ist am weitesten abgewichen, und
+ausgerechnet sie ist die Zahl, die zaehlt: Sie steht in dem Eintrag, der zur
+Klaerung der Kontofrage auffordert, und sagt dem Nutzer, das Gate sei 0,17
+Punkte entfernt. Es sind 0,66 - viermal so weit.
+
+### Was gebaut wurde
+
+Der Satz wird nicht mehr gepflegt, sondern gerechnet. `BEIM_NUTZER` traegt an
+der Stelle den Platzhalter `{vergleich}`; `Lage` ersetzt ihn durch den
+gemessenen Vergleich beider Betriebspunkte. Dafuer wandert die Messung des
+zweiten Punktes im Kommando nach oben - sie lief bisher **nach** dem Bericht,
+und das war der eigentliche Grund fuer die Kopie. Gerechnet wird sie weiterhin
+genau einmal.
+
+Kommt der zweite Punkt nicht zustande, steht dort ein Verweis auf die
+gemessene Gegenueberstellung - keine Naeherung. Eine Prosa-Naeherung waere
+genau die Kopie, die dieser Absatz abschafft.
+
+### Was daraus folgt
+
+1. **Das ist die vierte gepflegte Zahl in acht Befunden** (158, 159, 160, 165).
+   Befund 159 hat notiert, die Ausbeute dieser Suche lasse nach - sie liess
+   nach, aber `BEIM_NUTZER` war nie durchgesehen worden. Die drei
+   vorhergehenden lagen alle in `research/referenz.py` und `research/stand.py`
+   im Registerteil; dieser lag im Auftragsteil.
+2. **Eine Wache steht jetzt dagegen**: Kein Auftragstext darf einen Satz der
+   Form "x % statt y %" enthalten. Der naechste Rueckfall faellt im Test auf,
+   nicht erst beim Lesen.
+3. **Der Abstand zur Messlatte ist groesser, als der Bericht sagte.** Das ist
+   die dritte numerische Korrektur in Folge, die den Kandidaten **weiter** von
+   der Schwelle wegruecken laesst, nicht naeher heran.
+
+Versuchszaehler 198 unveraendert - derselbe Kandidat, dieselben Daten, keine
+neue Hypothese. Suchbudget 68 von 100.

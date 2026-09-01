@@ -542,6 +542,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'cli stand' sagt jetzt dazu, was an der offenen Voraussetzung haengt",
         164,
     ),
+    # Die Gate-Zahlen des Eintrags stimmten - deshalb hat niemand die
+    # Prozente daneben nachgerechnet.
+    Richtung(
+        "Betriebspunkte zweimal im Bericht",
+        "Auftragstext trug 14,83/13,47 und 0,17 Punkte, gemessen sind "
+        "14,34/12,95 und 0,66 - jetzt gerechnet statt gepflegt",
+        165,
+    ),
 )
 
 
@@ -892,6 +900,17 @@ AUFTRAG: tuple[Auftragspunkt, ...] = (
 #:
 #: Der Entwicklungscontainer ist von Bybit aus Regionsgruenden gesperrt. Das
 #: ist eine Eigenschaft dieser Sandbox, keine von Bybit und keine des Systems.
+#:
+#: ``{vergleich}`` wird von ``Lage`` durch den **gemessenen** Vergleich beider
+#: Betriebspunkte ersetzt. Bis Befund 165 standen die Zahlen dort als Prosa -
+#: eine zweite Kopie neben der Gegenueberstellung im selben Bericht, und sie
+#: ist stehengeblieben, waehrend die Messung weiterlief:
+#:
+#:     behauptet   14,83 % statt 13,47 %, Messlatte 0,17 Punkte
+#:     gemessen    14,34 % statt 12,95 %, Messlatte 0,66 Punkte
+#:
+#: Die Gate-Zahlen (9 von 11 statt 7) stimmten noch. Das ist der Grund, warum
+#: der Eintrag nicht auffiel: Die Haelfte, die man prueft, war richtig.
 BEIM_NUTZER: tuple[tuple[str, str], ...] = (
     (
         "python -m cli healthcheck",
@@ -899,9 +918,8 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "nur noch Spot. **Und das waere kein Rueckschritt:** Befund 106 hat "
         "gemessen, dass der Kandidat seinen Hebel an 0,2 % der Balken nutzt "
         "und long-only ist - der Deckel auf 1,0 aendert die Zahlen bitgleich "
-        "nicht. Ohne Funding steht er bei 14,83 % statt 13,47 % und 9 von 11 "
-        "Gates statt 7. Offen blieben Messlatte (0,17 Punkte) und Deflated "
-        "Sharpe. `cli instrument` rechnet es nach.",
+        "nicht. Was sich aendert, ist das Funding. {vergleich} "
+        "`cli instrument` rechnet es nach.",
     ),
     (
         "python -m cli abgleich",
@@ -948,6 +966,15 @@ class Lage:
     effektive, und die ist kleiner. Fehlt dieses Feld, steht in ``urteil``
     eine Untergrenze - so, wie ``suchbudget`` es seit Befund 139 haelt
     (Befund 148).
+    """
+
+    zweitpunkt: object | None = None
+    """Der andere Betriebspunkt, gemessen - oder ``None``.
+
+    Ein ``research.betriebspunkt.Betriebspunkt``; nur als ``object``
+    annotiert, damit dieses Modul keine Abhaengigkeit auf die Messung
+    bekommt, die es beschreibt. Gebraucht wird er fuer ``{vergleich}`` in
+    ``BEIM_NUTZER`` (Befund 165).
     """
 
     kerzenbestand: str = ""
@@ -1143,5 +1170,38 @@ class Lage:
             zeilen += [f"  {e.frage}", f"    {e.zahl}", f"    {e.warum}", ""]
         zeilen += ["NUR AUF DEINEM RECHNER", "-" * 72]
         for befehl, warum in BEIM_NUTZER:
-            zeilen += [f"  {befehl}", f"    {warum}"]
+            # ``replace`` und nicht ``format``: Die uebrigen Texte duerfen
+            # geschweifte Klammern enthalten, ohne dass hier etwas bricht.
+            text = warum.replace("{vergleich}", self._vergleichssatz())
+            zeilen += [f"  {befehl}", f"    {text}"]
         return "\n".join(zeilen)
+
+    def _vergleichssatz(self) -> str:
+        """Der gemessene Vergleich beider Betriebspunkte, als ein Satz.
+
+        Ohne Messung wird **kein Ersatz erfunden**, sondern auf die Stelle
+        verwiesen, an der die Zahlen stehen. Eine Prosa-Naeherung waere genau
+        die Kopie, die dieser Absatz abschafft.
+        """
+        z = self.zweitpunkt
+        if z is None:
+            return (
+                "Wieviel das ausmacht, misst dieser Bericht weiter unten "
+                "unter 'DIE BEIDEN BETRIEBSPUNKTE'."
+            )
+        from research.gates import GateThresholds
+
+        satz = (
+            f"Ohne Funding steht er bei {z.cagr_pct:.2f} % statt "
+            f"{self.cagr_pct:.2f} % und besteht {z.bestanden} von {z.gesamt} "
+            f"Gates statt {self.bestanden}."
+        )
+        if z.offen:
+            luecke = GateThresholds().min_cagr_pct - z.cagr_pct
+            zusatz = (
+                f" - die Messlatte um {luecke:.2f} Punkte"
+                if any("Messlatte" in g for g in z.offen)
+                else ""
+            )
+            satz += f" Offen bleiben dort {', '.join(z.offen)}{zusatz}."
+        return satz
