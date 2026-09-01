@@ -53,6 +53,7 @@ Forderung ist als "der Vorteil ist zu 78 % echt".
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import StrEnum
 
@@ -93,6 +94,14 @@ class Hindernis:
     botschaft: str
     art: Art
     fundstelle: int | None = None
+    nur_hier: bool = False
+    """Faellt dieses Gate **nur** am berichteten Betriebspunkt durch?
+
+    ``cli stand`` rechnet den Kandidaten an zwei Punkten und berichtet
+    absichtlich den schlechteren, weil die Voraussetzung offen ist. Ein Gate,
+    das am anderen Punkt besteht, ist damit keine Aufgabe, sondern eine Folge
+    dieser Wahl - und das gehoert dazugesagt (Befund 164).
+    """
 
     @property
     def zahlen_erklaeren_es(self) -> bool:
@@ -116,11 +125,18 @@ class Gatelage:
     """Alle offenen Gates - geordnet danach, wer sie angehen kann."""
 
     hindernisse: list[Hindernis] = field(default_factory=list)
+    zweitpunkt: str | None = None
+    """Name des anderen Betriebspunkts, falls einer gemessen wurde."""
 
     @property
     def offen(self) -> list[Hindernis]:
         """Die Gates, an denen tatsaechlich Arbeit liegt."""
         return [h for h in self.hindernisse if h.art is Art.OFFEN]
+
+    @property
+    def am_punkt(self) -> list[Hindernis]:
+        """Offene Gates, die am anderen Betriebspunkt bestehen."""
+        return [h for h in self.offen if h.nur_hier]
 
     @property
     def beim_nutzer(self) -> list[Hindernis]:
@@ -143,6 +159,38 @@ class Gatelage:
             zeilen.append(f"  {h.als_zeile()}")
             zeilen.append(f"      {h.botschaft}")
         return "\n".join(zeilen)
+
+    def _punktabsatz(self) -> list[str]:
+        """Wieviel der genannten Arbeit an der Wahl des Betriebspunkts haengt.
+
+        ``cli stand`` misst zwei Punkte, berichtet den schlechteren und sagt
+        drei Zeilen weiter oben, dass der andere gemessen besser ist. Die
+        Aufgabenliste kam bis Befund 164 allein aus dem berichteten Punkt -
+        und nannte beim Bestand genau die zwei Gates, die am anderen Punkt
+        bestehen. Wer sie las, sah eine Arbeit vor sich, die sich mit der
+        Antwort auf eine offene Frage in Luft aufloest.
+
+        **Gemessen wird dadurch nichts besser.** Es ist derselbe Kandidat
+        unter anderen Handelsbedingungen; welche gelten, weiss nur der Nutzer.
+        Berichtet wird weiter der schlechtere Punkt.
+        """
+        haengend = self.am_punkt
+        if not haengend or self.zweitpunkt is None:
+            return []
+        namen = ", ".join(h.name for h in haengend)
+        alle = len(haengend) == len(self.offen)
+        kopf = (
+            "**Die ganze Arbeit haengt am Betriebspunkt.**"
+            if alle
+            else f"**{len(haengend)} davon haengen am Betriebspunkt.**"
+        )
+        return [
+            f"{kopf} Unter '{self.zweitpunkt}' bestanden: {namen}. Berichtet "
+            f"wird weiter der schlechtere Punkt, weil die Voraussetzung offen "
+            f"ist - klaert sie sich zu '{self.zweitpunkt}', entfaellt diese "
+            f"Arbeit. Gemessen wird dadurch nichts besser: derselbe Kandidat, "
+            f"andere Handelsbedingungen."
+        ]
 
     def urteil(self) -> str:
         if not self.hindernisse:
@@ -172,6 +220,7 @@ class Gatelage:
         if offen:
             namen = ", ".join(h.name for h in offen)
             teile.append(f"**Hier liegt die Arbeit: {namen}.**")
+            teile.extend(self._punktabsatz())
         else:
             teile.append(
                 "**Kein Gate mehr, an dem eine offene Frage haengt.** Was "
@@ -191,12 +240,33 @@ class Gatelage:
         return "\n\n".join(teile)
 
 
-def ordne(ergebnisse) -> Gatelage:
+def ordne(
+    ergebnisse,
+    *,
+    zweitpunkt: str | None = None,
+    dort_offen: Iterable[str] | None = None,
+) -> Gatelage:
     """Die nicht bestandenen Gates eines Berichts einordnen.
 
     Nimmt ``GateResult``-Objekte entgegen. Bestandene fallen heraus - hier
     geht es um Hindernisse, nicht um eine Gesamtschau.
+
+    ``zweitpunkt`` und ``dort_offen`` beschreiben den **anderen**
+    Betriebspunkt: seinen Namen und die Gates, die dort offen sind. Damit
+    laesst sich sagen, welche der hier genannten Aufgaben an der Wahl des
+    Punktes haengen (Befund 164). Ohne beides bleibt es beim alten Verhalten.
+
+    **Beides oder keines.** Ein Name ohne Menge koennte jedes Gate als
+    "haengt am Punkt" ausweisen, weil ``dort_offen`` dann leer waere - das
+    waere eine Behauptung ueber eine Messung, die nicht stattgefunden hat.
     """
+    if (zweitpunkt is None) != (dort_offen is None):
+        raise ValueError(
+            "zweitpunkt und dort_offen gehoeren zusammen - ein Name ohne "
+            "gemessene Gateliste wuerde jedes Gate als punktabhaengig "
+            "ausweisen."
+        )
+    dort = frozenset(dort_offen or ())
     hindernisse = []
     for r in ergebnisse:
         if r.passed:
@@ -211,9 +281,10 @@ def ordne(ergebnisse) -> Gatelage:
             Hindernis(
                 name=r.name, wert=float(r.value), schwelle=float(r.threshold),
                 botschaft=r.message, art=art, fundstelle=fundstelle,
+                nur_hier=zweitpunkt is not None and r.name not in dort,
             )
         )
-    return Gatelage(hindernisse=hindernisse)
+    return Gatelage(hindernisse=hindernisse, zweitpunkt=zweitpunkt)
 
 
 __all__ = [

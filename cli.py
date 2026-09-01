@@ -9191,7 +9191,18 @@ def stand(
         if not r.passed and r.message:
             console.print(f"      [dim]{r.message}[/]")
 
-    lage = ordne(gates.results)
+    # **Der zweite Punkt gehoert auch in die Aufgabenliste, nicht nur in die
+    # Zeile darueber.** Bis Befund 164 kam sie allein aus dem berichteten
+    # Punkt und nannte beim Bestand genau die zwei Gates, die unter Spot
+    # bestehen - eine Arbeit, die sich mit der Antwort auf eine offene Frage
+    # aufloest. Berichtet wird weiter der schlechtere Punkt.
+    lage = (
+        ordne(gates.results)
+        if zweitpunkt is None
+        else ordne(
+            gates.results, zweitpunkt=zweitpunkt.name, dort_offen=zweitpunkt.offen
+        )
+    )
     if lage.hindernisse:
         console.print()
         console.print("WORAN DIE ARBEIT LIEGT")

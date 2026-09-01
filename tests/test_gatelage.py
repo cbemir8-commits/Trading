@@ -181,3 +181,93 @@ class TestTabelle:
 
         assert "Drawdown" not in text
         assert "Out-of-Sample-Sharpe" not in text
+
+
+class TestArbeitAmBetriebspunkt:
+    """Wieviel der genannten Arbeit an einer offenen Frage haengt.
+
+    Gemessen am 01.09.2026 mit ``cli stand``, beide Punkte, alle elf Gates:
+
+        Perpetual  7/11   offen: Messlatte, Schlechtestes Jahr,
+                                 Deflated Sharpe, Parameter-Plateau
+        Spot       9/11   offen: Messlatte, Deflated Sharpe
+
+    Berichtet wird Perpetual, weil die Voraussetzung offen ist. Die
+    Aufgabenliste kam bis Befund 164 allein daraus - und nannte genau die
+    zwei Gates, die unter Spot bestehen.
+    """
+
+    def test_offene_gates_des_anderen_punktes_werden_markiert(self) -> None:
+        lage = ordne(
+            GEMESSEN,
+            zweitpunkt="Spot",
+            dort_offen=("Messlatte", "Deflated Sharpe"),
+        )
+
+        assert [h.name for h in lage.am_punkt] == [
+            "Schlechtestes Jahr", "Parameter-Plateau",
+        ]
+
+    def test_das_urteil_sagt_es_dazu(self) -> None:
+        """**Der Kern der Sache.** Wer 'Hier liegt die Arbeit' liest, muss
+        erfahren, dass sie sich mit einer Antwort erledigt."""
+        text = ordne(
+            GEMESSEN,
+            zweitpunkt="Spot",
+            dort_offen=("Messlatte", "Deflated Sharpe"),
+        ).urteil()
+
+        assert "Hier liegt die Arbeit: Schlechtestes Jahr, Parameter-Plateau." in text
+        assert "Die ganze Arbeit haengt am Betriebspunkt." in text
+        assert "Spot" in text
+
+    def test_ohne_zweiten_punkt_bleibt_alles_wie_vorher(self) -> None:
+        """Die Markierung darf nicht aus dem Nichts entstehen: Ohne gemessenen
+        Zweitpunkt steht kein Wort davon da."""
+        text = ordne(GEMESSEN).urteil()
+
+        assert "Hier liegt die Arbeit: Schlechtestes Jahr, Parameter-Plateau." in text
+        assert "Betriebspunkt" not in text
+        assert ordne(GEMESSEN).am_punkt == []
+
+    def test_ein_name_ohne_gemessene_liste_wird_abgewiesen(self) -> None:
+        """**Sonst waere die Auskunft frei erfunden.**
+
+        Ein Zweitpunkt ohne ``dort_offen`` liesse jedes Gate als
+        punktabhaengig durchgehen, weil die Menge leer ist - eine Aussage
+        ueber eine Messung, die es nicht gab.
+        """
+        import pytest
+
+        with pytest.raises(ValueError, match="gehoeren zusammen"):
+            ordne(GEMESSEN, zweitpunkt="Spot")
+        with pytest.raises(ValueError, match="gehoeren zusammen"):
+            ordne(GEMESSEN, dort_offen=("Messlatte",))
+
+    def test_gates_die_an_beiden_punkten_fallen_sind_keine_folge_der_wahl(
+        self,
+    ) -> None:
+        """Faellt ein offenes Gate auch am anderen Punkt durch, bleibt es
+        Arbeit - und darf nicht mitmarkiert werden."""
+        lage = ordne(
+            GEMESSEN,
+            zweitpunkt="Spot",
+            dort_offen=(
+                "Messlatte", "Deflated Sharpe", "Schlechtestes Jahr",
+            ),
+        )
+
+        assert [h.name for h in lage.am_punkt] == ["Parameter-Plateau"]
+        text = lage.urteil()
+        assert "1 davon haengen am Betriebspunkt." in text
+        assert "Die ganze Arbeit" not in text
+
+    def test_haengt_nichts_am_punkt_steht_auch_nichts_da(self) -> None:
+        lage = ordne(
+            GEMESSEN,
+            zweitpunkt="Spot",
+            dort_offen=tuple(g.name for g in GEMESSEN if not g.passed),
+        )
+
+        assert lage.am_punkt == []
+        assert "Betriebspunkt" not in lage.urteil()

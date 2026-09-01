@@ -15207,3 +15207,90 @@ laesst acht Tests fallen, ein falscher Faktor drei.
 Versuchszaehler 198 unveraendert - variiert wurden die Parameter eines
 vorhandenen Kandidaten, nichts ausgewaehlt und nichts verstellt. Suchbudget
 68 von 100.
+
+## Hundertvierundsechzig. Die Arbeitsliste kam vom falschen Punkt
+
+`cli stand` zeigt seit Befund 112 beide Betriebspunkte nebeneinander:
+
+    Perpetual   158 Trades, 12,95 % p.a., 10,64 % Rueckgang   7/11 Gates
+    Spot        158 Trades, 14,34 % p.a.,  9,87 % Rueckgang   9/11 Gates
+
+Berichtet wird absichtlich der schlechtere: Welcher gilt, haengt daran, ob das
+Bybit-Konto des Nutzers Perpetuals fuehrt - eine Tatsache, die nur er klaeren
+kann. Das ist die richtige Wahl und steht seit Befund 112 fest.
+
+Drei Zeilen unter dieser Gegenueberstellung sagt derselbe Bericht:
+
+    **Hier liegt die Arbeit: Schlechtestes Jahr, Parameter-Plateau.**
+
+### Was gemessen wurde
+
+Beide Punkte, alle elf Gates, derselbe Kandidat, dieselben Daten:
+
+| Punkt     | Gates | offen                                                        |
+|-----------|-------|--------------------------------------------------------------|
+| Perpetual | 7/11  | Messlatte, Schlechtestes Jahr, Deflated Sharpe, Parameter-Plateau |
+| Spot      | 9/11  | Messlatte, Deflated Sharpe                                   |
+
+**Die beiden genannten Aufgaben sind genau die zwei Gates, die unter Spot
+bestehen.** Die offene Menge unter Spot ist eine echte Teilmenge; kein Gate
+faellt dort durch, das hier bestuende.
+
+Die Arbeitsliste kam aus `ordne(gates.results)` - und das sind die Ergebnisse
+des berichteten Punktes allein. Wer sie las, sah zwei Aufgaben vor sich, die
+sich mit der Antwort auf eine offene Frage restlos aufloesen. Bleibt unter
+Spot: die Messlatte (eine Geschaeftsentscheidung) und der Deflated Sharpe
+(durchgemessen, Befund 89).
+
+### Warum das mehr ist als eine Anzeigefrage
+
+Die Befunde 92, 93, 161, 162 und 163 sind alle in diese zwei Gates gelaufen,
+weil der Bericht sie als *die* Arbeit ausgewiesen hat. Fuenf Laeufe an einer
+Aufgabe, deren Existenz an einer ungeklaerten Kontofrage haengt - und die
+Frage steht im selben Bericht, drei Zeilen darueber.
+
+Das entwertet die fuenf Befunde nicht: Befund 161 und 162 haben ueber
+'Schlechtestes Jahr' etwas gefunden, das an beiden Punkten gilt (ein Minimum
+kehrt nicht zurueck), und Befund 163 hat eine falsche Botschaft korrigiert.
+Aber die *Reihenfolge* war falsch begruendet.
+
+### Was gebaut wurde
+
+`ordne` nimmt jetzt den zweiten Punkt entgegen - seinen Namen und die dort
+offenen Gates. `Gatelage.am_punkt` nennt die Hindernisse, die an der Wahl
+haengen, und das Urteil sagt es dazu:
+
+    **Hier liegt die Arbeit: Schlechtestes Jahr, Parameter-Plateau.**
+
+    **Die ganze Arbeit haengt am Betriebspunkt.** Unter 'Spot' bestanden:
+    Schlechtestes Jahr, Parameter-Plateau. Berichtet wird weiter der
+    schlechtere Punkt, weil die Voraussetzung offen ist - klaert sie sich
+    zu 'Spot', entfaellt diese Arbeit. Gemessen wird dadurch nichts besser:
+    derselbe Kandidat, andere Handelsbedingungen.
+
+Der letzte Satz ist die Bedingung, ohne die der Absatz gefaehrlich waere.
+**Es besteht nichts, was vorher durchfiel** - es ist derselbe Kandidat unter
+anderen Handelsbedingungen, und welche gelten, weiss nur der Nutzer. Der
+Bericht zeigt weiter den schlechteren Punkt.
+
+Name und Gateliste muessen zusammen kommen; ein Name allein wird abgewiesen.
+Sonst waere `dort_offen` leer und jedes Gate wuerde als punktabhaengig
+ausgewiesen - eine Aussage ueber eine Messung, die nicht stattgefunden hat.
+
+### Was daraus folgt
+
+1. **Unter Spot ist keine gemessene Aufgabe mehr offen.** Was bleibt, ist eine
+   Geschaeftsentscheidung und ein durchgemessenes Gate. Das ist keine gute
+   Nachricht - es heisst, dass die naheliegende Arbeit erschoepft ist, nicht
+   dass der Kandidat taugt.
+2. **Die wirksamste offene Frage ist keine Messung, sondern zwei Minuten im
+   Handelsmenue.** Sie steht seit Befund 112 im Bericht und ist die einzige,
+   die vier Gates auf einmal bewegt.
+3. **Ein Bericht kann in sich widerspruechlich sein, ohne dass eine Zahl
+   falsch ist.** Beide Abschnitte waren fuer sich richtig; erst
+   nebeneinandergelegt zeigt sich, dass der eine den anderen aufhebt. Das ist
+   dieselbe Naht wie in Befund 163 - eine Aussage im Bericht, die eine andere
+   Stelle desselben Berichts widerlegt.
+
+Versuchszaehler 198 unveraendert - derselbe Kandidat, dieselben Daten, keine
+neue Hypothese. Suchbudget 68 von 100.

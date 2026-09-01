@@ -534,6 +534,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "seither bei -10,3 gegen -10,00 - ein Minimum kehrt nicht zurueck",
         161,
     ),
+    # Der zweite Betriebspunkt stand seit Befund 112 im Bericht - nur nicht
+    # in der Aufgabenliste drei Zeilen darunter.
+    Richtung(
+        "Aufgabenliste nur vom schlechteren Punkt",
+        "beide genannten Aufgaben bestehen unter Spot (9/11 gegen 7/11); "
+        "'cli stand' sagt jetzt dazu, was an der offenen Voraussetzung haengt",
+        164,
+    ),
 )
 
 
