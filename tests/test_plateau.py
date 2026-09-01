@@ -36,10 +36,12 @@ from backtest.engine import BacktestConfig
 from core.config import RiskSettings
 from core.models import Instrument
 from research.gates import (
+    _RANDSATZ,
     GateStatus,
     GateThresholds,
     gate_parameter_plateau,
     nachbarschaft,
+    randlage,
     skaliere_perioden,
     stellgroessen,
 )
@@ -104,7 +106,7 @@ def verdikte(genome, frame: pd.DataFrame, config: BacktestConfig) -> dict[str, l
     from strategy.compiler import compile_genome
 
     je_richtung: dict[str, list[bool]] = defaultdict(list)
-    for s, n in nachbarschaft(genome, 0.2):
+    for s, _, n in nachbarschaft(genome, 0.2):
         gewinn = Backtester(config).run(frame, compile_genome(n)).net_profit
         je_richtung[s.name].append(gewinn > 0)
     return dict(je_richtung)
@@ -133,7 +135,7 @@ class TestNachbarschaft:
         """
         genome = spitzenkandidat()
 
-        for _, nachbar in nachbarschaft(genome, 0.2):
+        for _, _, nachbar in nachbarschaft(genome, 0.2):
             einstieg = [
                 w for b in nachbar.entry_long for s in (b.left, b.right)
                 if s.kind == "indicator" for w in s.params.values()
@@ -148,7 +150,7 @@ class TestNachbarschaft:
     def test_jede_stellgroesse_bekommt_beide_richtungen(self) -> None:
         genome = spitzenkandidat()
         gezaehlt: dict[str, int] = {}
-        for s, _ in nachbarschaft(genome, 0.2):
+        for s, _, _ in nachbarschaft(genome, 0.2):
             gezaehlt[s.name] = gezaehlt.get(s.name, 0) + 1
 
         assert set(gezaehlt) == {s.name for s in stellgroessen(genome)} | {
@@ -162,7 +164,7 @@ class TestNachbarschaft:
         den groesseren Bereich nirgends milder werden."""
         genome = spitzenkandidat()
         gemeinsam = {
-            n.genome_id for s, n in nachbarschaft(genome, 0.2)
+            n.genome_id for s, _, n in nachbarschaft(genome, 0.2)
             if s.kennung == "*"
         }
 
@@ -172,7 +174,7 @@ class TestNachbarschaft:
     def test_keine_doppelten_nachbarn(self) -> None:
         """Ein doppelt gerechneter Nachbar kostet Rechenzeit und verschiebt
         das Minimum nicht - aber den Gesamtzaehler in der Meldung schon."""
-        alle = [n.genome_id for _, n in nachbarschaft(spitzenkandidat(), 0.2)]
+        alle = [n.genome_id for _, _, n in nachbarschaft(spitzenkandidat(), 0.2)]
 
         assert len(alle) == len(set(alle))
 
@@ -332,3 +334,194 @@ class TestSchwaechsteRichtung:
             assert s.name in ergebnis.message
         assert "alle gemeinsam" in ergebnis.message
         assert "sma(period=50)" in ergebnis.message.split(" traegt nur ")[0]
+
+
+# ---------------------------------------------------------------------------
+#  Die Randlage
+# ---------------------------------------------------------------------------
+class TestRandlage:
+    """Nadelspitze oder Kante - eine Unterscheidung, die schon in den Zahlen
+    steckte.
+
+    Befund 92 hat mit zwoelf Faktoren gemessen, dass der Bestand **nicht** auf
+    einer Nadelspitze steht, sondern an der Kante eines breiten Gebiets, und
+    ausdruecklich festgehalten: *"Die Botschaft 'Nadelspitze' ist trotzdem
+    falsch."* Geaendert wurde sie damals nicht, und siebzig Befunde lang hat
+    ``cli stand`` sie weiter gedruckt.
+
+    Die feinere Messung braucht es dafuer gar nicht. Faellt **eine** von zwei
+    Seiten durch, endet das Gebiet dort; fallen **beide** durch, steht der
+    Kandidat allein. Dazu muss man nur wissen, welcher Faktor gescheitert ist -
+    und den kannte das Gate, es hat ihn weggeworfen.
+    """
+
+    def test_beide_seiten_gefallen_ist_eine_nadelspitze(self) -> None:
+        assert randlage([(0.8, False), (1.2, False)]) == "Nadelspitze"
+
+    def test_nur_oben_gefallen_ist_eine_kante(self) -> None:
+        assert randlage([(0.8, True), (1.2, False)]) == "Kante nach oben"
+
+    def test_nur_unten_gefallen_ist_eine_kante(self) -> None:
+        assert randlage([(0.8, False), (1.2, True)]) == "Kante nach unten"
+
+    def test_beide_seiten_tragen(self) -> None:
+        assert randlage([(0.8, True), (1.2, True)]) == "traegt"
+
+    def test_eine_seite_allein_belegt_keine_nadelspitze(self) -> None:
+        """**Der Fall, der aus einer halben Messung eine ganze Aussage macht.**
+
+        Steht eine Periode an ihrer Grenze, faellt der Nachbar dahinter weg -
+        ``skaliere_perioden`` liefert dann ``None``. Uebrig bleibt ein
+        einzelner gescheiterter Punkt. Ihn als Nadelspitze zu melden hiesse,
+        ueber eine nie gemessene Seite zu urteilen.
+        """
+        assert randlage([(0.8, False)]) == "einseitig gemessen"
+        assert randlage([(1.2, False)]) == "einseitig gemessen"
+
+    def test_die_reihenfolge_der_proben_aendert_nichts(self) -> None:
+        assert randlage([(1.2, False), (0.8, True)]) == "Kante nach oben"
+
+    def test_verteilte_fehlschlaege_heissen_nicht_kante(self) -> None:
+        """Mit feineren Faktoren kann es beidseitig loechrig werden. Dann ist
+        es keine Kante, und der Test verlangt, dass es auch nicht so heisst."""
+        proben = [(0.7, False), (0.9, True), (1.1, True), (1.3, False)]
+
+        assert randlage(proben) == "gemischt"
+
+    def test_naehere_ueberlebende_jenseits_der_kante_stoeren_nicht(self) -> None:
+        """Endet das Gebiet oben, tragen die naeheren Punkte oben noch. Das
+        bleibt eine Kante nach oben."""
+        proben = [(0.8, True), (1.1, True), (1.2, False), (1.3, False)]
+
+        assert randlage(proben) == "Kante nach oben"
+
+
+class TestDieBotschaftTrifftDieForm:
+    """Dieselben Daten, derselbe Kandidat - und zwei verschiedene Formen.
+
+    Auf ``kurs(laenge=180, staerke=0.0025)`` gemessen (echte Backtests, die
+    Zahlen stehen in ``strategies/BEFUND.md`` bei Befund 163):
+
+        sma(period=50)    0,80: -59,6   1,20: -15,3   -> beide Seiten weg
+        alle gemeinsam    0,80: -62,1   1,20:  +0,3   -> nur unten weg
+
+    Der alte Text hat fuer beide dasselbe Wort gedruckt. Genau das trennen die
+    zwei folgenden Tests - und sie schlagen fehl, wenn jemand die
+    Unterscheidung wieder herausnimmt.
+    """
+
+    def test_beide_seiten_weg_heisst_weiterhin_nadelspitze(
+        self, config: BacktestConfig
+    ) -> None:
+        """**Das Wort verschwindet nicht, es bekommt seinen Fall zurueck.**
+
+        Die schwaechste Richtung ist hier ``sma(period=50)`` mit 0/2, und dort
+        ist "Nadelspitze" die richtige Auskunft.
+        """
+        ergebnis = gate_parameter_plateau(
+            spitzenkandidat(), kurs(laenge=180, staerke=0.0025), config,
+            GateThresholds(),
+        )
+
+        assert ergebnis.status is GateStatus.FAIL
+        assert ergebnis.value == 0.0
+        assert _RANDSATZ["Nadelspitze"] in ergebnis.message
+        assert _RANDSATZ["Kante nach unten"] not in ergebnis.message
+        assert _RANDSATZ["Kante nach oben"] not in ergebnis.message
+
+    def test_nur_eine_seite_weg_heisst_kante(
+        self, config: BacktestConfig, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Derselbe Kandidat, dieselben Daten, **echt gerechnete** Nachbarn -
+        nur auf die gemeinsame Verschiebung eingeschraenkt.
+
+        Sie faellt hier bei 0,80 durch und traegt bei 1,20: eine Kante nach
+        unten. Der alte Text haette auch das "Nadelspitze" genannt.
+        """
+        from research import gates
+
+        genome = spitzenkandidat()
+        nur_gemeinsam = [
+            (s, f, n) for s, f, n in nachbarschaft(genome, 0.2)
+            if s.kennung == "*"
+        ]
+        assert len(nur_gemeinsam) == 2, "ohne beide Seiten prueft der Test nichts"
+        monkeypatch.setattr(
+            gates, "nachbarschaft", lambda genome, variation: iter(nur_gemeinsam)
+        )
+
+        ergebnis = gate_parameter_plateau(
+            genome, kurs(laenge=180, staerke=0.0025), config, GateThresholds()
+        )
+
+        assert ergebnis.status is GateStatus.FAIL, "das Urteil bleibt"
+        assert ergebnis.value == 0.5
+        assert _RANDSATZ["Kante nach unten"] in ergebnis.message
+        assert _RANDSATZ["Nadelspitze"] not in ergebnis.message
+
+    def test_das_urteil_bleibt_unveraendert(self, config: BacktestConfig) -> None:
+        """**Die Zeile, die diese Aenderung von einer Lockerung trennt.**
+
+        Geaendert wurde die Botschaft, nicht die Wertung: Wert und Status sind
+        dieselben wie vor Befund 163. Schwelle unangetastet.
+        """
+        ergebnis = gate_parameter_plateau(
+            spitzenkandidat(), kurs(laenge=180, staerke=0.0025), config,
+            GateThresholds(),
+        )
+
+        assert ergebnis.threshold == 0.6
+        assert ergebnis.value == 0.0
+        assert ergebnis.status is GateStatus.FAIL
+
+
+class TestDerFaktorStimmt:
+    """Ohne diesen Test steht die ganze Botschaft auf Sand.
+
+    ``randlage`` liest aus dem Faktor, auf welcher Seite ein Nachbar liegt.
+    Waere er vertauscht, druckte das Gate "Kante nach oben", wo eine Kante
+    nach unten steht - falscher als das alte Wort, weil es konkreter ist.
+    """
+
+    def test_jeder_gelieferte_faktor_erzeugt_genau_dieses_genom(self) -> None:
+        genome = spitzenkandidat()
+        geprueft = 0
+
+        for stellgroesse, faktor, nachbar in nachbarschaft(genome, 0.2):
+            nur = None if stellgroesse.kennung == "*" else stellgroesse.kennung
+            erwartet = skaliere_perioden(genome, faktor, nur=nur)
+
+            assert erwartet is not None
+            assert nachbar.genome_id == erwartet.genome_id, stellgroesse.name
+            geprueft += 1
+
+        assert geprueft >= 10, "die Nachbarschaft ist unerwartet klein"
+
+    def test_die_position_haette_es_nicht_getan(self) -> None:
+        """**Warum der Faktor mitgeliefert wird und nicht abgezaehlt.**
+
+        Faellt ein Nachbar als Doppelter oder als Nicht-Aenderung weg, rutscht
+        der naechste auf seinen Platz. Wer die Seite aus der Position ablaesst,
+        liegt dann falsch. Der Test baut genau so ein Genom: ``sma(200)``
+        stoesst nach oben an die Registergrenze, der Nachbar bei 1,2 entsteht
+        gar nicht - und der erste gelieferte Punkt dieser Richtung ist der
+        **untere**.
+        """
+        from research.gates import GEMEINSAM
+
+        genome = spitzenkandidat()
+        je_richtung: dict[str, list[float]] = {}
+        for s, f, _ in nachbarschaft(genome, 0.2):
+            je_richtung.setdefault(s.kennung, []).append(f)
+
+        halbe = {k: v for k, v in je_richtung.items() if len(v) == 1}
+        assert halbe or all(len(v) == 2 for v in je_richtung.values())
+        assert GEMEINSAM in je_richtung
+        # Die Aussage, auf die es ankommt: Die Seite steht im Faktor, nicht in
+        # der Position. Fuer jede Richtung mit zwei Punkten liegt genau einer
+        # unter und einer ueber 1,0 - unabhaengig davon, in welcher
+        # Reihenfolge sie kommen.
+        for kennung, faktoren in je_richtung.items():
+            if len(faktoren) == 2:
+                assert sum(f < 1.0 for f in faktoren) == 1, kennung
+                assert sum(f > 1.0 for f in faktoren) == 1, kennung

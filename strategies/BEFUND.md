@@ -15088,3 +15088,122 @@ beziffert und unbeantwortet, neben der Mindestrendite und dem Funding-Satz.
    werden sollte es.
 
 Versuchszaehler 198 unveraendert. Suchbudget 68 von 100.
+
+## Hundertdreiundsechzig. Ein Befund, der nie im Bericht ankam
+
+Befund 162 hat drei Gates auf laufenden Extrema gefunden und die Entscheidung
+darueber dem Nutzer vorgelegt. `cli stand` nennt seither unveraendert dieselben
+zwei Stellen, an denen Arbeit liegt: **Schlechtestes Jahr** und
+**Parameter-Plateau**. Dieser Lauf nimmt das Plateau - und findet dort keinen
+neuen Befund, sondern einen alten, der nie eingebaut wurde.
+
+### Was `cli stand` bis heute gedruckt hat
+
+    - Parameter-Plateau             0.500 gegen      0.600
+        alle gemeinsam traegt nur 50% - in dieser Richtung steht die
+        Strategie auf einer Nadelspitze, nicht auf einem Plateau.
+
+**Befund 92 hat genau diesen Satz vor siebzig Befunden widerlegt.** Er mass mit
+zwoelf Faktoren von 0,70 bis 1,30 nach und hielt fest: die Strategie ist von
+0,70 bis 1,15 durchgehend profitabel, was das Gate trifft, ist eine *Kante bei
++20 %*, und - woertlich - *"Die Botschaft 'Nadelspitze' ist trotzdem falsch."*
+
+Danach wurde `research/plateaubild.py` gebaut, `cli plateaubild` dazu, ein
+Testmodul, ein Befundtext. Die eine Zeile, die der Nutzer tatsaechlich liest,
+blieb stehen. Der Schwesterfall aus demselben Befund - die irrefuehrende
+Messlatte-Zeile - ist inzwischen korrigiert; dieser hier nicht.
+
+### Die feinere Messung braucht es dafuer gar nicht
+
+Das ist der Teil, den Befund 92 uebersehen hat. Bei zwei Nachbarn je Richtung
+sagt schon die Quote, welcher Fall vorliegt:
+
+| Quote | Was zwei Punkte hergeben                            |
+|-------|-----------------------------------------------------|
+| 1,0   | beide Seiten tragen - kein Einwand in der Richtung   |
+| 0,5   | **genau eine** Seite faellt: das Gebiet endet dort   |
+| 0,0   | beide Seiten fallen: der Kandidat steht allein       |
+
+Nur die letzte Zeile ist eine Nadelspitze. Welcher der beiden mittleren Faelle
+vorliegt, entscheidet der **Faktor** des gescheiterten Nachbarn - und den hat
+`nachbarschaft` immer berechnet und nie herausgegeben. Das Gate verkuerzte
+jeden Nachbarn auf `gewinn > 0` und warf die Seite weg, auf der er lag.
+
+### Nachgemessen am Betriebspunkt von `cli stand`
+
+Gewinn in Konto-Einheiten, BTC + ETH auf Tageskerzen, Basis bei Faktor 1,00
+ist 957,9:
+
+    Stellgroesse              0,80      1,20   Quote  Seite
+    alle gemeinsam          1093,2    -103,6    0,50  nur oben
+    sma(period=50)           867,6    -103,9    0,50  nur oben
+    sma(period=200)          932,2     939,4    1,00  traegt
+    roc(period=90)           957,3     956,7    1,00  traegt
+    rsi(period=14)           964,1    1025,3    1,00  traegt
+    Vola-Fenster             801,9     964,2    1,00  traegt
+
+Die Zahlen decken sich mit Befund 92 (dort 1093 / -104 / 958). Der
+Datenbestand ist seither einmal verlorengegangen und neu geholt worden -
+an dieser Stelle hat sich dadurch nichts verschoben.
+
+Keine der beiden schwachen Richtungen faellt beidseitig durch. **Es ist eine
+Kante nach oben, in beiden Faellen, und zwar dieselbe** - `sma(period=50)` ist
+die einzige wirkende Stellgroesse, "alle gemeinsam" folgt ihr.
+
+### Was gebaut wurde
+
+`nachbarschaft` liefert jetzt `(Stellgroesse, Faktor, Genom)`. `randlage`
+uebersetzt die Proben einer Richtung in eine Form, und das Gate sagt sie an:
+
+    - Parameter-Plateau             0.500 gegen      0.600
+        alle gemeinsam traegt nur 50% - nach unten traegt sie, nach oben
+        kippt sie ins Negative - das ist die Kante eines Gebiets, keine
+        Nadelspitze. Wie weit das Gebiet nach unten reicht, sagen zwei
+        Punkte nicht ('cli plateaubild' misst es).
+
+Der letzte Halbsatz ist die Grenze der Auskunft und gehoert dazu. Zwei Punkte
+belegen, dass der Kandidat **nicht** allein steht; wie breit das Gebiet ist,
+belegen sie nicht. "Keine Nadelspitze" ist damit tragfaehig, "breites Plateau"
+waere es nicht.
+
+### Ein Fall, den ich beim ersten Anlauf falsch hatte
+
+Meine erste Fassung meldete "Nadelspitze", sobald kein Nachbar trug - auch
+dann, wenn nur **einer** gemessen worden war. Das kommt vor: Steht eine Periode
+an ihrer Registergrenze, aendert das Skalieren nichts, `skaliere_perioden`
+liefert `None` und der Nachbar dahinter existiert gar nicht. Aus einem
+gescheiterten Punkt auf eine nie gemessene Seite zu schliessen ist derselbe
+Fehler in klein, den dieser Befund behebt. Die Auskunft heisst jetzt
+"einseitig gemessen".
+
+### Was sich nicht geaendert hat
+
+**Das Urteil.** Wert 0,500, Schwelle 0,600, durchgefallen - vorher wie
+nachher. Die Schwelle wurde nicht angefasst, die Wertung ueber das Minimum
+nicht angefasst, die Variation von 20 % nicht angefasst. Ein Test steht
+ausdruecklich dafuer da (`test_das_urteil_bleibt_unveraendert`), und ein
+zweiter dafuer, dass das Wort "Nadelspitze" dort weiter erscheint, wo es
+zutrifft: Auf der Testfixture faellt `sma(period=50)` beidseitig durch, und
+dort heisst es weiterhin so.
+
+Beide Testklassen sind gegen Zahnlosigkeit geprueft worden, indem die
+Aenderung testweise zurueckgedreht wurde: `randlage` auf "immer Nadelspitze"
+laesst acht Tests fallen, ein falscher Faktor drei.
+
+### Was daraus folgt
+
+1. **Das Gate scheitert weiter zu Recht.** Bei +20 % kippt der Kandidat ins
+   Negative, und Robustheit in beide Richtungen ist die Anforderung.
+2. **Ein Befund, der nur im Journal steht, ist nicht eingebaut.** Befund 92 hat
+   die Messung gemacht, den Fehler benannt, ein Modul gebaut - und die Zeile,
+   um die es ging, stehen lassen. Das ist die dritte Stelle dieser Art nach den
+   Befunden 158 und 159, und die erste, bei der die Korrektur ausdruecklich
+   angekuendigt war.
+3. **Die Suche danach ist damit nicht erschoepft** - anders als die beiden in
+   Befund 159 und 160 abgeschlossenen. Gesucht wurde diesmal nicht nach einem
+   ungenutzten Modul oder einer gepflegten Zahl, sondern nach einer *Aussage im
+   Bericht, die eine spaetere Messung widerlegt hat*. Diese Naht ist neu.
+
+Versuchszaehler 198 unveraendert - variiert wurden die Parameter eines
+vorhandenen Kandidaten, nichts ausgewaehlt und nichts verstellt. Suchbudget
+68 von 100.

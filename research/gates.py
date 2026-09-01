@@ -930,6 +930,87 @@ def gate_cost_stress(
     )
 
 
+def randlage(proben: list[tuple[float, bool]]) -> str:
+    """Endet das profitable Gebiet hier, oder steht der Kandidat allein darin?
+
+    Das Plateau-Gate hat siebzig Befunde lang **eine** Botschaft fuer beide
+    Faelle gedruckt: "in dieser Richtung steht die Strategie auf einer
+    Nadelspitze". Befund 92 hat mit einer feineren Messung gezeigt, dass das
+    beim Bestand nicht stimmt - es ist eine Kante bei +20 % - und dass die
+    Botschaft falsch ist. Geaendert wurde sie damals nicht.
+
+    Dabei braucht es die feinere Messung dafuer gar nicht. Bei zwei Nachbarn
+    je Richtung sagt schon die Quote, welcher Fall vorliegt:
+
+    ======  ==========================================================
+    Quote   Was zwei Punkte hergeben
+    ======  ==========================================================
+    1,0     beide Seiten tragen - in dieser Richtung kein Einwand
+    0,5     **genau eine** Seite faellt durch: das Gebiet endet dort
+    0,0     beide Seiten fallen durch: der Kandidat steht allein
+    ======  ==========================================================
+
+    Eine Richtung kann auch nur **einen** Nachbarn haben: Steht eine Periode
+    an ihrer Grenze, aendert das Skalieren nichts und der Nachbar faellt weg.
+    Dann sind 0,0 und "beide Seiten fallen durch" nicht dasselbe, und die
+    Auskunft lautet "einseitig gemessen".
+
+    Nur die letzte Zeile ist eine Nadelspitze. Die mittlere ist eine Kante,
+    und welche der beiden es ist, entscheidet der Faktor des gescheiterten
+    Nachbarn - deshalb liefert ``nachbarschaft`` ihn mit.
+
+    **Die Grenze dieser Auskunft gehoert dazu.** Zwei Punkte belegen, dass der
+    Kandidat *nicht* allein steht; wie weit das Gebiet auf der tragenden Seite
+    reicht, sagen sie nicht. "Keine Nadelspitze" ist damit belegbar, "breites
+    Plateau" nicht. Wer die Breite braucht, misst sie mit ``cli plateaubild``.
+    """
+    getragen = [f for f, ok in proben if ok]
+    gefallen = [f for f, ok in proben if not ok]
+    if not gefallen:
+        return "traegt"
+    # **Zuerst die Frage, ob ueberhaupt beide Seiten gemessen wurden.** Eine
+    # Richtung kann einen einzigen Nachbarn haben: Steht eine Periode an ihrer
+    # Grenze, aendert das Skalieren nichts und der Nachbar faellt weg. Wer
+    # dann aus einem gescheiterten Punkt "Nadelspitze" liest, behauptet etwas
+    # ueber eine Seite, die er nie gemessen hat.
+    beidseitig = any(f < 1.0 for f, _ in proben) and any(f > 1.0 for f, _ in proben)
+    if not beidseitig:
+        return "einseitig gemessen"
+    if not getragen:
+        return "Nadelspitze"
+    if all(f > 1.0 for f in gefallen):
+        return "Kante nach oben"
+    if all(f < 1.0 for f in gefallen):
+        return "Kante nach unten"
+    return "gemischt"
+
+
+#: Wie die Randlage in der Botschaft erklaert wird. Der Satz sagt, was
+#: gemessen wurde, und nicht mehr - siehe ``randlage``.
+_RANDSATZ = {
+    "Nadelspitze": (
+        "auf beiden Seiten faellt sie ins Negative - hier steht die Strategie "
+        "tatsaechlich auf einer Nadelspitze"
+    ),
+    "Kante nach oben": (
+        "nach unten traegt sie, nach oben kippt sie ins Negative - das ist die "
+        "Kante eines Gebiets, keine Nadelspitze. Wie weit das Gebiet nach "
+        "unten reicht, sagen zwei Punkte nicht ('cli plateaubild' misst es)"
+    ),
+    "Kante nach unten": (
+        "nach oben traegt sie, nach unten kippt sie ins Negative - das ist die "
+        "Kante eines Gebiets, keine Nadelspitze. Wie weit das Gebiet nach "
+        "oben reicht, sagen zwei Punkte nicht ('cli plateaubild' misst es)"
+    ),
+    "gemischt": "die gescheiterten Nachbarn liegen auf beiden Seiten verteilt",
+    "einseitig gemessen": (
+        "gemessen wurde nur eine Seite - die Periode steht an ihrer Grenze, "
+        "der Nachbar dahinter existiert nicht. Ob der Kandidat dort allein "
+        "steht, sagt diese Messung nicht"
+    ),
+}
+
+
 def gate_parameter_plateau(
     genome: Genome,
     frame: pd.DataFrame,
@@ -988,8 +1069,9 @@ def gate_parameter_plateau(
 
     beine = _beine(frames, configs, frame, config)
     je_stellgroesse: dict[str, list[bool]] = {}
+    seiten: dict[str, list[tuple[float, bool]]] = {}
     namen: dict[str, str] = {}
-    for stellgroesse, neighbour in nachbarn:
+    for stellgroesse, faktor, neighbour in nachbarn:
         gewinn = sum(
             Backtester(cfg)
             .run(
@@ -1001,6 +1083,7 @@ def gate_parameter_plateau(
             for teil, cfg in beine
         )
         je_stellgroesse.setdefault(stellgroesse.kennung, []).append(gewinn > 0)
+        seiten.setdefault(stellgroesse.kennung, []).append((faktor, gewinn > 0))
         namen[stellgroesse.kennung] = stellgroesse.name
 
     quoten = {
@@ -1026,9 +1109,8 @@ def gate_parameter_plateau(
             f"({gesamt} von {len(nachbarn)} Nachbarn insgesamt profitabel). "
             f"{uebersicht}"
             if passed
-            else f"{namen[schwaechste]} traegt nur {ratio:.0%} - in dieser "
-            f"Richtung steht die Strategie auf einer Nadelspitze, nicht auf "
-            f"einem Plateau. {uebersicht}"
+            else f"{namen[schwaechste]} traegt nur {ratio:.0%} - "
+            f"{_RANDSATZ[randlage(seiten[schwaechste])]}. {uebersicht}"
         ),
     )
 
@@ -1425,9 +1507,18 @@ def nachbarschaft(genome: Genome, variation: float):
     beschreibt eine Nadel in **einer** Dimension, und genau die konnte der
     Zwei-Punkte-Test nie sehen. Er verschob immer alle Perioden zugleich.
 
-    Geliefert wird ``(Stellgroesse, Genom)``. Doppelte fallen raus: Hat ein
-    Genom nur eine Stellgroesse, ist ihre Verschiebung dieselbe wie die
+    Geliefert wird ``(Stellgroesse, Faktor, Genom)``. Doppelte fallen raus:
+    Hat ein Genom nur eine Stellgroesse, ist ihre Verschiebung dieselbe wie die
     gemeinsame, und dann bleiben es zwei Nachbarn.
+
+    **Der Faktor gehoert dazu, weil ohne ihn eine Seite fehlt.** Wer nur
+    ``(Stellgroesse, Genom)`` bekommt, weiss von einem gescheiterten Nachbarn
+    nicht, ob er ueber oder unter dem Kandidaten liegt - und damit nicht, ob
+    das Gebiet dort endet oder ob der Kandidat darin allein steht. Genau
+    diese Unterscheidung hat dem Plateau-Gate siebzig Befunde lang gefehlt
+    (Befund 163). Aus der Reihenfolge laesst sie sich nicht ablesen: Ein
+    Nachbar kann als Doppelter ausfallen, dann rutscht der naechste auf
+    seinen Platz.
     """
     seen: set[str] = {genome.genome_id}
     gemeinsam = Stellgroesse("alle gemeinsam", GEMEINSAM)
@@ -1437,7 +1528,7 @@ def nachbarschaft(genome: Genome, variation: float):
         if neighbour is None or neighbour.genome_id in seen:
             continue
         seen.add(neighbour.genome_id)
-        yield gemeinsam, neighbour
+        yield gemeinsam, faktor, neighbour
 
     for stellgroesse in stellgroessen(genome):
         for faktor in (1 - variation, 1 + variation):
@@ -1445,12 +1536,12 @@ def nachbarschaft(genome: Genome, variation: float):
             if neighbour is None or neighbour.genome_id in seen:
                 continue
             seen.add(neighbour.genome_id)
-            yield stellgroesse, neighbour
+            yield stellgroesse, faktor, neighbour
 
 
 def _vary_periods(genome: Genome, variation: float):
-    """Nur die Genome der Nachbarschaft, ohne die Stellgroessen dazu."""
-    for _, neighbour in nachbarschaft(genome, variation):
+    """Nur die Genome der Nachbarschaft, ohne Stellgroesse und Faktor dazu."""
+    for _, _, neighbour in nachbarschaft(genome, variation):
         yield neighbour
 
 

@@ -260,6 +260,17 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
 #:
 #: Reihenfolge: aufsteigend nach Fundstelle.
 BEHOBEN: tuple[Richtung, ...] = (
+    # Befund 92 hat die Botschaft als falsch nachgewiesen und nicht geaendert.
+    # Siebzig Befunde spaeter stand sie noch da - deshalb ist die Fundstelle
+    # 92 und die letzte Messung 163.
+    Richtung(
+        "Plateau-Gate meldete die falsche Form",
+        "'Nadelspitze' fuer jeden Fehlschlag, auch fuer die einseitigen - der "
+        "Faktor des gescheiterten Nachbarn unterscheidet es, das Gate hatte "
+        "ihn und warf ihn weg; Urteil unveraendert 0,500 gegen 0,600",
+        92,
+        163,
+    ),
     Richtung(
         "Stand auf einem Betriebspunkt",
         "zwei Gates hingen an einer ungeklaerten Tatsache",
