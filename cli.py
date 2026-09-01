@@ -7669,7 +7669,6 @@ def partner(
 
     Kostet keinen Versuch: Gerechnet wird ueber Partner, nicht mit ihnen.
     """
-    import json
 
     from research.admission import load_trials
     from research.partnerkarte import Anwaerter, Partnerkarte
@@ -7708,10 +7707,7 @@ def partner(
 
     # Die Trade-Zahlen aller Bestenlisten-Eintraege liegen laengst vor. Sie
     # abzulesen testet nichts Neues und kostet deshalb keinen Versuch.
-    try:
-        daten = json.loads((zustand / "leaderboard.json").read_text())
-    except (OSError, json.JSONDecodeError):
-        daten = {}
+    daten, liste_da = _bestenliste(zustand)
     anwaerter = [
         Anwaerter(
             name=str(e.get("name", "?")),
@@ -7738,10 +7734,7 @@ def partner(
             "Merkmal, nicht die Qualitaet.[/]\n"
         )
     else:
-        console.print(
-            "[yellow]Kein Bestenlisten-Eintrag traegt seinen Sharpe je "
-            "Trade.[/] Seit Befund 69 schreibt jeder neue Lauf ihn mit.\n"
-        )
+        console.print(_bestenliste_hinweis(liste_da))
 
 
 @app.command()
@@ -7909,7 +7902,6 @@ def quelle(
 
     Kostet keinen Versuch: Gelesen wird, was auf der Platte liegt.
     """
-    import json
 
     from research.admission import load_trials
     from research.aussagekraft import Beleg, Ideenquelle
@@ -7919,11 +7911,11 @@ def quelle(
     zustand = Path(settings.paths.state)
     versuche = load_trials(zustand / "trials.json")
 
-    try:
-        daten = json.loads((zustand / "leaderboard.json").read_text())
-    except (OSError, json.JSONDecodeError):
+    daten, liste_da = _bestenliste(zustand)
+    if not liste_da:
         console.print("[red]Keine Bestenliste gefunden.[/]")
-        raise typer.Exit(2) from None
+        console.print(_bestenliste_hinweis(False))
+        raise typer.Exit(2)
 
     nach_herkunft: dict[str, list[Beleg]] = {}
     for e in daten.get("eintraege", []):
@@ -8327,6 +8319,49 @@ def form(
             )
 
 
+def _bestenliste(zustand: Path) -> tuple[dict, bool]:
+    """Die Bestenliste lesen - **und sagen, ob es sie ueberhaupt gibt.**
+
+    Drei Stellen lasen sie bis Befund 166 mit je eigenem ``try/except``, und
+    keine konnte "Datei fehlt" von "Datei ohne brauchbare Eintraege"
+    unterscheiden. ``cli partner`` meldete deshalb auf einem frischen
+    Behaelter:
+
+        Kein Bestenlisten-Eintrag traegt seinen Sharpe je Trade. Seit
+        Befund 69 schreibt jeder neue Lauf ihn mit.
+
+    Das ist die Diagnose eines fehlenden **Feldes** - und es fehlte die
+    ganze Datei. Wer dem Hinweis folgt, sucht nach Eintraegen, die es nicht
+    gibt.
+
+    ``state/`` ist maschinenspezifisch und bis auf ``trials.json`` nicht im
+    Repository (Befund 73). Nach einem Behaelterwechsel ist die Bestenliste
+    also **regulaer** weg, nicht kaputt - genau wie die Kerzen in Befund 151.
+    """
+    import json
+
+    try:
+        return json.loads((zustand / "leaderboard.json").read_text()), True
+    except (OSError, json.JSONDecodeError):
+        return {}, False
+
+
+def _bestenliste_hinweis(vorhanden: bool) -> str:
+    """Warum keine Anwaerter dastehen - je nachdem, woran es liegt."""
+    if not vorhanden:
+        return (
+            "[yellow]Keine Bestenliste vorhanden.[/] 'state/' ist "
+            "maschinenspezifisch und liegt bis auf den Versuchszaehler nicht "
+            "im Repository (Befund 73) - nach einem Behaelterwechsel ist sie "
+            "weg, so wie die Kerzen in Befund 151. 'cli wettbewerb' legt sie "
+            "neu an.\n"
+        )
+    return (
+        "[yellow]Kein Bestenlisten-Eintrag traegt seinen Sharpe je Trade.[/] "
+        "Seit Befund 69 schreibt jeder neue Lauf ihn mit.\n"
+    )
+
+
 def _formpunkte(zustand: Path) -> list:
     """Alle Kandidaten, die Schiefe **und** Woelbung mittragen.
 
@@ -8356,10 +8391,7 @@ def _formpunkte(zustand: Path) -> list:
                         woelbung=float(k["woelbung"]),
                     )
                 )
-    try:
-        eintraege = json.loads((zustand / "leaderboard.json").read_text())
-    except (OSError, json.JSONDecodeError):
-        eintraege = {}
+    eintraege, _ = _bestenliste(zustand)
     for e in eintraege.get("eintraege", []):
         if e.get("schiefe") and e.get("woelbung"):
             gefunden.append(

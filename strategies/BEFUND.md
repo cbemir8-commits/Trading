@@ -15365,3 +15365,70 @@ genau die Kopie, die dieser Absatz abschafft.
 
 Versuchszaehler 198 unveraendert - derselbe Kandidat, dieselben Daten, keine
 neue Hypothese. Suchbudget 68 von 100.
+
+## Hundertsechsundsechzig. Eine fehlende Datei ist kein fehlendes Feld
+
+Der Dauerauftrag verlangt bei jedem Lauf einen Blick auf
+`state/leaderboard.json`. Die Datei gibt es in diesem Behaelter nicht - und
+das ist richtig so: `.gitignore` haelt `state/*` seit Befund 73 draussen, bis
+auf den Versuchszaehler. Maschinenspezifischer Zustand gehoert nicht ins
+Repository.
+
+Interessant ist nicht die fehlende Datei, sondern was das System dazu sagt.
+
+### Was `cli partner` meldete
+
+    Kein Bestenlisten-Eintrag traegt seinen Sharpe je Trade.
+    Seit Befund 69 schreibt jeder neue Lauf ihn mit.
+
+Das ist die Diagnose eines fehlenden **Feldes**. Es fehlte die ganze Datei.
+Wer dem Hinweis folgt, sucht nach Eintraegen ohne Sharpe - und findet keine
+Eintraege. Der Verweis auf Befund 69 fuehrt dabei aktiv in die Irre: Er
+erklaert, warum aeltere Eintraege das Feld nicht hatten, und legt damit nahe,
+die Liste sei alt statt weg.
+
+### Warum keine der drei Stellen es merken konnte
+
+`leaderboard.json` wurde an drei Stellen gelesen, jede mit eigenem
+`try/except`, und alle drei warfen dieselbe Information weg:
+
+    partner (7712)      except -> daten = {}          still
+    belege  (7923)      except -> Meldung + Exit 2    richtig, aber ohne Grund
+    _formpunkte (8360)  except -> eintraege = {}      still
+
+Der Unterschied zwischen "Datei fehlt" und "Datei ohne brauchbare Eintraege"
+war in jedem der drei `except` bekannt und ist in jedem verlorengegangen. Das
+ist dieselbe Form wie Befund 163: eine Botschaft, die konkreter ist als die
+Messung dahinter, weil die unterscheidende Angabe zwar vorlag, aber nicht
+weitergereicht wurde.
+
+### Was gebaut wurde
+
+`_bestenliste(zustand)` liest die Datei und liefert `(daten, vorhanden)` - ein
+Leser statt drei. `_bestenliste_hinweis(vorhanden)` waehlt die Botschaft:
+
+    Keine Bestenliste vorhanden. 'state/' ist maschinenspezifisch und liegt
+    bis auf den Versuchszaehler nicht im Repository (Befund 73) - nach einem
+    Behaelterwechsel ist sie weg, so wie die Kerzen in Befund 151.
+    'cli wettbewerb' legt sie neu an.
+
+**Die alte Botschaft bleibt** - fuer den Fall, fuer den sie geschrieben wurde:
+Liste da, Feld fehlt. Sie war nie falsch, nur am falschen Fall angebracht. Ein
+Test verlangt ausdruecklich, dass sie dort weiter erscheint.
+
+`belege` bekommt den Grund jetzt dazu, statt nur "Keine Bestenliste gefunden"
+zu sagen und mit Code 2 auszusteigen.
+
+### Was daraus folgt
+
+1. **Ein `except`, das den Grund verwirft, macht aus einem bekannten Zustand
+   eine Vermutung.** Alle drei Stellen wussten es und keine sagte es.
+2. **Der Weg zurueck gehoert in die Meldung.** Ein Test verlangt, dass
+   `cli wettbewerb` darin vorkommt - sonst ist es eine Klage statt einer
+   Auskunft.
+3. **Das ist die zweite Stelle, an der ein Behaelterwechsel Daten geloescht
+   hat, ohne dass das System es sagen konnte** (nach den Kerzen in Befund 151,
+   behoben in 157). Beide Male hat die Prosa den alten Zustand behauptet.
+
+Kein Gate wurde angefasst und kein Kandidat gemessen. Versuchszaehler 198
+unveraendert, Suchbudget 68 von 100.

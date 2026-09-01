@@ -550,6 +550,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "14,34/12,95 und 0,66 - jetzt gerechnet statt gepflegt",
         165,
     ),
+    # Drei 'except'-Zweige kannten den Unterschied und keiner reichte ihn
+    # weiter - dieselbe Form wie die Nadelspitze in Befund 163.
+    Richtung(
+        "Fehlende Bestenliste als fehlendes Feld gemeldet",
+        "'cli partner' verwies auf Befund 69, waehrend die ganze Datei fehlte; "
+        "ein Leser statt drei, und die Botschaft trifft jetzt den Fall",
+        166,
+    ),
 )
 
 
