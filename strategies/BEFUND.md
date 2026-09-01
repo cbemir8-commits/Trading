@@ -15432,3 +15432,74 @@ zu sagen und mit Code 2 auszusteigen.
 
 Kein Gate wurde angefasst und kein Kandidat gemessen. Versuchszaehler 198
 unveraendert, Suchbudget 68 von 100.
+
+## Hundertsiebenundsechzig. Die Anleitung war teilweise keine
+
+Befund 164 hat gezeigt, dass die wirksamste offene Frage des Projekts beim
+Nutzer liegt, nicht in einer Messung. Damit ist der Abschnitt 'NUR AUF DEINEM
+RECHNER' die wichtigste Stelle des Berichts: der einzige, dem jemand
+**folgen** soll. Dieser Lauf hat ihn geprueft.
+
+### Was dort stand
+
+    python -m cli backfill --von 2017-08-16, dann wettbewerb
+
+Das ist keine Befehlszeile. Wer sie kopiert, bekommt:
+
+    Got unexpected extra argument(s) (dann wettbewerb)
+
+Und `wettbewerb` - der Schritt, der aus den geladenen Kerzen ueberhaupt erst
+einen Kandidaten macht - war damit kein eigener Punkt: keine eigene
+Begruendung, keine eigene Zeile, von keiner Pruefung erfasst.
+
+### Warum es niemand bemerkt hat
+
+Geprueft wurde an diesen vier Zeilen bisher zweierlei: dass sie mit
+`python -m cli` beginnen, und dass die Begruendung laenger als 30 Zeichen ist.
+Ob der Befehl existiert, ob die Optionen existieren, ob die Zeile ueberhaupt
+eine Befehlszeile ist - nichts davon.
+
+Fuer die README gibt es diese Wache seit Befund 118 (*"Ein Befehl, den es
+nicht gibt, ist die teuerste Zeile einer Anleitung"*). Fuer die Anleitung, der
+der Nutzer wirklich folgt, gab es sie nicht.
+
+Wie berechtigt die Sorge ist, zeigt dieser Lauf selbst: Ich habe
+`cli partnerkarte` aufgerufen. Den Befehl gibt es nicht, er heisst `partner`.
+Ein Name aus dem Gedaechtnis ist eine Vermutung, und das gilt fuer meine
+Aufrufe wie fuer die Zeilen in diesem Register.
+
+### Was gebaut wurde
+
+Eine Wache, die jede Zeile **wirklich einliest**: `shlex.split`, dann
+`Command.make_context` von Click. Damit fallen unbekannte Befehle, unbekannte
+Optionen, fehlende Pflichtangaben und angehaengte Prosa alle auf, ohne dass
+irgendetwas ausgefuehrt wird.
+
+Der Eintrag ist in zwei geteilt, `backfill` und `wettbewerb`, jeder mit
+eigener Begruendung. Alle vier uebrigen Zeilen haben die Pruefung auf Anhieb
+bestanden - Befehle und Optionen stimmten.
+
+### Ein eigener Fehlgriff dabei
+
+Mein erster Anlauf pruefte mit `pytest.raises(click.UsageError)`. Typer
+bringt seit 0.12 eigene `click`-Klassen mit; die Ausnahme kommt aus
+`typer._click.exceptions` und wird davon **nicht** gefangen. Der Test schlug
+fehl, wo er haette gruen sein sollen - und haette, an anderer Stelle
+angebracht, ebenso gut gruen sein koennen, wo er es nicht durfte. Ein Test,
+der auf einen Ausnahmetyp aus einer fremden Bibliothek zeigt, prueft die
+Version, nicht die Sache. Die Wache prueft jetzt das **Ergebnis**: Laesst sich
+die Zeile einlesen, ja oder nein.
+
+### Was daraus folgt
+
+1. **Die Zeilen sind jetzt kopierbar.** Fuenf statt vier, jede fuer sich
+   ausfuehrbar.
+2. **Die Wache prueft, nicht die Form.** "Faengt mit `python -m cli` an" ist
+   eine Formalie; "laesst sich einlesen" ist eine Aussage.
+3. **Zwei Register, zwei Massstaebe.** Die README wurde seit Befund 118
+   strenger geprueft als die Anleitung im Bericht. Wo es zwei Listen fuer
+   dasselbe gibt, bekommt eine davon die Aufmerksamkeit - dieselbe Beobachtung
+   wie bei den doppelten Zahlen in Befund 165, nur mit Pruefungen statt Werten.
+
+Kein Gate angefasst, kein Kandidat gemessen. Versuchszaehler 198 unveraendert,
+Suchbudget 68 von 100.

@@ -876,3 +876,92 @@ class TestDerVergleichIstGemessen:
 
         for _, warum in BEIM_NUTZER:
             assert not re.search(r"\d+,\d+ %\s*statt", warum), warum
+
+
+class TestNutzerbefehleSindAusfuehrbar:
+    """Die vier Zeilen, an denen das Projekt haengt - laufen sie ueberhaupt?
+
+    Unter 'NUR AUF DEINEM RECHNER' steht alles, was aus diesem Behaelter
+    heraus nicht geht: Die Bybit-Sperre ist regional, und ohne die Kerzen
+    kann nichts zugelassen werden (Befund 102). Es ist der einzige Abschnitt
+    des Berichts, dem jemand **folgen** soll.
+
+    Geprueft wurde daran bis Befund 167 nur, dass die Zeile mit
+    ``python -m cli`` beginnt und eine Begruendung hat. Ob der Befehl
+    existiert, ob die Optionen existieren, ob die Zeile ueberhaupt eine
+    Befehlszeile ist - nichts davon. Fuer die README gibt es diese Wache
+    seit Befund 118; fuer die Anleitung, der der Nutzer wirklich folgt,
+    gab es sie nicht.
+
+    Wie berechtigt die Sorge ist, zeigt dieser Lauf selbst: Ich habe
+    ``cli partnerkarte`` aufgerufen - den Befehl gibt es nicht, er heisst
+    ``partner``. Ein Name aus dem Gedaechtnis ist eine Vermutung.
+    """
+
+    @staticmethod
+    def _zerlegt(befehl: str) -> tuple[str, list[str]]:
+        import shlex
+
+        teile = shlex.split(befehl)
+        assert teile[:3] == ["python", "-m", "cli"], befehl
+        return teile[3], teile[4:]
+
+    @staticmethod
+    def _parst(name: str, argumente: list[str]) -> bool:
+        """Laesst sich diese Befehlszeile ueberhaupt einlesen?
+
+        Geprueft wird das **Ergebnis**, nicht der Ausnahmetyp: Typer bringt
+        seit 0.12 eigene ``click``-Klassen mit, und ``click.UsageError``
+        faengt sie nicht. Ein Test, der auf den Typ zeigt, prueft dann die
+        Bibliotheksversion statt die Befehlszeile - das war mein erster
+        Anlauf hier, und er ging gruen durch, wo er es nicht durfte.
+        """
+        import typer.main
+
+        import cli
+
+        kommando = typer.main.get_command(cli.app).commands.get(name)
+        if kommando is None:
+            return False
+        try:
+            ctx = kommando.make_context(name, list(argumente), resilient_parsing=False)
+        except Exception:
+            return False
+        ctx.close()
+        return True
+
+    def test_jede_zeile_ist_eine_befehlszeile(self) -> None:
+        """**Der Fall, den es hier wirklich gab.**
+
+        ``backfill --von 2017-08-16, dann wettbewerb`` stand als Befehl da und
+        ist keiner: Wer ihn kopiert, bekommt "Got unexpected extra
+        argument(s) (dann wettbewerb)". Zwei Schritte gehoeren in zwei Zeilen -
+        auch damit der zweite eine eigene Begruendung traegt und von dieser
+        Wache erfasst wird.
+        """
+        for befehl, _ in BEIM_NUTZER:
+            name, argumente = self._zerlegt(befehl)
+
+            assert self._parst(name, argumente), befehl
+
+    def test_die_wache_bemerkt_falsche_namen_und_optionen(self) -> None:
+        """Sonst prueft der Test oben nur, dass nichts kaputt ist.
+
+        ``partnerkarte`` ist kein erfundenes Beispiel: Ich habe den Befehl in
+        diesem Lauf aufgerufen. Er heisst ``partner``.
+        """
+        assert not self._parst("partnerkarte", [])
+        assert not self._parst("backfill", ["--gibtsnicht", "1"])
+        assert not self._parst("backfill", ["--von", "2017-08-16", "dann"])
+        assert self._parst("backfill", ["--von", "2017-08-16"])
+
+    def test_wettbewerb_steht_als_eigener_schritt(self) -> None:
+        """Ohne ihn endet die Anleitung beim Laden der Daten - und der
+        Wettbewerb ist der Schritt, der daraus einen Kandidaten macht."""
+        namen = [self._zerlegt(b)[0] for b, _ in BEIM_NUTZER]
+
+        assert "wettbewerb" in namen
+        assert "backfill" in namen
+        assert namen.index("backfill") < namen.index("wettbewerb"), (
+            "Erst laden, dann suchen."
+        )

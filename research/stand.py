@@ -558,6 +558,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "ein Leser statt drei, und die Botschaft trifft jetzt den Fall",
         166,
     ),
+    # Die README hat diese Wache seit Befund 118 - die Anleitung, der der
+    # Nutzer wirklich folgt, hatte sie nicht.
+    Richtung(
+        "Nutzerbefehle nur auf Form geprueft",
+        "'backfill --von ..., dann wettbewerb' war keine Befehlszeile; jetzt "
+        "fuenf einzeln einlesbare Zeilen, von Click geprueft",
+        167,
+    ),
 )
 
 
@@ -935,12 +943,21 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "jedem Livegang auszufuehren.",
     ),
     (
-        "python -m cli backfill --von 2017-08-16, dann wettbewerb",
+        "python -m cli backfill --von 2017-08-16",
         "Laedt Bybit-Kerzen. **Ohne sie kann nichts zugelassen werden** - "
         "jede Zahl dieses Projekts steht auf Bitstamp-Kassakursen, und die "
         "sind nicht das gehandelte Instrument. Seit Befund 102 sagt das "
         "System das auch: Ein Bericht auf Forschungskerzen gilt nie als "
         "zugelassen, egal wie viele Gates halten.",
+    ),
+    (
+        "python -m cli wettbewerb",
+        "Sucht auf den geladenen Kerzen einen Kandidaten. Bis Befund 167 "
+        "stand dieser Schritt als ', dann wettbewerb' hinter dem Backfill in "
+        "derselben Zeile - keine Befehlszeile, sondern Prosa: Wer sie "
+        "kopierte, bekam 'Got unexpected extra argument(s)'. Er legt auch "
+        "'state/leaderboard.json' neu an, die in diesem Behaelter fehlt "
+        "(Befund 166).",
     ),
     (
         "python -m cli funding --von 2020-03-30",
