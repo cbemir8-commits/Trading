@@ -15503,3 +15503,125 @@ die Zeile einlesen, ja oder nein.
 
 Kein Gate angefasst, kein Kandidat gemessen. Versuchszaehler 198 unveraendert,
 Suchbudget 68 von 100.
+
+## Hundertachtundsechzig. Die Decke des Vorrats
+
+Fuenf Laeufe in Folge haben Berichtsfehler behoben (163 bis 167). Dieser
+stellt wieder eine Messfrage - und zwar die, die Befund 75 vor
+dreiundneunzig Befunden offen gelassen hat.
+
+### Die Rechnung, die niemand gemacht hat
+
+Befund 75 mass ueber 14 Genome **r = -0,533** zwischen Trade-Zahl und
+Qualitaet je Trade und nannte das ausdruecklich eine Eigenschaft *des
+Vorrats*, nicht einer Regel. Er endete mit einem Ziel - *"mindestens 120
+Trades, positiver Sharpe ueber 0,23"* - und liess das Naheliegende stehen:
+
+    Guete = SR je Trade * Wurzel(n). Faellt SR mit n, hat die Guete ein
+    **Maximum**. Liegt es unter der Latte, kann in diesem Vorrat nichts
+    bestehen - egal wie lange man sucht.
+
+### Was gemessen wurde
+
+Alle 39 Genome der auf Tageskerzen vorgesehenen Generationen, am Spot-Punkt,
+mit der Stichprobe des Gates (Beine und Fensterbloecke, nur fertig gehandelte
+Trades). Vorab festgelegt: die ganze Population, keine Auswahl, jede Regel
+berichtet - und in die Gerade kommt nur, wofuer es ueberhaupt eine Latte gibt.
+
+**23 von 39 handeln auf Tageskerzen gar nicht.** Generation 8 lebt von
+Kursluecken, VWAP und der New Yorker Eroeffnung - Innertagesbegriffe. Eines
+liefert zu wenige Trades, eines faellt mit n_eff 5 unter die Latte, eines ist
+eine Regel unter zwei Namen. Uebrig: **14 verschiedene Regeln**, n_eff 27 bis
+121.
+
+    Trend-Beteiligung 50 Tage      n_eff 111   SR 0,2148   Guete 2,263
+    Trend-Beteiligung (fair)              45      0,3214         2,156
+    Donchian-Ausbruch 55/20               55      0,2674         1,983
+    Vola-Ziel, kurzes Messfenster         34      0,3384         1,973
+    ...
+    Momentum-Beteiligung 90 Tage          39      0,1850         1,155
+
+    r(n_eff, SR) = -0,714 bei t = -3,53
+
+Die Kopplung ist damit an einem anderen Vorrat, an einem anderen
+Betriebspunkt und auf der effektiven statt der rohen Stichprobe bestaetigt -
+und deutlicher als 2020. Die beiden Enden zeigen sie unmittelbar: Die
+hoechste Qualitaet (0,3406) kommt mit n_eff 31, die groesste Stichprobe (121)
+mit SR 0,1583. **Beste Menge und beste Qualitaet sitzen nie auf derselben
+Regel.**
+
+### Die Decke
+
+Auf der angepassten Geraden hat `SR(n) * sqrt(n)` ihren Scheitel bei
+
+    n_eff 69, Guete 1,931   -   verlangt 3,522   -   es fehlen 1,591
+
+Die Luecke schliesst sich nirgends im gemessenen Bereich, und ausserhalb erst
+recht nicht: Die Gerade sagt SR = 0 bei n_eff 208. **Eine Regel, die so oft
+handelt wie der Bestand, hat in diesem Vorrat keinen Vorteil mehr.**
+
+Zum Vergleich: Der Bestand selbst steht bei Guete 2,90 und fehlt 0,66. Er ist
+damit besser als alles im Katalog **und** besser als dessen Decke.
+
+### Wo der Bestand in seinem eigenen Vorrat steht
+
+Das ist der eigentliche Fund. Der Spitzenkandidat liegt bei n_eff 115 mit
+SR 0,2708; die Gerade sagt dort 0,1554. Sein Vorsprung:
+
+    +2,41 Reststreuungen
+
+Das erwartete Maximum aus *k* unabhaengigen Ziehungen einer Standardnormalen
+liegt bei rund `sqrt(2 ln k)` - bei 14 Regeln 2,30, bei **198 Versuchen
+3,25**.
+
+**Der Vorsprung des Bestands ist kleiner als das, was reine Auswahl bei
+diesem Versuchsstand ohnehin erzeugt.** Das ist kein Beweis, dass er nichts
+kann. Aber es ist dieselbe Aussage, die der Deflated Sharpe macht (0,5881
+gegen 0,95) - auf einem **unabhaengigen** Weg: Der eine sieht die Verteilung
+der Trades des Kandidaten, der andere seine Lage in der Grundgesamtheit, aus
+der er ausgewaehlt wurde. Zwei Verfahren, die nichts voneinander wissen,
+kommen auf dasselbe.
+
+### Der Messfehler auf dem Weg dorthin
+
+Der erste Anlauf **setzte** `fraction` auf 1,0, statt zu deckeln. Fuer den
+Bestand ist das richtig - seine 3,0 faellt dadurch. Genome mit 0,4 wurden
+davon zweieinhalbmal groesser. Die Zahlen sahen plausibel aus (13 Regeln,
+r = -0,601, Decke 1,814) und waren falsch.
+
+Aufgefallen ist es nicht an ihnen, sondern daran, dass Generation 8
+durchgehend null Trades lieferte - was sich beim Nachsehen als eigene,
+richtige Beobachtung herausstellte. Der Fehler daneben waere ohne diesen
+Umweg durchgegangen.
+
+`cli.py` hatte den Spot-Punkt ausserdem **zweimal** wortgleich stehen, in
+`_spotguete` und `_spotpunkt`. Beide benutzen jetzt `_ohne_hebel` und
+`_spotconfigs`; gedeckelt wird an einer Stelle.
+
+### Ein zweiter eigener Fehler, im Modul
+
+`Decke.rest` verweigerte die Einordnung bei `reststreuung <= 0`. Liegen die
+Punkte exakt auf der Geraden, ist die Reststreuung in Fliesskommazahlen aber
+nicht null, sondern etwa 1e-17 - die Pruefung faellt darauf herein und
+liefert Reste der Groessenordnung 1e15. Geprueft wird jetzt `1 - r**2`, das
+ist skalenfrei. Ein Test steht dafuer.
+
+### Was daraus folgt
+
+1. **Der vorhandene Tageskerzen-Vorrat kann die Latte nicht erreichen** -
+   nicht knapp, sondern um 1,6 Guete. Weitersuchen *in diesem Vorrat* ist
+   kein Weg.
+2. **Es ist eine Aussage ueber diesen Vorrat, nicht ueber den Raum aller
+   Strategien.** Befund 75 hat das schon so formuliert. Gesucht ist eine
+   Regel, die die Kopplung bricht - genug handelt *und* Qualitaet behaelt.
+3. **Und kein Grund, eine Latte zu senken.** Die Decke ist ein Grund, den
+   Vorrat zu wechseln.
+4. Neu ist die zweite, unabhaengige Bestaetigung des Deflated Sharpe. Bisher
+   stand das Urteil auf **einem** Verfahren; jetzt auf zweien, die
+   verschiedene Dinge ansehen.
+
+`cli vorratsdecke` rechnet das jederzeit nach - gemessen, nichts gepflegt.
+
+Kostet keinen Versuch: Diese Genome standen laengst im Katalog und waren
+gezaehlt, als sie entstanden; ausgewaehlt wurde keines. Versuchszaehler 198
+unveraendert, Suchbudget 68 von 100.

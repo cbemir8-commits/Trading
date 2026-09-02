@@ -160,11 +160,14 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         zuletzt=125,
     ),
     Richtung("Woelbung senken", "unter 1 mathematisch unmoeglich", 70),
+    # Befund 168 hat die Kopplung an einem anderen Vorrat, am Spot-Punkt und
+    # auf der effektiven Stichprobe bestaetigt - und zu Ende gerechnet.
     Richtung(
         "Trade-Zahl heben",
-        "Kopplung -0,53; haelt der Nullprobe (79) und acht Saaten (113) stand",
+        "Kopplung -0,71 (t = -3,53) ueber 14 Regeln; die Guete deckelt bei "
+        "1,931 gegen noetige 3,522 - der Vorrat kann die Latte nicht erreichen",
         75,
-        zuletzt=113,
+        zuletzt=168,
     ),
     Richtung("Katalog als Partner", "0 von 15 Genomen taugen", 74),
     Richtung("Eigenbau-Partner", "8 Regeln aus Befund 77 und 83 gescheitert", 83),
@@ -565,6 +568,12 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'backfill --von ..., dann wettbewerb' war keine Befehlszeile; jetzt "
         "fuenf einzeln einlesbare Zeilen, von Click geprueft",
         167,
+    ),
+    Richtung(
+        "Spot-Punkt zweimal wortgleich in cli.py",
+        "_spotguete und _spotpunkt trugen denselben Block; 'fraction' wurde "
+        "gesetzt statt gedeckelt und blies Genome unter 1,0 auf",
+        168,
     ),
 )
 

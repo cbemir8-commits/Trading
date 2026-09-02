@@ -2781,27 +2781,42 @@ def _teststaerke_ueber_saaten(
     )
 
 
-def _spotguete(frames, symbole, genome, settings) -> float | None:
-    """Die Guete desselben Kandidaten unter Kassa-Bedingungen.
+def _ohne_hebel(genome):
+    """Denselben Kandidaten ohne Hebel - **gedeckelt, nicht gesetzt.**
 
-    Nur die eine Zahl, ohne Gate-Auswertung - fuer Berichte, die am
-    Perpetual-Punkt rechnen und den zweiten daneben zeigen sollen (Befund
-    112, hier fuer ``cli form`` nachgezogen).
+    ``fraction`` ist ein Vielfaches: Der Spitzenkandidat steht auf 3,0, und
+    ihn auf 1,0 zu setzen nimmt ihm den Hebel. Ein Genom mit 0,4 wuerde davon
+    aber **groesser**, nicht kleiner - beim ersten Anlauf zu Befund 168 hat
+    genau das den halben Katalog verzerrt, bevor es auffiel. Gedeckelt wird
+    nach oben.
 
-    **Kostet keinen Versuch.** Derselbe Kandidat, dieselben Daten, andere
-    Handelsbedingungen. ``None``, wenn der Lauf nicht zustandekommt.
+    Genome ohne ``sizing`` bleiben, wie sie sind.
+    """
+    sizing = getattr(genome, "sizing", None)
+    if sizing is None or getattr(sizing, "fraction", None) is None:
+        return genome
+    return genome.model_copy(
+        update={
+            "sizing": sizing.model_copy(
+                update={"fraction": min(sizing.fraction, 1.0)}
+            )
+        }
+    )
+
+
+def _spotconfigs(symbole, settings):
+    """Die Handelsbedingungen des Spot-Punkts: kein Funding, kein Hebel.
+
+    Stand bis Befund 168 **zweimal** wortgleich da - in ``_spotguete`` und in
+    ``_spotpunkt``. Zwei Stellen mit derselben Einstellung laufen in diesem
+    Projekt frueher oder spaeter auseinander; der dritte Aufrufer haette sie
+    ein drittes Mal nachgebaut.
     """
     from decimal import Decimal
 
     from backtest.costs import FundingSchedule
     from backtest.engine import BacktestConfig
-    from backtest.portfolio_walkforward import run_portfolio_walkforward
-    from research.suchbudget import Kandidat
-    from strategy.compiler import compile_genome
 
-    ohne_hebel = genome.model_copy(
-        update={"sizing": genome.sizing.model_copy(update={"fraction": 1.0})}
-    )
     configs = {}
     for x in symbole:
         grund = BacktestConfig(
@@ -2818,6 +2833,26 @@ def _spotguete(frames, symbole, genome, settings) -> float | None:
             entry_expiry_bars=grund.entry_expiry_bars,
             max_hold_bars=grund.max_hold_bars, kalender=grund.kalender,
         )
+    return configs
+
+
+def _spotguete(frames, symbole, genome, settings) -> float | None:
+    """Die Guete desselben Kandidaten unter Kassa-Bedingungen.
+
+    Nur die eine Zahl, ohne Gate-Auswertung - fuer Berichte, die am
+    Perpetual-Punkt rechnen und den zweiten daneben zeigen sollen (Befund
+    112, hier fuer ``cli form`` nachgezogen).
+
+    **Kostet keinen Versuch.** Derselbe Kandidat, dieselben Daten, andere
+    Handelsbedingungen. ``None``, wenn der Lauf nicht zustandekommt.
+    """
+
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.suchbudget import Kandidat
+    from strategy.compiler import compile_genome
+
+    ohne_hebel = _ohne_hebel(genome)
+    configs = _spotconfigs(symbole, settings)
 
     bericht = run_portfolio_walkforward(
         frames, lambda: compile_genome(ohne_hebel), configs
@@ -2841,35 +2876,15 @@ def _spotpunkt(frames, symbole, genome, trials: int, settings):
     Gibt ``None`` zurueck, wenn der Lauf nicht zustandekommt; der Bericht
     laesst den Abschnitt dann weg, statt mit einer Luecke dazustehen.
     """
-    from decimal import Decimal
 
-    from backtest.costs import FundingSchedule
-    from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.betriebspunkt import Betriebspunkt
     from research.gates import evaluate_gates
     from research.suchbudget import Kandidat
     from strategy.compiler import compile_genome
 
-    ohne_hebel = genome.model_copy(
-        update={"sizing": genome.sizing.model_copy(update={"fraction": 1.0})}
-    )
-    configs = {}
-    for x in symbole:
-        grund = BacktestConfig(
-            instrument=_fallback_instrument(_bybit_kontrakt(x)),
-            risk=settings.risk, initial_equity=Decimal("500"),
-            enforce_risk_limits=True,
-            kalender=_terminkalender(settings) or None,
-        )
-        configs[x] = BacktestConfig(
-            instrument=grund.instrument, risk=grund.risk, costs=grund.costs,
-            funding=FundingSchedule(default_rate=Decimal("0")),
-            initial_equity=grund.initial_equity, enforce_risk_limits=True,
-            allow_shorts=grund.allow_shorts,
-            entry_expiry_bars=grund.entry_expiry_bars,
-            max_hold_bars=grund.max_hold_bars, kalender=grund.kalender,
-        )
+    ohne_hebel = _ohne_hebel(genome)
+    configs = _spotconfigs(symbole, settings)
 
     bericht = run_portfolio_walkforward(
         frames, lambda: compile_genome(ohne_hebel), configs
@@ -10412,6 +10427,174 @@ def paare(
     farbe = "green" if feld.erreichen else "yellow"
     console.print(f"\n[{farbe}]{feld.urteil()}[/]\n")
 
+
+
+@app.command()
+def vorratsdecke(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Was der Vorrat hergibt - und ob das je reichen kann.
+
+    Befund 75 hat die Kopplung zwischen Trade-Zahl und Qualitaet gemessen und
+    als Eigenschaft *des Vorrats* bezeichnet. Faellt die Qualitaet mit der
+    Menge, hat ``SR * sqrt(n)`` ein Maximum - und wenn das unter der Latte
+    liegt, kann in diesem Vorrat nichts bestehen.
+
+    Gefahren wird der **ganze** Katalog der Generationen, die zu dieser
+    Kerzenlaenge gehoeren, am Spot-Punkt. Berichtet wird jede Regel, auch die
+    ohne einen einzigen Trade.
+
+    **Kostet keinen Versuch.** Diese Genome stehen laengst im Katalog und
+    waren gezaehlt, als sie entstanden; nachgemessen wird ein vorhandener
+    Vorrat. Ausgewaehlt wird nichts - wer eine davon weiterverfolgt, hat eine
+    Auswahl ueber den Katalog getroffen und muss sie zaehlen.
+    """
+    from backtest.portfolio_walkforward import (
+        common_range,
+        run_portfolio_walkforward,
+    )
+    from research.admission import load_trials
+    from research.gates import stichprobe_wie_im_gate
+    from research.randschnitt import ohne_zensierte
+    from research.seeds import GENERATIONS, passt_zum_intervall
+    from research.suchbudget import Kandidat
+    from research.verbund import noetige_guete
+    from research.vorratsdecke import Punkt, baue, urteil
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    versuche = load_trials(Path(settings.paths.state) / "trials.json")
+    interval_obj = Interval(intervall)
+    store = CandleStore(settings.paths.data_store)
+    frames = common_range({x: store.read(x, interval_obj) for x in symbole})
+    configs = _spotconfigs(symbole, settings)
+
+    console.print(
+        f"\n[bold]Vorratsdecke[/] {' + '.join(symbole)} {interval_obj.label}, "
+        f"Spot-Punkt, Versuchsstand {versuche}\n"
+    )
+    punkte: list[Punkt] = []
+    ohne_latte: list[tuple[str, int]] = []
+    stumm = 0
+    gesehen: set[tuple[int, float]] = set()
+    for gen, liste in sorted(GENERATIONS.items()):
+        if not passt_zum_intervall(gen, intervall):
+            continue
+        for bauen in liste:
+            genom = _ohne_hebel(bauen())
+            bericht = run_portfolio_walkforward(
+                frames, lambda g=genom: compile_genome(g), configs
+            )
+            gehandelt = ohne_zensierte(bericht)
+            kandidat = Kandidat.aus_trades(genom.name, gehandelt.all_trades)
+            if kandidat is None or not gehandelt.windows:
+                stumm += 1
+                console.print(
+                    f"  [dim]{genom.name[:44]:<44} "
+                    f"{len(gehandelt.all_trades):>4} Trades - kein Kandidat[/]"
+                )
+                continue
+            stichprobe = stichprobe_wie_im_gate(
+                gehandelt.all_trades,
+                beine=getattr(bericht, "beine", None),
+                bloecke=[
+                    [float(x.net_pnl) for x in w.trades] for w in gehandelt.windows
+                ],
+            )
+            kennung = (stichprobe.effektiv, round(kandidat.sharpe_je_trade, 6))
+            if kennung in gesehen:
+                # Dieselbe Regel unter einem anderen Namen. Sie mitzuzaehlen
+                # hiesse, die Zahl der Belege zu erfinden - genau der Fehler,
+                # gegen den die effektive Stichprobe im Gate steht.
+                console.print(
+                    f"  [dim]{genom.name[:44]:<44} identisch mit einer "
+                    f"frueheren Regel[/]"
+                )
+                continue
+            gesehen.add(kennung)
+            # **Nur Regeln, fuer die es ueberhaupt eine Latte gibt.** Wo
+            # ``noetige_guete`` nichts liefert, ist die Stichprobe so klein,
+            # dass das Gate dort gar nicht urteilt - ein solcher Punkt kann
+            # zu der Frage "reicht das je?" nichts beitragen, haette an der
+            # Kante des Bereichs aber grossen Hebel auf die Steigung. Die
+            # Regel steht hier, damit sie vor der Messung feststeht und nicht
+            # danach.
+            if noetige_guete(stichprobe.effektiv, versuche) is None:
+                ohne_latte.append((genom.name, stichprobe.effektiv))
+                continue
+            punkte.append(
+                Punkt(genom.name, stichprobe.effektiv, kandidat.sharpe_je_trade)
+            )
+
+    if len(punkte) < 3:
+        console.print(
+            f"\n[yellow]Nur {len(punkte)} verschiedene Regeln handeln auf "
+            f"{interval_obj.label} - daraus laesst sich keine Gerade legen.[/]"
+        )
+        raise typer.Exit(2)
+
+    punkte.sort(key=lambda p: -p.guete)
+    console.print(
+        f"\n{'Regel':<44}{'n_eff':>7}{'SR/Trade':>10}{'Guete':>8}{'noetig':>8}"
+    )
+    for p in punkte:
+        noetig = noetige_guete(p.n_eff, versuche)
+        console.print(
+            f"{p.name[:44]:<44}{p.n_eff:>7}{p.sharpe_je_trade:>10.4f}"
+            f"{p.guete:>8.3f}"
+            + ("        -" if noetig is None else f"{noetig:>8.3f}")
+        )
+
+    decke = baue(punkte)
+    console.print(
+        f"\n[dim]{stumm} Genome handeln auf {interval_obj.label} nicht und "
+        f"stehen oben ohne Zahlen.[/]"
+    )
+    for name, n in ohne_latte:
+        console.print(
+            f"[dim]{name} (n_eff {n}) bleibt draussen - bei dieser Stichprobe "
+            f"gibt es keine Latte.[/]"
+        )
+    console.print()
+    console.print(urteil(decke, lambda n: noetige_guete(n, versuche)))
+
+    # **Wo der Bestand in seinem eigenen Vorrat steht.** Der zweite Weg zur
+    # selben Aussage wie der Deflated Sharpe - und ein unabhaengiger: Der
+    # eine sieht die Verteilung der Trades, dieser die Lage des Kandidaten
+    # in seiner Grundgesamtheit.
+    from research.referenz import SPOTPUNKT
+
+    if decke.tragfaehig:
+        rest = decke.rest(SPOTPUNKT.effektiv, SPOTPUNKT.guete)
+        erwartet = decke.erwartetes_maximum(versuche)
+        console.print(
+            f"\n[bold]Wo der Bestand darin steht[/]\n"
+            f"  n_eff {SPOTPUNKT.effektiv}, SR {SPOTPUNKT.guete:.4f} - "
+            f"die Gerade sagt {decke.vorhersage(SPOTPUNKT.effektiv):.4f}\n"
+            f"  Vorsprung {rest:+.2f} Reststreuungen\n"
+            f"  Reine Auswahl aus {versuche} Versuchen erzeugt rund "
+            f"{erwartet:.2f}\n"
+        )
+        console.print(
+            "[yellow]Der Vorsprung ist kleiner als das, was Auswahl bei "
+            "diesem Versuchsstand\nohnehin erzeugt.[/] Das ist kein Beweis "
+            "gegen den Kandidaten - aber es ist\ndieselbe Aussage, die der "
+            "Deflated Sharpe aus einer anderen Richtung macht.\n"
+            "[dim]Naeherung: sqrt(2 ln k) fuer die Standardnormale, "
+            "normalverteilte Reste und\naustauschbare Ziehungen "
+            "unterstellt. Ein Groessenvergleich, kein Test.[/]"
+            if rest < erwartet
+            else
+            "[green]Der Vorsprung ist groesser als das, was Auswahl bei "
+            "diesem Versuchsstand erzeugt.[/]"
+        )
 
 
 if __name__ == "__main__":
