@@ -2723,7 +2723,7 @@ def _teststaerke_ueber_saaten(
                     Ziehung(
                         saat=saat_wert, anteil=anteil,
                         trades=len(bericht.all_trades),
-                        guete=form.sharpe_je_trade if form else 0.0,
+                        sharpe_je_trade=form.sharpe_je_trade if form else 0.0,
                         dsr=float(dsr) if dsr is not None else 0.0,
                         bestanden=sum(1 for r in gates.results if r.passed),
                         gesamt=len(gates.results),
@@ -2736,7 +2736,7 @@ def _teststaerke_ueber_saaten(
 
     lage = Leiter(sprossen=list(sprossen.values()))
     console.print(
-        f"  {'Anteil':>7}  {'Trades':>14}  {'Guete':>17}  "
+        f"  {'Anteil':>7}  {'Trades':>14}  {'SR je Trade':>17}  "
         f"{'DSR':>17}  {'Gates':>11}"
     )
     for anteil in anteile:
@@ -2754,7 +2754,7 @@ def _teststaerke_ueber_saaten(
 
         console.print(
             f"  {anteil:>7.0%}  {spalte('trades', 1):>14}  "
-            f"{spalte('guete', 4):>17}  {spalte('dsr', 4):>17}  "
+            f"{spalte('sharpe_je_trade', 4):>17}  {spalte('dsr', 4):>17}  "
             f"{spalte('bestanden', 1):>11}"
         )
 
@@ -2762,7 +2762,7 @@ def _teststaerke_ueber_saaten(
     # der Null sind fuenf Hypothesen, und |t| >= 2 waere dann zu milde.
     ueber_null = [a for a in anteile if a > 0.0]
     console.print()
-    for groesse in ("guete", "trades", "dsr"):
+    for groesse in ("sharpe_je_trade", "trades", "dsr"):
         console.print(f"  [bold]{groesse}[/] gegen die 0-%-Sprosse:")
         for anteil in ueber_null:
             u = lage.vergleich(0.0, anteil, groesse=groesse)
@@ -5093,7 +5093,8 @@ def teststaerke(
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.admission import load_trials
-    from research.gates import evaluate_gates
+    from research.gates import evaluate_gates, stichprobe_wie_im_gate
+    from research.randschnitt import ohne_zensierte
     from research.seeds import spitzenkandidat
     from research.suchbudget import Kandidat
     from research.teststaerke import (
@@ -5223,10 +5224,23 @@ def teststaerke(
                     (r.value for r in gates.results if r.name == "Deflated Sharpe"),
                     None,
                 )
+                # **Die effektive Stichprobe, nicht die rohe** (Befund 176).
+                # Genau wie das Gate: zensierte Trades raus, Beine und
+                # Fensterbloecke rein.
+                gehandelt = ohne_zensierte(bericht)
+                stichprobe = stichprobe_wie_im_gate(
+                    gehandelt.all_trades,
+                    beine=getattr(bericht, "beine", None),
+                    bloecke=[
+                        [float(x.net_pnl) for x in w.trades]
+                        for w in gehandelt.windows
+                    ],
+                )
                 leiter.stufen.append(
                     Stufe(
                         anteil=anteil,
                         trades=len(bericht.all_trades),
+                        effektiv=stichprobe.effektiv,
                         sharpe=bericht.combined.sharpe if bericht.combined else 0.0,
                         sharpe_je_trade=form.sharpe_je_trade if form else 0.0,
                         dsr=dsr,

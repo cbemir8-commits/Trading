@@ -171,9 +171,13 @@ class TestPflanzen:
 
 
 def stufe(anteil: float, *, bestanden: int, offen: tuple[str, ...] = ()) -> Stufe:
+    # ``effektiv=trades``: In einer gebauten Sprosse gibt es keine
+    # Blockstruktur, der Design-Effekt ist also 1. Auf echten Daten ist er
+    # groesser, und genau das prueft ``TestDieGueteRechnetMitDerEffektiven``.
     return Stufe(
-        anteil=anteil, trades=150, sharpe=1.1, sharpe_je_trade=0.26,
-        dsr=0.8, bestanden=bestanden, gesamt=11, offen=offen,
+        anteil=anteil, trades=150, effektiv=150, sharpe=1.1,
+        sharpe_je_trade=0.26, dsr=0.8, bestanden=bestanden, gesamt=11,
+        offen=offen,
     )
 
 
@@ -231,8 +235,8 @@ class TestGuete:
     def test_fuenffacher_vorteil_bei_einem_achtel_der_trades_ist_kein_fortschritt(
         self,
     ) -> None:
-        anker = Stufe(0.0, 154, 1.47, 0.2569, 0.79, 7, 11)
-        stark = Stufe(0.5, 12, 2.50, 1.2734, 0.0, 9, 11)
+        anker = Stufe(0.0, 154, 1.47, 0.2569, 0.79, 7, 11, effektiv=154)
+        stark = Stufe(0.5, 12, 2.50, 1.2734, 0.0, 9, 11, effektiv=12)
 
         assert stark.sharpe_je_trade / anker.sharpe_je_trade > 4.9
         assert stark.guete / anker.guete < 1.5, (
@@ -240,7 +244,7 @@ class TestGuete:
         )
 
     def test_ohne_trades_ist_die_guete_null(self) -> None:
-        assert Stufe(0.5, 0, 0.0, 0.0, None, 0, 11).guete == 0.0
+        assert Stufe(0.5, 0, 0.0, 0.0, None, 0, 11, effektiv=0).guete == 0.0
 
 
 class TestVerduennung:
@@ -255,8 +259,10 @@ class TestVerduennung:
     def test_eine_ausgeduennte_leiter_urteilt_nicht_ueber_die_strecke(self) -> None:
         leiter = Leiter(
             stufen=[
-                Stufe(0.0, 154, 1.47, 0.257, 0.79, 7, 11, ("Deflated Sharpe",)),
-                Stufe(0.5, 13, 2.63, 1.157, 0.0, 9, 11, ("Stichprobengroesse",)),
+                Stufe(0.0, 154, 1.47, 0.257, 0.79, 7, 11, ("Deflated Sharpe",),
+                      effektiv=154),
+                Stufe(0.5, 13, 2.63, 1.157, 0.0, 9, 11,
+                      ("Stichprobengroesse",), effektiv=13),
             ],
             versuche=161,
         )
@@ -273,8 +279,10 @@ class TestVerduennung:
     def test_bei_stabiler_stichprobe_faellt_das_urteil(self) -> None:
         leiter = Leiter(
             stufen=[
-                Stufe(0.0, 154, 1.47, 0.257, 0.79, 7, 11, ("Deflated Sharpe",)),
-                Stufe(0.5, 140, 2.63, 0.900, 0.90, 10, 11, ("Deflated Sharpe",)),
+                Stufe(0.0, 154, 1.47, 0.257, 0.79, 7, 11, ("Deflated Sharpe",),
+                      effektiv=154),
+                Stufe(0.5, 140, 2.63, 0.900, 0.90, 10, 11,
+                      ("Deflated Sharpe",), effektiv=140),
             ],
             versuche=161,
         )
@@ -289,7 +297,7 @@ def gestufte(*paare: tuple[float, float, int]) -> Leiter:
     """Eine Leiter aus (Anteil, SR je Trade, Trades)."""
     return Leiter(
         stufen=[
-            Stufe(a, n, 1.0, sr, 0.5, 8, 11) for a, sr, n in paare
+            Stufe(a, n, 1.0, sr, 0.5, 8, 11, effektiv=n) for a, sr, n in paare
         ],
         versuche=161,
     )
@@ -396,3 +404,59 @@ class TestWelcheHaelfteRiss:
 
         assert "gegen die geforderten" in v.urteil()
         assert "erreicht zwar" not in v.urteil()
+
+
+class TestDieGueteRechnetMitDerEffektiven:
+    """**Befund 176.** ``Stufe.guete`` rechnete mit der rohen Trade-Zahl.
+
+    Das ist der Fehler, den Befund 139 an fuenf von sechs Stellen behoben hat
+    - diese sechste ist durchgerutscht, ausgerechnet in dem Modul, das die
+    folgenreichste Frage des Projekts beantwortet: *Liesse die Strecke
+    ueberhaupt etwas durch?*
+
+    Der Betrag: Bei 160 rohen und 107 effektiven Trades ist die rohe Guete um
+    ``sqrt(160/107) = 1,22`` zu gross - 22 % zu freundlich, und zwar genau in
+    der Spalte, an der die Leiter gelesen wird.
+    """
+
+    def test_die_rohe_zahl_gaebe_eine_zu_grosse_guete(self) -> None:
+        echt = Stufe(0.0, 160, 1.47, 0.2649, 0.49, 7, 11, effektiv=107)
+
+        assert echt.guete == pytest.approx(0.2649 * 107**0.5, rel=1e-9)
+        assert echt.guete < 0.2649 * 160**0.5
+        assert 0.2649 * 160**0.5 / echt.guete == pytest.approx(1.22, abs=0.01)
+
+    def test_ohne_effektive_stichprobe_wird_verweigert(self) -> None:
+        """**Nicht auf die rohe Zahl zurueckfallen.** Ein stiller Rueckfall
+        waere zu freundlich, und niemandem waere es anzusehen - genau so ist
+        der Fehler sechs Befunde lang stehengeblieben."""
+        ohne = Stufe(0.0, 160, 1.47, 0.2649, 0.49, 7, 11)
+
+        with pytest.raises(ValueError, match="Ohne effektive Stichprobe"):
+            _ = ohne.guete
+
+    def test_die_latte_steigt_wenn_die_stichprobe_faellt(self) -> None:
+        """**Der bewegliche Teil, ohne den die Leiter falsch gelesen wird.**
+
+        Ein gepflanzter Trend hebt den Vorteil je Trade und senkt zugleich die
+        Trade-Zahl. Mit ihr steigt die Latte - und zwar schneller, als die
+        Guete waechst.
+        """
+        viel = Stufe(0.0, 160, 1.47, 0.2649, 0.49, 7, 11, effektiv=107)
+        wenig = Stufe(0.5, 12, 2.50, 1.2039, 0.0, 9, 11, effektiv=17)
+
+        assert wenig.noetig(198) > viel.noetig(198)
+        assert wenig.sharpe_je_trade > viel.sharpe_je_trade
+
+    def test_ohne_stichprobe_gibt_es_keine_latte(self) -> None:
+        assert Stufe(0.0, 160, 1.47, 0.26, 0.49, 7, 11).noetig(198) is None
+
+    def test_die_tabelle_zeigt_beide_spalten(self) -> None:
+        leiter = Leiter(
+            versuche=198,
+            stufen=[Stufe(0.0, 160, 1.47, 0.2649, 0.49, 7, 11, effektiv=107)],
+        )
+        text = leiter.tabelle()
+
+        assert "n_eff" in text and "noetig" in text
+        assert "107" in text

@@ -203,20 +203,52 @@ class Stufe:
     def voll(self) -> bool:
         return self.gesamt > 0 and self.bestanden == self.gesamt
 
+    effektiv: int | None = None
+    """Die **effektive** Stichprobe - die Zahl, gegen die das Gate urteilt.
+
+    Bis Befund 176 gab es dieses Feld nicht, und ``guete`` rechnete mit der
+    rohen Trade-Zahl. Das ist genau der Fehler, den Befund 139 an fuenf von
+    sechs Stellen behoben hat; diese sechste ist durchgerutscht, ausgerechnet
+    in dem Modul, das die folgenreichste Frage des Projekts beantwortet.
+
+    Der Betrag: Bei 160 rohen und 107 effektiven Trades ist die rohe Guete um
+    den Faktor ``sqrt(160/107) = 1,22`` zu gross - 22 % zu freundlich.
+    """
+
     @property
     def guete(self) -> float:
-        """Qualitaet **und** Menge in einer Zahl: ``SR je Trade * sqrt(Trades)``.
+        """Qualitaet **und** Menge in einer Zahl: ``SR je Trade * sqrt(n_eff)``.
 
-        Das ist im Kern die Groesse, gegen die der Deflated Sharpe seine
-        Huerde legt - er fragt nicht nach dem Vorteil je Trade, sondern nach
-        dem Vorteil ueber die ganze Stichprobe.
+        Das ist die Groesse, gegen die der Deflated Sharpe seine Huerde legt -
+        er fragt nicht nach dem Vorteil je Trade, sondern nach dem Vorteil
+        ueber die ganze Stichprobe, **und zwar ueber die effektive**.
 
         Sie steht hier, weil die Leiter sonst leicht falsch gelesen wird: Eine
         Sprosse mit fuenffachem Vorteil je Trade sieht nach einem grossen
         Fortschritt aus, und wenn sie dafuer nur ein Achtel so oft handelt,
         ist es keiner.
         """
-        return self.sharpe_je_trade * (self.trades**0.5)
+        if self.effektiv is None:
+            raise ValueError(
+                "Ohne effektive Stichprobe gibt es keine Guete. Die rohe "
+                "Trade-Zahl einzusetzen macht sie zu gross - siehe Befund "
+                "139 und 176."
+            )
+        return self.sharpe_je_trade * (self.effektiv**0.5)
+
+    def noetig(self, versuche: int) -> float | None:
+        """Welche Guete die Schwelle bei dieser Stichprobe verlangt.
+
+        **Der bewegliche Teil der Leiter.** Ein gepflanzter Trend hebt den
+        Vorteil je Trade und senkt zugleich die Trade-Zahl - und mit ihr
+        steigt die Latte. Ohne diese Spalte liest sich die Leiter, als muesse
+        nur die Guete wachsen.
+        """
+        from research.verbund import noetige_guete
+
+        if self.effektiv is None:
+            return None
+        return noetige_guete(self.effektiv, versuche)
 
 
 @dataclass(slots=True)
@@ -320,14 +352,17 @@ class Leiter:
         vierte.
         """
         zeilen = [
-            f"{'gepflanzt':>10} {'Trades':>7} {'je Trade':>9} {'Guete':>7} "
-            f"{'DSR':>7} {'Gates':>7}  offen"
+            f"{'gepflanzt':>10} {'Trades':>7} {'n_eff':>6} {'je Trade':>9} "
+            f"{'Guete':>7} {'noetig':>7} {'DSR':>7} {'Gates':>7}  offen"
         ]
         for s in self.geordnet:
             dsr = f"{s.dsr:.3f}" if s.dsr is not None else "   -"
+            noetig = s.noetig(self.versuche)
             zeilen.append(
-                f"{s.anteil:>9.0%} {s.trades:>7} {s.sharpe_je_trade:>9.4f} "
-                f"{s.guete:>7.2f} {dsr:>7} "
+                f"{s.anteil:>9.0%} {s.trades:>7} "
+                f"{'-' if s.effektiv is None else s.effektiv:>6} "
+                f"{s.sharpe_je_trade:>9.4f} {s.guete:>7.2f} "
+                f"{'-' if noetig is None else f'{noetig:.2f}':>7} {dsr:>7} "
                 f"{s.bestanden:>3}/{s.gesamt:<3}  {', '.join(s.offen) or '-'}"
             )
         return "\n".join(zeilen)

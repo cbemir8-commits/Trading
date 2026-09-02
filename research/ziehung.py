@@ -56,7 +56,20 @@ class Ziehung:
     saat: int
     anteil: float
     trades: int
-    guete: float
+    sharpe_je_trade: float
+    """**Bis Befund 176 hiess dieses Feld ``guete``** - und wurde mit dem
+    Sharpe je Trade gefuellt.
+
+    Die beiden sind in diesem Projekt sorgfaeltig getrennt: Guete ist
+    ``SR je Trade * sqrt(n_eff)`` und liegt beim Bestand bei rund 2,9; der
+    Sharpe je Trade liegt bei 0,26. Der falsche Name ist bis ins Laborbuch
+    gewandert - Befund 113 meldet *"Ueber acht Saaten: Guete 0,2452"*, und
+    das ist der Groessenordnung nach ein Sharpe je Trade.
+
+    Am Ergebnis jenes Befunds aendert das nichts: Gemessen wurde die
+    richtige Groesse, sie hiess nur falsch.
+    """
+
     dsr: float
     bestanden: int
     gesamt: int
@@ -139,7 +152,7 @@ class Leiter:
         return None
 
     def vergleich(
-        self, von: float, nach: float, groesse: str = "guete"
+        self, von: float, nach: float, groesse: str = "sharpe_je_trade"
     ) -> Unterschied | None:
         """Gepaarter Vergleich zweier Sprossen ueber die gemeinsamen Saaten.
 

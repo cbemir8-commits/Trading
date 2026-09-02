@@ -11,14 +11,14 @@ from research.ziehung import Leiter, Nachpruefung, Sprosse, Ziehung
 
 def zieh(saat: int, anteil: float, **kw) -> Ziehung:
     werte = dict(
-        saat=saat, anteil=anteil, trades=100, guete=0.25, dsr=0.8,
+        saat=saat, anteil=anteil, trades=100, sharpe_je_trade=0.25, dsr=0.8,
         bestanden=7, gesamt=11, cagr_pct=13.0,
     )
     werte.update(kw)
     return Ziehung(**werte)
 
 
-def leiter_aus(daten: dict[float, dict[int, float]], groesse: str = "guete") -> Leiter:
+def leiter_aus(daten: dict[float, dict[int, float]], groesse: str = "sharpe_je_trade") -> Leiter:
     """``{anteil: {saat: wert}}`` - alles andere bleibt gleich."""
     sprossen = []
     for anteil, je_saat in daten.items():
@@ -33,33 +33,33 @@ class TestSprosse:
     def test_eine_ziehung_hat_keine_streuung(self):
         s = Sprosse(anteil=0.1, ziehungen=[zieh(11, 0.1)])
         assert s.einzeln
-        assert s.streuung("guete") is None
-        assert s.mittel("guete") == pytest.approx(0.25)
+        assert s.streuung("sharpe_je_trade") is None
+        assert s.mittel("sharpe_je_trade") == pytest.approx(0.25)
 
     def test_zwei_ziehungen_haben_eine(self):
         s = Sprosse(
             anteil=0.1,
-            ziehungen=[zieh(11, 0.1, guete=0.20), zieh(23, 0.1, guete=0.30)],
+            ziehungen=[zieh(11, 0.1, sharpe_je_trade=0.20), zieh(23, 0.1, sharpe_je_trade=0.30)],
         )
         assert not s.einzeln
-        assert s.mittel("guete") == pytest.approx(0.25)
-        assert s.streuung("guete") == pytest.approx(0.0707, abs=1e-3)
+        assert s.mittel("sharpe_je_trade") == pytest.approx(0.25)
+        assert s.streuung("sharpe_je_trade") == pytest.approx(0.0707, abs=1e-3)
 
     def test_spanne_nennt_beide_enden(self):
         s = Sprosse(
             anteil=0.1,
             ziehungen=[
-                zieh(11, 0.1, guete=0.20),
-                zieh(23, 0.1, guete=0.35),
-                zieh(47, 0.1, guete=0.28),
+                zieh(11, 0.1, sharpe_je_trade=0.20),
+                zieh(23, 0.1, sharpe_je_trade=0.35),
+                zieh(47, 0.1, sharpe_je_trade=0.28),
             ],
         )
-        assert s.spanne("guete") == (0.20, 0.35)
+        assert s.spanne("sharpe_je_trade") == (0.20, 0.35)
 
     def test_leere_sprosse_hat_kein_mittel(self):
         s = Sprosse(anteil=0.1)
-        assert s.mittel("guete") is None
-        assert s.spanne("guete") is None
+        assert s.mittel("sharpe_je_trade") is None
+        assert s.spanne("sharpe_je_trade") is None
 
 
 class TestLeiter:
@@ -139,8 +139,8 @@ class TestLeiter:
                 0.5: {11: 0.30, 23: 0.40, 47: 0.50},
             }
         )
-        a = lage.sprosse(0.0).werte("guete")
-        b = lage.sprosse(0.5).werte("guete")
+        a = lage.sprosse(0.0).werte("sharpe_je_trade")
+        b = lage.sprosse(0.5).werte("sharpe_je_trade")
         assert min(b) < max(a)  # die Gruppen ueberlappen
 
     def test_reines_rauschen_ist_nicht_belegt(self):

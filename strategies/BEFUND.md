@@ -16234,3 +16234,102 @@ Versionsverwaltung endgueltig gewesen.
 
 Kostet keinen Versuch: dieselbe Regel, keine Auswahl, keine neue Hypothese.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertsechsundsiebzig. Die Latte laeuft schneller weg, als der Vorteil waechst
+
+`research/teststaerke.py` beantwortet die folgenreichste Frage des Projekts:
+*Liesse die Zulassungsstrecke ueberhaupt etwas durch?* Gepflanzt wird ein
+echter Trend in die echte Reihe; erkennt die Strecke ihn, liegt es an den
+Regeln, erkennt sie ihn nicht, liegt es an der Strecke.
+
+Der letzte Lauf ist vom 22.08. - davor liegen die Befunde 151 (Nachlauf),
+152 (Zensur) und 154 (Zeitskala). Dieser Lauf misst neu. Dabei fielen zwei
+Fehler auf, beide in der Messung selbst.
+
+### Erster Fehler: die Guete auf der rohen Trade-Zahl
+
+`Stufe.guete` rechnete `SR je Trade * sqrt(trades)` - mit der **rohen** Zahl.
+Das Gate urteilt seit Befund 135 ueber die **effektive**.
+
+Das ist genau der Fehler, den Befund 139 an fuenf von sechs Stellen behoben
+hat (*"Fuenf von sechs Stellen uebergaben weiter die rohe Zahl"*). Die sechste
+sass ausgerechnet hier. Der Betrag: bei 160 rohen und 121 effektiven Trades
+ist die rohe Guete um `sqrt(160/121) = 1,15` zu gross - jede Sprosse der
+Leiter war zu freundlich.
+
+`Stufe` traegt jetzt `effektiv`, und ohne diese Zahl **verweigert** `guete`
+die Auskunft, statt still auf die rohe zurueckzufallen. Ein stiller Rueckfall
+waere zu freundlich und niemandem anzusehen - so ist der Fehler sechs Befunde
+lang stehengeblieben.
+
+### Zweiter Fehler: ein Feld, das falsch heisst
+
+`research/ziehung.Ziehung.guete` wurde seit jeher mit dem **Sharpe je Trade**
+gefuellt. Die beiden sind in diesem Projekt sorgfaeltig getrennt - Guete ist
+rund 2,9, der Sharpe je Trade 0,26 -, und der falsche Name ist bis ins
+Laborbuch gewandert: Befund 113 meldet *"Ueber acht Saaten: Guete 0,2452
++-0,0450"*. Das ist der Groessenordnung nach ein Sharpe je Trade.
+
+**Am Ergebnis jenes Befunds aendert das nichts** - gemessen wurde die richtige
+Groesse, sie hiess nur falsch. Das Feld heisst jetzt `sharpe_je_trade`.
+
+### Die Leiter, richtig gerechnet
+
+    gepflanzt  Trades  n_eff  je Trade   Guete  noetig     DSR   Gates
+           0%     160    121    0,2649    2,91    3,62   0,491   7/11
+           5%      75     49    0,1815    1,27    3,53   0,022   7/11
+          10%      49     36    0,5519    3,31    3,68   0,779   9/11
+          20%      29     24    0,5678    2,78    4,43   0,000  10/11
+          35%      17     15    0,6999    2,71    9,16   0,000   8/11
+          50%      12     12    1,2039    4,17       -   0,000   9/11
+
+Die Spalte `noetig` ist neu und macht den Befund sichtbar: **Die Latte ist
+nicht fest.** Sie steigt, wenn die Stichprobe faellt - und ein gepflanzter
+Trend senkt die Stichprobe, weil die Regel dann laenger haelt.
+
+    Vorteil je Trade   0,2649 -> 1,2039   (Faktor 4,5)
+    Stichprobe            121 -> 12       (Faktor 0,1)
+    noetige Guete        3,62 -> unerreichbar bei n = 12
+
+**Kein einziges Sprossenniveau besteht alle Gates.** Am naechsten kommt die
+10-%-Sprosse: Guete 3,31 gegen noetige 3,68, DSR 0,779 gegen 0,95. Darueber
+faellt der DSR auf null, und bei 50 % ist die Stichprobe so klein, dass sich
+gar keine Latte mehr bilden laesst.
+
+### Was das heisst
+
+Das Modul nennt selbst die Lesart: *"Kommt nichts durch, ist das belastbar:
+Wenn schon der freundliche Fall scheitert, scheitert der unfreundliche erst
+recht."* Und das Pflanzen ist ausdruecklich freundlich - ein sauberes Regime
+ohne Uebergangsrauschen.
+
+**Es liegt nicht daran, dass die Strecke den Vorteil nicht sieht.** Sie sieht
+ihn: Der Sharpe je Trade steigt von 0,26 auf 1,20, und ueber fuenf Saaten
+gemessen ist der Anstieg belegt (|t| = 3,45 bei 10 %, 7,68 bei 20 %). Was
+scheitert, ist die **Zertifizierung**: Diese Regelfamilie antwortet auf einen
+staerkeren Trend, indem sie seltener handelt, und der Deflated Sharpe lebt von
+der Stichprobe.
+
+Das ist die Kopplung aus den Befunden 54, 75 und 168 - hier zum ersten Mal an
+einem **gepflanzten**, also garantiert echten Vorteil gemessen. Sie ist damit
+keine Eigenschaft des Katalogs, sondern der Bauart.
+
+### Was daraus folgt
+
+1. **Bei 198 Versuchen ist diese Regelfamilie nicht zertifizierbar** - auch
+   mit einem echten Vorteil beliebiger Staerke nicht. Weitersuchen *in dieser
+   Bauart* kann nicht gelingen.
+2. **Gesucht ist eine Regel, deren Trade-Zahl nicht einbricht, wenn der Trend
+   staerker wird.** Das ist dieselbe Richtung wie Befund 75, jetzt aber aus
+   der Strecke selbst hergeleitet statt aus dem Vorrat.
+3. **Kein Grund, eine Latte zu senken.** Die Latte tut genau das, wofuer sie
+   da ist; die Bauart passt nicht zu ihr.
+
+Einschraenkungen, die bleiben: Die korrigierte Leiter ist **eine Ziehung**
+(Saat 11). Die DSR-Werte, auf denen die Kernaussage steht, sind ueber fuenf
+Saaten gemessen und erreichen im Mittel nirgends mehr als das Niveau der
+ungepflanzten Wirklichkeit. Und die Messlatte-Zeilen taugen auf dieser Leiter
+ohnehin nicht - das steht seit jeher im Modulkopf.
+
+Kostet keinen Versuch: Geprueft wird die Strecke, keine Regel. Versuchszaehler
+198 unveraendert, Suchbudget 68 von 100.

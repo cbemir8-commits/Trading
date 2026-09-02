@@ -607,6 +607,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Maerkte ohne Walk-Forward urteilen gleich, 265s gegen 65s",
         173,
     ),
+    # Der sechste Ort derselben Verwechslung von roher und effektiver
+    # Stichprobe - Befund 139 hatte fuenf behoben.
+    Richtung(
+        "Teststaerke-Guete auf roher Trade-Zahl",
+        "sechste Stelle nach Befund 139, dazu ein Feld namens 'guete', das "
+        "den Sharpe je Trade trug und bis in Befund 113 gewandert ist",
+        176,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -626,6 +634,12 @@ OFFEN: tuple[Richtung, ...] = (
         "4 von 4 Maerkten ueber ihrer Null, aber nur ETH raeumt |z| = 2 - "
         "und die Ziehung hat keine Stops, also eine Obergrenze",
         175,
+    ),
+    Richtung(
+        "Zertifizierbarkeit der Bauart",
+        "auch mit gepflanztem echten Vorteil besteht keine Sprosse: Die Latte "
+        "steigt mit fallender Stichprobe schneller, als die Guete waechst",
+        176,
     ),
 )
 
