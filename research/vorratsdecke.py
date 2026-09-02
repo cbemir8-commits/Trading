@@ -75,6 +75,33 @@ nicht an ihnen, sondern daran, dass Generation 8 durchgehend null Trades
 lieferte - was sich als eigene, richtige Beobachtung herausstellte.
 ``cli.py._ohne_hebel`` deckelt jetzt, an einer Stelle fuer beide Aufrufer.
 
+Worauf die Kopplung steht (Befund 169)
+--------------------------------------
+Einen Lauf spaeter nachgesehen, wer die Auffaelligkeit traegt. Eingeteilt
+nach dem **Einstiegsindikator**, strukturell aus dem Genom gelesen:
+
+    sma 9,  roc 2,  ema 1,  distance_to_ema_pct 1,  swing_high 1
+
+    ganzer Vorrat      14 Regeln   r = -0,714   t = -3,53
+    nur 'sma'           9 Regeln   r = -0,778   t = -3,28
+    ohne 'sma'          5 Regeln   r = -0,547   t = -1,13  sagt nichts
+    Familienmediane     5 Punkte   r = -0,744   t = -1,93  sagt nichts
+
+**Die Kopplung ist innerhalb einer Familie belegt und darueber hinaus
+nicht.** Neun von vierzehn Regeln sind derselbe Einstiegsindikator, dreizehn
+von vierzehn sind long-only. Damit ist Befund 168 enger zu lesen, als er
+geschrieben war: Die Decke beschreibt **diese Familie**, nicht "den Vorrat" -
+und faellt insoweit auf Befund 54 zurueck, wo die Kopplung an einem
+Kandidaten durch Verstellen seiner Regler entstand.
+
+Die Familienmediane zeigen dasselbe Gefaelle (hoechste Qualitaet bei der
+kleinsten Stichprobe) und verfehlen die Schwelle knapp. **Knapp ist nicht
+erreicht**; genau dieser Fehler steht in Befund 75 als Scheinbefund.
+
+Was davon **unberuehrt** bleibt: dass keine gemessene Regel in die Naehe der
+Latte kommt. Die beste steht bei Guete 2,263 gegen 3,522. Das ist eine
+Beobachtung an vierzehn Messungen und haengt an keiner Geraden.
+
 Was hier **nicht** steht
 ------------------------
 * Dass es keine Regel gibt, die reicht. Gemessen ist ein **vorhandener
@@ -86,6 +113,9 @@ Was hier **nicht** steht
   der Groessenordnung, und mehr wird daraus nicht gemacht.
 * Eine Empfehlung, irgendetwas zu lockern. Die Decke ist ein Grund, den
   Vorrat zu wechseln, kein Grund, die Latte zu senken.
+* Eine Aussage ueber Familien, die hier gar nicht vorkommen. Vier der fuenf
+  sind mit einer oder zwei Regeln vertreten - ueber sie sagt diese Messung
+  nichts, weder gut noch schlecht.
 """
 
 from __future__ import annotations
@@ -288,4 +318,76 @@ def urteil(decke: Decke, noetig_bei) -> str:
     return "\n".join(zeilen)
 
 
-__all__ = ["MINDEST_T", "Decke", "Punkt", "baue", "urteil"]
+def traegt_eine_familie(
+    nach_familie: dict[str, list[Punkt]],
+) -> tuple[str, Decke | None, Decke | None] | None:
+    """Steht die Kopplung auf **einer** Familie oder auf dem ganzen Vorrat?
+
+    Der Unterschied entscheidet, was die Decke bedeutet. Befund 54 hat die
+    Kopplung an *einem* Kandidaten gemessen, durch Verstellen seiner Regler;
+    Befund 75 nannte sie eine Eigenschaft *des Vorrats* und grenzte sich
+    damit ausdruecklich davon ab. Traegt in Wahrheit eine Familie die ganze
+    Auffaelligkeit, sind beide Aussagen wieder dieselbe - nur mit mehr Namen
+    (Befund 169).
+
+    Geliefert wird ``(Name der groessten Familie, Gerade darin, Gerade ohne
+    sie)``; jede Gerade ist ``None``, wo zu wenige Regeln stehen. ``None``
+    fuer das Ganze, wenn keine Familie die Mehrheit haelt - dann stellt sich
+    die Frage nicht.
+    """
+    if not nach_familie:
+        return None
+    gesamt = sum(len(ps) for ps in nach_familie.values())
+    groesste = max(nach_familie, key=lambda f: len(nach_familie[f]))
+    if len(nach_familie[groesste]) * 2 <= gesamt:
+        return None
+    rest = [p for f, ps in nach_familie.items() if f != groesste for p in ps]
+    return groesste, _versuche_gerade(nach_familie[groesste]), _versuche_gerade(rest)
+
+
+def _versuche_gerade(punkte: list[Punkt]) -> Decke | None:
+    """Eine Gerade, wo sie sich legen laesst - sonst nichts."""
+    try:
+        return baue(punkte)
+    except ValueError:
+        return None
+
+
+def familienurteil(aufteilung: tuple[str, Decke | None, Decke | None]) -> str:
+    """Was die Aufteilung ueber die Tragfaehigkeit der Decke sagt."""
+    name, drin, ohne = aufteilung
+    zeilen = [
+        f"**Die Mehrheit der Regeln ist dieselbe Familie ({name}).** Was die "
+        f"Kopplung traegt, entscheidet, worueber die Decke spricht."
+    ]
+    if drin is not None:
+        zeilen.append(
+            f"  Nur '{name}': {len(drin.punkte)} Regeln, r = {drin.r:+.3f}, "
+            f"t = {drin.t:+.2f}"
+        )
+    if ohne is None:
+        zeilen.append("  Ohne sie bleiben zu wenige Regeln fuer eine Gerade.")
+    else:
+        zeilen.append(
+            f"  Ohne '{name}': {len(ohne.punkte)} Regeln, r = {ohne.r:+.3f}, "
+            f"t = {ohne.t:+.2f}"
+            + ("" if ohne.tragfaehig else " - **sagt nichts**")
+        )
+    if drin is not None and drin.tragfaehig and (ohne is None or not ohne.tragfaehig):
+        zeilen.append(
+            "  Damit ist die Kopplung **innerhalb einer Familie** belegt und "
+            "darueber hinaus nicht. Die Decke beschreibt diese Familie; fuer "
+            "den Vorrat als Ganzes reicht es nicht."
+        )
+    return "\n".join(zeilen)
+
+
+__all__ = [
+    "MINDEST_T",
+    "Decke",
+    "Punkt",
+    "baue",
+    "familienurteil",
+    "traegt_eine_familie",
+    "urteil",
+]

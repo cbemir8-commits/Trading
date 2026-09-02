@@ -191,9 +191,9 @@ def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
         "Termin-Overlay": 127,
         "Perioden-Faktor": 49,
         "Schiefe erhoehen": 125,
-        # Befund 168 hat die Kopplung zu Ende gerechnet: Decke 1,931
-        # gegen noetige 3,522.
-        "Trade-Zahl heben": 168,
+        # Befund 168 hat die Kopplung zu Ende gerechnet (Decke 1,931 gegen
+        # noetige 3,522), Befund 169 sie auf die SMA-Familie eingeschraenkt.
+        "Trade-Zahl heben": 169,
         "Kostenannahmen": 127,
         "Schnittpunkt als Prognose": 126,
         # Befund 141: 14 Paare mit dem Bestand, an der Einteilung des Gates.

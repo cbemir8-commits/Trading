@@ -160,14 +160,14 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         zuletzt=125,
     ),
     Richtung("Woelbung senken", "unter 1 mathematisch unmoeglich", 70),
-    # Befund 168 hat die Kopplung an einem anderen Vorrat, am Spot-Punkt und
-    # auf der effektiven Stichprobe bestaetigt - und zu Ende gerechnet.
+    # Befund 168 hat die Kopplung zu Ende gerechnet, Befund 169 nachgesehen,
+    # wer sie traegt: neun der vierzehn Regeln sind derselbe Einstieg.
     Richtung(
         "Trade-Zahl heben",
-        "Kopplung -0,71 (t = -3,53) ueber 14 Regeln; die Guete deckelt bei "
-        "1,931 gegen noetige 3,522 - der Vorrat kann die Latte nicht erreichen",
+        "Guete deckelt bei 1,931 gegen noetige 3,522; die Kopplung (-0,71) "
+        "traegt aber nur innerhalb der SMA-Familie, ausserhalb t = -1,13",
         75,
-        zuletzt=168,
+        zuletzt=169,
     ),
     Richtung("Katalog als Partner", "0 von 15 Genomen taugen", 74),
     Richtung("Eigenbau-Partner", "8 Regeln aus Befund 77 und 83 gescheitert", 83),
@@ -574,6 +574,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "_spotguete und _spotpunkt trugen denselben Block; 'fraction' wurde "
         "gesetzt statt gedeckelt und blies Genome unter 1,0 auf",
         168,
+    ),
+    # Meine eigene Verallgemeinerung aus dem Lauf davor, nach einem Lauf
+    # nachgeprueft und eingeschraenkt.
+    Richtung(
+        "Kopplung als Eigenschaft 'des Vorrats' gelesen",
+        "9 der 14 Regeln sind derselbe Einstiegsindikator; ohne sie bleibt "
+        "t = -1,13 - die Decke beschreibt eine Familie, nicht den Vorrat",
+        169,
     ),
 )
 

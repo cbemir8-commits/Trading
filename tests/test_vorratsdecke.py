@@ -17,7 +17,15 @@ import math
 
 import pytest
 
-from research.vorratsdecke import MINDEST_T, Decke, Punkt, baue, urteil
+from research.vorratsdecke import (
+    MINDEST_T,
+    Decke,
+    Punkt,
+    baue,
+    familienurteil,
+    traegt_eine_familie,
+    urteil,
+)
 
 
 def gerade(a: float, b: float, ns: list[int], stoerung: float = 0.0) -> list[Punkt]:
@@ -183,3 +191,94 @@ class TestDerBestandInSeinemVorrat:
         """Die Aussage haengt am Versuchsstand, nicht am Kandidaten - genau
         deshalb steht sie neben dem Deflated Sharpe und nicht statt seiner."""
         assert Decke.erwartetes_maximum(13) < 2.41
+
+
+class TestWoraufDieKopplungSteht:
+    """Traegt eine Familie die Auffaelligkeit - oder der ganze Vorrat?
+
+    Der Unterschied entscheidet, worueber die Decke spricht. Befund 54 hat
+    die Kopplung an **einem** Kandidaten durch Verstellen seiner Regler
+    gemessen; Befund 75 nannte sie eine Eigenschaft *des Vorrats* und grenzte
+    sich damit ausdruecklich davon ab. Traegt eine Familie alles, sind beide
+    Aussagen wieder dieselbe.
+
+    Gemessen (Befund 169): ganzer Vorrat r = -0,714 bei t = -3,53, nur 'sma'
+    (9 von 14) r = -0,778 bei t = -3,28, ohne 'sma' r = -0,547 bei t = -1,13.
+    """
+
+    def test_ohne_mehrheitsfamilie_stellt_sich_die_frage_nicht(self) -> None:
+        aufteilung = {
+            "a": gerade(0.4, -0.002, [20, 40, 60]),
+            "b": gerade(0.4, -0.002, [30, 50, 70]),
+        }
+
+        assert traegt_eine_familie(aufteilung) is None
+
+    def test_leerer_vorrat_ergibt_nichts(self) -> None:
+        assert traegt_eine_familie({}) is None
+
+    def test_die_mehrheitsfamilie_wird_benannt(self) -> None:
+        aufteilung = {
+            "sma": gerade(0.40, -0.002, [20, 40, 60, 80, 100], stoerung=0.01),
+            "roc": gerade(0.30, -0.001, [30, 70]),
+        }
+        name, drin, ohne = traegt_eine_familie(aufteilung)
+
+        assert name == "sma"
+        assert drin is not None and len(drin.punkte) == 5
+        assert ohne is None, "zwei Punkte sind keine Gerade"
+
+    def test_traegt_die_familie_alles_sagt_das_urteil_es(self) -> None:
+        """**Der Fall, den es hier wirklich gibt.**
+
+        Innerhalb der Familie ein klarer Abfall, ausserhalb Rauschen - dann
+        beschreibt die Decke die Familie und nicht den Vorrat.
+        """
+        aufteilung = {
+            "sma": gerade(0.40, -0.002, [20, 40, 60, 80, 100], stoerung=0.01),
+            "rest": [
+                Punkt("A", 30, 0.30), Punkt("B", 60, 0.31),
+                Punkt("C", 90, 0.28), Punkt("D", 120, 0.30),
+            ],
+        }
+        text = familienurteil(traegt_eine_familie(aufteilung))
+
+        assert "sagt nichts" in text
+        assert "innerhalb einer Familie" in text
+        assert "fuer den Vorrat als Ganzes reicht es nicht" in text
+
+    def test_haelt_die_kopplung_auch_ausserhalb_wird_nichts_eingeschraenkt(
+        self,
+    ) -> None:
+        """**Beide Ausgaenge sind Ergebnisse.** Faellt die Qualitaet auch in
+        den uebrigen Familien, ist die Decke keine Familieneigenschaft - und
+        der einschraenkende Satz darf dann nicht dastehen."""
+        aufteilung = {
+            "sma": gerade(
+                0.40, -0.002, [20, 30, 40, 60, 80, 100], stoerung=0.01
+            ),
+            "rest": gerade(0.38, -0.002, [25, 45, 65, 85, 105], stoerung=0.01),
+        }
+        aufgeteilt = traegt_eine_familie(aufteilung)
+
+        assert aufgeteilt is not None, "ohne Mehrheit prueft der Test nichts"
+        name, drin, ohne = aufgeteilt
+        text = familienurteil((name, drin, ohne))
+
+        assert ohne is not None and ohne.tragfaehig
+        assert "sagt nichts" not in text
+        assert "fuer den Vorrat als Ganzes reicht es nicht" not in text
+
+    def test_knapp_verfehlt_zaehlt_nicht_als_erreicht(self) -> None:
+        """Die Familienmediane kamen auf t = -1,93 gegen eine Schwelle von 2.
+
+        Genau dieser Fehler steht in Befund 75 als Scheinbefund: Eine
+        Korrelation ohne Deckung darf nicht klingen wie eine mit.
+        """
+        knapp = Decke(
+            punkte=(), achsenabschnitt=0.4, steigung=-0.002,
+            r=-0.744, t=-1.93, reststreuung=0.02,
+        )
+
+        assert not knapp.tragfaehig
+        assert knapp.scheitel_guete is None

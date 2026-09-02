@@ -2863,6 +2863,23 @@ def _spotguete(frames, symbole, genome, settings) -> float | None:
     return eintrag.sharpe_je_trade if eintrag else None
 
 
+def _familie(genome) -> str:
+    """Die Familie eines Genoms: seine Einstiegsindikatoren.
+
+    Strukturell aus dem Genom gelesen und nicht aus dem Namen - "Trend mit
+    Vola-Ziel 22 %" und "Trend-Beteiligung 50 Tage" heissen verschieden und
+    sind dieselbe Familie. Eine Einteilung nach Namen waere eine Meinung.
+    """
+    namen = {
+        s.name
+        for abschnitt in (genome.entry_long, genome.entry_short)
+        for c in abschnitt
+        for s in (c.left, c.right)
+        if s.kind == "indicator"
+    }
+    return "+".join(sorted(namen)) or "ohne Indikator"
+
+
 def _spotpunkt(frames, symbole, genome, trials: int, settings):
     """Derselbe Kandidat unter Kassa-Bedingungen - kein Hebel, kein Funding.
 
@@ -10464,7 +10481,13 @@ def vorratsdecke(
     from research.seeds import GENERATIONS, passt_zum_intervall
     from research.suchbudget import Kandidat
     from research.verbund import noetige_guete
-    from research.vorratsdecke import Punkt, baue, urteil
+    from research.vorratsdecke import (
+        Punkt,
+        baue,
+        familienurteil,
+        traegt_eine_familie,
+        urteil,
+    )
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -10481,6 +10504,7 @@ def vorratsdecke(
         f"Spot-Punkt, Versuchsstand {versuche}\n"
     )
     punkte: list[Punkt] = []
+    nach_familie: dict[str, list[Punkt]] = {}
     ohne_latte: list[tuple[str, int]] = []
     stumm = 0
     gesehen: set[tuple[int, float]] = set()
@@ -10529,9 +10553,11 @@ def vorratsdecke(
             if noetige_guete(stichprobe.effektiv, versuche) is None:
                 ohne_latte.append((genom.name, stichprobe.effektiv))
                 continue
-            punkte.append(
-                Punkt(genom.name, stichprobe.effektiv, kandidat.sharpe_je_trade)
+            punkt = Punkt(
+                genom.name, stichprobe.effektiv, kandidat.sharpe_je_trade
             )
+            punkte.append(punkt)
+            nach_familie.setdefault(_familie(genom), []).append(punkt)
 
     if len(punkte) < 3:
         console.print(
@@ -10564,6 +10590,21 @@ def vorratsdecke(
         )
     console.print()
     console.print(urteil(decke, lambda n: noetige_guete(n, versuche)))
+
+    # **Worauf die Kopplung steht.** Befund 168 hat r = -0,714 ueber den
+    # ganzen Vorrat gemeldet; Befund 169 hat nachgesehen, wer das traegt.
+    aufteilung = traegt_eine_familie(nach_familie)
+    if aufteilung is not None:
+        console.print()
+        console.print(f"[yellow]{familienurteil(aufteilung)}[/]")
+        console.print(
+            "\n[dim]Familien nach Einstiegsindikator: "
+            + ", ".join(
+                f"{f} {len(ps)}"
+                for f, ps in sorted(nach_familie.items(), key=lambda x: -len(x[1]))
+            )
+            + "[/]"
+        )
 
     # **Wo der Bestand in seinem eigenen Vorrat steht.** Der zweite Weg zur
     # selben Aussage wie der Deflated Sharpe - und ein unabhaengiger: Der

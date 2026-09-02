@@ -15625,3 +15625,89 @@ ist skalenfrei. Ein Test steht dafuer.
 Kostet keinen Versuch: Diese Genome standen laengst im Katalog und waren
 gezaehlt, als sie entstanden; ausgewaehlt wurde keines. Versuchszaehler 198
 unveraendert, Suchbudget 68 von 100.
+
+## Hundertneunundsechzig. Neun von vierzehn waren dieselbe Familie
+
+Befund 168 ist einen Lauf alt und war schon tragend: Er hat den Registereintrag
+"Trade-Zahl heben" auf 168 nachgezogen und dem Deflated Sharpe eine zweite,
+unabhaengige Bestaetigung zur Seite gestellt. Dieser Lauf prueft ihn nach,
+bevor er haertet - an seiner schwaechsten Stelle.
+
+### Der Zweifel
+
+Befund 168 mass `r = -0,714` ueber 14 Regeln und nannte das, Befund 75
+folgend, eine Eigenschaft *des Vorrats*. Befund 75 hatte diese Formulierung
+ausdruecklich gegen Befund 54 abgegrenzt, wo dieselbe Kopplung an **einem**
+Kandidaten entstand, durch Verstellen seiner Regler.
+
+Nur: Die Namen der 14 lesen sich wie eine Familie. "Trend-Beteiligung 50
+Tage", "Trend mit Vola-Ziel 22 %", "Vola-Ziel, kurzes Messfenster" - das
+klingt nach einem Reglerscan mit Etiketten.
+
+### Was gemessen wurde
+
+Eingeteilt nach dem **Einstiegsindikator**, strukturell aus dem Genom
+gelesen und nicht nach dem Namen - eine Einteilung nach Namen waere eine
+Meinung. Die Einteilung stand vor der Messung fest.
+
+    sma 9,  roc 2,  ema 1,  distance_to_ema_pct 1,  swing_high 1
+
+    ganzer Vorrat      14 Regeln   r = -0,714   t = -3,53
+    nur 'sma'           9 Regeln   r = -0,778   t = -3,28
+    ohne 'sma'          5 Regeln   r = -0,547   t = -1,13   sagt nichts
+    Familienmediane     5 Punkte   r = -0,744   t = -1,93   sagt nichts
+
+**Neun von vierzehn sind derselbe Einstiegsindikator, dreizehn von vierzehn
+sind long-only.** Die Kopplung ist innerhalb dieser Familie belegt und
+darueber hinaus nicht.
+
+### Was das an Befund 168 aendert
+
+**Die Decke beschreibt die SMA-Familie, nicht "den Vorrat".** Insoweit faellt
+die Aussage auf Befund 54 zurueck, und Befund 75 hat sich zu frueh davon
+abgegrenzt - mit 14 Genomen, von denen der Grossteil derselbe Einstieg war.
+Ich habe das in Befund 168 uebernommen, ohne nachzusehen.
+
+Die Familienmediane zeigen dasselbe Gefaelle (hoechste Qualitaet bei der
+kleinsten Stichprobe, `t = -1,93`) und verfehlen die Schwelle knapp.
+**Knapp ist nicht erreicht.** Genau dieser Fehler steht in Befund 75 als
+Scheinbefund, und er wird hier nicht wiederholt.
+
+### Was unberuehrt bleibt
+
+**Dass keine gemessene Regel in die Naehe der Latte kommt.** Die beste steht
+bei Guete 2,263 gegen 3,522. Das ist eine Beobachtung an vierzehn Messungen
+und haengt an keiner Geraden - sie gilt unabhaengig davon, wer die Kopplung
+traegt.
+
+Ebenso unberuehrt: die Einordnung des Bestands. Sein Vorsprung von +2,41
+Reststreuungen gegen die 3,25 aus 198 Versuchen ist eine Aussage ueber die
+Lage in der gemessenen Punktwolke, nicht ueber deren Ursache.
+
+### Was gebaut wurde
+
+`traegt_eine_familie` teilt den Vorrat auf und legt die Gerade dreimal: im
+Ganzen, in der Mehrheitsfamilie und ohne sie. `familienurteil` sagt das
+Ergebnis an - und schraenkt **nur** ein, wenn die Kopplung ausserhalb der
+Familie tatsaechlich nichts sagt. Haelt sie auch dort, steht der
+einschraenkende Satz nicht da; ein Test verlangt beides.
+
+`cli vorratsdecke` zeigt die Aufteilung jetzt unter der Decke.
+
+### Was daraus folgt
+
+1. **Der Vorrat ist schmaler, als seine Laenge aussieht.** 39 Genome, davon
+   23 ohne einen Trade auf Tageskerzen, und von den uebrigen 14 sind 9
+   derselbe Einstieg. Das ist kein Katalog, das ist ein Reglerscan mit vier
+   Ausreissern.
+2. **Gesucht ist damit zuerst Vielfalt, nicht Qualitaet.** Solange vier von
+   fuenf Familien mit einer oder zwei Regeln vertreten sind, kann keine
+   Messung sagen, ob die Kopplung ein Gesetz oder eine Familieneigenschaft
+   ist.
+3. **Eine Nachpruefung nach einem Lauf ist frueh genug.** Der Eintrag war
+   schon nachgezogen und stand in einem Register, aus dem kuenftige Laeufe
+   ablesen. Ein Lauf spaeter kostet nichts; zwanzig Laeufe spaeter waere es
+   Befund 130 gewesen.
+
+Kein Gate angefasst, kein Kandidat gemessen, nichts ausgewaehlt.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
