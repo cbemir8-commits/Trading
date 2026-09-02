@@ -195,6 +195,43 @@ class TestLage:
         assert lage.faktor is None
         assert "steigen" not in lage.urteil()
 
+    def test_das_zweite_tor_steht_daneben(self) -> None:
+        """**Befund 178.** Der Bericht nannte nur den noetigen Zuwachs an
+        Qualitaet - und der gemessene Wert ist das Beste aus 198 Versuchen.
+
+        Die Latte steigt oberhalb von rund 60 wirksamen Beobachtungen viel
+        langsamer als die Wurzel; dieselbe Regel oefter fuehrt deshalb ebenso
+        an die Schwelle wie eine bessere.
+        """
+        lage = _lage(effektiv=121, sharpe_je_trade=0.2649, versuche=198)
+
+        assert lage.menge == 199
+        text = lage.urteil()
+        assert "199 wirksame Beobachtungen" in text
+        assert "Faktor 1.64" in text
+
+    def test_ohne_gemessene_stichprobe_kein_mengentor(self) -> None:
+        """Ohne ``effektiv`` gaebe es keine Zahl, gegen die ein Faktor
+        rechnen koennte - dann steht dort nichts statt etwas Erfundenem."""
+        lage = _lage(effektiv=None)
+
+        assert lage.menge is None
+        assert "ueber die Menge" not in lage.urteil()
+
+    def test_wo_die_menge_nicht_genuegt_wird_es_gesagt(self) -> None:
+        lage = _lage(effektiv=121, sharpe_je_trade=0.02, versuche=198)
+
+        assert lage.menge is None
+        assert "nicht zu holen" in lage.urteil()
+
+    def test_wer_genug_beobachtungen_hat_bekommt_kein_mengenziel(self) -> None:
+        """Sonst staende dort eine Zahl **unter** der vorhandenen - eine
+        Aufforderung, weniger zu handeln."""
+        lage = _lage(effektiv=400, sharpe_je_trade=0.2649, versuche=198)
+
+        assert lage.menge is not None and lage.menge < 400
+        assert "wirksame Beobachtungen" not in lage.urteil()
+
     def test_zugelassen_bleibt_vorsichtig(self) -> None:
         """Alle Gates bestanden heisst nicht, dass Geld darauf gehoert."""
         lage = _lage(bestanden=11, offen=())

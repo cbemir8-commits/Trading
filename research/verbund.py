@@ -389,6 +389,34 @@ class Verbund:
             )
         return "\n".join(zeilen)
 
+    def _mengenweg(self, guete: float) -> str:
+        """Dieselbe Luecke in Trades statt in Gueteeinheiten.
+
+        Eine fehlende Guete von 0,4 sagt niemandem, was zu tun ist. Die Zahl
+        daneben schon: **bei unveraenderter Qualitaet je Trade** braucht es so
+        viele wirksame Trades. Das ist ein Ziel, das eine Suche ansteuern
+        kann - und ein anderes als "eine bessere Regel finden", weil die Latte
+        oberhalb ihres Talbodens viel langsamer steigt als die Wurzel
+        (Befund 178).
+        """
+        st = self.stichprobe
+        if st.effektiv <= 0:
+            return ""
+        je_trade = guete / st.effektiv**0.5
+        ziel = noetige_stichprobe(je_trade, self.versuche)
+        if ziel is None:
+            return (
+                " Ueber die Menge ist es nicht zu holen: Bei dieser Qualitaet "
+                f"je Trade genuegen auch {HOECHSTENS} wirksame Trades nicht."
+            )
+        if ziel <= st.effektiv:
+            return ""
+        return (
+            f" In Trades statt in Gueteeinheiten: Bei unveraendertem "
+            f"{je_trade:.4f} je Trade waeren {ziel} wirksame noetig statt "
+            f"{st.effektiv} - Faktor {ziel / st.effektiv:.2f}."
+        )
+
     def urteil(self, *, noetige_guete: float | None = None) -> str:
         guete, dsr, bestes = self.guete, self.dsr, self.bestes_bein
         if guete is None or dsr is None or bestes is None:
@@ -406,6 +434,7 @@ class Verbund:
             naehe = (
                 f" Noetig fuer die Schwelle waeren {noetige_guete:.3f}; "
                 f"es fehlen {noetige_guete - guete:.3f}."
+                + self._mengenweg(guete)
                 if guete < noetige_guete
                 else f" Damit ist die noetige Guete von {noetige_guete:.3f} "
                 f"erreicht - was **ein** Gate von elf ist."
@@ -504,7 +533,59 @@ def noetige_guete(effektiv: int, versuche: int) -> float | None:
     return noetig * effektiv**0.5 if noetig is not None else None
 
 
+#: Ab wo eine Antwort auf ``noetige_stichprobe`` keine mehr waere.
+#:
+#: Auf Tageskerzen umfasst die gemeinsame Historie 3300 Tage. Eine Regel, die
+#: 5000 **unabhaengige** Trades braeuchte, um die Schwelle zu raeumen, kann es
+#: in dieser Historie nicht - die Zahl waere formal richtig und praktisch eine
+#: Absage. Sie wird deshalb als ``None`` gemeldet und nicht als Ziel.
+HOECHSTENS = 5000
+
+
+def noetige_stichprobe(
+    sharpe_je_trade: float, versuche: int, *, hoechstens: int = HOECHSTENS
+) -> int | None:
+    """Die kleinste effektive Stichprobe, bei der **diese** Qualitaet genuegt.
+
+    Die Umkehrung von ``noetige_guete``: Dort steht die Latte bei gegebener
+    Stichprobe, hier die Stichprobe bei gegebener Qualitaet je Trade. Beide
+    Richtungen beschreiben dieselbe Linie - aber nur die zweite ist ein Ziel,
+    das eine Suche ansteuern kann.
+
+    Warum es die Funktion erst seit Befund 178 gibt
+    -----------------------------------------------
+    Befund 176 hat die Latte als bewegliches Hindernis beschrieben ("sie
+    laeuft schneller weg, als der Vorteil waechst") und daraus geschlossen,
+    diese Bauart sei nicht zertifizierbar. Das galt entlang der Achse, die
+    dort gemessen wurde: Ein gepflanzter Trend hebt die Qualitaet und
+    **senkt** die Stichprobe, und unter etwa 40 explodiert die Latte.
+
+    Entlang der anderen Achse - Qualitaet fest, Stichprobe waechst - stimmt es
+    nicht. Die Latte in Gueteeinheiten ist ein flaches Tal mit dem Boden bei
+    ungefaehr 60 wirksamen Trades; von dort bis 300 steigt sie um 9 %,
+    waehrend die Guete um 124 % steigt. Wer sie einmal geraeumt hat, raeumt
+    sie auch mit mehr Trades - deshalb ist der erste Treffer von unten die
+    kleinste Loesung und nicht bloss eine.
+
+    ``None`` heisst: bis ``hoechstens`` nicht erreichbar.
+
+    Nicht zu verwechseln mit ``Partnerkarte.wende``
+    -----------------------------------------------
+    Die beantwortet dieselbe Frage fuer ein **zweites Bein neben dem
+    Bestand**, bei einem Unabhaengigkeitsgrad von 0,72. Diese hier fragt nach
+    einer Regel, die allein steht.
+    """
+    if sharpe_je_trade <= 0:
+        return None
+    for n in range(10, hoechstens + 1):
+        latte = noetige_guete(n, versuche)
+        if latte is not None and sharpe_je_trade * n**0.5 >= latte:
+            return n
+    return None
+
+
 __all__ = [
+    "HOECHSTENS",
     "ZIEL",
     "Bein",
     "Verbund",
@@ -512,4 +593,5 @@ __all__ = [
     "fensterbloecke",
     "fensterkorrelation",
     "noetige_guete",
+    "noetige_stichprobe",
 ]

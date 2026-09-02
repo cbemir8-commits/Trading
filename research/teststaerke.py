@@ -463,35 +463,103 @@ class Vergleich:
             return "Nichts zu vergleichen."
         namen = list(self.leitern)
         anteile = sorted({s.anteil for lt in self.leitern.values() for s in lt.stufen})
+        # **Gekuerzt wird nur die Ueberschrift, nicht der Name.** Bis Befund
+        # 178 schnitt der Aufrufer (``cli._familie``) auf 14 Zeichen, damit es
+        # in die Spalte passte - und die gekuerzte Fassung war danach der
+        # Schluessel, unter dem das Urteil die Variante nannte
+        # ("**Neues Hoch im ** raeumt die Latte"). Wer hier kuerzt, kuerzt
+        # eine Beschriftung; wer dort kuerzte, kuerzte eine Identitaet.
+        breite = 20
+        kurz = {n: n if len(n) <= breite - 2 else n[: breite - 4] + ".." for n in namen}
 
-        kopf = f"{'gepflanzt':>10}" + "".join(f"{n:>16}" for n in namen)
+        kopf = f"{'gepflanzt':>10}" + "".join(f"{kurz[n]:>{breite}}" for n in namen)
         zeilen = [kopf, "-" * len(kopf)]
         for anteil in anteile:
-            zeile = f"{anteil:>9.0%}"
+            # Zehn wie im Kopf und in der Steigungszeile. Bis Befund 178
+            # standen hier neun, und die Zahlenspalten lagen um ein Zeichen
+            # gegen ihre Ueberschrift versetzt.
+            zeile = f"{anteil:>10.0%}"
             for name in namen:
                 treffer = next(
                     (s for s in self.leitern[name].stufen if s.anteil == anteil), None
                 )
-                zeile += (
-                    f"{treffer.guete:>10.2f} ({treffer.trades:>3})"
-                    if treffer is not None
-                    else f"{'-':>16}"
+                if treffer is None:
+                    zeile += f"{'-':>{breite}}"
+                    continue
+                noetig = treffer.noetig(self.leitern[name].versuche)
+                marke = "*" if noetig is not None and treffer.guete >= noetig else " "
+                zelle = (
+                    f"{treffer.guete:>7.2f}/"
+                    + ("    -" if noetig is None else f"{noetig:>5.2f}")
+                    + f"{marke}({treffer.trades:>3})"
                 )
+                zeile += f"{zelle:>{breite}}"
             zeilen.append(zeile)
 
         zeilen.append("-" * len(kopf))
         steig = f"{'Steigung':>10}"
         for name in namen:
             wert = self.leitern[name].steigung
-            steig += f"{wert:>16.2f}" if wert is not None else f"{'-':>16}"
+            steig += (
+                f"{wert:>{breite}.2f}" if wert is not None else f"{'-':>{breite}}"
+            )
         zeilen.append(steig)
-        zeilen.append("[in Klammern die Trades; Guete = SR je Trade * sqrt(Trades)]")
+        zeilen.append("[Guete/noetig, * = geraeumt, in Klammern die Trades]")
+        gekuerzt = [n for n in namen if kurz[n] != n]
+        if gekuerzt:
+            zeilen.append(
+                "[Spalten: " + "; ".join(f"{kurz[n]} = {n}" for n in gekuerzt) + "]"
+            )
         return "\n".join(zeilen)
+
+    @property
+    def raeumen(self) -> dict[str, list[float]]:
+        """Welche Variante ihre Latte **erreicht** - und auf welchen Sprossen.
+
+        Die Matrix zeigte bis Befund 178 nur die Guete. Damit laesst sich
+        ablesen, welche Variante die groesste hat, aber nicht, ob sie
+        genuegt - und genau das ist die Frage. Die Latte bewegt sich mit der
+        Stichprobe (Befund 176); eine groessere Guete bei kleinerer
+        Stichprobe kann weiter von ihr weg sein als eine kleinere bei
+        grosser.
+        """
+        gefunden: dict[str, list[float]] = {}
+        for name, leiter in self.leitern.items():
+            treffer = [
+                s.anteil
+                for s in leiter.stufen
+                if s.effektiv is not None
+                and (n := s.noetig(leiter.versuche)) is not None
+                and s.guete >= n
+            ]
+            if treffer:
+                gefunden[name] = sorted(treffer)
+        return gefunden
 
     def urteil(self) -> str:
         if not self.leitern:
             return "Nichts zu vergleichen."
+        geraeumt = self.raeumen
         gebrochen = [n for n, lt in self.leitern.items() if lt.entkoppelt]
+        if geraeumt:
+            teile = [
+                f"**{name}** raeumt die Latte bei "
+                + ", ".join(f"{a:.0%}" for a in sprossen)
+                for name, sprossen in geraeumt.items()
+            ]
+            kopf = (
+                "**Eine Variante erreicht ihre Latte.**"
+                if len(geraeumt) == 1
+                else f"**{len(geraeumt)} Varianten erreichen ihre Latte.**"
+            )
+            return (
+                f"{kopf} "
+                + "; ".join(teile)
+                + ". Das ist mehr als eine gebrochene Kopplung: Die Guete "
+                "genuegt dort, statt nur zu wachsen. Gemessen ist das auf "
+                "gepflanzten Reihen; auf echten Daten kostet es Versuche, und "
+                "erst dort entscheidet sich, ob davon etwas uebrig bleibt."
+            )
         if gebrochen:
             return (
                 f"**Die Kopplung bricht bei: {', '.join(gebrochen)}.** Dort "

@@ -148,7 +148,23 @@ class TestRegelnAusDatei:
 
         geladen = _regeln_aus_datei(datei(tmp_path, [REGEL, kaputt]))
 
-        assert [n for n, _ in geladen] == [REGEL["name"][:14]]
+        assert [n for n, _ in geladen] == [REGEL["name"]]
+
+    def test_der_name_kommt_ungekuerzt_an(self, tmp_path: Path) -> None:
+        """**Befund 178.** Hier stand ``[:14]``, damit der Name in die Spalte
+        der Vergleichsmatrix passte.
+
+        Damit war die gekuerzte Fassung der Schluessel, unter dem das Urteil
+        die Variante nannte - es meldete "**Neues Hoch im ** raeumt die
+        Latte". Gekuerzt wird jetzt in ``Vergleich.matrix``, wo eine
+        Beschriftung gekuerzt wird und keine Identitaet.
+        """
+        lang = json.loads(json.dumps(REGEL))
+        lang["name"] = "Neues Hoch im Takt, mit Deckel und Filter"
+
+        geladen = _regeln_aus_datei(datei(tmp_path, [lang]))
+
+        assert [n for n, _ in geladen] == [lang["name"]]
 
 
 class TestGroessenlogik:

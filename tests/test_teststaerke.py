@@ -351,6 +351,33 @@ class TestVergleich:
         assert "Steigung" in text
 
     def test_eine_entkoppelnde_variante_wird_benannt(self) -> None:
+        """Entkoppelt, aber **unter** der Latte.
+
+        Bei 150 Trades verlangt die Schwelle rund 3,67; diese Variante kommt
+        auf 0,25 * sqrt(150) = 3,06. Die Kopplung ist gebrochen - erreicht
+        ist die Latte nicht, und genau das soll dastehen.
+        """
+        v = Vergleich(
+            leitern={
+                "unbegrenzt": gestufte((0.0, 0.2569, 154), (0.5, 1.2734, 12)),
+                "30 Kerzen": gestufte((0.0, 0.18, 154), (0.5, 0.25, 150)),
+            }
+        )
+
+        assert v.raeumen == {}
+        assert "30 Kerzen" in v.urteil()
+        assert "Kopplung bricht" in v.urteil()
+        assert "kostet Versuche" in v.urteil() or "Versuche kostet" in v.urteil()
+
+    def test_eine_variante_die_ihre_latte_erreicht_wird_anders_gemeldet(self) -> None:
+        """**Befund 178.** Eine wachsende Guete ist nicht dasselbe wie eine,
+        die genuegt.
+
+        Die Latte bewegt sich mit der Stichprobe (Befund 176) - eine
+        groessere Guete bei kleinerer Stichprobe kann weiter von ihr weg sein
+        als eine kleinere bei grosser. Die Matrix zeigte bis hierher nur die
+        Guete.
+        """
         v = Vergleich(
             leitern={
                 "unbegrenzt": gestufte((0.0, 0.2569, 154), (0.5, 1.2734, 12)),
@@ -358,9 +385,69 @@ class TestVergleich:
             }
         )
 
-        assert "30 Kerzen" in v.urteil()
-        assert "Kopplung bricht" in v.urteil()
-        assert "kostet Versuche" in v.urteil() or "Versuche kostet" in v.urteil()
+        assert v.raeumen == {"30 Kerzen": [0.5]}
+        assert "raeumt die Latte" in v.urteil()
+        assert "50%" in v.urteil()
+        assert "auf echten Daten kostet es Versuche" in v.urteil()
+        assert v.urteil().startswith("**Eine Variante")
+
+    def test_mehrere_treffer_werden_im_plural_gemeldet(self) -> None:
+        """Der gemessene Fall hatte zwei - "eine Variante" waere dort falsch."""
+        v = Vergleich(
+            leitern={
+                "Ausbruch": gestufte((0.0, 0.26, 154), (0.5, 0.60, 150)),
+                "30 Kerzen": gestufte((0.0, 0.26, 154), (0.5, 0.62, 150)),
+            }
+        )
+
+        assert len(v.raeumen) == 2
+        assert v.urteil().startswith("**2 Varianten erreichen ihre Latte.**")
+
+    def test_die_matrix_zeigt_die_latte_neben_der_guete(self) -> None:
+        v = Vergleich(
+            leitern={"30 Kerzen": gestufte((0.0, 0.26, 154), (0.5, 0.60, 150))}
+        )
+        text = v.matrix()
+
+        assert "noetig" in text
+        assert "*" in text, "die geraeumte Sprosse ist nicht markiert"
+
+    def test_lange_namen_werden_nicht_gekuerzt(self) -> None:
+        """**Der Anzeigefehler aus Befund 178.**
+
+        Die Kuerzung sass beim Aufrufer (``cli._familie`` schnitt auf 14
+        Zeichen, damit es in die Spalte passte) und wanderte damit in die
+        Schluesselmenge - das Urteil nannte die Variante dann
+        "**Neues Hoch im **". Die Spalte richtet sich jetzt nach dem Namen
+        statt umgekehrt.
+        """
+        lang = "Neues Hoch im Takt, mit Deckel"
+        v = Vergleich(
+            leitern={
+                "kurz": gestufte((0.0, 0.2569, 154), (0.5, 1.2734, 12)),
+                lang: gestufte((0.0, 0.26, 154), (0.5, 0.60, 150)),
+            }
+        )
+
+        assert lang in v.urteil()
+        # In der Tabelle darf die Ueberschrift kuerzen - dann aber mit
+        # Aufloesung darunter, damit der volle Name auffindbar bleibt.
+        assert f"= {lang}" in v.matrix()
+
+    def test_die_matrix_bleibt_ausgerichtet(self) -> None:
+        """Kopf, Zellen und Steigung in derselben Breite - sonst liest man die
+        Zahl unter dem falschen Namen ab."""
+        v = Vergleich(
+            leitern={
+                "Neues Hoch im Takt": gestufte((0.0, 0.26, 154), (0.5, 0.60, 150)),
+                "kurz": gestufte((0.0, 0.2569, 154), (0.5, 1.2734, 12)),
+            }
+        )
+        zeilen = [z for z in v.matrix().splitlines() if not z.startswith("[")]
+
+        assert len({len(z.rstrip()) for z in zeilen if set(z) == {"-"}}) == 1
+        breiten = {len(z) for z in zeilen if set(z) != {"-"}}
+        assert len(breiten) == 1, f"unterschiedliche Zeilenbreiten: {breiten}"
 
     def test_ohne_treffer_wird_die_beste_variante_beziffert(self) -> None:
         v = Vergleich(

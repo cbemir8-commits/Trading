@@ -16440,3 +16440,160 @@ Kostet keinen Versuch: Geprueft wird die Strecke, keine Regel; die Deckel
 sind Varianten auf gepflanzten Reihen und **keine davon ist ausgewaehlt**.
 Wer eine auf die echte Reihe traegt, hat ueber vier Varianten gewaehlt und
 muss sie zaehlen. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertachtundsiebzig. Die Latte ist ein Tal, keine Wand
+
+Befund 177 endete mit einer Richtung: *"Gesucht ist eine Einstiegsbedingung,
+deren Ausloesehaeufigkeit nicht am Rauschen haengt."*
+
+**Die gab es schon.** Befund 56 hat genau diese Struktur benannt - den
+wiederholbaren Ausbruch, neues 20-Tage-Hoch, Filter auf den 100er-Schnitt -,
+sie auf gepflanzten Reihen gemessen und danach auf echten. Das war 122
+Befunde vor Befund 177. Ich habe die Richtung formuliert, ohne im Register
+nachzusehen, ob sie schon gegangen worden ist. Dass Befund 177 im selben Atemzug
+Befund 55 zitiert, macht es nicht besser: Ich habe den Nachbareintrag gelesen
+und den nicht.
+
+### Was Befund 56 gemessen hat - und was er nicht gesagt hat
+
+    Ein Versuch, auf echten Daten (161 -> 162):
+    Neues Hoch im Takt   123 Trades  SR/Trade 0,2137  Guete 2,37  DSR 0,331  5/11
+    Bestand              154 Trades  SR/Trade 0,2569  Guete 3,19  DSR 0,791  7/11
+
+Das Urteil dort lautete "schlechter als der Bestand, und zwar deutlich". Es ist
+ein **Vergleich zwischen zwei Kandidaten**, und beide Guetezahlen sind mit der
+rohen Trade-Zahl gerechnet - der Fehler, den Befund 176 gefunden hat. Beide
+sind dadurch zu gross, ungefaehr im selben Verhaeltnis, die Rangfolge bleibt.
+
+Was fehlt, ist die andere Zahl. Bei 162 Versuchen verlangt die Schwelle 3,56
+bei 123 Trades und 3,62 bei 154. **Keiner von beiden hat sie erreicht** - der
+eine fehlte 1,19, der andere 0,43, und mit der effektiven statt der rohen
+Stichprobe fehlt beiden mehr. Befund 56 hat den Abstand zwischen zwei
+Kandidaten beziffert und den Abstand zur Schwelle nicht.
+
+### Die Umkehrung, die dem Projekt gefehlt hat
+
+`noetige_guete(n, versuche)` steht an dreizehn Aufrufstellen: Latte bei
+gegebener Stichprobe. Die andere Richtung gab es nirgends - **Stichprobe bei
+gegebener Qualitaet je Trade**. Beide beschreiben dieselbe Linie, aber nur die
+zweite ist ein Ziel, das eine Suche ansteuern kann. `noetige_stichprobe` in
+`research/verbund.py` sucht sie von unten.
+
+Am naechsten dran war `Partnerkarte.wende` - "ab wie vielen Trades ein
+Partner mit der Qualitaet des Bestands genuegt". Die fragt nach einem
+**zweiten Bein** bei einem Unabhaengigkeitsgrad von 0,72; hier geht es um
+eine Regel, die allein steht. Der Modulkopf sagt jetzt, dass es zwei
+verschiedene Fragen sind - die Verwechslung von `nullprobe` und
+`zufallseinstieg` in Befund 175 ist drei Laeufe alt.
+
+### Und dann sieht die Latte anders aus
+
+     n_eff    Latte   noetiger SR je Trade      (198 Versuche)
+        19    5,667                 1,3001
+        25    4,299                 0,8598
+        40    3,604                 0,5699
+        60    3,516                 0,4539     <- Talboden
+        80    3,540                 0,3958
+       121    3,619                 0,3290
+       199    3,734                 0,2647
+       300    3,828                 0,2210
+       500    3,935                 0,1760
+
+**Das ist kein Hang, das ist ein Tal.** Unter 40 wirksamen Trades explodiert
+die Latte, bei 60 liegt der Boden, und darueber steigt sie nur noch traege:
+von 60 auf 300 - Faktor 5 in der Stichprobe - legt sie 9 % zu, waehrend die
+Guete bei fester Qualitaet um 124 % steigt.
+
+Befund 176 hat geschrieben, die Latte laufe schneller weg, als der Vorteil
+waechst. **Das gilt entlang der Achse, die dort gemessen wurde**, und nur
+dort: Ein gepflanzter Trend hebt die Qualitaet und senkt die Stichprobe, die
+Leiter lief also von n_eff 121 nach 19 - vom flachen Teil in die Explosion.
+Entlang der anderen Achse, Qualitaet fest und Menge waechst, stimmt der Satz
+nicht.
+
+Der Schluss dort - *"diese Bauart ist nicht zertifizierbar"* - war deshalb
+eine Nummer zu gross. Richtig ist: **Ueber gepflanzte Trends ist sie nicht
+zertifizierbar**, weil das Pflanzen die Stichprobe mitnimmt. Ueber die Menge
+ist die Frage offen, und die Leiter kann sie nicht stellen.
+
+### Die beiden Tore, beziffert
+
+Der Bestand steht bei 0,2535 je Trade und 115 wirksamen Beobachtungen - das
+ist die Zahl aus `cli stand`, am gemeldeten Betriebspunkt, bei 198 Versuchen:
+
+* **Qualitaet:** 0,3364 je Trade bei unveraenderter Menge - 33 % mehr.
+* **Menge:** 220 wirksame Beobachtungen bei unveraenderter Qualitaet -
+  Faktor 1,91.
+
+Die Leiter aus Befund 176 misst auf ihrer unveraenderten Sprosse 0,2649 bei
+121 wirksamen und kommt damit auf 199 - Faktor 1,64. Zwei verschieden
+aufgesetzte Messungen, dieselbe Groessenordnung: **etwa die doppelte
+Stichprobe.**
+
+Die zweite Zeile ist die neue. Der Bericht nannte bisher nur die erste, und
+das ordnet die Suche falsch herum: 33 % sehen nach weniger aus als Faktor
+1,91, aber 0,2535 ist der Wert **nach** 198 Versuchen Suche - das Beste, was
+diese Historie hergegeben hat. Ein Drittel darueber zu finden ist genau das,
+woran 198 Versuche gescheitert sind. Die Menge verlangt nichts Besseres, nur
+mehr davon.
+
+Dieselbe Rechnung fuer Befund 56, heute gestellt: 'Neues Hoch im Takt'
+braeuchte bei seinen 0,2137 je Trade **324** wirksame Trades. Er handelte
+oefter als der Bestand und stand trotzdem weiter weg - Befund 56 hat das
+"schlechter" genannt, ohne zu wissen, um welchen Faktor.
+
+### Was die gepflanzte Matrix jetzt zeigt
+
+Die Matrix zeigte bisher nur die Guete. Damit liest man ab, welche Variante
+die groesste hat, nicht ob sie genuegt - und das ist die Frage. Mit der
+Latte daneben:
+
+     gepflanzt  Kurzer Rueckkehr..  Neues Hoch im Takt  Trendfolge 50 ge..
+           10%    1,89/ 3,52 (105)    5,16/ 3,59*(124)    3,83/ 3,56*( 49)
+           20%    2,88/ 3,55 ( 49)    4,96/ 3,52*(113)    2,97/ 4,30 ( 29)
+           35%    2,93/ 5,67 ( 19)    6,77/ 3,52*( 87)    3,28/ 6,81 ( 17)
+      Steigung                3,84                6,89               -1,84
+     [* = geraeumt]
+
+Der Ausbruch raeumt seine Latte auf allen drei Sprossen, der Bestand auf
+keiner. Das ist mehr als die gebrochene Kopplung aus Befund 56 - die sagte
+nur, dass die Guete waechst.
+
+**Und es ist trotzdem kein Beleg.** Befund 56 hat denselben Kandidaten auf
+echten Daten gemessen, und dort war seine Qualitaet je Trade *niedriger* als
+die des Bestands. Eine gepflanzte Reihe prueft, ob eine Struktur einen
+vorhandenen Vorteil in Guete umsetzt; ob der Markt einen anbietet, prueft sie
+nicht. Der Modulkopf sagt das seit Befund 54, und es gilt hier woertlich.
+
+### Ein Anzeigefehler nebenbei
+
+`cli._familie` schnitt Regelnamen auf 14 Zeichen, damit sie in die Spalte
+passten. Die gekuerzte Fassung wurde damit zum Schluessel von
+`Vergleich.leitern` - und das Urteil meldete "**Neues Hoch im ** raeumt die
+Latte". Wer eine Beschriftung kuerzt, kuerzt eine Beschriftung; wer sie beim
+Aufrufer kuerzt, kuerzt eine Identitaet. Die Kuerzung sitzt jetzt in der
+Tabelle, mit Aufloesung darunter. Dabei fiel ein zweiter auf: Die Zahlenzeilen
+standen um ein Zeichen gegen ihre Ueberschrift versetzt, seit es die Matrix
+gibt.
+
+### Was gebaut wurde
+
+* `research.verbund.noetige_stichprobe` - die Umkehrung, mit Deckel bei 5000
+  wirksamen Trades. Wer mehr braeuchte, bekommt kein Ziel genannt, sondern
+  `None`: In 3300 Tagen gemeinsamer Historie waere die Zahl formal richtig
+  und praktisch eine Absage.
+* `Verbund.urteil` nennt die Luecke jetzt auch in Trades. "Es fehlen 1,851"
+  sagt nicht, was zu tun ist; "430 wirksame noetig statt 77" schon.
+* `Lage.urteil` nennt beide Tore. Bisher stand dort nur der noetige Zuwachs
+  an Qualitaet je Trade - und der gemessene Wert ist das Beste aus 198
+  Versuchen. Wer nur diese Zahl liest, sucht in die teurere Richtung.
+* Ein Test bindet beide Richtungen aneinander: Wer bei n gerade die Latte
+  raeumt, muss von der Umkehrung genau n zurueckbekommen.
+* Der fehlende Registereintrag ist nachgetragen - in `OFFEN`, nicht in
+  `GESCHLOSSEN`. Gemessen ist **ein** Kandidat dieser Bauart, und er hat
+  verloren; die Bauart ist damit nicht erledigt. Ein zweiter kostet einen
+  Versuch, und dieser Lauf hat keinen ausgegeben.
+
+Kostet keinen Versuch: Gerechnet wird an vorhandenen Zahlen, gemessen wird auf
+gepflanzten Reihen, ausgewaehlt wird nichts. Versuchszaehler 198 unveraendert,
+Suchbudget 68 von 100.

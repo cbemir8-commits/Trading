@@ -3458,9 +3458,13 @@ def _regeln_aus_datei(pfad: Path) -> list[tuple[str, object]]:
     # Spalte - auch beim Bestand, der dort 48 haben muss. Verglichen wurden
     # Groessenlogiken, nicht Einstiegsstrukturen.
     groesse = spitzenkandidat().sizing
-    return [
-        (g.name[:14], g.model_copy(update={"sizing": groesse})) for g in angenommen
-    ]
+    # **Der volle Name, nicht die ersten vierzehn Zeichen.** Die Kuerzung sass
+    # hier, um in eine 16 Zeichen breite Spalte zu passen - und wanderte damit
+    # in die Schluesselmenge von ``Vergleich.leitern``. Das Urteil nennt die
+    # Variante beim Namen, und seit Befund 178 stand dort "**Neues Hoch im **
+    # raeumt die Latte". Die Spaltenbreite ist eine Sache der Darstellung; sie
+    # richtet sich jetzt in ``Vergleich.matrix`` nach dem laengsten Namen.
+    return [(g.name, g.model_copy(update={"sizing": groesse})) for g in angenommen]
 
 
 def _kandidat_aus_lauf(genome, report, gates):

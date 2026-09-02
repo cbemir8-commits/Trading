@@ -21,11 +21,13 @@ import pytest
 
 from research.gates import stichprobe_wie_im_gate
 from research.verbund import (
+    HOECHSTENS,
     Verbund,
     baue,
     fensterbloecke,
     fensterkorrelation,
     noetige_guete,
+    noetige_stichprobe,
 )
 
 
@@ -226,6 +228,70 @@ class TestUrteil:
 
         assert "es fehlen" in urteil
 
+    def schwach(self, hoch: float, tief: float) -> Verbund:
+        """Zwei Beine mit **vorgegebener Qualitaet je Trade**.
+
+        Bei abwechselnd ``hoch`` und ``tief`` ist der Sharpe je Trade genau
+        ``(hoch + tief) / (hoch - tief)`` - so laesst sich die Sprosse waehlen
+        statt zu hoffen, dass die Vorlage dort landet.
+        """
+        return baue(
+            [
+                ("A", bericht(muster(14, hoch, tief))),
+                ("B", bericht(muster(14, hoch * 0.7, tief * 0.7), versatz=200)),
+            ],
+            versuche=166,
+        )
+
+    def test_die_luecke_steht_auch_in_trades_da(self) -> None:
+        """**Befund 178.** Eine fehlende Guete von 1,85 sagt nicht, was zu tun
+        ist; die noetige Trade-Zahl bei unveraenderter Qualitaet schon.
+
+        Diese Vorlage liegt bei rund 0,19 je Trade und 77 wirksamen Trades -
+        gebraucht wuerden ueber vierhundert.
+        """
+        verbund = self.schwach(3.0, -2.0)
+        st = verbund.stichprobe
+        ziel = noetige_guete(st.effektiv, verbund.versuche)
+        assert verbund.guete is not None and ziel is not None
+        assert verbund.guete < ziel, "die Vorlage muss unter der Latte liegen"
+        gebraucht = noetige_stichprobe(verbund.guete / st.effektiv**0.5, 166)
+        assert gebraucht is not None and gebraucht > 3 * st.effektiv, (
+            "eine Vorlage, die fast schon reicht, pruefte den Satz nicht"
+        )
+
+        urteil = verbund.urteil(noetige_guete=ziel)
+
+        assert "es fehlen" in urteil
+        assert f"waeren {gebraucht} wirksame noetig statt {st.effektiv}" in urteil
+
+    def test_wer_die_latte_schon_hat_bekommt_kein_mengenziel(self) -> None:
+        """Sonst staende dort eine Trade-Zahl **unter** der vorhandenen - eine
+        Aufforderung, weniger zu handeln."""
+        verbund = self.zwei(muster(14, 3.0, -1.0))
+        ziel = noetige_guete(verbund.stichprobe.effektiv, verbund.versuche)
+        assert verbund.guete is not None and ziel is not None
+        assert verbund.guete > ziel
+
+        assert "wirksame noetig" not in verbund.urteil(noetige_guete=ziel)
+
+    def test_wo_die_menge_nicht_reicht_wird_das_gesagt(self) -> None:
+        """Eine Qualitaet je Trade, die auch bei 5000 wirksamen Trades nicht
+        genuegt, bekommt kein Ziel genannt - sondern die Absage.
+
+        Ohne diesen Zweig staende dort eine Zahl in der Groessenordnung
+        Hunderttausend, formal richtig und als Ziel unbrauchbar.
+        """
+        verbund = self.schwach(3.0, -2.72)
+        st = verbund.stichprobe
+        assert verbund.guete is not None
+        je_trade = verbund.guete / st.effektiv**0.5
+        assert noetige_stichprobe(je_trade, 166) is None, (
+            f"die Vorlage muss unerreichbar sein, ist aber {je_trade:.4f} je Trade"
+        )
+
+        assert "nicht zu holen" in verbund.urteil(noetige_guete=99.0)
+
     def test_ein_treffer_bleibt_ein_gate_von_elf(self) -> None:
         """Auch ein bestandener Deflated Sharpe ist keine Zulassung."""
         verbund = self.zwei(muster(14, 3.0, -1.0))
@@ -250,6 +316,107 @@ class TestNoetigeGuete:
         """Bei 154 Trades und 166 Versuchen sind es 3,62 - die Zahl, gegen die
         der gemessene Verbund mit 3,37 antritt."""
         assert noetige_guete(154, 166) == pytest.approx(3.62, abs=0.05)
+
+
+class TestNoetigeStichprobe:
+    """Die Umkehrung - und der Grund, warum Befund 176 zu weit ging.
+
+    Dort hiess es, die Latte laufe schneller weg, als der Vorteil waechst.
+    Entlang der gemessenen Achse stimmt das: Ein gepflanzter Trend hebt die
+    Qualitaet und senkt die Stichprobe. Entlang der anderen - Qualitaet fest,
+    Menge waechst - stimmt es nicht, und diese Tests halten den Unterschied
+    fest.
+    """
+
+    def test_die_umkehrung_trifft_die_hinrichtung(self) -> None:
+        """**Die Probe, die beide Richtungen aneinander bindet.**
+
+        Wer bei ``n`` genau die Latte raeumt, muss von der Umkehrung
+        hoechstens ``n`` zurueckbekommen - und bei ``n - 1`` mehr als vorher.
+        """
+        for n in (60, 121, 200):
+            latte = noetige_guete(n, 198)
+            assert latte is not None
+            gerade_genug = latte / n**0.5
+
+            assert noetige_stichprobe(gerade_genug, 198) == n
+
+    def test_bessere_qualitaet_braucht_weniger_menge(self) -> None:
+        werte = [noetige_stichprobe(sr, 198) for sr in (0.22, 0.2649, 0.35, 0.55)]
+
+        assert all(w is not None for w in werte)
+        assert werte == sorted(werte, reverse=True)
+
+    def test_die_latte_ist_ein_tal_und_keine_wand(self) -> None:
+        """**Der Kern von Befund 178.**
+
+        In Gueteeinheiten faellt die Latte bis etwa 60 wirksame Trades und
+        steigt danach nur noch langsam. Von 60 auf 300 - Faktor 5 in der
+        Stichprobe - legt sie um weniger als 15 % zu, waehrend die Guete bei
+        fester Qualitaet um 124 % steigt. Deshalb ist die Menge das billigere
+        Tor, sobald man ueber dem Talboden steht.
+        """
+        werte = {n: noetige_guete(n, 198) for n in (19, 40, 60, 100, 300)}
+        assert all(v is not None for v in werte.values())
+
+        assert werte[19] > werte[40] > werte[60]
+        assert werte[60] < werte[100] < werte[300]
+        # Bei fester Qualitaet waechst die Guete mit der Wurzel; die Latte
+        # bleibt weit dahinter zurueck. Genau diese Schere ist das zweite Tor.
+        guete_waechst = (300 / 60) ** 0.5
+        latte_waechst = werte[300] / werte[60]
+        assert latte_waechst < 1.15 < guete_waechst
+
+    def test_wer_einmal_raeumt_raeumt_auch_mit_mehr_trades(self) -> None:
+        """Sonst waere der erste Treffer von unten nicht die kleinste Loesung,
+        sondern bloss irgendeine."""
+        ziel = noetige_stichprobe(0.2649, 198)
+
+        assert ziel is not None
+        for n in range(ziel, ziel + 400, 25):
+            latte = noetige_guete(n, 198)
+            assert latte is not None
+            assert 0.2649 * n**0.5 >= latte
+
+    def test_der_bestand_braucht_menge_und_zwar_diese(self) -> None:
+        """**Die Zahl, die dem Projekt bisher gefehlt hat.**
+
+        Zwei verschieden aufgesetzte Messungen des Bestands, eine
+        Groessenordnung: `cli stand` misst 0,2535 je Trade bei 115 wirksamen
+        Beobachtungen, die Leiter aus Befund 176 auf ihrer unveraenderten
+        Sprosse 0,2649 bei 121. Die Schwelle ist damit nicht unerreichbar -
+        sie liegt bei rund der doppelten Stichprobe.
+        """
+        assert noetige_stichprobe(0.2535, 198) == 220
+        assert noetige_stichprobe(0.2649, 198) == 199
+
+    def test_der_entkoppelte_kandidat_stand_weiter_weg(self) -> None:
+        """Befund 56 hat 'Neues Hoch im Takt' auf echten Daten gemessen:
+        0,2137 je Trade. Er handelte oefter und war trotzdem weiter von der
+        Schwelle entfernt als der Bestand - Befund 56 hat das 'schlechter'
+        genannt, aber nie beziffert."""
+        assert noetige_stichprobe(0.2137, 198) == 324
+
+    def test_ohne_vorteil_je_trade_gibt_es_kein_ziel(self) -> None:
+        assert noetige_stichprobe(0.0, 198) is None
+        assert noetige_stichprobe(-0.1, 198) is None
+
+    def test_zu_kleine_qualitaet_wird_nicht_als_ziel_gemeldet(self) -> None:
+        """**Eine formal richtige Zahl waere hier eine Absage.**
+
+        Auf Tageskerzen umfasst die gemeinsame Historie 3300 Tage. Wer 5000
+        unabhaengige Trades braeuchte, bekommt kein Ziel genannt.
+        """
+        assert noetige_stichprobe(0.02, 198) is None
+        assert noetige_stichprobe(0.02, 198, hoechstens=200_000) is not None
+        assert HOECHSTENS == 5000
+
+    def test_mehr_versuche_verlangen_mehr_menge(self) -> None:
+        frueh = noetige_stichprobe(0.2649, 100)
+        spaet = noetige_stichprobe(0.2649, 500)
+
+        assert frueh is not None and spaet is not None
+        assert spaet > frueh
 
 
 class TestStandNachBefund154:

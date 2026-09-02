@@ -1,0 +1,246 @@
+{
+  "erzeugt": "2026-09-02T21:00:13.836860+00:00",
+  "maerkte": [
+    "BTCUSD_BITSTAMP",
+    "ETHUSD_BITSTAMP"
+  ],
+  "intervall": "1d",
+  "dauer": 60,
+  "saat": 11,
+  "versuche": 198,
+  "varianten": {
+    "Kurzer Rueckke": [
+      {
+        "anteil": 0.1,
+        "trades": 105,
+        "sharpe": 0.9465128380512815,
+        "sharpe_je_trade": 0.22637719866005726,
+        "dsr": 0.11447410378375811,
+        "bestanden": 6,
+        "gesamt": 11,
+        "offen": [
+          "Messlatte",
+          "Out-of-Sample-Sharpe",
+          "Bestaendigkeit",
+          "Deflated Sharpe",
+          "Parameter-Plateau"
+        ],
+        "cagr_pct": 5.188908728491892,
+        "rueckgang_pct": 11.713825277801144,
+        "meldungen": [
+          [
+            "Messlatte",
+            "Strategie +49.9 % bei 11.7 % Rueckgang (+5.2 % p.a.), Halten +3463.0 % bei 96.7 % (auf 11.7 % Rueckgang heruntergefahren: +22.7 %) - risikobereinigt besser, aber nur 5.2 % im Jahr. Unter 15 % lohnt der Betrieb nicht."
+          ],
+          [
+            "Out-of-Sample-Sharpe",
+            "Sharpe 0.95 unter der Schwelle - das Chance-Risiko-Verhaeltnis rechtfertigt den Betrieb nicht."
+          ],
+          [
+            "Bestaendigkeit",
+            "9 von 21 gehandelten Fenstern profitabel, schlechtestes Fenster -25.07 (11 Fenster ohne Handel, zaehlen nicht mit)"
+          ],
+          [
+            "Deflated Sharpe",
+            "Nach 198 getesteten Hypothesen ist der Vorteil nur zu 11.4% echt (Sharpe je Trade 0.226, Schiefe +2.51) - zu wahrscheinlich Zufall."
+          ],
+          [
+            "Parameter-Plateau",
+            "alle gemeinsam traegt nur 50% - nach unten traegt sie, nach oben kippt sie ins Negative - das ist die Kante eines Gebiets, keine Nadelspitze. Wie weit das Gebiet nach unten reicht, sagen zwei Punkte nicht ('cli plateaubild' misst es). alle gemeinsam 1/2, sma(period=10) 1/2, Vola-Fenster 2/2, sma(period=50) 2/2"
+          ]
+        ],
+        "tage_im_markt": 487,
+        "effektiv": 70
+      },
+      {
+        "anteil": 0.2,
+        "trades": 49,
+        "sharpe": 1.6946123573452165,
+        "sharpe_je_trade": 0.42430370507775667,
+        "dsr": 0.5450021705943926,
+        "bestanden": 7,
+        "gesamt": 11,
+        "offen": [
+          "Messlatte",
+          "Deflated Sharpe",
+          "Kosten-Stress",
+          "Parameter-Plateau"
+        ],
+        "cagr_pct": 7.119286176387618,
+        "rueckgang_pct": 7.647636274629237,
+        "meldungen": [
+          [
+            "Messlatte",
+            "Strategie +73.3 % bei 7.6 % Rueckgang (+7.1 % p.a.), Halten +5738.4 % bei 99.2 % (auf 7.6 % Rueckgang heruntergefahren: +10.5 %) - risikobereinigt besser, aber nur 7.1 % im Jahr. Unter 15 % lohnt der Betrieb nicht."
+          ],
+          [
+            "Deflated Sharpe",
+            "Nach 198 getesteten Hypothesen ist der Vorteil nur zu 54.5% echt (Sharpe je Trade 0.424, Schiefe +1.23) - zu wahrscheinlich Zufall."
+          ],
+          [
+            "Kosten-Stress",
+            "Bei 2-fachen Kosten -82.82 (-22.39, -60.43) - der Vorteil war nur ein zu mildes Kostenmodell."
+          ],
+          [
+            "Parameter-Plateau",
+            "Vola-Fenster traegt nur 0% - auf beiden Seiten faellt sie ins Negative - hier steht die Strategie tatsaechlich auf einer Nadelspitze. Vola-Fenster 0/2, sma(period=50) 0/2, alle gemeinsam 2/2, sma(period=10) 2/2"
+          ]
+        ],
+        "tage_im_markt": 281,
+        "effektiv": 46
+      },
+      {
+        "anteil": 0.35,
+        "trades": 19,
+        "sharpe": 1.9511745750220815,
+        "sharpe_je_trade": 0.6721940877792424,
+        "dsr": 0.0,
+        "bestanden": 9,
+        "gesamt": 11,
+        "offen": [
+          "Stichprobengroesse",
+          "Messlatte"
+        ],
+        "cagr_pct": 5.32705007965697,
+        "rueckgang_pct": 2.661104964842238,
+        "meldungen": [
+          [
+            "Stichprobengroesse",
+            "Nur 145 Tage im Markt aus 19 Ein- und Ausstiegen (noetig: 250 Tage und 10 Einstiege). Zu wenig gemeinsame Zeit mit dem Markt fuer eine belastbare Aussage."
+          ],
+          [
+            "Messlatte",
+            "Strategie +51.4 % bei 2.7 % Rueckgang (+5.3 % p.a.), Halten +9994.6 % bei 99.8 % (auf 2.7 % Rueckgang heruntergefahren: +2.8 %) - risikobereinigt besser, aber nur 5.3 % im Jahr. Unter 15 % lohnt der Betrieb nicht."
+          ]
+        ],
+        "tage_im_markt": 145,
+        "effektiv": 19
+      }
+    ],
+    "Neues Hoch im ": [
+      {
+        "anteil": 0.1,
+        "trades": 124,
+        "sharpe": 2.597820977632771,
+        "sharpe_je_trade": 0.49862017056782826,
+        "dsr": 0.9993291408376967,
+        "bestanden": 11,
+        "gesamt": 11,
+        "offen": [],
+        "cagr_pct": 26.942151568866723,
+        "rueckgang_pct": 8.247753021062474,
+        "meldungen": [],
+        "tage_im_markt": 909,
+        "effektiv": 107
+      },
+      {
+        "anteil": 0.2,
+        "trades": 113,
+        "sharpe": 3.1867490674792194,
+        "sharpe_je_trade": 0.5925802742295015,
+        "dsr": 0.9978692937340912,
+        "bestanden": 11,
+        "gesamt": 11,
+        "offen": [],
+        "cagr_pct": 34.179701370402384,
+        "rueckgang_pct": 8.067889914762478,
+        "meldungen": [],
+        "tage_im_markt": 853,
+        "effektiv": 70
+      },
+      {
+        "anteil": 0.35,
+        "trades": 87,
+        "sharpe": 4.367237391056787,
+        "sharpe_je_trade": 0.8889520444328457,
+        "dsr": 0.9999922056598434,
+        "bestanden": 11,
+        "gesamt": 11,
+        "offen": [],
+        "cagr_pct": 50.64140593905391,
+        "rueckgang_pct": 9.68938258328551,
+        "meldungen": [],
+        "tage_im_markt": 821,
+        "effektiv": 58
+      }
+    ],
+    "Trendfolge 50 ": [
+      {
+        "anteil": 0.1,
+        "trades": 49,
+        "sharpe": 1.755664033225675,
+        "sharpe_je_trade": 0.5769902848236484,
+        "dsr": 0.9242393702891261,
+        "bestanden": 9,
+        "gesamt": 11,
+        "offen": [
+          "Messlatte",
+          "Deflated Sharpe"
+        ],
+        "cagr_pct": 8.77445320622121,
+        "rueckgang_pct": 4.181819723297514,
+        "meldungen": [
+          [
+            "Messlatte",
+            "Strategie +95.9 % bei 4.2 % Rueckgang (+8.8 % p.a.), Halten +3463.0 % bei 96.7 % (auf 4.2 % Rueckgang heruntergefahren: +7.4 %) - risikobereinigt besser, aber nur 8.8 % im Jahr. Unter 15 % lohnt der Betrieb nicht."
+          ],
+          [
+            "Deflated Sharpe",
+            "Nach 198 getesteten Hypothesen ist der Vorteil nur zu 92.4% echt (Sharpe je Trade 0.577, Schiefe +1.18) - zu wahrscheinlich Zufall."
+          ]
+        ],
+        "tage_im_markt": 469,
+        "effektiv": 44
+      },
+      {
+        "anteil": 0.2,
+        "trades": 29,
+        "sharpe": 1.3726662801792673,
+        "sharpe_je_trade": 0.5933778213881078,
+        "dsr": 0.0,
+        "bestanden": 10,
+        "gesamt": 11,
+        "offen": [
+          "Messlatte"
+        ],
+        "cagr_pct": 4.159958646023432,
+        "rueckgang_pct": 4.799432080952255,
+        "meldungen": [
+          [
+            "Messlatte",
+            "Strategie +38.5 % bei 4.8 % Rueckgang (+4.2 % p.a.), Halten +5738.4 % bei 99.2 % (auf 4.8 % Rueckgang heruntergefahren: +6.4 %) - risikobereinigt besser, aber nur 4.2 % im Jahr. Unter 15 % lohnt der Betrieb nicht."
+          ]
+        ],
+        "tage_im_markt": 255,
+        "effektiv": 25
+      },
+      {
+        "anteil": 0.35,
+        "trades": 17,
+        "sharpe": 2.0028360844711472,
+        "sharpe_je_trade": 0.7961992002099176,
+        "dsr": 0.0,
+        "bestanden": 9,
+        "gesamt": 11,
+        "offen": [
+          "Stichprobengroesse",
+          "Messlatte"
+        ],
+        "cagr_pct": 4.441820343533509,
+        "rueckgang_pct": 2.1965568290899022,
+        "meldungen": [
+          [
+            "Stichprobengroesse",
+            "Nur 161 Tage im Markt aus 17 Ein- und Ausstiegen (noetig: 250 Tage und 10 Einstiege). Zu wenig gemeinsame Zeit mit dem Markt fuer eine belastbare Aussage."
+          ],
+          [
+            "Messlatte",
+            "Strategie +41.6 % bei 2.2 % Rueckgang (+4.4 % p.a.), Halten +9994.6 % bei 99.8 % (auf 2.2 % Rueckgang heruntergefahren: +2.3 %) - risikobereinigt besser, aber nur 4.4 % im Jahr. Unter 15 % lohnt der Betrieb nicht."
+          ]
+        ],
+        "tage_im_markt": 161,
+        "effektiv": 17
+      }
+    ]
+  }
+}

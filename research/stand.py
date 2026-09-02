@@ -623,6 +623,13 @@ BEHOBEN: tuple[Richtung, ...] = (
         "wegbleibende Einstiege: 158 auf 16, Zeit im Markt 34,1 auf 2,8 %",
         177,
     ),
+    # Ein Name, der als Schluessel diente und als Beschriftung gekuerzt wurde.
+    Richtung(
+        "Gekuerzte Regelnamen im Urteil",
+        "'cli._familie' schnitt auf 14 Zeichen; das Urteil meldete 'Neues "
+        "Hoch im ' - gekuerzt wird jetzt die Spalte, nicht der Name",
+        178,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -645,15 +652,39 @@ OFFEN: tuple[Richtung, ...] = (
     ),
     Richtung(
         "Zertifizierbarkeit der Bauart",
-        "auch mit gepflanztem echten Vorteil besteht keine Sprosse: Die Latte "
-        "steigt mit fallender Stichprobe schneller, als die Guete waechst",
+        "keine gepflanzte Sprosse besteht - das gilt aber nur entlang dieser "
+        "Achse: Pflanzen nimmt die Stichprobe mit, und die Latte ist ein Tal "
+        "mit Boden bei n_eff 60, kein Hang",
         176,
+        178,
     ),
     Richtung(
         "Gedeckelter Ausstieg",
         "vier Deckel von 10 bis 40 Kerzen, keiner entkoppelt (beste Steigung "
         "0,36 gegen 0,5) - der Deckel bindet, aendert die Trade-Zahl aber nicht",
         177,
+    ),
+    Richtung(
+        "Menge statt Qualitaet",
+        "der Bestand braucht bei 0,2535 je Trade 220 wirksame Beobachtungen "
+        "statt 115 (Faktor 1,91) - oder 33 % mehr Qualitaet bei gleicher "
+        "Menge; die Leiter aus 176 kommt unabhaengig auf Faktor 1,64",
+        178,
+    ),
+    # **Der Eintrag, dessen Fehlen einen Lauf gekostet hat.** Befund 177 hat
+    # die Richtung als neue formuliert, 122 Befunde nach ihrer Messung. Eine
+    # Richtung, die nicht im Register steht, wird ein zweites Mal gegangen.
+    #
+    # Er steht hier und nicht in ``GESCHLOSSEN``: Gemessen ist **ein**
+    # Kandidat dieser Bauart, und er hat verloren - die Bauart selbst ist
+    # damit nicht erledigt. Ein zweiter kostet einen Versuch.
+    Richtung(
+        "Einstieg, der nicht am Rauschen haengt",
+        "der wiederholbare Ausbruch entkoppelt (haelt 70 % seiner Trades "
+        "statt 19 %) und raeumt jede gepflanzte Latte; auf echten Daten war "
+        "er mit 0,2137 je Trade schlechter als der Bestand und braeuchte 324",
+        56,
+        178,
     ),
 )
 
@@ -1129,6 +1160,27 @@ class Lage:
             return None
         return self.noetiger_sharpe / self.sharpe_je_trade
 
+    @property
+    def menge(self) -> int | None:
+        """Wie viele wirksame Beobachtungen **dieselbe** Qualitaet braeuchte.
+
+        **Das zweite Tor, und bis Befund 178 stand hier nur das erste.** Der
+        Bericht nannte einen noetigen Zuwachs an Qualitaet je Trade und liess
+        offen, dass die Latte oberhalb von rund 60 wirksamen Beobachtungen
+        viel langsamer steigt als die Wurzel. Wer nur die Qualitaetszahl
+        liest, sucht nach einer besseren Regel - und der gemessene Wert ist
+        das Beste, was 198 Versuche hergegeben haben.
+
+        ``None``, wenn die effektive Stichprobe fehlt (dann gaebe es nichts
+        zu vergleichen) oder wenn diese Qualitaet auch bei sehr vielen
+        Beobachtungen nicht genuegt.
+        """
+        from research.verbund import noetige_stichprobe
+
+        if self.effektiv is None or self.sharpe_je_trade <= 0:
+            return None
+        return noetige_stichprobe(self.sharpe_je_trade, self.versuche)
+
     def urteil(self) -> str:
         if self.zugelassen:
             return (
@@ -1167,7 +1219,32 @@ class Lage:
                     "Gate rechnet mit ihr, und sie ist kleiner - die "
                     "wirkliche Latte liegt also hoeher."
                 )
+            text += self._mengentor()
         return text
+
+    def _mengentor(self) -> str:
+        """Dasselbe Ziel ueber die Menge - der zweite Weg zur selben Schwelle.
+
+        Er gehoert neben den ersten, weil er ein anderes Verlangen stellt:
+        Der eine will eine **bessere** Regel, der andere dieselbe **oefter**.
+        Nach 198 Versuchen ist das nicht dasselbe Angebot.
+        """
+        if self.effektiv is None:
+            return ""
+        ziel = self.menge
+        if ziel is None:
+            return (
+                " Ueber die Menge ist es nicht zu holen: Bei dieser Qualitaet "
+                "je Trade genuegt auch eine sehr grosse Stichprobe nicht."
+            )
+        if ziel <= self.effektiv:
+            return ""
+        return (
+            f" **Oder ueber die Menge:** {ziel} wirksame Beobachtungen bei "
+            f"unveraenderter Qualitaet, Faktor {ziel / self.effektiv:.2f}. "
+            f"Oberhalb von rund 60 steigt die Latte viel langsamer als die "
+            f"Wurzel - deshalb sind das zwei Tore und nicht eines."
+        )
 
     def _zensurhinweis(self) -> str:
         """**Nicht in einer Fussnote.** Wer die Trade-Zahl liest, muss sehen,
