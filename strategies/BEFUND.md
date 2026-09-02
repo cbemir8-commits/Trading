@@ -15711,3 +15711,107 @@ einschraenkende Satz nicht da; ein Test verlangt beides.
 
 Kein Gate angefasst, kein Kandidat gemessen, nichts ausgewaehlt.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertsiebzig. Neun Regeln standen auf der falschen Kerzenlaenge
+
+Befund 169 endete mit: *"Gesucht ist zuerst Vielfalt, nicht Qualitaet."* Neun
+von vierzehn Tagesregeln sind derselbe Einstiegsindikator. Dieser Lauf sieht
+nach, wo die fehlende Vielfalt geblieben ist - und findet sie im Katalog,
+falsch einsortiert.
+
+### Was auffiel
+
+Befund 168 hat gemessen, dass **23 von 39** Genomen der Tagesgenerationen auf
+Tageskerzen keinen einzigen Trade machen. Neun davon sind Generation 8, und
+ihre Namen lesen sich so: "Luecke wird geschlossen", "Abfolge zur New Yorker
+Eroeffnung", "VWAP-Rueckkehr short", "Grosse Kerze mit Volumen short".
+
+**Kryptomaerkte handeln rund um die Uhr.** Auf einer Tageskerze gibt es keine
+Eroeffnungsluecke und keinen Sitzungsbeginn. Eine Regel, die auf beides
+wartet, kann dort nie ausloesen.
+
+### Der Fingerabdruck
+
+    Gen  vorgesehen  max_hold  cooldown  Perioden-Median  Indikatoren
+      6        15         32         8         17         bollinger, donchian, rsi
+      7        15         32         8         20         body_atr_ratio, ...
+      8         D         32         8         14         bars_since_bos, fvg, vwap
+      9         D          0         0        150         roc, sma, swing
+     10         D          0         0        200         sma
+      5         D          0         0         90         funding, sma
+
+Generation 8 traegt die Balkenzahlen von 6 und 7 - 32 Balken Haltedauer, 8
+Balken Abkuehlung, Perioden um 15 - und nichts von denen der
+Tagesgenerationen. Auf Viertelstunden sind 32 Balken acht Stunden; auf
+Tageskerzen ein Monat.
+
+Das ist genau die Begruendung, die im Kopf von ``VORGESEHEN`` fuer die
+Generationen 6 und 7 steht. Sie gilt fuer 8 mitsamt Wort und Zahl - nur stand
+dort "D".
+
+### Was die Fehlbuchung gekostet hat
+
+Sie kostete **doppelt**:
+
+1. Auf Tageskerzen liefen bei jedem Wettbewerb neun Regeln mit, die dort
+   nichts finden koennen. Jede gewertete Regel ist ein Versuch, und jeder
+   Versuch hebt die Huerde des Deflated Sharpe fuer alle folgenden - genau
+   der Schaden, den ``VORGESEHEN`` verhindern soll.
+2. Auf Viertelstunden **fehlten** sie: ``passt_zum_intervall(8, "15")`` war
+   falsch. Und das sind neun strukturell verschiedene Regeln - Kursluecke,
+   Strukturbruch, VWAP, Volumen, drei davon short - in einem Katalog, dessen
+   Mangel Befund 169 einen Lauf zuvor als *fehlende Vielfalt* benannt hat.
+
+### Was gebaut wurde
+
+``VORGESEHEN[8] = "15"``, mit der Begruendung im Kopf. Dazu die Pruefung, die
+es haette finden muessen: ``tests/test_generationszuordnung.py`` faehrt jede
+Generation auf ihrer zugeordneten Kerzenlaenge und verlangt, dass wenigstens
+ein Genom genug handelt, um daraus einen ``Kandidat`` zu bilden. Die Schwelle
+ist nicht erfunden - ``Kandidat.aus_trades`` liefert ``None``, wo die Liste
+"fuer eine Aussage zu duenn" ist.
+
+Die Zuordnung war bis hierher eine **gepflegte Tabelle ohne Messung** - die
+fuenfte Stelle dieser Art nach den Befunden 158, 159, 165 und 166.
+
+### Mein Fehlgriff dabei
+
+Der erste Anlauf der Pruefung fuhr einen schlichten Backtest ueber die ganze
+BTC-Reihe und meldete prompt **auch Generation 5** als stumm - die
+Generation, aus der der Spitzenkandidat stammt. Sie handelt sehr wohl, nur im
+Portfolio-Walk-Forward ueber beide Maerkte am Spot-Punkt, so wie die Zulassung
+rechnet.
+
+Ein Test, der eine andere Methode benutzt als die Messung, prueft eine andere
+Frage - und haette hier eine falsche Anschuldigung gegen die wichtigste
+Generation des Projekts erhoben. Er benutzt jetzt denselben Weg.
+
+### Was sich an den Zahlen aendert: nichts
+
+Nachgerechnet nach der Umbuchung:
+
+    Decke 1,931 bei n_eff 69, verlangt 3,522     unveraendert
+    14 Regeln, r = -0,714, t = -3,53             unveraendert
+    Familien sma 9, roc 2, ema 1, ...            unveraendert
+    Vorsprung des Bestands +2,41                 unveraendert
+
+Generation 8 hat zu keiner dieser Zahlen beigetragen - sie lieferte keine.
+Nur die Zeile "23 Genome handeln nicht" heisst jetzt 14, weil neun gar nicht
+mehr antreten.
+
+### Was daraus folgt
+
+1. **Die Vielfalt, die Befund 169 vermisst, ist vorhanden** - auf
+   Viertelstunden, und dort fehlten die 15-Minuten-Kerzen seit dem
+   Behaelterwechsel (Befund 151). Der Auftragspunkt
+   ``cli backfill --intervall 15`` bekommt damit ein zweites, unabhaengiges
+   Argument.
+2. **Ohne die Kerzen bleibt es eine Vermutung.** Dass Generation 8 auf
+   Viertelstunden handelt, ist hier **nicht** gemessen - der Speicher hat nur
+   Tageskerzen. Belegt ist nur, dass sie auf Tageskerzen nicht handeln kann.
+3. Befund 145 hat 14 Kandidaten auf 15-Minuten gemessen und alle verworfen.
+   Das waren die Generationen 6 und 7. **Generation 8 war nie dabei** - sie
+   stand ja auf "D".
+
+Kein Gate angefasst, kein Kandidat gemessen, nichts ausgewaehlt.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

@@ -583,6 +583,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "t = -1,13 - die Decke beschreibt eine Familie, nicht den Vorrat",
         169,
     ),
+    # Die Zuordnung war eine gepflegte Tabelle ohne Messung - die fuenfte
+    # Stelle dieser Art nach 158, 159, 165, 166.
+    Richtung(
+        "Generation 8 auf der falschen Kerzenlaenge",
+        "Luecken-, VWAP- und Eroeffnungsregeln standen auf Tageskerzen, wo "
+        "keine davon ausloest; jetzt auf 15 Minuten, mit Pruefung",
+        170,
+    ),
 )
 
 

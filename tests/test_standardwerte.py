@@ -108,9 +108,12 @@ class TestHerleitung:
         from cli import _standardintervall
 
         assert _standardintervall(5) == "D"
-        assert _standardintervall(8) == "D"
+        assert _standardintervall(9) == "D"
         assert _standardintervall(6) == "15"
         assert _standardintervall(7) == "15"
+        # Generation 8 stand hier bis Befund 170 als Beispiel fuer "D" -
+        # zu Unrecht: Keines ihrer Genome handelt auf Tageskerzen.
+        assert _standardintervall(8) == "15"
 
     def test_generationen_ohne_vorgabe_bekommen_tageskerzen(self) -> None:
         """1 bis 4 haben keine Vorgabe. Tageskerzen, weil dort der Kandidat
@@ -139,12 +142,20 @@ class TestHerleitung:
 
     def test_ein_ausdruecklicher_widerspruch_wird_weiter_abgelehnt(self) -> None:
         """Der Standard ist jetzt stimmig - die Wache bleibt trotzdem, fuer
-        den Fall, dass jemand die Paarung von Hand setzt."""
+        den Fall, dass jemand die Paarung von Hand setzt.
+
+        Beide Richtungen, seit Befund 170: Eine Tagesgeneration auf
+        Viertelstunden ist genauso falsch wie ein Scalp-Katalog auf
+        Tageskerzen. Hier stand vorher ``(8, "15")`` als Beispiel fuer den
+        Widerspruch - genau diese Paarung ist jetzt die richtige.
+        """
         from cli import _pruefe_generation
         from core.models import Interval
 
         with pytest.raises((typer.Exit, click.exceptions.Exit)):
-            _pruefe_generation(8, Interval("15"))
+            _pruefe_generation(9, Interval("15"))
+        with pytest.raises((typer.Exit, click.exceptions.Exit)):
+            _pruefe_generation(8, Interval("D"))
 
 
 class TestLaufzeit:

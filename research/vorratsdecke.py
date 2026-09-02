@@ -16,9 +16,12 @@ Neunzig Befunde lang ist diese Rechnung nicht gemacht worden.
 
 Was gemessen wurde (Befund 168)
 -------------------------------
-Alle 39 Genome der auf Tageskerzen vorgesehenen Generationen, am Spot-Punkt.
-**23 davon handeln auf Tageskerzen ueberhaupt nicht** - Generation 8 lebt von
-Kursluecken, VWAP und der New Yorker Eroeffnung, also von Innertagesbegriffen.
+Alle Genome der auf Tageskerzen vorgesehenen Generationen, am Spot-Punkt.
+Zur Zeit der Messung waren das 39; Generation 8 stand damals faelschlich auf
+Tageskerzen und ist seit Befund 170 auf Viertelstunden gebucht - **sie hat zu
+keiner Zahl hier beigetragen**, weil keines ihrer neun Genome auf Tageskerzen
+handelt. Der Vorrat sind damit 30 Genome, von denen 14 nicht handeln.
+
 Eines liefert zu wenige Trades, eines faellt mit n_eff 5 unter die Stichprobe,
 bei der es ueberhaupt eine Latte gibt, eines ist eine Regel unter zwei Namen.
 Uebrig bleiben **14 verschiedene Regeln** mit n_eff 27 bis 121:

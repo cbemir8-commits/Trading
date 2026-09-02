@@ -2269,6 +2269,23 @@ GENERATIONS = {
 #: Messung, die nichts bedeutet.
 #:
 #: ``None`` heisst: nicht festgelegt, laeuft ueberall.
+#:
+#: **Generation 8 stand hier bis Befund 170 auf "D" und gehoerte nie dahin.**
+#: Ihr Vokabular ist das des Innertageshandels - ``fvg_up_pct``
+#: (Kursluecke), VWAP, New Yorker Eroeffnung, ``bars_since_bos`` -, und
+#: Kryptomaerkte handeln rund um die Uhr: Auf einer Tageskerze gibt es weder
+#: eine Eroeffnungsluecke noch einen Sitzungsbeginn. Ihre Balkenzahlen teilen
+#: den Fingerabdruck von 6 und 7 (max_hold 32, cooldown 8, Perioden um 15),
+#: nicht den der Tagesgenerationen (max_hold 0, Perioden 90 bis 200).
+#:
+#: Gemessen: **keines ihrer neun Genome** liefert auf Tageskerzen genug
+#: Trades fuer einen ``Kandidat``. Die Zuordnung kostete damit doppelt - auf
+#: Tageskerzen liefen neun Regeln, die dort nichts finden koennen, und auf
+#: Viertelstunden fehlten genau die neun, die den Katalog dort erst
+#: vielfaeltig machen (Befund 169: neun von vierzehn Tagesregeln sind
+#: derselbe Einstieg).
+#:
+#: ``tests/test_generationszuordnung.py`` misst das jetzt bei jedem Lauf.
 VORGESEHEN: dict[int, str | None] = {
     1: None,
     2: None,
@@ -2277,7 +2294,7 @@ VORGESEHEN: dict[int, str | None] = {
     5: "D",
     6: "15",
     7: "15",
-    8: "D",
+    8: "15",
     9: "D",
     10: "D",
 }
