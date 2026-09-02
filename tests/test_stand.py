@@ -965,3 +965,56 @@ class TestNutzerbefehleSindAusfuehrbar:
         assert namen.index("backfill") < namen.index("wettbewerb"), (
             "Erst laden, dann suchen."
         )
+
+
+class TestDerZweiteWeg:
+    """**Befund 172.** Die folgenreichste Messung der letzten fuenf Laeufe
+    stand in einem Befehl, den niemand von sich aus aufruft.
+
+    Befund 168 hat den Bestand in seine eigene Grundgesamtheit eingeordnet -
+    sein Vorsprung ist kleiner als das, was Auswahl aus 198 Versuchen ohnehin
+    erzeugt. Wer ``cli stand`` las, sah "es fehlen 0,66 Guete" und hielt das
+    fuer knapp. Dieselbe Bauart wie Befund 160 (Entfernung nirgends
+    angezeigt), nur mit dem wichtigeren Ergebnis.
+    """
+
+    def test_der_bericht_nennt_die_zweite_frage(self) -> None:
+        text = _lage().bericht()
+
+        assert "OB DER VORSPRUNG ECHT IST" in text
+        assert "Katalog, aus dem er ausgewaehlt" in text
+        assert "cli vorratsdecke" in text
+
+    def test_er_nennt_die_fundstellen(self) -> None:
+        """Ohne sie ist es eine Behauptung - die Regel dieses Registers."""
+        text = _lage().bericht()
+
+        for nummer in ("168", "169", "171"):
+            assert nummer in text
+
+    def test_er_traegt_keine_gepflegte_zahl(self) -> None:
+        """**Die Bedingung, unter der dieser Abschnitt ueberhaupt dastehen
+        darf.**
+
+        Vier Befunde handeln von Zahlen, die an zwei Stellen standen und
+        auseinanderliefen (158, 159, 165, 166). Der Vorsprung wird gerechnet,
+        nicht hier gepflegt - sonst waere dieser Abschnitt die fuenfte
+        Stelle.
+        """
+        import re
+
+        # Geprueft werden die Zeilen, die **diese Methode** liefert - nicht
+        # ein Ausschnitt des Berichts. Der erste Anlauf schnitt am naechsten
+        # Absatz und erwischte das halbe Register mit.
+        abschnitt = "\n".join(_lage()._zweiter_weg())
+        zahlen = [z for z in re.findall(r"\d+[,.]\d+", abschnitt)]
+
+        assert zahlen == [], f"gepflegte Zahl im Abschnitt: {zahlen}"
+        assert "OB DER VORSPRUNG ECHT IST" in abschnitt
+
+    def test_ein_zugelassener_kandidat_braucht_ihn_nicht(self) -> None:
+        """Steht die Zulassung, ist die Frage beantwortet - dann ist der
+        Abschnitt eine Warnung ohne Anlass."""
+        text = _lage(bestanden=11, gesamt=11, offen=()).bericht()
+
+        assert "OB DER VORSPRUNG ECHT IST" not in text

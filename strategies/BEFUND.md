@@ -15918,3 +15918,63 @@ Tageskerzen.
 Kostet keinen Versuch: 36 vorhandene Katalogregeln nachgemessen, **keine
 ausgewaehlt**. Es gibt auch nichts auszuwaehlen. Versuchszaehler 198
 unveraendert, Suchbudget 68 von 100.
+
+## Hundertzweiundsiebzig. Das wichtigste Ergebnis stand im falschen Befehl
+
+Fuenf Laeufe (168 bis 171) haben eine Frage beantwortet, die vorher niemand
+gestellt hatte: Wie weit liegt der Bestand ueber dem Katalog, aus dem er
+ausgewaehlt wurde? Die Antwort - **+2,41 Reststreuungen gegen die rund 3,25,
+die reine Auswahl aus 198 Versuchen ohnehin erzeugt** - steht seither
+ausschliesslich in `cli vorratsdecke`.
+
+Das ist ein Befehl, den niemand von sich aus aufruft. Wer `cli stand` liest,
+sieht "7 von 11 Gates, es fehlen 0,66 Guete" und haelt das fuer knapp.
+
+### Warum das dieselbe Bauart ist wie Befund 160
+
+Dort stand die Entfernung zur Schwelle gerechnet, getestet und unsichtbar im
+Modul. Hier ist es dasselbe, nur mit dem folgenreicheren Ergebnis: Der
+Deflated Sharpe sagt "zu wahrscheinlich Zufall", und ein **zweiter,
+unabhaengiger** Weg sagt dasselbe - der eine sieht die Verteilung der Trades,
+der andere die Lage des Kandidaten unter seinesgleichen. Zwei Verfahren, die
+nichts voneinander wissen, kommen auf dieselbe Auskunft, und der Bericht
+erwaehnte das mit keinem Wort.
+
+### Was gebaut wurde - und was ausdruecklich nicht
+
+`cli stand` hat einen Abschnitt **OB DER VORSPRUNG ECHT IST**. Er nennt die
+zweite Frage, die drei Fundstellen (168, 169, 171) und den Befehl zum
+Nachrechnen.
+
+**Er nennt keine Zahl.** Das ist keine Nachlaessigkeit, sondern die
+Bedingung, unter der er dastehen darf: Vier Befunde dieses Projekts handeln
+von Zahlen, die an zwei Stellen standen und auseinanderliefen (158, 159, 165,
+166). Der Vorsprung wird gerechnet, und wer ihn braucht, ruft den Befehl. Ein
+Test verlangt, dass in diesem Abschnitt keine Dezimalzahl steht - er wuerde
+anschlagen, sobald jemand die 2,41 hineinschreibt.
+
+Bei einem zugelassenen Kandidaten faellt der Abschnitt weg: Dann ist die
+Frage beantwortet, und eine Warnung ohne Anlass ist Laerm.
+
+### Mein Fehlgriff dabei
+
+Der erste Anlauf des Zahlen-Tests schnitt den Abschnitt aus dem fertigen
+Bericht heraus - am naechsten Leerabsatz - und erwischte dabei das halbe
+Register mit, samt dessen historischen Zahlen. Er schlug fehl und behauptete
+einen Fehler, den es nicht gab. Geprueft werden jetzt die Zeilen, die die
+Methode selbst liefert.
+
+### Was daraus folgt
+
+1. **Der Bericht sagt jetzt beides**: wie weit es zur Schwelle ist, und dass
+   ein zweiter Weg den Vorsprung selbst in Frage stellt.
+2. **Ein Ergebnis, das nur ein Fachbefehl kennt, ist nicht berichtet.** Das
+   ist die zweite Stelle dieser Art nach Befund 160 - und diesmal ging es
+   nicht um eine Kennzahl, sondern um die Frage, ob der Kandidat ueberhaupt
+   etwas kann.
+3. **Die Zahl bleibt draussen.** Der Abschnitt ist ein Wegweiser, keine
+   Kopie - sonst waere er die fuenfte Stelle, an der eine gepflegte Zahl
+   verrottet.
+
+Kein Gate angefasst, kein Kandidat gemessen. Versuchszaehler 198
+unveraendert, Suchbudget 68 von 100.

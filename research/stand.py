@@ -592,6 +592,13 @@ BEHOBEN: tuple[Richtung, ...] = (
         170,
         171,
     ),
+    # Dieselbe Bauart wie Befund 160, nur mit dem folgenreicheren Ergebnis.
+    Richtung(
+        "Zweiter Weg nur im Fachbefehl",
+        "die Einordnung des Bestands in seinen eigenen Katalog stand nur in "
+        "'cli vorratsdecke'; 'cli stand' nennt sie jetzt - ohne Zahl",
+        172,
+    ),
 )
 
 
@@ -1117,6 +1124,41 @@ class Lage:
             f"nicht gezaehlt)"
         )
 
+    def _zweiter_weg(self) -> list[str]:
+        """Der zweite, unabhaengige Weg zum selben Urteil - und wo er steht.
+
+        Befund 168 hat den Bestand in seine eigene Grundgesamtheit
+        eingeordnet: Sein Vorsprung vor der Geraden durch den Katalog ist
+        **kleiner** als das, was Auswahl bei diesem Versuchsstand ohnehin
+        erzeugt. Das ist dieselbe Aussage wie der Deflated Sharpe, auf einem
+        Weg, der nichts von ihm weiss - der eine sieht die Verteilung der
+        Trades, der andere die Lage des Kandidaten unter seinesgleichen.
+
+        Bis Befund 172 stand das ausschliesslich in ``cli vorratsdecke``,
+        einem Befehl, den niemand von sich aus aufruft. Wer ``cli stand``
+        liest, sah "es fehlen 0,66 Guete" und hielt das fuer knapp.
+
+        **Hier steht bewusst keine Zahl.** Sie wird gerechnet, nicht
+        gepflegt; vier Befunde dieses Projekts handeln von Zahlen, die an
+        zwei Stellen standen und auseinanderliefen (158, 159, 165, 166). Was
+        hier steht, ist der Weg dorthin.
+        """
+        if self.zugelassen:
+            return []
+        return [
+            "",
+            "OB DER VORSPRUNG ECHT IST",
+            "-" * 72,
+            "  Der Deflated Sharpe fragt, ob die Trades des Kandidaten fuer",
+            "  seinen Vorteil reichen. Eine zweite Frage steht daneben: Wie",
+            "  weit liegt er ueber dem **Katalog, aus dem er ausgewaehlt**",
+            "  wurde? Reine Auswahl erzeugt einen Vorsprung ganz von selbst.",
+            "",
+            "  Gemessen wurde das in Befund 168, eingeschraenkt in 169 und",
+            "  auf Viertelstunden geprueft in 171. **Das Ergebnis war nicht",
+            "  beruhigend.** Nachrechnen mit `cli vorratsdecke`.",
+        ]
+
     def _aussichtszeilen(self) -> list[str]:
         """Wie weit es noch ist - **und was die Zeit ueberhaupt loest.**
 
@@ -1188,6 +1230,7 @@ class Lage:
             "",
             self.urteil(),
             *self._aussichtszeilen(),
+            *self._zweiter_weg(),
             "",
             "GEMESSEN UND GESCHLOSSEN",
             "-" * 72,
