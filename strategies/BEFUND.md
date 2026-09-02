@@ -16059,3 +16059,91 @@ mit derselben Config, demselben `_ohne_hebel` und derselben Schwelle
 
 Kein Gate angefasst, kein Kandidat gemessen. Versuchszaehler 198
 unveraendert, Suchbudget 68 von 100.
+
+## Hundertvierundsiebzig. Der Holdout haelt 41 Prozent
+
+Befund 168 hat den Bestand in seinen eigenen Katalog eingeordnet und einen
+Verdacht hinterlassen: Sein Vorsprung ist kleiner als das, was Auswahl aus 198
+Versuchen ohnehin erzeugt. Es gibt einen Test, der das von der **anderen**
+Seite prueft - dieselbe Regel, unveraendert, auf Maerkten, die bei ihrer
+Entwicklung keine Rolle gespielt haben. `data/reference.py` nennt ihn selbst
+*"der schaerfste verfuegbare Test"*.
+
+Er ist nie gelaufen.
+
+### Was er nicht ist
+
+Die Befunde 27 und 133 haben LTC und XRP dem Portfolio **hinzugefuegt** und
+gemessen, dass die Qualitaet je Trade dabei faellt; die Richtung ist
+geschlossen. Hier laeuft jeder Markt **einzeln**, ohne BTC und ETH. Die Zahlen
+von damals - *"LTC und XRP liefern einzeln Sharpe 0,42 und 0,38"* - sind
+Jahressharpes von vor 146 Befunden, ohne effektive Stichprobe, ohne Guete,
+ohne Gate.
+
+### Gemessen
+
+LTC und XRP von Bitstamp geholt (3.366 und 3.548 Tageskerzen), der Bestand
+unveraendert, Spot-Punkt, Stichprobe wie im Gate:
+
+    Markt   Rolle          Trades  n_eff  SR/Trade   Guete   noetig
+    BTC     Entwicklung      117    107    0,2633    2,723    3,593
+    ETH     Entwicklung       80     76    0,2907    2,534    3,533
+    LTC     Holdout          106    106    0,1154    1,188    3,591
+    XRP     Holdout          112    106    0,1095    1,127    3,591
+
+**Der Holdout haelt 41 % des Vorteils je Trade.** Positiv, aber weniger als
+die Haelfte - die uebliche Handschrift eines Vorteils, der teils echt und
+teils angepasst ist.
+
+Das ist die erste Zahl seit vielen Laeufen, die **fuer** den Kandidaten
+spricht: Waere sein Vorteil restlos Auswahl, waere im Holdout eine Null zu
+erwarten, und es steht dort zweimal etwas Positives.
+
+### Und jetzt die zwei Einschraenkungen
+
+**Erstens sind die Maerkte nicht unabhaengig.** Korrelation der Tagesrenditen
+ueber 3300 gemeinsame Tage:
+
+           BTC    ETH    LTC    XRP
+    BTC   1,000  0,799  0,736  0,572
+    ETH   0,799  1,000  0,786  0,647
+    LTC   0,736  0,786  1,000  0,631
+    XRP   0,572  0,647  0,631  1,000
+
+Holdout gegen Entwicklung im Mittel **0,685** - rund 47 % gemeinsame Varianz.
+Ein Holdout auf diesen Maerkten ist deutlich schwaecher als sein Name klingt.
+
+Auch die verblueffende Naehe der beiden Holdout-Werte (0,1154 und 0,1095)
+sagt weniger, als sie scheint: LTC und XRP korrelieren untereinander mit
+0,631. Ich habe sie beim ersten Lesen fuer eine unabhaengige Bestaetigung
+gehalten - sie ist es nicht.
+
+**Zweitens ist der Aufwaertstrend nicht herausgerechnet.** Der Bestand ist
+eine Long-Trendfolge, und alle vier Maerkte sind ueber den Messzeitraum
+gestiegen. Ein positiver Holdout kann daher auch nur heissen, dass dort
+ebenfalls ein Trend war. **Diese Messung trennt Koennen nicht von
+Marktrichtung.**
+
+### Was folgt und was nicht
+
+Es folgt: Der Vorteil ist **nicht restlos** Auswahl.
+
+Es folgt **nicht**, dass der Bestand taugt. Die Holdout-Guete liegt bei 1,19
+und 1,13 gegen eine Latte von 3,59 - nicht knapp, sondern um das Dreifache
+daneben. Und es folgt nicht, dass 41 % der Anteil echten Koennens sind; dafuer
+muessten die beiden Einwaende oben gehoben sein.
+
+`cli holdout` rechnet es nach. `research/holdout.py` traegt die beiden
+Einschraenkungen **fest im Urteilstext** - ein Test verlangt, dass die
+Marktrichtung immer dabeisteht, auch wenn keine Korrelation gemessen wurde.
+Ein Holdout-Ergebnis ohne seine Grenzen liest sich als Beleg fuer Koennen.
+
+### Die naechste Frage, sauber gestellt
+
+Eine Nullprobe mit **gleichen Haltedauern an zufaelligen Einstiegen** auf
+denselben Maerkten wuerde die Marktrichtung herausrechnen. Steht der Bestand
+dann noch ueber ihr, ist es Koennen; steht er darauf, war es der Trend. Das
+ist die Messung, die dieser Befund vorbereitet und nicht mehr erledigt.
+
+Kostet keinen Versuch: dieselbe Regel, andere Daten, keine Auswahl und keine
+neue Hypothese. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

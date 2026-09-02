@@ -10638,5 +10638,125 @@ def vorratsdecke(
         )
 
 
+@app.command()
+def holdout(
+    entwicklung: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--entwicklung",
+        help="Maerkte, auf denen der Kandidat entstanden ist.",
+    ),
+    pruefung: str = typer.Option(
+        "LTCUSD_BITSTAMP,XRPUSD_BITSTAMP", "--holdout",
+        help="Maerkte, die bei der Entwicklung keine Rolle gespielt haben.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Traegt die Regel dort, wo sie nie ausgewaehlt wurde?
+
+    Jeder Markt **einzeln**, der Kandidat unveraendert. Das ist etwas anderes
+    als die Befunde 27 und 133: Dort kamen LTC und XRP zum Portfolio dazu und
+    verduennten die Qualitaet - hier laufen sie allein, als Probe.
+
+    Berichtet wird beides: was der Holdout haelt, und was diese Messung
+    **nicht** trennt (Korrelation der Maerkte, Marktrichtung).
+
+    **Kostet keinen Versuch**: dieselbe Regel, andere Daten, keine Auswahl.
+    """
+    import numpy as np
+
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.gates import stichprobe_wie_im_gate
+    from research.holdout import ENTWICKLUNG, HOLDOUT, Holdoutbild, Marktbefund
+    from research.randschnitt import ohne_zensierte
+    from research.seeds import spitzenkandidat
+    from research.suchbudget import Kandidat
+    from research.verbund import noetige_guete
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    versuche = load_trials(Path(settings.paths.state) / "trials.json")
+    interval_obj = Interval(intervall)
+    store = CandleStore(settings.paths.data_store)
+    genome = _ohne_hebel(spitzenkandidat())
+
+    aufgaben = [(x.strip(), ENTWICKLUNG) for x in entwicklung.split(",") if x.strip()]
+    aufgaben += [(x.strip(), HOLDOUT) for x in pruefung.split(",") if x.strip()]
+
+    console.print(
+        f"\n[bold]Holdout[/] {genome.name}, {interval_obj.label}, Spot-Punkt, "
+        f"Versuchsstand {versuche}\n"
+    )
+    console.print(
+        f"{'Markt':<10}{'Rolle':<13}{'Trades':>8}{'n_eff':>7}"
+        f"{'SR/Trade':>10}{'Guete':>8}{'noetig':>8}"
+    )
+    befunde: list[Marktbefund] = []
+    reihen: dict[str, object] = {}
+    for symbol, rolle in aufgaben:
+        rahmen = store.read(symbol, interval_obj)
+        reihen[symbol] = rahmen
+        bericht = run_portfolio_walkforward(
+            {symbol: rahmen},
+            lambda: compile_genome(genome),
+            _spotconfigs([symbol], settings),
+        )
+        gehandelt = ohne_zensierte(bericht)
+        kandidat = Kandidat.aus_trades(symbol, gehandelt.all_trades)
+        if kandidat is None or not gehandelt.windows:
+            console.print(
+                f"[dim]{symbol[:9]:<10}{rolle:<13}"
+                f"{len(gehandelt.all_trades):>8}   kein Kandidat[/]"
+            )
+            continue
+        st = stichprobe_wie_im_gate(
+            gehandelt.all_trades,
+            beine=getattr(bericht, "beine", None),
+            bloecke=[
+                [float(x.net_pnl) for x in w.trades] for w in gehandelt.windows
+            ],
+        )
+        befund = Marktbefund(
+            symbol, rolle, len(gehandelt.all_trades), st.effektiv,
+            kandidat.sharpe_je_trade,
+        )
+        befunde.append(befund)
+        noetig = noetige_guete(st.effektiv, versuche)
+        console.print(
+            f"{symbol[:9]:<10}{rolle:<13}{befund.trades:>8}{befund.n_eff:>7}"
+            f"{befund.sharpe_je_trade:>10.4f}{befund.guete:>8.3f}"
+            + ("       -" if noetig is None else f"{noetig:>8.3f}")
+        )
+
+    # **Die Korrelation gehoert dazu, nicht daneben.** Ein Holdout auf
+    # Maerkten, die mit den Entwicklungsmaerkten laufen, ist schwaecher als
+    # sein Name - und das darf der Leser nicht selbst herausfinden muessen.
+    korrelation = None
+    entw = [b.symbol for b in befunde if b.rolle == ENTWICKLUNG]
+    hold = [b.symbol for b in befunde if b.rolle == HOLDOUT]
+    if entw and hold:
+        renditen = {}
+        for symbol, rahmen in reihen.items():
+            reihe = rahmen[["open_time", "close"]].copy()
+            reihe["close"] = reihe["close"].astype(float)
+            renditen[symbol] = np.log(
+                reihe.set_index("open_time")["close"]
+            ).diff()
+        import pandas as pd
+
+        tabelle = pd.DataFrame(renditen).dropna()
+        paare = [tabelle[a].corr(tabelle[b]) for a in hold for b in entw]
+        if paare:
+            korrelation = float(sum(paare) / len(paare))
+            console.print(
+                f"\n[dim]{len(tabelle)} gemeinsame Balken; Korrelation je "
+                f"Paar: " + ", ".join(f"{v:.3f}" for v in paare) + "[/]"
+            )
+
+    console.print()
+    console.print(Holdoutbild(tuple(befunde), korrelation).urteil())
+
+
 if __name__ == "__main__":
     app()

@@ -609,6 +609,20 @@ BEHOBEN: tuple[Richtung, ...] = (
     ),
 )
 
+#: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
+#:
+#: Getrennt von ``GESCHLOSSEN``, weil "gemessen und offen" etwas anderes ist
+#: als "gemessen und zu". Ein Eintrag hier ist eine Zusage, keine Ablage.
+OFFEN: tuple[Richtung, ...] = (
+    Richtung(
+        "Holdout auf fremden Maerkten",
+        "LTC und XRP halten 41 % des Vorteils je Trade - aber sie "
+        "korrelieren mit 0,685, und die Marktrichtung ist nicht "
+        "herausgerechnet. Nullprobe mit gleichen Haltedauern steht aus",
+        174,
+    ),
+)
+
 
 
 #: Die deutschen Zahlwoerter, mit denen die Abschnitte im Laborbuch
