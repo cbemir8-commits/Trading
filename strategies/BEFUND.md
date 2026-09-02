@@ -16147,3 +16147,90 @@ ist die Messung, die dieser Befund vorbereitet und nicht mehr erledigt.
 
 Kostet keinen Versuch: dieselbe Regel, andere Daten, keine Auswahl und keine
 neue Hypothese. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertfuenfundsiebzig. Vier von vier schlagen den Zufall - knapp
+
+Befund 174 hat den Holdout gemessen (41 % des Vorteils bleiben) und
+ausdruecklich offengelassen, was davon Koennen ist: Alle vier Maerkte sind
+ueber den Messzeitraum gestiegen, und eine Long-Trendfolge ist dort schon
+deshalb im Plus. Der Befund hat die naechste Messung benannt und in
+`research.stand.OFFEN` eingetragen. Dieser Lauf fuehrt sie aus.
+
+### Das Verfahren
+
+**Gleiche Haltedauern, zufaellige Einstiege, derselbe Zeitraum.** Fuer jeden
+echten Trade wird ein Einstieg gezogen und ebenso viele Balken gehalten;
+gezogen wird nur aus der Spanne, die die echten Trades abdecken. Verglichen
+wird die prozentuale Rendite je Trade - sie streift Positionsgroesse und
+Kosten auf beiden Seiten gleichermassen ab und misst nur den Zeitpunkt.
+
+2000 Ziehungen des ganzen Trade-Satzes je Markt, fester Startwert.
+
+### Gemessen
+
+    Markt  Rolle          Trades   echt %   Null %  Streuung  Perzentil     z
+    BTC    Entwicklung        78    8,989    6,406     4,104     78,6%   0,63
+    ETH    Entwicklung        50   13,592    4,179     3,334     99,5%   2,82
+    LTC    Holdout            70    3,869    1,187     1,762     93,8%   1,52
+    XRP    Holdout            75    3,642    1,697     2,409     81,5%   0,81
+
+**Vier von vier liegen ueber ihrer Null**, beide Holdout-Maerkte
+eingeschlossen. Damit ist die Frage aus Befund 174 beantwortet: Der Vorteil
+ist **nicht bloss Marktrichtung**. Bei BTC verdient schon der Zufall mit
+gleicher Haltedauer 6,4 % je Trade - die Regel verdient 9,0 %.
+
+### Was daran nicht stark ist
+
+Nur ETH raeumt die uebliche Schwelle von |z| = 2. Die uebrigen drei liegen
+zwischen 0,6 und 1,5 Streuungen ueber ihrer Null. Das ist die Richtung, nicht
+der Beleg.
+
+**Und die vier Zahlen lassen sich nicht zu einer zusammenziehen.** Die
+Maerkte korrelieren mit rund 0,70 (Befund 174); ein gemeinsames z aus vier
+korrelierten Proben waere zu gross, und zwar um einen Betrag, den man nicht
+kennt. Es waere die bequemste Zahl dieses Befunds und die unehrlichste. Das
+Modul rechnet sie deshalb nicht - es zaehlt, wie viele oben liegen, und nennt
+die Korrelation dazu. Ein Test haelt das fest.
+
+### Die Huerde ist zu niedrig, nicht zu hoch
+
+**Die Ziehung hat keine Stops, die Regel schon.** Stops schneiden Verluste ab;
+das begoenstigt die Regel in diesem Vergleich. Wer diese Huerde nicht nimmt,
+scheitert deutlich - wer sie nimmt, hat sie moeglicherweise mit den Stops
+genommen und nicht mit dem Einstiegszeitpunkt.
+
+Das Ergebnis ist damit eine **Obergrenze** des Timing-Vorteils, keine
+Untergrenze. Auch das steht fest im Urteilstext.
+
+### Mein Fehler: ich habe ein Modul ueberschrieben
+
+`research/nullprobe.py` gibt es seit langem. Es mischt die **Renditen** und
+fragt, ob die Zulassungsstrecke einen Vorteil findet, wo garantiert keiner ist
+- es prueft die **Maschine**. Meine Messung laesst die Reihe unangetastet und
+zieht **Einstiege** - sie prueft die **Regel**.
+
+Zwei verschiedene Tests, und ich habe die Datei des ersten mit dem zweiten
+ueberschrieben. Aufgefallen ist es an ruff (`F811 Redefinition of unused
+nullprobe`), nicht an mir. Zurueckgeholt mit `git checkout`, das neue Modul
+heisst jetzt `research/zufallseinstieg.py`, der Befehl `cli zufallseinstieg`.
+
+Ein Test haelt fest, dass es beide gibt und dass sie verschiedene Fragen
+stellen. Ohne ihn passiert dasselbe wieder - der Name lag zu nah.
+
+Zwei Dinge daran sind unangenehm: Ich habe vor dem Schreiben nicht
+nachgesehen, ob es die Datei gibt, und der Verlust waere ohne die
+Versionsverwaltung endgueltig gewesen.
+
+### Was daraus folgt
+
+1. **Der Vorteil ist nicht bloss Marktrichtung** - vier von vier, Holdout
+   eingeschlossen. Das ist die zweite Zahl in Folge, die fuer den Kandidaten
+   spricht.
+2. **Er ist trotzdem nicht belegt.** Ein Markt von vier raeumt die Schwelle,
+   und die Obergrenze-Einschraenkung steht daneben.
+3. **Nichts davon bewegt ein Gate.** Die Guete bleibt 2,90 gegen 3,52, der
+   Deflated Sharpe 0,5881 gegen 0,95. Was sich geaendert hat, ist die
+   Einschaetzung, wie viel davon ueberhaupt echt sein koennte.
+
+Kostet keinen Versuch: dieselbe Regel, keine Auswahl, keine neue Hypothese.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

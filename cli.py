@@ -10758,5 +10758,124 @@ def holdout(
     console.print(Holdoutbild(tuple(befunde), korrelation).urteil())
 
 
+@app.command()
+def zufallseinstieg(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP,LTCUSD_BITSTAMP,XRPUSD_BITSTAMP",
+        "--maerkte", "-m",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    ziehungen: int = typer.Option(2000, "--ziehungen"),
+    saat: int = typer.Option(20260902, "--saat"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Schlaegt das Timing den Zufall mit gleicher Haltedauer?
+
+    Befund 174 hat gemessen, dass der Holdout 41 % des Vorteils haelt, und
+    ausdruecklich offengelassen, ob das Koennen ist oder Marktrichtung. Diese
+    Probe trennt es: gleiche Haltedauern, zufaellige Einstiege, derselbe
+    Zeitraum.
+
+    **Nicht zu verwechseln mit `cli nullprobe`**: Der mischt die Renditen und
+    prueft die Maschine. Hier bleibt die Reihe unangetastet, und geprueft wird
+    die Regel.
+
+    Verglichen wird die **prozentuale Rendite je Trade** - sie streift
+    Positionsgroesse und Kosten auf beiden Seiten gleich ab.
+
+    **Kostet keinen Versuch**: dieselbe Regel, keine Auswahl.
+    """
+    import numpy as np
+    import pandas as pd
+
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.holdout import ENTWICKLUNG, HOLDOUT
+    from research.randschnitt import ohne_zensierte
+    from research.seeds import spitzenkandidat
+    from research.zufallseinstieg import Marktprobe, Zufallsbild, zufallsverteilung
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    store = CandleStore(settings.paths.data_store)
+    genome = _ohne_hebel(spitzenkandidat())
+    rng = np.random.default_rng(saat)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    console.print(
+        f"\n[bold]Zufallseinstieg[/] {genome.name}, {interval_obj.label}, "
+        f"{ziehungen} Ziehungen, Saat {saat}\n"
+    )
+    console.print(
+        f"{'Markt':<10}{'Rolle':<13}{'Trades':>7}{'echt %':>9}{'Null %':>9}"
+        f"{'Streuung':>10}{'Perzentil':>11}{'z':>7}"
+    )
+    proben: list[Marktprobe] = []
+    for symbol in symbole:
+        rahmen = store.read(symbol, interval_obj)
+        bericht = run_portfolio_walkforward(
+            {symbol: rahmen}, lambda: compile_genome(genome),
+            _spotconfigs([symbol], settings),
+        )
+        trades = ohne_zensierte(bericht).all_trades
+        schluss = rahmen["close"].astype(float).to_numpy()
+        zeiten = pd.DatetimeIndex(rahmen["open_time"])
+
+        def balken(zeitpunkt, zeiten=zeiten) -> int:
+            return int(zeiten.searchsorted(pd.Timestamp(zeitpunkt), side="right") - 1)
+
+        dauern, echte, starts, enden = [], [], [], []
+        for t in trades:
+            a, b = balken(t.entry_time), balken(t.exit_time)
+            if a < 0 or b <= a or b >= len(schluss):
+                continue
+            dauern.append(b - a)
+            starts.append(a)
+            enden.append(b)
+            echte.append(float(t.exit_price) / float(t.entry_price) - 1.0)
+        if len(echte) < 20:
+            console.print(
+                f"[dim]{symbol[:9]:<10}{'':<13}{len(echte):>7}   "
+                f"zu wenige Trades fuer eine Probe[/]"
+            )
+            continue
+
+        verteilung = zufallsverteilung(
+            schluss, np.array(dauern), von=min(starts), bis=max(enden),
+            ziehungen=ziehungen, rng=rng,
+        )
+        rolle = ENTWICKLUNG if symbol.startswith(("BTC", "ETH")) else HOLDOUT
+        probe = Marktprobe(
+            symbol=symbol, rolle=rolle, trades=len(echte),
+            echt=float(np.mean(echte)), null=float(np.mean(verteilung)),
+            streuung=float(np.std(verteilung, ddof=1)),
+            perzentil=float((verteilung < np.mean(echte)).mean()),
+        )
+        proben.append(probe)
+        console.print(
+            f"{symbol[:9]:<10}{rolle:<13}{probe.trades:>7}{probe.echt*100:>9.3f}"
+            f"{probe.null*100:>9.3f}{probe.streuung*100:>10.3f}"
+            f"{probe.perzentil:>10.1%}"
+            + ("      -" if probe.z is None else f"{probe.z:>7.2f}")
+        )
+
+    korrelation = None
+    if len(symbole) > 1:
+        renditen = {}
+        for symbol in symbole:
+            reihe = store.read(symbol, interval_obj)[["open_time", "close"]].copy()
+            reihe["close"] = reihe["close"].astype(float)
+            renditen[symbol] = np.log(reihe.set_index("open_time")["close"]).diff()
+        tabelle = pd.DataFrame(renditen).dropna()
+        if len(tabelle) > 30:
+            werte = tabelle.corr().to_numpy()
+            oben = werte[np.triu_indices_from(werte, k=1)]
+            korrelation = float(oben.mean())
+
+    console.print()
+    console.print(Zufallsbild(tuple(proben), korrelation).urteil())
+
+
 if __name__ == "__main__":
     app()

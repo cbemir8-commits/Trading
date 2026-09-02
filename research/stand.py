@@ -616,10 +616,16 @@ BEHOBEN: tuple[Richtung, ...] = (
 OFFEN: tuple[Richtung, ...] = (
     Richtung(
         "Holdout auf fremden Maerkten",
-        "LTC und XRP halten 41 % des Vorteils je Trade - aber sie "
-        "korrelieren mit 0,685, und die Marktrichtung ist nicht "
-        "herausgerechnet. Nullprobe mit gleichen Haltedauern steht aus",
+        "LTC und XRP halten 41 % des Vorteils je Trade; die Marktrichtung "
+        "ist seit 175 herausgerechnet, die Korrelation von 0,685 bleibt",
         174,
+        175,
+    ),
+    Richtung(
+        "Timing gegen Zufallseinstiege",
+        "4 von 4 Maerkten ueber ihrer Null, aber nur ETH raeumt |z| = 2 - "
+        "und die Ziehung hat keine Stops, also eine Obergrenze",
+        175,
     ),
 )
 
