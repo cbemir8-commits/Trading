@@ -16333,3 +16333,110 @@ ohnehin nicht - das steht seit jeher im Modulkopf.
 
 Kostet keinen Versuch: Geprueft wird die Strecke, keine Regel. Versuchszaehler
 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertsiebenundsiebzig. Es sind die Einstiege, nicht die Haltedauer
+
+Befund 176 endete mit einer Richtung: *"Gesucht ist eine Regel, deren
+Trade-Zahl nicht einbricht, wenn der Trend staerker wird."* Und mit einer
+Erklaerung dafuer, warum sie einbricht: *"Diese Bauart antwortet auf einen
+staerkeren Trend, indem sie seltener handelt."* Die Erklaerung, die ich
+mitgeliefert habe, lautete: Sie haelt laenger.
+
+**Das war eine Geschichte, keine Messung.** Dieser Lauf misst sie nach, und
+sie ist falsch.
+
+### Zuerst: der gedeckelte Ausstieg
+
+`cli teststaerke --halten` vergleicht Varianten mit gedeckelter Haltedauer auf
+**derselben** gepflanzten Reihe. Die Maschinerie gibt es samt Abschnitt
+"BRICHT EIN GEDECKELTER AUSSTIEG DIE KOPPLUNG?" - und sie ist nie gelaufen.
+Gebaut und nicht angeschlossen, das siebte Mal in diesem Projekt.
+
+Vorab festgelegt: Deckel 0/10/20/40 Kerzen, Sprossen 0/10/20/35 %. Die 5 %
+bleiben draussen, weil sie unter der Erkennungsschwelle aus Befund 113 liegen,
+die 50 %, weil sich dort gar keine Latte mehr bilden laesst (Befund 176).
+
+    gepflanzt      unbegrenzt       10 Kerzen       20 Kerzen       40 Kerzen
+           0%      2,91 (160)      2,22 (160)      2,56 (160)      3,21 (160)
+          10%      3,31 ( 49)      3,62 ( 49)      3,63 ( 49)      3,57 ( 49)
+          20%      2,78 ( 29)      1,84 ( 29)      2,73 ( 29)      2,85 ( 29)
+          35%      2,71 ( 17)      2,54 ( 17)      3,01 ( 17)      2,71 ( 17)
+      Steigung          -1,02           -0,65            0,36           -1,94
+
+**Keine Variante entkoppelt.** Die beste ist der 20-Kerzen-Deckel mit einer
+Steigung von 0,36 gegen die geforderten 0,5.
+
+### Der Deckel greift wirklich - nachgeprueft
+
+Die Trade-Zahlen sind ueber alle vier Deckel **identisch** (160, 160, 160,
+160). Das sieht aus, als taete der Deckel nichts, und ein Nullbefund aus einem
+nicht angeschlossenen Regler waere wertlos. Also nachgesehen:
+
+    Deckel   Trades  laengster Halt  Ausstiegsgruende
+         0      158        104 Tage  signal_exit 78, stop_loss 68, ...
+        10      158         10 Tage  stop_loss 59, **max_hold 51**, signal 48
+        20      158         20 Tage  stop_loss 65, signal 53, max_hold 39
+        40      158         40 Tage  stop_loss 68, signal 58, max_hold 25
+
+Der Deckel bindet - bei 10 Kerzen an 51 von 158 Trades. Die Trade-Zahl bleibt
+trotzdem gleich, weil ein frueher Ausstieg keinen frueheren **Einstieg**
+erzeugt: Der naechste braucht ein neues Signal.
+
+### Und damit der eigentliche Befund
+
+Wenn ein Deckel die Trade-Zahl nicht aendert, kann die Haltedauer nicht der
+Grund fuer ihren Verfall sein. Nachgemessen ueber die Leiter:
+
+    gepflanzt  Trades  Median-Halt  Mittel-Halt  Tage im Markt   Anteil
+           0%     158       3 Tage      14,2       2250           34,1 %
+          10%      49       4 Tage      15,6        762           11,5 %
+          20%      29       4 Tage      13,3        386            5,8 %
+          35%      16       2 Tage      11,6        186            2,8 %
+
+**Die Haltedauer bleibt flach** - Median 3, 4, 4, 2 Tage; im Mittel sogar
+leicht fallend. Was einbricht, sind die **Einstiege**: 158 auf 16, und die
+Zeit im Markt von 34,1 % auf 2,8 %.
+
+Der Grund liegt in der Konstruktion des Pflanzens, und er ist unangenehm: Die
+Gesamtstreuung bleibt gleich, der Rauschanteil wird um genau so viel gesenkt,
+wie der Regimeanteil steigt. **Weniger Rauschen heisst weniger Kreuzungen des
+gleitenden Durchschnitts - und damit weniger Einstiege.**
+
+Diese Regel wird also nicht von der Staerke eines Trends ausgeloest, sondern
+vom **Rauschen um ihn herum**. Ein sauberer Trend laesst sie schweigen.
+
+### Was das an Befund 176 aendert
+
+Die Zahlen dort stehen alle. Die **Mechanik** war falsch benannt: nicht
+"haelt laenger", sondern "steigt seltener ein". Und daraus folgt anderes:
+
+* Am Ausstieg zu drehen kann nicht helfen - der Deckel wirkt auf Ausstiege,
+  und die waren nie das Problem. Das erklaert den Nullbefund oben, statt ihn
+  nur zu berichten.
+* Gesucht ist eine **Einstiegsbedingung, deren Ausloesehaeufigkeit nicht am
+  Rauschen haengt**. Das ist enger und pruefbarer als "eine Regel, deren
+  Trade-Zahl nicht einbricht".
+
+Befund 55 stand schon einmal hier: *"Wer die Kopplung brechen will, muss an
+der Einstiegsbedingung ansetzen."* Das war 122 Befunde vor diesem und ist
+jetzt aus einer zweiten, unabhaengigen Richtung bestaetigt.
+
+### Eine gepflegte Zahl nebenbei
+
+Im Modulkopf stand *"Der Kandidat haelt eine Position rund 40 Tage"* - als
+Begruendung fuer die Regimedauer von 60 Kerzen. Gemessen sind es im Median 3
+und im Mittel 14,2 Tage. Die Begruendung traegt dadurch besser, nicht
+schlechter; die Zahl war trotzdem falsch und ist jetzt gemessen.
+
+### Was gebaut wurde
+
+Die Leiter zeigt eine Spalte **im Markt**. Ohne sie liest man aus fallenden
+Trade-Zahlen das Falsche heraus - genau das ist mir in Befund 176 passiert.
+Faellt die Zeit im Markt im Gleichschritt mit den Trades, bleibt die
+Haltedauer; faellt sie langsamer, sind die Trades laenger geworden. Ein Test
+rechnet das an den gemessenen Zahlen nach.
+
+Kostet keinen Versuch: Geprueft wird die Strecke, keine Regel; die Deckel
+sind Varianten auf gepflanzten Reihen und **keine davon ist ausgewaehlt**.
+Wer eine auf die echte Reihe traegt, hat ueber vier Varianten gewaehlt und
+muss sie zaehlen. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

@@ -77,9 +77,13 @@ import pandas as pd
 
 from research.nullprobe import baue_reihe
 
-#: Mittlere Regimedauer in Kerzen. Der Kandidat haelt eine Position rund
-#: 40 Tage; ein Regime, das kuerzer ist als der Haltezeitraum, waere kein
-#: Trend, sondern Rauschen mit anderem Namen.
+#: Mittlere Regimedauer in Kerzen.
+#:
+#: Hier stand "der Kandidat haelt eine Position rund 40 Tage". Gemessen
+#: (Befund 177) sind es **im Median 3 Tage und im Mittel 14,2** - die 40 war
+#: eher die Obergrenze als der Regelfall. Die Begruendung traegt trotzdem, und
+#: zwar deutlicher: Ein Regime von 60 Kerzen ist um ein Vielfaches laenger als
+#: der Haltezeitraum, also ein Trend und nicht Rauschen mit anderem Namen.
 DAUER = 60
 
 #: Ab welcher Steigung die Guete als "waechst mit dem Vorteil" gilt.
@@ -202,6 +206,19 @@ class Stufe:
     @property
     def voll(self) -> bool:
         return self.gesamt > 0 and self.bestanden == self.gesamt
+
+    tage_im_markt: int | None = None
+    """Summe der Haltedauern - die Groesse, die den Verfall wirklich erklaert.
+
+    Befund 176 hat den Verfall der Stichprobe der **Haltedauer** zugeschrieben
+    ("haelt laenger, handelt seltener"). Befund 177 hat nachgemessen: Die
+    Haltedauer bleibt flach (Median 3 -> 4 -> 4 -> 2 Tage), was einbricht,
+    sind die **Einstiege** - 158 auf 16, und die Zeit im Markt von 34,1 % auf
+    2,8 %.
+
+    Ohne diese Spalte liest man aus fallenden Trades das Falsche heraus, und
+    ich habe genau das getan.
+    """
 
     effektiv: int | None = None
     """Die **effektive** Stichprobe - die Zahl, gegen die das Gate urteilt.
@@ -352,14 +369,16 @@ class Leiter:
         vierte.
         """
         zeilen = [
-            f"{'gepflanzt':>10} {'Trades':>7} {'n_eff':>6} {'je Trade':>9} "
-            f"{'Guete':>7} {'noetig':>7} {'DSR':>7} {'Gates':>7}  offen"
+            f"{'gepflanzt':>10} {'Trades':>7} {'im Markt':>9} {'n_eff':>6} "
+            f"{'je Trade':>9} {'Guete':>7} {'noetig':>7} {'DSR':>7} "
+            f"{'Gates':>7}  offen"
         ]
         for s in self.geordnet:
             dsr = f"{s.dsr:.3f}" if s.dsr is not None else "   -"
             noetig = s.noetig(self.versuche)
             zeilen.append(
                 f"{s.anteil:>9.0%} {s.trades:>7} "
+                f"{'-' if s.tage_im_markt is None else s.tage_im_markt:>9} "
                 f"{'-' if s.effektiv is None else s.effektiv:>6} "
                 f"{s.sharpe_je_trade:>9.4f} {s.guete:>7.2f} "
                 f"{'-' if noetig is None else f'{noetig:.2f}':>7} {dsr:>7} "

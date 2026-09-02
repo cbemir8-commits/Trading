@@ -615,6 +615,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "den Sharpe je Trade trug und bis in Befund 113 gewandert ist",
         176,
     ),
+    # Meine eigene Erklaerung aus dem Lauf davor - eine Geschichte, keine
+    # Messung, und einen Lauf spaeter widerlegt.
+    Richtung(
+        "Verfall der Stichprobe falsch erklaert",
+        "nicht laengere Haltedauer (Median bleibt 3-4 Tage), sondern "
+        "wegbleibende Einstiege: 158 auf 16, Zeit im Markt 34,1 auf 2,8 %",
+        177,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -640,6 +648,12 @@ OFFEN: tuple[Richtung, ...] = (
         "auch mit gepflanztem echten Vorteil besteht keine Sprosse: Die Latte "
         "steigt mit fallender Stichprobe schneller, als die Guete waechst",
         176,
+    ),
+    Richtung(
+        "Gedeckelter Ausstieg",
+        "vier Deckel von 10 bis 40 Kerzen, keiner entkoppelt (beste Steigung "
+        "0,36 gegen 0,5) - der Deckel bindet, aendert die Trade-Zahl aber nicht",
+        177,
     ),
 )
 

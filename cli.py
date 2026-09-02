@@ -5240,6 +5240,10 @@ def teststaerke(
                     Stufe(
                         anteil=anteil,
                         trades=len(bericht.all_trades),
+                        tage_im_markt=sum(
+                            (t.exit_time - t.entry_time).days
+                            for t in bericht.all_trades
+                        ),
                         effektiv=stichprobe.effektiv,
                         sharpe=bericht.combined.sharpe if bericht.combined else 0.0,
                         sharpe_je_trade=form.sharpe_je_trade if form else 0.0,

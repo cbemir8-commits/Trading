@@ -460,3 +460,59 @@ class TestDieGueteRechnetMitDerEffektiven:
 
         assert "n_eff" in text and "noetig" in text
         assert "107" in text
+
+
+class TestDieZeitImMarkt:
+    """**Befund 177.** Was einbricht, sind die Einstiege - nicht die Haltedauer.
+
+    Befund 176 hat den Verfall der Stichprobe der Haltedauer zugeschrieben
+    ("haelt laenger, handelt seltener"). Gemessen ist das Gegenteil: Die
+    Haltedauer bleibt flach (Median 3, 4, 4, 2 Tage), die Einstiege fallen von
+    158 auf 16 und die Zeit im Markt von 34,1 % auf 2,8 %.
+
+    Die Spalte steht deshalb in der Leiter: Ohne sie liest man aus fallenden
+    Trades das Falsche heraus, und genau das ist mir passiert.
+    """
+
+    def test_die_spalte_steht_in_der_tabelle(self) -> None:
+        leiter = Leiter(
+            versuche=198,
+            stufen=[
+                Stufe(0.0, 158, 1.47, 0.2649, 0.49, 7, 11,
+                      effektiv=121, tage_im_markt=2250),
+            ],
+        )
+        text = leiter.tabelle()
+
+        assert "im Markt" in text
+        assert "2250" in text
+
+    def test_ohne_messung_steht_ein_strich(self) -> None:
+        """Nicht raten: Wo die Zeit im Markt fehlt, steht kein Ersatz."""
+        leiter = Leiter(
+            versuche=198,
+            stufen=[Stufe(0.0, 158, 1.47, 0.2649, 0.49, 7, 11, effektiv=121)],
+        )
+
+        assert "im Markt" in leiter.tabelle()
+
+    def test_fallende_trades_bei_flacher_haltedauer_heissen_weniger_einstiege(
+        self,
+    ) -> None:
+        """**Die Rechnung, die den Irrtum aufgedeckt haette.**
+
+        Faellt die Zeit im Markt schneller als die Trade-Zahl, sind die Trades
+        kuerzer geworden. Faellt sie **langsamer**, sind sie laenger geworden.
+        Hier faellt beides fast im Gleichschritt - die Haltedauer bleibt also,
+        und was fehlt, sind Einstiege.
+        """
+        viel = Stufe(0.0, 158, 1.47, 0.2649, 0.49, 7, 11,
+                     effektiv=121, tage_im_markt=2250)
+        wenig = Stufe(0.35, 16, 1.0, 0.6999, 0.0, 8, 11,
+                      effektiv=15, tage_im_markt=186)
+
+        halt_viel = viel.tage_im_markt / viel.trades
+        halt_wenig = wenig.tage_im_markt / wenig.trades
+
+        assert halt_wenig < halt_viel, "die Haltedauer ist nicht gewachsen"
+        assert wenig.trades / viel.trades < 0.15, "die Einstiege sind eingebrochen"
