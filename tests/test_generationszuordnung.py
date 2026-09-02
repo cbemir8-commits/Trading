@@ -44,7 +44,7 @@ SYMBOL = "BTCUSD_BITSTAMP"
 
 
 @pytest.fixture(scope="module")
-def tageslauf():
+def lauf():
     """Der **gleiche Weg wie die Messung**, nicht ein einfacherer.
 
     Der erste Anlauf fuhr einen schlichten Backtest ueber die ganze BTC-Reihe
@@ -65,62 +65,89 @@ def tageslauf():
     einstellungen = get_settings()
     speicher = CandleStore(einstellungen.paths.data_store)
     symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
-    rahmen = common_range({x: speicher.read(x, Interval("D")) for x in symbole})
     configs = cli._spotconfigs(symbole, einstellungen)
+    rahmen: dict[str, dict] = {}
 
-    def lauf(genom):
+    def hole(intervall: str) -> dict:
+        if intervall not in rahmen:
+            rahmen[intervall] = common_range(
+                {x: speicher.read(x, Interval(intervall)) for x in symbole}
+            )
+        return rahmen[intervall]
+
+    def fahre(genom, intervall: str):
         genom = cli._ohne_hebel(genom)
         return run_portfolio_walkforward(
-            rahmen, lambda g=genom: compile_genome(g), configs
+            hole(intervall), lambda g=genom: compile_genome(g), configs
         )
 
-    return lauf
+    return fahre
 
 
-def kandidaten(generation: int, tageslauf) -> list[Kandidat]:
-    gefunden = []
+def handelt(generation: int, lauf, intervall: str) -> str | None:
+    """Der Name des **ersten** Genoms, das auf dieser Kerzenlaenge handelt.
+
+    Abgebrochen wird beim ersten Treffer: Gefragt ist, ob die Generation dort
+    ueberhaupt zu Hause ist, nicht wie viele ihrer Regeln taugen. Das haelt
+    den Test bei drei Kerzenlaengen in der Suite tragbar.
+    """
     for bauen in GENERATIONS[generation]:
         genom = bauen()
-        bericht = tageslauf(genom)
-        kandidat = Kandidat.aus_trades(genom.name, bericht.all_trades)
-        if kandidat is not None:
-            gefunden.append(kandidat)
-    return gefunden
+        bericht = lauf(genom, intervall)
+        if Kandidat.aus_trades(genom.name, bericht.all_trades) is not None:
+            return genom.name
+    return None
 
 
-TAGESGENERATIONEN = sorted(g for g, i in VORGESEHEN.items() if i == "D")
+#: Jede Generation mit einer festen Zuordnung, und die Kerzenlaenge dazu.
+#:
+#: ``None`` bleibt draussen: "laeuft ueberall" ist keine Zusage, dass es
+#: ueberall handelt.
+ZUGEORDNET = sorted(
+    (g, i) for g, i in VORGESEHEN.items() if i is not None
+)
 
 
 @pytest.mark.daten
 @pytest.mark.langsam
-@pytest.mark.parametrize("generation", TAGESGENERATIONEN)
-def test_jede_tagesgeneration_handelt_auf_tageskerzen(generation, tageslauf) -> None:
+@pytest.mark.parametrize(("generation", "intervall"), ZUGEORDNET)
+def test_jede_generation_handelt_auf_ihrer_kerzenlaenge(
+    generation, intervall, lauf
+) -> None:
     """**Die Pruefung, die Generation 8 an die falsche Stelle gelassen hat.**
 
     Eine Generation, die auf ihrer eigenen Kerzenlaenge keinen einzigen
     Kandidaten hervorbringt, ist dort nicht zu Hause. Sie kostet dann bei
     jedem Wettbewerb Rechenzeit und - schlimmer - sie fehlt auf der
     Kerzenlaenge, auf der sie hingehoert.
-    """
-    gefunden = kandidaten(generation, tageslauf)
 
-    assert gefunden, (
-        f"Generation {generation} ist auf 'D' zugeordnet, liefert dort aber "
-        f"keinen einzigen Kandidaten - siehe Befund 170."
+    Seit Befund 171 laeuft das fuer **beide** Kerzenlaengen: Die
+    Viertelstunden sind wieder im Speicher, und damit ist die Zusage
+    ``VORGESEHEN[8] = "15"`` keine Vermutung mehr.
+    """
+    gefunden = handelt(generation, lauf, intervall)
+
+    assert gefunden is not None, (
+        f"Generation {generation} ist auf '{intervall}' zugeordnet, liefert "
+        f"dort aber keinen einzigen Kandidaten - siehe Befund 170."
     )
 
 
 @pytest.mark.daten
 @pytest.mark.langsam
-def test_die_pruefung_haette_generation_8_gefunden(tageslauf) -> None:
-    """Ohne diesen Test prueft der obige nur, dass nichts kaputt ist.
+def test_generation_8_handelt_auf_15_und_nicht_auf_tageskerzen(lauf) -> None:
+    """**Die Umbuchung aus Befund 170, in beide Richtungen gemessen.**
 
-    Generation 8 steht seit Befund 170 auf ``"15"`` und ist damit oben nicht
-    mehr dabei. Dass sie auf Tageskerzen tatsaechlich nichts liefert, bleibt
-    trotzdem gemessen - sonst waere die Umbuchung eine Behauptung.
+    Auf Tageskerzen null Trades, auf Viertelstunden Tausende. Befund 170
+    konnte nur die erste Haelfte belegen - der Speicher hatte damals keine
+    Viertelstunden. Jetzt steht beides.
+
+    Dass die Regeln dort **verlieren** (Guete -6,1 bis -9,9, Befund 171), ist
+    eine andere Frage als die, wo sie hingehoeren.
     """
     assert VORGESEHEN[8] == "15"
-    assert kandidaten(8, tageslauf) == [], (
+    assert handelt(8, lauf, "15") is not None
+    assert handelt(8, lauf, "D") is None, (
         "Generation 8 handelt auf Tageskerzen doch - dann war die Umbuchung "
         "in Befund 170 falsch und gehoert zurueckgenommen."
     )

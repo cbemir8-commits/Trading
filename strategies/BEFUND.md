@@ -15815,3 +15815,106 @@ mehr antreten.
 
 Kein Gate angefasst, kein Kandidat gemessen, nichts ausgewaehlt.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hunderteinundsiebzig. Die Vielfalt ist da und sie verliert
+
+Befund 169 endete mit *"Gesucht ist zuerst Vielfalt, nicht Qualitaet"*, Befund
+170 fand sie im Katalog - neun strukturell verschiedene Regeln, auf die
+falsche Kerzenlaenge gebucht - und musste offen lassen, ob sie dort ueberhaupt
+handeln: Der Speicher hatte nur Tageskerzen. Dieser Lauf holt sie und misst.
+
+### Die Viertelstunden sind zurueck
+
+    BTCUSD_BITSTAMP   15m   225.339 Kerzen   2020-03-30 bis 2026-09-02
+    ETHUSD_BITSTAMP   15m   225.341 Kerzen
+
+Geholt mit `cli referenz` von **Bitstamp**, der dokumentierten
+Forschungsquelle des Projekts (`data/reference.py`), nicht von Bybit. Das ist
+keine Umgehung der Regionssperre, sondern der Weg, den das Projekt fuer genau
+diesen Fall gebaut hat: Kassamarkt, kein Funding, eigenes Symbol, ausdruecklich
+nur fuer die Vorauswahl. **Fuer die Zulassung bleibt es bei Bybit-Kerzen**, und
+die nur auf dem Rechner des Nutzers.
+
+Seit dem Behaelterwechsel in Befund 151 war die Reihe weg. `cli stand` zeigt
+sie jetzt gemessen: `15m 225339` - die Zeile aus Befund 157 tut, wofuer sie
+gebaut wurde.
+
+### Befund 170 ist bestaetigt
+
+    Luecke wird geschlossen     auf Tageskerzen      0 Trades
+                                auf Viertelstunden   n_eff 2657
+
+Alle neun Regeln der Generation 8 handeln auf Viertelstunden - n_eff 1057 bis
+3287 - und keine auf Tageskerzen. Die Umbuchung war richtig, und sie ist
+nicht mehr strukturell begruendet, sondern gemessen.
+
+### Und die Vielfalt taugt nichts
+
+36 Regeln gemessen (drei Funding-Regeln handeln auf Bitstamp nicht - dort gibt
+es kein Funding). **Zwei** haben eine positive Guete:
+
+    Trendbeteiligung mit Puffer      n_eff  584   Guete  0,744   noetig 3,964
+    Seltener grosser Ausbruch              1065          0,156          4,065
+    ------------------------------------------ die uebrigen 34 negativ ----
+    Starker Trend, Momentum                1818         -0,780          4,138
+    ...
+    Keltner-Enge mit Ausbruch              2594        -12,532          4,178
+
+Die neun aus Generation 8, um die es hier ging:
+
+    Grosse Kerze mit Volumen short   n_eff 2316   Guete -4,653
+    Bollinger-Ruecksetzer short            1518         -5,664
+    Abfolge zur New Yorker Eroeffnung      1057         -6,106
+    Luecke wird geschlossen                2657         -7,729
+    VWAP-Rueckkehr short                   3014         -8,420
+    Abfolge-Modell short                   2822         -8,618
+    Abfolge ohne Strukturbruch             3287         -9,184
+    Abfolge ohne Luecke                    2798         -9,338
+    Abfolge-Modell (Abgriff, Bruch, ...)   2747         -9,870
+
+**Alle neun verlieren, und zwar deutlich.** Die Vielfalt, die Befund 169
+vermisst hat, war vorhanden, war falsch einsortiert, und ist wertlos.
+
+### Was die Zahlen sonst noch sagen
+
+**Menge ist kein Weg.** Auf Viertelstunden sind die Stichproben zehn- bis
+vierzigmal so gross wie auf Tageskerzen (n_eff 584 bis 4878 gegen 27 bis 121)
+- und die Guete ist negativ. Die Latte steigt dabei mit: Sie verlangt hier
+3,7 bis 4,2 statt 3,5. Mehr zu handeln bringt mehr Beobachtungen **und** eine
+hoehere Huerde, und wenn die Qualitaet je Trade dabei ins Negative kippt,
+hilft keine Menge.
+
+**Keine Decke ablesbar**: r = -0,044 bei |t| = 0,26 ueber die 36 Regeln. Die
+Kopplung, die auf Tageskerzen innerhalb der SMA-Familie mit t = -3,28 steht,
+ist hier nicht zu sehen. Das ist eine dritte, unabhaengige Stuetze fuer die
+Einschraenkung aus Befund 169: **Die Kopplung ist eine Familieneigenschaft,
+kein Gesetz.** Hier fallen einfach alle.
+
+Befund 145 hatte 14 Kandidaten auf Viertelstunden gemessen und alle verworfen
+(*"alle 14 verlieren brutto"*). Dieser Lauf misst 36 - netto - und findet
+dasselbe. Die Generationen 6 und 7 liefen als Kontrolle mit und reproduzieren
+das Urteil; der Aufbau ist damit an einem bekannten Ergebnis geprueft.
+
+### Was gebaut wurde
+
+Die Wache aus Befund 170 lief nur fuer Tageskerzen, weil es nichts anderes
+gab. Sie prueft jetzt **jede** zugeordnete Kerzenlaenge und bricht beim ersten
+handelnden Genom ab - gefragt ist, ob eine Generation dort zu Hause ist, nicht
+wie viele ihrer Regeln taugen. Dazu ein Test, der die Umbuchung in beide
+Richtungen festhaelt: Generation 8 handelt auf 15 Minuten und nicht auf
+Tageskerzen.
+
+### Was daraus folgt
+
+1. **Der 15-Minuten-Weg ist gemessen und zu.** Nicht mehr "die Daten fehlen",
+   sondern 36 Regeln, davon 34 negativ und die beste bei 0,744 gegen 3,964.
+2. **Damit ist auch die Hoffnung aus Befund 169 erledigt.** Die fehlende
+   Vielfalt war kein Mangel des Katalogs, sondern eine Fehlbuchung - und was
+   dahinter lag, traegt nicht.
+3. **Der Auftragspunkt bleibt trotzdem offen**, aber aus einem anderen Grund:
+   Fuer die Zulassung braucht es Bybit-Kerzen. Was hier gemessen wurde, ist
+   Vorauswahl auf Bitstamp - und die sagt, dass dort nichts zu holen ist.
+
+Kostet keinen Versuch: 36 vorhandene Katalogregeln nachgemessen, **keine
+ausgewaehlt**. Es gibt auch nichts auszuwaehlen. Versuchszaehler 198
+unveraendert, Suchbudget 68 von 100.

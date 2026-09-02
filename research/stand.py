@@ -112,10 +112,10 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     # netto. Ergebnis unveraendert, Zahlen neu.
     Richtung(
         "15-Minuten-Kerzen",
-        "alle 14 Kandidaten verlieren brutto; nachgemessen -0,059 bis -0,110 "
-        "brutto gegen noetige +0,116 - bester Abstand 8,35 Guete",
+        "36 Regeln auf 225.000 Kerzen: 34 negativ, beste Guete 0,744 gegen "
+        "noetige 3,964 - und keine Kopplung (t = -0,26)",
         29,
-        zuletzt=145,
+        zuletzt=171,
     ),
     # Befund 21 hat diese Richtung eroeffnet, Befund 23 hat sie nach zwei
     # behobenen Messfehlern neu vermessen (die Leiter rutschte um eine Stufe),
@@ -590,6 +590,7 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Luecken-, VWAP- und Eroeffnungsregeln standen auf Tageskerzen, wo "
         "keine davon ausloest; jetzt auf 15 Minuten, mit Pruefung",
         170,
+        171,
     ),
 )
 
@@ -927,11 +928,17 @@ AUFTRAG: tuple[Auftragspunkt, ...] = (
     # waren danach weg, und dieser Eintrag behauptete sie fuenf Befunde lang
     # weiter. Was hier steht, ist gepflegte Prosa - was wirklich im Speicher
     # liegt, zeigt ``cli stand`` gemessen (Befund 157).
+    #
+    # Befund 171 hat sie ueber ``cli referenz`` neu geholt - Bitstamp, nicht
+    # Bybit. Damit ist die Forschung wieder moeglich; die Zulassung bleibt an
+    # den Boersendaten und die an der Regionssperre.
     Auftragspunkt(
         frage="backfill 15m + wettbewerb beim Nutzer",
-        stand="hier nur Tageskerzen; die 15-Minuten-Reihe fehlt seit dem "
-              "Behaelterwechsel und wird auf dem eigenen Rechner gebraucht",
-        befund=62,
+        stand="15-Minuten-Forschungskerzen wieder da (225.000 je Markt, "
+              "Bitstamp) und der Katalog darauf gemessen: 34 von 36 Regeln "
+              "negativ, beste Guete 0,744 gegen 3,964. Fuer die Zulassung "
+              "braucht es Bybit-Kerzen - und die nur beim Nutzer",
+        befund=171,
         erledigt=False,
     ),
 )

@@ -202,7 +202,9 @@ def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
         "Verbund aus dem Katalog": 151,
         # Befund 145: dieselben 14 Genome, am Spot-Punkt und mit der
         # Zerlegung in brutto und netto.
-        "15-Minuten-Kerzen": 145,
+        # Befund 171 hat 36 statt 14 Regeln gemessen, netto, auf neu
+        # geholten Bitstamp-Kerzen.
+        "15-Minuten-Kerzen": 171,
     }
 
 
