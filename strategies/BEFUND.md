@@ -15978,3 +15978,84 @@ Methode selbst liefert.
 
 Kein Gate angefasst, kein Kandidat gemessen. Versuchszaehler 198
 unveraendert, Suchbudget 68 von 100.
+
+## Hundertdreiundsiebzig. Ich habe es der Config angelastet, es war die Marktzahl
+
+Der Suitenlauf zu Befund 172 dauerte **13:32 statt sieben Minuten**. Die
+Ursache ist die Wache, die ich in Befund 170 gebaut und in 171 auf beide
+Kerzenlaengen erweitert habe: Sie faehrt fuer jede zugeordnete Generation
+einen Portfolio-Walk-Forward, auf Viertelstunden ueber 225.000 Kerzen.
+
+Eine Wache, die den Lauf verdoppelt, wird frueher oder spaeter uebersprungen.
+Das ist eine Schuld, und sie ist meine.
+
+### Der Fehler dahinter
+
+Der erste Anlauf zu Befund 170 fuhr einen schlichten Backtest auf **einem**
+Markt und meldete Generation 5 als stumm - die Generation, aus der der
+Spitzenkandidat stammt. Ich habe daraus geschlossen, es liege an der Methode,
+und auf den vollen Walk-Forward umgestellt. Im Befund steht:
+
+> *"Ein Test, der eine andere Methode benutzt als die Messung, prueft eine
+> andere Frage."*
+
+Der Satz stimmt. Die **Zuschreibung** war falsch. Der erste Anlauf unterschied
+sich in drei Dingen vom richtigen Weg: andere Config, kein `_ohne_hebel`, und
+ein Markt statt zwei. Ich habe die ersten beiden verdaechtigt und die dritte
+nicht einmal erwaehnt.
+
+### Getrennt gemessen
+
+Diesmal mit identischer Config und identischem `_ohne_hebel`, nur die
+Marktzahl und die Fenster variiert:
+
+    Gen  iv   Walk-Forward   1 Markt   2 Maerkte      teuer   billig
+      5   D        ja          nein       ja           3,7s     0,3s
+      6  15        ja          ja         ja          95,1s    23,7s
+      7  15        ja          ja         ja          78,6s    20,0s
+      8  15        ja          ja         ja          82,9s    20,6s
+      9   D        ja          ja         ja           2,3s     0,3s
+     10   D        ja          nein       ja           2,6s     0,3s
+
+**Es lag an der Marktzahl.** Bei den Generationen 5 und 10 reichen die
+BTC-Trades allein nicht fuer einen `Kandidat` (unter fuenf), mit ETH schon.
+Die Fenster haben damit nichts zu tun - ueber beide Maerkte stimmt der billige
+Weg auf **allen sechs Paaren** mit dem teuren ueberein.
+
+265 Sekunden gegen 65. Die Testdatei faellt von 194 auf 91 Sekunden.
+
+### Was das ueber den Fehler sagt
+
+Zwei Unterschiede zugleich zu aendern und dann einen davon zu beschuldigen ist
+derselbe Fehler wie in Befund 92, wo ich die Kopplungsrechnung an den falschen
+Aufrufer haengte und das Urteil trotzdem stehen liess. Hier kam dazu, dass
+das Ergebnis **richtig** war - der Walk-Forward ist der ehrlichere Weg - und
+eine richtige Entscheidung aus einem falschen Grund faellt nicht auf.
+
+Aufgefallen ist es erst an der Rechnung: 13:32 statt sieben Minuten sind zu
+teuer fuer eine Frage, die "handelt diese Generation hier ueberhaupt?"
+lautet.
+
+### Die Grenze der billigen Wache
+
+Geprueft ist die Gleichheit an **sechs Paaren**, nicht bewiesen. Kaeme eine
+Generation dazu, deren Regeln nur in einzelnen Fenstern ausloesen, koennte der
+billige Weg sie durchwinken. Das steht im Docstring der Fixture, und
+`scratchpad/mess_wache.py` rechnet den Vergleich nach.
+
+Was **nicht** billiger geworden ist: die Frage selbst. Geprueft wird weiter
+mit derselben Config, demselben `_ohne_hebel` und derselben Schwelle
+(`Kandidat.aus_trades`) wie die Messung.
+
+### Was daraus folgt
+
+1. **Eine Wache muss ihre eigenen Kosten wert sein.** Diese faengt einen
+   Fehler, der in 170 Befunden einmal vorkam; sie darf die Suite nicht
+   verdoppeln.
+2. **Eine richtige Entscheidung aus falschem Grund bleibt ein Fehler** - sie
+   faellt nur spaeter auf, und dann ueber den Umweg der Rechnung.
+3. Wer zwei Dinge zugleich aendert, hat keine Messung, sondern zwei
+   Vermutungen.
+
+Kein Gate angefasst, kein Kandidat gemessen. Versuchszaehler 198
+unveraendert, Suchbudget 68 von 100.

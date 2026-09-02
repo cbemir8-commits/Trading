@@ -45,22 +45,41 @@ SYMBOL = "BTCUSD_BITSTAMP"
 
 @pytest.fixture(scope="module")
 def lauf():
-    """Der **gleiche Weg wie die Messung**, nicht ein einfacherer.
+    """Ein Backtest ueber **beide** Maerkte - ohne Walk-Forward.
 
-    Der erste Anlauf fuhr einen schlichten Backtest ueber die ganze BTC-Reihe
-    und meldete prompt auch Generation 5 als stumm - die Generation, aus der
-    der Spitzenkandidat stammt. Sie handelt sehr wohl, nur eben im
-    Portfolio-Walk-Forward ueber beide Maerkte am Spot-Punkt, so wie
-    ``cli vorratsdecke`` und die Zulassung es rechnen.
+    Gefragt ist nur, ob eine Generation auf ihrer Kerzenlaenge ueberhaupt
+    handelt. Dafuer braucht es keine Fenster, aber sehr wohl beide Maerkte.
 
-    Ein Test, der eine andere Methode benutzt als die Messung, prueft eine
-    andere Frage.
+    **Zweimal falsch zugeordnet, bevor das klar war.** Der erste Anlauf zu
+    Befund 170 fuhr einen Backtest auf **einem** Markt mit abweichender
+    Config und meldete Generation 5 als stumm. Ich habe das der Config
+    zugeschrieben und auf den vollen Walk-Forward umgestellt - das war zwar
+    richtig im Ergebnis, aber aus dem falschen Grund, und es hat die Suite
+    von 7 auf 13:32 Minuten verlaengert.
+
+    Befund 173 hat die beiden Unterschiede getrennt gemessen:
+
+        Gen  iv   Walk-Forward   1 Markt   2 Maerkte
+          5   D        ja          nein       ja
+          6  15        ja          ja         ja
+          7  15        ja          ja         ja
+          8  15        ja          ja         ja
+          9   D        ja          ja         ja
+         10   D        ja          nein       ja
+
+    Es lag an der **Marktzahl**: Bei 5 und 10 reichen die BTC-Trades allein
+    nicht fuer einen ``Kandidat``, mit ETH schon. Ueber beide Maerkte stimmt
+    der billige Weg auf allen sechs Paaren mit dem teuren ueberein - bei
+    265 gegen 65 Sekunden.
+
+    **Die Grenze davon:** Geprueft ist die Gleichheit an sechs Paaren, nicht
+    bewiesen. Kaeme eine Generation dazu, deren Regeln nur in einzelnen
+    Fenstern ausloesen, koennte der billige Weg sie durchwinken. Das
+    Skript in ``scratchpad/mess_wache.py`` rechnet den Vergleich nach.
     """
     import cli
-    from backtest.portfolio_walkforward import (
-        common_range,
-        run_portfolio_walkforward,
-    )
+    from backtest.engine import Backtester
+    from backtest.portfolio_walkforward import common_range
 
     einstellungen = get_settings()
     speicher = CandleStore(einstellungen.paths.data_store)
@@ -75,11 +94,14 @@ def lauf():
             )
         return rahmen[intervall]
 
-    def fahre(genom, intervall: str):
+    def fahre(genom, intervall: str) -> list:
         genom = cli._ohne_hebel(genom)
-        return run_portfolio_walkforward(
-            hole(intervall), lambda g=genom: compile_genome(g), configs
-        )
+        daten = hole(intervall)
+        trades: list = []
+        for x in symbole:
+            ergebnis = Backtester(configs[x]).run(daten[x], compile_genome(genom))
+            trades += list(ergebnis.trades)
+        return trades
 
     return fahre
 
@@ -88,13 +110,12 @@ def handelt(generation: int, lauf, intervall: str) -> str | None:
     """Der Name des **ersten** Genoms, das auf dieser Kerzenlaenge handelt.
 
     Abgebrochen wird beim ersten Treffer: Gefragt ist, ob die Generation dort
-    ueberhaupt zu Hause ist, nicht wie viele ihrer Regeln taugen. Das haelt
-    den Test bei drei Kerzenlaengen in der Suite tragbar.
+    ueberhaupt zu Hause ist, nicht wie viele ihrer Regeln taugen.
     """
     for bauen in GENERATIONS[generation]:
         genom = bauen()
-        bericht = lauf(genom, intervall)
-        if Kandidat.aus_trades(genom.name, bericht.all_trades) is not None:
+        trades = lauf(genom, intervall)
+        if Kandidat.aus_trades(genom.name, trades) is not None:
             return genom.name
     return None
 

@@ -599,6 +599,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'cli vorratsdecke'; 'cli stand' nennt sie jetzt - ohne Zahl",
         172,
     ),
+    # Meine eigene Fehlzuschreibung aus Befund 170, drei Laeufe spaeter an
+    # der Rechnung aufgefallen.
+    Richtung(
+        "Wache auf dem teuren Weg, aus falschem Grund",
+        "nicht die Config und nicht die Fenster - die Marktzahl; zwei "
+        "Maerkte ohne Walk-Forward urteilen gleich, 265s gegen 65s",
+        173,
+    ),
 )
 
 
