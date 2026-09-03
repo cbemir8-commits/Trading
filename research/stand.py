@@ -702,19 +702,21 @@ OFFEN: tuple[Richtung, ...] = (
     # Der Preis, den die Decke verlangt - und die Richtung, die daraus folgt.
     Richtung(
         "Der Preis in Reststreuungen",
-        "an der guenstigsten Stelle (n_eff 97) muesste eine Regel 3,70 "
-        "Reststreuungen ueber der Geraden ihrer Familie liegen; der Bestand "
-        "steht bei 2,41, Auswahl aus 198 Versuchen erzeugt 3,25",
+        "auf dem berichtigten Vorrat 1,67 bei n_eff 101 statt 3,70 bei 97, "
+        "Bestand +1,18 statt +2,41 - und die Gerade selbst haelt an einem "
+        "Punkt (ohne ihn t = -0,98)",
         179,
+        183,
     ),
     # **Die Gegenprobe zu 169/179 - und sie war nicht durchfuehrbar.**
     Richtung(
         "Haengt die Familienaussage am Schnitt?",
-        "von drei Einteilungen konnte nur eine pruefen (Aussenmenge 5 gegen "
-        "noetige 5); sie stuetzt. Bei den anderen stehen draussen 3 und 1 "
-        "Regel - eine einzige weitere Regel ohne gleitenden Schnitt macht die "
-        "zweite pruefbar",
+        "auf dem berichtigten Vorrat (18 Regeln) hat unter keiner "
+        "Indikator-Einteilung eine Familie mehr die Mehrheit; nach Regellogik "
+        "traegt 'Trend' 12/18 selbst nicht (t = -1,77). Kein pruefbarer "
+        "Schnitt stuetzt die Familienaussage",
         181,
+        183,
     ),
     Richtung(
         "Einstieg, der nicht am Rauschen haengt",

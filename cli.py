@@ -1721,25 +1721,22 @@ def _auftragslage(zustand: Path):
         versuche=load_trials(zustand / "trials.json"),
         bestand_trades=SPOTPUNKT.effektiv,
         bestand_sharpe=SPOTPUNKT.guete,
-        # **Befund 168, nicht mehr Befund 75.** Hier stand -0,533 mit dem
-        # Vermerk "ueber 14 Genome der Tageskerzen-Generationen" - gerechnet
-        # auf **rohen** Trade-Zahlen und an einem anderen Betriebspunkt.
-        # Befund 168 hat dieselbe Kopplung am Spot-Punkt und mit der
-        # Stichprobe des Gates gemessen: -0,714 bei t = -3,53.
-        kopplung=-0.714,
-        # **Und Befund 169 hat sie eingegrenzt.** Der Auftragstext gab elf
-        # Befunde lang Befund 75s Lesart weiter ("jede Regel im vorhandenen
-        # Vorrat"). Getragen wird sie von einer Familie; ausserhalb stehen
-        # fuenf Regeln mit t = -1,13, und das sagt nichts.
-        kopplung_traegt="sma",
-        familien=(
-            ("sma", 9), ("roc", 2), ("ema", 1),
-            ("distance_to_ema_pct", 1), ("swing_high", 1),
-        ),
-        # Befund 179: der noetige Abstand zur Geraden der eigenen Familie,
-        # an seiner guenstigsten Stelle.
-        familienpreis=3.70,
-        familienpreis_bei=97,
+        # **Nichts von alledem uebergeben - Befund 183.** Hier standen
+        # kopplung=-0,714, kopplung_traegt="sma", die Familienzaehlung und
+        # der Preis 3,70. Alle vier sind auf dem Katalog gemessen, den
+        # Befund 182 als nach der Groessenlogik gefiltert nachgewiesen hat.
+        #
+        # Auf dem berichtigten Vorrat (18 statt 14 Regeln) haelt keine
+        # davon: keine Familie hat mehr die Mehrheit, und die Kopplung
+        # faellt von r = -0,544 (t = -2,59) auf -0,244 (t = -0,98), sobald
+        # ein einziger Punkt fehlt (Momentum Ruecksetzer, n_eff 254).
+        #
+        # Eine Korrelation, die ein Punkt loeschen kann, gehoert nicht in
+        # einen Auftrag - das ist der Fehler aus Befund 75, den der
+        # Modulkopf von vorratsdecke ausdruecklich benennt. Der Abschnitt
+        # "Warum das schwer ist" faellt damit weg, und das ist richtig so:
+        # Was traegt, ist die Luecke selbst (beste Guete 2,484 gegen 3,516
+        # ueber 18 Messungen), und die steht weiter oben im Auftrag.
     )
 
 

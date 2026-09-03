@@ -16938,3 +16938,97 @@ aber ueberhaupt erst gestellt.
 
 Kostet keinen Versuch: Gemessen wurden Trade-Zahlen, keine Gates; ausgewaehlt
 wurde nichts. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertdreiundachtzig. Neu gemessen - und drei Befunde nehmen sich zurueck
+
+Befund 182 hat den Katalog berichtigt: Neun Regeln fehlten, weil ihre
+Groessenlogik sie stumm machte. Dieser Lauf misst die Decke auf dem
+berichtigten Vorrat. **18 Regeln statt 14**, n_eff 16 bis 254.
+
+### Was sich aendert
+
+    Groesse                    vorher (14)        jetzt (18)
+    Decke                 1,931 bei n_eff 69   1,579 bei n_eff 63
+    es fehlen                        1,591                1,937
+    Nullstelle                   n_eff 208            n_eff 190
+    Kopplung              r -0,714 / t -3,53   r -0,544 / t -2,59
+    Vorsprung des Bestands           +2,41                +1,18
+    Preis (Befund 179)     3,70 bei n_eff 97    1,67 bei n_eff 101
+
+Die Decke faellt, die Luecke waechst, der Vorsprung des Bestands halbiert
+sich. Nichts davon ist milder als vorher - die vier fehlenden Regeln mit den
+groessten Stichproben (bis n_eff 254) ziehen die Gerade nach unten.
+
+### Und dann faellt die Gerade selbst
+
+Achtzehn Punkte, r = -0,544 bei t = -2,59: formal traegt das. Eine Zeile
+weiter nicht mehr:
+
+    alle 18                            r = -0,544   t = -2,59   traegt
+    ohne 'Momentum Ruecksetzer'        r = -0,244   t = -0,98   traegt nicht
+    ohne 'Starker Trend, Momentum'     r = -0,830   t = -5,76   traegt
+
+**Ein einziger Punkt haelt die Kopplung.** 'Momentum Ruecksetzer' steht bei
+n_eff 254 mit SR -0,1358 - ganz rechts und ganz unten, der Hebel einer
+Regressionsgeraden schlechthin. Es sind nicht "Ausreisser allgemein": Ohne
+einen anderen Punkt wird die Kopplung staerker.
+
+Eine Decke, die ein Punkt loeschen kann, ist keine. Damit ist **Befund 168 auf
+dem berichtigten Vorrat nicht belegt**, und alles, was auf seiner Geraden
+steht, steht mit ihm.
+
+(Beiseite, damit es niemand als Rettung liest: Beschraenkt man den Vorrat auf
+SR > 0,10, bleibt r = -0,573 bei t = -2,52. Das ist ein Schnitt auf der
+**abhaengigen** Groesse und verzerrt die Steigung - er belegt nichts.)
+
+### Die Familienaussage haelt auch nicht
+
+    Einstiegsindikator     keine Mehrheitsfamilie   nicht geprueft
+    gleitende zusammen     keine Mehrheitsfamilie   nicht geprueft
+    Regellogik (Bef. 83)   'Trend' 12/18, t=-1,77   traegt nicht allein
+
+**Kein pruefbarer Schnitt stuetzt sie.** Auf 18 Regeln hat unter beiden
+Indikator-Einteilungen keine Familie mehr die Mehrheit - die neun
+nachgerueckten Regeln sind ueberwiegend keine gleitenden Durchschnitte, genau
+wie Befund 182 vermutet hat. Nach Regellogik hat 'Trend' zwoelf von achtzehn,
+traegt aber selbst nicht.
+
+Das Werkzeug aus Befund 181 hat hier zum ersten Mal gearbeitet und **gegen**
+den Befund entschieden, auf den es gebaut wurde. Genau dafuer war es da.
+
+### Die Bilanz, ohne Beschoenigung
+
+* **Befund 168** (Decke bei 1,931): neu gemessen 1,579 - und die Gerade
+  haelt an einem Punkt. Zurueckgenommen.
+* **Befund 169** (eine Familie traegt die Kopplung): auf 18 Regeln gibt es
+  keine Mehrheitsfamilie mehr. Zurueckgenommen.
+* **Befund 179** (Preis 3,70 Reststreuungen, "das Mengentor ist nicht die
+  billigere Haelfte"): der Preis ist 1,67 und liegt damit **unter** den 3,25
+  aus reiner Auswahl. Die Rechnung stimmt, ihre Grundlage nicht.
+* **Befund 180** (Kopplung und Familienzaehlung im Auftrag an die
+  Research-KI): beide Zahlen sind fort. Der Auftrag uebergibt jetzt **keine**
+  Kopplung.
+* **Befund 181** (die Gegenprobe war nicht moeglich): jetzt war sie es, und
+  sie faellt negativ aus.
+
+Was **unberuehrt** bleibt und keine Gerade braucht: Keine der 18 gemessenen
+Regeln kommt in die Naehe der Latte. Die beste steht bei Guete 2,484 gegen
+3,516 - eine Beobachtung an achtzehn Messungen, die an keiner Anpassung
+haengt. Das ist die Aussage, die traegt, und sie ist unveraendert seit
+Befund 61.
+
+Zwei Regeln haben negative Guete (-1,891 und -2,164). Auch das ist ein
+Ergebnis: Der Vorrat enthaelt Regeln, die auf dieser Historie Geld verlieren,
+und sie standen bis Befund 182 nicht in der Rechnung.
+
+### Was gebaut wurde
+
+* Der Modulkopf von `research/vorratsdecke.py` traegt die berichtigten Zahlen
+  und die drei Ruecknahmen - nicht mehr nur die Warnung aus Befund 182.
+* `cli._auftragslage` uebergibt keine Kopplung, keine Familie und keinen
+  Preis mehr. Der Abschnitt "Warum das schwer ist" faellt aus dem Auftrag,
+  und das ist richtig: Was traegt, ist die Luecke, und die steht darueber.
+* Die Tests dazu pruefen den **echten** Auftrag, nicht das Modul.
+
+Kostet keinen Versuch: Derselbe Katalog, andere Groessenlogik, keine Auswahl.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

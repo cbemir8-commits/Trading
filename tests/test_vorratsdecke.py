@@ -524,9 +524,10 @@ class TestHaengtEsAmSchnitt:
 
 
 def test_der_modulkopf_warnt_vor_seinen_eigenen_zahlen() -> None:
-    """**Befund 182.** Die Zahlen im Kopf stehen auf einem Vorrat, der nach
-    der Groessenlogik gefiltert war - neun Regeln fehlten, und der Grund hat
-    mit ihrem Einstieg nichts zu tun.
+    """**Befund 182/183.** Die Zahlen im Kopf stehen auf einem Vorrat, der
+    nach der Groessenlogik gefiltert war - neun Regeln fehlten, und der Grund
+    hat mit ihrem Einstieg nichts zu tun. Befund 183 hat neu gemessen; der
+    Kopf traegt die berichtigten Zahlen und die Ruecknahmen.
 
     Sie hier stehen zu lassen, ohne das dazuzusagen, ist genau der Fehler,
     den Befund 130 an einer veralteten Fundstelle gefunden hat: Zwei Laeufe
@@ -536,9 +537,12 @@ def test_der_modulkopf_warnt_vor_seinen_eigenen_zahlen() -> None:
     import research.vorratsdecke as modul
 
     kopf = modul.__doc__ or ""
-    assert "ACHTUNG" in kopf
-    assert "Befund 182" in kopf
-    assert "gefilterten Vorrat" in kopf
+    assert "BERICHTIGT IN BEFUND 183" in kopf
+    assert "gefilterten Vorrat gemessen" in kopf
     # Die betroffenen Befunde beim Namen - sonst sucht sie niemand.
-    for nummer in ("168", "169", "179", "181"):
+    for nummer in ("168", "169", "179"):
         assert nummer in kopf
+    # Und die Ruecknahme selbst, nicht nur der Hinweis auf sie.
+    assert "18 statt 14 Regeln" in kopf
+    assert "haelt an einem einzigen Punkt" in kopf
+    assert "haelt nicht" in kopf

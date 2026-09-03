@@ -1,21 +1,37 @@
 """Was der Vorrat hergibt - und ob das je reichen kann.
 
-ACHTUNG: Alle Zahlen unten stehen auf einem gefilterten Vorrat
-==============================================================
-**Befund 182.** Bis dahin lief jedes Genom mit seiner **eigenen**
-Groessenlogik durch diesen Katalog. Neun von dreissig Tagesgenomen lieferten
-dadurch null Trades - nicht weil ihr Einstieg nicht ausloest (die Signale
-kreuzen 182-mal), sondern weil ihre ``risiko``-Logik am Stop-Abstand bemisst
-und ablehnt. Mit der Groessenlogik des Bestands handeln dieselben Regeln 138,
-103, 71, 61, 58, 41, 40, 19 und 7 Mal.
+BERICHTIGT IN BEFUND 183 - die Zahlen weiter unten sind Geschichte
+==================================================================
+Bis Befund 182 lief jedes Genom mit seiner **eigenen** Groessenlogik durch
+diesen Katalog. Neun von dreissig Tagesgenomen lieferten dadurch null Trades -
+nicht weil ihr Einstieg nicht ausloest, sondern weil ihre ``risiko``-Logik am
+Stop-Abstand bemisst und ablehnt. Alles unter "Was gemessen wurde (Befund
+168)", "Worauf die Kopplung steht (Befund 169)" und "Wo der Bestand darin
+steht" ist an diesem gefilterten Vorrat gemessen.
 
-Die vierzehn Regeln unten sind damit **die, die diesen Filter ueberlebt
-haben**, und der Filter hat mit dem Einstieg nichts zu tun. Betroffen sind
-alle Zahlen dieses Modulkopfs sowie die Befunde 168, 169, 179, 180 und 181 -
-insbesondere die Familienzaehlung "sma 9, roc 2, ...", auf der sie stehen.
-Neu gemessen ist noch nichts; ``cli vorratsdecke`` stellt seit Befund 182
-alle auf dieselbe Groessenlogik, und der naechste Lauf liefert die neuen
-Zahlen.
+Auf dem berichtigten Vorrat, **18 statt 14 Regeln**, n_eff 16 bis 254:
+
+    Decke                    1,579 bei n_eff 63   (vorher 1,931 bei 69)
+    es fehlen                1,937               (vorher 1,591)
+    Nullstelle               n_eff 190           (vorher 208)
+    Kopplung                 r = -0,544, t = -2,59  (vorher -0,714 / -3,53)
+    Vorsprung des Bestands   +1,18 Reststreuungen   (vorher +2,41)
+    Preis (Befund 179)       1,67 bei n_eff 101     (vorher 3,70 bei 97)
+
+**Und die Kopplung haelt an einem einzigen Punkt.** Ohne 'Momentum
+Ruecksetzer' (n_eff 254, SR -0,1358) faellt sie auf r = -0,244 bei t = -0,98
+und traegt nicht mehr. Ohne einen anderen Punkt wird sie staerker; es ist
+nicht "Ausreisser allgemein", sondern dieser eine, ganz rechts und ganz
+unten. Eine Decke, die ein Punkt loeschen kann, ist keine.
+
+**Die Familienaussage aus Befund 169 haelt nicht.** Auf 18 Regeln hat unter
+keiner der beiden Indikator-Einteilungen eine Familie mehr die Mehrheit; nach
+Regellogik hat 'Trend' zwoelf von achtzehn, traegt aber selbst nicht
+(t = -1,77). Kein pruefbarer Schnitt stuetzt sie.
+
+Was **unberuehrt** bleibt und keine Gerade braucht: Keine der 18 gemessenen
+Regeln kommt in die Naehe der Latte. Die beste steht bei Guete 2,484 gegen
+3,516.
 
 Die Frage, die Befund 75 offen liess
 ------------------------------------

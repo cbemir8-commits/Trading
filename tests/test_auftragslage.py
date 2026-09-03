@@ -207,12 +207,17 @@ class TestWoDieKopplungSteht:
         assert "-0.714" in text
         assert "-0.533" not in text
 
-    def test_der_echte_auftrag_traegt_die_neuen_zahlen(self, tmp_path) -> None:
-        """**Sonst stuende die Korrektur nur im Modul, nicht im Prompt.**
+    def test_der_echte_auftrag_behauptet_keine_kopplung_mehr(self, tmp_path) -> None:
+        """**Befund 183, und es ist eine Ruecknahme.**
 
-        Genau diese Luecke ist der Befund: Die Einschraenkung stand seit
-        Befund 169 im Register und kam elf Befunde lang nicht dort an, wo sie
-        wirkt.
+        Der Auftrag trug seit Befund 180 die Kopplung -0,714 und die Familie
+        'sma'. Beide sind auf dem Katalog gemessen, den Befund 182 als nach
+        der Groessenlogik gefiltert nachgewiesen hat. Auf dem berichtigten
+        Vorrat hat keine Familie mehr die Mehrheit, und die Kopplung faellt
+        auf t = -0,98, sobald ein einziger Punkt fehlt.
+
+        Eine Korrelation, die ein Punkt loeschen kann, gehoert nicht in einen
+        Auftrag - das ist der Fehler aus Befund 75.
         """
         import json
 
@@ -223,11 +228,16 @@ class TestWoDieKopplungSteht:
         )
         echt = _auftragslage(tmp_path)
 
-        assert echt.kopplung == pytest.approx(-0.714)
-        assert echt.kopplung_traegt == "sma"
-        assert dict(echt.familien)["sma"] == 9
-        assert echt.familienpreis == pytest.approx(3.70)
-        assert "such woanders" in echt.als_auftrag()
+        assert echt.kopplung is None
+        assert echt.kopplung_traegt is None
+        assert echt.familien == ()
+        assert echt.familienpreis is None
+        text = echt.als_auftrag()
+        assert "Warum das schwer ist" not in text
+        assert "such woanders" not in text
+        # Was traegt, steht weiter da: die Luecke selbst.
+        assert "Was tatsaechlich fehlt" in text
+        assert "Es fehlen" in text
 
 
 class TestEinbau:
