@@ -204,16 +204,34 @@ class Decke:
         return self.steigung < 0 and abs(self.t) >= MINDEST_T
 
     @property
+    def durchweg_ohne_vorteil(self) -> bool:
+        """Faellt die Gerade und liegt sie dabei **ueberall** unter null?
+
+        Bei fallender Gerade und einem Achsenabschnitt, der schon bei null
+        Trades keinen Vorteil sieht, gibt es im ganzen sinnvollen Bereich
+        keine Stichprobe mit positiver Qualitaet. Das ist die haertere
+        Aussage: nicht "die Decke ist zu niedrig", sondern "es gibt nichts
+        zu decken" (Befund 188).
+        """
+        return self.steigung < 0 and self.achsenabschnitt <= 0
+
+    @property
     def scheitel_n(self) -> float | None:
         """Bei welcher Stichprobe die Guete ihr Maximum hat.
 
         ``(a + b n) * sqrt(n)`` ist maximal bei ``n = -a / (3 b)`` - Ableitung
         Null. Ohne tragfaehige Kopplung wird **keine** Zahl geliefert, statt
         eine auszurechnen, die nichts bedeutet.
+
+        **Und ebenso wenig bei negativem Achsenabschnitt** (Befund 188). Die
+        Formel liefert dann eine negative Stichprobengroesse - rechnerisch
+        richtig, als Aussage sinnlos. Auf Viertelstunden kam ``n = -2085``
+        heraus, und ``urteil`` hat es zu formatieren versucht.
         """
         if not self.tragfaehig:
             return None
-        return -self.achsenabschnitt / (3 * self.steigung)
+        n = -self.achsenabschnitt / (3 * self.steigung)
+        return n if n > 0 else None
 
     @property
     def scheitel_guete(self) -> float | None:
@@ -230,10 +248,16 @@ class Decke:
 
     @property
     def nullstelle(self) -> float | None:
-        """Ab welcher Stichprobe die Gerade keinen Vorteil mehr sieht."""
+        """Ab welcher Stichprobe die Gerade keinen Vorteil mehr sieht.
+
+        ``None``, wenn es diese Stelle im positiven Bereich nicht gibt - also
+        auch dann, wenn die Gerade schon bei null Trades unter null liegt und
+        die Formel eine negative Stichprobe liefert (Befund 188).
+        """
         if self.steigung >= 0:
             return None
-        return -self.achsenabschnitt / self.steigung
+        null = -self.achsenabschnitt / self.steigung
+        return null if null > 0 else None
 
     def vorhersage(self, n_eff: int) -> float:
         return self.achsenabschnitt + self.steigung * n_eff
@@ -381,17 +405,54 @@ def urteil(decke: Decke, noetig_bei) -> str:
             f"Regeln ist r = {decke.r:+.3f}. Diese Punkte sagen darueber "
             f"nichts - weder das eine noch das andere."
         )
+    unten, oben = decke.bereich
+    herkunft = (
+        f"Gemessen an {len(decke.punkte)} verschiedenen Regeln, "
+        f"r = {decke.r:+.3f} bei t = {decke.t:+.2f}, "
+        f"Stichproben von {unten} bis {oben}."
+    )
+    # **Der Vorrat kann auch ohne jeden Vorteil sein** (Befund 188). Dann hat
+    # die Guetekurve kein Maximum im positiven Bereich, und die Scheitelformel
+    # liefert eine negative Stichprobe. Bis Befund 188 wurde die hier
+    # formatiert - auf Viertelstunden ist der Bericht daran abgebrochen.
+    if decke.durchweg_ohne_vorteil:
+        return "\n".join(
+            [
+                f"**Dieser Vorrat hat keine Decke - er hat keinen Boden.** "
+                f"Die Gerade liegt schon bei null Trades bei "
+                f"{decke.achsenabschnitt:+.4f} und faellt weiter.",
+                "Es gibt damit **keine** Stichprobengroesse, bei der dieser "
+                "Vorrat einen Vorteil je Trade hergibt - nicht nur keine, die "
+                "reicht.",
+                herkunft,
+                "**Das ist eine Aussage ueber diesen Vorrat, nicht ueber den "
+                "Raum aller Strategien** - und kein Grund, eine Latte zu "
+                "senken.",
+            ]
+        )
+
     n = decke.scheitel_n
     g = decke.scheitel_guete
+    if n is None or g is None:
+        return (
+            f"**Kein Scheitel im sinnvollen Bereich.** Die Kopplung traegt "
+            f"(r = {decke.r:+.3f}, t = {decke.t:+.2f}), aber die Guetekurve "
+            f"hat kein Maximum bei einer positiven Stichprobe. {herkunft}"
+        )
     noetig = noetig_bei(round(n))
-    unten, oben = decke.bereich
+    if noetig is None:
+        return (
+            f"**Die hoechste Guete, die dieser Vorrat hergibt: {g:.3f}** bei "
+            f"n_eff {n:.0f}.\n"
+            f"Dort gibt es keine Latte - bei dieser Stichprobe urteilt das "
+            f"Gate nicht, und ob {g:.3f} reichen wuerde, ist damit nicht "
+            f"gesagt.\n{herkunft}"
+        )
     zeilen = [
         f"**Die hoechste Guete, die dieser Vorrat hergibt: {g:.3f}** bei "
         f"n_eff {n:.0f}.",
         f"Verlangt sind dort {noetig:.3f} - es fehlen {noetig - g:.3f}.",
-        f"Gemessen an {len(decke.punkte)} verschiedenen Regeln, "
-        f"r = {decke.r:+.3f} bei t = {decke.t:+.2f}, "
-        f"Stichproben von {unten} bis {oben}.",
+        herkunft,
     ]
     null = decke.nullstelle
     if null is not None:

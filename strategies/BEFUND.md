@@ -17351,3 +17351,115 @@ ein - der Fehler aus Befund 139. Der Bericht sagt es jetzt dazu.
 Kostet keinen Versuch: nachgerechnet wurden Trades, die schon gerechnet sind;
 ausgewaehlt wurde nichts. Versuchszaehler 198 unveraendert, Suchbudget 68 von
 100.
+
+## Hundertachtundachtzig. Dieser Vorrat hat keine Decke, er hat keinen Boden
+
+Der Viertelstunden-Katalog, neu gemessen mit der Groessenlogik-Normalisierung
+aus Befund 182 und der berichtigten Intervallpruefung aus Befund 184 - beides
+hatte Befund 171 noch nicht. 36 Regeln handeln, drei nicht.
+
+    Regel                                  n_eff   SR/Trade    Guete   noetig
+    Trendbeteiligung mit Puffer              536    +0,0304    0,703    3,948
+    Seltener grosser Ausbruch               1110    +0,0044    0,145    4,071
+    ----------------------------- die uebrigen 34 negativ ------------------
+    Starker Trend, Momentum                 1958    -0,0282   -1,248    4,147
+    ...
+    Momentum Ruecksetzer                    7857    -0,2092  -18,540    4,271
+
+**Zwei von 36 sind positiv**, und beide weit unter ihrer Latte. Das
+reproduziert Befund 171 auf einem anders zusammengesetzten Katalog: dort
+waren es ebenfalls zwei, ebenfalls dieselben beiden.
+
+### Ein Unterschied zu Befund 171, und er ist wichtig
+
+Befund 171 hat auf Viertelstunden **keine Kopplung** gefunden - `r = -0,044`
+bei `|t| = 0,26` - und daraus eine dritte Stuetze fuer die Einschraenkung aus
+Befund 169 gemacht: *"Die Kopplung ist eine Familieneigenschaft, kein
+Gesetz. Hier fallen einfach alle."*
+
+Auf dem berichtigten Vorrat steht dort `r = -0,352` bei `t = -2,19`. **Die
+Kopplung ist da**, und sie raeumt die Schwelle von `|t| = 2`, die dieses
+Projekt seit Befund 75 verlangt.
+
+Die Groessenlogik-Normalisierung aus Befund 182 hat also nicht nur die
+Grundgesamtheit der Tagesbefunde veraendert, sondern auch die der
+Viertelstunden - und dort ein Vorzeichen sichtbar gemacht, wo vorher Rauschen
+stand. Der Satz aus 171 ist damit **zurueckzunehmen**: Er war eine Aussage
+ueber einen nach der Groessenlogik gefilterten Vorrat, nicht ueber die
+Viertelstunden.
+
+Was das fuer Befund 169 heisst, sagt dieser Lauf **nicht**. Dass die Kopplung
+hier sichtbar ist, macht sie nicht zum Gesetz; es nimmt nur eine der drei
+Stuetzen weg, auf denen die Einschraenkung stand. Die anderen beiden hat
+Befund 183 ohnehin schon zurechtgerueckt.
+
+### Die Gerade hat keinen Boden
+
+    SR(n) = -0,0882 - 1,41e-05 * n     r = -0,352   t = -2,19   36 Regeln
+
+Der **Achsenabschnitt ist negativ**. Auf Tageskerzen faellt die Gerade von
+einem positiven Wert aus ab und schneidet die Null bei n_eff 190 - dort gibt
+es einen Bereich, in dem der Vorrat Vorteil hergibt, und die Frage ist, ob er
+reicht. Hier gibt es diesen Bereich nicht:
+
+> Es gibt **keine** Stichprobengroesse, bei der dieser Vorrat einen Vorteil
+> je Trade hergibt - nicht nur keine, die reicht.
+
+Das ist eine haertere Aussage als "die Decke ist zu niedrig", und sie ist
+einfacher zu pruefen: Sie steht schon in den 34 negativen Zeilen der Tabelle.
+
+### Woran der Bericht abgebrochen ist
+
+`SR*sqrt(n)` ist maximal bei `n = -a/(3b)`. Bei negativem Achsenabschnitt und
+negativer Steigung ist das eine **negative Stichprobengroesse** - hier
+`n = -2085`. `scheitel_guete` hat den Fall abgefangen und `None` geliefert,
+`scheitel_n` nicht, und `urteil` hat beide formatiert:
+
+    TypeError: unsupported format string passed to NoneType.__format__
+
+Mitten im Bericht, nach zweieinhalb Stunden Rechnen, **nach** der Tabelle und
+**vor** allem uebrigen. Dieselbe Formel haette auch die Nullstelle bei
+n_eff -6254 gemeldet - "die Gerade sieht bei n_eff -6254 keinen Vorteil mehr".
+
+Der Fehler ist nicht die fehlende `None`-Pruefung, sondern was dahinter
+steht: Das Modul war an einem Vorrat gebaut, dessen Gerade positiv beginnt,
+und hat diese Eigenschaft als gegeben genommen. Zum wievielten Mal, steht in
+Befund 56, 182, 184 und 187.
+
+Behoben, mit Tests auf den gemessenen Zahlen:
+
+- `scheitel_n` liefert nichts, wo die Formel eine negative Stichprobe ergibt
+- `nullstelle` ebenso
+- `durchweg_ohne_vorteil` benennt den Fall, statt ihn nur abzufangen
+- `urteil` spricht dort die haertere Aussage aus, statt einen Scheitel
+  vorzurechnen, den es nicht gibt
+- und ein dritter Weg, auf dem eine `None` formatiert worden waere: ein
+  Scheitel in einem Bereich, in dem es gar keine Latte gibt
+
+### Was das fuer die Menge heisst
+
+Befund 178 hat das Mengentor geoeffnet - dieselbe Qualitaet bei groesserer
+Stichprobe genuegt ebenso -, und Befund 179 hat es wieder zugemacht: In einem
+gekoppelten Vorrat ist "dieselbe Qualitaet" keine freie Wahl. Die
+Viertelstunden sind der Extremfall davon. Die Stichproben sind hier gut
+zehn- bis dreissigmal so gross wie auf Tageskerzen (204 bis 7857 gegen 16 bis
+254), die Latte steigt dabei nur von 3,5 auf 4,3 - und die Qualitaet je Trade
+ist durchweg negativ. **Die Latte war nie das Problem.**
+
+### Was ausdruecklich offen bleibt
+
+Ob die Kopplung hier an den **Signalen** oder an der **Reibung** haengt, sagt
+dieser Lauf nicht - die Kostenfrage aus Befund 187 stand hinter der Stelle,
+an der der Bericht abgebrochen ist. Auf Tageskerzen lag der Kostenanteil bei
+hoechstens 0,0086 der Trade-Streuung.
+
+Die Laufprotokolle nennen zwar je Lauf einen Gebuehrenanteil am
+Bruttogewinn - er streut hier von 0 bis 37 % -, aber das ist **nicht**
+dieselbe Groesse: Der Kostenanteil der Kostenfrage misst die Gebuehr je Trade
+in Einheiten der Trade-Streuung, der Protokollwert einen Anteil an einer
+Summe, und bei neun Laeufen steht dort 0,0 %, weil es keinen Bruttogewinn
+gibt, an dem ein Anteil zu messen waere. Aus diesen Zahlen laesst sich die
+Frage nicht beantworten. Der naechste Lauf misst sie richtig.
+
+Kostet keinen Versuch: 36 vorhandene Katalogregeln nachgemessen, keine
+ausgewaehlt. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

@@ -546,3 +546,84 @@ def test_der_modulkopf_warnt_vor_seinen_eigenen_zahlen() -> None:
     assert "18 statt 14 Regeln" in kopf
     assert "haelt an einem einzigen Punkt" in kopf
     assert "haelt nicht" in kopf
+
+
+class TestEinVorratOhneJedenVorteil:
+    """**Befund 188.** Der Fall, an dem der Bericht abgebrochen ist.
+
+    Auf Viertelstunden faellt die Gerade nicht von einem positiven Wert aus
+    ab, sondern liegt **schon bei null Trades unter null**: gemessen
+    ``SR(n) = -0,0882 - 1,41e-05 n`` ueber 36 Regeln. Dann hat ``SR*sqrt(n)``
+    kein Maximum im positiven Bereich, und die Scheitelformel ``-a/(3b)``
+    liefert eine negative Stichprobengroesse - hier ``n = -2085``.
+
+    ``scheitel_guete`` hat das abgefangen und ``None`` geliefert,
+    ``scheitel_n`` nicht, und ``urteil`` hat beide formatiert. Ergebnis:
+    ``TypeError: unsupported format string passed to NoneType.__format__``,
+    mitten im Bericht, nach zweieinhalb Stunden Rechnen.
+
+    Die Zahlen unten sind die gemessenen. Der Vorrat ist damit nicht
+    "schlechter als der von Tageskerzen" - er ist eine andere Sorte Aussage.
+    """
+
+    def gemessen(self) -> Decke:
+        """Die Gerade aus Befund 188, ohne die 36 Laeufe zu wiederholen."""
+        return baue(gerade(-0.08816, -1.410e-05, [204, 1000, 2000, 4000, 7857]))
+
+    def test_die_scheitelformel_liefert_keine_negative_stichprobe(self) -> None:
+        decke = self.gemessen()
+
+        assert decke.tragfaehig, "ohne Deckung prueft dieser Test etwas anderes"
+        assert -decke.achsenabschnitt / (3 * decke.steigung) < 0, (
+            "die Formel selbst muss hier negativ werden, sonst ist der Fall weg"
+        )
+        assert decke.scheitel_n is None
+        assert decke.scheitel_guete is None
+
+    def test_es_gibt_keine_nullstelle_im_positiven_bereich(self) -> None:
+        decke = self.gemessen()
+
+        assert -decke.achsenabschnitt / decke.steigung < 0
+        assert decke.nullstelle is None
+
+    def test_das_urteil_sagt_die_haertere_aussage(self) -> None:
+        text = urteil(self.gemessen(), lambda n: 4.0)
+
+        assert "keinen Boden" in text
+        assert "keine** Stichprobengroesse" in text
+        assert "nicht nur keine, die reicht" in text
+        # Und es rechnet keinen Scheitel vor, den es nicht gibt.
+        assert "hoechste Guete" not in text
+
+    def test_der_vorbehalt_bleibt_auch_hier_stehen(self) -> None:
+        """Auch das haertere Urteil ist eine Aussage ueber **diesen** Vorrat."""
+        text = urteil(self.gemessen(), lambda n: 4.0)
+
+        assert "nicht ueber den Raum aller Strategien" in text
+        assert "kein Grund, eine Latte zu senken" in text
+
+    def test_ein_vorrat_mit_boden_bleibt_wie_er_war(self) -> None:
+        """Die Verzweigung darf den Tagesfall nicht umleiten."""
+        decke = baue(gerade(0.40, -0.002, [20, 40, 60, 80, 100]))
+
+        assert not decke.durchweg_ohne_vorteil
+        assert decke.scheitel_n is not None
+        assert "hoechste Guete" in urteil(decke, lambda n: 4.0)
+
+
+class TestOhneLatteAmScheitel:
+    """Der dritte Weg, auf dem ``urteil`` eine ``None`` formatiert haette.
+
+    ``noetige_guete`` liefert bei sehr kleinen Stichproben nichts - dort
+    urteilt das Gate nicht. Liegt der Scheitel in diesem Bereich, gibt es
+    eine Guete, aber keine Latte, mit der man sie vergleichen koennte.
+    """
+
+    def test_ohne_latte_wird_keine_luecke_erfunden(self) -> None:
+        decke = baue(gerade(0.40, -0.002, [20, 40, 60, 80, 100]))
+
+        text = urteil(decke, lambda n: None)
+
+        assert "keine Latte" in text
+        assert "nicht gesagt" in text
+        assert "es fehlen" not in text

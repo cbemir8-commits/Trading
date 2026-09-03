@@ -110,12 +110,19 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     # Befund 145 hat dasselbe noch einmal gemessen - mit der Einteilung des
     # Gates (135), am Spot-Punkt (108) und mit der Zerlegung in brutto und
     # netto. Ergebnis unveraendert, Zahlen neu.
+    #
+    # Befund 188 hat es auf dem nach 182/184 berichtigten Vorrat wiederholt.
+    # Zwei Dinge aendern sich gegen 171: Die Kopplung ist jetzt da (t = -2,19
+    # statt -0,26), und die Aussage wird haerter - der Achsenabschnitt ist
+    # negativ, es gibt also **keine** Stichprobengroesse mit Vorteil je
+    # Trade, nicht nur keine, die reicht. Dieselben zwei Regeln sind positiv.
     Richtung(
         "15-Minuten-Kerzen",
-        "36 Regeln auf 225.000 Kerzen: 34 negativ, beste Guete 0,744 gegen "
-        "noetige 3,964 - und keine Kopplung (t = -0,26)",
+        "36 Regeln auf 225.000 Kerzen: 34 negativ; die Gerade beginnt schon "
+        "bei -0,0882 und faellt (t = -2,19) - keine Stichprobe traegt dort "
+        "einen Vorteil je Trade",
         29,
-        zuletzt=171,
+        zuletzt=188,
     ),
     # Befund 21 hat diese Richtung eroeffnet, Befund 23 hat sie nach zwei
     # behobenen Messfehlern neu vermessen (die Leiter rutschte um eine Stufe),
@@ -684,6 +691,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Kandidat.aus_trades, und 'cli vorratsdecke' rechnet sie mit",
         187,
     ),
+    # Fuenfte Wiederholung derselben Bauart: an einem Vorrat gebaut, dessen
+    # Gerade positiv beginnt, und diese Eigenschaft als gegeben genommen.
+    Richtung(
+        "Scheitelformel lieferte eine negative Stichprobe",
+        "bei negativem Achsenabschnitt ergibt -a/(3b) ein n < 0 (auf "
+        "Viertelstunden -2085); 'urteil' hat es formatiert und ist nach "
+        "zweieinhalb Stunden Rechnen mit TypeError abgebrochen. scheitel_n "
+        "und nullstelle liefern dort jetzt nichts, durchweg_ohne_vorteil "
+        "benennt den Fall",
+        188,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -778,9 +796,10 @@ OFFEN: tuple[Richtung, ...] = (
     Richtung(
         "Traegt die Reibung die Kopplung auf kurzen Kerzen?",
         "auf Tageskerzen nein: Kostenanteil 0,0013 bis 0,0086, Kippfaktor 56 "
-        "(rund 2,2 % je Roundtrip). Auf Viertelstunden ungemessen",
+        "(rund 2,2 % je Roundtrip). Auf Viertelstunden ungemessen - der "
+        "Bericht ist vor der Stelle abgebrochen (188)",
         78,
-        187,
+        188,
     ),
 )
 

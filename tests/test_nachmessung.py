@@ -204,7 +204,10 @@ def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
         # Zerlegung in brutto und netto.
         # Befund 171 hat 36 statt 14 Regeln gemessen, netto, auf neu
         # geholten Bitstamp-Kerzen.
-        "15-Minuten-Kerzen": 171,
+        # Befund 188: dieselben 36 auf dem nach 182/184 berichtigten Vorrat -
+        # die Kopplung ist dort jetzt zu sehen (t = -2,19 statt -0,26), und
+        # der negative Achsenabschnitt macht die Aussage haerter.
+        "15-Minuten-Kerzen": 188,
     }
 
 
