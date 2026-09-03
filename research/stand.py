@@ -659,6 +659,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Donchian-Ausbrueche nie gesehen",
         184,
     ),
+    # Vierter Ort desselben Filters aus Befund 182.
+    Richtung(
+        "Groessenlogik-Filter auch in 'cli holdout'",
+        "erster Lauf mit --regel lieferte null Trades in allen vier "
+        "Maerkten; jetzt auf der Logik des Bestands, wie in paare und "
+        "vorratsdecke",
+        185,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -714,9 +722,10 @@ OFFEN: tuple[Richtung, ...] = (
     Richtung(
         "Bestand + 'Grosser Trendausbruch'",
         "Guete 3,632 bei n_eff 169 gegen 3,696 - es fehlen 0,064, nach "
-        "ehrlicher Zaehlung von 18 Versuchen 0,089. Vorher war die kleinste "
-        "bekannte Luecke 0,542 (153). Zehn weitere Gates ungeprueft",
+        "ehrlicher Zaehlung von 18 Versuchen 0,089. Aber der Partner haelt "
+        "im Holdout -70 % (Bestand +41 %), auf LTC dreht das Vorzeichen",
         184,
+        185,
     ),
     Richtung(
         "Der Preis in Reststreuungen",

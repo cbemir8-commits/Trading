@@ -17112,3 +17112,79 @@ zaehlt 18.**
   gegen stille Veralterung sichert.
 
 Suchbudget 68 von 100.
+
+## Hundertfuenfundachtzig. Der beste Partner haelt im Holdout minus siebzig Prozent
+
+Befund 184 hat den besten gemessenen Stand des Projekts gefunden - Bestand +
+'Grosser Trendausbruch', Luecke 0,064 - und dazu geschrieben, was zuerst zu
+tun ist: **nicht uebernehmen, sondern pruefen, was ohne Versuche pruefbar
+ist.** Das ist dieser Lauf.
+
+### Erst musste der Befehl es koennen
+
+`cli holdout` konnte nur den Bestand messen. Eine Option `--regel` schlaegt
+jetzt ein Genom im Katalog nach - ueber **alle** Generationen, nicht nur die
+des Intervalls, denn genau diese Abkuerzung war Befund 184.
+
+Der erste Lauf lieferte null Trades in allen vier Maerkten. Grund: derselbe
+Groessenlogik-Filter aus Befund 182, **an einem vierten Ort**. `cli paare`
+normalisiert seit jeher, `cli._familie` seit Befund 56, `cli vorratsdecke`
+seit Befund 182 - `cli holdout` nicht. Er tut es jetzt, und zwar auf die
+Logik des Bestands: `cli paare` hat den Partner gleichgestellt gemessen, eine
+Holdout-Probe unter anderer Groessenlogik pruefte eine andere Regel.
+
+### Und dann die Zahlen
+
+    Markt   Rolle          Trades  n_eff  SR/Trade   Guete  noetig
+    BTC     Entwicklung        45     45    0,4540   3,046   3,554
+    ETH     Entwicklung        28     28    0,2378   1,258   4,019
+    LTC     Holdout            25     25   -0,6834  -3,417   4,299
+    XRP     Holdout            22     22    0,1995   0,936   4,774
+
+    SR je Trade: Entwicklung +0,3459, Holdout -0,2420
+
+**Der Holdout haelt minus siebzig Prozent.** Das Vorzeichen dreht. Auf LTC
+verliert die Regel 0,68 je Trade - sie ist dort nicht schwaecher, sie ist
+verkehrt herum.
+
+Zum Vergleich: Der Bestand haelt **+41 %** (Befund 174). Der Partner, der die
+Luecke von 0,705 auf 0,064 gedrueckt hat, haelt -70 %.
+
+### Was das ueber die 0,064 sagt
+
+Die 0,064 sind auf BTC und ETH gemessen - denselben Maerkten, auf denen der
+Partner aus achtzehn ausgewaehlt wurde. Der Holdout ist die einzige
+Messung, die nicht auf diesen Maerkten steht, und sie sagt: **dort ist der
+Vorteil je Trade nicht.**
+
+Das ist kein Beweis. Der Bericht nennt die Grenzen selbst, und sie sind
+ernst:
+
+* Holdout und Entwicklung korrelieren mit 0,685 - rund 47 % gemeinsame
+  Varianz. Ein Holdout auf diesen Maerkten ist schwaecher als sein Name.
+* Der Aufwaertstrend ist nicht herausgerechnet.
+* 25 und 22 Trades sind wenige. Ein einzelnes schlechtes Jahr auf LTC kann
+  das Vorzeichen tragen.
+
+Aber die Richtung ist eindeutig, und sie ist die **dritte Stimme** neben dem
+Deflated Sharpe und der Einordnung in die eigene Grundgesamtheit.
+
+### Was daraus folgt
+
+Der naechste Schritt bleibt, was Befund 184 gesagt hat, nur mit einer
+Antwort weniger offen: Von den drei versuchsfreien Proben ist die erste
+gelaufen und negativ ausgefallen. Ein Kandidat, dessen Vorteil auf zwei von
+vier Maerkten das Vorzeichen wechselt, ist keiner, den man fuer 18 Versuche
+kauft.
+
+**Und das ist der Wert des Ablaufs, nicht sein Scheitern.** Die Reihenfolge
+"erst die kostenlosen Proben, dann die Versuche" hat hier zum ersten Mal
+etwas verhindert, statt nur etwas zu bestaetigen.
+
+Offen bleibt, was Befund 184 sonst genannt hat: Zufallseinstiege und
+Parameter-Plateau, beide fuer den Partner ungemessen. Und die Frage, ob ein
+**anderes** der sieben besseren Paare den Holdout haelt - das laesst sich
+jetzt messen, weil der Befehl es kann.
+
+Kostet keinen Versuch: dieselbe Regel, andere Maerkte, keine Auswahl.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

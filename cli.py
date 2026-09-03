@@ -10784,6 +10784,38 @@ def vorratsdecke(
         )
 
 
+def _katalogregel(name: str):
+    """Ein Genom aus dem Katalog, beim Namen genannt.
+
+    **Ueber alle Generationen, nicht nur die des Intervalls.** Befund 184 hat
+    gezeigt, wohin die Abkuerzung fuehrt: Sechs Stellen haben die
+    Intervallpruefung nachgebaut und dabei vier Generationen ausgeschlossen.
+    Hier wird nichts gefiltert - wer eine Regel beim Namen nennt, meint sie.
+
+    Der Vergleich ist unempfindlich gegen Gross- und Kleinschreibung und
+    gegen Teilnamen, solange die Angabe eindeutig bleibt; mehrdeutige
+    Angaben werden abgewiesen statt geraten.
+    """
+    from research.seeds import GENERATIONS
+
+    alle = [bauen() for liste in GENERATIONS.values() for bauen in liste]
+    gesucht = name.strip().lower()
+    genau = [g for g in alle if g.name.lower() == gesucht]
+    if genau:
+        return genau[0]
+    teilweise = [g for g in alle if gesucht in g.name.lower()]
+    if len(teilweise) == 1:
+        return teilweise[0]
+    if not teilweise:
+        console.print(f"[red]Keine Regel heisst '{name}'.[/]")
+        raise typer.Exit(2)
+    console.print(
+        f"[red]'{name}' passt auf mehrere Regeln:[/] "
+        + ", ".join(sorted(g.name for g in teilweise))
+    )
+    raise typer.Exit(2)
+
+
 @app.command()
 def holdout(
     entwicklung: str = typer.Option(
@@ -10793,6 +10825,10 @@ def holdout(
     pruefung: str = typer.Option(
         "LTCUSD_BITSTAMP,XRPUSD_BITSTAMP", "--holdout",
         help="Maerkte, die bei der Entwicklung keine Rolle gespielt haben.",
+    ),
+    regel: str | None = typer.Option(
+        None, "--regel",
+        help="Name einer Katalogregel; ohne Angabe der Bestand.",
     ),
     intervall: str = typer.Option("D", "--intervall", "-i"),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
@@ -10825,7 +10861,28 @@ def holdout(
     versuche = load_trials(Path(settings.paths.state) / "trials.json")
     interval_obj = Interval(intervall)
     store = CandleStore(settings.paths.data_store)
-    genome = _ohne_hebel(spitzenkandidat())
+    # **Nicht nur der Bestand** (Befund 185). Befund 184 hat den besten
+    # gemessenen Stand des Projekts als Paar gefunden - Bestand + 'Grosser
+    # Trendausbruch' -, und der naechste Schritt ist, den neuen Partner auf
+    # Maerkten zu pruefen, die bei seiner Entwicklung keine Rolle gespielt
+    # haben. Ohne diese Option laesst sich das nicht messen.
+    if regel is None:
+        genome = _ohne_hebel(spitzenkandidat())
+    else:
+        # **Auf die Groessenlogik des Bestands** - der vierte Ort desselben
+        # Filters (Befund 182 fand ihn in ``vorratsdecke``, 56 in der
+        # Vorauswahl, ``paare`` normalisiert seit jeher). Ohne das lieferte
+        # der erste Lauf dieses Befehls null Trades in **allen vier**
+        # Maerkten, und zwar nicht wegen des Einstiegs.
+        #
+        # Es ist ausserdem der Vergleich, um den es geht: ``cli paare`` hat
+        # den Partner gleichgestellt gemessen. Eine Holdout-Probe unter
+        # anderer Groessenlogik pruefte eine andere Regel.
+        genome = _ohne_hebel(
+            _katalogregel(regel).model_copy(
+                update={"sizing": spitzenkandidat().sizing}
+            )
+        )
 
     aufgaben = [(x.strip(), ENTWICKLUNG) for x in entwicklung.split(",") if x.strip()]
     aufgaben += [(x.strip(), HOLDOUT) for x in pruefung.split(",") if x.strip()]

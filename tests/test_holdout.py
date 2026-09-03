@@ -116,3 +116,65 @@ class TestDasUrteilNenntSeineGrenzen:
         assert "Im Holdout bleibt nichts uebrig" in text
         assert "dritte Stimme" in text
         assert "nicht restlos Auswahl" not in text
+
+
+class TestDieRegelWirdBeimNamenGenannt:
+    """**Befund 185.** ``cli holdout`` konnte nur den Bestand pruefen.
+
+    Befund 184 hat den besten gemessenen Stand des Projekts als **Paar**
+    gefunden - Bestand + 'Grosser Trendausbruch'. Der neue Partner ist auf
+    BTC und ETH ausgewaehlt worden; ob er auf Maerkten traegt, die dabei
+    keine Rolle spielten, liess sich mit diesem Befehl nicht messen.
+    """
+
+    def test_ein_genauer_name_findet_die_regel(self) -> None:
+        from cli import _katalogregel
+
+        assert _katalogregel("Grosser Trendausbruch").name == "Grosser Trendausbruch"
+
+    def test_gross_und_kleinschreibung_spielt_keine_rolle(self) -> None:
+        from cli import _katalogregel
+
+        assert _katalogregel("grosser trendausbruch").name == "Grosser Trendausbruch"
+
+    def test_ein_eindeutiger_teilname_genuegt(self) -> None:
+        from cli import _katalogregel
+
+        assert "Donchian" in _katalogregel("Donchian").name
+
+    def test_ein_mehrdeutiger_name_wird_abgewiesen_statt_geraten(self) -> None:
+        """**Sonst misst man eine andere Regel als gemeint.** Bei elf
+        Trend-Regeln im Katalog ist 'Trend' keine Angabe."""
+        import typer
+
+        from cli import _katalogregel
+
+        with pytest.raises(typer.Exit):
+            _katalogregel("Trend")
+
+    def test_ein_unbekannter_name_wird_abgewiesen(self) -> None:
+        import typer
+
+        from cli import _katalogregel
+
+        with pytest.raises(typer.Exit):
+            _katalogregel("Gibt es nicht")
+
+    def test_gesucht_wird_ueber_alle_generationen(self) -> None:
+        """**Die Lehre aus Befund 184.** Wer nach Intervall filtert, schliesst
+        die vier nicht festgelegten Generationen aus - und genau in ihnen
+        steht 'Grosser Trendausbruch'."""
+        from cli import _katalogregel
+        from research.seeds import GENERATIONS, VORGESEHEN
+
+        gefunden = _katalogregel("Grosser Trendausbruch")
+        heimat = [
+            gen
+            for gen, liste in GENERATIONS.items()
+            if any(b().name == gefunden.name for b in liste)
+        ]
+
+        assert heimat, "die Regel muss in einer Generation stehen"
+        assert VORGESEHEN.get(heimat[0]) is None, (
+            "dieser Test prueft gerade den None-Fall"
+        )
