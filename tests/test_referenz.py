@@ -394,3 +394,40 @@ class TestDieSammelrate:
         from research.referenz import AUSSICHT, AUSSICHT_VERBUND
 
         assert AUSSICHT.historie_tage == AUSSICHT_VERBUND.historie_tage
+
+
+class TestJederStandKenntSeineKerzenlaenge:
+    """**Befund 190.** Ohne dieses Feld stand der Bestand auf jeder Geraden.
+
+    ``cli vorratsdecke`` legt den Bestand in den Vorrat, den es gerade
+    gefittet hat, und rechnet seinen Vorsprung in Reststreuungen aus. Auf
+    Viertelstunden kam dabei **+5,64** heraus - gruen gedruckt, groesser als
+    die 3,25, die reine Auswahl erzeugt, und damit als bester Stand der
+    Projektgeschichte zu lesen.
+
+    Er bedeutet nichts. Der Bestand ist auf Tageskerzen gemessen; die Gerade
+    stammt aus 36 Regeln, die er nie gehandelt hat. Auf einem Vorrat, dessen
+    Gerade schon bei null Trades unter null liegt, sieht jeder Kandidat mit
+    positivem Vorteil grossartig aus.
+
+    **Ein Ausschlag nach oben faellt schwerer auf als ein Absturz.** Der
+    TypeError aus Befund 188 hat sich gemeldet; diese Zahl haette man
+    geglaubt.
+    """
+
+    def test_der_massgebliche_punkt_steht_auf_tageskerzen(self) -> None:
+        assert SPOTPUNKT.intervall == "D"
+
+    def test_auch_die_ueberholten_staende_tragen_ihre_kerzenlaenge(self) -> None:
+        for punkt in UEBERHOLT:
+            assert punkt.intervall, f"{punkt.name} ohne Kerzenlaenge"
+
+    def test_die_vorratsdecke_prueft_die_kerzenlaenge(self) -> None:
+        """Der Vergleich muss im Code stehen, nicht in der Absicht."""
+        from pathlib import Path
+
+        quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+
+        assert "SPOTPUNKT.intervall == intervall" in quelle, (
+            "der Bestand wird wieder auf jede Gerade gelegt"
+        )

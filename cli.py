@@ -10833,7 +10833,22 @@ def vorratsdecke(
     # in seiner Grundgesamtheit.
     from research.referenz import SPOTPUNKT
 
-    if decke.tragfaehig:
+    # **Nur auf seiner eigenen Kerzenlaenge** (Befund 190). Der Bestand ist
+    # auf Tageskerzen gemessen; ihn gegen eine Gerade aus 36
+    # Viertelstunden-Regeln zu stellen, vergleicht zwei Vorraete und nicht
+    # einen Kandidaten mit seinem. Der Lauf hat dort +5,64 Reststreuungen
+    # gemeldet, gruen, als besten Stand der Projektgeschichte - und ein
+    # Ausschlag nach oben faellt schwerer auf als ein Absturz.
+    passt = SPOTPUNKT.intervall == intervall
+    if decke.tragfaehig and not passt:
+        console.print(
+            f"\n[dim]Wo der Bestand darin steht: nicht gerechnet. Er ist auf "
+            f"{Interval(SPOTPUNKT.intervall).label} gemessen (Befund "
+            f"{SPOTPUNKT.befund}), dieser Vorrat steht auf "
+            f"{interval_obj.label}. Ein Kandidat gehoert an die Gerade "
+            f"seines eigenen Vorrats.[/]"
+        )
+    if decke.tragfaehig and passt:
         rest = decke.rest(SPOTPUNKT.effektiv, SPOTPUNKT.guete)
         erwartet = decke.erwartetes_maximum(versuche)
         console.print(
@@ -10868,11 +10883,14 @@ def vorratsdecke(
             "diesem Versuchsstand erzeugt.[/]"
         )
 
-        # **Was die Menge kostet** (Befund 179). Befund 178 hat das Mengentor
-        # geoeffnet - dieselbe Qualitaet bei groesserer Stichprobe -, und es
-        # steht unter "bei unveraenderter Qualitaet". In einem gekoppelten
-        # Vorrat ist das keine freie Wahl, und diese Zeile sagt, was daraus
-        # wird.
+    # **Was die Menge kostet** (Befund 179). Befund 178 hat das Mengentor
+    # geoeffnet - dieselbe Qualitaet bei groesserer Stichprobe -, und es
+    # steht unter "bei unveraenderter Qualitaet". In einem gekoppelten
+    # Vorrat ist das keine freie Wahl, und diese Zeile sagt, was daraus wird.
+    #
+    # Das gilt fuer **jeden** Vorrat, auch wenn der Bestand nicht dazu
+    # gehoert - nur der Vergleich mit ihm faellt dann weg (Befund 190).
+    if decke.tragfaehig:
         from research.suchbudget import Budget
 
         budget = Budget(versuche=versuche)
@@ -10882,7 +10900,9 @@ def vorratsdecke(
                 decke,
                 budget.noetig_bei,
                 versuche=versuche,
-                bestand=rest,
+                bestand=decke.rest(SPOTPUNKT.effektiv, SPOTPUNKT.guete)
+                if passt
+                else None,
             )
         )
 

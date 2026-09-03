@@ -55,6 +55,21 @@ class Referenzpunkt:
     versuche: int
     schwelle: float = 0.95
 
+    intervall: str = "D"
+    """Auf welcher Kerzenlaenge dieser Stand gemessen wurde.
+
+    **Das Feld fehlte bis Befund 190**, und ohne es hat ``cli vorratsdecke``
+    den Bestand auf jede Gerade gelegt, die es gerade gefittet hatte - auch
+    auf die des Viertelstunden-Vorrats. Dort kam ein Vorsprung von +5,64
+    Reststreuungen heraus, gruen gedruckt und als bester Stand der
+    Projektgeschichte zu lesen. Er bedeutet nichts: Ein auf Tageskerzen
+    gemessener Kandidat steht dort gegen eine Gerade aus 36 Regeln, die er
+    nie gehandelt hat.
+
+    Ein Ausschlag nach oben ist schwerer zu bemerken als ein Absturz. Der
+    Abbruch aus Befund 188 hat sich gemeldet; diese Zahl haette man geglaubt.
+    """
+
     schiefe: float | None = None
     woelbung: float | None = None
     """Die Verteilungsform der Trades - **damit ``noetiges_n`` rechenbar ist.**

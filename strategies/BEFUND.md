@@ -17564,3 +17564,101 @@ still umbricht.
 
 Kostet keinen Versuch: gerechnet wurde auf Zahlen, die schon gemessen waren.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertneunzig. Auf Viertelstunden koennten es die Kosten sein
+
+Befund 188 ist vor der Kostenfrage abgebrochen. Der Wiederholungslauf hat sie
+beantwortet, und die Antwort ist eine andere als auf Tageskerzen.
+
+### Der Kostenanteil ist eine andere Groesse geworden
+
+    Kostenanteil der Trade-Streuung   Tageskerzen    0,0013 bis 0,0086
+                                      Viertelstunden 0,0094 bis 0,1250
+
+Die **kleinste** Viertelstundenregel liegt ueber der groessten Tagesregel, die
+groesste beim Vierzehnfachen davon. Der Mechanismus, den Befund 78 beschrieben
+hat - wer oefter handelt, haelt kuerzer, streut je Trade weniger, und dieselbe
+Gebuehr frisst mehr - ist hier voll ausgefahren.
+
+### Und damit kippt das Urteil
+
+    Faktor   r brutto   Aenderung
+         1     -0,224     +0,043
+         5     +0,287     +0,554
+        10     +0,305     +0,571
+
+    netto        r = -0,267
+    Kippfaktor   2         (rund 0,1 % je Roundtrip)
+
+Auf Tageskerzen verschwindet die Kopplung erst bei **56-facher** Gebuehr - rund
+2,2 % je Roundtrip, was kein Handelsplatz verlangt und keine Slippage
+erzeugt. Hier reicht die **doppelte**.
+
+Damit ist hier **nicht entschieden**, ob die Kopplung an den Signalen oder an
+der Reibung haengt. Die Gebuehr laesst sich abziehen, die Slippage nicht - sie
+steckt im Ausfuehrungspreis und damit schon in `gross_pnl`. Ein Kippfaktor von
+2 liegt in der Reichweite dessen, was allein sie ausmachen kann.
+
+**Das ist die Verzweigung aus Befund 187, und sie hat bei ihrem ersten
+Einsatz auf echten Daten gegriffen.** Der alte Code haette hier gedruckt:
+
+    **Die Kopplung liegt nicht an den Kosten.** ... Erst bei 2-facher
+    Gebuehr verschwindet sie - das waeren 0,1 % je Roundtrip, und das
+    verlangt kein Handelsplatz.
+
+Ein Satz und seine Widerlegung in derselben Zeile. Der Fehler war nicht
+hypothetisch; die naechste Messung ist hineingelaufen.
+
+### Was das fuer Befund 188 heisst
+
+Nichts an der Tabelle: 34 von 36 Regeln bleiben negativ, die Gerade beginnt
+weiter bei -0,0882. Aber die **Erklaerung** dafuer ist offen. "Auf
+Viertelstunden gibt es keinen Vorteil" und "auf Viertelstunden frisst die
+Reibung den Vorteil" sehen in den Nettozahlen gleich aus und bedeuten
+Verschiedenes - das zweite waere ein Kostenproblem, das erste keines.
+
+Entscheiden liesse es sich nur mit einer Messung der Slippage, und die ist
+aus diesen Trades nicht zu trennen. Der Eintrag bleibt darum offen und wird
+nicht zugunsten der einen oder anderen Lesart geschlossen.
+
+### Der Fehler, der schwerer aufgefallen waere als ein Absturz
+
+Derselbe Lauf hat das hier gedruckt:
+
+    Wo der Bestand darin steht
+      n_eff 115, SR 0.2708 - die Gerade sagt -0.0898
+      Vorsprung +5.64 Reststreuungen
+      Reine Auswahl aus 198 Versuchen erzeugt rund 3.25
+
+    Der Vorsprung ist groesser als das, was Auswahl bei diesem
+    Versuchsstand erzeugt.
+
+In gruen. Nach dieser Zeile stuende der Bestand zum ersten Mal in der
+Projektgeschichte ueber dem, was reine Auswahl erzeugt - genau die Aussage,
+auf die dieses Projekt seit Befund 168 wartet.
+
+**Sie bedeutet nichts.** Der Bestand ist auf **Tageskerzen** gemessen; die
+Gerade stammt aus 36 Viertelstundenregeln, die er nie gehandelt hat. Auf einem
+Vorrat, dessen Gerade schon bei null Trades unter null liegt, sieht jeder
+Kandidat mit positivem Vorteil grossartig aus. Der Vergleich stellt zwei
+Vorraete gegeneinander, nicht einen Kandidaten mit seinem.
+
+`Referenzpunkt` hatte kein Feld fuer die Kerzenlaenge, und `cli vorratsdecke`
+hat den Bestand darum auf jede Gerade gelegt, die es gerade gefittet hatte.
+Behoben: Das Feld gibt es jetzt, alle vier Referenzpunkte tragen `D`, und der
+Block wird uebersprungen, wenn die Kerzenlaengen nicht zusammenpassen - mit
+einer Zeile, die sagt warum. Der Preis der Menge wird weiter gerechnet, denn
+er ist eine Aussage ueber den Vorrat; nur der Vergleich mit dem Bestand faellt
+weg.
+
+**Ein Ausschlag nach oben faellt schwerer auf als ein Absturz.** Der TypeError
+aus Befund 188 hat sich von selbst gemeldet. Diese Zahl haette man geglaubt -
+sie stand in gruen, sie war die erwartete gute Nachricht, und sie kam aus
+demselben Lauf, dessen uebrige Zahlen stimmten.
+
+Das ist die sechste Wiederholung derselben Bauart (56, 182, 184, 187, 188) -
+eine Groesse, die an einem Betriebspunkt gemessen wurde, an einem anderen
+verwendet.
+
+Kostet keinen Versuch: derselbe Lauf, zu Ende gebracht. Versuchszaehler 198
+unveraendert, Suchbudget 68 von 100.

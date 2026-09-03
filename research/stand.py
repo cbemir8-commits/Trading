@@ -712,6 +712,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "benennt den Fall",
         188,
     ),
+    # Sechste Wiederholung - und die einzige, die als **gute** Nachricht
+    # herauskam. Ein Absturz meldet sich, eine gruene Zahl nicht.
+    Richtung(
+        "Der Bestand stand auf jeder Geraden",
+        "Referenzpunkt hatte kein Feld fuer die Kerzenlaenge; auf "
+        "Viertelstunden meldete der Lauf +5,64 Reststreuungen Vorsprung "
+        "gegen 3,25 aus reiner Auswahl - ein Tageskandidat an einer Geraden "
+        "aus 36 Regeln, die er nie gehandelt hat. Der Block wird jetzt "
+        "uebersprungen, wenn die Kerzenlaengen nicht passen",
+        190,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -803,13 +814,16 @@ OFFEN: tuple[Richtung, ...] = (
     # Kostenanteil lag dort bei hoechstens 0,0086 der Trade-Streuung - auf
     # Viertelstunden ist er das nicht mehr, und ein Urteil von einem
     # Betriebspunkt gilt am anderen nicht.
+    # **Nicht zu schliessen, in keine Richtung.** Entscheiden liesse es sich
+    # nur mit einer Messung der Slippage, und die steckt im
+    # Ausfuehrungspreis - aus den Trades ist sie nicht zu trennen.
     Richtung(
         "Traegt die Reibung die Kopplung auf kurzen Kerzen?",
-        "auf Tageskerzen nein: Kostenanteil 0,0013 bis 0,0086, Kippfaktor 56 "
-        "(rund 2,2 % je Roundtrip). Auf Viertelstunden ungemessen - der "
-        "Bericht ist vor der Stelle abgebrochen (188)",
+        "auf Tageskerzen nein (Kostenanteil 0,0013 bis 0,0086, Kippfaktor "
+        "56). Auf Viertelstunden offen: Kostenanteil 0,0094 bis 0,1250 und "
+        "Kippfaktor 2 - das schafft die Slippage allein",
         78,
-        188,
+        190,
     ),
 )
 
