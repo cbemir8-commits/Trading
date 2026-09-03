@@ -650,6 +650,15 @@ BEHOBEN: tuple[Richtung, ...] = (
         "ausgeschlossen (182 Kreuzungen)",
         182,
     ),
+    # Dieselbe Bauart, dritte Wiederholung - und sie sass in der
+    # folgenreichsten Vorauswahl des Projekts.
+    Richtung(
+        "Nachgebaute Intervallpruefung an sechs Stellen",
+        "'iv == interval_obj.value' statt passt_zum_intervall schloss die "
+        "vier nicht festgelegten Generationen aus; 'cli paare' hat alle "
+        "Donchian-Ausbrueche nie gesehen",
+        184,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -700,6 +709,15 @@ OFFEN: tuple[Richtung, ...] = (
     # Kandidat dieser Bauart, und er hat verloren - die Bauart selbst ist
     # damit nicht erledigt. Ein zweiter kostet einen Versuch.
     # Der Preis, den die Decke verlangt - und die Richtung, die daraus folgt.
+    # **Der beste gemessene Stand des Projekts** - und ausdruecklich nicht
+    # bestanden.
+    Richtung(
+        "Bestand + 'Grosser Trendausbruch'",
+        "Guete 3,632 bei n_eff 169 gegen 3,696 - es fehlen 0,064, nach "
+        "ehrlicher Zaehlung von 18 Versuchen 0,089. Vorher war die kleinste "
+        "bekannte Luecke 0,542 (153). Zehn weitere Gates ungeprueft",
+        184,
+    ),
     Richtung(
         "Der Preis in Reststreuungen",
         "auf dem berichtigten Vorrat 1,67 bei n_eff 101 statt 3,70 bei 97, "

@@ -6023,7 +6023,12 @@ def anwaerter(
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.admission import load_trials
     from research.partnerkarte import Anwaerter, Katalogkopplung, Partnerkarte
-    from research.seeds import VORGESEHEN, load_seeds, spitzenkandidat
+    from research.seeds import (
+        VORGESEHEN,
+        load_seeds,
+        passt_zum_intervall,
+        spitzenkandidat,
+    )
     from research.suchbudget import Kandidat
     from research.verbund import fensterkorrelation, noetige_guete
     from strategy.compiler import compile_genome
@@ -6056,7 +6061,7 @@ def anwaerter(
         console.print("[red]Der Bestand liefert keine Trades.[/]")
         raise typer.Exit(2)
 
-    passende = [g for g, iv in VORGESEHEN.items() if iv == interval_obj.value]
+    passende = [g for g in VORGESEHEN if passt_zum_intervall(g, intervall)]
     console.print(
         f"\n[bold]Anwaerter als Verbund-Partner[/] auf {' + '.join(symbole)} "
         f"{interval_obj.label}\n"
@@ -7111,7 +7116,7 @@ def rangprobe(
     from research.admission import load_trials
     from research.gates import evaluate_gates
     from research.rangprobe import Doppel, Rangprobe, schranke
-    from research.seeds import VORGESEHEN, load_seeds
+    from research.seeds import VORGESEHEN, load_seeds, passt_zum_intervall
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -7153,7 +7158,7 @@ def rangprobe(
 
     kandidaten = []
     for generation in sorted(
-        g for g, i in VORGESEHEN.items() if i == interval_obj.value
+        g for g in VORGESEHEN if passt_zum_intervall(g, intervall)
     ):
         kandidaten.extend(load_seeds(generation))
     if not kandidaten:
@@ -7389,7 +7394,12 @@ def zeitachse(
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.entdopplung import entdoppele
     from research.gates import stichprobe_wie_im_gate
-    from research.seeds import VORGESEHEN, load_seeds, spitzenkandidat
+    from research.seeds import (
+        VORGESEHEN,
+        load_seeds,
+        passt_zum_intervall,
+        spitzenkandidat,
+    )
     from research.suchbudget import Kandidat
     from research.zeitachse import messe
     from strategy.compiler import compile_genome
@@ -7415,7 +7425,7 @@ def zeitachse(
         )
 
     kandidaten = [spitzenkandidat()]
-    for gen in sorted(g for g, iv in VORGESEHEN.items() if iv == interval_obj.value):
+    for gen in sorted(g for g in VORGESEHEN if passt_zum_intervall(g, intervall)):
         kandidaten.extend(load_seeds(gen))
 
     roh: dict[str, list] = {}
@@ -7508,7 +7518,12 @@ def verbundmodell(
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.entdopplung import entdoppele
-    from research.seeds import VORGESEHEN, load_seeds, spitzenkandidat
+    from research.seeds import (
+        VORGESEHEN,
+        load_seeds,
+        passt_zum_intervall,
+        spitzenkandidat,
+    )
     from research.verbundmodell import pruefe
     from strategy.compiler import compile_genome
     from strategy.genome import SizingSpec
@@ -7534,7 +7549,7 @@ def verbundmodell(
 
     bestand = spitzenkandidat()
     kandidaten = [bestand]
-    for gen in sorted(g for g, iv in VORGESEHEN.items() if iv == interval_obj.value):
+    for gen in sorted(g for g in VORGESEHEN if passt_zum_intervall(g, intervall)):
         kandidaten.extend(load_seeds(gen))
 
     roh: dict[str, list] = {}
@@ -7640,7 +7655,12 @@ def phasen(
 
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.phasen import ABWAERTSJAHRE, Phasenbild, Phasenvergleich
-    from research.seeds import VORGESEHEN, load_seeds, spitzenkandidat
+    from research.seeds import (
+        VORGESEHEN,
+        load_seeds,
+        passt_zum_intervall,
+        spitzenkandidat,
+    )
     from research.suchbudget import Kandidat
     from research.verbund import fensterkorrelation
     from strategy.compiler import compile_genome
@@ -7667,7 +7687,7 @@ def phasen(
 
     bestand = spitzenkandidat()
     kandidaten = [bestand]
-    passende = [g for g, iv in VORGESEHEN.items() if iv == interval_obj.value]
+    passende = [g for g in VORGESEHEN if passt_zum_intervall(g, intervall)]
     for gen in sorted(passende):
         kandidaten.extend(load_seeds(gen))
     for name in (x.strip() for x in vorschlaege.split(",") if x.strip()):
@@ -10402,7 +10422,12 @@ def paare(
     from research.admission import load_trials
     from research.entdopplung import entdoppele
     from research.paarkarte import Paar, Paarfeld
-    from research.seeds import VORGESEHEN, load_seeds, spitzenkandidat
+    from research.seeds import (
+        VORGESEHEN,
+        load_seeds,
+        passt_zum_intervall,
+        spitzenkandidat,
+    )
     from research.suchbudget import Kandidat
     from research.verbund import baue, noetige_guete
     from strategy.compiler import compile_genome
@@ -10449,7 +10474,7 @@ def paare(
 
     # Erst alle Beine, dann entdoppeln - dasselbe Genom steht unter mehreren
     # Namen im Katalog, und jede Dublette blaehte die Auswahl auf.
-    passende = [g for g, iv in VORGESEHEN.items() if iv == interval_obj.value]
+    passende = [g for g in VORGESEHEN if passt_zum_intervall(g, intervall)]
     roh: dict[str, list] = {bestand.name: list(spitze.all_trades)}
     berichte = {bestand.name: spitze}
     for gen in sorted(passende):

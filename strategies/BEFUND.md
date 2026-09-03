@@ -17032,3 +17032,83 @@ und sie standen bis Befund 182 nicht in der Rechnung.
 
 Kostet keinen Versuch: Derselbe Katalog, andere Groessenlogik, keine Auswahl.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertvierundachtzig. Sechs Stellen bauten dieselbe Pruefung nach - und eine davon war die Partnerkarte
+
+``research.seeds.passt_zum_intervall`` sagt seit Befund 64, was ``VORGESEHEN``
+bedeutet: *"Wahr auch dann, wenn nichts festgelegt ist - eine fehlende Angabe
+ist keine Ablehnung."* Vier Generationen stehen auf ``None`` und laufen
+ueberall.
+
+**Sechs Aufrufstellen in `cli.py` haben stattdessen `iv ==
+interval_obj.value` geschrieben.** Das ist nicht dieselbe Bedingung: Es
+schliesst genau die vier nicht festgelegten Generationen aus. In ihnen stehen
+alle Donchian-Ausbrueche, die Bollinger/RSI-Rueckkehr, beide EMA-Kreuzungen
+und die roc-Momentum-Regel.
+
+Betroffen ist unter anderem `cli paare` - der Befehl, der jedes Katalog-Genom
+als Verbund mit dem Bestand misst und damit die folgenreichste Vorauswahl des
+Projekts trifft. **Er hat diese Generationen nie gesehen.**
+
+Dieselbe Bauart wie Befund 182 (eine Lehre an einer Stelle gezogen, an den
+anderen nicht angewandt), und damit die dritte in Folge. Ein Test prueft
+jetzt die Quelle: Wer die Bedingung wieder von Hand schreibt, faellt auf.
+
+### Was der Katalog hergibt, wenn man ihn ganz ansieht
+
+18 Paare, jeweils Bestand + Katalog-Genom, geordnet nach der Luecke:
+
+    Partner                        n_2  SR_2  n_roh  n_eff  Guete  noetig  fehlt
+    Grosser Trendausbruch           61  0,306   221    169  3,632   3,696  0,064
+    Trendfolge Ausbruch            142  0,205   302    251  3,663   3,788  0,125
+    Trend-Beteiligung (fair)        53  0,295   213    138  3,128   3,649  0,521
+    ...
+    Momentum Ruecksetzer           266 -0,134   426    353  2,254   3,864  1,609
+
+Der Bestand allein fehlt 0,705. **Sieben von achtzehn Paaren stehen besser
+da**, und die beiden besten sind Regeln, die bis Befund 182 stumm waren und
+die `cli paare` ohnehin nie gesehen haette.
+
+### Und jetzt der Teil, der nicht uebersehen werden darf
+
+**0,064 ist nicht bestanden.** Drei Gruende, und jeder allein genuegt:
+
+1. **Die Auswahl kostet 18 Versuche, nicht einen.** Wer aus achtzehn
+   gemessenen Paaren das beste nimmt, hat ueber achtzehn ausgewaehlt - so
+   haelt es dieses Projekt seit Befund 71, und der Bericht sagt es selbst.
+   Bei 216 statt 198 Versuchen steigt die Latte auf 3,721: **es fehlen dann
+   0,089**, nicht 0,064. Der zweite Platz faellt von 0,125 auf 0,150.
+2. **Knapp ist nicht erreicht.** Das steht seit Befund 75 als Scheinbefund
+   im Laborbuch und seit Befund 85 als Regel. Eine Luecke von 0,089 ist eine
+   Luecke.
+3. **Der Deflated Sharpe ist eines von elf Gates.** Selbst ein geraeumter
+   sagt nichts ueber Messlatte, Kosten-Stress oder Parameter-Plateau. Der
+   Bestand steht bei 7 von 11, und keines der drei uebrigen ist hier
+   gemessen.
+
+**Es ist trotzdem der beste gemessene Stand des Projekts.** Vor diesem Lauf
+war die kleinste bekannte Luecke 0,542 (Befund 153, bester Dreierverbund);
+sie liegt jetzt bei 0,089 nach ehrlicher Zaehlung. Was den Unterschied
+gemacht hat, war keine neue Idee, sondern zwei behobene Filter.
+
+### Was das fuer den naechsten Schritt heisst
+
+Der naechste Schritt ist **nicht**, 'Grosser Trendausbruch' zu uebernehmen.
+Er ist, die Zahl gegen die uebrigen zehn Gates zu halten - und das kostet die
+18 Versuche, sobald es passiert. Vorher gehoert geprueft, was ohne Versuche
+prueffbar ist: der Holdout (`cli holdout`), die Zufallseinstiege
+(`cli zufallseinstieg`) und das Parameter-Plateau.
+
+Kostet keinen Versuch: `cli paare` misst und waehlt nicht aus; der
+Versuchszaehler steht unveraendert bei 198. **Wer eines der Paare uebernimmt,
+zaehlt 18.**
+
+### Was gebaut wurde
+
+* Sechs Aufrufstellen benutzen jetzt `passt_zum_intervall` statt einer
+  nachgebauten Bedingung.
+* Ein Test liest `cli.py` und schlaegt an, wenn jemand sie wieder von Hand
+  schreibt - dieselbe Bauart wie der Test, der in Befund 183 den Modulkopf
+  gegen stille Veralterung sichert.
+
+Suchbudget 68 von 100.

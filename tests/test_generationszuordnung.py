@@ -204,3 +204,40 @@ class TestDieZuordnungSelbst:
         assert haltedauer(8) == haltedauer(6) == haltedauer(7) == 32
         for tagesgeneration in (5, 9, 10):
             assert haltedauer(tagesgeneration) == 0, tagesgeneration
+
+
+def test_keine_stelle_baut_die_intervallpruefung_selbst_nach() -> None:
+    """**Befund 184.** ``passt_zum_intervall`` sagt: "eine fehlende Angabe ist
+    keine Ablehnung" - Generationen mit ``VORGESEHEN = None`` laufen ueberall.
+
+    Sechs Aufrufstellen in ``cli.py`` haben stattdessen ``iv ==
+    interval_obj.value`` geschrieben. Das schliesst genau die vier
+    Generationen aus, die nirgends festgelegt sind - und in ihnen stehen alle
+    Donchian-Ausbrueche, die Rueckkehr-Regel, beide EMA-Kreuzungen und die
+    Momentum-Regel. ``cli paare`` hat sie dadurch nie gesehen.
+
+    Dieselbe Bauart wie Befund 182: eine Lehre, die an einer Stelle gezogen
+    und an den anderen nicht angewandt wurde. Dieser Test verhindert die
+    naechste Wiederholung.
+    """
+    from pathlib import Path
+
+    quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+
+    assert "interval_obj.value" not in quelle or "VORGESEHEN.items()" not in quelle, (
+        "Eine Stelle vergleicht die Zuordnung wieder von Hand"
+    )
+    for muster in ("iv == interval_obj.value", "i == interval_obj.value"):
+        assert muster not in quelle, f"nachgebaute Pruefung: {muster}"
+
+
+def test_die_nicht_festgelegten_generationen_laufen_auf_tageskerzen() -> None:
+    """Was der nachgebaute Vergleich ausgeschlossen hat - namentlich."""
+    from research.seeds import VORGESEHEN, passt_zum_intervall
+
+    offen = [g for g, iv in VORGESEHEN.items() if iv is None]
+
+    assert offen, "ohne None-Generationen prueft dieser Test nichts"
+    for gen in offen:
+        assert passt_zum_intervall(gen, "D")
+        assert passt_zum_intervall(gen, "15")
