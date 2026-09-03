@@ -722,10 +722,11 @@ OFFEN: tuple[Richtung, ...] = (
     Richtung(
         "Bestand + 'Grosser Trendausbruch'",
         "Guete 3,632 bei n_eff 169 gegen 3,696 - es fehlen 0,064, nach "
-        "ehrlicher Zaehlung von 18 Versuchen 0,089. Aber der Partner haelt "
-        "im Holdout -70 % (Bestand +41 %), auf LTC dreht das Vorzeichen",
+        "ehrlicher Zaehlung von 18 Versuchen 0,089. Aber **keiner der "
+        "sieben** haelt im Holdout mehr als der Bestand allein (bester 30 % "
+        "gegen 41 %), und die beiden Bestplatzierten halten +7 % und -70 %",
         184,
-        185,
+        186,
     ),
     Richtung(
         "Der Preis in Reststreuungen",

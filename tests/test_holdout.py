@@ -13,6 +13,8 @@ das gibt diese Messung nicht her.
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import pytest
 
 from research.holdout import ENTWICKLUNG, HOLDOUT, Holdoutbild, Marktbefund
@@ -177,4 +179,80 @@ class TestDieRegelWirdBeimNamenGenannt:
         assert heimat, "die Regel muss in einer Generation stehen"
         assert VORGESEHEN.get(heimat[0]) is None, (
             "dieser Test prueft gerade den None-Fall"
+        )
+
+
+class TestDieSiebenAusBefund184:
+    """**Befund 186.** Alle sieben Paare, die besser dastanden als der
+    Bestand allein, im Holdout gemessen - als Zahlen festgehalten.
+
+    Die Rangfolge stammt aus `cli paare` auf BTC und ETH; der Holdout steht
+    auf LTC und XRP. Was hier gepflegt wird, ist der Vergleich zwischen
+    beidem.
+    """
+
+    #: (Name, Luecke aus Befund 184, Anteil den der Holdout haelt)
+    GEMESSEN: ClassVar[tuple[tuple[str, float, float], ...]] = (
+        ("Grosser Trendausbruch", 0.064, -0.70),
+        ("Trendfolge Ausbruch", 0.125, +0.07),
+        ("Trend-Beteiligung (fair gerechnet)", 0.521, +0.30),
+        ("Nur mit der Drift", 0.574, +0.29),
+        ("EMA-Kreuzung (Messlatte)", 0.605, -0.34),
+        ("Trendbeteiligung EMA200", 0.657, +0.25),
+        ("Langsamer Kreuzer (Messlatte 2)", 0.684, -7.89),
+    )
+    #: Der Bestand allein, aus Befund 174 - der Massstab.
+    BESTAND = (0.705, +0.41)
+
+    def test_kein_partner_haelt_mehr_als_der_bestand(self) -> None:
+        """**Der Satz, der traegt.** Er braucht keine Korrelation, nur einen
+        Vergleich von acht Zahlen."""
+        beste = max(anteil for _, _, anteil in self.GEMESSEN)
+
+        assert beste < self.BESTAND[1], (
+            f"bester Partner haelt {beste:.0%}, Bestand {self.BESTAND[1]:.0%}"
+        )
+
+    def test_die_beiden_bestplatzierten_halten_am_wenigsten(self) -> None:
+        """Die Rangfolge aus der Entwicklung findet den Partner nicht, der
+        draussen traegt - sie findet an der Spitze zwei, die es nicht tun."""
+        nach_rang = sorted(self.GEMESSEN, key=lambda x: x[1])
+
+        assert nach_rang[0][2] < 0, "der Bestplatzierte haelt nichts"
+        assert nach_rang[1][2] < 0.10, "der Zweite fast nichts"
+
+    def test_drei_von_sieben_halten_gar_nichts(self) -> None:
+        leer = [n for n, _, anteil in self.GEMESSEN if anteil <= 0]
+
+        assert len(leer) == 3, leer
+
+    def test_die_rangkorrelation_traegt_ausdruecklich_nicht(self) -> None:
+        """**Und das gehoert dazu.** Ueber acht Punkte ist rho = +0,21 bei
+        t = +0,54, ohne den 9-Trade-Ausreisser +0,57 bei t = +1,56.
+
+        Beides liegt unter der Schwelle, die dieses Projekt seit Befund 75
+        verlangt. Wer daraus "die Rangfolge ist umgekehrt" liest, macht
+        genau den Fehler, den Befund 75 als Scheinbefund festhaelt.
+        """
+        import statistics
+
+        from research.vorratsdecke import MINDEST_T
+
+        punkte = [(luecke, a) for _, luecke, a in self.GEMESSEN] + [self.BESTAND]
+
+        def raenge(werte):
+            ordnung = sorted(range(len(werte)), key=lambda i: werte[i])
+            r = [0] * len(werte)
+            for platz, i in enumerate(ordnung, 1):
+                r[i] = platz
+            return r
+
+        rl = raenge([p[0] for p in punkte])
+        rh = raenge([p[1] for p in punkte])
+        rho = statistics.correlation(rl, rh)
+        t = rho * ((len(punkte) - 2) / (1 - rho**2)) ** 0.5
+
+        assert abs(t) < MINDEST_T, (
+            f"t = {t:+.2f} - dann waere die Aussage belegt und dieser Test "
+            f"muesste umgeschrieben werden"
         )

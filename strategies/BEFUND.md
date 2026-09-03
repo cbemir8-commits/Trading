@@ -17188,3 +17188,74 @@ jetzt messen, weil der Befehl es kann.
 
 Kostet keinen Versuch: dieselbe Regel, andere Maerkte, keine Auswahl.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertsechsundachtzig. Keiner der sieben haelt mehr als der Bestand
+
+Befund 184 hat sieben Paare gefunden, die besser dastehen als der Bestand
+allein. Befund 185 hat das erste davon im Holdout geprueft: minus siebzig
+Prozent. Dieser Lauf prueft die uebrigen sechs - dieselbe Probe, dieselben
+Maerkte, keine Auswahl.
+
+    Partner                          Luecke (184)   Holdout haelt
+    Grosser Trendausbruch                   0,064          -70 %
+    Trendfolge Ausbruch                     0,125           +7 %
+    Trend-Beteiligung (fair gerechnet)      0,521          +30 %
+    Nur mit der Drift                       0,574          +29 %
+    EMA-Kreuzung (Messlatte)                0,605          -34 %
+    Trendbeteiligung EMA200                 0,657          +25 %
+    Langsamer Kreuzer (Messlatte 2)         0,684         -789 %
+    ---
+    Bestand allein (Befund 174)             0,705          +41 %
+
+### Was daran traegt
+
+**Kein einziger Partner haelt mehr als der Bestand allein.** Der beste
+kommt auf 30 % gegen dessen 41 %. Drei von sieben halten gar nichts - ihr
+Vorteil je Trade dreht das Vorzeichen.
+
+Und die beiden, die in der Rangfolge oben stehen, halten am wenigsten: +7 %
+und -70 %. Die Rangfolge aus der Entwicklung findet an ihrer Spitze zwei
+Partner, die draussen nicht tragen.
+
+Das braucht keine Statistik, nur den Vergleich von acht Zahlen.
+
+### Was ausdruecklich **nicht** traegt
+
+Es liegt nahe, daraus "die Rangfolge ist umgekehrt" zu lesen. Gemessen:
+
+    alle acht Punkte                rho = +0,214   t = +0,54
+    ohne den 9-Trade-Ausreisser     rho = +0,571   t = +1,56
+
+Beides liegt unter der Schwelle von |t| = 2, die dieses Projekt seit Befund
+75 verlangt. **Eine Korrelation ohne Deckung darf nicht klingen wie eine
+mit** - und genau dieser Fehler steht dort als Scheinbefund. Die Richtung ist
+auffaellig, belegt ist sie nicht.
+
+Auch der letzte Eintrag taugt zu nichts: -789 % stehen auf neun Trades im
+Holdout. Das ist keine Messung, das ist eine Zahl.
+
+### Was das fuer die 0,064 heisst
+
+Sie bleibt, was Befund 184 gesagt hat: der beste gemessene Stand des
+Projekts, gemessen auf denselben Maerkten, auf denen der Partner aus
+achtzehn ausgewaehlt wurde. Die versuchsfreien Proben sagen jetzt
+uebereinstimmend, dass dort nichts ist, was draussen traegt - und sie sagen
+es fuer **alle sieben**, nicht nur fuer den ersten.
+
+Damit ist der naechste Schritt klar, und er ist nicht "das naechste Paar
+nehmen": In dieser Rangfolge steht kein Kandidat, fuer den achtzehn Versuche
+zu rechtfertigen waeren.
+
+### Was das ueber das Verfahren sagt
+
+Zwei Laeufe, keine Versuche ausgegeben, und der Vorschlag, der die Luecke des
+Projekts um 91 % gedrueckt hatte, ist vom Tisch. Das ist die Reihenfolge, die
+Befund 184 vorgegeben hat, zum zweiten Mal mit Wirkung.
+
+Der Holdout selbst bleibt schwaecher als sein Name: Korrelation 0,685 zu den
+Entwicklungsmaerkten, Marktrichtung nicht herausgerechnet, Stichproben
+zwischen 9 und 55 Trades. Er kann einen Kandidaten nicht adeln. Sieben von
+sieben durchfallen zu lassen kann er.
+
+Kostet keinen Versuch: dieselben Regeln, andere Maerkte, keine Auswahl.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
