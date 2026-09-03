@@ -13,6 +13,8 @@ optimiert, und niemand hat es ihm gesagt.
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import pytest
 
 from research.analyst import build_prompt
@@ -141,6 +143,91 @@ class TestAuftragstext:
         ohne = aus_messungen(**{**STAND, "kopplung": None})
 
         assert "Warum das schwer ist" not in ohne.als_auftrag()
+
+
+class TestWoDieKopplungSteht:
+    """**Befund 180.** Der Auftrag gab elf Befunde lang Befund 75s Lesart
+    weiter: die Kopplung als Eigenschaft *des Vorrats*.
+
+    Befund 169 hat sie eingegrenzt - getragen wird sie von einer Familie. Der
+    Unterschied aendert die Suchrichtung: "der Vorrat ist gekoppelt" heisst
+    such feiner, "diese Familie ist gekoppelt" heisst such woanders.
+    """
+
+    GEMESSEN: ClassVar[dict] = {
+        **STAND,
+        "kopplung": -0.714,
+        "kopplung_traegt": "sma",
+        "familien": (("sma", 9), ("roc", 2), ("ema", 1)),
+        "familienpreis": 3.70,
+        "familienpreis_bei": 97,
+    }
+
+    def test_die_familie_wird_benannt_und_die_richtung_daraus(self) -> None:
+        text = aus_messungen(**self.GEMESSEN).als_auftrag()
+
+        assert "einer einzigen Familie: 'sma'" in text
+        assert "such woanders" in text
+
+    def test_ohne_traeger_bleibt_die_alte_lesart(self) -> None:
+        """Wo nicht gemessen ist, wer die Kopplung traegt, wird auch keine
+        Familie erfunden - dann steht dort weiter der allgemeine Satz."""
+        text = aus_messungen(**{**self.GEMESSEN, "kopplung_traegt": None}).als_auftrag()
+
+        assert "einzigen Familie" not in text
+        assert "auf eine andere\nUrsache zielt als ein Trend" in text
+
+    def test_die_zaehlung_sagt_was_schon_vermessen_ist(self) -> None:
+        """**Der pruefbare Teil von Punkt 3.** "Ein anderes Marktverhalten"
+        laesst sich nicht nachsehen, "sma steht neunmal da" schon."""
+        text = aus_messungen(**self.GEMESSEN).als_auftrag()
+
+        assert "nach Einstiegsindikator" in text
+        assert "sma 9" in text and "roc 2" in text
+
+    def test_der_preis_steht_als_zahl_da(self) -> None:
+        text = aus_messungen(**self.GEMESSEN).als_auftrag()
+
+        assert "3.70 Reststreuungen" in text
+        assert "n_eff 97" in text
+        assert "raeumt die Schwelle bei **keiner**" in text
+
+    def test_ohne_preis_wird_keiner_behauptet(self) -> None:
+        ohne = aus_messungen(**{**self.GEMESSEN, "familienpreis": None})
+
+        assert "Reststreuungen" not in ohne.als_auftrag()
+
+    def test_die_kopplung_ist_die_nachgemessene(self) -> None:
+        """**Die Zahl selbst war veraltet.** Befund 75 hat -0,533 auf rohen
+        Trade-Zahlen gemessen, Befund 168 dieselbe Kopplung am Spot-Punkt und
+        mit der Stichprobe des Gates: -0,714.
+        """
+        text = aus_messungen(**self.GEMESSEN).als_auftrag()
+
+        assert "-0.714" in text
+        assert "-0.533" not in text
+
+    def test_der_echte_auftrag_traegt_die_neuen_zahlen(self, tmp_path) -> None:
+        """**Sonst stuende die Korrektur nur im Modul, nicht im Prompt.**
+
+        Genau diese Luecke ist der Befund: Die Einschraenkung stand seit
+        Befund 169 im Register und kam elf Befunde lang nicht dort an, wo sie
+        wirkt.
+        """
+        import json
+
+        from cli import _auftragslage
+
+        (tmp_path / "trials.json").write_text(
+            json.dumps({"format": 2, "trials": 198, "versuche": []})
+        )
+        echt = _auftragslage(tmp_path)
+
+        assert echt.kopplung == pytest.approx(-0.714)
+        assert echt.kopplung_traegt == "sma"
+        assert dict(echt.familien)["sma"] == 9
+        assert echt.familienpreis == pytest.approx(3.70)
+        assert "such woanders" in echt.als_auftrag()
 
 
 class TestEinbau:

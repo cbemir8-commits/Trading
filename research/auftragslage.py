@@ -130,6 +130,40 @@ class Auftragslage:
     verschiedenen Trade-Zahlen nebeneinander lesen sich wie ein Widerspruch.
     """
 
+    kopplung_traegt: str | None = None
+    """Welche Familie die Kopplung traegt - oder ``None``, wenn keine.
+
+    **Der Auftrag las Befund 75, elf Befunde nach seiner Einschraenkung.**
+    Dort hiess es, die Kopplung sei eine Eigenschaft *des Vorrats*, und der
+    Auftragstext gab das so weiter: "Jede Regel im vorhandenen Vorrat
+    erfuellt entweder Punkt 1 oder Punkt 2." Befund 169 hat nachgesehen, wer
+    sie traegt: Innerhalb der groessten Familie ist sie belegt (9 Regeln,
+    r = -0,778, t = -3,28), ausserhalb nicht (5 Regeln, t = -1,13).
+
+    Der Unterschied aendert den Auftrag. "Der Vorrat ist gekoppelt" heisst:
+    such feiner. "Diese Familie ist gekoppelt" heisst: such woanders.
+    """
+
+    familien: tuple[tuple[str, int], ...] = ()
+    """Die Zaehlung nach Einstiegsindikator, strukturell aus dem Genom.
+
+    Ohne sie ist "ein anderes Marktverhalten als Trendfolge" eine Bitte, die
+    sich nicht pruefen laesst - genau der Fehler, den Befund 141 an der
+    Fensterkorrelation gefunden hat. Mit ihr steht da, welcher Ausloeser
+    schon neunmal vermessen ist.
+    """
+
+    familienpreis: float | None = None
+    """Wie weit ueber der Geraden seiner Familie ein Vorschlag liegen muss.
+
+    Befund 179, in Reststreuungen. Die Zahl beantwortet die Frage, die ein
+    Trade-Ziel offenlaesst: Ein Vorschlag, der auf der Geraden liegt, raeumt
+    die Schwelle bei **keiner** Trade-Zahl.
+    """
+
+    familienpreis_bei: int | None = None
+    """Die Stichprobe, bei der dieser Preis am niedrigsten ist."""
+
     @property
     def bestand_guete(self) -> float:
         return self.bestand_sharpe * self.bestand_trades**0.5
@@ -201,20 +235,64 @@ class Auftragslage:
         ]
 
         if self.kopplung is not None:
+            traeger = self.kopplung_traegt
             zeilen += [
                 "## Warum das schwer ist\n",
-                "Ueber alle bisher gemessenen Regeln betraegt die Korrelation",
+                "Ueber die gemessenen Regeln betraegt die Korrelation",
                 f"zwischen Trade-Zahl und Qualitaet je Trade **{self.kopplung:+.3f}**:",
-                "Wer oefter handelt, handelt schlechter. Jede Regel im",
-                "vorhandenen Vorrat erfuellt entweder Punkt 1 oder Punkt 2,",
-                "keine beide.",
-                "",
-                "Es geht also nicht darum, eine bekannte Regel zu verfeinern.",
-                "Gebraucht wird ein Ausloeser, der **oft** zutrifft und dabei",
-                "trotzdem Vorteil traegt - etwa weil er auf eine andere",
-                "Ursache zielt als ein Trend.",
+                "Wer oefter handelt, handelt schlechter.",
                 "",
             ]
+            if traeger is None:
+                zeilen += [
+                    "Es geht also nicht darum, eine bekannte Regel zu "
+                    "verfeinern.",
+                    "Gebraucht wird ein Ausloeser, der **oft** zutrifft und "
+                    "dabei",
+                    "trotzdem Vorteil traegt - etwa weil er auf eine andere",
+                    "Ursache zielt als ein Trend.",
+                    "",
+                ]
+            else:
+                zeilen += [
+                    f"**Getragen wird sie von einer einzigen Familie: "
+                    f"'{traeger}'.**",
+                    "Innerhalb dieser Familie ist die Kopplung belegt, "
+                    "ausserhalb nicht -",
+                    "dort stehen zu wenige Regeln, um etwas zu sagen "
+                    "(Befund 169).",
+                    "",
+                    "Das aendert die Suchrichtung. 'Der Vorrat ist "
+                    "gekoppelt' hiesse:",
+                    "such feiner. Gemessen ist aber 'diese Familie ist "
+                    "gekoppelt', und das",
+                    "heisst: **such woanders.**",
+                    "",
+                ]
+            if self.familien:
+                zeilen += [
+                    "Was schon vermessen ist, nach Einstiegsindikator "
+                    "gezaehlt:",
+                    "",
+                    "    "
+                    + ",  ".join(f"{f} {n}" for f, n in self.familien),
+                    "",
+                ]
+            if self.familienpreis is not None and self.familienpreis_bei is not None:
+                zeilen += [
+                    f"Und der Preis, falls doch aus dieser Familie: Bei "
+                    f"n_eff {self.familienpreis_bei} -",
+                    "der guenstigsten Stelle der ganzen Strecke - muesste "
+                    "ein Vorschlag",
+                    f"**{self.familienpreis:.2f} Reststreuungen** ueber der Geraden "
+                    f"seiner Familie",
+                    "liegen. Wer auf ihr liegt, raeumt die Schwelle bei "
+                    "**keiner**",
+                    "Trade-Zahl - mehr Trades kosten dort mehr Qualitaet, "
+                    "als sie sparen",
+                    "(Befund 179).",
+                    "",
+                ]
 
         if self.quoten_spanne[1] > 0:
             von, bis = self.ziel_spanne
@@ -258,6 +336,10 @@ def aus_messungen(
     bestand_trades: int,
     bestand_sharpe: float,
     kopplung: float | None = None,
+    kopplung_traegt: str | None = None,
+    familien: tuple[tuple[str, int], ...] = (),
+    familienpreis: float | None = None,
+    familienpreis_bei: int | None = None,
 ) -> Auftragslage:
     """Die Lage aus den vorhandenen Rechnungen zusammensetzen.
 
@@ -294,6 +376,10 @@ def aus_messungen(
         partner_sharpe=bedarf,
         bedarf_bei_doppelt=karte.bedarf(wende * 2, 0.72) or 0.0,
         kopplung=kopplung,
+        kopplung_traegt=kopplung_traegt,
+        familien=familien,
+        familienpreis=familienpreis,
+        familienpreis_bei=familienpreis_bei,
         kosten_je_versuch=preis,
         bestes_ziel=lage[0],
         bedarf_am_ziel=(karte.bedarf(lage[0], 0.72) or bedarf) if lage[0] else bedarf,

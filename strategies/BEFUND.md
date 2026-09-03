@@ -16676,3 +16676,92 @@ Einstiegsindikator.
 Kostet keinen Versuch: Gerechnet wird an der vorhandenen Geraden und der
 vorhandenen Latte, ausgewaehlt wird nichts. Versuchszaehler 198 unveraendert,
 Suchbudget 68 von 100.
+
+## Hundertachtzig. Der Auftrag an die Research-KI stand auf Befund 75
+
+Der Auslauf von Befund 179 lautete: nicht dieselbe Regel oefter, sondern eine
+andere Familie. Die Stelle, an der so eine Richtung wirken muesste, ist der
+Auftragstext fuer die Research-KI - `research/auftragslage.py`. Dort steht
+sie nicht. Dort stand bis heute Befund 75.
+
+### Zwei Dinge waren veraltet, und beide zaehlen
+
+**Die Zahl.** `cli._auftragslage` uebergab `kopplung=-0.533` mit dem Vermerk
+*"Aus Befund 75, ueber 14 Genome der Tageskerzen-Generationen"*. Diese
+Korrelation ist auf **rohen** Trade-Zahlen und an einem anderen
+Betriebspunkt gerechnet. Befund 168 hat dieselbe Kopplung am Spot-Punkt und
+mit der Stichprobe des Gates gemessen: **-0,714 bei t = -3,53**. Der Auftrag
+nannte dem Analysten also eine Kopplung, die um ein Drittel zu schwach war.
+
+**Die Lesart.** Schwerer wiegt der Satz daneben:
+
+    Ueber alle bisher gemessenen Regeln betraegt die Korrelation ...
+    Jede Regel im vorhandenen Vorrat erfuellt entweder Punkt 1 oder
+    Punkt 2, keine beide.
+
+Das ist Befund 75s Formulierung - die Kopplung als Eigenschaft *des
+Vorrats*. **Befund 169 hat sie eingegrenzt:** Getragen wird sie von einer
+einzigen Familie (9 Regeln mit `sma` als Einstiegsindikator, r = -0,778,
+t = -3,28); ausserhalb stehen fuenf Regeln mit t = -1,13, und das sagt
+nichts.
+
+Der Unterschied ist keine Feinheit, er dreht die Suchrichtung um:
+
+* "Der Vorrat ist gekoppelt" heisst: **such feiner.**
+* "Diese Familie ist gekoppelt" heisst: **such woanders.**
+
+Elf Befunde lang hat der Auftrag das erste gesagt.
+
+### Und Punkt 3 war nicht pruefbar
+
+Der Auftrag verlangt in Punkt 3 *"ein anderes Marktverhalten als
+Trendfolge"*. Das laesst sich nicht nachschlagen - dieselbe Bauart von
+Kriterium, die Befund 141 an der Fensterkorrelation verworfen hat. Die
+Zaehlung nach Einstiegsindikator laesst sich nachschlagen, und sie steht
+jetzt im Auftrag:
+
+    sma 9,  roc 2,  ema 1,  distance_to_ema_pct 1,  swing_high 1
+
+Neun von vierzehn Regeln sind derselbe Ausloeser. Ein Vorschlag mit `sma` im
+Einstieg ist damit nicht verboten - er ist nur der zehnte in einer Familie,
+deren Gerade gemessen ist.
+
+### Was der Preis dort tut
+
+Dazu kommt die Zahl aus Befund 179: An der guenstigsten Stelle der Strecke
+(n_eff 97) muesste ein Vorschlag **3,70 Reststreuungen** ueber der Geraden
+seiner Familie liegen. Das beantwortet die Frage, die ein Trade-Ziel
+offenlaesst - wer auf der Geraden liegt, raeumt die Schwelle bei **keiner**
+Trade-Zahl.
+
+Der Auftrag nennt weiterhin ein Trade-Optimum (146 bis 185), und das bleibt
+richtig: Es ist die Rechnung fuer ein **zweites Bein neben dem Bestand**, bei
+einem Unabhaengigkeitsgrad von 0,72, und eine andere Frage als die nach einer
+Regel, die allein steht (Befund 178, `Partnerkarte.wende` gegen
+`noetige_stichprobe`). Beides steht jetzt nebeneinander, statt dass das eine
+fuer das andere gehalten wird.
+
+### Was daran der eigentliche Befund ist
+
+Nicht die Zahl. Der **Weg**, den eine Einschraenkung nehmen muss, um zu
+wirken. Befund 169 hat sie gemessen und ins Register geschrieben; sie stand
+dort korrekt und ist trotzdem elf Befunde lang nicht dort angekommen, wo sie
+die Suche steuert. Befund 178 hat denselben Mechanismus von der anderen
+Seite gezeigt - eine Richtung, die nicht im Register steht, wird ein zweites
+Mal gegangen. Hier steht sie im Register und wirkt nicht.
+
+Ein Test schliesst diese Luecke fuer diesen Fall: Er prueft nicht das Modul,
+sondern `cli._auftragslage` - also das, was der Analyst wirklich bekommt.
+
+### Was gebaut wurde
+
+* `Auftragslage.kopplung_traegt`, `.familien`, `.familienpreis` und
+  `.familienpreis_bei` - die vier Zahlen aus Befund 168/169/179.
+* Der Abschnitt "Warum das schwer ist" nennt die Familie und die
+  Suchrichtung, die daraus folgt. Ohne gemessenen Traeger bleibt der alte,
+  allgemeine Text stehen - es wird keine Familie erfunden.
+* `cli._auftragslage` uebergibt -0,714 statt -0,533, mit der Fundstelle im
+  Kommentar.
+
+Kostet keinen Versuch: Gebaut wird ein Auftragstext, kein Kandidat.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

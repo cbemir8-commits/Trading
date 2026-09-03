@@ -1721,8 +1721,25 @@ def _auftragslage(zustand: Path):
         versuche=load_trials(zustand / "trials.json"),
         bestand_trades=SPOTPUNKT.effektiv,
         bestand_sharpe=SPOTPUNKT.guete,
-        # Aus Befund 75, ueber 14 Genome der Tageskerzen-Generationen.
-        kopplung=-0.533,
+        # **Befund 168, nicht mehr Befund 75.** Hier stand -0,533 mit dem
+        # Vermerk "ueber 14 Genome der Tageskerzen-Generationen" - gerechnet
+        # auf **rohen** Trade-Zahlen und an einem anderen Betriebspunkt.
+        # Befund 168 hat dieselbe Kopplung am Spot-Punkt und mit der
+        # Stichprobe des Gates gemessen: -0,714 bei t = -3,53.
+        kopplung=-0.714,
+        # **Und Befund 169 hat sie eingegrenzt.** Der Auftragstext gab elf
+        # Befunde lang Befund 75s Lesart weiter ("jede Regel im vorhandenen
+        # Vorrat"). Getragen wird sie von einer Familie; ausserhalb stehen
+        # fuenf Regeln mit t = -1,13, und das sagt nichts.
+        kopplung_traegt="sma",
+        familien=(
+            ("sma", 9), ("roc", 2), ("ema", 1),
+            ("distance_to_ema_pct", 1), ("swing_high", 1),
+        ),
+        # Befund 179: der noetige Abstand zur Geraden der eigenen Familie,
+        # an seiner guenstigsten Stelle.
+        familienpreis=3.70,
+        familienpreis_bei=97,
     )
 
 

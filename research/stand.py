@@ -630,6 +630,16 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Hoch im ' - gekuerzt wird jetzt die Spalte, nicht der Name",
         178,
     ),
+    # Eine Einschraenkung, die im Register stand und nicht ankam - das
+    # Gegenstueck zu Befund 178, wo eine Richtung fehlte und zweimal gegangen
+    # wurde.
+    Richtung(
+        "Auftrag an die Research-KI auf Befund 75",
+        "Kopplung -0,533 statt der nachgemessenen -0,714, und als Eigenschaft "
+        "des Vorrats statt einer Familie (169) - elf Befunde lang; jetzt samt "
+        "Familienzaehlung und dem Preis aus 179",
+        180,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
