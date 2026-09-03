@@ -10660,7 +10660,15 @@ def vorratsdecke(
                 ohne_latte.append((genom.name, stichprobe.effektiv))
                 continue
             punkt = Punkt(
-                genom.name, stichprobe.effektiv, kandidat.sharpe_je_trade
+                genom.name,
+                stichprobe.effektiv,
+                kandidat.sharpe_je_trade,
+                # **Ihre eigene Verteilungsform** (Befund 191). Bis dahin
+                # stand in dieser Tabelle bei jeder Regel die Latte des
+                # Bestands - und dessen Schiefe von 3,47 senkt sie um ein
+                # Viertel gegenueber einer neutralen Verteilung.
+                schiefe=kandidat.schiefe,
+                woelbung=kandidat.woelbung,
             )
             punkte.append(punkt)
             # **Woran die Kopplung haengt** (Befund 78/187). Kostet nichts -
@@ -10697,13 +10705,23 @@ def vorratsdecke(
         f"{'bis':>5}"
     )
     staende: list[tuple[str, int]] = []
+    milder: list[tuple[str, float]] = []
     for p in punkte:
-        noetig = noetige_guete(p.n_eff, versuche)
+        # **Mit den Momenten dieser Regel** (Befund 191), so wie das Gate es
+        # tut. Die Vorgabe waeren die des Bestands.
+        noetig = noetige_guete(
+            p.n_eff, versuche, schiefe=p.schiefe, woelbung=p.woelbung
+        )
+        nach_vorgabe = noetige_guete(p.n_eff, versuche)
+        if noetig is not None and nach_vorgabe is not None:
+            milder.append((p.name, noetig - nach_vorgabe))
         # **Bis zu welchem Versuchsstand diese Regel bestanden haette**
         # (Befund 189). Nicht dasselbe wie die Luecke: Sie sagt, wie weit es
         # fehlt, diese Spalte, ob ueberhaupt je eine Suchbreite denkbar war,
         # bei der es gereicht haette.
-        stand = hoechster_versuchsstand(p.guete, p.n_eff)
+        stand = hoechster_versuchsstand(
+            p.guete, p.n_eff, schiefe=p.schiefe, woelbung=p.woelbung
+        )
         if stand is not None:
             staende.append((p.name, stand))
         console.print(
@@ -10714,8 +10732,26 @@ def vorratsdecke(
         )
     console.print(
         f"[dim]'bis' = hoechster Versuchsstand, bei dem diese Regel die "
-        f"Schwelle noch geraeumt haette. Der Zaehler steht bei {versuche}.[/]"
+        f"Schwelle noch geraeumt haette. Der Zaehler steht bei {versuche}.\n"
+        f"'noetig' steht auf den Momenten **dieser** Regel, wie im Gate - "
+        f"nicht auf denen des Bestands.[/]"
     )
+    # **Was die Vorgabe verdeckt hat** (Befund 191). Bis dahin stand hier bei
+    # jeder Regel die Latte des Bestands. Diese Zeilen sagen, in welche
+    # Richtung und wie weit das danebenlag.
+    if milder:
+        zu_mild = [x for x in milder if x[1] > 0]
+        name, groesster = max(milder, key=lambda x: x[1])
+        console.print(
+            f"\n[yellow]Mit den Momenten des Bestands gerechnet stuenden "
+            f"{len(zu_mild)} von {len(milder)} Regeln zu milde da.[/]\n"
+            f"  Am weitesten '{name}': {groesster:+.3f} Guetepunkte Latte, "
+            f"die die Vorgabe verschluckt hat."
+            if zu_mild
+            else
+            f"\n[dim]Die Vorgabemomente haetten hier keine Regel milder "
+            f"gestellt (groesster Unterschied {groesster:+.3f}).[/]"
+        )
 
     decke = baue(punkte)
     console.print(
@@ -10862,7 +10898,12 @@ def vorratsdecke(
         # Der Bestand steht nicht im Katalog und fehlt darum in der Spalte
         # 'bis' oben - seine eigene Zahl gehoert aber hierher (Befund 189).
         bestandsstand = hoechster_versuchsstand(
-            SPOTPUNKT.guete * SPOTPUNKT.effektiv**0.5, SPOTPUNKT.effektiv
+            SPOTPUNKT.guete * SPOTPUNKT.effektiv**0.5,
+            SPOTPUNKT.effektiv,
+            # Seine eigenen, nicht die Vorgabe - die ihm zwar aehnelt
+            # (3,4646 gegen 3,473), aber nicht dieselbe ist (Befund 191).
+            schiefe=SPOTPUNKT.schiefe,
+            woelbung=SPOTPUNKT.woelbung,
         )
         if bestandsstand is not None:
             console.print(

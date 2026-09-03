@@ -255,12 +255,17 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     # Die naheliegende Hoffnung nach 198 Versuchen - "haetten wir sparsamer
     # gesucht, staende hier etwas" - ist damit gemessen und nicht mehr offen.
     # Sie ist ausdruecklich kein Grund, den Zaehler zu senken.
+    # Die Katalogzahl stand zuerst bei 10 und war mit den Momenten des
+    # Bestands gerechnet (Befund 191); mit denen jeder Regel sind es 8.
+    # Der Schluss wird davon fester, nicht wackliger.
     Richtung(
         "Suchdisziplin als Weg",
         "der Bestand haette bis 21 Versuche bestanden, die beste Katalogregel "
-        "bis 10, elf weitere bis 1 oder 2 - selbst eine perfekte Suche haette "
-        "nach 21 Versuchen aufhoeren muessen und stuende bei 8 von 11 Gates",
+        "bis 8, vier raeumen die Schwelle bei keinem Stand - selbst eine "
+        "perfekte Suche haette nach 21 Versuchen aufhoeren muessen und "
+        "stuende bei 8 von 11 Gates",
         189,
+        zuletzt=191,
     ),
 )
 
@@ -722,6 +727,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "aus 36 Regeln, die er nie gehandelt hat. Der Block wird jetzt "
         "uebersprungen, wenn die Kerzenlaengen nicht passen",
         190,
+    ),
+    # Siebte Wiederholung - und die erste, die durch Suchen statt durch
+    # Zufall aufgefallen ist. Sie sass in jeder Katalogtabelle des Projekts.
+    Richtung(
+        "Jede Regel an der Verteilung des Bestands gemessen",
+        "noetige_guete reichte Schiefe und Woelbung nie durch und rechnete "
+        "mit den Vorgaben (3,473/15,951 - den Momenten des Bestands), "
+        "waehrend das Gate die der Regel nimmt; 10 von 18 Tagesregeln "
+        "standen dadurch zu milde da, am weitesten die EMA-Kreuzung mit "
+        "0,643 Guetepunkten",
+        191,
     ),
 )
 

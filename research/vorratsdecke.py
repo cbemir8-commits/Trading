@@ -177,6 +177,19 @@ class Punkt:
     n_eff: int
     sharpe_je_trade: float
 
+    schiefe: float | None = None
+    woelbung: float | None = None
+    """Die Verteilungsform **dieser** Regel - fuer ihre eigene Latte.
+
+    Das Deflated-Sharpe-Gate rechnet mit den Momenten der beurteilten
+    Verteilung. Ohne diese Felder stand in der Tabelle bei jeder Regel die
+    Latte des **Bestands**, und die ist eine andere: Starke rechte Schiefe
+    und dicke Raender senken sie (Befund 191).
+
+    ``None`` heisst "nicht gemessen" - dann bleibt es bei der Vorgabe, und
+    der Bericht weist es aus.
+    """
+
     @property
     def guete(self) -> float:
         return self.sharpe_je_trade * self.n_eff**0.5
@@ -452,6 +465,15 @@ def urteil(decke: Decke, noetig_bei) -> str:
         f"**Die hoechste Guete, die dieser Vorrat hergibt: {g:.3f}** bei "
         f"n_eff {n:.0f}.",
         f"Verlangt sind dort {noetig:.3f} - es fehlen {noetig - g:.3f}.",
+        # **Unter welcher Annahme** (Befund 191). In der Tabelle steht bei
+        # jeder Regel die Latte ihrer eigenen Verteilung; hier geht das
+        # nicht, denn den Scheitel besetzt keine Regel, und eine, die es
+        # nicht gibt, hat keine Momente. Was bleibt, ist die Vorgabe - und
+        # die ist die Form des Bestands, nicht die neutrale.
+        "Diese Latte steht auf den Vorgabemomenten (der Verteilungsform des "
+        "Bestands): Den Scheitel besetzt keine Regel, und eine, die es nicht "
+        "gibt, hat keine eigene Form. Eine gewoehnlichere Verteilung "
+        "verlangte dort mehr.",
         herkunft,
     ]
     null = decke.nullstelle

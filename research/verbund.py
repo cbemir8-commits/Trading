@@ -519,7 +519,13 @@ def baue(namen_und_berichte: list[tuple[str, object]], *, versuche: int) -> Verb
     )
 
 
-def noetige_guete(effektiv: int, versuche: int) -> float | None:
+def noetige_guete(
+    effektiv: int,
+    versuche: int,
+    *,
+    schiefe: float | None = None,
+    woelbung: float | None = None,
+) -> float | None:
     """Welche Guete die Schwelle bei dieser **effektiven** Stichprobe verlangt.
 
     ``effektiv`` ist die effektive Stichprobe, nicht die rohe Trade-Zahl - und
@@ -530,10 +536,25 @@ def noetige_guete(effektiv: int, versuche: int) -> float | None:
 
     Der Fehler sass danach nicht mehr in der Rechnung, sondern im Aufruf:
     Fuenf von sechs Stellen uebergaben weiter die rohe Zahl (Befund 139).
+
+    Die Momente gehoeren zur Regel, nicht zum Bestand
+    -------------------------------------------------
+    Der Deflated Sharpe rechnet mit Schiefe und Woelbung **der beurteilten
+    Verteilung** - so macht es ``gates.py``, das sie aus den Trades des
+    Kandidaten nimmt. Ohne Angabe stehen hier die Vorgaben aus ``suchbudget``,
+    und das sind die **gemessenen des Bestands** (3,473 und 15,951).
+
+    Das ist keine neutrale Wahl: Starke rechte Schiefe und dicke Raender
+    **senken** die Latte. Bei n_eff 115 verlangt sie mit den Momenten des
+    Bestands 3,608, mit neutralen (0 und 3) dagegen 4,497 - ein Viertel mehr.
+    Wer eine Regel mit weniger extremer Verteilung an der Vorgabe misst, misst
+    sie zu milde (Befund 191).
     """
     from research.suchbudget import Budget
 
-    noetig = Budget(versuche=versuche).noetig_bei(effektiv)
+    noetig = Budget(versuche=versuche).noetig_bei(
+        effektiv, schiefe=schiefe, woelbung=woelbung
+    )
     return noetig * effektiv**0.5 if noetig is not None else None
 
 
@@ -597,7 +618,12 @@ VERSUCHSDECKE = 10_000
 
 
 def hoechster_versuchsstand(
-    guete: float, effektiv: int, *, hoechstens: int = VERSUCHSDECKE
+    guete: float,
+    effektiv: int,
+    *,
+    hoechstens: int = VERSUCHSDECKE,
+    schiefe: float | None = None,
+    woelbung: float | None = None,
 ) -> int | None:
     """Bis zu welchem Versuchsstand **diese** Guete die Schwelle noch raeumt.
 
@@ -629,18 +655,18 @@ def hoechster_versuchsstand(
 
     Womit gerechnet wird
     --------------------
-    Ueber ``noetige_guete`` und damit mit den Vorgabemomenten aus
-    ``suchbudget`` - Schiefe 3,473 und Woelbung 15,951, den **gemessenen des
-    Bestands**. Fuer eine andere Regel sind das nicht ihre eigenen Momente.
-    Die Spalte ist deshalb mit der Latte daneben vergleichbar, die auf
-    derselben Annahme steht, und nicht mit einem Deflated Sharpe, der die
-    Momente der Regel selbst benutzt.
+    Ueber ``noetige_guete``, und ``schiefe``/``woelbung`` werden
+    durchgereicht. Ohne sie stehen dort die Vorgaben aus ``suchbudget`` -
+    die Momente des Bestands -, und das ist fuer eine andere Regel die
+    falsche Verteilung; siehe die Warnung in ``noetige_guete`` (Befund 191).
     """
     if guete <= 0 or effektiv <= 0:
         return None
 
     def raeumt(versuche: int) -> bool:
-        latte = noetige_guete(effektiv, versuche)
+        latte = noetige_guete(
+            effektiv, versuche, schiefe=schiefe, woelbung=woelbung
+        )
         # ``None`` heisst hier **nicht** "keine Auskunft": Entweder ist die
         # Stichprobe zu klein (dann gilt das fuer jeden Versuchsstand), oder
         # selbst ein Sharpe von 3,0 je Trade genuegt nicht mehr. Beides

@@ -885,3 +885,73 @@ def test_die_tabellenzeile_passt_in_achtzig_spalten() -> None:
     assert len(laengster) <= breiten[0], (
         f"'{laengster}' ({len(laengster)}) wird auf {breiten[0]} gekuerzt"
     )
+
+
+class TestDieMomenteGehoerenZurRegel:
+    """**Befund 191.** Die Latte stand bei jeder Regel auf der Form des Bestands.
+
+    Das Deflated-Sharpe-Gate rechnet mit Schiefe und Woelbung **der
+    beurteilten Verteilung** - ``gates.py`` nimmt sie aus den Trades des
+    Kandidaten. ``noetige_guete`` hat sie nie durchgereicht und damit die
+    Vorgaben aus ``suchbudget`` benutzt: 3,473 und 15,951, die **gemessenen
+    des Bestands**.
+
+    Das ist keine neutrale Wahl. Starke rechte Schiefe und dicke Raender
+    senken die Latte deutlich - eine Regel mit gewoehnlicherer Verteilung
+    wurde dadurch zu milde gemessen.
+    """
+
+    def test_die_vorgabe_ist_die_form_des_bestands(self) -> None:
+        from research.suchbudget import SCHIEFE, WOELBUNG
+
+        assert (SCHIEFE, WOELBUNG) == (3.473, 15.951)
+
+    def test_eine_neutrale_verteilung_verlangt_deutlich_mehr(self) -> None:
+        """**Der tragende Test** - die Zahlen aus Befund 191."""
+        vorgabe = noetige_guete(115, 198)
+        neutral = noetige_guete(115, 198, schiefe=0.0, woelbung=3.0)
+
+        assert vorgabe is not None and neutral is not None
+        assert neutral > vorgabe
+        assert neutral / vorgabe > 1.2, (
+            f"nur {neutral / vorgabe:.3f}x - dann traegt der Befund nicht"
+        )
+
+    def test_mehr_schiefe_senkt_die_latte(self) -> None:
+        """Die Richtung, die den Fehler zu einem milden macht."""
+        werte = [
+            noetige_guete(115, 198, schiefe=s, woelbung=3.0 + 4 * s)
+            for s in (0.0, 1.0, 3.0, 6.0)
+        ]
+        vorhanden = [x for x in werte if x is not None]
+
+        assert len(vorhanden) == len(werte)
+        assert vorhanden == sorted(vorhanden, reverse=True)
+
+    def test_der_versuchsstand_reicht_die_momente_durch(self) -> None:
+        guete = 0.2708 * 115**0.5
+        mit_vorgabe = hoechster_versuchsstand(guete, 115)
+        neutral = hoechster_versuchsstand(guete, 115, schiefe=0.0, woelbung=3.0)
+
+        assert mit_vorgabe == 21
+        assert neutral is not None and neutral < mit_vorgabe, (
+            "eine neutrale Verteilung muss frueher an die Grenze stossen"
+        )
+
+    def test_ohne_angabe_bleibt_alles_wie_zuvor(self) -> None:
+        """Die Erweiterung darf keinen bestehenden Aufruf verschieben."""
+        assert noetige_guete(115, 198) == noetige_guete(
+            115, 198, schiefe=None, woelbung=None
+        )
+
+    def test_die_vorratsdecke_reicht_die_momente_durch(self) -> None:
+        from pathlib import Path
+
+        quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+
+        assert "schiefe=p.schiefe, woelbung=p.woelbung" in quelle, (
+            "die Tabelle rechnet wieder mit der Form des Bestands"
+        )
+        assert "schiefe=kandidat.schiefe" in quelle, (
+            "die Momente kommen nicht mehr aus den Trades der Regel"
+        )

@@ -17662,3 +17662,89 @@ verwendet.
 
 Kostet keinen Versuch: derselbe Lauf, zu Ende gebracht. Versuchszaehler 198
 unveraendert, Suchbudget 68 von 100.
+
+## Hunderteinundneunzig. Jede Regel wurde an der Verteilung des Bestands gemessen
+
+Befund 190 hat den sechsten Fall derselben Bauart gefunden: eine Groesse, an
+einem Betriebspunkt gemessen, an einem anderen verwendet. Er ist durch Zufall
+aufgefallen - eine gruene Zahl in einem Lauf. Dieser hier ist durch Suchen
+aufgefallen, und er sitzt tiefer.
+
+### Wo er sass
+
+Das Deflated-Sharpe-Gate rechnet mit Schiefe und Woelbung **der beurteilten
+Verteilung**. So macht es `gates.py`:
+
+    skew     = float(np.mean(centred**3))
+    kurtosis = float(np.mean(centred**4))
+
+aus den Trades des Kandidaten. `noetige_guete` hat diese Momente nie
+durchgereicht und deshalb die Vorgaben aus `suchbudget` benutzt - **3,473 und
+15,951, die gemessenen des Bestands**.
+
+Damit stand in jeder Katalogtabelle, die dieses Projekt je gedruckt hat, bei
+jeder Regel die Latte des Bestands. Und das ist keine neutrale Wahl:
+
+    Latte in Guete-Einheiten bei n_eff 115, 198 Versuche
+      Momente des Bestands (3,47 / 15,95)     3,608
+      neutral (0 / 3)                         4,497      +25 %
+      maessig schief (1 / 5)                  4,216      +17 %
+      stark schief (6 / 40)                   3,234      -10 %
+
+Starke rechte Schiefe und dicke Raender **senken** die Latte. Der Bestand hat
+beides ausgepraegt. Jede Regel mit gewoehnlicherer Verteilung wurde dadurch zu
+milde gemessen.
+
+### Was die Messung sagt
+
+Mit den Momenten jeder Regel, wie im Gate:
+
+    Regel                                n_eff   Latte alt   neu    bis alt/neu
+    Donchian-Ausbruch 55/20                 58       3,516  3,557      10 -> 8
+    Grosser Trendausbruch                   57       3,516  3,973       9 -> 4
+    Trend-Beteiligung 50 Tage              127       3,630  3,353       4 -> 8
+    Trendfolge Ausbruch                    130       3,635  4,227       3 -> 2
+    EMA-Kreuzung (Messlatte)                59       3,516  4,158       2 -> 1
+    Langsamer Kreuzer (Messlatte 2)         16       7,738  3,770       1 -> -
+
+**Zehn von 18 Regeln standen zu milde da.** Am weitesten die EMA-Kreuzung:
+0,643 Guetepunkte Latte, die die Vorgabe verschluckt hat. Acht standen zu
+streng - die Richtung ist nicht einheitlich, der Fehler war es auch nicht.
+
+### Eine Ueberraschung, die keine ist
+
+Die Zeile 'Trend-Beteiligung (fair gerechnet)' bekommt eine **niedrigere**
+Latte (3,450 statt 3,952) und raeumt trotzdem **weniger** Versuche (2 statt
+3). Das sieht nach einem Rechenfehler aus und ist keiner: Andere Momente
+verschieben die Kurve nicht, sie **verformen** sie. Bei n_eff 29 und Momenten
+um (1,8 / 4,0) liegt die Latte bei zwei Versuchen hoeher als mit der Vorgabe
+(1,716 gegen 1,486) und bei 198 niedriger. Die Kurven kreuzen sich.
+
+Geprueft ist auch, was die Halbierung aus Befund 189 braucht: Die Latte
+steigt ueber ein Raster von zwanzig Momentpaaren monoton mit dem
+Versuchsstand. Die Suche bleibt richtig.
+
+### Die Bilanz, ohne Beschoenigung
+
+* **Befund 189** ("die beste Katalogregel raeumt bis 10 Versuche"): es sind
+  **8**. Und "drei Regeln raeumen sie bei keinem Stand" sind **vier**.
+  Zurueckgenommen und ersetzt.
+* **Befund 189** (der Bestand raeumt bis 21): unveraendert. Seine eigenen
+  Momente (3,4646 / 15,9173) sind fast die Vorgabe - dass die Zahl stimmte,
+  war Glueck und kein Verdienst der Rechnung. Sie wird jetzt trotzdem mit
+  seinen eigenen gerechnet.
+* **Der Schluss aus Befund 189 steht**, und zwar fester: Suchdisziplin war
+  nie der Hebel. Die Korrektur zieht die Katalogzahl nach unten, nicht nach
+  oben.
+
+### Was nicht berichtigt wurde, und warum
+
+Die Decke selbst - *"die hoechste Guete, die dieser Vorrat hergibt: 1,579,
+verlangt sind dort 3,517"* - steht weiter auf den Vorgabemomenten. Das ist
+hier richtig: Der Scheitel ist eine Stelle auf einer angepassten Geraden, und
+eine Regel, die dort stuende, gibt es nicht. Sie hat keine Momente, die man
+einsetzen koennte. Die Zahl bleibt damit eine Aussage unter der Annahme "eine
+Verteilung wie die des Bestands" - und das steht jetzt dabei.
+
+Kostet keinen Versuch: 18 vorhandene Katalogregeln nachgerechnet, keine
+ausgewaehlt. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

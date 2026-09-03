@@ -208,6 +208,10 @@ def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
         # die Kopplung ist dort jetzt zu sehen (t = -2,19 statt -0,26), und
         # der negative Achsenabschnitt macht die Aussage haerter.
         "15-Minuten-Kerzen": 188,
+        # Befund 191: dieselben 18 Regeln mit ihren **eigenen** Momenten
+        # statt denen des Bestands. Die beste raeumt bis 8 statt 10
+        # Versuche; der Schluss aus 189 wird davon fester.
+        "Suchdisziplin als Weg": 191,
     }
 
 
