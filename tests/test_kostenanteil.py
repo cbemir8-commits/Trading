@@ -14,9 +14,44 @@ Kostenanteil korrelieren mit +0,83, und es macht keinen Unterschied.
 
 from __future__ import annotations
 
+import statistics
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+
 import pytest
 
-from research.kostenanteil import Kostenfrage, Taktpunkt
+from research.kostenanteil import ERREICHBAR, Kostenfrage, Taktpunkt
+
+ANFANG = datetime(2024, 1, 1)
+
+
+@dataclass(frozen=True)
+class FakeTrade:
+    """Nur die Felder, die ``Taktpunkt.aus_trades`` liest."""
+
+    net_pnl: float
+    fees: float
+    entry_time: datetime
+    exit_time: datetime
+
+    @property
+    def duration(self) -> timedelta:
+        return self.exit_time - self.entry_time
+
+
+def handel(
+    werte: list[float], *, gebuehr: float = 0.0, stunden: float = 6.0
+) -> list[FakeTrade]:
+    """Trades mit vorgegebenem Netto-Ergebnis, Gebuehr und Haltedauer."""
+    return [
+        FakeTrade(
+            net_pnl=w,
+            fees=gebuehr,
+            entry_time=ANFANG + timedelta(days=i),
+            exit_time=ANFANG + timedelta(days=i, hours=stunden),
+        )
+        for i, w in enumerate(werte)
+    ]
 
 #: Zehn Regeln mit sehr verschiedener Taktung, wie in Befund 78 gemessen:
 #: Name, Trades, Sharpe je Trade, Haltedauer in Tagen, Kostenanteil.
@@ -138,3 +173,130 @@ class TestGrenzen:
         )
 
         assert ohne.kippfaktor() is None
+
+
+class TestDasUrteilKenntNurEinenBetriebspunkt:
+    """**Der Test zu Befund 187.**
+
+    ``urteil`` begann mit *"Die Kopplung liegt nicht an den Kosten"* - ohne
+    Bedingung, sobald genug Punkte da waren. Auf Tageskerzen ist das die
+    gemessene Antwort (Kippfaktor 29). Bei einem Kippfaktor von 1,5 haette
+    derselbe Satz dagestanden, unmittelbar gefolgt von der Zahl, die ihm
+    widerspricht.
+
+    Ein an einem Betriebspunkt gemessenes Ergebnis war als Gesetz eingebaut -
+    dieselbe Sorte Fehler wie in Befund 56, 182 und 184.
+    """
+
+    def kippt_frueh(self) -> Kostenfrage:
+        """Kopplung, die schon bei kleiner Kostenerhoehung verschwindet.
+
+        Gebaut, nicht gemessen: Der Kostenanteil steigt mit der Trade-Zahl
+        stark genug an, dass wenige Vielfache der Gebuehr die Korrelation
+        aufheben.
+        """
+        return Kostenfrage(
+            punkte=[
+                Taktpunkt(f"k{i}", t, s, 1.0, k)
+                for i, (t, s, k) in enumerate(
+                    [
+                        (50, 0.30, 0.012),
+                        (100, 0.21, 0.050),
+                        (200, 0.13, 0.100),
+                        (400, 0.01, 0.155),
+                    ]
+                )
+            ]
+        )
+
+    def test_ein_frueher_kippfaktor_wird_nicht_wegbehauptet(self) -> None:
+        f = self.kippt_frueh()
+        kipp = f.kippfaktor()
+
+        assert kipp is not None and kipp <= ERREICHBAR, f"gemessen {kipp}"
+        assert "nicht an den Kosten" not in f.urteil()
+        assert "koennten es die Kosten sein" in f.urteil()
+
+    def test_das_offene_urteil_sagt_dass_es_offen_ist(self) -> None:
+        urteil = self.kippt_frueh().urteil()
+
+        assert "nicht entschieden" in urteil
+        assert "Slippage" in urteil
+        assert "gilt hier nicht" in urteil
+
+    def test_der_tagesbefund_bleibt_wie_er_war(self) -> None:
+        """Die Verzweigung darf das gemessene Ergebnis nicht umdrehen."""
+        urteil = frage().urteil()
+
+        assert "nicht an den Kosten" in urteil
+        assert "Eigenschaft der **Signale**" in urteil
+
+
+def test_die_kostenfrage_wird_auch_gestellt() -> None:
+    """**Befund 187.** Ein Modul ohne Aufrufer beantwortet die Frage von damals.
+
+    ``Kostenfrage`` war gebaut, dokumentiert und mit neun Tests belegt - und
+    stand in ``cli.py`` kein einziges Mal. Die Antwort aus Befund 78 galt
+    damit fuer den Vorrat von Befund 78, und niemand haette gemerkt, wenn sie
+    fuer den heutigen nicht mehr gilt.
+
+    Dasselbe Muster wie bei der Research-KI: gebaut, gemessen, nicht
+    angeschlossen. Dieser Test haelt den Anschluss fest.
+    """
+    from pathlib import Path
+
+    quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+
+    assert "Kostenfrage" in quelle, "die Kostenfrage hat wieder keinen Aufrufer"
+    assert "Taktpunkt.aus_trades" in quelle, (
+        "die Taktpunkte werden nicht mehr aus den Trades gefuellt"
+    )
+
+
+class TestVonTradesZumTaktpunkt:
+    """Der Weg, den es nicht gab: Trades rein, Taktpunkt raus."""
+
+    def test_die_vier_groessen_kommen_aus_der_liste(self) -> None:
+        t = Taktpunkt.aus_trades("probe", handel([3.0, -1.0, 2.0, -2.0, 1.0], gebuehr=0.5))
+
+        assert t is not None
+        assert t.trades == 5
+        assert t.haltedauer_tage == pytest.approx(0.25)
+        # Streuung der Netto-Werte, Gebuehr in denselben Einheiten.
+        assert t.kostenanteil == pytest.approx(0.5 / statistics.stdev(
+            [3.0, -1.0, 2.0, -2.0, 1.0]
+        ))
+
+    def test_dieselbe_zahl_wie_der_kandidat(self) -> None:
+        """**Der tragende Test.**
+
+        ``Kandidat.aus_trades`` und ``Taktpunkt.aus_trades`` lesen dieselbe
+        Liste. Laufen ihre Sharpe-Werte auseinander, misst die Kostenfrage
+        einen anderen Vorrat als die Vorratsdecke - und genau daran ist
+        dieses Projekt laut ``Kandidat.aus_trades`` schon viermal gescheitert.
+        """
+        from research.suchbudget import Kandidat
+
+        werte = [3.0, -1.0, 2.0, -2.0, 1.0, 0.5, -0.25]
+        trades = handel(werte, gebuehr=0.5)
+
+        takt = Taktpunkt.aus_trades("probe", trades)
+        kandidat = Kandidat.aus_trades("probe", trades)
+
+        assert takt is not None and kandidat is not None
+        assert takt.sharpe_je_trade == pytest.approx(kandidat.sharpe_je_trade)
+        assert takt.trades == kandidat.trades
+
+    def test_zu_duenn_und_ohne_streuung_liefern_nichts(self) -> None:
+        assert Taktpunkt.aus_trades("kurz", handel([1.0, 2.0, 3.0, 4.0])) is None
+        assert Taktpunkt.aus_trades("flach", handel([2.0] * 8)) is None
+
+    def test_die_gebuehr_laesst_sich_zurueckrechnen(self) -> None:
+        """Der Kostenanteil ist in Einheiten der Streuung - deshalb addierbar."""
+        werte = [3.0, -1.0, 2.0, -2.0, 1.0, 0.5, -0.25]
+        t = Taktpunkt.aus_trades("probe", handel(werte, gebuehr=0.5))
+
+        assert t is not None
+        streuung = statistics.stdev(werte)
+        brutto_mittel = (statistics.fmean(werte) + 0.5) / streuung
+        assert t.brutto(1.0) == pytest.approx(brutto_mittel)

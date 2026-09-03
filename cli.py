@@ -10561,6 +10561,7 @@ def vorratsdecke(
     from research.admission import load_trials
     from research.familien import familie_von
     from research.gates import stichprobe_wie_im_gate
+    from research.kostenanteil import Kostenfrage, Taktpunkt
     from research.randschnitt import ohne_zensierte
     from research.seeds import GENERATIONS, passt_zum_intervall, spitzenkandidat
     from research.suchbudget import Kandidat
@@ -10594,6 +10595,7 @@ def vorratsdecke(
     # wie in der Vorauswahl (Befund 56/182).
     vergleichsgroesse = spitzenkandidat().sizing
     punkte: list[Punkt] = []
+    taktpunkte: list[Taktpunkt] = []
     nach_familie: dict[str, list[Punkt]] = {}
     grob_familie: dict[str, list[Punkt]] = {}
     nach_logik: dict[str, list[Punkt]] = {}
@@ -10661,6 +10663,12 @@ def vorratsdecke(
                 genom.name, stichprobe.effektiv, kandidat.sharpe_je_trade
             )
             punkte.append(punkt)
+            # **Woran die Kopplung haengt** (Befund 78/187). Kostet nichts -
+            # die Trades sind gerechnet, und der Taktpunkt faellt aus
+            # derselben Liste wie der Kandidat.
+            takt = Taktpunkt.aus_trades(genom.name, gehandelt.all_trades)
+            if takt is not None:
+                taktpunkte.append(takt)
             nach_familie.setdefault(_familie(genom), []).append(punkt)
             grob_familie.setdefault(_familie_grob(genom), []).append(punkt)
             # Die zweite, unabhaengig gebaute Einteilung (Befund 83, nach
@@ -10733,6 +10741,35 @@ def vorratsdecke(
             ]
         )
     )
+
+    # **Woran die Kopplung haengt - an den Signalen oder an der Reibung?**
+    # Befund 78 hat das ueber zehn Regeln auf Tageskerzen gemessen und die
+    # Kosten ausgeschlossen (Kippfaktor 29). Dort war der Kostenanteil aber
+    # winzig: 0,0013 bis 0,0170 der Trade-Streuung. Auf kuerzeren Kerzen ist
+    # er das nicht mehr, und ein Urteil von einem Betriebspunkt gilt am
+    # anderen nicht (Befund 187). ``Kostenfrage`` stand seit Befund 78
+    # gebaut und getestet da und hatte keinen einzigen Aufrufer.
+    frage = Kostenfrage(punkte=taktpunkte)
+    if frage.genug:
+        anteile = [p.kostenanteil for p in taktpunkte]
+        console.print(
+            f"\n[bold]Woran die Kopplung haengt[/]\n"
+            f"  Kostenanteil {min(anteile):.4f} bis {max(anteile):.4f} der "
+            f"Trade-Streuung, ueber {len(taktpunkte)} Regeln\n"
+            f"  [dim]Diese Korrelationen laufen ueber die **rohe** "
+            f"Trade-Zahl, nicht ueber n_eff wie die Decke oben - die "
+            f"Gebuehr faellt je Trade an, nicht je unabhaengiger "
+            f"Beobachtung. Die beiden r sind deshalb nicht dasselbe Mass "
+            f"und nicht gegeneinander zu lesen (Befund 139).[/]\n"
+        )
+        console.print(frage.tabelle())
+        console.print()
+        console.print(frage.urteil())
+    else:
+        console.print(
+            f"\n[dim]Woran die Kopplung haengt: nur {len(taktpunkte)} "
+            f"Taktpunkte - dafuer braucht es vier.[/]"
+        )
 
     # **Wo der Bestand in seinem eigenen Vorrat steht.** Der zweite Weg zur
     # selben Aussage wie der Deflated Sharpe - und ein unabhaengiger: Der

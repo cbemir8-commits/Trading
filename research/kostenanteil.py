@@ -68,6 +68,24 @@ Fuer die Suche heisst das: Wer eine Regel sucht, die **oft ausloest und dabei
 Vorteil behaelt**, sucht gegen ein Muster, das nicht an einer Reibung liegt,
 die sich beseitigen liesse.
 
+Wofuer dieser Satz gilt - und wofuer nicht (Befund 187)
+-------------------------------------------------------
+Alles oben ist auf **Tageskerzen** gemessen, und dort ist der Kostenanteil
+winzig. Auf dem nach Befund 182/184 berichtigten Katalog (18 statt 10 Regeln)
+kommt dasselbe heraus, mit anderen Zahlen:
+
+    Kostenanteil   0,0013 bis 0,0086     Mechanik  +0,554
+    netto -0,378   brutto -0,374         Kippfaktor 56
+
+**Auf kuerzeren Kerzen ist das ungemessen.** Wer oefter handelt, haelt
+kuerzer und streut je Trade weniger - der Kostenanteil waechst also genau
+dort, wo dieses Modul ihn fuer vernachlaessigbar erklaert hat.
+
+``urteil`` hat den Satz bis Befund 187 **unbedingt** ausgesprochen, sobald
+vier Punkte da waren - auch bei einem Kippfaktor von 2, unmittelbar gefolgt
+von der Zahl, die ihm widerspricht. Ein Betriebspunkt war als Gesetz
+eingebaut. Jetzt verzweigt es an ``ERREICHBAR``.
+
 Kostet keinen Versuch: Zerlegt werden Trades, die schon gerechnet sind.
 """
 
@@ -76,6 +94,20 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
+
+#: Bis zu welchem Kostenfaktor die Reibung als Ursache in Frage kommt.
+#:
+#: Die Gebuehr laesst sich abziehen, die Slippage nicht - sie steckt im
+#: Ausfuehrungspreis und damit schon in ``gross_pnl``. Was sich fragen laesst,
+#: ist deshalb nur: Wie gross muesste die *gesamte* Reibung sein, damit sie
+#: die Kopplung traegt? Liegt dieser Faktor unter fuenf, waere er allein durch
+#: eine Slippage in der Groessenordnung der Gebuehr erreichbar, und die
+#: Ursache ist offen. Liegt er darueber, scheidet die Reibung aus.
+#:
+#: Fuenf ist eine gesetzte Grenze, keine gemessene. Sie steht hier, damit sie
+#: **vor** der Messung feststeht - auf Tageskerzen kam Faktor 29 heraus, weit
+#: jenseits jeder Wahl der Grenze.
+ERREICHBAR: float = 5.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,6 +134,44 @@ class Taktpunkt:
         aendern.
         """
         return self.sharpe_je_trade + faktor * self.kostenanteil
+
+    @classmethod
+    def aus_trades(cls, name: str, trades) -> Taktpunkt | None:
+        """Alle vier Groessen aus einer Trade-Liste - an **einer** Stelle.
+
+        Die Zahlen im Kopf dieses Moduls stehen dort seit Befund 78 als
+        Prosa, und die Testdatei haelt sie als Zahlenliste fest - einen Weg
+        von Trades zu einem ``Taktpunkt`` gab es im Code nicht, und
+        ``Kostenfrage`` hatte in ``cli.py`` keinen einzigen Aufrufer. Wer die
+        Frage an einem anderen Vorrat stellen wollte, musste die Herleitung
+        nachbauen - derselbe Anlass wie bei ``Kandidat.aus_trades``.
+
+        ``None``, wenn die Liste fuer eine Aussage zu duenn ist. Die Schwelle
+        ist dieselbe wie dort (fuenf Trades, Streuung ungleich null), damit
+        beide Wege denselben Vorrat sehen.
+        """
+        import numpy as np
+
+        netto = np.array([float(t.net_pnl) for t in trades], dtype=float)
+        if len(netto) < 5:
+            return None
+        streuung = float(netto.std(ddof=1))
+        if streuung == 0:
+            return None
+
+        gebuehr = float(np.mean([float(t.fees) for t in trades]))
+        stunden = np.array(
+            [t.duration.total_seconds() / 3600.0 for t in trades], dtype=float
+        )
+        return cls(
+            name=name,
+            trades=len(netto),
+            sharpe_je_trade=float(netto.mean() / streuung),
+            haltedauer_tage=float(stunden.mean()) / 24.0,
+            # In Einheiten der Trade-Streuung - deshalb direkt auf den Sharpe
+            # je Trade zurueckaddierbar.
+            kostenanteil=gebuehr / streuung,
+        )
 
 
 @dataclass(slots=True)
@@ -176,22 +246,51 @@ class Kostenfrage:
             if mechanik is not None and mechanik > 0.5
             else ""
         )
-        kipp = self.kippfaktor()
-        wo = (
-            f"Erst bei **{kipp:.0f}-facher Gebuehr** verschwindet sie - das "
-            f"waeren {0.04 * kipp:.1f} % je Roundtrip, und das verlangt kein "
-            f"Handelsplatz."
-            if kipp is not None
-            else "Auch bei tausendfacher Gebuehr verschwindet sie nicht."
+        gemessen = (
+            f"{vorhanden}Rechnet man die Gebuehr zurueck, geht die "
+            f"Korrelation von {netto:+.3f} auf {brutto:+.3f} - "
+            f"{abs(brutto - netto):.3f} Unterschied. "
         )
+        kipp = self.kippfaktor()
+        if kipp is None:
+            return (
+                f"**Die Kopplung liegt nicht an den Kosten.** {gemessen}Auch "
+                f"bei tausendfacher Gebuehr verschwindet sie nicht.\n\n"
+                f"Sie ist damit eine Eigenschaft der **Signale**, nicht einer "
+                f"Reibung: Haeufigere Ausloeser tragen weniger Vorteil je "
+                f"Ausloesung. Das ist nicht wegverhandelbar - keine "
+                f"Konditionen, kein groesseres Konto, keine bessere "
+                f"Ausfuehrung aendert daran etwas."
+            )
+
+        wo = (
+            f"Bei **{kipp:.0f}-facher Gebuehr** verschwindet sie - das waeren "
+            f"rund {0.04 * kipp:.1f} % je Roundtrip."
+        )
+        if kipp > ERREICHBAR:
+            return (
+                f"**Die Kopplung liegt nicht an den Kosten.** {gemessen}{wo} "
+                f"Das verlangt kein Handelsplatz, und selbst eine Slippage, "
+                f"die die Kosten verfuenffachte, bliebe darunter.\n\n"
+                f"Sie ist damit eine Eigenschaft der **Signale**, nicht einer "
+                f"Reibung: Haeufigere Ausloeser tragen weniger Vorteil je "
+                f"Ausloesung. Das ist nicht wegverhandelbar - keine "
+                f"Konditionen, kein groesseres Konto, keine bessere "
+                f"Ausfuehrung aendert daran etwas."
+            )
+        # **Hier stand bis Befund 187 derselbe Satz wie oben.** Das Urteil
+        # sprach die Antwort aus, die auf Tageskerzen gemessen worden war,
+        # und haette sie auch bei einem Kippfaktor von 1,5 gesprochen -
+        # unmittelbar gefolgt von der Zahl, die ihr widerspricht. Ein
+        # Betriebspunkt war als Gesetz eingebaut; dieselbe Sorte Fehler wie
+        # in Befund 56/182/184.
         return (
-            f"**Die Kopplung liegt nicht an den Kosten.** {vorhanden}Rechnet "
-            f"man die Gebuehr zurueck, geht die Korrelation von {netto:+.3f} "
-            f"auf {brutto:+.3f} - {abs(brutto - netto):.3f} Unterschied. "
-            f"{wo}\n\n"
-            f"Sie ist damit eine Eigenschaft der **Signale**, nicht einer "
-            f"Reibung: Haeufigere Ausloeser tragen weniger Vorteil je "
-            f"Ausloesung. Das ist nicht wegverhandelbar - keine Konditionen, "
-            f"kein groesseres Konto, keine bessere Ausfuehrung aendert daran "
-            f"etwas."
+            f"**Hier koennten es die Kosten sein.** {gemessen}{wo} Das liegt "
+            f"in der Reichweite dessen, was allein die Slippage ausmachen "
+            f"kann - und die steckt im Ausfuehrungspreis, laesst sich aus "
+            f"den Trades also nicht abziehen.\n\n"
+            f"Damit ist hier **nicht entschieden**, ob die Kopplung an den "
+            f"Signalen oder an der Reibung haengt. Auf Tageskerzen war sie "
+            f"es nicht (Kippfaktor 29); dieser Vorrat liegt anders, und das "
+            f"Urteil von dort gilt hier nicht."
         )

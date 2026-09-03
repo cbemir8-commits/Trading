@@ -667,6 +667,23 @@ BEHOBEN: tuple[Richtung, ...] = (
         "vorratsdecke",
         185,
     ),
+    # Ein an einem Betriebspunkt gemessenes Ergebnis als Gesetz eingebaut -
+    # dieselbe Bauart wie 56/182/184, vierte Wiederholung.
+    Richtung(
+        "Kostenurteil sprach die Antwort von Tageskerzen",
+        "'Die Kopplung liegt nicht an den Kosten' stand unbedingt im "
+        "Urteil und haette auch bei Kippfaktor 2 dort gestanden; "
+        "verzweigt jetzt an ERREICHBAR = 5 (Slippage steckt im "
+        "Ausfuehrungspreis und laesst sich nicht abziehen)",
+        187,
+    ),
+    Richtung(
+        "Kostenfrage hatte seit Befund 78 keinen Aufrufer",
+        "gebaut, mit neun Tests belegt, in cli.py kein einziges Mal - "
+        "Taktpunkt.aus_trades faellt jetzt aus derselben Trade-Liste wie "
+        "Kandidat.aus_trades, und 'cli vorratsdecke' rechnet sie mit",
+        187,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -753,6 +770,17 @@ OFFEN: tuple[Richtung, ...] = (
         "er mit 0,2137 je Trade schlechter als der Bestand und braeuchte 324",
         56,
         178,
+    ),
+    # Auf Tageskerzen beantwortet (Kippfaktor 56, Befund 187). Der
+    # Kostenanteil lag dort bei hoechstens 0,0086 der Trade-Streuung - auf
+    # Viertelstunden ist er das nicht mehr, und ein Urteil von einem
+    # Betriebspunkt gilt am anderen nicht.
+    Richtung(
+        "Traegt die Reibung die Kopplung auf kurzen Kerzen?",
+        "auf Tageskerzen nein: Kostenanteil 0,0013 bis 0,0086, Kippfaktor 56 "
+        "(rund 2,2 % je Roundtrip). Auf Viertelstunden ungemessen",
+        78,
+        187,
     ),
 )
 

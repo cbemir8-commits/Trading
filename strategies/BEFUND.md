@@ -17259,3 +17259,95 @@ sieben durchfallen zu lassen kann er.
 
 Kostet keinen Versuch: dieselben Regeln, andere Maerkte, keine Auswahl.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertsiebenundachtzig. Das Urteil sprach die Antwort, die es kannte
+
+`research/kostenanteil.py` beantwortet eine der wichtigsten Fragen des
+Projekts: Liegt die Kopplung zwischen Handelshaeufigkeit und Qualitaet an den
+**Kosten** oder an den **Signalen**? Liegt sie an den Kosten, ist sie
+verhandelbar - bessere Konditionen, Maker-Rebates, ein groesseres Konto. Liegt
+sie an den Signalen, ist sie es nicht.
+
+Befund 78 hat sie ueber zehn Regeln auf Tageskerzen gemessen und die Kosten
+ausgeschlossen. Beim Nachsehen, wo dieses Ergebnis heute steht, fiel zweierlei
+auf.
+
+### Das Modul hatte nie einen Aufrufer
+
+`Kostenfrage` ist gebaut, dokumentiert und mit neun Tests belegt. In `cli.py`
+steht sie **kein einziges Mal**. Die Zahlen im Modulkopf sind Prosa aus Befund
+78; die Testdatei haelt zehn Zeilen als Zahlenliste fest. Einen Weg von Trades
+zu einem `Taktpunkt` gab es im Code nicht - wer die Frage an einem anderen
+Vorrat stellen wollte, haette die Herleitung nachbauen muessen.
+
+Das ist dasselbe Muster wie bei der Research-KI: gebaut, gemessen, und dann
+nicht dort angeschlossen, wo gearbeitet wird.
+
+### Und das Urteil kannte nur einen Betriebspunkt
+
+`urteil()` begann mit **"Die Kopplung liegt nicht an den Kosten."** Ohne
+Bedingung, sobald vier Punkte da waren. Danach folgte der Kippfaktor - die
+Zahl, ab der die Kosten sie doch tragen wuerden - und der Satz *"das verlangt
+kein Handelsplatz"*, ebenfalls ohne Bedingung.
+
+Bei einem Kippfaktor von 2 haette dort gestanden:
+
+    **Die Kopplung liegt nicht an den Kosten.** ... Erst bei 2-facher
+    Gebuehr verschwindet sie - das waeren 0,1 % je Roundtrip, und das
+    verlangt kein Handelsplatz.
+
+Ein an einem Betriebspunkt gemessenes Ergebnis war als Gesetz eingebaut. Das
+ist die Sorte Fehler, die dieses Projekt in Befund 56, 182 und 184 schon
+dreimal gefunden hat, hier zum vierten Mal.
+
+Das Urteil verzweigt jetzt an `ERREICHBAR = 5.0`: Die Gebuehr laesst sich
+abziehen, die **Slippage nicht** - sie steckt im Ausfuehrungspreis und damit
+schon in `gross_pnl`. Ein Kippfaktor unter fuenf waere allein durch eine
+Slippage in der Groessenordnung der Gebuehr erreichbar, und dann ist die
+Ursache offen. Die Grenze ist gesetzt, nicht gemessen, und sie steht im Code
+**vor** der Messung.
+
+### Angeschlossen und auf Tageskerzen nachgemessen
+
+`Taktpunkt.aus_trades` faellt jetzt aus derselben Trade-Liste wie
+`Kandidat.aus_trades`, und ein Test haelt fest, dass beide denselben Sharpe je
+Trade liefern. `cli vorratsdecke` rechnet die Kostenfrage mit - sie kostet
+nichts, die Trades sind ohnehin gerechnet.
+
+Auf Tageskerzen, ueber die **18** Regeln des nach Befund 182/184 berichtigten
+Katalogs:
+
+    Kostenanteil        0,0013 bis 0,0086 der Trade-Streuung
+    Mechanik            Trades <-> Kostenanteil   +0,554
+    netto               r = -0,378
+    brutto (Faktor 1)   r = -0,374        0,004 Unterschied
+    Kippfaktor          56                rund 2,2 % je Roundtrip
+
+**Befund 78 ist bestaetigt, mit anderen Zahlen.** Dort standen zehn Regeln,
+Mechanik +0,831 und Kippfaktor 29; hier achtzehn Regeln, +0,554 und 56. Die
+Richtung ist dieselbe und der Abstand zur Reichweite der Reibung groesser
+geworden. Auf **Tageskerzen** liegt die Kopplung nicht an den Kosten.
+
+### Zwei r, die nicht dasselbe messen
+
+Im selben Bericht steht jetzt die Decke mit r = -0,544 und die Kostenfrage mit
+r = -0,378. Das sind **nicht** zwei Messungen derselben Groesse: Die Decke
+laeuft ueber `n_eff`, die Kostenfrage ueber die **rohe** Trade-Zahl, weil die
+Gebuehr je Trade anfaellt und nicht je unabhaengiger Beobachtung. Beides ist
+an seiner Stelle richtig, und nebeneinander gedruckt laedt es zum Verwechseln
+ein - der Fehler aus Befund 139. Der Bericht sagt es jetzt dazu.
+
+### Was daraus folgt
+
+1. **Fuer Tageskerzen ist die Frage beantwortet und bleibt beantwortet.** Die
+   Kopplung ist eine Eigenschaft der Signale.
+2. **Fuer kuerzere Kerzen ist sie offen.** Der Kostenanteil lag hier bei
+   hoechstens 0,0086 der Trade-Streuung. Was auf Viertelstunden daraus wird,
+   sagt der naechste Lauf - und erst dann laesst sich sagen, ob das Urteil von
+   Befund 78 dort ueberhaupt gilt.
+3. Ein Modul ohne Aufrufer beantwortet keine Frage mehr, sobald sich der
+   Vorrat aendert. Es beantwortet die Frage von damals.
+
+Kostet keinen Versuch: nachgerechnet wurden Trades, die schon gerechnet sind;
+ausgewaehlt wurde nichts. Versuchszaehler 198 unveraendert, Suchbudget 68 von
+100.
