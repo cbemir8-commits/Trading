@@ -167,6 +167,12 @@ BEGRIFFE: dict[str, tuple[str, ...]] = {
     "Schwacher Vorteil (5 %)": ("schwacher Vorteil", "Schwacher Vorteil"),
     "Belege als Kalibrierung": ("Belege als Kalibrierung", "Abdeckung"),
     "Schnittpunkt als Prognose": ("Schnittpunkt", "Fehlerbalken"),
+    "Suchdisziplin als Weg": (
+        "Suchdisziplin",
+        "hoechster Versuchsstand",
+        "sparsamer gesucht",
+        "raeumt bis",
+    ),
 }
 
 

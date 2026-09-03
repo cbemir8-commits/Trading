@@ -10565,7 +10565,7 @@ def vorratsdecke(
     from research.randschnitt import ohne_zensierte
     from research.seeds import GENERATIONS, passt_zum_intervall, spitzenkandidat
     from research.suchbudget import Kandidat
-    from research.verbund import noetige_guete
+    from research.verbund import hoechster_versuchsstand, noetige_guete
     from research.vorratsdecke import (
         Einteilung,
         Punkt,
@@ -10687,16 +10687,35 @@ def vorratsdecke(
         raise typer.Exit(2)
 
     punkte.sort(key=lambda p: -p.guete)
+    # **Die Zeile muss in 80 Spalten passen** (Befund 189). Mit der Spalte
+    # 'bis' stand sie bei 83 und ist umgebrochen - jede Regel auf zwei
+    # Zeilen, die Tabelle unlesbar. 42 ist die Laenge des laengsten Namens
+    # im Katalog ('Abfolge-Modell (Abgriff, Bruch, Rueckkehr)'), es wird
+    # also nichts abgeschnitten.
     console.print(
-        f"\n{'Regel':<44}{'n_eff':>7}{'SR/Trade':>10}{'Guete':>8}{'noetig':>8}"
+        f"\n{'Regel':<42}{'n_eff':>6}{'SR/Trade':>9}{'Guete':>8}{'noetig':>8}"
+        f"{'bis':>5}"
     )
+    staende: list[tuple[str, int]] = []
     for p in punkte:
         noetig = noetige_guete(p.n_eff, versuche)
+        # **Bis zu welchem Versuchsstand diese Regel bestanden haette**
+        # (Befund 189). Nicht dasselbe wie die Luecke: Sie sagt, wie weit es
+        # fehlt, diese Spalte, ob ueberhaupt je eine Suchbreite denkbar war,
+        # bei der es gereicht haette.
+        stand = hoechster_versuchsstand(p.guete, p.n_eff)
+        if stand is not None:
+            staende.append((p.name, stand))
         console.print(
-            f"{p.name[:44]:<44}{p.n_eff:>7}{p.sharpe_je_trade:>10.4f}"
+            f"{p.name[:42]:<42}{p.n_eff:>6}{p.sharpe_je_trade:>9.4f}"
             f"{p.guete:>8.3f}"
-            + ("        -" if noetig is None else f"{noetig:>8.3f}")
+            + ("       -" if noetig is None else f"{noetig:>8.3f}")
+            + ("    -" if stand is None else f"{stand:>5}")
         )
+    console.print(
+        f"[dim]'bis' = hoechster Versuchsstand, bei dem diese Regel die "
+        f"Schwelle noch geraeumt haette. Der Zaehler steht bei {versuche}.[/]"
+    )
 
     decke = baue(punkte)
     console.print(
@@ -10741,6 +10760,43 @@ def vorratsdecke(
             ]
         )
     )
+
+    # **Haette Suchdisziplin gereicht?** (Befund 189) Die Latte waechst mit
+    # jedem Versuch. Naheliegend ist die Hoffnung, der Vorrat haette bei
+    # sparsamerer Suche etwas hergegeben - diese Zeilen rechnen sie nach,
+    # statt sie stehenzulassen.
+    console.print()
+    if not staende:
+        console.print(
+            "[yellow]**Keine einzige Regel dieses Vorrats haette die Schwelle "
+            "bei irgendeinem Versuchsstand geraeumt.**[/] Auch beim ersten "
+            "Versuch nicht. Suchdisziplin ist hier nicht das Thema."
+        )
+    else:
+        bester, hoechster = max(staende, key=lambda x: x[1])
+        console.print(
+            f"[bold]Haette weniger Suchen gereicht?[/]\n"
+            f"  Am laengsten haelt '{bester}': bis {hoechster} Versuche.\n"
+            f"  Der Zaehler steht bei {versuche}."
+        )
+        nie = len(punkte) - len(staende)
+        console.print(
+            f"[yellow]Auch eine sparsame Suche haette hier nichts "
+            f"hervorgebracht[/] - schon der {hoechster + 1}. Versuch haette "
+            f"die Schwelle ueber **jede** Regel dieses Vorrats gehoben"
+            + (
+                f"; {nie} von {len(punkte)} raeumen sie bei keinem Stand.\n"
+                if nie
+                else ".\n"
+            )
+            + "[dim]Ausgegebene Versuche sind ausgegeben. Die Zahl ordnet "
+            "ein, sie ist keine Buchhaltung und kein Grund, den Zaehler zu "
+            "senken.[/]"
+            if hoechster < versuche
+            else
+            f"[green]Bei einem Versuchsstand von {hoechster} haette diese "
+            f"Regel bestanden.[/] Der Zaehler steht bei {versuche}."
+        )
 
     # **Woran die Kopplung haengt - an den Signalen oder an der Reibung?**
     # Befund 78 hat das ueber zehn Regeln auf Tageskerzen gemessen und die
@@ -10788,6 +10844,16 @@ def vorratsdecke(
             f"  Reine Auswahl aus {versuche} Versuchen erzeugt rund "
             f"{erwartet:.2f}\n"
         )
+        # Der Bestand steht nicht im Katalog und fehlt darum in der Spalte
+        # 'bis' oben - seine eigene Zahl gehoert aber hierher (Befund 189).
+        bestandsstand = hoechster_versuchsstand(
+            SPOTPUNKT.guete * SPOTPUNKT.effektiv**0.5, SPOTPUNKT.effektiv
+        )
+        if bestandsstand is not None:
+            console.print(
+                f"  Er selbst haette bis [bold]{bestandsstand} Versuche[/] "
+                f"bestanden - der Zaehler steht bei {versuche}.\n"
+            )
         console.print(
             "[yellow]Der Vorsprung ist kleiner als das, was Auswahl bei "
             "diesem Versuchsstand\nohnehin erzeugt.[/] Das ist kein Beweis "

@@ -588,14 +588,94 @@ def noetige_stichprobe(
     return None
 
 
+#: Ab wo ein Versuchsstand keine Auskunft mehr ist.
+#:
+#: Die Latte waechst mit ``sqrt(ln k)`` und damit sehr langsam. Wer erst bei
+#: zehntausend Versuchen anschlaegt, hat keinen Kandidaten beschrieben,
+#: sondern die Rechengrenze gefunden.
+VERSUCHSDECKE = 10_000
+
+
+def hoechster_versuchsstand(
+    guete: float, effektiv: int, *, hoechstens: int = VERSUCHSDECKE
+) -> int | None:
+    """Bis zu welchem Versuchsstand **diese** Guete die Schwelle noch raeumt.
+
+    Die dritte Richtung derselben Linie. ``noetige_guete`` haelt den
+    Versuchsstand fest und fragt nach der Latte, ``noetige_stichprobe`` nach
+    der Stichprobe - diese hier haelt Guete und Stichprobe fest und fragt nach
+    dem **Suchaufwand**, der sich damit noch rechtfertigen liesse.
+
+    Warum das eine eigene Frage ist
+    -------------------------------
+    Das Deflated-Sharpe-Gate wird mit jedem Versuch schwerer; ``erreichbarkeit``
+    sagt, was ein weiterer Versuch kostet. Was bisher niemand ausgerechnet hat,
+    ist die Umkehrung: **Wie frueh haette man aufhoeren muessen?** Sie
+    unterscheidet zwei Lagen, die sich sonst gleich anfuehlen:
+
+    * Ein Kandidat, der bei kleinem Versuchsstand bestanden haette, ist an der
+      Breite der Suche gescheitert. Dann ist Suchdisziplin das Thema.
+    * Ein Kandidat, der auch bei einer Handvoll Versuche nicht bestanden
+      haette, ist an sich selbst gescheitert. Dann hilft keine Disziplin, und
+      es braucht eine andere Regel.
+
+    ``None`` heisst: raeumt die Schwelle nicht einmal beim kleinstmoeglichen
+    Versuchsstand. Ein Wert von ``hoechstens`` heisst umgekehrt, dass die
+    Suchbreite fuer diesen Kandidaten kein Hindernis ist.
+
+    **Das ist keine Erlaubnis, den Zaehler zu senken.** Ausgegebene Versuche
+    sind ausgegeben; die Zahl sagt, was gewesen waere, und taugt zur
+    Einordnung, nicht zur Buchhaltung.
+
+    Womit gerechnet wird
+    --------------------
+    Ueber ``noetige_guete`` und damit mit den Vorgabemomenten aus
+    ``suchbudget`` - Schiefe 3,473 und Woelbung 15,951, den **gemessenen des
+    Bestands**. Fuer eine andere Regel sind das nicht ihre eigenen Momente.
+    Die Spalte ist deshalb mit der Latte daneben vergleichbar, die auf
+    derselben Annahme steht, und nicht mit einem Deflated Sharpe, der die
+    Momente der Regel selbst benutzt.
+    """
+    if guete <= 0 or effektiv <= 0:
+        return None
+
+    def raeumt(versuche: int) -> bool:
+        latte = noetige_guete(effektiv, versuche)
+        # ``None`` heisst hier **nicht** "keine Auskunft": Entweder ist die
+        # Stichprobe zu klein (dann gilt das fuer jeden Versuchsstand), oder
+        # selbst ein Sharpe von 3,0 je Trade genuegt nicht mehr. Beides
+        # heisst "raeumt nicht".
+        return latte is not None and guete >= latte
+
+    if not raeumt(1):
+        return None
+    if raeumt(hoechstens):
+        return hoechstens
+    # **Halbiert, nicht abgezaehlt.** Die Latte steigt monoton mit dem
+    # Versuchsstand (ein Test haelt das fest), also genuegt die Suche nach
+    # der Kante. Linear waeren es bis zu ``hoechstens`` Aufrufe mit je einer
+    # achtzigstufigen Bisektion darin - der erste Entwurf hat damit die
+    # Testdatei zum Stehen gebracht.
+    tief, hoch = 1, hoechstens
+    while hoch - tief > 1:
+        mitte = (tief + hoch) // 2
+        if raeumt(mitte):
+            tief = mitte
+        else:
+            hoch = mitte
+    return tief
+
+
 __all__ = [
     "HOECHSTENS",
+    "VERSUCHSDECKE",
     "ZIEL",
     "Bein",
     "Verbund",
     "baue",
     "fensterbloecke",
     "fensterkorrelation",
+    "hoechster_versuchsstand",
     "noetige_guete",
     "noetige_stichprobe",
 ]

@@ -17463,3 +17463,104 @@ Frage nicht beantworten. Der naechste Lauf misst sie richtig.
 
 Kostet keinen Versuch: 36 vorhandene Katalogregeln nachgemessen, keine
 ausgewaehlt. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertneunundachtzig. Zu spaet war es nach einundzwanzig Versuchen
+
+Das Deflated-Sharpe-Gate wird mit jedem Versuch schwerer. `erreichbarkeit`
+rechnet seit Befund 14 aus, was der **naechste** Versuch kostet. Die
+Umkehrung hat nie jemand gerechnet: **Wie frueh haette man aufhoeren
+muessen?**
+
+Sie trennt zwei Lagen, die sich sonst gleich anfuehlen:
+
+* Ein Kandidat, der bei kleinem Versuchsstand bestanden haette, ist an der
+  **Breite der Suche** gescheitert. Dann ist Disziplin das Thema.
+* Ein Kandidat, der auch bei einer Handvoll Versuche nicht bestanden haette,
+  ist **an sich selbst** gescheitert. Dann hilft keine Disziplin.
+
+### Gemessen
+
+`hoechster_versuchsstand(guete, n_eff)` ist die dritte Richtung derselben
+Linie: `noetige_guete` haelt den Versuchsstand fest, `noetige_stichprobe` die
+Qualitaet, diese haelt beides fest und fragt nach dem Suchaufwand. Ueber den
+Tageskatalog:
+
+    Regel                                 n_eff    Guete   raeumt bis
+    Donchian-Ausbruch 55/20                  58    2,484    10 Versuche
+    Grosser Trendausbruch                    57    2,427     9
+    Trend-Beteiligung 50 Tage               127    2,278     4
+    Trendfolge Ausbruch                     130    2,157     3
+    ... elf weitere                                          2 bis 1
+    Volatilitaets-Ausbruch                   85    0,279     bei keinem
+    ---
+    Bestand am Spot-Punkt                   115    2,904    21 Versuche
+
+    Versuchszaehler                                        198
+
+**Der Bestand haelt am laengsten - bis 21 Versuche.** Er ist damit tatsaechlich
+das Beste in seinem eigenen Vorrat, was Befund 186 aus einer anderen Richtung
+schon gesagt hat. Und er haette bis zum **einundzwanzigsten** Versuch gefunden
+sein muessen.
+
+### Was das beantwortet
+
+Die naheliegende Hoffnung nach 198 Versuchen lautet: *Haetten wir sparsamer
+gesucht, staende hier etwas.* Sie ist jetzt gemessen, und die Antwort ist
+**nein**. Selbst eine perfekte Suche, die den besten Kandidaten sofort
+gefunden haette, haette nach 21 Versuchen aufhoeren muessen - und dann stuende
+sie mit einem Kandidaten da, der 8 von 11 Gates raeumt.
+
+Die Suchbreite war nie der Hebel. Sie hat es schlimmer gemacht, aber sie ist
+nicht der Grund.
+
+### Und was es fuer das restliche Budget heisst
+
+Das Suchbudget steht bei 68 von 100. Was dessen Ausgabe kostet, an der Stelle
+des Bestands (n_eff 115):
+
+    198 Versuche    Latte 3,608    Luecke 0,704
+    266 Versuche    Latte 3,692    Luecke 0,788
+
+Die Luecke waechst um 0,084, **bevor** ein einziger Kandidat gemessen ist. Wer
+das Budget ausgibt, muss also nicht nur etwas Besseres finden, sondern etwas,
+das auch diesen Aufschlag traegt. Befund 186 hat das fuer achtzehn Versuche
+schon einmal ausgerechnet und ist zum selben Schluss gekommen - hier steht die
+allgemeine Form davon.
+
+### Was ausdruecklich **nicht** daraus folgt
+
+**Der Zaehler wird nicht gesenkt.** Ausgegebene Versuche sind ausgegeben; die
+Zahl sagt, was gewesen waere, und taugt zur Einordnung, nicht zur
+Buchhaltung. Wer aus "bei 21 haette es gereicht" ein "dann rechnen wir mit 21"
+macht, hat das Gate umgangen, nicht bestanden.
+
+Ebenso wenig folgt daraus, dass das Gate zu hart ist. Es folgt, dass **dieser
+Vorrat** an ihm scheitert - und das ist dieselbe Aussage, die die Decke
+(Befund 168/183), die Paare (184/186) und die Viertelstunden (188) aus je
+eigener Richtung machen.
+
+### Womit gerechnet wird
+
+Ueber `noetige_guete` und damit mit den Vorgabemomenten aus `suchbudget` -
+Schiefe 3,473, Woelbung 15,951, die **gemessenen des Bestands**. Fuer eine
+andere Regel sind das nicht ihre eigenen Momente. Die Spalte ist deshalb mit
+der Latte daneben vergleichbar, die auf derselben Annahme steht, und nicht
+mit einem Deflated Sharpe, der die Momente der Regel selbst benutzt.
+
+### Zwei eigene Fehler auf dem Weg
+
+Der erste Entwurf zaehlte die Versuchsstaende linear ab - bis zu 10.000
+Aufrufe mit je einer achtzigstufigen Bisektion darin, und die Testdatei blieb
+stehen. Die Latte steigt monoton mit dem Versuchsstand; ein Test haelt das
+fest, und die Suche halbiert jetzt. Die Zahlen sind vor und nach dem Umbau
+dieselben.
+
+Und die neue Spalte hat die Tabellenzeile auf 83 Zeichen gebracht. Rich
+bricht bei 80 um, und die Tabelle stand danach mit **jeder** Regel auf zwei
+Zeilen. Die Breiten sind jetzt so gesetzt, dass 78 Zeichen herauskommen und
+der laengste Katalogname (42 Zeichen) trotzdem ungekuerzt bleibt - mit einem
+Test, der beides aus `cli.py` liest, damit die naechste Spalte nicht wieder
+still umbricht.
+
+Kostet keinen Versuch: gerechnet wurde auf Zahlen, die schon gemessen waren.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

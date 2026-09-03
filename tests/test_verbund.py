@@ -22,10 +22,12 @@ import pytest
 from research.gates import stichprobe_wie_im_gate
 from research.verbund import (
     HOECHSTENS,
+    VERSUCHSDECKE,
     Verbund,
     baue,
     fensterbloecke,
     fensterkorrelation,
+    hoechster_versuchsstand,
     noetige_guete,
     noetige_stichprobe,
 )
@@ -768,3 +770,118 @@ class TestDieFensterprobe:
         )
         assert not probe.belastbar
         assert "SCHLECHTER" in probe.bericht()
+
+
+class TestHoechsterVersuchsstand:
+    """Die dritte Richtung: Wie frueh haette man aufhoeren muessen?
+
+    ``noetige_guete`` haelt den Versuchsstand fest, ``noetige_stichprobe`` die
+    Qualitaet - diese hier haelt beides fest und fragt nach dem Suchaufwand.
+    Sie trennt zwei Lagen, die sich sonst gleich anfuehlen: an der Breite der
+    Suche gescheitert, oder an sich selbst.
+    """
+
+    def test_die_latte_steigt_mit_dem_versuchsstand(self) -> None:
+        """**Die Voraussetzung, auf der die Abbruchbedingung steht.**
+
+        Die Suche bricht beim ersten Versuchsstand ab, an dem es nicht mehr
+        reicht. Das ist nur richtig, wenn die Latte monoton steigt - sonst
+        laege dahinter noch ein Bereich, der wieder reicht.
+        """
+        werte = [noetige_guete(115, v) for v in range(1, 400, 7)]
+        vorhanden = [x for x in werte if x is not None]
+
+        assert len(vorhanden) == len(werte), "Luecke im geprueften Bereich"
+        assert vorhanden == sorted(vorhanden)
+
+    def test_wer_die_latte_raeumt_raeumt_sie_auch_knapp_darunter(self) -> None:
+        stand = hoechster_versuchsstand(2.904, 115)
+
+        assert stand is not None
+        latte_dort = noetige_guete(115, stand)
+        latte_danach = noetige_guete(115, stand + 1)
+        assert latte_dort is not None and latte_danach is not None
+        assert latte_dort <= 2.904, "der gemeldete Stand haelt nicht"
+        assert latte_danach > 2.904, "einer mehr haette auch noch gehalten"
+
+    def test_der_bestand_haette_bei_einundzwanzig_versuchen_bestanden(self) -> None:
+        """**Der tragende Test** - die Zahl aus Befund 189.
+
+        Der Bestand steht am Spot-Punkt bei n_eff 115 und 0,2708 je Trade,
+        also einer Guete von 2,904. Der Versuchszaehler steht bei 198.
+        """
+        guete = 0.2708 * 115**0.5
+
+        assert hoechster_versuchsstand(guete, 115) == 21
+
+    def test_ohne_guete_gibt_es_keine_antwort(self) -> None:
+        assert hoechster_versuchsstand(0.0, 115) is None
+        assert hoechster_versuchsstand(-1.0, 115) is None
+        assert hoechster_versuchsstand(2.9, 0) is None
+
+    def test_eine_zu_kleine_stichprobe_liefert_nichts(self) -> None:
+        """Unter drei wirksamen Beobachtungen urteilt das Gate gar nicht."""
+        assert hoechster_versuchsstand(5.0, 2) is None
+
+    def test_eine_sehr_hohe_guete_stoesst_an_die_decke(self) -> None:
+        """Wer bis zur Decke traegt, ist an der Suchbreite nicht gescheitert."""
+        stand = hoechster_versuchsstand(50.0, 200, hoechstens=200)
+
+        assert stand == 200
+
+    def test_die_drei_richtungen_beschreiben_dieselbe_linie(self) -> None:
+        """**Die Gegenprobe.**
+
+        Wer bei ``versuche`` gerade noch raeumt, muss dort auch die von
+        ``noetige_guete`` verlangte Guete haben - und die Stichprobe, die
+        ``noetige_stichprobe`` fuer diese Qualitaet nennt, darf nicht groesser
+        sein als die, mit der gerechnet wurde.
+        """
+        effektiv, sr = 115, 0.2708
+        guete = sr * effektiv**0.5
+        stand = hoechster_versuchsstand(guete, effektiv)
+        assert stand is not None
+
+        latte = noetige_guete(effektiv, stand)
+        assert latte is not None and guete >= latte
+
+        noetig = noetige_stichprobe(sr, stand)
+        assert noetig is not None and noetig <= effektiv
+
+    def test_die_decke_ist_eine_obergrenze_und_keine_aussage(self) -> None:
+        assert VERSUCHSDECKE == 10_000
+        assert hoechster_versuchsstand(2.904, 115, hoechstens=5) == 5
+
+
+def test_die_tabellenzeile_passt_in_achtzig_spalten() -> None:
+    """**Befund 189.** Die Spalte 'bis' hat die Zeile auf 83 Zeichen gebracht.
+
+    Rich bricht bei 80 um, und die Tabelle stand danach mit jeder Regel auf
+    zwei Zeilen - lesbar war sie nicht mehr. Der laengste Katalogname hat 42
+    Zeichen, die Zahlenspalten zusammen 36; das passt.
+
+    Der Test liest die Breiten aus ``cli.py``, damit eine spaetere Spalte
+    nicht wieder still umbricht.
+    """
+    import re
+    from pathlib import Path
+
+    from research.seeds import GENERATIONS
+
+    quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+    kopf = re.search(
+        r"\{'Regel':<(\d+)\}\{'n_eff':>(\d+)\}\{'SR/Trade':>(\d+)\}"
+        r"\{'Guete':>(\d+)\}\{'noetig':>(\d+)\}\"\s*\n\s*f\"\{'bis':>(\d+)\}",
+        quelle,
+    )
+    assert kopf is not None, "Tabellenkopf der Vorratsdecke nicht gefunden"
+    breiten = [int(x) for x in kopf.groups()]
+
+    assert sum(breiten) <= 80, f"Zeile ist {sum(breiten)} Zeichen breit"
+
+    laengster = max(
+        (b().name for liste in GENERATIONS.values() for b in liste), key=len
+    )
+    assert len(laengster) <= breiten[0], (
+        f"'{laengster}' ({len(laengster)}) wird auf {breiten[0]} gekuerzt"
+    )

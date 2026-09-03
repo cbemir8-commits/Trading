@@ -252,6 +252,16 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         "von 91 ueberhaupt besser als ein Paar. Deckel auf die Beinsumme",
         153,
     ),
+    # Die naheliegende Hoffnung nach 198 Versuchen - "haetten wir sparsamer
+    # gesucht, staende hier etwas" - ist damit gemessen und nicht mehr offen.
+    # Sie ist ausdruecklich kein Grund, den Zaehler zu senken.
+    Richtung(
+        "Suchdisziplin als Weg",
+        "der Bestand haette bis 21 Versuche bestanden, die beste Katalogregel "
+        "bis 10, elf weitere bis 1 oder 2 - selbst eine perfekte Suche haette "
+        "nach 21 Versuchen aufhoeren muessen und stuende bei 8 von 11 Gates",
+        189,
+    ),
 )
 
 
