@@ -548,3 +548,79 @@ class TestNachBefund139:
         assert "Befund 142" in kopf
         assert "0,0925" in kopf
         assert "effektive" in kopf
+
+
+class TestDieHuerdeGehoertZumKandidaten:
+    """**Befund 192.** Derselbe Fehler wie in Befund 191, zweite Stelle.
+
+    ``Rennen.huerde`` rief ``Budget.noetig_bei`` ohne Momente auf und hat
+    damit die Vorgaben benutzt - 3,473 und 15,951, die des **Bestands**. Fuer
+    ihn selbst ist das fast richtig; fuer jeden anderen Kandidaten ist es die
+    falsche Verteilung.
+
+    Und es schlaegt auf den Schnittpunkt durch, die Kennzahl dieses Moduls.
+    """
+
+    def rennen(self, **extra) -> Rennen:
+        """Der Betriebspunkt, aus dem die Zahlen im Modulkopf stammen."""
+        return Rennen(bester=0.2708, versuche=198, trades=152, **extra)
+
+    def test_eine_neutrale_verteilung_hebt_die_huerde_deutlich(self) -> None:
+        vorgabe = self.rennen().huerde(198)
+        neutral = self.rennen(schiefe=0.0, woelbung=3.0).huerde(198)
+
+        assert vorgabe is not None and neutral is not None
+        assert neutral / vorgabe > 1.2, f"nur {neutral / vorgabe:.3f}x"
+
+    def test_der_schnittpunkt_verschiebt_sich_um_groessenordnungen(self) -> None:
+        """**Der tragende Test.**
+
+        Mit den Momenten des Bestands holt die Suche bei rund achttausend
+        Versuchen auf; mit einer neutralen Verteilung nicht einmal bei einer
+        Milliarde. Dieselbe Regel, dieselben Daten - nur die Verteilung, mit
+        der die Huerde gerechnet wird, ist eine andere.
+        """
+        mit_vorgabe = self.rennen().schnittpunkt()
+        neutral = self.rennen(schiefe=0.0, woelbung=3.0).schnittpunkt()
+
+        assert mit_vorgabe is not None and 5_000 < mit_vorgabe < 20_000
+        assert neutral is None, "der Schnittpunkt darf hier nicht erreichbar sein"
+
+    def test_ob_die_suche_je_aufholt_haengt_nicht_an_den_momenten(self) -> None:
+        """Die Grenze, die der Befund **nicht** verschiebt.
+
+        ``schneller_als_die_huerde`` vergleicht Ideenstreuung und
+        Nullstreuung - beide unabhaengig von der Verteilungsform. Wer aus
+        diesem Befund liest, die Momente entschieden ueber "nie", liest zu
+        viel hinein: Sie entscheiden ueber das **Wo**, nicht ueber das **Ob**.
+        """
+        assert (
+            self.rennen().schneller_als_die_huerde
+            is self.rennen(schiefe=0.0, woelbung=3.0).schneller_als_die_huerde
+        )
+
+    def test_ohne_angabe_bleibt_alles_wie_zuvor(self) -> None:
+        assert self.rennen().huerde(198) == self.rennen(
+            schiefe=None, woelbung=None
+        ).huerde(198)
+
+    def test_der_bestand_selbst_merkt_kaum_etwas(self) -> None:
+        """Warum der Fehler so lange unbemerkt blieb.
+
+        Die eigenen Momente des Bestands (3,4646 / 15,9173) liegen dicht an
+        der Vorgabe. Wer nur ihn rechnete, sah keinen Unterschied.
+        """
+        vorgabe = self.rennen().huerde(198)
+        eigene = self.rennen(schiefe=3.4646, woelbung=15.9173).huerde(198)
+
+        assert vorgabe is not None and eigene is not None
+        assert abs(eigene - vorgabe) < 0.001
+
+    def test_der_bericht_reicht_die_momente_durch(self) -> None:
+        from pathlib import Path
+
+        quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+
+        assert quelle.count("schiefe=kandidat.schiefe") >= 3, (
+            "eine Rennen-Aufrufstelle rechnet wieder mit der Vorgabe"
+        )

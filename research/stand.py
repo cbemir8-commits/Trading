@@ -739,6 +739,20 @@ BEHOBEN: tuple[Richtung, ...] = (
         "0,643 Guetepunkten",
         191,
     ),
+    # Achte Wiederholung. Elf Latten-Aufrufstellen nachgesehen: vier waren
+    # richtig, drei auf der Vorgabe, drei haben keinen Kandidaten und
+    # duerfen es sein. Der Kandidatenpfad ueber Budget.abstaende war immer
+    # richtig - falsch waren die Stellen, die mit einer Stichprobe statt mit
+    # einem Kandidatenobjekt rechnen.
+    Richtung(
+        "Auch die Wettrennen-Huerde stand auf der Vorgabe",
+        "Rennen.huerde rechnete ohne Momente; bei n_eff 152 liegt der "
+        "Schnittpunkt damit bei 8.041 Versuchen, mit neutraler Verteilung "
+        "jenseits von 1e9. Ob die Suche je aufholt, aendert sich nicht - das "
+        "haengt an Ideen- und Nullstreuung. Dazu die Linie am Spot-Punkt in "
+        "'cli suchbudget' (0,3367 statt 0,3364)",
+        192,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

@@ -17748,3 +17748,93 @@ Verteilung wie die des Bestands" - und das steht jetzt dabei.
 
 Kostet keinen Versuch: 18 vorhandene Katalogregeln nachgerechnet, keine
 ausgewaehlt. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertzweiundneunzig. Dieselbe Stelle, zweiter Ort
+
+Befund 191 hat gefunden, dass `noetige_guete` die Momente nie durchgereicht
+hat und deshalb jede Regel an der Verteilung des Bestands gemessen wurde.
+Naheliegende Frage: **Ist das die einzige Stelle?**
+
+### Die Suche
+
+Alle elf Stellen, die eine Latte rechnen, nachgesehen:
+
+    Budget.abstaende            gibt k.schiefe/k.woelbung weiter   richtig
+    front.Lage.budget           geht durch abstaende               richtig
+    erreichbarkeit.bewerte      gibt skew/kurtosis weiter          richtig
+    taktung                     gibt schiefe/woelbung weiter       richtig
+    verbund.noetige_guete       Vorgabe                            Bef. 191
+    wettrennen.Rennen.huerde    Vorgabe                            **hier**
+    cli suchbudget, die Linie   Vorgabe statt SPOTPUNKTs eigenen   **hier**
+    Budget.linie                kein Kandidat vorhanden            zulaessig
+    Budget.kosten_je_versuch    kein Kandidat vorhanden            zulaessig
+    vorratsdecke.urteil         Scheitel, kein Kandidat            zulaessig
+    auftragslage                rechnet Kosten, keine Latte        -
+
+Der Kandidatenpfad - Bestenliste, `cli front`, `cli erreichbarkeit`, die
+Taktungstabelle - war die ganze Zeit richtig, und `taktung` hat die Wahl im
+Modulkopf sogar begruendet. Falsch waren die Stellen, die mit einer
+**Stichprobe** rechnen statt mit einem Kandidatenobjekt: Dort war kein
+Kandidat im Argument, also nahm niemand seine Momente.
+
+Die dritte Fundstelle ist die Zeile *"Was Weitersuchen an der Linie
+verschiebt"* in `cli suchbudget`. Sie rechnet den Spot-Punkt gegen die
+Vorgabe, obwohl `SPOTPUNKT` seit Befund 158 seine eigenen Momente traegt -
+gemessen 0,3367 statt 0,3364. Der Unterschied ist winzig, aber es ist
+dieselbe Zeile Code, und sie steht jetzt richtig da.
+
+Drei Stellen, an denen kein Kandidat vorliegt, bleiben auf der Vorgabe: die
+Grenzlinie ueber mehrere Stichproben, der Preis eines Versuchs und der
+Scheitel der Decke. Dort gibt es keine Regel, deren Form man einsetzen
+koennte - das ist keine Nachlaessigkeit, sondern die einzige Moeglichkeit,
+und in `vorratsdecke.urteil` steht es seit Befund 191 dabei.
+
+### Was an dieser zweiten Stelle haengt
+
+`Rennen.huerde` ist die Huerde im Wettrennen, und daran haengt der
+**Schnittpunkt** - die Kennzahl dieses Moduls, die Zahl, die sagt, nach wie
+vielen Versuchen die Suche ihre eigene Huerde einholt. Bei n_eff 152 und 198
+Versuchen:
+
+    Momente des Bestands (3,47 / 15,95)   Huerde 0,2978   Schnitt  8.041
+    neutral (0 / 3)                              0,3630   jenseits von 1e9
+
+**Vier Groessenordnungen, dieselbe Regel, dieselben Daten.** Nur die
+Verteilung, mit der die Huerde gerechnet wird, ist eine andere.
+
+### Was sich ausdruecklich nicht verschiebt
+
+Ob die Suche **ueberhaupt je** aufholt, entscheidet
+`schneller_als_die_huerde`, und das vergleicht Ideenstreuung mit
+Nullstreuung. Beide kennen keine Momente. Wer aus diesem Befund liest, die
+Verteilungsform entscheide ueber "nie", liest zu viel hinein: Sie entscheidet
+ueber das *Wo*, nicht ueber das *Ob*.
+
+Ein Test haelt genau das fest, damit der Befund nicht groesser gelesen wird,
+als er ist.
+
+### Warum es so lange gutging
+
+Die eigenen Momente des Bestands sind 3,4646 und 15,9173, die Vorgabe 3,473
+und 15,951. Der Unterschied in der Huerde liegt unter einem Tausendstel. Wer
+nur ihn rechnete - und `cli wettrennen` wurde fast immer auf ihn angewandt -
+sah nichts.
+
+Das ist die Bauart, die dieses Projekt jetzt zum achten Mal findet, und sie
+hat hier ihre unangenehmste Form: **Die Vorgabe ist der Sonderfall, der
+stimmt.** Solange man den misst, ist alles in Ordnung; der Fehler zeigt sich
+erst an dem Kandidaten, den man noch nicht hat.
+
+### Am aktuellen Betriebspunkt aendert sich nichts
+
+Der Bestand steht bei n_eff 115, nicht 152. Dort liegt der Schnittpunkt
+jenseits von 1e9, mit jeder Verteilung - die Suche holt an diesem
+Betriebspunkt ohnehin nicht auf. Die 8.041 oben sind der Stand vor Befund
+135, aus dem die Zahlen im Modulkopf stammen.
+
+Es waere bequem, das als "kein Schaden entstanden" zu berichten. Richtiger
+ist: Der Schaden waere entstanden, sobald `cli wettrennen` auf eine andere
+Regel angewandt worden waere - und dafuer ist der Befehl gebaut.
+
+Kostet keinen Versuch: gerechnet wurde ueber Versuche, nicht mit ihnen.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

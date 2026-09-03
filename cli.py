@@ -8211,6 +8211,11 @@ def rennen(
         versuche=versuche,
         trades=stichprobe.effektiv,
         mittel=mittel,
+        # **Seine eigene Verteilungsform** (Befund 192). Ohne sie steht die
+        # Huerde auf den Momenten des Bestands, und der Schnittpunkt - die
+        # Kennzahl dieses Berichts - haengt daran.
+        schiefe=kandidat.schiefe,
+        woelbung=kandidat.woelbung,
     )
     abbruch = BUDGET.beginn + BUDGET.umfang
     console.print(
@@ -8245,6 +8250,8 @@ def rennen(
             trades=stichprobe.effektiv,
             mittel=mittel,
             schub=schub,
+            schiefe=kandidat.schiefe,
+            woelbung=kandidat.woelbung,
         )
         console.print("[bold]Derselbe Lauf unter Spot-Bedingungen[/]")
         console.print(
@@ -9063,7 +9070,15 @@ def suchbudget(
     from research.referenz import SPOTPUNKT
 
     for weitere in (0, 40, 90, 190, 390):
-        wert = budget.noetig_bei(SPOTPUNKT.effektiv, versuche=trials + weitere)
+        # Mit **seinen** Momenten, nicht der Vorgabe (Befund 192). Sie
+        # aehneln einander (3,4646 gegen 3,473), sind aber nicht dieselben,
+        # und der Punkt traegt seine eigenen seit Befund 158.
+        wert = budget.noetig_bei(
+            SPOTPUNKT.effektiv,
+            versuche=trials + weitere,
+            schiefe=SPOTPUNKT.schiefe,
+            woelbung=SPOTPUNKT.woelbung,
+        )
         if wert is not None:
             console.print(
                 f"  {trials + weitere:>4} Versuche: {SPOTPUNKT.effektiv} "

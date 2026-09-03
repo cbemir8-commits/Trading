@@ -85,6 +85,18 @@ Was das Modell nicht kann
 * Das Mittel einer neuen Regelidee ist eine **Annahme**. Deshalb steht es als
   Parameter da und nicht als Zahl im Code, und ``spanne`` zeigt, wie stark das
   Ergebnis daran haengt.
+* Die Huerde haengt an der **Verteilungsform** des Kandidaten, und die ist
+  bis Befund 192 nie uebergeben worden - gerechnet wurde mit den Vorgaben aus
+  ``suchbudget``, also mit der Form des Bestands. Wie stark das traegt, bei
+  n_eff 152 und 198 Versuchen:
+
+      Momente des Bestands (3,47 / 15,95)   Huerde 0,2978   Schnitt  8.041
+      neutral (0 / 3)                              0,3630   jenseits von 1e9
+
+  Vier Groessenordnungen, dieselbe Regel. Was sich **nicht** verschiebt, ist
+  die Frage, ob die Suche ueberhaupt je aufholt: Dafuer zaehlen Ideen- und
+  Nullstreuung, und beide kennen keine Momente. Die Verteilung entscheidet
+  ueber das *Wo*, nicht ueber das *Ob*.
 
 Kostet keinen Versuch: Gerechnet wird ueber Versuche, nicht mit ihnen.
 """
@@ -181,6 +193,23 @@ class Rennen:
     hat, und Kostenaenderungen kommen hierher.
     """
 
+    schiefe: float | None = None
+    woelbung: float | None = None
+    """Die Verteilungsform des Kandidaten, gegen dessen Huerde gerannt wird.
+
+    **Die Huerde gehoert zu ihm, nicht zum Bestand** (Befund 192). ``huerde``
+    hat die Momente nie gesetzt und damit die Vorgaben aus ``suchbudget``
+    benutzt - 3,473 und 15,951, die des Bestands. Fuer den Bestand selbst
+    ist das fast richtig; fuer jeden anderen Kandidaten ist es die falsche
+    Verteilung, und starke Schiefe senkt die Huerde deutlich.
+
+    Das ist derselbe Fehler wie in Befund 191, an der zweiten Stelle. Dort
+    sass er in ``noetige_guete``, hier in ``Rennen.huerde`` - und er schlaegt
+    auf den Schnittpunkt durch, die Kennzahl dieses ganzen Moduls.
+
+    ``None`` heisst "nicht gemessen"; dann bleibt es bei der Vorgabe.
+    """
+
     @property
     def streuung(self) -> float | None:
         return kalibriere(
@@ -252,10 +281,16 @@ class Rennen:
         return satz
 
     def huerde(self, versuche: int) -> float | None:
-        """Der noetige Sharpe je Trade bei diesem Versuchsstand."""
+        """Der noetige Sharpe je Trade bei diesem Versuchsstand.
+
+        Mit den Momenten **dieses** Kandidaten, so wie das Gate rechnet -
+        nicht mit denen des Bestands (Befund 192).
+        """
         from research.suchbudget import Budget
 
-        return Budget(versuche=versuche).noetig_bei(self.trades)
+        return Budget(versuche=versuche).noetig_bei(
+            self.trades, schiefe=self.schiefe, woelbung=self.woelbung
+        )
 
     def erwartet(self, versuche: int) -> float | None:
         """Der beste Fund, der aus so vielen Versuchen zu erwarten waere.
