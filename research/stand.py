@@ -697,6 +697,15 @@ OFFEN: tuple[Richtung, ...] = (
         "steht bei 2,41, Auswahl aus 198 Versuchen erzeugt 3,25",
         179,
     ),
+    # **Die Gegenprobe zu 169/179 - und sie war nicht durchfuehrbar.**
+    Richtung(
+        "Haengt die Familienaussage am Schnitt?",
+        "von drei Einteilungen konnte nur eine pruefen (Aussenmenge 5 gegen "
+        "noetige 5); sie stuetzt. Bei den anderen stehen draussen 3 und 1 "
+        "Regel - eine einzige weitere Regel ohne gleitenden Schnitt macht die "
+        "zweite pruefbar",
+        181,
+    ),
     Richtung(
         "Einstieg, der nicht am Rauschen haengt",
         "der wiederholbare Ausbruch entkoppelt (haelt 70 % seiner Trades "

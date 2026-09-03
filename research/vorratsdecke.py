@@ -257,6 +257,23 @@ class Decke:
                 beste = (n, abstand)
         return beste
 
+    def noetige_regeln(self, schwelle: float = MINDEST_T) -> int:
+        """Wie viele Regeln eine Gruppe braucht, um **diese** Kopplung zu
+        zeigen.
+
+        ``t = r * sqrt((n - 2) / (1 - r^2))``, nach ``n`` aufgeloest. Die
+        Zahl beantwortet die Frage, die ein leeres Ergebnis offenlaesst: Hat
+        die Gruppe nichts gefunden, oder konnte sie nichts finden?
+
+        **Ohne sie zaehlt Abwesenheit von Beleg als Beleg** - genau das ist
+        beim ersten Anlauf zu Befund 181 passiert. Zwei von drei Einteilungen
+        meldeten "die Mehrheitsfamilie traegt es allein", weil ihre
+        Aussenmenge drei bzw. eine Regel hatte.
+        """
+        if self.r == 0:
+            return 0
+        return math.ceil(2 + schwelle**2 * (1 - self.r**2) / self.r**2)
+
     @staticmethod
     def erwartetes_maximum(ziehungen: int) -> float:
         """Wie hoch das Beste aus *k* Ziehungen allein durch Auswahl liegt.
@@ -433,6 +450,130 @@ def _versuche_gerade(punkte: list[Punkt]) -> Decke | None:
         return None
 
 
+#: Die drei Ausgaenge einer Einteilung - und der dritte ist der Punkt.
+TRAEGT = "traegt allein"
+TRAEGT_NICHT = "traegt nicht allein"
+UNGEPRUEFT = "nicht geprueft"
+
+
+def befund_der_einteilung(
+    aufteilung: tuple[str, Decke | None, Decke | None] | None,
+) -> str:
+    """Was eine Einteilung ueber "eine Familie traegt es" sagt.
+
+    Drei Ausgaenge, und der dritte fehlte im ersten Anlauf:
+
+    * ``TRAEGT`` - drinnen belegt, draussen nicht, **und draussen stehen
+      genug Regeln**, um es zu zeigen, wenn es da waere.
+    * ``TRAEGT_NICHT`` - draussen faellt die Qualitaet ebenso.
+    * ``UNGEPRUEFT`` - draussen stehen zu wenige Regeln. Dann ist nichts
+      gefunden worden, weil nichts gesucht werden konnte.
+
+    Ohne den dritten zaehlt eine zu kleine Aussenmenge als Bestaetigung, und
+    je feiner man schneidet, desto sicherer wird der Befund. Das ist keine
+    Robustheitspruefung, sondern ihr Gegenteil.
+    """
+    if aufteilung is None:
+        return UNGEPRUEFT
+    _, drin, ohne = aufteilung
+    if drin is None or not drin.tragfaehig:
+        return TRAEGT_NICHT
+    if ohne is None or len(ohne.punkte) < drin.noetige_regeln():
+        return UNGEPRUEFT
+    return TRAEGT_NICHT if ohne.tragfaehig else TRAEGT
+
+
+@dataclass(frozen=True, slots=True)
+class Einteilung:
+    """Eine Art, dieselben Punkte in Familien zu schneiden."""
+
+    name: str
+    aufteilung: tuple[str, Decke | None, Decke | None] | None
+
+    @property
+    def befund(self) -> str:
+        return befund_der_einteilung(self.aufteilung)
+
+    @property
+    def traegt_allein(self) -> bool:
+        return self.befund == TRAEGT
+
+
+def stabilitaetsurteil(einteilungen: list[Einteilung]) -> str:
+    """Haengt "eine Familie traegt es" an der Art, Familien zu schneiden?
+
+    **Die Gegenprobe zu Befund 169, und sie hat gefehlt.** Dort wurde nach
+    dem Einstiegsindikator eingeteilt - strukturell aus dem Genom gelesen und
+    insofern keine Meinung. Aber es ist **eine** Einteilung unter mehreren:
+    ``sma``, ``ema`` und ``distance_to_ema_pct`` sind drei Schluessel und ein
+    Gedanke. Wer sie zusammenlegt, bekommt eine andere Mehrheit.
+
+    Befund 83 hat unabhaengig davon eine Einteilung nach Regellogik gebaut
+    und gegen eine Permutation geprueft. Sie auf dieselben Punkte zu legen
+    kostet nichts und beantwortet die Frage, ob der Befund an der Sache haengt
+    oder am Schnitt.
+    """
+    if not einteilungen:
+        return "**Keine Einteilung** - ohne Gruppierung gibt es nichts zu vergleichen."
+    zeilen = ["Traegt die Mehrheitsfamilie die Kopplung - je nach Schnitt?"]
+    for e in einteilungen:
+        if e.aufteilung is None:
+            zeilen.append(f"  {e.name:<24} keine Mehrheitsfamilie ({UNGEPRUEFT})")
+            continue
+        name, drin, ohne = e.aufteilung
+        teile = [
+            "drin -" if drin is None else f"drin {len(drin.punkte)}/t={drin.t:+.2f}",
+            "ohne -"
+            if ohne is None
+            else f"ohne {len(ohne.punkte)}/t={ohne.t:+.2f}",
+        ]
+        if drin is not None and drin.tragfaehig:
+            teile.append(f"noetig aussen {drin.noetige_regeln()}")
+        zeilen.append(
+            f"  {e.name:<24} '{name}'  {'  '.join(teile)}   **{e.befund}**"
+        )
+    geprueft = [e for e in einteilungen if e.befund != UNGEPRUEFT]
+    dafuer = sum(1 for e in geprueft if e.traegt_allein)
+    zeilen.append("")
+    if not geprueft:
+        zeilen.append(
+            f"**Keiner der {len(einteilungen)} Schnitte hat es geprueft.** In "
+            f"jedem war die Aussenmenge zu klein, um eine Kopplung dieser "
+            f"Staerke zu zeigen - gefunden wurde nichts, weil nichts gesucht "
+            f"werden konnte."
+        )
+    elif dafuer == len(geprueft):
+        zeilen.append(
+            f"**{dafuer} von {len(geprueft)} pruefbaren Schnitten "
+            f"{'sagt' if len(geprueft) == 1 else 'sagen'} dasselbe**"
+            + (
+                f" ({len(einteilungen) - len(geprueft)} konnten es nicht "
+                f"pruefen)."
+                if len(geprueft) < len(einteilungen)
+                else "."
+            )
+        )
+    elif dafuer == 0:
+        zeilen.append(
+            f"**Kein pruefbarer Schnitt stuetzt es** ({len(geprueft)} von "
+            f"{len(einteilungen)} konnten pruefen). Die Aussage gehoert dann "
+            f"nicht in einen Befund."
+        )
+    else:
+        zeilen.append(
+            f"**{dafuer} von {len(geprueft)} pruefbaren Schnitten stuetzen "
+            f"es.** Damit haengt die Aussage am Schnitt, und wer sie zitiert, "
+            f"muss dazusagen, nach welcher Einteilung."
+        )
+    if len(geprueft) < len(einteilungen):
+        zeilen.append(
+            "Ein Schnitt mit zu kleiner Aussenmenge zaehlt hier **nicht** als "
+            "Bestaetigung. Sonst wuerde der Befund umso sicherer, je feiner "
+            "man schneidet - das Gegenteil einer Robustheitspruefung."
+        )
+    return "\n".join(zeilen)
+
+
 def familienurteil(aufteilung: tuple[str, Decke | None, Decke | None]) -> str:
     """Was die Aufteilung ueber die Tragfaehigkeit der Decke sagt."""
     name, drin, ohne = aufteilung
@@ -464,11 +605,17 @@ def familienurteil(aufteilung: tuple[str, Decke | None, Decke | None]) -> str:
 
 __all__ = [
     "MINDEST_T",
+    "TRAEGT",
+    "TRAEGT_NICHT",
+    "UNGEPRUEFT",
     "Decke",
+    "Einteilung",
     "Punkt",
     "baue",
+    "befund_der_einteilung",
     "familienurteil",
     "preisurteil",
+    "stabilitaetsurteil",
     "traegt_eine_familie",
     "urteil",
 ]

@@ -2887,12 +2887,34 @@ def _familie(genome) -> str:
     Vola-Ziel 22 %" und "Trend-Beteiligung 50 Tage" heissen verschieden und
     sind dieselbe Familie. Eine Einteilung nach Namen waere eine Meinung.
     """
-    namen = {
+    return "+".join(sorted(_einstiegsindikatoren(genome))) or "ohne Indikator"
+
+
+def _einstiegsindikatoren(genome) -> set[str]:
+    return {
         s.name
         for abschnitt in (genome.entry_long, genome.entry_short)
         for c in abschnitt
         for s in (c.left, c.right)
         if s.kind == "indicator"
+    }
+
+
+#: Indikatoren, die denselben Gedanken auf verschiedene Arten schreiben.
+#:
+#: ``sma``, ``ema`` und ``distance_to_ema_pct`` sind drei Schluessel und ein
+#: gleitender Durchschnitt. Befund 169 hat nach dem einzelnen Schluessel
+#: eingeteilt - strukturell richtig und trotzdem **eine** Wahl unter mehreren.
+#: Diese Zusammenlegung ist die naheliegendste Alternative und dient als
+#: Gegenprobe (Befund 181), nicht als Ersatz.
+GLEITEND = ("sma", "ema", "distance_to_ema_pct", "wma", "vwap")
+
+
+def _familie_grob(genome) -> str:
+    """Dieselbe Einteilung, gleitende Durchschnitte zusammengelegt."""
+    namen = {
+        "gleitender Schnitt" if n in GLEITEND else n
+        for n in _einstiegsindikatoren(genome)
     }
     return "+".join(sorted(namen)) or "ohne Indikator"
 
@@ -10515,16 +10537,19 @@ def vorratsdecke(
         run_portfolio_walkforward,
     )
     from research.admission import load_trials
+    from research.familien import familie_von
     from research.gates import stichprobe_wie_im_gate
     from research.randschnitt import ohne_zensierte
     from research.seeds import GENERATIONS, passt_zum_intervall
     from research.suchbudget import Kandidat
     from research.verbund import noetige_guete
     from research.vorratsdecke import (
+        Einteilung,
         Punkt,
         baue,
         familienurteil,
         preisurteil,
+        stabilitaetsurteil,
         traegt_eine_familie,
         urteil,
     )
@@ -10545,6 +10570,8 @@ def vorratsdecke(
     )
     punkte: list[Punkt] = []
     nach_familie: dict[str, list[Punkt]] = {}
+    grob_familie: dict[str, list[Punkt]] = {}
+    nach_logik: dict[str, list[Punkt]] = {}
     ohne_latte: list[tuple[str, int]] = []
     stumm = 0
     gesehen: set[tuple[int, float]] = set()
@@ -10598,6 +10625,14 @@ def vorratsdecke(
             )
             punkte.append(punkt)
             nach_familie.setdefault(_familie(genom), []).append(punkt)
+            grob_familie.setdefault(_familie_grob(genom), []).append(punkt)
+            # Die zweite, unabhaengig gebaute Einteilung (Befund 83, nach
+            # Regellogik und gegen eine Permutation geprueft). Regeln ohne
+            # Zuordnung fallen heraus, statt in einen Topf "Sonstige" zu
+            # wandern - dieselbe Regel wie in ``ausschluss``.
+            logisch = familie_von(genom.name)
+            if logisch is not None:
+                nach_logik.setdefault(logisch, []).append(punkt)
 
     if len(punkte) < 3:
         console.print(
@@ -10645,6 +10680,22 @@ def vorratsdecke(
             )
             + "[/]"
         )
+
+    # **Haengt der Befund am Schnitt?** Befund 169 hat nach dem einzelnen
+    # Einstiegsindikator eingeteilt - strukturell richtig und trotzdem eine
+    # Wahl. Zwei Gegenproben auf denselben Punkten (Befund 181): gleitende
+    # Durchschnitte zusammengelegt, und die unabhaengig gebaute Einteilung
+    # nach Regellogik aus Befund 83.
+    console.print()
+    console.print(
+        stabilitaetsurteil(
+            [
+                Einteilung("Einstiegsindikator", traegt_eine_familie(nach_familie)),
+                Einteilung("gleitende zusammen", traegt_eine_familie(grob_familie)),
+                Einteilung("Regellogik (Bef. 83)", traegt_eine_familie(nach_logik)),
+            ]
+        )
+    )
 
     # **Wo der Bestand in seinem eigenen Vorrat steht.** Der zweite Weg zur
     # selben Aussage wie der Deflated Sharpe - und ein unabhaengiger: Der

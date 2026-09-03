@@ -19,11 +19,14 @@ import pytest
 
 from research.vorratsdecke import (
     MINDEST_T,
+    UNGEPRUEFT,
     Decke,
+    Einteilung,
     Punkt,
     baue,
     familienurteil,
     preisurteil,
+    stabilitaetsurteil,
     traegt_eine_familie,
     urteil,
 )
@@ -385,3 +388,136 @@ class TestWoraufDieKopplungSteht:
 
         assert not knapp.tragfaehig
         assert knapp.scheitel_guete is None
+
+
+class TestHaengtEsAmSchnitt:
+    """**Befund 181, und es ist eine Gegenprobe zu meiner eigenen Arbeit.**
+
+    Befund 169 hat nach dem Einstiegsindikator eingeteilt - strukturell aus
+    dem Genom gelesen und insofern keine Meinung. Aber es ist **eine**
+    Einteilung unter mehreren, und auf ihr stehen zwei Befunde: dass die
+    Kopplung eine Familieneigenschaft ist (169) und was sie kostet (179).
+
+    Wer denselben Punkten einen anderen Schnitt gibt und dasselbe herausholt,
+    hat einen Befund. Wer etwas anderes herausholt, hat einen Schnitt.
+    """
+
+    def traegt(self) -> Einteilung:
+        return Einteilung(
+            "Indikator",
+            traegt_eine_familie(
+                {
+                    "sma": gerade(0.40, -0.002, [20, 40, 60, 80, 100], 0.01),
+                    "rest": [
+                        Punkt("A", 30, 0.30), Punkt("B", 60, 0.31),
+                        Punkt("C", 90, 0.28), Punkt("D", 120, 0.30),
+                    ],
+                }
+            ),
+        )
+
+    def traegt_nicht(self) -> Einteilung:
+        return Einteilung(
+            "gleitende zusammen",
+            traegt_eine_familie(
+                {
+                    "gleitend": gerade(0.40, -0.002, [20, 30, 40, 60, 80, 100], 0.01),
+                    "rest": gerade(0.38, -0.002, [25, 45, 65, 85, 105], 0.01),
+                }
+            ),
+        )
+
+    def test_einigkeit_wird_als_solche_gemeldet(self) -> None:
+        text = stabilitaetsurteil([self.traegt(), self.traegt()])
+
+        assert "2 von 2 pruefbaren Schnitten sagen dasselbe" in text
+
+    def test_uneinigkeit_macht_die_aussage_bedingt(self) -> None:
+        """**Der Fall, um den es geht.** Zwei Schnitte, zwei Antworten - dann
+        gehoert der Schnitt in jede Zitierung."""
+        text = stabilitaetsurteil([self.traegt(), self.traegt_nicht()])
+
+        assert "1 von 2 pruefbaren Schnitten stuetzen es" in text
+        assert "am Schnitt" in text
+
+    def test_wo_keiner_stuetzt_wird_es_deutlich_gesagt(self) -> None:
+        text = stabilitaetsurteil([self.traegt_nicht(), self.traegt_nicht()])
+
+        assert "Kein pruefbarer Schnitt stuetzt es" in text
+        assert "gehoert dann nicht in einen Befund" in text
+
+    def test_eine_einteilung_ohne_mehrheit_zaehlt_nicht_als_bestaetigung(
+        self,
+    ) -> None:
+        """**Der Fehler aus dem ersten Anlauf.** Sie zaehlte als "traegt
+        allein" - und damit war die fehlende Aussenmenge ein Beleg."""
+        ohne = Einteilung("Regellogik", None)
+
+        assert ohne.befund == UNGEPRUEFT
+        assert not ohne.traegt_allein
+        text = stabilitaetsurteil([self.traegt(), ohne])
+        assert "keine Mehrheitsfamilie" in text
+        assert "1 von 1 pruefbaren" in text
+        assert "1 konnten es nicht pruefen" in text
+
+    def test_ohne_einteilungen_wird_nichts_behauptet(self) -> None:
+        assert "Keine Einteilung" in stabilitaetsurteil([])
+
+    def test_die_zahlen_je_schnitt_stehen_dabei(self) -> None:
+        """Ein blosses Ja/Nein liesse nicht erkennen, ob ein Schnitt knapp
+        oder deutlich entscheidet."""
+        text = stabilitaetsurteil([self.traegt()])
+
+        assert "drin 5/t=" in text
+        assert "ohne" in text
+
+    def test_eine_zu_kleine_aussenmenge_ist_kein_beleg(self) -> None:
+        """**Der gemessene Fall, der den ersten Anlauf widerlegt hat.**
+
+        Legt man die gleitenden Durchschnitte zusammen, stehen drinnen 11
+        Regeln mit r = -0,817 und draussen drei. Eine Kopplung dieser Staerke
+        braeuchte draussen vier, um sich zu zeigen - der Schnitt hat also
+        nichts gefunden, weil er nichts finden konnte.
+
+        Der erste Anlauf meldete hier "traegt allein" und kam damit auf
+        "alle 3 Schnitte sagen dasselbe".
+        """
+        # Die gemessene Lage selbst: 11 Regeln, r = -0,817 (aus t = -4,25).
+        drin = Decke(
+            punkte=tuple(gerade(0.40, -0.002, list(range(20, 130, 10)))),
+            achsenabschnitt=0.40, steigung=-0.002,
+            r=-0.817, t=-4.25, reststreuung=0.02,
+        )
+        assert drin.tragfaehig
+        assert drin.noetige_regeln() == 4
+
+        klein = Einteilung(
+            "gleitende zusammen",
+            (
+                "gleitend",
+                drin,
+                baue([Punkt("A", 30, 0.30), Punkt("B", 60, 0.34), Punkt("C", 90, 0.29)]),
+            ),
+        )
+
+        assert klein.befund == UNGEPRUEFT
+        assert "nicht geprueft" in stabilitaetsurteil([klein])
+
+    def test_die_noetige_menge_folgt_aus_der_staerke(self) -> None:
+        """Je schwaecher die Kopplung drinnen, desto mehr Regeln braucht es
+        draussen, um ihr Fehlen zu belegen."""
+        stark = baue(gerade(0.40, -0.002, [20, 40, 60, 80, 100], 0.005))
+        schwach = baue(gerade(0.40, -0.002, [20, 40, 60, 80, 100], 0.05))
+
+        assert abs(stark.r) > abs(schwach.r)
+        assert stark.noetige_regeln() < schwach.noetige_regeln()
+
+    def test_ein_einzelner_pruefbarer_schnitt_bekommt_den_singular(self) -> None:
+        """Die gemessene Lage aus Befund 181: einer von drei konnte pruefen.
+        "1 von 1 pruefbaren Schnitten sagen dasselbe" stand da zuerst."""
+        text = stabilitaetsurteil(
+            [self.traegt(), Einteilung("A", None), Einteilung("B", None)]
+        )
+
+        assert "1 von 1 pruefbaren Schnitten sagt dasselbe" in text
+        assert "2 konnten es nicht pruefen" in text

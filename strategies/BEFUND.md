@@ -16765,3 +16765,80 @@ sondern `cli._auftragslage` - also das, was der Analyst wirklich bekommt.
 
 Kostet keinen Versuch: Gebaut wird ein Auftragstext, kein Kandidat.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hunderteinundachtzig. Die Gegenprobe war nicht moeglich, und das ist der Befund
+
+Auf einer Einteilung stehen inzwischen drei Befunde: dass die Kopplung eine
+Familieneigenschaft ist (169), was sie kostet (179), und was im Auftrag an
+die Research-KI steht (180). Eingeteilt wurde nach dem **Einstiegsindikator**
+- strukturell aus dem Genom gelesen und insofern keine Meinung. Aber es ist
+**eine** Einteilung unter mehreren, und niemand hat je eine zweite probiert.
+
+Zwei liegen nahe:
+
+* `sma`, `ema` und `distance_to_ema_pct` sind drei Schluessel und ein
+  gleitender Durchschnitt. Wer sie zusammenlegt, bekommt eine andere Mehrheit.
+* Befund 83 hat unabhaengig davon nach **Regellogik** eingeteilt
+  (Trend / Ausbruch / Rueckkehr / Volumen / Struktur) und die Einteilung gegen
+  eine Permutation geprueft. Sie auf dieselben 14 Punkte zu legen kostet
+  nichts.
+
+### Der erste Anlauf sagte, alles sei in Ordnung
+
+    Einstiegsindikator   'sma'                 drin  9/t=-3,28   ohne 5/t=-1,13
+    gleitende zusammen   'gleitender Schnitt'  drin 11/t=-4,25   ohne 3/t=+2,09
+    Regellogik (Bef. 83) 'Trend'               drin 13/t=-3,39   ohne -
+
+    **Alle 3 Schnitte sagen dasselbe.**
+
+Das habe ich geschrieben und dann die Zahlen daneben angesehen. **Die
+Aussenmenge hat in zwei von drei Schnitten drei bzw. eine Regel.** Dort ist
+nichts gefunden worden, weil nichts gesucht werden konnte - und mein Urteil
+zaehlte das als Bestaetigung.
+
+Der Fehler hat eine Bauart, die sich benennen laesst: Je feiner man schneidet,
+desto kleiner wird die Aussenmenge, desto sicherer wird der Befund. Das ist
+das Gegenteil einer Robustheitspruefung.
+
+### Wie viele Regeln draussen stehen muessten
+
+Die Frage laesst sich beantworten statt schaetzen. ``t = r sqrt((n-2)/(1-r^2))``
+nach ``n`` aufgeloest sagt, wie viele Regeln eine Gruppe braucht, um eine
+Kopplung **dieser Staerke** ueberhaupt zu zeigen:
+
+    Schnitt                r drinnen   noetig aussen   vorhanden
+    Einstiegsindikator        -0,778               5           5   geprueft
+    gleitende zusammen        -0,817               4           3   nicht
+    Regellogik (Bef. 83)      -0,715               6           1   nicht
+
+**Einer von drei Schnitten konnte die Frage stellen**, und er stuetzt den
+Befund. Die anderen beiden sagen nichts - in keine Richtung.
+
+### Was daraus folgt
+
+Befund 169 und 179 stehen unveraendert da, aber sie stehen auf **einem**
+Schnitt und nicht auf dreien. Wer sie zitiert, muss die Einteilung dazusagen.
+
+Und die Gegenprobe ist nicht verloren, sie ist nur zu teuer fuer 14 Regeln.
+Sie wird moeglich, sobald der Vorrat auf Tageskerzen **eine einzige weitere
+Regel ohne gleitenden Durchschnitt** enthaelt: Dann stehen draussen vier statt
+drei, und der zweite Schnitt laesst sich pruefen. Fuer den dritten waeren es
+fuenf weitere Nicht-Trend-Regeln.
+
+Das ist dieselbe Richtung, die Befund 179 und 180 nennen - eine andere
+Familie -, jetzt aber mit einem Zweck, der keinen Versuch kostet: **nicht um
+zu gewinnen, sondern um die eigene Behauptung pruefbar zu machen.**
+
+### Was gebaut wurde
+
+* ``Decke.noetige_regeln`` - wie viele Regeln eine Gruppe braucht, um eine
+  Kopplung dieser Staerke zu zeigen.
+* ``befund_der_einteilung`` mit **drei** Ausgaengen statt zwei: traegt allein,
+  traegt nicht allein, **nicht geprueft**. Der dritte fehlte, und in ihm sass
+  der Fehler.
+* ``stabilitaetsurteil`` zaehlt nur die pruefbaren Schnitte und sagt dazu, wie
+  viele nicht pruefen konnten.
+* ``cli vorratsdecke`` legt alle drei Einteilungen auf dieselben Punkte.
+
+Kostet keinen Versuch: Dieselben 14 Messungen, anders gruppiert. Nichts wird
+ausgewaehlt. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
