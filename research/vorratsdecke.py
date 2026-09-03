@@ -222,6 +222,41 @@ class Decke:
             )
         return (sharpe_je_trade - self.vorhersage(n_eff)) / self.reststreuung
 
+    def noetiger_abstand(
+        self, noetig_je_trade, *, von: int = 15, bis: int = 400
+    ) -> tuple[int, float] | None:
+        """Wie weit ueber der eigenen Geraden eine Regel liegen **muesste**.
+
+        **Die Frage, die Befund 178 offengelassen hat.** Dort standen zwei
+        Tore: mehr Qualitaet je Trade, oder dieselbe Qualitaet bei groesserer
+        Stichprobe. Das zweite steht dort unter der Bedingung *"bei
+        unveraenderter Qualitaet"* - und genau die haelt in diesem Vorrat
+        nicht, weil Qualitaet und Menge gekoppelt sind (Befund 168/169).
+
+        Diese Rechnung legt beide Kurven uebereinander: Die Gerade sagt, was
+        eine Regel dieser Familie bei ``n`` an Qualitaet **hat**; die Latte
+        sagt, was sie dort **braucht**. Der Abstand dazwischen, gemessen in
+        Reststreuungen, ist der Preis - und er hat ein Minimum. Wo es liegt,
+        ist die guenstigste Stelle der ganzen Strecke.
+
+        ``noetig_je_trade`` ist eine Funktion ``n_eff -> noetiger Sharpe je
+        Trade``; sie kommt von aussen, aus demselben Grund wie bei ``urteil``.
+
+        Geliefert wird ``(n_eff, Abstand in Reststreuungen)`` oder ``None``,
+        wenn die Decke nichts hergibt oder nirgends eine Latte steht.
+        """
+        if not self.tragfaehig or 1 - self.r**2 <= 1e-12:
+            return None
+        beste: tuple[int, float] | None = None
+        for n in range(von, bis + 1):
+            noetig = noetig_je_trade(n)
+            if noetig is None:
+                continue
+            abstand = (noetig - self.vorhersage(n)) / self.reststreuung
+            if beste is None or abstand < beste[1]:
+                beste = (n, abstand)
+        return beste
+
     @staticmethod
     def erwartetes_maximum(ziehungen: int) -> float:
         """Wie hoch das Beste aus *k* Ziehungen allein durch Auswahl liegt.
@@ -321,6 +356,48 @@ def urteil(decke: Decke, noetig_bei) -> str:
     return "\n".join(zeilen)
 
 
+def preisurteil(
+    decke: Decke, noetig_je_trade, *, versuche: int, bestand: float | None = None
+) -> str:
+    """Was die Menge kostet - der zweite Weg zur selben Aussage.
+
+    Befund 178 hat das Mengentor geoeffnet: dieselbe Qualitaet bei groesserer
+    Stichprobe genuegt ebenso wie bessere Qualitaet bei gleicher. Es steht
+    aber unter *"bei unveraenderter Qualitaet"*, und in einem Vorrat mit
+    Kopplung ist das keine freie Wahl. Diese Rechnung sagt, was daraus wird.
+    """
+    treffer = decke.noetiger_abstand(noetig_je_trade)
+    if treffer is None:
+        return (
+            "**Kein Preis ablesbar** - ohne tragfaehige Decke gibt es keine "
+            "Gerade, ueber der etwas liegen koennte."
+        )
+    n, abstand = treffer
+    auswahl = Decke.erwartetes_maximum(versuche)
+    zeilen = [
+        f"**Die guenstigste Stelle der Strecke liegt bei n_eff {n}.** Dort "
+        f"muesste eine Regel {abstand:.2f} Reststreuungen ueber der Geraden "
+        f"ihrer eigenen Familie liegen, um die Schwelle zu raeumen.",
+        f"Zum Vergleich: Auswahl aus {versuche} Ziehungen erzeugt allein "
+        f"schon rund {auswahl:.2f}.",
+    ]
+    if bestand is not None:
+        zeilen.append(
+            f"Der Bestand steht bei {bestand:+.2f} - er braeuchte das "
+            f"{abstand / bestand:.1f}-fache, wenn er dort stuende."
+            if bestand > 0
+            else f"Der Bestand steht bei {bestand:+.2f}, also unter seiner "
+            f"eigenen Geraden."
+        )
+    zeilen.append(
+        "**Das Mengentor ist damit nicht die billigere Haelfte.** Der noetige "
+        "Abstand hat sein Minimum und steigt nach beiden Seiten: Mehr Trades "
+        "senken zwar die Latte je Trade, kosten in diesem Vorrat aber mehr "
+        "Qualitaet, als sie sparen."
+    )
+    return "\n".join(zeilen)
+
+
 def traegt_eine_familie(
     nach_familie: dict[str, list[Punkt]],
 ) -> tuple[str, Decke | None, Decke | None] | None:
@@ -391,6 +468,7 @@ __all__ = [
     "Punkt",
     "baue",
     "familienurteil",
+    "preisurteil",
     "traegt_eine_familie",
     "urteil",
 ]

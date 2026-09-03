@@ -398,6 +398,10 @@ class Verbund:
         kann - und ein anderes als "eine bessere Regel finden", weil die Latte
         oberhalb ihres Talbodens viel langsamer steigt als die Wurzel
         (Befund 178).
+
+        **Ein anderes Ziel, kein billigeres.** Befund 179 hat den Weg dorthin
+        an der Geraden des Vorrats nachgerechnet: Er kostet mehr Vorsprung,
+        als die fallende Latte spart.
         """
         st = self.stichprobe
         if st.effektiv <= 0:

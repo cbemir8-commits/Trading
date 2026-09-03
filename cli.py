@@ -10507,6 +10507,7 @@ def vorratsdecke(
         Punkt,
         baue,
         familienurteil,
+        preisurteil,
         traegt_eine_familie,
         urteil,
     )
@@ -10657,6 +10658,24 @@ def vorratsdecke(
             else
             "[green]Der Vorsprung ist groesser als das, was Auswahl bei "
             "diesem Versuchsstand erzeugt.[/]"
+        )
+
+        # **Was die Menge kostet** (Befund 179). Befund 178 hat das Mengentor
+        # geoeffnet - dieselbe Qualitaet bei groesserer Stichprobe -, und es
+        # steht unter "bei unveraenderter Qualitaet". In einem gekoppelten
+        # Vorrat ist das keine freie Wahl, und diese Zeile sagt, was daraus
+        # wird.
+        from research.suchbudget import Budget
+
+        budget = Budget(versuche=versuche)
+        console.print()
+        console.print(
+            preisurteil(
+                decke,
+                budget.noetig_bei,
+                versuche=versuche,
+                bestand=rest,
+            )
         )
 
 

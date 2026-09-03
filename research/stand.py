@@ -666,10 +666,11 @@ OFFEN: tuple[Richtung, ...] = (
     ),
     Richtung(
         "Menge statt Qualitaet",
-        "der Bestand braucht bei 0,2535 je Trade 220 wirksame Beobachtungen "
-        "statt 115 (Faktor 1,91) - oder 33 % mehr Qualitaet bei gleicher "
-        "Menge; die Leiter aus 176 kommt unabhaengig auf Faktor 1,64",
+        "220 wirksame Beobachtungen statt 115 - aber nur bei unveraenderter "
+        "Qualitaet, und die haelt in diesem Vorrat nicht: Der Preis steigt "
+        "von 3,78 auf 5,72 Reststreuungen (179). Beide Tore sind dasselbe",
         178,
+        179,
     ),
     # **Der Eintrag, dessen Fehlen einen Lauf gekostet hat.** Befund 177 hat
     # die Richtung als neue formuliert, 122 Befunde nach ihrer Messung. Eine
@@ -678,6 +679,14 @@ OFFEN: tuple[Richtung, ...] = (
     # Er steht hier und nicht in ``GESCHLOSSEN``: Gemessen ist **ein**
     # Kandidat dieser Bauart, und er hat verloren - die Bauart selbst ist
     # damit nicht erledigt. Ein zweiter kostet einen Versuch.
+    # Der Preis, den die Decke verlangt - und die Richtung, die daraus folgt.
+    Richtung(
+        "Der Preis in Reststreuungen",
+        "an der guenstigsten Stelle (n_eff 97) muesste eine Regel 3,70 "
+        "Reststreuungen ueber der Geraden ihrer Familie liegen; der Bestand "
+        "steht bei 2,41, Auswahl aus 198 Versuchen erzeugt 3,25",
+        179,
+    ),
     Richtung(
         "Einstieg, der nicht am Rauschen haengt",
         "der wiederholbare Ausbruch entkoppelt (haelt 70 % seiner Trades "
@@ -1174,6 +1183,11 @@ class Lage:
         ``None``, wenn die effektive Stichprobe fehlt (dann gaebe es nichts
         zu vergleichen) oder wenn diese Qualitaet auch bei sehr vielen
         Beobachtungen nicht genuegt.
+
+        **Und es ist kein billigeres Tor** (Befund 179). Der erste Anlauf hat
+        es so gelesen; gemessen an der Geraden des Vorrats kostet der Weg
+        dorthin mehr Vorsprung, als die fallende Latte spart. Die Zahl bleibt
+        richtig - was sie wert ist, entscheidet die Kopplung.
         """
         from research.verbund import noetige_stichprobe
 
@@ -1240,10 +1254,12 @@ class Lage:
         if ziel <= self.effektiv:
             return ""
         return (
-            f" **Oder ueber die Menge:** {ziel} wirksame Beobachtungen bei "
-            f"unveraenderter Qualitaet, Faktor {ziel / self.effektiv:.2f}. "
-            f"Oberhalb von rund 60 steigt die Latte viel langsamer als die "
-            f"Wurzel - deshalb sind das zwei Tore und nicht eines."
+            f" **Oder ueber die Menge:** {ziel} wirksame Beobachtungen, "
+            f"Faktor {ziel / self.effektiv:.2f} - aber nur **bei "
+            f"unveraenderter Qualitaet**, und die haelt in diesem Vorrat "
+            f"nicht: Qualitaet und Menge sind gekoppelt, der Weg dorthin "
+            f"kostet mehr Vorsprung als er spart (Befund 179). Beide Tore "
+            f"verlangen dasselbe."
         )
 
     def _zensurhinweis(self) -> str:

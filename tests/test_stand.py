@@ -202,6 +202,10 @@ class TestLage:
         Die Latte steigt oberhalb von rund 60 wirksamen Beobachtungen viel
         langsamer als die Wurzel; dieselbe Regel oefter fuehrt deshalb ebenso
         an die Schwelle wie eine bessere.
+
+        **Ebenso, nicht billiger** - der Zusatz kam mit Befund 179 dazu, und
+        er gehoert in denselben Satz: Der Weg zu mehr Trades kostet in diesem
+        Vorrat mehr Vorsprung, als die fallende Latte spart.
         """
         lage = _lage(effektiv=121, sharpe_je_trade=0.2649, versuche=198)
 
@@ -209,6 +213,8 @@ class TestLage:
         text = lage.urteil()
         assert "199 wirksame Beobachtungen" in text
         assert "Faktor 1.64" in text
+        assert "bei unveraenderter Qualitaet" in text
+        assert "gekoppelt" in text
 
     def test_ohne_gemessene_stichprobe_kein_mengentor(self) -> None:
         """Ohne ``effektiv`` gaebe es keine Zahl, gegen die ein Faktor

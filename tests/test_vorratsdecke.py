@@ -23,6 +23,7 @@ from research.vorratsdecke import (
     Punkt,
     baue,
     familienurteil,
+    preisurteil,
     traegt_eine_familie,
     urteil,
 )
@@ -191,6 +192,108 @@ class TestDerBestandInSeinemVorrat:
         """Die Aussage haengt am Versuchsstand, nicht am Kandidaten - genau
         deshalb steht sie neben dem Deflated Sharpe und nicht statt seiner."""
         assert Decke.erwartetes_maximum(13) < 2.41
+
+
+class TestWasDieMengeKostet:
+    """**Befund 179.** Befund 178 hat das Mengentor geoeffnet - dieselbe
+    Qualitaet bei groesserer Stichprobe genuegt ebenso wie bessere Qualitaet
+    bei gleicher.
+
+    Es steht dort unter *"bei unveraenderter Qualitaet"*. In einem Vorrat mit
+    Kopplung ist das keine freie Wahl: Wer mehr handelt, handelt schlechter.
+    Diese Tests halten fest, was daraus wird.
+    """
+
+    #: Die Gerade aus Befund 168, aus Scheitel (n_eff 69, Guete 1,931) und
+    #: Nullstelle (n_eff 208) zurueckgerechnet.
+    B = -0.23246 / 139
+    A = -208 * B
+
+    def decke(self) -> Decke:
+        """**Die gemessene Lage selbst**, nicht eine nachgebaute.
+
+        Ueber ``baue`` liesse sie sich nur annaehern: Reststreuung und
+        Korrelation haengen dann an der gewaehlten Stoerung, und der Preis
+        skaliert direkt mit der Reststreuung. Hier stehen die vier Zahlen aus
+        Befund 168 - 14 Regeln, r = -0,714, t = -3,53, Reststreuung 0,0479 -
+        und der Test misst an ihnen.
+        """
+        return Decke(
+            punkte=tuple(gerade(self.A, self.B, [27, 55, 70, 90, 115, 121])),
+            achsenabschnitt=self.A,
+            steigung=self.B,
+            r=-0.714,
+            t=-3.53,
+            reststreuung=0.04783,
+        )
+
+    def latte(self, versuche: int = 198):
+        from research.suchbudget import Budget
+
+        return Budget(versuche=versuche).noetig_bei
+
+    def test_der_noetige_abstand_hat_ein_minimum(self) -> None:
+        """**Der Kern.** Waere er monoton fallend, waere "mehr handeln" ein
+        Weg. Er faellt und steigt wieder - es gibt eine guenstigste Stelle."""
+        d = self.decke()
+        treffer = d.noetiger_abstand(self.latte())
+
+        assert treffer is not None
+        n, abstand = treffer
+        davor = (self.latte()(n - 20) - d.vorhersage(n - 20)) / d.reststreuung
+        danach = (self.latte()(n + 20) - d.vorhersage(n + 20)) / d.reststreuung
+        assert abstand < davor and abstand < danach
+
+    def test_mehr_trades_machen_es_teurer_nicht_billiger(self) -> None:
+        """Die Latte je Trade faellt mit der Stichprobe - die Gerade faellt
+        schneller. Das ist die ganze Aussage von Befund 179."""
+        d = self.decke()
+        latte = self.latte()
+        preise = [
+            (latte(n) - d.vorhersage(n)) / d.reststreuung for n in (120, 160, 200, 240)
+        ]
+
+        assert preise == sorted(preise), f"muesste steigen, ist {preise}"
+
+    def test_ohne_tragfaehige_decke_gibt_es_keinen_preis(self) -> None:
+        """Eine steigende Gerade hat kein Maximum, und eine ohne Deckung sagt
+        nichts - in beiden Faellen waere eine Zahl erfunden."""
+        steigend = baue(gerade(0.1, +0.001, [30, 60, 90, 120], 0.02))
+
+        assert steigend.noetiger_abstand(self.latte()) is None
+        assert "Kein Preis ablesbar" in preisurteil(
+            steigend, self.latte(), versuche=198
+        )
+
+    def test_das_urteil_nennt_die_stelle_und_den_vergleich(self) -> None:
+        text = preisurteil(self.decke(), self.latte(), versuche=198, bestand=2.41)
+
+        assert "guenstigste Stelle" in text
+        assert "Reststreuungen ueber der Geraden" in text
+        assert "198 Ziehungen" in text
+        assert "nicht die billigere Haelfte" in text
+
+    def test_ein_bestand_unter_seiner_geraden_wird_nicht_schoengerechnet(
+        self,
+    ) -> None:
+        """Sonst staende dort ein negativer Faktor - eine Zahl, die aussieht
+        wie eine Auskunft und keine ist."""
+        text = preisurteil(self.decke(), self.latte(), versuche=198, bestand=-0.4)
+
+        assert "unter seiner" in text
+        assert "-fache" not in text
+
+    def test_die_gemessene_lage_wird_getroffen(self) -> None:
+        """**Die Zahl aus Befund 179**, an der zurueckgerechneten Geraden:
+        rund 3,7 Reststreuungen, und die guenstigste Stelle liegt dort, wo
+        der Bestand ohnehin schon steht (n_eff 115).
+        """
+        treffer = self.decke().noetiger_abstand(self.latte())
+
+        assert treffer is not None
+        n, abstand = treffer
+        assert abstand == pytest.approx(3.70, abs=0.15)
+        assert 80 <= n <= 130, f"guenstigste Stelle bei n_eff {n}"
 
 
 class TestWoraufDieKopplungSteht:

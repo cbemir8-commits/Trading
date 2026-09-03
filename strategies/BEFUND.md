@@ -16597,3 +16597,82 @@ gibt.
 Kostet keinen Versuch: Gerechnet wird an vorhandenen Zahlen, gemessen wird auf
 gepflanzten Reihen, ausgewaehlt wird nichts. Versuchszaehler 198 unveraendert,
 Suchbudget 68 von 100.
+
+## Hundertneunundsiebzig. Das Mengentor kostet mehr, nicht weniger
+
+Befund 178 hat zwei Tore zur Schwelle beziffert: 33 % mehr Qualitaet je
+Trade, oder 220 wirksame Beobachtungen statt 115 **bei unveraenderter
+Qualitaet**. Und es hat das zweite als das erreichbarere hingestellt, weil
+die Latte oberhalb ihres Talbodens langsamer steigt als die Wurzel.
+
+Der Halbsatz "bei unveraenderter Qualitaet" traegt das ganze Gewicht. In
+diesem Vorrat haelt er nicht: Qualitaet und Menge sind gekoppelt (Befund
+168/169, r = -0,714 bei t = -3,53). Wer mehr handelt, handelt schlechter -
+das steht seit elf Befunden gemessen da, und ich habe es einen Lauf lang
+nicht in dieselbe Rechnung gestellt.
+
+### Beide Kurven uebereinandergelegt
+
+Die Gerade sagt, was eine Regel dieser Familie bei ``n`` an Qualitaet **hat**.
+Die Latte sagt, was sie dort **braucht**. Der Abstand dazwischen, in
+Reststreuungen der Geraden, ist der Preis:
+
+     n_eff   Gerade   noetig   Preis in Reststreuungen
+        40   0,2810   0,5699                      6,04
+        60   0,2475   0,4539                      4,31
+        80   0,2141   0,3958                      3,80
+        97   0,1856   0,3628                      3,70   <- guenstigste Stelle
+       115   0,1555   0,3364                      3,78   <- hier steht der Bestand
+       140   0,1137   0,3087                      4,08
+       180   0,0468   0,2766                      4,80
+       220  -0,0201   0,2533                      5,72   <- das Ziel aus Befund 178
+
+**Der Preis hat ein Minimum, und der Bestand steht schon fast darauf.** Die
+Strecke von 115 nach 220, die Befund 178 als den gangbaren Weg beschrieben
+hat, macht die Sache teurer: von 3,78 auf 5,72. Bei 220 sieht die Gerade
+ueberhaupt keinen Vorteil mehr - sie ist dort schon durch null (n_eff 208).
+
+Mehr Trades senken die Latte je Trade tatsaechlich, wie Befund 178 sagt. Sie
+kosten in diesem Vorrat nur mehr Qualitaet, als sie sparen. Beide Tore sind
+damit dasselbe Tor: **rund 3,7 Reststreuungen ueber der Geraden der eigenen
+Familie**, und wo man an der Strecke steht, aendert daran wenig.
+
+### Was der Vergleich mit der Auswahl sagt - in beide Richtungen
+
+Reine Auswahl aus 198 Ziehungen erzeugt rund 3,25 Reststreuungen (Befund
+168). Der noetige Abstand von 3,70 liegt **darueber**. Das heisst zweierlei,
+und beides gehoert hier hin:
+
+* Was diese Latte raeumt, waere mehr als Auswahlrauschen. Die Schwelle ist
+  insofern nicht bloss eine hoehere Huerde fuer dasselbe Spiel.
+* Nichts ist in die Naehe gekommen. Der Bestand steht bei +2,41 - er
+  braeuchte gut das Anderthalbfache seines eigenen Vorsprungs.
+
+### Woran das haengt
+
+An derselben Einschraenkung wie Befund 168, und sie steht im selben Bericht
+zwei Absaetze darueber: Die Kopplung ist **innerhalb der sma-Familie** belegt
+(9 Regeln, r = -0,778, t = -3,28) und darueber hinaus nicht (5 Regeln,
+t = -1,13, sagt nichts). Der Preis ist damit der Preis **in dieser Familie**.
+Fuer eine Regel, die nicht auf ihrer Geraden liegt, sagt er nichts - und
+genau solche Regeln sind das, was fehlt.
+
+Das ist keine Absage an die Suche, sondern eine Richtung fuer sie: Nicht
+dieselbe Regel oefter, sondern eine andere Familie. Dreizehn von vierzehn
+gemessenen Regeln sind long-only, neun von vierzehn derselbe
+Einstiegsindikator.
+
+### Was gebaut wurde
+
+* ``Decke.noetiger_abstand`` legt beide Kurven uebereinander und sucht das
+  Minimum. Ohne tragfaehige Decke liefert sie ``None`` statt einer Zahl.
+* ``preisurteil`` nennt die Stelle, den Preis, den Auswahlvergleich und den
+  Satz, der die Lesart von Befund 178 korrigiert. ``cli vorratsdecke`` gibt
+  ihn aus.
+* Ein Test haelt fest, dass der Preis nach **beiden** Seiten steigt. Waere er
+  monoton fallend, waere "mehr handeln" ein Weg; genau das war die
+  stillschweigende Annahme in Befund 178.
+
+Kostet keinen Versuch: Gerechnet wird an der vorhandenen Geraden und der
+vorhandenen Latte, ausgewaehlt wird nichts. Versuchszaehler 198 unveraendert,
+Suchbudget 68 von 100.
