@@ -10540,7 +10540,7 @@ def vorratsdecke(
     from research.familien import familie_von
     from research.gates import stichprobe_wie_im_gate
     from research.randschnitt import ohne_zensierte
-    from research.seeds import GENERATIONS, passt_zum_intervall
+    from research.seeds import GENERATIONS, passt_zum_intervall, spitzenkandidat
     from research.suchbudget import Kandidat
     from research.verbund import noetige_guete
     from research.vorratsdecke import (
@@ -10568,6 +10568,9 @@ def vorratsdecke(
         f"\n[bold]Vorratsdecke[/] {' + '.join(symbole)} {interval_obj.label}, "
         f"Spot-Punkt, Versuchsstand {versuche}\n"
     )
+    # Die Groessenlogik, auf die alle gestellt werden - die des Bestands,
+    # wie in der Vorauswahl (Befund 56/182).
+    vergleichsgroesse = spitzenkandidat().sizing
     punkte: list[Punkt] = []
     nach_familie: dict[str, list[Punkt]] = {}
     grob_familie: dict[str, list[Punkt]] = {}
@@ -10579,7 +10582,19 @@ def vorratsdecke(
         if not passt_zum_intervall(gen, intervall):
             continue
         for bauen in liste:
-            genom = _ohne_hebel(bauen())
+            # **Alle auf dieselbe Groessenlogik** (Befund 182). Ohne das misst
+            # dieser Katalog Groessenlogiken statt Einstiegsstrukturen: Neun
+            # von dreissig Tagesgenomen lieferten null Trades, weil ihre
+            # 'risiko'-Logik am Stop-Abstand bemisst und ablehnt - dieselbe
+            # Regel handelt mit der Logik des Bestands 138, 103, 71 Mal.
+            #
+            # ``cli._familie`` macht das seit Befund 56 aus genau diesem
+            # Grund; hier ist es nie angekommen. Der Katalog, auf dem die
+            # Befunde 168, 169, 179 und 181 stehen, war dadurch nach einem
+            # Merkmal gefiltert, das mit dem Einstieg nichts zu tun hat.
+            genom = _ohne_hebel(
+                bauen().model_copy(update={"sizing": vergleichsgroesse})
+            )
             bericht = run_portfolio_walkforward(
                 frames, lambda g=genom: compile_genome(g), configs
             )

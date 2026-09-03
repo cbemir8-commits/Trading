@@ -1,5 +1,22 @@
 """Was der Vorrat hergibt - und ob das je reichen kann.
 
+ACHTUNG: Alle Zahlen unten stehen auf einem gefilterten Vorrat
+==============================================================
+**Befund 182.** Bis dahin lief jedes Genom mit seiner **eigenen**
+Groessenlogik durch diesen Katalog. Neun von dreissig Tagesgenomen lieferten
+dadurch null Trades - nicht weil ihr Einstieg nicht ausloest (die Signale
+kreuzen 182-mal), sondern weil ihre ``risiko``-Logik am Stop-Abstand bemisst
+und ablehnt. Mit der Groessenlogik des Bestands handeln dieselben Regeln 138,
+103, 71, 61, 58, 41, 40, 19 und 7 Mal.
+
+Die vierzehn Regeln unten sind damit **die, die diesen Filter ueberlebt
+haben**, und der Filter hat mit dem Einstieg nichts zu tun. Betroffen sind
+alle Zahlen dieses Modulkopfs sowie die Befunde 168, 169, 179, 180 und 181 -
+insbesondere die Familienzaehlung "sma 9, roc 2, ...", auf der sie stehen.
+Neu gemessen ist noch nichts; ``cli vorratsdecke`` stellt seit Befund 182
+alle auf dieselbe Groessenlogik, und der naechste Lauf liefert die neuen
+Zahlen.
+
 Die Frage, die Befund 75 offen liess
 ------------------------------------
 Dort wurde ueber 14 Genome **r = -0,533** zwischen Trade-Zahl und Qualitaet

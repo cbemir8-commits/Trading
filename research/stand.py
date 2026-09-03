@@ -640,6 +640,16 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Familienzaehlung und dem Preis aus 179",
         180,
     ),
+    # Derselbe Fehler wie in Befund 56, an der zweiten Stelle - und er
+    # filtert die Grundgesamtheit der Befunde 168, 169, 179, 180 und 181.
+    Richtung(
+        "Katalog nach Groessenlogik gefiltert",
+        "9 von 30 Tagesgenomen lieferten null Trades, weil ihre "
+        "'risiko'-Logik weite Stops ablehnt - mit der Logik des Bestands "
+        "handeln sie 138, 103, 71 Mal; Signal und Betriebspunkt "
+        "ausgeschlossen (182 Kreuzungen)",
+        182,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

@@ -16842,3 +16842,99 @@ zu gewinnen, sondern um die eigene Behauptung pruefbar zu machen.**
 
 Kostet keinen Versuch: Dieselben 14 Messungen, anders gruppiert. Nichts wird
 ausgewaehlt. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertzweiundachtzig. Neun Regeln fehlten im Katalog, und der Grund war die Groessenlogik
+
+Befund 181 endete mit einer Rechnung: Eine einzige weitere Regel ohne
+gleitenden Durchschnitt macht die Gegenprobe pruefbar. Bevor ich eine gebaut
+habe, habe ich nachgesehen, was der Vorrat schon enthaelt.
+
+**Er enthaelt sie.** Auf Tageskerzen stehen Donchian-Ausbrueche, eine
+Bollinger/RSI-Rueckkehr, zwei EMA-Kreuzungen, eine Momentum-Regel und vier
+Funding-Regeln. Keine davon taucht in der Decke auf, weil vierzehn von
+dreissig Genomen **null Trades** liefern.
+
+### Drei Erklaerungen ausgeschlossen, eine gefunden
+
+Null Trades auf 3300 Tagen ist keine Seltenheit, sondern ein Hinweis. Der
+Reihe nach gemessen:
+
+* **Betriebspunkt?** Nein. Dieselben vierzehn liefern am Spot-Punkt und am
+  gewoehnlichen Punkt je null.
+* **Signal?** Nein. `donchian_upper(50)` kreuzt den Schluss in der BTC-Reihe
+  **182-mal**; die handelnde Vergleichsregel `swing_high(55)` kreuzt 177-mal.
+  Beide Indikatoren schliessen die laufende Kerze aus, sind also nicht
+  zirkulaer. Das Signal loest aus.
+* **Groessenlogik?** **Ja.** Dieselben Regeln, auf die Logik des Bestands
+  gestellt:
+
+        Trendfolge Ausbruch                 0  ->  138
+        Volatilitaets-Ausbruch              0  ->  103
+        EMA-Kreuzung (Messlatte)            0  ->   71
+        Starker Trend, Momentum             0  ->   61
+        Grosser Trendausbruch               0  ->   58
+        Nur mit der Drift                   0  ->   41
+        Seltener grosser Ausbruch           0  ->   40
+        Langsamer Kreuzer (Messlatte 2)     0  ->   19
+        Mean Reversion Uebertreibung        0  ->    7
+        vier Funding-Regeln                 0  ->    0
+
+Neun von vierzehn handeln, sobald die Groessenlogik dieselbe ist. Ihre
+`risiko`-Logik bemisst am Stop-Abstand und lehnt weite Stops ab - auf
+Tageskerzen sind sie weit. Die uebrigen fuenf bleiben stumm, und das ist
+richtig: Sie lesen Funding, und Bitstamp ist eine Kassaboerse ohne
+Funding-Reihe.
+
+### Das ist derselbe Fehler wie in Befund 56, an einer anderen Stelle
+
+Dort stand er schon:
+
+    Der erste Lauf lieferte ueberall Nullen - auch beim Bestand, der dort 48
+    Trades haben muss. Grund: Vorschlaege kommen mit risiko-Groessenlogik,
+    die am Stop-Abstand bemisst und einen 4-%-Stop als zu weit ablehnt.
+    Verglichen wurden Groessenlogiken, nicht Einstiegsstrukturen.
+
+`cli._familie` stellt seitdem alle Vorschlaege gleich. `cli vorratsdecke`
+nicht - dort ist die Lehre nie angekommen. Zwei Befunde weiter oben habe ich
+genau diese Bauart benannt (Befund 180: eine Einschraenkung, die im Register
+steht und nicht dort ankommt, wo sie wirkt). Hier ist sie noch einmal, und
+diesmal in meiner eigenen Messung.
+
+### Was das an den letzten Befunden aendert
+
+Der Katalog, auf dem sie stehen, war nach einem Merkmal gefiltert, das mit
+dem Einstieg nichts zu tun hat. Betroffen sind:
+
+* **Befund 168** (Decke bei Guete 1,931, Nullstelle 208) - die Gerade ist
+  durch vierzehn Punkte gelegt, und neun weitere fehlten.
+* **Befund 169** (die Kopplung traegt die `sma`-Familie) - die Zaehlung
+  "sma 9, roc 2, ema 1, ..." ist eine Zaehlung der Ueberlebenden. Die neun
+  Fehlenden sind ueberwiegend **keine** gleitenden Durchschnitte.
+* **Befund 179** (Preis 3,70 Reststreuungen bei n_eff 97) - er haengt an
+  Steigung und Reststreuung derselben Geraden.
+* **Befund 180** - die Familienzaehlung im Auftrag an die Research-KI.
+* **Befund 181** - "eine einzige weitere Regel ohne gleitenden Durchschnitt
+  macht es pruefbar". Es sind neun, und sie waren die ganze Zeit da.
+
+**Keine dieser Zahlen ist widerlegt, und keine ist bestaetigt.** Sie stehen
+auf einer Grundgesamtheit, die sich gerade geaendert hat. Der naechste Lauf
+von `cli vorratsdecke` misst sie neu; bis dahin traegt der Modulkopf eine
+Warnung, die sie als das kennzeichnet, was sie sind.
+
+Bemerkenswert nebenbei: 'Trendfolge Ausbruch' braechte mit 138 Trades die
+**groesste** Stichprobe des ganzen Katalogs mit - groesser als die 121 des
+Bestands. Ob davon Guete uebrig bleibt, sagt das nicht; die Frage ist jetzt
+aber ueberhaupt erst gestellt.
+
+### Was gebaut wurde
+
+* `cli vorratsdecke` stellt alle Genome auf die Groessenlogik des Bestands,
+  mit derselben Begruendung wie `cli._familie` - verglichen werden
+  Einstiegsstrukturen, nicht Groessenlogiken.
+* Der Modulkopf von `research/vorratsdecke.py` warnt vor seinen eigenen
+  Zahlen und nennt die betroffenen Befunde beim Namen. Ein Test haelt das
+  fest: Eine veraltete Fundstelle, die nicht als solche gekennzeichnet ist,
+  hat dieses Projekt schon zweimal in die Irre gefuehrt (Befund 130).
+
+Kostet keinen Versuch: Gemessen wurden Trade-Zahlen, keine Gates; ausgewaehlt
+wurde nichts. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

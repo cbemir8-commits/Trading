@@ -521,3 +521,24 @@ class TestHaengtEsAmSchnitt:
 
         assert "1 von 1 pruefbaren Schnitten sagt dasselbe" in text
         assert "2 konnten es nicht pruefen" in text
+
+
+def test_der_modulkopf_warnt_vor_seinen_eigenen_zahlen() -> None:
+    """**Befund 182.** Die Zahlen im Kopf stehen auf einem Vorrat, der nach
+    der Groessenlogik gefiltert war - neun Regeln fehlten, und der Grund hat
+    mit ihrem Einstieg nichts zu tun.
+
+    Sie hier stehen zu lassen, ohne das dazuzusagen, ist genau der Fehler,
+    den Befund 130 an einer veralteten Fundstelle gefunden hat: Zwei Laeufe
+    haben dort nachgeschlagen und den Unterschied falschen Ursachen
+    zugeschrieben.
+    """
+    import research.vorratsdecke as modul
+
+    kopf = modul.__doc__ or ""
+    assert "ACHTUNG" in kopf
+    assert "Befund 182" in kopf
+    assert "gefilterten Vorrat" in kopf
+    # Die betroffenen Befunde beim Namen - sonst sucht sie niemand.
+    for nummer in ("168", "169", "179", "181"):
+        assert nummer in kopf
