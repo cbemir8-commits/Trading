@@ -828,11 +828,18 @@ OFFEN: tuple[Richtung, ...] = (
         174,
         175,
     ),
+    # Die "Obergrenze" aus 175 war eine Ueberlegung und ging in die falsche
+    # Richtung: Mit denselben Deckeln faellt die Null, weil ein zufaelliger
+    # Einstieg oefter am Stop endet (54,2 % gegen 41,9 %). Offen bleibt es
+    # trotzdem - vier korrelierte Maerkte sind keine vier Belege.
     Richtung(
         "Timing gegen Zufallseinstiege",
-        "4 von 4 Maerkten ueber ihrer Null, aber nur ETH raeumt |z| = 2 - "
-        "und die Ziehung hat keine Stops, also eine Obergrenze",
+        "ohne Deckel raeumt nur ETH |z| = 2, mit denselben Deckeln wie die "
+        "Regel alle vier (2,71 bis 6,34). Der ungedeckelte Vergleich ist "
+        "eine Untergrenze, keine Obergrenze - aber die Maerkte korrelieren "
+        "mit 0,695, also keine vier unabhaengigen Bestaetigungen",
         175,
+        200,
     ),
     Richtung(
         "Zertifizierbarkeit der Bauart",
@@ -973,12 +980,19 @@ def zahlwort(n: int) -> str:
     bis dahin ausdruecklich, dass er gebaut wird, wenn er gebraucht wird - und
     dass die Suche bis dahin sichtbar ausfaellt statt still das Falsche zu
     liefern. Jetzt wird er gebraucht.
+
+    **Und der Zweihunderterbereich mit Befund 200**, aus demselben Grund und
+    nach derselben Regel. Die Grenze rueckt weiter, sie verschwindet nicht:
+    Ueber 299 faellt die Suche wieder sichtbar aus.
     """
-    if not 1 <= n <= 199:
-        # Ueber 199 gaebe es "Zweihundert" und Aehnliches. Dieselbe Regel wie
-        # vorher: erst bauen, wenn es soweit ist. Ein leerer String findet
-        # keine Ueberschrift, und der Test schlaegt an.
+    if not 1 <= n <= 299:
+        # Dieselbe Regel wie bei 99 und 199: erst bauen, wenn es soweit ist.
+        # Ein leerer String findet keine Ueberschrift, und der Test schlaegt
+        # an, statt still das Falsche zu liefern.
         return ""
+    if n >= 200:
+        rest = zahlwort(n - 200)
+        return f"Zweihundert{rest.lower()}" if rest else "Zweihundert"
     if n >= 100:
         rest = zahlwort(n - 100)
         return f"Hundert{rest.lower()}" if rest else "Hundert"

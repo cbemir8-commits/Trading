@@ -11190,6 +11190,40 @@ def holdout(
     console.print(Holdoutbild(tuple(befunde), korrelation).urteil())
 
 
+
+def _deckel_der_regel(trades) -> tuple[float | None, float | None]:
+    """Stop- und Zielabstand, **aus den Trades der Regel selbst gelesen**.
+
+    Nicht aus dem Genom: Was dort steht, muss nicht das sein, was der
+    Backtest ausgefuehrt hat, und dieses Projekt hat schon dreimal eine
+    Kennzahl an zwei Stellen gepflegt (Befund 158, 159, 165). Gelesen wird,
+    was tatsaechlich passiert ist.
+
+    Der Stop kommt aus ``stop_loss`` gegen den Einstieg, das Ziel aus den
+    Trades, die mit ``take_profit`` endeten. ``None``, wo es keine gibt -
+    dann laeuft nur die Ziehung ohne Deckel, statt einen zu erfinden.
+    """
+    import statistics
+
+    stops = [
+        (float(t.entry_price) - float(t.stop_loss)) / float(t.entry_price)
+        for t in trades
+        if t.stop_loss is not None and float(t.entry_price) > 0
+    ]
+    ziele = [
+        float(t.exit_price) / float(t.entry_price) - 1.0
+        for t in trades
+        if t.exit_reason == "take_profit" and float(t.entry_price) > 0
+    ]
+    stop = statistics.median(stops) if stops else None
+    ziel = statistics.median(ziele) if ziele else None
+    if stop is not None and stop <= 0:
+        stop = None
+    if ziel is not None and ziel <= 0:
+        ziel = None
+    return stop, ziel
+
+
 @app.command()
 def zufallseinstieg(
     maerkte: str = typer.Option(
@@ -11224,7 +11258,13 @@ def zufallseinstieg(
     from research.holdout import ENTWICKLUNG, HOLDOUT
     from research.randschnitt import ohne_zensierte
     from research.seeds import spitzenkandidat
-    from research.zufallseinstieg import Marktprobe, Zufallsbild, zufallsverteilung
+    from research.zufallseinstieg import (
+        MINDEST_Z,
+        Marktprobe,
+        Zufallsbild,
+        zufallsverteilung,
+        zufallsverteilung_mit_deckeln,
+    )
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -11244,6 +11284,7 @@ def zufallseinstieg(
         f"{'Streuung':>10}{'Perzentil':>11}{'z':>7}"
     )
     proben: list[Marktprobe] = []
+    faire: list[tuple[str, float | None]] = []
     for symbol in symbole:
         rahmen = store.read(symbol, interval_obj)
         bericht = run_portfolio_walkforward(
@@ -11277,6 +11318,21 @@ def zufallseinstieg(
             schluss, np.array(dauern), von=min(starts), bis=max(enden),
             ziehungen=ziehungen, rng=rng,
         )
+        # **Dieselbe Ziehung mit den Deckeln der Regel** (Befund 200). Ohne
+        # sie faehrt die Null jeden Einbruch bis zum Schluss mit, waehrend
+        # die Regel bei -4 % abschneidet - 42 % ihrer Trades enden dort.
+        # Der Vergleich begoenstigt die Regel, und der Modulkopf nennt das
+        # Ergebnis seit Befund 175 deshalb eine Obergrenze.
+        stop, ziel = _deckel_der_regel(trades)
+        fair = None
+        if stop is not None and ziel is not None:
+            fair = zufallsverteilung_mit_deckeln(
+                schluss,
+                rahmen["low"].astype(float).to_numpy(),
+                rahmen["high"].astype(float).to_numpy(),
+                np.array(dauern), von=min(starts), bis=max(enden),
+                ziehungen=ziehungen, rng=rng, stop=stop, ziel=ziel,
+            )
         rolle = ENTWICKLUNG if symbol.startswith(("BTC", "ETH")) else HOLDOUT
         probe = Marktprobe(
             symbol=symbol, rolle=rolle, trades=len(echte),
@@ -11291,6 +11347,22 @@ def zufallseinstieg(
             f"{probe.perzentil:>10.1%}"
             + ("      -" if probe.z is None else f"{probe.z:>7.2f}")
         )
+        if fair is not None:
+            fair_null = float(np.mean(fair))
+            fair_streuung = float(np.std(fair, ddof=1))
+            fair_z = (
+                (probe.echt - fair_null) / fair_streuung
+                if fair_streuung > 0
+                else None
+            )
+            faire.append((symbol, fair_z))
+            console.print(
+                f"[dim]{'  mit Deckeln':<10}{'':<13}{'':>7}{'':>9}"
+                f"{fair_null*100:>9.3f}{fair_streuung*100:>10.3f}"
+                f"{float((fair < probe.echt).mean()):>10.1%}"
+                + ("      -" if fair_z is None else f"{fair_z:>7.2f}")
+                + "[/]"
+            )
 
     korrelation = None
     if len(symbole) > 1:
@@ -11307,6 +11379,25 @@ def zufallseinstieg(
 
     console.print()
     console.print(Zufallsbild(tuple(proben), korrelation).urteil())
+
+    # **Was die faire Null daraus macht** (Befund 200). Die Zeile oben nennt
+    # das Ergebnis eine Obergrenze; hier steht, wie viel davon uebrig bleibt,
+    # wenn die Ziehung dieselben Deckel bekommt wie die Regel.
+    gemessen = [(s, z) for s, z in faire if z is not None]
+    if gemessen:
+        darueber = sum(1 for _, z in gemessen if z > 0)
+        belegt = sum(1 for _, z in gemessen if z >= MINDEST_Z)
+        console.print(
+            f"\n[bold]Mit denselben Deckeln wie die Regel[/] "
+            f"(Stop {stop:.1%}, Ziel {ziel:.0%}):\n"
+            f"  {darueber} von {len(gemessen)} Maerkten liegen ueber ihrer "
+            f"Null, {belegt} raeumen |z| = {MINDEST_Z:.0f}."
+        )
+        console.print(
+            "[dim]Das ist der Vergleich, den der Modulkopf seit Befund 175 "
+            "verlangt: Die Null faehrt jetzt nicht mehr jeden Einbruch bis "
+            "zum Schluss mit.[/]"
+        )
 
 
 if __name__ == "__main__":

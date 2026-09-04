@@ -97,11 +97,11 @@ class TestRichtung:
         import re
 
         text = Path("strategies/BEFUND.md").read_text()
-        # Bis 199, seit das Laborbuch die Hundert ueberschritten hat. Bliebe
-        # der Bereich bei 99 stehen, waere ``neuester`` fuer immer 99 und der
-        # Test schluege nie wieder an.
+        # Bis 299, seit das Laborbuch die Zweihundert erreicht hat. Bliebe
+        # der Bereich bei 199 stehen, waere ``neuester`` fuer immer 199 und
+        # der Test schluege nie wieder an.
         nummern = [
-            n for n in range(1, 200)
+            n for n in range(1, 300)
             if re.search(rf"^## {zahlwort(n)}\.", text, re.M)
         ]
         neuester = max(nummern)
@@ -153,11 +153,18 @@ class TestZahlwort:
         assert zahlwort(121) == "Hunderteinundzwanzig"
         assert zahlwort(130) == "Hundertdreissig"
 
+    def test_der_zweihunderterbereich_kam_mit_befund_200(self) -> None:
+        """Dieselbe Regel wie beim Hunderter: gebaut, als er gebraucht wurde."""
+        assert zahlwort(200) == "Zweihundert"
+        assert zahlwort(201) == "Zweihunderteins"
+        assert zahlwort(213) == "Zweihundertdreizehn"
+        assert zahlwort(221) == "Zweihunderteinundzwanzig"
+
     def test_jenseits_der_grenze_faellt_die_suche_sichtbar_aus(self) -> None:
         """Ein leerer String findet keine Ueberschrift - dann schlaegt der
         Fundstellen-Test an, statt still nichts zu pruefen. Die Grenze ist nur
         weitergerueckt, nicht verschwunden."""
-        assert zahlwort(200) == ""
+        assert zahlwort(300) == ""
         assert zahlwort(0) == ""
 
     def test_darstellung_nennt_ergebnis_und_fundstelle(self) -> None:

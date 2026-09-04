@@ -19,6 +19,7 @@ from research.zufallseinstieg import (
     Marktprobe,
     Zufallsbild,
     zufallsverteilung,
+    zufallsverteilung_mit_deckeln,
 )
 
 
@@ -182,3 +183,112 @@ def test_die_beiden_nullproben_sind_verschiedene_tests() -> None:
     assert not hasattr(maschine, "zufallsverteilung")
     assert "Maschine" in maschine.__doc__
     assert "Haltedauer" in regel.__doc__
+
+
+class TestDieNullBekommtDieselbenDeckel:
+    """**Befund 200.** Die Huerde war zu niedrig, und der Modulkopf sagte es.
+
+    ``zufallsverteilung`` haelt bis zum Ende der Dauer und steigt zum
+    Schlusskurs aus. Die Regel schneidet bei -4 % ab und nimmt bei +80 % mit;
+    **42 % ihrer Trades enden am Stop**. Die Null faehrt jeden Einbruch bis
+    zum Schluss mit und sieht dadurch schlechter aus, als sie ist.
+
+    Die Tests hier pruefen an Reihen, deren Antwort **vorher feststeht**.
+    """
+
+    def reihe(self, werte: list[float]) -> np.ndarray:
+        return np.array(werte, dtype=float)
+
+    def test_ein_stop_wird_genommen_wenn_das_tief_ihn_reisst(self) -> None:
+        """Schluss steigt, aber das Tief unterschreitet den Stop."""
+        schluss = self.reihe([100.0, 101.0, 102.0, 103.0])
+        tief = self.reihe([100.0, 95.0, 102.0, 103.0])
+        hoch = schluss
+
+        werte = zufallsverteilung_mit_deckeln(
+            schluss, tief, hoch, np.array([3]), von=0, bis=3,
+            ziehungen=1, rng=np.random.default_rng(0), stop=0.04, ziel=0.80,
+        )
+
+        assert werte[0] == pytest.approx(-0.04)
+
+    def test_ohne_treffer_gilt_der_schlusskurs(self) -> None:
+        schluss = self.reihe([100.0, 101.0, 102.0, 103.0])
+        tief = self.reihe([100.0, 99.0, 101.0, 102.0])
+        hoch = self.reihe([100.0, 102.0, 103.0, 104.0])
+
+        werte = zufallsverteilung_mit_deckeln(
+            schluss, tief, hoch, np.array([3]), von=0, bis=3,
+            ziehungen=1, rng=np.random.default_rng(0), stop=0.04, ziel=0.80,
+        )
+
+        assert werte[0] == pytest.approx(0.03)
+
+    def test_das_ziel_wird_genommen_wenn_das_hoch_es_erreicht(self) -> None:
+        schluss = self.reihe([100.0, 120.0, 150.0, 190.0])
+        tief = self.reihe([100.0, 119.0, 149.0, 189.0])
+        hoch = self.reihe([100.0, 121.0, 151.0, 191.0])
+
+        werte = zufallsverteilung_mit_deckeln(
+            schluss, tief, hoch, np.array([3]), von=0, bis=3,
+            ziehungen=1, rng=np.random.default_rng(0), stop=0.04, ziel=0.80,
+        )
+
+        assert werte[0] == pytest.approx(0.80)
+
+    def test_im_gleichen_balken_gilt_der_stop(self) -> None:
+        """Die vorsichtige Auslegung - und die des Backtests."""
+        schluss = self.reihe([100.0, 150.0])
+        tief = self.reihe([100.0, 90.0])
+        hoch = self.reihe([100.0, 190.0])
+
+        werte = zufallsverteilung_mit_deckeln(
+            schluss, tief, hoch, np.array([1]), von=0, bis=1,
+            ziehungen=1, rng=np.random.default_rng(0), stop=0.04, ziel=0.80,
+        )
+
+        assert werte[0] == pytest.approx(-0.04)
+
+    def test_der_deckel_hebt_die_null_in_einer_fallenden_reihe(self) -> None:
+        """**Der tragende Test.**
+
+        Genau darum geht es: In einer fallenden Reihe verliert die Null ohne
+        Stop den vollen Weg, mit Stop nur 4 %. Wer sie ohne Stop misst,
+        vergleicht die Regel mit einem Gegner, der schlechter spielt als
+        erlaubt.
+        """
+        n = 400
+        schluss = self.reihe([100.0 * (0.99**i) for i in range(n)])
+        tief = schluss * 0.995
+        hoch = schluss * 1.005
+        args = dict(von=0, bis=n - 1, ziehungen=200)
+
+        ohne = zufallsverteilung(
+            schluss, np.array([30] * 5), rng=np.random.default_rng(1), **args
+        )
+        mit = zufallsverteilung_mit_deckeln(
+            schluss, tief, hoch, np.array([30] * 5),
+            rng=np.random.default_rng(1), stop=0.04, ziel=0.80, **args
+        )
+
+        assert ohne.mean() < -0.20, f"die Reihe muss deutlich fallen: {ohne.mean()}"
+        assert mit.mean() == pytest.approx(-0.04, abs=1e-9), (
+            "mit Stop darf nichts unter -4 % durchkommen"
+        )
+
+    def test_leere_und_unsinnige_eingaben_werden_abgewiesen(self) -> None:
+        schluss = self.reihe([100.0, 101.0])
+        args = dict(
+            von=0, bis=1, ziehungen=1, rng=np.random.default_rng(0),
+            stop=0.04, ziel=0.80,
+        )
+
+        with pytest.raises(ValueError, match="nichts zu ziehen"):
+            zufallsverteilung_mit_deckeln(
+                schluss, schluss, schluss, np.array([]), **args
+            )
+        with pytest.raises(ValueError, match="Abstaende"):
+            zufallsverteilung_mit_deckeln(
+                schluss, schluss, schluss, np.array([1]),
+                **{**args, "stop": 0.0}
+            )

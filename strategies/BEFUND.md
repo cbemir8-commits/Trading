@@ -18343,3 +18343,89 @@ nicht mehr.
 
 Kostet keinen Versuch: gerechnet wurde auf achtzehn Paaren, die schon
 gemessen sind. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundert. Die Null durfte aussitzen, was die Regel nie durfte
+
+`research/zufallseinstieg.py` fragt, ob das Timing der Regel den Zufall
+schlaegt: gleiche Haltedauer, zufaelliger Einstieg. Befund 175 hat es gemessen
+und mit einer Einschraenkung versehen, die seither im Register steht:
+
+> Die Nullprobe hat keine Stops, die Regel schon. Stops schneiden Verluste ab;
+> das begoenstigt die Regel in diesem Vergleich. Damit ist das Ergebnis eine
+> **Obergrenze** des Timing-Vorteils, keine Untergrenze.
+
+Das ist eine Ueberlegung, keine Messung. Sie stand fuenfundzwanzig Befunde
+lang. Diese Runde misst sie nach.
+
+### Was die Regel wirklich tut
+
+Aus ihren eigenen 117 Trades gelesen, nicht aus dem Genom:
+
+    stop_loss      49 von 117   -4,05 %
+    take_profit     6 von 117   +80,0 %
+    signal_exit    62 von 117   -3,2 % bis +50,8 %
+
+Ein enger Stop und ein sehr weites Ziel. **Zweiundvierzig Prozent der Trades
+enden am Stop**, fuenf Prozent am Ziel.
+
+### Und was daraus wird, wenn die Null dieselben Deckel bekommt
+
+    Markt  Rolle          echt %   Null ohne   z ohne   Null mit   z mit
+    BTC    Entwicklung     8,989       6,406     0,63      2,659    3,94
+    ETH    Entwicklung    13,592       4,099     2,95      1,729    6,34
+    LTC    Holdout         3,869       1,086     1,57      0,320    3,32
+    XRP    Holdout         3,642       1,628     0,85      0,457    2,71
+
+**Aus einem von vier Maerkten ueber |z| = 2 werden vier von vier.**
+
+Ich hatte das Gegenteil erwartet. Die Absicht war, die Huerde zu **erhoehen** -
+der Null die Stops zu geben, die ihr fehlen, damit der Vergleich fair wird.
+Fair geworden ist er, aber in die andere Richtung.
+
+### Warum
+
+Die Deckel sind asymmetrisch: -4 % gegen +80 %. Der Stop schneidet staendig,
+das Ziel praktisch nie. Und ein zufaelliger Einstieg reisst den Stop **oefter**
+als ein gewaehlter:
+
+    echte Trades        41,9 % enden am Stop
+    Zufallsziehung      54,2 %   (2000 Ziehungen, mediane Dauer 10 Balken)
+
+Wer ohne Stop zieht, gibt der Null eine Freiheit, die die Regel nie hatte:
+einen Einbruch aussitzen und danach wieder steigen. Die echte Regel darf das
+nicht - sie ist bei -4 % draussen.
+
+Der ungedeckelte Vergleich ist damit keine Obergrenze, sondern eine
+**Untergrenze**. Der Satz im Modulkopf und im Urteil ist berichtigt.
+
+### Was das **nicht** ist
+
+Kein Beweis, und ausdruecklich keine Aenderung an einem Gate.
+
+Die vier Maerkte korrelieren mit 0,695 (Befund 174). Vier Treffer sind hier
+keine vier unabhaengigen Bestaetigungen, und die z-Werte lassen sich weiterhin
+nicht zusammenziehen - das Modul rechnet sie deshalb auch jetzt nicht zusammen.
+
+Die Haltedauern stammen aus den Trades der Regel und sind von ihren eigenen
+Ausstiegen geformt. Das gilt fuer beide Fassungen gleich und stand schon in
+Befund 175.
+
+Und es bewegt **nichts** am Deflated Sharpe. Der Timing-Vorteil war nie das
+offene Gate; er ist die Frage, ob hinter dem Kandidaten ueberhaupt etwas
+steht. Die Antwort ist jetzt besser belegt als vorher - und der Kandidat
+steht weiter bei 7 von 11.
+
+### Was gebaut wurde
+
+`zufallsverteilung_mit_deckeln`: dieselbe Ziehung, mit Stop und Ziel bar fuer
+bar geprueft; bei Gleichstand im selben Balken gilt der Stop. Sechs Tests an
+Reihen, deren Antwort vorher feststeht. `_deckel_der_regel` liest die beiden
+Abstaende **aus den Trades**, nicht aus dem Genom - was dort steht, muss nicht
+das sein, was der Backtest ausgefuehrt hat.
+
+Und `zahlwort` kann jetzt bis 299. Der Hunderterbereich kam mit Befund 100 und
+wurde damals ausdruecklich erst gebaut, als er gebraucht wurde; hier steht
+derselbe Fall zum zweiten Mal. Ueber 299 faellt die Suche weiter sichtbar aus.
+
+Kostet keinen Versuch: dieselbe Regel, dieselben Daten, eine andere Null.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
