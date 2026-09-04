@@ -788,6 +788,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "durchgefallen sind; das Wort 'Holdout' kam im ganzen Text nicht vor",
         196,
     ),
+    # Dieselbe Bauart wie Befund 157, diesmal im Bericht statt im Auftrag.
+    Richtung(
+        "Der Stand nannte drei ueberholte Fundstellen",
+        "'Ob der Vorsprung echt ist' verwies auf 168, 169 und 171 - zwei "
+        "davon in Befund 183 zurueckgenommen, die dritte in 188 ersetzt; "
+        "ein Test verlangt jetzt, dass die berichtigenden Befunde dabeistehen",
+        197,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1524,9 +1532,18 @@ class Lage:
             "  weit liegt er ueber dem **Katalog, aus dem er ausgewaehlt**",
             "  wurde? Reine Auswahl erzeugt einen Vorsprung ganz von selbst.",
             "",
-            "  Gemessen wurde das in Befund 168, eingeschraenkt in 169 und",
-            "  auf Viertelstunden geprueft in 171. **Das Ergebnis war nicht",
-            "  beruhigend.** Nachrechnen mit `cli vorratsdecke`.",
+            "  Gemessen in Befund 168, eingeschraenkt in 169, auf",
+            "  Viertelstunden geprueft in 171 - und dann **neu gemessen in",
+            "  183**, weil der Katalog dieser drei nach der Groessenlogik",
+            "  gefiltert war (Befund 182). 183 hat 168 und 169",
+            "  zurueckgenommen, 188 die Viertelstunden ersetzt.",
+            "",
+            "  **Das Ergebnis war auch danach nicht beruhigend**, und der",
+            "  Vorsprung des Bestands blieb kleiner als das, was Auswahl bei",
+            "  diesem Versuchsstand ohnehin erzeugt.",
+            "",
+            "  Die Zahlen stehen hier absichtlich nicht: Nachrechnen mit",
+            "  `cli vorratsdecke`.",
         ]
 
     def _aussichtszeilen(self) -> list[str]:

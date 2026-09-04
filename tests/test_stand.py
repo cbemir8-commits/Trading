@@ -1035,6 +1035,25 @@ class TestDerZweiteWeg:
         for nummer in ("168", "169", "171"):
             assert nummer in text
 
+    def test_die_zurueckgenommenen_stehen_nicht_unmarkiert_da(self) -> None:
+        """**Befund 197.** Der Abschnitt nannte drei Befunde als seinen Beleg.
+
+        Befund 183 hat 168 und 169 zurueckgenommen - der Katalog dieser
+        Messungen war nach der Groessenlogik gefiltert (Befund 182) -, und
+        Befund 188 hat die Viertelstunden aus 171 ersetzt. Der Abschnitt
+        schickte den Leser also an drei Stellen, von denen zwei
+        zurueckgenommen und eine ueberholt sind.
+
+        Das ist dieselbe Bauart wie Befund 157: ein Text, der stehenblieb,
+        waehrend die Messung weiterlief. Die Fundstellen duerfen bleiben -
+        sie sind die Geschichte der Frage -, aber nicht unmarkiert.
+        """
+        abschnitt = "\n".join(_lage()._zweiter_weg())
+
+        assert "183" in abschnitt, "die berichtigende Messung fehlt"
+        assert "188" in abschnitt, "die ersetzende Messung fehlt"
+        assert "zurueckgenommen" in abschnitt
+
     def test_er_traegt_keine_gepflegte_zahl(self) -> None:
         """**Die Bedingung, unter der dieser Abschnitt ueberhaupt dastehen
         darf.**

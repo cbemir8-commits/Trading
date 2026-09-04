@@ -18143,3 +18143,64 @@ und es hat nicht gereicht.
 
 Kostet keinen Versuch: Gebaut wird ein Auftragstext, nicht ein Kandidat.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertsiebenundneunzig. Der Stand schickte den Leser an drei ueberholte Stellen
+
+Nach acht Runden Arbeit an den Werkzeugen (189 bis 196) stand die Frage an, ob
+der Bericht, den ein Mensch tatsaechlich liest, das alles noch richtig
+wiedergibt. `cli stand` ausgedruckt und gegen die Register gelesen.
+
+### Was stimmt
+
+Die Register sind aktuell. 'Suchdisziplin als Weg' steht mit Nr. 194,
+'15-Minuten-Kerzen' mit Nr. 188, die Gate-Tabelle rechnet live, und der
+Abschnitt "Woran die Arbeit liegt" nennt weiter die beiden Gates, an denen es
+haengt. Von den 661 Zeilen war genau ein Absatz falsch.
+
+### Was nicht stimmte
+
+Der Abschnitt **"Ob der Vorsprung echt ist"** - der zweite, unabhaengige Weg
+zur selben Aussage wie der Deflated Sharpe - endete mit:
+
+    Gemessen wurde das in Befund 168, eingeschraenkt in 169 und
+    auf Viertelstunden geprueft in 171.
+
+**Befund 183 hat 168 und 169 zurueckgenommen**, weil ihr Katalog nach der
+Groessenlogik gefiltert war (Befund 182), und **Befund 188 hat 171 ersetzt**.
+Der Bericht schickte den Leser also an drei Stellen, von denen zwei
+zurueckgenommen und eine ueberholt sind - und keine davon sagte das.
+
+Dieselbe Bauart wie Befund 157: ein Text, der stehenblieb, waehrend die
+Messung weiterlief. Nur steht er diesmal im **Bericht**, nicht im Auftrag.
+
+Die Fundstellen bleiben stehen - sie sind die Geschichte der Frage -, aber
+jetzt mit dem Satz, was aus ihnen geworden ist.
+
+### Ein eigener Fehler beim Beheben, den die Testsuite gefangen hat
+
+Mein erster Entwurf hat die berichtigten Zahlen eingesetzt: Vorsprung +1,18
+Reststreuungen gegen rund +3,25 aus reiner Auswahl. Das liest sich besser -
+der Leser sieht sofort, worum es geht.
+
+`test_er_traegt_keine_gepflegte_zahl` ist durchgefallen, und zu Recht:
+
+> Vier Befunde handeln von Zahlen, die an zwei Stellen standen und
+> auseinanderliefen (158, 159, 165, 166). Der Vorsprung wird gerechnet,
+> nicht hier gepflegt - sonst waere dieser Abschnitt die fuenfte Stelle.
+
+Der Test ist aelter als ich und hatte recht. Der Abschnitt sagt jetzt
+ausdruecklich, **dass** die Zahlen dort nicht stehen und wo sie zu holen sind.
+
+Das ist die zweite Runde hintereinander, in der eine bestehende Pruefung mich
+korrigiert hat - in Befund 193 war es `test_die_nachgemessenen_eintraege_stehen_fest`
+mit dem Doppeleintrag. Beide Male habe ich etwas Naheliegendes tun wollen, das
+dieses Projekt schon einmal teuer bezahlt hat.
+
+### Was dazukam
+
+Ein Test, der verlangt, dass der Abschnitt die berichtigenden Befunde (183,
+188) und das Wort "zurueckgenommen" nennt. Eine Fundstelle darf veralten; sie
+darf nur nicht unmarkiert dastehen.
+
+Kostet keinen Versuch: gelesen und berichtigt wurde ein Bericht.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
