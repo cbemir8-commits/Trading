@@ -17918,3 +17918,78 @@ veraltet, ein zaehlender Test nicht.
 
 Kostet keinen Versuch: 18 vorhandene Paare nachgerechnet, keine Auswahl
 getroffen. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertvierundneunzig. Der eine Weg, auf dem der Zaehler entschieden hat
+
+Befund 189 hat gefragt, bis zu welchem Versuchsstand eine Guete die Schwelle
+noch raeumt, und geantwortet: Suchdisziplin war nie der Hebel. Gemessen war
+das am **Katalog** (beste Regel bis 8) und am **Bestand allein** (bis 21).
+
+Der Verbundweg war nicht dabei. Er faellt anders aus.
+
+### Gemessen, mit der Latte jedes Paares
+
+    Partner                              n_eff   Guete  noetig  fehlt   bis
+    Trendfolge Ausbruch                    251   3,663   3,771  0,108   137
+    Grosser Trendausbruch                  169   3,632   3,844  0,212    98
+    Trend-Beteiligung (fair gerechnet)     138   3,128   3,618  0,490    41
+    Trendbeteiligung EMA200                155   3,018   3,673  0,655    25
+    ... vierzehn weitere                                          25 bis 4
+    ---
+    Bestand allein                         117   2,907   3,650  0,743    21
+    beste Einzelregel im Katalog (189)      58   2,484              8
+
+    Versuchszaehler                                                    198
+
+**137 gegen 198.** Das ist keine andere Groessenordnung mehr, sondern ein
+Faktor 1,4. Auf allen anderen gemessenen Wegen lag der Abstand bei 9 bis 25.
+
+### Was das an Befund 189 aendert
+
+Der Satz *"Suchdisziplin war nie der Hebel"* gilt fuer den Katalog und den
+Bestand allein - dort haette auch eine perfekte Suche nach 8 beziehungsweise
+21 Versuchen aufhoeren muessen, und das ist unerreichbar frueh.
+
+**Auf dem Verbundweg gilt er nicht.** Dort liegt die Grenze bei 137, der
+Zaehler bei 198, und irgendwo dazwischen hat dieses Projekt sie
+ueberschritten. Das ist der einzige gemessene Weg, auf dem der Versuchsstand
+tatsaechlich entschieden hat.
+
+Ehrlich gezaehlt wird es enger, nicht weiter: Eines von 18 Paaren zu nehmen
+kostet 18 Versuche, und die stecken in den 137 schon drin. Der Stand **vor**
+der Auswahl haette also hoechstens 119 sein duerfen.
+
+### Und warum das trotzdem kein Verlust ist
+
+Es liegt nahe, daraus eine verpasste Gelegenheit zu lesen: haetten wir bei 119
+gestanden, waere das Paar durchgegangen. Genau dagegen steht Befund 186.
+
+Dort sind **alle sieben** bestplatzierten Partner im Holdout geprueft worden,
+und alle sieben sind durchgefallen - der beste haelt 30 % gegen die 41 % des
+Bestands allein, die beiden Erstplatzierten +7 % und -70 %. Was bei 119
+Versuchen bestanden haette, waere mit hoher Wahrscheinlichkeit ein
+Fehlalarm gewesen.
+
+**Das Gate hat hier dasselbe gesagt wie der Holdout**, aus einer voellig
+anderen Richtung und ohne einen einzigen zusaetzlichen Datenpunkt. Es ist
+nicht zu streng gewesen; es hat abgelehnt, was der out-of-sample-Test
+ebenfalls ablehnt.
+
+Das ist der belastbarste Grund, den dieses Projekt bisher hat, die Schwelle
+**nicht** anzufassen: Sie ist an einem Fall geprueft worden, in dem sie fast
+gefallen waere, und lag richtig.
+
+### Was gebaut wurde
+
+`Paar.bis()` rechnet den Versuchsstand mit den Momenten des Paares, `cli
+paare` fuehrt ihn als Spalte, und das Urteil nennt ihn fuer den
+Bestplatzierten.
+
+Die Zeile stand schon vor der neuen Spalte bei 84 Zeichen und ist
+umgebrochen - `fehlt` landete bei jeder Zeile allein darunter, und das ist
+sechs Befunde lang niemandem aufgefallen, mir eingeschlossen. Jetzt 79, mit
+einem Test, der die Breiten aus `cli.py` liest. Weichen musste `halt`, die
+Behaltequote: Sie ist genau `n/roh`, und beide stehen daneben.
+
+Kostet keinen Versuch: dieselben 18 Paare, nachgerechnet. Versuchszaehler 198
+unveraendert, Suchbudget 68 von 100.

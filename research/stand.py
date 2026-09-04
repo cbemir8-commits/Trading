@@ -257,15 +257,21 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     # Sie ist ausdruecklich kein Grund, den Zaehler zu senken.
     # Die Katalogzahl stand zuerst bei 10 und war mit den Momenten des
     # Bestands gerechnet (Befund 191); mit denen jeder Regel sind es 8.
-    # Der Schluss wird davon fester, nicht wackliger.
+    #
+    # **Und der Verbundweg fehlte** (Befund 194). Dort liegt die Grenze bei
+    # 137 gegen einen Zaehler von 198 - der einzige gemessene Weg, auf dem
+    # der Versuchsstand tatsaechlich entschieden hat. Geschlossen bleibt die
+    # Richtung trotzdem: Befund 186 hat alle sieben Bestplatzierten im
+    # Holdout durchfallen lassen, was bei 119 bestanden haette, waere also
+    # aller Wahrscheinlichkeit nach ein Fehlalarm gewesen.
     Richtung(
         "Suchdisziplin als Weg",
-        "der Bestand haette bis 21 Versuche bestanden, die beste Katalogregel "
-        "bis 8, vier raeumen die Schwelle bei keinem Stand - selbst eine "
-        "perfekte Suche haette nach 21 Versuchen aufhoeren muessen und "
-        "stuende bei 8 von 11 Gates",
+        "Bestand allein bis 21 Versuche, beste Katalogregel bis 8, bestes "
+        "Paar bis 137 (vor der Auswahl 119) gegen einen Zaehler von 198. Nur "
+        "auf dem Verbundweg war der Stand ueberhaupt entscheidend - und dort "
+        "haben Gate und Holdout dasselbe gesagt",
         189,
-        zuletzt=191,
+        zuletzt=194,
     ),
 )
 

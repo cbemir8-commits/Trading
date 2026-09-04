@@ -211,7 +211,10 @@ def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
         # Befund 191: dieselben 18 Regeln mit ihren **eigenen** Momenten
         # statt denen des Bestands. Die beste raeumt bis 8 statt 10
         # Versuche; der Schluss aus 189 wird davon fester.
-        "Suchdisziplin als Weg": 191,
+        # Befund 194: der Verbundweg dazu - bestes Paar bis 137 gegen einen
+        # Zaehler von 198. Dort war der Stand entscheidend, anders als im
+        # Katalog; geschlossen bleibt die Richtung durch den Holdout (186).
+        "Suchdisziplin als Weg": 194,
     }
 
 

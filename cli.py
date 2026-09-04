@@ -10553,21 +10553,34 @@ def paare(
             noetig=noetige_guete(
                 n, versuche, schiefe=k.schiefe, woelbung=k.woelbung
             ) or 0.0,
+            # Fuer 'bis' - dieselbe Form, dieselbe Latte (Befund 194).
+            schiefe=k.schiefe,
+            woelbung=k.woelbung,
         ))
 
     feld = Paarfeld(bestand.name, allein_g, allein_ziel, tuple(gemessen))
-    kopf = (f"  {'Partner':<32} {'P_n':>4} {'P_sr':>6} {'roh':>4} {'n':>4} "
-            f"{'halt':>5} {'Guete':>6} {'noetig':>7} {'fehlt':>6}")
+    # **Die Zeile passt in 80 Spalten** (Befund 189/194). Vorher stand sie
+    # bei 84 und ist umgebrochen - die Spalte 'fehlt' landete bei jeder
+    # Zeile allein darunter. Fuer 'bis' weicht 'halt' (die Behaltequote):
+    # Sie ist genau n/roh, und beide stehen daneben.
+    kopf = (f"  {'Partner':<30} {'P_n':>4} {'P_sr':>5} {'roh':>4} {'n':>4} "
+            f"{'Guete':>6} {'noetig':>6} {'fehlt':>6} {'bis':>4}")
     console.print(kopf)
     console.print("  " + "-" * (len(kopf) - 2))
     for p in feld.geordnet:
         marke = "  [green]<== ueber der Latte[/]" if p.reicht else ""
+        stand = p.bis()
         console.print(
-            f"  {p.name[:32]:<32} {p.partner_trades:>4} "
-            f"{p.partner_sharpe:>6.3f} {p.roh:>4} {p.effektiv:>4} "
-            f"{p.behaltequote:>5.2f} {p.guete:>6.3f} {p.noetig:>7.3f} "
-            f"{p.luecke:>6.3f}{marke}"
+            f"  {p.name[:30]:<30} {p.partner_trades:>4} "
+            f"{p.partner_sharpe:>5.3f} {p.roh:>4} {p.effektiv:>4} "
+            f"{p.guete:>6.3f} {p.noetig:>6.3f} "
+            f"{p.luecke:>6.3f} " + ("   -" if stand is None else f"{stand:>4}")
+            + marke
         )
+    console.print(
+        f"  [dim]'bis' = hoechster Versuchsstand, bei dem dieses Paar die "
+        f"Schwelle noch geraeumt haette (Zaehler: {versuche}).[/]"
+    )
 
     farbe = "green" if feld.erreichen else "yellow"
     console.print(f"\n[{farbe}]{feld.urteil()}[/]\n")

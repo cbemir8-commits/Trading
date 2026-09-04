@@ -82,6 +82,15 @@ class Paar:
     guete: float
     noetig: float
 
+    schiefe: float | None = None
+    woelbung: float | None = None
+    """Die Verteilungsform **dieses Verbunds** - fuer seine eigene Latte.
+
+    Bis Befund 193 stand in ``noetig`` die Latte des Bestands. Mit der des
+    Paares wechselt die Spitze der Rangfolge (Befund 193), und ``bis``
+    unten haengt ebenfalls daran.
+    """
+
     def __post_init__(self) -> None:
         if self.effektiv > self.roh:
             raise ValueError(
@@ -106,6 +115,30 @@ class Paar:
     @property
     def reicht(self) -> bool:
         return self.guete >= self.noetig
+
+    def bis(self, *, hoechstens: int | None = None) -> int | None:
+        """Bis zu welchem Versuchsstand dieses Paar bestanden haette.
+
+        Die Frage aus Befund 189, auf den Verbundweg angewandt. Sie trennt
+        auch hier zwei Lagen: an der Breite der Suche gescheitert - oder an
+        sich selbst.
+
+        **Und hier faellt sie anders aus als im Katalog** (Befund 194). Die
+        beste Einzelregel raeumt bis 8 Versuche, der Bestand allein bis 21;
+        das beste Paar kommt in dieselbe Groessenordnung wie der Zaehler.
+        Der Verbundweg ist damit der einzige gemessene, der ueberhaupt in
+        die Naehe kam.
+        """
+        from research.verbund import hoechster_versuchsstand
+
+        zusatz = {} if hoechstens is None else {"hoechstens": hoechstens}
+        return hoechster_versuchsstand(
+            self.guete,
+            self.effektiv,
+            schiefe=self.schiefe,
+            woelbung=self.woelbung,
+            **zusatz,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -166,4 +199,14 @@ class Paarfeld:
             f"{self.kosten_einer_auswahl} Versuche**, nicht einen: Die Auswahl "
             f"lief ueber alle."
         )
+        # **Wie frueh haette es gereicht?** (Befund 189, hier auf den
+        # Verbundweg angewandt.) Die Antwort faellt anders aus als im
+        # Katalog, und das gehoert in dasselbe Urteil - sonst liest sich
+        # "0 ueber der Latte" ueberall gleich.
+        stand = beste.bis()
+        if stand is not None:
+            teile.append(
+                f"Bis zu einem Versuchsstand von **{stand}** haette dieses "
+                f"Paar die Schwelle geraeumt."
+            )
         return " ".join(teile)

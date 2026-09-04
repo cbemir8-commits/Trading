@@ -137,3 +137,83 @@ class TestDerModulkopf:
         kopf = modul.__doc__ or ""
         assert "Befund 140" in kopf
         assert "nicht** vorher" in kopf or "nicht* vorher" in kopf
+
+
+class TestWieFruehEsGereichtHaette:
+    """**Befund 194.** Die Frage aus Befund 189, auf den Verbundweg angewandt.
+
+    Befund 189 hat gemessen, bis zu welchem Versuchsstand eine Guete die
+    Schwelle noch raeumt, und daraus geschlossen: Suchdisziplin war nie der
+    Hebel. Gemessen war das am **Katalog** (beste Regel bis 8) und am
+    **Bestand allein** (bis 21).
+
+    Der Verbundweg faellt anders aus, und das gehoert in dasselbe Urteil.
+    """
+
+    def paar(self, guete: float, n: int, **momente) -> Paar:
+        return Paar(
+            name="Probe", partner_trades=142, partner_sharpe=0.205,
+            roh=302, effektiv=n, guete=guete, noetig=3.771, **momente,
+        )
+
+    def test_das_beste_paar_kommt_in_die_naehe_des_zaehlers(self) -> None:
+        """**Der tragende Test** - die Zahl aus Befund 194.
+
+        'Trendfolge Ausbruch' als Verbund: Guete 3,663 bei n_eff 251. Der
+        Zaehler steht bei 198, und dieses Paar haette bis in dieselbe
+        Groessenordnung hinein bestanden - anders als alles andere, was
+        dieses Projekt gemessen hat.
+        """
+        stand = self.paar(3.663, 251).bis()
+
+        assert stand is not None
+        assert 100 < stand < 200, f"gemessen {stand}"
+
+    def test_es_bleibt_trotzdem_unter_dem_zaehler(self) -> None:
+        """Naeher heisst nicht bestanden."""
+        assert (self.paar(3.663, 251).bis() or 0) < 198
+
+    def test_die_momente_werden_durchgereicht(self) -> None:
+        mit_vorgabe = self.paar(3.663, 251).bis()
+        neutral = self.paar(3.663, 251, schiefe=0.0, woelbung=3.0).bis()
+
+        assert mit_vorgabe is not None and neutral is not None
+        assert neutral < mit_vorgabe, (
+            "eine neutrale Verteilung muss frueher an die Grenze stossen"
+        )
+
+    def test_ein_schwaches_paar_raeumt_gar_nichts(self) -> None:
+        assert self.paar(0.2, 251).bis() is None
+
+    def test_das_urteil_nennt_den_stand(self) -> None:
+        feld = Paarfeld(
+            "Bestand", 2.907, 3.650, (self.paar(3.663, 251),)
+        )
+
+        assert "Versuchsstand von" in feld.urteil()
+
+
+def test_die_paartabelle_passt_in_achtzig_spalten() -> None:
+    """**Befund 194**, dieselbe Lehre wie in Befund 189.
+
+    Die Zeile stand schon vor der neuen Spalte bei 84 Zeichen und ist
+    umgebrochen; 'fehlt' landete bei jeder Zeile allein darunter. Der Test
+    liest die Breiten aus ``cli.py``, damit die naechste Spalte nicht wieder
+    still umbricht.
+    """
+    import re
+    from pathlib import Path
+
+    quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+    kopf = re.search(
+        r"\{'Partner':<(\d+)\} \{'P_n':>(\d+)\} \{'P_sr':>(\d+)\} "
+        r"\{'roh':>(\d+)\} \{'n':>(\d+)\} \"\s*\n\s*f\"\{'Guete':>(\d+)\} "
+        r"\{'noetig':>(\d+)\} \{'fehlt':>(\d+)\} \{'bis':>(\d+)\}",
+        quelle,
+    )
+    assert kopf is not None, "Kopf der Paartabelle nicht gefunden"
+    breiten = [int(x) for x in kopf.groups()]
+
+    # Spaltenbreiten + je ein Trennzeichen + zwei fuehrende Leerzeichen.
+    breit = sum(breiten) + (len(breiten) - 1) + 2
+    assert breit <= 80, f"Zeile ist {breit} Zeichen breit"
