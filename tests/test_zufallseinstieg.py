@@ -344,3 +344,57 @@ class TestDerStopIstDerRegler:
 
         assert '"--stop"' in quelle
         assert "eigener if stop <= 0 else stop" in quelle
+
+
+class TestDieProbeGiltNichtNurDemBestand:
+    """**Befund 202.** Warum die sieben Partner im Holdout durchgefallen sind.
+
+    Befund 186 hat gemessen, dass keiner der sieben mehr haelt als der
+    Bestand allein - ohne sagen zu koennen, woran es lag. Diese Probe trennt
+    Koennen von Marktrichtung, und mit ``--regel`` laesst sie sich auf einen
+    Partner anwenden.
+
+    Die beiden Fehler, die dabei herauskamen, stehen hier ebenfalls: Beide
+    haetten still falsche Zahlen geliefert.
+    """
+
+    def test_der_befehl_kennt_die_regel(self) -> None:
+        from pathlib import Path
+
+        quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+
+        assert '"--regel"' in quelle
+        assert "_katalogregel(regel).model_copy(" in quelle, (
+            "ohne die Groessenlogik des Bestands waere es eine andere Regel"
+        )
+
+    def test_der_parameter_wird_nicht_ueberschrieben(self) -> None:
+        """**Der erste Fehler.**
+
+        Der Entwurf schrieb den gemessenen Abstand in ``stop`` zurueck - den
+        Parameter der Befehlszeile. Nach dem ersten Markt war er nicht mehr
+        null, und jeder folgende bekam dessen Abstand statt seinen eigenen.
+        Bei Regeln mit volatilitaetsskalierten Stops (gemessen: 4,6 % bis
+        6,8 % ueber vier Maerkte) ist das keine Kleinigkeit.
+        """
+        from pathlib import Path
+
+        quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+
+        assert "deckel = eigener if stop <= 0 else stop" in quelle
+        assert "stop = eigener if stop <= 0 else stop" not in quelle
+
+    def test_die_zusammenfassung_erfindet_keinen_deckel(self) -> None:
+        """**Der zweite Fehler.**
+
+        Wo keine Trades am Ziel endeten, gibt es kein Ziel - und die
+        Schlusszeile hat es trotzdem formatiert: ``TypeError: unsupported
+        format string passed to NoneType.__format__``, nach einem vollen
+        Lauf. Jetzt zaehlt sie auf, was gebraucht wurde.
+        """
+        from pathlib import Path
+
+        quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+
+        assert "if s is not None and z is not None" in quelle
+        assert "(Stop {stop:.1%}, Ziel {ziel:.0%})" not in quelle

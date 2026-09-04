@@ -825,6 +825,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Beobachtung",
         201,
     ),
+    # Beide in derselben Runde entstanden und gefunden - dieselbe Bauart wie
+    # Befund 190: eine Groesse, an einer Stelle gemessen, an einer anderen
+    # verwendet.
+    Richtung(
+        "Der Stopabstand des ersten Marktes galt fuer alle",
+        "der gemessene Abstand wurde in den Befehlszeilenparameter "
+        "zurueckgeschrieben; bei volatilitaetsskalierten Stops (4,6 bis "
+        "6,8 % ueber vier Maerkte) sind das andere Zahlen. Dazu ein "
+        "TypeError, wo keine Trades am Ziel endeten",
+        202,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -848,9 +859,11 @@ OFFEN: tuple[Richtung, ...] = (
         "ohne Deckel raeumt nur ETH |z| = 2, mit denselben Deckeln wie die "
         "Regel alle vier (2,71 bis 6,34). Der ungedeckelte Vergleich ist "
         "eine Untergrenze, keine Obergrenze - aber die Maerkte korrelieren "
-        "mit 0,695, also keine vier unabhaengigen Bestaetigungen",
+        "mit 0,695, also keine vier unabhaengigen Bestaetigungen. Der "
+        "Bestand raeumt auf 4 von 4 Maerkten, die beiden besten Partner auf "
+        "2 von 4 und 1 von 2 - eine Erklaerung fuer Befund 186",
         175,
-        201,
+        202,
     ),
     Richtung(
         "Zertifizierbarkeit der Bauart",

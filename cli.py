@@ -11233,6 +11233,10 @@ def zufallseinstieg(
     intervall: str = typer.Option("D", "--intervall", "-i"),
     ziehungen: int = typer.Option(2000, "--ziehungen"),
     saat: int = typer.Option(20260902, "--saat"),
+    regel: str | None = typer.Option(
+        None, "--regel",
+        help="Katalogregel statt des Bestands (Befund 202).",
+    ),
     stop: float = typer.Option(
         0.0, "--stop",
         help=(
@@ -11278,7 +11282,21 @@ def zufallseinstieg(
     settings = get_settings()
     interval_obj = Interval(intervall)
     store = CandleStore(settings.paths.data_store)
-    genome = _ohne_hebel(spitzenkandidat())
+    # **Nicht nur der Bestand** (Befund 202). Befund 186 hat sieben Partner
+    # im Holdout durchfallen lassen, ohne sagen zu koennen, woran es lag.
+    # Diese Probe trennt Koennen von Marktrichtung - genau die Frage.
+    #
+    # Auf die Groessenlogik des Bestands, wie in ``holdout`` und ``paare``
+    # (Befund 182/185): Eine Probe unter anderer Groessenlogik pruefte eine
+    # andere Regel.
+    if regel is None:
+        genome = _ohne_hebel(spitzenkandidat())
+    else:
+        genome = _ohne_hebel(
+            _katalogregel(regel).model_copy(
+                update={"sizing": spitzenkandidat().sizing}
+            )
+        )
     rng = np.random.default_rng(saat)
     symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
 
@@ -11292,6 +11310,7 @@ def zufallseinstieg(
     )
     proben: list[Marktprobe] = []
     faire: list[tuple[str, float | None]] = []
+    gebraucht: list[tuple[float | None, float | None]] = []
     for symbol in symbole:
         rahmen = store.read(symbol, interval_obj)
         bericht = run_portfolio_walkforward(
@@ -11335,15 +11354,21 @@ def zufallseinstieg(
         # Stop gibt der Null die Freiheit zurueck, einen Einbruch
         # auszusitzen, und senkt damit das z. Wer wissen will, ob das
         # Ergebnis am genauen Abstand haengt, dreht hier.
-        stop = eigener if stop <= 0 else stop
+        #
+        # **Nicht in ``stop`` zurueckschreiben** (Befund 202): Das ist der
+        # Parameter der Befehlszeile. Der erste Entwurf hat ihn ueberschrieben,
+        # womit jeder Markt nach dem ersten stillschweigend dessen Abstand
+        # bekam statt seinen eigenen.
+        deckel = eigener if stop <= 0 else stop
+        gebraucht.append((deckel, ziel))
         fair = None
-        if stop is not None and ziel is not None:
+        if deckel is not None and ziel is not None:
             fair = zufallsverteilung_mit_deckeln(
                 schluss,
                 rahmen["low"].astype(float).to_numpy(),
                 rahmen["high"].astype(float).to_numpy(),
                 np.array(dauern), von=min(starts), bis=max(enden),
-                ziehungen=ziehungen, rng=rng, stop=stop, ziel=ziel,
+                ziehungen=ziehungen, rng=rng, stop=deckel, ziel=ziel,
             )
         rolle = ENTWICKLUNG if symbol.startswith(("BTC", "ETH")) else HOLDOUT
         probe = Marktprobe(
@@ -11399,9 +11424,16 @@ def zufallseinstieg(
     if gemessen:
         darueber = sum(1 for _, z in gemessen if z > 0)
         belegt = sum(1 for _, z in gemessen if z >= MINDEST_Z)
+        # Die Deckel koennen sich je Markt unterscheiden - ``ziel`` kommt aus
+        # den Trades, und wo keiner am Ziel endete, gibt es keines. Deshalb
+        # wird hier aufgezaehlt, was gebraucht wurde, statt eine Zahl zu
+        # nennen, die nur fuer einen Markt galt (Befund 202).
+        benutzt = sorted({
+            (s, z) for s, z in gebraucht if s is not None and z is not None
+        })
+        wie = ", ".join(f"Stop {s:.1%} / Ziel {z:.0%}" for s, z in benutzt)
         console.print(
-            f"\n[bold]Mit denselben Deckeln wie die Regel[/] "
-            f"(Stop {stop:.1%}, Ziel {ziel:.0%}):\n"
+            f"\n[bold]Mit denselben Deckeln wie die Regel[/] ({wie}):\n"
             f"  {darueber} von {len(gemessen)} Maerkten liegen ueber ihrer "
             f"Null, {belegt} raeumen |z| = {MINDEST_Z:.0f}."
         )

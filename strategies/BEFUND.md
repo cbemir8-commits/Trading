@@ -18482,3 +18482,75 @@ mir korrigiert hat - nach dem Doppeleintrag in 193 und der gepflegten Zahl in
 
 Kostet keinen Versuch: dieselben vier Maerkte, fuenf Abstaende.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertzwei. Warum die sieben durchgefallen sind
+
+Befund 186 hat sieben Partner im Holdout geprueft und alle sieben durchfallen
+lassen - **ohne sagen zu koennen, woran es lag.** Befund 200 hat das Werkzeug
+gebaut, das Koennen von Marktrichtung trennt. Mit `--regel` laesst es sich auf
+einen Partner anwenden.
+
+### Gemessen, jede Regel gegen ihre eigene Null
+
+    Regel                        BTC     ETH     LTC     XRP   raeumt |z|=2
+    Bestand                     3,94    6,34    3,32    2,71        4 von 4
+    Trendfolge Ausbruch         5,00    1,42    1,39    3,37        2 von 4
+    Grosser Trendausbruch       3,45   -0,57       -       -        1 von 2
+
+**Der Bestand raeumt auf allen vier Maerkten, die Partner auf zwei
+beziehungsweise einem.** Das ist eine Erklaerung fuer Befund 186 und nicht
+bloss eine Wiederholung: Die Partner fallen draussen durch, weil ihr Einstieg
+den Zufall dort nicht schlaegt.
+
+Am schaerfsten bei 'Grosser Trendausbruch' auf LTC - dem Partner, den Befund
+184 auf Platz eins gesetzt hatte. Dort liegt das ungedeckelte z bei **-2,75**:
+signifikant **schlechter** als ein zufaelliger Einstieg. Es ist derselbe
+Markt, auf dem Befund 185 minus siebzig Prozent gemessen hat. Zwei Verfahren,
+ein Markt, dasselbe Urteil.
+
+### Was daran nicht trägt
+
+**Die Partner haben weniger Trades.** Auf den Holdout-Maerkten 49 und 34
+gegen die 70 und 75 des Bestands, bei 'Grosser Trendausbruch' 24 und 19 - der
+XRP-Lauf kam mit 19 Trades gar nicht erst durch die Mindestgrenze. Weniger
+Trades heisst weniger Schaerfe, und ein Teil von "raeumt nicht" ist
+Stichprobe und nicht Abwesenheit von Koennen.
+
+Die vier Maerkte korrelieren weiterhin mit 0,695. Und die Deckel sind je Regel
+und je Markt verschieden - was sich vergleichen laesst, ist "jede Regel gegen
+ihre eigene Null", nicht die z-Werte gegeneinander.
+
+### Zwei eigene Fehler, beide still
+
+Der erste Lauf dieser Probe hat den gemessenen Stopabstand in `stop`
+zurueckgeschrieben - **den Parameter der Befehlszeile**. Nach dem ersten Markt
+war er nicht mehr null, und jeder folgende bekam dessen Abstand statt seinen
+eigenen. Beim Bestand faellt das nicht auf: Sein Stop liegt auf allen Maerkten
+bei 4 %. Bei den Partnern schon, denn ihre Stops sind
+volatilitaetsskaliert:
+
+    Trendfolge Ausbruch     Stop 4,6 % / 6,3 % / 6,5 % / 6,8 %
+    Grosser Trendausbruch   Stop 9,0 % / 12,3 %
+
+Die Zahlen im ersten Durchgang waren damit falsch. Sie stehen hier nicht;
+oben steht der Lauf nach der Berichtigung.
+
+Der zweite Fehler hat sich selbst gemeldet: Wo keine Trades am Ziel endeten,
+gibt es kein Ziel, und die Schlusszeile hat es trotzdem formatiert -
+`TypeError`, nach einem vollen Lauf. Sie zaehlt jetzt auf, welche Deckel
+gebraucht wurden, statt eine Zahl zu nennen, die nur fuer einen Markt galt.
+
+Beide sind dieselbe Bauart wie Befund 190: eine Groesse, an einer Stelle
+gemessen, an einer anderen verwendet. Der Unterschied ist, dass diese beiden
+in derselben Runde entstanden und gefunden wurden.
+
+### Was es fuer die Suche heisst
+
+Nichts an einem Gate, und keinen Versuch. Aber es schaerft, wonach zu suchen
+ist: Ein Partner, der die drei Punkte des Auftrags erfuellt, ist erst dann
+interessant, wenn sein Einstieg auch **auf fremden Maerkten** den Zufall
+schlaegt. Das ist billig zu pruefen - `cli zufallseinstieg --regel <Name>` -
+und kostet keinen Versuch.
+
+Kostet keinen Versuch: dieselben Regeln, dieselben Daten, eine andere Null.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
