@@ -78,6 +78,29 @@ die die Regel nie hatte: einen Einbruch aussitzen und danach wieder steigen.
 Der ungedeckelte Vergleich ist damit keine Obergrenze, sondern eine
 **Untergrenze**.
 
+Haengt das am genauen Abstand? (Befund 201)
+--------------------------------------------
+Nein. Derselbe Lauf mit Stops von 2 % bis 8 % - dem Doppelten dessen, was die
+Regel benutzt:
+
+    Stop      2 %    3 %    4 %    6 %    8 %
+    BTC      5,32   4,36   3,80   3,28   3,02
+    ETH      8,78   7,32   6,41   5,20   4,77
+    LTC      5,01   3,88   3,27   2,70   2,29
+    XRP      3,67   2,94   2,58   2,28   2,07
+
+**In jeder Spalte raeumen alle vier die Schwelle.** Am schwaechsten steht XRP
+bei 8 % mit 2,07 - knapp, aber die 8 % sind auch das Doppelte des
+tatsaechlichen Abstands.
+
+Das z faellt hier monoton mit dem Abstand. **Das ist eine Beobachtung auf
+diesen vier Reihen und kein Gesetz**: Ein weiterer Stop wird zwar seltener
+gerissen - das gilt immer -, kostet aber jedes Mal mehr, und was davon
+ueberwiegt, haengt an der Reihe. Ein erster Test hat die Monotonie als Gesetz
+behauptet und ist an einer gebauten Reihe durchgefallen.
+
+``cli zufallseinstieg --stop 0.06`` rechnet jede Spalte nach.
+
 Was er nicht ist
 ----------------
 Kein Beweis. Die vier Maerkte korrelieren mit 0,695 (Befund 174) - vier

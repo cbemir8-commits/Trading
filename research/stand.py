@@ -814,6 +814,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Punkt 2 ist jetzt als Herleitung ausgewiesen, nicht als Vorhersage",
         199,
     ),
+    # Meine eigene Erklaerung zu Befund 200 war die halbe Wahrheit, und die
+    # andere Haelfte dreht sie um - gefangen von einem Test aus derselben
+    # Runde.
+    Richtung(
+        "Monotonie des z als Mechanik behauptet",
+        "ein weiterer Stop wird seltener gerissen, kostet aber jedes Mal "
+        "mehr; was ueberwiegt, haengt an der Reihe. Der Test prueft jetzt "
+        "die garantierte Haelfte, der Modulkopf nennt die Monotonie eine "
+        "Beobachtung",
+        201,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -839,7 +850,7 @@ OFFEN: tuple[Richtung, ...] = (
         "eine Untergrenze, keine Obergrenze - aber die Maerkte korrelieren "
         "mit 0,695, also keine vier unabhaengigen Bestaetigungen",
         175,
-        200,
+        201,
     ),
     Richtung(
         "Zertifizierbarkeit der Bauart",

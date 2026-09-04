@@ -292,3 +292,55 @@ class TestDieNullBekommtDieselbenDeckel:
                 schluss, schluss, schluss, np.array([1]),
                 **{**args, "stop": 0.0}
             )
+
+
+class TestDerStopIstDerRegler:
+    """**Befund 201.** Haengt die Umkehr aus Befund 200 am genauen Abstand?
+
+    Nein: Ueber Stops von 2 % bis 8 % raeumen alle vier Maerkte die Schwelle.
+    Auf den echten Reihen faellt das z dabei monoton - **das ist aber eine
+    Beobachtung und kein Gesetz**, und mein erster Test hat es als Gesetz
+    behauptet und ist an einer gebauten Reihe durchgefallen.
+
+    Der Grund: Ein weiterer Stop wird zwar seltener gerissen, kostet aber
+    jedes Mal mehr. Was davon ueberwiegt, haengt an der Reihe.
+
+    Garantiert ist nur die Haelfte davon, und die steht hier.
+    """
+
+    def test_ein_weiterer_stop_wird_seltener_gerissen(self) -> None:
+        """Die Mechanik, die **immer** gilt - und auf der Befund 200 steht.
+
+        Wird der Stop nie gerissen, steht am Ende der Schlusskurs; wird er
+        gerissen, steht dort der Abstand. Ein Ergebnis von genau ``-stop``
+        ist also die Spur eines Treffers, und die wird mit dem Abstand
+        seltener.
+        """
+        n = 300
+        i = np.arange(n, dtype=float)
+        schluss = 100.0 * (1.0 + 0.002 * i) * (1.0 + 0.05 * np.sin(i / 3.0))
+        tief = schluss * 0.97
+        hoch = schluss * 1.03
+
+        anteile = []
+        for s in (0.02, 0.04, 0.08, 0.16):
+            werte = zufallsverteilung_mit_deckeln(
+                schluss, tief, hoch, np.array([20]),
+                von=0, bis=n - 1, ziehungen=400,
+                rng=np.random.default_rng(7), stop=s, ziel=0.80,
+            )
+            anteile.append(float(np.isclose(werte, -s).mean()))
+
+        assert anteile == sorted(anteile, reverse=True), (
+            f"ein weiterer Stop muss seltener greifen: {anteile}"
+        )
+        assert anteile[0] > anteile[-1], "sonst zeigt der Test nichts"
+
+    def test_der_befehl_kennt_den_regler(self) -> None:
+        """Sonst waere die Gegenprobe ein Wegwerfskript."""
+        from pathlib import Path
+
+        quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+
+        assert '"--stop"' in quelle
+        assert "eigener if stop <= 0 else stop" in quelle

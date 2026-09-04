@@ -18429,3 +18429,56 @@ derselbe Fall zum zweiten Mal. Ueber 299 faellt die Suche weiter sichtbar aus.
 
 Kostet keinen Versuch: dieselbe Regel, dieselben Daten, eine andere Null.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihunderteins. Der Stop als Regler - und eine Monotonie, die keine ist
+
+Befund 200 hat eine Umkehr gemeldet: Mit denselben Deckeln wie die Regel
+raeumen vier von vier Maerkten die Schwelle |z| = 2 statt einem von vier. Die
+Deckel kamen aus den Trades der Regel - 4 % Stop, 80 % Ziel. Bleibt die Frage,
+ob das Ergebnis an genau diesen Zahlen haengt.
+
+### Die Gegenprobe
+
+Derselbe Lauf ueber Stops von 2 % bis 8 %, dem Doppelten des tatsaechlichen
+Abstands:
+
+    Stop      2 %    3 %    4 %    6 %    8 %
+    BTC      5,32   4,36   3,80   3,28   3,02
+    ETH      8,78   7,32   6,41   5,20   4,77
+    LTC      5,01   3,88   3,27   2,70   2,29
+    XRP      3,67   2,94   2,58   2,28   2,07
+
+**In jeder Spalte raeumen alle vier.** Am schwaechsten XRP bei 8 % mit 2,07 -
+knapp, aber bei einem Abstand, den die Regel nie benutzt hat. Die Umkehr aus
+Befund 200 haengt nicht am genauen Wert.
+
+`cli zufallseinstieg --stop 0.06` rechnet jede Spalte nach; ohne die Angabe
+nimmt der Befehl weiter den Abstand der Regel.
+
+### Und ein Fehler in meiner eigenen Erklaerung
+
+Beim Schreiben des Tests wollte ich die Monotonie festhalten - das z faellt in
+jeder Zeile mit dem Abstand - und habe sie als **Mechanik** formuliert: *"Ein
+weiterer Stop gibt der Null die Freiheit zurueck, einen Einbruch auszusitzen."*
+
+Der Test ist an einer gebauten Reihe durchgefallen, und zwar zu Recht. Die
+Mechanik hat zwei Haelften, die gegeneinander laufen:
+
+* Ein weiterer Stop wird **seltener gerissen** - das gilt immer.
+* Jeder Treffer **kostet mehr** - das gilt auch immer.
+
+Was ueberwiegt, haengt an der Reihe. Auf den vier echten faellt das z monoton;
+auf einer Reihe mit engen Schwankungen um einen Aufwaertstrend nicht. Meine
+Erklaerung war die halbe Wahrheit, und die andere Haelfte hat sie umgedreht.
+
+Der Test prueft jetzt die Haelfte, die garantiert ist: **Der Anteil der
+Ziehungen, die am Stop enden, faellt mit dem Abstand.** Der Modulkopf sagt
+dazu, dass die Monotonie des z eine Beobachtung auf diesen vier Reihen ist und
+kein Gesetz.
+
+Das ist in dieser Serie das dritte Mal, dass eine Pruefung eine Behauptung von
+mir korrigiert hat - nach dem Doppeleintrag in 193 und der gepflegten Zahl in
+197. Diesmal war es ein Test, den ich in derselben Runde geschrieben habe.
+
+Kostet keinen Versuch: dieselben vier Maerkte, fuenf Abstaende.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

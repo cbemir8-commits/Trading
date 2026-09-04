@@ -11233,6 +11233,13 @@ def zufallseinstieg(
     intervall: str = typer.Option("D", "--intervall", "-i"),
     ziehungen: int = typer.Option(2000, "--ziehungen"),
     saat: int = typer.Option(20260902, "--saat"),
+    stop: float = typer.Option(
+        0.0, "--stop",
+        help=(
+            "Stopabstand fuer die gedeckelte Null, z. B. 0.06. "
+            "0 heisst: den der Regel nehmen (Befund 201)."
+        ),
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Schlaegt das Timing den Zufall mit gleicher Haltedauer?
@@ -11323,7 +11330,12 @@ def zufallseinstieg(
         # die Regel bei -4 % abschneidet - 42 % ihrer Trades enden dort.
         # Der Vergleich begoenstigt die Regel, und der Modulkopf nennt das
         # Ergebnis seit Befund 175 deshalb eine Obergrenze.
-        stop, ziel = _deckel_der_regel(trades)
+        eigener, ziel = _deckel_der_regel(trades)
+        # **Der Stop ist der Regler dieser Probe** (Befund 201). Ein weiterer
+        # Stop gibt der Null die Freiheit zurueck, einen Einbruch
+        # auszusitzen, und senkt damit das z. Wer wissen will, ob das
+        # Ergebnis am genauen Abstand haengt, dreht hier.
+        stop = eigener if stop <= 0 else stop
         fair = None
         if stop is not None and ziel is not None:
             fair = zufallsverteilung_mit_deckeln(
