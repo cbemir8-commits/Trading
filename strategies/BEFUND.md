@@ -17993,3 +17993,87 @@ Behaltequote: Sie ist genau `n/roh`, und beide stehen daneben.
 
 Kostet keinen Versuch: dieselben 18 Paare, nachgerechnet. Versuchszaehler 198
 unveraendert, Suchbudget 68 von 100.
+
+## Hundertfuenfundneunzig. Die berichtigte Rangfolge sagt schlechter voraus
+
+Befund 193 hat die Latte jedes Paares auf seine eigenen Momente gestellt und
+damit die Rangfolge veraendert - die Spitze wechselte, die Luecke des Besten
+ging von 0,064 auf 0,108. Zwei Fragen folgen daraus, und beide sind ohne
+neuen Lauf zu beantworten.
+
+### Muss etwas neu geprueft werden?
+
+Befund 186 hat **sieben** Paare im Holdout geprueft: alle, die damals besser
+dastanden als der Bestand allein. Mit der berichtigten Rechnung sind es
+**sechs**, und die Schwelle ist von 0,705 auf 0,743 gewandert.
+
+    berichtigt besser als der Bestand allein (Luecke < 0,743)
+      0,108  Trendfolge Ausbruch
+      0,212  Grosser Trendausbruch
+      0,490  Trend-Beteiligung (fair gerechnet)
+      0,655  Trendbeteiligung EMA200
+      0,664  Nur mit der Drift
+      0,693  EMA-Kreuzung (Messlatte)
+
+Die sechs sind eine **echte Teilmenge** der alten sieben; herausgefallen ist
+'Langsamer Kreuzer (Messlatte 2)' (0,684 auf 0,809). **Kein Paar rueckt neu
+vor, das nicht schon geprueft waere.** Der Schluss aus Befund 186 - keiner
+haelt draussen mehr als der Bestand allein - deckt damit weiter alles, was
+oben steht.
+
+### Ordnet die Luecke ueberhaupt, was draussen passiert?
+
+Befund 186 hat das gemessen und in Prosa hinterlassen. Nachgerechnet, jetzt
+im Code, und dazu dasselbe mit der berichtigten Rangfolge:
+
+    Rangfolge aus Befund 184   alle acht           rho +0,214   t +0,54
+                               ohne den Ausreisser     +0,571      +1,56
+    Rangfolge aus Befund 193   alle acht               -0,024      -0,06
+                               ohne den Ausreisser     +0,464      +1,17
+
+**Die Berichtigung sagt schwaechter voraus, nicht besser.** In allen vier
+Rechnungen bleibt |t| unter 2 - die Schwelle, die dieses Projekt seit Befund
+75 verlangt -, aber die Richtung des Unterschieds ist eindeutig.
+
+Das ist unbequem, und die naheliegende Aufloesung waere falsch: Die alte
+Rechnung war nicht "doch besser". Sie hat mit den Momenten des **Bestands**
+gerechnet, wo das Gate die des Paares nimmt; das ist ein Messfehler, und ein
+Messfehler wird nicht dadurch richtig, dass sein Ergebnis besser korreliert.
+Wer so argumentierte, haette ein Guetekriterium aus einer Zufallszahl
+gemacht.
+
+Der ehrliche Zustand ist: **Die Korrektur stimmt, und sie hat die
+Vorhersagekraft nicht gehoben.** Beides gilt.
+
+### Was daraus wirklich folgt
+
+Keine der vier Rechnungen raeumt |t| = 2. **Die Luecke ordnet die
+Entwicklung, ueber das Verhalten draussen sagt sie nach dieser Messung
+nichts.** Das schaerft, was Befund 194 gesagt hat: Gate und Holdout stimmen
+im **Urteil** ueberein - beide lehnen alle ab -, aber nicht in der
+**Reihenfolge**. Wer aus der Rangfolge liest, welcher Kandidat draussen am
+ehesten traegt, liest etwas hinein, das nicht gemessen ist.
+
+Praktisch heisst das: Die Reihenfolge taugt weiter, um zu entscheiden, was
+man **zuerst prueft** - eine Prioritaet muss irgendwoher kommen. Sie taugt
+nicht, um auf eine Pruefung zu **verzichten**.
+
+### Was gebaut wurde
+
+`research/rangtreue.py`: Spearman mit gemittelten Bindungen, der t-Wert dazu,
+und ein Urteil, das unter |t| = 2 die Aussage verweigert statt sie
+abzuschwaechen. Die Rechnung stand seit Befund 186 nur im Laborbuch - genau
+die Lage, die Befund 187 bei `kostenanteil` vorgefunden hat.
+
+Der tragende Test rechnet die veroeffentlichten Zahlen aus Befund 186 nach
+(+0,214 und +0,571). Damit ist die Umsetzung an einer fremden Messung
+geprueft und nicht an sich selbst.
+
+Ein eigener Fehler dabei, gleich behoben: Bei einer **vollstaendigen**
+Rangkorrelation gab `t_wert` zuerst `None` zurueck, und das Urteil hat daraus
+*"Nur 12 Punkte - ueber die Rangtreue laesst sich nichts sagen"* gemacht. Eine
+perfekte Uebereinstimmung wurde also als fehlende Messung gemeldet. Jetzt ist
+der t-Wert dort unendlich, und `None` heisst nur noch: zu wenige Punkte.
+
+Kostet keinen Versuch: gerechnet wurde auf Zahlen, die schon gemessen sind.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

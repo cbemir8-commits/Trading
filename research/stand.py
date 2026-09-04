@@ -770,6 +770,15 @@ BEHOBEN: tuple[Richtung, ...] = (
         "namentlich genannte Ausnahmen zu",
         193,
     ),
+    # Kein behobener Fehler, sondern eine Rechnung, die nur als Prosa
+    # existierte - dieselbe Lage wie bei 'kostenanteil' in Befund 187.
+    Richtung(
+        "Die Rangtreue stand seit Befund 186 nur im Laborbuch",
+        "research/rangtreue.py rechnet sie jetzt nach und verweigert unter "
+        "|t| = 2 die Aussage; der tragende Test reproduziert die "
+        "veroeffentlichten +0,214 und +0,571",
+        195,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -877,6 +886,19 @@ OFFEN: tuple[Richtung, ...] = (
         "Kippfaktor 2 - das schafft die Slippage allein",
         78,
         190,
+    ),
+    # **Acht Punkte reichen dafuer nicht**, und mehr gibt es nicht: Jeder
+    # weitere Holdout-Punkt setzt ein Paar voraus, das geprueft werden
+    # sollte. Die Richtung bleibt offen, nicht weil sie ungemessen waere,
+    # sondern weil die Messung nichts entscheidet.
+    Richtung(
+        "Ordnet die Luecke das Verhalten im Holdout?",
+        "vier Rechnungen ueber acht Paare, alle unter |t| = 2: alte "
+        "Rangfolge +0,214 / +0,571, berichtigte -0,024 / +0,464. Die "
+        "Berichtigung sagt schwaecher voraus - was sie nicht falsch macht. "
+        "Die Reihenfolge taugt zum Priorisieren, nicht zum Verzichten",
+        186,
+        195,
     ),
 )
 
