@@ -335,6 +335,8 @@ def aus_messungen(
     versuche: int,
     bestand_trades: int,
     bestand_sharpe: float,
+    bestand_schiefe: float | None = None,
+    bestand_woelbung: float | None = None,
     kopplung: float | None = None,
     kopplung_traegt: str | None = None,
     familien: tuple[tuple[str, int], ...] = (),
@@ -356,7 +358,16 @@ def aus_messungen(
     from research.suchbudget import Budget
     from research.verbund import noetige_guete
 
-    ziel = noetige_guete(bestand_trades, versuche) or 0.0
+    # Mit **seiner** Verteilungsform, wie im Gate (Befund 193). Ohne sie
+    # bekam der Analyst ein Ziel, das auf einer Vorgabeverteilung stand -
+    # dieselbe Sorte Fehler wie die rohe Trade-Zahl in Befund 139.
+    ziel = (
+        noetige_guete(
+            bestand_trades, versuche,
+            schiefe=bestand_schiefe, woelbung=bestand_woelbung,
+        )
+        or 0.0
+    )
     karte = Partnerkarte(n1=bestand_trades, sr1=bestand_sharpe, ziel=ziel)
     wende = karte.wende or bestand_trades
     bedarf = karte.bedarf(wende, 0.72) or bestand_sharpe

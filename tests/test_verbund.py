@@ -955,3 +955,68 @@ class TestDieMomenteGehoerenZurRegel:
         assert "schiefe=kandidat.schiefe" in quelle, (
             "die Momente kommen nicht mehr aus den Trades der Regel"
         )
+
+
+class TestJedeLatteKenntIhrenKandidaten:
+    """**Befund 193.** Der Nachtrag zu einer Suche, die zu frueh fertig war.
+
+    Befund 192 hat "alle elf Aufrufstellen" gemeldet, die eine Latte rechnen -
+    gesucht wurde aber nur nach ``noetig_bei`` und ``noetiger_sharpe``. Die
+    Schicht darueber, ``noetige_guete``, hat vierzehn eigene Aufrufer, und
+    sechs davon standen auf der Vorgabe.
+
+    Dieselbe Bauart wie der Fehler, den die Suche finden sollte: an einer
+    Stelle nachgesehen und auf das Ganze geschlossen.
+    """
+
+    def test_die_stichprobe_reicht_die_momente_durch(self) -> None:
+        vorgabe = noetige_stichprobe(0.25, 198)
+        neutral = noetige_stichprobe(0.25, 198, schiefe=0.0, woelbung=3.0)
+
+        assert vorgabe is not None and neutral is not None
+        assert neutral > vorgabe, (
+            "eine neutrale Verteilung muss mehr Beobachtungen verlangen"
+        )
+
+    def test_ohne_angabe_bleibt_die_stichprobe_wie_zuvor(self) -> None:
+        assert noetige_stichprobe(0.25, 198) == noetige_stichprobe(
+            0.25, 198, schiefe=None, woelbung=None
+        )
+
+    def test_keine_lattenrechnung_steht_mehr_ohne_kandidat_da(self) -> None:
+        """**Der tragende Test** - er zaehlt, was die Suche uebersehen hat.
+
+        Jeder ``noetige_guete``-Aufruf in ``cli.py`` muss entweder Momente
+        uebergeben oder an einer der Stellen stehen, an denen es keinen
+        Kandidaten gibt. Die Ausnahmen stehen hier namentlich, damit eine
+        neue nicht unbemerkt dazukommt.
+        """
+        import re
+        from pathlib import Path
+
+        quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+        aufrufe = re.findall(
+            r"noetige_guete\((?:[^()]|\([^()]*\))*\)", quelle, re.S
+        )
+
+        assert len(aufrufe) >= 9, f"nur {len(aufrufe)} Aufrufe gefunden"
+        ohne = [a for a in aufrufe if "schiefe=" not in a]
+
+        # Die drei zulaessigen Ausnahmen (Befund 191/193):
+        #   - der Scheitel der Decke: dort steht keine Regel
+        #   - der Vergleichswert 'nach_vorgabe', der die Vorgabe zeigen soll
+        #   - die Pruefung, ob es an dieser Stichprobe ueberhaupt eine Latte
+        #     gibt - eine Ja/Nein-Frage, die die Momente nicht dreht
+        assert len(ohne) == 3, (
+            "unerwartete Lattenrechnung ohne Momente:\n" + "\n".join(ohne)
+        )
+
+    def test_die_paarlatte_steht_auf_dem_paar(self) -> None:
+        """Daran haengt die Rangfolge aus Befund 184."""
+        from pathlib import Path
+
+        quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+
+        assert "n, versuche, schiefe=k.schiefe, woelbung=k.woelbung" in quelle, (
+            "die Paarlatte rechnet wieder mit der Form des Bestands"
+        )

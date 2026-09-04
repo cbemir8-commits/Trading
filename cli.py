@@ -1721,6 +1721,8 @@ def _auftragslage(zustand: Path):
         versuche=load_trials(zustand / "trials.json"),
         bestand_trades=SPOTPUNKT.effektiv,
         bestand_sharpe=SPOTPUNKT.guete,
+        bestand_schiefe=SPOTPUNKT.schiefe,
+        bestand_woelbung=SPOTPUNKT.woelbung,
         # **Nichts von alledem uebergeben - Befund 183.** Hier standen
         # kopplung=-0,714, kopplung_traegt="sma", die Familienzaehlung und
         # der Preis 3,70. Alle vier sind auf dem Katalog gemessen, den
@@ -5287,6 +5289,10 @@ def teststaerke(
                         effektiv=stichprobe.effektiv,
                         sharpe=bericht.combined.sharpe if bericht.combined else 0.0,
                         sharpe_je_trade=form.sharpe_je_trade if form else 0.0,
+                        # Die Form dieser Sprosse, nicht die des Bestands
+                        # (Befund 193) - die Leiter verschiebt sie absichtlich.
+                        schiefe=form.schiefe if form else None,
+                        woelbung=form.woelbung if form else None,
                         dsr=dsr,
                         bestanden=sum(1 for r in gates.results if r.passed),
                         gesamt=len(gates.results),
@@ -6105,7 +6111,13 @@ def anwaerter(
         spitze.all_trades,
         bloecke=[[float(x.net_pnl) for x in w.trades] for w in spitze.windows],
     )
-    ziel = noetige_guete(eigene_stichprobe.effektiv, versuche)
+    ziel = noetige_guete(
+        eigene_stichprobe.effektiv,
+        versuche,
+        # Seine eigene Verteilungsform, wie im Gate (Befund 193).
+        schiefe=eigen.schiefe,
+        woelbung=eigen.woelbung,
+    )
     karte = Partnerkarte(
         n1=eigene_stichprobe.effektiv, sr1=eigen.sharpe_je_trade, ziel=ziel
     )
@@ -7801,7 +7813,9 @@ def partner(
     from research.referenz import SPOTPUNKT
 
     n1, sr1 = SPOTPUNKT.effektiv, SPOTPUNKT.guete
-    ziel = noetige_guete(n1, versuche)
+    ziel = noetige_guete(
+        n1, versuche, schiefe=SPOTPUNKT.schiefe, woelbung=SPOTPUNKT.woelbung
+    )
     karte = Partnerkarte(n1=n1, sr1=sr1, ziel=ziel)
 
     console.print(
@@ -7957,7 +7971,12 @@ def verbund(
         )
     console.print(lage.tabelle())
 
-    ziel = noetige_guete(lage.stichprobe.effektiv, neu)
+    ziel = noetige_guete(
+        lage.stichprobe.effektiv,
+        neu,
+        schiefe=lage.kandidat.schiefe if lage.kandidat else None,
+        woelbung=lage.kandidat.woelbung if lage.kandidat else None,
+    )
     console.print(f"\n{lage.urteil(noetige_guete=ziel)}\n")
     dsr = lage.dsr
     if dsr is not None:
@@ -10477,7 +10496,13 @@ def paare(
         raise typer.Exit(2)
     allein_n = allein.stichprobe.effektiv
     allein_g = allein_k.sharpe_je_trade * allein_n**0.5
-    allein_ziel = noetige_guete(allein_n, versuche) or 0.0
+    allein_ziel = (
+        noetige_guete(
+            allein_n, versuche,
+            schiefe=allein_k.schiefe, woelbung=allein_k.woelbung,
+        )
+        or 0.0
+    )
 
     console.print(
         f"\n[bold]Gemessene Paare[/] auf {' + '.join(symbole)} "
@@ -10522,7 +10547,12 @@ def paare(
             partner_sharpe=einzeln.sharpe_je_trade,
             roh=len(lage.trades), effektiv=n,
             guete=k.sharpe_je_trade * n**0.5,
-            noetig=noetige_guete(n, versuche) or 0.0,
+            # **Die Latte dieses Paares, nicht die des Bestands**
+            # (Befund 193). Daran haengt die Luecke, nach der hier
+            # geordnet wird - und damit die Rangfolge aus Befund 184.
+            noetig=noetige_guete(
+                n, versuche, schiefe=k.schiefe, woelbung=k.woelbung
+            ) or 0.0,
         ))
 
     feld = Paarfeld(bestand.name, allein_g, allein_ziel, tuple(gemessen))
@@ -11104,7 +11134,10 @@ def holdout(
             kandidat.sharpe_je_trade,
         )
         befunde.append(befund)
-        noetig = noetige_guete(st.effektiv, versuche)
+        noetig = noetige_guete(
+            st.effektiv, versuche,
+            schiefe=kandidat.schiefe, woelbung=kandidat.woelbung,
+        )
         console.print(
             f"{symbol[:9]:<10}{rolle:<13}{befund.trades:>8}{befund.n_eff:>7}"
             f"{befund.sharpe_je_trade:>10.4f}{befund.guete:>8.3f}"

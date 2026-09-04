@@ -17838,3 +17838,83 @@ Regel angewandt worden waere - und dafuer ist der Befehl gebaut.
 
 Kostet keinen Versuch: gerechnet wurde ueber Versuche, nicht mit ihnen.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertdreiundneunzig. Meine eigene Suche war zu frueh fertig
+
+Befund 192 hat gemeldet: *"Alle elf Stellen, die eine Latte rechnen,
+nachgesehen."* Gesucht wurde nach `noetig_bei(` und `noetiger_sharpe(`. Die
+Schicht **darueber** - `noetige_guete` - hat vierzehn eigene Aufrufer, und
+sechs davon standen auf der Vorgabe.
+
+Das ist genau die Bauart, die die Suche finden sollte: an einer Stelle
+nachgesehen und auf das Ganze geschlossen. Der Fehler ist diesmal meiner, und
+er stand einen Befund lang als Vollstaendigkeitsaussage da.
+
+### Was noch fehlte
+
+    cli, Partnerkarte des Spitzenkandidaten     Vorgabe   -> eigen
+    cli, Partnerkarte am Referenzpunkt          Vorgabe   -> SPOTPUNKT
+    cli, der Verbund im Bericht                 Vorgabe   -> lage.kandidat
+    cli paare, der Bestand allein               Vorgabe   -> allein_k
+    cli paare, **die Latte jedes Paares**       Vorgabe   -> k
+    cli, die Marktkarte                         Vorgabe   -> kandidat
+    auftragslage, das Ziel fuer die Research-KI Vorgabe   -> SPOTPUNKT
+    teststaerke.Stufe, jede Sprosse der Leiter  Vorgabe   -> form
+    verbund.noetige_stichprobe                  Vorgabe   -> durchgereicht
+
+Die Leiter aus `teststaerke` ist der bitterste davon: Sie **verschiebt die
+Verteilungsform absichtlich** - ein gepflanzter Trend hebt den Vorteil und
+aendert die Momente - und rechnete dabei jede Sprosse gegen die Form des
+Bestands.
+
+### Und was das an der Paarrangfolge aendert
+
+Befund 184 hat 18 Paare gemessen und die Luecke 0,064 als **besten
+gemessenen Stand des Projekts** gemeldet. Mit der Latte jedes Paares statt der
+des Bestands:
+
+    Partner                          Luecke (184)   Luecke (jetzt)
+    Trendfolge Ausbruch                     0,125            0,108
+    Grosser Trendausbruch                   0,064            0,212
+    Trend-Beteiligung (fair gerechnet)      0,521            0,490
+    Trendbeteiligung EMA200                 0,657            0,655
+    Nur mit der Drift                       0,574            0,664
+    EMA-Kreuzung (Messlatte)                0,605            0,693
+    ---
+    Bestand allein                          0,705            0,743
+
+Zwei Dinge aendern sich, und beide sind unangenehm:
+
+1. **Der beste Stand ist 0,108, nicht 0,064.** Die Zahl, die dieses Projekt
+   als seinen Hoehepunkt gefuehrt hat, war um zwei Drittel zu guenstig.
+2. **Die Spitze wechselt.** 'Grosser Trendausbruch' faellt von Platz 1 auf
+   Platz 2 und von 0,064 auf 0,212; 'Trendfolge Ausbruch' rueckt vor.
+
+Weiter gilt: **0 von 18 ueber der Latte**, und eines zu uebernehmen kostet 18
+Versuche.
+
+### Was das fuer Befund 185 heisst
+
+Befund 185 hat den damaligen Spitzenreiter im Holdout geprueft - 'Grosser
+Trendausbruch', minus siebzig Prozent. Diese Wahl stand auf der falschen
+Rangfolge. Sie war trotzdem nicht umsonst: Befund 186 hat **alle sieben**
+geprueft, nicht nur den ersten, und alle sieben sind durchgefallen. Der
+Schluss haengt damit nicht an der Reihenfolge.
+
+Wer nur Befund 185 gelesen haette, haette aus einer falsch sortierten Liste
+den ersten gezogen. Dass das folgenlos blieb, liegt an Befund 186, nicht an
+der Sorgfalt in 185.
+
+### Was jetzt gegen die naechste Unvollstaendigkeit steht
+
+Ein Test zaehlt die `noetige_guete`-Aufrufe in `cli.py` und verlangt, dass
+jeder Momente uebergibt - bis auf **drei namentlich genannte** Ausnahmen: den
+Scheitel der Decke, den absichtlichen Vergleichswert und die Ja/Nein-Pruefung,
+ob es an dieser Stichprobe ueberhaupt eine Latte gibt. Kommt eine vierte
+dazu, faellt der Test.
+
+Das ist die Lehre aus dem eigenen Fehler: Eine Aufzaehlung im Befundtext
+veraltet, ein zaehlender Test nicht.
+
+Kostet keinen Versuch: 18 vorhandene Paare nachgerechnet, keine Auswahl
+getroffen. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

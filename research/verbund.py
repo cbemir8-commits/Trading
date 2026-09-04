@@ -568,7 +568,12 @@ HOECHSTENS = 5000
 
 
 def noetige_stichprobe(
-    sharpe_je_trade: float, versuche: int, *, hoechstens: int = HOECHSTENS
+    sharpe_je_trade: float,
+    versuche: int,
+    *,
+    hoechstens: int = HOECHSTENS,
+    schiefe: float | None = None,
+    woelbung: float | None = None,
 ) -> int | None:
     """Die kleinste effektive Stichprobe, bei der **diese** Qualitaet genuegt.
 
@@ -603,7 +608,7 @@ def noetige_stichprobe(
     if sharpe_je_trade <= 0:
         return None
     for n in range(10, hoechstens + 1):
-        latte = noetige_guete(n, versuche)
+        latte = noetige_guete(n, versuche, schiefe=schiefe, woelbung=woelbung)
         if latte is not None and sharpe_je_trade * n**0.5 >= latte:
             return n
     return None

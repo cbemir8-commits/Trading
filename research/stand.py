@@ -753,6 +753,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'cli suchbudget' (0,3367 statt 0,3364)",
         192,
     ),
+    # **Die Suche aus Befund 192 war selbst unvollstaendig.** Sie hat nach
+    # noetig_bei und noetiger_sharpe gegriffen; die Schicht darueber hat
+    # vierzehn eigene Aufrufer. Dieselbe Bauart wie der gesuchte Fehler.
+    Richtung(
+        "Sechs weitere Latten standen auf der Vorgabe",
+        "darunter die Latte jedes Paares: Die Luecke aus Befund 184 ist 0,108 "
+        "statt 0,064, und die Spitze wechselt von 'Grosser Trendausbruch' zu "
+        "'Trendfolge Ausbruch'. Ein zaehlender Test laesst nur noch drei "
+        "namentlich genannte Ausnahmen zu",
+        193,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -805,14 +816,20 @@ OFFEN: tuple[Richtung, ...] = (
     # Der Preis, den die Decke verlangt - und die Richtung, die daraus folgt.
     # **Der beste gemessene Stand des Projekts** - und ausdruecklich nicht
     # bestanden.
+    # **Der Name dieses Eintrags stimmt seit Befund 193 nicht mehr.** Mit der
+    # Latte jedes Paares statt der des Bestands faellt 'Grosser
+    # Trendausbruch' von 0,064 auf 0,212 und von Platz 1 auf Platz 2; vorn
+    # steht 'Trendfolge Ausbruch' mit 0,108. Der Eintrag behaelt den Namen,
+    # unter dem die Messungen 184 bis 186 gelaufen sind - umbenennen wuerde
+    # die Fundstellen unauffindbar machen.
     Richtung(
         "Bestand + 'Grosser Trendausbruch'",
-        "Guete 3,632 bei n_eff 169 gegen 3,696 - es fehlen 0,064, nach "
-        "ehrlicher Zaehlung von 18 Versuchen 0,089. Aber **keiner der "
-        "sieben** haelt im Holdout mehr als der Bestand allein (bester 30 % "
-        "gegen 41 %), und die beiden Bestplatzierten halten +7 % und -70 %",
+        "berichtigt (193): bester Stand ist 'Trendfolge Ausbruch' mit 0,108 "
+        "bei n_eff 251; 'Grosser Trendausbruch' fehlt 0,212 statt 0,064. "
+        "0 von 18 ueber der Latte, und **keiner der sieben** haelt im "
+        "Holdout mehr als der Bestand allein (bester 30 % gegen 41 %)",
         184,
-        186,
+        193,
     ),
     Richtung(
         "Der Preis in Reststreuungen",

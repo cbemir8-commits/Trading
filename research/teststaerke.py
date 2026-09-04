@@ -192,6 +192,16 @@ class Stufe:
     bestanden: int
     gesamt: int
     offen: tuple[str, ...] = ()
+
+    schiefe: float | None = None
+    woelbung: float | None = None
+    """Die Verteilungsform dieser Sprosse - fuer ihre eigene Latte.
+
+    Ein gepflanzter Trend verschiebt die Form, und die Latte haengt daran.
+    Ohne diese Felder stand auf jeder Sprosse die Latte des Bestands, obwohl
+    die Leiter die Form absichtlich veraendert (Befund 193).
+    """
+
     cagr_pct: float = 0.0
     rueckgang_pct: float = 0.0
     meldungen: tuple[tuple[str, str], ...] = ()
@@ -265,7 +275,13 @@ class Stufe:
 
         if self.effektiv is None:
             return None
-        return noetige_guete(self.effektiv, versuche)
+        # Mit den Momenten **dieser** Sprosse (Befund 193). Ein gepflanzter
+        # Trend aendert die Verteilungsform, und die Latte haengt daran -
+        # gerade auf einer Leiter, die die Form absichtlich verschiebt, waere
+        # eine feste Vorgabe die falsche Wahl.
+        return noetige_guete(
+            self.effektiv, versuche, schiefe=self.schiefe, woelbung=self.woelbung
+        )
 
 
 @dataclass(slots=True)
