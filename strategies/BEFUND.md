@@ -18204,3 +18204,70 @@ darf nur nicht unmarkiert dastehen.
 
 Kostet keinen Versuch: gelesen und berichtigt wurde ein Bericht.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertachtundneunzig. Das zweite Artefakt, das den Preis verschwieg
+
+Befund 196 hat den Auftrag an die Research-KI nachgelesen: Er nannte drei
+Kriterien fuer einen Partner und verschwieg, dass sieben Partner sie erfuellt
+haben und alle sieben draussen durchgefallen sind.
+
+Es gibt ein **zweites** Artefakt, das kuenftige Versuche steuert, und es hatte
+dieselbe Luecke.
+
+### `BEIM_NUTZER`
+
+Die Liste der Befehle, die nur auf dem Rechner des Nutzers laufen koennen. Der
+Eintrag zum Wettbewerb erklaerte einen alten Kopierfehler und die fehlende
+Bestenlisten-Datei - und sagte nicht, was ein Lauf **kostet**:
+
+> Sucht auf den geladenen Kerzen einen Kandidaten. Bis Befund 167 stand
+> dieser Schritt als ', dann wettbewerb' hinter dem Backfill ...
+
+Jeder geprueft Kandidat hebt die Latte des Deflated Sharpe fuer alle
+folgenden, dauerhaft. Das steht im Auftrag an die KI, es steht in
+`erreichbarkeit`, es steht in `suchbudget` - nur nicht dort, wo jemand
+tatsaechlich auf Enter drueckt.
+
+### Was jetzt dasteht
+
+Ein Satz, der ueber denselben Platzhalter-Mechanismus eingesetzt wird wie der
+Betriebspunkt-Vergleich, also **gerechnet und nicht gepflegt**:
+
+    Jeder gepruefte Kandidat kostet einen Versuch, und der Versuchsstand
+    steht bei 198. Die Latte des Deflated Sharpe waechst mit ihm, fuer alle
+    folgenden und dauerhaft. Gemessen (Befund 194): Das beste je gefundene
+    Paar haette bis zu einem Stand von 137 bestanden - vor der Auswahl 119 -,
+    und sieben Partner, die alle Kriterien erfuellten, sind draussen
+    durchgefallen (Befund 186). Das ist kein Grund, es nicht zu tun; es ist
+    der Preis, der vorher dastehen sollte.
+
+Der letzte Satz ist Absicht und wird von einem Test festgehalten. Diese Zeilen
+**verbieten nichts**. Ob die 68 verbleibenden Versuche ausgegeben werden, ist
+eine Entscheidung des Nutzers; meine Aufgabe ist, dass der Preis vorher
+dasteht und nicht hinterher.
+
+### Und eine ehrliche Einordnung dieser Serie
+
+Das sind zehn Runden hintereinander (189 bis 198) an den Werkzeugen. Die
+ersten haben Zahlen geaendert, an denen etwas hing:
+
+    191   zehn von 18 Regeln standen zu milde da
+    193   die beste Paar-Luecke ist 0,108 statt 0,064, die Spitze wechselt
+    194   das beste Paar haette bis 137 Versuche bestanden, nicht bis 21
+
+Die spaeteren finden weniger: Befund 197 hat **einen Absatz** in 661 Zeilen
+berichtigt, und dieser hier eine fehlende Warnung. Das ist noch nuetzlich,
+aber die Kurve ist deutlich.
+
+**Der Grund dafuer gehoert dazu:** Es gibt in diesem Behaelter keinen Schritt
+mehr, der auf eine bestandene Zulassung zulaeuft. Jede Suchrichtung ist
+gemessen und zu, die Latte steigt mit jedem weiteren Versuch, und die
+Zulassung selbst haengt an Bybit-Kerzen, die nur der Nutzer holen kann. Was
+hier noch geht, ist genau das, was diese zehn Befunde getan haben: dafuer
+sorgen, dass die Zahlen stimmen, wenn jemand weitermacht.
+
+Das ist keine Aufforderung, den Dauerlauf zu beenden - es ist die Auskunft,
+die zum Stand gehoert.
+
+Kostet keinen Versuch: berichtigt wurde ein Registertext.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

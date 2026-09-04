@@ -796,6 +796,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "ein Test verlangt jetzt, dass die berichtigenden Befunde dabeistehen",
         197,
     ),
+    # Zweites Artefakt mit derselben Luecke wie der Auftrag in Befund 196.
+    Richtung(
+        "Der Wettbewerb stand ohne seinen Preis da",
+        "BEIM_NUTZER sagte, wie man ihn startet, und nicht, dass jeder "
+        "gepruefte Kandidat die Latte fuer alle folgenden hebt; der Satz "
+        "wird jetzt aus dem Versuchsstand gerechnet und verbietet nichts",
+        198,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1321,7 +1329,7 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "derselben Zeile - keine Befehlszeile, sondern Prosa: Wer sie "
         "kopierte, bekam 'Got unexpected extra argument(s)'. Er legt auch "
         "'state/leaderboard.json' neu an, die in diesem Behaelter fehlt "
-        "(Befund 166).",
+        "(Befund 166). {versuchskosten}",
     ),
     (
         "python -m cli funding --von 2020-03-30",
@@ -1660,8 +1668,34 @@ class Lage:
             # ``replace`` und nicht ``format``: Die uebrigen Texte duerfen
             # geschweifte Klammern enthalten, ohne dass hier etwas bricht.
             text = warum.replace("{vergleich}", self._vergleichssatz())
+            text = text.replace("{versuchskosten}", self._kostensatz())
             zeilen += [f"  {befehl}", f"    {text}"]
         return "\n".join(zeilen)
+
+    def _kostensatz(self) -> str:
+        """Was ein weiterer Kandidat kostet - **bevor** einer gesucht wird.
+
+        Befund 196 hat gefunden, dass der Auftrag an die Research-KI die drei
+        Kriterien nannte und verschwieg, wie es den sieben Vorgaengern ergangen
+        ist. ``BEIM_NUTZER`` ist das **zweite** Artefakt, das kuenftige
+        Versuche steuert, und es hatte dieselbe Luecke: Es sagt, wie man den
+        Wettbewerb startet, und sagte nicht, dass jeder gepruefte Kandidat die
+        Huerde fuer alle folgenden hebt - dauerhaft (Befund 198).
+
+        Die Zahl wird **gerechnet**, nicht gepflegt. Vier Befunde dieses
+        Projekts handeln von Zahlen, die an zwei Stellen standen und
+        auseinanderliefen (158, 159, 165, 166).
+        """
+        return (
+            f"**Jeder gepruefte Kandidat kostet einen Versuch, und der "
+            f"Versuchsstand steht bei {self.versuche}.** Die Latte des "
+            f"Deflated Sharpe waechst mit ihm, fuer alle folgenden und "
+            f"dauerhaft. Gemessen (Befund 194): Das beste je gefundene Paar "
+            f"haette bis zu einem Stand von 137 bestanden - vor der Auswahl "
+            f"119 -, und sieben Partner, die alle Kriterien erfuellten, sind "
+            f"draussen durchgefallen (Befund 186). Das ist kein Grund, es "
+            f"nicht zu tun; es ist der Preis, der vorher dastehen sollte."
+        )
 
     def _vergleichssatz(self) -> str:
         """Der gemessene Vergleich beider Betriebspunkte, als ein Satz.

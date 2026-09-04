@@ -1080,3 +1080,56 @@ class TestDerZweiteWeg:
         text = _lage(bestanden=11, gesamt=11, offen=()).bericht()
 
         assert "OB DER VORSPRUNG ECHT IST" not in text
+
+
+class TestWasDerWettbewerbKostet:
+    """**Befund 198.** Das zweite Artefakt mit derselben Luecke.
+
+    Befund 196 hat gefunden, dass der Auftrag an die Research-KI drei
+    Kriterien nannte und verschwieg, wie es den sieben Vorgaengern ergangen
+    ist. ``BEIM_NUTZER`` ist das andere Artefakt, das kuenftige Versuche
+    steuert - es sagt dem Nutzer, welche Befehle er auf seinem Rechner
+    ausfuehren soll.
+
+    Es sagte, **wie** man den Wettbewerb startet, und nicht, **was** er
+    kostet: Jeder geprueft Kandidat hebt die Latte des Deflated Sharpe fuer
+    alle folgenden, dauerhaft.
+    """
+
+    def test_der_wettbewerb_nennt_seinen_preis(self) -> None:
+        text = _lage().bericht()
+        i = text.index("python -m cli wettbewerb")
+        abschnitt = text[i : i + 900]
+
+        assert "kostet einen Versuch" in abschnitt
+        assert "dauerhaft" in abschnitt
+
+    def test_er_nennt_die_gemessenen_belege(self) -> None:
+        """Ohne sie waere die Warnung eine Meinung."""
+        satz = _lage()._kostensatz()
+
+        assert "137" in satz and "119" in satz, "der Stand aus Befund 194 fehlt"
+        assert "sieben Partner" in satz, "das Holdout-Ergebnis fehlt"
+
+    def test_der_versuchsstand_wird_gerechnet_und_nicht_gepflegt(self) -> None:
+        """**Die Bedingung, unter der die Zahl dort stehen darf.**
+
+        Vier Befunde handeln von Zahlen, die an zwei Stellen standen und
+        auseinanderliefen (158, 159, 165, 166). Der Versuchsstand kommt aus
+        derselben Quelle wie oben im Kopf des Berichts.
+        """
+        assert "198" in _lage(versuche=198)._kostensatz()
+        assert "250" in _lage(versuche=250)._kostensatz()
+
+    def test_die_warnung_verbietet_nichts(self) -> None:
+        """Sie nennt den Preis - die Entscheidung faellt woanders."""
+        satz = _lage()._kostensatz()
+
+        assert "kein Grund, es nicht zu tun" in satz
+
+    def test_ohne_platzhalter_bleibt_der_text_unveraendert(self) -> None:
+        """Die uebrigen Eintraege duerfen keine Klammern verlieren."""
+        text = _lage().bericht()
+
+        assert "{versuchskosten}" not in text
+        assert "{vergleich}" not in text
