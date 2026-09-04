@@ -804,6 +804,16 @@ BEHOBEN: tuple[Richtung, ...] = (
         "wird jetzt aus dem Versuchsstand gerechnet und verbietet nichts",
         198,
     ),
+    # Die in Befund 196 aufgeschobene Neurechnung - und sie faellt anders
+    # aus als erwartet: Die Zahl traegt nicht mehr, also faellt die
+    # Behauptung, nicht nur die Zahl.
+    Richtung(
+        "Der Auftrag nannte eine Vorhersage ohne Deckung",
+        "'die eigene Qualitaet je Trade ordnet die Luecke' stand auf 14 "
+        "Paaren mit rho = -0,53; ueber alle 18 sind es -0,410 bei t = -1,80. "
+        "Punkt 2 ist jetzt als Herleitung ausgewiesen, nicht als Vorhersage",
+        199,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

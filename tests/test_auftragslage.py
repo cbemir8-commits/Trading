@@ -110,13 +110,19 @@ class TestAuftragstext:
         aber nichts (+0,04), und der beste Partner haette sie gerissen. Jetzt
         steht dort, was gemessen zaehlt - und dass die alte Groesse es nicht
         tut.
+
+        **Befund 199 hat den dritten Beleg ersetzt.** Hier stand "+13
+        unabhaengige Beobachtungen fuer 53 zusaetzliche Trades" - *der eine*
+        gemessene Partner aus Befund 140. Inzwischen sind achtzehn gemessen,
+        und ueber die reicht der Zuwachs von -14 bis +236. Die alte Zahl war
+        nicht falsch, sie war die einzige.
         """
         text = lage().als_auftrag()
 
         assert "Trendfolge" in text
         assert "+0,04" in text, "die widerlegte Groesse wird beziffert"
-        assert "-0,53" in text, "und die, die Signal traegt"
-        assert "+13" in text, "was der Verbund tatsaechlich beitrug"
+        assert "-0,53" in text, "und die, die einmal Signal trug"
+        assert "+236" in text, "was ein Verbund ueber 18 Paare beitraegt"
 
     def test_die_fensterkorrelation_ist_kein_kriterium_mehr(self) -> None:
         """Sonst suchte die KI nach einer Groesse, die nichts vorhersagt.
@@ -391,3 +397,61 @@ class TestWasAusDenPartnernWurde:
         assert "holdout=(7, 0, 30.0, 41.0)" in quelle, (
             "der Auftrag bekommt das Holdout-Ergebnis nicht mehr uebergeben"
         )
+
+
+class TestPunktZweiIstEineHerleitung:
+    """**Befund 199.** Der Auftrag nannte eine Vorhersage, die nicht mehr traegt.
+
+    Er sagte: *"Was gemessen zaehlt, ist Punkt 2: die eigene Qualitaet je
+    Trade des Vorschlags (Rangkorrelation -0,53 gegen die Luecke)."* Diese
+    Zahl stand auf vierzehn Paaren (Befund 140/141).
+
+    Ueber alle achtzehn gemessenen sind es -0,41 bei t = -1,80 - unter der
+    Schwelle von |t| = 2, die dieses Projekt seit Befund 75 verlangt. Die
+    Richtung ist geblieben, die Deckung nicht.
+
+    Befund 196 hatte die Neurechnung ausdruecklich aufgeschoben. Der Grund
+    damals war, dass eine Zahl durch eine andere ohne Deckung zu ersetzen
+    nichts bringt. Das stimmte fuer die **Ersetzung** - nicht dafuer, die
+    Behauptung stehenzulassen.
+    """
+
+    def lage(self):
+        return aus_messungen(
+            versuche=198, bestand_trades=115, bestand_sharpe=0.2708,
+        )
+
+    def test_punkt_zwei_wird_nicht_mehr_als_vorhersage_verkauft(self) -> None:
+        text = self.lage().als_auftrag()
+
+        assert "Herleitung, keine Vorhersage" in text
+        assert "Die Richtung ist geblieben, die Deckung nicht" in text
+
+    def test_die_neue_zahl_steht_mit_ihrem_t_wert_da(self) -> None:
+        """Ohne ihn liest sich -0,41 wie ein Beleg."""
+        text = self.lage().als_auftrag()
+
+        assert "-0,41" in text and "-1,80" in text
+        assert "|t| = 2" in text
+
+    def test_die_alte_zahl_wird_nicht_verschwiegen(self) -> None:
+        """Sie war richtig, als sie gemessen wurde - das gehoert dazu."""
+        text = self.lage().als_auftrag()
+
+        assert "-0,53" in text
+        assert "vierzehn Paare" in text
+
+    def test_die_fensterkorrelation_wird_als_ungeprueft_markiert(self) -> None:
+        """Sie stuetzt eine Verneinung - dafuer reichen vierzehn Paare."""
+        text = self.lage().als_auftrag()
+
+        assert "nicht wiederholt worden" in text
+        assert "stuetzt eine Verneinung" in text
+
+    def test_was_ein_partner_beitraegt_steht_aktuell_da(self) -> None:
+        """Der alte Satz nannte 'den einen gemessenen Partner' - es sind 18."""
+        text = self.lage().als_auftrag()
+
+        assert "-14 bis" in text and "+236" in text
+        assert "Zwei Paare stehen im Minus" in text
+        assert "der eine gemessene Partner" not in text

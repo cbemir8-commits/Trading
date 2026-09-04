@@ -18271,3 +18271,75 @@ die zum Stand gehoert.
 
 Kostet keinen Versuch: berichtigt wurde ein Registertext.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertneunundneunzig. Der Auftrag nannte eine Vorhersage, die nicht mehr traegt
+
+Befund 196 hat zwei Zahlen im Auftrag an die Research-KI als veraltet
+erkannt - sie stehen auf **vierzehn** gemessenen Paaren, gemessen sind
+**achtzehn** - und die Neurechnung ausdruecklich aufgeschoben:
+
+> Beide neu zu rechnen heisst, achtzehn Paare gegen ihr tatsaechliches
+> Ergebnis zu korrelieren - und Befund 195 hat gerade gezeigt, dass solche
+> Rangkorrelationen hier die Schwelle von |t| = 2 nicht raeumen. Eine Zahl
+> durch eine andere zu ersetzen, die genauso wenig traegt, waere Bewegung
+> ohne Gewinn.
+
+**Das Argument stimmte fuer die Ersetzung und nicht fuer das
+Stehenlassen.** Wenn die neue Zahl nicht traegt, ist das kein Grund, die
+alte zu behalten - es ist der Grund, die *Behauptung* zurueckzuziehen.
+
+### Gemessen
+
+    Qualitaet je Trade des Partners  <->  Luecke des Paares
+      ueber 14 Paare (Befund 140/141)      rho = -0,53
+      ueber alle 18 (Befund 193/194)       rho = -0,410 bei t = -1,80
+
+Unter |t| = 2. Der Auftrag sagte davor:
+
+> Was gemessen zaehlt, ist Punkt 2: die eigene Qualitaet je Trade des
+> Vorschlags (Rangkorrelation -0,53 gegen die Luecke).
+
+Das war die **einzige** Stelle, an der er einem Vorschlagenden sagte, worauf
+er sich verlassen kann. Sie traegt nicht mehr.
+
+Jetzt steht dort, dass Punkt 2 eine **Herleitung** ist - er sagt, was
+rechnerisch reichen wuerde, damit das Gate faellt - und keine Vorhersage:
+*"Erfuelle Punkt 2, weil die Rechnung ihn verlangt, nicht weil er sich als
+Vorhersage bewaehrt haette."* Die alte Zahl bleibt mit ihrer Fundstelle
+stehen; sie war richtig, als sie gemessen wurde.
+
+### Die dritte Zahl war die einzige, nicht die falsche
+
+Der Auftrag nannte auch: *"Der eine gemessene Partner steuerte +13
+unabhaengige Beobachtungen bei, fuer 53 zusaetzliche Trades (Befund 140)."*
+Der eine. Inzwischen sind achtzehn gemessen:
+
+    Zuwachs an unabhaengigen Beobachtungen ueber 18 Paare
+      Momentum Ruecksetzer     266 Partner-Trades   +236
+      Trendfolge Ausbruch      142                  +134
+      ...
+      Donchian-Ausbruch 55/20   58                    -7
+      Langsamer Kreuzer         19                   -14
+
+    Spanne -14 bis +236, im Mittelfeld +38
+
+**Zwei Paare stehen im Minus.** Ein Partner bringt Trades mit, und die
+Blockeinteilung des Gates frisst sie samt einem Teil der vorhandenen wieder
+auf. Das ist der messbare Kern von Punkt 3 ("ein anderes Marktverhalten") -
+und es ist eine schaerfere Auskunft als die alte Einzelzahl: Mehr Trades
+koennen die Stichprobe **verkleinern**.
+
+### Die Fensterkorrelation bleibt, wo sie ist
+
+Die +0,04 aus Befund 141 stehen weiter auf vierzehn Paaren; die
+Fensterkorrelationen der vier neuen liegen nicht vor. Der Auftrag markiert
+das jetzt und sagt, warum es reicht: **Sie stuetzt eine Verneinung** ("die
+Fensterkorrelation ist kein Massstab"), und eine Verneinung wird durch mehr
+Punkte nicht schwaecher.
+
+Der Unterschied zur -0,53 ist genau der: Die eine Zahl sagt "danach nicht
+aussuchen", die andere sagte "darauf verlassen". Fuer das zweite reicht sie
+nicht mehr.
+
+Kostet keinen Versuch: gerechnet wurde auf achtzehn Paaren, die schon
+gemessen sind. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
