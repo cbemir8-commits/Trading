@@ -11202,8 +11202,19 @@ def _deckel_der_regel(trades) -> tuple[float | None, float | None]:
     Der Stop kommt aus ``stop_loss`` gegen den Einstieg, das Ziel aus den
     Trades, die mit ``take_profit`` endeten. ``None``, wo es keine gibt -
     dann laeuft nur die Ziehung ohne Deckel, statt einen zu erfinden.
+
+    **Nur fuer Long-Regeln** (Befund 203). Bei einem Short liegt der Stop
+    ueber dem Einstieg, und diese Rechnung liefert dann einen negativen
+    Abstand - beim ersten Anlauf kam bei 'EMA-Kreuzung (Messlatte)' auf BTC
+    ``None`` heraus, obwohl alle 56 Trades einen Stop hatten. Wichtiger noch:
+    Die Ziehung selbst ist long, ein Short-Trade gegen eine Long-Null zu
+    stellen vergliche zwei verschiedene Dinge. Solche Regeln werden hier
+    abgewiesen statt falsch gemessen.
     """
     import statistics
+
+    if any(str(t.side).lower().startswith("s") for t in trades):
+        return None, None
 
     stops = [
         (float(t.entry_price) - float(t.stop_loss)) / float(t.entry_price)
@@ -11350,6 +11361,13 @@ def zufallseinstieg(
         # Der Vergleich begoenstigt die Regel, und der Modulkopf nennt das
         # Ergebnis seit Befund 175 deshalb eine Obergrenze.
         eigener, ziel = _deckel_der_regel(trades)
+        if eigener is None and any(
+            str(t.side).lower().startswith("s") for t in trades
+        ):
+            console.print(
+                f"[dim]  {'':<10}{'':<13}{'':>7} handelt short - die Ziehung "
+                f"ist long, also nicht vergleichbar[/]"
+            )
         # **Der Stop ist der Regler dieser Probe** (Befund 201). Ein weiterer
         # Stop gibt der Null die Freiheit zurueck, einen Einbruch
         # auszusitzen, und senkt damit das z. Wer wissen will, ob das
@@ -11362,7 +11380,12 @@ def zufallseinstieg(
         deckel = eigener if stop <= 0 else stop
         gebraucht.append((deckel, ziel))
         fair = None
-        if deckel is not None and ziel is not None:
+        # **Ein fehlendes Ziel ist kein Grund, den Markt wegzulassen**
+        # (Befund 203). Vier von 32 Zellen blieben leer, weil kein Trade am
+        # Ziel endete - und das Ziel liegt bei +17 % bis +119 %, greift also
+        # ohnehin fast nie. Der Stop allein ist die richtige Naeherung; die
+        # Zelle ganz zu streichen war die falsche.
+        if deckel is not None:
             fair = zufallsverteilung_mit_deckeln(
                 schluss,
                 rahmen["low"].astype(float).to_numpy(),
@@ -11428,10 +11451,15 @@ def zufallseinstieg(
         # den Trades, und wo keiner am Ziel endete, gibt es keines. Deshalb
         # wird hier aufgezaehlt, was gebraucht wurde, statt eine Zahl zu
         # nennen, die nur fuer einen Markt galt (Befund 202).
-        benutzt = sorted({
-            (s, z) for s, z in gebraucht if s is not None and z is not None
-        })
-        wie = ", ".join(f"Stop {s:.1%} / Ziel {z:.0%}" for s, z in benutzt)
+        benutzt = sorted(
+            {(s, z) for s, z in gebraucht if s is not None},
+            key=lambda p: (p[0], p[1] if p[1] is not None else -1.0),
+        )
+        wie = ", ".join(
+            f"Stop {s:.1%} / Ziel {z:.0%}" if z is not None
+            else f"Stop {s:.1%} / ohne Ziel"
+            for s, z in benutzt
+        )
         console.print(
             f"\n[bold]Mit denselben Deckeln wie die Regel[/] ({wie}):\n"
             f"  {darueber} von {len(gemessen)} Maerkten liegen ueber ihrer "

@@ -18554,3 +18554,76 @@ und kostet keinen Versuch.
 
 Kostet keinen Versuch: dieselben Regeln, dieselben Daten, eine andere Null.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertdrei. Zehn Regeln durch die Probe - und zwei davon zu Unrecht
+
+Befund 202 hat ein Kriterium gefunden, das nichts mit der Luecke zu tun hat
+und trotzdem erklaert, warum die Partner draussen durchfallen: Schlaegt ihr
+Einstieg den Zufall auf fremden Maerkten? Gemessen war es an zweien. Diese
+Runde misst die uebrigen.
+
+### Was herauskam
+
+    Regel                                BTC     ETH     LTC     XRP  raeumt
+    Bestand                             3,94    6,34    3,32    2,71  4 von 4
+    Trend-Beteiligung 50 Tage           3,45    2,31    0,73    1,49  2 von 4
+    Trendfolge Ausbruch                 5,00    1,42    1,39    3,37  2 von 4
+    Grosser Trendausbruch               3,45   -0,57   -3,07    n=19  1 von 3
+    Donchian-Ausbruch 55/20             2,26    1,68    0,03    1,17  1 von 4
+    Trendbeteiligung EMA200             2,54    n=17    1,94    n=18  1 von 2
+    Nur mit der Drift                   2,62    n=16    n=16    n=13  1 von 1
+    Trend-Beteiligung (fair gerechnet)  0,79    n=16    0,32    0,57  0 von 3
+    Langsamer Kreuzer (Messlatte 2)     n=10    n=10    n=13     n=8  0 von 0
+
+`n=` heisst: zu wenige Trades fuer eine Probe (Mindestgrenze 20).
+
+**Der Bestand ist die einzige Regel, die auf allen vier Maerkten raeumt** -
+und die einzige, die auf allen vier ueberhaupt genug handelt. Keine andere
+kommt ueber zwei.
+
+Und das ist der zweite Teil des Befunds: **Zehn von 36 Zellen sind leer, weil
+die Regel auf dem Markt zu selten handelt.** 'Langsamer Kreuzer' bringt es auf
+zehn, zehn, dreizehn und acht Trades ueber die volle Historie - eine Regel,
+die sich so nicht pruefen laesst, ist auch als Partner nichts wert. Das ist
+kein Ergebnis der Probe, sondern eines, das sie sichtbar macht.
+
+### Zwei Zeilen, die ich zurueckziehen muss
+
+In einem ersten Durchgang standen hier auch:
+
+    EMA-Kreuzung (Messlatte)               -   -0,47    0,93    4,15
+    Volatilitaets-Ausbruch              4,38    0,17   -0,71    1,63
+
+**Beide Regeln handeln short**, und die Probe ist long. `zufallsverteilung`
+rechnet `schluss[ende]/schluss[start] - 1` - eine Long-Rendite, immer. Einen
+Short-Trade dagegen zu stellen vergleicht zwei verschiedene Dinge, und die
+vier Zahlen je Zeile bedeuten nichts.
+
+Aufgefallen ist es an einer leeren Zelle: Bei 'EMA-Kreuzung' auf BTC kam kein
+Deckel heraus, obwohl **alle 56 Trades einen Stop hatten**. Bei einem Short
+liegt der Stop ueber dem Einstieg, und die Abstandsrechnung wird negativ. Die
+zweite Haelfte des Fehlers - die Long-Null - haette sich nicht gemeldet; sie
+hat still falsche Zahlen geliefert, und ich habe sie in die Tabelle
+geschrieben.
+
+Beide Regeln werden jetzt abgewiesen statt falsch gemessen, mit einer Zeile,
+die den Grund nennt. Eine Short-Ziehung waere zu bauen - Stop ueber dem
+Einstieg, Ziel darunter, Rendite mit umgekehrtem Vorzeichen -, aber das ist
+eine eigene Aufgabe und keine Fussnote.
+
+### Was noch berichtigt wurde
+
+Vier Zellen fehlten, weil kein Trade am **Ziel** endete und `ziel` damit
+`None` war. Das Ziel liegt bei +17 % bis +119 % und greift ohnehin fast nie;
+die Zelle deshalb ganz zu streichen war falsch. `zufallsverteilung_mit_deckeln`
+nimmt jetzt ein Ziel von `None` und deckelt dann nur nach unten.
+
+### Was das fuer die Suche heisst
+
+Nichts an einem Gate. Aber die Reihenfolge, in der ein Partner geprueft wird,
+kann jetzt vor dem Holdout ansetzen: Wer auf den fremden Maerkten nicht genug
+handelt oder den Zufall dort nicht schlaegt, braucht keine Holdout-Probe mehr.
+Beides kostet keinen Versuch.
+
+Kostet keinen Versuch: dieselben Regeln, dieselben Daten, eine andere Null.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

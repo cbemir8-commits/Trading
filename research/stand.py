@@ -836,6 +836,16 @@ BEHOBEN: tuple[Richtung, ...] = (
         "TypeError, wo keine Trades am Ziel endeten",
         202,
     ),
+    # Die zweite Haelfte hat sich **nicht** gemeldet: Eine Long-Null gegen
+    # Short-Trades liefert Zahlen, nur keine richtigen.
+    Richtung(
+        "Die Zufallsprobe ist long, zwei Regeln nicht",
+        "'EMA-Kreuzung (Messlatte)' und 'Volatilitaets-Ausbruch' handeln "
+        "short; die Ziehung rechnet immer eine Long-Rendite. Beide Zeilen "
+        "sind zurueckgezogen, solche Regeln werden jetzt abgewiesen statt "
+        "falsch gemessen. Dazu: ein fehlendes Ziel kostet keinen Markt mehr",
+        203,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -860,10 +870,11 @@ OFFEN: tuple[Richtung, ...] = (
         "Regel alle vier (2,71 bis 6,34). Der ungedeckelte Vergleich ist "
         "eine Untergrenze, keine Obergrenze - aber die Maerkte korrelieren "
         "mit 0,695, also keine vier unabhaengigen Bestaetigungen. Der "
-        "Bestand raeumt auf 4 von 4 Maerkten, die beiden besten Partner auf "
-        "2 von 4 und 1 von 2 - eine Erklaerung fuer Befund 186",
+        "Bestand raeumt auf 4 von 4 Maerkten und ist die einzige Regel, die "
+        "auf allen vieren genug handelt; von neun geprueften Partnern kommt "
+        "keiner ueber 2 von 4 - eine Erklaerung fuer Befund 186",
         175,
-        202,
+        203,
     ),
     Richtung(
         "Zertifizierbarkeit der Bauart",

@@ -287,7 +287,7 @@ class TestDieNullBekommtDieselbenDeckel:
             zufallsverteilung_mit_deckeln(
                 schluss, schluss, schluss, np.array([]), **args
             )
-        with pytest.raises(ValueError, match="Abstaende"):
+        with pytest.raises(ValueError, match="Abstand"):
             zufallsverteilung_mit_deckeln(
                 schluss, schluss, schluss, np.array([1]),
                 **{**args, "stop": 0.0}
@@ -396,5 +396,107 @@ class TestDieProbeGiltNichtNurDemBestand:
 
         quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
 
-        assert "if s is not None and z is not None" in quelle
+        assert "if s is not None" in quelle
+        assert "ohne Ziel" in quelle, "ein fehlendes Ziel wird benannt"
         assert "(Stop {stop:.1%}, Ziel {ziel:.0%})" not in quelle
+
+
+class TestOhneZielGehtEsAuch:
+    """**Befund 203.** Ein fehlendes Ziel darf keinen Markt kosten.
+
+    ``_deckel_der_regel`` liest das Ziel aus den Trades, die am Ziel endeten.
+    Wo keiner das tat, gab es kein Ziel - und die ganze Zelle fiel aus. Vier
+    von 32 Zellen der Partnertabelle blieben so leer, obwohl das Ziel bei
+    +17 % bis +119 % liegt und ohnehin fast nie greift.
+    """
+
+    def test_der_stop_allein_genuegt(self) -> None:
+        schluss = np.array([100.0, 101.0, 102.0, 103.0])
+        tief = np.array([100.0, 95.0, 102.0, 103.0])
+        hoch = schluss
+
+        werte = zufallsverteilung_mit_deckeln(
+            schluss, tief, hoch, np.array([3]), von=0, bis=3,
+            ziehungen=1, rng=np.random.default_rng(0), stop=0.04,
+        )
+
+        assert werte[0] == pytest.approx(-0.04)
+
+    def test_ohne_ziel_wird_kein_gewinn_gedeckelt(self) -> None:
+        """Der Lauf muss bis zum Schlusskurs durchlaufen."""
+        schluss = np.array([100.0, 150.0, 200.0, 300.0])
+        tief = schluss * 0.999
+        hoch = schluss * 1.001
+
+        werte = zufallsverteilung_mit_deckeln(
+            schluss, tief, hoch, np.array([3]), von=0, bis=3,
+            ziehungen=1, rng=np.random.default_rng(0), stop=0.04,
+        )
+
+        assert werte[0] == pytest.approx(2.0)
+
+    def test_ein_negatives_ziel_bleibt_ein_fehler(self) -> None:
+        schluss = np.array([100.0, 101.0])
+        with pytest.raises(ValueError, match="Ziel"):
+            zufallsverteilung_mit_deckeln(
+                schluss, schluss, schluss, np.array([1]), von=0, bis=1,
+                ziehungen=1, rng=np.random.default_rng(0),
+                stop=0.04, ziel=-0.1,
+            )
+
+
+class TestShortRegelnWerdenAbgewiesen:
+    """**Befund 203.** Die Ziehung ist long - eine Short-Regel gehoert nicht dagegen.
+
+    Beim Reihenmessen der Partner kamen zwei Regeln durch, die short handeln:
+    'EMA-Kreuzung (Messlatte)' und 'Volatilitaets-Ausbruch'. Fuer sie stimmt
+    die Probe in zwei Punkten nicht:
+
+    * ``zufallsverteilung`` rechnet ``schluss[ende]/schluss[start] - 1`` und
+      ist damit **immer long**. Ein Short-Trade dagegen zu stellen vergleicht
+      zwei verschiedene Dinge.
+    * Bei einem Short liegt der Stop **ueber** dem Einstieg, und die
+      Abstandsrechnung liefert ein negatives Ergebnis.
+
+    Der zweite Punkt hat sich gemeldet - bei 'EMA-Kreuzung' auf BTC kam kein
+    Deckel heraus, obwohl alle 56 Trades einen Stop hatten. Der erste haette
+    still falsche Zahlen geliefert, und fuer zwei Zeilen meiner Tabelle hat
+    er das auch getan.
+    """
+
+    def test_der_helfer_weist_shorts_ab(self) -> None:
+        from cli import _deckel_der_regel
+
+        class FakeShort:
+            side = "Sell"
+            entry_price = 100.0
+            stop_loss = 104.0
+            exit_price = 96.0
+            exit_reason = "take_profit"
+
+        assert _deckel_der_regel([FakeShort()]) == (None, None)
+
+    def test_long_regeln_gehen_weiter_durch(self) -> None:
+        from cli import _deckel_der_regel
+
+        class FakeLong:
+            side = "Buy"
+            entry_price = 100.0
+            stop_loss = 96.0
+            exit_price = 180.0
+            exit_reason = "take_profit"
+
+        stop, ziel = _deckel_der_regel([FakeLong()])
+
+        assert stop == pytest.approx(0.04)
+        assert ziel == pytest.approx(0.80)
+
+    def test_der_bericht_sagt_warum(self) -> None:
+        """Sonst laese sich die leere Zelle als 'kein Stop' statt als
+        'nicht vergleichbar'."""
+        from pathlib import Path
+
+        quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+
+        assert "handelt short" in quelle
+        assert "die Ziehung " in quelle

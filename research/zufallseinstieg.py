@@ -171,7 +171,7 @@ def zufallsverteilung_mit_deckeln(
     ziehungen: int,
     rng: np.random.Generator,
     stop: float,
-    ziel: float,
+    ziel: float | None = None,
 ) -> np.ndarray:
     """Dieselbe Ziehung - aber mit **denselben Deckeln wie die Regel**.
 
@@ -211,8 +211,10 @@ def zufallsverteilung_mit_deckeln(
         raise ValueError(f"Leerer Zeitraum: von={von}, bis={bis}.")
     if int(np.min(dauern)) < 1:
         raise ValueError("Eine Haltedauer unter einem Balken ist keine.")
-    if stop <= 0 or ziel <= 0:
-        raise ValueError("Stop und Ziel sind Abstaende und deshalb positiv.")
+    if stop <= 0:
+        raise ValueError("Der Stop ist ein Abstand und deshalb positiv.")
+    if ziel is not None and ziel <= 0:
+        raise ValueError("Das Ziel ist ein Abstand und deshalb positiv.")
 
     ergebnis = np.empty((ziehungen, len(dauern)))
     for i, dauer in enumerate(dauern):
@@ -223,10 +225,14 @@ def zufallsverteilung_mit_deckeln(
         felder = np.minimum(start[:, None] + np.arange(1, d + 1)[None, :], bis)
         einstieg = schluss[start]
         stopniveau = einstieg * (1.0 - stop)
-        zielniveau = einstieg * (1.0 + ziel)
+        zielniveau = einstieg * (1.0 + (ziel or 0.0))
 
         traf_stop = tief[felder] <= stopniveau[:, None]
-        traf_ziel = hoch[felder] >= zielniveau[:, None]
+        traf_ziel = (
+            np.zeros_like(traf_stop)
+            if ziel is None
+            else hoch[felder] >= zielniveau[:, None]
+        )
         # ``argmax`` liefert 0, wenn nichts zutrifft - deshalb die Maske.
         wann_stop = np.where(traf_stop.any(axis=1), traf_stop.argmax(axis=1), d)
         wann_ziel = np.where(traf_ziel.any(axis=1), traf_ziel.argmax(axis=1), d)
@@ -238,7 +244,7 @@ def zufallsverteilung_mit_deckeln(
         stop_zuerst = (wann_stop < d) & (wann_stop <= wann_ziel)
         ziel_zuerst = (wann_ziel < d) & (wann_ziel < wann_stop)
         ergebnis[:, i] = np.where(
-            stop_zuerst, -stop, np.where(ziel_zuerst, ziel, am_schluss)
+            stop_zuerst, -stop, np.where(ziel_zuerst, ziel or 0.0, am_schluss)
         )
     return ergebnis.mean(axis=1)
 
