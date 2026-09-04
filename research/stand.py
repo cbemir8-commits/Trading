@@ -846,6 +846,16 @@ BEHOBEN: tuple[Richtung, ...] = (
         "falsch gemessen. Dazu: ein fehlendes Ziel kostet keinen Markt mehr",
         203,
     ),
+    # Die andere Haelfte von Befund 203: abweisen war richtig, koennen ist
+    # besser. Die Berichtigung dreht eine Zelle von +4,15 auf -2,31.
+    Richtung(
+        "Die Zufallsprobe kann jetzt short",
+        "beide Ziehungen spiegeln die Seite jedes Trades - Stop ueber dem "
+        "Einstieg, vom Hoch gerissen, Ziel darunter. Die zwei "
+        "zurueckgezogenen Zeilen stehen neu; bei 'EMA-Kreuzung' auf XRP "
+        "wird aus +4,15 ein -2,31",
+        204,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -871,10 +881,10 @@ OFFEN: tuple[Richtung, ...] = (
         "eine Untergrenze, keine Obergrenze - aber die Maerkte korrelieren "
         "mit 0,695, also keine vier unabhaengigen Bestaetigungen. Der "
         "Bestand raeumt auf 4 von 4 Maerkten und ist die einzige Regel, die "
-        "auf allen vieren genug handelt; von neun geprueften Partnern kommt "
+        "auf allen vieren genug handelt; von zehn geprueften Partnern kommt "
         "keiner ueber 2 von 4 - eine Erklaerung fuer Befund 186",
         175,
-        203,
+        204,
     ),
     Richtung(
         "Zertifizierbarkeit der Bauart",

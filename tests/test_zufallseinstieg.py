@@ -445,38 +445,33 @@ class TestOhneZielGehtEsAuch:
             )
 
 
-class TestShortRegelnWerdenAbgewiesen:
-    """**Befund 203.** Die Ziehung ist long - eine Short-Regel gehoert nicht dagegen.
+class TestShortRegelnWerdenJetztGemessen:
+    """**Befund 204.** Was Befund 203 abweisen musste, wird jetzt gerechnet.
 
-    Beim Reihenmessen der Partner kamen zwei Regeln durch, die short handeln:
-    'EMA-Kreuzung (Messlatte)' und 'Volatilitaets-Ausbruch'. Fuer sie stimmt
-    die Probe in zwei Punkten nicht:
-
-    * ``zufallsverteilung`` rechnet ``schluss[ende]/schluss[start] - 1`` und
-      ist damit **immer long**. Ein Short-Trade dagegen zu stellen vergleicht
-      zwei verschiedene Dinge.
-    * Bei einem Short liegt der Stop **ueber** dem Einstieg, und die
-      Abstandsrechnung liefert ein negatives Ergebnis.
-
-    Der zweite Punkt hat sich gemeldet - bei 'EMA-Kreuzung' auf BTC kam kein
-    Deckel heraus, obwohl alle 56 Trades einen Stop hatten. Der erste haette
-    still falsche Zahlen geliefert, und fuer zwei Zeilen meiner Tabelle hat
-    er das auch getan.
+    Befund 203 hat zwei Zeilen zurueckgezogen, weil die Ziehung immer eine
+    Long-Rendite rechnete und zwei Regeln short handeln. Die Abweisung war
+    richtig und der halbe Schritt: Eine Short-Ziehung spiegelt beides - der
+    Stop liegt ueber dem Einstieg und wird vom **Hoch** gerissen, das Ziel
+    darunter und vom **Tief** erreicht, und die Rendite dreht das Vorzeichen.
     """
 
-    def test_der_helfer_weist_shorts_ab(self) -> None:
+    def test_der_helfer_liest_den_short_stop_richtig(self) -> None:
+        """Bei einem Short liegt der Stop ueber dem Einstieg."""
         from cli import _deckel_der_regel
 
         class FakeShort:
             side = "Sell"
             entry_price = 100.0
             stop_loss = 104.0
-            exit_price = 96.0
+            exit_price = 80.0
             exit_reason = "take_profit"
 
-        assert _deckel_der_regel([FakeShort()]) == (None, None)
+        stop, ziel = _deckel_der_regel([FakeShort()])
 
-    def test_long_regeln_gehen_weiter_durch(self) -> None:
+        assert stop == pytest.approx(0.04)
+        assert ziel == pytest.approx(0.20)
+
+    def test_long_regeln_bleiben_wie_sie_waren(self) -> None:
         from cli import _deckel_der_regel
 
         class FakeLong:
@@ -491,12 +486,88 @@ class TestShortRegelnWerdenAbgewiesen:
         assert stop == pytest.approx(0.04)
         assert ziel == pytest.approx(0.80)
 
-    def test_der_bericht_sagt_warum(self) -> None:
-        """Sonst laese sich die leere Zelle als 'kein Stop' statt als
-        'nicht vergleichbar'."""
+    def test_ein_short_verdient_am_fallenden_kurs(self) -> None:
+        """Ohne Vorzeichen stuende hier das Gegenteil."""
+        schluss = np.array([100.0, 90.0, 80.0, 70.0])
+        tief = schluss * 0.999
+        hoch = schluss * 1.001
+
+        werte = zufallsverteilung_mit_deckeln(
+            schluss, tief, hoch, np.array([3]), von=0, bis=3,
+            ziehungen=1, rng=np.random.default_rng(0), stop=0.50,
+            seiten=np.array([-1.0]),
+        )
+
+        assert werte[0] == pytest.approx(0.30)
+
+    def test_der_short_stop_wird_vom_hoch_gerissen(self) -> None:
+        schluss = np.array([100.0, 99.0, 98.0, 97.0])
+        tief = schluss * 0.99
+        hoch = np.array([100.0, 105.0, 98.0, 97.0])
+
+        werte = zufallsverteilung_mit_deckeln(
+            schluss, tief, hoch, np.array([3]), von=0, bis=3,
+            ziehungen=1, rng=np.random.default_rng(0), stop=0.04,
+            seiten=np.array([-1.0]),
+        )
+
+        assert werte[0] == pytest.approx(-0.04)
+
+    def test_das_short_ziel_wird_vom_tief_erreicht(self) -> None:
+        schluss = np.array([100.0, 99.0, 98.0, 97.0])
+        tief = np.array([100.0, 79.0, 98.0, 97.0])
+        hoch = schluss * 1.001
+
+        werte = zufallsverteilung_mit_deckeln(
+            schluss, tief, hoch, np.array([3]), von=0, bis=3,
+            ziehungen=1, rng=np.random.default_rng(0), stop=0.30, ziel=0.20,
+            seiten=np.array([-1.0]),
+        )
+
+        assert werte[0] == pytest.approx(0.20)
+
+    def test_die_ungedeckelte_ziehung_spiegelt_ebenfalls(self) -> None:
+        """Sonst stuenden die beiden Spalten des Berichts gegeneinander."""
+        schluss = np.array([100.0, 90.0, 80.0, 70.0])
+
+        long = zufallsverteilung(
+            schluss, np.array([3]), von=0, bis=3,
+            ziehungen=1, rng=np.random.default_rng(0),
+        )
+        short = zufallsverteilung(
+            schluss, np.array([3]), von=0, bis=3,
+            ziehungen=1, rng=np.random.default_rng(0),
+            seiten=np.array([-1.0]),
+        )
+
+        assert short[0] == pytest.approx(-long[0])
+
+    def test_eine_unsinnige_seite_wird_abgewiesen(self) -> None:
+        schluss = np.array([100.0, 101.0])
+        with pytest.raises(ValueError, match="\\+1 \\(long\\)"):
+            zufallsverteilung(
+                schluss, np.array([1]), von=0, bis=1, ziehungen=1,
+                rng=np.random.default_rng(0), seiten=np.array([0.0]),
+            )
+
+    def test_je_trade_eine_seite(self) -> None:
+        schluss = np.array([100.0, 101.0, 102.0])
+        with pytest.raises(ValueError, match="je Trade"):
+            zufallsverteilung(
+                schluss, np.array([1, 1]), von=0, bis=2, ziehungen=1,
+                rng=np.random.default_rng(0), seiten=np.array([1.0]),
+            )
+
+    def test_der_bericht_reicht_die_seiten_durch(self) -> None:
         from pathlib import Path
 
         quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
 
-        assert "handelt short" in quelle
-        assert "die Ziehung " in quelle
+        assert quelle.count("seiten=np.array(seiten)") == 2, (
+            "beide Ziehungen brauchen die Seiten"
+        )
+        assert "richtung * (float(t.exit_price)" in quelle, (
+            "die echte Rendite muss die Seite ebenfalls tragen"
+        )
+
+

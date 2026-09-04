@@ -101,6 +101,25 @@ behauptet und ist an einer gebauten Reihe durchgefallen.
 
 ``cli zufallseinstieg --stop 0.06`` rechnet jede Spalte nach.
 
+Long und Short (Befund 204)
+----------------------------
+Die Ziehung rechnete bis Befund 203 immer eine **Long-Rendite**. Fuer die
+Haelfte des Katalogs ist das die falsche Null, und zwei gemessene Zeilen
+mussten zurueckgezogen werden. Jetzt spiegelt sie die Seite jedes Trades:
+
+    long    Stop unter dem Einstieg, vom **Tief** gerissen; Ziel darueber
+    short   Stop ueber dem Einstieg, vom **Hoch** gerissen; Ziel darunter
+
+Die Rendite dreht dabei das Vorzeichen. Wie gross der Unterschied ist, zeigt
+die Berichtigung der beiden Zeilen:
+
+    EMA-Kreuzung (Messlatte)   falsch    -   -0,47   0,93   4,15
+                               richtig  -0,10  2,21  -0,38  -2,31
+
+Auf XRP steht statt eines klaren Treffers ein Ergebnis, das **signifikant
+schlechter** ist als der Zufall. Eine Long-Null gegen Short-Trades meldet
+sich nicht - sie liefert Zahlen, nur keine richtigen.
+
 Was er nicht ist
 ----------------
 Kein Beweis. Die vier Maerkte korrelieren mit 0,695 (Befund 174) - vier
@@ -131,6 +150,7 @@ def zufallsverteilung(
     bis: int,
     ziehungen: int,
     rng: np.random.Generator,
+    seiten: np.ndarray | None = None,
 ) -> np.ndarray:
     """Die Verteilung der mittleren Rendite bei zufaelligen Einstiegen.
 
@@ -150,13 +170,25 @@ def zufallsverteilung(
         raise ValueError(f"Leerer Zeitraum: von={von}, bis={bis}.")
     if int(np.min(dauern)) < 1:
         raise ValueError("Eine Haltedauer unter einem Balken ist keine.")
+    # **Die Ziehung spiegelt die Seite des Trades** (Befund 204). Ohne das
+    # rechnet sie immer long, und eine Short-Regel steht gegen die falsche
+    # Null - Befund 203 hat dafuer zwei Zeilen zurueckziehen muessen.
+    if seiten is None:
+        seiten = np.ones(len(dauern))
+    if len(seiten) != len(dauern):
+        raise ValueError(
+            f"{len(seiten)} Seiten zu {len(dauern)} Haltedauern - je Trade "
+            f"gehoert eine."
+        )
+    if not np.all(np.isin(seiten, (1, -1))):
+        raise ValueError("Eine Seite ist +1 (long) oder -1 (short), sonst nichts.")
 
     hoechster = np.maximum(bis - dauern, von + 1)
     mittel = np.empty(ziehungen)
     for k in range(ziehungen):
         start = rng.integers(von, hoechster)
         ende = np.minimum(start + dauern, bis)
-        mittel[k] = np.mean(schluss[ende] / schluss[start] - 1.0)
+        mittel[k] = np.mean(seiten * (schluss[ende] / schluss[start] - 1.0))
     return mittel
 
 
@@ -172,6 +204,7 @@ def zufallsverteilung_mit_deckeln(
     rng: np.random.Generator,
     stop: float,
     ziel: float | None = None,
+    seiten: np.ndarray | None = None,
 ) -> np.ndarray:
     """Dieselbe Ziehung - aber mit **denselben Deckeln wie die Regel**.
 
@@ -215,6 +248,15 @@ def zufallsverteilung_mit_deckeln(
         raise ValueError("Der Stop ist ein Abstand und deshalb positiv.")
     if ziel is not None and ziel <= 0:
         raise ValueError("Das Ziel ist ein Abstand und deshalb positiv.")
+    if seiten is None:
+        seiten = np.ones(len(dauern))
+    if len(seiten) != len(dauern):
+        raise ValueError(
+            f"{len(seiten)} Seiten zu {len(dauern)} Haltedauern - je Trade "
+            f"gehoert eine."
+        )
+    if not np.all(np.isin(seiten, (1, -1))):
+        raise ValueError("Eine Seite ist +1 (long) oder -1 (short), sonst nichts.")
 
     ergebnis = np.empty((ziehungen, len(dauern)))
     for i, dauer in enumerate(dauern):
@@ -224,15 +266,29 @@ def zufallsverteilung_mit_deckeln(
         # Balken 1..d nach dem Einstieg, am Rand der Reihe abgeschnitten.
         felder = np.minimum(start[:, None] + np.arange(1, d + 1)[None, :], bis)
         einstieg = schluss[start]
-        stopniveau = einstieg * (1.0 - stop)
-        zielniveau = einstieg * (1.0 + (ziel or 0.0))
-
-        traf_stop = tief[felder] <= stopniveau[:, None]
-        traf_ziel = (
-            np.zeros_like(traf_stop)
-            if ziel is None
-            else hoch[felder] >= zielniveau[:, None]
+        # **Der Short spiegelt beides** (Befund 204): Sein Stop liegt ueber
+        # dem Einstieg und wird vom Hoch gerissen, sein Ziel darunter und vom
+        # Tief erreicht. Die Betraege ``stop`` und ``ziel`` bleiben dieselben
+        # - sie sind Verlust und Gewinn, nicht Richtung.
+        long = seiten[i] > 0
+        stopniveau = einstieg * (1.0 - stop if long else 1.0 + stop)
+        zielniveau = einstieg * (
+            (1.0 + (ziel or 0.0)) if long else (1.0 - (ziel or 0.0))
         )
+
+        traf_stop = (
+            tief[felder] <= stopniveau[:, None]
+            if long
+            else hoch[felder] >= stopniveau[:, None]
+        )
+        if ziel is None:
+            traf_ziel = np.zeros_like(traf_stop)
+        else:
+            traf_ziel = (
+                hoch[felder] >= zielniveau[:, None]
+                if long
+                else tief[felder] <= zielniveau[:, None]
+            )
         # ``argmax`` liefert 0, wenn nichts zutrifft - deshalb die Maske.
         wann_stop = np.where(traf_stop.any(axis=1), traf_stop.argmax(axis=1), d)
         wann_ziel = np.where(traf_ziel.any(axis=1), traf_ziel.argmax(axis=1), d)
@@ -240,7 +296,7 @@ def zufallsverteilung_mit_deckeln(
         # Drei Faelle, ausgeschrieben statt uebereinandergelegt: Der erste
         # Entwurf stapelte drei ``np.where`` und kam nur durch die
         # Reihenfolge auf das richtige Ergebnis - lesbar war das nicht.
-        am_schluss = schluss[felder[:, -1]] / einstieg - 1.0
+        am_schluss = seiten[i] * (schluss[felder[:, -1]] / einstieg - 1.0)
         stop_zuerst = (wann_stop < d) & (wann_stop <= wann_ziel)
         ziel_zuerst = (wann_ziel < d) & (wann_ziel < wann_stop)
         ergebnis[:, i] = np.where(

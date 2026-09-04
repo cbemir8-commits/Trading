@@ -11203,26 +11203,26 @@ def _deckel_der_regel(trades) -> tuple[float | None, float | None]:
     Trades, die mit ``take_profit`` endeten. ``None``, wo es keine gibt -
     dann laeuft nur die Ziehung ohne Deckel, statt einen zu erfinden.
 
-    **Nur fuer Long-Regeln** (Befund 203). Bei einem Short liegt der Stop
-    ueber dem Einstieg, und diese Rechnung liefert dann einen negativen
-    Abstand - beim ersten Anlauf kam bei 'EMA-Kreuzung (Messlatte)' auf BTC
-    ``None`` heraus, obwohl alle 56 Trades einen Stop hatten. Wichtiger noch:
-    Die Ziehung selbst ist long, ein Short-Trade gegen eine Long-Null zu
-    stellen vergliche zwei verschiedene Dinge. Solche Regeln werden hier
-    abgewiesen statt falsch gemessen.
+    **Long und Short** (Befund 204). Bei einem Short liegt der Stop ueber dem
+    Einstieg und das Ziel darunter; beide Abstaende werden deshalb mit dem
+    Vorzeichen der Seite gerechnet. Befund 203 hat sie noch abgewiesen, weil
+    die Ziehung nur long konnte - beim ersten Anlauf kam bei 'EMA-Kreuzung
+    (Messlatte)' auf BTC ``None`` heraus, obwohl alle 56 Trades einen Stop
+    hatten.
     """
     import statistics
 
-    if any(str(t.side).lower().startswith("s") for t in trades):
-        return None, None
+    def richtung(t) -> float:
+        return -1.0 if str(t.side).lower().startswith("s") else 1.0
 
     stops = [
-        (float(t.entry_price) - float(t.stop_loss)) / float(t.entry_price)
+        richtung(t) * (float(t.entry_price) - float(t.stop_loss))
+        / float(t.entry_price)
         for t in trades
         if t.stop_loss is not None and float(t.entry_price) > 0
     ]
     ziele = [
-        float(t.exit_price) / float(t.entry_price) - 1.0
+        richtung(t) * (float(t.exit_price) / float(t.entry_price) - 1.0)
         for t in trades
         if t.exit_reason == "take_profit" and float(t.entry_price) > 0
     ]
@@ -11335,15 +11335,22 @@ def zufallseinstieg(
         def balken(zeitpunkt, zeiten=zeiten) -> int:
             return int(zeiten.searchsorted(pd.Timestamp(zeitpunkt), side="right") - 1)
 
-        dauern, echte, starts, enden = [], [], [], []
+        dauern, echte, starts, enden, seiten = [], [], [], [], []
         for t in trades:
             a, b = balken(t.entry_time), balken(t.exit_time)
             if a < 0 or b <= a or b >= len(schluss):
                 continue
+            # **Die Seite gehoert zur Rendite** (Befund 204). Ein Short
+            # verdient, wenn der Kurs faellt; ohne das Vorzeichen stand die
+            # halbe Katalogseite mit umgekehrtem Ergebnis da.
+            richtung = -1.0 if str(t.side).lower().startswith("s") else 1.0
             dauern.append(b - a)
             starts.append(a)
             enden.append(b)
-            echte.append(float(t.exit_price) / float(t.entry_price) - 1.0)
+            seiten.append(richtung)
+            echte.append(
+                richtung * (float(t.exit_price) / float(t.entry_price) - 1.0)
+            )
         if len(echte) < 20:
             console.print(
                 f"[dim]{symbol[:9]:<10}{'':<13}{len(echte):>7}   "
@@ -11353,7 +11360,7 @@ def zufallseinstieg(
 
         verteilung = zufallsverteilung(
             schluss, np.array(dauern), von=min(starts), bis=max(enden),
-            ziehungen=ziehungen, rng=rng,
+            ziehungen=ziehungen, rng=rng, seiten=np.array(seiten),
         )
         # **Dieselbe Ziehung mit den Deckeln der Regel** (Befund 200). Ohne
         # sie faehrt die Null jeden Einbruch bis zum Schluss mit, waehrend
@@ -11361,13 +11368,6 @@ def zufallseinstieg(
         # Der Vergleich begoenstigt die Regel, und der Modulkopf nennt das
         # Ergebnis seit Befund 175 deshalb eine Obergrenze.
         eigener, ziel = _deckel_der_regel(trades)
-        if eigener is None and any(
-            str(t.side).lower().startswith("s") for t in trades
-        ):
-            console.print(
-                f"[dim]  {'':<10}{'':<13}{'':>7} handelt short - die Ziehung "
-                f"ist long, also nicht vergleichbar[/]"
-            )
         # **Der Stop ist der Regler dieser Probe** (Befund 201). Ein weiterer
         # Stop gibt der Null die Freiheit zurueck, einen Einbruch
         # auszusitzen, und senkt damit das z. Wer wissen will, ob das
@@ -11392,6 +11392,7 @@ def zufallseinstieg(
                 rahmen["high"].astype(float).to_numpy(),
                 np.array(dauern), von=min(starts), bis=max(enden),
                 ziehungen=ziehungen, rng=rng, stop=deckel, ziel=ziel,
+                seiten=np.array(seiten),
             )
         rolle = ENTWICKLUNG if symbol.startswith(("BTC", "ETH")) else HOLDOUT
         probe = Marktprobe(

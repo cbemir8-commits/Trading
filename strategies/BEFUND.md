@@ -18627,3 +18627,68 @@ Beides kostet keinen Versuch.
 
 Kostet keinen Versuch: dieselben Regeln, dieselben Daten, eine andere Null.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertvier. Die Ziehung kann jetzt short - und eine Zeile dreht sich um
+
+Befund 203 hat zwei Zeilen zurueckgezogen, weil `zufallsverteilung` immer
+eine Long-Rendite rechnet und zwei Regeln short handeln. Die Abweisung war
+richtig und der halbe Schritt; der andere steht hier.
+
+### Gebaut
+
+Beide Ziehungen nehmen jetzt die Seite jedes Trades:
+
+    long    Stop unter dem Einstieg, vom **Tief** gerissen; Ziel darueber
+    short   Stop ueber dem Einstieg, vom **Hoch** gerissen; Ziel darunter
+
+Die Rendite dreht das Vorzeichen mit. `_deckel_der_regel` liest die Abstaende
+entsprechend: Bei einem Short liegt `stop_loss` ueber dem Einstieg, und ohne
+das Vorzeichen kam dort ein negativer Abstand heraus - der Grund, warum die
+Zelle in Befund 203 leer blieb, obwohl alle 56 Trades einen Stop hatten.
+
+Und die echte Rendite im Bericht traegt die Seite ebenfalls. Ohne das haette
+die Berichtigung nur die halbe Rechnung getroffen.
+
+### Wie gross der Fehler war
+
+    EMA-Kreuzung (Messlatte)   falsch      -   -0,47    0,93    4,15
+                               richtig  -0,10    2,21   -0,38   -2,31
+
+    Volatilitaets-Ausbruch     falsch   4,38    0,17   -0,71    1,63
+                               richtig  1,62    0,04    3,40    1,70
+
+Auf XRP wird aus einem klaren Treffer (+4,15) ein Ergebnis, das
+**signifikant schlechter** ist als der Zufall (-2,31). Kein Vorzeichenfehler
+am Rand, sondern eine andere Aussage.
+
+### Die vollstaendige Tabelle
+
+    Regel                                BTC     ETH     LTC     XRP  raeumt
+    Bestand                             3,94    6,34    3,32    2,71  4 von 4
+    Trend-Beteiligung 50 Tage           3,45    2,31    0,73    1,49  2 von 4
+    Trendfolge Ausbruch                 5,00    1,42    1,39    3,37  2 von 4
+    Grosser Trendausbruch               3,45   -0,57   -3,07    n=19  1 von 3
+    Donchian-Ausbruch 55/20             2,26    1,68    0,03    1,17  1 von 4
+    Trendbeteiligung EMA200             2,54    n=17    1,94    n=18  1 von 2
+    Nur mit der Drift                   2,62    n=16    n=16    n=13  1 von 1
+    Volatilitaets-Ausbruch              1,62    0,04    3,40    1,70  1 von 4
+    EMA-Kreuzung (Messlatte)           -0,10    2,21   -0,38   -2,31  1 von 4
+    Trend-Beteiligung (fair gerechnet)  0,79    n=16    0,32    0,57  0 von 3
+    Langsamer Kreuzer (Messlatte 2)     n=10    n=10    n=13     n=8  0 von 0
+
+**Elf Regeln, und der Bestand ist die einzige, die auf allen vier Maerkten
+raeumt.** Keine andere kommt ueber zwei. Der Schluss aus Befund 203 haelt der
+Berichtigung stand - was sich geaendert hat, sind zwei Zeilen in der Mitte,
+nicht die Aussage.
+
+### Was auffaellt, seit die Seite stimmt
+
+Die **ungedeckelten** Nullen der beiden Short-Regeln sind negativ (-1,2 % bis
+-4,7 %), waehrend sie bei den Long-Regeln positiv sind. Das ist keine
+Ueberraschung, sondern die Marktrichtung: In vier steigenden Maerkten verliert
+eine zufaellige Short-Position. Genau deshalb war die Long-Null fuer diese
+Regeln so falsch - sie hat ihnen eine Huerde gestellt, die zur Gegenrichtung
+gehoerte.
+
+Kostet keinen Versuch: dieselben Regeln, dieselben Daten, die richtige Null.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
