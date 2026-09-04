@@ -327,3 +327,67 @@ class TestOptimumImAuftrag:
         )
 
         assert "Wie oft so ein Vorschlag trifft" not in ohne.als_auftrag()
+
+
+class TestWasAusDenPartnernWurde:
+    """**Befund 196.** Der Auftrag war eine Einladung zur Wiederholung.
+
+    Er nennt drei Kriterien, nach denen ein Partner brauchbar ist, und hat
+    verschwiegen, dass **jeder** bisher gefundene Partner, der sie erfuellte,
+    ausserhalb der Entwicklungsdaten durchgefallen ist: sieben von sieben,
+    der beste 30 % gegen die 41 % des Bestands allein (Befund 186).
+
+    Wer das nicht weiss, schlaegt denselben Kandidatentyp noch einmal vor -
+    und jeder Vorschlag hebt die Huerde fuer alle folgenden.
+
+    Dasselbe Muster wie Befund 180: Der Auftrag stand auf einem alten Stand.
+    """
+
+    def lage(self, holdout=(7, 0, 30.0, 41.0)):
+        return aus_messungen(
+            versuche=198, bestand_trades=115, bestand_sharpe=0.2708,
+            holdout=holdout,
+        )
+
+    def test_der_abschnitt_nennt_die_gemessenen_zahlen(self) -> None:
+        text = self.lage().als_auftrag()
+
+        assert "Was aus den bisherigen Partnern geworden ist" in text
+        assert "0 von 7" in text
+        assert "30 % gegen dessen 41 %" in text
+
+    def test_er_steht_vor_der_trefferquote(self) -> None:
+        """Sonst liest man erst, wie oft es klappt, und dann, dass es nicht hat."""
+        text = self.lage().als_auftrag()
+
+        assert text.index("bisherigen Partnern") < text.index(
+            "Wie oft so ein Vorschlag trifft"
+        )
+
+    def test_er_entwertet_die_drei_punkte_nicht(self) -> None:
+        """Sie beschreiben, was rechnerisch reichen wuerde - das bleibt wahr."""
+        text = self.lage().als_auftrag()
+
+        assert "nicht, dass die drei Punkte falsch sind" in text
+        assert "nicht genuegen" in text
+
+    def test_er_verlangt_einen_unterschied_in_der_begruendung(self) -> None:
+        text = self.lage().als_auftrag()
+
+        assert "in seine Begruendung" in text
+
+    def test_ohne_messung_wird_keine_entwarnung_erfunden(self) -> None:
+        """``None`` heisst 'nicht gemessen', nicht 'nichts gefunden'."""
+        text = self.lage(holdout=None).als_auftrag()
+
+        assert "bisherigen Partnern geworden ist" not in text
+
+    def test_der_auftrag_traegt_die_zahl_aus_dem_bericht(self) -> None:
+        """Sie darf nicht im Auftragstext zweitgepflegt werden."""
+        from pathlib import Path
+
+        quelle = (Path(__file__).resolve().parents[1] / "cli.py").read_text()
+
+        assert "holdout=(7, 0, 30.0, 41.0)" in quelle, (
+            "der Auftrag bekommt das Holdout-Ergebnis nicht mehr uebergeben"
+        )

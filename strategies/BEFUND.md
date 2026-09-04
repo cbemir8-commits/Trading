@@ -18077,3 +18077,69 @@ der t-Wert dort unendlich, und `None` heisst nur noch: zu wenige Punkte.
 
 Kostet keinen Versuch: gerechnet wurde auf Zahlen, die schon gemessen sind.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Hundertsechsundneunzig. Der Auftrag verschwieg, wie es den Vorgaengern ergangen ist
+
+Der Auftrag an die Research-KI ist das eine Artefakt dieses Projekts, das
+**kuenftige** Versuche steuert. Er war schon zweimal falsch: Befund 180 fand
+ihn drei Befunde stale, Befund 183 nahm vier Zahlen daraus zurueck. Befund 193
+hat sein Ziel neu gerechnet. Also nachgelesen, was heute darin steht.
+
+### Was darin fehlte
+
+Der Auftrag nennt drei Punkte, nach denen ein Partner brauchbar ist:
+mindestens 135 Trades (am besten 161), Sharpe je Trade ueber 0,25, und ein
+anderes Marktverhalten als Trendfolge.
+
+Er sagt **nicht**, dass genau diese drei Punkte schon siebenmal erfuellt
+worden sind - und dass alle sieben ausserhalb der Entwicklungsdaten
+durchgefallen sind. Befund 186: keiner haelt mehr als der Bestand allein, der
+beste 30 % gegen dessen 41 %, die beiden Bestplatzierten +7 % und -70 %.
+
+Das Wort "Holdout" kam im ganzen Auftragstext nicht vor.
+
+**Ein Auftrag, der die Kriterien nennt und ihr Ergebnis verschweigt, ist eine
+Einladung zur Wiederholung.** Wer ihn liest, schlaegt denselben
+Kandidatentyp noch einmal vor - und jeder Vorschlag hebt die Huerde fuer alle
+folgenden, dauerhaft.
+
+### Was jetzt darin steht
+
+Ein eigener Abschnitt, **vor** der Trefferquote (sonst liest man erst, wie oft
+es klappt, und danach, dass es nicht geklappt hat):
+
+    Lies das, bevor du Punkt 1 bis 3 erfuellst. 7 Partner, die alle drei
+    Punkte erfuellten, sind auf anderen Maerkten nachgemessen worden.
+
+    0 von 7 haben mehr gehalten als der Bestand allein.
+    Der beste kam auf 30 % gegen dessen 41 %.
+
+    Daraus folgt nicht, dass die drei Punkte falsch sind - sie beschreiben,
+    was rechnerisch reichen wuerde. Es folgt, dass sie nicht genuegen.
+
+Die Formulierung ist Absicht. Die drei Punkte **bleiben richtig**: Sie sagen,
+was reichen wuerde, damit das Gate faellt. Sie sind nur kein hinreichendes
+Merkmal, und der Unterschied gehoert in die Begruendung eines Vorschlags,
+nicht in eine gelockerte Anforderung.
+
+`None` bleibt `None`: Ohne gemessenes Holdout faellt der Abschnitt weg, statt
+eine Entwarnung zu erfinden.
+
+### Was ausdruecklich **nicht** geaendert wurde
+
+Zwei Zahlen im Auftrag stehen auf **vierzehn** gemessenen Paaren (Befund
+140/141), obwohl inzwischen achtzehn gemessen sind: die Rangkorrelation der
+Fensterkorrelation (+0,04) und die der Qualitaet je Trade (-0,53).
+
+Sie bleiben vorerst stehen, und das ist eine Entscheidung mit Grund: Beide neu
+zu rechnen heisst, achtzehn Paare gegen ihr tatsaechliches Ergebnis zu
+korrelieren - und Befund 195 hat gerade gezeigt, dass solche Rangkorrelationen
+hier die Schwelle von |t| = 2 nicht raeumen. Eine Zahl durch eine andere zu
+ersetzen, die genauso wenig traegt, waere Bewegung ohne Gewinn.
+
+**Im Auftrag steht jetzt aber nicht mehr, sie seien der Massstab.** Der neue
+Abschnitt sagt, was tatsaechlich gemessen ist: Die Kriterien wurden erfuellt,
+und es hat nicht gereicht.
+
+Kostet keinen Versuch: Gebaut wird ein Auftragstext, nicht ein Kandidat.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

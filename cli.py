@@ -1723,6 +1723,10 @@ def _auftragslage(zustand: Path):
         bestand_sharpe=SPOTPUNKT.guete,
         bestand_schiefe=SPOTPUNKT.schiefe,
         bestand_woelbung=SPOTPUNKT.woelbung,
+        # **Was aus den bisherigen Partnern wurde** (Befund 186, in den
+        # Auftrag gehoben in Befund 196). Sieben geprueft, keiner haelt mehr
+        # als der Bestand allein; der beste 30 % gegen dessen 41 %.
+        holdout=(7, 0, 30.0, 41.0),
         # **Nichts von alledem uebergeben - Befund 183.** Hier standen
         # kopplung=-0,714, kopplung_traegt="sma", die Familienzaehlung und
         # der Preis 3,70. Alle vier sind auf dem Katalog gemessen, den

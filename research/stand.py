@@ -779,6 +779,15 @@ BEHOBEN: tuple[Richtung, ...] = (
         "veroeffentlichten +0,214 und +0,571",
         195,
     ),
+    # Dritter Fehler im selben Artefakt (nach 180 und 183) - und der
+    # folgenreichste: Er haette Versuche gekostet, nicht nur Zahlen.
+    Richtung(
+        "Der Auftrag verschwieg das Holdout-Ergebnis",
+        "er nennt drei Kriterien fuer einen Partner und sagte nicht, dass "
+        "sieben Partner sie erfuellt haben und alle sieben draussen "
+        "durchgefallen sind; das Wort 'Holdout' kam im ganzen Text nicht vor",
+        196,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1216,10 +1225,17 @@ AUFTRAG: tuple[Auftragspunkt, ...] = (
         stand="beides gebaut und gemessen; die Wirkung ist nicht belegt",
         befund=59,
     ),
+    # Der Punkt ist erledigt, sein **Auftrag** war es nicht: Befund 180 fand
+    # ihn drei Befunde stale, 183 nahm vier Zahlen zurueck, 193 hat sein Ziel
+    # neu gerechnet, und 196 hat gefunden, dass er das Holdout-Ergebnis
+    # verschwieg. Wer die KI erneut laufen laesst, bekommt jetzt einen
+    # anderen Auftrag als beim letzten Mal.
     Auftragspunkt(
         frage="Research-KI im Wettbewerb nutzen",
-        stand="genutzt, vier Vorschlaege gemessen - alle schlechter",
-        befund=53,
+        stand="genutzt, vier Vorschlaege gemessen - alle schlechter; der "
+              "Auftrag nennt seit 196 auch, dass sieben Partner die "
+              "Kriterien erfuellt haben und draussen durchgefallen sind",
+        befund=196,
     ),
     Auftragspunkt(
         frage="Generation 6/7 auf 15-Minuten",

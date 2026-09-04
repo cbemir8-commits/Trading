@@ -130,6 +130,26 @@ class Auftragslage:
     verschiedenen Trade-Zahlen nebeneinander lesen sich wie ein Widerspruch.
     """
 
+    holdout: tuple[int, int, float, float] | None = None
+    """Was aus den geprueften Partnern **ausserhalb** der Entwicklung wurde.
+
+    ``(geprueft, gehalten, bester_pct, bestand_pct)`` - wie viele im Holdout
+    geprueft wurden, wie viele mehr hielten als der Bestand allein, und die
+    beiden Haltequoten dazu.
+
+    **Ohne dieses Feld war der Auftrag eine Einladung zur Wiederholung**
+    (Befund 196). Er hat drei Kriterien genannt, nach denen ein Partner
+    brauchbar ist, und verschwiegen, dass **jeder** bisher gefundene Partner,
+    der sie erfuellte, draussen durchgefallen ist: sieben von sieben, der
+    beste haelt 30 % gegen die 41 % des Bestands allein (Befund 186).
+
+    Wer das nicht weiss, schlaegt denselben Kandidatentyp noch einmal vor -
+    und jeder Vorschlag hebt die Huerde fuer alle folgenden.
+
+    ``None`` heisst "nicht gemessen" und nicht "nichts gefunden": Dann bleibt
+    der Abschnitt weg, statt eine Entwarnung zu erfinden.
+    """
+
     kopplung_traegt: str | None = None
     """Welche Familie die Kopplung traegt - oder ``None``, wenn keine.
 
@@ -234,6 +254,37 @@ class Auftragslage:
             "",
         ]
 
+        # **Der wichtigste Abschnitt fuer einen Vorschlagenden** (Befund 196).
+        # Bis dahin nannte der Auftrag drei Kriterien und verschwieg, dass
+        # jeder Partner, der sie erfuellte, draussen durchgefallen ist.
+        if self.holdout is not None:
+            geprueft, gehalten, bester, bestand = self.holdout
+            zeilen += [
+                "## Was aus den bisherigen Partnern geworden ist\n",
+                f"**Lies das, bevor du Punkt 1 bis 3 erfuellst.** {geprueft} "
+                f"Partner, die",
+                "alle drei Punkte erfuellten, sind auf **anderen Maerkten**",
+                "nachgemessen worden - nicht als Zulassung, sondern als Probe,",
+                "ob der Vorteil ausserhalb der Entwicklungsdaten ueberhaupt",
+                "auftaucht.",
+                "",
+                f"**{gehalten} von {geprueft} haben mehr gehalten als der "
+                f"Bestand allein.**",
+                f"Der beste kam auf {bester:.0f} % gegen dessen "
+                f"{bestand:.0f} %.",
+                "",
+                "Daraus folgt nicht, dass die drei Punkte falsch sind - sie",
+                "beschreiben, was rechnerisch reichen wuerde. Es folgt, dass",
+                "sie **nicht genuegen**: Ein Vorschlag, der sie erfuellt und",
+                "sonst nichts Neues mitbringt, ist derselbe Kandidatentyp",
+                "noch einmal, und der ist gemessen.",
+                "",
+                "Was einen Vorschlag von den bisherigen unterscheidet, gehoert",
+                "in seine Begruendung. Ein Vorschlag ohne diesen Unterschied",
+                "kostet einen Versuch und hebt die Huerde fuer alle folgenden.",
+                "",
+            ]
+
         if self.kopplung is not None:
             traeger = self.kopplung_traegt
             zeilen += [
@@ -337,6 +388,7 @@ def aus_messungen(
     bestand_sharpe: float,
     bestand_schiefe: float | None = None,
     bestand_woelbung: float | None = None,
+    holdout: tuple[int, int, float, float] | None = None,
     kopplung: float | None = None,
     kopplung_traegt: str | None = None,
     familien: tuple[tuple[str, int], ...] = (),
@@ -379,6 +431,7 @@ def aus_messungen(
         karte=karte,
     )
     return Auftragslage(
+        holdout=holdout,
         versuche=versuche,
         bestand_trades=bestand_trades,
         bestand_sharpe=bestand_sharpe,
