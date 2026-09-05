@@ -18757,3 +18757,61 @@ stellt. Die Lehre stand aufgeschrieben; angewandt habe ich sie nicht.
 
 Kostet keinen Versuch: gerechnet wurde auf Zahlen, die schon gemessen sind.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsechs. Das billige Vorfilter gehoert in den Auftrag
+
+Befund 196 hat den Auftrag an die Research-KI um das Holdout-Ergebnis
+ergaenzt: Sieben Partner haben die drei Kriterien erfuellt und sind draussen
+durchgefallen. **Was** passiert ist, stand damit drin. **Woran es lag**,
+haben erst die Befunde 202 bis 205 gemessen - und es stand nirgends.
+
+### Zuerst die Gegenprobe
+
+Die Sweep-Frage aus Befund 205 - fehlt die Korrektur fuer die Suche noch
+woanders? - ist nachgesehen: Genau drei Module benutzen eine
+Signifikanzschwelle.
+
+    zufallseinstieg   Schwelle am **ausgewaehlten** Kandidaten   in 205 behoben
+    vorratsdecke      Kopplung ueber den ganzen Katalog          vollstaendige Menge
+    rangtreue         Rangkorrelation ueber alle acht Paare      vollstaendige Menge
+
+Der Unterschied ist der springende Punkt: Eine Schwelle auf eine
+**vollstaendige Menge** braucht keine Auswahlkorrektur, eine auf den
+**Gewinner** schon. `vorratsdecke` traegt seine Korrektur ohnehin - dort steht
+seit Befund 168 der Vergleich mit `erwartetes_maximum(versuche)`.
+
+Es war also genau eine Stelle, und sie ist behoben.
+
+### Und dann der offene Kreis
+
+    **Woran es bei allen sieben lag** (Befund 202 bis 205): Ihr Einstieg
+    schlaegt den Zufall auf fremden Maerkten nicht. Die Probe zieht
+    zufaellige Einstiege mit denselben Haltedauern und denselben Stops -
+    `cli zufallseinstieg --regel <Name>`, kostet keinen Versuch. Ueber
+    zehn gepruefte Partner raeumt **keiner** mehr als zwei von vier
+    Maerkten; der Bestand raeumt vier.
+
+    Zehn von 36 Zellen liessen sich gar nicht messen, weil die Regel auf
+    dem Markt zu selten handelt - unter 20 Trades ueber die volle
+    Historie. Wer dort nicht handelt, ist als Partner nichts wert.
+
+Dazu die Korrektur aus Befund 205, damit sie nicht wieder verlorengeht:
+Rechnet man die Versuche mit, verlangt die Schwelle z = 3,48 statt 2,00, und
+der Bestand raeumt dann zwei von vier. Fuer einen Vorschlag heisst das -
+**zwei von vier sind kein Beleg, sondern das Minimum, unter dem sich
+Weiterrechnen nicht lohnt.**
+
+### Warum das etwas wert ist
+
+Es ist das erste Kriterium im Auftrag, das **vor** einem Versuch greift.
+Alles andere dort beschreibt, was ein Vorschlag erfuellen muesste; dieses
+sagt, wie man ihn widerlegt, ohne den Zaehler zu bewegen. Die Reihenfolge
+lautet jetzt: genug Trades auf fremden Maerkten, dann die Zufallsprobe, dann
+erst der Holdout - und die ersten beiden Stufen kosten nichts.
+
+Ob das je einen Versuch spart, ist damit nicht bewiesen. Gemessen ist nur,
+dass alle zehn bisher geprueften Partner an dieser Stufe haengengeblieben
+waeren.
+
+Kostet keinen Versuch: Gebaut wird ein Auftragstext, nicht ein Kandidat.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

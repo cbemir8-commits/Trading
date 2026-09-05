@@ -455,3 +455,65 @@ class TestPunktZweiIstEineHerleitung:
         assert "-14 bis" in text and "+236" in text
         assert "Zwei Paare stehen im Minus" in text
         assert "der eine gemessene Partner" not in text
+
+
+class TestDasBilligeVorfilterStehtImAuftrag:
+    """**Befund 206.** Was 202 bis 205 gemessen haben, gehoert in den Auftrag.
+
+    Die Zufallsprobe erklaert, **woran** die sieben Partner gescheitert sind:
+    Ihr Einstieg schlaegt den Zufall auf fremden Maerkten nicht. Sie kostet
+    keinen Versuch und laesst sich vor jeder Holdout-Probe fahren.
+
+    Befund 196 hat den Auftrag um das Holdout-Ergebnis ergaenzt - **was** war
+    also drin, **woran es lag** nicht.
+    """
+
+    def lage(self):
+        return aus_messungen(
+            versuche=198, bestand_trades=115, bestand_sharpe=0.2708,
+            holdout=(7, 0, 30.0, 41.0),
+        )
+
+    def test_die_probe_wird_beim_namen_genannt(self) -> None:
+        text = self.lage().als_auftrag()
+
+        assert "cli zufallseinstieg --regel" in text
+        assert "kostet keinen Versuch" in text
+
+    def test_das_ergebnis_ueber_zehn_partner_steht_da(self) -> None:
+        text = self.lage().als_auftrag()
+
+        assert "keiner** mehr als zwei von vier" in text
+        assert "der Bestand" in text and "raeumt vier" in text
+
+    def test_die_zu_seltenen_regeln_stehen_dabei(self) -> None:
+        """Wer auf fremden Maerkten nicht handelt, ist als Partner nichts wert."""
+        text = self.lage().als_auftrag()
+
+        assert "unter 20 Trades" in text
+        assert "zu selten handelt" in text
+
+    def test_die_schwelle_traegt_ihre_korrektur(self) -> None:
+        """**Befund 205 darf hier nicht verlorengehen.**
+
+        Ohne sie liest ein Vorschlagender "vier von vier" als Beleg - und
+        genau das war der Fehler, den 205 an mir selbst gefunden hat.
+        """
+        text = self.lage().als_auftrag()
+
+        assert "3,48" in text and "2,00" in text
+        assert "2 von 4 statt 4 von 4" in text
+
+    def test_es_steht_hinter_dem_holdout_abschnitt(self) -> None:
+        """Erst was passiert ist, dann woran es lag."""
+        text = self.lage().als_auftrag()
+
+        assert text.index("bisherigen Partnern") < text.index("zufallseinstieg")
+
+    def test_ohne_holdout_faellt_auch_das_vorfilter_weg(self) -> None:
+        """Es begruendet sich aus dem Ergebnis - ohne das steht es allein da."""
+        ohne = aus_messungen(
+            versuche=198, bestand_trades=115, bestand_sharpe=0.2708,
+        ).als_auftrag()
+
+        assert "zufallseinstieg" not in ohne

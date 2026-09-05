@@ -867,6 +867,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "nebeneinander",
         205,
     ),
+    # Der Kreis aus 202 bis 205, geschlossen im Artefakt, das kuenftige
+    # Versuche steuert - und das erste Kriterium dort, das **vor** einem
+    # Versuch greift.
+    Richtung(
+        "Der Auftrag nannte das Vorfilter nicht",
+        "'woran es bei allen sieben lag' stand nirgends; jetzt nennt er die "
+        "Zufallsprobe samt Befehl, das Ergebnis ueber zehn Partner und die "
+        "Schwellenkorrektur aus 205. Die Sweep-Gegenprobe: von drei Modulen "
+        "mit Signifikanzschwelle war nur zufallseinstieg betroffen",
+        206,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
