@@ -898,6 +898,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "mit den Pruefungen, die GESCHLOSSEN seit Befund 90 hat",
         208,
     ),
+    # Aus der Korrektur von 208 eine Regel gemacht - und die Suche nach
+    # weiteren Faellen kam leer zurueck.
+    Richtung(
+        "Register wurden von Hand geprueft",
+        "jedes Register hatte einen Test, der es beim Namen nennt - ein "
+        "siebtes bekaeme keinen. Der Test sucht sie jetzt selbst und "
+        "verlangt jeden Feldtext im Bericht, mit Gegenprobe. Die Suche nach "
+        "weiterem Ungenutzten fand nichts: 75 von 79 research-Modulen "
+        "haengen an Produktionscode, keines an gar nichts",
+        209,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

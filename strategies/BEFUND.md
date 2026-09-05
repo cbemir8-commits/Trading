@@ -18945,3 +18945,80 @@ festgehalten -, und die Arbeit war vollstaendig folgenlos.
 
 Kostet keinen Versuch: angezeigt wird, was schon gemessen war.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertneun. Die Gegenprobe zu 208 - und was sie nicht fand
+
+Befund 208 hat `OFFEN` sichtbar gemacht. Damit war *ein* Register behoben und
+die *Bauart* offen: Vier Mal in dieser Serie hat dasselbe Muster zugeschlagen
+- gebaut, richtig, und von niemandem gelesen (Befund 160 `AUSSICHT`, 187
+`kostenanteil`, 195 die Rangkorrelation, 208 `OFFEN`). Also einmal
+systematisch danach gesucht, statt auf den fuenften Zufallsfund zu warten.
+
+### Die Suche, und warum ihre erste Zahl nichts wert war
+
+Erster Durchgang, auf Namen: 542 oeffentliche Namen auf Modulebene in
+`research/`. Davon werden 311 ausserhalb ihres eigenen Moduls von anderem
+Code benutzt, 122 nur von Tests, und 109 von gar nichts - zusammen 231, die
+in keinem Produktions- oder research-Modul ausser ihrem eigenen vorkommen.
+
+Diese Zahl ist **kein Befund**, und das war vorher zu sehen, nicht hinterher:
+
+* Die zehn `GENERATION_n` und 53 Genom-Bauer in `seeds.py` haengen an der
+  `GENERATIONS`-Zuordnung, nicht am Namen. Nachgemessen: alle zehn
+  Konstanten *sind* die Werte dieses Verzeichnisses.
+* "Nur in Tests" ist fuer eine Schwelle, die es zum Dagegenpruefen gibt, der
+  vorgesehene Zustand und kein Mangel.
+
+Wer die 231 als Fund gemeldet haette, haette ein Suchwerkzeug fuer eine
+Messung gehalten.
+
+### Zweiter Durchgang, auf Modulen
+
+Die Frage, die zaehlt, ist nicht "wird dieser Name genannt", sondern "kommt
+dieses Modul irgendwo an":
+
+    79 Module in research/
+      von Produktionscode importiert       75
+      ueber ein anderes research-Modul      3   (fenstervergleich, portfolio, zeitskala)
+      nur von Tests                         1   (rangtreue)
+      von niemandem                         0
+
+Der eine Treffer ist `rangtreue.py` - aus Befund 195, von mir. Und er ist
+**kein Fund**: Der Zweck war, die Prosa-Zahl aus Befund 186 nachrechenbar zu
+machen, und `tests/test_rangtreue.py` traegt die acht gemessenen Paare und
+rechnet sie nach. Die Nachrechnung *ist* die Verdrahtung.
+
+**Die Suche hat nichts gefunden.** Das ist das Ergebnis, und es steht hier,
+weil ein Nichtfund nach vier Treffern desselben Musters eine Auskunft ist -
+sonst sucht in drei Befunden jemand dasselbe noch einmal.
+
+### Was dann doch offen war
+
+Nicht der Code, sondern die Zusicherung. Jedes Register in `stand.py` hat
+seinen eigenen, von Hand geschriebenen Test, der es beim Namen nennt -
+`test_bericht_zeigt_jede_geschlossene_richtung`, `..._die_offenen_...`. Ein
+siebtes Register bekaeme keinen, ausser jemand denkt daran. Genau daran hat
+bei `OFFEN` acht Befunde lang niemand gedacht.
+
+`TestJedesRegisterWirdAuchGezeigt` zaehlt die Register deshalb nicht auf,
+sondern **sucht sie**: oeffentlicher, nicht leerer Tupel auf Modulebene,
+Eintraege entweder durchweg Dataclasses oder durchweg Zeichenketten-Tupel.
+Gefunden werden genau die sechs, die es gibt. Jeder Feldtext ab zwoelf
+Zeichen muss im Bericht wieder auftauchen.
+
+Dazu die Gegenprobe, die die Klasse traegt: ein siebtes, nirgends angezeigtes
+Register wird untergeschoben, und der Test muss es melden. Er meldet es. Eine
+Pruefung, die nichts finden kann, besteht immer - das war bei `OFFEN` der
+Zustand, und ohne diesen Gegentest waere es der neue gewesen.
+
+### Was mir daran auffaellt
+
+Befund 208 endete mit dem Satz, ich haette das Register gepflegt und nie
+gefragt, wer es liest. Die naheliegende Reaktion darauf ist, alles
+durchzusehen und weitere Faelle zu finden. Gefunden habe ich keinen - der
+Behaelter ist an dieser Stelle sauberer, als der eigene Fehler vermuten
+liess. Die Arbeit lag nicht im Aufraeumen, sondern darin, aus einer
+Korrektur eine Regel zu machen, die den naechsten Fall ohne mich findet.
+
+Kostet keinen Versuch: gesucht und geprueft wurde an Quelltext, nicht an Kursen.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

@@ -11,10 +11,12 @@ Zwei Tests tragen die Datei:
 
 from __future__ import annotations
 
+import dataclasses
 from pathlib import Path
 
 import pytest
 
+from research import stand
 from research.stand import (
     BEHOBEN,
     BEIM_NUTZER,
@@ -1212,3 +1214,133 @@ class TestDasOffeneRegisterWirdAuchGezeigt:
 
         assert text.index("GEMESSEN UND GESCHLOSSEN") < text.index("GEMESSEN UND OFFEN")
         assert text.index("GEMESSEN UND OFFEN") < text.index("BEHOBEN AN DEN")
+
+
+#: Ab welcher Laenge ein Feldtext im Bericht wiedergefunden werden muss.
+#:
+#: Kurze Felder (``"offen"``, ``"OK"``) sagen nichts darueber, ob ein Eintrag
+#: angezeigt wird - sie stehen in jedem Bericht irgendwo.
+_AUSSAGEKRAEFTIG = 12
+
+
+def _register() -> dict[str, tuple]:
+    """Die Register in ``research.stand``, gefunden statt aufgezaehlt.
+
+    Ein Register ist ein oeffentlicher, nicht leerer Tupel auf Modulebene,
+    dessen Eintraege entweder alle Dataclasses sind (``GESCHLOSSEN``,
+    ``OFFEN``, ``BEHOBEN``, ``AUFTRAG``, ``ENTSCHEIDUNGEN``) oder alle
+    Zeichenketten-Tupel (``BEIM_NUTZER``).
+
+    **Gefunden, nicht aufgezaehlt** - das ist der ganze Punkt. Eine Liste von
+    Hand haette Befund 208 nicht verhindert: Wer ein Register anlegt und
+    vergisst, es anzuzeigen, vergisst genauso, es in die Liste einzutragen.
+    """
+    aus: dict[str, tuple] = {}
+    for name, wert in vars(stand).items():
+        if name.startswith("_") or not isinstance(wert, tuple) or not wert:
+            continue
+        dataclassen = all(dataclasses.is_dataclass(e) for e in wert)
+        strtupel = all(
+            isinstance(e, tuple) and all(isinstance(x, str) for x in e) for e in wert
+        )
+        if dataclassen or strtupel:
+            aus[name] = wert
+    return aus
+
+
+def _feldtexte(eintrag) -> list[str]:
+    """Die aussagekraeftigen Zeichenketten eines Registereintrags.
+
+    Texte mit ``{`` fallen heraus: ``BEIM_NUTZER`` traegt Platzhalter, die
+    der Bericht vor der Ausgabe ersetzt (Befund 196). Ihr Rohtext steht dort
+    also zu Recht nicht.
+    """
+    if dataclasses.is_dataclass(eintrag):
+        werte = [getattr(eintrag, f.name) for f in dataclasses.fields(eintrag)]
+    else:
+        werte = list(eintrag)
+    return [
+        w
+        for w in werte
+        if isinstance(w, str) and "{" not in w and len(w) >= _AUSSAGEKRAEFTIG
+    ]
+
+
+def _fehlstellen(text: str) -> list[tuple[str, str]]:
+    """Welche Registertexte im Bericht **nicht** vorkommen."""
+    return [
+        (name, t)
+        for name, wert in sorted(_register().items())
+        for e in wert
+        for t in _feldtexte(e)
+        if t not in text
+    ]
+
+
+class TestJedesRegisterWirdAuchGezeigt:
+    """**Befund 209.** Aus Befund 208 eine Zusicherung machen statt einer Zeile.
+
+    Befund 208 hat ``OFFEN`` angezeigt - elf Eintraege, die dutzende Befunde
+    lang gepflegt und nie ausgegeben wurden. Damit war *dieser* Fall behoben
+    und der *Fall* offen: Jedes Register hier hat seinen eigenen, von Hand
+    geschriebenen Test, der es beim Namen nennt. Ein siebtes Register bekaeme
+    keinen, ausser jemand denkt daran - und genau daran hat acht Befunde lang
+    niemand gedacht.
+
+    Deshalb zaehlt dieser Test die Register nicht auf, sondern **sucht sie**.
+    Was aussieht wie ein Register, muss im Bericht ankommen.
+
+    ``test_die_regel_ist_nicht_blind`` traegt die Klasse: Eine Pruefung, die
+    nichts finden kann, besteht immer.
+    """
+
+    def test_die_bekannten_register_werden_gefunden(self) -> None:
+        """Ohne das koennte die Suche stillschweigend leerlaufen."""
+        gefunden = _register()
+
+        assert set(gefunden) == {
+            "AUFTRAG",
+            "BEHOBEN",
+            "BEIM_NUTZER",
+            "ENTSCHEIDUNGEN",
+            "GESCHLOSSEN",
+            "OFFEN",
+        }
+
+    def test_jedes_register_erreicht_den_bericht(self) -> None:
+        fehlt = _fehlstellen(_lage().bericht())
+
+        assert fehlt == [], f"gepflegt, aber nirgends angezeigt: {fehlt}"
+
+    def test_die_regel_ist_nicht_blind(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Die Gegenprobe: ein siebtes Register, das der Bericht nicht kennt.
+
+        Genau die Lage von Befund 208 - angelegt, gepflegt, unsichtbar. Wenn
+        die Pruefung sie nicht meldet, sichert sie nichts zu.
+        """
+        monkeypatch.setattr(
+            stand,
+            "SPAETERES_REGISTER",
+            (
+                Richtung(
+                    name="Etwas Ungezeigtes",
+                    ergebnis="gemessen und nirgends sichtbar",
+                    befund=42,
+                ),
+            ),
+            raising=False,
+        )
+
+        fehlt = _fehlstellen(_lage().bericht())
+
+        assert [n for n, _ in fehlt] == ["SPAETERES_REGISTER"] * 2
+
+    def test_kurze_felder_zaehlen_nicht_als_beleg(self) -> None:
+        """Warum es die Laengenschwelle gibt.
+
+        ``Auftragspunkt.stand`` kann "offen" sein - das steht in jedem
+        Bericht und wuerde eine Anzeige vortaeuschen, die es nicht gibt.
+        """
+        assert _feldtexte(("ok", "cli backfill --intervall 15")) == [
+            "cli backfill --intervall 15"
+        ]
