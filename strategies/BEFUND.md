@@ -19507,3 +19507,94 @@ wollte.
 
 Kostet keinen Versuch: gelesen und bewacht, nichts gemessen.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertfuenfzehn. Und wo noch - die Anleitung
+
+Befund 214 endete mit dem Satz, was jedes Mal fehle, sei nicht die Einsicht,
+sondern die Frage *"und wo noch?"*. Diesmal zuerst gefragt.
+
+### Erst das Erfreuliche: der Befehlsbestand ist sauber
+
+Jede Zeichenkette `python -m cli ...` im Quelltext gegen die tatsaechliche
+Befehlszeile geprueft - 48 Stellen ausserhalb der Tests, **alle
+ausfuehrbar**. Die Wache, die `BEIM_NUTZER` seit Befund 167 hat und die
+README seit 118, haette hier nichts zu tun.
+
+Der erste Durchgang meldete zwoelf Treffer. Elf davon waren Prosa in
+Docstrings, in Anfuehrungsstriche gesetzte Befehlsnamen und die Suchmuster
+der Tests selbst; der zwoelfte war `python -m cli --help`, das kein
+Unterbefehl ist. Wieder eine Zahl, die vor dem Filtern nichts wert war - wie
+die 231 aus Befund 209 und die zwoelf halben Ladehinweise aus 213.
+
+### Und dann die Anleitung
+
+Befund 214 hat das Paar in `BEIM_NUTZER` geradegezogen: laden auf `-i D`,
+suchen auf `--generation 9`. Die README habe ich dabei nicht angesehen. Dort
+steht dasselbe Paar, gleich dreimal - und es ist das **erste**, was jemand
+liest.
+
+**Der Schnelleinstieg**, direkt unter dem Satz *"von deinem Rechner aus geht
+es"*:
+
+    python -m cli backfill --intervall D --von 2017-08-16   # Boersenkerzen laden
+    python -m cli wettbewerb                                # Strategien suchen
+
+Laedt Tageskerzen, sucht auf Vorgabegeneration 8 - Viertelstunden. Leerer
+Speicher, Abbruch.
+
+**Die Windows-Kurzfassung**, und die ist der interessantere Fall:
+
+    .venv\Scripts\python -m cli backfill    Kurse laden, ~8 Minuten
+    .venv\Scripts\python -m cli research    Strategie suchen
+
+Hier ist es andersherum. `backfill` ohne `-i` laedt 1m/15m/1h/4h, und
+`research` laeuft auf **Vorgabegeneration 5, also Tageskerzen**. Dieselbe
+Fehlpaarung, aus der anderen Richtung.
+
+Denn die beiden Suchbefehle haben **verschiedene Vorgaben**:
+
+    wettbewerb   --generation 8   ->  15 Minuten
+    research     --generation 5   ->  Tageskerzen
+
+Das ist keine Nachlaessigkeit, sondern gewachsen - aber es heisst, dass man
+die Kerzenlaenge eines Suchbefehls nicht raten kann und eine Wache sie
+ausrechnen muss.
+
+### Die Wache steht jetzt an der Anleitung
+
+Nicht am Register: Sie liest die Codebloecke der README, findet die, in denen
+Laden und Suchen zusammenstehen, rechnet fuer jeden Suchbefehl seine
+Kerzenlaenge aus und prueft, ob der Ladebefehl im selben Block sie holt. Drei
+solche Bloecke gibt es; alle drei passen jetzt.
+
+Dazu die Gegenprobe mit genau den zwei alten Zeilenpaaren - eine Regel, die
+den Fall nicht mehr erzeugen kann, gegen den sie gebaut ist, sichert nichts
+zu.
+
+### Was noch dazukam
+
+Die README erklaerte weiter unten voellig richtig, dass `backfill` ohne `-i`
+*"~6 Jahre BTC-Historie (1m/15m/1h/4h)"* laedt. Die Angabe stand seit jeher
+da, achtzig Zeilen unter der Anweisung, die deshalb falsch war. Jetzt steht
+der Satz daneben, dass Tageskerzen in dieser Vorgabe **nicht** enthalten
+sind und auf ihnen alle elf Gates stehen.
+
+Das ist zum zweiten Mal dieselbe Form: In Befund 211 wusste `cli.py` seit
+Befund 119, dass die Herkunft nach Datei trennt und nicht nach Quelle - der
+Satz stand im Quelltext, und ich habe trotzdem falsch geschlossen. Wissen,
+das an der falschen Stelle steht, ist fuer den, der es braucht, nicht
+vorhanden.
+
+### Was mir daran auffaellt
+
+Die Frage "und wo noch?" hat diesmal gearbeitet, und ihr Ertrag war
+unsymmetrisch: Beim Befehlsbestand, wo ich einen Fund erwartet hatte, war
+nichts; bei der Anleitung, an die ich einen Befund zuvor nicht gedacht hatte,
+lagen drei.
+
+Erwartung ist offenbar ein schlechter Hinweis darauf, wo zu suchen ist. Das
+haette man nach Befund 209 wissen koennen, wo dieselbe Suche im erwarteten
+Verzeichnis leer ausging und der Fall vier Befunde spaeter in `data/` lag.
+
+Kostet keinen Versuch: gelesen und bewacht, nichts gemessen.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

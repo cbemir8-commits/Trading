@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import re
 import shlex
+from pathlib import Path
 
 import pytest
 import typer
@@ -146,9 +147,107 @@ class TestDieSchritteFuerDenNutzerPassenZusammen:
         assert not set(gebraucht.values()) <= geladen
 
 
-def _vorgabe_generation() -> int:
-    """Die Vorgabe von ``--generation``, aus dem Befehl gelesen."""
-    kommando = typer.main.get_command(cli.app).commands["wettbewerb"]
+class TestDieAnleitungPasstAuchZusammen:
+    """**Befund 215.** Dieselbe Pruefung fuer die README.
+
+    Befund 214 hat das Paar in ``BEIM_NUTZER`` geradegezogen und die README
+    nicht angesehen - obwohl dort dieselben zwei Schritte stehen und sie das
+    erste sind, was jemand liest. Die Wache gehoert also nicht an ein
+    Register, sondern an jede Stelle, die eine Folge von Befehlen vorgibt.
+    """
+
+    #: Codeblöcke der README, in denen Laden und Suchen zusammen stehen.
+    @staticmethod
+    def _bloecke() -> list[list[str]]:
+        text = Path("README.md").read_text()
+        aus = []
+        for block in re.findall(r"```[a-z]*\n(.*?)```", text, re.S):
+            zeilen = [
+                z.strip()
+                for z in block.splitlines()
+                if "-m cli" in z and not z.lstrip().startswith("#")
+            ]
+            if any("backfill" in z for z in zeilen) and any(
+                _sucht(z) for z in zeilen
+            ):
+                aus.append(zeilen)
+        return aus
+
+    def test_es_gibt_solche_bloecke(self) -> None:
+        """Sonst prueft der Test darunter nichts."""
+        assert self._bloecke()
+
+    def test_die_regel_faende_beide_alten_faelle(self) -> None:
+        """**Die Gegenprobe** - genau die zwei Stellen, die es gab.
+
+        Oben: Tageskerzen laden, dann ``wettbewerb`` ohne Generation, also
+        Vorgabe 8 und damit Viertelstunden. Unten die Windows-Kurzfassung:
+        ``backfill`` ohne Intervall, also 1m/15m/1h/4h, dann ``research``,
+        das auf Vorgabe 5 und damit auf Tageskerzen laeuft.
+        """
+        oben_geladen = _geladen_aus("python -m cli backfill --intervall D --von 2017-08-16")
+        assert _gebraucht_aus("python -m cli wettbewerb") not in oben_geladen
+
+        unten_geladen = _geladen_aus(r".venv\Scripts\python -m cli backfill")
+        assert _gebraucht_aus(r".venv\Scripts\python -m cli research") not in unten_geladen
+
+    def test_die_beiden_suchbefehle_haben_verschiedene_vorgaben(self) -> None:
+        """Der Grund, warum eine Wache das nicht raten darf."""
+        assert _vorgabe_generation("wettbewerb") != _vorgabe_generation("research")
+        assert cli._standardintervall(_vorgabe_generation("research")) == "D"
+
+    def test_laden_und_suchen_treffen_sich(self) -> None:
+        for zeilen in self._bloecke():
+            geladen = _geladen_aus(next(z for z in zeilen if "backfill" in z))
+            for zeile in (z for z in zeilen if _sucht(z)):
+                gebraucht = _gebraucht_aus(zeile)
+
+                assert gebraucht in geladen, (
+                    f"'{zeile}' laeuft auf {gebraucht}-Kerzen, der Ladebefehl "
+                    f"im selben Block holt {sorted(geladen)}."
+                )
+
+
+def _sucht(zeile: str) -> bool:
+    """Sucht diese Zeile Strategien - laeuft also auf Kerzen?"""
+    return any(f"cli {b}" in zeile for b in ("wettbewerb", "research"))
+
+
+def _argumente(zeile: str) -> list[str]:
+    """Die Argumente hinter dem Befehlsnamen, ohne Kommentar."""
+    ohne = zeile.split("#")[0]
+    teile = ohne.split("-m cli", 1)[1].split()
+    return teile[1:]
+
+
+def _geladen_aus(zeile: str) -> set[str]:
+    args = _argumente(zeile)
+    codes = [args[i + 1] for i, a in enumerate(args) if a in ("--intervall", "-i")]
+    return set(codes) if codes else {i.value for i in cli.DEFAULT_INTERVALS}
+
+
+def _gebraucht_aus(zeile: str) -> str:
+    args = _argumente(zeile)
+    ausdruecklich = [
+        args[i + 1] for i, a in enumerate(args) if a in ("--intervall", "-i")
+    ]
+    if ausdruecklich:
+        return ausdruecklich[0]
+    befehl = "wettbewerb" if "cli wettbewerb" in zeile else "research"
+    generation = next(
+        (int(args[i + 1]) for i, a in enumerate(args) if a in ("--generation", "-g")),
+        _vorgabe_generation(befehl),
+    )
+    return cli._standardintervall(generation)
+
+
+def _vorgabe_generation(befehl: str = "wettbewerb") -> int:
+    """Die Vorgabe von ``--generation``, aus dem Befehl gelesen.
+
+    Sie ist **nicht** fuer alle gleich: ``wettbewerb`` steht auf 8 (15
+    Minuten), ``research`` auf 5 (Tageskerzen).
+    """
+    kommando = typer.main.get_command(cli.app).commands[befehl]
     for p in kommando.params:
         if "--generation" in getattr(p, "opts", []):
             return int(p.default)

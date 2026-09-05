@@ -991,6 +991,16 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Wache, die beide Zeilen gegeneinander prueft",
         214,
     ),
+    # 214 hat das Register geradegezogen und die README nicht angesehen -
+    # dabei steht dort dasselbe Paar, und es wird zuerst gelesen.
+    Richtung(
+        "Dieselbe Fehlpaarung in der README",
+        "drei Bloecke: der Schnelleinstieg lud D und suchte mit Vorgabe 8 "
+        "auf Viertelstunden, die Windows-Kurzfassung lud 1m/15m/1h/4h und "
+        "suchte mit 'research' auf Tageskerzen. Beide berichtigt; die Wache "
+        "aus 214 prueft jetzt auch die Codebloecke der Anleitung",
+        215,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

@@ -30,7 +30,7 @@ geoblockt; von deinem Rechner aus geht es:
 
 ```bash
 python -m cli backfill --intervall D --von 2017-08-16   # Börsenkerzen laden
-python -m cli wettbewerb                                # Strategien suchen
+python -m cli wettbewerb --generation 9                 # Strategien suchen (Tageskerzen)
 ```
 
 Zwei weitere Dinge kann nur dein Konto beantworten:
@@ -186,7 +186,7 @@ python -m cli quality                     # Lücken, Duplikate, Ausreißer
 python -m cli ingest                      # Live-Kerzen mitschreiben
 python -m cli leverage --kapital 500      # Hebel-Tabelle für dein Konto
 python -m cli stand                       # wo steht das Projekt?
-python -m cli wettbewerb                  # Strategien suchen und pruefen
+python -m cli wettbewerb --generation 9   # Strategien suchen (Tageskerzen)
 python -m cli research                    # ein einzelner Pruefdurchgang
 python -m cli review                      # laeuft die Strategie noch?
 python -m cli trade --trocken             # Handelsplan zeigen, keine Order
@@ -200,7 +200,7 @@ einzelnen Befunden. `python -m cli --help` listet sie alle.
 ### `TRADING_TROCKENLAUF` — probieren, ohne Spuren
 
 ```bash
-TRADING_TROCKENLAUF=1 python -m cli wettbewerb
+TRADING_TROCKENLAUF=1 python -m cli wettbewerb --generation 9
 ```
 
 Mit gesetzter Variable **hinterlässt kein Befehl etwas**: kein Versuchszähler,
@@ -221,7 +221,7 @@ Kurzfassung — nach jedem Befehl kurz schauen, ob etwas Rotes dabei war:
 ```
 python install.py                       einrichten, 1-3 Minuten
 .venv\Scripts\python -m cli setup       Bybit verbinden
-.venv\Scripts\python -m cli backfill    Kurse laden, ~8 Minuten
+.venv\Scripts\python -m cli backfill --intervall D --von 2017-08-16    Kurse laden
 .venv\Scripts\python -m cli research    Strategie suchen
 start.bat                               loslaufen lassen
 ```
@@ -270,9 +270,14 @@ ssh -L 8000:localhost:8000 benutzer@server
 Dann `http://localhost:8000` öffnen, *Teilen → Zum Home-Bildschirm* — und sie
 verhält sich wie eine App.
 
-`backfill` lädt ~6 Jahre BTC-Historie (1m/15m/1h/4h) in rund 3.400 Anfragen
-(~8 Minuten bei 8 req/s). Er ist **resumierbar** — ein Abbruch kostet höchstens
-eine Seite, der nächste Aufruf setzt hinter der letzten vollständigen Kerze an.
+`backfill` lädt ohne `-i` ~6 Jahre BTC-Historie (1m/15m/1h/4h) in rund 3.400
+Anfragen (~8 Minuten bei 8 req/s). Er ist **resumierbar** — ein Abbruch kostet
+höchstens eine Seite, der nächste Aufruf setzt hinter der letzten vollständigen
+Kerze an.
+
+**Tageskerzen sind in dieser Vorgabe nicht enthalten**, und auf ihnen stehen
+der Spitzenkandidat und alle elf Gates. Wer sie braucht, muss `-i D` angeben —
+deshalb steht es oben in jedem Ladebefehl (Befund 213/215).
 
 ## Struktur
 
