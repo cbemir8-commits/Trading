@@ -1521,9 +1521,14 @@ def _ask_the_analyst(settings, journal_path: Path) -> list:
     """Die Research-KI um neue Kandidaten bitten.
 
     Sie schlaegt vor, sie entscheidet nicht: Jeder Vorschlag durchlaeuft
-    danach dieselben neun Gates wie ein von Hand geschriebenes Genom,
+    danach dieselben **elf** Gates wie ein von Hand geschriebenes Genom,
     inklusive Mehrfachtest-Korrektur. Ein Modellaufruf verschiebt keine
     einzige Schwelle.
+
+    Hier stand bis Befund 210 "neun Gates" - dieselbe falsche Zahl, die in
+    Befund 104 einundzwanzig Versuche gekostet hat und in Befund 120 an der
+    anderen Fundstelle berichtigt wurde. Sie hat in diesem Docstring
+    ueberlebt, weil dort nach dem Wort gesucht wurde und nicht nach der Zahl.
     """
     import json as _json
 

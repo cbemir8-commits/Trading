@@ -1344,3 +1344,114 @@ class TestJedesRegisterWirdAuchGezeigt:
         assert _feldtexte(("ok", "cli backfill --intervall 15")) == [
             "cli backfill --intervall 15"
         ]
+
+
+class TestBeideWegeDesWettbewerbsStehenDa:
+    """**Befund 210.** Behoben laut Register, unerreichbar in der Anleitung.
+
+    Befund 146 hat die Research-KI an den Wettbewerb gehaengt und den Eintrag
+    "Research-KI nicht am Wettbewerb" auf behoben gesetzt. Das stimmt - als
+    Schalter. ``--ki`` steht auf aus, und die Zeile, der der Nutzer folgt,
+    hat ihn nie genannt.
+
+    Die Sweep-Gegenprobe aus Befund 209 konnte das nicht finden: Sie hat
+    Importe gemessen, und der Import war da. Unerreichbar war der Weg nicht
+    mangels Verdrahtung, sondern wegen einer Vorgabe.
+    """
+
+    @staticmethod
+    def _wettbewerbszeilen() -> list[str]:
+        return [b for b, _ in BEIM_NUTZER if "wettbewerb" in b]
+
+    def test_beide_wege_stehen_als_befehlszeile(self) -> None:
+        """Nicht als Prosa - das war der Fehler aus Befund 167."""
+        zeilen = self._wettbewerbszeilen()
+
+        assert "python -m cli wettbewerb" in zeilen
+        assert "python -m cli wettbewerb --ki" in zeilen
+
+    def test_der_schalter_wird_nicht_stillschweigend_verschwiegen(self) -> None:
+        """Wer nur die erste Zeile liest, muss erfahren, was ihm entgeht."""
+        ohne = next(
+            w for b, w in BEIM_NUTZER if b == "python -m cli wettbewerb"
+        )
+
+        assert "Research-KI" in ohne
+        assert "ohne" in ohne.lower()
+
+    def test_die_entscheidung_ist_beziffert_und_nicht_beantwortet(self) -> None:
+        """``ENTSCHEIDUNGEN`` benennt und beziffert - es empfiehlt nicht.
+
+        Die Bilanz der KI ist null von fuenf, und diese fuenf sind vor der
+        Korrektur aus Befund 76 entstanden. Beides muss dastehen: die Zahl
+        allein waere ein Urteil ueber ein Werkzeug, das es so nicht mehr gibt.
+        """
+        eintrag = next(
+            e for e in ENTSCHEIDUNGEN if "Research-KI" in e.frage
+        )
+
+        assert "fuenf" in eintrag.zahl and "0,25" in eintrag.zahl
+        assert "76" in eintrag.zahl, "die Korrektur des Auftrags fehlt"
+        assert "Grundstock" in eintrag.zahl, "der Beleg-Vorbehalt fehlt"
+        assert "hebt die Huerde" in eintrag.warum, "der Preis fehlt"
+
+    def test_der_preis_steht_neben_der_chance(self) -> None:
+        """Ein Vorschlag ist ein Versuch, und jeder Versuch hebt die Huerde
+        des Deflated Sharpe fuer alle folgenden (Befund 71). Wer die KI
+        empfiehlt, ohne das zu sagen, empfiehlt einen sicheren Aufschlag
+        gegen eine unbelegte Chance."""
+        text = _lage().bericht()
+
+        assert "Soll die Research-KI mitlaufen" in text
+        assert "python -m cli wettbewerb --ki" in text
+
+
+class TestDieFalscheGatezahlKommtNichtWieder:
+    """**Befund 210, Nebenfund.** "Neun Gates" hat 21 Versuche gekostet.
+
+    Befund 104 hat einundzwanzig Versuche fuer eine Suche ausgegeben, deren
+    Docstring neun statt elf Gates nannte; Befund 120 hat die Stelle
+    berichtigt. In ``_ask_the_analyst`` stand die Zahl weiter - und
+    ausgerechnet dort, wo die Vorschlaege der KI durch die Gates gehen.
+
+    Eine berichtigte Zahl an einer Stelle ist keine berichtigte Zahl.
+    """
+
+    @staticmethod
+    def _fundstellen(text: str) -> list[str]:
+        """Zeilen, die neun Gates **behaupten**.
+
+        Erlaubt ist, ueber den Fehler zu reden - "neun Gates statt elf" oder
+        die Zahl in Anfuehrungszeichen. Nicht erlaubt ist, sie zu behaupten.
+        Der Unterschied ist der zwischen Erinnerung und Wiederholung.
+
+        Nimmt den Text als Argument, damit die Regel selbst pruefbar ist:
+        Eine Wache, die nur gegen die eigene Datei laeuft, kann nicht zeigen,
+        dass sie etwas faende (Befund 209).
+        """
+        import re
+
+        return [
+            z
+            for z in re.findall(r"[^\n]*neun Gates[^\n]*", text)
+            if "statt elf" not in z and '"neun Gates"' not in z
+        ]
+
+    def test_keine_stelle_nennt_mehr_neun_gates(self) -> None:
+        assert self._fundstellen(Path("cli.py").read_text()) == []
+
+    def test_die_regel_faende_einen_rueckfall(self) -> None:
+        """Die Gegenprobe: genau der Satz, der bis heute dort stand."""
+        rueckfall = "    danach dieselben neun Gates wie ein Genom.\n"
+
+        assert len(self._fundstellen(rueckfall)) == 1
+
+    def test_ueber_den_fehler_reden_bleibt_erlaubt(self) -> None:
+        assert self._fundstellen("er nannte neun Gates statt elf\n") == []
+        assert self._fundstellen('bis 210 stand hier "neun Gates"\n') == []
+
+    def test_die_geschichte_darf_stehenbleiben(self) -> None:
+        """Sonst loescht der Test oben die Erinnerung mit dem Fehler."""
+        text = Path("cli.py").read_text()
+
+        assert "neun Gates statt elf" in text

@@ -19022,3 +19022,116 @@ Korrektur eine Regel zu machen, die den naechsten Fall ohne mich findet.
 
 Kostet keinen Versuch: gesucht und geprueft wurde an Quelltext, nicht an Kursen.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertzehn. Behoben laut Register, unerreichbar in der Anleitung
+
+Der Dauerauftrag fuehrt seit vielen Runden denselben offenen Punkt: *"Die
+Research-KI ist gebaut, wird im Wettbewerb aber nicht genutzt."* Diesmal
+nachgesehen, statt ihn weiterzuschreiben.
+
+### Die Behauptung stimmt nicht - und das Ergebnis ist trotzdem dasselbe
+
+`research/analyst.py` **haengt** am Wettbewerb, seit Befund 146. `cli.py:701`
+ruft `_ask_the_analyst` aus `wettbewerb` heraus auf, die Herkunft wird
+getrennt gefuehrt, und `BEHOBEN` fuehrt den Eintrag "Research-KI nicht am
+Wettbewerb" als erledigt. Alles richtig.
+
+Nur steht der Schalter auf aus:
+
+    cli.py:516   ki: bool = typer.Option(False, "--ki/--ohne-ki", ...)
+
+Und die Zeile, der der Nutzer folgen soll, hat ihn nie genannt:
+
+    BEIM_NUTZER   "python -m cli wettbewerb"
+
+`--ki` gibt es seit Befund 146. Die Anleitung hat ihn in den 64 Befunden
+seither kein einziges Mal erwaehnt. Wer tut, was das Projekt ihm sagt, laesst
+den einzigen Bauteil ungenutzt, der eine Regel vorschlagen kann, die es noch
+nicht gibt - und nach Befund 145 ist genau das die Luecke.
+
+**Der Dauerauftrag hatte also recht in der Wirkung und unrecht in der
+Ursache.** Nicht die Verdrahtung fehlt, sondern die Vorgabe eines Schalters
+macht sie unerreichbar.
+
+### Was das ueber Befund 209 sagt
+
+Einen Befund zuvor habe ich systematisch nach "gebaut und ungelesen" gesucht
+und gemeldet: nichts gefunden, 75 von 79 Modulen haengen an Produktionscode.
+Das war richtig gemessen und hat diesen Fall nicht gefunden - `analyst.py`
+**wird** importiert, der Test existiert, das Modul ist verdrahtet. Meine
+Suche hat Importe gezaehlt. Unerreichbar war der Weg nicht mangels Import,
+sondern wegen einer Vorgabe, und danach habe ich nicht gesucht.
+
+Das ist kein Fehler in der Messung von 209, aber es ist eine Grenze, die ich
+dort nicht genannt habe. Ein Nichtfund gilt fuer die gestellte Frage, nicht
+fuer die gemeinte.
+
+### Was dazukam - und was ausdruecklich nicht
+
+Beide Wege stehen jetzt als eigene, geprueft ausfuehrbare Befehlszeile unter
+"Nur auf deinem Rechner", und die Zeile ohne KI sagt, was ihr fehlt.
+
+**Der Vorgabewert bleibt auf aus, und empfohlen wird nichts.** Die Bilanz der
+KI ist naemlich unschoen: fuenf Vorschlaege, vier mit 68 bis 123 Trades,
+keiner mit einem Sharpe je Trade ueber 0,25 - gebraucht werden 120 Trades bei
+ueber 0,23 (Befund 74/75). Null von fuenf.
+
+Diese fuenf sind allerdings **vor** der Korrektur entstanden, die Befund 76
+selbst gebracht hat: Bis dahin nannte der Auftrag an die KI den Deflated
+Sharpe nicht und zielte auf 100 Trades. Was der korrigierte Auftrag bringt,
+ist nirgends verzeichnet. Von den elf einzeln erfassten Versuchen traegt
+keiner die Herkunft "Analyst" - die uebrigen 187 stehen als Grundstock ohne
+Herkunft da, und dieser Behaelter ist einmal geleert worden (Befund 166).
+**Also belegt das nichts**, und "die KI hat seither nie gelaufen" waere eine
+Vermutung, keine Messung.
+
+Deshalb steht es unter `ENTSCHEIDUNGEN` und nicht als Empfehlung: Gegen die
+unbelegte Chance auf strukturell Neues steht ein sicherer Preis - jeder
+Vorschlag zaehlt als Versuch und hebt die Huerde des Deflated Sharpe fuer
+alle folgenden (Befund 71), dazu Modellkosten gegen das Monatsbudget. Eine
+Serie erfolgloser Vorschlaege macht den Bestand messbar schlechter. Ob sich
+das lohnt, ist eine Geschaeftsfrage und faellt nicht hier.
+
+### Nebenfund: dieselbe falsche Zahl, eine Fundstelle weiter
+
+Beim Lesen von `_ask_the_analyst` stand dort:
+
+    danach dieselben neun Gates wie ein von Hand geschriebenes Genom
+
+Es sind **elf**. Diese Zahl hat eine Geschichte: In Befund 104 hat sie
+einundzwanzig Versuche gekostet, Befund 118 fand sie als "acht" in der
+README, Befund 120 als "neun" in `cli research`. Befund 121 hat dann
+aufgeraeumt und die Bilanz gezogen - *"dieselbe Zahl an vier Stellen in drei
+Fassungen"* - und sie mit `analyst.anzahl_gates()` aus `evaluate_gates`
+abgeleitet, damit sie nicht mehr abgeschrieben werden kann.
+
+**Der Docstring von `_ask_the_analyst` war die fuenfte Stelle.** Er stand
+neunzig Befunde spaeter unveraendert da.
+
+Nachgesehen, ob die Ableitung aus 121 verfallen ist: nein. `anzahl_gates()`
+wird in `analyst.py` dreimal benutzt, im Systemauftrag und zweimal in
+`build_prompt` - alles, was der KI tatsaechlich vorgelegt wird, rechnet die
+Zahl. Was ueberlebt hat, ist ein Docstring, und den erreicht keine Ableitung:
+Er wird nicht gerendert, sondern gelesen.
+
+Berichtigt, mit einer Wache dagegen: Die Zahl darf genannt werden, wo ueber
+den Fehler geredet wird ("neun Gates statt elf"), und nicht, wo sie behauptet
+wird. Die Wache nimmt ihren Text als Argument, damit die Gegenprobe zeigen
+kann, dass sie einen Rueckfall faende - die Lehre aus Befund 209.
+
+Eine an vier Stellen berichtigte Zahl ist keine berichtigte Zahl. Befund 121
+hat die Fassungen gezaehlt, die er gefunden hat, und daraus geschlossen, das
+Feld sei abgeraeumt - derselbe zu enge Schnitt wie bei meiner Suche in Befund
+209 und in Befund 193.
+
+### Was mir daran auffaellt
+
+Ein Register kann "behoben" sagen und recht haben, waehrend der Weg, den ein
+Mensch tatsaechlich geht, an der Sache vorbeifuehrt. Der Eintrag aus 146
+beschreibt, was gebaut wurde; niemand hat gefragt, ob es auf dem
+vorgezeichneten Weg auch vorkommt. Das ist dieselbe Luecke wie in Befund 208,
+eine Ebene weiter aussen: dort wurde gepflegt, was niemand liest, hier
+gebaut, was niemand aufruft.
+
+Kostet keinen Versuch: gelesen wurde Quelltext, nicht Kurse.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

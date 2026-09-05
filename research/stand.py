@@ -909,6 +909,26 @@ BEHOBEN: tuple[Richtung, ...] = (
         "haengen an Produktionscode, keines an gar nichts",
         209,
     ),
+    # Die Sweep-Gegenprobe aus 209 konnte das nicht finden: Der Import war
+    # da, der Test war da - nur die Vorgabe des Schalters stand auf aus.
+    Richtung(
+        "Behoben laut Register, unerreichbar in der Anleitung",
+        "146 hat die KI an den Wettbewerb gehaengt und das Register auf "
+        "behoben gesetzt; '--ki' steht seither auf aus, und die Zeile, der "
+        "der Nutzer folgt, hat den Schalter nie genannt. Jetzt beide Wege "
+        "als Befehlszeile, mit der Entscheidung samt Preis daneben",
+        210,
+    ),
+    # Die fuenfte Fassung derselben Zahl - 121 hat vier gefunden und das
+    # Feld fuer abgeraeumt gehalten.
+    Richtung(
+        "Neun Gates im Docstring des Analysten",
+        "die Zahl, die in Befund 104 einundzwanzig Versuche gekostet hat, "
+        "stand in '_ask_the_analyst' neunzig Befunde nach ihrer Berichtigung "
+        "noch da. Die Ableitung aus 121 gilt weiter - sie erreicht nur "
+        "keinen Docstring. Jetzt elf, mit Wache und Gegenprobe",
+        210,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1319,6 +1339,35 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "geben, nach denen das System steht, bis jemand es freigibt. "
               "Ob das so bleiben soll, ist eine Betriebsentscheidung.",
     ),
+    Entscheidung(
+        frage="Soll die Research-KI mitlaufen",
+        zahl="Ihre einzige gemessene Bilanz sind fuenf Vorschlaege aus "
+             "Befund 76: vier zwischen 68 und 123 Trades, keiner mit einem "
+             "Sharpe je Trade ueber 0,25. Gebraucht werden 120 Trades bei "
+             "ueber 0,23 (Befund 74/75) - also null von fuenf."
+             "\n    Diese fuenf sind aber **vor** der Korrektur entstanden, "
+             "die Befund 76 selbst gebracht hat: Bis dahin nannte ihr "
+             "Auftrag den Deflated Sharpe nicht und zielte auf 100 Trades. "
+             "Seither weiss sie, worauf es ankommt - und was seither "
+             "herauskam, ist nirgends verzeichnet. Von den 11 einzeln "
+             "erfassten Versuchen traegt keiner die Herkunft 'Analyst'; die "
+             "uebrigen 187 stehen als Grundstock ohne Herkunft da, also "
+             "belegt das nichts.",
+        warum="Nach Befund 145 sind alle gemessenen Richtungen leer, und was "
+              "fehlt, ist eine Regel, die es noch nicht gibt. Der Katalog "
+              "kann sie nicht liefern (Befund 75), 'breed' bildet nur "
+              "Abwandlungen - die KI ist das einzige gebaute Bauteil, das "
+              "eine vorschlagen kann.\n    Dagegen steht der Preis, und er "
+              "ist keine Kleinigkeit: **Jeder Vorschlag zaehlt als Versuch "
+              "und hebt die Huerde des Deflated Sharpe fuer alle folgenden** "
+              "(Befund 71), dazu kommen Modellkosten gegen das Monatsbudget. "
+              "Eine Serie erfolgloser Vorschlaege macht den Bestand also "
+              "messbar schlechter, ohne etwas beizutragen."
+              "\n    Zu entscheiden ist damit, ob eine unbelegte Chance auf "
+              "strukturell Neues diesen sicheren Aufschlag wert ist. Das ist "
+              "eine Geschaeftsfrage und faellt nicht hier. Beide Wege stehen "
+              "als Befehlszeile unter 'Nur auf deinem Rechner'.",
+    ),
 )
 
 
@@ -1453,7 +1502,21 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "derselben Zeile - keine Befehlszeile, sondern Prosa: Wer sie "
         "kopierte, bekam 'Got unexpected extra argument(s)'. Er legt auch "
         "'state/leaderboard.json' neu an, die in diesem Behaelter fehlt "
-        "(Befund 166). {versuchskosten}",
+        "(Befund 166). So aufgerufen laeuft er **ohne** die Research-KI und "
+        "bildet nur Abwandlungen dessen, was der Katalog schon kennt - die "
+        "Zeile darunter ist der andere Weg, und welcher richtig ist, steht "
+        "unter 'Was nicht bei mir liegt'. {versuchskosten}",
+    ),
+    (
+        "python -m cli wettbewerb --ki",
+        "Dasselbe, aber die Research-KI schlaegt je Runde zusaetzlich neue "
+        "Kandidaten vor. Das ist das einzige gebaute Bauteil, das eine Regel "
+        "vorschlagen kann, die es noch nicht gibt - und nach Befund 145 ist "
+        "genau das die Luecke, denn alle gemessenen Richtungen sind leer. "
+        "Ohne LLM__ANTHROPIC_API_KEY sagt der Befehl das und laeuft normal "
+        "weiter, kaputt geht dabei nichts. Was es kostet und was dagegen "
+        "spricht, steht unter 'Was nicht bei mir liegt' - es ist eine "
+        "Entscheidung und keine Empfehlung.",
     ),
     (
         "python -m cli funding --von 2020-03-30",
