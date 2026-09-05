@@ -11284,6 +11284,7 @@ def zufallseinstieg(
         MINDEST_Z,
         Marktprobe,
         Zufallsbild,
+        korrigierte_schwelle,
         zufallsverteilung,
         zufallsverteilung_mit_deckeln,
     )
@@ -11310,6 +11311,12 @@ def zufallseinstieg(
         )
     rng = np.random.default_rng(saat)
     symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    # **Der Versuchsstand gehoert in beide Urteile** (Befund 205): Ohne ihn
+    # liest sich "vier von vier" wie ein Beleg, und der Kandidat ist aus 198
+    # Versuchen ausgewaehlt worden.
+    from research.admission import load_trials
+
+    versuche = load_trials(Path(settings.paths.state) / "trials.json")
 
     console.print(
         f"\n[bold]Zufallseinstieg[/] {genome.name}, {interval_obj.label}, "
@@ -11439,7 +11446,7 @@ def zufallseinstieg(
             korrelation = float(oben.mean())
 
     console.print()
-    console.print(Zufallsbild(tuple(proben), korrelation).urteil())
+    console.print(Zufallsbild(tuple(proben), korrelation, versuche).urteil())
 
     # **Was die faire Null daraus macht** (Befund 200). Die Zeile oben nennt
     # das Ergebnis eine Obergrenze; hier steht, wie viel davon uebrig bleibt,
@@ -11461,10 +11468,17 @@ def zufallseinstieg(
             else f"Stop {s:.1%} / ohne Ziel"
             for s, z in benutzt
         )
+        # **Auch hier zaehlt die Suche davor mit** (Befund 205). Diese Zeile
+        # traegt die Schlagzeile der Befunde 200 bis 204; die Korrektur im
+        # Urteil darunter gilt nur fuer die ungedeckelte Ziehung.
+        schwelle = korrigierte_schwelle(versuche)
+        streng = sum(1 for _, z in gemessen if z >= schwelle)
         console.print(
             f"\n[bold]Mit denselben Deckeln wie die Regel[/] ({wie}):\n"
             f"  {darueber} von {len(gemessen)} Maerkten liegen ueber ihrer "
-            f"Null, {belegt} raeumen |z| = {MINDEST_Z:.0f}."
+            f"Null, {belegt} raeumen |z| = {MINDEST_Z:.0f}.\n"
+            f"  Mit der Suche davor gerechnet (z = {schwelle:.2f} bei "
+            f"{versuche} Versuchen): **{streng} von {len(gemessen)}**."
         )
         console.print(
             "[dim]Das ist der Vergleich, den der Modulkopf seit Befund 175 "

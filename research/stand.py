@@ -856,6 +856,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "wird aus +4,15 ein -2,31",
         204,
     ),
+    # Fuenf Befunde lang ein positives Ergebnis ohne die Frage, die dieses
+    # Projekt an jede andere Zahl stellt. Die Lehre stand seit Befund 190
+    # aufgeschrieben.
+    Richtung(
+        "Die Zufallsprobe rechnete die Suche nicht mit",
+        "z = 2,00 ohne Korrektur, obwohl der Kandidat aus 198 Versuchen "
+        "stammt; Bonferroni verlangt 3,48. Gedeckelt raeumen dann 2 von 4 "
+        "statt 4 von 4, ungedeckelt keiner. Beide Zahlen stehen jetzt "
+        "nebeneinander",
+        205,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -882,9 +893,11 @@ OFFEN: tuple[Richtung, ...] = (
         "mit 0,695, also keine vier unabhaengigen Bestaetigungen. Der "
         "Bestand raeumt auf 4 von 4 Maerkten und ist die einzige Regel, die "
         "auf allen vieren genug handelt; von zehn geprueften Partnern kommt "
-        "keiner ueber 2 von 4 - eine Erklaerung fuer Befund 186",
+        "keiner ueber 2 von 4 - eine Erklaerung fuer Befund 186. Rechnet man "
+        "die 198 Versuche mit (z = 3,48), sind es 2 von 4, und beide "
+        "Holdout-Maerkte fallen heraus",
         175,
-        204,
+        205,
     ),
     Richtung(
         "Zertifizierbarkeit der Bauart",

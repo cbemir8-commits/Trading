@@ -18692,3 +18692,68 @@ gehoerte.
 
 Kostet keinen Versuch: dieselben Regeln, dieselben Daten, die richtige Null.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertfuenf. Vier von vier - aus wie vielen Versuchen?
+
+Die Befunde 200 bis 204 haben ein **positives** Ergebnis gemeldet: Der
+Bestand schlaegt den Zufall auf allen vier Maerkten, gedeckelt gerechnet, mit
+z zwischen 2,71 und 6,34.
+
+Sie haben mit keinem Wort erwaehnt, dass er aus **198 Versuchen** ausgewaehlt
+wurde.
+
+### Warum das zaehlt
+
+Genau dafuer gibt es den Deflated Sharpe. Er ist das haerteste Gate dieses
+Projekts und der Grund, warum der Kandidat bei 7 von 11 steht - weil ein
+Vorteil, der aus 198 Versuchen ausgewaehlt wurde, zu einem grossen Teil
+Auswahl ist. Dieselbe Ueberlegung gilt fuer jede andere Zahl, die man am
+Gewinner misst, und die Zufallsprobe hatte sie nicht.
+
+Bonferroni ueber die Versuche, einseitig:
+
+    unkorrigiert                  z = 1,64
+    ueber 4 Einteilungen              2,24
+    ueber 198 Versuche                3,48
+
+### Gemessen
+
+    Bestand, gedeckelt   BTC 3,94   ETH 6,34   LTC 3,32   XRP 2,71
+
+    bei z >= 2,00     4 von 4
+    bei z >= 3,48     2 von 4
+
+**Es bleiben die beiden Entwicklungsmaerkte.** Die beiden Holdout-Maerkte -
+LTC mit 3,32 und XRP mit 2,71 - fallen heraus, und das ist die unangenehmere
+Haelfte: Gerade dort war das Ergebnis interessant, weil der Kandidat auf
+ihnen nicht entwickelt wurde.
+
+Die ungedeckelte Ziehung faellt noch deutlicher: dort raeumt bei 3,48
+**keiner** der vier.
+
+### Was die Zahl nicht ist
+
+Keine exakte Korrektur, sondern eine **obere Schranke**. Die 198 Versuche
+liefen ueber die Gates, nicht ueber diese Probe; die beiden haengen zusammen,
+sind aber nicht dasselbe. Die richtige Schwelle liegt zwischen 2,00 und 3,48,
+und wo genau, sagt diese Rechnung nicht - sie behauptet es auch nicht.
+
+Beide Zahlen stehen jetzt nebeneinander im Bericht. Die 2,00 bleibt, weil sie
+die Schwelle dieses Projekts seit Befund 75 ist; die 3,48 daneben, weil ohne
+sie "vier von vier" wie ein Beleg klingt.
+
+### Warum das aufgefallen ist
+
+Befund 190 hat die Lehre aufgeschrieben, nachdem ein falscher Vorsprung von
++5,64 Reststreuungen fast durchgegangen waere:
+
+> **Ein Ausschlag nach oben faellt schwerer auf als ein Absturz.** Der
+> TypeError aus Befund 188 hat sich von selbst gemeldet. Diese Zahl haette
+> man geglaubt.
+
+Fuenf Befunde lang habe ich ein positives Ergebnis ueber diese Probe
+berichtet, ohne die Frage zu stellen, die das Projekt an jede andere Zahl
+stellt. Die Lehre stand aufgeschrieben; angewandt habe ich sie nicht.
+
+Kostet keinen Versuch: gerechnet wurde auf Zahlen, die schon gemessen sind.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

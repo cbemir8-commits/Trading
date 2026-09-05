@@ -18,6 +18,7 @@ from research.zufallseinstieg import (
     MINDEST_Z,
     Marktprobe,
     Zufallsbild,
+    korrigierte_schwelle,
     zufallsverteilung,
     zufallsverteilung_mit_deckeln,
 )
@@ -571,3 +572,68 @@ class TestShortRegelnWerdenJetztGemessen:
         )
 
 
+
+
+class TestDieSucheDavorZaehltMit:
+    """**Befund 205.** Das Modul hat ein positives Ergebnis ohne Korrektur gemeldet.
+
+    Die Befunde 200 bis 204 sagen: Der Bestand raeumt auf allen vier
+    Maerkten. Kein Wort davon, dass er aus **198 Versuchen** ausgewaehlt
+    wurde - und genau dafuer gibt es den Deflated Sharpe, das haerteste Gate
+    dieses Projekts.
+
+    Befund 190 hat die Lehre schon aufgeschrieben: *"Ein Ausschlag nach oben
+    faellt schwerer auf als ein Absturz."* Hier war es einer.
+    """
+
+    def bild(self, versuche: int | None = None) -> Zufallsbild:
+        werte = ((3.94, "BTC"), (6.34, "ETH"), (3.32, "LTC"), (2.71, "XRP"))
+        proben = tuple(
+            Marktprobe(
+                symbol=s, rolle="Holdout", trades=70,
+                echt=0.05, null=0.0, streuung=0.05 / z, perzentil=0.99,
+            )
+            for z, s in werte
+        )
+        return Zufallsbild(proben, 0.695, versuche)
+
+    def test_die_schwelle_steigt_mit_den_versuchen(self) -> None:
+        assert korrigierte_schwelle(1) == pytest.approx(1.64, abs=0.01)
+        assert korrigierte_schwelle(198) == pytest.approx(3.48, abs=0.01)
+        assert korrigierte_schwelle(198) > korrigierte_schwelle(4)
+
+    def test_aus_vier_von_vier_werden_zwei(self) -> None:
+        """**Der tragende Test** - die Zahl, um die es geht."""
+        bild = self.bild(versuche=198)
+
+        assert bild.belegt == 4
+        assert bild.belegt_korrigiert == 2
+
+    def test_ohne_versuchsstand_wird_nichts_erfunden(self) -> None:
+        bild = self.bild()
+
+        assert bild.belegt_korrigiert is None
+        assert "Suche davor" not in bild.urteil()
+
+    def test_das_urteil_nennt_beide_zahlen(self) -> None:
+        urteil = self.bild(versuche=198).urteil()
+
+        assert "4 von 4" in urteil, "die unkorrigierte Zahl bleibt stehen"
+        assert "**2 von 4**" in urteil
+        assert "198 Versuchen" in urteil
+
+    def test_es_gibt_die_schranke_als_grosszuegig_aus(self) -> None:
+        """Bonferroni ueber alle Versuche ist eine obere Schranke.
+
+        Ausgewaehlt wurde ueber die Gates, nicht ueber diese Probe. Die
+        richtige Schwelle liegt zwischen 2,00 und 3,48 - wo, sagt diese
+        Rechnung nicht, und sie behauptet es auch nicht.
+        """
+        urteil = self.bild(versuche=198).urteil()
+
+        assert "grosszuegig gerechnet" in urteil
+        assert "nicht ueber diese Probe" in urteil
+
+    def test_ohne_versuche_ist_die_schwelle_ein_fehler(self) -> None:
+        with pytest.raises(ValueError, match="Ohne Versuche"):
+            korrigierte_schwelle(0)

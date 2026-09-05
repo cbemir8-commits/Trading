@@ -120,6 +120,27 @@ Auf XRP steht statt eines klaren Treffers ein Ergebnis, das **signifikant
 schlechter** ist als der Zufall. Eine Long-Null gegen Short-Trades meldet
 sich nicht - sie liefert Zahlen, nur keine richtigen.
 
+Die Suche davor zaehlt mit (Befund 205)
+----------------------------------------
+Die Befunde 200 bis 204 melden: vier von vier Maerkten ueber |z| = 2. Sie
+sagen nicht dazu, dass der Kandidat aus **198 Versuchen** ausgewaehlt wurde -
+und genau dafuer gibt es den Deflated Sharpe.
+
+Bonferroni ueber die Versuche verlangt z = 3,48 statt 2,00:
+
+    Bestand, gedeckelt   3,94   6,34   3,32   2,71
+    bei z >= 2,00                             4 von 4
+    bei z >= 3,48                             2 von 4
+
+**Es bleiben die beiden Entwicklungsmaerkte**; die beiden Holdout-Maerkte
+fallen heraus. Das ist die unangenehmere Haelfte: Gerade dort war das
+Ergebnis interessant.
+
+Die Schranke ist grosszuegig gerechnet - ausgewaehlt wurde ueber die Gates
+und nicht ueber diese Probe -, die richtige Schwelle liegt also zwischen 2,00
+und 3,48. Wo genau, sagt diese Rechnung nicht. Sie steht trotzdem daneben:
+Wer nur die 2,00 liest, haelt vier von vier fuer einen Beleg.
+
 Was er nicht ist
 ----------------
 Kein Beweis. Die vier Maerkte korrelieren mit 0,695 (Befund 174) - vier
@@ -139,7 +160,50 @@ import numpy as np
 
 #: Ab welchem |z| dieses Modul von einem Beleg spricht - dieselbe Schwelle
 #: wie in ``research/vorratsdecke.py`` und aus demselben Grund (Befund 75).
+#:
+#: **Ohne Korrektur fuer die Suche davor** - siehe ``korrigierte_schwelle``.
 MINDEST_Z = 2.0
+
+
+def korrigierte_schwelle(versuche: int, *, irrtum: float = 0.05) -> float:
+    """Die Schwelle, wenn man die Suche davor mitrechnet (Befund 205).
+
+    Warum das hier fehlte
+    ---------------------
+    Dieses Modul hat in den Befunden 200 bis 204 ein **positives** Ergebnis
+    gemeldet: Der Bestand raeumt auf allen vier Maerkten. Es hat dabei mit
+    keinem Wort erwaehnt, dass er aus **198 Versuchen** ausgewaehlt wurde.
+
+    Genau dafuer gibt es den Deflated Sharpe, und genau das ist der Grund,
+    warum er das haerteste Gate des Projekts ist. Ein z ohne Korrektur ist
+    die Zahl, die man bekommt, wenn man nur den Gewinner anschaut.
+
+    Bonferroni ueber ``versuche`` Tests: ``irrtum / versuche``, einseitig.
+    Bei 198 Versuchen sind das z = 3,48 statt 2,00.
+
+    Was die Zahl **nicht** ist
+    --------------------------
+    Keine exakte Korrektur, sondern eine **obere** Schranke. Die Auswahl lief
+    nicht ueber diese Probe, sondern ueber die Gates; die beiden haengen
+    zusammen, sind aber nicht dasselbe. Die richtige Schwelle liegt damit
+    irgendwo zwischen 2,00 und 3,48, und wo genau, sagt diese Rechnung nicht.
+
+    Sie steht trotzdem hier: Wer nur die 2,00 liest, haelt vier von vier
+    Maerkten fuer einen Beleg - und nach der strengeren Lesart sind es zwei.
+    """
+    import math
+
+    if versuche < 1:
+        raise ValueError("Ohne Versuche gibt es nichts zu korrigieren.")
+    ziel = irrtum / versuche
+    tief, hoch = 0.0, 12.0
+    for _ in range(200):
+        mitte = (tief + hoch) / 2
+        if 0.5 * math.erfc(mitte / math.sqrt(2)) > ziel:
+            tief = mitte
+        else:
+            hoch = mitte
+    return hoch
 
 
 def zufallsverteilung(
@@ -340,6 +404,12 @@ class Zufallsbild:
 
     proben: tuple[Marktprobe, ...]
     korrelation: float | None = None
+    versuche: int | None = None
+    """Der Versuchsstand - fuer die Schwelle, die die Suche mitrechnet.
+
+    ``None`` heisst: nicht uebergeben, dann bleibt es bei ``MINDEST_Z`` und
+    das Urteil sagt nichts ueber die Korrektur. Es erfindet keine.
+    """
 
     @property
     def darueber(self) -> int:
@@ -348,6 +418,16 @@ class Zufallsbild:
     @property
     def belegt(self) -> int:
         return sum(1 for p in self.proben if p.belegt)
+
+    @property
+    def belegt_korrigiert(self) -> int | None:
+        """Wie viele auch die trials-korrigierte Schwelle raeumen."""
+        if self.versuche is None:
+            return None
+        schwelle = korrigierte_schwelle(self.versuche)
+        return sum(
+            1 for p in self.proben if p.z is not None and p.z >= schwelle
+        )
 
     def urteil(self) -> str:
         if not self.proben:
@@ -373,6 +453,20 @@ class Zufallsbild:
                 f"man nicht kennt. Deshalb steht hier eine Anzahl und keine "
                 f"Gesamtstatistik."
             )
+        # **Die Suche davor gehoert dazu** (Befund 205). Ohne sie liest sich
+        # "vier von vier" wie ein Beleg, und der Bestand ist aus 198
+        # Versuchen ausgewaehlt worden.
+        korrigiert = self.belegt_korrigiert
+        if korrigiert is not None and self.versuche is not None:
+            schwelle = korrigierte_schwelle(self.versuche)
+            zeilen.append(
+                f"**Und die Suche davor zaehlt mit.** Der Kandidat stammt aus "
+                f"{self.versuche} Versuchen; wer das mitrechnet, verlangt "
+                f"z = {schwelle:.2f} statt {MINDEST_Z:.2f} (Bonferroni). "
+                f"Dann raeumen **{korrigiert} von {n}**. Die Schranke ist "
+                f"grosszuegig gerechnet - ausgewaehlt wurde ueber die Gates "
+                f"und nicht ueber diese Probe -, aber sie gehoert daneben."
+            )
         zeilen.append(
             "Und die Ziehung hat keine Stops, die Regel schon. Bis Befund 200 "
             "stand hier, das mache das Ergebnis zu einer **Obergrenze** - "
@@ -388,6 +482,7 @@ __all__ = [
     "MINDEST_Z",
     "Marktprobe",
     "Zufallsbild",
+    "korrigierte_schwelle",
     "zufallsverteilung",
     "zufallsverteilung_mit_deckeln",
 ]
