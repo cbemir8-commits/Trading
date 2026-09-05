@@ -789,7 +789,12 @@ class TestDieKiImWettbewerb:
         from cli import app
 
         hilfe = CliRunner().invoke(app, ["wettbewerb", "--help"]).output
-        text = " ".join(hilfe.split())
+        # **Ohne die Rahmenzeichen** (Befund 216). Rich bricht den Hilfetext
+        # in eine Box um; wo genau, haengt an der Breite der laengsten
+        # Option. Eine neue Option hat den Umbruch verschoben, und der Test
+        # schlug an, obwohl der Satz unveraendert dastand. Geprueft gehoert
+        # der Text, nicht die Stelle, an der er umgebrochen wird.
+        text = " ".join(hilfe.replace("│", " ").split())
 
         assert "zusaetzlich" in text
         assert "statt ihrer" in text

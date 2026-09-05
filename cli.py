@@ -513,6 +513,13 @@ def wettbewerb(
              "sofort mit allen elf nachgeprueft - ein Champion entsteht nie "
              "aus einer Vorauswahl.",
     ),
+    ueber_budget: bool = typer.Option(
+        False, "--ueber-das-budget",
+        help="Auch dann weitersuchen, wenn das Suchbudget aus dem Plan "
+             "aufgebraucht ist. Ohne dieses Flag bricht die Suche dort ab - "
+             "so steht es im Plan, und jeder weitere Versuch hebt die Huerde "
+             "des Deflated Sharpe dauerhaft.",
+    ),
     ki: bool = typer.Option(
         False, "--ki/--ohne-ki",
         help="Die Research-KI je Runde neue Kandidaten vorschlagen lassen - "
@@ -726,8 +733,12 @@ def wettbewerb(
 
     try:
         while runden == 0 or runde < runden:
-            runde += 1
             trials_before = load_trials(trials_path)
+            # **Vor** der Runde, nicht danach: Eine Runde, die begonnen hat,
+            # gibt ihre Versuche aus.
+            if _budget_erschoepft(trials_before, ueber_budget=ueber_budget):
+                break
+            runde += 1
             woher = herkunft if not ki_ids else (
                 f"{herkunft} + {len(ki_ids)} von der KI"
             )
@@ -3060,6 +3071,49 @@ def _pruefe_generation(generation: int, interval_obj) -> None:
         f"eine passende Generation waehlen.[/]"
     )
     raise typer.Exit(2)
+
+
+def _budget_erschoepft(versuche: int, *, ueber_budget: bool) -> bool:
+    """Ist die Abmachung aus dem Plan aufgebraucht - und was heisst das?
+
+    **Der Docstring von ``Suchbudget`` sagte "endlich im System statt nur im
+    Text", und es stand nur im Text** (Befund 216). ``BUDGET`` kam in
+    ``rennen`` und ``suchbudget`` vor - beides Befehle, die *berichten*. Der
+    Befehl, der die Versuche *ausgibt*, hat es nie gelesen, und ``--runden``
+    steht auf 0, also "bis Strg-C". Die Zeile im Bericht verspricht
+    "Abbruch bei 230"; abgebrochen hat nichts.
+
+    Das ist keine Kleinigkeit, weil ein Versuch nicht zurueckgenommen werden
+    kann: Jeder hebt die Huerde des Deflated Sharpe um 0,00021 fuer alle
+    kuenftigen. Eine Suche, die ueber ihre eigene Grenze laeuft, macht das
+    Ziel schwerer, das sie sucht.
+
+    Weitergesucht werden **darf** - der Plan ist eine Abmachung des Nutzers,
+    keine Naturkonstante. Aber bewusst: mit ``--ueber-das-budget``, und dann
+    steht auch da, was es kostet.
+    """
+    from research.stand import BUDGET
+
+    if not BUDGET.erschoepft(versuche):
+        return False
+    if ueber_budget:
+        console.print(
+            f"[yellow]Suchbudget aufgebraucht[/] ({versuche} Versuche, "
+            f"Grenze {BUDGET.grenze}) - weiter, weil --ueber-das-budget "
+            f"gesetzt ist.\n"
+            f"[dim]Jeder weitere Versuch hebt die Huerde des Deflated Sharpe "
+            f"um 0,00021 fuer alle kuenftigen, dauerhaft.[/]"
+        )
+        return False
+    console.print(
+        f"[bold]Suchbudget aufgebraucht.[/] {BUDGET.zeile(versuche)}\n"
+        f"[dim]So steht es im Plan vom 9. August, und deshalb bricht die "
+        f"Suche hier ab statt weiterzulaufen. Wer trotzdem weitersuchen "
+        f"will, setzt [bold]--ueber-das-budget[/] - jeder weitere Versuch "
+        f"hebt die Huerde des Deflated Sharpe dauerhaft fuer alle "
+        f"kuenftigen.[/]"
+    )
+    return True
 
 
 def _pruefe_spitze(interval_obj) -> None:

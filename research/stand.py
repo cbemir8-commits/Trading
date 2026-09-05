@@ -1001,6 +1001,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "aus 214 prueft jetzt auch die Codebloecke der Anleitung",
         215,
     ),
+    # Der Docstring sagte "endlich im System statt nur im Text" - und es
+    # stand nur im Text.
+    Richtung(
+        "Das Suchbudget brach nichts ab",
+        "BUDGET kam nur in 'rennen' und 'suchbudget' vor, beides berichtende "
+        "Befehle; der Wettbewerb las es nie und laeuft mit '--runden 0' bis "
+        "Strg-C. Die Berichtszeile versprach 'Abbruch bei 230', abgebrochen "
+        "hat nichts. Jetzt greift die Grenze vor jeder Runde, mit "
+        "'--ueber-das-budget' als bewusstem Weg darueber hinaus",
+        216,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1999,6 +2010,10 @@ class Lage:
             f"119 -, und sieben Partner, die alle Kriterien erfuellten, sind "
             f"draussen durchgefallen (Befund 186). Das ist kein Grund, es "
             f"nicht zu tun; es ist der Preis, der vorher dastehen sollte."
+            f"\n    {BUDGET.zeile(self.versuche)} Seit Befund 216 haelt der "
+            f"Wettbewerb diese Grenze auch ein: Er bricht dort ab und laeuft "
+            f"nicht mehr bis Strg-C weiter. Wer darueber hinaus will, setzt "
+            f"'--ueber-das-budget'."
         )
 
     def _vergleichssatz(self) -> str:

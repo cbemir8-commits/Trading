@@ -19598,3 +19598,78 @@ Verzeichnis leer ausging und der Fall vier Befunde spaeter in `data/` lag.
 
 Kostet keinen Versuch: gelesen und bewacht, nichts gemessen.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsechzehn. "Endlich im System statt nur im Text" - es stand nur im Text
+
+Beim Nachrechnen, was der Befehl kostet, den Befund 214 dem Nutzer gegeben
+hat, kam etwas Groesseres heraus als eine Zahl.
+
+### Der Satz und die Wirklichkeit
+
+Der Docstring von `Suchbudget` beginnt so:
+
+> *"Das Abbruchkriterium aus dem Plan - **endlich im System statt nur im
+> Text**."*
+
+Und die Zeile, die in jedem Bericht steht:
+
+    Suchbudget 68 von 100 verbraucht, 32 bleiben (Abbruch bei 230).
+
+Nachgesehen, wer `BUDGET` liest: `cli rennen` und `cli suchbudget`. **Beides
+Befehle, die berichten.** Der einzige Befehl, der Versuche in einer Schleife
+ausgibt - `cli wettbewerb` -, kommt in dieser Liste nicht vor. Sein
+Quelltext enthaelt weder `BUDGET` noch `erschoepft`.
+
+Dazu steht `--runden` auf **0**, und das heisst im Code *"bis Strg-C"*:
+
+    while runden == 0 or runde < runden:
+
+Der Befehl, den ich zwei Befunde zuvor in die Anleitung geschrieben habe,
+laeuft also unbegrenzt und geht ueber die eigene Grenze hinweg, ohne ein
+Wort. Das Wort "Abbruch" im Bericht versprach etwas, das es nicht gab.
+
+### Warum das nicht nur unordentlich ist
+
+Ein Versuch laesst sich nicht zuruecknehmen. Der Docstring selbst sagt es:
+*"Jeder Versuch hebt die Huerde des Deflated Sharpe um 0,00021 fuer alle
+kuenftigen. Wer weitersucht, macht das Ziel schwerer, das er sucht."*
+
+Bei 198 Versuchen bleiben 32 bis zur Grenze. Generation 9 hat sieben Genome,
+die erste Runde kostet also sieben - und danach laeuft es weiter, solange
+niemand hinsieht. Es ist die einzige Stelle im Projekt, an der Untaetigkeit
+*besser* ist als ein Lauf, und ausgerechnet dort gab es keine Bremse.
+
+### Was jetzt greift
+
+Vor jeder Runde, nicht danach: Eine Runde, die begonnen hat, gibt ihre
+Versuche aus. Ist die Grenze erreicht, endet die Schleife mit der Antwort,
+die der Plan vorgesehen hat - *"diese Regelfamilie traegt nicht. Das ist ein
+Ergebnis, kein Scheitern."*
+
+**Weitergesucht werden darf trotzdem**, mit `--ueber-das-budget`. Der Plan
+ist eine Abmachung des Nutzers, keine Naturkonstante, und eine Schranke, die
+ihren eigenen Schalter verschweigt, ist keine Abmachung, sondern eine Sperre.
+Was nicht bleiben durfte, ist das **unbemerkte** Weiterlaufen. Wer den
+Schalter setzt, bekommt die 0,00021 noch einmal vorgerechnet.
+
+Die Grenze steht dabei nirgends im Wettbewerb hingeschrieben - sie kommt aus
+`BUDGET.erschoepft`. Zwei Grenzen im selben System waeren genau der Fehler,
+von dem vier Befunde dieses Projekts handeln (158, 159, 165, 166).
+
+### Was mir daran auffaellt
+
+Ich habe in Befund 214 einen Befehl in die Anleitung geschrieben und nicht
+gefragt, wann er aufhoert. Aufgefallen ist es erst, als ich nachrechnen
+wollte, wie viele Versuche er kostet - also bei einer Frage, die ich fuer
+eine Nebensache hielt.
+
+Und der Satz "endlich im System statt nur im Text" ist die genaue
+Selbstbeschreibung dessen, was hier fehlte. Er stand vier Zeilen ueber einer
+Klasse, die ausschliesslich rechnet und nichts anhaelt. Ein Docstring kann
+eine Absicht beschreiben und dabei wie ein Zustand klingen - und dann liest
+ihn jemand, der die Absicht fuer erledigt haelt. Ich war das, ueber mehrere
+Befunde hinweg: `BUDGET.zeile` steht im Bericht, den ich in dieser Serie
+mehrfach ausgegeben und gelesen habe.
+
+Kostet keinen Versuch: gebaut wurde eine Bremse, nichts gemessen.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
