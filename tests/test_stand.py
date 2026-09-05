@@ -21,6 +21,7 @@ from research.stand import (
     BUDGET,
     ENTSCHEIDUNGEN,
     GESCHLOSSEN,
+    OFFEN,
     Lage,
     Richtung,
     zahlwort,
@@ -1140,3 +1141,74 @@ class TestWasDerWettbewerbKostet:
 
         assert "{versuchskosten}" not in text
         assert "{vergleich}" not in text
+
+
+class TestDasOffeneRegisterWirdAuchGezeigt:
+    """**Befund 208.** Elf Eintraege, gepflegt ueber Dutzende Befunde, unsichtbar.
+
+    ``OFFEN`` stand seit seiner Anlage in ``research/stand.py`` und war an
+    **keiner** Stelle referenziert - nicht im Bericht, nicht in ``cli.py``,
+    nicht in einem Test. Ich habe es durch die Befunde 188, 190, 195 und 202
+    bis 205 hindurch nachgezogen, ohne zu bemerken, dass es niemand zu sehen
+    bekommt.
+
+    Dieselbe Bauart wie Befund 160: Dort rechnete ``AUSSICHT`` seit Befund
+    132 die Entfernung zur Schwelle - die meistzitierte vorausschauende Zahl
+    des Projekts - und stand in keinem Bericht.
+
+    Und der Unterschied zu ``GESCHLOSSEN`` ist der wichtigere von beiden: Wer
+    wissen will, was als naechstes zu tun ist, liest die offenen Richtungen
+    und nicht die zugemachten.
+    """
+
+    def test_der_bericht_zeigt_die_offenen_richtungen(self) -> None:
+        text = _lage().bericht()
+
+        assert "GEMESSEN UND OFFEN" in text
+        for r in OFFEN:
+            assert r.name in text, f"'{r.name}' fehlt im Bericht"
+
+    def test_jede_offene_richtung_hat_eine_fundstelle(self) -> None:
+        """Dieselbe Regel wie fuer die geschlossenen - der Datentyp erzwingt
+        sie, aber gemessen hat es hier nie jemand."""
+        assert OFFEN
+        for r in OFFEN:
+            assert r.befund > 0, r.name
+            assert r.ergebnis, r.name
+
+    def test_keine_richtung_steht_offen_und_geschlossen(self) -> None:
+        """**Der Test, der einen Widerspruch faende.**
+
+        Eine Richtung kann nicht zugleich gemessen-zu und offen sein. Ohne
+        Pruefung koennte ein Eintrag beim Schliessen in der einen Liste
+        landen und in der anderen stehenbleiben - und der Bericht wuerde
+        beides behaupten.
+        """
+        for register, name in ((GESCHLOSSEN, "GESCHLOSSEN"), (BEHOBEN, "BEHOBEN")):
+            doppelt = {r.name for r in OFFEN} & {r.name for r in register}
+            assert doppelt == set(), f"in OFFEN und {name}: {doppelt}"
+
+    def test_keine_offene_richtung_doppelt(self) -> None:
+        namen = [r.name for r in OFFEN]
+
+        assert len(namen) == len(set(namen))
+
+    def test_jede_fundstelle_gibt_es_wirklich(self) -> None:
+        """Wie fuer ``GESCHLOSSEN`` seit Befund 90 - hier war es nie geprueft."""
+        import re
+
+        text = Path("strategies/BEFUND.md").read_text()
+        ueberschriften = set(re.findall(r"^## ([A-Za-zaeoeueAEOEUEss]+)\.", text, re.M))
+        nummern = {r.befund for r in OFFEN} | {r.zuletzt for r in OFFEN if r.zuletzt}
+        fehlend = sorted(n for n in nummern if zahlwort(n) not in ueberschriften)
+
+        assert fehlend == [], f"Fundstellen ohne Abschnitt im Laborbuch: {fehlend}"
+
+    def test_es_steht_vor_den_werkzeugbefunden(self) -> None:
+        """Die Reihenfolge sagt, was wichtiger ist: erst zu, dann offen, dann
+        die Werkzeuge - und die zuletzt, weil sie ueber die Aussichten nichts
+        sagen (Befund 123)."""
+        text = _lage().bericht()
+
+        assert text.index("GEMESSEN UND GESCHLOSSEN") < text.index("GEMESSEN UND OFFEN")
+        assert text.index("GEMESSEN UND OFFEN") < text.index("BEHOBEN AN DEN")

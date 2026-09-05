@@ -888,6 +888,16 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Zeile wie das Kriterium",
         207,
     ),
+    # Befund 160 noch einmal - nur war AUSSICHT wenigstens getestet.
+    Richtung(
+        "Das offene Register stand in keinem Bericht",
+        "OFFEN hatte im ganzen Projekt genau eine Fundstelle: seine "
+        "Definition. Elf Eintraege, ueber Dutzende Befunde gepflegt, in "
+        "keinem Bericht und in keinem Test. Jetzt als 'GEMESSEN UND OFFEN' "
+        "zwischen den geschlossenen Richtungen und den Werkzeugbefunden, "
+        "mit den Pruefungen, die GESCHLOSSEN seit Befund 90 hat",
+        208,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1734,6 +1744,23 @@ class Lage:
             "-" * 72,
         ]
         zeilen.extend(f"  {r}" for r in GESCHLOSSEN)
+        # **Und was noch offen ist** (Befund 208). ``OFFEN`` stand seit
+        # seiner Anlage in diesem Modul und war an **keiner** Stelle
+        # angezeigt - elf Eintraege, gepflegt ueber Dutzende Befunde,
+        # unsichtbar. Dieselbe Bauart wie Befund 160, wo ``AUSSICHT`` die
+        # meistzitierte vorausschauende Zahl des Projekts war und in keinem
+        # Bericht stand.
+        #
+        # Der Unterschied zu GESCHLOSSEN ist der wichtigere von beiden: Wer
+        # wissen will, was als naechstes zu tun ist, liest diese Liste und
+        # nicht die der zugemachten Wege.
+        if OFFEN:
+            zeilen += [
+                "",
+                "GEMESSEN UND OFFEN (hier liegt die Arbeit)",
+                "-" * 72,
+            ]
+            zeilen.extend(f"  {r}" for r in OFFEN)
         # **Getrennt, seit Befund 123.** Neun Werkzeugbefunde standen unter
         # den Suchrichtungen; wer die Liste las, fand zwischen "Mehr Maerkte"
         # auf einmal "README auf dem Stand vom 1. August". Beides Messungen

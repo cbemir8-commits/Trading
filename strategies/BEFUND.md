@@ -18874,3 +18874,74 @@ gilt.
 
 Kostet keinen Versuch: nachgerechnet wurde auf Zahlen, die schon gemessen
 sind. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertacht. Elf offene Richtungen, die niemand zu sehen bekam
+
+Nach zehn Runden Aenderungen (198 bis 207) stand die Frage an, ob `cli stand`
+das noch wiedergibt. Befund 197 hat dieselbe Pruefung gemacht und einen
+Absatz berichtigt.
+
+Diesmal fehlt kein Absatz, sondern ein ganzes Register.
+
+### `OFFEN` steht in keinem Bericht
+
+`research/stand.py` fuehrt vier Register: `GESCHLOSSEN`, `BEHOBEN`, `OFFEN`,
+`AUFTRAG`. Der Bericht zeigt drei davon.
+
+    grep -rn "OFFEN" --include=*.py .
+    research/stand.py:897:OFFEN: tuple[Richtung, ...] = (
+
+**Eine einzige Fundstelle: die Definition.** Nicht in `bericht()`, nicht in
+`cli.py`, nicht in einem Test. Elf Eintraege, angelegt und seither gepflegt -
+ich selbst habe sie in den Befunden 188, 190, 195 und 202 bis 205 nachgezogen,
+zuletzt vor zwei Runden -, und niemand bekommt sie zu Gesicht.
+
+Das ist Befund 160 noch einmal:
+
+> ``research.referenz.AUSSICHT`` rechnet die Entfernung seit Befund 132 und
+> ist bis Befund 160 an **keiner** Stelle angezeigt worden. Die
+> meistzitierte vorausschauende Zahl des Projekts stand gepflegt, getestet
+> und unsichtbar im Modul.
+
+Nur war `AUSSICHT` wenigstens getestet.
+
+### Warum gerade dieses Register
+
+`GESCHLOSSEN` beantwortet "worauf brauche ich nicht mehr zu schauen".
+**`OFFEN` beantwortet "wo liegt die Arbeit"** - und das ist die Frage, mit
+der jemand `cli stand` aufruft. Von den beiden Listen stand die weniger
+dringende im Bericht.
+
+Was jetzt dort steht, ist unter anderem:
+
+    Timing gegen Zufallseinstiege   ... der Bestand raeumt auf 4 von 4
+      Maerkten und ist die einzige Regel, die auf allen vieren genug
+      handelt; von zehn geprueften Partnern kommt keiner ueber 2 von 4.
+      Rechnet man die 198 Versuche mit (z = 3,48), sind es 2 von 4, und
+      beide Holdout-Maerkte fallen heraus.
+
+Das ist das Ergebnis von sechs Befunden dieser Serie - und es war nur im
+Quelltext zu finden.
+
+### Was dazukam
+
+Der Abschnitt **"GEMESSEN UND OFFEN (hier liegt die Arbeit)"**, zwischen den
+geschlossenen Richtungen und den Werkzeugbefunden. Die Reihenfolge sagt
+etwas: erst was zu ist, dann wo die Arbeit liegt, und zuletzt die Werkzeuge,
+weil die ueber die Aussichten nichts sagen (Befund 123).
+
+Dazu die Pruefungen, die `GESCHLOSSEN` seit Befund 90 hat und `OFFEN` nie
+hatte: jede Fundstelle existiert im Laborbuch, keine Dublette, und - neu -
+**keine Richtung steht zugleich offen und geschlossen.** Der letzte faende
+einen Widerspruch, den es beim Schliessen einer Richtung leicht zu erzeugen
+gibt: in die eine Liste eintragen und in der anderen stehenlassen. Gemessen:
+Es gibt ihn zurzeit nicht.
+
+### Was mir daran auffaellt
+
+Ich habe dieses Register acht Befunde lang gepflegt und nie gefragt, wer es
+liest. Es hat sich richtig angefuehlt - ein Eintrag nachgezogen, ein Ergebnis
+festgehalten -, und die Arbeit war vollstaendig folgenlos.
+
+Kostet keinen Versuch: angezeigt wird, was schon gemessen war.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
