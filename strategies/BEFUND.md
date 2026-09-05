@@ -19228,3 +19228,117 @@ der Blick auf den Bericht gewesen, den ich selbst ausgegeben habe.
 
 Kostet keinen Versuch: berichtigt wurde eine Behauptung, gemessen wurde nichts Neues.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertzwoelf. Der Dauerauftrag, Punkt fuer Punkt nachgemessen
+
+Der Dauerauftrag fuehrt vier offene Punkte, unveraendert seit vielen Runden.
+Befund 210 hat einen davon nachgemessen und stale gefunden. Diesmal die
+uebrigen drei - denn dieser Auftrag steuert jede Runde, und wenn die Haelfte
+davon nicht mehr stimmt, faengt jede Runde mit einem falschen Bild an.
+
+### Punkt 1: "P7: News- und Termin-Overlay ist nie gebaut worden"
+
+Gebaut ist **beides, was sich bauen laesst**, und das Nichtgebaute ist eine
+begruendete Entscheidung, kein Versaeumnis.
+
+* **Termin-Overlay**: gebaut (`data/termine.py`), gemessen in Befund 12,
+  nachgemessen in 127. Ergebnis: 2 von 156 Signalen blockiert, kein Gate
+  bewegt - *"wirkungslos mit Kosten"*.
+* **Nachrichten-Overlay**: **absichtlich nicht gebaut.** Der Kopf von
+  `research/schock.py` sagt warum: Ein Overlay, das eine Schlagzeile vom
+  12. Maerz 2020 kennt und deshalb am 11. Maerz nicht einsteigt, *"misst
+  nicht Vorsicht, sondern Hellsicht"*. Es wuerde den Backtest verbessern und
+  im Betrieb nichts leisten.
+* **Was stattdessen gebaut wurde**: die kausal zulaessige Haelfte - die
+  Reaktion auf den **Abdruck** eines Schocks, der schon in abgeschlossenen
+  Kerzen steht. Gemessen in Befund 58: neun von elf Gates, der beste Stand,
+  den dieses Projekt je hatte. Er hat **einen Tag** gehalten: Die Kontrolle
+  in `sperrprobe.py` zieht zweihundertmal genauso viele Einstiege zufaellig,
+  und **66,5 % dieser Ziehungen halten genauso viele Gates** (Befund 59).
+  Der Gewinn kam vom Streichen, nicht vom richtigen Streichen.
+
+Der Punkt ist also nicht offen, sondern dreimal beantwortet - und die
+gefaehrlichste Lesart des Auftrags waere, ihn zu "erledigen": Das
+Nachrichten-Overlay zu bauen hiesse, Hellsicht einzubauen und einen besseren
+Backtest fuer echten Fortschritt zu halten.
+
+### Punkt 4: "Generation 5 auf Tageskerzen, 6/7 auf 15-Minuten"
+
+Das ist keine offene Aufgabe, sondern **seit Befund 64 erzwungen**.
+`_pruefe_generation` bricht ab - nicht warnt -, wenn eine Generation auf der
+falschen Kerzenlaenge laeuft:
+
+    VORGESEHEN   5 -> D    6 -> 15   7 -> 15   8 -> 15   9 -> D   10 -> D
+
+Abgebrochen und nicht gewarnt, weil so ein Lauf Versuche kostet. Die
+Zuordnung im Auftrag stimmt mit den Daten ueberein.
+
+### Punkt 3: hier lag etwas Echtes
+
+Der Auftrag nennt `cli backfill --intervall 15 --von 2020-03-30`. Fuer
+15-Minuten-Kerzen ist dieses Datum richtig - dort ist es keine Wahl, sondern
+die Reichweite der Reihe (rund 6,3 Jahre, `zeitskala`).
+
+Fuer **Tageskerzen** ist es das falsche Datum, und das steht seit Befund 133
+gemessen da:
+
+        ab       Tage  Trades   eff    Guete     DSR   Gates
+    2017-08-16   3277     152   152   0,2765  0,8640    9/11   <- Referenz
+    2020-03-30   2320     103   103   0,2396  0,2969    8/11
+
+957 Tage, 49 unabhaengige Beobachtungen und ein Gate Unterschied - und der
+Deflated Sharpe, das einzige noch wirklich offene Gate, faellt von 0,8640 auf
+**0,2969**.
+
+**Was diese beiden Zahlen nicht sind: der heutige Stand.** Befund 135 teilt
+das Gate zusaetzlich nach Kalenderquartalen; die effektive Stichprobe der
+Referenz faellt dadurch von 152 auf 112 und der Deflated Sharpe von 0,8640
+auf 0,6026. Beide Zeilen oben stammen aus derselben Tabelle vor dieser
+Umrechnung. Getragen wird hier der **Vergleich** - spaeter anfangen heisst
+weniger Evidenz -, und der ueberlebt die Umrechnung, weil sie beide Zeilen
+gleich trifft. Die einzelne Zahl ueberlebt sie nicht, und wer sie als
+heutigen DSR zitiert, macht denselben Fehler, den dieses Projekt achtmal
+gemacht hat: eine Groesse von einem Betriebspunkt an einem anderen benutzt.
+Der massgebliche Stand steht in `research/referenz.py`.
+
+`BEIM_NUTZER` sagt das Richtige (`--von 2017-08-16`). Der **Code** sagte es
+nicht: `2020-03-30` war die Vorgabe von `backfill`, `funding` und `referenz`
+und stand im Hinweis, der bei zu kurzer Historie erscheint - also genau dem
+Text, den jemand liest, der zu wenig Daten hat, unabhaengig vom Intervall.
+
+Fuer `funding` ist das Datum richtig. Fuer Tageskerzen schickte es in das
+zweitschlechteste der sechs gemessenen Fenster. `empfohlener_start` trennt
+das jetzt: `D` auf 2017-08-16, alles andere unveraendert.
+
+### Und die Kurve selbst war Prosa
+
+Die sechs Zeilen standen seit Befund 133 nur im Kopf von
+`research/historie.py`. Das Modul hatte `Historienstufe` und
+`Historienkurve` - beide gebaut, getestet, benutzt - und **keine Daten
+darin**. Wer die Sammelrate nachrechnen wollte, musste die Tabelle abtippen.
+
+Dieselbe Lage wie bei `kostenanteil` (Befund 187) und der Rangkorrelation
+(195), und sie ist mir bei der Modulsuche in Befund 209 durchgegangen: Das
+Modul *wird* importiert, es hat Tests, es ist verdrahtet. Was fehlte, waren
+seine eigenen Zahlen.
+
+Jetzt `historie.GEMESSEN`. Die drei Zahlen aus dem Kopf kommen daraus wieder
+heraus - Sammelrate 44,7 je 1000 Tage, 29 fehlende Beobachtungen, 649 Tage -
+und sind damit nachgerechnet statt abgeschrieben.
+
+### Was mir daran auffaellt
+
+Von vier Punkten des Dauerauftrags waren nach dieser Runde **drei nicht
+mehr offen** und einer teilweise falsch. Sie stehen trotzdem in jeder Runde
+wieder da, und ich habe sie viele Runden lang gelesen, ohne sie
+nachzuschlagen.
+
+Ein Auftrag altert wie jede andere gepflegte Liste. Der Unterschied ist, dass
+dieser hier bestimmt, womit eine Runde anfaengt - und ein Punkt, der als
+offen dasteht, obwohl er beantwortet ist, kostet im besten Fall Zeit und im
+schlimmsten Versuche fuer eine Messung, die es schon gibt. Genau davor warnt
+`Auftragspunkt` seit Befund 130, und der Warnung fehlte bisher, dass auch der
+**Auftrag selbst** nachgemessen gehoert.
+
+Kostet keinen Versuch: nachgeschlagen und nachgerechnet, nichts neu gemessen.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

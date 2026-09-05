@@ -623,6 +623,13 @@ class TestUeberholteZahlenImRegister:
             "Ueberholte Kennzahl im Modulkopf": ("0,8640",),
             # Nennt den Ausgangswert und daneben den heutigen (0,5881).
             "Frischer Datenabzug hob den Referenzpunkt": ("0,6026",),
+            # **Befund 212.** Der Eintrag zitiert die Tabelle aus Befund 133,
+            # und deren Absolutwerte sind seit 135 ueberholt - das Gate teilt
+            # seither zusaetzlich nach Quartalen. Getragen wird hier der
+            # **Vergleich zweier Zeilen derselben Tabelle**: spaeter anfangen
+            # heisst weniger Evidenz. Das Verhaeltnis ueberlebt die
+            # Umrechnung, die einzelne Zahl nicht.
+            "Der Ladehinweis schickte Tageskerzen auf 2320 Tage": ("0,8640",),
         }, (
             "Ein Registereintrag nennt eine ueberholte Kennzahl. Ist sie als "
             "Geschichte gemeint, gehoert der Eintrag in diese Liste; ist sie "

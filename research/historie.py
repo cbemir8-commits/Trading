@@ -72,7 +72,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-__all__ = ["Historienkurve", "Historienstufe"]
+__all__ = [
+    "AB_FEINKERZEN",
+    "AB_TAGESKERZEN",
+    "GEMESSEN",
+    "Historienkurve",
+    "Historienstufe",
+    "empfohlener_start",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -222,3 +229,53 @@ class Historienkurve:
                 f"({tage / 365.25:.1f} Jahre) - hochgerechnet, nicht gemessen."
             )
         return " ".join(teile)
+
+
+#: Die sechs gemessenen Fenster aus Befund 133, als Daten statt als Prosa.
+#:
+#: Sie standen seit ihrer Messung nur im Kopf dieses Moduls. Wer die
+#: Sammelrate oder den Abstand zur Schwelle nachrechnen wollte, musste sie
+#: abtippen - dieselbe Lage, die Befund 187 bei ``kostenanteil`` und Befund
+#: 195 bei der Rangkorrelation vorgefunden hat.
+#:
+#: Der Stand von n und DSR ist seit Befund 135 ueberholt (siehe Kopf); die
+#: **Form** der Kurve ist es nicht, und um die geht es hier.
+GEMESSEN: Historienkurve = Historienkurve(
+    stufen=(
+        Historienstufe("2017-08-16", 3277, 152, 152, 0.2765, 0.8640, 9, 11),
+        Historienstufe("2018-08-16", 2912, 137, 136, 0.2734, 0.7659, 9, 11),
+        Historienstufe("2019-08-16", 2547, 111, 103, 0.2705, 0.4792, 9, 11),
+        Historienstufe("2020-03-30", 2320, 103, 103, 0.2396, 0.2969, 8, 11),
+        Historienstufe("2021-08-16", 1816, 72, 72, 0.2711, 0.2209, 9, 11),
+        Historienstufe("2022-08-16", 1451, 52, 52, 0.2903, 0.1347, 9, 11),
+    ),
+    ziel=181,
+)
+
+#: Ab wann Tageskerzen geladen gehoeren.
+#:
+#: Das laengste gemessene Fenster, und zugleich der Anfang des gemeinsamen
+#: Bereichs von BTC und ETH - frueher gibt es keine ETH-Reihe.
+AB_TAGESKERZEN: str = "2017-08-16"
+
+#: Ab wann die uebrigen Kerzenlaengen geladen gehoeren.
+#:
+#: Die Vorgabe der Befehle. Fuer 15-Minuten-Kerzen ist das keine Wahl,
+#: sondern die Reichweite der Reihe: gemessen rund 6,3 Jahre (``zeitskala``).
+AB_FEINKERZEN: str = "2020-03-30"
+
+
+def empfohlener_start(intervall: str) -> str:
+    """Ab welchem Tag dieses Intervall geladen gehoert.
+
+    **Warum das nicht ein Datum fuer alle ist.** Die Vorgabe aller Befehle
+    war ``2020-03-30``, und fuer Tageskerzen ist das die zweitschlechteste
+    der sechs gemessenen Stufen: 2320 statt 3277 Tage, 103 statt 152
+    unabhaengige Beobachtungen, Deflated Sharpe **0,2969 statt 0,8640** und
+    acht Gates statt neun. Der Hinweis, der bei zu kurzer Historie erscheint,
+    hat genau dorthin geschickt.
+
+    Fuer 15-Minuten-Kerzen bleibt es dabei: Dort ist das Datum nicht
+    gewaehlt, sondern der Anfang der Reihe.
+    """
+    return AB_TAGESKERZEN if str(intervall).upper() == "D" else AB_FEINKERZEN

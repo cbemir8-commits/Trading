@@ -940,6 +940,26 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Quelle. Bilanz berichtigt: neun Vorschlaege, keiner geraeumt",
         211,
     ),
+    # Ein Startdatum fuer alle Kerzenlaengen - und fuer die eine, auf der
+    # alle elf Gates stehen, war es das falsche.
+    Richtung(
+        "Der Ladehinweis schickte Tageskerzen auf 2320 Tage",
+        "'--von 2020-03-30' stand als Vorgabe und im Hinweis bei zu kurzer "
+        "Historie, auch fuer '-i D'. Gemessen ist das die zweitschlechteste "
+        "der sechs Stufen: DSR 0,2969 statt 0,8640, acht Gates statt neun. "
+        "Jetzt nach Intervall - D auf 2017-08-16, Feinkerzen unveraendert, "
+        "weil dort die Reihe endet",
+        212,
+    ),
+    # Die Tabelle aus 133 stand nur im Kopf des Moduls.
+    Richtung(
+        "Die Historienkurve war Prosa",
+        "sechs gemessene Fenster im Docstring, nirgends nachrechenbar - wie "
+        "kostenanteil (187) und die Rangkorrelation (195). Jetzt als "
+        "'historie.GEMESSEN': Sammelrate 44,7 je 1000 Tage, 29 fehlende "
+        "Beobachtungen, 649 Tage - alle drei aus den Daten gerechnet",
+        212,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

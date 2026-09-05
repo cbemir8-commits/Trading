@@ -582,13 +582,18 @@ def wettbewerb(
     # nichts bedeutete.
     span_days = (frame["open_time"].iloc[-1] - frame["open_time"].iloc[0]).days
     if span_days < 450:
+        # **Nicht ein Datum fuer alle** (Befund 212). Hier stand fest
+        # ``2020-03-30``, und fuer Tageskerzen ist das die zweitschlechteste
+        # gemessene Stufe: Deflated Sharpe 0,2969 statt 0,8640.
+        from research.historie import empfohlener_start
+
         console.print(
             f"[red]Nur {span_days} Tage Historie.[/] Der Walk-Forward braucht "
             "mindestens rund 15 Monate, sonst entsteht kein einziges "
             "Testfenster - und jede Bestenliste daraus waere leer, ohne dass "
             "es auffiele.\n"
             f"Mehr laden: python -m cli backfill --intervall {intervall} "
-            "--von 2020-03-30"
+            f"--von {empfohlener_start(intervall)}"
         )
         raise typer.Exit(2)
 
