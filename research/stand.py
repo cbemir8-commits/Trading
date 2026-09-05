@@ -960,6 +960,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Beobachtungen, 649 Tage - alle drei aus den Daten gerechnet",
         212,
     ),
+    # Und die andere Haelfte derselben Vorgabe, einen Befund spaeter.
+    Richtung(
+        "Der Ladebefehl holte nie Tageskerzen",
+        "'backfill' laedt ohne '-i' die Vorgabe 1m/15m/1h/4h - **kein D**, "
+        "und der Speicher fasst nicht selbst zusammen. Die Zeile fuer den "
+        "Nutzer sagte '--von 2017-08-16' ohne Intervall, holte also vier "
+        "Intraday-Reihen und keine der Kerzen, auf denen alle elf Gates "
+        "stehen. Sechs solcher halben Hinweise gefunden und berichtigt, mit "
+        "Wache gegen den siebten",
+        213,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1092,6 +1103,18 @@ OFFEN: tuple[Richtung, ...] = (
         "Die Reihenfolge taugt zum Priorisieren, nicht zum Verzichten",
         186,
         195,
+    ),
+    # **Gebaut, getestet, nie aufgerufen** - und die Frage dahinter faellt
+    # nicht nebenbei. Sie steht hier und nicht unter BEHOBEN, weil nichts
+    # entschieden ist: Befund 213 hat sie gefunden, nicht beantwortet.
+    Richtung(
+        "Tageskerzen ableiten statt laden?",
+        "'data/resample.py' fasst Kerzen zusammen, wirft angefangene weg und "
+        "ist getestet - 'teilbar(15m, D)' gilt. Aufgerufen wird es "
+        "ausserhalb seiner Tests nirgends, und 'CandleStore.read' faellt "
+        "nicht darauf zurueck. Ob D abgeleitet oder geladen gehoert, "
+        "beruehrt jede Zahl des Projekts und ist ungeprueft",
+        213,
     ),
 )
 
@@ -1533,12 +1556,14 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "jedem Livegang auszufuehren.",
     ),
     (
-        "python -m cli backfill --von 2017-08-16",
+        "python -m cli backfill --intervall D --von 2017-08-16",
         "Laedt Bybit-Kerzen. **Ohne sie kann nichts zugelassen werden** - "
         "jede Zahl dieses Projekts steht auf Bitstamp-Kassakursen, und die "
         "sind nicht das gehandelte Instrument. Seit Befund 102 sagt das "
         "System das auch: Ein Bericht auf Forschungskerzen gilt nie als "
-        "zugelassen, egal wie viele Gates halten.",
+        "zugelassen, egal wie viele Gates halten. **Das Intervall gehoert "
+        "dazu**: Ohne '-i' laedt der Befehl 1m/15m/1h/4h und **keine** "
+        "Tageskerzen - und auf denen stehen alle elf Gates (Befund 213).",
     ),
     (
         "python -m cli wettbewerb",

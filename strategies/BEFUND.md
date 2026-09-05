@@ -19342,3 +19342,87 @@ schlimmsten Versuche fuer eine Messung, die es schon gibt. Genau davor warnt
 
 Kostet keinen Versuch: nachgeschlagen und nachgerechnet, nichts neu gemessen.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertdreizehn. Der Ladebefehl holte nie die Kerzen, auf denen alles steht
+
+Befund 212 hat das **Datum** des Ladebefehls nach Intervall getrennt. Beim
+Nachsehen, ob das ueberall greift, kam die andere Haelfte derselben Vorgabe
+heraus - und sie ist die schwerere.
+
+### Die Messung
+
+`cli backfill` hat zwei Vorgaben:
+
+    --von         2020-03-30            (Befund 212: fuer D die zweitschlechteste Stufe)
+    --intervall   1  15  60  240        **kein D**
+
+Die Zeile, die `BEIM_NUTZER` dem Nutzer gibt, lautete
+`python -m cli backfill --von 2017-08-16`. Ohne `-i` laedt sie also vier
+Intraday-Reihen ab 2017 - und **keine einzige Tageskerze**.
+
+Auf Tageskerzen stehen der Spitzenkandidat, alle elf Gates und die
+Referenzmessung aus Befund 133. Der Bericht, in dem diese Zeile steht, sagt
+in seinem Kopf *"Gemessen: BTC + ETH, Tageskerzen"*.
+
+Nachgesehen, ob der Speicher das auffaengt: nein. `CandleStore.read` liest
+die Parkettdateien des angefragten Intervalls und faellt **nicht** auf
+Zusammenfassen zurueck. Was nicht geladen wurde, ist leer.
+
+### Ein gebautes Werkzeug, das genau das koennte
+
+`data/resample.py` fasst Kerzen zu groesseren zusammen, wirft angefangene
+Kerzen weg (Lookahead am rechten Rand, sorgfaeltig begruendet) und ist
+getestet. Sein Modulkopf sagt sogar, wozu: *"Aus einer einzigen
+15-Minuten-Reihe abgeleitet, sind alle Intervalle per Konstruktion
+konsistent."*
+
+Es hat **keinen einzigen Aufrufer ausserhalb seiner Tests.**
+
+Das ist der vierte Fall des Musters aus Befund 209 - und meine Suche dort
+konnte ihn nicht finden, weil sie `research/` abgesucht hat und dieses Modul
+in `data/` liegt. Ein Nichtfund gilt fuer das abgesuchte Verzeichnis, nicht
+fuer den Behaelter. Denselben Satz habe ich in Befund 210 ueber dieselbe
+Suche geschrieben; hier ist er zum zweiten Mal faellig.
+
+**Verdrahtet wird es hier nicht.** Ob Tageskerzen abgeleitet oder geladen
+gehoeren, ist eine Entscheidung mit Folgen fuer jede Zahl des Projekts, und
+sie faellt nicht nebenbei in einem Befund ueber Ladehinweise.
+
+### Sechs halbe Hinweise
+
+Diesmal nicht eine Stelle berichtigt und das Feld fuer abgeraeumt gehalten -
+das war der Fehler von Befund 120/121 (Befund 210) und von 212. Gesucht wurde
+nach **jedem** `cli backfill` in Quelltext und Anleitung:
+
+    cli.py Modulkopf          --von 2020-03-30          -> -i D --von 2017-08-16
+    cli.py research-Schranke  --von 2020-03-30          -> nach Intervall
+    cli.py Wettbewerb, leer   --intervall {x}           -> Datum dazu
+    cli.py Live-Luecke        --von {datum}             -> Intervall dazu
+    cli.py Anlagentest        --intervall 15            -> Datum dazu
+    README.md                 --von 2017-08-16          -> -i D dazu
+    reihenfolge.py            --von 2017-08-16          -> -i D dazu
+
+Die Regel dahinter ist einfach genug fuer eine Wache: **Wer eines von beiden
+nennt, muss das andere nennen.** Genau eines zu nennen heisst, fuer das
+andere stillschweigend eine Vorgabe zu nehmen, und beide Vorgaben sind fuer
+Tageskerzen falsch. Ein blosses `python -m cli backfill` bleibt erlaubt - das
+ist ein Wegweiser, keine Vorschrift.
+
+Der erste Entwurf der Wache hat zwei bereits berichtigte Stellen angezeigt:
+Das Suchmuster lief ueber den Rohtext, und Python fuegt benachbarte
+Zeichenketten zusammen, ein Suchmuster nicht. Ein `--von` in der Folgezeile
+fiel unter den Tisch. Behoben, bevor die Zahl irgendwo stand.
+
+### Was mir daran auffaellt
+
+Diese Zeile steht seit Befund 102 im Bericht, an der Stelle, die ueberschrieben
+ist mit *"Ohne sie kann nichts zugelassen werden"*. Sie ist die einzige
+Anweisung des Projekts, die auf dem Rechner des Nutzers etwas bewirken soll,
+und sie hat die Kerzen nicht geholt, um die es geht.
+
+Aufgefallen ist es nicht beim Lesen des Berichts - den habe ich oft genug
+gelesen -, sondern beim Nachsehen, was der Befehl ohne seine Argumente tut.
+Eine Anweisung liest man als das, was sie sagt; was sie tut, steht woanders.
+
+Kostet keinen Versuch: gelesen und berichtigt, nichts gemessen.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

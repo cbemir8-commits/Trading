@@ -3,7 +3,7 @@
     python -m cli --help
 
     python -m cli healthcheck              # zuerst ausfuehren auf neuem Server
-    python -m cli backfill --von 2020-03-30
+    python -m cli backfill --intervall D --von 2017-08-16
     python -m cli funding                  # zweite Datenquelle: Positionierung
     python -m cli status
     python -m cli quality
@@ -563,9 +563,18 @@ def wettbewerb(
     handelssymbol = symbole[0] if symbole else (symbol or settings.bybit.symbol)
     frame = store.read(handelssymbol, interval_obj)
     if frame.empty:
+        # **Intervall und Datum gehoeren zusammen** (Befund 213). Hier stand
+        # nur das Intervall, also griff die Vorgabe ``--von 2020-03-30`` -
+        # fuer Tageskerzen die zweitschlechteste gemessene Stufe. Es ist der
+        # Hinweis, den ein Nutzer als **ersten** sieht, wenn ein Intervall
+        # nie geladen wurde, und Tageskerzen laedt der Backfill von sich aus
+        # nie.
+        from research.historie import empfohlener_start
+
         console.print(
             f"[red]Keine Kerzen fuer {handelssymbol} {interval_obj.label}.[/] "
-            f"Zuerst: python -m cli backfill --intervall {intervall}"
+            f"Zuerst: python -m cli backfill --intervall {intervall} "
+            f"--von {empfohlener_start(intervall)}"
         )
         raise typer.Exit(2)
 
@@ -1269,10 +1278,13 @@ def research(
     span_days = (frame["open_time"].iloc[-1] - frame["open_time"].iloc[0]).days
     if span_days < 450:
         # 12 Monate Training + 3 Monate Test ergeben sonst kein einziges Fenster.
+        from research.historie import empfohlener_start
+
         console.print(
             f"[red]Nur {span_days} Tage Historie.[/] Der Walk-Forward braucht "
             "mindestens rund 15 Monate, sonst entsteht kein einziges Testfenster.\n"
-            "Mehr laden: python -m cli backfill --von 2020-03-30"
+            f"Mehr laden: python -m cli backfill --intervall {intervall} "
+            f"--von {empfohlener_start(intervall)}"
         )
         raise typer.Exit(2)
 
@@ -1926,7 +1938,8 @@ def ingest(
                         f"[yellow]Luecke in {interval.label} ist aelter als 6 Stunden "
                         f"und wurde nicht vollstaendig geschlossen.[/]\n"
                         f"[yellow]Vor dem Handeln ausfuehren: "
-                        f"python -m cli backfill --von {result.requested_from:%Y-%m-%d}[/]"
+                        f"python -m cli backfill --intervall {interval.value} "
+                        f"--von {result.requested_from:%Y-%m-%d}[/]"
                     )
                 elif result.written:
                     console.print(
@@ -4950,8 +4963,8 @@ def anlagentest(
         "[bold]So laeuft der Test[/] - drei Schritte, alle auf deinem Rechner:\n"
         "  1  python -m cli healthcheck"
         "          [dim]bietet das Konto ueberhaupt Perpetuals?[/]\n"
-        "  2  python -m cli backfill --intervall 15"
-        "   [dim]Kerzen laden[/]\n"
+        "  2  python -m cli backfill --intervall 15 --von 2020-03-30"
+        "  [dim]Kerzen laden[/]\n"
         "  3  ./start.sh --anlagentest"
         "             [dim]Website und Handel zusammen[/]\n"
     )

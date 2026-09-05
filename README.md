@@ -180,7 +180,7 @@ in die `.env` auf dem Server.
 ```bash
 python -m cli setup                       # Zugangsdaten einrichten
 python -m cli healthcheck                 # zuerst auf jedem neuen Server
-python -m cli backfill --von 2017-08-16   # Historie laden (resumierbar)
+python -m cli backfill --intervall D --von 2017-08-16   # Historie laden (resumierbar)
 python -m cli status                      # was liegt im Speicher?
 python -m cli quality                     # Lücken, Duplikate, Ausreißer
 python -m cli ingest                      # Live-Kerzen mitschreiben
