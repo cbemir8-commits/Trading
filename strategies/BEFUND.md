@@ -19135,3 +19135,96 @@ gebaut, was niemand aufruft.
 
 Kostet keinen Versuch: gelesen wurde Quelltext, nicht Kurse.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertelf. Berichtigung: die Bilanz der KI endet nicht bei fuenf
+
+Befund 210 hat unter `ENTSCHEIDUNGEN` geschrieben, die Research-KI habe eine
+Bilanz von null von fuenf, diese fuenf stammten aus der Zeit vor der
+Auftragskorrektur, und **was seither herauskam, sei nirgends verzeichnet**.
+
+Der letzte Halbsatz ist falsch. Er steht seit gestern im Bericht.
+
+### Was tatsaechlich verzeichnet ist
+
+Befund 77 hat den in Befund 76 berichtigten Auftrag beantwortet - von Hand
+ueber `DateiClient`, weil in diesem Behaelter kein Modell verdrahtet ist - und
+vier Regeln gebaut, jede mit einer anderen Ursache als Trend:
+
+    Vorschlag                         Trades  SR/Trade    noetig      rho
+    ----------------------------------------------------------------------
+    Enge vor Bewegung                     18    0,3405    0,9047   +0,417
+    Volumenschock mit Fortsetzung        114    0,1584    0,2652   +0,396
+    Rueckkehr zum Volumenschwerpunkt      92   -0,1201    0,2967   +0,063
+    Abgriff des Vortagestiefs            406   -0,1201    0,1514   +0,129
+
+Keiner raeumt die Latte - aber "nirgends verzeichnet" ist etwas anderes als
+"nichts gefunden". Die vier haben die staerkste Methodenaussage des Projekts
+gebracht: Unabhaengigkeit ist **leicht** (rho +0,06 bis +0,42 gegen eine
+Schwelle von 0,8), das Nadeloehr ist die Kopplung von Haeufigkeit und Guete,
+und sie haben Befund 75 von n = 14 (r = -0,533) auf n = 18 (r = -0,602,
+t = -3,02) gehoben.
+
+Das stand an drei Stellen, die ich alle offen hatte:
+
+* **Befund 77** im Laborbuch, mit dieser Tabelle.
+* **Das `AUFTRAG`-Register**, seit Befund 196: *"genutzt, vier Vorschlaege
+  gemessen - alle schlechter"*. Ich habe den Bericht gestern gerendert und
+  ausgegeben, um meine Aenderung zu pruefen - dieser Satz stand darin.
+* **`state/trials.json`**: Alle vier liegen dort, mit Namen, Trade-Zahl und
+  Guete auf vier Stellen genau wie in der Tabelle.
+
+### Warum ich sie nicht gefunden habe
+
+Ich habe `trials.json` nach `herkunft == "Analyst"` durchsucht, keinen
+Treffer bekommen und daraus geschlossen, es gebe keinen Beleg. Die vier
+tragen `gen11 partnersuche`, weil sie dort nachgemessen wurden.
+
+Die Herkunft trennt nach **Lauf**, nicht nach Quelle. Dieselbe KI erscheint
+als `Analyst` (ueber `cli vorschlag` mit Schluessel), als `KI-Vorschlag`
+(ueber `cli wettbewerb --ki`) und als `Vorschlag (<datei>)` - drei Etiketten
+fuer eine Quelle, und ich habe nach einem gesucht.
+
+`cli.py` weiss das seit Befund 119 und sagt es an der Stelle, die die Gruppen
+bewusst **nicht** zusammenlegt: *"Die Herkunft trennt nach Datei, nicht nach
+Quelle."* Ich habe die Zeile nicht gelesen, und die Feldbeschreibung in
+`leaderboard.py` nannte nur drei der Werte, die wirklich vergeben werden.
+
+**Aus dem Fehlen eines Etiketts folgt nicht das Fehlen der Quelle.** Das ist
+dieselbe Bauart wie Befund 139 (Rohzahl statt effektiver Stichprobe): ein
+Feld gelesen, das die gestellte Frage nicht beantwortet, und die Antwort
+trotzdem daraus genommen.
+
+### Und die Wache hat mitgeholfen
+
+Der Test, den ich in Befund 210 dazugeschrieben habe, verlangte das Wort
+"Grundstock" im Eintrag - also ausdruecklich den Beleg-Vorbehalt, der der
+Fehlschluss war. Er haette den Irrtum nicht gefunden; er hat ihn
+festgeschrieben.
+
+Eine Wache ist nie besser als die Behauptung, die sie schuetzt. Sie prueft
+jetzt die vollstaendige Bilanz und den Preis, nicht ein bestimmtes Wort.
+
+### Was dazukam
+
+Die Entscheidung nennt jetzt neun Vorschlaege in zwei Serien, mit den vier
+Zeilen aus Befund 77 samt der Latte daneben, und sagt, was sie erbracht
+haben. Die Frage lautet damit anders: nicht "eine unbelegte Chance gegen
+einen sicheren Aufschlag", sondern **ob neun Nieten gegen die Quelle
+sprechen oder zu wenige sind, um etwas zu sagen**. Beides ist vertretbar,
+und es bleibt eine Geschaeftsfrage.
+
+Die Feldbeschreibung von `herkunft` zaehlt jetzt die tatsaechlich vergebenen
+Werte auf und nennt die Regel, an der ich mich gestossen habe.
+
+### Was mir daran auffaellt
+
+Ich habe in Befund 210 geschrieben, meine Suche in 209 sei zu eng geschnitten
+gewesen - ein Nichtfund gelte fuer die gestellte Frage, nicht fuer die
+gemeinte. Im selben Befund habe ich denselben Fehler noch einmal gemacht, ein
+Feld weiter unten, und ihn mit einem Test befestigt.
+
+Es hilft offenbar nicht, die Lehre aufzuschreiben. Was geholfen haette, waere
+der Blick auf den Bericht gewesen, den ich selbst ausgegeben habe.
+
+Kostet keinen Versuch: berichtigt wurde eine Behauptung, gemessen wurde nichts Neues.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

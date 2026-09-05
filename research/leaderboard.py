@@ -99,7 +99,26 @@ class Entry:
     """
 
     herkunft: str = "Katalog"
-    """Woher der Kandidat stammt: Katalog, Variante oder KI-Vorschlag."""
+    """Woher der Kandidat stammt - ein freier Text, keine feste Auswahl.
+
+    Vergeben werden unter anderem ``Katalog``, ``Variante``, ``Variante der
+    Spitze``, ``KI-Vorschlag``, ``Analyst``, ``Vorschlag (<datei>)``,
+    ``verbund`` und ``wettbewerb g<n>``.
+
+    **Wonach das trennt, ist der Lauf und nicht die Quelle.** Dieselbe
+    Research-KI erscheint als ``Analyst`` (ueber ``cli vorschlag`` mit
+    Schluessel), als ``KI-Vorschlag`` (ueber ``cli wettbewerb --ki``) und als
+    ``Vorschlag (<datei>)`` (ueber ``--datei``, wie in Befund 77); wird ein
+    Vorschlag spaeter in einem anderen Zusammenhang nachgemessen, traegt er
+    dessen Herkunft. Die vier Regeln aus Befund 77 stehen deshalb heute als
+    ``gen11 partnersuche`` im Versuchsverzeichnis.
+
+    Daraus folgt die Regel, an der sich Befund 210 gestossen hat: **Aus dem
+    Fehlen einer Herkunft folgt nicht das Fehlen der Quelle.** Wer wissen
+    will, was die KI beigetragen hat, liest die Befunde, nicht dieses Feld.
+    ``cli ideenquellen`` zeigt die Gruppen deshalb getrennt und legt sie
+    ausdruecklich nicht zusammen.
+    """
 
     geprueft: int = 0
     zuerst: str = ""

@@ -1382,17 +1382,22 @@ class TestBeideWegeDesWettbewerbsStehenDa:
     def test_die_entscheidung_ist_beziffert_und_nicht_beantwortet(self) -> None:
         """``ENTSCHEIDUNGEN`` benennt und beziffert - es empfiehlt nicht.
 
-        Die Bilanz der KI ist null von fuenf, und diese fuenf sind vor der
-        Korrektur aus Befund 76 entstanden. Beides muss dastehen: die Zahl
-        allein waere ein Urteil ueber ein Werkzeug, das es so nicht mehr gibt.
+        **Dieser Test stand bis Befund 211 falsch da.** Er verlangte das Wort
+        "Grundstock" als "Beleg-Vorbehalt" - also genau den Fehlschluss aus
+        Befund 210, die Bilanz der KI ende bei den fuenf aus Befund 76. Sie
+        endet dort nicht, und der Test hat den Irrtum festgeschrieben statt
+        ihn zu finden.
+
+        Eine Wache ist so gut wie die Behauptung, die sie schuetzt. Was hier
+        stehen muss, ist die vollstaendige Bilanz und der Preis - nicht ein
+        bestimmtes Wort.
         """
         eintrag = next(
             e for e in ENTSCHEIDUNGEN if "Research-KI" in e.frage
         )
 
-        assert "fuenf" in eintrag.zahl and "0,25" in eintrag.zahl
-        assert "76" in eintrag.zahl, "die Korrektur des Auftrags fehlt"
-        assert "Grundstock" in eintrag.zahl, "der Beleg-Vorbehalt fehlt"
+        assert "0,25" in eintrag.zahl
+        assert "76" in eintrag.zahl and "77" in eintrag.zahl
         assert "hebt die Huerde" in eintrag.warum, "der Preis fehlt"
 
     def test_der_preis_steht_neben_der_chance(self) -> None:
@@ -1455,3 +1460,99 @@ class TestDieFalscheGatezahlKommtNichtWieder:
         text = Path("cli.py").read_text()
 
         assert "neun Gates statt elf" in text
+
+
+class TestDieBilanzDerKiIstVollstaendig:
+    """**Befund 211.** Berichtigung von Befund 210 - mein eigener Fehler.
+
+    Befund 210 hat unter ``ENTSCHEIDUNGEN`` geschrieben, was die Research-KI
+    nach der Auftragskorrektur aus Befund 76 gebracht habe, sei "nirgends
+    verzeichnet". Das ist falsch. Befund 77 hat vier Vorschlaege gegen den
+    berichtigten Auftrag gebaut und mit Tabelle gemessen; der
+    ``AUFTRAG``-Eintrag sagt es seit Befund 196; und die vier stehen in
+    ``trials.json``.
+
+    Der Grund fuer den Fehlschluss: Ich habe dort nach ``herkunft ==
+    "Analyst"`` gesucht und aus dem Fehlen auf Nichtvorhandensein
+    geschlossen. Die Herkunft trennt aber nach **Lauf**, nicht nach Quelle -
+    die vier tragen ``gen11 partnersuche``, weil sie dort nachgemessen
+    wurden. Genau davor warnt ``cli.py`` seit Befund 119 an der Stelle, die
+    die Gruppen bewusst nicht zusammenlegt.
+    """
+
+    @staticmethod
+    def _eintrag():
+        return next(e for e in ENTSCHEIDUNGEN if "Research-KI" in e.frage)
+
+    def test_beide_serien_stehen_da(self) -> None:
+        """Fuenf unter dem alten Auftrag, vier unter dem berichtigten."""
+        zahl = self._eintrag().zahl
+
+        assert "Neun gemessene Vorschlaege" in zahl
+        assert "Befund 76" in zahl and "Befund 77" in zahl
+
+    def test_die_vier_stehen_mit_ihren_zahlen_da(self) -> None:
+        """Nicht als 'alle schlechter' - die Latte gehoert daneben."""
+        zahl = self._eintrag().zahl
+
+        for wert in ("0,3405", "0,1584", "-0,1201"):
+            assert wert in zahl, wert
+        for noetig in ("0,9047", "0,2652", "0,2967", "0,1514"):
+            assert noetig in zahl, noetig
+
+    def test_der_ertrag_ohne_kandidat_steht_dabei(self) -> None:
+        """Die vier haben keinen Kandidaten gebracht und trotzdem etwas:
+        Unabhaengigkeit ist leicht, die Kopplung ist das Nadeloehr."""
+        zahl = self._eintrag().zahl
+
+        assert "Unabhaengigkeit ist **leicht**" in zahl
+        assert "-0,602" in zahl and "-3,02" in zahl
+
+    def test_der_widerlegte_satz_kommt_nicht_wieder(self) -> None:
+        """Die Wache gegen genau den Fehlschluss aus Befund 210."""
+        eintrag = self._eintrag()
+
+        assert "nirgends verzeichnet" not in eintrag.zahl
+        assert "unbelegte Chance" not in eintrag.warum
+
+    def test_die_vier_liegen_im_versuchsverzeichnis(self) -> None:
+        """**Der Beleg, den ich haette holen muessen.**
+
+        Nicht die Herkunft entscheidet, sondern Name, Trades und Guete: Die
+        vier aus Befund 77 stehen unter ``gen11 partnersuche`` in
+        ``trials.json``, mit genau den Zahlen der Tabelle.
+        """
+        import json
+
+        gemessen = {
+            "Enge vor Bewegung": (18, 0.3405),
+            "Volumenschock mit Fortsetzung": (114, 0.1584),
+            "Rueckkehr zum Volumenschwerpunkt": (92, -0.1201),
+            "Abgriff des Vortagestiefs": (406, -0.1201),
+        }
+        versuche = json.loads(Path("state/trials.json").read_text())["versuche"]
+        gefunden = {
+            v["kennung"]: (v["trades"], v["sharpe_je_trade"])
+            for v in versuche
+            if v["kennung"] in gemessen
+        }
+
+        assert set(gefunden) == set(gemessen)
+        for name, (trades, guete) in gemessen.items():
+            assert gefunden[name][0] == trades, name
+            assert gefunden[name][1] == pytest.approx(guete, abs=5e-4), name
+
+    def test_keiner_von_ihnen_traegt_die_herkunft_analyst(self) -> None:
+        """Der Befund selbst: Die Quelle ist da, das Etikett sagt es nicht."""
+        import json
+
+        versuche = json.loads(Path("state/trials.json").read_text())["versuche"]
+        namen = {
+            "Enge vor Bewegung",
+            "Volumenschock mit Fortsetzung",
+            "Rueckkehr zum Volumenschwerpunkt",
+            "Abgriff des Vortagestiefs",
+        }
+        herkuenfte = {v["herkunft"] for v in versuche if v["kennung"] in namen}
+
+        assert herkuenfte == {"gen11 partnersuche"}

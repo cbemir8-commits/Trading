@@ -929,6 +929,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "keinen Docstring. Jetzt elf, mit Wache und Gegenprobe",
         210,
     ),
+    # Mein eigener Fehler aus 210, einen Befund spaeter - und dieselbe
+    # Bauart, vor der ich dort gewarnt habe.
+    Richtung(
+        "Aus fehlender Herkunft auf fehlende Quelle geschlossen",
+        "210 behauptete, was die KI nach der Auftragskorrektur brachte, sei "
+        "nirgends verzeichnet. Es steht in Befund 77 mit Tabelle, im "
+        "AUFTRAG-Register und in trials.json - dort unter 'gen11 "
+        "partnersuche', weil die Herkunft nach Lauf trennt und nicht nach "
+        "Quelle. Bilanz berichtigt: neun Vorschlaege, keiner geraeumt",
+        211,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1341,18 +1352,27 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
     ),
     Entscheidung(
         frage="Soll die Research-KI mitlaufen",
-        zahl="Ihre einzige gemessene Bilanz sind fuenf Vorschlaege aus "
-             "Befund 76: vier zwischen 68 und 123 Trades, keiner mit einem "
-             "Sharpe je Trade ueber 0,25. Gebraucht werden 120 Trades bei "
-             "ueber 0,23 (Befund 74/75) - also null von fuenf."
-             "\n    Diese fuenf sind aber **vor** der Korrektur entstanden, "
-             "die Befund 76 selbst gebracht hat: Bis dahin nannte ihr "
-             "Auftrag den Deflated Sharpe nicht und zielte auf 100 Trades. "
-             "Seither weiss sie, worauf es ankommt - und was seither "
-             "herauskam, ist nirgends verzeichnet. Von den 11 einzeln "
-             "erfassten Versuchen traegt keiner die Herkunft 'Analyst'; die "
-             "uebrigen 187 stehen als Grundstock ohne Herkunft da, also "
-             "belegt das nichts.",
+        zahl="Neun gemessene Vorschlaege, keiner hat die Latte geraeumt "
+             "(gebraucht: 120 Trades bei Guete ueber 0,23, Befund 74/75)."
+             "\n    Fuenf aus Befund 76, noch unter dem alten Auftrag, der "
+             "den Deflated Sharpe nicht nannte und auf 100 Trades zielte: "
+             "vier mit 68 bis 123 Trades, keiner ueber 0,25."
+             "\n    Vier aus Befund 77, eigens gegen den **berichtigten** "
+             "Auftrag gebaut:"
+             "\n      Enge vor Bewegung              18 Trades  0,3405 "
+             "(noetig 0,9047)"
+             "\n      Volumenschock mit Fortsetzung 114 Trades  0,1584 "
+             "(noetig 0,2652)"
+             "\n      Rueckkehr zum Schwerpunkt      92 Trades -0,1201 "
+             "(noetig 0,2967)"
+             "\n      Abgriff des Vortagestiefs     406 Trades -0,1201 "
+             "(noetig 0,1514)"
+             "\n    Diese vier haben trotzdem etwas erbracht, nur keinen "
+             "Kandidaten: Ihre Fensterkorrelation lag bei +0,06 bis +0,42 "
+             "gegen eine Schwelle von 0,8 - Unabhaengigkeit ist **leicht**. "
+             "Das Nadeloehr ist die Kopplung von Haeufigkeit und Guete, und "
+             "sie haben Befund 75 von n = 14 (r = -0,533) auf n = 18 "
+             "(r = -0,602, t = -3,02) gehoben.",
         warum="Nach Befund 145 sind alle gemessenen Richtungen leer, und was "
               "fehlt, ist eine Regel, die es noch nicht gibt. Der Katalog "
               "kann sie nicht liefern (Befund 75), 'breed' bildet nur "
@@ -1362,11 +1382,16 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "und hebt die Huerde des Deflated Sharpe fuer alle folgenden** "
               "(Befund 71), dazu kommen Modellkosten gegen das Monatsbudget. "
               "Eine Serie erfolgloser Vorschlaege macht den Bestand also "
-              "messbar schlechter, ohne etwas beizutragen."
-              "\n    Zu entscheiden ist damit, ob eine unbelegte Chance auf "
-              "strukturell Neues diesen sicheren Aufschlag wert ist. Das ist "
-              "eine Geschaeftsfrage und faellt nicht hier. Beide Wege stehen "
-              "als Befehlszeile unter 'Nur auf deinem Rechner'.",
+              "messbar schlechter."
+              "\n    Zu entscheiden ist damit, ob neun erfolglose Versuche "
+              "gegen diese Quelle sprechen oder ob sie zu wenige sind, um "
+              "etwas zu sagen. Beides ist vertretbar: Neun Nieten sind kein "
+              "Beweis, dass die zehnte auch eine ist - und sie sind auch "
+              "kein Grund, mit der zehnten zu rechnen. Was die vier aus "
+              "Befund 77 gebracht haben, war Methodenwissen und kein "
+              "Kandidat; ob das den Aufschlag wert ist, ist eine "
+              "Geschaeftsfrage und faellt nicht hier. Beide Wege stehen als "
+              "Befehlszeile unter 'Nur auf deinem Rechner'.",
     ),
 )
 
