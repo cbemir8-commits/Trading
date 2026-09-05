@@ -19426,3 +19426,84 @@ Eine Anweisung liest man als das, was sie sagt; was sie tut, steht woanders.
 
 Kostet keinen Versuch: gelesen und berichtigt, nichts gemessen.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertvierzehn. Zwei Wege an derselben Pruefung vorbei
+
+Befund 213 hat die Ladezeile auf `-i D` gestellt, damit sie die Kerzen holt,
+auf denen alle elf Gates stehen. Beim Nachsehen, ob der Schritt **danach**
+darauf noch passt, kamen zwei Luecken heraus - eine alte und eine, die ich
+selbst hineingebaut habe.
+
+### Meine eigene, einen Befund alt
+
+Die Schritte, die `BEIM_NUTZER` dem Nutzer gibt, sind nacheinander
+auszufuehren:
+
+    python -m cli backfill --intervall D --von 2017-08-16     laedt Tageskerzen
+    python -m cli wettbewerb                                  laeuft auf 15 Minuten
+
+`wettbewerb` hat die Vorgabe `--generation 8`, und Generation 8 ist ein
+Viertelstunden-Katalog. Der zweite Schritt haette also auf Kerzen laufen
+wollen, die der erste nicht mehr laedt, und waere am leeren Speicher
+abgebrochen.
+
+Vor Befund 213 passte das Paar - der Backfill lud damals unter anderem 15
+Minuten mit. Es passte nur auf der **falschen** Linie: nicht auf der, auf der
+der Bestand und die Gates stehen. Ich habe die eine Zeile berichtigt und die
+Zeile darunter nicht gelesen, obwohl beide im selben Register stehen und
+untereinander im selben Bericht ausgegeben werden.
+
+Jetzt `--generation 9` - der Tageskerzen-Katalog mit den meisten Regeln - und
+eine Wache, die beide Zeilen gegeneinander prueft: Auf welchem Intervall
+laeuft der Wettbewerb, und ist es unter den geladenen? Sie kann den alten
+Stand nachbilden und meldet ihn.
+
+### Die aeltere, und die kostet Versuche
+
+`_pruefe_generation` bewacht seit Befund 64, dass Generation und Kerzenlaenge
+zusammenpassen. Sie steht im **Katalogzweig**:
+
+    if von_spitze:
+        aktuell = breed([spitzenkandidat()], ...)     <- keine Pruefung
+    else:
+        _pruefe_generation(generation, interval_obj)
+        aktuell = load_seeds(generation)
+
+`--von-spitze` geht am Katalog vorbei und damit an der Pruefung. Das
+Intervall steht dann trotzdem auf dem der **Vorgabegeneration**, denn es wird
+vor dem Zweig gesetzt - und das ist 15 Minuten.
+
+`python -m cli wettbewerb --von-spitze` hat damit Varianten von *'Trend 50
+Tage mit Konfluenz'* auf Viertelstundenkerzen gemessen. Dort sind 50 Balken
+**zwoelfeinhalb Stunden** statt fuenfzig Tagen. Dieselbe Zahl, eine andere
+Regel - und anders als die Luecke oben faellt sie nicht auf: Der Lauf hat
+Daten, laeuft durch, traegt ein und **kostet Versuche**. Genau davor warnt
+der Kopf von `_pruefe_generation`, und genau dort greift sie nicht.
+
+Es ist derselbe Fehler wie in Befund 190, eine Ebene weiter. Dort wurde ein
+auf Tageskerzen gemessener Bestand gegen eine Viertelstunden-Gerade
+**gestellt** - +5,64 Reststreuungen, gruen gedruckt. Hier wird er darauf
+**gemessen**. Das Feld, das ich in 190 dafuer angelegt habe,
+`Referenzpunkt.intervall`, beantwortet die Frage seit damals; es hat sie hier
+nur niemand gestellt.
+
+`_pruefe_spitze` prueft jetzt gegen `SPOTPUNKT.intervall` - nicht gegen ein
+hier hingeschriebenes "D", damit die Pruefung mitwandert, falls der Bestand
+je auf eine andere Kerzenlaenge zieht. Abgebrochen statt gewarnt, aus dem
+Grund, den Befund 64 schon genannt hat.
+
+### Was mir daran auffaellt
+
+Eine Wache steht immer an **einer** Stelle im Kontrollfluss, und ein zweiter
+Weg zum selben Ziel geht daran vorbei. `_pruefe_generation` war nie falsch;
+sie war nur nicht dort, wo der zweite Weg verlaeuft.
+
+Das ist die vierte Ausgabe desselben Musters in dieser Serie - berichtigte
+Gate-Zahl an einer von fuenf Stellen (210), ein Etikett von dreien (211), ein
+Ladehinweis von sieben (213), jetzt ein Zweig von zweien. Was jedes Mal
+gefehlt hat, ist nicht die Einsicht, sondern die Frage "und wo noch?" - und
+die habe ich hier erst gestellt, weil ich meine eigene Aenderung nachsehen
+wollte.
+
+Kostet keinen Versuch: gelesen und bewacht, nichts gemessen.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

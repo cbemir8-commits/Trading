@@ -971,6 +971,26 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Wache gegen den siebten",
         213,
     ),
+    # Die Pruefung aus 64 sass im Katalogzweig - und --von-spitze geht am
+    # Katalog vorbei.
+    Richtung(
+        "--von-spitze umging die Intervallpruefung",
+        "das Intervall stand dann auf dem der Vorgabegeneration, und die ist "
+        "ein Viertelstunden-Katalog: Varianten von 'Trend 50 Tage' auf "
+        "15-Minuten-Kerzen, wo 50 Balken zwoelfeinhalb Stunden sind. Jetzt "
+        "'_pruefe_spitze' gegen SPOTPUNKT.intervall, abgebrochen statt "
+        "gewarnt - so ein Lauf kostet Versuche",
+        214,
+    ),
+    # Meine eigene Aenderung aus 213, einen Befund spaeter nachgezogen.
+    Richtung(
+        "Laden und Suchen liefen auf verschiedenen Kerzen",
+        "213 stellte die Ladezeile auf '-i D'; der Schritt danach lief "
+        "weiter auf Vorgabegeneration 8, also Viertelstunden, und waere am "
+        "leeren Speicher abgebrochen. Jetzt '--generation 9', dazu eine "
+        "Wache, die beide Zeilen gegeneinander prueft",
+        214,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1566,19 +1586,19 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "Tageskerzen - und auf denen stehen alle elf Gates (Befund 213).",
     ),
     (
-        "python -m cli wettbewerb",
+        "python -m cli wettbewerb --generation 9",
         "Sucht auf den geladenen Kerzen einen Kandidaten. Bis Befund 167 "
         "stand dieser Schritt als ', dann wettbewerb' hinter dem Backfill in "
         "derselben Zeile - keine Befehlszeile, sondern Prosa: Wer sie "
         "kopierte, bekam 'Got unexpected extra argument(s)'. Er legt auch "
         "'state/leaderboard.json' neu an, die in diesem Behaelter fehlt "
-        "(Befund 166). So aufgerufen laeuft er **ohne** die Research-KI und "
+        "(Befund 166). **Die Generation gehoert dazu**: Die Vorgabe ist 8, ein Viertelstunden-Katalog, und der Backfill darueber laedt Tageskerzen - der Lauf braeche mit leerem Speicher ab (Befund 214). Neun ist der Tageskerzen-Katalog mit den meisten Regeln. So aufgerufen laeuft er **ohne** die Research-KI und "
         "bildet nur Abwandlungen dessen, was der Katalog schon kennt - die "
         "Zeile darunter ist der andere Weg, und welcher richtig ist, steht "
         "unter 'Was nicht bei mir liegt'. {versuchskosten}",
     ),
     (
-        "python -m cli wettbewerb --ki",
+        "python -m cli wettbewerb --generation 9 --ki",
         "Dasselbe, aber die Research-KI schlaegt je Runde zusaetzlich neue "
         "Kandidaten vor. Das ist das einzige gebaute Bauteil, das eine Regel "
         "vorschlagen kann, die es noch nicht gibt - und nach Befund 145 ist "

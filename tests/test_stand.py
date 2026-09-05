@@ -1113,10 +1113,22 @@ class TestWasDerWettbewerbKostet:
     alle folgenden, dauerhaft.
     """
 
+    @staticmethod
+    def _abschnitt(text: str, befehl: str) -> str:
+        """Der Block zu einer Befehlszeile - bis zur naechsten.
+
+        Vorher stand hier ein festes Fenster von 900 Zeichen. Das ist keine
+        Grenze des Abschnitts, sondern eine Zahl: Ein Satz mehr in der
+        Begruendung, und die Pruefung schlug an, ohne dass etwas fehlte
+        (Befund 214).
+        """
+        i = text.index(befehl)
+        rest = text[i + len(befehl) :]
+        naechste = rest.find("\n  python -m cli")
+        return rest if naechste < 0 else rest[:naechste]
+
     def test_der_wettbewerb_nennt_seinen_preis(self) -> None:
-        text = _lage().bericht()
-        i = text.index("python -m cli wettbewerb")
-        abschnitt = text[i : i + 900]
+        abschnitt = self._abschnitt(_lage().bericht(), "python -m cli wettbewerb")
 
         assert "kostet einen Versuch" in abschnitt
         assert "dauerhaft" in abschnitt
@@ -1374,13 +1386,15 @@ class TestBeideWegeDesWettbewerbsStehenDa:
         """Nicht als Prosa - das war der Fehler aus Befund 167."""
         zeilen = self._wettbewerbszeilen()
 
-        assert "python -m cli wettbewerb" in zeilen
-        assert "python -m cli wettbewerb --ki" in zeilen
+        assert any(z.endswith("--ki") for z in zeilen), zeilen
+        assert any(not z.endswith("--ki") for z in zeilen), zeilen
 
     def test_der_schalter_wird_nicht_stillschweigend_verschwiegen(self) -> None:
         """Wer nur die erste Zeile liest, muss erfahren, was ihm entgeht."""
         ohne = next(
-            w for b, w in BEIM_NUTZER if b == "python -m cli wettbewerb"
+            w
+            for b, w in BEIM_NUTZER
+            if "wettbewerb" in b and not b.endswith("--ki")
         )
 
         assert "Research-KI" in ohne
@@ -1415,7 +1429,7 @@ class TestBeideWegeDesWettbewerbsStehenDa:
         text = _lage().bericht()
 
         assert "Soll die Research-KI mitlaufen" in text
-        assert "python -m cli wettbewerb --ki" in text
+        assert "wettbewerb --generation 9 --ki" in text
 
 
 class TestDieFalscheGatezahlKommtNichtWieder:

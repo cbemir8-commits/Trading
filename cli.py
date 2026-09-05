@@ -688,6 +688,7 @@ def wettbewerb(
     if von_spitze:
         from research.seeds import spitzenkandidat
 
+        _pruefe_spitze(interval_obj)
         aktuell = breed([spitzenkandidat()], varianten, seed=0)
         herkunft = "Variante der Spitze"
         if not aktuell:
@@ -3057,6 +3058,39 @@ def _pruefe_generation(generation: int, interval_obj) -> None:
         f"waere eine andere Regel unter demselben Namen, und sie wuerde "
         f"Versuche kosten. Mit [bold]-i {vorgesehen}[/] laufen lassen oder "
         f"eine passende Generation waehlen.[/]"
+    )
+    raise typer.Exit(2)
+
+
+def _pruefe_spitze(interval_obj) -> None:
+    """Steht der Spitzenkandidat ueberhaupt auf dieser Kerzenlaenge?
+
+    **Die Luecke, die ``_pruefe_generation`` offen liess** (Befund 214). Der
+    Katalogzweig prueft seit Befund 64, ob Generation und Intervall
+    zusammenpassen. ``--von-spitze`` geht am Katalog vorbei und damit auch an
+    der Pruefung: ``intervall`` steht dann auf dem der **Vorgabegeneration**,
+    und die ist eine Viertelstunden-Generation.
+
+    ``python -m cli wettbewerb --von-spitze`` hat deshalb Varianten von
+    'Trend 50 Tage mit Konfluenz' auf 15-Minuten-Kerzen gemessen. Dort sind
+    50 Balken zwoelfeinhalb Stunden statt fuenfzig Tagen - dieselbe Zahl,
+    eine andere Regel, und jeder Lauf kostet Versuche.
+
+    Es ist derselbe Fehler wie in Befund 190, eine Ebene weiter: Dort wurde
+    ein auf Tageskerzen gemessener Bestand gegen eine Viertelstunden-Gerade
+    **gestellt**, hier wird er darauf **gemessen**.
+    """
+    from research.referenz import SPOTPUNKT
+
+    if interval_obj.value == SPOTPUNKT.intervall:
+        return
+    console.print(
+        f"[red]Der Spitzenkandidat steht auf {SPOTPUNKT.intervall}-Kerzen, "
+        f"nicht auf {interval_obj.label}.[/]\n"
+        f"[dim]Seine Perioden sind in Tagen gemessen; auf einer anderen "
+        f"Kerzenlaenge bedeuten dieselben Zahlen andere Zeitraeume - eine "
+        f"andere Regel unter demselben Namen, und sie wuerde Versuche "
+        f"kosten. Mit [bold]-i {SPOTPUNKT.intervall}[/] laufen lassen.[/]"
     )
     raise typer.Exit(2)
 
