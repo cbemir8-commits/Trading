@@ -502,7 +502,10 @@ class TestDasBilligeVorfilterStehtImAuftrag:
         text = self.lage().als_auftrag()
 
         assert "3,48" in text and "2,00" in text
-        assert "2 von 4 statt 4 von 4" in text
+        assert "Zwei von vier bei z = 3,48" in text, (
+            "ohne die Schwelle ist das Kriterium mehrdeutig (Befund 207)"
+        )
+        assert "bester Partner             1 von 4" in text
 
     def test_es_steht_hinter_dem_holdout_abschnitt(self) -> None:
         """Erst was passiert ist, dann woran es lag."""

@@ -878,6 +878,16 @@ BEHOBEN: tuple[Richtung, ...] = (
         "mit Signifikanzschwelle war nur zufallseinstieg betroffen",
         206,
     ),
+    # Die Korrektur aus 205 im Code richtig, im Satz darueber fallen
+    # gelassen - einen Befund spaeter.
+    Richtung(
+        "Das Vorfilter stand ohne seine Schwelle da",
+        "'alle zehn Partner waeren haengengeblieben' gilt bei z = 3,48, "
+        "nicht bei 2,00 - dort kommen zwei durch, und es sind acht von "
+        "zehn. Auftrag und Befund nennen die Schwelle jetzt in derselben "
+        "Zeile wie das Kriterium",
+        207,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

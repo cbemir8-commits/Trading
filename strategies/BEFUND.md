@@ -18815,3 +18815,62 @@ waeren.
 
 Kostet keinen Versuch: Gebaut wird ein Auftragstext, nicht ein Kandidat.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsieben. Acht von zehn, nicht zehn von zehn
+
+Befund 206 endet mit diesem Satz:
+
+> Ob das je einen Versuch spart, ist damit nicht bewiesen. Gemessen ist nur,
+> dass alle zehn bisher geprueften Partner an dieser Stufe haengengeblieben
+> waeren.
+
+Das stimmt nicht bei der Schwelle, die im selben Abschnitt als Latte stand.
+
+### Nachgerechnet
+
+    Regel                                bei z >= 2,00   bei z >= 3,48
+    Bestand                                    4 von 4         2 von 4
+    Trend-Beteiligung 50 Tage                  2 von 4         0 von 4
+    Trendfolge Ausbruch                        2 von 4         1 von 4
+    die uebrigen acht Partner                1 oder 0         0 von 4
+
+Bei **z = 2,00** raeumen zwei der zehn Partner immerhin zwei von vier
+Maerkten - und "mindestens zwei von vier" war die Latte, die ich in den
+Auftrag geschrieben habe. Sie waeren also **durchgekommen**. Acht von zehn
+haetten die Stufe gestoppt, nicht zehn.
+
+Bei **z = 3,48** - der Schwelle, die die 198 Versuche mitrechnet (Befund
+205) - stimmt der Satz: Kein Partner erreicht dort zwei von vier, der
+Bestand als einziger.
+
+### Der Fehler war die fehlende Schwelle, nicht die Zahl
+
+Beide Rechnungen standen in Befund 206 nebeneinander, und der Schlusssatz
+nannte nicht, welche gemeint war. Dieselbe Luecke hatte der Auftragstext: Er
+schrieb "zwei von vier sind das Minimum", ohne die Schwelle dazu - und wer
+ihn liest, nimmt naheliegend die 2,00, die zwei Absaetze darueber steht.
+
+Das ist kein Rundungsfehler. Bei der einen Lesart haetten zwei Partner die
+Stufe passiert und je einen Versuch gekostet; bei der anderen keiner.
+
+Der Auftrag nennt die Schwelle jetzt in derselben Zeile wie das Kriterium,
+mit der Tabelle darunter:
+
+    Bestand                    2 von 4
+    bester Partner             1 von 4
+    die uebrigen neun          0 von 4
+
+**Zwei von vier bei z = 3,48** ist damit die Latte - genau das, was der
+Bestand schafft und kein Partner.
+
+### Was mir daran auffaellt
+
+Befund 205 hat genau diese Korrektur eingefuehrt, und einen Befund spaeter
+habe ich sie beim Formulieren des Schlusssatzes wieder fallen lassen. Nicht
+im Code - dort steht sie richtig -, sondern im Satz darueber.
+
+Die Zahlen standen beide da. Was gefehlt hat, war das Wort, das sagt, welche
+gilt.
+
+Kostet keinen Versuch: nachgerechnet wurde auf Zahlen, die schon gemessen
+sind. Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
