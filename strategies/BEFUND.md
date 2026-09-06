@@ -19766,3 +19766,86 @@ Eine Wache ist kein Zustand, sondern eine Stelle.
 
 Kostet keinen Versuch: gelesen, uebersprungen, bewacht.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertachtzehn. Eine Frage, die gebaut wurde und nie gestellt worden ist
+
+Befund 217 endete mit dem Satz, eine Wache sei kein Zustand, sondern eine
+Stelle. Dieser hier handelt von einer Wache, die an gar keiner Stelle steht.
+
+### Was `am_rand` sein sollte
+
+`research/zeitskala.py` misst, auf welcher Zeitskala die Abhaengigkeit
+zwischen Trades sitzt. Das Gate nimmt die **strengste** Einteilung. Der Kopf
+des Moduls nennt die Sorge, die daraus folgt:
+
+> *"Liegt die strengste Einteilung am Rand des Gemessenen? Dann ist die Zahl
+> kein Minimum, sondern das Ende des Massbands - jenseits davon koennte es
+> weiter fallen, und niemand wuesste es."*
+
+Und weiter: *"``am_rand`` sagt es beim naechsten Mal von selbst."* Das
+Register sagt es seit Befund 143 genauso: *"'am_rand' stellt die Frage jetzt
+von selbst."*
+
+`am_rand` hat ausserhalb seiner Tests **keinen Aufrufer**. `gates.py`
+importiert aus dem Modul `STUFEN` und `nach_kalender` und rechnet die Leiter
+durch; die Randfrage stellt es nicht. Es gibt kein "naechstes Mal" gegeben,
+und "von selbst" war eine Absicht, die wie ein Zustand klang - dieselbe Form
+wie *"endlich im System statt nur im Text"* in Befund 216.
+
+### Also gestellt
+
+Die Tabelle aus Befund 143 stand als Prosa im Modulkopf. Jetzt liegt sie als
+`zeitskala.GEMESSEN` vor - Bloecke und effektive Stichprobe aus den
+veroeffentlichten `je Block`, `ICC` und `Quote` zurueckgerechnet, keine neue
+Messung - und die Frage ist beantwortet:
+
+    Tageskerzen         strengste: Kalenderquartal    n_eff  112   am Rand: nein
+    15-Minuten-Kerzen   strengste: Gleichzeitigkeit   n_eff 1830   am Rand: **ja**
+
+Auf Tageskerzen bestaetigt sich, was Befund 143 behauptet hat: Das Quartal
+liegt zwischen Monat (0,816) und Halbjahr (0,921), ist also ein echtes
+Minimum. Die 112 decken sich mit den 115 des Referenzpunkts.
+
+**Auf Viertelstunden nicht.** Dort ist die strengste Sprosse die
+Gleichzeitigkeit - und die ist die **erste** gemessene. Unterhalb davon ist
+nichts vermessen. Die Quote 0,922 ist damit kein Minimum, sondern das Ende
+des Massbands.
+
+### Warum das ausgerechnet dort unangenehm ist
+
+Die Viertelstunden sind kein Nebenschauplatz. Der Kopf von
+`data/resample.py` nennt sie als **den** Weg zum offenen Gate: Der Deflated
+Sharpe haengt an `sqrt(n-1)`, mehr Trades aus schlechteren Maerkten
+funktionieren nicht, *"bleibt der Weg ueber die Zeitachse"*. Und die Zahlen
+sehen dort gut aus - 1985 statt 152 Trades, Behaltequote 0,922 statt 0,737.
+
+Genau diese Behaltequote ist die, von der jetzt feststeht, dass sie nicht
+ausgemessen ist. Wer den Weg ueber die Zeitachse geht, stuetzt sich auf eine
+Groesse, die nach unten offen ist.
+
+**Das heisst nicht, dass sie falsch ist.** Es heisst, dass niemand weiss, wie
+tief sie faellt - und das ist der Unterschied, den `am_rand` benennen sollte.
+Der Eintrag steht deshalb unter *gemessen und offen* und nicht unter
+*behoben*: Beantwortet ist, dass die Frage offen ist.
+
+### Und die Berichtigung im Register
+
+Der Eintrag zu Befund 143 sagte, `am_rand` stelle die Frage von selbst. Das
+stimmte nie. Er sagt jetzt, was gilt: auf Tageskerzen geklaert, die Frage bis
+218 ungestellt, beide Leitern jetzt als Daten.
+
+### Was mir daran auffaellt
+
+Drei Befunde dieser Serie haben dieselbe Bauart: `OFFEN` wurde gepflegt und
+nicht gelesen (208), das Suchbudget wurde angezeigt und nicht durchgesetzt
+(216), `am_rand` wurde gebaut und nicht gefragt (218). Jedes Mal stand im
+Text, die Sache sei erledigt, und jedes Mal war der Text die einzige Stelle,
+an der sie es war.
+
+Was diesen Fall davon abhebt: Die ungestellte Frage hat eine Antwort, und die
+Antwort ist nicht "alles in Ordnung". Bei 208 und 216 war der Schaden
+Unsichtbarkeit; hier stand eine Zahl im Raum, auf die sich der einzige
+gebaute Weg zum offenen Gate stuetzt.
+
+Kostet keinen Versuch: zurueckgerechnet aus veroeffentlichten Zahlen.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

@@ -438,9 +438,12 @@ BEHOBEN: tuple[Richtung, ...] = (
     ),
     Richtung(
         "Strengste Einteilung ungeprueft am Rand",
-        "Quartal ist ein echtes Minimum - Halbjahr 0,921, Jahr 1,000; "
-        "'am_rand' stellt die Frage jetzt von selbst",
+        "auf Tageskerzen ist das Quartal ein echtes Minimum - Halbjahr "
+        "0,921, Jahr 1,000. 'am_rand' hatte dafuer bis 218 keinen Aufrufer, "
+        "die Frage war also gebaut und ungestellt; jetzt beide Leitern als "
+        "Daten und beantwortet",
         143,
+        zuletzt=218,
     ),
     Richtung(
         "Verteilungsform in taktung stillschweigend normal",
@@ -1023,6 +1026,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "auf, die beides annehmen",
         217,
     ),
+    # Die Frage war gebaut und nie gestellt - und die Antwort ist fuer den
+    # einen Betriebspunkt unbequem.
+    Richtung(
+        "Die Randfrage der Skalenleiter blieb ungestellt",
+        "'am_rand' hatte ausserhalb der Tests keinen Aufrufer, das Register "
+        "behauptete aber, es stelle die Frage von selbst. Beide Leitern aus "
+        "143 liegen jetzt als 'zeitskala.GEMESSEN' vor und sind gefragt: "
+        "Tageskerzen nein (Quartal, n_eff 112), Viertelstunden **ja** "
+        "(Gleichzeitigkeit, erste Sprosse)",
+        218,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1167,6 +1181,18 @@ OFFEN: tuple[Richtung, ...] = (
         "nicht darauf zurueck. Ob D abgeleitet oder geladen gehoert, "
         "beruehrt jede Zahl des Projekts und ist ungeprueft",
         213,
+    ),
+    # Gemessen und offen: Die Zahl ist nicht falsch, sie ist unbegrenzt
+    # nach unten.
+    Richtung(
+        "Wie tief faellt die Stichprobe auf Viertelstunden?",
+        "die strengste Einteilung ist dort die Gleichzeitigkeit (n_eff 1830 "
+        "von 1985) - die **erste** gemessene Sprosse. Unterhalb ist nichts "
+        "gemessen, die Quote 0,922 ist also kein Minimum, sondern das Ende "
+        "des Massbands. Auf Tageskerzen ist die Frage geklaert (Quartal "
+        "liegt zwischen zwei milderen Sprossen)",
+        143,
+        zuletzt=218,
     ),
 )
 

@@ -50,7 +50,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-__all__ = ["STUFEN", "Skalenleiter", "Skalenstufe", "nach_kalender"]
+__all__ = [
+    "GEMESSEN",
+    "STUFEN",
+    "Skalenleiter",
+    "Skalenstufe",
+    "nach_kalender",
+]
 
 #: Die Leiter, von fein nach grob. Der Schluessel bildet einen Zeitpunkt auf
 #: den Abschnitt ab, zu dem er gehoert.
@@ -166,3 +172,57 @@ class Skalenleiter:
                 "echtes Minimum und kein Randeffekt."
             )
         return satz
+
+
+def _leiter(roh: int, zeilen: tuple[tuple[str, float, float, float], ...]) -> Skalenleiter:
+    """Eine Leiter aus der Tabelle in Befund 143.
+
+    Gegeben sind dort ``je Block``, ``ICC`` und ``Quote``; Bloecke und
+    effektive Stichprobe folgen daraus. Das ist Rueckrechnung aus
+    veroeffentlichten Zahlen, keine neue Messung.
+    """
+    return Skalenleiter(
+        stufen=tuple(
+            Skalenstufe(
+                name=name,
+                bloecke=round(roh / je_block),
+                roh=roh,
+                effektiv=round(quote * roh),
+                icc=icc,
+            )
+            for name, je_block, icc, quote in zeilen
+        )
+    )
+
+
+#: Die beiden Leitern aus Befund 143 - als Daten statt nur im Kopf des Moduls.
+#:
+#: Sie standen seit ihrer Messung als Tabelle im Docstring. ``am_rand`` war
+#: dafuer gebaut, die entscheidende Frage von selbst zu stellen, und hatte
+#: ausserhalb der Tests keinen Aufrufer - die Frage ist also nie gestellt
+#: worden (Befund 218). Dieselbe Lage wie bei ``historie`` vor Befund 212.
+GEMESSEN: dict[str, Skalenleiter] = {
+    "Tageskerzen": _leiter(
+        152,
+        (
+            ("Kalendertag", 1.1, 0.956, 1.000),
+            ("Kalenderwoche", 1.4, 0.718, 0.954),
+            ("Kalendermonat", 2.4, 0.515, 0.816),
+            ("Kalenderquartal", 4.8, 0.257, 0.737),
+            ("Halbjahr", 9.5, 0.087, 0.921),
+            ("Kalenderjahr", 16.9, 0.052, 1.000),
+        ),
+    ),
+    # **Gleichzeitigkeit ist hier die erste Sprosse**, und sie ist zugleich
+    # die strengste. Unterhalb davon ist nichts gemessen.
+    "15-Minuten-Kerzen": _leiter(
+        1985,
+        (
+            ("Gleichzeitigkeit", 1.2, 0.601, 0.922),
+            ("Kalendertag", 2.2, 0.105, 0.935),
+            ("Kalenderwoche", 7.8, 0.013, 1.000),
+            ("Kalendermonat", 32.5, 0.006, 1.000),
+            ("Kalenderquartal", 94.5, 0.006, 0.968),
+        ),
+    ),
+}
