@@ -31,9 +31,24 @@ Was gemessen ist
 ----------------
     Betriebspunkt      beste Regel                   n_eff   Guete   Latte   Anteil
     Tageskerzen        Bestand (Spot wie gebaut)       115   2,904   3,611    0,804
+    Tageskerzen        Spitze allein                   114   2,690   3,609    0,745
+    Tageskerzen        + Trend-Beteiligung 200         136   2,986   3,648    0,819
     15 Minuten         Trendbeteiligung mit Puffer     584   0,744   3,964    0,188
     15 Minuten         Seltener grosser Ausbruch      1065   0,156   4,065    0,038
     15 Minuten         Starker Trend, Momentum        1818  -0,780   4,138   -0,188
+
+Die mittleren beiden Zeilen stammen aus **einem** Lauf (Befund 155) und sind
+nur miteinander vergleichbar; die erste ist der gepflegte Referenzpunkt aus
+einem anderen. Dass "Bestand" dort 115 und hier 114 traegt, ist kein
+Fortschritt, sondern sind zwei Messungen - ``vergleich_im_lauf`` stellt
+deshalb nur zusammen, was denselben Lauf traegt (Befund 227).
+
+**Der Verbund steht naeher an seiner Latte als die Regel allein** - 0,819
+gegen 0,745 im selben Lauf. Der Zugewinn ist aber ein **Stichproben**-Effekt
+und kein Qualitaetseffekt: n_eff steigt von 114 auf 136, die Guete je Trade
+nur von 0,2520 auf 0,2560, und Befund 155 hat den Qualitaetsanteil eigens
+geprueft - der Vorzeichentest ueber die Fenster faellt mit p = 0,94 negativ
+aus.
 
 **Die feinere Kerze senkt die Latte je Trade und nicht insgesamt.** Die
 beste dort gemessene Regel steht auf n_eff 584, und die Schwelle verlangt
@@ -58,7 +73,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-__all__ = ["GEMESSEN", "Betriebspunkt", "erfuellungsgrad"]
+__all__ = [
+    "GEMESSEN",
+    "Betriebspunkt",
+    "erfuellungsgrad",
+    "vergleich_im_lauf",
+]
 
 
 def erfuellungsgrad(guete: float, latte: float) -> float | None:
@@ -87,6 +107,19 @@ class Betriebspunkt:
     guete: float
     latte: float
     befund: int
+
+    lauf: str = ""
+    """Aus welchem Messlauf diese Zeile stammt.
+
+    **Zwei Zeilen aus verschiedenen Laeufen sind nicht vergleichbar** - das
+    ist derselbe Grund, aus dem Guete und Latte vom selben Punkt kommen
+    muessen (Befund 190). Der Bestand steht hier zweimal, mit n_eff 115 aus
+    dem gepflegten Referenzpunkt und mit 114 aus dem Verbundlauf; die 0,7 %
+    Unterschied sind kein Fortschritt, sondern zwei Messungen.
+
+    ``vergleich_im_lauf`` stellt deshalb nur zusammen, was denselben Lauf
+    traegt (Befund 227).
+    """
 
     def __post_init__(self) -> None:
         if self.effektiv <= 0:
@@ -158,6 +191,28 @@ GEMESSEN: tuple[Betriebspunkt, ...] = (
         latte=3.611,
         befund=152,
     ),
+    # **Der Verbundlauf aus Befund 155**, beide Zeilen aus derselben Messung.
+    # Nur innerhalb dieses Paares ist der Vergleich zulaessig.
+    Betriebspunkt(
+        name="Tageskerzen",
+        intervall="D",
+        regel="Spitze allein",
+        effektiv=114,
+        guete=2.6902,
+        latte=3.6088,
+        befund=155,
+        lauf="Verbund 155",
+    ),
+    Betriebspunkt(
+        name="Tageskerzen",
+        intervall="D",
+        regel="+ Trend-Beteiligung 200",
+        effektiv=136,
+        guete=2.9860,
+        latte=3.6479,
+        befund=155,
+        lauf="Verbund 155",
+    ),
     Betriebspunkt(
         name="15 Minuten",
         intervall="15",
@@ -196,6 +251,29 @@ def bester_je_intervall() -> dict[str, Betriebspunkt]:
         if vorher is None or (p.anteil or 0) > (vorher.anteil or 0):
             aus[p.intervall] = p
     return aus
+
+
+def vergleich_im_lauf(lauf: str) -> str:
+    """Was ein einzelner Messlauf ueber zwei Zeilen sagt.
+
+    **Nur innerhalb eines Laufes**, weil zwei Zeilen aus verschiedenen
+    Laeufen verschiedene Stichproben, Zeitraeume und Rezepturen tragen
+    (Befund 227).
+    """
+    zeilen = [p for p in GEMESSEN if p.lauf == lauf]
+    if len(zeilen) < 2:
+        return f"'{lauf}': weniger als zwei Zeilen - kein Vergleich."
+    geordnet = sorted(zeilen, key=lambda p: -(p.anteil or 0))
+    vorn, hinten = geordnet[0], geordnet[-1]
+    return (
+        f"Im selben Lauf ({lauf}) raeumt '{vorn.regel}' {vorn.anteil:.3f} "
+        f"seiner Latte, '{hinten.regel}' {hinten.anteil:.3f}. Der Zugewinn "
+        f"ist ein **Stichproben**-Effekt: n_eff {hinten.effektiv} auf "
+        f"{vorn.effektiv}, waehrend die Guete je Trade fast stehenbleibt "
+        f"({hinten.je_trade:.4f} auf {vorn.je_trade:.4f}). Befund 155 hat "
+        f"den Qualitaetsanteil eigens geprueft - der Vorzeichentest ueber "
+        f"die Fenster faellt mit p = 0,94 negativ aus."
+    )
 
 
 def urteil() -> str:

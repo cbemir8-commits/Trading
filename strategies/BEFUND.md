@@ -20401,3 +20401,72 @@ hinsehen, was tatsaechlich dasteht.
 
 Kostet keinen Versuch: gelesen und umgestellt.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsiebenundzwanzig. Der Verbund fehlte im Vergleich
+
+Befund 220 hat gefragt, auf welchem Betriebspunkt die Suche naeher am Ziel
+steht, und zwei Kerzenlaengen gegeneinandergestellt. Ausgelassen hat er den
+einzigen Hebel, von dem gemessen ist, dass er wirkt: den **Verbund**.
+
+Der Registerkommentar sagt es seit Befund 140 - *"der Verbund ist der einzige
+gemessene Hebel, der die effektive Stichprobe hebt"* -, und im Bericht steht
+`AUSSICHT_VERBUND` unmittelbar neben `AUSSICHT`. Er hat nur im
+Erfuellungsvergleich nicht gestanden.
+
+### Gerechnet, im selben Lauf
+
+Die Zahlen aus Befund 155, beide aus **einer** Messung:
+
+    Zeile                        n_eff   Guete    Latte   Anteil
+    Spitze allein                  114   2,690    3,609    0,745
+    + Trend-Beteiligung 200        136   2,986    3,648    0,819
+
+**Der Verbund steht naeher an seiner Latte.** Er raeumt gut vier Fuenftel,
+die Regel allein knapp drei Viertel.
+
+Empfindlichkeitsprobe, weil Befund 155 keine eigenen Momente fuehrt und die
+Latte mit denen des Bestands gerechnet ist: Mit Normalverteilung (Schiefe 0,
+Woelbung 3) sind es 0,666 gegen 0,598. Die Anteile fallen, **die Reihenfolge
+bleibt** - der Schluss haengt nicht an der Annahme.
+
+### Und die Einschraenkung, ohne die die Zahl falsch gelesen wird
+
+Der Zugewinn ist ein **Stichprobeneffekt**, kein Qualitaetseffekt:
+
+    n_eff            114  ->  136    (+19 %)
+    Guete je Trade  0,2520 -> 0,2560  (+1,6 %)
+
+Befund 155 hat den Qualitaetsanteil eigens geprueft. Der Partner handelt in
+15 von 32 Fenstern, und in 10 davon **senkt** er das mittlere Ergebnis je
+Trade; der Vorzeichentest ergibt p = 0,94. Der Verbund ist naeher, weil er
+mehr unabhaengige Beobachtungen hat, nicht weil er besser handelt.
+
+Das entwertet ihn nicht - fuer ein Sharpe-Kriterium ist ein Partner, der die
+Streuung staerker senkt als das Mittel, zu Recht wertvoll. Aber wer 0,819
+liest und "die Kombination ist die bessere Regel" versteht, liest es falsch.
+
+### Was der Lauf-Vermerk soll
+
+`Betriebspunkt` traegt jetzt, aus welchem Messlauf eine Zeile stammt, und
+`vergleich_im_lauf` stellt nur zusammen, was denselben traegt. Der Anlass
+steht in der Tabelle selbst: Der Bestand erscheint dort mit n_eff **115**
+(gepflegter Referenzpunkt) und mit **114** (Verbundlauf). Diese 0,7 Prozent
+sind kein Fortschritt, sondern zwei Messungen - und genau solche Differenzen
+sind es, aus denen in diesem Projekt neunmal ein falscher Vergleich geworden
+ist.
+
+Der Kerzenlaengen-Vergleich aus 220 bleibt daneben zulaessig: Dort stehen
+**Verhaeltnisse**, jedes auf seiner eigenen Stichprobe gerechnet.
+
+### Was mir daran auffaellt
+
+Befund 220 hat die Frage "wo lohnt die Suche" gestellt und dabei die
+Kerzenlaenge fuer die einzige Achse gehalten. Der Verbund ist eine zweite,
+und er ist die einzige, auf der das Projekt je etwas gewonnen hat.
+
+Eine Frage praegt ihre Antwort staerker als die Daten: Ich habe zwei
+Betriebspunkte verglichen, weil ich zwei Betriebspunkte gemessen hatte -
+nicht, weil es nur zwei Wege gaebe.
+
+Kostet keinen Versuch: gerechnet auf veroeffentlichten Zahlen.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

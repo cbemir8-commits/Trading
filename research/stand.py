@@ -1126,6 +1126,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Zwanzigstel - mit dem Gegengewicht aus Befund 71 daneben",
         226,
     ),
+    # 220 hat Kerzenlaengen verglichen und den einzigen gemessenen Hebel
+    # ausgelassen.
+    Richtung(
+        "Der Verbund fehlte im Erfuellungsvergleich",
+        "im selben Lauf (155) raeumt der Verbund 0,819 seiner Latte, die "
+        "Regel allein 0,745 - der Zugewinn ist aber Stichprobe (n_eff 114 "
+        "auf 136) und nicht Qualitaet (0,2520 auf 0,2560; Vorzeichentest "
+        "p = 0,94). Beide Zeilen tragen jetzt ihren Lauf, und verglichen "
+        "wird nur innerhalb eines Laufes",
+        227,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -2021,6 +2032,14 @@ class Lage:
                 for p in sorted(beste.values(), key=lambda x: -(x.anteil or 0))
             ]
             zeilen += ["", "  " + erfuellungsurteil()]
+
+        # **Der Verbund ist der einzige gemessene Hebel** (Befund 140), und
+        # er stand in diesem Vergleich nicht (Befund 227).
+        from research.erfuellung import vergleich_im_lauf
+
+        verbundsatz = vergleich_im_lauf("Verbund 155")
+        if "kein Vergleich" not in verbundsatz:
+            zeilen += ["", "  " + verbundsatz]
 
         # **Der Preis des Suchens gehoert neben die Luecke** (Befund 226).
         # Befund 221 hat beide Zahlen gemessen und geschlossen, sie

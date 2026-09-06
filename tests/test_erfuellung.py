@@ -20,6 +20,7 @@ from research.erfuellung import (
     bester_je_intervall,
     erfuellungsgrad,
     urteil,
+    vergleich_im_lauf,
 )
 from research.referenz import SPOTPUNKT
 from research.verbund import noetige_guete
@@ -350,3 +351,69 @@ class TestBeideZahlenStehenNebeneinander:
 
         assert "Trefferquote" in text
         assert "cli rennen" in text
+
+
+class TestDerVerbundStehtImVergleich:
+    """**Befund 227.** Befund 220 hat Kerzenlaengen verglichen und den
+    Verbund ausgelassen - den einzigen gemessenen Hebel, der die effektive
+    Stichprobe hebt (Befund 140).
+
+    Er steht im Bericht direkt neben ``AUSSICHT``, und im
+    Erfuellungsvergleich stand er nicht.
+    """
+
+    def test_der_lauf_aus_befund_155_hat_zwei_zeilen(self) -> None:
+        zeilen = [p for p in GEMESSEN if p.lauf == "Verbund 155"]
+
+        assert len(zeilen) == 2
+        assert {p.regel for p in zeilen} == {"Spitze allein", "+ Trend-Beteiligung 200"}
+
+    def test_der_verbund_steht_naeher_an_seiner_latte(self) -> None:
+        zeilen = {p.regel: p for p in GEMESSEN if p.lauf == "Verbund 155"}
+        allein, verbund = zeilen["Spitze allein"], zeilen["+ Trend-Beteiligung 200"]
+
+        assert allein.anteil == pytest.approx(0.745, abs=5e-3)
+        assert verbund.anteil == pytest.approx(0.819, abs=5e-3)
+
+    def test_der_zugewinn_ist_stichprobe_und_nicht_qualitaet(self) -> None:
+        """**Die Einschraenkung, ohne die die Zahl falsch gelesen wird.**
+
+        n_eff waechst um ein Fuenftel, die Guete je Trade um anderthalb
+        Prozent. Befund 155 hat den Qualitaetsanteil eigens geprueft, und der
+        Vorzeichentest faellt negativ aus (p = 0,94).
+        """
+        zeilen = {p.regel: p for p in GEMESSEN if p.lauf == "Verbund 155"}
+        allein, verbund = zeilen["Spitze allein"], zeilen["+ Trend-Beteiligung 200"]
+
+        assert verbund.effektiv / allein.effektiv > 1.15
+        assert verbund.je_trade / allein.je_trade < 1.03
+
+    def test_das_urteil_nennt_beides(self) -> None:
+        text = vergleich_im_lauf("Verbund 155")
+
+        assert "Stichproben" in text
+        assert "0,94" in text
+
+    def test_nur_derselbe_lauf_wird_verglichen(self) -> None:
+        """Der gepflegte Referenzpunkt traegt 115, der Verbundlauf 114 - das
+        sind zwei Messungen und kein Fortschritt."""
+        ohne_lauf = [p for p in GEMESSEN if not p.lauf]
+
+        assert any(p.effektiv == 115 for p in ohne_lauf)
+        assert all(p.effektiv != 115 for p in GEMESSEN if p.lauf == "Verbund 155")
+
+    def test_ein_unbekannter_lauf_gibt_kein_urteil(self) -> None:
+        assert "kein Vergleich" in vergleich_im_lauf("gibt es nicht")
+
+    def test_der_bericht_zeigt_ihn(self) -> None:
+        from research.stand import Lage
+
+        text = Lage(
+            kandidat="Trend 50 Tage mit Konfluenz",
+            maerkte="BTC + ETH, Tageskerzen",
+            trades=156, sharpe_je_trade=0.2708, noetiger_sharpe=0.3367,
+            bestanden=9, gesamt=11, offen=("Messlatte", "Deflated Sharpe"),
+            versuche=198, cagr_pct=13.47, rueckgang_pct=10.64,
+        ).bericht()
+
+        assert "Im selben Lauf (Verbund 155)" in text
