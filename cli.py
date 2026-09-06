@@ -8349,8 +8349,11 @@ def rennen(
     """Suchen hebt die Huerde. Holt der beste Fund sie je ein?
 
     Nach Befund 70 ist von vier Wegen zum haertesten Gate einer uebrig - die
-    Qualitaet je Trade, +13 % -, und alle Regler daran sind ausgemessen. Es
-    bliebe: weitersuchen. Nur hebt jeder Versuch die Latte mit.
+    Qualitaet je Trade -, und alle Regler daran sind ausgemessen. Es bliebe:
+    weitersuchen. Nur hebt jeder Versuch die Latte mit.
+
+    Befund 70 hat diesen Weg mit +13 % beziffert; das galt bei Guete 0,260
+    und n_eff 152. Heute sind es +24,3 % (Befund 222).
 
     Beide Groessen wachsen ueber dieselbe Extremwertkonstante:
 

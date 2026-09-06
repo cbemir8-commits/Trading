@@ -108,6 +108,23 @@ class Betriebspunkt:
         """
         return self.latte / self.effektiv**0.5
 
+    @property
+    def luecke(self) -> float | None:
+        """Um welchen Anteil muesste die Guete je Trade steigen?
+
+        **Die Zahl, die Befund 70 mit "+13 %" beziffert hat** - gemessen dort
+        bei Guete 0,260 und n_eff 152. Beides ist ueberholt; heute sind es
+        +24,3 % (Befund 222). Deshalb steht sie hier als Eigenschaft und
+        nicht als Text: Sie haengt an drei Groessen, die sich alle bewegt
+        haben.
+
+        ``None`` bei einer Guete von null oder darunter - "um wieviel
+        Prozent besser als nichts" ist keine Auskunft.
+        """
+        if self.je_trade <= 0:
+            return None
+        return self.noetig_je_trade / self.je_trade - 1.0
+
     def __str__(self) -> str:
         anteil = self.anteil
         return (

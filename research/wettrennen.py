@@ -5,8 +5,14 @@ Warum die Frage jetzt dran ist
 Nach Befund 70 sind drei der vier Wege zum haertesten Gate geschlossen:
 Woelbung (unter 1 gibt es nichts), Schiefe (die Kopplung an die Woelbung),
 Trade-Zahl (die Kopplung an die Qualitaet, Befund 54). Es bleibt einer -
-**die Qualitaet je Trade, +13 %** -, und alle Regler, die daran drehen, sind
+**die Qualitaet je Trade** -, und alle Regler, die daran drehen, sind
 ausgemessen und geschlossen.
+
+Befund 70 hat diesen Weg mit **+13 %** beziffert, bei Guete 0,260 und n_eff
+152. Beides ist ueberholt; am heutigen Betriebspunkt sind es **+24,3 %**
+(Befund 222). Gerechnet wird die Zahl in ``erfuellung.Betriebspunkt.luecke``
+- sie haengt an drei Groessen, die sich alle bewegt haben, und gehoert
+deshalb nicht als Text in einen Kopf.
 
 Bleibt also: weitersuchen. Und genau da sitzt ein Problem, das dieses Projekt
 zwar seit langem kennt, aber nie ausgerechnet hat. Der Deflated Sharpe zieht

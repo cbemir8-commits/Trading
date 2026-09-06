@@ -120,6 +120,69 @@ class TestWasDieFeinereKerzeLoest:
         assert tag.anteil > fein.anteil * 4
 
 
+class TestDieLueckeDesBestands:
+    """**Befund 222.** Befund 70 hat den letzten offenen Weg mit "+13 %"
+    beziffert - bei Guete 0,260 und n_eff 152. Beides ist ueberholt.
+
+    Die Zahl stand seither als Text im Kopf von ``wettrennen`` und im
+    Docstring von ``cli rennen``, also ausgerechnet dort, wo jemand
+    entscheidet, ob Weitersuchen lohnt. Heute ist die Luecke fast doppelt so
+    gross.
+    """
+
+    def test_sie_ist_heute_gut_ein_viertel(self) -> None:
+        tag = next(p for p in GEMESSEN if p.intervall == "D")
+
+        assert tag.luecke == pytest.approx(0.243, abs=5e-3)
+
+    def test_sie_stimmt_mit_dem_referenzpunkt_ueberein(self) -> None:
+        """Nachgerechnet aus SPOTPUNKT statt aus der Tabelle abgelesen."""
+        import math
+
+        latte = noetige_guete(
+            SPOTPUNKT.effektiv,
+            SPOTPUNKT.versuche,
+            schiefe=SPOTPUNKT.schiefe,
+            woelbung=SPOTPUNKT.woelbung,
+        )
+        assert latte is not None
+        erwartet = latte / math.sqrt(SPOTPUNKT.effektiv) / SPOTPUNKT.guete - 1
+
+        tag = next(p for p in GEMESSEN if p.intervall == "D")
+        assert tag.luecke == pytest.approx(erwartet, abs=5e-3)
+
+    def test_befund_70_war_deutlich_kleiner(self) -> None:
+        """Die alte Zahl ist nicht falsch - sie ist von einem anderen Punkt.
+
+        Sie unterschaetzt die heutige Luecke um fast die Haelfte, und zwar in
+        der Richtung, die zum Weitersuchen ermutigt.
+        """
+        tag = next(p for p in GEMESSEN if p.intervall == "D")
+
+        assert tag.luecke > 1.8 * 0.131
+
+    def test_ohne_guete_keine_luecke(self) -> None:
+        """"Um wieviel Prozent besser als nichts" ist keine Auskunft."""
+        punkt = Betriebspunkt(
+            name="x", intervall="D", regel="r", effektiv=100,
+            guete=-1.0, latte=2.0, befund=1,
+        )
+
+        assert punkt.luecke is None
+
+    def test_die_zahl_steht_nicht_mehr_als_text_da(self) -> None:
+        """In ``wettrennen`` und ``cli rennen`` darf ueber die alte Zahl
+        geredet werden - sie darf dort nicht mehr als heutiger Stand stehen.
+        """
+        from pathlib import Path
+
+        for datei in ("research/wettrennen.py", "cli.py"):
+            for zeile in Path(datei).read_text().splitlines():
+                if "+13 %" not in zeile and "+13 % -" not in zeile:
+                    continue
+                assert "Befund 70" in zeile, f"{datei}: {zeile.strip()[:70]}"
+
+
 class TestDasUrteil:
     def test_es_nennt_die_tageskerzen(self) -> None:
         text = urteil()

@@ -20065,3 +20065,74 @@ Wache die Erinnerung an den Fehler mit.
 
 Kostet keinen Versuch: nachgerechnet an der eigenen Formel.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertzweiundzwanzig. Der letzte offene Weg ist doppelt so weit
+
+Befund 221 hat gefunden, dass "0,00021 je Versuch" der Wert von 130 Versuchen
+war. Die naheliegende Anschlussfrage: **Welche andere Zahl aus derselben Zeit
+steht noch als heutiger Stand da?**
+
+Die wichtigste zuerst. Nach Befund 70 sind drei der vier Wege zum haertesten
+Gate geschlossen, und der eine verbliebene ist beziffert:
+
+> *"Es bleibt einer - **die Qualitaet je Trade, +13 %** -, und alle Regler,
+> die daran drehen, sind ausgemessen und geschlossen."*
+
+Der Satz steht im Kopf von `research/wettrennen.py` und im Docstring von
+`cli rennen` - also genau dort, wo jemand entscheidet, ob Weitersuchen lohnt.
+
+### Nachgerechnet
+
+Die +13 % stammen aus der Zerlegung in Befund 70: Guete **0,260** auf **152**
+unabhaengigen Trades, noetig 0,294. Beide Groessen sind ueberholt - Befund 135
+hat die effektive Stichprobe auf 112 gesenkt, Befund 152 den Betriebspunkt auf
+Spot gestellt.
+
+Dieselbe Rechnung an jedem registrierten Betriebspunkt:
+
+    Betriebspunkt                Guete   noetig   Luecke
+    Perpetual, vor Befund 108   0,2597   0,2980   +14,7 %
+    Spot, vor Befund 135        0,2765   0,2980    +7,8 %
+    Spot, vor Befund 152        0,2765   0,3406   +23,2 %
+    Spot wie gebaut (heute)     0,2708   0,3367   **+24,3 %**
+
+Die Luecke ist heute **fast doppelt so gross** wie die Zahl, die dasteht.
+
+Sie ist auch nicht monoton gewachsen: Vor Befund 135 waren es 7,8 %, danach
+23,2 %. Nicht die Strategie ist schlechter geworden, sondern die Messung
+strenger - die Quartalseinteilung hat die effektive Stichprobe von 152 auf
+112 gedrueckt, und die Latte haengt an ihr.
+
+### Die Richtung, diesmal andersherum
+
+Befund 221 fand eine Zahl, die den Preis des Suchens **ueberschaetzt** und
+damit abschreckt. Diese hier **unterschaetzt** die Entfernung zum Ziel und
+ermutigt. Zusammengenommen stand im Kopf von `cli rennen` eine zu teure Suche
+vor einem zu nahen Ziel - beide Fehler in die Richtung, die eine Entscheidung
+verzerrt, und in entgegengesetzte.
+
+Dass die Abweichungen nicht in dieselbe Richtung zeigen, ist die einzig gute
+Nachricht daran: Es ist kein Schoenrechnen, sondern Alterung. Zahlen, die
+einmal stimmten, altern in die Richtung, in die sich ihr Betriebspunkt
+bewegt, und die kennt keine Absicht.
+
+### Was gebaut ist
+
+`erfuellung.Betriebspunkt.luecke` rechnet sie aus Guete, Latte und
+Stichprobe - drei Groessen, die sich alle bewegt haben, weshalb die Zahl
+nicht als Text in einen Modulkopf gehoert. Beide Fundstellen nennen die
++13 % jetzt als das, was sie sind: Befund 70, bei Guete 0,260 und n_eff 152.
+
+### Was das fuer die Entscheidung heisst
+
+Mit Befund 221 zusammen steht es jetzt beziffert da:
+
+    Rest des Suchbudgets kostet    +1,18 %
+    zu schliessende Luecke        +24,30 %
+
+Der Preis des Suchens ist ein Zwanzigstel des Wegs - aber der Weg ist doppelt
+so lang, wie zwei Fundstellen behauptet haben. Beides gehoert in denselben
+Satz, sonst wird aus einer Messung eine Stimmung.
+
+Kostet keinen Versuch: nachgerechnet an der eigenen Formel.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

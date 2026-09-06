@@ -1072,6 +1072,16 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Tokenizer, dass niemand wieder mit der festen Zahl rechnet",
         221,
     ),
+    # Zehnter Fall - und der erste, der in die andere Richtung irrt.
+    Richtung(
+        "Der letzte offene Weg stand mit +13 % da",
+        "Befund 70 hat ihn so beziffert, bei Guete 0,260 und n_eff 152. Am "
+        "heutigen Punkt sind es +24,3 % - fast das Doppelte, und die Zahl "
+        "stand im Kopf von 'wettrennen' und im Docstring von 'cli rennen', "
+        "also dort, wo ueber Weitersuchen entschieden wird. Jetzt "
+        "'erfuellung.Betriebspunkt.luecke'",
+        222,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
