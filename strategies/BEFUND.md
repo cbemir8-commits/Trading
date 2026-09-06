@@ -20262,3 +20262,78 @@ und beim naechsten Mal steht sie an einer Zahl. Berichtigt.
 
 Kostet keinen Versuch: gepruefte Koepfe, keine neue Messung.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertfuenfundzwanzig. Der Schiefe-Weg, an heutigen Zahlen
+
+Befund 224 hat die Kopfwache auf alle vier Module mit Daten ausgedehnt. Ein
+fuenftes traegt seine Zahlen ebenfalls im Kopf, hat aber kein `GEMESSEN` und
+fiel deshalb nicht auf: `research/formgrenze.py`.
+
+Es ist nicht irgendeins. Dort steht, warum von vier Wegen zum haertesten Gate
+drei geschlossen sind - die Begruendung, auf der die ganze Strategie des
+Projekts ruht.
+
+### Was im Kopf stand
+
+> *"Entlang der harten Schranke: Es braucht Schiefe 5,54 statt 4,53 - +60 %
+> statt +30 %. Entlang der gemessenen Linie: Der hoechste erreichbare Wert
+> liegt bei 0,872."*
+
+Beide Zahlen kommen aus Befund 70. Nachgerechnet am heutigen Referenzpunkt,
+mit derselben Linie:
+
+    Weg                            Max DSR    bei    Schwelle
+    Woelbung festgehalten           1,0000   4,71    ab 4,68  (+35 %)
+    entlang der harten Schranke     1,0000   7,27    ab 6,81  (+96 %)
+    entlang der gemessenen Linie    0,6212   6,19    nie erreicht
+
+**Der Schluss ist unveraendert**: Ueber die Schiefe ist das Gate nicht zu
+erreichen. Er ist sogar deutlicher geworden - die harte Schranke verlangt
++96 % statt +60 %, und der hoechste Wert auf der gemessenen Linie ist von
+0,87 auf 0,62 gefallen.
+
+Das ist die angenehme Sorte Alterung: Eine Aussage, die stimmte, stimmt
+immer noch, und die Zahl daneben war zu freundlich. Bei Befund 222 war es
+umgekehrt.
+
+### Was sich nicht mehr nachrechnen laesst
+
+Befund 70 an **seinem** Punkt. Zwei Gruende, beide strukturell:
+
+* Die ueberholten Eintraege in `referenz.UEBERHOLT` tragen **keine Schiefe
+  und keine Woelbung** mit. Ohne die Momente laesst sich der Schiefe-Weg
+  nicht rechnen - `am_punkt` sagt das jetzt ausdruecklich, statt an einem
+  `None` zu zerbrechen.
+* Die acht Punkte der gemessenen Linie liegen nicht mehr im Behaelter.
+  `_formpunkte` findet hier 24 Punkte, aber es sind Vola-Ziel-Stufen **eines**
+  Kandidaten mit Schiefe zwischen 3,35 und 3,48 - nicht die acht aus fuenf
+  Regelfamilien. Der Behaelterwechsel aus Befund 151 hat auch das getroffen.
+
+Aus einer Spanne von 3,35 bis 3,48 auf Schiefe 6,8 zu schliessen waere
+Hochrechnung weit ausserhalb der Daten. Deshalb steht die Linie jetzt als
+**Koeffizientenpaar aus Befund 70** im Modul und wird daraus rekonstruiert -
+eine Rekonstruktion, die als solche benannt ist, ist ehrlicher als eine
+Anpassung an Punkte, die die Frage nicht tragen.
+
+### Was gebaut ist
+
+`linie_aus_befund_70()` baut die Gerade aus ihren veroeffentlichten
+Koeffizienten. `am_punkt(referenzpunkt)` rechnet die drei Wege daran - und
+verweigert, wenn der Punkt seine Momente nicht mittraegt. Der Kopf nennt die
+Zahlen des heutigen Punktes, die Kopfwache aus Befund 224 haelt ihn daran
+fest, und Befund 70 steht daneben als das, was es ist.
+
+### Was mir daran auffaellt
+
+Die Wache aus 224 sucht nach Modulen mit `GEMESSEN`. `formgrenze` traegt
+seine Messung als Prosa und seine Rechnung als Funktion - dieselbe Bauart,
+anderer Name, und damit unsichtbar fuer eine Suche nach dem Namen.
+
+Das ist zum zweiten Mal dieselbe Grenze: In Befund 213 hat meine Suche
+`research/` abgesucht und `data/resample.py` verfehlt, weil es woanders lag.
+Hier verfehlt sie ein Modul, weil es seine Daten anders nennt. Eine Suche
+findet, wonach sie sucht, und das ist nie ganz dasselbe wie das, was man
+meint.
+
+Kostet keinen Versuch: nachgerechnet an veroeffentlichten Koeffizienten.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

@@ -37,6 +37,7 @@ MODULE = (
     "research.zeitskala",
     "research.erfuellung",
     "research.koernung",
+    "research.formgrenze",
 )
 
 
@@ -104,6 +105,21 @@ def _zahlen(modul: str) -> list[tuple[str, str]]:
             ]
             for wert in (komma(s.cagr, 2), komma(s.rueckgang, 2)):
                 assert wert in zeile, f"{marke}: {wert} steht nicht in seiner Zeile"
+    elif modul == "research.formgrenze":
+        # Der Kopf nennt die drei Wege am heutigen Punkt. Sie werden
+        # gerechnet, also muessen sie mit der Rechnung uebereinstimmen
+        # (Befund 225).
+        from research.referenz import SPOTPUNKT
+
+        for weg in m.am_punkt(SPOTPUNKT):
+            schiefe_max, dsr_max = weg.hoechstwert
+            aus.append((weg.name, weg.name))
+            aus.append((weg.name, komma(dsr_max, 4)))
+            aus.append((weg.name, komma(schiefe_max, 2)))
+            if weg.schwelle is not None:
+                aus.append((weg.name, komma(weg.schwelle, 2)))
+        aus.append(("Linie", komma(m.LINIE_STEIGUNG, 3)))
+        aus.append(("Linie", komma(m.LINIE_ABSCHNITT, 3)))
     else:  # pragma: no cover - der Abdeckungstest verhindert das
         raise AssertionError(f"keine Auswahl fuer {modul}")
     return aus
@@ -150,7 +166,7 @@ def test_jedes_modul_mit_daten_wird_geprueft() -> None:
         if hasattr(modul, "GEMESSEN"):
             gefunden.add(name)
 
-    assert gefunden == set(MODULE), (
+    assert gefunden <= set(MODULE), (
         f"Module mit GEMESSEN, die hier nicht geprueft werden: "
         f"{sorted(gefunden - set(MODULE))}"
     )

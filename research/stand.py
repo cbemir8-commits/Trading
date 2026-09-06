@@ -1104,6 +1104,18 @@ BEHOBEN: tuple[Richtung, ...] = (
         "berichtigt: Kopf 'Bestand (Befund 152)', Daten 'Spot wie gebaut'",
         224,
     ),
+    # Der Schluss haelt, die Zahlen nicht - und der Weg ist heute weiter zu,
+    # nicht weniger.
+    Richtung(
+        "Der Schiefe-Weg stand mit den Zahlen von Befund 70 da",
+        "'ab 5,54 (+60 %)' und 'Max DSR 0,8724' im Kopf von formgrenze; am "
+        "heutigen Punkt sind es +96 % und 0,6212. Der Schluss - ueber die "
+        "Schiefe nie erreichbar - ist unveraendert und deutlicher. Die Linie "
+        "aus 70 laesst sich jetzt aus ihren Koeffizienten rekonstruieren, "
+        "'am_punkt' rechnet die drei Wege, und die Kopfwache deckt das Modul "
+        "mit ab",
+        225,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
