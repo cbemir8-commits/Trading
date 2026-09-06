@@ -35,10 +35,18 @@ Was gemessen ist
     15 Minuten         Seltener grosser Ausbruch      1065   0,156   4,065    0,038
     15 Minuten         Starker Trend, Momentum        1818  -0,780   4,138   -0,188
 
-**Die feinere Kerze senkt die Latte je Trade und nicht insgesamt.** Bei
-n_eff 1830 verlangt die Schwelle 0,0968 je Trade statt 0,3406 - ein Drittel.
-Gefunden wurde dort aber so viel weniger, dass der Abstand groesser ist und
-nicht kleiner: 0,188 gegen 0,804, also gut das Vierfache.
+**Die feinere Kerze senkt die Latte je Trade und nicht insgesamt.** Die
+beste dort gemessene Regel steht auf n_eff 584, und die Schwelle verlangt
+ihr 0,1640 je Trade ab; der Bestand auf Tageskerzen muss 0,3367 bringen -
+gut das Doppelte. Gefunden wurde auf den feinen Kerzen aber so viel weniger,
+dass der Abstand groesser ist und nicht kleiner: 0,188 gegen 0,804, also gut
+das Vierfache.
+
+*(Dieser Absatz nannte bis Befund 223 "0,0968 statt 0,3406" und mischte
+damit drei Betriebspunkte: 0,0968 gilt bei n_eff 1830 - der ganzen Leiter,
+nicht der Regel -, und 0,3406 bei n_eff 112, dem vor Befund 152 ueberholten
+Punkt. Beide Zahlen sind fuer sich richtig und standen an der falschen
+Stelle; genau davor warnt dieses Modul in seinem eigenen Kopf.)*
 
 Das widerspricht Befund 171 nicht, es beziffert ihn. Dort steht *"die
 Vielfalt ist da und sie verliert"* - hier steht, um welchen Faktor.

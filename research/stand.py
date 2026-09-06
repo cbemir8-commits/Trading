@@ -1082,6 +1082,16 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'erfuellung.Betriebspunkt.luecke'",
         222,
     ),
+    # Gesucht statt gelesen - und der erste Treffer war mein eigener, drei
+    # Befunde alt, im Modul gegen genau diesen Fehler.
+    Richtung(
+        "Der Kopf von erfuellung mischte drei Betriebspunkte",
+        "'0,0968 je Trade statt 0,3406' - 0,0968 gilt bei n_eff 1830, der "
+        "ganzen Leiter statt der Regel (584), 0,3406 bei n_eff 112, dem vor "
+        "152 ueberholten Punkt. Die Daten des Moduls sagen 0,1640 und "
+        "0,3367. Die Wache haelt den Kopf jetzt an den Daten fest",
+        223,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

@@ -20136,3 +20136,73 @@ Satz, sonst wird aus einer Messung eine Stimmung.
 
 Kostet keinen Versuch: nachgerechnet an der eigenen Formel.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertdreiundzwanzig. Gesucht statt gelesen - und der erste Treffer war meiner
+
+Befund 221 und 222 haben zwei veraltete Zahlen gefunden, beide durchs Lesen.
+Zweimal derselbe Zufall ist ein Wink. Also diesmal gesucht.
+
+### Die Suche
+
+Fuer jeden registrierten Betriebspunkt - den heutigen und die drei in
+`UEBERHOLT` - die abgeleiteten Groessen ausgerechnet und den Behaelter danach
+durchsucht:
+
+    Betriebspunkt                noetig je Trade   Luecke
+    Spot wie gebaut (heute)               0,3367   0,2433
+    Spot, vor Befund 152                  0,3406   0,2320
+    Spot, vor Befund 135                  0,2980   0,0776
+    Perpetual, vor Befund 108             0,2980   0,1473
+
+Sieben Fundstellen. Fuenf davon in Ordnung: die Tabelle in Befund 222, die
+diese Werte ausdruecklich als ueberholt auffuehrt, und zwei Stellen, an denen
+`0,3406` etwas ganz anderes ist - eine Guete aus `vorratsdecke`, die zufaellig
+dieselbe Ziffernfolge hat. Genau diese Kollision ist der Grund, warum ich
+`veraltet()` **nicht** um die abgeleiteten Groessen erweitert habe: Eine Wache,
+die zwei Drittel Fehlalarm meldet, wird abgeschaltet.
+
+### Der eine echte Fund
+
+`research/erfuellung.py`, Modulkopf, aus Befund 220 - von mir, drei Befunde
+alt:
+
+> *"Bei n_eff 1830 verlangt die Schwelle 0,0968 je Trade statt 0,3406 - ein
+> Drittel."*
+
+Beide Zahlen sind fuer sich richtig. Keine gehoert dorthin:
+
+* **0,0968** gilt bei n_eff 1830 - das ist die ganze Viertelstunden-Leiter
+  aus Befund 143, nicht die beste dort gemessene Regel. Die steht auf n_eff
+  584, und ihr verlangt die Schwelle **0,1640**.
+* **0,3406** gilt bei n_eff 112 - dem Punkt, den Befund 152 ueberholt hat.
+  Der heutige verlangt **0,3367**.
+
+Ein Satz, drei Betriebspunkte. Und zwar in dem Modul, dessen Kopf vier Zeilen
+weiter oben erklaert, dass genau das der Fehler aus Befund 190 ist.
+
+### Warum das durchgegangen ist
+
+Die Daten des Moduls waren von Anfang an richtig - `GEMESSEN` traegt n_eff
+115 und 584, und alle Tests rechnen daraus. Falsch war nur die Prosa
+darueber, und die hat kein Test angesehen. Es ist dieselbe Lage wie bei
+`historie` vor Befund 212 und `zeitskala` vor 218, nur andersherum: Dort
+stand die Tabelle **nur** in der Prosa, hier steht sie doppelt und die beiden
+Fassungen sind auseinandergelaufen.
+
+Die Wache haelt den Kopf jetzt an den Daten fest - jede Zeile der Tabelle,
+jeder Anteil und die beiden Lattenwerte je Trade muessen aus `GEMESSEN`
+kommen. Gegengeprobt: Am alten Kopf haette sie angeschlagen.
+
+### Was mir daran auffaellt
+
+Ich habe in Befund 220 einen Absatz darueber geschrieben, dass man Guete und
+Latte verschiedener Betriebspunkte nicht mischen darf, und im naechsten
+Absatz drei gemischt. Das Wissen war nicht abwesend - es stand in derselben
+Datei, ein paar Zeilen hoeher.
+
+Was gefehlt hat, ist nicht Einsicht, sondern eine Stelle, an der die Prosa
+gegen die Daten faellt. Genau das ist die Lehre aus Befund 217: Eine Wache
+ist kein Zustand, sondern eine Stelle. Ein Modulkopf war bisher keine.
+
+Kostet keinen Versuch: gesucht und berichtigt, nichts gemessen.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

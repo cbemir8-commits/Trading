@@ -120,6 +120,66 @@ class TestWasDieFeinereKerzeLoest:
         assert tag.anteil > fein.anteil * 4
 
 
+class TestDerKopfStimmtMitDenDatenUeberein:
+    """**Befund 223.** Der Kopf dieses Moduls hatte drei Betriebspunkte gemischt.
+
+    Er sagte *"Bei n_eff 1830 verlangt die Schwelle 0,0968 je Trade statt
+    0,3406"*. Beide Zahlen sind fuer sich richtig und keine gehoert dorthin:
+    0,0968 gilt fuer die ganze Leiter (n_eff 1830), nicht fuer die beste dort
+    gemessene Regel (584); 0,3406 gilt bei n_eff 112, dem vor Befund 152
+    ueberholten Punkt. Die Daten des Moduls sagen 0,1640 und 0,3367.
+
+    Ausgerechnet in dem Modul, das gegen genau diese Verwechslung gebaut ist.
+    Eine Tabelle im Kopf ist gepflegte Prosa; die Wache haelt sie an den
+    Daten fest.
+    """
+
+    @staticmethod
+    def _kopf() -> str:
+        import research.erfuellung as modul
+
+        return modul.__doc__ or ""
+
+    def test_jede_zeile_der_tabelle_steht_in_den_daten(self) -> None:
+        """Name, Stichprobe, Guete und Latte - Zeile fuer Zeile."""
+        kopf = self._kopf()
+        for punkt in GEMESSEN:
+            zahlen = (
+                str(punkt.effektiv),
+                f"{punkt.guete:.3f}".replace(".", ","),
+                f"{punkt.latte:.3f}".replace(".", ","),
+            )
+            for zahl in zahlen:
+                assert zahl in kopf, f"{punkt.regel}: {zahl} fehlt im Kopf"
+
+    def test_jeder_anteil_steht_im_kopf(self) -> None:
+        for punkt in GEMESSEN:
+            anteil = punkt.anteil
+            assert anteil is not None
+            assert f"{abs(anteil):.3f}".replace(".", ",") in self._kopf(), punkt.regel
+
+    def test_die_beiden_lattenwerte_je_trade_stimmen(self) -> None:
+        """**Der Satz, der falsch war.** Er nennt zwei Zahlen je Trade, und
+        beide muessen aus den Daten dieses Moduls kommen."""
+        kopf = self._kopf()
+        tag = next(p for p in GEMESSEN if p.intervall == "D")
+        fein = bester_je_intervall()["15"]
+
+        assert f"{tag.noetig_je_trade:.4f}".replace(".", ",") in kopf
+        assert f"{fein.noetig_je_trade:.4f}".replace(".", ",") in kopf
+
+    def test_die_alten_zahlen_stehen_nur_noch_als_geschichte(self) -> None:
+        """Sie duerfen genannt werden - aber gekennzeichnet."""
+        kopf = self._kopf()
+
+        for alt in ("0,0968", "0,3406"):
+            if alt not in kopf:
+                continue
+            i = kopf.index(alt)
+            umfeld = kopf[max(0, i - 400) : i + 400]
+            assert "Befund 223" in umfeld, f"{alt} ohne Einordnung"
+
+
 class TestDieLueckeDesBestands:
     """**Befund 222.** Befund 70 hat den letzten offenen Weg mit "+13 %"
     beziffert - bei Guete 0,260 und n_eff 152. Beides ist ueberholt.
