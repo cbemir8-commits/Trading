@@ -19849,3 +19849,74 @@ gebaute Weg zum offenen Gate stuetzt.
 
 Kostet keinen Versuch: zurueckgerechnet aus veroeffentlichten Zahlen.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertneunzehn. Die Warnung aus 218 traf das falsche Ende
+
+Befund 218 hat gemeldet, die Viertelstunden-Leiter stehe am Rand des
+Gemessenen: Die strengste Sprosse ist dort die Gleichzeitigkeit, und sie ist
+zugleich die erste. *"Die Quote 0,922 ist damit kein Minimum, sondern das
+Ende des Massbands."*
+
+Bevor daraus eine offene Frage stehenbleibt, die jemand zu beantworten
+versucht: **Was liegt eigentlich unterhalb der Gleichzeitigkeit?**
+
+### Nichts, und zwar aus zwei Gruenden
+
+**Sachlich.** Feiner als "Positionen, die zugleich offen waren" hiesse,
+gleichzeitig offene Positionen auseinanderzureissen. Genau dagegen ist
+`concurrent_groups` gebaut: *"Zwei Positionen, die gleichzeitig offen sind,
+sind keine zwei unabhaengigen Beobachtungen. Faellt der Markt, treffen sie
+das Konto zusammen."* Unterhalb dieser Sprosse liegt kein unvermessenes
+Gebiet, sondern ein bekannter Fehler.
+
+**Rechnerisch.** Nachgemessen an `designeffekt` mit gleichen Bloecken
+wachsender Groesse:
+
+    Blockgroesse   1: faktor = None
+    Blockgroesse   2: faktor = 1,0
+    Blockgroesse   3: faktor = 1,0
+    ...
+
+Bei Bloecken der Groesse eins gibt es **kein Ergebnis** - innerhalb eines
+einzelnen Trades laesst sich keine Streuung schaetzen. Die feinste ueberhaupt
+rechenbare Einteilung ist die mit mehr als einem Trade je Block, und
+`effektive_stichprobe` wirft `None`-Ergebnisse ohnehin heraus.
+
+Die Leiter hat unten also einen **Boden**, keinen offenen Rand.
+
+### Was daran allgemein ist
+
+`am_rand` fragt nach beiden Enden zugleich, und die sind nicht gleich viel
+wert:
+
+* **Grobes Ende**: Es gibt weitere Sprossen - Zweijahres-, Dreijahresblocke -,
+  sie sind nur nicht gemessen. Dort kann die Stichprobe wirklich weiter
+  fallen, und niemand wuesste es. **Das ist die Warnung.**
+* **Feines Ende**: Es gibt keine weiteren. Dort ist die Leiter zu Ende, nicht
+  das Messband.
+
+`am_groben_rand` trennt das jetzt, und `urteil` sagt am feinen Ende
+ausdruecklich, dass es **keine Luecke** ist. Beide gemessenen Leitern stehen
+damit auf `am_groben_rand = False` - die eine, weil das Quartal zwischen zwei
+milderen Sprossen liegt, die andere, weil sie am Boden aufliegt.
+
+Der Eintrag, den Befund 218 unter *gemessen und offen* gestellt hat, ist
+damit zurueckgenommen. Er stand einen Befund lang.
+
+### Was mir daran auffaellt
+
+Befund 218 hat eine gebaute und nie gestellte Frage gestellt - das war
+richtig. Dann habe ich die Antwort genommen, wie sie herauskam, und sie in
+das Register geschrieben, ohne zu fragen, **ob die Frage an dieser Stelle
+ueberhaupt Sinn ergibt.** Ein Werkzeug zum ersten Mal zu benutzen und seinem
+Ergebnis sofort zu glauben, ist derselbe Fehler wie in Befund 190: Dort war
+es der Vergleich mit einer fremden Kerzenlaenge, hier eine Warnung, die fuer
+ein Ende der Leiter gedacht war und am anderen ansprang.
+
+Und die Richtung ist nicht harmlos. Eine Warnung zuviel klingt nach
+Vorsicht, kostet aber dasselbe wie eine zuwenig: Wer sie ernst nimmt,
+verwirft einen Weg, der offensteht - hier ausgerechnet den einzigen gebauten
+Weg zum offenen Gate.
+
+Kostet keinen Versuch: nachgemessen an der eigenen Formel.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

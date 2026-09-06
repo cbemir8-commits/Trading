@@ -1036,6 +1036,19 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Tageskerzen nein (Quartal, n_eff 112), Viertelstunden **ja** "
         "(Gleichzeitigkeit, erste Sprosse)",
         218,
+        zuletzt=219,
+    ),
+    # Meine eigene Warnung aus 218 zurueckgenommen: Sie fragte nach beiden
+    # Enden der Leiter, und nur eines ist eine Luecke.
+    Richtung(
+        "Die Randwarnung traf das falsche Ende",
+        "'am_rand' meldet beide Enden. Am groben gibt es weitere Sprossen, "
+        "die nur niemand gemessen hat; am feinen gibt es keine - unter der "
+        "Gleichzeitigkeit muesste man zusammen offene Positionen trennen, "
+        "und 'designeffekt' gibt fuer Bloecke der Groesse eins ohnehin None. "
+        "'am_groben_rand' trennt das jetzt; die Viertelstunden-Leiter ist "
+        "damit **keine** offene Frage, wie 218 gemeldet hatte",
+        219,
     ),
 )
 
@@ -1184,16 +1197,6 @@ OFFEN: tuple[Richtung, ...] = (
     ),
     # Gemessen und offen: Die Zahl ist nicht falsch, sie ist unbegrenzt
     # nach unten.
-    Richtung(
-        "Wie tief faellt die Stichprobe auf Viertelstunden?",
-        "die strengste Einteilung ist dort die Gleichzeitigkeit (n_eff 1830 "
-        "von 1985) - die **erste** gemessene Sprosse. Unterhalb ist nichts "
-        "gemessen, die Quote 0,922 ist also kein Minimum, sondern das Ende "
-        "des Massbands. Auf Tageskerzen ist die Frage geklaert (Quartal "
-        "liegt zwischen zwei milderen Sprossen)",
-        143,
-        zuletzt=218,
-    ),
 )
 
 

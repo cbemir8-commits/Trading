@@ -136,6 +136,29 @@ class Skalenleiter:
         streng = self.strengste
         return streng is self.stufen[0] or streng is self.stufen[-1]
 
+    @property
+    def am_groben_rand(self) -> bool | None:
+        """Liegt die strengste Sprosse am **groben** Ende der Leiter?
+
+        **Nur dieses Ende ist eine Warnung** (Befund 219). ``am_rand`` fragt
+        nach beiden Enden, und die sind nicht gleich viel wert:
+
+        * Am groben Ende gibt es weitere Sprossen - man hat sie nur nicht
+          gemessen. Dort kann die Stichprobe wirklich weiter fallen.
+        * Am feinen Ende gibt es keine. Feiner als die Gleichzeitigkeit
+          hiesse, gleichzeitig offene Positionen auseinanderzureissen - genau
+          den Fehler, gegen den ``concurrent_groups`` gebaut ist. Und
+          rechnerisch endet es dort ohnehin: ``designeffekt`` gibt fuer
+          Bloecke der Groesse eins ``None`` zurueck, weil sich innerhalb
+          eines einzelnen Trades keine Streuung schaetzen laesst.
+
+        Befund 218 hat diesen Unterschied nicht gemacht und die
+        Viertelstunden-Leiter als offene Frage gemeldet. Sie ist keine.
+        """
+        if len(self.stufen) < 3:
+            return None
+        return self.strengste is self.stufen[-1]
+
     def als_tabelle(self) -> str:
         kopf = (
             f"  {'Einteilung':<18} {'Bloecke':>7} {'je Block':>9} "
@@ -160,11 +183,19 @@ class Skalenleiter:
             f"({streng.je_block:.1f} Trades je Block): {streng.effektiv} von "
             f"{streng.roh} bleiben uebrig, Quote {streng.quote:.3f}."
         )
-        if self.am_rand:
+        if self.am_groben_rand:
             satz += (
-                " **Diese Sprosse liegt am Rand der gemessenen Leiter** - die "
-                "Zahl ist damit kein Minimum, sondern das Ende des Massbands. "
-                "Eine Sprosse weiter koennte weniger uebrig bleiben."
+                " **Diese Sprosse liegt am groben Rand der gemessenen "
+                "Leiter** - die Zahl ist damit kein Minimum, sondern das Ende "
+                "des Massbands. Eine Sprosse weiter koennte weniger uebrig "
+                "bleiben."
+            )
+        elif self.am_rand:
+            satz += (
+                " Sie liegt am feinen Rand der Leiter, und das ist keine "
+                "Luecke: Feiner als die Gleichzeitigkeit gibt es keine "
+                "zulaessige Einteilung - wer sie teilt, trennt Positionen, "
+                "die zusammen offen waren."
             )
         elif self.am_rand is False:
             satz += (

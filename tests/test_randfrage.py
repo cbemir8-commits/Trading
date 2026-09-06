@@ -54,28 +54,38 @@ class TestDieFrageIstJetztGestellt:
         """Es liegt zwischen Monat und Halbjahr - kein Randeffekt."""
         assert GEMESSEN["Tageskerzen"].am_rand is False
 
-    def test_auf_viertelstunden_liegt_die_strengste_sprosse_am_rand(self) -> None:
-        """**Der Befund.** Die Gleichzeitigkeit ist zugleich die strengste und
-        die erste gemessene Sprosse - unterhalb ist nichts vermessen."""
+    def test_auf_viertelstunden_liegt_die_strengste_sprosse_am_feinen_rand(
+        self,
+    ) -> None:
+        """Die Gleichzeitigkeit ist zugleich die strengste und die erste
+        Sprosse - aber am **feinen** Ende, und das ist keine Luecke
+        (Befund 219)."""
         leiter = GEMESSEN["15-Minuten-Kerzen"]
         streng = leiter.strengste
 
         assert leiter.am_rand is True
+        assert leiter.am_groben_rand is False
         assert streng is not None
         assert streng.name == "Gleichzeitigkeit"
         assert streng is leiter.stufen[0]
 
-    def test_das_urteil_sagt_es_auch(self) -> None:
+    def test_das_urteil_nennt_es_ausdruecklich_keine_luecke(self) -> None:
         text = GEMESSEN["15-Minuten-Kerzen"].urteil()
 
-        assert "am Rand der gemessenen Leiter" in text
-        assert "kein Minimum" in text
+        assert "feinen Rand" in text
+        assert "keine Luecke" in text
+        assert "Ende des Massbands" not in text
 
     def test_und_fuer_tageskerzen_sagt_es_das_gegenteil(self) -> None:
         text = GEMESSEN["Tageskerzen"].urteil()
 
         assert "echtes Minimum" in text
-        assert "am Rand der gemessenen Leiter" not in text
+        assert "Rand der gemessenen Leiter" not in text
+
+    def test_keine_der_beiden_leitern_endet_am_groben_rand(self) -> None:
+        """Das waere die Warnung, die etwas bedeutet - es gibt sie hier nicht."""
+        for name, leiter in GEMESSEN.items():
+            assert leiter.am_groben_rand is False, name
 
 
 class TestDieRegelSelbst:
@@ -106,8 +116,31 @@ class TestDieRegelSelbst:
 
         assert leiter.am_rand is True
 
+    def test_nur_das_grobe_ende_ist_eine_warnung(self) -> None:
+        """**Die Unterscheidung aus Befund 219.**
+
+        Dieselbe Lage an beiden Enden, und nur eine davon ist eine Luecke.
+        """
+        fein = Skalenleiter(
+            stufen=(self._stufe("a", 50), self._stufe("b", 90), self._stufe("c", 95))
+        )
+        grob = Skalenleiter(
+            stufen=(self._stufe("a", 95), self._stufe("b", 90), self._stufe("c", 50))
+        )
+
+        assert fein.am_rand is True and fein.am_groben_rand is False
+        assert grob.am_rand is True and grob.am_groben_rand is True
+
+    def test_am_groben_rand_warnt_das_urteil(self) -> None:
+        grob = Skalenleiter(
+            stufen=(self._stufe("a", 95), self._stufe("b", 90), self._stufe("c", 50))
+        )
+
+        assert "Ende des Massbands" in grob.urteil()
+
     def test_unter_drei_sprossen_gibt_es_keine_aussage(self) -> None:
         """Mit zweien ist jede am Rand - das waere eine Warnung ohne Inhalt."""
         leiter = Skalenleiter(stufen=(self._stufe("a", 50), self._stufe("b", 90)))
 
         assert leiter.am_rand is None
+        assert leiter.am_groben_rand is None
