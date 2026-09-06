@@ -19920,3 +19920,75 @@ Weg zum offenen Gate.
 
 Kostet keinen Versuch: nachgemessen an der eigenen Formel.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertzwanzig. Welcher Betriebspunkt naeher am Ziel steht
+
+Befund 219 hat der Viertelstunden-Leiter bescheinigt, dass ihre Stichprobe
+ausgemessen ist - 1830 von 1985, kein offener Rand. Damit steht die Frage
+sauber da, die seit Befund 171 in der Luft haengt: **Auf welcher Kerzenlaenge
+lohnt die Suche?**
+
+### Warum sie nie beziffert war
+
+Weil sie direkt nicht geht. Die Latte des Deflated Sharpe haengt an der
+effektiven Stichprobe, und die ist auf den beiden Punkten 115 gegen 1830. Wer
+eine Guete von hier gegen eine Latte von dort haelt, macht den Fehler aus
+Befund 190 - dort kam so ein Vorsprung von "+5,64 Reststreuungen" heraus,
+gruen gedruckt und bedeutungslos.
+
+Vergleichbar ist erst ein **Verhaeltnis**, je Punkt fuer sich gerechnet:
+
+    Erfuellungsgrad = erreichte Guete / noetige Guete
+
+Beide Zahlen vom selben Punkt, mit dessen eigener Stichprobe und dessen
+eigenen Momenten. Das Ergebnis ist dimensionslos, und erst diese
+Verhaeltnisse duerfen nebeneinanderstehen.
+
+### Gerechnet
+
+    Betriebspunkt   beste Regel                    n_eff   Guete   Latte   Anteil
+    Tageskerzen     Bestand (Befund 152)             115  +2,904   3,611  +0,804
+    15 Minuten      Trendbeteiligung mit Puffer      584  +0,744   3,964  +0,188
+    15 Minuten      Seltener grosser Ausbruch       1065  +0,156   4,065  +0,038
+    15 Minuten      Starker Trend, Momentum         1818  -0,780   4,138  -0,188
+
+Die Latte des Bestands ist mit `verbund.noetige_guete` auf seiner eigenen
+Stichprobe und seinen eigenen Momenten nachgerechnet und nicht abgeschrieben;
+sie faellt mit 3,611 dort hin, wo Befund 171 fuer vergleichbare Stichproben
+3,964 bis 4,178 gemessen hat.
+
+### Was daran der Punkt ist
+
+**Die feinere Kerze senkt die Latte je Trade, nicht insgesamt.** Bei n_eff
+1830 verlangt die Schwelle 0,0968 je Trade, auf Tageskerzen 0,3406 - ein
+Drittel. Genau das ist der Reiz, den `data/resample.py` in seinem Kopf
+beschreibt.
+
+Insgesamt steigt die Latte dabei sogar (3,611 auf 3,964), weil die
+Mehrfachtest-Korrektur mit der Stichprobe nicht faellt. Und gefunden wurde
+auf den feinen Kerzen so viel weniger, dass der Abstand **groesser** wird:
+0,804 gegen 0,188, das 4,3-fache.
+
+Das widerspricht Befund 171 nicht, es beziffert ihn. Dort steht *"die
+Vielfalt ist da und sie verliert"* - hier steht, um welchen Faktor.
+
+### Was es nicht sagt
+
+Es ist **keine Aussage ueber Kerzenlaengen**, sondern ueber das, was auf
+ihnen gefunden wurde. Auf Tageskerzen steht der beste Fund aus Jahren, auf
+Viertelstunden der beste aus 36 gemessenen Regeln. Wer dort so lange suchte
+wie hier, koennte etwas anderes finden - die Zahl sagt nur, dass die 36
+bisher gemessenen es nicht sind, und um wie viel.
+
+Der Satz gegen den Fehler aus Befund 190 steht im `urteil` selbst und nicht
+nur hier: Eine Tabelle mit zwei Kerzenlaengen nebeneinander laedt genau dazu
+ein, und der Hinweis gehoert dorthin, wo die Tabelle gelesen wird.
+
+### Angezeigt
+
+Unter "WIE WEIT ES NOCH IST", neben `AUSSICHT`. Etwas zu rechnen und nicht
+anzuzeigen waere Befund 208 noch einmal - und ausgerechnet dieser Abschnitt
+ist der, den Befund 160 aus derselben Lage geholt hat.
+
+Kostet keinen Versuch: gerechnet auf veroeffentlichten Zahlen.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

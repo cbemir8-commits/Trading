@@ -1050,6 +1050,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "damit **keine** offene Frage, wie 218 gemeldet hatte",
         219,
     ),
+    # Beide Punkte lange gemessen, der Vergleich nie gezogen - weil er
+    # direkt nicht geht.
+    Richtung(
+        "Welcher Betriebspunkt naeher am Ziel steht, war unbeziffert",
+        "Guete gegen fremde Latte zu halten ist der Fehler aus 190; das "
+        "Verhaeltnis je Punkt fuer sich ist es nicht. Gerechnet: Tageskerzen "
+        "0,804 der eigenen Latte, beste Viertelstundenregel 0,188 - das "
+        "4,3-fache. Die feine Kerze senkt die Latte je Trade (0,164 gegen "
+        "0,337) und nicht insgesamt",
+        220,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1920,6 +1931,21 @@ class Lage:
             "  Untergrenzen, keine Termine - die Sammelrate ist die des",
             "  laengsten gemessenen Fensters (siehe research/referenz.py).",
         ]
+        # **Auf welchem Betriebspunkt lohnt die Suche?** (Befund 220.) Die
+        # Frage stand nirgends beziffert, obwohl beide Punkte gemessen sind.
+        # Verglichen werden Verhaeltnisse, jedes auf seiner eigenen
+        # Stichprobe - nicht Guete gegen fremde Latte (Befund 190).
+        from research.erfuellung import bester_je_intervall
+        from research.erfuellung import urteil as erfuellungsurteil
+
+        beste = bester_je_intervall()
+        if len(beste) >= 2:
+            zeilen += ["", "  Wovon der beste Fund je Kerzenlaenge steht:"]
+            zeilen += [
+                f"     {p.intervall:>3}  {p.regel:30} {p.anteil:+.3f} der Latte"
+                for p in sorted(beste.values(), key=lambda x: -(x.anteil or 0))
+            ]
+            zeilen += ["", "  " + erfuellungsurteil()]
         # Befund 160 hat das hier als **Ueberlegung** hingeschrieben. Befund
         # 161 hat es gemessen, und es ist schlimmer als die Ueberlegung.
         if self.offen:
