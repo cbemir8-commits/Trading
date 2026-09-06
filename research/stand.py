@@ -1092,6 +1092,18 @@ BEHOBEN: tuple[Richtung, ...] = (
         "0,3367. Die Wache haelt den Kopf jetzt an den Daten fest",
         223,
     ),
+    # Die Wache aus 223 stand an einem Modul; drei weitere haben dieselbe
+    # Bauart, und das vierte hat der Abdeckungstest selbst gefunden.
+    Richtung(
+        "Nur ein Modulkopf war an seine Daten gebunden",
+        "historie (seit 212), zeitskala (218) und koernung tragen ihre "
+        "Messung ebenfalls zweimal. Nachgemessen: alle drei stimmen, sie "
+        "standen nur ungeprueft. Die Wache deckt jetzt alle vier ab und "
+        "verlangt von jedem neuen Modul mit 'GEMESSEN', dass es dazukommt - "
+        "so ist koernung aufgefallen. Dabei ein Namensdrift in erfuellung "
+        "berichtigt: Kopf 'Bestand (Befund 152)', Daten 'Spot wie gebaut'",
+        224,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

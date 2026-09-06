@@ -30,7 +30,7 @@ aus Jahren, auf Viertelstunden der beste aus 36 gemessenen Regeln.
 Was gemessen ist
 ----------------
     Betriebspunkt      beste Regel                   n_eff   Guete   Latte   Anteil
-    Tageskerzen        Bestand (Befund 152)            115   2,904   3,611    0,804
+    Tageskerzen        Bestand (Spot wie gebaut)       115   2,904   3,611    0,804
     15 Minuten         Trendbeteiligung mit Puffer     584   0,744   3,964    0,188
     15 Minuten         Seltener grosser Ausbruch      1065   0,156   4,065    0,038
     15 Minuten         Starker Trend, Momentum        1818  -0,780   4,138   -0,188

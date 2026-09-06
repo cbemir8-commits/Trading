@@ -20206,3 +20206,59 @@ ist kein Zustand, sondern eine Stelle. Ein Modulkopf war bisher keine.
 
 Kostet keinen Versuch: gesucht und berichtigt, nichts gemessen.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertvierundzwanzig. Die Wache stand an einem Modul von vier
+
+Befund 223 hat den Kopf von `erfuellung` an seine Daten gebunden. Die Frage,
+die in dieser Serie dreimal etwas gefunden hat: **und wo noch?**
+
+### Vier Module tragen ihre Messung zweimal
+
+    research/historie.py     Tabelle im Kopf, GEMESSEN darunter   (Befund 212)
+    research/zeitskala.py    dieselbe Bauart                      (Befund 218)
+    research/erfuellung.py   dieselbe Bauart                      (Befund 220)
+    research/koernung.py     dieselbe Bauart
+
+Nachgemessen: **alle drei anderen stimmen.** Kein zweiter Fall von 223. Sie
+standen nur ungeprueft, und das ist der Unterschied, um den es hier geht -
+`erfuellung` hat auch drei Befunde lang gestimmt.
+
+### Das vierte Modul hat der Test selbst gefunden
+
+Die Wache zaehlt die Module nicht auf. Sie sucht in `research/` nach allem,
+was ein `GEMESSEN` traegt, und verlangt, dass es geprueft wird. Beim ersten
+Lauf meldete sie `research/koernung.py` - ein Modul, an das ich nicht gedacht
+hatte und das seine Kontostufen-Tabelle genauso doppelt fuehrt.
+
+Das ist die Lehre aus Befund 209 richtig herum angewandt: Nicht die Auswahl
+allgemein machen, sondern die **Abdeckung**. Welche Zahlen im Kopf stehen
+muessen, weiss nur das Modul selbst; dass ueberhaupt eines dazugekommen ist,
+weiss der Test.
+
+### Zwei Fehlalarme, beide vor dem Melden abgeraeumt
+
+**Erstens** wollte ich alle Felder aller Datensaetze im Kopf wiederfinden.
+`Skalenstufe.bloecke` steht dort aber bewusst nicht - der Kopf zeigt "je
+Block". Ein Waechter, der das meldet, ist Fehlalarm.
+
+**Zweitens** hat der Abgleich fuer `koernung` zunaechst auf den blossen
+Betrag gesucht. "2.000 EUR" steht dort in der Prosa und als **Spalte einer
+anderen Tabelle**, nicht als Zeile der Kontostufen. Geprueft wird jetzt die
+Zeile: Der Betrag muss sie beginnen, und die Zahlen muessen darin stehen.
+
+Beides ist dieselbe Sorte Fehler wie die 231 aus Befund 209 und die zwoelf
+halben Ladehinweise aus 213 - und beide Male hat es gereicht, die Liste
+anzusehen, bevor sie zu einer Zahl wird.
+
+Die Regel lautet deshalb nicht *"der Kopf traegt alle Daten"*, sondern **"der
+Kopf widerspricht ihnen nicht"**. `koernung` zeigt sechs von vierzehn Stufen,
+und das ist seine Sache.
+
+### Ein kleiner echter Fund nebenbei
+
+Der Kopf von `erfuellung` nannte die Zeile *"Bestand (Befund 152)"*, die
+Daten *"Bestand (Spot wie gebaut)"*. Kein Zahlenfehler, aber dieselbe Drift,
+und beim naechsten Mal steht sie an einer Zahl. Berichtigt.
+
+Kostet keinen Versuch: gepruefte Koepfe, keine neue Messung.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
