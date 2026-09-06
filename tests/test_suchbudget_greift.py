@@ -69,10 +69,19 @@ class TestWeitersuchenBleibtMoeglich:
         assert not cli._budget_erschoepft(BUDGET.grenze + 1, ueber_budget=True)
 
     def test_es_sagt_dabei_was_es_kostet(self, capsys: pytest.CaptureFixture) -> None:
+        """**Der Preis wird gerechnet, nicht gepflegt** (Befund 221).
+
+        Hier stand ``"0,00021" in text`` - die Zahl aus Befund 31, gemessen
+        als der Zaehler bei 130 stand. Sie war zu diesem Zeitpunkt schon
+        68 Versuche alt, und der Test hat sie festgeschrieben. Zum zweiten
+        Mal nach Befund 211 hat eine Wache von mir einen Irrtum gesichert
+        statt ihn zu finden.
+        """
         cli._budget_erschoepft(BUDGET.grenze + 1, ueber_budget=True)
         text = capsys.readouterr().out
 
-        assert "0,00021" in text
+        assert cli._versuchspreis() in text
+        assert "0,00021" not in text, "die alte feste Zahl ist wieder da"
         assert "aufgebraucht" in text
 
     def test_der_abbruch_nennt_den_weg_darum_herum(

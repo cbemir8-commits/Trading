@@ -1061,6 +1061,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "0,337) und nicht insgesamt",
         220,
     ),
+    # Die eigene Signatur des Projekts: eine Groesse von einem Betriebspunkt
+    # an einem anderen benutzt - diesmal in der Warnung vor dem Suchen.
+    Richtung(
+        "0,00021 je Versuch war der Wert von 130",
+        "an vier Stellen als Konstante zitiert; gemessen faellt der Anstieg "
+        "mit dem Zaehler - 0,000212 bei 130, 0,000135 bei 198, 0,000115 bei "
+        "230. Der Rest des Budgets kostet 1,18 % gegen eine Luecke von "
+        "24,3 %. 'versuchskosten' rechnet es jetzt, die Wache prueft mit dem "
+        "Tokenizer, dass niemand wieder mit der festen Zahl rechnet",
+        221,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1282,9 +1293,19 @@ class Suchbudget:
 
     **Warum das ueberhaupt aufgeschrieben gehoert.** Eine Suche ohne Ende ist
     keine Suche, sondern Warten - und sie ist hier nicht nur unproduktiv,
-    sondern schaedlich: Jeder Versuch hebt die Huerde des Deflated Sharpe um
-    0,00021 fuer alle kuenftigen. Wer weitersucht, macht das Ziel schwerer,
-    das er sucht.
+    sondern schaedlich: Jeder Versuch hebt die Huerde des Deflated Sharpe
+    fuer alle kuenftigen. Wer weitersucht, macht das Ziel schwerer, das er
+    sucht.
+
+    **Wie viel das ist, haengt vom Zaehlerstand ab** (Befund 221). Hier stand
+    lange "0,00021 je Versuch" - der Wert aus Befund 31, gemessen als der
+    Zaehler bei 130 stand. Bei 198 sind es 0,000135, und der ganze Rest des
+    Budgets kostet 1,18 % mehr geforderte Qualitaet gegen eine Luecke von
+    24,3 %. ``verbund.versuchskosten`` rechnet es nach.
+
+    Der Preis des Suchens ist damit nicht das, was die Suche aussichtsarm
+    macht - das sagt schon Befund 31 in seinem letzten Absatz, und zitiert
+    worden ist seither die abschreckende Zahl und nicht der Schluss.
 
     **Warum eine Zahl und keine Bedingung.** Ein Kriterium wie "abbrechen, wenn
     sich nichts mehr verbessert" laesst sich nachtraeglich zurechtlegen - man

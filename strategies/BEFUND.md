@@ -19992,3 +19992,76 @@ ist der, den Befund 160 aus derselben Lage geholt hat.
 
 Kostet keinen Versuch: gerechnet auf veroeffentlichten Zahlen.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihunderteinundzwanzig. 0,00021 war der Wert von hundertdreissig
+
+Befund 220 hat die Betriebspunkte verglichen und die Tageskerzen vorn
+gesehen. Die naechste Frage ist die, vor der der Nutzer tatsaechlich steht:
+**Lohnt es, die verbleibenden 32 Versuche auszugeben?**
+
+Dagegen steht ein Satz, den dieses Projekt an vier Stellen fuehrt - und den
+ich selbst in Befund 216 noch einmal hingeschrieben habe:
+
+> *"Jeder Versuch hebt die Huerde des Deflated Sharpe um 0,00021 fuer alle
+> kuenftigen."*
+
+### Die Zahl stimmt, aber nicht mehr
+
+Sie stammt aus Befund 31, gemessen bei **152 Trades** ueber die Spanne 112
+bis 502 Versuche - als der Zaehler bei **130** stand. Nachgemessen an
+n_eff 115, dem heutigen Betriebspunkt:
+
+    bei  130 Versuchen   0,000212   <- die zitierte Zahl
+    bei  198 Versuchen   0,000135
+    bei  230 Versuchen   0,000115
+    bei 1000 Versuchen   0,000024
+
+Der Anstieg ist **keine Konstante.** Die Extremwertkorrektur waechst wie die
+Wurzel des Logarithmus der Versuchszahl, nicht linear - jeder weitere Versuch
+kostet weniger als der davor. Wer heute mit 0,00021 rechnet, ueberschaetzt
+den Preis um gut die Haelfte.
+
+Das ist die Signatur dieses Projekts, zum neunten Mal: **eine Groesse von
+einem Betriebspunkt an einem anderen benutzt.** Diesmal in dem Satz, der vor
+dem Suchen warnt.
+
+### Und die Richtung ist die unangenehme
+
+Ein zu hoher Preis haelt vom Suchen ab. Gerechnet, was tatsaechlich auf dem
+Spiel steht:
+
+    Rest des Budgets (198 -> 230)   +1,18 % geforderte Qualitaet
+    Luecke des Bestands             +24,3 %  (0,2708 gegen noetig 0,3367)
+
+Der ganze verbleibende Suchraum kostet ein Zwanzigstel dessen, was er
+schliessen muesste. **Der Preis des Suchens ist nicht das, was die Suche
+schwer macht.**
+
+Genau das steht im letzten Absatz von Befund 31, wortwoertlich: *"Nicht die
+Huerde macht die Suche aussichtsarm, sondern die bisherige Trefferquote."*
+Zitiert worden ist seither die abschreckende Zahl - nicht der Schluss.
+
+### Was dagegen weiter gilt
+
+Befund 71 und `cli rennen` bleiben unberuehrt: Der erwartete beste Fund
+waechst ueber dieselbe Extremwertkonstante wie die Huerde, und er holt sie
+erst bei rund 56.000 Versuchen ein. Das ist der Grund, aus dem Suchen
+aussichtsarm ist - die Trefferquote, nicht der Aufschlag.
+
+Beide Zahlen gehoeren nebeneinander. Nur die eine allein zu nennen, macht aus
+einer Messung eine Stimmung: Der Aufschlag allein klaenge nach "getrost
+weitersuchen", die Trefferquote allein nach "lass es". Gemessen ist beides.
+
+### Was gebaut ist
+
+`verbund.versuchskosten` rechnet den Anstieg an einem gegebenen
+Betriebspunkt. Die vier Fundstellen nennen die Zahl nicht mehr als Konstante;
+`cli` rechnet sie fuer seine Meldung aus dem Referenzpunkt.
+
+Die Wache dagegen ist genauer als die aus Befund 210: Ein Tokenizer trennt
+Text von Code, und geprueft wird, dass die alte Zahl **nirgends im Code**
+steht. Ueber sie zu reden bleibt erlaubt - das muss es, sonst loescht die
+Wache die Erinnerung an den Fehler mit.
+
+Kostet keinen Versuch: nachgerechnet an der eigenen Formel.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

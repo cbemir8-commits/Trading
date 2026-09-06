@@ -567,6 +567,43 @@ def noetige_guete(
 HOECHSTENS = 5000
 
 
+def versuchskosten(
+    effektiv: int,
+    versuche: int,
+    *,
+    schiefe: float | None = None,
+    woelbung: float | None = None,
+    weitere: int = 1,
+) -> float | None:
+    """Um wie viel steigt die noetige Guete **je Trade** durch weitere Versuche?
+
+    **Das ist keine Konstante** (Befund 221). Das Projekt zitiert an vier
+    Stellen "0,00021 je Versuch", und diese Zahl stammt aus Befund 31: dort
+    gemessen bei 152 Trades und ueber die Spanne 112 bis 502 Versuche, als
+    der Zaehler bei 130 stand.
+
+    Der Anstieg faellt aber mit dem Zaehler - die Extremwertkorrektur waechst
+    wie die Wurzel des Logarithmus, nicht linear. Bei n_eff 115 gemessen:
+
+        bei  130 Versuchen   0,000212   <- die zitierte Zahl
+        bei  198 Versuchen   0,000135
+        bei  230 Versuchen   0,000115
+        bei 1000 Versuchen   0,000024
+
+    Wer heute mit 0,00021 rechnet, ueberschaetzt den Preis des Suchens um gut
+    die Haelfte - und zwar in der Richtung, die vom Suchen abhaelt.
+
+    ``None``, wenn die Latte an einem der beiden Punkte nicht bestimmt ist.
+    """
+    a = noetige_guete(effektiv, versuche, schiefe=schiefe, woelbung=woelbung)
+    b = noetige_guete(
+        effektiv, versuche + weitere, schiefe=schiefe, woelbung=woelbung
+    )
+    if a is None or b is None or effektiv <= 0:
+        return None
+    return (b - a) / effektiv**0.5
+
+
 def noetige_stichprobe(
     sharpe_je_trade: float,
     versuche: int,
@@ -709,4 +746,5 @@ __all__ = [
     "hoechster_versuchsstand",
     "noetige_guete",
     "noetige_stichprobe",
+    "versuchskosten",
 ]

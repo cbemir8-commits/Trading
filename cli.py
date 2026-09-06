@@ -3073,6 +3073,25 @@ def _pruefe_generation(generation: int, interval_obj) -> None:
     raise typer.Exit(2)
 
 
+def _versuchspreis() -> str:
+    """Was ein weiterer Versuch die Latte je Trade kostet - gerechnet.
+
+    Am gemessenen Betriebspunkt (``referenz.SPOTPUNKT``) und beim heutigen
+    Zaehlerstand. Bis Befund 221 stand hier die feste Zahl 0,00021, und die
+    galt bei 130 Versuchen.
+    """
+    from research.referenz import SPOTPUNKT
+    from research.verbund import versuchskosten
+
+    preis = versuchskosten(
+        SPOTPUNKT.effektiv,
+        SPOTPUNKT.versuche,
+        schiefe=SPOTPUNKT.schiefe,
+        woelbung=SPOTPUNKT.woelbung,
+    )
+    return "einen unbestimmten Betrag" if preis is None else f"{preis:.6f}"
+
+
 def _budget_erschoepft(versuche: int, *, ueber_budget: bool) -> bool:
     """Ist die Abmachung aus dem Plan aufgebraucht - und was heisst das?
 
@@ -3084,9 +3103,11 @@ def _budget_erschoepft(versuche: int, *, ueber_budget: bool) -> bool:
     "Abbruch bei 230"; abgebrochen hat nichts.
 
     Das ist keine Kleinigkeit, weil ein Versuch nicht zurueckgenommen werden
-    kann: Jeder hebt die Huerde des Deflated Sharpe um 0,00021 fuer alle
-    kuenftigen. Eine Suche, die ueber ihre eigene Grenze laeuft, macht das
-    Ziel schwerer, das sie sucht.
+    kann: Jeder hebt die Huerde des Deflated Sharpe fuer alle kuenftigen.
+    Eine Suche, die ueber ihre eigene Grenze laeuft, macht das Ziel schwerer,
+    das sie sucht. Wie viel das ist, haengt vom Zaehlerstand ab und wird
+    gerechnet (Befund 221) - die fruehere feste Zahl 0,00021 galt bei 130
+    Versuchen.
 
     Weitergesucht werden **darf** - der Plan ist eine Abmachung des Nutzers,
     keine Naturkonstante. Aber bewusst: mit ``--ueber-das-budget``, und dann
@@ -3102,7 +3123,7 @@ def _budget_erschoepft(versuche: int, *, ueber_budget: bool) -> bool:
             f"Grenze {BUDGET.grenze}) - weiter, weil --ueber-das-budget "
             f"gesetzt ist.\n"
             f"[dim]Jeder weitere Versuch hebt die Huerde des Deflated Sharpe "
-            f"um 0,00021 fuer alle kuenftigen, dauerhaft.[/]"
+            f"um {_versuchspreis()} fuer alle kuenftigen, dauerhaft.[/]"
         )
         return False
     console.print(
@@ -3374,7 +3395,8 @@ def vorschlag(
     dieselben Schwellen, und **einen Versuch im Zaehler**. Der letzte Punkt
     ist der wichtigste: Ein Vorschlag aus einem Modell ist keinen Deut
     glaubwuerdiger als einer aus einer Schleife, und er hebt die Huerde des
-    Deflated Sharpe fuer alle folgenden um dieselben 0,00021.
+    Deflated Sharpe fuer alle folgenden - um wie viel, haengt vom
+    Zaehlerstand ab (Befund 221).
 
     **Woher die Antwort kommt, steht dran.** Ohne ``--datei`` wird das Modell
     gefragt und das Forschungsbudget belastet. Mit ``--datei`` liest der

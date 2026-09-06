@@ -1,266 +1,160 @@
-"""Welcher Befehl kostet einen Versuch? - Befund 120.
+"""Was ein Versuch kostet - und dass es keine Konstante ist.
 
-Woher die Frage kommt
----------------------
-Aus Befund 104, dem teuersten Fehler dieses Projekts: Ein Rauchtest ueber alle
-Befehle traf zwanzig, die **messen und dabei zaehlen**. Der Versuchszaehler
-stand danach bei 198 statt 177, und die Huerde des Deflated-Sharpe-Gates ist
-seither dauerhaft hoeher - fuer jeden kuenftigen Kandidaten.
+**Befund 221.** Das Projekt hat an vier Stellen "0,00021 je Versuch"
+zitiert. Die Zahl stammt aus Befund 31, gemessen bei 152 Trades und ueber die
+Spanne 112 bis 502 Versuche, als der Zaehler bei 130 stand.
 
-Damals entstand ``TRADING_TROCKENLAUF``. Was nicht entstand, ist eine Antwort
-auf die Frage, die den Fehler ausgeloest hat: **Welche Befehle kosten
-eigentlich Versuche?** Sie steht in 34 von 63 Docstrings ("Kostet keinen
-Versuch"), in 24 gar nicht, und nichts prueft die Angabe gegen das Verhalten.
-
-Was hier geprueft wird - und was nicht
---------------------------------------
-Geprueft wird die Richtung, die **schaden** kann: Ein Befehl, der in den
-Zaehler schreibt, darf nicht behaupten, er koste nichts. Wer sich darauf
-verlaesst, verbrennt Versuche - genau wie in Befund 104.
-
-Die Gegenrichtung - ein Befehl, der schweigt, obwohl er kostenlos ist - ist
-laestig und nicht gefaehrlich. Sie bleibt ungeprueft.
-
-**Die statische Erkennung ist unvollstaendig, und das ist gemessen.** Sie
-findet Aufrufe im Funktionskoerper des Befehls, nicht solche ueber
-Hilfsfunktionen. Befund 104 spricht von zwanzig zaehlenden Befehlen; die
-Textsuche findet fuenf.
-
-Deshalb steht daneben eine **gemessene** Liste: Jeder in Frage kommende Befehl
-einmal mit ``TRADING_TROCKENLAUF`` ausgefuehrt, und wer die Meldung
-``zaehler.trockenlauf`` ausloeste, haette gezaehlt:
-
-    adaptiv        1 Versuch
-    korb           7 Versuche     <- von der Textsuche nicht gefunden
-    machbarkeit    9 Versuche
-    landschaft    11 Versuche
-    ------------------------------
-    zusammen      28 Versuche
-
-Bei 32 verbleibenden im Suchbudget. Vier Befehle, einmal beilaeufig
-ausgefuehrt, und das Budget waere fast leer - genau so ist Befund 104
-entstanden.
-
-``korb`` ist der Beleg dafuer, dass die Textsuche allein nicht genuegt.
+Der Anstieg faellt aber mit dem Zaehler: Die Extremwertkorrektur waechst wie
+die Wurzel des Logarithmus, nicht linear. Heute, bei 198 Versuchen und n_eff
+115, sind es 0,000135 - wer mit 0,00021 rechnet, ueberschaetzt den Preis um
+gut die Haelfte, und zwar in der Richtung, die vom Suchen abhaelt.
 """
 
 from __future__ import annotations
 
-import inspect
-import re
+import math
+from pathlib import Path
 
 import pytest
 
-#: Aufrufe, die den Zaehler fortschreiben. Alle laufen durch
-#: ``research.versuche.speichern``.
-SCHREIBT = re.compile(r"\bsave_trials\s*\(|\banhaengen\s*\(")
-
-#: Die Zusage, auf die man sich verlaesst.
-ZUSAGE = "ostet keinen Versuch"
-
-#: **Gemessen, nicht gelesen.** Jeder Befehl einmal mit ``TRADING_TROCKENLAUF``
-#: ausgefuehrt; wer die Meldung ``zaehler.trockenlauf`` ausloest, haette
-#: gezaehlt. Die Zahl ist das ``waere=N`` aus der Meldung, gegen den Stand von
-#: 198 gerechnet.
-#:
-#: ``korb`` steht hier und **nicht** in der statischen Suche - er schreibt den
-#: Zaehler ueber eine Hilfsfunktion fort. Genau dafuer war die Messung noetig.
-GEMESSEN_ZAEHLEND = {
-    "adaptiv": 1,
-    "korb": 7,
-    "machbarkeit": 9,
-    "landschaft": 11,
-}
-
-#: Befehle, die beim Messen abgebrochen sind - ueber sie ist nichts bekannt.
-#: Sie stehen hier, damit die Luecke sichtbar bleibt statt als "zaehlt nicht"
-#: durchzugehen.
-UNGEMESSEN = ("verbund", "vorschlag", "review", "research", "wettbewerb")
+from research.referenz import SPOTPUNKT as S
+from research.verbund import noetige_guete, versuchskosten
 
 
-def befehle():
-    import cli
-
-    for c in cli.app.registered_commands:
-        name = c.name or c.callback.__name__
-        try:
-            quelle = inspect.getsource(c.callback)
-        except OSError:  # pragma: no cover - nur bei fehlender Quelle
-            continue
-        yield name, quelle, c.callback.__doc__ or ""
-
-
-class TestDieZusageStimmt:
-    def test_kein_zaehlender_befehl_verspricht_kostenlosigkeit(self) -> None:
-        """**Der Test, der diese Datei traegt.**
-
-        Genau diese Verwechslung hat in Befund 104 einundzwanzig Versuche
-        gekostet. Ein falsches "kostet keinen Versuch" ist teurer als gar
-        keine Angabe: Es laedt dazu ein, den Befehl beilaeufig auszufuehren.
-        """
-        luegen = [
-            name
-            for name, quelle, doc in befehle()
-            if SCHREIBT.search(quelle) and ZUSAGE in doc
-        ]
-        assert luegen == [], (
-            f"Diese Befehle schreiben in den Zaehler und behaupten, sie "
-            f"kosteten nichts: {luegen}"
-        )
-
-    def test_die_zaehlenden_sind_bekannt(self) -> None:
-        """Wer dazukommt, soll es merken.
-
-        Die Liste ist keine Vorschrift, sondern ein Weckruf: Ein neuer
-        zaehlender Befehl ist eine Entscheidung, und sie gehoert bewusst
-        getroffen.
-        """
-        gefunden = sorted(
-            name for name, quelle, _ in befehle() if SCHREIBT.search(quelle)
-        )
-        assert gefunden == [
-            "adaptiv",
-            "landschaft",
-            "machbarkeit",
-            "research",
-            "wettbewerb",
-        ], (
-            "Die Menge der zaehlenden Befehle hat sich geaendert. Wenn das "
-            "Absicht war, gehoert die Liste hier angepasst - und der Docstring "
-            "des Befehls muss es sagen."
-        )
-
-    def test_jeder_zaehlende_befehl_sagt_etwas_dazu(self) -> None:
-        """Schweigen ist bei einem zaehlenden Befehl keine Option."""
-        stumm = [
-            name
-            for name, quelle, doc in befehle()
-            if SCHREIBT.search(quelle)
-            and "Versuch" not in doc
-            and "Zaehler" not in doc
-        ]
-        assert stumm == [], (
-            f"Diese Befehle kosten Versuche und erwaehnen es nicht: {stumm}"
-        )
-
-
-class TestDieUnvollstaendigkeitStehtFest:
-    def test_die_statische_suche_findet_weniger_als_befund_104(self) -> None:
-        """Der Beweis, dass es indirekte Wege gibt - und die Begruendung
-        dafuer, dass hier keine Vollstaendigkeit behauptet wird.
-
-        Faende diese Suche eines Tages zwanzig, waere die Annahme hinfaellig
-        und der Modul-Docstring falsch. Dann soll dieser Test anschlagen.
-        """
-        gefunden = sum(1 for _, quelle, _ in befehle() if SCHREIBT.search(quelle))
-        assert gefunden < 20, (
-            f"Die statische Suche findet jetzt {gefunden} zaehlende Befehle. "
-            "Befund 104 sprach von zwanzig - wenn die Suche sie inzwischen "
-            "alle findet, gehoert der Modul-Docstring korrigiert."
-        )
-
-
-class TestDerTrockenlaufIstDieAntwort:
-    def test_er_deckt_den_zaehler_ab(self) -> None:
-        """Weil die statische Suche unvollstaendig ist, ist der Trockenlauf
-        die einzige verlaessliche Auskunft: Er sitzt an der einen Stelle, durch
-        die jeder Schreibvorgang laeuft."""
-        from research import versuche
-
-        quelle = inspect.getsource(versuche.speichern)
-        assert "trockenlauf()" in quelle
-
-    def test_und_meldet_was_er_verhindert_hat(self) -> None:
-        """``waere=N`` ist die Zahl, die den Schaden beziffert - ohne sie
-        wuesste niemand, was der Lauf gekostet haette."""
-        from research import versuche
-
-        quelle = inspect.getsource(versuche.speichern)
-        assert "waere" in quelle
-
-    @pytest.mark.parametrize(
-        "modul,funktion",
-        [
-            ("research.versuche", "speichern"),
-            ("research.leaderboard", "Leaderboard.save"),
-            ("core.report", "write_report"),
-            ("core.report", "publish"),
-            ("research.admission", "write_champion"),
-        ],
+def _preis(versuche: int, weitere: int = 1) -> float:
+    wert = versuchskosten(
+        S.effektiv, versuche, schiefe=S.schiefe, woelbung=S.woelbung, weitere=weitere
     )
-    def test_alle_fuenf_schreibstellen_fragen_ihn(
-        self, modul: str, funktion: str
-    ) -> None:
-        """Die Bilanz aus den Befunden 116 und 117, als Test.
-
-        Erst hielt der Trockenlauf nur den Zaehler an, dann drei Stellen, dann
-        vier - die vierte committet und pusht, und sie fiel nur auf, weil ein
-        fremder Commit im Verlauf stand.
-        """
-        import importlib
-
-        gegenstand = importlib.import_module(modul)
-        for teil in funktion.split("."):
-            gegenstand = getattr(gegenstand, teil)
-        assert "trockenlauf()" in inspect.getsource(gegenstand)
+    assert wert is not None
+    return wert
 
 
-class TestDieGemesseneListe:
-    """Was der Trockenlauf gemeldet hat - Befund 120.
+class TestDerPreisFaelltMitDemZaehler:
+    def test_die_zitierte_zahl_gilt_bei_hundertdreissig(self) -> None:
+        """**Der Befund.** 0,00021 ist nicht falsch - es ist der Wert von
+        damals, und damals ist der Zaehlerstand 130 aus dem Plan."""
+        assert _preis(130) == pytest.approx(0.00021, abs=5e-6)
 
-    Die statische Suche fand fuenf zaehlende Befehle, die Messung sechs. Der
-    Unterschied heisst ``korb``: Er schreibt den Zaehler ueber eine
-    Hilfsfunktion fort, und keine Textsuche im Funktionskoerper findet das.
+    def test_heute_ist_er_deutlich_niedriger(self) -> None:
+        assert _preis(S.versuche) == pytest.approx(0.000135, abs=5e-6)
 
-    Deshalb ist **diese** Liste die verlaessliche, und die statische nur ein
-    Sicherheitsnetz gegen offensichtliche Widersprueche.
-    """
+    def test_er_faellt_durchweg(self) -> None:
+        staende = [130, 198, 230, 500, 1000]
+        preise = [_preis(v) for v in staende]
 
-    def test_jeder_gemessen_zaehlende_sagt_es_im_docstring(self) -> None:
-        """Der Test, der ``korb`` gefunden hat."""
-        nach_name = {name: doc for name, _, doc in befehle()}
-        stumm = [
-            name
-            for name in GEMESSEN_ZAEHLEND
-            if name in nach_name and "Versuch" not in nach_name[name]
-        ]
-        assert stumm == [], (
-            f"Diese Befehle kosten gemessen Versuche und sagen es nicht: "
-            f"{stumm}"
+        assert preise == sorted(preise, reverse=True)
+
+    def test_die_alte_zahl_ueberschaetzt_um_die_haelfte(self) -> None:
+        assert 0.00021 / _preis(S.versuche) > 1.5
+
+
+class TestDieGroessenordnung:
+    """Die Zahl, auf die es bei der Entscheidung ankommt."""
+
+    def test_der_rest_des_budgets_kostet_gut_ein_prozent(self) -> None:
+        from research.stand import BUDGET
+
+        latte = noetige_guete(
+            S.effektiv, S.versuche, schiefe=S.schiefe, woelbung=S.woelbung
         )
+        spaeter = noetige_guete(
+            S.effektiv, BUDGET.grenze, schiefe=S.schiefe, woelbung=S.woelbung
+        )
+        assert latte is not None and spaeter is not None
 
-    def test_keiner_von_ihnen_verspricht_kostenlosigkeit(self) -> None:
-        nach_name = {name: doc for name, _, doc in befehle()}
-        luegen = [
-            name
-            for name in GEMESSEN_ZAEHLEND
-            if name in nach_name and ZUSAGE in nach_name[name]
+        assert (spaeter - latte) / latte == pytest.approx(0.0118, abs=5e-4)
+
+    def test_und_die_luecke_ist_zwanzigmal_so_gross(self) -> None:
+        """Der Preis des Suchens ist nicht das, was die Suche schwer macht."""
+        latte = noetige_guete(
+            S.effektiv, S.versuche, schiefe=S.schiefe, woelbung=S.woelbung
+        )
+        assert latte is not None
+        noetig_je_trade = latte / math.sqrt(S.effektiv)
+        luecke = noetig_je_trade / S.guete - 1
+
+        assert luecke == pytest.approx(0.243, abs=5e-3)
+        assert luecke > 20 * 0.0118
+
+    def test_befund_31_laesst_sich_nachrechnen(self) -> None:
+        """*"Hundert weitere Versuche kosten rund 5 % mehr geforderte
+        Qualitaet"* - gemessen von 130 aus, und dort stimmt es."""
+        latte = noetige_guete(
+            S.effektiv, 130, schiefe=S.schiefe, woelbung=S.woelbung
+        )
+        spaeter = noetige_guete(
+            S.effektiv, 230, schiefe=S.schiefe, woelbung=S.woelbung
+        )
+        assert latte is not None and spaeter is not None
+
+        assert (spaeter - latte) / latte == pytest.approx(0.0475, abs=2e-3)
+
+
+class TestDieZahlWirdGerechnetUndNichtGepflegt:
+    @staticmethod
+    def _im_code(datei: str) -> list[str]:
+        """Vorkommen der alten Zahl **ausserhalb** von Text und Kommentar.
+
+        Erlaubt bleibt, ueber sie zu reden; nicht erlaubt ist, mit ihr zu
+        rechnen. Der Unterschied ist derselbe wie bei der Gatezahl in Befund
+        210, nur laesst er sich hier genauer ziehen: Ein Tokenizer weiss, was
+        Text ist und was Code.
+        """
+        import io
+        import token
+        import tokenize
+
+        aus = []
+        quelle = Path(datei).read_text()
+        for tok in tokenize.generate_tokens(io.StringIO(quelle).readline):
+            if tok.type in (token.STRING, tokenize.COMMENT):
+                continue
+            if "0.00021" in tok.string or "0,00021" in tok.string:
+                aus.append(f"{datei}:{tok.start[0]} {tok.string[:40]}")
+        return aus
+
+    def test_keine_feste_zahl_mehr_im_code(self) -> None:
+        treffer = [
+            x
+            for datei in ("cli.py", "research/stand.py", "research/verbund.py")
+            for x in self._im_code(datei)
         ]
-        assert luegen == []
 
-    def test_korb_fehlt_der_statischen_suche(self) -> None:
-        """Der Beweis, dass die Textsuche nicht genuegt.
+        assert treffer == [], treffer
 
-        Sollte sie ``korb`` eines Tages finden, waere die Begruendung fuer die
-        gemessene Liste hinfaellig - dann schlaegt dieser Test an und der
-        Modul-Docstring gehoert korrigiert.
-        """
-        statisch = {name for name, quelle, _ in befehle() if SCHREIBT.search(quelle)}
-        assert "korb" not in statisch
-        assert "korb" in GEMESSEN_ZAEHLEND
+    def test_die_regel_faende_eine_gerechnete_zahl(self) -> None:
+        """Gegenprobe: eine Datei, in der die Zahl im Code steht."""
+        import tempfile
 
-    def test_die_summe_uebersteigt_das_restbudget(self) -> None:
-        """Die Zahl, die den Befund traegt.
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
+            f.write('x = 0.00021  # Kommentar mit 0.00021\ny = "Text 0,00021"\n')
+            pfad = f.name
 
-        Vier Befehle, einmal beilaeufig ausgefuehrt, haetten 28 der 32
-        verbleibenden Versuche gekostet - und die Huerde des
-        Deflated-Sharpe-Gates dauerhaft gehoben. Genau so ist Befund 104
-        entstanden.
-        """
-        assert sum(GEMESSEN_ZAEHLEND.values()) == 28
+        assert self._im_code(pfad) != []
 
-    def test_die_ungemessenen_stehen_als_luecke_da(self) -> None:
-        """Ein abgebrochener Lauf ist kein "zaehlt nicht"."""
-        assert set(UNGEMESSEN) & set(GEMESSEN_ZAEHLEND) == set()
-        nach_name = {name for name, _, _ in befehle()}
-        assert set(UNGEMESSEN) <= nach_name
+    def test_ueber_sie_reden_bleibt_erlaubt(self) -> None:
+        """Sonst loescht die Wache die Erinnerung mit der Zahl."""
+        quelle = Path("research/verbund.py").read_text()
+
+        assert "0,00021" in quelle
+        assert "Befund 31" in quelle
+
+    def test_der_cli_helfer_rechnet(self) -> None:
+        import cli
+
+        assert cli._versuchspreis() == f"{_preis(S.versuche):.6f}"
+
+    def test_er_haengt_am_referenzpunkt(self) -> None:
+        """Wandert der Betriebspunkt, wandert der Preis mit."""
+        import inspect
+
+        import cli
+
+        quelle = inspect.getsource(cli._versuchspreis)
+
+        assert "SPOTPUNKT" in quelle
+        assert "0.00021" not in quelle
+
+
+def test_ohne_latte_kein_preis() -> None:
+    assert versuchskosten(0, 198) is None
