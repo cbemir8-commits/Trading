@@ -19673,3 +19673,96 @@ mehrfach ausgegeben und gelesen habe.
 
 Kostet keinen Versuch: gebaut wurde eine Bremse, nichts gemessen.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsiebzehn. Und wo noch - dreiundzwanzig von dreiundfuenfzig
+
+Zwei Suchen, ein Fund. Zuerst die, die nichts gebracht hat.
+
+### Die Grenze, die nur angezeigt wird: einmalig
+
+Befund 216 fand eine Grenze, die im Bericht stand und nirgends griff. Die
+naheliegende Frage: gibt es davon mehr? Alle 38 Konstanten mit Grenz-Namen
+(`MINDEST*`, `MAX*`, `*SCHWELLE`, `GRENZE`, `DECKEL`, ...) daraufhin geprueft,
+ob sie irgendwo in einer Bedingung vorkommen. Acht Treffer, **alle acht
+Fehlalarm**: Sie werden als Vorgabewert eines Parameters durchgesetzt
+(`min_trades: int = MIN_TRADES`), ueber `min()`/`max()`, oder sie sind
+Schrittweiten und keine Grenzen. Zwei verschiedene `SCHWELLE` in
+verschiedenen Modulen (0,95 und 0,05) hat mein Muster ausserdem zu einer
+gemacht.
+
+Befund 216 war also ein Einzelfall, kein Muster. Das ist die Auskunft, und
+sie ist eine Runde wert - sonst sucht in drei Befunden jemand dasselbe.
+
+### Die zweite Suche: Wachen und ihre Aufrufer
+
+Befund 214 fand einen Zweig, der an `_pruefe_generation` vorbeiging. Diesmal
+die allgemeine Frage gestellt: **Welcher Befehl nimmt Generation und
+Kerzenlaenge zugleich an - und welcher prueft, dass sie zusammenpassen?**
+
+    korb            _pruefe_generation
+    research        _pruefe_generation
+    verbund         _pruefe_generation
+    wettbewerb      _pruefe_generation, _pruefe_spitze
+    nachpruefung    **keine**
+
+### Was das bedeutet
+
+`cli nachpruefung` misst den ganzen Katalog mit dem korrigierten Instrument
+nach. Seine Vorgaben:
+
+    --intervall   D
+    --generation  ""   -> alle
+
+Ohne Argumente laufen also **alle 53 Genome auf Tageskerzen** - darunter die
+Generationen 6, 7 und 8, die fuer Viertelstunden gebaut sind:
+
+    Generation  6   4 Genome
+    Generation  7  10 Genome
+    Generation  8   9 Genome
+                   --
+                   23 von 53
+
+Dort sind 50 Balken fuenfzig Tage statt zwoelfeinhalb Stunden - dieselben
+Zahlen, sechsundneunzigfach andere Zeitraeume.
+
+**Anders als beim Wettbewerb kostet das keinen Versuch** - der Docstring sagt
+es ausdruecklich, und er hat recht: dieselben Regeln auf denselben Daten. Der
+Schaden ist ein anderer. Dieser Befehl faellt ein **Urteil**, und zwar eines,
+das ein altes ersetzen soll: *"Aendert sich das Geraet, ist das Urteil neu zu
+faellen."* Er endet mit dem Satz, wer hier weit komme, sei *"einer aus 53"* -
+und 23 dieser 53 sind auf der falschen Kerzenlaenge gemessen. Ein Urteil auf
+fremden Kerzen ist schlechter als keines, weil es wie eines aussieht.
+
+### Uebersprungen, nicht abgebrochen
+
+Der Wettbewerb bricht ab, weil ein falscher Lauf dort Versuche kostet. Hier
+waere Abbrechen falsch: Die uebrigen dreissig Genome sind richtig gemessen,
+und ein Abbruch naehme sie mit. Also uebersprungen - und **gesagt**, mit der
+Kerzenlaenge, auf der sie hingehoeren. Stilles Ueberspringen waere dieselbe
+Luege in anderer Form: Die Tabelle saehe vollstaendig aus und waere es nicht.
+
+Der Spitzenkandidat brauchte eine eigene Regel. `VORGESEHEN` kennt die Null
+nicht, dort steht `None`, und das liesse jede Kerzenlaenge durch. Er haengt
+jetzt an `SPOTPUNKT.intervall` - wie in Befund 214, und aus demselben Grund
+nicht an einem hier hingeschriebenen "D".
+
+### Die Wache gegen den naechsten
+
+Sie zaehlt nicht `nachpruefung` auf, sondern **jeden Befehl, der Generation
+und Kerzenlaenge zugleich annimmt**, und verlangt von jedem eine der drei
+Pruefungen. Ein sechster Befehl dieser Art bekommt sie damit nicht geschenkt.
+
+### Was mir daran auffaellt
+
+Die Frage "und wo noch?" hat jetzt dreimal hintereinander etwas gefunden -
+sechs halbe Ladehinweise (213), drei Bloecke in der Anleitung (215), ein
+ganzer Befehl (217) - und einmal ausdruecklich nichts (die Grenzen oben).
+Dass sie manchmal leer ausgeht, ist kein Argument gegen sie; es ist der
+Unterschied zwischen Suchen und Vermuten.
+
+Auffaellig ist eher, wie lange `_pruefe_generation` als erledigt galt. Sie
+wurde in Befund 64 gebaut, und seither sind zwei Wege an ihr vorbeigelaufen.
+Eine Wache ist kein Zustand, sondern eine Stelle.
+
+Kostet keinen Versuch: gelesen, uebersprungen, bewacht.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

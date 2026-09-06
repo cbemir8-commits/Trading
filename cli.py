@@ -4707,15 +4707,56 @@ def nachpruefung(
         for x in symbole
     }
 
+    from research.seeds import passt_zum_intervall
+
     gewuenscht = {int(x) for x in generation.replace(" ", "").split(",") if x}
     kandidaten: list[tuple[int, object]] = []
+    # **Nicht auf fremden Kerzen nachmessen** (Befund 217). Ohne Argumente
+    # nimmt dieser Befehl **alle** Generationen und Tageskerzen. 23 der 53
+    # Genome gehoeren zu Viertelstunden-Generationen; dort bedeuten dieselben
+    # Periodenzahlen sechsundneunzigmal laengere Zeitraeume. Das kostet zwar
+    # keinen Versuch, aber dieser Befehl faellt ein **Urteil**, das ein altes
+    # ersetzen soll - und ein Urteil auf der falschen Kerzenlaenge ist
+    # schlechter als keines.
+    #
+    # Uebersprungen und nicht abgebrochen: Die uebrigen Generationen sind
+    # richtig gemessen, und ein Abbruch naehme sie mit. Gesagt wird es aber.
+    uebersprungen: list[int] = []
     for nummer, liste in sorted(GENERATIONS.items()):
         if gewuenscht and nummer not in gewuenscht:
             continue
+        if not passt_zum_intervall(nummer, interval_obj.value):
+            uebersprungen.append(nummer)
+            continue
         for eintrag in liste:
             kandidaten.append((nummer, eintrag() if callable(eintrag) else eintrag))
+    if uebersprungen:
+        from research.seeds import VORGESEHEN
+
+        zeilen = ", ".join(
+            f"{n} ({VORGESEHEN.get(n)}-Kerzen)" for n in uebersprungen
+        )
+        console.print(
+            f"[yellow]Uebersprungen auf {interval_obj.label}:[/] "
+            f"Generation {zeilen}.\n"
+            f"[dim]Dieselben Periodenzahlen bedeuten dort andere Zeitraeume - "
+            f"das waere eine andere Regel unter demselben Namen. Mit "
+            f"[bold]-i {VORGESEHEN.get(uebersprungen[0])}[/] nachmessen.[/]"
+        )
+    # Der Spitzenkandidat haengt nicht an ``VORGESEHEN`` - dort steht fuer 0
+    # nichts, was jedes Intervall durchliesse. Er steht auf der Kerzenlaenge,
+    # auf der er gemessen wurde, und die sagt der Referenzpunkt.
+    from research.referenz import SPOTPUNKT
+
     if not gewuenscht:
-        kandidaten.append((0, spitzenkandidat()))
+        if interval_obj.value == SPOTPUNKT.intervall:
+            kandidaten.append((0, spitzenkandidat()))
+        else:
+            console.print(
+                f"[yellow]Der Spitzenkandidat bleibt aussen vor:[/] gemessen "
+                f"auf {SPOTPUNKT.intervall}-Kerzen, hier laeuft "
+                f"{interval_obj.label}."
+            )
     if not kandidaten:
         console.print(f"[red]Keine Kandidaten fuer Generation {generation}.[/]")
         raise typer.Exit(2)

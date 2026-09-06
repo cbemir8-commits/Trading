@@ -1012,6 +1012,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'--ueber-das-budget' als bewusstem Weg darueber hinaus",
         216,
     ),
+    # Die Frage aus 214 - und wo noch? - hat einen ganzen Befehl gefunden.
+    Richtung(
+        "Die Nachpruefung mass 23 von 53 Genomen falsch",
+        "'cli nachpruefung' nimmt Generation und Intervall und rief keine "
+        "der beiden Wachen; ohne Argumente sind das alle Generationen auf "
+        "'-i D', darunter 23 Genome aus Viertelstunden-Katalogen. Kostet "
+        "keinen Versuch, faellt aber ein Urteil. Fremde Generationen werden "
+        "jetzt uebersprungen und benannt; eine Wache zaehlt alle Befehle "
+        "auf, die beides annehmen",
+        217,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
