@@ -20337,3 +20337,67 @@ meint.
 
 Kostet keinen Versuch: nachgerechnet an veroeffentlichten Koeffizienten.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsechsundzwanzig. Zwei Zahlen, ein Satz - diesmal wirklich
+
+Nach dreizehn Befunden am Werkzeug einmal den Bericht selbst gelesen, so wie
+ihn jemand liest, der entscheiden will.
+
+### Was darin steht
+
+Er ist vollstaendiger, als ich erwartet hatte. Der Kopf nennt den Stand, das
+Urteil die noetige Steigerung, "Wie weit es noch ist" die fehlenden
+Beobachtungen und seit Befund 220 den Vergleich der Betriebspunkte. Nichts
+davon fehlt.
+
+### Was auseinanderstand
+
+Die beiden Zahlen, aus denen die Entscheidung besteht:
+
+    zu schliessende Luecke        +24,3 %   im Urteil, ganz oben
+    Rest des Suchbudgets kostet    +1,18 %  unter "Nur auf deinem Rechner", ganz unten
+
+Dazwischen liegt der halbe Bericht. Wer nur die eine liest, bekommt eine
+Stimmung statt einer Messung: Der Preis allein klingt nach *"getrost
+weitersuchen"*, die Luecke allein nach *"lass es"*.
+
+**Das habe ich in Befund 221 selbst geschrieben** - im letzten Absatz:
+*"Beide Zahlen gehoeren nebeneinander. Nur die eine allein zu nennen, macht
+aus einer Messung eine Stimmung."* Und dann habe ich sie in zwei Abschnitte
+gelegt.
+
+### Jetzt
+
+Unter "Wie weit es noch ist", direkt nach dem Vergleich der Betriebspunkte:
+
+    Was das Suchen selbst kostet:
+       zu schliessende Luecke         +24.3%
+       Rest des Suchbudgets kostet    +1.18%
+
+    Der ganze Rest des Budgets hebt die Latte um 5% dessen, was
+    zu schliessen waere. **Nicht der Aufschlag macht die Suche
+    aussichtsarm, sondern die Trefferquote** (Befund 31/221) -
+    und wie langsam der beste Fund nachzieht, rechnet
+    'cli rennen' (Befund 71).
+
+Beide Zahlen werden gerechnet, keine steht da: die Luecke aus
+`erfuellung.Betriebspunkt.luecke`, der Preis aus `noetige_guete` bei 198
+gegen 230 Versuchen. Und das Gegengewicht steht daneben, weil ein kleiner
+Preis fuer sich nach Ermutigung klingt.
+
+### Was mir daran auffaellt
+
+Es ist die dritte Ausgabe desselben Musters in dieser Serie, und alle drei
+sind meine: In Befund 210 habe ich ueber einen zu engen Schnitt geschrieben
+und ihn im selben Befund wiederholt. In 223 habe ich einen Absatz ueber das
+Mischen von Betriebspunkten geschrieben und im naechsten drei gemischt. Hier
+habe ich geschrieben, zwei Zahlen gehoerten nebeneinander, und sie
+auseinandergelegt.
+
+Eine Lehre aufzuschreiben und sie im selben Atemzug zu verfehlen ist offenbar
+kein Ausrutscher, sondern die Regel - die Aufmerksamkeit geht in den Satz und
+nicht in die Handlung. Was dagegen hilft, ist nichts Kluges: einmal
+hinsehen, was tatsaechlich dasteht.
+
+Kostet keinen Versuch: gelesen und umgestellt.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

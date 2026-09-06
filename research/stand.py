@@ -1116,6 +1116,16 @@ BEHOBEN: tuple[Richtung, ...] = (
         "mit ab",
         225,
     ),
+    # Befund 221 hat den Satz geschrieben und ihn selbst nicht befolgt.
+    Richtung(
+        "Die zwei Zahlen der Entscheidung standen auseinander",
+        "221 schloss, Preis des Suchens und Luecke gehoerten in denselben "
+        "Satz - und legte die Luecke ins Urteil, den Preis unter 'Nur auf "
+        "deinem Rechner'. Jetzt beide unter 'Wie weit es noch ist': +24,3 % "
+        "zu schliessen, +1,18 % kostet der ganze Rest des Budgets, also ein "
+        "Zwanzigstel - mit dem Gegengewicht aus Befund 71 daneben",
+        226,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1982,7 +1992,7 @@ class Lage:
         Zwoelfmonatsfenster und hat die Schwelle bei 2547 Tagen Historie
         gerissen; seither steht es bei -10,3 gegen -10,00 (Befund 161).
         """
-        from research.referenz import AUSSICHT, AUSSICHT_VERBUND
+        from research.referenz import AUSSICHT, AUSSICHT_VERBUND, SPOTPUNKT
 
         if self.zugelassen:
             return []
@@ -2011,6 +2021,40 @@ class Lage:
                 for p in sorted(beste.values(), key=lambda x: -(x.anteil or 0))
             ]
             zeilen += ["", "  " + erfuellungsurteil()]
+
+        # **Der Preis des Suchens gehoert neben die Luecke** (Befund 226).
+        # Befund 221 hat beide Zahlen gemessen und geschlossen, sie
+        # gehoerten in denselben Satz - und hat sie dann in zwei Abschnitte
+        # gelegt: die Luecke ins Urteil, den Preis unter 'Nur auf deinem
+        # Rechner'. Wer nur eine liest, bekommt eine Stimmung statt einer
+        # Messung.
+        from research.erfuellung import GEMESSEN as BETRIEBSPUNKTE
+        from research.verbund import noetige_guete
+
+        tag = next((p for p in BETRIEBSPUNKTE if p.intervall == "D"), None)
+        heute = noetige_guete(
+            SPOTPUNKT.effektiv, self.versuche,
+            schiefe=SPOTPUNKT.schiefe, woelbung=SPOTPUNKT.woelbung,
+        )
+        spaeter = noetige_guete(
+            SPOTPUNKT.effektiv, BUDGET.grenze,
+            schiefe=SPOTPUNKT.schiefe, woelbung=SPOTPUNKT.woelbung,
+        )
+        if tag is not None and tag.luecke and heute and spaeter:
+            preis = spaeter / heute - 1.0
+            zeilen += [
+                "",
+                "  Was das Suchen selbst kostet:",
+                f"     zu schliessende Luecke        {tag.luecke:+7.1%}",
+                f"     Rest des Suchbudgets kostet   {preis:+7.2%}",
+                "",
+                f"  Der ganze Rest des Budgets hebt die Latte um "
+                f"{preis / tag.luecke:.0%} dessen, was",
+                "  zu schliessen waere. **Nicht der Aufschlag macht die Suche",
+                "  aussichtsarm, sondern die Trefferquote** (Befund 31/221) -",
+                "  und wie langsam der beste Fund nachzieht, rechnet",
+                "  'cli rennen' (Befund 71).",
+            ]
         # Befund 160 hat das hier als **Ueberlegung** hingeschrieben. Befund
         # 161 hat es gemessen, und es ist schlimmer als die Ueberlegung.
         if self.offen:

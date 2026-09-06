@@ -281,3 +281,72 @@ def test_der_bericht_zeigt_den_vergleich() -> None:
 
     assert "Wovon der beste Fund je Kerzenlaenge steht" in text
     assert "Naeher am Ziel" in text
+
+
+class TestBeideZahlenStehenNebeneinander:
+    """**Befund 226.** Befund 221 hat beide Zahlen gemessen und geschlossen,
+    sie gehoerten in denselben Satz - und sie dann in zwei Abschnitte gelegt.
+
+    Die Luecke stand im Urteil ganz oben, der Preis des Suchens unter "NUR
+    AUF DEINEM RECHNER" ganz unten. Wer nur eine liest, bekommt eine
+    Stimmung: der Preis allein klingt nach "getrost weitersuchen", die
+    Luecke allein nach "lass es".
+    """
+
+    @staticmethod
+    def _bericht() -> str:
+        from research.stand import Lage
+
+        return Lage(
+            kandidat="Trend 50 Tage mit Konfluenz",
+            maerkte="BTC + ETH, Tageskerzen",
+            trades=156, sharpe_je_trade=0.2708, noetiger_sharpe=0.3367,
+            bestanden=9, gesamt=11, offen=("Messlatte", "Deflated Sharpe"),
+            versuche=198, cagr_pct=13.47, rueckgang_pct=10.64,
+        ).bericht()
+
+    def test_der_bericht_stellt_sie_zusammen(self) -> None:
+        text = self._bericht()
+
+        assert "Was das Suchen selbst kostet" in text
+        assert "zu schliessende Luecke" in text
+        assert "Rest des Suchbudgets kostet" in text
+
+    def test_die_luecke_kommt_aus_den_daten(self) -> None:
+        tag = next(p for p in GEMESSEN if p.intervall == "D")
+        assert tag.luecke is not None
+
+        assert f"{tag.luecke:+7.1%}".strip() in self._bericht()
+
+    def test_der_preis_ist_gerechnet_und_nicht_geschrieben(self) -> None:
+        """Er haengt am Versuchsstand und an der Budgetgrenze - beides
+        Groessen, die sich bewegen (Befund 221)."""
+        from research.referenz import SPOTPUNKT as S
+        from research.stand import BUDGET
+        from research.verbund import noetige_guete
+
+        heute = noetige_guete(
+            S.effektiv, S.versuche, schiefe=S.schiefe, woelbung=S.woelbung
+        )
+        spaeter = noetige_guete(
+            S.effektiv, BUDGET.grenze, schiefe=S.schiefe, woelbung=S.woelbung
+        )
+        assert heute is not None and spaeter is not None
+        preis = spaeter / heute - 1.0
+
+        assert f"{preis:+7.2%}".strip() in self._bericht()
+
+    def test_das_verhaeltnis_wird_genannt(self) -> None:
+        """Die eigentliche Auskunft: ein Zwanzigstel des Wegs."""
+        tag = next(p for p in GEMESSEN if p.intervall == "D")
+        assert tag.luecke is not None
+
+        assert "hebt die Latte um" in self._bericht()
+        assert tag.luecke > 15 * 0.0118
+
+    def test_die_gegenrechnung_steht_daneben(self) -> None:
+        """Ohne Befund 71 klaenge der kleine Preis nach Ermutigung."""
+        text = self._bericht()
+
+        assert "Trefferquote" in text
+        assert "cli rennen" in text
