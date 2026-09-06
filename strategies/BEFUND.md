@@ -20470,3 +20470,88 @@ nicht, weil es nur zwei Wege gaebe.
 
 Kostet keinen Versuch: gerechnet auf veroeffentlichten Zahlen.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertachtundzwanzig. Zwei von drei Dimensionen
+
+Befund 227 endete mit dem Satz, eine Frage praege ihre Antwort staerker als
+die Daten. Also diesmal nicht gefragt, sondern nachgesehen, was im Behaelter
+liegt: `reports/` traegt fuenf Berichtsarten mit echten Messungen.
+
+### Was in `marktkombinationen` steht
+
+Fuenfzehn Marktkombinationen, ein Lauf, dieselben 198 Versuche auf
+Tageskerzen - nach Deflated Sharpe geordnet:
+
+    BTC+ETH           2 Maerkte   152 Trades   7/11   0,7641
+    BTC+ETH+LTC       3           258          6/11   0,6440
+    BTC+ETH+XRP       3           260          7/11   0,6266
+    BTC+ETH+LTC+XRP   4           366          5/11   0,4258
+    ...
+    XRP               1           109          3/11   0,0087
+
+Eine saubere Messung mit einer klaren Aussage: **BTC+ETH ist das Optimum**,
+und mehr Maerkte bringen mehr Trades bei fallendem Deflated Sharpe - 152 auf
+366 Trades, 0,7641 auf 0,4258. Befund 27 hat das als *"mehr Maerkte bringen
+Trades, aber keine Information"* festgehalten; hier steht es beziffert.
+
+### Und die Zahl, die nicht passt
+
+**7 von 11 bei 0,7641.** Der gepflegte Referenzpunkt sagt 9 von 11 bei
+0,5881. Nachgeschlagen:
+
+    Perpetual, vor Befund 108 (Befund 54)   7/11   0,7641   152 Trades
+    Spot wie gebaut (Befund 152)            9/11   0,5881   156 Trades
+
+Auf vier Stellen genau der Perpetual-Punkt - den Befund 108 verlassen hat.
+Der Bericht ist vom 22. August.
+
+Im Quelltext nachgesehen, und es stimmt: `marktkombinationen` nimmt
+`spitzenkandidat()` statt `_ohne_hebel(...)` und baut seine Konfigurationen
+selbst statt ueber `_spotconfigs`. Der Unterschied zwischen den Punkten sind
+genau zwei Dinge - ein Hebel ueber 1,0 und ein Funding ueber null -, und
+Funding ist nach Befund 100 der groesste Kostenblock des Systems.
+
+Befund 126 hat den Betriebspunkt in **vier** Befehlen berichtigt: `stand`,
+`form`, `rennen`, `suchbudget`. Dieser war nicht dabei.
+
+### Was ich nicht getan habe
+
+**Den Befehl auf Spot umgestellt.** Ob auf dem Perpetual gemessen werden
+soll, ist keine Aufraeumfrage: Ob das Konto unter MiCA ueberhaupt Perpetuals
+fuehrt, steht als offene Entscheidung im Bericht, und `cli healthcheck` ist
+die erste Zeile unter "Nur auf deinem Rechner". Eine Messung auf dem
+Instrument, das vielleicht gehandelt wird, ist zu verteidigen.
+
+Nicht zu verteidigen ist, dass **nichts im Bericht sagt, welcher Punkt es
+ist**.
+
+### Was fehlte, allgemein
+
+Ein Betriebspunkt hat in diesem Projekt drei Dimensionen. Zwei davon fuehren
+die Berichte:
+
+    intervall     seit Befund 190
+    versuche      seit jeher
+    Instrument    **nirgends**
+
+Genau die dritte ist die, die Befund 108 geaendert hat. `_betriebspunkt`
+liest sie jetzt an Genom und Konfiguration ab - "Spot (kein Hebel, kein
+Funding)" oder "Perpetual (Hebel 3, mit Funding)" -, schreibt sie in den
+Bericht und zeigt sie an, mit dem Hinweis, womit die Zahlen vergleichbar sind
+und womit nicht.
+
+Abgelesen, nicht hingeschrieben: Die 3,0 steht im Genom, der Funding-Satz in
+der Konfiguration. Eine gepflegte Angabe waere genau die Sorte Zahl, vor der
+dieser Befund warnt.
+
+### Was offen bleibt
+
+Vier Berichtsarten fuehren ihn weiter nicht - `machbarkeit`,
+`nachpruefung`, `teststaerke`, `zulassung`. Ob die am gepflegten Punkt
+rechnen, ist **ungeprueft**; bei `marktkombinationen` war es ein anderer.
+Das steht unter *gemessen und offen* und nicht unter *behoben*: Fuenf
+Befehle nachzurechnen ist eine eigene Runde, und eine Behauptung ohne
+Messung waere hier besonders unangebracht.
+
+Kostet keinen Versuch: gelesen und vermerkt.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

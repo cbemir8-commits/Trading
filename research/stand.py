@@ -1137,6 +1137,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "wird nur innerhalb eines Laufes",
         227,
     ),
+    # Zwei von drei Dimensionen des Betriebspunkts standen im Bericht.
+    Richtung(
+        "Berichte vermerkten das Instrument nicht",
+        "'reports/marktkombinationen' zeigt fuer BTC+ETH 7 von 11 bei DSR "
+        "0,7641 - auf drei Stellen der Perpetual-Punkt aus 54, den 108 "
+        "verlassen hat; 'cli stand' sagt 9 von 11 bei 0,5881, und nichts "
+        "sagte warum. Intervall steht seit 190 im Bericht, Versuche seit "
+        "jeher, das Instrument nirgends. '_betriebspunkt' liest es jetzt an "
+        "Genom und Konfiguration ab",
+        228,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1282,8 +1293,15 @@ OFFEN: tuple[Richtung, ...] = (
         "beruehrt jede Zahl des Projekts und ist ungeprueft",
         213,
     ),
-    # Gemessen und offen: Die Zahl ist nicht falsch, sie ist unbegrenzt
-    # nach unten.
+    # Einer von fuenf traegt ihn jetzt; die uebrigen sind ungeprueft.
+    Richtung(
+        "Vier Berichtsarten ohne Betriebspunkt",
+        "'marktkombinationen' vermerkt ihn seit 228; machbarkeit, "
+        "nachpruefung, teststaerke und zulassung nicht. Ob sie am gepflegten "
+        "Punkt rechnen, ist ungeprueft - bei marktkombinationen war es ein "
+        "anderer",
+        228,
+    ),
 )
 
 

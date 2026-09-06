@@ -630,6 +630,11 @@ class TestUeberholteZahlenImRegister:
             # heisst weniger Evidenz. Das Verhaeltnis ueberlebt die
             # Umrechnung, die einzelne Zahl nicht.
             "Der Ladehinweis schickte Tageskerzen auf 2320 Tage": ("0,8640",),
+            # **Befund 228.** Der Eintrag nennt 0,7641, weil das der ganze
+            # Punkt ist: Der Bericht trug diesen Wert, und er gehoert zu
+            # einem Betriebspunkt, den Befund 108 verlassen hat. Die Zahl
+            # als Geschichte zu nennen ist hier die Aussage selbst.
+            "Berichte vermerkten das Instrument nicht": ("0,7641",),
         }, (
             "Ein Registereintrag nennt eine ueberholte Kennzahl. Ist sie als "
             "Geschichte gemeint, gehoert der Eintrag in diese Liste; ist sie "

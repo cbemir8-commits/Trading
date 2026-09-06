@@ -2836,6 +2836,36 @@ def _teststaerke_ueber_saaten(
     )
 
 
+def _betriebspunkt(genome, configs) -> str:
+    """Auf welchem Betriebspunkt ist gemessen worden - aus den Objekten gelesen.
+
+    **Berichte fuehrten zwei der drei Dimensionen** (Befund 228). ``intervall``
+    steht seit Befund 190 darin, ``versuche`` seit jeher; das **Instrument**
+    stand nirgends. Der Unterschied zwischen den beiden Punkten sind genau
+    zwei Dinge - ein Hebel ueber 1,0 und ein Funding ueber null -, und beide
+    lassen sich am Genom und an den Konfigurationen ablesen.
+
+    Ohne diese Angabe steht in ``reports/marktkombinationen`` "7 von 11"
+    neben den "9 von 11" aus ``cli stand``, und nichts sagt, warum.
+    """
+    from decimal import Decimal
+
+    sizing = getattr(genome, "sizing", None)
+    hebel = getattr(sizing, "fraction", None)
+    mit_hebel = hebel is not None and hebel > 1.0
+    saetze = [
+        getattr(getattr(c, "funding", None), "default_rate", None)
+        for c in (configs.values() if hasattr(configs, "values") else configs)
+    ]
+    mit_funding = any(s is not None and s != Decimal("0") for s in saetze)
+    if not mit_hebel and not mit_funding:
+        return "Spot (kein Hebel, kein Funding)"
+    teile = []
+    teile.append(f"Hebel {hebel:g}" if mit_hebel else "kein Hebel")
+    teile.append("mit Funding" if mit_funding else "kein Funding")
+    return "Perpetual (" + ", ".join(teile) + ")"
+
+
 def _ohne_hebel(genome):
     """Denselben Kandidaten ohne Hebel - **gedeckelt, nicht gesetzt.**
 
@@ -5031,9 +5061,18 @@ def marktkombinationen(
             "eigentliche Frage.[/]"
         )
 
+    punkt = _betriebspunkt(genome, configs)
+    console.print(
+        f"\n[dim]Betriebspunkt: {punkt}. Der gepflegte Referenzpunkt steht "
+        f"auf Spot (Befund 108/152) - Zahlen von hier sind mit denen aus "
+        f"'cli stand' nur vergleichbar, wenn beide denselben Punkt tragen "
+        f"(Befund 228).[/]"
+    )
+
     ziel = write_report(
         {
             "intervall": interval_obj.label,
+            "betriebspunkt": punkt,
             "versuche": trials,
             "kombinationen": [
                 {
