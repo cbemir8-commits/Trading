@@ -1227,6 +1227,7 @@ BEHOBEN: tuple[Richtung, ...] = (
         "denn kein Sprachmodell hat diese Regeln vorgeschlagen und keine "
         "davon taugte",
         237,
+        zuletzt=238,
     ),
 )
 

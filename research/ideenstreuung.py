@@ -58,6 +58,36 @@ Die Zahl ist damit ein **zweiter Messwert neben einem sehr unsicheren
 ersten**, und nicht dessen Ersatz. Befund 236 steht direkt davor: Ein
 Punktschaetzer im Ton eines Urteils ist der Fehler, den dieses Projekt zuletzt
 gemacht hat.
+
+Und sie gehoert **nicht** in das Wettrennen (Befund 238)
+--------------------------------------------------------
+Der naechstliegende Griff waere, diese Streuung in ``Rennen`` einzusetzen und
+den Schnittpunkt neu zu rechnen. ``Rennen.erklaert_den_verlauf`` weist das
+zurueck, und zwar deutlich:
+
+    Streuung   Mittel    erwarteter Bestwert nach 198 Versuchen
+    0,0918     0,0000    0,2535    <- beobachtet, per Konstruktion
+    0,1654     0,0324    0,4892    <- diese Messung
+    0,1019     0,1685    0,4500    <- der Ansatz, den der Modulkopf verwirft
+
+Haette die Suche aus dieser Verteilung gezogen, stuende der Bestwert nach 198
+Versuchen bei 0,49. Er steht bei 0,2535. **Es sind zwei Populationen:** Die
+198 Versuche waren ueberwiegend Reglerscans in der Nachbarschaft des Bestands,
+diese acht sind gegen die Spezifikation gebaute Regeln. Auf ihre **eigenen**
+acht Ziehungen angewandt passt die Streuung dagegen ungefaehr (erwartet
+0,2737, bester mit brauchbarer Trade-Zahl 0,2238).
+
+Wer die eine Zahl in die andere Rechnung setzt, macht denselben Fehler wie an
+elf anderen Stellen dieses Projekts - eine Groesse an Punkt A gemessen und an
+Punkt B verwendet -, nur eine Ebene hoeher: nicht zwei Betriebspunkte, sondern
+zwei Ideenquellen.
+
+**Was daraus folgt und was nicht.** Die Aussage "die Suche holt nicht auf"
+beschreibt die Reglerscans, nicht das Regelbauen; sie ist enger, als sie
+klingt. Ein Beleg dafuer, dass Regelbauen ankommt, ist das nicht: Alle acht
+sind gescheitert, und ihr bester Wert mit brauchbarer Trade-Zahl (0,2238)
+liegt **unter** dem Bestand (0,2535). Eine breitere Ziehung um ein Mittel
+nahe null ist kein besserer Kandidat.
 """
 
 from __future__ import annotations
@@ -155,6 +185,66 @@ class Schaetzung:
                 else "bleibt               nichts - Schaetzfehler erklaeren alles"
             ),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class Populationsvergleich:
+    """Erklaert diese Streuung den Verlauf, an dem das Rennen kalibriert ist?
+
+    **Der Grund, warum es diese Klasse gibt** (Befund 238): Zwei Zahlen fuer
+    dieselbe Groesse laden dazu ein, die eine in die Rechnung der anderen zu
+    setzen. Hier faellt auf, wenn das nicht geht.
+    """
+
+    erwartet: float
+    """Welchen Bestwert diese Streuung nach ``versuche`` Ziehungen vorhersagt."""
+
+    beobachtet: float
+    """Welcher Bestwert tatsaechlich dasteht."""
+
+    spielraum: float = 0.05
+
+    @property
+    def passt(self) -> bool:
+        return abs(self.erwartet - self.beobachtet) <= self.spielraum
+
+    @property
+    def abweichung(self) -> float:
+        return self.erwartet - self.beobachtet
+
+    def urteil(self) -> str:
+        if self.passt:
+            return (
+                f"erklaert den Verlauf: {self.erwartet:.4f} erwartet gegen "
+                f"{self.beobachtet:.4f} beobachtet"
+            )
+        return (
+            f"erklaert den Verlauf **nicht**: {self.erwartet:.4f} erwartet "
+            f"gegen {self.beobachtet:.4f} beobachtet ({self.abweichung:+.4f}). "
+            f"Zwei Populationen - diese Streuung gehoert nicht in eine "
+            f"Rechnung, die an jenem Bestwert kalibriert ist."
+        )
+
+
+def vergleiche(
+    schaetzung: Schaetzung, *, bester: float, versuche: int, spielraum: float = 0.05
+) -> Populationsvergleich:
+    """Die Schaetzung gegen einen beobachteten Bestwert halten.
+
+    ``versuche`` ist die Zahl der Ziehungen, aus denen ``bester`` stammt - die
+    198 des Projektverlaufs, oder die acht dieser Messung selbst. Beide
+    Richtungen sind aufschlussreich, und sie fallen unterschiedlich aus.
+    """
+    from research.wettrennen import extremwert
+
+    streuung = schaetzung.echt
+    if streuung is None:
+        streuung = 0.0
+    return Populationsvergleich(
+        erwartet=schaetzung.mittel + streuung * extremwert(versuche),
+        beobachtet=bester,
+        spielraum=spielraum,
+    )
 
 
 def ziehungen(pfad: Path | str, *, herkuenfte: tuple[str, ...] = GEBAUT) -> tuple[Ziehung, ...]:

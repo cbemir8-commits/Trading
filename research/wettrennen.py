@@ -92,8 +92,15 @@ Was das Modell nicht kann
   **gebaut** und samt und sonders gemessen wurden, also Ziehungen und keine
   Ueberlebenden. ``research.ideenstreuung`` schaetzt die Streuung daraus
   direkt und kommt nach Abzug der Schaetzfehler hoeher heraus als diese
-  Rueckrechnung. Beide Zahlen sind unsicher, und keine ersetzt die andere -
-  aber "es gibt nur eine Beobachtung" gilt nicht mehr.
+  Rueckrechnung. "Es gibt nur eine Beobachtung" gilt also nicht mehr.
+
+  **Einsetzen laesst sich die Zahl trotzdem nicht** (Befund 238):
+  ``erklaert_den_verlauf`` weist sie zurueck - sie sagt nach 198 Versuchen
+  einen Bestwert von 0,49 voraus, dasteht 0,2535. Es sind zwei Populationen.
+  Die 198 Versuche waren ueberwiegend Reglerscans; die acht sind gebaute
+  Regeln, und auf ihre eigenen Ziehungen angewandt passt ihre Streuung.
+  Was dieses Modul rechnet, gilt damit fuer das Scannen von Reglern - nicht
+  fuer das Bauen neuer Regeln.
 * Das Mittel einer neuen Regelidee ist eine **Annahme**. Deshalb steht es als
   Parameter da und nicht als Zahl im Code, und ``spanne`` zeigt, wie stark das
   Ergebnis daran haengt.

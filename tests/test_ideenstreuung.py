@@ -143,6 +143,87 @@ class TestWasImVerzeichnisSteht:
         assert schaetzen(leer) is None
 
 
+class TestZweiPopulationen:
+    """**Befund 238 - die Einschraenkung an Befund 237.**
+
+    Zwei Zahlen fuer dieselbe Groesse laden dazu ein, die eine in die Rechnung
+    der anderen zu setzen. Hier faellt auf, dass das nicht geht.
+    """
+
+    @staticmethod
+    def _schaetzung() -> Schaetzung:
+        s = schaetzen(ZAEHLER)
+        assert s is not None
+        return s
+
+    def test_sie_erklaert_den_projektverlauf_nicht(self) -> None:
+        """Haette die Suche so gezogen, stuende der Bestwert bei rund 0,49."""
+        from research.ideenstreuung import vergleiche
+        from research.referenz import PERPETUALPUNKT, SPOTPUNKT
+
+        v = vergleiche(
+            self._schaetzung(),
+            bester=PERPETUALPUNKT.guete,
+            versuche=SPOTPUNKT.versuche,
+        )
+
+        assert not v.passt
+        assert v.abweichung > 0.2
+
+    def test_sie_verfehlt_ihn_deutlicher_als_der_verworfene_ansatz(self) -> None:
+        """Der Modulkopf von ``wettrennen`` verwirft die Bestenlisten-Schaetzung
+        mit 0,444 gegen 0,257. Diese hier liegt noch weiter daneben - ein Grund
+        mehr, sie nicht einzusetzen."""
+        from research.ideenstreuung import vergleiche
+        from research.referenz import PERPETUALPUNKT, SPOTPUNKT
+        from research.wettrennen import extremwert
+
+        eigen = vergleiche(
+            self._schaetzung(),
+            bester=PERPETUALPUNKT.guete,
+            versuche=SPOTPUNKT.versuche,
+        )
+        bestenliste = 0.1685 + 0.1019 * extremwert(SPOTPUNKT.versuche)
+
+        assert eigen.erwartet > bestenliste
+
+    def test_auf_die_eigenen_ziehungen_angewandt_passt_sie(self) -> None:
+        """Das ist der Beleg fuer 'zwei Populationen' statt 'zu hoch geschaetzt'.
+
+        Verglichen wird gegen den besten mit brauchbarer Trade-Zahl: Der
+        Rohbeste hat 18 Trades, und sein Standardfehler ist groesser als der
+        ganze Abstand, um den es hier geht.
+        """
+        from research.ideenstreuung import vergleiche
+
+        z = ziehungen(ZAEHLER)
+        bester = max(x.guete for x in z if x.trades >= 50)
+
+        assert vergleiche(self._schaetzung(), bester=bester, versuche=len(z)).passt
+
+    def test_der_beste_gebaute_bleibt_unter_dem_bestand(self) -> None:
+        """**Breiter ziehen ist nicht besser finden.**
+
+        Ohne diesen Satz liest sich Befund 237 als Empfehlung. Alle acht sind
+        gescheitert, und der beste mit brauchbarer Trade-Zahl liegt unter dem,
+        was der Bestand ohnehin liefert.
+        """
+        from research.referenz import PERPETUALPUNKT
+
+        z = ziehungen(ZAEHLER)
+        bester = max(x.guete for x in z if x.trades >= 50)
+
+        assert bester < PERPETUALPUNKT.guete
+
+    def test_der_modulkopf_sagt_es_dazu(self) -> None:
+        import research.ideenstreuung as modul
+
+        kopf = modul.__doc__ or ""
+
+        assert "zwei populationen" in kopf.lower()
+        assert "erklaert_den_verlauf" in kopf
+
+
 def test_der_modulkopf_von_wettrennen_behauptet_es_nicht_mehr() -> None:
     """"Mehr gibt es nicht" war die Aussage, die Befund 237 widerlegt hat.
 

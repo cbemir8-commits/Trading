@@ -21267,3 +21267,93 @@ Der Kopf von `wettrennen.py` sagt jetzt, was wirklich vorliegt.
 
 Kostet keinen Versuch: gelesen und nachgerechnet, nichts gehandelt.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertachtunddreissig. Zwei Zahlen, zwei Populationen
+
+Befund 237 hat neben die zurueckgerechnete Ideenstreuung (0,0918) eine
+gemessene gestellt (0,1654) und mit dem Satz geschlossen, sie sei "nicht
+kleiner als die erste". Der naechstliegende Griff waere, sie in `Rennen`
+einzusetzen und den Schnittpunkt neu zu rechnen.
+
+Das geht nicht, und das Modul sagt es selbst.
+
+### Der Konsistenztest
+
+`Rennen.erklaert_den_verlauf` fragt: Wuerde diese Schaetzung den Bestwert
+hervorbringen, der tatsaechlich dasteht?
+
+    Streuung   Mittel    erwarteter Bestwert nach 198 Versuchen
+    0,0918     0,0000    0,2535    <- beobachtet, per Konstruktion
+    0,1654     0,0324    0,4892    <- die Messung aus Befund 237
+    0,1019     0,1685    0,4500    <- der Ansatz, den der Modulkopf verwirft
+
+Haette die Suche aus dieser Verteilung gezogen, stuende der Bestwert nach 198
+Versuchen bei **0,49**. Er steht bei **0,2535**. Die Messung aus Befund 237
+verfehlt den eigenen Verlauf damit **staerker** als die Bestenlisten-Schaetzung,
+die `wettrennen.py` in seinem Kopf ausdruecklich verwirft.
+
+### Warum das kein Widerspruch ist
+
+Auf ihre **eigenen** acht Ziehungen angewandt passt sie:
+
+    erwartet aus 8 Ziehungen                      0,2737
+    bester der acht mit brauchbarer Trade-Zahl    0,2238
+    (der Rohbeste hat 18 Trades - sein Standardfehler ist groesser
+     als der ganze Abstand, um den es hier geht)
+
+Also **zwei Populationen**, jede fuer sich ungefaehr stimmig:
+
+* die 198 Versuche - ueberwiegend Reglerscans in der Nachbarschaft des
+  Bestands, Streuung 0,0918
+* die acht gebauten Regeln - gegen die Spezifikation entworfen, Streuung
+  0,1654
+
+Wer die eine Zahl in die Rechnung der anderen setzt, macht denselben Fehler
+wie an elf anderen Stellen dieses Projekts: eine Groesse an Punkt A gemessen
+und an Punkt B verwendet. Nur eine Ebene hoeher - nicht zwei Betriebspunkte,
+sondern zwei Ideenquellen.
+
+### Was das an der Lage aendert
+
+**Die Aussage aus Befund 235/236 gilt enger, als sie klingt.** "Die Suche holt
+nicht auf" beschreibt das **Scannen von Reglern**. Ueber das Bauen neuer Regeln
+sagt dieses Modell nichts - es ist daran nicht kalibriert.
+
+**Und es ist keine Empfehlung.** Alle acht gebauten Regeln sind gescheitert,
+und ihr bester mit brauchbarer Trade-Zahl (0,2238) liegt **unter** dem Bestand
+(0,2535). Eine breitere Ziehung um ein Mittel nahe null ist kein besserer
+Kandidat, sondern eine breitere Ziehung. Wer daraus "dann bau eben Regeln"
+liest, hat die Zeile darunter nicht gelesen.
+
+Die ehrliche Bilanz nach vier Befunden an derselben Zahl: Der Abstand von
++24,3 % steht unveraendert. Was sich geaendert hat, ist ausschliesslich, wie
+genau wir wissen, was wir nicht wissen.
+
+### Was mir daran auffaellt
+
+Das ist die dritte Korrektur an eigener Arbeit in Folge - 236 an 235, 238 an
+237 -, und beide Male ging es um dasselbe: eine richtig gerechnete Zahl, der
+ich im Satz danebengestellt habe, mehr zu bedeuten, als sie bedeutet.
+
+Befund 236 nannte es "ein Punktschaetzer im Ton eines Urteils". Hier ist es
+feiner: Die Zahl war richtig, die Einschraenkungen standen alle dabei - und
+trotzdem endete der Befund mit "nicht kleiner als die erste", was zum
+Einsetzen einlaedt. Ein Satz, der stimmt, kann trotzdem in die falsche
+Richtung zeigen.
+
+Der Unterschied zwischen 236 und 238: Dort hat mir das Modul den Fehlerbalken
+hingehalten, hier den Konsistenztest. Beide Male war das Bauteil da.
+
+### Was gebaut wurde
+
+`Populationsvergleich` und `vergleiche()` in `research/ideenstreuung.py`:
+haelt eine Schaetzung gegen einen beobachteten Bestwert und sagt, ob sie ihn
+erklaert. Fuenf Tests halten beide Richtungen fest - dass die Messung den
+Projektverlauf verfehlt, dass sie ihre eigenen Ziehungen trifft, und dass der
+beste Gebaute unter dem Bestand blieb.
+
+Die Koepfe von `ideenstreuung.py` und `wettrennen.py` sagen es jetzt, und die
+Zeile im Bericht auch.
+
+Kostet keinen Versuch: nachgerechnet, nichts gehandelt.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

@@ -309,7 +309,15 @@ def _laufsatz(
             f"enthaelt die Nullstreuung, das Rennen ist also nach beiden "
             f"Seiten offen"
         )
-    return f"{kern} (Nr. 110)"
+    # **Und es gilt enger, als es klingt** (Befund 238): kalibriert ist die
+    # Streuung am Projektverlauf, und der bestand ueberwiegend aus Reglerscans.
+    # Die acht gebauten Regeln streuen breiter und erklaeren diesen Verlauf
+    # nicht - zwei Populationen, keine Zahl fuer beide.
+    return (
+        f"{kern} (Nr. 110). Gemessen ist damit das Scannen von Reglern; "
+        f"gebaute Regeln streuen breiter, ihr bester blieb aber unter dem "
+        f"Bestand (Nr. 237)"
+    )
 
 
 def _guetelucke() -> Schritt:
