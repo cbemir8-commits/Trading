@@ -20897,3 +20897,98 @@ gemessen werden.
 
 Kostet keinen Versuch: gesucht und verdrahtet.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertvierunddreissig. Was ein Sweep bucht, heisst Vorgeschichte
+
+Befund 233 liess eine Frage offen: Zaehlt ein Sweep um den Bestand als
+Versuch? Ich wollte sie an der Akte beantworten - nachsehen, welche der 198
+Versuche aus `landschaft` und `machbarkeit` stammen.
+
+Das geht nicht. Und der Grund ist interessanter als die Frage.
+
+### Was ich zuerst aufgeschrieben hatte - und was daran falsch war
+
+Mein erster Test hiess `test_zwei_buecher.py` und behauptete, es gebe zwei
+Wege zur selben Zahl, die auseinanderlaufen koennen: einen lokalen Zaehler und
+ein Verzeichnis. Als Beleg zitierte ich den Kopf von `_verzeichne`, der genau
+davor warnt.
+
+Nachgemessen stimmt das nicht. Es gibt **eine** Datei und **einen** Schreiber,
+`versuche.speichern`, und dessen Kopf sagt es richtig:
+
+> *"Doppelte Wahrheiten laufen sonst auseinander - hier nicht, weil nur diese
+> Funktion schreibt und sie beide aus derselben Quelle nimmt."*
+
+`_verzeichne` vergleicht nicht zwei Dateien. Es vergleicht die Datei mit dem
+Schleifenzaehler des laufenden Befehls. Ich hatte eine Warnung gelesen und die
+Gefahr, vor der sie warnt, fuer den Zustand gehalten.
+
+### Was tatsaechlich passiert
+
+Eine Zeile in `save_trials`:
+
+    verzeichnis.grundstock = trials - len(verzeichnis.eintraege)
+
+Der Ueberschuss geht in den **Grundstock**. Auf einer Kopie gemessen, nicht am
+Bestand:
+
+    gemeldet          198 -> 203
+    Grundstock        187 -> 192      (+5)
+    Einzelnachweise    11 ->  11      (+0)
+
+Und so ist der Grundstock im eigenen Kopf beschrieben:
+
+> *"Versuche von vor der Einfuehrung des Verzeichnisses. Ohne Einzelnachweis,
+> und das bleibt so. Sie nachtraeglich zu erfinden waere eine Zahl ohne
+> Messung an genau der Stelle, an der dieses Projekt schon zweimal
+> hereingefallen ist."*
+
+Das Feld, das Vorgeschichte heissen soll, ist die Ablage fuer alles Neue.
+
+### Es ist nicht nur die Anlage, es ist passiert
+
+    a2e6362   trials 177   Grundstock 166   Eintraege 11
+    7120d27   trials 198   Grundstock 187   Eintraege 11
+
+Einundzwanzig Versuche in den Grundstock, kein einziger Eintrag. Wer diese
+Zahlen waren, steht in **Befund 104**: ein Rauchtest ueber 61 Befehle, bei dem
+zwanzig davon mitzaehlten, ohne dass eine Hypothese geprueft wurde. Der
+damalige Befund hat den Schaden offen benannt und den Zaehler ausdruecklich
+nicht zurueckgedreht - richtig so.
+
+Nur liegen diese 21 heute unter "von vor der Einfuehrung des Verzeichnisses".
+Der Befund weiss es, die Datei nicht.
+
+### Warum Befund 233 damit unbeantwortbar ist
+
+Fuenf Befehle schreiben den Zaehler fort (`wettbewerb`, `research`,
+`landschaft`, `machbarkeit`, `adaptiv`), zwei hinterlassen eine Herkunft
+(`korb`, `verbund`), und die Mengen ueberschneiden sich nicht. Ein Sweep
+hinterlaesst also nicht bloss keinen Eintrag - er wird als Vorgeschichte
+abgelegt. Aus 187 laesst sich nicht herausrechnen, was davon Sweep war.
+
+Die Frage bleibt offen, aber sie ist jetzt eine andere: nicht "zaehlt es?",
+sondern "es laesst sich nicht mehr feststellen, was gezaehlt hat".
+
+### Was ich nicht getan habe
+
+**Umgebucht.** Wie Versuche gebucht werden, steuert die Haerte des einzigen
+noch offenen Gates. Jede Aenderung dort verschiebt die Latte, und die fuenf
+betroffenen Befehle lassen sich in diesem Behaelter nicht laufen - sie
+brauchen Kerzen. Ein ungepruefter Eingriff an der Stellschraube des letzten
+Gates waere genau das, wogegen die ganze Zulassungsstrecke gebaut ist.
+
+Der Zaehler bleibt bei 198. Ein Test haelt ihn dort fest.
+
+### Was mir daran auffaellt
+
+Befund 233 endete mit der Beobachtung, dass Zahlen ueber die eigene Sache hier
+geschaetzt werden, waehrend Zahlen ueber den Markt gemessen werden. Der Test,
+mit dem ich das nachweisen wollte, war das naechste Beispiel: Ich habe eine
+Warnung gefunden, sie fuer einen Befund gehalten und einen Test darauf gebaut,
+der gruen wurde - weil er die Warnung prueft und nicht die Sache.
+
+Ein gruener Test ist kein Beleg, wenn er die falsche Frage stellt.
+
+Kostet keinen Versuch: gelesen, auf einer Kopie gemessen, nichts angefasst.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

@@ -1353,15 +1353,32 @@ OFFEN: tuple[Richtung, ...] = (
         228,
         zuletzt=229,
     ),
-    # Aufgeworfen von 233, nicht beantwortet.
+    # Aufgeworfen von 233; 234 misst, warum die Akte sie nicht beantwortet.
     Richtung(
         "Zaehlt ein Sweep am Bestand als Versuch?",
         "'landschaft' und 'machbarkeit' vermessen die Umgebung des "
         "vorhandenen Kandidaten und schreiben dabei den Zaehler fort - "
         "'machbarkeit' um eine ganze Vola-Leiter. Ob das Hypothesen ueber "
         "den Markt sind oder Messungen am Bestand, entscheidet, ob die "
-        "Budgetgrenze fuer sie gilt. Sie bricht dort bewusst nicht ab",
+        "Budgetgrenze fuer sie gilt. Sie bricht dort bewusst nicht ab. Aus "
+        "der Akte ist die Frage nicht zu beantworten: Was sie melden, bucht "
+        "'save_trials' in den Grundstock - 187 der 198 Versuche stehen dort "
+        "ohne Herkunft, als waeren sie Vorgeschichte",
         233,
+        zuletzt=234,
+    ),
+    # Gemessen in 234, absichtlich nicht angefasst.
+    Richtung(
+        "Der Grundstock nimmt auch das Neue auf",
+        "'save_trials' setzt 'grundstock = trials - len(eintraege)', bucht "
+        "gemeldete Versuche also in das Feld, dessen Kopf 'von vor der "
+        "Einfuehrung des Verzeichnisses' sagt. Auf einer Kopie gemessen: 5 "
+        "gemeldet, Grundstock +5, Einzelnachweise +0. Belegt auch am "
+        "Verlauf - 166 auf 187 bei unveraendert 11 Eintraegen, die 21 aus "
+        "Befund 104. Nicht umgebaut: Die Buchung steuert die Haerte des "
+        "einzigen offenen Gates, und die fuenf Befehle laufen hier nicht "
+        "(sie brauchen Kerzen)",
+        234,
     ),
 )
 
