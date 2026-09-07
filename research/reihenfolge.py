@@ -59,10 +59,16 @@ elf Befunde lang als fester Text - "+30 Beobachtungen", "+8,0 % Guete", "rund
 effektive Stichprobe noch bei 152 lag. Alle drei Zahlen waren zu guenstig; die
 Guete-Luecke auf gut das Dreifache.
 
-Beide sind gemessen aussichtslos: Die Quellen fuer Beobachtungen sind
-geschlossen (Maerkte 27, Historie 14), und die Ideenstreuung der Suche liegt
-inzwischen unter dem, was Zufall bei 115 Beobachtungen hergibt - das
-Wettrennen aus Befund 110 holt nicht mehr auf.
+Die erste ist gemessen aussichtslos: Die Quellen fuer Beobachtungen sind
+geschlossen (Maerkte 27, Historie 14).
+
+Bei der zweiten ist der **Punktschaetzer** des Wettrennens von "5.951
+Versuche" auf "holt nicht auf" gekippt - die Ideenstreuung liegt inzwischen
+unter dem, was Zufall bei 115 Beobachtungen hergibt. Mehr als ein
+Punktschaetzer ist es aber nicht (Befund 236): Der 90-%-Bereich der
+Ideenstreuung enthaelt die Nullstreuung, heute wie schon bei Befund 110.
+Entschieden war dieser Vergleich nie; gekippt ist die Seite, auf die er
+faellt.
 
 Bleiben drei Zeilen, und alle drei stehen beim Nutzer. Das ist keine Ausrede,
 sondern das Ergebnis: **Aus diesem Container heraus gibt es keinen Schritt
@@ -74,6 +80,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from research.wettrennen import Rennen
 
 
 class Art(Enum):
@@ -248,6 +260,58 @@ def _beobachtungen() -> Schritt:
     )
 
 
+def _laufsatz(
+    rennen: Rennen, effektiv: int, komma: Callable[[float], str]
+) -> str:
+    """Was das Wettrennen sagt - **mit dem Fehlerbalken, nicht ohne** (236).
+
+    Befund 235 hat hier "Die Suche holt sie nach diesem Modell nicht mehr ein"
+    hingeschrieben und die Nullstreuung als Begruendung danebengestellt. Das
+    ist ein Punktschaetzer im Ton eines Urteils, und ``wettrennen.py`` sagt in
+    seinem eigenen Kopf, warum das nicht traegt:
+
+        "Ob Suchen ueberhaupt besser ist als Wuerfeln, war aus diesem Verlauf
+         auch vorher nicht zu entscheiden. Gefallen ist der beste Schaetzwert,
+         nicht die Bestimmtheit - die gab es nie."
+
+    Die Ideenstreuung wird aus **einem** beobachteten Bestwert zurueckgerechnet
+    und streut bei 198 Versuchen um 14,3 %. Der 90-%-Bereich enthaelt die
+    Nullstreuung - heute und schon bei Befund 110. Was sich geaendert hat, ist
+    die Seite, auf die der Punktschaetzer faellt, nicht die Bestimmtheit.
+
+    ``Rennen.unsicherheit`` haelt genau das fest, seit Befund 124. Sie stand
+    da und wurde nicht gerufen - dieselbe Sorte wie "gebaut, richtig, nicht
+    verdrahtet", nur diesmal von mir, einen Befund nach dem Einbau.
+    """
+    from research.wettrennen import kalibrierbereich
+
+    wo = rennen.wo_holt_sie_auf()
+    streuung = rennen.streuung
+    if streuung is None:
+        # Nicht kalibrierbar ist etwas anderes als 'unter dem Zufall', und die
+        # Begruendung darf nicht schaerfer sein als die Rechnung.
+        return "Der Verlauf laesst sich nicht kalibrieren (Nr. 110)"
+
+    unten, oben = kalibrierbereich(streuung, rennen.versuche, irrtum=0.10)
+    kern = (
+        f"Die Suche holt auf bei {wo}"
+        if wo != "nie"
+        else (
+            f"Die Suche holt sie nach diesem Modell nicht mehr ein - die "
+            f"Ideenstreuung liegt mit {komma(streuung)} unter dem, was Zufall "
+            f"bei {effektiv} Beobachtungen hergibt ({komma(rennen.nullstreuung)})"
+        )
+    )
+    if unten <= rennen.nullstreuung <= oben:
+        kern += (
+            f", aber das ist ein Punktschaetzer: Der 90-%-Bereich der "
+            f"Ideenstreuung reicht von {komma(unten)} bis {komma(oben)} und "
+            f"enthaelt die Nullstreuung, das Rennen ist also nach beiden "
+            f"Seiten offen"
+        )
+    return f"{kern} (Nr. 110)"
+
+
 def _guetelucke() -> Schritt:
     """Wieviel Guete am Spot-Punkt fehlt - und ob die Suche sie einholt.
 
@@ -292,21 +356,7 @@ def _guetelucke() -> Schritt:
         schiefe=punkt.schiefe,
         woelbung=punkt.woelbung,
     )
-    wo = rennen.wo_holt_sie_auf()
-    streuung = rennen.streuung
-    if wo != "nie":
-        lauf = f"Die Suche holt auf bei {wo} (Nr. 110)"
-    elif streuung is None:
-        # Nicht kalibrierbar ist etwas anderes als 'unter dem Zufall', und die
-        # Begruendung darf nicht schaerfer sein als die Rechnung.
-        lauf = "Die Suche holt sie nach diesem Modell nicht mehr ein (Nr. 110)"
-    else:
-        lauf = (
-            f"Die Suche holt sie nach diesem Modell nicht mehr ein - die "
-            f"Ideenstreuung liegt mit {komma(streuung)} unter dem, was Zufall "
-            f"bei {punkt.effektiv} Beobachtungen hergibt "
-            f"({komma(rennen.nullstreuung)}, Nr. 110)"
-        )
+    lauf = _laufsatz(rennen, punkt.effektiv, komma)
     return Schritt(
         name=f"{anteil} Guete am Spot-Punkt",
         art=Art.BEDINGUNG,

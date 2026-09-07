@@ -151,6 +151,41 @@ class TestDasWettrennen:
 
             assert not wo.endswith("Versuche"), f"mittel={mittel}: {wo}"
 
+    def test_der_punktschaetzer_steht_nicht_ohne_seine_spanne(self) -> None:
+        """**Befund 236 - die Korrektur an Befund 235.**
+
+        Die Ideenstreuung wird aus **einem** Bestwert zurueckgerechnet und
+        streut bei 198 Versuchen um 14,3 %. Solange die Nullstreuung in diesem
+        Bereich liegt, ist "die Suche holt nie auf" mit dem Verlauf vereinbar -
+        und ebenso, dass sie fast angekommen ist. Ein Satz, der nur die eine
+        Seite nennt, gibt eine Bestimmtheit vor, die es nie gab.
+        """
+        from research.wettrennen import kalibrierbereich
+
+        r = self._rennen()
+        assert r.streuung is not None
+        unten, oben = kalibrierbereich(r.streuung, r.versuche, irrtum=0.10)
+        hinweis = _bedingung("Guete").hinweis
+
+        if unten <= r.nullstreuung <= oben:
+            assert "Punktschaetzer" in hinweis
+            assert "nach beiden Seiten offen" in hinweis
+
+    def test_die_spanne_enthielt_die_nullstreuung_auch_bei_befund_110(self) -> None:
+        """Nicht die Bestimmtheit ist gefallen, sondern der Schaetzwert.
+
+        Bei 152 Beobachtungen lag der Punktschaetzer ueber der Nullstreuung,
+        bei 115 darunter - die Spanne umschloss sie beide Male.
+        """
+        from research.wettrennen import kalibrierbereich
+
+        for trades in (152, SPOTPUNKT.effektiv):
+            r = self._rennen(trades=trades)
+            assert r.streuung is not None
+            unten, oben = kalibrierbereich(r.streuung, r.versuche, irrtum=0.10)
+
+            assert unten <= r.nullstreuung <= oben, f"n_eff {trades}"
+
     def test_bester_ist_der_perpetual_wert(self) -> None:
         """Die Falle aus Befund 110, als Test.
 

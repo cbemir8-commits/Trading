@@ -21091,3 +21091,84 @@ derselbe Fehler in die andere Richtung.
 Kostet keinen Versuch: zwei Nachrechnungen desselben Kandidaten, keine neue
 Hypothese.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsechsunddreissig. Ein Punktschaetzer im Ton eines Urteils
+
+Befund 235 hat die Handlungsliste auf gerechnete Zahlen umgestellt und dabei
+einen Satz hingeschrieben, den die Rechnung nicht hergibt:
+
+> *"Die Suche holt sie nach diesem Modell nicht mehr ein - die Ideenstreuung
+> liegt mit 0,0918 unter dem, was Zufall bei 115 Beobachtungen hergibt
+> (0,0937)."*
+
+Beide Zahlen stimmen. Der Schluss daraus ist trotzdem zu fest.
+
+### Was der Vergleich hergibt
+
+Die Ideenstreuung wird aus **einem** beobachteten Bestwert zurueckgerechnet,
+und der ist selbst eine Zufallsgroesse. Bei 198 Versuchen streut diese
+Rueckrechnung um 14,3 %:
+
+    Stand                  Ideenstreuung   Nullstreuung   90-%-Bereich
+    Befund 110 (n_eff 152)        0,0940         0,0814   0,0765 - 0,1191
+    heute      (n_eff 115)        0,0918         0,0937   0,0747 - 0,1162
+
+**Die Nullstreuung liegt beide Male im Bereich.** Der Vergleich war also
+weder damals noch heute entschieden. Was gekippt ist, ist die Seite, auf die
+der Punktschaetzer faellt - nicht die Bestimmtheit.
+
+`wettrennen.py` sagt das in seinem eigenen Kopf, und zwar wortgleich zu dem,
+was ich haette lesen sollen:
+
+> *"Ob Suchen ueberhaupt besser ist als Wuerfeln, war aus diesem Verlauf also
+> auch vorher nicht zu entscheiden. Gefallen ist der beste Schaetzwert, nicht
+> die Bestimmtheit - die gab es nie."*
+
+### Das Bauteil war da
+
+`Rennen.unsicherheit` gibt es seit Befund 124, und sein Kopf beginnt mit
+*"Ohne ihn suggeriert die Zahl eine Genauigkeit, die sie nicht hat."* Er
+rechnet den Bereich aus, prueft, ob die Nullstreuung darin liegt, und haengt
+den Satz an, wenn sie es tut.
+
+Ich habe ihn nicht gerufen. Das ist dieselbe Sorte wie *"gebaut, richtig,
+nicht verdrahtet"* - nur diesmal von mir, einen Befund nach dem Einbau, und
+an der einen Zeile, die der Bericht als naechsten Schritt hervorhebt.
+
+### Was daran mein Muster ist
+
+In Befund 233 stand die Beobachtung, dass Zahlen ueber die eigene Sache hier
+geschaetzt werden, waehrend Zahlen ueber den Markt gemessen werden. Befund 234
+war ein Beispiel dafuer, dieser ist das naechste - aber eine Stufe feiner:
+Diesmal war die Zahl gemessen und richtig. Falsch war, wieviel Gewissheit ich
+ihr im Satz danebengestellt habe.
+
+Eine Zahl zu messen und eine Aussage zu messen sind zwei Schritte. Ich habe
+den ersten getan und den zweiten mitgeschrieben.
+
+### Was gebaut wurde
+
+`_laufsatz()` haengt die Spanne an, sobald die Nullstreuung darin liegt. Die
+Zeile im Bericht lautet jetzt:
+
+    ... aber das ist ein Punktschaetzer: Der 90-%-Bereich der Ideenstreuung
+    reicht von 0,0747 bis 0,1162 und enthaelt die Nullstreuung, das Rennen ist
+    also nach beiden Seiten offen.
+
+Ein Test haelt fest, dass die Spanne dasteht, solange sie die Nullstreuung
+umschliesst - und ein zweiter, dass sie es bei Befund 110 auch schon tat.
+
+Der Registereintrag zu 235 traegt jetzt `zuletzt=236`. Nach der Regel aus
+Befund 130 nennt eine Fundstelle die **letzte** Messung; wer den Eintrag liest,
+soll die Spanne finden und nicht den festen Satz.
+
+### Was sich an der Lage nicht aendert
+
+Die Guete-Luecke von +24,3 % steht unveraendert, und die Quellen fuer mehr
+Beobachtungen sind weiter geschlossen. Diese Korrektur macht die Aussicht
+nicht besser - sie macht sie unbestimmter, und das ist ein Unterschied. Wer
+32 Versuche in dieses Rennen steckt, weiss danach immer noch nicht, auf
+welcher Seite er stand.
+
+Kostet keinen Versuch: nachgerechnet und einen Satz zurechtgerueckt.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
