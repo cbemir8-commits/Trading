@@ -731,6 +731,12 @@ def wettbewerb(
             aktuell = list(aktuell) + zusatz
             ki_ids = {g.genome_id for g in zusatz}
 
+    # **Was der Lauf kostet, gehoert an sein Ende** (Befund 232). Bis dahin
+    # sagte die Schlusszeile, wie viele Strategien geprueft wurden - nicht,
+    # wie viele Versuche das waren. Genau die sind die knappe Groesse: Jeder
+    # hebt die Latte fuer alle kuenftigen, und das Budget hat eine Grenze.
+    versuche_am_anfang = load_trials(trials_path)
+
     try:
         while runden == 0 or runde < runden:
             trials_before = load_trials(trials_path)
@@ -847,6 +853,32 @@ def wettbewerb(
     board.save()
     console.print(f"\n[bold]{board.summary()}[/]")
     console.print(f"[dim]Bestenliste: {board.path}[/]")
+    console.print(_laufbilanz(versuche_am_anfang, load_trials(trials_path)))
+
+
+def _laufbilanz(vorher: int, nachher: int) -> str:
+    """Was dieser Lauf gekostet hat - und was vom Budget bleibt.
+
+    **Die knappe Groesse ist nicht die Zahl der Strategien, sondern die der
+    Versuche** (Befund 232). Die Schlusszeile nannte bis dahin nur die erste.
+    Jeder Versuch hebt die Latte des Deflated Sharpe fuer alle kuenftigen,
+    und das Budget aus dem Plan hat eine Grenze - beides steht in jedem
+    ``cli stand``, nur nicht dort, wo die Versuche gerade ausgegeben wurden.
+    """
+    from research.stand import BUDGET
+
+    ausgegeben = max(0, nachher - vorher)
+    if not ausgegeben:
+        return (
+            f"[dim]Dieser Lauf hat keinen Versuch gekostet. Zaehler "
+            f"unveraendert bei {nachher}.[/]"
+        )
+    return (
+        f"[dim]Dieser Lauf hat {ausgegeben} Versuche gekostet "
+        f"({vorher} -> {nachher}). {BUDGET.zeile(nachher)}\n"
+        f"Was ein Versuch die Latte kostet und wie gross die Luecke ist, "
+        f"steht in 'python -m cli stand'.[/]"
+    )
 
 
 def _nach_herkunft(

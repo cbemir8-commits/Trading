@@ -20760,3 +20760,68 @@ Anweisung, die seit Befund 215 stimmt.
 
 Kostet keinen Versuch: gesucht, nichts gefunden, festgehalten.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertzweiunddreissig. Was der Lauf gekostet hat, stand nicht an seinem Ende
+
+Befund 231 hat festgehalten, dass am Werkzeug wenig zu holen bleibt und der
+Schritt, der zaehlt, auf dem Rechner des Nutzers liegt. Also einmal die
+Stelle angesehen, an der dieser Schritt endet: das Ende von `cli wettbewerb`.
+
+### Was dort steht
+
+Der gute Fall ist gut gebaut. Besteht ein Kandidat alle Gates, kommt eine
+gruene Zeile, `champion.json` wird geschrieben, und es steht da, was als
+naechstes zu tun ist (`cli trade --trocken`).
+
+Der **normale** Fall - der Lauf endet ohne Champion, weil das Budget
+aufgebraucht ist, die Runden durch sind oder jemand Strg-C drueckt - endete
+mit zwei Zeilen:
+
+    17 Strategien in 3 Laeufen geprueft, 0 zugelassen. Vorn: ... (7/11 Gates)
+    Bestenliste: state/leaderboard.json
+
+Geprueft**e Strategien** stehen da. **Ausgegebene Versuche** nicht.
+
+### Warum das die falsche Zahl ist
+
+Die Zahl der Strategien ist folgenlos. Die Zahl der Versuche ist die knappe
+Groesse dieses Projekts: Jeder hebt die Latte des Deflated Sharpe fuer alle
+kuenftigen, dauerhaft (Befund 71), und das Budget aus dem Plan hat eine
+Grenze, die seit Befund 216 auch greift.
+
+Beides steht in jedem `cli stand`. Es stand nur nicht dort, wo die Versuche
+gerade ausgegeben worden sind - und das ist der Moment, in dem jemand
+entscheidet, ob er noch eine Runde dreht.
+
+### Was jetzt dasteht
+
+    Dieser Lauf hat 7 Versuche gekostet (198 -> 205).
+    75 von 100 verbraucht, 25 bleiben (Abbruch bei 230).
+    Was ein Versuch die Latte kostet und wie gross die Luecke ist,
+    steht in 'python -m cli stand'.
+
+Die Grenze kommt aus `BUDGET`, nicht aus einer zweiten Zahl hier. Preis und
+Luecke stehen **nicht** hier, sondern der Weg dorthin - eine zweite Kopie
+waere genau das, woran dieses Projekt schon oft haengengeblieben ist, und
+Befund 230 hat gerade erst zwei auseinanderlaufende Fassungen derselben
+Groesse eingesammelt.
+
+Kostet der Lauf nichts - Trockenlauf, Abbruch vor der ersten Runde -, steht
+dort auch nichts von Kosten. Und ein rueckwaerts laufender Zaehler, wie ihn
+ein Behaelterwechsel erzeugt (Befund 151), ergibt keine negative Zahl,
+sondern dieselbe schlichte Auskunft.
+
+### Was mir daran auffaellt
+
+Neunzehn Befunde lang habe ich Berichte gelesen und Register geprueft - also
+das, was **vor** einem Lauf dasteht. Das Ende eines Laufs habe ich zum ersten
+Mal angesehen, und es war die Stelle, an der die wichtigste Zahl des Projekts
+fehlte.
+
+Der Grund ist derselbe wie in Befund 227: Ich habe geprueft, was ich vor mir
+hatte. `cli stand` laeuft in diesem Behaelter, `cli wettbewerb` nicht - er
+braucht Kerzen. Was man nicht laufen lassen kann, sieht man sich seltener an,
+und genau dort sammelt sich, was niemandem auffaellt.
+
+Kostet keinen Versuch: eine Zeile am Ende, keine neue Messung.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

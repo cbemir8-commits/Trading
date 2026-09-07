@@ -1177,6 +1177,15 @@ BEHOBEN: tuple[Richtung, ...] = (
         "haelt den Stand fest und meldet jeden neuen Doppelgaenger",
         231,
     ),
+    # Nicht mehr am Bericht, sondern am Lauf, der die Versuche ausgibt.
+    Richtung(
+        "Der Wettbewerb sagte nicht, was er gekostet hat",
+        "die Schlusszeile nannte gepruefte Strategien, nicht ausgegebene "
+        "Versuche - und die sind die knappe Groesse. Jetzt '_laufbilanz': "
+        "wieviele der Lauf gekostet hat, was vom Budget bleibt, und wo Preis "
+        "und Luecke stehen. Bei null Versuchen steht dort nichts von Kosten",
+        232,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
