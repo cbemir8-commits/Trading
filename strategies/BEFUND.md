@@ -21172,3 +21172,98 @@ welcher Seite er stand.
 
 Kostet keinen Versuch: nachgerechnet und einen Satz zurechtgerueckt.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsiebenunddreissig. Es gab die zweite Beobachtung schon seit Befund 83
+
+Die Befunde 235 und 236 drehten sich um eine einzige Zahl: die Ideenstreuung,
+aus der sich entscheidet, ob Weitersuchen den Abstand je einholt. Sie wird in
+`wettrennen.py` aus **einem** Wert zurueckgerechnet - dem beobachteten
+Bestwert. Der Modulkopf nennt das als Grenze und begruendet sie:
+
+> *"Es kalibriert an einem Punkt. Mehr gibt es nicht: Der Bestwert nach 166
+> Versuchen ist die einzige Beobachtung dieser Art, die vorliegt."*
+
+Das ist seit Befund 83 falsch.
+
+### Was im Verzeichnis liegt
+
+`state/trials.json` traegt acht Regeln, die **gegen die Spezifikation gebaut**
+wurden - vier aus Befund 77, vier aus Befund 83 -, jede mit Trade-Zahl und
+Guete:
+
+    Enge vor Bewegung                        18   +0,3405
+    Volumenschock mit Fortsetzung           114   +0,1584
+    Rueckkehr zum Volumenschwerpunkt         92   -0,1201
+    Abgriff des Vortagestiefs               406   -0,1201
+    Volumenschock breit                     145   +0,1387
+    Rueckkehr zum Volumenschwerpunkt breit  130   -0,1704
+    Ueberverkauft ohne Trendfilter          133   -0,1919
+    Enge vor Bewegung breit                  61   +0,2238
+
+**Das sind Ziehungen und keine Ueberlebenden.** Befund 77 sagt es
+ausdruecklich - *"eigens gegen die Spezifikation gebaut, nicht ausgesucht"* -,
+und beide Laeufe haben gemessen, was sie vorgeschlagen hatten, ohne vorher zu
+sieben. Genau diese Eigenschaft fehlte der Schaetzung, die `wettrennen.py`
+in seinem Kopf als falschen ersten Anlauf beschreibt: Dort waren es sechs
+Ueberlebende aus 166 Versuchen.
+
+### Warum die rohe Streuung nicht die gesuchte ist
+
+Jede dieser Gueten ist selbst geschaetzt, und zwar aus wenigen Trades. Der
+Standardfehler eines Sharpe je Trade liegt bei rund `sqrt((1 + SR^2/2) / n)` -
+bei 18 Trades sind das **0,236**, mehr als die ganze gesuchte Groesse. Was man
+beobachtet, ist deshalb
+
+    beobachtet^2  =  echt^2  +  Schaetzrauschen^2
+
+Ohne den Abzug waere die Zahl systematisch zu gross, und am staerksten bei den
+seltensten Regeln - genau denen, die hier die beste Guete zeigen (Befund 54).
+Gerechnet:
+
+    beobachtete Streuung   0,2059
+    davon Schaetzfehler    0,1226
+    bleibt                 0,1654   (+/- rund 27 %)
+
+Zum Vergleich: aus dem Verlauf zurueckgerechnet 0,0918, Nullstreuung bei
+n_eff 115 dann 0,0937.
+
+Der Rest haelt ueber die Schnitte: nur die vier aus Befund 77 ergeben 0,1755,
+nur die mit mindestens 50 Trades 0,1503.
+
+### Was das **nicht** heisst
+
+Nach Befund 236 steht das hier voran und nicht am Ende.
+
+* **Acht Ziehungen sind wenig**, und drei davon sind dieselben Ideen wie in
+  Befund 77 mit anders kalibrierten Schwellen. Die relative Unsicherheit einer
+  Streuung aus acht Werten liegt bei rund 27 %.
+* **Kein Sprachmodell hat diese Regeln vorgeschlagen.** Befund 77:
+  *"In diesem Container ist kein Sprachmodell verdrahtet ... Also habe ich ihn
+  beantwortet."* Gemessen ist die Streuung von Regeln, die gegen die
+  Spezifikation gebaut wurden - ueber `cli wettbewerb --ki` sagt sie nichts.
+* **Roh statt effektiv.** Verzeichnet sind Trade-Zahlen; die Nullstreuung des
+  Gates rechnet mit effektiven Stichproben.
+* **Keine taugte.** Eine breitere Streuung ist kein besserer Kandidat, sondern
+  eine breitere Ziehung.
+
+Es gibt jetzt eine zweite Zahl, sie ist nicht kleiner als die erste, und beide
+sind unsicher. Mehr steht hier nicht.
+
+### Nebenbei richtiggestellt
+
+Der stehende Punkt *"Die Research-KI wird im Wettbewerb nicht genutzt"* ist
+ueberholt: `wettbewerb` und `research` haben beide `--ki` und rufen darueber
+`_ask_the_analyst`. Sie ist verdrahtet, nur nicht voreingestellt.
+
+### Was gebaut wurde
+
+`research/ideenstreuung.py`: liest die gebauten Regeln aus dem Verzeichnis,
+zieht das Schaetzrauschen ab, meldet die Unsicherheit mit und gibt `None`
+zurueck, wenn nach dem Abzug nichts bleibt - eine Wurzel aus einer negativen
+Zahl waere eine erfundene Zahl. `verbund` bleibt draussen: Paarungen des
+Bestands mit sich selbst sind Nachbarschaft, keine neue Idee.
+
+Der Kopf von `wettrennen.py` sagt jetzt, was wirklich vorliegt.
+
+Kostet keinen Versuch: gelesen und nachgerechnet, nichts gehandelt.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

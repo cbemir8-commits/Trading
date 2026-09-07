@@ -1213,6 +1213,21 @@ BEHOBEN: tuple[Richtung, ...] = (
         235,
         zuletzt=236,
     ),
+    # Ein Modulkopf, der eine Datenlage behauptet, die es nicht mehr gibt.
+    Richtung(
+        "'Mehr gibt es nicht' galt seit Befund 83 nicht mehr",
+        "'wettrennen.py' nannte den Bestwert die einzige Beobachtung ihrer "
+        "Art und kalibrierte die Ideenstreuung aus diesem einen Wert. Im "
+        "Verzeichnis liegen acht gegen die Spezifikation **gebaute** Regeln "
+        "(Befunde 77 und 83), samt und sonders gemessen, also Ziehungen und "
+        "keine Ueberlebenden. 'research.ideenstreuung' schaetzt daraus direkt "
+        "und zieht die Schaetzfehler ab - noetig, weil der Standardfehler bei "
+        "18 Trades groesser ist als die gesuchte Groesse. Die zweite Zahl "
+        "liegt hoeher als die Rueckrechnung; entschieden ist damit nichts, "
+        "denn kein Sprachmodell hat diese Regeln vorgeschlagen und keine "
+        "davon taugte",
+        237,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

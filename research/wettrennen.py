@@ -86,8 +86,14 @@ Was das Modell nicht kann
   Projekts waren Reglerscans - Varianten des Bestands, die in derselben
   Nachbarschaft nachsehen. Der echte Fortschritt ist also **langsamer** als
   hier gerechnet, nicht schneller.
-* Es kalibriert an **einem** Punkt. Mehr gibt es nicht: Der Bestwert nach 166
-  Versuchen ist die einzige Beobachtung dieser Art, die vorliegt.
+* Es kalibriert an **einem** Punkt - dem beobachteten Bestwert. Hier stand
+  dazu "Mehr gibt es nicht", und das ist seit Befund 83 falsch (Befund 237):
+  Im Versuchsverzeichnis liegen acht Regeln, die gegen die Spezifikation
+  **gebaut** und samt und sonders gemessen wurden, also Ziehungen und keine
+  Ueberlebenden. ``research.ideenstreuung`` schaetzt die Streuung daraus
+  direkt und kommt nach Abzug der Schaetzfehler hoeher heraus als diese
+  Rueckrechnung. Beide Zahlen sind unsicher, und keine ersetzt die andere -
+  aber "es gibt nur eine Beobachtung" gilt nicht mehr.
 * Das Mittel einer neuen Regelidee ist eine **Annahme**. Deshalb steht es als
   Parameter da und nicht als Zahl im Code, und ``spanne`` zeigt, wie stark das
   Ergebnis daran haengt.
