@@ -20825,3 +20825,75 @@ und genau dort sammelt sich, was niemandem auffaellt.
 
 Kostet keinen Versuch: eine Zeile am Ende, keine neue Messung.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertdreiunddreissig. Die Grenze galt fuer einen von fuenf
+
+Befund 232 endete mit der Beobachtung, dass sich dort etwas sammelt, wo man
+nichts laufen lassen kann. Also nachgesehen, wer sonst noch den
+Versuchszaehler fortschreibt.
+
+### Was Befund 216 behauptet hat
+
+> *"Der Befehl, der die Versuche **ausgibt** ... ``cli wettbewerb``, der
+> einzige, der Versuche in einer Schleife ausgibt."*
+
+Das ist falsch. **Fuenf** Befehle schreiben `trials.json` fort:
+
+    wettbewerb    Suche, unbegrenzt             Wache seit 216, Bilanz seit 232
+    research      Suche, ein ganzer Katalog     **keine Wache**
+    landschaft    Sweep um den Kandidaten       zaehlte **stumm**
+    machbarkeit   Sweep ueber Vola-Stellungen   meldete von selbst
+    adaptiv       genau ein Versuch             meldete von selbst
+
+Ich habe die Grenze in einen Befehl gebaut und geschrieben, es gebe nur
+diesen.
+
+### Die beiden Luecken
+
+**`cli research`** prueft einen ganzen Katalog auf einmal - bei Generation 8
+neun Genome in einem Durchgang - und hat die Budgetgrenze nie angesehen. Wer
+bei 228 Versuchen steht, kann sie damit in einem Aufruf ueberschreiten, ohne
+ein Wort. Jetzt dieselbe Wache wie im Wettbewerb, **vor** dem Lauf gefragt:
+Danach zu fragen waere zu spaet, weil der Durchgang seine Versuche dann schon
+ausgegeben hat. Mit `--ueber-das-budget` als bewusstem Weg darueber hinaus,
+und mit der Laufbilanz aus Befund 232 am Ende.
+
+**`cli landschaft`** hat den Zaehler um die Zahl seiner Kartenpunkte
+fortgeschrieben und nichts dazu gesagt. Jetzt sagt es die Laufbilanz.
+
+`machbarkeit` und `adaptiv` waren in Ordnung: Beide melden von selbst, was
+sie kosten - `adaptiv` genau einen Versuch, `machbarkeit` seine ganze Leiter.
+
+### Was ich nicht getan habe
+
+**Die Grenze in die beiden Sweeps gebaut.** `landschaft` und `machbarkeit`
+vermessen die Umgebung des vorhandenen Kandidaten. Ob so ein Sweep eine
+Hypothese ueber den Markt ist - dann gilt die Abmachung aus dem Plan fuer ihn
+- oder eine Messung am Bestand, ist eine offene Frage, und sie mitten in
+ihrer Antwort abzubrechen waere eine Entscheidung, die hier nicht faellt. Sie
+steht jetzt unter *gemessen und offen*.
+
+Sie ist nicht klein: `machbarkeit` schreibt eine ganze Vola-Leiter fort. Wenn
+das keine Hypothesen ueber den Markt sind, steht der Zaehler zu hoch - und
+die Latte des Deflated Sharpe mit ihm.
+
+### Die Wache dagegen
+
+Sie zaehlt die fuenf nicht auf, sondern **sucht** nach `save_trials`. Ein
+sechster Befehl faellt damit auf und muss sich entscheiden, ob er Suche ist
+oder Messung.
+
+### Was mir daran auffaellt
+
+Befund 216 hat den Satz *"endlich im System statt nur im Text"* als falsche
+Selbstbeschreibung entlarvt - und im selben Befund eine eigene aufgeschrieben:
+"der einzige Befehl". Ich habe nicht nachgesehen, ich habe es gewusst.
+
+Das ist das dritte Mal, dass eine Behauptung ueber den **Umfang** einer Sache
+danebenlag: 121 zaehlte vier Fundstellen der Gate-Zahl und es waren fuenf
+(210), 216 zaehlte einen Befehl und es sind fuenf. Zahlen ueber die eigene
+Sache werden hier offenbar geschaetzt, waehrend Zahlen ueber den Markt
+gemessen werden.
+
+Kostet keinen Versuch: gesucht und verdrahtet.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

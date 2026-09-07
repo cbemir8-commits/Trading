@@ -1186,6 +1186,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "und Luecke stehen. Bei null Versuchen steht dort nichts von Kosten",
         232,
     ),
+    # Meine Behauptung aus 216 war falsch: Es ist nicht ein Befehl, es sind
+    # fuenf.
+    Richtung(
+        "Die Budgetgrenze galt fuer einen von fuenf",
+        "216 nannte den Wettbewerb 'den einzigen Befehl, der Versuche in "
+        "einer Schleife ausgibt'. Fuenf schreiben den Zaehler fort; "
+        "'research' prueft einen ganzen Katalog auf einmal und sah die "
+        "Grenze nie an, 'landschaft' zaehlte stumm. Beides behoben, die "
+        "beiden Sweeps melden ihre Kosten von selbst",
+        233,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1341,6 +1352,16 @@ OFFEN: tuple[Richtung, ...] = (
         "bleibt die Luecke",
         228,
         zuletzt=229,
+    ),
+    # Aufgeworfen von 233, nicht beantwortet.
+    Richtung(
+        "Zaehlt ein Sweep am Bestand als Versuch?",
+        "'landschaft' und 'machbarkeit' vermessen die Umgebung des "
+        "vorhandenen Kandidaten und schreiben dabei den Zaehler fort - "
+        "'machbarkeit' um eine ganze Vola-Leiter. Ob das Hypothesen ueber "
+        "den Markt sind oder Messungen am Bestand, entscheidet, ob die "
+        "Budgetgrenze fuer sie gilt. Sie bricht dort bewusst nicht ab",
+        233,
     ),
 )
 

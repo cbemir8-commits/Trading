@@ -1239,6 +1239,11 @@ def research(
         help="Handelsintervall. Leer = das der gewaehlten Generation.",
     ),
     von: str | None = typer.Option(None, help="Startdatum der Auswertung (YYYY-MM-DD)."),
+    ueber_budget: bool = typer.Option(
+        False, "--ueber-das-budget",
+        help="Auch dann pruefen, wenn das Suchbudget aus dem Plan "
+             "aufgebraucht ist. Ohne dieses Flag bricht der Lauf dort ab.",
+    ),
     schnell: bool = typer.Option(
         False,
         "--schnell",
@@ -1442,6 +1447,14 @@ def research(
     def show(position: int, total: int, genome: Genome) -> None:
         console.print(f"  [dim]{position}/{total}[/] {genome.name} ...")
 
+    # **Auch hier** (Befund 233). Befund 216 hat die Budgetgrenze in den
+    # Wettbewerb gebaut und dabei geschrieben, das sei "der einzige Befehl,
+    # der Versuche in einer Schleife ausgibt". Das stimmte nicht: Fuenf
+    # Befehle schreiben den Zaehler fort, und dieser hier prueft einen
+    # ganzen Katalog auf einmal.
+    if _budget_erschoepft(trials_before, ueber_budget=ueber_budget):
+        raise typer.Exit(0)
+
     report = run_admission(
         genomes,
         frame,
@@ -1452,6 +1465,7 @@ def research(
         on_progress=show,
     )
     save_trials(trials_path, report.trials_after)
+    console.print(_laufbilanz(trials_before, report.trials_after))
     write_journal(report, Path(settings.paths.state) / "journal.json")
 
     # Die Messlatte: Was haette einfaches Halten im selben Zeitraum gebracht?
@@ -4361,6 +4375,9 @@ def landschaft(
     neue = max(0, len(karte.punkte) - 1)  # der Kandidat selbst zaehlt nicht neu
     vorher = load_trials(trials_path)
     save_trials(trials_path, vorher + neue)
+    # **Stumm gezaehlt** (Befund 233). Von fuenf Befehlen, die den Zaehler
+    # fortschreiben, sagte nur ``machbarkeit`` von selbst, was er kostet.
+    console.print(_laufbilanz(vorher, vorher + neue))
 
     farbe = "green" if "Plateau" in karte.urteil() else "yellow"
     console.print(f"\n[{farbe}]{karte.urteil()}[/]")
