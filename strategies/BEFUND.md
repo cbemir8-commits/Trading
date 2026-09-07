@@ -20992,3 +20992,102 @@ Ein gruener Test ist kein Beleg, wenn er die falsche Frage stellt.
 
 Kostet keinen Versuch: gelesen, auf einer Kopie gemessen, nichts angefasst.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertfuenfunddreissig. Die Liste, die sagt was zu tun ist, stand auf 108
+
+`cli stand` endet mit einer Liste namens *WAS DEN ZUSTAND AENDERN KANN* und
+hebt daraus eine Zeile hervor: **"Hier laufen wuerde: +8,0 % Guete am
+Spot-Punkt."** Das ist der Satz, an dem sich entscheidet, woran hier gearbeitet
+wird.
+
+Er stimmt seit Befund 152 nicht mehr.
+
+### Der Nachweis
+
+Die Zeilen standen als fester Text in `research/reihenfolge.py`:
+
+    Bedingung   +30 unabhaengige Beobachtungen    keiner   111
+    Bedingung   +8,0 % Guete am Spot-Punkt        Suche    108
+                "Die Suche braeuchte rund 5.951 Versuche (Nr. 110)"
+
+Alle drei Zahlen stammen aus einer Zeit, in der die effektive Stichprobe bei
+152 lag. Die Blockkorrekturen haben sie auf 115 gesenkt. Nachgerechnet mit
+`SPOTPUNKT` und denselben Funktionen, die der Rest des Berichts benutzt:
+
+    Groesse             Liste sagt        gemessen heute
+    Beobachtungen       +30 (152 -> 182)  +75 (115 -> 190)
+    Guete-Luecke        +8,0 %            +24,3 %
+    Wettrennen          5.951 Versuche    holt nicht mehr auf
+
+**Alle drei waren zu guenstig, die Guete-Luecke auf gut das Dreifache.**
+
+### Das Wettrennen holt nicht mehr auf
+
+Das ist der eigentliche Fund. Befund 71 hat den Mechanismus aufgeschrieben:
+Huerde und bester Fund wachsen beide mit derselben Extremwertkonstante, es
+entscheidet allein, ob die Ideenstreuung ueber der des reinen Zufalls liegt.
+Die Nullstreuung haengt an der Stichprobe:
+
+    n_eff 152     Nullstreuung 0,0814     Ideenstreuung 0,0940   ->   5.951 Versuche
+    n_eff 115     Nullstreuung 0,0937     Ideenstreuung 0,0918   ->   holt nicht auf
+
+Nicht der Kandidat ist schlechter geworden und nicht die Suche. Die kleinere
+effektive Stichprobe laesst den **Zufall** mehr streuen, und damit ist der
+Vorsprung der Suche vor ihm aufgebraucht.
+
+Befund 110 nennt ein negatives `mittel` die guenstigere Annahme. Auch dort
+kommt heute keine erreichbare Zahl mehr heraus - ueber die ganze Spanne von
+-0,05 bis +0,05 nicht. Das Ergebnis haengt also nicht an dieser Annahme.
+
+Die alte Rechnung liess sich exakt reproduzieren (5.951 auf die Stelle genau),
+bevor die neue gemacht wurde. Ohne das waere es eine Behauptung ueber eine
+Zahl, die ich nicht nachvollzogen habe.
+
+### Warum das ausgerechnet hier passiert ist
+
+`research/referenz.py` ist **gegen genau diesen Fehler** gebaut worden. Sein
+Kopf sagt es:
+
+> *"Danach standen einundzwanzig Stellen in acht Modulen weiter auf 0,8640.
+> Jede zitierte korrekt einen Befund; wer sie las, fand trotzdem den Stand von
+> gestern. Ein Laborbuch darf alte Zahlen tragen: Es ist ein Protokoll. Ein
+> Modulkopf nicht: Er wird als Stand gelesen."*
+
+Die Handlungsliste war die zweiundzwanzigste Stelle. Das Register hat sie nie
+erreicht, weil niemand sie fuer eine Zahlenstelle gehalten hat - sie sieht aus
+wie eine Aufzaehlung von Aufgaben, und ihre Zahlen stehen in den Namen der
+Aufgaben.
+
+### Was gebaut wurde
+
+Die beiden Bedingungen werden jetzt **gerufen statt geschrieben**
+(`_beobachtungen()`, `_guetelucke()`), aus `SPOTPUNKT` und denselben
+Funktionen wie der Rest.
+
+Dafuer brauchte es einen zweiten Referenzpunkt. `Rennen.bester` gehoert das,
+was die **Suche** hervorgebracht hat, und gesucht wurde unter Perpetual; der
+Wegfall des Funding kommt als `schub` obendrauf. Das ist die Falle, die Befund
+110 beschreibt - wer den Spot-Wert einsetzt, laesst die Suche 2,4-mal
+produktiver aussehen. Solange nur ein Punkt verzeichnet war, war dieser Wert
+eine gepflegte Zahl in einem Prosatext. Jetzt steht `PERPETUALPUNKT` neben
+`SPOTPUNKT`, und `SCHUB` wird aus beiden gerechnet - er betraegt 0,0173, nicht
+die 0,0168 aus Befund 108.
+
+Beide Punkte sind fuer diesen Befund neu vermessen worden; `SPOTPUNKT` kam auf
+allen sieben Stellen bitgleich wieder heraus.
+
+### Was das an der Lage aendert
+
+Nichts zum Besseren, und das ist der Punkt. Die Liste zeigte eine Aufgabe, die
+ein Drittel so gross war wie die wirkliche, und einen Weg dorthin, den es nach
+demselben Modell nicht mehr gibt. Wer danach gearbeitet haette, haette 32
+Versuche in ein Rennen gesteckt, das die Rechnung als nicht mehr aufholbar
+ausweist - und die Latte fuer alles Weitere dabei gehoben.
+
+`wer` bleibt trotzdem auf **Suche** und nicht auf **niemand**: Der Ausgang
+haengt an `mittel`, einer Annahme. Eine Annahme als Urteil zu buchen waere
+derselbe Fehler in die andere Richtung.
+
+Kostet keinen Versuch: zwei Nachrechnungen desselben Kandidaten, keine neue
+Hypothese.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

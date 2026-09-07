@@ -32,6 +32,8 @@ from dataclasses import dataclass
 __all__ = [
     "AUSSICHT",
     "AUSSICHT_VERBUND",
+    "PERPETUALPUNKT",
+    "SCHUB",
     "SPOTPUNKT",
     "UEBERHOLT",
     "Aussicht",
@@ -146,6 +148,39 @@ SPOTPUNKT = Referenzpunkt(
     schiefe=3.4646,
     woelbung=15.9173,
 )
+
+#: Der **zweite** Betriebspunkt: Perpetual, mit Hebel und Funding.
+#:
+#: Kein ueberholter Stand und kein zweiter Anwaerter auf "massgeblich" -
+#: derselbe Kandidat auf denselben Daten unter anderen Handelsbedingungen.
+#: ``cli stand`` rechnet ihn primaer, weil die Voraussetzung offen ist
+#: (Befund 112); die Analyse bezieht sich auf ``SPOTPUNKT``.
+#:
+#: **Warum er hier steht** (Befund 235): Ohne ihn liess sich der Verlauf des
+#: Wettrennens nicht rechnen. ``Rennen.bester`` gehoert das, was die **Suche**
+#: hervorgebracht hat - und gesucht wurde unter Perpetual. Wer stattdessen den
+#: Spot-Wert einsetzt, schreibt der Suche einen Gewinn gut, den der Wegfall
+#: des Funding gebracht hat: genau die Falle, die Befund 110 beschreibt und
+#: die die Suche 2,4-mal produktiver aussehen liess. Solange nur ein Punkt
+#: verzeichnet war, blieb dieser Wert eine gepflegte Zahl in einem Prosatext.
+PERPETUALPUNKT = Referenzpunkt(
+    name="Perpetual wie gebaut",
+    befund=235,
+    trades=156,
+    effektiv=115,
+    guete=0.2535,
+    dsr=0.4633,
+    bestanden=7,
+    gesamt=11,
+    versuche=198,
+    schiefe=3.4934,
+    woelbung=16.1849,
+)
+
+#: Was der Wegfall des Funding an Guete je Trade bringt - **gerechnet, nicht
+#: gepflegt.** In Befund 108 stand dafuer 0,0168 als feste Zahl; heute sind es
+#: 0,0173, und niemand haette es bemerkt.
+SCHUB = round(SPOTPUNKT.guete - PERPETUALPUNKT.guete, 4)
 
 #: Staende, die einmal massgeblich waren und es nicht mehr sind. Wer einen
 #: dieser Werte in einem Modulkopf liest, liest Geschichte.

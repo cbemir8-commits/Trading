@@ -48,14 +48,21 @@ Was den Zustand aendern kann
 Gemessen, mit Fundstelle, und danach geordnet, wer es tun kann:
 
     Sperre        Boersendaten fehlen                     Nutzer   102
-    Bedingung     +30 unabhaengige Beobachtungen          keiner   111
-    Bedingung     +8,0 % Guete am Spot-Punkt              Suche    108
+    Bedingung     +75 unabhaengige Beobachtungen          keiner   111
+    Bedingung     +24,3 % Guete am Spot-Punkt             Suche    108
     Klaerung      Perpetual oder Spot?                    Nutzer   112
     Klaerung      echte Funding-Raten                     Nutzer   100
 
-Die beiden Bedingungen sind gemessen aussichtslos: Die Quellen fuer
-Beobachtungen sind geschlossen (Maerkte 27, Historie 14), und die Suche
-braeuchte rund 5.951 Versuche bei einem Budget, das bei 230 endet (110).
+**Die beiden Bedingungen werden gerechnet** (Befund 235). Sie standen hier
+elf Befunde lang als fester Text - "+30 Beobachtungen", "+8,0 % Guete", "rund
+5.951 Versuche" - und trugen damit den Stand von Befund 108/110/111, als die
+effektive Stichprobe noch bei 152 lag. Alle drei Zahlen waren zu guenstig; die
+Guete-Luecke auf gut das Dreifache.
+
+Beide sind gemessen aussichtslos: Die Quellen fuer Beobachtungen sind
+geschlossen (Maerkte 27, Historie 14), und die Ideenstreuung der Suche liegt
+inzwischen unter dem, was Zufall bei 115 Beobachtungen hergibt - das
+Wettrennen aus Befund 110 holt nicht mehr auf.
 
 Bleiben drei Zeilen, und alle drei stehen beim Nutzer. Das ist keine Ausrede,
 sondern das Ergebnis: **Aus diesem Container heraus gibt es keinen Schritt
@@ -211,11 +218,119 @@ class Lage:
         )
 
 
+def _beobachtungen() -> Schritt:
+    """Wieviele unabhaengige Beobachtungen noch fehlen - **gerechnet.**
+
+    Bis Befund 235 stand hier "30 unabhaengige Beobachtungen ... 152 sind da,
+    182 traegt das DSR-Gate": die Zahlen aus Befund 111, festgeschrieben, als
+    die effektive Stichprobe noch bei 152 lag. Die Blockkorrekturen haben sie
+    gesenkt, und ein kleineres n verlangt ein groesseres Ziel - die Entfernung
+    war damit nach beiden Seiten zu kurz.
+
+    Was heute herauskommt, steht im Bericht und nicht hier: Ein Modulkopf wird
+    als Stand gelesen, und das war der ganze Fehler.
+    """
+    from research.referenz import SPOTPUNKT
+
+    noetig = SPOTPUNKT.noetiges_n()
+    fehlend = "?" if noetig is None else str(noetig - SPOTPUNKT.effektiv)
+    ziel = "?" if noetig is None else str(noetig)
+    return Schritt(
+        name=f"+{fehlend} unabhaengige Beobachtungen",
+        art=Art.BEDINGUNG,
+        wer=Wer.NIEMAND,
+        befund=111,
+        hinweis=(
+            f"{SPOTPUNKT.effektiv} sind da, {ziel} traegt das DSR-Gate. Die "
+            f"Quellen sind gemessen geschlossen: Maerkte (Nr. 27), Historie "
+            f"(Nr. 14)."
+        ),
+    )
+
+
+def _guetelucke() -> Schritt:
+    """Wieviel Guete am Spot-Punkt fehlt - und ob die Suche sie einholt.
+
+    **Beides gerechnet, und beides stand hier falsch** (Befund 235). Die Zeile
+    hiess "+8,0 % Guete am Spot-Punkt" mit dem Hinweis "rund 5.951 Versuche"
+    und trug damit den Stand von Befund 108/110 - Guete 0,2765 bei einer
+    effektiven Stichprobe von 152.
+
+    Der Bericht hebt genau diese Zeile als das hervor, was hier laufen wuerde.
+    Sie ist die letzte, an der eine Untertreibung teuer ist - deshalb stehen
+    die heutigen Zahlen nicht in diesem Kopf, sondern kommen aus der Rechnung
+    darunter.
+    """
+    import math
+
+    from research.referenz import PERPETUALPUNKT, SCHUB, SPOTPUNKT
+    from research.verbund import noetige_guete
+    from research.wettrennen import Rennen
+
+    def komma(x: float) -> str:
+        return f"{x:.4f}".replace(".", ",")
+
+    punkt = SPOTPUNKT
+    latte = noetige_guete(
+        punkt.effektiv, punkt.versuche, schiefe=punkt.schiefe, woelbung=punkt.woelbung
+    )
+    erreicht = punkt.guete * math.sqrt(punkt.effektiv)
+    anteil = (
+        f"{latte / erreicht - 1:+.1%}".replace(".", ",").replace("%", " %")
+        if latte
+        else "?"
+    )
+
+    # ``bester`` gehoert das, was die **Suche** hervorgebracht hat, und gesucht
+    # wurde unter Perpetual; der Wegfall des Funding kommt als Schub obendrauf.
+    # Den Spot-Wert einzusetzen waere die Falle aus Befund 110.
+    rennen = Rennen(
+        bester=PERPETUALPUNKT.guete,
+        versuche=punkt.versuche,
+        trades=punkt.effektiv,
+        schub=SCHUB,
+        schiefe=punkt.schiefe,
+        woelbung=punkt.woelbung,
+    )
+    wo = rennen.wo_holt_sie_auf()
+    streuung = rennen.streuung
+    if wo != "nie":
+        lauf = f"Die Suche holt auf bei {wo} (Nr. 110)"
+    elif streuung is None:
+        # Nicht kalibrierbar ist etwas anderes als 'unter dem Zufall', und die
+        # Begruendung darf nicht schaerfer sein als die Rechnung.
+        lauf = "Die Suche holt sie nach diesem Modell nicht mehr ein (Nr. 110)"
+    else:
+        lauf = (
+            f"Die Suche holt sie nach diesem Modell nicht mehr ein - die "
+            f"Ideenstreuung liegt mit {komma(streuung)} unter dem, was Zufall "
+            f"bei {punkt.effektiv} Beobachtungen hergibt "
+            f"({komma(rennen.nullstreuung)}, Nr. 110)"
+        )
+    return Schritt(
+        name=f"{anteil} Guete am Spot-Punkt",
+        art=Art.BEDINGUNG,
+        # **Bleibt bei der Suche, auch wenn das Rennen 'nie' sagt.** Sie laeuft,
+        # das Budget hat 32 Versuche uebrig, und der Ausgang haengt an
+        # 'mittel' - einer Annahme, keiner Messung. Sie hier auf 'niemand' zu
+        # setzen hiesse, eine Annahme als Urteil zu buchen.
+        wer=Wer.SUCHE,
+        befund=108,
+        hinweis=(
+            f"{lauf}; das Budget endet bei 230, verbraucht sind {punkt.versuche}."
+        ),
+    )
+
+
 #: Der Stand, wie er gemessen ist. Jede Zeile mit Fundstelle.
 #:
 #: Bewusst hier und nicht im Bericht zusammengesetzt: Wer eine Zeile aendert,
 #: aendert sie an einer Stelle, und der Test prueft die Fundstellen gegen das
 #: Laborbuch.
+#:
+#: **Die beiden Bedingungen werden gerechnet, nicht geschrieben** (Befund 235).
+#: Sie standen elf Befunde lang auf dem Stand von 108/110/111 und haben die
+#: verbleibende Aufgabe damit auf ein Drittel verkuerzt.
 STAND: tuple[Schritt, ...] = (
     Schritt(
         name="Boersendaten fehlen",
@@ -228,26 +343,8 @@ STAND: tuple[Schritt, ...] = (
             "wie viele Gates halten. 'cli backfill --intervall D --von 2017-08-16'."
         ),
     ),
-    Schritt(
-        name="30 unabhaengige Beobachtungen",
-        art=Art.BEDINGUNG,
-        wer=Wer.NIEMAND,
-        befund=111,
-        hinweis=(
-            "152 sind da, 182 traegt das DSR-Gate. Die Quellen sind gemessen "
-            "geschlossen: Maerkte (Nr. 27), Historie (Nr. 14)."
-        ),
-    ),
-    Schritt(
-        name="+8,0 % Guete am Spot-Punkt",
-        art=Art.BEDINGUNG,
-        wer=Wer.SUCHE,
-        befund=108,
-        hinweis=(
-            "Die Suche braeuchte rund 5.951 Versuche (Nr. 110); das Budget "
-            "endet bei 230, verbraucht sind 198."
-        ),
-    ),
+    _beobachtungen(),
+    _guetelucke(),
     Schritt(
         name="Perpetual oder Spot?",
         art=Art.KLAERUNG,

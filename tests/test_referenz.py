@@ -431,3 +431,107 @@ class TestJederStandKenntSeineKerzenlaenge:
         assert "SPOTPUNKT.intervall == intervall" in quelle, (
             "der Bestand wird wieder auf jede Gerade gelegt"
         )
+
+
+@pytest.mark.langsam
+def test_der_perpetualpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
+    """Dasselbe fuer den zweiten Betriebspunkt (Befund 235).
+
+    ``PERPETUALPUNKT`` ist gebaut worden, damit ``Rennen.bester`` das bekommt,
+    was die **Suche** hervorgebracht hat. Eine gepflegte Zahl ohne Gegenprobe
+    waere genau die Sorte, gegen die dieses Modul steht - und diese hier steuert
+    die Aussage, ob das Wettrennen noch aufholt.
+
+    Er dauert. Das ist der Preis dafuer, dass die Zahl nicht wegdriftet.
+    """
+    from decimal import Decimal
+
+    import cli
+    from backtest.engine import BacktestConfig
+    from backtest.portfolio_walkforward import (
+        common_range,
+        run_portfolio_walkforward,
+    )
+    from core.config import get_settings
+    from core.models import Interval
+    from data.store import CandleStore
+    from research.admission import load_trials
+    from research.gates import evaluate_gates, stichprobe_wie_im_gate
+    from research.randschnitt import ohne_zensierte
+    from research.referenz import PERPETUALPUNKT, SCHUB, SPOTPUNKT
+    from research.seeds import spitzenkandidat
+    from research.suchbudget import Kandidat
+    from strategy.compiler import compile_genome
+
+    einstellungen = get_settings()
+    symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
+    speicher = CandleStore(einstellungen.paths.data_store)
+    frames = common_range({x: speicher.read(x, Interval("D")) for x in symbole})
+    if any(f.empty for f in frames.values()):
+        pytest.skip("keine Kerzen im Speicher")
+
+    versuche = load_trials(Path(einstellungen.paths.state) / "trials.json")
+    assert versuche == PERPETUALPUNKT.versuche
+
+    # **Der Perpetual-Punkt ist der ungeaenderte Kandidat**: mit Hebel und mit
+    # Funding, so wie 'cli stand' ihn primaer rechnet. Kein 'fraction = 1.0'
+    # und kein Nullsatz - das ist der Spot-Punkt daneben.
+    genom = spitzenkandidat()
+    configs = {
+        x: BacktestConfig(
+            instrument=cli._fallback_instrument(cli._bybit_kontrakt(x)),
+            risk=einstellungen.risk,
+            initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=cli._terminkalender(einstellungen) or None,
+        )
+        for x in symbole
+    }
+
+    bericht = run_portfolio_walkforward(
+        frames, lambda: compile_genome(genom), configs
+    )
+    ergebnisse = evaluate_gates(
+        genom, bericht, next(iter(frames.values())), configs[symbole[0]],
+        trials_so_far=versuche, frames=frames, configs=configs,
+    )
+    dsr = next(r for r in ergebnisse.results if r.name == "Deflated Sharpe")
+
+    gehandelt = ohne_zensierte(bericht)
+    stichprobe = stichprobe_wie_im_gate(
+        gehandelt.all_trades,
+        beine=getattr(bericht, "beine", None),
+        bloecke=[[float(t.net_pnl) for t in w.trades] for w in gehandelt.windows],
+    )
+    kandidat = Kandidat.aus_trades(genom.name, gehandelt.all_trades)
+    assert kandidat is not None
+
+    assert len(gehandelt.all_trades) == PERPETUALPUNKT.trades
+    assert stichprobe.effektiv == PERPETUALPUNKT.effektiv
+    assert float(dsr.value) == pytest.approx(PERPETUALPUNKT.dsr, abs=5e-4)
+    assert kandidat.sharpe_je_trade == pytest.approx(PERPETUALPUNKT.guete, abs=5e-5)
+    assert kandidat.schiefe == pytest.approx(PERPETUALPUNKT.schiefe, abs=5e-5)
+    assert kandidat.woelbung == pytest.approx(PERPETUALPUNKT.woelbung, abs=5e-5)
+    assert sum(1 for r in ergebnisse.results if r.passed) == PERPETUALPUNKT.bestanden
+    assert len(ergebnisse.results) == PERPETUALPUNKT.gesamt
+
+    # **Der Schub ist die Differenz der beiden Punkte, nicht die 0,0168 aus
+    # Befund 108.** Er geht in 'Rennen.schub' und entscheidet mit darueber, ob
+    # das Wettrennen aufholt.
+    gemessener_schub = SPOTPUNKT.guete - kandidat.sharpe_je_trade
+    assert gemessener_schub == pytest.approx(SCHUB, abs=1e-4)
+
+
+def test_die_beiden_betriebspunkte_unterscheiden_sich_nur_im_handel() -> None:
+    """Derselbe Kandidat, dieselben Daten - Spot ist besser, aber kein Fund.
+
+    Wer den Spot-Wert fuer ein Suchergebnis haelt, schreibt der Suche einen
+    Gewinn gut, den der Wegfall des Funding gebracht hat (Befund 110).
+    """
+    from research.referenz import PERPETUALPUNKT, SPOTPUNKT
+
+    assert PERPETUALPUNKT.trades == SPOTPUNKT.trades
+    assert PERPETUALPUNKT.effektiv == SPOTPUNKT.effektiv
+    assert PERPETUALPUNKT.guete < SPOTPUNKT.guete
+    assert PERPETUALPUNKT.dsr < SPOTPUNKT.dsr
+    assert PERPETUALPUNKT.bestanden < SPOTPUNKT.bestanden

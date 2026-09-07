@@ -1197,6 +1197,20 @@ BEHOBEN: tuple[Richtung, ...] = (
         "beiden Sweeps melden ihre Kosten von selbst",
         233,
     ),
+    # Die zweiundzwanzigste Stelle aus dem Kopf von 'referenz.py' - und die
+    # eine, die der Bericht als naechsten Schritt hervorhebt.
+    Richtung(
+        "Die Handlungsliste stand auf dem Stand von Befund 108",
+        "'WAS DEN ZUSTAND AENDERN KANN' trug feste Zahlen aus einer Zeit mit "
+        "effektiver Stichprobe 152 - die Guete-Luecke stand dort auf einem "
+        "Drittel des gemessenen Werts, und das Wettrennen aus Befund 110 holt "
+        "inzwischen gar nicht mehr auf, weil die Nullstreuung ueber die "
+        "Ideenstreuung gestiegen ist. Beide Bedingungen werden jetzt gerufen "
+        "statt geschrieben; die Zahlen stehen im Bericht, nicht hier. Dafuer "
+        "steht 'PERPETUALPUNKT' neben 'SPOTPUNKT', weil 'Rennen.bester' das "
+        "braucht, was die Suche hervorgebracht hat",
+        235,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
