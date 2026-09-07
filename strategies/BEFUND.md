@@ -21357,3 +21357,93 @@ Zeile im Bericht auch.
 
 Kostet keinen Versuch: nachgerechnet, nichts gehandelt.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertneununddreissig. Die halbe letzte Tageskerze
+
+Befund 213 hat `data/resample.py` als gebaut und unverdrahtet gefunden und
+eine Frage offen gelassen, die seither unter *gemessen und offen* stand:
+**Gehoeren Tageskerzen abgeleitet oder geladen?** Der Vermerk dazu lautete,
+sie beruehre jede Zahl des Projekts und sei ungeprueft.
+
+Beide Reihen liegen im Speicher. Also nebeneinandergelegt.
+
+### Die Antwort auf die gestellte Frage
+
+Auf den 2.344 Tagen, die BTC und ETH gemeinsam haben:
+
+    open    2.343 von 2.344 bitgleich
+    high    2.343 von 2.344
+    low     2.344 von 2.344
+    close   2.343 von 2.344
+
+**Die beiden Wege stimmen ueberein.** "Abgeleitet oder geladen" ist keine
+Frage der Richtigkeit - jedenfalls nicht fuer die Daten, die vorliegen.
+
+### Die Ausnahme ist der eigentliche Fund
+
+Es ist in beiden Maerkten dieselbe Kerze: die letzte.
+
+    2026-08-29  BTC   geladen        abgeleitet     Unterschied
+    high              77.957,10      78.328,63      +0,48 %
+    close             77.643,97      78.235,02      +0,76 %
+    Volumen              419,40         809,27      52 %
+
+Die gespeicherte Tageskerze deckt **rund die Haelfte ihres Tages** - der
+Backfill hat sie gegen 11:00 UTC geschrieben und nie nachgezogen - und steht
+in der Reihe wie eine volle. `open` und `low` stimmen, weil beide frueh
+fallen; `high` und `close` fehlt der halbe Tag.
+
+Das ist genau der Fallstrick, vor dem `resample.py` in seinem Kopf warnt:
+
+> *"Sie handelt damit auf einem Schlusskurs, den es zu diesem Zeitpunkt noch
+> nicht gab. Das ist Lookahead, und zwar der unauffaellige: Es betrifft nur
+> die letzte Kerze, faellt in keiner Stichprobe auf und verschiebt trotzdem
+> jedes Ergebnis am rechten Rand - also genau dort, wo der Walk-Forward seine
+> Testfenster hat."*
+
+Nur sitzt er nicht im Code. `resample` wirft angefangene Kerzen weg; der
+**Backfill** hat eine geschrieben. Die Vorsichtsmassnahme steht an der Stelle,
+die nicht benutzt wird, und fehlt an der, die benutzt wird.
+
+Die zweite Abweichung, `open` am 2020-04-26, betrifft nur diese eine Spalte
+und beide Maerkte gleichermassen - eine Unstimmigkeit zwischen zwei Feeds
+derselben Boerse, kein Ableitungsfehler.
+
+### Was er kostet: nichts
+
+Gerechnet, nicht vermutet - derselbe Kandidat am Spot-Punkt, einmal mit und
+einmal ohne die letzte Tageskerze:
+
+    Trades 156   n_eff 115   Guete 0,2708   DSR 0,5881   9/11 Gates
+    cagr 14,3391 %   Rueckgang 9,8687 %
+
+Beide Male identisch, auf vier Stellen. Der Nachlauf aus Befund 151 und der
+Randschnitt aus Befund 152 halten den Datenrand aus der Statistik heraus. Sie
+sind fuer genau diesen Fall gebaut worden, und sie tragen ihn.
+
+**Das ist aber eine Eigenschaft des Nachlaufs und keine der Daten.** Wird er
+kuerzer, ruecken die Testfenster nach, oder kommt ein Vorrat ohne diesen
+Puffer dazu, steht der Fehler im Ergebnis. Ein Fund, der heute nichts kostet,
+ist kein Fund, der nichts kostet.
+
+### Was gebaut wurde
+
+`data/gegenprobe.py`: legt eine grobe Reihe gegen die aus einer feineren
+abgeleitete und meldet, wo sie sich unterscheiden. Die angefangene Randkerze
+bekommt eine eigene Frage (`angefangene_randkerze`), weil sie an den Preisen
+allein nicht von einem ruhigen Tag zu unterscheiden ist - erkannt wird sie am
+**Volumenanteil**, mit einer Schwelle bei 99 %, damit eine nachtraeglich
+eingebuchte Handvoll Trades keine taegliche Warnung ausloest.
+
+`volume` steht bewusst nicht unter den verglichenen Preisspalten: Es weicht
+schon bei einer Nachbuchung ab und wuerde die Preisfrage zudecken.
+
+### Was offen bleibt
+
+Ob `CandleStore.read` kuenftig ableiten soll. Dass beide Wege
+uebereinstimmen, beantwortet das **nicht** - es nimmt der Frage nur die
+Dringlichkeit. Sie ist jetzt eine Frage der Herkunft und nicht mehr der
+Richtigkeit, und sie steht weiter unter *gemessen und offen*.
+
+Kostet keinen Versuch: zwei vorhandene Reihen verglichen, nichts gehandelt.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

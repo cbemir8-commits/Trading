@@ -1362,17 +1362,20 @@ OFFEN: tuple[Richtung, ...] = (
         186,
         195,
     ),
-    # **Gebaut, getestet, nie aufgerufen** - und die Frage dahinter faellt
-    # nicht nebenbei. Sie steht hier und nicht unter BEHOBEN, weil nichts
-    # entschieden ist: Befund 213 hat sie gefunden, nicht beantwortet.
+    # Gemessen beantwortet in 239 - aber nicht in beide Richtungen: Dass die
+    # Wege uebereinstimmen, heisst nicht, dass 'CandleStore.read' ableiten
+    # soll. Der Vorrat ist geprueft, die Bauentscheidung steht offen.
     Richtung(
         "Tageskerzen ableiten statt laden?",
-        "'data/resample.py' fasst Kerzen zusammen, wirft angefangene weg und "
-        "ist getestet - 'teilbar(15m, D)' gilt. Aufgerufen wird es "
-        "ausserhalb seiner Tests nirgends, und 'CandleStore.read' faellt "
-        "nicht darauf zurueck. Ob D abgeleitet oder geladen gehoert, "
-        "beruehrt jede Zahl des Projekts und ist ungeprueft",
+        "beide Wege stimmen ueberein: von 2.344 gemeinsamen Tagen weichen "
+        "zwei ab, und 'low' auf keinem einzigen. Die eine ist der Fund - die "
+        "letzte gespeicherte Tageskerze traegt rund die Haelfte des Volumens "
+        "ihres Tages und steht wie eine volle da; 'data.gegenprobe' findet "
+        "sie. Sie kostet nichts, Nachlauf und Randschnitt halten den Rand aus "
+        "der Statistik. Ob 'read' kuenftig ableiten soll, ist damit keine "
+        "Frage der Richtigkeit mehr, sondern der Herkunft - und offen",
         213,
+        zuletzt=239,
     ),
     # Einer von fuenf traegt ihn jetzt; die uebrigen sind ungeprueft.
     Richtung(
