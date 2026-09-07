@@ -21447,3 +21447,59 @@ Richtigkeit, und sie steht weiter unter *gemessen und offen*.
 
 Kostet keinen Versuch: zwei vorhandene Reihen verglichen, nichts gehandelt.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertvierzig. Die Wache, die ich fast selbst vergessen haette
+
+Befund 239 hat die angefangene Randkerze gefunden und `data/gegenprobe.py`
+dafuer gebaut. Am Ende des Laufs stand ein Modul, das von nichts ausser seinen
+eigenen Tests gerufen wurde.
+
+Das ist genau der Zustand, den Befund 213 an `resample.py` gefunden hat - dem
+Modul, auf dem diese Pruefung aufsetzt. Zwei Befunde spaeter haette dasselbe
+fuer meine eigene Arbeit gegolten.
+
+### Wo sie hingehoert
+
+`cli quality` laeuft ohnehin ueber jede Reihe im Speicher. Die Gegenprobe
+braucht nur eine zweite: die feinste, aus der sich die gepruefte bilden laesst.
+`_feinste_teilbare` sucht sie, `check_candles` nimmt sie entgegen.
+
+**Feinste, nicht irgendeine.** Mehr Bausteine beziffern eine angefangene Kerze
+genauer: Aus Viertelstunden ist ein halber Tag ein halber, aus
+Vier-Stunden-Kerzen waeren es drei von sechs. Gibt es keine, entfaellt die
+Pruefung - eine Heuristik auf den Preisen allein waere hier schlechter als
+keine Antwort, weil ein halber Tag aussieht wie ein ruhiger.
+
+### Warnung, nicht Fehler
+
+`cli quality` bricht mit Code 2 ab, wenn eine Reihe nicht backtestfaehig ist.
+Die Randkerze ist das nicht: Befund 239 hat gemessen, dass mit und ohne sie
+alle Zahlen des Bestands gleich sind. Sie als Fehler zu fuehren waere
+schaerfer als die Messung hergibt - und die Sorte Verschaerfung, die man
+spaeter wieder herausnimmt, weil sie staendig anschlaegt.
+
+### Was der Lauf zeigt
+
+    BTCUSD_BITSTAMP 1d   ! Die letzte Kerze traegt nur 52 % ...
+    ETHUSD_BITSTAMP 1d   ! Die letzte Kerze traegt nur 49 % ...
+    LTCUSD_BITSTAMP 1d   (keine feinere Reihe - nicht geprueft)
+    XRPUSD_BITSTAMP 1d   (keine feinere Reihe - nicht geprueft)
+
+Nebenbei sichtbar geworden: LTC und XRP haben Tageskerzen bis zum 2026-09-02,
+BTC und ETH nur bis zum 2026-08-29. Der Tageskerzen-Backfill der beiden
+Hauptmaerkte ist vier Tage im Rueckstand - und endet genau auf der halben
+Kerze. Beides faellt jetzt beim Pruefen auf.
+
+### Was mir daran auffaellt
+
+Der Befund davor hat einen Fallstrick gefunden, der im Code sauber vermieden
+und in den Daten trotzdem vorhanden war. Dieser hier haette einen gebaut, der
+sauber geprueft und nirgends gerufen wird.
+
+"Gebaut, richtig, unverdrahtet" ist in diesem Laborbuch inzwischen ein
+stehender Eintrag - 145, 210, 213, 236. Ihn beim eigenen Modul zu vermeiden
+kostet zwanzig Zeilen; ihn drei Befunde spaeter zu finden, kostet einen
+Befund.
+
+Kostet keinen Versuch: verdrahtet und geprueft, nichts gehandelt.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

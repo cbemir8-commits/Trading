@@ -197,3 +197,124 @@ class TestAmEchtenVorrat:
 
         assert g.angefangene_randkerze
         assert g.volumenanteil < 0.6
+
+
+class TestDiePruefungWirdGerufen:
+    """**Befund 240.** Ein Bauteil, das niemand ruft, ist in diesem Projekt
+    schon mehrfach aufgefallen - zuletzt ``resample.py`` selbst (Befund 213),
+    das dieser Pruefung zugrunde liegt. ``gegenprobe`` waere das naechste
+    gewesen: gebaut in 239, gerufen von nichts ausser seinen Tests.
+    """
+
+    @staticmethod
+    def _paar() -> tuple[pd.DataFrame, pd.DataFrame]:
+        voll = _viertelstunden(5)
+        halb = _viertelstunden(5, kappen=48)
+        from data.resample import resample
+
+        return resample(halb, Interval("15"), Interval.D1, vollstaendig=False), voll
+
+    def test_check_candles_meldet_die_angefangene_randkerze(self) -> None:
+        from data.quality import Severity, check_candles
+
+        grob, fein = self._paar()
+
+        bericht = check_candles(
+            grob,
+            symbol="TEST",
+            interval=Interval.D1,
+            feiner=fein,
+            feiner_intervall=Interval("15"),
+        )
+        codes = {f.code: f for f in bericht.findings}
+
+        assert "randkerze" in codes
+        assert codes["randkerze"].severity is Severity.WARN
+
+    def test_sie_macht_die_reihe_nicht_unbrauchbar(self) -> None:
+        """Gemessen kostet sie am Bestand nichts (Befund 239). Die Reihe
+        deshalb zu sperren waere schaerfer als die Messung hergibt."""
+        from data.quality import check_candles
+
+        grob, fein = self._paar()
+
+        bericht = check_candles(
+            grob,
+            symbol="TEST",
+            interval=Interval.D1,
+            feiner=fein,
+            feiner_intervall=Interval("15"),
+        )
+
+        assert bericht.is_usable
+
+    def test_ohne_feinere_reihe_entfaellt_sie(self) -> None:
+        """Keine Heuristik: An den Preisen allein sieht ein halber Tag aus wie
+        ein ruhiger."""
+        from data.quality import check_candles
+
+        grob, _ = self._paar()
+
+        bericht = check_candles(grob, symbol="TEST", interval=Interval.D1)
+
+        assert "randkerze" not in {f.code for f in bericht.findings}
+
+    def test_eine_unteilbare_reihe_wird_nicht_verglichen(self) -> None:
+        """Aus Tageskerzen entstehen keine Tageskerzen."""
+        from data.quality import check_candles
+
+        fein = _viertelstunden(5)
+        grob = _tage_aus(fein)
+
+        bericht = check_candles(
+            grob,
+            symbol="TEST",
+            interval=Interval.D1,
+            feiner=grob,
+            feiner_intervall=Interval.D1,
+        )
+
+        assert "gegenprobe" not in {f.code for f in bericht.findings}
+
+    def test_der_befehl_uebergibt_die_feinere_reihe(self) -> None:
+        """Ohne diese Zeile bliebe die Pruefung ein Modul ohne Aufrufer."""
+        import ast
+        from pathlib import Path
+
+        baum = ast.parse(Path("cli.py").read_text())
+        quelle = next(
+            ast.unparse(n)
+            for n in ast.walk(baum)
+            if isinstance(n, ast.FunctionDef) and n.name == "quality"
+        )
+
+        assert "feiner=" in quelle
+        assert "_feinste_teilbare" in quelle
+
+
+class TestDerSchiedsrichterWirdGewaehlt:
+    def test_die_feinste_teilbare_gewinnt(self) -> None:
+        """Mehr Bausteine beziffern eine angefangene Kerze genauer."""
+        import cli
+
+        vorhanden = [
+            ("BTC", Interval("15")),
+            ("BTC", Interval("240")),
+            ("BTC", Interval.D1),
+        ]
+
+        assert cli._feinste_teilbare(vorhanden, "BTC", Interval.D1) is Interval("15")
+
+    def test_andere_maerkte_zaehlen_nicht(self) -> None:
+        import cli
+
+        vorhanden = [("ETH", Interval("15")), ("BTC", Interval.D1)]
+
+        assert cli._feinste_teilbare(vorhanden, "BTC", Interval.D1) is None
+
+    def test_ohne_feinere_reihe_gibt_es_keinen(self) -> None:
+        import cli
+
+        vorhanden = [("BTC", Interval.D1)]
+
+        assert cli._feinste_teilbare(vorhanden, "BTC", Interval.D1) is None

@@ -13,6 +13,12 @@ gegen die hier geprueft wird:
   nicht, also duerfen dort auch keine Signale entstehen.
 * **Preissprunge.** Entweder echte Marktereignisse (Flash-Crash) oder kaputte
   Daten. Beides muss man sehen, bevor man einer Kennzahl glaubt.
+* **Angefangene Randkerzen.** Ein Backfill, der mittags laeuft, schreibt einen
+  halben Tag als ganze Tageskerze. Ihr Schlusskurs gehoert einem Zeitpunkt,
+  den es noch nicht gab - Lookahead genau am rechten Rand, wo der
+  Walk-Forward seine Testfenster hat. Erkennbar ist das **nicht** an den
+  Preisen: Ein halber Tag sieht aus wie ein ruhiger. Es braucht eine feinere
+  Reihe als Schiedsrichter, und genau die wird uebergeben (Befund 239).
 
 Die Pruefung loescht nichts. Sie berichtet - die Entscheidung, was mit einer
 Auffaelligkeit passiert, gehoert nicht in eine Pruefroutine.
@@ -120,6 +126,8 @@ def check_candles(
     interval: Interval,
     max_gap_tolerance: float = 0.001,
     extreme_move_sigma: float = 12.0,
+    feiner: pd.DataFrame | None = None,
+    feiner_intervall: Interval | None = None,
 ) -> QualityReport:
     """Zeitreihe pruefen.
 
@@ -127,6 +135,12 @@ def check_candles(
     (Standard 0,1 %). ``extreme_move_sigma`` markiert Preisspruenge jenseits von
     N Standardabweichungen - bei 12 Sigma sind das echte Ausreisser, keine
     normale Volatilitaet.
+
+    ``feiner`` ist eine feinere Reihe desselben Marktes, gegen die
+    gegengeprueft wird (Befund 239). Sie ist der einzige Weg, eine
+    **angefangene Randkerze** zu erkennen: An den Preisen allein ist ein halber
+    Tag nicht von einem ruhigen zu unterscheiden. Fehlt sie, entfaellt die
+    Pruefung - eine Heuristik waere hier schlechter als keine Antwort.
     """
     if frame.empty:
         report = QualityReport(
@@ -155,6 +169,8 @@ def check_candles(
     _check_gaps(frame, interval, report, max_gap_tolerance)
     _check_volume(frame, report)
     _check_extreme_moves(frame, report, extreme_move_sigma)
+    if feiner is not None and feiner_intervall is not None:
+        _check_gegenprobe(frame, feiner, interval, feiner_intervall, report)
 
     if not report.findings:
         report.findings.append(
@@ -294,5 +310,70 @@ def _check_extreme_moves(frame: pd.DataFrame, report: QualityReport, sigma: floa
                 f"Groesster: {worst[1]:+.2f} % am {worst[0]:%Y-%m-%d %H:%M}. "
                 "Entweder echtes Marktereignis oder kaputte Daten - vor "
                 "Kennzahlen-Interpretation ansehen.",
+            )
+        )
+
+
+def _check_gegenprobe(
+    grob: pd.DataFrame,
+    fein: pd.DataFrame,
+    interval: Interval,
+    feiner_intervall: Interval,
+    report: QualityReport,
+) -> None:
+    """Die Reihe gegen eine feinere halten - Befund 239.
+
+    **Warum das hier steht und nicht nur als Modul.** Befund 239 hat die
+    angefangene Randkerze gefunden und ``data/gegenprobe.py`` dafuer gebaut.
+    Ein Bauteil, das niemand ruft, ist in diesem Projekt schon mehrfach
+    aufgefallen - zuletzt ``resample.py`` selbst (Befund 213), das dieser
+    Pruefung zugrunde liegt. Also gerufen, und zwar dort, wo ohnehin geprueft
+    wird.
+
+    **Die angefangene Randkerze ist eine Warnung, kein Fehler.** Gemessen
+    (Befund 239) kostet sie am Bestand nichts: Nachlauf und Randschnitt halten
+    den Datenrand aus der Statistik. Die Reihe deshalb als nicht backtestfaehig
+    auszuweisen waere schaerfer als die Messung hergibt.
+    """
+    from data.gegenprobe import gegenprobe
+    from data.resample import teilbar
+
+    if not teilbar(feiner_intervall, interval):
+        return
+
+    probe = gegenprobe(grob, fein, quelle=feiner_intervall, ziel=interval)
+    if probe.verglichen == 0:
+        return
+
+    if probe.angefangene_randkerze:
+        report.findings.append(
+            Finding(
+                Severity.WARN,
+                "randkerze",
+                f"Die letzte Kerze traegt nur {probe.volumenanteil:.0%} des "
+                f"Volumens ihres Fensters, gemessen an {feiner_intervall.label}. "
+                "Sie ist angefangen und steht wie eine volle in der Reihe - "
+                "Schlusskurs und Hoch gehoeren einem halben Zeitraum. Ein "
+                "erneuter Backfill zieht sie nach.",
+            )
+        )
+
+    # Abweichungen **ohne** die Randkerze: Die ist oben schon erklaert, und
+    # zweimal dieselbe Sache zu melden macht die Ausgabe unlesbar.
+    letzte = max(probe.betroffene_kerzen) if probe.betroffene_kerzen else None
+    uebrig = [
+        a
+        for a in probe.abweichungen
+        if not (probe.angefangene_randkerze and a.zeitpunkt == letzte)
+    ]
+    if uebrig:
+        schlimmste = max(uebrig, key=lambda a: abs(a.relativ))
+        report.findings.append(
+            Finding(
+                Severity.INFO,
+                "gegenprobe",
+                f"{len({a.zeitpunkt for a in uebrig})} von {probe.verglichen} "
+                f"Kerzen weichen von der aus {feiner_intervall.label} "
+                f"abgeleiteten Reihe ab. Groesste: {schlimmste}.",
             )
         )

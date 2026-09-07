@@ -1199,10 +1199,20 @@ def quality(
         console.print("[yellow]Keine Daten zum Pruefen.[/]")
         raise typer.Exit(1)
 
+    vorhanden = list(store.series())
     worst = Severity.INFO
     for symbol, interval in series:
         frame = store.read(symbol, interval)
-        report = check_candles(frame, symbol=symbol, interval=interval)
+        feiner_intervall = _feinste_teilbare(vorhanden, symbol, interval)
+        report = check_candles(
+            frame,
+            symbol=symbol,
+            interval=interval,
+            feiner=(
+                store.read(symbol, feiner_intervall) if feiner_intervall else None
+            ),
+            feiner_intervall=feiner_intervall,
+        )
 
         colour = {
             Severity.INFO: "green",
@@ -1875,6 +1885,27 @@ def _ausschluesse():
     return aus_familienbild(
         Familienbild(regeln=regeln), gescheiterte=gescheiterte
     )
+
+
+def _feinste_teilbare(vorhanden, symbol, interval):
+    """Die feinste im Speicher liegende Reihe, aus der ``interval`` entsteht.
+
+    Der Schiedsrichter fuer die Gegenprobe (Befund 239). "Feinste", weil mehr
+    Bausteine je Kerze eine angefangene Randkerze genauer beziffern: Aus
+    Viertelstunden ist ein halber Tag ein halber, aus Vier-Stunden-Kerzen
+    waeren es drei von sechs.
+
+    ``None``, wenn es keine gibt - dann entfaellt die Pruefung, statt auf eine
+    Heuristik auszuweichen.
+    """
+    from data.resample import teilbar
+
+    passende = [
+        iv
+        for sym, iv in vorhanden
+        if sym == symbol and iv is not interval and teilbar(iv, interval)
+    ]
+    return min(passende, key=lambda iv: iv.duration) if passende else None
 
 
 def _terminkalender(settings):

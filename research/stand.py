@@ -1229,6 +1229,21 @@ BEHOBEN: tuple[Richtung, ...] = (
         237,
         zuletzt=238,
     ),
+    # Der Fund aus 239 und die Wache dagegen aus 240 - zusammen, weil das eine
+    # ohne das andere genau die Sorte Bauteil waere, die 213 gefunden hat.
+    Richtung(
+        "Die letzte Tageskerze war ein halber Tag",
+        "der Backfill schrieb sie mittags und zog sie nie nach: 52 % des "
+        "Volumens, 'high' und 'close' um 0,48 % und 0,76 % zu tief, und in "
+        "der Reihe stand sie wie eine volle. Gemessen kostet sie nichts - mit "
+        "und ohne sie sind alle Zahlen des Bestands gleich, Nachlauf (151) "
+        "und Randschnitt (152) tragen den Rand. Das ist aber eine "
+        "Eigenschaft des Nachlaufs und keine der Daten, deshalb prueft 'cli "
+        "quality' es jetzt gegen die feinste teilbare Reihe im Speicher - "
+        "eine Warnung, kein Fehler",
+        239,
+        zuletzt=240,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
