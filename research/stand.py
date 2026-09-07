@@ -1157,6 +1157,17 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Analysebezug (SPOTPUNKT) - und genau das gehoert vermerkt",
         229,
     ),
+    # Und derselbe Riss lief durch den Bericht - eingebaut von mir in 226.
+    Richtung(
+        "Zwei Luecken in einem Bericht",
+        "das Urteil rechnete sie aus den eigenen Zahlen (+15,0 % am "
+        "Erstpunkt), der Abschnitt 'Wie weit es noch ist' aus SPOTPUNKT "
+        "(+24,3 %) - eine Seite auseinander, ohne Hinweis. Jetzt beide aus "
+        "den eigenen Zahlen; der Preis des Suchens bleibt daneben stehen "
+        "und ist nachgemessen fast punktunabhaengig (1,11 bis 1,26 % ueber "
+        "n_eff 80 bis 584)",
+        230,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -2076,10 +2087,12 @@ class Lage:
         # gelegt: die Luecke ins Urteil, den Preis unter 'Nur auf deinem
         # Rechner'. Wer nur eine liest, bekommt eine Stimmung statt einer
         # Messung.
-        from research.erfuellung import GEMESSEN as BETRIEBSPUNKTE
         from research.verbund import noetige_guete
 
-        tag = next((p for p in BETRIEBSPUNKTE if p.intervall == "D"), None)
+        # **Die Luecke aus den eigenen Zahlen** (Befund 230). Bis dahin kam
+        # sie aus ``erfuellung`` und damit vom Spot-Punkt, waehrend der Kopf
+        # dieses Berichts den Erstpunkt zeigt: Das Urteil sagte +15 %, dieser
+        # Abschnitt +24,3 %, und nichts sagte, dass es zwei Punkte sind.
         heute = noetige_guete(
             SPOTPUNKT.effektiv, self.versuche,
             schiefe=SPOTPUNKT.schiefe, woelbung=SPOTPUNKT.woelbung,
@@ -2088,20 +2101,30 @@ class Lage:
             SPOTPUNKT.effektiv, BUDGET.grenze,
             schiefe=SPOTPUNKT.schiefe, woelbung=SPOTPUNKT.woelbung,
         )
-        if tag is not None and tag.luecke and heute and spaeter:
+        luecke = (
+            self.noetiger_sharpe / self.sharpe_je_trade - 1.0
+            if self.noetiger_sharpe and self.sharpe_je_trade > 0
+            else None
+        )
+        if luecke and heute and spaeter:
             preis = spaeter / heute - 1.0
             zeilen += [
                 "",
                 "  Was das Suchen selbst kostet:",
-                f"     zu schliessende Luecke        {tag.luecke:+7.1%}",
-                f"     Rest des Suchbudgets kostet   {preis:+7.2%}",
+                f"     zu schliessende Luecke        {luecke:+7.1%}"
+                f"   (dieser Betriebspunkt)",
+                f"     Rest des Suchbudgets kostet   {preis:+7.2%}"
+                f"   (fast punktunabhaengig)",
                 "",
                 f"  Der ganze Rest des Budgets hebt die Latte um "
-                f"{preis / tag.luecke:.0%} dessen, was",
-                "  zu schliessen waere. **Nicht der Aufschlag macht die Suche",
-                "  aussichtsarm, sondern die Trefferquote** (Befund 31/221) -",
-                "  und wie langsam der beste Fund nachzieht, rechnet",
-                "  'cli rennen' (Befund 71).",
+                f"{preis / luecke:.0%} dessen, was",
+                "  zu schliessen waere. Der Aufschlag liegt ueber die",
+                "  gemessenen Stichproben von 80 bis 584 zwischen 1,11 % und",
+                "  1,26 % - er haengt kaum am Betriebspunkt, die Luecke sehr",
+                "  wohl. **Nicht der Aufschlag macht die Suche aussichtsarm,",
+                "  sondern die Trefferquote** (Befund 31/221) - und wie",
+                "  langsam der beste Fund nachzieht, rechnet 'cli rennen'",
+                "  (Befund 71).",
             ]
         # Befund 160 hat das hier als **Ueberlegung** hingeschrieben. Befund
         # 161 hat es gemessen, und es ist schlimmer als die Ueberlegung.

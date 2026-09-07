@@ -313,11 +313,48 @@ class TestBeideZahlenStehenNebeneinander:
         assert "zu schliessende Luecke" in text
         assert "Rest des Suchbudgets kostet" in text
 
-    def test_die_luecke_kommt_aus_den_daten(self) -> None:
-        tag = next(p for p in GEMESSEN if p.intervall == "D")
-        assert tag.luecke is not None
+    def test_die_luecke_kommt_aus_dem_bericht_selbst(self) -> None:
+        """**Befund 230.** Sie kam bis dahin aus ``erfuellung`` und damit vom
+        Spot-Punkt, waehrend der Kopf den Erstpunkt zeigt - das Urteil sagte
+        +15 %, dieser Abschnitt +24,3 %, und nichts sagte, dass es zwei
+        Punkte sind.
+        """
+        from research.stand import Lage
 
-        assert f"{tag.luecke:+7.1%}".strip() in self._bericht()
+        lage = Lage(
+            kandidat="Trend 50 Tage mit Konfluenz",
+            maerkte="BTC + ETH, Tageskerzen",
+            trades=152, sharpe_je_trade=0.2597, noetiger_sharpe=0.2987,
+            bestanden=7, gesamt=11, offen=("Messlatte", "Deflated Sharpe"),
+            versuche=198, cagr_pct=13.47, rueckgang_pct=10.64,
+        )
+        eigene = lage.noetiger_sharpe / lage.sharpe_je_trade - 1.0
+
+        assert f"{eigene:+7.1%}".strip() in lage.bericht()
+
+    def test_beide_luecken_im_bericht_sind_dieselbe(self) -> None:
+        """Das Urteil und dieser Abschnitt duerfen nicht zwei Zahlen nennen."""
+        from research.stand import Lage
+
+        lage = Lage(
+            kandidat="Trend 50 Tage mit Konfluenz",
+            maerkte="BTC + ETH, Tageskerzen",
+            trades=152, sharpe_je_trade=0.2597, noetiger_sharpe=0.2987,
+            bestanden=7, gesamt=11, offen=("Messlatte", "Deflated Sharpe"),
+            versuche=198, cagr_pct=13.47, rueckgang_pct=10.64,
+        )
+        text = lage.bericht()
+
+        assert "um mindestens 15%" in text
+        assert "+15.0%   (dieser Betriebspunkt)" in text
+        assert "+24.3%" not in text, "die Zahl vom anderen Punkt"
+
+    def test_der_preis_ist_als_punktunabhaengig_ausgewiesen(self) -> None:
+        """Gemessen ueber n_eff 80 bis 584: 1,11 % bis 1,26 %."""
+        text = self._bericht()
+
+        assert "fast punktunabhaengig" in text
+        assert "1,11 %" in text and "1,26 %" in text
 
     def test_der_preis_ist_gerechnet_und_nicht_geschrieben(self) -> None:
         """Er haengt am Versuchsstand und an der Budgetgrenze - beides

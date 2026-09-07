@@ -20628,3 +20628,78 @@ nehmen, die zur Hand ist.
 
 Kostet keinen Versuch: berichtigt, nichts gemessen.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertdreissig. Zwei Luecken in einem Bericht
+
+Befund 229 hat gezeigt, dass dieses Projekt zwei Betriebspunkte fuehrt und
+sie verschieden benutzt: Der **Erstpunkt** (Perpetual) steht im Kopf des
+Berichts, der **Spot-Punkt** ist der Bezug der Latten- und
+Lueckenrechnungen. Die naechste Frage ist die naheliegende: Zeigt der Bericht
+dann beides durcheinander?
+
+Ja. Und eingebaut habe ich es selbst, vier Befunde vorher.
+
+### Was dastand
+
+Ein Bericht, zwei Zahlen fuer dieselbe Sache:
+
+    Urteil, ganz oben:
+      "Dafuer muesste die Qualitaet je Trade um mindestens 15% steigen:
+       0.2597 auf mindestens 0.2987"
+
+    Wie weit es noch ist:
+      zu schliessende Luecke        +24.3%
+
+Die erste rechnet aus den Zahlen des Berichts - dem Erstpunkt. Die zweite kam
+aus `erfuellung.Betriebspunkt.luecke` und damit vom Spot-Punkt. Beide sind
+richtig, keine steht neben der anderen erklaert, und sie sind eine
+Bildschirmseite auseinander.
+
+Das ist Befund 226 in umgekehrter Richtung: Dort habe ich zwei Zahlen
+zusammengestellt, die getrennt standen. Hier habe ich beim Zusammenstellen
+eine geholt, die nicht dorthin gehoerte.
+
+### Berichtigt
+
+Die Luecke kommt jetzt aus den eigenen Zahlen des Berichts. Sie stimmt damit
+mit dem Urteil ueberein - eine Zahl, nicht zwei.
+
+### Und der Preis haelt der Frage stand
+
+Beim Nachsehen, ob der **Preis** des Suchens dasselbe Problem hat, kam etwas
+Angenehmes heraus. Er ist der relative Anstieg der Latte von 198 auf 230
+Versuche, und die Stichprobe kuerzt sich dabei fast heraus:
+
+    n_eff   80    +1,2577 %
+    n_eff  112    +1,1876 %
+    n_eff  115    +1,1839 %
+    n_eff  136    +1,1645 %
+    n_eff  152    +1,1546 %
+    n_eff  300    +1,1228 %
+    n_eff  584    +1,1120 %
+
+    n_eff 115, Normalverteilung statt der gemessenen Momente   +1,1216 %
+
+**1,11 % bis 1,26 % ueber den ganzen gemessenen Bereich**, und die
+Verteilungsform aendert daran fast nichts. Der Preis ist damit die einzige
+Zahl dieser Serie, die man ohne Betriebspunkt nennen darf - und das steht
+jetzt auch dabei.
+
+Die Luecke ist es nicht: Sie geht von +15,0 % am Erstpunkt auf +24,3 % am
+Spot-Punkt. Beide Zahlen im selben Abschnitt zu nennen, ohne zu sagen welche
+wo gilt, war der Fehler.
+
+### Was mir daran auffaellt
+
+Elf Faelle derselben Bauart in dieser Serie, und die letzten vier sind meine.
+Die Erklaerung, die ich mir bisher gegeben habe - Unaufmerksamkeit - traegt
+nicht mehr. Was tatsaechlich passiert, ist regelmaessiger: Ich brauche an
+einer Stelle eine Zahl, greife die naechstliegende, und die naechstliegende
+ist die, die ich zuletzt gerechnet habe.
+
+Dagegen hilft keine Aufmerksamkeit, sondern die Frage, die im Kopf von
+`erfuellung` seit Befund 220 steht und die ich beim Bauen dieses Abschnitts
+nicht gestellt habe: **Von welchem Punkt ist diese Zahl?**
+
+Kostet keinen Versuch: berichtigt und nachgemessen, ohne neue Hypothese.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
