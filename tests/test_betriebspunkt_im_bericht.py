@@ -95,8 +95,14 @@ class TestMarktkombinationenTraegtIhn:
 
         assert "console.print" in quelle[i : i + 400]
 
-    def test_der_hinweis_nennt_den_gepflegten_punkt(self) -> None:
-        assert "Spot (Befund 108/152)" in self._quelle()
+    def test_der_hinweis_ordnet_ihn_ein(self) -> None:
+        """Nicht nur "Perpetual", sondern wozu das im Verhaeltnis steht:
+        derselbe Erstpunkt wie bei ``cli stand``, und der Spot-Punkt ist der,
+        auf den sich die Lattenrechnungen beziehen (Befund 229)."""
+        quelle = self._quelle()
+
+        assert "Erstpunkt" in quelle
+        assert "Spot-Punkt" in quelle
 
 
 class TestDerBefundSelbst:
@@ -119,3 +125,64 @@ class TestDerBefundSelbst:
 
         assert perp.dsr - SPOTPUNKT.dsr > 0.15
         assert perp.bestanden != SPOTPUNKT.bestanden
+
+
+class TestWelcherPunktWoGilt:
+    """**Befund 229.** Berichtigung von 228: Anzeige und Analysebezug sind
+    verschiedene Punkte, und beide sind gepflegt.
+
+    ``cli stand`` rechnet **primaer** auf Perpetual und zeigt den Spot-Punkt
+    als ``zweitpunkt`` daneben ("Ohne Funding steht er bei ... statt ..."),
+    seit Befund 108. Die Latten- und Lueckenrechnungen dieses Projekts
+    beziehen sich dagegen auf ``SPOTPUNKT``.
+
+    Befund 228 hat aus ``SPOTPUNKT`` abgelesen, ``cli stand`` sage 9 von 11,
+    und daraus einen Widerspruch zum Marktkombinationsbericht gemacht. Es
+    war keiner: Dessen 7 von 11 sind der Erstpunkt.
+    """
+
+    def test_stand_rechnet_primaer_ohne_die_spot_helfer(self) -> None:
+        """Der Erstlauf nimmt das rohe Genom und die Vorgabekonfiguration."""
+        baum = ast.parse(Path("cli.py").read_text())
+        fn = next(
+            n for n in ast.walk(baum)
+            if isinstance(n, ast.FunctionDef) and n.name == "stand"
+        )
+        quelle = ast.unparse(fn)
+
+        assert "_spotpunkt(" in quelle, "der zweite Punkt wird gerechnet"
+        i = quelle.index("_spotpunkt(")
+        assert "_ohne_hebel" not in quelle[:i], "der erste Lauf ist der Perpetual"
+
+    def test_der_zweite_punkt_wird_gemessen_und_nicht_nachgeschlagen(self) -> None:
+        """Sonst waere es eine zweite Kopie neben dem Lauf - der Fehler aus
+        den Befunden 101, 103 und 109."""
+        quelle = inspect.getsource(cli._spotpunkt)
+
+        assert "run_portfolio_walkforward" in quelle
+        assert "0.8640" not in quelle and "0,8640" not in quelle
+
+    def test_der_bericht_stellt_beide_nebeneinander(self) -> None:
+        from research.stand import Lage
+
+        def _lage(zweitpunkt):
+            return Lage(
+                kandidat="Trend 50 Tage mit Konfluenz",
+                maerkte="BTC + ETH, Tageskerzen",
+                trades=152, sharpe_je_trade=0.2597, noetiger_sharpe=0.2987,
+                bestanden=7, gesamt=11, offen=("Messlatte", "Deflated Sharpe"),
+                versuche=198, cagr_pct=13.47, rueckgang_pct=10.64,
+                zweitpunkt=zweitpunkt,
+            )
+
+        assert "DIE BEIDEN BETRIEBSPUNKTE" in _lage(None).bericht()
+
+    def test_die_beiden_punkte_sind_beide_gepflegt(self) -> None:
+        """Der Perpetual-Punkt ist nicht verlassen, sondern der Erstpunkt -
+        ``UEBERHOLT`` nennt ihn 'vor Befund 108', weil 108 den **Bezug** auf
+        Spot gestellt hat, nicht die Anzeige."""
+        perp = next(p for p in UEBERHOLT if p.name.startswith("Perpetual"))
+
+        assert perp.bestanden == 7
+        assert SPOTPUNKT.bestanden == 9
+        assert perp.trades == SPOTPUNKT.trades - 4

@@ -1140,13 +1140,22 @@ BEHOBEN: tuple[Richtung, ...] = (
     # Zwei von drei Dimensionen des Betriebspunkts standen im Bericht.
     Richtung(
         "Berichte vermerkten das Instrument nicht",
-        "'reports/marktkombinationen' zeigt fuer BTC+ETH 7 von 11 bei DSR "
-        "0,7641 - auf drei Stellen der Perpetual-Punkt aus 54, den 108 "
-        "verlassen hat; 'cli stand' sagt 9 von 11 bei 0,5881, und nichts "
-        "sagte warum. Intervall steht seit 190 im Bericht, Versuche seit "
-        "jeher, das Instrument nirgends. '_betriebspunkt' liest es jetzt an "
-        "Genom und Konfiguration ab",
+        "Intervall steht seit 190 im Bericht, Versuche seit jeher, das "
+        "Instrument nirgends - '_betriebspunkt' liest es jetzt an Genom und "
+        "Konfiguration ab. Die Begruendung in 228 war falsch und ist in 229 "
+        "berichtigt: Der Bericht widersprach 'cli stand' nicht",
         228,
+        zuletzt=229,
+    ),
+    # Mein Fehler aus 228, einen Befund spaeter.
+    Richtung(
+        "Zweitpunkt fuer Erstpunkt gehalten",
+        "228 las 'cli stand sagt 9 von 11' aus SPOTPUNKT ab - das ist der "
+        "**zweite** Punkt. Primaer rechnet 'stand' auf Perpetual, und die "
+        "7 von 11 des Berichts stimmen damit ueberein. Beide Punkte sind "
+        "gepflegt (108); getrennt sind Anzeige (Perpetual zuerst) und "
+        "Analysebezug (SPOTPUNKT) - und genau das gehoert vermerkt",
+        229,
     ),
 )
 
@@ -1297,10 +1306,12 @@ OFFEN: tuple[Richtung, ...] = (
     Richtung(
         "Vier Berichtsarten ohne Betriebspunkt",
         "'marktkombinationen' vermerkt ihn seit 228; machbarkeit, "
-        "nachpruefung, teststaerke und zulassung nicht. Ob sie am gepflegten "
-        "Punkt rechnen, ist ungeprueft - bei marktkombinationen war es ein "
-        "anderer",
+        "nachpruefung, teststaerke und zulassung nicht. Alle vier nehmen "
+        "das rohe Genom und bauen ihre Konfigurationen selbst, rechnen also "
+        "wie 'stand' primaer auf Perpetual - dass sie ihn nicht vermerken, "
+        "bleibt die Luecke",
         228,
+        zuletzt=229,
     ),
 )
 

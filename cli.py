@@ -2845,8 +2845,12 @@ def _betriebspunkt(genome, configs) -> str:
     zwei Dinge - ein Hebel ueber 1,0 und ein Funding ueber null -, und beide
     lassen sich am Genom und an den Konfigurationen ablesen.
 
-    Ohne diese Angabe steht in ``reports/marktkombinationen`` "7 von 11"
-    neben den "9 von 11" aus ``cli stand``, und nichts sagt, warum.
+    Ohne diese Angabe steht in ``reports/marktkombinationen`` "7 von 11", und
+    nichts sagt, zu welchem Punkt das gehoert. Befund 228 hat daraus einen
+    Widerspruch zu ``cli stand`` gemacht - falsch: Dessen **Erstlauf** ist
+    derselbe Perpetual-Punkt, die "9 von 11" sind sein Zweitpunkt (Befund
+    229). Der Vermerk bleibt trotzdem noetig, denn ohne ihn ist das dem
+    Bericht nicht anzusehen.
     """
     from decimal import Decimal
 
@@ -5063,10 +5067,11 @@ def marktkombinationen(
 
     punkt = _betriebspunkt(genome, configs)
     console.print(
-        f"\n[dim]Betriebspunkt: {punkt}. Der gepflegte Referenzpunkt steht "
-        f"auf Spot (Befund 108/152) - Zahlen von hier sind mit denen aus "
-        f"'cli stand' nur vergleichbar, wenn beide denselben Punkt tragen "
-        f"(Befund 228).[/]"
+        f"\n[dim]Betriebspunkt: {punkt}. Das ist derselbe Erstpunkt, auf dem "
+        f"auch 'cli stand' primaer rechnet; den Spot-Punkt zeigt jener "
+        f"daneben, und auf ihn beziehen sich die Latten- und "
+        f"Lueckenrechnungen (Befund 108/229). Zahlen sind nur vergleichbar, "
+        f"wenn beide denselben Punkt tragen - deshalb steht er jetzt hier.[/]"
     )
 
     ziel = write_report(

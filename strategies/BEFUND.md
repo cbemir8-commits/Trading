@@ -20555,3 +20555,76 @@ Messung waere hier besonders unangebracht.
 
 Kostet keinen Versuch: gelesen und vermerkt.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertneunundzwanzig. Berichtigung: der Zweitpunkt war nicht der Erstpunkt
+
+Befund 228 wollte die vier uebrigen Berichtsarten auf ihren Betriebspunkt
+nachsehen. Beim ersten Blick in `cli stand` kam etwas anderes heraus: **228
+selbst stimmt nicht.**
+
+### Was ich behauptet habe
+
+> *"'reports/marktkombinationen' zeigt fuer BTC+ETH 7 von 11 bei DSR 0,7641 -
+> der Perpetual-Punkt, den Befund 108 verlassen hat; 'cli stand' sagt 9 von
+> 11 bei 0,5881, und nichts sagte warum."*
+
+### Was gilt
+
+`cli stand` rechnet **primaer auf dem Perpetual-Punkt** - rohes Genom,
+Vorgabekonfiguration - und misst den Spot-Punkt daneben als `zweitpunkt`. Im
+Bericht steht er als *"Ohne Funding steht er bei X % statt Y % und besteht N
+von M Gates statt K"*, seit Befund 108, unter der Ueberschrift "DIE BEIDEN
+BETRIEBSPUNKTE".
+
+Die "9 von 11 bei 0,5881" habe ich nicht aus `cli stand` gelesen, sondern aus
+`referenz.SPOTPUNKT` - dem **zweiten** Punkt. Die 7 von 11 des Berichts sind
+der **erste**, und damit stimmen Bericht und `cli stand` ueberein.
+
+**Es gab keinen Widerspruch.** Befund 108 hat den Perpetual-Punkt auch nicht
+verlassen; er hat beide gemessen und den *Bezug* der Latten- und
+Lueckenrechnungen auf Spot gestellt. Angezeigt wird weiter der Perpetual
+zuerst.
+
+### Der Fehler ist genau der, den diese Serie zaehlt
+
+Eine Groesse von einer Stelle gelesen und an einer anderen behauptet - zum
+zehnten Mal, und diesmal **innerhalb eines Befundes ueber genau diesen
+Fehler**. Ich habe einen Registerwert fuer die Ausgabe eines Befehls
+gehalten, ohne den Befehl anzusehen.
+
+Was mich haette stutzig machen muessen: Ich hatte die Zahl 0,7641 selbst als
+"auf drei Stellen der Perpetual-Punkt" erkannt - und daraus geschlossen, sie
+sei falsch, statt zu fragen, ob sie richtig dorthin gehoert.
+
+### Was von Befund 228 bleibt
+
+Der Vermerk. Dass die Berichte ihren Betriebspunkt nicht fuehren, ist
+weiterhin wahr und weiterhin eine Luecke - nur nicht, weil sie einander
+widersprechen, sondern weil **dem Bericht allein nicht anzusehen ist, welcher
+Punkt es war**. Wer `reports/marktkombinationen` ohne den Quelltext liest,
+kann 7 von 11 nicht einordnen; er weiss nicht einmal, dass es zwei Punkte
+gibt.
+
+`_betriebspunkt` bleibt also, der Hinweistext ist berichtigt: Er sagt jetzt,
+dass dies derselbe Erstpunkt ist wie in `cli stand`, und dass der Spot-Punkt
+der Bezug der Lattenrechnungen ist.
+
+Und die eigentliche Auskunft fuer die vier uebrigen Berichte faellt damit
+auch anders aus als erwartet: `machbarkeit`, `nachpruefung`, `teststaerke`
+und `zulassung` nehmen alle das rohe Genom und bauen ihre Konfigurationen
+selbst - sie rechnen also **wie `stand`** auf dem Erstpunkt. Nichts daran ist
+falsch; es steht nur nirgends.
+
+### Was mir daran auffaellt
+
+Zwei Befunde hintereinander mit derselben Bewegung: In 227 habe ich eine
+Achse uebersehen, weil ich zwei gemessen hatte. In 228 habe ich einen
+Widerspruch gesehen, weil ich zwei Zahlen hatte und nicht nachgesehen habe,
+woher die zweite kam.
+
+Beide Male war das Material vollstaendig und die Frage schief. Und beide Male
+haette dieselbe Handlung geholfen: die Stelle aufschlagen, statt die Zahl zu
+nehmen, die zur Hand ist.
+
+Kostet keinen Versuch: berichtigt, nichts gemessen.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
