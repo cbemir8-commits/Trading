@@ -1168,6 +1168,15 @@ BEHOBEN: tuple[Richtung, ...] = (
         "n_eff 80 bis 584)",
         230,
     ),
+    # Und danach gesucht statt gelesen - diesmal ohne zweiten Fund.
+    Richtung(
+        "Der Bericht war sonst widerspruchsfrei",
+        "25 Prozentwerte, zwei davon in zwei Abschnitten, beide zu Recht "
+        "(Hebelnutzung 0,2 % aus 106; die Preisobergrenze 1,26 % aus 230 im "
+        "Abschnitt und im Register). Kein zweiter Fall von 230. Die Wache "
+        "haelt den Stand fest und meldet jeden neuen Doppelgaenger",
+        231,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

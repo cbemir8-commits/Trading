@@ -20703,3 +20703,60 @@ nicht gestellt habe: **Von welchem Punkt ist diese Zahl?**
 
 Kostet keinen Versuch: berichtigt und nachgemessen, ohne neue Hypothese.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihunderteinunddreissig. Kein zweiter Widerspruch - und ein Wort zum Ertrag
+
+Befund 230 hat einen Widerspruch im eigenen Bericht gefunden: zwei Luecken,
+eine Bildschirmseite auseinander, aus zwei Betriebspunkten. Gefunden durchs
+Lesen. Also danach gesucht.
+
+### Das Ergebnis
+
+Der Bericht nennt **25 verschiedene Prozentwerte**. Zwei davon stehen in mehr
+als einem Abschnitt, und beide zu Recht:
+
+    0,2 %    Hebelnutzung aus Befund 106 - im Register und in der
+             Begruendung zu 'cli healthcheck'. Dieselbe Groesse, absichtlich
+             zweimal.
+    1,26 %   die Obergrenze der Preisspanne aus Befund 230 - im Abschnitt
+             selbst und im Registereintrag, der ihn zitiert.
+
+**Kein zweiter Fall von Befund 230.** Die Wache haelt den Stand fest: Jeder
+neue Prozentwert, der in zwei Abschnitten auftaucht, faellt auf und gehoert
+angesehen - dieselbe Bauart wie die Liste der ueberholten Kennzahlen seit
+Befund 156. Sie kann nicht wissen, welche Zahlen dieselbe Groesse meinen;
+sie kann melden, dass jemand hinsehen sollte.
+
+### Und ein Wort zum Ertrag dieser Serie
+
+Neunzehn Befunde seit 213 haben am Werkzeug und am Bericht gearbeitet. Der
+Ertrag ist ungleich verteilt, und das gehoert gesagt:
+
+**Substanz** - Dinge, die den Weg des Nutzers wirklich geaendert haben:
+
+    213   der Ladebefehl holte nie die Kerzen, auf denen alle Gates stehen
+    214   '--von-spitze' mass den Bestand auf fremder Kerzenlaenge, mit Versuchskosten
+    216   das Suchbudget brach nichts ab; 'wettbewerb' lief bis Strg-C
+    220   welcher Betriebspunkt naeher am Ziel steht, war unbeziffert
+    221   der Preis des Suchens war die Zahl von 130 Versuchen
+    222   der letzte offene Weg war doppelt so weit wie ausgewiesen
+    227   der Verbund fehlte im Vergleich
+
+**Berichtigungen eigener Fehler** aus derselben Serie: 219, 223, 226, 229,
+230. Fuenf von neunzehn.
+
+**Und Nichtfunde**: 217 (Grenzen), 224 (drei weitere Modulkoepfe), dieser
+hier. Drei Runden, die nichts fanden - und die trotzdem noetig waren, weil
+der Unterschied zwischen "nichts gefunden" und "nicht gesucht" der ganze
+Punkt dieses Projekts ist.
+
+Die Kurve zeigt nach unten. Die letzten vier Befunde haben ueberwiegend
+Fehler behoben, die die vorangegangenen vier eingebaut haben. Das ist kein
+Grund aufzuhoeren, aber ein Grund, es aufzuschreiben: Was hier noch zu holen
+ist, sind kleine Ordnungsgewinne. **Der Schritt, der auf eine bestandene
+Zulassung zulaeuft, liegt weiter nicht in diesem Behaelter** - er liegt bei
+den Bybit-Kerzen auf dem Rechner des Nutzers, und dorthin fuehrt eine
+Anweisung, die seit Befund 215 stimmt.
+
+Kostet keinen Versuch: gesucht, nichts gefunden, festgehalten.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
