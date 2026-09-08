@@ -1336,6 +1336,19 @@ BEHOBEN: tuple[Richtung, ...] = (
         "haelt fest, dass das Kuerzen erst nach dem Walk-Forward greift",
         248,
     ),
+    # Beim Lesen des gekuerzten Berichts aufgefallen - 248 hat es sichtbar
+    # gemacht.
+    Richtung(
+        "Die Befehle fuer den Nutzer standen nicht in ihrer Folge",
+        "'abgleich' stand an zweiter Stelle, obwohl sein Text 'Vor jedem "
+        "Livegang auszufuehren' sagt, und 'funding' an letzter, obwohl bis "
+        "dahin jede Zahl mit dem Vorgabewert fuer den groessten Kostenblock "
+        "rechnet - wer so sucht, zahlt Versuche fuer Ergebnisse auf "
+        "geschaetzten Kosten. Jetzt: klaeren, laden, suchen, abgleichen. Von "
+        "den vier Bedingungen war eine schon geprueft ('erst laden, dann "
+        "suchen'); die drei ungeprueften waren genau die, die danebengingen",
+        249,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1945,6 +1958,16 @@ AUFTRAG: tuple[Auftragspunkt, ...] = (
 #:
 #: Die Gate-Zahlen (9 von 11 statt 7) stimmten noch. Das ist der Grund, warum
 #: der Eintrag nicht auffiel: Die Haelfte, die man prueft, war richtig.
+#: **Die Reihenfolge ist die Reihenfolge** (Befund 249). Bis hierher stand
+#: ``abgleich`` an zweiter Stelle, obwohl sein eigener Text sagt *"Vor jedem
+#: Livegang auszufuehren"*, und ``funding`` an letzter, obwohl bis dahin jede
+#: Zahl mit dem Vorgabewert rechnet. Wer eine Liste von Befehlen sieht, liest
+#: sie als Folge - das war schon der Kern von Befund 167, dort als Prosa
+#: gegen Befehlszeile.
+#:
+#: Geordnet nach dem, was die Eintraege selbst sagen: klaeren, laden, suchen,
+#: und zuletzt der Abgleich vor dem Livegang. Ein Test haelt jede der vier
+#: Bedingungen einzeln fest.
 BEIM_NUTZER: tuple[tuple[str, str], ...] = (
     (
         "python -m cli healthcheck",
@@ -1956,11 +1979,6 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "`cli instrument` rechnet es nach.",
     ),
     (
-        "python -m cli abgleich",
-        "Erzeugt der Livebetrieb dieselben Signale wie der Backtest? Vor "
-        "jedem Livegang auszufuehren.",
-    ),
-    (
         "python -m cli backfill --intervall D --von 2017-08-16",
         "Laedt Bybit-Kerzen. **Ohne sie kann nichts zugelassen werden** - "
         "jede Zahl dieses Projekts steht auf Bitstamp-Kassakursen, und die "
@@ -1969,6 +1987,12 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "zugelassen, egal wie viele Gates halten. **Das Intervall gehoert "
         "dazu**: Ohne '-i' laedt der Befehl 1m/15m/1h/4h und **keine** "
         "Tageskerzen - und auf denen stehen alle elf Gates (Befund 213).",
+    ),
+    (
+        "python -m cli funding --von 2020-03-30",
+        "Laedt die echten Funding-Raten. Bisher rechnet jede Zahl mit dem "
+        "Vorgabewert, und der ist der groesste Kostenblock des Systems - das "
+        "8,9-fache der Handelsgebuehren (Befund 100).",
     ),
     (
         "python -m cli wettbewerb --generation 9",
@@ -1994,10 +2018,9 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "Entscheidung und keine Empfehlung.",
     ),
     (
-        "python -m cli funding --von 2020-03-30",
-        "Laedt die echten Funding-Raten. Bisher rechnet jede Zahl mit dem "
-        "Vorgabewert, und der ist der groesste Kostenblock des Systems - das "
-        "8,9-fache der Handelsgebuehren (Befund 100).",
+        "python -m cli abgleich",
+        "Erzeugt der Livebetrieb dieselben Signale wie der Backtest? Vor "
+        "jedem Livegang auszufuehren.",
     ),
 )
 

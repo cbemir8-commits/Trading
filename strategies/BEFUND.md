@@ -22100,3 +22100,67 @@ teuer gewesen (Befund 114, Befund 160).
 
 Kostet keinen Versuch: eine Ausgabeform, keine Rechnung.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertneunundvierzig. Eine Liste von Befehlen ist eine Folge
+
+Befund 248 hat den Bericht auf das Handelnde gekuerzt. Dabei ist beim Lesen
+des Abschnitts *NUR AUF DEINEM RECHNER* etwas aufgefallen, das die Kuerzung
+sichtbar gemacht hat: Die sechs Befehle standen nicht in der Reihenfolge, in
+der man sie ausfuehrt.
+
+    1. healthcheck
+    2. abgleich        <- "Vor jedem Livegang auszufuehren"
+    3. backfill --intervall D --von 2017-08-16
+    4. wettbewerb --generation 9
+    5. wettbewerb --generation 9 --ki
+    6. funding --von 2020-03-30   <- bis dahin rechnet alles mit dem Vorgabewert
+
+Zwei Eintraege widersprechen ihrer eigenen Stelle, und zwar mit ihrem eigenen
+Text.
+
+### Warum das mehr als Kosmetik ist
+
+Wer eine Liste von Befehlszeilen sieht, liest sie als Folge. Das ist derselbe
+Kern wie in Befund 167, eine Stufe weiter: Dort war der zweite Schritt Prosa
+statt Befehlszeile - *"', dann wettbewerb'"* - und wer ihn kopierte, bekam
+`Got unexpected extra argument(s)`. Hier sind es saubere Befehlszeilen in
+einer Ordnung, die keine ist.
+
+Der teure Fall ist `funding`. Steht es hinter dem Wettbewerb, sucht man mit
+dem Vorgabewert fuer den **groessten Kostenblock des Systems** (Befund 100,
+das 8,9-fache der Handelsgebuehren) - und jeder gepruefte Kandidat kostet
+dabei einen Versuch, der die Latte fuer alle folgenden hebt. Das ist kein
+Schoenheitsfehler, das sind verlorene Versuche.
+
+### Die neue Folge, und woher sie kommt
+
+    1. healthcheck                  klaeren: welcher Betriebspunkt gilt
+    2. backfill                     laden - ohne Kerzen keine Zulassung
+    3. funding                      laden - sonst rechnet alles mit Vorgabe
+    4. wettbewerb --generation 9    suchen
+    5. wettbewerb ... --ki          suchen, der andere Weg
+    6. abgleich                     vor dem Livegang
+
+Nicht nach Gefuehl geordnet: Jede der Bedingungen steht im Text des Eintrags,
+den sie betrifft. `abgleich` sagt *"Vor jedem Livegang auszufuehren"*,
+`funding` nennt den Vorgabewert, `backfill` sagt *"Ohne sie kann nichts
+zugelassen werden"*.
+
+### Was schon da war
+
+Eine der vier Bedingungen stand bereits:
+`test_wettbewerb_steht_als_eigener_schritt` prueft seit jeher *"Erst laden,
+dann suchen"*. Die Reihenfolge wurde also schon als bedeutungstragend
+behandelt - nur eben an einer Stelle von vieren.
+
+Das ist die inzwischen vertraute Bauart: Es traegt etwas, aber nicht so weit,
+wie man annimmt (241, 243, 244). Hier war es nicht einmal falsch, nur
+unvollstaendig - und die drei ungeprueften Bedingungen sind genau die, die
+danebengingen.
+
+Jetzt stehen alle vier als Test, dazu drei, die die begruendenden Saetze
+festhalten: Verschwindet *"Vor jedem Livegang"* aus dem Eintrag, faellt die
+Begruendung fuer seine Stelle mit.
+
+Kostet keinen Versuch: eine Umstellung, keine Rechnung.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
