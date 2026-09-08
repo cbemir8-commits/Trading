@@ -514,6 +514,7 @@ def report_payload(
     gates_full: bool,
     benchmark: dict | None = None,
     funding_rows: int = 0,
+    betriebspunkt: str = "",
 ) -> dict:
     """Der vollstaendige Bericht eines Zulassungslaufs, maschinenlesbar.
 
@@ -533,6 +534,13 @@ def report_payload(
         "markt": {
             "symbol": symbol,
             "intervall": interval,
+            # **Die dritte Dimension** (Befund 242). Aus diesem Bericht liesse
+            # sie sich zwar rekonstruieren - ``genom.sizing.fraction`` steht
+            # bei jedem Kandidaten, ``funding_eintraege`` gleich daneben -,
+            # aber rekonstruierbar ist nicht dasselbe wie genannt. Elf Mal ist
+            # in diesem Projekt eine Groesse von Punkt A an Punkt B verwendet
+            # worden, und jedes Mal stand sie irgendwo ableitbar da.
+            "betriebspunkt": betriebspunkt,
             "historie_von": history_from,
             "historie_bis": history_to,
             "kerzen": candles,

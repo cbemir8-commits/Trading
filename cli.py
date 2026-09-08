@@ -1507,6 +1507,16 @@ def research(
             gates_full=not schnell,
             benchmark=messlatte,
             funding_rows=len(funding_frame),
+            # **Der des Champions, nicht des Laufs** (Befund 242). Ein
+            # Zulassungslauf prueft mehrere Genome, und der Hebel steht im
+            # Genom - ein Punkt fuer alle waere gemittelt und damit falsch.
+            # Ohne Champion bleibt das Feld leer: Lieber nichts als eine
+            # Angabe, die zu keinem der geprueften Kandidaten gehoert.
+            betriebspunkt=(
+                _betriebspunkt(report.champion.genome, [config])
+                if report.champion is not None
+                else ""
+            ),
         ),
     )
 
@@ -4625,6 +4635,13 @@ def machbarkeit(
     nutzlast = analyse.als_payload()
     nutzlast["maerkte"] = symbole
     nutzlast["intervall"] = interval_obj.label
+    # Die dritte Dimension (Befund 242). Ohne sie steht in der Datei eine
+    # Vola-Leiter, und nichts sagt, ob mit Hebel und Funding gerechnet wurde.
+    #
+    # ``vorlage`` und nicht die Stufe: Keiner der sechs Regler fasst
+    # ``sizing.fraction`` an, der Punkt ist ueber die ganze Leiter derselbe.
+    # Die Stufe waere ausserdem die letzte gelaufene - eine von vielen.
+    nutzlast["betriebspunkt"] = _betriebspunkt(vorlage, configs)
     nutzlast["versuche"] = trials
     ziel = write_report(nutzlast, root=Path.cwd(), kind="machbarkeit")
     console.print(f"[dim]Werte hinter den Zeichen: {ziel}[/]")
@@ -4981,6 +4998,8 @@ def nachpruefung(
         {
             "maerkte": symbole,
             "intervall": interval_obj.label,
+            # Befund 242: sonst steht "9 von 11" da, ohne zu welchem Punkt.
+            "betriebspunkt": _betriebspunkt(spitzenkandidat(), configs),
             "versuche": trials,
             "ergebnisse": [
                 {
@@ -5645,6 +5664,9 @@ def teststaerke(
                 "erzeugt": datetime.now(UTC).isoformat(),
                 "maerkte": symbole,
                 "intervall": interval_obj.label,
+                # Befund 242: eine Leiter gepflanzter Staerken ohne den Punkt,
+                # an dem sie gemessen wurde, ist spaeter nicht einzuordnen.
+                "betriebspunkt": _betriebspunkt(genome, configs),
                 "dauer": dauer,
                 "saat": saat,
                 "versuche": versuche,

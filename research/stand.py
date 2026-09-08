@@ -1143,9 +1143,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Intervall steht seit 190 im Bericht, Versuche seit jeher, das "
         "Instrument nirgends - '_betriebspunkt' liest es jetzt an Genom und "
         "Konfiguration ab. Die Begruendung in 228 war falsch und ist in 229 "
-        "berichtigt: Der Bericht widersprach 'cli stand' nicht",
+        "berichtigt: Der Bericht widersprach 'cli stand' nicht. 228 hat es "
+        "fuer eine von fuenf Berichtsarten eingebaut; seit 242 fuehren alle "
+        "fuenf das Feld - machbarkeit, nachpruefung, teststaerke und der "
+        "Zulassungsbericht aus 'cli research' dazu. Dort ist es der Punkt "
+        "des Champions und ohne Champion leer, weil ein Lauf mehrere Genome "
+        "prueft und der Hebel im Genom steht",
         228,
-        zuletzt=229,
+        zuletzt=242,
     ),
     # Mein Fehler aus 228, einen Befund spaeter.
     Richtung(
@@ -1392,17 +1397,6 @@ OFFEN: tuple[Richtung, ...] = (
         "Frage der Richtigkeit mehr, sondern der Herkunft - und offen",
         213,
         zuletzt=239,
-    ),
-    # Einer von fuenf traegt ihn jetzt; die uebrigen sind ungeprueft.
-    Richtung(
-        "Vier Berichtsarten ohne Betriebspunkt",
-        "'marktkombinationen' vermerkt ihn seit 228; machbarkeit, "
-        "nachpruefung, teststaerke und zulassung nicht. Alle vier nehmen "
-        "das rohe Genom und bauen ihre Konfigurationen selbst, rechnen also "
-        "wie 'stand' primaer auf Perpetual - dass sie ihn nicht vermerken, "
-        "bleibt die Luecke",
-        228,
-        zuletzt=229,
     ),
     # Aufgeworfen von 233; 234 misst, warum die Akte sie nicht beantwortet.
     Richtung(

@@ -21584,3 +21584,75 @@ nicht beim naechsten Fehler.
 
 Kostet keinen Versuch: gemessen und nichts nachgeladen.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertzweiundvierzig. Die dritte Dimension, in allen fuenf Dateien
+
+Befund 228 hat gefunden, dass Berichte zwei der drei Dimensionen fuehren:
+`intervall` seit Befund 190, `versuche` seit jeher - das **Instrument**
+nirgends. Behoben wurde es dort fuer eine von fuenf Berichtsarten. Die
+uebrigen vier standen seither unter *gemessen und offen*.
+
+### Warum das nicht kosmetisch ist
+
+Der Unterschied zwischen den beiden Punkten sind zwei Dinge - ein Hebel ueber
+1,0 und ein Funding ueber null - und er entscheidet ueber zwei Gates:
+
+    Perpetual   7 von 11
+    Spot        9 von 11
+
+Eine Datei, in der "9 von 11" steht, ohne zu welchem Punkt, ist damit nicht
+bloss unvollstaendig, sondern **verwechselbar**. Genau diese Verwechslung ist
+in diesem Projekt elf Mal vorgekommen, und Befund 228 hat selbst noch einen
+falschen Widerspruch daraus abgeleitet (zurueckgenommen in 229).
+
+### Was jetzt wo steht
+
+    machbarkeit          nutzlast["betriebspunkt"]
+    nachpruefung         write_report({... "betriebspunkt" ...})
+    teststaerke          eigene Datei, Feld ergaenzt
+    Zulassungsbericht    markt.betriebspunkt (aus 'cli research')
+
+Gelesen wird er wie seit 228 mit `_betriebspunkt(genom, configs)` - aus den
+Objekten, nicht von Hand gepflegt. Im Register bekommt das keinen eigenen
+Eintrag: Es ist dieselbe Richtung wie 228, nur zu Ende gebracht, und steht
+dort jetzt mit `zuletzt=242`. Eine gepflegte Angabe waere genau die
+Sorte, die in Befund 235 eine ganze Handlungsliste auf dem Stand von Befund
+108 hat stehen lassen.
+
+### Drei Stellen, an denen es nicht einfach "dasselbe nochmal" war
+
+**`machbarkeit` misst eine Leiter, kein Genom.** `genome` ist dort die zuletzt
+gelaufene Stufe - der Betriebspunkt gehoert aber zur Vorlage. Geprueft, ob das
+zulaessig ist: Keiner der sechs Regler (`vola`, `stop`, `periode`,
+`abkuehlung`, `ziel`, `konviktion`) fasst `sizing.fraction` an. Der Punkt ist
+ueber die ganze Leiter derselbe, also steht die Vorlage darin. `ruff` hat den
+ersten Versuch mit `genome` als *undefined name* abgewiesen - zu Recht, aus
+dem falschen Grund und mit dem richtigen Ergebnis.
+
+**`teststaerke` schreibt ihre Datei selbst**, nicht ueber `write_report`. Wer
+die Luecke ueber eine Suche nach `write_report` sucht, findet sie nicht. Genau
+so ist sie bis hierher durchgerutscht; ein Test haelt jetzt fest, dass sie
+dazugehoert.
+
+**Der Zulassungsbericht prueft mehrere Genome.** Der Hebel steht im Genom, ein
+Punkt fuer den ganzen Lauf waere gemittelt und damit falsch. Also der des
+Champions - und ohne Champion bleibt das Feld **leer**. Lieber nichts als eine
+Angabe, die zu keinem der geprueften Kandidaten gehoert.
+
+Rekonstruierbar war er dort uebrigens schon vorher: `genom.sizing.fraction`
+steht bei jedem Kandidaten, `funding_eintraege` gleich daneben. Rekonstruierbar
+ist aber nicht dasselbe wie genannt - bei allen elf Verwechslungen dieses
+Projekts stand die Groesse irgendwo ableitbar da.
+
+### Was ich unterwegs fast falsch aufgeschrieben haette
+
+Beim Nachsehen fiel auf, dass `reports/marktkombinationen/` **kein**
+`betriebspunkt`-Feld enthaelt - obwohl der Code es seit 228 schreibt. Das sah
+nach einem zweiten Fund aus.
+
+Es ist keiner: Die Datei ist vom 2026-08-22, die Aenderung vom 2026-09-06. Ein
+Bericht ist eine Momentaufnahme und wird nicht nachgezogen. Nachgesehen mit
+`git log -S`, bevor daraus ein Befund wurde.
+
+Kostet keinen Versuch: vier Felder ergaenzt, nichts gerechnet.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
