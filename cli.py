@@ -5652,34 +5652,41 @@ def teststaerke(
             for name, meldung in s.meldungen:
                 console.print(f"    [red]{name:22s}[/] [dim]{meldung[:74]}[/]")
 
-    import json as _json
+    # **Ueber ``write_report`` und nicht von Hand** (Befund 244). Bis hierher
+    # schrieb dieser Befehl als einziger direkt nach ``reports/`` und ging
+    # damit an drei Dingen vorbei, die dort eingebaut sind: der Trockenlauf-
+    # Wache aus Befund 116 (gemessen - ein Rauchtest legte trotz
+    # ``TRADING_TROCKENLAUF`` eine Datei ab), dem ``scrub`` gegen Felder, die
+    # nicht in ein oeffentliches Repository gehoeren, und dem Schutz gegen
+    # zwei Laeufe in derselben Sekunde.
     from dataclasses import asdict
 
-    ziel = Path.cwd() / "reports" / "teststaerke"
-    ziel.mkdir(parents=True, exist_ok=True)
-    datei = ziel / f"{datetime.now(UTC):%Y-%m-%d_%H%M%S}.json"
-    datei.write_text(
-        _json.dumps(
-            {
-                "erzeugt": datetime.now(UTC).isoformat(),
-                "maerkte": symbole,
-                "intervall": interval_obj.label,
-                # Befund 242: eine Leiter gepflanzter Staerken ohne den Punkt,
-                # an dem sie gemessen wurde, ist spaeter nicht einzuordnen.
-                "betriebspunkt": _betriebspunkt(genome, configs),
-                "dauer": dauer,
-                "saat": saat,
-                "versuche": versuche,
-                "varianten": {
-                    name: [asdict(s) for s in lt.geordnet]
-                    for name, lt in vergleich.leitern.items()
-                },
+    from core.report import write_report
+    from research.versuche import trockenlauf
+
+    datei = write_report(
+        {
+            "erzeugt": datetime.now(UTC).isoformat(),
+            "maerkte": symbole,
+            "intervall": interval_obj.label,
+            # Befund 242: eine Leiter gepflanzter Staerken ohne den Punkt,
+            # an dem sie gemessen wurde, ist spaeter nicht einzuordnen.
+            "betriebspunkt": _betriebspunkt(genome, configs),
+            "dauer": dauer,
+            "saat": saat,
+            "versuche": versuche,
+            "varianten": {
+                name: [asdict(s) for s in lt.geordnet]
+                for name, lt in vergleich.leitern.items()
             },
-            indent=2,
-            ensure_ascii=False,
-        )
+        },
+        root=Path.cwd(),
+        kind="teststaerke",
     )
-    console.print(f"\n[dim]Bericht: {datei}[/]")
+    # Im Trockenlauf gibt ``write_report`` den Ordner zurueck und schreibt
+    # nichts - dann waere "Bericht: <Ordner>" eine Falschmeldung.
+    if not trockenlauf():
+        console.print(f"\n[dim]Bericht: {datei}[/]")
     console.print(
         "[dim]Der Versuchszaehler steht unveraendert bei "
         f"{versuche}. Gepflanzte Reihen waehlen keinen Kandidaten aus.[/]\n"

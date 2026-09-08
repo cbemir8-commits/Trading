@@ -21724,3 +21724,85 @@ Walk-Forward faehrt, faellt dort auf.
 
 Kostet keinen Versuch: gemessen, verglichen, nichts gehandelt.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertvierundvierzig. Der Rauchtest, der einen Bericht hinterliess
+
+Befund 243 hat eine Wache auf Vollstaendigkeit geprueft. Dieselbe Frage fuer
+die naechste: **Wer schreibt nach `reports/`, und geht er durch
+`write_report`?**
+
+`core.report.write_report` traegt drei Dinge, die man einzeln nicht sieht:
+
+* die **Trockenlauf-Wache** aus Befund 116 - *"Ein Rauchtest gehoert nicht in
+  diesen Verlauf: Er sieht dort aus wie ein Lauf und ist keiner."*
+* `scrub` gegen Schluessel, die nicht in ein oeffentliches Repository gehoeren
+  (`api_key`, `balance`, `secret` und neun weitere)
+* den Schutz gegen zwei Laeufe in derselben Sekunde
+
+### Einer ging an allen dreien vorbei
+
+`cli teststaerke` baute Ordner, Zeitstempel und Datei von Hand:
+
+    ziel = Path.cwd() / "reports" / "teststaerke"
+    datei = ziel / f"{datetime.now(UTC):%Y-%m-%d_%H%M%S}.json"
+    datei.write_text(_json.dumps({...}))
+
+**Gemessen, nicht gefolgert:** Ein Lauf in einem eigenen Arbeitsverzeichnis mit
+`TRADING_TROCKENLAUF=1` legte eine Datei von 14 327 Bytes ab. Derselbe Lauf
+meldete korrekt *"Der Versuchszaehler steht unveraendert bei 198"* - jene Wache
+sitzt in `versuche.speichern` und greift. Diese nicht.
+
+Das Format traf er dabei genau: `2026-09-08_070015.json`, nicht von
+`write_report` zu unterscheiden. Deshalb ist es nie aufgefallen.
+
+### Was es gekostet hat: nichts
+
+Nachgesehen statt angenommen:
+
+* Die sechs Dateien vom 2026-09-02 stammen aus **echten** Laeufen - `git log`
+  weist sie den Befunden 176 und 178 zu, nicht einem Rauchtest.
+* Keiner der 49 Schluesselpfade eines Teststaerke-Berichts faellt unter
+  `VERBOTEN`; `scrub` haette an keiner vorhandenen Datei etwas geaendert.
+
+Das ist der dritte Befund in Folge derselben Bauart: **Es traegt etwas, nur
+nicht das Bauteil, dem man es zuschreiben wuerde** - 241 der Randschnitt statt
+des Nachlaufs, 243 der Trade-Filter statt der Kerzenwache, hier der Zufall,
+dass niemand einen Rauchtest laufen liess.
+
+### Was gebaut wurde
+
+`teststaerke` geht durch `write_report`. Im Trockenlauf gibt die den **Ordner**
+zurueck und schreibt nichts - die Zeile "Bericht: <Pfad>" entfaellt dann, sonst
+waere sie eine Falschmeldung.
+
+Die Wache dagegen prueft drei Teile zugleich: nennt `reports`, **schreibt**
+auch, und geht nicht durch `write_report`.
+
+### Wieder ein Gespenst
+
+Der erste Entwurf der Wache liess den mittleren Teil weg und meldete fuenf
+weitere Befehle - `gatemuster`, `vereinbar`, `front`, `streuung`,
+`_formpunkte`. Keiner davon schreibt; sie lesen den Ordner oder nennen ihn.
+
+Das ist genau der Fehler aus Befund 243, einen Befund spaeter und in derselben
+Sitzung: dort nach dem Mantel statt nach der Sache, hier nach dem Ordnernamen
+statt nach dem Schreibvorgang. Beide Male hat der zweite Blick es gefangen,
+beide Male erst nach dem ersten Schreck.
+
+### Ein eigener Test ist dabei gefallen - zu Recht
+
+`test_teststaerke_zaehlt_mit` aus Befund 242 enthielt:
+
+    assert "write_report" not in quelle
+
+Das war der **Mangel als Zusicherung festgeschrieben**. Gemeint war "sie ist
+leicht zu uebersehen, also pruefe, dass sie mitzaehlt"; dagestanden hat "sie
+schreibt selbst, und dabei bleibt es". Beim Beheben ist der Test gefallen -
+genau da merkt man es.
+
+Ein Test soll halten, was gelten **soll**, nicht was gerade **ist**. Der
+Unterschied faellt erst auf, wenn jemand das Richtige tut.
+
+Kostet keinen Versuch: `teststaerke` schreibt den Zaehler nicht, und der
+Probelauf lief im Trockenlauf.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

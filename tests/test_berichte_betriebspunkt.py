@@ -68,13 +68,20 @@ class TestJedeBerichtsartNenntIhn:
         assert "_betriebspunkt(" in _quelltext(befehl)
 
     def test_teststaerke_zaehlt_mit(self) -> None:
-        """Sie schreibt ihre Datei nicht ueber ``write_report``, sondern
-        selbst - und ist deshalb bei einer Suche nach ``write_report``
-        unsichtbar. Genau so ist sie bis 242 durchgerutscht."""
+        """Sie war bis 242 unsichtbar, weil sie ihre Datei selbst schrieb.
+
+        **Diese Begruendung ist seit Befund 244 ueberholt** - sie geht jetzt
+        durch ``write_report``. Hier stand dazu ``assert "write_report" not in
+        quelle``: Der Mangel als Zusicherung festgeschrieben, statt nur die
+        Abdeckung. Der Test ist beim Beheben zu Recht gefallen, und das ist
+        die Sorte Fehlschlag, an der man ihn merkt.
+
+        Geprueft wird jetzt, worum es ging: dass sie mitzaehlt.
+        """
         quelle = _quelltext("teststaerke")
 
-        assert "write_report" not in quelle
         assert "betriebspunkt" in quelle
+        assert "teststaerke" in BERICHTE
 
 
 class TestDerZulassungsbericht:

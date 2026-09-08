@@ -1265,6 +1265,21 @@ BEHOBEN: tuple[Richtung, ...] = (
         "direkt und waren im ersten Durchgang falsch als Luecke gemeldet",
         243,
     ),
+    # Dieselbe Frage fuer die naechste Wache - und derselbe erste Fehlgriff.
+    Richtung(
+        "'teststaerke' schrieb an der Berichtswache vorbei",
+        "es baute Ordner, Zeitstempel und Datei von Hand und ging damit an "
+        "drei Dingen vorbei, die in 'write_report' stecken: der "
+        "Trockenlauf-Wache aus 116, 'scrub' gegen Felder fuer ein "
+        "oeffentliches Repository, und dem Schutz gegen zwei Laeufe in "
+        "derselben Sekunde. Gemessen: Ein Lauf mit gesetztem Trockenlauf "
+        "legte trotzdem eine Datei ab, waehrend der Versuchszaehler korrekt "
+        "stehenblieb. Gekostet hat es nichts - die vorhandenen Berichte "
+        "stammen aus echten Laeufen und tragen kein verbotenes Feld. Jetzt "
+        "ueber 'write_report', und eine Wache prueft, wer sonst noch nach "
+        "'reports' schreibt",
+        244,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
