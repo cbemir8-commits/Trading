@@ -1250,6 +1250,21 @@ BEHOBEN: tuple[Richtung, ...] = (
         239,
         zuletzt=241,
     ),
+    # Der zweite Fall derselben Bauart wie 241: Es traegt etwas, nur nicht
+    # das Bauteil, dem man es zuschreiben wuerde.
+    Richtung(
+        "'suchbudget' rechnete jeden Katalog auf jeder Kerzenlaenge",
+        "es sammelte ueber alle Generationen - auf Tageskerzen 23 von 53 "
+        "Regeln aus den Viertelstunden-Katalogen. Verfaelscht hat das nichts: "
+        "Keine davon kommt in die Rangliste, sie fallen vorher an der "
+        "Trade-Zahl heraus, und die Ausgabe ist vor und nach der Wache "
+        "zeichengleich. Der Schutz war also ein Filter und keine Absicht. "
+        "Gekostet hat es Rechenzeit (54 Kandidaten in 78 s gegen 31 in 48 s). "
+        "Die Abdeckung ist jetzt vollstaendig und wird geprueft - nach "
+        "beiden Wachen, denn acht Befehle nutzen 'passt_zum_intervall' "
+        "direkt und waren im ersten Durchgang falsch als Luecke gemeldet",
+        243,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

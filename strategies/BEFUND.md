@@ -21656,3 +21656,71 @@ Bericht ist eine Momentaufnahme und wird nicht nachgezogen. Nachgesehen mit
 
 Kostet keinen Versuch: vier Felder ergaenzt, nichts gerechnet.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertdreiundvierzig. Der Filter war der Schutz, nicht die Wache
+
+`passt_zum_intervall` haelt fest, welcher Katalog auf welche Kerzenlaenge
+gehoert. Der Grund steht in `_pruefe_generation`: *"Dieselben Periodenzahlen
+bedeuten dort sechsundneunzigmal laengere Zeitraeume - eine voellig andere
+Regel unter demselben Namen."*
+
+Ein Durchgang durch alle Befehle, die Kataloge laden, fand **einen** ohne diese
+Pruefung.
+
+### Der erste Durchgang war falsch
+
+Gesucht wurde nach `_pruefe_generation`. Ergebnis: neun Luecken -
+`nachpruefung`, `anwaerter`, `rangprobe`, `zeitachse`, `verbundmodell`,
+`phasen`, `suchbudget`, `paare`, `vorratsdecke`.
+
+Acht davon waren keine. Sie pruefen ueber `passt_zum_intervall` direkt und
+**ueberspringen** die unpassenden Generationen, statt abzubrechen - richtig so,
+denn sie nehmen mehrere Kataloge auf einmal, und ein Abbruch waere schaerfer
+als noetig. `_pruefe_generation` ist der Mantel fuer den Fall *ein* Katalog.
+
+Wer nach dem Mantel sucht statt nach der Sache, findet Gespenster. Das steht
+hier, weil es fast in einen Befund gelaufen waere.
+
+### Die eine echte Luecke
+
+`cli suchbudget` sammelte ueber **alle** Generationen:
+
+    for liste in GENERATIONS.values():
+
+und rechnete sie auf der gewaehlten Kerzenlaenge durch. Auf Tageskerzen sind
+das 23 von 53 Regeln aus den Viertelstunden-Katalogen 6, 7 und 8 - **43 %**.
+
+### Warum es trotzdem nichts verfaelscht hat
+
+Gemessen: **keine einzige** der 23 taucht in der Ausgabe auf. Sie fallen an der
+Trade-Zahl heraus, bevor die Rangliste entsteht - eine Scalp-Regel loest auf
+Tageskerzen kaum aus. Die Ausgabe ist vor und nach der Wache **zeichengleich**.
+
+Der Schutz war also da, aber als **Nebenwirkung eines Filters** und nicht als
+Absicht. Dieselbe Lage wie beim Datenrand in Befund 241: Etwas traegt, nur
+nicht das Bauteil, dem man es zuschreiben wuerde. Und dieselbe Folge: Aendert
+sich der Filter, faellt der Schutz weg, ohne dass jemand ihn angefasst haette.
+
+### Was es gekostet hat
+
+Rechenzeit.
+
+    Kandidaten     54  ->  31
+    Laufzeit       78 s -> 48 s
+
+Vierzig Prozent eines Laufs fuer Regeln, die nicht in die Auswertung kommen
+koennen. Kein Versuch - `suchbudget` schreibt den Zaehler nicht.
+
+### Was gebaut wurde
+
+Die Schleife laeuft ueber `GENERATIONS.items()` statt `.values()` - die Nummer
+ist der Schluessel, ohne sie laesst sich nichts pruefen - und ueberspringt, was
+nicht passt. Uebersprungenes wird **genannt**: Wer 31 statt 54 Kandidaten
+sieht, soll wissen, warum.
+
+Die Wache dagegen sucht nach **beiden** Pruefungen und nur bei Befehlen, die
+auch wirklich rechnen. Ein neuer Befehl, der Kataloge laedt und einen
+Walk-Forward faehrt, faellt dort auf.
+
+Kostet keinen Versuch: gemessen, verglichen, nichts gehandelt.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

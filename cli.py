@@ -9338,11 +9338,35 @@ def suchbudget(
         for x in symbole
     }
 
+    # **Nur die Kataloge, die auf diese Kerzenlaenge gehoeren** (Befund 243).
+    # Bis hierher lief die Schleife ueber *alle* Generationen: Auf Tageskerzen
+    # waren das 23 von 53 Regeln aus den Viertelstunden-Katalogen 6, 7 und 8.
+    # Sie kosten keinen Versuch, aber sie werden gerechnet, und "dieselben
+    # Periodenzahlen bedeuten hier andere Zeitraeume" - eine andere Regel unter
+    # demselben Namen. Alle uebrigen Befehle, die Seeds laden, pruefen das
+    # laengst; dieser war der einzige, der es nicht tat.
+    from research.seeds import VORGESEHEN, passt_zum_intervall
+
     genome = []
-    for liste in GENERATIONS.values():
+    uebersprungen = []
+    for nummer, liste in GENERATIONS.items():
+        if not passt_zum_intervall(nummer, interval_obj.value):
+            uebersprungen.append(nummer)
+            continue
         for eintrag in liste:
             genome.append(eintrag() if callable(eintrag) else eintrag)
     genome.append(spitzenkandidat())
+    if uebersprungen:
+        zeilen = ", ".join(
+            f"{n} ({VORGESEHEN.get(n)}-Kerzen)" for n in sorted(uebersprungen)
+        )
+        console.print(
+            f"[yellow]Uebersprungen auf {interval_obj.label}:[/] "
+            f"Generation {zeilen}.\n"
+            f"[dim]Sie kamen bisher mit und fielen an der Trade-Zahl heraus - "
+            f"gerechnet wurden sie trotzdem. Dieselben Periodenzahlen "
+            f"bedeuten hier andere Zeitraeume.[/]"
+        )
 
     trials = load_trials(Path(settings.paths.state) / "trials.json")
     console.print(
