@@ -21503,3 +21503,84 @@ Befund.
 
 Kostet keinen Versuch: verdrahtet und geprueft, nichts gehandelt.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihunderteinundvierzig. Welche der beiden Schichten wirklich traegt
+
+Befund 240 hat nebenbei sichtbar gemacht, dass der Tagesvorrat von BTC und ETH
+vier Tage hinter dem von LTC und XRP zurueckliegt - und auf der halben Kerze
+aus Befund 239 endet. Die naheliegende Reaktion: nachladen. Bitstamp ist aus
+diesem Container erreichbar (HTTP 200), der Befehl `cli referenzkerzen` gibt es.
+
+Nachladen aendert allerdings **jede gepflegte Zahl des Projekts**. Also erst
+gemessen, was der veraltete Rand kostet.
+
+### Er kostet nichts
+
+Aus den Viertelstunden laesst sich der Tagesrand sauber verlaengern - Befund
+239 hat gezeigt, dass beide Wege uebereinstimmen. Damit die halbe Kerze durch
+die ganze ersetzt und drei Tage angehaengt:
+
+    Stand                              Fenster  Trades  n_eff  Guete   DSR
+    wie der Speicher ist (bis 08-29)        32     156    115  0,2708  0,5881
+    sauberer Rand (bis 09-01)               32     156    115  0,2708  0,5881
+
+Identisch. **Der Vorrat wird deshalb nicht nachgeladen**: Es gibt keinen
+gemessenen Gewinn, und der Preis waere, dass jede Fundstelle dieses Laborbuchs
+neu gepflegt werden muesste.
+
+### Warum er nichts kostet - und da lag ich in 239 daneben
+
+In Befund 239 steht als Begruendung: *"Der Nachlauf aus Befund 151 und der
+Randschnitt aus Befund 152 halten den Datenrand aus der Statistik heraus."*
+Das ist richtig und teilt die Arbeit trotzdem falsch auf.
+
+    letztes Testfenster endet    2026-08-19
+    Datenrand                    2026-08-29     Abstand 10 Tage
+    letzter Trade endet          2026-08-29     Abstand  0 Tage
+
+Der Nachlauf haelt die **Fenster** zehn Tage vom Rand weg. Die **Positionen**
+haelt er nicht: Eine im letzten Fenster eroeffnete laeuft weiter, bis die
+Daten enden, und zwei tun das auch. Was die halbe Kerze dann kostet:
+
+    Guete mit zensierten Trades    0,284810 -> 0,285295   (+0,000486)
+    Guete ohne zensierte Trades    0,270779 -> 0,270779   (+0,000000)
+
+**Tragend ist der Randschnitt allein.** Der Nachlauf ist ein Puffer fuer
+Fenster, kein Puffer fuer Trades - und dass es so aussah, lag an meinem Satz.
+
+Die Groesse ist klein, die Richtung nicht gleichgueltig: Die halbe Kerze
+schmeichelt. Sie schneidet das Hoch und den Schlusskurs ab, der zensierte
+Trade sieht dadurch besser aus, als er war.
+
+### Warum das aufgeschrieben gehoert
+
+Weil die Zusicherung sonst an der falschen Stelle haengt. Wer den Nachlauf
+fuer den Schutz haelt, koennte den Randschnitt lockern und glauben, es bleibe
+ein Puffer von zehn Tagen. Fuer Positionen gibt es ihn nicht.
+
+`randtrades` erkennt zensierte Trades an ihrem **Ausstiegsgrund**, nicht an
+der Naehe zum Rand. Genau deshalb traegt die Schicht: Sie haengt nicht daran,
+wie weit der Nachlauf reicht.
+
+### Was gebaut wurde
+
+`tests/test_datenrand.py`: haelt beide Schichten getrennt fest - dass der
+Nachlauf die Fenster wegdrueckt, dass er die Trades **nicht** wegdrueckt, und
+dass die Randkerze mit den zensierten Trades etwas aendert und ohne sie
+nichts. Faellt der letzte Test, ist der Randschnitt weg, und dann ist der
+Datenrand in den Zahlen.
+
+Der Registereintrag zu 239 nennt jetzt die tragende Schicht statt beider.
+
+### Was mir daran auffaellt
+
+Zwei Befunde hintereinander an derselben Sache, und beide Male war die Zahl
+richtig und der Satz daneben - 236 hat einen Punktschaetzer zum Urteil
+gemacht, 239 hat einen Schutz zwei Bauteilen zugeschrieben, von denen nur
+eines ihn leistet.
+
+Der Unterschied zu frueher: Diesmal ist es beim Nachmessen aufgefallen und
+nicht beim naechsten Fehler.
+
+Kostet keinen Versuch: gemessen und nichts nachgeladen.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

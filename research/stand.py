@@ -1236,13 +1236,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "der Backfill schrieb sie mittags und zog sie nie nach: 52 % des "
         "Volumens, 'high' und 'close' um 0,48 % und 0,76 % zu tief, und in "
         "der Reihe stand sie wie eine volle. Gemessen kostet sie nichts - mit "
-        "und ohne sie sind alle Zahlen des Bestands gleich, Nachlauf (151) "
-        "und Randschnitt (152) tragen den Rand. Das ist aber eine "
-        "Eigenschaft des Nachlaufs und keine der Daten, deshalb prueft 'cli "
-        "quality' es jetzt gegen die feinste teilbare Reihe im Speicher - "
-        "eine Warnung, kein Fehler",
+        "und ohne sie sind alle Zahlen des Bestands gleich. Tragend ist dabei "
+        "allein der Randschnitt (152): Der Nachlauf haelt die Fenster zehn "
+        "Tage vom Rand weg, die Trades nicht - zwei laufen bis genau dorthin, "
+        "und mit ihnen bewegt die halbe Kerze die Guete um 0,0005 nach oben. "
+        "'cli quality' prueft es jetzt gegen die feinste teilbare Reihe im "
+        "Speicher, als Warnung und nicht als Fehler",
         239,
-        zuletzt=240,
+        zuletzt=241,
     ),
 )
 
