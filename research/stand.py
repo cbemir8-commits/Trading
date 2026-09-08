@@ -1309,6 +1309,21 @@ BEHOBEN: tuple[Richtung, ...] = (
         "SPOTPUNKT gebunden",
         246,
     ),
+    # Kein Fund, sondern eine Bestaetigung - und das Wissen, das der Lauf
+    # vorher gebraucht hat.
+    Richtung(
+        "Der Rauchtest aus 104 war nie wiederholt worden",
+        "52 Befehle mit ihren Voreinstellungen unter Trockenlauf: kein "
+        "Traceback, Zaehler vor und nach dem Lauf 198. Die drei mit Exit "
+        "ungleich null lehnen sauber ab und sagen, was fehlt - die Lehre aus "
+        "103 haelt, und 'sperrprobe' nennt seine Laufzeit von selbst (105). "
+        "Geblieben ist die Einteilung, die der Lauf vorher brauchte: "
+        "siebzehn Befehle wirken nach aussen, 52 nicht, beide Seiten einzeln "
+        "aufgezaehlt. Der erste Entwurf rechnete die harmlosen als Differenz "
+        "und war damit tautologisch - ein neuer Befehl waere stillschweigend "
+        "als harmlos durchgegangen",
+        247,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

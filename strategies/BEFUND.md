@@ -21946,3 +21946,73 @@ Gewinn.
 
 Kostet keinen Versuch: durchsucht, gemessen, gebunden.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsiebenundvierzig. Der Rauchtest, den es seit 104 umsonst gibt
+
+Befund 103 hat einen Befehl gefunden, der mit seinen eigenen Voreinstellungen
+abbrach. Der Rauchtest, der ihn fand, kostete **21 Versuche** (Befund 104) -
+zwanzig Befehle messen und zaehlen dabei. Daraufhin entstand
+`TRADING_TROCKENLAUF`.
+
+Seither ist der Rauchtest **nie wiederholt worden**. Das Werkzeug war da, der
+Lauf nicht.
+
+### Nachgeholt
+
+52 Befehle mit ihren Voreinstellungen, unter Trockenlauf:
+
+    ok (Exit 0)          28
+    laenger als 30 s     20
+    sauber abgelehnt      3
+    Traceback             0
+
+    Versuchszaehler vorher 198, nachher 198
+
+Die drei mit Exit ungleich null lehnen ab und sagen, was fehlt:
+
+    quelle     "Keine Bestenliste vorhanden ... 'cli wettbewerb' legt sie an"
+    review     "Noch keine abgeschlossenen Trades"
+    vorschlag  "Kein LLM__ANTHROPIC_API_KEY ... oder mit --datei"
+
+Das ist die Lehre aus 103, nicht ihr Gegenteil: abbrechen ist in Ordnung,
+**stumm** abbrechen nicht.
+
+Dazu die Gegenprobe zu Befund 105: `sperrprobe` sagt jetzt von selbst *"Eine
+Ziehung dauert 9.9 s, 200 davon also rund 33 Minuten"* - damals wurde es nach
+900 Sekunden abgeschossen, weil nur ein Spinner ohne Zahl zu sehen war.
+
+**Zwei Wachen bestaetigt, keine Luecke gefunden.**
+
+### Warum daraus trotzdem etwas bleibt
+
+Nicht wegen des Ergebnisses - es war sauber. Sondern wegen der Frage, die
+**vorher** zu beantworten war: Welche Befehle darf man dafuer ueberhaupt
+starten? `cli trade` stellt Orders, `cli setup` schreibt Zugangsdaten, `cli
+backfill` laedt an einer Boerse, und siebzehn insgesamt wirken nach aussen.
+
+Ein Rauchtest, der diese Liste falsch zieht, ist teurer als der Fehler, den er
+sucht. Sie steht jetzt als Daten da, mit Grund je Eintrag - der naechste Lauf
+muss sie nicht neu raten.
+
+### Und die Wache dazu, im zweiten Anlauf
+
+Der erste Entwurf rechnete die harmlosen als "alles Uebrige":
+
+    unbekannt = alle - WIRKT_NACH_AUSSEN - _harmlos()   # immer leer
+
+Die Einteilung war damit vollstaendig per Konstruktion, der Test tautologisch,
+und ein **neuer** Befehl waere stillschweigend auf der harmlosen Seite
+gelandet - der Richtung, in der ein Irrtum eine Order stellt.
+
+Jetzt stehen beide Seiten einzeln da. Gegengeprueft mit einem erfundenen
+Befehl: Der Test faellt, wie er soll.
+
+Das ist der dritte Anlauf dieser Art in Folge, bei dem der erste Wurf zu
+bequem war - 243 nach dem Mantel statt der Sache gesucht, 244 nach dem
+Ordnernamen statt dem Schreibvorgang, hier die Menge per Differenz statt per
+Aufzaehlung. Alle drei Male hat erst die Gegenprobe es gezeigt. Eine Wache,
+die man nicht gegen eine erfundene Verletzung haelt, ist eine Behauptung.
+
+Kostet keinen Versuch: 52 Befehle gelaufen, Zaehler unveraendert bei 198 -
+gemessen, nicht angenommen.
+Suchbudget 68 von 100.
