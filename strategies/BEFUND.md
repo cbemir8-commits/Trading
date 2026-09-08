@@ -21806,3 +21806,66 @@ Unterschied faellt erst auf, wenn jemand das Richtige tut.
 Kostet keinen Versuch: `teststaerke` schreibt den Zaehler nicht, und der
 Probelauf lief im Trockenlauf.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertfuenfundvierzig. Eine Zusicherung, die einen Mangel festhielt
+
+In Befund 244 ist ein eigener Test gefallen, und zwar zu Recht.
+`test_teststaerke_zaehlt_mit` aus Befund 242 enthielt:
+
+    assert "write_report" not in quelle
+
+Gemeint war *"sie ist leicht zu uebersehen, also pruefe, dass sie mitzaehlt"*.
+Dagestanden hat *"sie schreibt selbst, und dabei bleibt es"*.
+
+Das ist eine eigene Fehlerart, und sie hat eine unangenehme Eigenschaft: Sie
+faellt erst auf, wenn jemand das **Richtige** tut. Ein Test, der einen Mangel
+festhaelt, ist bis dahin gruen und sieht aus wie eine Zusicherung.
+
+### Gibt es mehr davon?
+
+Durchgesucht: jede Zusicherung der Form `assert "<Wache>" not in ...` ueber die
+sechzehn Namen, die in diesem Projekt fuer eine Wache stehen.
+
+**Ein Treffer** - und er ist richtig.
+
+`test_die_sweeps_brechen_nicht_ab` sichert zu, dass `landschaft` und
+`machbarkeit` die Budgetgrenze **nicht** kennen. Sein Kopf sagt, warum:
+
+> *"Was ich nicht getan habe. ... ob so ein Sweep eine Hypothese ueber den
+> Markt ist oder eine Messung am Bestand, ist eine offene Frage. Sie mitten in
+> ihrer Antwort abzubrechen waere eine Entscheidung, die hier nicht faellt."*
+
+Da ist der Unterschied. Die Zusicherung haelt eine **Entscheidung**, die
+bewusst nicht gefallen ist (Befund 233/234) - nicht einen Zustand. Wer die
+Grenze dort einbaut, beantwortet die offene Frage im Vorbeigehen, und das soll
+auffallen.
+
+    Mangel festgehalten     "sie schreibt selbst"         -> weg damit
+    Entscheidung gehalten   "sie bricht bewusst nicht ab" -> eintragen
+
+### Was gebaut wurde
+
+`tests/test_zusicherungen.py`: findet jede negative Zusicherung ueber eine
+Wache und verlangt, dass sie in `BEGRUENDET` steht - mit einem Satz, der die
+Entscheidung nennt und eine Fundstelle traegt. Ein neuer Fall zwingt damit zu
+der Frage, die in 242 nicht gestellt wurde: *Halte ich eine Entscheidung oder
+einen Zustand?*
+
+Dazu zwei Gegenproben, wie sie das Projekt fuer seine Register schon kennt: Ein
+Eintrag fuer einen Test, den es nicht mehr gibt, faellt auf, und eine
+Begruendung ohne Befundnummer auch.
+
+Die Wache selbst ist gegen eine erfundene Verletzung geprueft worden - sonst
+waere sie eine Zusicherung, von der niemand weiss, ob sie greift.
+
+### Was sie nicht kann
+
+Ein Test, der einen falschen **Wert** festschreibt - `assert x == 0.2765`, als
+das laengst ueberholt war -, sieht aus wie jeder andere. Gegen den hilft nur,
+was `referenz.py` tut: die Zahl an eine Messung binden statt an eine Erwartung.
+
+Diese Wache deckt die **Bauart** ab, nicht die Absicht. Das ist weniger, als es
+zunaechst aussieht, und mehr als nichts.
+
+Kostet keinen Versuch: durchsucht und eine Wache gebaut.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

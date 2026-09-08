@@ -1280,6 +1280,20 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'reports' schreibt",
         244,
     ),
+    # Die Fehlerart hinter dem gefallenen Test aus 244, einmal durchgesucht.
+    Richtung(
+        "Ein Test hielt einen Mangel fest statt einer Zusicherung",
+        "242 schrieb 'assert write_report not in quelle' - gemeint war 'sie "
+        "zaehlt mit', dagestanden hat 'sie schreibt selbst, und dabei bleibt "
+        "es'. Solche Tests sind gruen, bis jemand das Richtige tut. Alle "
+        "sechzehn Wachennamen durchsucht: ein weiterer Treffer, und der ist "
+        "richtig - die Sweeps brechen bewusst nicht am Budget ab, weil das "
+        "die offene Frage aus 233/234 im Vorbeigehen beantworten wuerde. Eine "
+        "Wache verlangt jetzt fuer jede solche Zusicherung einen Eintrag mit "
+        "Grund und Fundstelle; falsche Werte findet sie nicht, dagegen hilft "
+        "nur die Bindung an eine Messung",
+        245,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
