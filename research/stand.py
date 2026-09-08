@@ -1293,6 +1293,21 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Grund und Fundstelle; falsche Werte findet sie nicht, dagegen hilft "
         "nur die Bindung an eine Messung",
         245,
+        zuletzt=246,
+    ),
+    # Die Grenze aus 245, nachgesehen: Es gab einen solchen Fall.
+    Richtung(
+        "Ein Testkopf nannte einen ueberholten Punkt 'den' Betriebspunkt",
+        "'test_wettrennen' baute seine Faelle mit der Stichprobe vor Befund "
+        "152 und dem Spot-Wert in 'bester', wo der Suchwert hingehoert - und "
+        "der Kopf nannte das den geltenden Punkt. Die Tests selbst waren "
+        "richtig: Sie zeigen, dass die Momente Huerde und Schnittpunkt "
+        "verschieben, und das laesst sich nur an einem festen Punkt zeigen - "
+        "am heutigen gibt es keinen Schnittpunkt mehr. Der Punkt heisst jetzt "
+        "nach seinem Befund, daneben stehen vier Tests ohne eine einzige Zahl "
+        "im Quelltext, und vier Stellen in 'test_auftragslage' sind an "
+        "SPOTPUNKT gebunden",
+        246,
     ),
 )
 

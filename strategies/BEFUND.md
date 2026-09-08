@@ -21869,3 +21869,80 @@ zunaechst aussieht, und mehr als nichts.
 
 Kostet keinen Versuch: durchsucht und eine Wache gebaut.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsechsundvierzig. Der Fall, den die Wache aus 245 nicht faengt
+
+Befund 245 hat eine Wache gegen Tests gebaut, die einen Mangel festschreiben,
+und ihre Grenze gleich dazu:
+
+> *"Ein Test, der einen falschen Wert festschreibt - `assert x == 0.2765`, als
+> das laengst ueberholt war -, sieht aus wie jeder andere."*
+
+Also nachgesehen, ob es davon welche gibt. Durchsucht: die sechs Zahlen aus
+`referenz.py`, die veralten koennen, gegen alle Testdateien.
+
+### Der Fund
+
+`tests/test_wettrennen.py` baut seine Faelle aus:
+
+    def rennen(self, **extra) -> Rennen:
+        """Der Betriebspunkt, aus dem die Zahlen im Modulkopf stammen."""
+        return Rennen(bester=0.2708, versuche=198, trades=152, **extra)
+
+Zwei Dinge stimmen daran nicht mehr:
+
+* `trades=152` ist die effektive Stichprobe **vor** Befund 152. Heute sind es
+  115.
+* `bester=0.2708` ist der **Spot**-Wert. In `bester` gehoert, was die Suche
+  hervorgebracht hat, und gesucht wurde unter Perpetual - das ist die Falle,
+  die Befund 110 beschreibt und 238 nachgerechnet hat.
+
+Und der Kopf sagte "**der** Betriebspunkt", also: der geltende.
+
+### Was daran wirklich falsch war
+
+Nicht die Tests. Sie zeigen, **dass** die Momente Huerde und Schnittpunkt
+verschieben - eine Eigenschaft der Rechnung, die sich an jedem festen Punkt
+zeigen laesst. Gemessen an beiden Punkten:
+
+    Stand                      Faktor Huerde   Schnittpunkt
+    Befund 192 (n_eff 152)              1,219           8041
+    heute      (n_eff 115)              1,246           keiner
+
+Die Eigenschaft haelt. Was nicht hielt, war der **Satz daneben**: *"Mit den
+Momenten des Bestands holt die Suche bei rund achttausend Versuchen auf."* Das
+las sich als Aussage ueber den heutigen Stand und war seit Befund 235 keine
+mehr - dort holt sie gar nicht mehr auf.
+
+Am heutigen Punkt liesse sich der Test uebrigens nicht einmal formulieren: Der
+Vergleich "achttausend gegen nie" waere "nie gegen nie". Der alte Punkt ist
+also nicht bloss zulaessig, er ist noetig - er muss nur als alter dastehen.
+
+### Was gebaut wurde
+
+Der feste Punkt bleibt und heisst jetzt, was er ist: der Stand von Befund 192,
+mit dem Grund, warum er fest sein darf. Daneben `TestDerHeutigeStand` - vier
+Tests, in denen **keine Zahl steht**, alles aus `referenz`:
+
+* die Suche holt nach diesem Modell nicht mehr auf (235),
+* die Spanne umschliesst die Nullstreuung (236) - sonst liest sich der erste
+  als Urteil,
+* die Momente entscheiden auch hier ueber das *Wo*, nicht das *Ob*,
+* und ein Test, der auffaellt, wenn eine der Referenzzahlen wieder als Zahl im
+  Quelltext dieser Klasse landet.
+
+Dazu in `tests/test_auftragslage.py` vier Stellen `versuche=198,
+bestand_trades=115, bestand_sharpe=0.2708` an `SPOTPUNKT` gebunden. Sie
+stimmten - sie waren nur festgeschrieben, und das ist derselbe Zustand wie die
+einundzwanzig Stellen aus Befund 135, nur in den Tests statt in den
+Modulkoepfen.
+
+### Was offen bleibt
+
+Die uebrigen Treffer stehen in `test_verbund.py` und `test_erfuellung.py` und
+sind Rechenbeispiele mit eigenem Zweck - dort ist die Zahl das, was geprueft
+wird, nicht der Stand, den sie beschreibt. Sie zu binden waere Aufwand ohne
+Gewinn.
+
+Kostet keinen Versuch: durchsucht, gemessen, gebunden.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

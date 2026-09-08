@@ -562,7 +562,24 @@ class TestDieHuerdeGehoertZumKandidaten:
     """
 
     def rennen(self, **extra) -> Rennen:
-        """Der Betriebspunkt, aus dem die Zahlen im Modulkopf stammen."""
+        """Der Stand von Befund 192 - **absichtlich fest, absichtlich alt.**
+
+        Hier stand "der Betriebspunkt, aus dem die Zahlen im Modulkopf
+        stammen". Das war einmal richtig und ist es seit Befund 152 nicht
+        mehr: Die effektive Stichprobe ist von 152 auf 115 gefallen, und
+        ``bester`` traegt hier den Spot-Wert, wo der Suchwert hingehoert
+        (Befund 110/238).
+
+        Der Punkt bleibt trotzdem stehen. Diese Klasse zeigt, **dass** die
+        Momente die Huerde und den Schnittpunkt verschieben - eine
+        Eigenschaft der Rechnung, die an jedem festen Punkt zu zeigen ist.
+        Mit dem heutigen Stand liesse sie sich gerade nicht zeigen: Dort gibt
+        es ueberhaupt keinen Schnittpunkt mehr, und der Vergleich "acht-
+        tausend gegen nie" waere "nie gegen nie".
+
+        Was der heutige Stand sagt, steht in ``TestDerHeutigeStand`` darunter
+        und ist an ``referenz`` gebunden, damit es nicht wieder einfriert.
+        """
         return Rennen(bester=0.2708, versuche=198, trades=152, **extra)
 
     def test_eine_neutrale_verteilung_hebt_die_huerde_deutlich(self) -> None:
@@ -575,10 +592,14 @@ class TestDieHuerdeGehoertZumKandidaten:
     def test_der_schnittpunkt_verschiebt_sich_um_groessenordnungen(self) -> None:
         """**Der tragende Test.**
 
-        Mit den Momenten des Bestands holt die Suche bei rund achttausend
-        Versuchen auf; mit einer neutralen Verteilung nicht einmal bei einer
-        Milliarde. Dieselbe Regel, dieselben Daten - nur die Verteilung, mit
-        der die Huerde gerechnet wird, ist eine andere.
+        Am Stand von Befund 192 holt die Suche mit den damaligen Momenten bei
+        rund achttausend Versuchen auf; mit einer neutralen Verteilung nicht
+        einmal bei einer Milliarde. Dieselbe Regel, dieselben Daten - nur die
+        Verteilung, mit der die Huerde gerechnet wird, ist eine andere.
+
+        Hier stand "mit den Momenten **des Bestands**". Das las sich wie eine
+        Aussage ueber den heutigen Stand und war seit Befund 235 keine mehr:
+        Dort holt die Suche nach diesem Modell gar nicht mehr auf.
         """
         mit_vorgabe = self.rennen().schnittpunkt()
         neutral = self.rennen(schiefe=0.0, woelbung=3.0).schnittpunkt()
@@ -624,3 +645,85 @@ class TestDieHuerdeGehoertZumKandidaten:
         assert quelle.count("schiefe=kandidat.schiefe") >= 3, (
             "eine Rennen-Aufrufstelle rechnet wieder mit der Vorgabe"
         )
+
+
+class TestDerHeutigeStand:
+    """Was das Rennen **jetzt** sagt - an ``referenz`` gebunden.
+
+    **Befund 246.** Die Klasse darueber rechnet an einem festen Punkt von
+    Befund 192. Das ist fuer eine Eigenschaftspruefung richtig, laesst den
+    heutigen Stand aber ungeprueft - und genau so ist in Befund 235 eine ganze
+    Handlungsliste auf dem Stand von 108 stehengeblieben.
+
+    Hier stehen keine Zahlen im Code. Wer ``referenz.py`` nachzieht, zieht
+    diese Tests mit; wer sie einfriert, faellt hier auf.
+    """
+
+    @staticmethod
+    def _heute(**extra) -> Rennen:
+        from research.referenz import PERPETUALPUNKT, SCHUB, SPOTPUNKT
+
+        werte = {
+            # ``bester`` gehoert das, was die **Suche** hervorgebracht hat, und
+            # gesucht wurde unter Perpetual (Befund 110/238).
+            "bester": PERPETUALPUNKT.guete,
+            "versuche": SPOTPUNKT.versuche,
+            "trades": SPOTPUNKT.effektiv,
+            "schub": SCHUB,
+            "schiefe": SPOTPUNKT.schiefe,
+            "woelbung": SPOTPUNKT.woelbung,
+        }
+        werte.update(extra)
+        return Rennen(**werte)
+
+    def test_die_suche_holt_nach_diesem_modell_nicht_mehr_auf(self) -> None:
+        """Der Punktschaetzer aus Befund 235, gebunden statt zitiert."""
+        r = self._heute()
+
+        assert not r.schneller_als_die_huerde
+        assert r.schnittpunkt() is None
+
+    def test_die_spanne_umschliesst_die_nullstreuung(self) -> None:
+        """Und die Einschraenkung aus Befund 236 gleich daneben - ohne sie
+        liest sich der Test darueber als Urteil."""
+        from research.wettrennen import kalibrierbereich
+
+        r = self._heute()
+        assert r.streuung is not None
+        unten, oben = kalibrierbereich(r.streuung, r.versuche, irrtum=0.10)
+
+        assert unten <= r.nullstreuung <= oben
+
+    def test_die_momente_entscheiden_auch_hier_nicht_ueber_das_ob(self) -> None:
+        """Dieselbe Eigenschaft wie oben, am heutigen Punkt: Die Verteilung
+        verschiebt das **Wo**, nicht das **Ob**."""
+        assert (
+            self._heute().schneller_als_die_huerde
+            is self._heute(schiefe=0.0, woelbung=3.0).schneller_als_die_huerde
+        )
+
+    def test_keine_der_zahlen_steht_im_test(self) -> None:
+        """**Die Wache gegen das Wiedereinfrieren.**
+
+        Befund 245 hat festgehalten, dass eine Zusicherung ueber einen festen
+        Wert wie jede andere aussieht. Hier ist sie zu erkennen: Steht eine
+        der Referenzzahlen als Zahl im Quelltext dieser Klasse, ist sie
+        eingefroren.
+        """
+        import ast
+        import inspect
+
+        from research.referenz import PERPETUALPUNKT, SPOTPUNKT
+
+        quelle = inspect.getsource(TestDerHeutigeStand)
+        zahlen = {
+            n.value
+            for n in ast.walk(ast.parse(quelle))
+            if isinstance(n, ast.Constant) and isinstance(n.value, float)
+        }
+        verboten = {
+            SPOTPUNKT.guete, SPOTPUNKT.dsr, SPOTPUNKT.schiefe,
+            SPOTPUNKT.woelbung, PERPETUALPUNKT.guete, PERPETUALPUNKT.dsr,
+        }
+
+        assert not (zahlen & verboten), f"eingefroren: {sorted(zahlen & verboten)}"

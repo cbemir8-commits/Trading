@@ -20,6 +20,7 @@ import pytest
 from research.analyst import build_prompt
 from research.auftragslage import AEHNLICH, Auftragslage, aus_messungen
 from research.gates import GateThresholds
+from research.referenz import SPOTPUNKT
 
 #: Der gemessene Stand nach Befund 75.
 STAND = {
@@ -351,7 +352,9 @@ class TestWasAusDenPartnernWurde:
 
     def lage(self, holdout=(7, 0, 30.0, 41.0)):
         return aus_messungen(
-            versuche=198, bestand_trades=115, bestand_sharpe=0.2708,
+            versuche=SPOTPUNKT.versuche,
+            bestand_trades=SPOTPUNKT.effektiv,
+            bestand_sharpe=SPOTPUNKT.guete,
             holdout=holdout,
         )
 
@@ -418,7 +421,9 @@ class TestPunktZweiIstEineHerleitung:
 
     def lage(self):
         return aus_messungen(
-            versuche=198, bestand_trades=115, bestand_sharpe=0.2708,
+            versuche=SPOTPUNKT.versuche,
+            bestand_trades=SPOTPUNKT.effektiv,
+            bestand_sharpe=SPOTPUNKT.guete,
         )
 
     def test_punkt_zwei_wird_nicht_mehr_als_vorhersage_verkauft(self) -> None:
@@ -470,7 +475,9 @@ class TestDasBilligeVorfilterStehtImAuftrag:
 
     def lage(self):
         return aus_messungen(
-            versuche=198, bestand_trades=115, bestand_sharpe=0.2708,
+            versuche=SPOTPUNKT.versuche,
+            bestand_trades=SPOTPUNKT.effektiv,
+            bestand_sharpe=SPOTPUNKT.guete,
             holdout=(7, 0, 30.0, 41.0),
         )
 
@@ -516,7 +523,9 @@ class TestDasBilligeVorfilterStehtImAuftrag:
     def test_ohne_holdout_faellt_auch_das_vorfilter_weg(self) -> None:
         """Es begruendet sich aus dem Ergebnis - ohne das steht es allein da."""
         ohne = aus_messungen(
-            versuche=198, bestand_trades=115, bestand_sharpe=0.2708,
+            versuche=SPOTPUNKT.versuche,
+            bestand_trades=SPOTPUNKT.effektiv,
+            bestand_sharpe=SPOTPUNKT.guete,
         ).als_auftrag()
 
         assert "zufallseinstieg" not in ohne
