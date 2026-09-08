@@ -1324,6 +1324,18 @@ BEHOBEN: tuple[Richtung, ...] = (
         "als harmlos durchgegangen",
         247,
     ),
+    # Die Klage aus 114, eine Ebene hoeher - diesmal am eigenen Bericht.
+    Richtung(
+        "Der Bericht stellte 750 Zeilen vor die erste Aufgabe",
+        "'cli stand' war auf 1.053 Zeilen gewachsen; die drei Abschnitte, die "
+        "etwas von ihrem Leser verlangen, begannen bei Zeile 754 - davor die "
+        "beiden Archive. '--kurz' laesst genau die weg und sonst nichts: 563 "
+        "Zeilen, erste Aufgabe bei 264. Der Schnitt steht nicht nach Gefuehl, "
+        "sondern nach dem, was die Register selbst sagen ('sagt nichts ueber "
+        "die Aussichten'). Gerechnet wird unveraendert dasselbe - ein Test "
+        "haelt fest, dass das Kuerzen erst nach dem Walk-Forward greift",
+        248,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -2330,7 +2342,29 @@ class Lage:
                     ]
         return zeilen
 
-    def bericht(self) -> str:
+    def bericht(self, *, kurz: bool = False) -> str:
+        """Der Stand als Text - vollstaendig oder auf das Handelnde gekuerzt.
+
+        **Warum es die Kuerzung gibt** (Befund 248). Der volle Bericht ist auf
+        1.053 Zeilen gewachsen, und die drei Abschnitte, die etwas von seinem
+        Leser verlangen - was nicht bei ihm liegt, was nur auf seinem Rechner
+        laeuft, was den Zustand aendert -, beginnen bei Zeile 754. Davor
+        stehen ueber fuenfhundert Zeilen abgeschlossener Wege.
+
+        Das ist die Klage aus Befund 114, eine Ebene hoeher: *"Das Wissen
+        liegt im System, aber nicht dort, wo es die Arbeit steuern wuerde."*
+
+        Gekuerzt wird genau um die beiden **Archive** - ``GESCHLOSSEN`` und
+        ``BEHOBEN``. Der Schnitt ist nicht nach Gefuehl gewaehlt: Die
+        Ueberschrift des zweiten sagt schon selbst *"sagt nichts ueber die
+        Aussichten"*, und der Kopf von ``OFFEN`` nennt den Unterschied zu
+        ``GESCHLOSSEN`` *"der wichtigere von beiden"*.
+
+        Was bleibt, ist alles Gemessene ueber den **heutigen** Stand: Zahlen,
+        Urteil, Aussichten, was offen ist, der Auftrag, die Entscheidungen und
+        die Befehle fuer den Rechner des Nutzers. Gerechnet wird in beiden
+        Faellen dasselbe - gekuerzt wird die Ausgabe, nicht die Messung.
+        """
         zeilen = [
             "STAND",
             "=" * 72,
@@ -2345,11 +2379,10 @@ class Lage:
             self.urteil(),
             *self._aussichtszeilen(),
             *self._zweiter_weg(),
-            "",
-            "GEMESSEN UND GESCHLOSSEN",
-            "-" * 72,
         ]
-        zeilen.extend(f"  {r}" for r in GESCHLOSSEN)
+        if not kurz:
+            zeilen += ["", "GEMESSEN UND GESCHLOSSEN", "-" * 72]
+            zeilen.extend(f"  {r}" for r in GESCHLOSSEN)
         # **Und was noch offen ist** (Befund 208). ``OFFEN`` stand seit
         # seiner Anlage in diesem Modul und war an **keiner** Stelle
         # angezeigt - elf Eintraege, gepflegt ueber Dutzende Befunde,
@@ -2372,7 +2405,7 @@ class Lage:
         # auf einmal "README auf dem Stand vom 1. August". Beides Messungen
         # mit Fundstelle, aber zu verschiedenen Fragen - und nur die obere
         # sagt etwas ueber die Aussichten des Projekts.
-        if BEHOBEN:
+        if BEHOBEN and not kurz:
             zeilen += [
                 "",
                 "BEHOBEN AN DEN WERKZEUGEN (sagt nichts ueber die Aussichten)",

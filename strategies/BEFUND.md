@@ -6468,6 +6468,28 @@ Der Hebel ist trotzdem da, nur eine Stuetzstelle weiter: bei 240 Trades
 genuegen 0,19. Der Text nennt jetzt beide Punkte, und ein Test verlangt, dass
 die falsche Behauptung nicht wiederkommt.
 
+### Ein Test ist dabei gefallen - und sein eigener Kopf sagt warum
+
+`test_ein_vergessener_trockenlauf_faellt_auf` prueft, dass die
+Trockenlauf-Warnung **vor** dem Bericht steht. Es tat das ueber
+
+    stelle.index("ACHTUNG") < stelle.index("lage.bericht()")
+
+und ist an der geaenderten Signatur gefallen, obwohl sich an der Reihenfolge
+nichts geaendert hat. Sein Kopf warnt genau davor:
+
+> *"Ein Test, der bei jeder Umstellung anschlaegt, misst die Umstellung und
+> nicht die Anforderung - und die lautet: vor der ersten Ausgabe."*
+
+Der Satz stammt aus Befund 112, wo derselbe Test an `stelle[:4000]` gerissen
+war. Der Anker ist damals von einem Zeichenfenster auf eine Reihenfolge
+umgestellt worden - und blieb an der exakten Aufrufform haengen. Jetzt
+`lage.bericht(`, ohne Klammerinhalt.
+
+Zweimal dieselbe Lehre am selben Test, nur eine Ebene feiner. Das ist keine
+Nachlaessigkeit, sondern die Eigenschaft von Ankern: Sie sind immer an
+irgendetwas fest, und man sieht erst beim Brechen, woran.
+
 ### Was das nicht ist
 
 Ein Vorschlag ist damit nicht besser, nur besser beauftragt. Ob der Analyst
@@ -22016,3 +22038,65 @@ die man nicht gegen eine erfundene Verletzung haelt, ist eine Behauptung.
 Kostet keinen Versuch: 52 Befehle gelaufen, Zaehler unveraendert bei 198 -
 gemessen, nicht angenommen.
 Suchbudget 68 von 100.
+
+## Zweihundertachtundvierzig. Siebenhundertfuenfzig Zeilen vor der ersten Aufgabe
+
+`cli stand` ist der Bericht, mit dem dieses Projekt seinen Nutzer erreicht. Er
+ist auf **1.053 Zeilen** gewachsen. Die drei Abschnitte, die etwas von ihm
+verlangen, beginnen bei Zeile 754:
+
+    WAS NICHT BEI MIR LIEGT        754
+    NUR AUF DEINEM RECHNER         893
+    WAS DEN ZUSTAND AENDERN KANN   947
+
+Davor liegen die beiden Archive - `GEMESSEN UND GESCHLOSSEN` ab Zeile 173 und
+`BEHOBEN AN DEN WERKZEUGEN` dahinter, zusammen ueber fuenfhundert Zeilen
+abgeschlossener Wege.
+
+Das ist die Klage aus Befund 114, eine Ebene hoeher: *"Das Wissen liegt im
+System, aber nicht dort, wo es die Arbeit steuern wuerde."* Dort ging es
+darum, dass die Reihenfolge der Arbeit nirgends stand. Hier steht sie - hinter
+siebenhundertfuenfzig Zeilen Geschichte.
+
+### Wo der Schnitt liegt, und warum genau dort
+
+Nicht nach Gefuehl. Beide Register sagen es selbst:
+
+* Die Ueberschrift von `BEHOBEN` lautet *"BEHOBEN AN DEN WERKZEUGEN (sagt
+  nichts ueber die Aussichten)"*.
+* Der Kopf von `OFFEN` nennt den Unterschied zu `GESCHLOSSEN` *"der wichtigere
+  von beiden: Wer wissen will, was als naechstes zu tun ist, liest diese Liste
+  und nicht die der zugemachten Wege."*
+
+`--kurz` laesst also **die beiden Archive** weg und sonst nichts. Alles ueber
+den heutigen Stand bleibt: Zahlen, Urteil, Aussichten, was offen ist, der
+Auftrag, die Entscheidungen, die Befehle fuer den Rechner des Nutzers, beide
+Betriebspunkte und die Gates.
+
+    Bericht        1.053 Zeilen  ->  563
+    erste Aufgabe  Zeile 754     ->  264
+
+### Was dabei nicht passieren darf
+
+Dass an der **Messung** gespart wird. Gerechnet wird in beiden Faellen
+dasselbe - zwei volle Walk-Forwards, beide Betriebspunkte, alle elf Gates.
+Gekuerzt wird die Ausgabe.
+
+Ein Test haelt das fest, und zwar an der Stelle, an der es schiefginge: Das
+`kurz` darf im Quelltext erst **nach** dem Walk-Forward vorkommen. Stuende es
+davor, waere der kurze Bericht ein anderer Bericht - und so entstehen zwei
+Wahrheiten ueber denselben Stand.
+
+Ein zweiter Test vergleicht beide Fassungen zeilenweise und laesst nur durch,
+was ein Eintrag der beiden Register oder deren Ueberschrift ist. Faellt der
+Kuerzung irgendwann mehr zum Opfer, faellt er.
+
+### Was das nicht ist
+
+Keine neue Messung und keine bessere Aussicht. Der Abstand von +24,3 % steht
+unveraendert, die Sperre auch. Es ist der Unterschied zwischen "es steht im
+Bericht" und "man findet es" - und der ist in diesem Projekt schon zweimal
+teuer gewesen (Befund 114, Befund 160).
+
+Kostet keinen Versuch: eine Ausgabeform, keine Rechnung.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

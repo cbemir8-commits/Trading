@@ -9496,6 +9496,10 @@ def stand(
         help="Symbole, durch Komma getrennt.",
     ),
     intervall: str = typer.Option("D", "--intervall", "-i"),
+    kurz: bool = typer.Option(
+        False, "--kurz", "-k",
+        help="Ohne die beiden Archive - nur Stand, Aussichten und was zu tun ist.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Wo steht das Projekt - auf einem Bildschirm.
@@ -9636,7 +9640,7 @@ def stand(
             f"wird nicht fortgeschrieben - jede Suche in diesem Zustand "
             f"zaehlt nicht mit, und die Huerde bleibt zu niedrig.\n"
         )
-    console.print(lage.bericht())
+    console.print(lage.bericht(kurz=kurz))
 
     # **Die Sperre gehoert an den Anfang, nicht ans Ende.**
     #

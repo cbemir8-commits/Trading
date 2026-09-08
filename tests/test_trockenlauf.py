@@ -153,7 +153,11 @@ class TestWache:
 
         assert "trockenlauf()" in stelle
         assert "ACHTUNG" in stelle
-        assert stelle.index("ACHTUNG") < stelle.index("lage.bericht()"), (
+        # ``lage.bericht(`` und nicht ``lage.bericht()``: Der Aufruf hat mit
+        # Befund 248 ein Argument bekommen, und der Test ist daran gefallen -
+        # genau die Bruchstelle, vor der sein eigener Kopf warnt, nur eine
+        # Ebene feiner. Gemeint ist die Reihenfolge, nicht die Signatur.
+        assert stelle.index("ACHTUNG") < stelle.index("lage.bericht("), (
             "Die Trockenlauf-Warnung steht nach dem Bericht - wer nur den "
             "Stand liest, sieht sie dann womoeglich nicht."
         )
