@@ -62,6 +62,13 @@ MEHRFACH: dict[str, str] = {
     # Die Obergrenze der Preisspanne aus Befund 230 - im Abschnitt selbst
     # und im Registereintrag, der sie zitiert.
     "1,26%": "Preisspanne des Suchens (Befund 230), Abschnitt und Register",
+    # Die beiden Kipppunkte aus Befund 250: einmal als Befund im Register,
+    # einmal als das, wonach bei 'cli funding' zu schauen ist. Dieselbe
+    # Messung, und genau die zwei Stellen, die sie brauchen - der dritte
+    # Fundort ist mit ihr weggefallen, weil er noch das alte Sprossenpaar
+    # trug.
+    "6,0%": "Erster Kipppunkt, Schlechtestes Jahr (Befund 250)",
+    "9,8%": "Zweiter Kipppunkt, Parameter-Plateau (Befund 250)",
 }
 
 

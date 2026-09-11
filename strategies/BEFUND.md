@@ -22164,3 +22164,85 @@ Begruendung fuer seine Stelle mit.
 
 Kostet keinen Versuch: eine Umstellung, keine Rechnung.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertfuenfzig. Der Abstand zweier Sprossen war zur Aussage geworden
+
+Befund 249 hat den Funding-Eintrag im Nutzerbericht nach vorn geholt, mit
+der Begruendung, an ihm haengen Versuche. Beim Nachlesen, wie viel genau an
+ihm haengt, stand in `research/finanzierung.py` seit Befund 100 dieser Satz:
+
+> Zwischen 5,5 % und 11 % kippen **zwei Gates** (Schlechtestes Jahr,
+> Parameter-Plateau).
+
+Der Satz ist wahr. Er ist trotzdem die falsche Auskunft, denn er beschreibt
+**die Leiter und nicht den Kandidaten**: 5,5 % und 11 % sind zwei benachbarte
+Sprossen, und dass beide Gates dazwischen fallen, heisst nur, dass keine
+Sprosse zwischen ihnen liegt.
+
+Je Gate nachgemessen, auf 0,11 Punkte genau:
+
+    Schlechtestes Jahr     haelt bis 5,99 %   faellt ab 6,07 %  p.a.
+    Parameter-Plateau      haelt bis 9,75 %   faellt ab 9,84 %  p.a.
+
+**3,7 Prozentpunkte liegen dazwischen.** Der Spielraum bis zum ersten
+Durchfaller ist 6,0 % im Jahr und nicht 11 % - gut die Haelfte dessen, was
+das Sprossenpaar nahelegt. Der Vorgabewert, mit dem jede Zahl dieses Projekts
+rechnet, steht bei 10,9 %: **jenseits von beiden Kipppunkten.** Was als
+7 von 11 gemeldet wird, ist der Zustand nach zwei Durchfaellern, deren
+Ursache eine nie gemessene Kostenannahme ist.
+
+Das ist derselbe Kern wie in 241, 243, 244 und 249: Es traegt etwas, aber
+nicht so weit, wie man annimmt. Hier war es die Aufloesung einer Leiter.
+
+### Was gebaut wurde
+
+`kipppunkte_suchen` halbiert **je Gate**, nicht je Sprossenzahl. Der
+Unterschied ist genau der Befund: Zwei Gates koennen sich einen
+Sprossenabstand teilen, und dann meldet jede Leiter "hier kippen zwei" und
+laesst den Raum dazwischen verschwinden. Jeder Satz ist ein voller
+Walk-Forward, also teilen sich die Suchen einen Zwischenspeicher - 14
+Messungen fuer beide Punkte statt zweimal sieben plus Raender.
+
+Leiter und Suche rufen denselben `lauf()`; zwei Kopien der Konfiguration
+waeren auseinandergelaufen, ohne dass man es an den Zahlen saehe. Ein Test
+haelt das an der Stelle fest (`run_portfolio_walkforward` kommt in `cli
+finanzierung` genau einmal vor).
+
+### Was die Suche nicht kann, und wo das steht
+
+Halbieren setzt voraus, dass ein Gate ueber den Bereich genau einmal
+wechselt. Das ist eine Annahme ueber den Kandidaten und keine Eigenschaft
+der Methode, also wird sie an allen Messungen nachgeprueft.
+
+Beim Schreiben des Tests dazu ist mir aufgefallen, dass ich der Pruefung zu
+viel zugetraut hatte: Ein Gate, das faellt, sich erholt und wieder faellt,
+kommt **einheitlich** durch, wenn die Halbierung das untere Band nie
+betritt - und sie betritt es nicht, weil sie nur innerhalb ihres eigenen
+schrumpfenden Paares misst. Mein Test hatte das Gegenteil behauptet und ist
+zu Recht gefallen.
+
+Geblieben ist die Pruefung trotzdem, aber mit dem richtigen Namen: **"kein
+Widerspruch gefunden"**, nicht "es gibt keinen". Zaehne bekommt sie durch
+den geteilten Zwischenspeicher - die Halbierung anderer Gates streut
+Messungen ueber den ganzen Bereich, und die werden mitgeprueft. Beide
+Faelle stehen jetzt als Test: der, in dem sie zuschlaegt, und der, in dem
+sie blind ist.
+
+### Was sich dadurch nicht aendert
+
+Nichts am Kandidaten. `Messlatte` und `Deflated Sharpe` fallen auch bei
+0,00 % durch - ein niedrigerer Satz holt sie nicht zurueck, und die beiden
+sind die Arbeit. Der Satz wird auch nicht auf den Spielraum gestellt: Die
+Grenze zu kennen ist nicht dasselbe, wie sie einzusetzen (Befund 100).
+
+Was sich aendert, ist, was beim Nutzer zu tun ist. `cli funding` laedt die
+echten Raten, und bis jetzt hiess die Erwartung dazu "irgendwo unter 11 %
+waere besser". Jetzt steht im Bericht, wonach zu schauen ist: unter 6,0 %
+kommt `Schlechtestes Jahr` zurueck, unter 9,8 % `Parameter-Plateau`. Die
+Richtung des Fehlers bleibt, wie sie war - der Bestand ist eine
+Long-Trendfolge und im Markt, wenn Longs am meisten zahlen (Befund 100).
+
+Volle Suite 3339 passed, 1 skipped; ruff check sauber.
+Kostet keinen Versuch: derselbe Kandidat, veraendert wird eine
+Kostenannahme, ausgewaehlt wird nichts.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

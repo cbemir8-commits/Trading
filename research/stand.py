@@ -1349,6 +1349,21 @@ BEHOBEN: tuple[Richtung, ...] = (
         "suchen'); die drei ungeprueften waren genau die, die danebengingen",
         249,
     ),
+    # 249 hat den Funding-Eintrag nach vorn geholt, weil an ihm Versuche
+    # haengen. Beim Nachlesen, wie viel genau: Die Zahl stand nur als
+    # Sprossenpaar da.
+    Richtung(
+        "Der Spielraum beim Funding war doppelt so gross notiert",
+        "Die Leiter aus Befund 100 meldete 'zwischen 5,5 % und 11 % kippen "
+        "zwei Gates' - wahr, aber es ist **ein Abstand der Leiter und keiner "
+        "des Kandidaten**. Je Gate nachgemessen: 'Schlechtestes Jahr' faellt "
+        "bei 6,0 % im Jahr, 'Parameter-Plateau' erst bei 9,8 % - 3,7 Punkte "
+        "dazwischen. Der Spielraum bis zum ersten Durchfaller ist also 6,0 % "
+        "und nicht 11 %, gut die Haelfte des Vorgabewerts, mit dem gerechnet "
+        "wird. 'cli finanzierung --kipppunkt' sucht ihn je Gate auf 0,11 "
+        "Punkte genau und kostet keinen Versuch",
+        250,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1750,8 +1765,11 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
              "von 9 von 11 (bei 0 %) bis 3 von 11 (bei 55 %); bei 11 % steht "
              "sie auf 7. `cli finanzierung` rechnet es nach.",
         warum="Der groesste Kostenblock des Systems steht auf einem "
-              "Vorgabewert. Zwei Gates kippen zwischen 5,5 % und 11 % - "
-              "Schlechtestes Jahr und Parameter-Plateau. Und der Vorgabewert "
+              "Vorgabewert - und **beide** Gates, die am Funding haengen "
+              "(Schlechtestes Jahr, Parameter-Plateau), kippen unterhalb von "
+              "ihm; wo genau, steht je Gate bei 'cli funding' (Befund 250). "
+              "Was gemeldet wird, ist also der Zustand nach dem Kippen. Und "
+              "der Vorgabewert "
               "ist der **Basiswert**, nicht der Durchschnitt: Der Bestand ist "
               "eine Long-Trendfolge und im Markt, wenn der Trend steigt, also "
               "wenn Longs am meisten zahlen. Liegt die wahre Rate darueber, "
@@ -1992,7 +2010,12 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "python -m cli funding --von 2020-03-30",
         "Laedt die echten Funding-Raten. Bisher rechnet jede Zahl mit dem "
         "Vorgabewert, und der ist der groesste Kostenblock des Systems - das "
-        "8,9-fache der Handelsgebuehren (Befund 100).",
+        "8,9-fache der Handelsgebuehren (Befund 100). **Wonach zu schauen "
+        "ist, steht seit Befund 250 fest:** Der Kandidat vertraegt bis "
+        "6,0 % im Jahr, dann faellt 'Schlechtestes Jahr'; bei 9,8 % faellt "
+        "'Parameter-Plateau'. Der Vorgabewert steht bei 10,9 % - also "
+        "jenseits von beiden. Liegt die wahre Rate darunter, gewinnt der "
+        "Kandidat Gates zurueck, ohne dass sich an ihm etwas aendert.",
     ),
     (
         "python -m cli wettbewerb --generation 9",

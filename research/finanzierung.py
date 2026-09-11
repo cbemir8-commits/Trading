@@ -25,6 +25,17 @@ Der Bestand ueber eine Leiter von Saetzen, sonst alles gleich:
 Zwischen 5,5 % und 11 % kippen **zwei Gates** (Schlechtestes Jahr,
 Parameter-Plateau), zwischen 21,9 % und 32,9 % ein drittes (Drawdown).
 
+**Dieses erste Paar war zu grob - nachgemessen in Befund 250.** Die beiden
+kippen nicht zusammen, zwischen ihnen liegen 3,7 Prozentpunkte:
+
+    Schlechtestes Jahr     haelt bis 5,99 %   faellt ab 6,07 %  p.a.
+    Parameter-Plateau      haelt bis 9,75 %   faellt ab 9,84 %  p.a.
+
+Der Spielraum bis zum ersten Durchfaller ist also **nicht** 11 %, sondern
+6,0 % - gut die Haelfte dessen, was das Sprossenpaar nahelegt, und der
+Vorgabewert liegt jenseits von beiden Punkten.
+``cli finanzierung --kipppunkt`` sucht sie je Gate auf 0,11 Punkte genau.
+
 Die Zahl, die das Verhaeltnis zeigt
 -----------------------------------
     Handelsgebuehren     7,17 EUR
@@ -107,6 +118,7 @@ eine Kostenannahme, ausgewaehlt wird nichts. Insbesondere wird der Satz
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from itertools import pairwise
 
@@ -117,6 +129,19 @@ BASISSATZ = 0.0001
 
 #: Funding faellt alle acht Stunden an: dreimal am Tag.
 PERIODEN_JE_JAHR = 3 * 365
+
+#: Wie eng die Kipppunktsuche das Paar zusammenschiebt - je Achtstunden-
+#: periode. Rund 0,11 Prozentpunkte im Jahr; feiner zu suchen kostet je
+#: Halbierung einen weiteren Walk-Forward und sagt nichts mehr.
+FEINHEIT = 1e-6
+
+
+def jahr_pct(satz: float) -> float:
+    """Ein Satz je Achtstundenperiode als Prozent im Jahr.
+
+    Die Umrechnung steht an einer Stelle, weil sie sonst an dreien steht.
+    """
+    return satz * PERIODEN_JE_JAHR * 100.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,7 +161,7 @@ class Stufe:
 
     @property
     def jahr_pct(self) -> float:
-        return self.satz * PERIODEN_JE_JAHR * 100.0
+        return jahr_pct(self.satz)
 
     @property
     def anteil_am_brutto(self) -> float:
@@ -374,10 +399,286 @@ class Stresslage:
         return "\n\n".join(teile)
 
 
+# ---------------------------------------------------------------------------
+# Wo genau es kippt
+# ---------------------------------------------------------------------------
+#
+# Die Leiter oben hat sechs Sprossen, und ihre Auskunft lautete: *"Zwischen
+# 5,5 % und 11 % kippen zwei Gates."* Das ist wahr und verbirgt trotzdem das
+# Wesentliche - die beiden kippen nicht zusammen, es liegen 3,7 Prozentpunkte
+# dazwischen (Befund 250). Wer nur das Sprossenpaar liest, haelt den Spielraum
+# bis zum ersten Durchfaller fuer 11 %; er ist 6,0 %.
+#
+# Der Abstand zweier Sprossen ist eine Eigenschaft der Leiter und keine des
+# Kandidaten. Hier war er zur Aussage geworden.
+
+
+@dataclass(frozen=True, slots=True)
+class Kipppunkt:
+    """Zwischen welchen zwei Saetzen ein einzelnes Gate kippt.
+
+    Beide Werte sind **gemessen**, nicht interpoliert: ``haelt_bis`` ist der
+    hoechste Satz, bei dem das Gate noch gehalten hat, ``faellt_ab`` der
+    niedrigste, bei dem es gefallen ist. Der Kipppunkt liegt dazwischen, und
+    ``breite`` sagt, wie eng das Paar sitzt.
+    """
+
+    gate: str
+    haelt_bis: float
+    faellt_ab: float
+    einheitlich: bool = True
+    """Widerspricht **keine** Messung einem einzigen Wechsel?
+
+    Die Suche halbiert, und Halbieren setzt voraus, dass das Gate ueber den
+    Bereich genau einmal wechselt. Das ist eine Annahme ueber den Kandidaten,
+    keine Eigenschaft der Methode - sie wird deshalb an allen Messungen
+    nachgeprueft: Haelt das Gate irgendwo **oberhalb** von ``faellt_ab``,
+    steht hier ``False``, und die Zahl ist einer von mehreren Bereichen und
+    keine Grenze.
+
+    **Was diese Pruefung nicht kann.** Sie sieht nur, was gemessen wurde, und
+    die Halbierung misst ausschliesslich innerhalb ihres schrumpfenden Paares.
+    Ein zweiter Wechsel in einem Band, das sie nie betritt, bleibt unsichtbar
+    - ``True`` heisst also "kein Widerspruch gefunden" und nicht "es gibt
+    keinen". Zaehne bekommt die Pruefung durch den geteilten Zwischenspeicher:
+    Die Halbierung **anderer** Gates streut Messungen ueber den ganzen
+    Bereich, und die werden hier mitgeprueft. Bei einem einzigen Gate hat sie
+    entsprechend wenig zu sehen.
+    """
+
+    @property
+    def breite(self) -> float:
+        return self.faellt_ab - self.haelt_bis
+
+    @property
+    def haelt_bis_pct(self) -> float:
+        return jahr_pct(self.haelt_bis)
+
+    @property
+    def faellt_ab_pct(self) -> float:
+        return jahr_pct(self.faellt_ab)
+
+    def zeile(self) -> str:
+        rand = "" if self.einheitlich else "  (nicht einheitlich)"
+        return (
+            f"{self.gate:<22}{self.haelt_bis_pct:>7.2f} % bis "
+            f"{self.faellt_ab_pct:>6.2f} % p.a.{rand}"
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class Kippbild:
+    """Alle Kipppunkte eines Laufs, dazu was **nicht** gekippt ist."""
+
+    punkte: tuple[Kipppunkt, ...] = ()
+    immer_offen: tuple[str, ...] = ()
+    """Gates, die an beiden Enden des Bereichs durchfallen - sie haengen
+    nicht am Funding und werden von ihm auch nicht gerettet."""
+    verkehrt: tuple[str, ...] = ()
+    """Gates, die unten fallen und oben halten. Die Richtung, die das Modell
+    nicht erwartet; sie gehoert genannt und nicht weggelassen."""
+    messungen: int = 0
+    unten: float = 0.0
+    oben: float = BASISSATZ
+    toleranz: float = FEINHEIT
+
+    @property
+    def geordnet(self) -> list[Kipppunkt]:
+        return sorted(self.punkte, key=lambda p: p.faellt_ab)
+
+    @property
+    def erster(self) -> Kipppunkt | None:
+        """Das Gate, das als erstes faellt - es bestimmt den Spielraum."""
+        return self.geordnet[0] if self.punkte else None
+
+    @property
+    def spielraum(self) -> float:
+        """Bis zu welchem Satz **alle** Gates halten, die hier kippen."""
+        erster = self.erster
+        return erster.haelt_bis if erster is not None else self.oben
+
+    @property
+    def spielraum_pct(self) -> float:
+        return jahr_pct(self.spielraum)
+
+    @property
+    def anteil_der_vorgabe(self) -> float:
+        """Der Spielraum als Anteil des Vorgabewerts.
+
+        Unter 1 heisst: Der Vorgabewert liegt schon jenseits des ersten
+        Kipppunkts - was gemeldet wird, ist der Zustand **nach** dem Kippen.
+        """
+        return self.spielraum / BASISSATZ if BASISSATZ else 0.0
+
+    @property
+    def einheitlich(self) -> bool:
+        return all(p.einheitlich for p in self.punkte)
+
+    def tabelle(self) -> str:
+        if not self.punkte:
+            return (
+                f"Kein Gate kippt zwischen {jahr_pct(self.unten):.2f} % und "
+                f"{jahr_pct(self.oben):.2f} % p.a."
+            )
+        zeilen = [
+            f"{'Gate':<22}{'haelt bis':>9} {'faellt ab':>13}",
+            "-" * 52,
+        ]
+        zeilen.extend(p.zeile() for p in self.geordnet)
+        return "\n".join(zeilen)
+
+    def urteil(self) -> str:
+        teile: list[str] = []
+        erster = self.erster
+
+        if erster is None:
+            teile.append(
+                f"**Kein Gate kippt in diesem Bereich.** Zwischen "
+                f"{jahr_pct(self.unten):.2f} % und {jahr_pct(self.oben):.2f} % "
+                f"p.a. bleibt die Bilanz dieselbe; der Satz traegt hier kein "
+                f"Urteil."
+            )
+        else:
+            teile.append(
+                f"**Der Spielraum reicht bis {self.spielraum_pct:.2f} % p.a.** "
+                f"Dort faellt '{erster.gate}' als erstes - spaetestens bei "
+                f"{erster.faellt_ab_pct:.2f} %. Das ist "
+                f"{self.anteil_der_vorgabe:.0%} des Vorgabewerts von "
+                f"{jahr_pct(BASISSATZ):.2f} %, mit dem jede Zahl dieses "
+                f"Projekts rechnet."
+            )
+            if len(self.punkte) > 1:
+                abstand = self.geordnet[-1].haelt_bis_pct - erster.faellt_ab_pct
+                teile.append(
+                    f"**Sie kippen nicht zusammen.** Zwischen dem ersten und "
+                    f"dem letzten Durchfaller liegen mindestens {abstand:.2f} "
+                    f"Prozentpunkte im Jahr. Eine Leiter, deren Sprossen "
+                    f"weiter auseinanderstehen, meldet ein einziges Paar und "
+                    f"laesst den Abstand verschwinden."
+                )
+
+        if self.immer_offen:
+            teile.append(
+                f"**Am Funding haengt nicht alles:** "
+                f"{', '.join(self.immer_offen)} "
+                f"{'fallen' if len(self.immer_offen) > 1 else 'faellt'} auch "
+                f"bei {jahr_pct(self.unten):.2f} % p.a. durch. Ein niedrigerer "
+                f"Satz holt {'sie' if len(self.immer_offen) > 1 else 'es'} "
+                f"nicht zurueck."
+            )
+
+        if self.verkehrt:
+            teile.append(
+                f"**Achtung, andere Richtung:** {', '.join(self.verkehrt)} "
+                f"faellt unten und haelt oben. Das widerspricht der Annahme, "
+                f"auf der die Suche beruht; die Zahlen oben gelten fuer dieses "
+                f"Gate nicht."
+            )
+
+        if not self.einheitlich:
+            teile.append(
+                "**Mindestens ein Gate wechselt mehr als einmal.** Die Suche "
+                "halbiert und setzt einen einzigen Wechsel voraus; die "
+                "Nachpruefung an allen Messungen widerlegt das. Was dort steht, "
+                "ist einer von mehreren Bereichen und keine Grenze."
+            )
+
+        teile.append(
+            f"Gemessen wurden {self.messungen} Saetze, jeder ein voller "
+            f"Walk-Forward mit allen Gates. **Es kostet keinen Versuch** - "
+            f"derselbe Kandidat, veraendert wird eine Kostenannahme, "
+            f"ausgewaehlt wird nichts. Und der Satz wird **nicht** auf den "
+            f"Spielraum gestellt: Was hier steht, ist die Grenze, an der das "
+            f"Urteil kippt, nicht ein Vorschlag, wo es stehen soll."
+        )
+        return "\n\n".join(teile)
+
+
+def _kipppunkt_aus(gate: str, gemessen: Mapping[float, frozenset[str]]) -> Kipppunkt:
+    """Das engste gemessene Paar fuer ein Gate - aus **allen** Messungen.
+
+    Die Halbierungen der Gates teilen sich einen Zwischenspeicher, also liegen
+    am Ende Saetze vor, die waehrend der eigenen Suche noch nicht dastanden.
+    Das Paar wird deshalb zum Schluss aus dem ganzen Bestand gebildet und
+    nicht aus dem, was die eigene Halbierung gerade zurueckliess.
+    """
+    faellt = [satz for satz, offen in gemessen.items() if gate in offen]
+    haelt = [satz for satz, offen in gemessen.items() if gate not in offen]
+    faellt_ab = min(faellt)
+    darunter = [satz for satz in haelt if satz < faellt_ab]
+    return Kipppunkt(
+        gate=gate,
+        haelt_bis=max(darunter) if darunter else faellt_ab,
+        faellt_ab=faellt_ab,
+        einheitlich=not any(satz > faellt_ab for satz in haelt),
+    )
+
+
+def kipppunkte_suchen(
+    messe: Callable[[float], Iterable[str]],
+    *,
+    unten: float = 0.0,
+    oben: float = BASISSATZ,
+    toleranz: float = FEINHEIT,
+) -> Kippbild:
+    """Wo genau kippt welches Gate, wenn der Funding-Satz steigt?
+
+    ``messe`` bekommt einen Satz je Achtstundenperiode und nennt die Gates,
+    die dabei **durchfallen**. Jeder Aufruf ist ein voller Walk-Forward, also
+    wird jeder Satz hoechstens einmal gemessen und der Bestand geteilt: Was
+    die Halbierung des einen Gates gekostet hat, steht dem naechsten umsonst
+    zur Verfuegung.
+
+    Gesucht wird je Gate, nicht je Sprossenzahl. Zwei Gates koennen sich einen
+    Sprossenabstand teilen - dann meldet eine Leiter "hier kippen zwei" und
+    verschweigt, dass zwischen ihnen Raum liegt. Genau das war der Fall.
+    """
+    if oben <= unten:
+        raise ValueError("'oben' muss ueber 'unten' liegen.")
+    if toleranz <= 0:
+        raise ValueError("Die Toleranz muss groesser als null sein.")
+
+    gemessen: dict[float, frozenset[str]] = {}
+
+    def bei(satz: float) -> frozenset[str]:
+        if satz not in gemessen:
+            gemessen[satz] = frozenset(messe(satz))
+        return gemessen[satz]
+
+    offen_unten, offen_oben = bei(unten), bei(oben)
+
+    for gate in sorted(offen_oben - offen_unten):
+        tief, hoch = unten, oben
+        while hoch - tief > toleranz:
+            mitte = (tief + hoch) / 2.0
+            if gate in bei(mitte):
+                hoch = mitte
+            else:
+                tief = mitte
+
+    return Kippbild(
+        punkte=tuple(
+            _kipppunkt_aus(gate, gemessen)
+            for gate in sorted(offen_oben - offen_unten)
+        ),
+        immer_offen=tuple(sorted(offen_unten & offen_oben)),
+        verkehrt=tuple(sorted(offen_unten - offen_oben)),
+        messungen=len(gemessen),
+        unten=unten,
+        oben=oben,
+        toleranz=toleranz,
+    )
+
+
 __all__ = [
     "BASISSATZ",
+    "FEINHEIT",
     "PERIODEN_JE_JAHR",
     "Finanzierung",
+    "Kippbild",
+    "Kipppunkt",
     "Stresslage",
     "Stufe",
+    "jahr_pct",
+    "kipppunkte_suchen",
 ]

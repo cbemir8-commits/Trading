@@ -7092,6 +7092,14 @@ def finanzierung(
         False, "--stress",
         help="Statt der Leiter: Was der Kosten-Stress-Test auslaesst.",
     ),
+    kipppunkt: bool = typer.Option(
+        False, "--kipppunkt",
+        help="Statt der Leiter: Wo genau jedes Gate kippt (Halbierung).",
+    ),
+    bis: float = typer.Option(
+        0.0, "--bis",
+        help="Obergrenze der Kipppunktsuche; 0 nimmt den Vorgabewert.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Wie viel haengt am angenommenen Funding-Satz?
@@ -7105,6 +7113,12 @@ def finanzierung(
     Gemessen wird, wie stark das Urteil daran haengt. Am Betriebspunkt ist
     Funding das 8,9-fache der Handelsgebuehren - der groesste Kostenblock des
     Systems steht auf einer Annahme.
+
+    Mit ``--kipppunkt`` statt der Leiter: Wo genau faellt welches Gate?
+    Gehalbiert wird je Gate und nicht je Sprossenzahl - zwei Gates koennen
+    sich einen Sprossenabstand teilen, und dann meldet die Leiter "hier kippen
+    zwei" und laesst den Raum dazwischen verschwinden. Genau das war der Fall
+    (Befund 250).
 
     **Kostet keinen Versuch.** Derselbe Kandidat auf jeder Sprosse; veraendert
     wird eine Kostenannahme. Der Satz wird insbesondere **nicht** auf den Wert
@@ -7146,6 +7160,33 @@ def finanzierung(
     historie = any(
         not laden.read(_bybit_kontrakt(s)).empty for s in symbole
     )
+
+    def lauf(satz: float):
+        """Ein voller Walk-Forward bei einem angenommenen Satz, mit Gates.
+
+        Leiter und Kipppunktsuche messen dasselbe und muessen es deshalb an
+        derselben Stelle messen - zwei Kopien dieser Konfiguration wuerden
+        auseinanderlaufen, und der Unterschied waere nicht zu sehen.
+        """
+        configs = {
+            x: BacktestConfig(
+                instrument=_fallback_instrument(_bybit_kontrakt(x)),
+                risk=settings.risk, initial_equity=Decimal("500"),
+                enforce_risk_limits=True,
+                kalender=_terminkalender(settings) or None,
+                funding=FundingSchedule(default_rate=Decimal(str(satz))),
+            )
+            for x in symbole
+        }
+        bericht = run_portfolio_walkforward(
+            frames, lambda: compile_genome(genome), configs
+        )
+        if not bericht.windows or bericht.combined is None:
+            return bericht, None
+        return bericht, evaluate_gates(
+            genome, bericht, erster, configs[symbole[0]],
+            trials_so_far=trials, frames=frames, configs=configs,
+        )
 
     if stress:
         from backtest.engine import Backtester
@@ -7208,6 +7249,46 @@ def finanzierung(
         )
         return
 
+    if kipppunkt:
+        from research.finanzierung import FEINHEIT, jahr_pct, kipppunkte_suchen
+
+        obergrenze = bis if bis > 0 else BASISSATZ
+        console.print(
+            f"\n[bold]Kipppunkte[/] {' + '.join(symbole)} {interval_obj.label}\n"
+            f"  Kandidat   {genome.name}\n"
+            f"  Bereich    0 bis {jahr_pct(obergrenze):.2f} % p.a.\n"
+            f"  Feinheit   {jahr_pct(FEINHEIT):.2f} Punkte\n"
+        )
+
+        def offen(satz: float) -> tuple[str, ...]:
+            _, gates = lauf(satz)
+            if gates is None:
+                # Ohne Fenster gibt es kein Urteil, und "nichts faellt durch"
+                # waere die falsche Auskunft: Die Suche wuerde den Satz fuer
+                # unbedenklich halten.
+                raise typer.BadParameter(
+                    f"Satz {satz:g}: keine Fenster - die Suche kann daraus "
+                    f"nichts schliessen."
+                )
+            namen = tuple(r.name for r in gates.results if not r.passed)
+            console.print(
+                f"[dim]  {jahr_pct(satz):>6.2f} % p.a.  "
+                f"{len(gates.results) - len(namen)}/{len(gates.results)} Gates"
+                f"{'  offen: ' + ', '.join(namen) if namen else ''}[/]"
+            )
+            return namen
+
+        bild = kipppunkte_suchen(offen, oben=obergrenze)
+        console.print("\n" + bild.tabelle())
+        farbe = "yellow" if bild.punkte else "green"
+        console.print(f"\n[{farbe}]{bild.urteil()}[/]\n")
+        if not historie:
+            console.print(
+                "[dim]Historie nicht vorhanden: Wo der wahre Satz in diesem "
+                "Bild steht, sagt erst 'cli funding'.[/]\n"
+            )
+        return
+
     werte = [float(x.strip()) for x in saetze.split(",") if x.strip()]
     if len(werte) < 3:
         console.print("[red]Mindestens drei Saetze noetig.[/]")
@@ -7222,26 +7303,10 @@ def finanzierung(
 
     stufen = []
     for satz in werte:
-        configs = {
-            x: BacktestConfig(
-                instrument=_fallback_instrument(_bybit_kontrakt(x)),
-                risk=settings.risk, initial_equity=Decimal("500"),
-                enforce_risk_limits=True,
-                kalender=_terminkalender(settings) or None,
-                funding=FundingSchedule(default_rate=Decimal(str(satz))),
-            )
-            for x in symbole
-        }
-        bericht = run_portfolio_walkforward(
-            frames, lambda: compile_genome(genome), configs
-        )
-        if not bericht.windows or bericht.combined is None:
+        bericht, gates = lauf(satz)
+        if gates is None:
             console.print(f"[yellow]Satz {satz:g}: keine Fenster.[/]")
             continue
-        gates = evaluate_gates(
-            genome, bericht, erster, configs[symbole[0]],
-            trials_so_far=trials, frames=frames, configs=configs,
-        )
         k = bericht.combined
         stufe = Stufe(
             satz=satz, cagr=float(k.cagr_pct),
