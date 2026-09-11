@@ -64,6 +64,15 @@ from math import log
 #: Stunden im Jahr - die Drift wird je Stunde gerechnet und je Jahr berichtet.
 STUNDEN_JE_JAHR = 24.0 * 365.0
 
+#: Ab wie vielen Haltezeiten eine Verdichtung ueberhaupt etwas sagt.
+#:
+#: **Eine Konvention, keine Messung.** Darunter haengen die Summen an ein,
+#: zwei Zeitraeumen, und ein einziger guter erklaert alles. Weil die Zahl
+#: gesetzt und nicht gemessen ist, entscheidet sie nichts allein:
+#: ``Familienbild.urteil`` prueft seine Aussage zusaetzlich ohne sie und sagt,
+#: ob sie daran haengt.
+MINDESTZEITEN = 20
+
 
 @dataclass(frozen=True, slots=True)
 class Haltezeit:
@@ -72,6 +81,15 @@ class Haltezeit:
     ``kurs_beginn`` und ``kurs_ende`` sind **Marktkurse** zu den beiden
     Zeitpunkten, nicht die Ein- und Ausstiegskurse des Trades: Gefragt ist,
     was der Markt getan hat, nicht was der Trade daran verdient hat.
+
+    ``long`` sagt, auf welcher Seite die Position stand. Die Rechnung weiter
+    unten braucht es nicht - sie zaehlt Drift und Stunden, egal wer sie
+    traegt. Aber ihre **Deutung** braucht es: Auf einem Perpetual zahlt die
+    Long-Seite bei positiver Rate und die Short-Seite bekommt. Fuer eine
+    zweiseitige Regel heisst "der Markt ist gestiegen" also nicht mehr
+    "sie hat mehr gezahlt", und die ganze Aussage kippt. Deshalb steht die
+    Seite hier, und deshalb macht eine einzige Short-Haltezeit den Markt
+    unten ``nicht belastbar`` (Befund 252).
     """
 
     beginn: datetime
@@ -79,6 +97,7 @@ class Haltezeit:
     kurs_beginn: float
     kurs_ende: float
     funding: float = 0.0
+    long: bool = True
 
     @property
     def stunden(self) -> float:
@@ -117,6 +136,7 @@ class Marktverdichtung:
     funding_ab: float = 0.0
     funding_flach: float = 0.0
     ueberlappende: int = 0
+    nicht_long: int = 0
     zeiten: int = 0
 
     @property
@@ -166,17 +186,52 @@ class Marktverdichtung:
         return self.funding_auf / self.funding_gesamt
 
     @property
+    def genug(self) -> bool:
+        """Genug Haltezeiten, dass die Summen nicht an einer einzigen haengen.
+
+        ``MINDESTZEITEN`` ist eine Konvention und keine Messung. Deshalb
+        traegt sie hier keine Entscheidung allein: ``Familienbild`` prueft
+        sein Urteil zusaetzlich ohne sie.
+        """
+        return self.zeiten >= MINDESTZEITEN
+
+    @property
+    def grund(self) -> str:
+        """Warum dieser Markt nichts traegt - leer, wenn er traegt."""
+        if self.ueberlappende:
+            viele = self.ueberlappende > 1
+            return (
+                f"{self.ueberlappende} "
+                f"{'Haltezeiten ragen' if viele else 'Haltezeit ragt'} "
+                f"ineinander"
+            )
+        if self.nicht_long:
+            viele = self.nicht_long > 1
+            return (
+                f"{self.nicht_long} "
+                f"{'Haltezeiten' if viele else 'Haltezeit'} nicht long"
+            )
+        if self.drift_gesamt <= 0:
+            return "Markt ueber die Spanne nicht gestiegen"
+        return ""
+
+    @property
     def belastbar(self) -> bool:
         """Traegt die Verdichtung dieses Marktes ueberhaupt eine Aussage?
 
-        Nein bei Ueberlappung (dann zaehlt Zeit doppelt) und nein, wenn der
-        Markt ueber die Spanne gefallen ist - dann ist das Verhaeltnis zweier
-        Driften kein Mass fuer "steiler", sondern ein Vorzeichenspiel.
+        Drei Mal nein, und jedes Mal aus einem anderen Grund:
+
+        * **Ueberlappung** - dann zaehlt derselbe Zeitraum doppelt.
+        * **Nicht nur long** - dann heisst "gestiegen" nicht mehr "mehr
+          gezahlt", denn auf einem Perpetual bekommt die Short-Seite bei
+          positiver Rate (Befund 252).
+        * **Gefallener Markt** - dann misst das Verhaeltnis zweier Driften
+          kein "steiler", sondern ein Vorzeichen.
         """
-        return self.ueberlappende == 0 and self.drift_gesamt > 0
+        return not self.grund
 
     def zeile(self) -> str:
-        rand = "" if self.belastbar else "  (nicht belastbar)"
+        rand = "" if self.belastbar else f"  ({self.grund})"
         return (
             f"{self.symbol:<18}{self.anteil_zeit:>10.1%}"
             f"{self.anteil_drift:>12.1%}{self.verdichtung:>12.2f}x"
@@ -206,6 +261,7 @@ def messe(
         funding_ab=ab,
         funding_flach=flach,
         ueberlappende=_ueberlappungen(liste),
+        nicht_long=sum(1 for z in liste if not z.long),
         zeiten=len(liste),
     )
 
@@ -336,10 +392,224 @@ class Verdichtungsbild:
         return "\n\n".join(teile)
 
 
+# ---------------------------------------------------------------------------
+# Eigenschaft des Bestands oder der Bauart?
+# ---------------------------------------------------------------------------
+#
+# Befund 251 hat die Verdichtung am Bestand gemessen. Die naechste Frage
+# entscheidet, was sie wert ist: Traegt **jede** Regel dieser Bauart sie, oder
+# ist der Bestand ein Einzelfall? Im ersten Fall kann die Suche nicht
+# herauswaehlen, was sie nicht hat; im zweiten waere sie ein Weg.
+#
+# Nachgemessen ueber den Tageskerzen-Katalog (Befund 252).
+
+
+@dataclass(frozen=True, slots=True)
+class Regelverdichtung:
+    """Eine Regel des Katalogs, auf ihren schwaechsten Markt eingedampft."""
+
+    name: str
+    verdichtung: float
+    zeiten: int
+    belastbar: bool
+    grund: str = ""
+    ist_bestand: bool = False
+
+    @property
+    def genug(self) -> bool:
+        return self.zeiten >= MINDESTZEITEN
+
+    @property
+    def brauchbar(self) -> bool:
+        return self.belastbar and self.genug
+
+    def zeile(self) -> str:
+        marke = "  <- Bestand" if self.ist_bestand else ""
+        if not self.zeiten:
+            # "unter 20 Haltezeiten" waere hier irrefuehrend - die Regel hat
+            # auf diesen Daten ueberhaupt nicht gehandelt.
+            return f"{self.name:<40}{0:>8}{'-':>13}   (kein einziger Trade)"
+        if not self.belastbar:
+            return f"{self.name:<40}{self.zeiten:>8}{'-':>13}   ({self.grund})"
+        knapp = "" if self.genug else f"  (unter {MINDESTZEITEN} Haltezeiten)"
+        return (
+            f"{self.name:<40}{self.zeiten:>8}{self.verdichtung:>12.2f}x"
+            f"{marke}{knapp}"
+        )
+
+
+def aus_bild(
+    name: str, bild: Verdichtungsbild, *, ist_bestand: bool = False
+) -> Regelverdichtung:
+    """Ein ``Verdichtungsbild`` als eine Zeile der Familientabelle.
+
+    Genommen wird der **schwaechste** belastbare Markt, wie im Urteil eines
+    einzelnen Bildes auch: Er traegt die Aussage gerade noch.
+    """
+    schwaechste = bild.schwaechste
+    zeiten = sum(m.zeiten for m in bild.maerkte)
+    if schwaechste is None:
+        gruende = [m.grund for m in bild.maerkte if m.grund]
+        return Regelverdichtung(
+            name=name, verdichtung=0.0, zeiten=zeiten, belastbar=False,
+            grund=gruende[0] if gruende else "kein Markt vermessen",
+            ist_bestand=ist_bestand,
+        )
+    return Regelverdichtung(
+        name=name, verdichtung=schwaechste.verdichtung, zeiten=zeiten,
+        belastbar=True, ist_bestand=ist_bestand,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class Familienbild:
+    """Der ganze Katalog - und ob der Bestand darin heraussticht."""
+
+    regeln: tuple[Regelverdichtung, ...] = ()
+
+    @property
+    def brauchbare(self) -> tuple[Regelverdichtung, ...]:
+        return tuple(r for r in self.regeln if r.brauchbar)
+
+    @property
+    def bestand(self) -> Regelverdichtung | None:
+        return next((r for r in self.regeln if r.ist_bestand), None)
+
+    @property
+    def spanne(self) -> tuple[float, float]:
+        werte = [r.verdichtung for r in self.brauchbare]
+        return (min(werte), max(werte)) if werte else (0.0, 0.0)
+
+    @property
+    def verdichtende(self) -> tuple[Regelverdichtung, ...]:
+        return tuple(r for r in self.brauchbare if r.verdichtung > 1.0)
+
+    @property
+    def ausnahmen(self) -> tuple[Regelverdichtung, ...]:
+        return tuple(r for r in self.brauchbare if r.verdichtung <= 1.0)
+
+    @property
+    def bestand_liegt_drin(self) -> bool:
+        """Steht der Bestand **innerhalb** der Spanne der uebrigen Regeln?
+
+        Die eigentliche Frage: Ist er ein Einzelfall oder einer von vielen?
+        """
+        bestand = self.bestand
+        andere = [r.verdichtung for r in self.brauchbare if not r.ist_bestand]
+        if bestand is None or not bestand.brauchbar or not andere:
+            return False
+        return min(andere) <= bestand.verdichtung <= max(andere)
+
+    @property
+    def haengt_an_der_schwelle(self) -> bool:
+        """Aendert ``MINDESTZEITEN`` die Aussage?
+
+        Die Schwelle ist gesetzt und nicht gemessen. Wenn die Aussage ohne
+        sie eine andere waere, gehoert das dazugesagt - sonst entscheidet
+        eine Konvention ueber einen Befund.
+        """
+        ohne = [r for r in self.regeln if r.belastbar]
+        mit = self.brauchbare
+        if not ohne or not mit:
+            return True
+        return (all(r.verdichtung > 1.0 for r in mit)) != (
+            all(r.verdichtung > 1.0 for r in ohne)
+        )
+
+    def tabelle(self) -> str:
+        if not self.regeln:
+            return "Keine Regeln vermessen."
+        zeilen = [
+            f"{'Regel':<40}{'Zeiten':>8}{'Verdichtung':>13}",
+            "-" * 70,
+        ]
+        zeilen.extend(
+            r.zeile()
+            for r in sorted(
+                self.regeln,
+                key=lambda r: (not r.brauchbar, -r.verdichtung),
+            )
+        )
+        return "\n".join(zeilen)
+
+    def urteil(self) -> str:
+        teile: list[str] = []
+        brauchbar = self.brauchbare
+        bestand = self.bestand
+
+        if len(brauchbar) < 2:
+            return (
+                f"**Zu wenige brauchbare Regeln** ({len(brauchbar)} von "
+                f"{len(self.regeln)}), um ueber die Bauart etwas zu sagen."
+            )
+
+        tief, hoch = self.spanne
+        teile.append(
+            f"**{len(self.verdichtende)} von {len(brauchbar)} brauchbaren "
+            f"Regeln verdichten**, die Spanne reicht von {tief:.2f}x bis "
+            f"{hoch:.2f}x. Vermessen wurden {len(self.regeln)} Regeln des "
+            f"Katalogs; der Rest traegt nichts (zu wenige Haltezeiten oder "
+            f"ein Grund, der in der Tabelle steht)."
+        )
+
+        if bestand is not None and bestand.brauchbar:
+            if self.bestand_liegt_drin:
+                teile.append(
+                    f"**Der Bestand ({bestand.verdichtung:.2f}x) liegt "
+                    f"mitten darin**, nicht an einem Rand. Die Verdichtung "
+                    f"ist damit keine Eigenschaft dieses Kandidaten, sondern "
+                    f"der Bauart - und was die Bauart traegt, kann die Suche "
+                    f"innerhalb dieses Katalogs nicht herauswaehlen."
+                )
+            else:
+                teile.append(
+                    f"**Der Bestand ({bestand.verdichtung:.2f}x) liegt "
+                    f"ausserhalb der Spanne der uebrigen Regeln.** Dann ist "
+                    f"die Verdichtung seine Eigenschaft und nicht die der "
+                    f"Bauart - und eine andere Regel traegt weniger davon."
+                )
+
+        if self.ausnahmen:
+            teile.append(
+                f"**Ausnahmen, die dazugehoeren:** "
+                f"{', '.join(r.name for r in self.ausnahmen)} "
+                f"{'verdichten' if len(self.ausnahmen) > 1 else 'verdichtet'} "
+                f"nicht. Sie stehen hier und nicht in einer Fussnote - eine "
+                f"Aussage ueber die Bauart, die ihre Gegenbeispiele "
+                f"verschweigt, ist keine."
+            )
+
+        if self.haengt_an_der_schwelle:
+            teile.append(
+                f"**Achtung:** Ohne die Schwelle von {MINDESTZEITEN} "
+                f"Haltezeiten waere die Aussage eine andere. Die Schwelle ist "
+                f"gesetzt und nicht gemessen - hier entscheidet sie mit, und "
+                f"das ist zu wenig."
+            )
+        else:
+            teile.append(
+                f"Die Aussage haengt nicht an der Schwelle von "
+                f"{MINDESTZEITEN} Haltezeiten: Ohne sie faellt sie genauso "
+                f"aus."
+            )
+
+        teile.append(
+            "Kostet keinen Versuch: Diese Genome stehen laengst im Katalog "
+            "und waren gezaehlt, als sie entstanden - nachgemessen wird ein "
+            "vorhandener Vorrat, ausgewaehlt wird nichts. Wer eine davon "
+            "weiterverfolgt, hat eine Auswahl getroffen und muss sie zaehlen."
+        )
+        return "\n\n".join(teile)
+
+
 __all__ = [
+    "MINDESTZEITEN",
     "STUNDEN_JE_JAHR",
+    "Familienbild",
     "Haltezeit",
     "Marktverdichtung",
+    "Regelverdichtung",
     "Verdichtungsbild",
+    "aus_bild",
     "messe",
 ]

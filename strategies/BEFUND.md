@@ -22332,3 +22332,94 @@ bleibt beim Nutzer, zusammen mit `cli funding`.
 
 Volle Suite 3376 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertzweiundfuenfzig. Eigenschaft des Bestands oder der Bauart?
+
+Befund 251 hat gemessen, dass die Haltezeit des Bestands im Aufwaerts liegt:
+die Drift waehrend der Haltezeit ist das 2,52-fache (BTC) bis 6,57-fache
+(ETH) der ganzen Spanne. Was die Zahl wert ist, entscheidet aber erst die
+naechste Frage, und die stand nirgends:
+
+**Traegt jede Regel dieser Bauart sie, oder ist der Bestand ein Einzelfall?**
+
+Der Unterschied ist der zwischen einem Mangel und einem Preis. Ist es sein
+Einzelfall, gibt es im Katalog eine Regel, die weniger davon traegt - und
+das waere eine Richtung. Ist es die Bauart, kann die Suche nicht
+herauswaehlen, was sie nicht hat.
+
+### Gemessen: die Bauart
+
+Ueber den ganzen Tageskerzen-Katalog, 31 Regeln, am Vorgabesatz:
+
+    g9 Trend-Beteiligung 50 Tage                 148        2.67x
+    g5 Trend-Beteiligung (fair gerechnet)         46        2.59x
+    g9 Trend-Beteiligung 200 Tage                 46        2.59x
+    Trend 50 Tage mit Konfluenz                  158        2.52x  <- Bestand
+    g10 Trend mit Vola-Ziel 22 %                  51        2.35x
+    g10 Trend mit Vola-Ziel 20 %                  51        2.31x
+    g10 Vola-Ziel, langes Messfenster             51        2.31x
+    g9 Trend-Beteiligung 100 Tage                103        2.28x
+    g9 Momentum-Beteiligung 90 Tage               96        2.13x
+    g10 Vola-Ziel, kurzes Messfenster             51        2.10x
+    g3 Momentum-Beteiligung                      101        2.02x
+    g9 Trend-Beteiligung voller Einsatz           43        1.62x
+    g3 Trendbeteiligung EMA200                    66        0.81x
+
+**12 von 13 brauchbaren Regeln verdichten**, und der Bestand steht mit
+2,52x auf Platz vier von dreizehn - mitten im Feld, nicht an einem Rand.
+Die Verdichtung ist damit keine Eigenschaft dieses Kandidaten, sondern der
+Bauart. Was die Bauart traegt, kann die Suche in diesem Katalog nicht
+herauswaehlen.
+
+Die eine Ausnahme steht in der Tabelle und nicht in einer Fussnote: `g3
+Trendbeteiligung EMA200` mit 0,81x. Berichtet wird je Regel der schwaechste
+Markt, und dieser ist auf BTC bei 0,81x, auf ETH bei 3,04x - er verdichtet
+also auf dem einen und nicht auf dem anderen. Eine Aussage ueber die
+Bauart, die ihre Gegenbeispiele verschweigt, ist keine.
+
+### Die Wache hat mir mein Gegenbeispiel weggenommen
+
+Beim ersten Durchlauf stand `g9 Trend beide Richtungen` mit 0,74x als
+zweite Ausnahme da - und der Name legte die Erklaerung sofort nahe: Wer
+auch short geht, ist im fallenden Markt ebenfalls drin, und dann verdichtet
+nichts. Das waere der Ausweg gewesen, und ich war nahe dran, ihn
+aufzuschreiben.
+
+Nachgesehen, ob der Mechanismus stimmt: `allow_shorts` ist an, die Regel
+handelt tatsaechlich zweiseitig (42 Buy, 42 Sell), und sie ist die einzige
+im Katalog mit Short-Regeln im Genom. Der Mechanismus stimmte also.
+
+Was nicht stimmte, war mein **Mass**. Es zaehlt Drift und Stunden, egal wer
+sie traegt - und auf einem Perpetual zahlt die Long-Seite bei positiver
+Rate, waehrend die Short-Seite bekommt. Fuer eine zweiseitige Regel heisst
+"der Markt ist gestiegen" nicht mehr "sie hat mehr gezahlt". Die Zahl 0,74x
+ist richtig gerechnet und beantwortet eine andere Frage als die gestellte.
+
+`Haltezeit` traegt jetzt die Seite, und eine einzige Short-Haltezeit macht
+den Markt `nicht belastbar`. Die Regel faellt damit aus dem Urteil heraus,
+statt es zu faerben - dieselbe Bauart wie die Ueberlappungswache, die im
+selben Lauf zwei weitere Regeln aussortiert hat (`Trendbeteiligung mit
+Puffer` und `Donchian-Ausbruch 55/20`). Die Tabelle nennt dabei den Grund
+des erstgenannten Marktes - es reicht einer, um die Regel herauszunehmen,
+und welcher es war, steht dort.
+
+Der Ausweg bleibt damit offen und unbelegt: Eine zweiseitige Regel *koennte*
+weniger Funding-Verdichtung tragen. Gemessen ist es nicht, und es
+aufzuschreiben, als waere es gemessen, waere der Fehler gewesen.
+
+### Was noch dazugehoert
+
+Elf der 31 Regeln handeln auf diesen Daten **gar nicht** - sie stehen mit
+"kein einziger Trade" da und nicht mit "unter 20 Haltezeiten", weil das
+zweite sich liest wie "hat wenig gehandelt".
+
+Die Schwelle von 20 Haltezeiten ist gesetzt und nicht gemessen. Deshalb
+entscheidet sie nicht allein: Das Urteil prueft seine Aussage zusaetzlich
+ohne sie und sagt, ob sie daran haengt. Hier haengt sie nicht daran.
+
+Kostet keinen Versuch - dieselbe Begruendung wie bei `cli vorratsdecke`:
+Diese Genome stehen laengst im Katalog und waren gezaehlt, als sie
+entstanden. Nachgemessen wird ein vorhandener Vorrat; ausgewaehlt wird
+nichts. Versuchszaehler vor und nach dem Lauf 198.
+
+Volle Suite 3402 passed, 1 skipped; ruff check sauber.

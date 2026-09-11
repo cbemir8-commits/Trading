@@ -7104,6 +7104,10 @@ def finanzierung(
         False, "--verdichtung",
         help="Statt der Leiter: Liegen die Funding-Stunden im Aufwaerts?",
     ),
+    katalog: bool = typer.Option(
+        False, "--katalog",
+        help="Mit --verdichtung: den ganzen Katalog statt nur den Bestand.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Wie viel haengt am angenommenen Funding-Satz?
@@ -7170,13 +7174,17 @@ def finanzierung(
         not laden.read(_bybit_kontrakt(s)).empty for s in symbole
     )
 
-    def lauf(satz: float):
+    def lauf(satz: float, regel=None):
         """Ein voller Walk-Forward bei einem angenommenen Satz, mit Gates.
 
-        Leiter und Kipppunktsuche messen dasselbe und muessen es deshalb an
-        derselben Stelle messen - zwei Kopien dieser Konfiguration wuerden
-        auseinanderlaufen, und der Unterschied waere nicht zu sehen.
+        Leiter, Kipppunktsuche und Verdichtung messen dasselbe und muessen es
+        deshalb an derselben Stelle messen - drei Kopien dieser Konfiguration
+        wuerden auseinanderlaufen, und der Unterschied waere nicht zu sehen.
+
+        ``regel`` ist der Bestand, wenn nichts anderes dasteht: Nur der
+        Katalogdurchlauf gibt hier etwas hinein.
         """
+        regel = regel if regel is not None else genome
         configs = {
             x: BacktestConfig(
                 instrument=_fallback_instrument(_bybit_kontrakt(x)),
@@ -7188,12 +7196,12 @@ def finanzierung(
             for x in symbole
         }
         bericht = run_portfolio_walkforward(
-            frames, lambda: compile_genome(genome), configs
+            frames, lambda: compile_genome(regel), configs
         )
         if not bericht.windows or bericht.combined is None:
             return bericht, None
         return bericht, evaluate_gates(
-            genome, bericht, erster, configs[symbole[0]],
+            regel, bericht, erster, configs[symbole[0]],
             trials_so_far=trials, frames=frames, configs=configs,
         )
 
@@ -7261,51 +7269,96 @@ def finanzierung(
     if verdichtung:
         from math import log as ln
 
+        from core.models import Side
+        from research.seeds import GENERATIONS, passt_zum_intervall
         from research.verdichtung import (
+            Familienbild,
             Haltezeit,
             Verdichtungsbild,
+            aus_bild,
         )
         from research.verdichtung import messe as verdichtung_messen
 
-        bericht, _ = lauf(BASISSATZ)
-        if bericht.combined is None:
-            console.print("[red]Keine Fenster - nichts zu vermessen.[/]")
-            raise typer.Exit(2)
-
-        console.print(
-            f"\n[bold]Verdichtung[/] {' + '.join(symbole)} {interval_obj.label}\n"
-            f"  Kandidat   {genome.name}\n"
-            f"  Trades     {len(bericht.all_trades)}\n"
-        )
-
-        bild = []
+        # Je Markt einmal: Kursreihe, Spanne in Stunden, Gesamtdrift. Das
+        # haengt nur am Markt und nicht an der Regel - im Katalogfall waere
+        # es sonst je Regel neu gerechnet.
+        reihen = {}
         for symbol in symbole:
             reihe = frames[symbol].set_index("open_time").sort_index()
             kurs = reihe["close"].astype(float)
-            kontrakt = _bybit_kontrakt(symbol)
-            zeiten = [
-                Haltezeit(
-                    beginn=t.entry_time, ende=t.exit_time,
-                    # Marktkurse, nicht die Ein- und Ausstiegskurse des
-                    # Trades: Gefragt ist, was der Markt getan hat.
-                    kurs_beginn=float(kurs.asof(t.entry_time)),
-                    kurs_ende=float(kurs.asof(t.exit_time)),
-                    funding=float(t.funding),
-                )
-                for t in bericht.all_trades
-                if t.symbol == kontrakt
-            ]
-            spanne = (reihe.index[-1] - reihe.index[0]).total_seconds() / 3600.0
-            bild.append(
-                verdichtung_messen(
-                    symbol, zeiten, stunden_gesamt=spanne,
-                    drift_gesamt=ln(kurs.iloc[-1] / kurs.iloc[0]),
-                )
+            reihen[symbol] = (
+                kurs,
+                (reihe.index[-1] - reihe.index[0]).total_seconds() / 3600.0,
+                ln(kurs.iloc[-1] / kurs.iloc[0]),
             )
 
-        ganz = Verdichtungsbild(maerkte=tuple(bild))
-        console.print(ganz.tabelle())
-        console.print(f"\n[yellow]{ganz.urteil()}[/]\n")
+        def vermesse(regel) -> Verdichtungsbild | None:
+            ergebnis, _ = lauf(BASISSATZ, regel)
+            if ergebnis.combined is None:
+                return None
+            maerkte = []
+            for symbol in symbole:
+                kurs, spanne, drift = reihen[symbol]
+                kontrakt = _bybit_kontrakt(symbol)
+                zeiten = [
+                    Haltezeit(
+                        beginn=t.entry_time, ende=t.exit_time,
+                        # Marktkurse, nicht die Ein- und Ausstiegskurse des
+                        # Trades: Gefragt ist, was der Markt getan hat.
+                        kurs_beginn=float(kurs.asof(t.entry_time)),
+                        kurs_ende=float(kurs.asof(t.exit_time)),
+                        funding=float(t.funding),
+                        long=t.side == Side.BUY,
+                    )
+                    for t in ergebnis.all_trades
+                    if t.symbol == kontrakt
+                ]
+                maerkte.append(
+                    verdichtung_messen(
+                        symbol, zeiten, stunden_gesamt=spanne,
+                        drift_gesamt=drift,
+                    )
+                )
+            return Verdichtungsbild(maerkte=tuple(maerkte))
+
+        if not katalog:
+            ganz = vermesse(genome)
+            if ganz is None:
+                console.print("[red]Keine Fenster - nichts zu vermessen.[/]")
+                raise typer.Exit(2)
+            console.print(
+                f"\n[bold]Verdichtung[/] {' + '.join(symbole)} "
+                f"{interval_obj.label}\n  Kandidat   {genome.name}\n"
+            )
+            console.print(ganz.tabelle())
+            console.print(f"\n[yellow]{ganz.urteil()}[/]\n")
+            return
+
+        regeln = [(genome.name, genome, True)]
+        for nummer, bauer in GENERATIONS.items():
+            if not passt_zum_intervall(nummer, intervall):
+                continue
+            for mache in bauer:
+                gebaut = mache()
+                regeln.append((f"g{nummer} {gebaut.name}", gebaut, False))
+
+        console.print(
+            f"\n[bold]Verdichtung im Katalog[/] {' + '.join(symbole)} "
+            f"{interval_obj.label}\n  {len(regeln)} Regeln, "
+            f"Bestand '{genome.name}'\n"
+        )
+
+        zeilen = []
+        for name, regel, ist_bestand in regeln:
+            einzeln = vermesse(regel)
+            if einzeln is None:
+                continue
+            zeilen.append(aus_bild(name, einzeln, ist_bestand=ist_bestand))
+            console.print(f"[dim]  {zeilen[-1].zeile()}[/]")
+
+        familie = Familienbild(regeln=tuple(zeilen))
+        console.print("\n" + familie.tabelle())
+        console.print(f"\n[yellow]{familie.urteil()}[/]\n")
         return
 
     if kipppunkt:

@@ -1553,9 +1553,13 @@ OFFEN: tuple[Richtung, ...] = (
         "62 % des Fundings faellt in steigende Phasen. Ein flacher Satz auf "
         "den Marktdurchschnitt setzt diesen Kandidaten also zu niedrig an. "
         "**Um wie viel, bleibt offen** - das ist die Haelfte, die Bybit "
-        "braucht. Gemessen ist der Hebel, nicht der Ausschlag",
+        "braucht. Gemessen ist der Hebel, nicht der Ausschlag. Und es ist "
+        "nicht seine Eigenschaft, sondern die der Bauart (252): Von 13 "
+        "brauchbaren Katalogregeln verdichten 12, der Bestand liegt mit "
+        "seinem Wert auf Platz 4 mitten im Feld. Die Suche kann in diesem "
+        "Katalog nicht herauswaehlen, was alle tragen",
         100,
-        zuletzt=251,
+        zuletzt=252,
     ),
 )
 
