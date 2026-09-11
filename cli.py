@@ -7308,7 +7308,7 @@ def finanzierung(
                         kurs_beginn=float(kurs.asof(t.entry_time)),
                         kurs_ende=float(kurs.asof(t.exit_time)),
                         funding=float(t.funding),
-                        long=t.side == Side.BUY,
+                        long=t.side is Side.BUY,
                     )
                     for t in ergebnis.all_trades
                     if t.symbol == kontrakt

@@ -593,6 +593,20 @@ class Kippbild:
                 "ist einer von mehreren Bereichen und keine Grenze."
             )
 
+        if erster is not None:
+            teile.append(
+                f"**Und es sind *flache* Saetze.** Der Kandidat ist rein "
+                f"long, fuer ihn ist ein flacher Satz also zugleich sein "
+                f"tatsaechlicher (Befund 253) - fuer eine Regel mit "
+                f"Short-Anteil waere er es nicht, und die Zahl liesse sich "
+                f"nicht uebertragen. Zweitens: Die {self.spielraum_pct:.2f} % "
+                f"sind der Satz, den **er** traegt, nicht der "
+                f"Marktdurchschnitt. Seine Haltezeit liegt in den steilsten "
+                f"Stuecken (Befund 251), also gehoert zu einem Spielraum von "
+                f"{self.spielraum_pct:.2f} % ein Marktdurchschnitt "
+                f"**darunter** - um wie viel, sagt erst 'cli funding'."
+            )
+
         teile.append(
             f"Gemessen wurden {self.messungen} Saetze, jeder ein voller "
             f"Walk-Forward mit allen Gates. **Es kostet keinen Versuch** - "

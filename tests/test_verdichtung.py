@@ -693,3 +693,184 @@ class TestKeinTradeIstNichtDasselbeWieWenigeTrades:
     def test_beide_zaehlen_nicht_als_brauchbar(self) -> None:
         assert not _regel("stumm", 0.0, zeiten=0).brauchbar
         assert not _regel("knapp", 2.0, zeiten=3).brauchbar
+
+
+class TestBeiFlachemSatzIstDerZeitsaldoDieGanzeGeschichte:
+    """**Befund 253.** Gemessen ueber vier Regeln und zwei Saetze:
+    ``Funding / signierte Wertstunden`` ist derselbe Wert (1,53e-05 bis
+    1,70e-05 bei 0,0001) und verdoppelt sich mit dem Satz. Das Funding einer
+    Regel haengt bei flachem Satz **nur** an ihrer vorzeichenbehafteten
+    Haltezeit - Longs zahlen, Shorts bekommen dieselbe Rate.
+
+    Folge fuer Befund 252: Dass 'Trend beide Richtungen' fast nichts zahlt
+    (0,80 EUR, Zeitsaldo -0,048), ist kein Befund ueber die Welt, sondern
+    ueber die Annahme.
+    """
+
+    def test_reines_long_hat_saldo_eins(self) -> None:
+        bild = messe(
+            "M", [_halt(0, 10, faktor=2.0), _halt(20, 30, faktor=2.0)],
+            stunden_gesamt=2400.0, drift_gesamt=log(2.0),
+        )
+
+        assert bild.zeitsaldo == pytest.approx(1.0)
+
+    def test_gleich_viel_long_wie_short_hebt_sich_auf(self) -> None:
+        kurz = Haltezeit(
+            beginn=START + 20 * TAG, ende=START + 30 * TAG,
+            kurs_beginn=100.0, kurs_ende=200.0, long=False,
+        )
+        bild = messe(
+            "M", [_halt(0, 10, faktor=2.0), kurz],
+            stunden_gesamt=2400.0, drift_gesamt=log(2.0),
+        )
+
+        assert bild.zeitsaldo == pytest.approx(0.0)
+        assert bild.stunden_long == pytest.approx(bild.stunden_short)
+
+    def test_ohne_haltezeiten_ist_der_saldo_null_und_kein_fehler(self) -> None:
+        assert messe(
+            "M", [], stunden_gesamt=2400.0, drift_gesamt=log(2.0)
+        ).zeitsaldo == 0.0
+
+    def test_der_saldo_steht_auch_bei_unbelastbaren_regeln_in_der_zeile(self) -> None:
+        """Gerade dort: Die zweiseitige Regel faellt aus der Verdichtung
+        heraus, und ihr Saldo ist genau die Erklaerung dafuer, warum ihr
+        niedriges Funding keine ist."""
+        zeile = Regelverdichtung(
+            name="zweiseitig", verdichtung=0.0, zeiten=84, belastbar=False,
+            grund="25 Haltezeiten nicht long", zeitsaldo=-0.048,
+        ).zeile()
+
+        assert "-0.05" in zeile
+        assert "nicht long" in zeile
+
+    def test_eine_ausgeglichene_regel_wird_im_urteil_entzaubert(self) -> None:
+        familie = Familienbild(
+            regeln=(
+                _regel("Bestand", 2.5, bestand=True),
+                _regel("b", 2.0),
+                Regelverdichtung(
+                    name="zweiseitig", verdichtung=0.0, zeiten=84,
+                    belastbar=False, grund="nicht long", zeitsaldo=-0.048,
+                ),
+            )
+        )
+        text = familie.urteil()
+
+        assert "Ausweg ist keiner" in text
+        assert "zweiseitig" in text
+        assert "Arithmetik und kein Befund" in text
+        assert "braucht echte Raten" in text
+        assert "zahlt damit kaum" in text, "Singular"
+
+    def test_ohne_ausgeglichene_regel_steht_der_satz_nicht_da(self) -> None:
+        familie = Familienbild(
+            regeln=(_regel("Bestand", 2.5, bestand=True), _regel("b", 2.0))
+        )
+
+        assert "Ausweg ist keiner" not in familie.urteil()
+
+    def test_eine_regel_ohne_trades_zaehlt_nicht_als_ausgeglichen(self) -> None:
+        """Saldo null, weil nichts da ist - das ist kein zweiseitiges Buch."""
+        familie = Familienbild(
+            regeln=(
+                _regel("Bestand", 2.5, bestand=True),
+                _regel("b", 2.0),
+                Regelverdichtung(
+                    name="stumm", verdichtung=0.0, zeiten=0, belastbar=False,
+                    zeitsaldo=0.0,
+                ),
+            )
+        )
+
+        assert "Ausweg ist keiner" not in familie.urteil()
+
+    def test_die_tabelle_hat_eine_spalte_dafuer(self) -> None:
+        text = Familienbild(
+            regeln=(_regel("Bestand", 2.5, bestand=True),)
+        ).tabelle()
+
+        assert "Zeitsaldo" in text
+
+
+class TestDerSaldoWandertAusDenMaerktenInDieRegelzeile:
+    def test_beide_maerkte_werden_zusammengezaehlt(self) -> None:
+        zeile = aus_bild(
+            "R",
+            Verdichtungsbild(
+                maerkte=(
+                    Marktverdichtung(
+                        symbol="a", stunden_gesamt=2400.0, stunden_im_markt=300.0,
+                        drift_gesamt=1.0, drift_im_markt=0.25, zeiten=30,
+                        stunden_long=300.0, stunden_short=0.0,
+                    ),
+                    Marktverdichtung(
+                        symbol="b", stunden_gesamt=2400.0, stunden_im_markt=100.0,
+                        drift_gesamt=1.0, drift_im_markt=0.25, zeiten=25,
+                        stunden_long=0.0, stunden_short=100.0,
+                    ),
+                )
+            ),
+        )
+
+        assert zeile.zeitsaldo == pytest.approx((300.0 - 100.0) / 400.0)
+
+    def test_fuenf_haltezeiten_sind_kein_zweiseitiges_buch(self) -> None:
+        """Gefunden am Katalogdurchlauf: 'g1 Momentum Ruecksetzer' hat fuenf
+        Haltezeiten und einen Saldo von +0,23 - und stand damit im Satz ueber
+        den Ausweg, wo er nichts verloren hat. Ein Saldo nahe null heisst bei
+        fuenf Zeitraeumen nicht 'zweiseitig', sondern 'zu wenig, um etwas zu
+        heissen'."""
+        familie = Familienbild(
+            regeln=(
+                _regel("Bestand", 2.5, bestand=True),
+                _regel("b", 2.0),
+                Regelverdichtung(
+                    name="fast nichts gehandelt", verdichtung=0.0, zeiten=5,
+                    belastbar=True, zeitsaldo=0.23,
+                ),
+            )
+        )
+
+        assert "Ausweg ist keiner" not in familie.urteil()
+
+    def test_genug_haltezeiten_und_ausgeglichen_zaehlt_schon(self) -> None:
+        familie = Familienbild(
+            regeln=(
+                _regel("Bestand", 2.5, bestand=True),
+                _regel("b", 2.0),
+                Regelverdichtung(
+                    name="wirklich zweiseitig", verdichtung=0.0, zeiten=84,
+                    belastbar=False, grund="nicht long", zeitsaldo=-0.048,
+                ),
+            )
+        )
+        text = familie.urteil()
+
+        assert "Ausweg ist keiner" in text
+        assert "steht mit einem" in text and "zahlt damit kaum" in text
+
+
+class TestDieTrennlinieIstSoBreitWieDieSpalten:
+    """Sie war 82 Zeichen breit bei 73 Zeichen Spalten - im Terminal ein
+    Umbruch mitten in der Linie."""
+
+    def test_familientabelle(self) -> None:
+        zeilen = Familienbild(
+            regeln=(_regel("Bestand", 2.5, bestand=True),)
+        ).tabelle().splitlines()
+
+        assert len(zeilen[1]) == len(zeilen[0])
+
+    def test_markttabelle(self) -> None:
+        zeilen = Verdichtungsbild(
+            maerkte=(
+                Marktverdichtung(
+                    symbol="M", stunden_gesamt=2400.0, stunden_im_markt=240.0,
+                    drift_gesamt=1.0, drift_im_markt=0.25,
+                ),
+            )
+        ).tabelle().splitlines()
+
+        assert len(zeilen[1]) == len(zeilen[0])

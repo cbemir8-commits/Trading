@@ -137,7 +137,23 @@ class Marktverdichtung:
     funding_flach: float = 0.0
     ueberlappende: int = 0
     nicht_long: int = 0
+    stunden_long: float = 0.0
+    stunden_short: float = 0.0
     zeiten: int = 0
+
+    @property
+    def zeitsaldo(self) -> float:
+        """``(long - short) / (long + short)`` ueber die Haltestunden.
+
+        Bei einem **flachen** Satz ist das die ganze Funding-Geschichte einer
+        Regel: Longs zahlen, Shorts bekommen dieselbe Rate, also haengt die
+        Rechnung nur am Uebergewicht. +1 ist reines Long, 0 ist ausgeglichen
+        (Befund 253).
+        """
+        gesamt = self.stunden_long + self.stunden_short
+        if not gesamt:
+            return 0.0
+        return (self.stunden_long - self.stunden_short) / gesamt
 
     @property
     def anteil_zeit(self) -> float:
@@ -262,6 +278,8 @@ def messe(
         funding_flach=flach,
         ueberlappende=_ueberlappungen(liste),
         nicht_long=sum(1 for z in liste if not z.long),
+        stunden_long=sum(z.stunden for z in liste if z.long),
+        stunden_short=sum(z.stunden for z in liste if not z.long),
         zeiten=len(liste),
     )
 
@@ -414,6 +432,10 @@ class Regelverdichtung:
     belastbar: bool
     grund: str = ""
     ist_bestand: bool = False
+    zeitsaldo: float = 1.0
+    """``(long - short) / (long + short)``. Bei flachem Satz die ganze
+    Funding-Geschichte der Regel (Befund 253) - deshalb steht er auch bei
+    denen in der Tabelle, die keine Verdichtung hergeben."""
 
     @property
     def genug(self) -> bool:
@@ -425,16 +447,23 @@ class Regelverdichtung:
 
     def zeile(self) -> str:
         marke = "  <- Bestand" if self.ist_bestand else ""
+        saldo = f"{self.zeitsaldo:>+12.2f}"
         if not self.zeiten:
             # "unter 20 Haltezeiten" waere hier irrefuehrend - die Regel hat
             # auf diesen Daten ueberhaupt nicht gehandelt.
-            return f"{self.name:<40}{0:>8}{'-':>13}   (kein einziger Trade)"
+            return (
+                f"{self.name:<40}{0:>8}{'-':>13}{'-':>12}"
+                f"   (kein einziger Trade)"
+            )
         if not self.belastbar:
-            return f"{self.name:<40}{self.zeiten:>8}{'-':>13}   ({self.grund})"
+            return (
+                f"{self.name:<40}{self.zeiten:>8}{'-':>13}{saldo}"
+                f"   ({self.grund})"
+            )
         knapp = "" if self.genug else f"  (unter {MINDESTZEITEN} Haltezeiten)"
         return (
             f"{self.name:<40}{self.zeiten:>8}{self.verdichtung:>12.2f}x"
-            f"{marke}{knapp}"
+            f"{saldo}{marke}{knapp}"
         )
 
 
@@ -448,16 +477,19 @@ def aus_bild(
     """
     schwaechste = bild.schwaechste
     zeiten = sum(m.zeiten for m in bild.maerkte)
+    lang = sum(m.stunden_long for m in bild.maerkte)
+    kurz = sum(m.stunden_short for m in bild.maerkte)
+    saldo = (lang - kurz) / (lang + kurz) if lang + kurz else 0.0
     if schwaechste is None:
         gruende = [m.grund for m in bild.maerkte if m.grund]
         return Regelverdichtung(
             name=name, verdichtung=0.0, zeiten=zeiten, belastbar=False,
             grund=gruende[0] if gruende else "kein Markt vermessen",
-            ist_bestand=ist_bestand,
+            ist_bestand=ist_bestand, zeitsaldo=saldo,
         )
     return Regelverdichtung(
         name=name, verdichtung=schwaechste.verdichtung, zeiten=zeiten,
-        belastbar=True, ist_bestand=ist_bestand,
+        belastbar=True, ist_bestand=ist_bestand, zeitsaldo=saldo,
     )
 
 
@@ -520,8 +552,8 @@ class Familienbild:
         if not self.regeln:
             return "Keine Regeln vermessen."
         zeilen = [
-            f"{'Regel':<40}{'Zeiten':>8}{'Verdichtung':>13}",
-            "-" * 70,
+            f"{'Regel':<40}{'Zeiten':>8}{'Verdichtung':>13}{'Zeitsaldo':>12}",
+            "-" * 73,
         ]
         zeilen.extend(
             r.zeile()
@@ -577,6 +609,27 @@ class Familienbild:
                 f"nicht. Sie stehen hier und nicht in einer Fussnote - eine "
                 f"Aussage ueber die Bauart, die ihre Gegenbeispiele "
                 f"verschweigt, ist keine."
+            )
+
+        # ``genug`` gehoert dazu: Bei fuenf Haltezeiten ist ein Saldo nahe
+        # null kein zweiseitiges Buch, sondern Zufall.
+        ausgeglichene = tuple(
+            r for r in self.regeln if abs(r.zeitsaldo) < 0.5 and r.genug
+        )
+        if ausgeglichene:
+            teile.append(
+                f"**Und der naheliegende Ausweg ist keiner.** "
+                f"{', '.join(r.name for r in ausgeglichene)} "
+                f"{'stehen' if len(ausgeglichene) > 1 else 'steht'} mit einem "
+                f"Zeitsaldo nahe null da und "
+                f"{'zahlen' if len(ausgeglichene) > 1 else 'zahlt'} damit kaum "
+                f"Funding - aber bei "
+                f"einem **flachen** Satz ist das Arithmetik und kein Befund: "
+                f"Longs zahlen, Shorts bekommen dieselbe Rate, und uebrig "
+                f"bleibt genau das Uebergewicht. Ob ein zweiseitiges Buch "
+                f"wirklich weniger traegt, haengt daran, ob die Raten hoeher "
+                f"sind, wenn es long ist - und das braucht echte Raten "
+                f"(Befund 253)."
             )
 
         if self.haengt_an_der_schwelle:

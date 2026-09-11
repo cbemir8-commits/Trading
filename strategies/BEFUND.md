@@ -22423,3 +22423,87 @@ entstanden. Nachgemessen wird ein vorhandener Vorrat; ausgewaehlt wird
 nichts. Versuchszaehler vor und nach dem Lauf 198.
 
 Volle Suite 3402 passed, 1 skipped; ruff check sauber.
+
+## Zweihundertdreiundfuenfzig. Eine Tuer, die von hier aus nicht aufgeht
+
+Befund 252 hat einen Ausweg benannt und offengelassen: `Trend beide
+Richtungen` verdichtet als einzige Katalogregel nicht, und sie ist die
+einzige, die zweiseitig handelt. Dort stand *"Gemessen ist es nicht"* -
+also der naechste Schritt.
+
+Der ist, ihn nicht zu gehen, und zwar aus einem gemessenen Grund.
+
+### Zuerst: Die Engine rechnet richtig
+
+`FundingSchedule.payments_between` sagt `total += payment if side is
+Side.BUY else -payment`. Bei positiver Rate zahlt die Long-Seite und die
+Short-Seite **bekommt**. Das Kostenmodell hat also keinen Fehler - der
+Verdacht war naheliegend, war aber keiner.
+
+### Dann: Was ein flacher Satz ueberhaupt aussagen kann
+
+Vier Regeln, zwei Saetze, dieselbe Rechnung - Funding geteilt durch die
+**vorzeichenbehaftete** Haltezeit (Positionswert mal Stunden, long positiv,
+short negativ):
+
+    Regel                          Satz   Funding   Fund/(sig. Wert*h)
+    Bestand (long-only)          0.0001     67.24          1.7024e-05
+    Bestand (long-only)          0.0002    134.18          3.4056e-05
+    Trend-Beteiligung 50 Tage    0.0001    119.26          1.6725e-05
+    Trend-Beteiligung 50 Tage    0.0002    238.20          3.3463e-05
+    Momentum-Beteiligung 90 Tg   0.0001     86.38          1.5288e-05
+    Momentum-Beteiligung 90 Tg   0.0002    170.00          3.0675e-05
+    Trend beide Richtungen       0.0001       0.80          1.6094e-05
+
+Bei 0,0001 steht ueberall derselbe Wert, 1,53e-05 bis 1,70e-05, und bei
+doppeltem Satz verdoppelt er sich. (Der Rest der Streuung kommt daher, dass
+der Nenner den Einstiegswert nimmt und der Positionswert mit dem Kurs
+laeuft.)
+
+**Das Funding einer Regel haengt bei flachem Satz an nichts ausser ihrer
+vorzeichenbehafteten Haltezeit.** Damit ist der Zeitsaldo
+`(long - short) / (long + short)` die ganze Geschichte:
+
+    Bestand                 +1.000   -> zahlt voll
+    Trend beide Richtungen  -0.048   -> zahlt 0,80 EUR, also nichts
+
+Dass die zweiseitige Regel fast nichts zahlt, ist **Arithmetik der
+Annahme** und kein Befund ueber die Welt. Longs zahlen, Shorts bekommen
+dieselbe Rate, uebrig bleibt das Uebergewicht - und ihres ist -0,048.
+
+Ob ein zweiseitiges Buch **wirklich** weniger traegt, haengt daran, ob die
+Raten hoeher sind, wenn es long ist. Das ist genau die Haelfte, die aus
+diesem Container nicht zu haben ist (251). Die Tuer geht von hier aus nicht
+auf - nicht, weil das Mass zu grob waere, sondern weil hinter ihr die Daten
+fehlen. Ein besseres Mass haette denselben Wert geliefert.
+
+### Und eine zweite Lesart, die einen Schritt danebenliegt
+
+Die Kipppunkte aus Befund 250 - 6,0 % und 9,8 % im Jahr - sind **flache**
+Saetze. Fuer den Bestand faellt das zusammen, weil er rein long ist: sein
+flacher Satz ist sein tatsaechlicher. Zwei Dinge folgen trotzdem:
+
+**Nicht uebertragbar.** Fuer eine Regel mit Short-Anteil ist ein flacher
+Satz nicht ihr tatsaechlicher, und 6,0 % heisst dort etwas anderes.
+
+**Nicht der Marktdurchschnitt.** Die 6,0 % sind der Satz, den *er* traegt.
+Seine Haltezeit liegt in den steilsten Stuecken (251), also gehoert zu
+einem Spielraum von 6,0 % ein Marktdurchschnitt **darunter**. Um wie viel,
+sagt erst `cli funding`.
+
+Beides steht jetzt im Urteil der Kipppunktsuche, nicht in einer Fussnote.
+
+### Beim Bauen aufgefallen
+
+Der Satz ueber den Ausweg zog zuerst auch `g1 Momentum Ruecksetzer` herein
+- Zeitsaldo +0,23, sieht ausgeglichen aus. Die Regel hat **fuenf**
+Haltezeiten. Ein Saldo nahe null heisst dort nicht "zweiseitig", sondern
+"zu wenig, um etwas zu heissen". Die Schwelle, die fuer die Verdichtung
+schon galt, gilt jetzt auch hier.
+
+Am Kandidaten aendert sich nichts, kein Gate bewegt sich, kein Versuch wird
+faellig. Was sich aendert: zwei Lesarten, die nahelagen, stehen jetzt als
+das da, was sie sind.
+
+Volle Suite 3419 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

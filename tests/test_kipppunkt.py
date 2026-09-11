@@ -430,3 +430,41 @@ class TestLeiterUndSucheMessenAnDerselbenStelle:
         quelle = ast.unparse(self._quelle())
 
         assert "keine Fenster - die Suche kann daraus" in quelle
+
+
+class TestDieKipppunkteSindFlacheSaetze:
+    """**Befund 253.** Zwei Lesarten liegen einen Schritt daneben, und beide
+    sind teuer.
+
+    Erstens: Ein flacher Satz ist nur fuer ein rein langes Buch zugleich der
+    tatsaechliche - bei Short-Anteil zahlen Longs und Shorts bekommen, und
+    uebrig bleibt das Uebergewicht. Die Zahl laesst sich also nicht auf eine
+    andere Regel uebertragen.
+
+    Zweitens: Der Spielraum ist der Satz, den **dieser Kandidat** traegt. Weil
+    seine Haltezeit in den steilsten Stuecken liegt (Befund 251), gehoert
+    dazu ein Marktdurchschnitt darunter.
+    """
+
+    @staticmethod
+    def _urteil() -> str:
+        return kipppunkte_suchen(_welt({"Schlechtestes Jahr": 0.000055})).urteil()
+
+    def test_das_urteil_nennt_sie_flach(self) -> None:
+        assert "*flache* Saetze" in self._urteil()
+
+    def test_es_sagt_warum_das_beim_bestand_zusammenfaellt(self) -> None:
+        text = self._urteil()
+
+        assert "rein long" in text
+        assert "Short-Anteil" in text
+
+    def test_es_warnt_vor_der_verwechslung_mit_dem_marktdurchschnitt(self) -> None:
+        text = self._urteil()
+
+        assert "nicht der Marktdurchschnitt" in text
+        assert "darunter" in text
+
+    def test_ohne_kipppunkt_steht_der_absatz_nicht_da(self) -> None:
+        """Er haengt an einer Zahl - ohne die gibt es nichts zu lesen."""
+        assert "*flache* Saetze" not in kipppunkte_suchen(lambda _s: ()).urteil()

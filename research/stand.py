@@ -1557,9 +1557,15 @@ OFFEN: tuple[Richtung, ...] = (
         "nicht seine Eigenschaft, sondern die der Bauart (252): Von 13 "
         "brauchbaren Katalogregeln verdichten 12, der Bestand liegt mit "
         "seinem Wert auf Platz 4 mitten im Feld. Die Suche kann in diesem "
-        "Katalog nicht herauswaehlen, was alle tragen",
+        "Katalog nicht herauswaehlen, was alle tragen. **Der zweiseitige "
+        "Ausweg ist von hier aus nicht zu pruefen** (253): Bei flachem Satz "
+        "haengt das Funding einer Regel nur an ihrer vorzeichenbehafteten "
+        "Haltezeit - gemessen ueber vier Regeln und zwei Saetze ist "
+        "'Funding je signierter Wertstunde' derselbe Wert und verdoppelt "
+        "sich mit dem Satz. Dass ein ausgeglichenes Buch fast nichts zahlt, "
+        "ist damit Arithmetik der Annahme und kein Befund ueber die Welt",
         100,
-        zuletzt=252,
+        zuletzt=253,
     ),
 )
 
