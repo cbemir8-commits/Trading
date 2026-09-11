@@ -370,12 +370,17 @@ class Reibungsprobe:
             "-" * 52,
         ]
         for name, frage in (("mit Reibung", self.mit), ("ohne", self.ohne)):
+            # Ohne Reibung ist jeder Kostenanteil null, also hat 'mechanik'
+            # keine Streuung und ist **nicht definiert**. Als '+0.000' sieht
+            # das aus wie eine gemessene Null - es ist keine.
+            zahlen = [
+                f"{wert:+.3f}" if wert is not None else "-"
+                for wert in (frage.netto, frage.mechanik)
+            ]
             kipp = frage.kippfaktor()
             zeilen.append(
-                f"{name:<12}{len(frage.punkte):>8}"
-                f"{frage.netto if frage.netto is not None else 0.0:>+10.3f}"
-                f"{frage.mechanik if frage.mechanik is not None else 0.0:>+10.3f}"
-                f"{f'{kipp:.1f}' if kipp is not None else '-':>12}"
+                f"{name:<12}{len(frage.punkte):>8}{zahlen[0]:>10}"
+                f"{zahlen[1]:>10}{f'{kipp:.1f}' if kipp is not None else '-':>12}"
             )
         return "\n".join(zeilen)
 

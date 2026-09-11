@@ -233,3 +233,13 @@ class TestDerBefehlLaesstBeideLaeufeDurchDieselbeStelle:
         quelle = self._quelle()
 
         assert "if reibungslos:" in quelle
+
+    def test_eine_nicht_definierte_zahl_steht_nicht_als_null_da(self) -> None:
+        """Ohne Reibung ist jeder Kostenanteil null, also hat 'mechanik' keine
+        Streuung und ist nicht definiert. '+0.000' laese sich wie eine
+        gemessene Null."""
+        text = Reibungsprobe(mit=_lauf(*MIT, anteil=0.01), ohne=_lauf(*MIT)).tabelle()
+        ohne_zeile = next(z for z in text.splitlines() if z.startswith("ohne"))
+
+        assert "+0.000" not in ohne_zeile
+        assert "-" in ohne_zeile
