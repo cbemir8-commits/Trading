@@ -22507,3 +22507,86 @@ das da, was sie sind.
 
 Volle Suite 3419 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertvierundfuenfzig. Die Frage direkt stellen
+
+Seit Befund 78 steht in `research/kostenanteil.py` eine Frage in einer
+Form, die sie nicht ganz beantwortet:
+
+> Deshalb wird die Frage andersherum gestellt, und das ist ihre ehrliche
+> Form: **Bei welchem Kostenfaktor wuerde die Kopplung kippen?**
+
+Der Grund ist gut: `net_pnl = gross_pnl - fees - funding`, und die Slippage
+steckt im **Ausfuehrungspreis** - also schon in `gross_pnl`. Die Gebuehr
+laesst sich zurueckrechnen, die Slippage nicht. Also fragt das Modul, wie
+gross die *gesamte* Reibung sein muesste, und `ERREICHBAR = 5.0`
+entscheidet, ab wann die Antwort "nein" lautet.
+
+Auf Tageskerzen war das folgenlos - Kippfaktor 56, weit jenseits jeder Wahl
+der Grenze. Auf Viertelstunden kam **Faktor 2** heraus. Dort entscheidet
+seit Befund 187 eine gesetzte Konvention ueber einen Befund, und der
+Registereintrag steht seitdem als "offen".
+
+### Die Slippage ist ein Parameter
+
+`CostModel` hat `slippage_bps` und `stop_slippage_bps` als Felder, und
+`scaled(faktor)` skaliert sie mit. `scaled(Decimal(0))` setzt **Gebuehr und
+Slippage auf null**. Laesst man dieselben Regeln zweimal laufen, einmal mit
+und einmal ohne jede Reibung, steht die Kopplung ohne Faktorargument da -
+die Slippage muss nicht herausgerechnet werden, weil sie gar nicht erst
+entsteht.
+
+Das war die ganze Zeit moeglich. Die Frage ist seit 78 in ihrer
+schwierigeren Form gestellt worden, weil der Weg ueber `gross_pnl` gesucht
+wurde und nicht ueber die Konfiguration.
+
+### Geeicht, wo die Antwort schon feststeht
+
+Bevor das Werkzeug auf die offene Frage zeigt, muss es dort stimmen, wo die
+Antwort bekannt ist. Auf Tageskerzen, 18 Regeln, `cli vorratsdecke -i D
+--reibungslos`:
+
+    Lauf          Regeln   r netto  Mechanik  Kippfaktor
+    mit Reibung       18    -0.378    +0.554        55.9
+    ohne              18    -0.370    +0.000           -
+
+Die beiden Wege sagen dasselbe. Der alte: "Es braeuchte 56-fache Gebuehr,
+also 2,2 % je Roundtrip." Der neue: "Nimmt man die Reibung **ganz** weg,
+bewegt sich die Kopplung um 2 % des Weges zur Null." Der zweite Satz ist
+der staerkere - er behauptet nichts ueber Plausibilitaet, sondern misst.
+
+Dass der Kippfaktor ohne Reibung `-` ist, gehoert dazu: Ohne Kosten gibt es
+nichts zurueckzurechnen, der Mechanismus-Wert faellt auf null, und der
+Faktor ist nicht mehr definiert. Genau deshalb ersetzt der eine Weg den
+anderen nicht - er steht daneben.
+
+### Was gebaut wurde
+
+`Reibungsprobe` haelt beide Laeufe und urteilt in drei Richtungen: die
+Reibung traegt sie, teils, oder nicht. Der Fehler aus Befund 187 - ein
+Betriebspunkt als Gesetz eingebaut - waere hier leicht zu wiederholen
+gewesen; ein Test haelt fest, dass die drei Urteile verschieden ausfallen.
+
+Die wichtigste Wache ist `gleiche_regeln`. Ohne Reibung fallen Fuellungen
+anders aus, Risikogrenzen greifen anders, und eine Regel kann im einen Lauf
+genug Trades haben und im anderen nicht. Waeren die Mengen verschieden,
+verglichen sich zwei Populationen - der Fehler, den dieses Projekt oefter
+gemacht hat als jeden anderen (56, 182, 184, 190, 237). Ist er da, sagt das
+Urteil es und rechnet nicht weiter.
+
+### Was noch aussteht
+
+Die eigentliche Frage - Viertelstunden - laeuft. Sie kostet rund sechs
+Stunden: 39 Regeln, jede zweimal, auf 225.341 Kerzen je Markt, und die
+Normierung auf die Groessenlogik des Bestands (Befund 182) laesst die
+Regeln dort viel haeufiger handeln als auf Tageskerzen. Das Ergebnis
+gehoert in einen eigenen Befund und nicht in diesen.
+
+Gemessen ist hier also das **Werkzeug**, nicht die offene Frage. Der
+Registereintrag sagt das auch so.
+
+Am Kandidaten aendert sich nichts, kein Gate bewegt sich, kein Versuch wird
+faellig - `vorratsdecke` misst einen vorhandenen Vorrat.
+
+Volle Suite 3439 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

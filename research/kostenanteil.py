@@ -294,3 +294,147 @@ class Kostenfrage:
             f"es nicht (Kippfaktor 29); dieser Vorrat liegt anders, und das "
             f"Urteil von dort gilt hier nicht."
         )
+
+
+# ---------------------------------------------------------------------------
+# Die Frage direkt statt ueber einen Faktor
+# ---------------------------------------------------------------------------
+#
+# ``Kostenfrage`` kann die Gebuehr zurueckrechnen, die Slippage aber nicht -
+# sie steckt im Ausfuehrungspreis und damit schon in ``gross_pnl``. Deshalb
+# musste die Frage als "wie gross muesste die Reibung sein?" gestellt werden,
+# mit ``ERREICHBAR`` als gesetztem Schiedsrichter. Auf Tageskerzen kam Faktor
+# 29 heraus und die Antwort war eindeutig; auf Viertelstunden kam Faktor 2,
+# und dort entscheidet seit Befund 187 eine **gesetzte Grenze** ueber einen
+# Befund.
+#
+# Das muss sie nicht. ``CostModel.scaled(0)`` setzt Gebuehr **und** Slippage
+# auf null - die Engine nimmt beide als Parameter. Laesst man dieselben Regeln
+# zweimal laufen, einmal mit und einmal ohne jede Reibung, steht die Kopplung
+# ohne Faktorargument da (Befund 254).
+
+
+@dataclass(frozen=True, slots=True)
+class Reibungsprobe:
+    """Dieselben Regeln, einmal mit und einmal ohne jede Reibung."""
+
+    mit: Kostenfrage
+    ohne: Kostenfrage
+
+    @property
+    def gleiche_regeln(self) -> bool:
+        """Beide Laeufe muessen dieselbe Regelmenge tragen.
+
+        Ohne Reibung fallen Fuellungen anders aus, Risikogrenzen greifen
+        anders, und eine Regel kann im einen Lauf genug Trades haben und im
+        anderen nicht. Waere die Menge verschieden, verglichen sich zwei
+        Populationen - der Fehler, den dieses Projekt oefter gemacht hat als
+        jeden anderen.
+        """
+        return {p.name for p in self.mit.punkte} == {
+            p.name for p in self.ohne.punkte
+        }
+
+    @property
+    def belastbar(self) -> bool:
+        return self.mit.genug and self.ohne.genug and self.gleiche_regeln
+
+    @property
+    def anteil_der_reibung(self) -> float | None:
+        """Wie viel der Kopplung verschwindet, wenn die Reibung verschwindet.
+
+        0 heisst: Die Reibung traegt nichts davon. 1 heisst: ohne sie ist die
+        Kopplung weg. Gerechnet als Weg zur Null, nicht als Verhaeltnis der
+        beiden Zahlen - gefragt ist, wie weit die Reibung die Kopplung
+        aufhebt.
+        """
+        if not self.belastbar:
+            return None
+        mit, ohne = self.mit.netto, self.ohne.netto
+        if mit is None or ohne is None or mit >= 0:
+            return None
+        return (ohne - mit) / (0.0 - mit)
+
+    @property
+    def traegt_die_reibung(self) -> bool:
+        """Ist die Kopplung ohne Reibung verschwunden?"""
+        if not self.belastbar:
+            return False
+        ohne = self.ohne.netto
+        return ohne is not None and ohne >= 0.0
+
+    def tabelle(self) -> str:
+        zeilen = [
+            f"{'Lauf':<12}{'Regeln':>8}{'r netto':>10}{'Mechanik':>10}"
+            f"{'Kippfaktor':>12}",
+            "-" * 52,
+        ]
+        for name, frage in (("mit Reibung", self.mit), ("ohne", self.ohne)):
+            kipp = frage.kippfaktor()
+            zeilen.append(
+                f"{name:<12}{len(frage.punkte):>8}"
+                f"{frage.netto if frage.netto is not None else 0.0:>+10.3f}"
+                f"{frage.mechanik if frage.mechanik is not None else 0.0:>+10.3f}"
+                f"{f'{kipp:.1f}' if kipp is not None else '-':>12}"
+            )
+        return "\n".join(zeilen)
+
+    def urteil(self) -> str:
+        if not self.belastbar:
+            if not self.gleiche_regeln:
+                fehlt = {p.name for p in self.mit.punkte} ^ {
+                    p.name for p in self.ohne.punkte
+                }
+                return (
+                    f"**Nicht vergleichbar.** Die beiden Laeufe tragen "
+                    f"verschiedene Regeln ({len(fehlt)} nur in einem von "
+                    f"beiden). Ohne Reibung fallen Fuellungen anders aus, und "
+                    f"eine Regel kann im einen Lauf genug Trades haben und im "
+                    f"anderen nicht - verglichen wuerden dann zwei "
+                    f"Populationen."
+                )
+            return (
+                "**Zu wenige Punkte.** Fuer eine Korrelation braucht es vier "
+                "Regeln je Lauf."
+            )
+
+        mit, ohne = self.mit.netto, self.ohne.netto
+        anteil = self.anteil_der_reibung
+        kopf = (
+            f"Dieselben {len(self.mit.punkte)} Regeln, einmal mit und einmal "
+            f"ohne jede Reibung: Die Kopplung steht bei {mit:+.3f} und "
+            f"{ohne:+.3f}."
+        )
+
+        if self.traegt_die_reibung:
+            return (
+                f"**Die Reibung traegt sie.** {kopf} Ohne Gebuehr und ohne "
+                f"Slippage ist die Kopplung nicht mehr negativ. Auf diesem "
+                f"Vorrat ist sie damit **keine** Eigenschaft der Signale, "
+                f"sondern der Handelskosten - und anders als eine Eigenschaft "
+                f"der Signale ist sie verhandelbar: Konditionen, Maker statt "
+                f"Taker, ein groesseres Konto."
+            )
+
+        if anteil is not None and anteil > 0.25:
+            return (
+                f"**Teils.** {kopf} Die Reibung hebt {anteil:.0%} des Weges "
+                f"zur Null auf - sie traegt einen sichtbaren Teil, aber ohne "
+                f"sie bleibt die Kopplung negativ. Was uebrig bleibt, haengt "
+                f"an den Signalen."
+            )
+
+        return (
+            f"**Die Reibung traegt sie nicht.** {kopf} Auch ganz ohne Gebuehr "
+            f"und Slippage bleibt die Kopplung negativ"
+            + (f" ({anteil:.0%} des Weges zur Null)" if anteil is not None else "")
+            + ". Sie ist eine Eigenschaft der **Signale**: Haeufigere "
+            "Ausloeser tragen weniger Vorteil je Ausloesung.\n\n"
+            "Und das steht hier ohne Faktorargument da. 'Kostenfrage' musste "
+            "fragen, wie gross die Reibung sein muesste, weil die Slippage "
+            "im Ausfuehrungspreis steckt; hier ist sie auf null gesetzt, "
+            "statt herausgerechnet zu werden."
+        )
+
+
+__all__ = ["ERREICHBAR", "Kostenfrage", "Reibungsprobe", "Taktpunkt"]

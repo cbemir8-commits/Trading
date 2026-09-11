@@ -1480,9 +1480,15 @@ OFFEN: tuple[Richtung, ...] = (
         "Traegt die Reibung die Kopplung auf kurzen Kerzen?",
         "auf Tageskerzen nein (Kostenanteil 0,0013 bis 0,0086, Kippfaktor "
         "56). Auf Viertelstunden offen: Kostenanteil 0,0094 bis 0,1250 und "
-        "Kippfaktor 2 - das schafft die Slippage allein",
+        "Kippfaktor 2 - das schafft die Slippage allein. **Der Kippfaktor "
+        "ist nicht mehr noetig** (254): 'CostModel.scaled(0)' setzt Gebuehr "
+        "und Slippage auf null, damit steht die Kopplung ohne Reibung direkt "
+        "da. Auf Tageskerzen geeicht - dort geht sie von -0,378 auf -0,370, "
+        "also 2 % des Weges zur Null, und das deckt sich mit dem Faktor 56. "
+        "Der Viertelstundenlauf kostet rund sechs Stunden und steht aus; "
+        "'cli vorratsdecke -i 15 --reibungslos' rechnet ihn",
         78,
-        190,
+        254,
     ),
     # **Acht Punkte reichen dafuer nicht**, und mehr gibt es nicht: Jeder
     # weitere Holdout-Punkt setzt ein Paar voraus, das geprueft werden
