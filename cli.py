@@ -7100,6 +7100,10 @@ def finanzierung(
         0.0, "--bis",
         help="Obergrenze der Kipppunktsuche; 0 nimmt den Vorgabewert.",
     ),
+    verdichtung: bool = typer.Option(
+        False, "--verdichtung",
+        help="Statt der Leiter: Liegen die Funding-Stunden im Aufwaerts?",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Wie viel haengt am angenommenen Funding-Satz?
@@ -7119,6 +7123,11 @@ def finanzierung(
     sich einen Sprossenabstand teilen, und dann meldet die Leiter "hier kippen
     zwei" und laesst den Raum dazwischen verschwinden. Genau das war der Fall
     (Befund 250).
+
+    Mit ``--verdichtung``: Liegen die Funding-Stunden des Kandidaten in
+    Aufwaertsphasen? Die Behauptung aus Befund 100 hat zwei Haelften - liegt
+    die Haltezeit im Aufwaerts, und sind die Raten dort hoeher. Nur die zweite
+    braucht Bybit; die erste steht im eigenen Handelsbuch (Befund 251).
 
     **Kostet keinen Versuch.** Derselbe Kandidat auf jeder Sprosse; veraendert
     wird eine Kostenannahme. Der Satz wird insbesondere **nicht** auf den Wert
@@ -7247,6 +7256,56 @@ def finanzierung(
         console.print(
             f"\n[{'red' if lage.urteil_kippt else 'yellow'}]{lage.urteil()}[/]\n"
         )
+        return
+
+    if verdichtung:
+        from math import log as ln
+
+        from research.verdichtung import (
+            Haltezeit,
+            Verdichtungsbild,
+        )
+        from research.verdichtung import messe as verdichtung_messen
+
+        bericht, _ = lauf(BASISSATZ)
+        if bericht.combined is None:
+            console.print("[red]Keine Fenster - nichts zu vermessen.[/]")
+            raise typer.Exit(2)
+
+        console.print(
+            f"\n[bold]Verdichtung[/] {' + '.join(symbole)} {interval_obj.label}\n"
+            f"  Kandidat   {genome.name}\n"
+            f"  Trades     {len(bericht.all_trades)}\n"
+        )
+
+        bild = []
+        for symbol in symbole:
+            reihe = frames[symbol].set_index("open_time").sort_index()
+            kurs = reihe["close"].astype(float)
+            kontrakt = _bybit_kontrakt(symbol)
+            zeiten = [
+                Haltezeit(
+                    beginn=t.entry_time, ende=t.exit_time,
+                    # Marktkurse, nicht die Ein- und Ausstiegskurse des
+                    # Trades: Gefragt ist, was der Markt getan hat.
+                    kurs_beginn=float(kurs.asof(t.entry_time)),
+                    kurs_ende=float(kurs.asof(t.exit_time)),
+                    funding=float(t.funding),
+                )
+                for t in bericht.all_trades
+                if t.symbol == kontrakt
+            ]
+            spanne = (reihe.index[-1] - reihe.index[0]).total_seconds() / 3600.0
+            bild.append(
+                verdichtung_messen(
+                    symbol, zeiten, stunden_gesamt=spanne,
+                    drift_gesamt=ln(kurs.iloc[-1] / kurs.iloc[0]),
+                )
+            )
+
+        ganz = Verdichtungsbild(maerkte=tuple(bild))
+        console.print(ganz.tabelle())
+        console.print(f"\n[yellow]{ganz.urteil()}[/]\n")
         return
 
     if kipppunkt:

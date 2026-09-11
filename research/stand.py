@@ -1539,6 +1539,24 @@ OFFEN: tuple[Richtung, ...] = (
         "(sie brauchen Kerzen)",
         234,
     ),
+    # Halb gemessen in 251. Die andere Haelfte braucht Bybit - deshalb steht
+    # der Eintrag hier und nicht bei den geschlossenen.
+    Richtung(
+        "Zahlt der Bestand dann, wenn Longs am meisten zahlen?",
+        "Seit Befund 100 stand das als Aussage des Engine-Docstrings da, mit "
+        "dem Zusatz, es sei nur mit echten Bybit-Raten nachpruefbar. Das "
+        "stimmt fuer die **Rate** und nicht fuer die **Belastung**: Ob die "
+        "Haltezeit im Aufwaerts liegt, steht im eigenen Handelsbuch. "
+        "Gemessen (251): Der Kandidat ist auf BTC 37 % der Zeit im Markt und "
+        "faengt dabei 93 % des gesamten Anstiegs ein - die Drift waehrend "
+        "der Haltezeit ist das 2,5-fache der Spanne, auf ETH das 6,6-fache; "
+        "62 % des Fundings faellt in steigende Phasen. Ein flacher Satz auf "
+        "den Marktdurchschnitt setzt diesen Kandidaten also zu niedrig an. "
+        "**Um wie viel, bleibt offen** - das ist die Haelfte, die Bybit "
+        "braucht. Gemessen ist der Hebel, nicht der Ausschlag",
+        100,
+        zuletzt=251,
+    ),
 )
 
 

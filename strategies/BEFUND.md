@@ -22246,3 +22246,89 @@ Volle Suite 3339 passed, 1 skipped; ruff check sauber.
 Kostet keinen Versuch: derselbe Kandidat, veraendert wird eine
 Kostenannahme, ausgewaehlt wird nichts.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihunderteinundfuenfzig. Eine Behauptung mit zwei Haelften
+
+Befund 250 hat den Spielraum beim Funding auf 6,0 % im Jahr vermessen, bei
+einem Vorgabewert von 10,9 %. Bei so duenner Luft wird eine Zeile aus
+`research/finanzierung.py` wichtig, die seit Befund 100 unangetastet dasteht:
+
+> Der Bestand ist eine **Long-Trendfolge**. Er ist im Markt, wenn der Trend
+> steigt - also genau dann, wenn Longs am meisten zahlen. [...] **Das ist
+> hier nicht gemessen, sondern die Aussage des Engine-Docstrings.**
+> Nachpruefen laesst es sich nur mit echten Bybit-Raten.
+
+Der letzte Satz ist es, an dem die Sache haengengeblieben ist - und er ist
+nur zur Haelfte richtig. Die Behauptung zerfaellt naemlich in zwei:
+
+    1. Liegen die Funding-Stunden in Aufwaertsphasen?   <- eigenes Handelsbuch
+    2. Sind die Raten dort hoeher?                      <- braucht Bybit
+
+Haelfte 2 braucht Bybit, Haelfte 1 nicht. Sie stand ein Jahr lang im eigenen
+Kursspeicher, und weil der Satz beide zusammen als "nur mit echten Raten"
+abgelegt hat, hat sie niemand nachgesehen.
+
+### Gemessen
+
+Verglichen wird die Log-Drift je Stunde waehrend der Haltezeit mit der ueber
+die ganze Spanne - beides je Stunde, damit sich ungleich lange Zeitraeume
+vergleichen lassen:
+
+    Markt               im Markt  Drift dort  Verdichtung  Funding auf
+    BTCUSD_BITSTAMP        37,0 %      93,1 %       2,52x        61,1 %
+    ETHUSD_BITSTAMP        31,2 %     205,0 %       6,57x        64,6 %
+
+Auf BTC ist der Kandidat 37 % der Zeit im Markt und faengt dabei 93 % des
+gesamten Anstiegs ein. Auf ETH sind es **205 %** - er faengt mehr Anstieg
+ein, als am Ende netto uebrig ist, weil er die Rueckgaenge aussitzt. Das ist
+kein Rechenfehler, sondern die Bauart einer Trendfolge.
+
+Ueber beide Maerkte faellt **62 % des Fundings** in Haltezeiten, in denen der
+Markt gestiegen ist (41,95 von 67,24 EUR). Das ist eine Aufteilung und kein
+Modell: Jede Haltezeit steigt oder faellt, und ihr Funding faellt mit ihr.
+
+Bemerkenswert ist der Unterschied der beiden Zahlen. Die Vorzeichenteilung
+liegt bei 62 zu 38 - deutlich, aber nicht dramatisch. Die Verdichtung liegt
+beim 2,5- bis 6,6-fachen. Der Kandidat ist also nicht vor allem **oefter** im
+steigenden Markt, sondern er ist dann drin, wenn er **schneller** steigt.
+
+### Was daraus folgt und was nicht
+
+Folgt: Ein flacher Satz, der auf den Marktdurchschnitt geeicht waere, setzt
+genau diesen Kandidaten zu niedrig an. Er ist nicht irgendwo im Markt.
+
+Folgt nicht: um wie viel. Dafuer braucht es Haelfte 2, also die Raten selbst.
+**Gemessen ist der Hebel, nicht der Ausschlag.**
+
+Und ausdruecklich nicht gemessen: dass er ueber dem **Vorgabewert** liegt.
+Der ist der Bybit-Basiswert und kein Durchschnitt; verglichen wird hier gegen
+den Marktdurchschnitt. Wer die Zeilen zusammenlegt, bekommt eine Richtung und
+keine Zahl - und beides steht im Urteil des Befehls so nebeneinander.
+
+### Was die Rechnung nicht traegt
+
+Die Summen zaehlen Stunden und Drift ueber Haltezeiten. Zwei Annahmen stecken
+darin, und beide werden geprueft statt geglaubt:
+
+**Ueberlappung.** Ragen zwei Haltezeiten ineinander, zaehlt derselbe Zeitraum
+doppelt und die Verdichtung waere zu gross. Nachgesehen: null auf beiden
+Maerkten. Ein Markt mit Ueberlappung faellt aus dem Urteil heraus, statt es
+zu faerben.
+
+**Ein gefallener Markt.** Dort misst das Verhaeltnis zweier Driften kein
+"steiler", sondern ein Vorzeichen. Auch das faellt heraus.
+
+Berichtet wird der **schwaechste** belastbare Markt, nicht der Durchschnitt
+und nicht der beste: Er ist der, der die Aussage gerade noch traegt. Hier ist
+das BTC mit 2,52x.
+
+### Am Kandidaten aendert sich nichts
+
+Kein Gate bewegt sich, kein Versuch wird faellig - gelesen wird das
+Handelsbuch eines Laufs, der ohnehin stattfindet. Was sich aendert, ist der
+Registereintrag: Die Frage stand als Aussage eines fremden Docstrings da und
+steht jetzt zur Haelfte als Messung. Die andere Haelfte bleibt offen und
+bleibt beim Nutzer, zusammen mit `cli funding`.
+
+Volle Suite 3376 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

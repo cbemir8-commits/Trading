@@ -65,6 +65,15 @@ Container nicht erreichbar. Deshalb steht hier keine Korrektur, sondern eine
 Groessenordnung: Liegt die wahre Rate ueber der Vorgabe, steht der Bestand
 schlechter da als 7 von 11 - nicht besser.
 
+**Halb nachgemessen, Befund 251.** Der Satz "nur mit echten Raten" gilt fuer
+die *Rate*, nicht fuer die *Belastung*. Ob die Haltezeit im Aufwaerts liegt,
+steht im eigenen Handelsbuch, und dort liegt sie: Die Drift waehrend der
+Haltezeit ist das 2,5-fache (BTC) bis 6,6-fache (ETH) der ganzen Spanne, und
+62 % des Fundings faellt in steigende Phasen. Ein flacher Satz auf den
+Marktdurchschnitt setzt diesen Kandidaten also zu niedrig an. Offen bleibt,
+**um wie viel** - dafuer braucht es die Raten. ``research.verdichtung``
+rechnet den gemessenen Teil nach.
+
 Warum die Nullzeile keine Hoffnung ist - **teilweise widerlegt, Befund 106**
 ---------------------------------------------------------------------------
 Bei 0 % stuende der Bestand auf 9 von 11. Hier stand dazu:
@@ -300,14 +309,15 @@ class Finanzierung:
             )
 
         teile.append(
-            "**In welche Richtung der Fehler zeigt, ist hier nicht gemessen.** "
-            "Der Engine-Docstring haelt fest, dass die Rate in Aufwaertsphasen "
-            "meist positiv ist und Longs zahlen; der Bestand ist eine "
-            "Long-Trendfolge und im Markt, wenn der Trend steigt. Der "
-            "Vorgabewert ist der Basiswert, nicht der Durchschnitt. Liegt die "
-            "wahre Rate darueber, steht der Kandidat **schlechter** da als "
-            "gemeldet - nicht besser. Nachpruefen laesst sich das nur mit "
-            "echten Raten."
+            "**In welche Richtung der Fehler zeigt, ist halb gemessen.** Der "
+            "Engine-Docstring haelt fest, dass die Rate in Aufwaertsphasen "
+            "meist positiv ist und Longs zahlen - das braucht echte Raten. "
+            "Dass der Bestand dort **liegt**, brauchte sie nicht und steht "
+            "seit Befund 251 als Messung da ('cli finanzierung "
+            "--verdichtung'): Die Drift waehrend seiner Haltezeit ist ein "
+            "Vielfaches der Spanne. Der Vorgabewert ist der Basiswert, nicht "
+            "der Durchschnitt; liegt die wahre Rate darueber, steht der "
+            "Kandidat **schlechter** da als gemeldet - nicht besser."
         )
 
         null = next((s for s in self.geordnet if s.satz == 0), None)

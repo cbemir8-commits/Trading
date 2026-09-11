@@ -154,14 +154,35 @@ class TestEhrlichkeit:
         assert "0,17 Punkte" in urteil
         assert "nicht auf den Wert gestellt, bei dem mehr Gates halten" in urteil
 
-    def test_die_richtung_des_fehlers_wird_nicht_behauptet(self) -> None:
-        """Dass Longs im Bullenmarkt mehr zahlen, steht im Engine-Docstring -
-        gemessen ist es hier nicht, und das Urteil sagt das."""
+    def test_die_richtung_des_fehlers_wird_halbiert_und_nicht_behauptet(
+        self,
+    ) -> None:
+        """Das Urteil muss sagen, welche Haelfte gemessen ist.
+
+        Bis Befund 251 verlangte dieser Test *"nicht gemessen"* und *"nur mit
+        echten Raten"* - richtig, solange beide Haelften zusammen abgelegt
+        waren. 251 hat die Behauptung geteilt: Ob die Haltezeit im Aufwaerts
+        **liegt**, steht im eigenen Handelsbuch und ist jetzt gemessen; ob die
+        **Raten** dort hoeher sind, braucht weiter Bybit.
+
+        Der Test ist damit nicht schwaecher, sondern genauer: Verlangt wird,
+        dass beide Haelften als solche dastehen. Ein Urteil, das aus der
+        gemessenen Haelfte eine Zahl fuer die andere macht, faellt hier durch.
+        """
         urteil = leiter().urteil()
 
-        assert "nicht gemessen" in urteil
+        assert "halb gemessen" in urteil
+        assert "Befund 251" in urteil, "die gemessene Haelfte fehlt"
+        assert "braucht echte Raten" in urteil, "die offene Haelfte fehlt"
         assert "schlechter" in urteil
-        assert "nur mit echten Raten" in urteil
+
+    def test_aus_der_gemessenen_haelfte_wird_keine_zahl_gemacht(self) -> None:
+        """Der Vorgabewert ist ein Basiswert und kein Durchschnitt - die
+        Verdichtung misst gegen den Durchschnitt und sagt deshalb nichts
+        darueber, ob der Kandidat ueber der Vorgabe liegt."""
+        urteil = leiter().urteil()
+
+        assert "Basiswert, nicht der Durchschnitt" in urteil
 
     def test_fehlende_historie_wird_vorangestellt(self) -> None:
         """Der erste Satz des Urteils, nicht eine Fussnote: Ohne historische
