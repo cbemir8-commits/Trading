@@ -22590,3 +22590,79 @@ faellig - `vorratsdecke` misst einen vorhandenen Vorrat.
 
 Volle Suite 3439 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertfuenfundfuenfzig. Dreissig Prozent, nicht null und nicht alles
+
+Befund 254 hat das Werkzeug gebaut und auf Tageskerzen geeicht. Hier ist
+die Frage selbst, seit Befund 78 offen und seit 187 an einer gesetzten
+Grenze haengend: **Traegt die Reibung die Kopplung auf Viertelstunden?**
+
+36 Regeln, 225.341 Kerzen je Markt, jede Regel zweimal - `cli vorratsdecke
+-i 15 --reibungslos`:
+
+    Lauf          Regeln   r netto  Mechanik  Kippfaktor
+    mit Reibung       36    -0.267    +0.305         2.3
+    ohne              36    -0.186         -           -
+
+**Die Reibung traegt 30 % davon.** Nimmt man Gebuehr und Slippage ganz weg,
+geht die Kopplung von -0,267 auf -0,186 - sie wird schwaecher und
+verschwindet nicht. Auch auf Viertelstunden ist sie damit **keine**
+Eigenschaft der Kosten. Was uebrig bleibt, haengt an den Signalen.
+
+### Warum das vorher nicht zu sagen war
+
+Der Kippfaktor lag bei 2,3 und damit unter `ERREICHBAR = 5,0`; das Urteil
+lautete folgerichtig *"hier koennte es die Reibung sein - nicht
+entschieden"*. Die beiden Saetze widersprechen sich nicht, sie beantworten
+verschiedene Fragen:
+
+* Der Faktor fragt: **Wie gross muesste** die Reibung sein, damit sie die
+  Kopplung traegt? Antwort: 2,3-fache Gebuehr. Das ist plausibel, also
+  bleibt es offen.
+* Die Wiederholung fragt: **Wie viel traegt** die Reibung, die tatsaechlich
+  im Modell steht? Antwort: 30 %.
+
+Nur die zweite ist eine Messung. Die erste ist eine Plausibilitaetsfrage,
+und ihre Antwort haengt an einer Zahl, die jemand gesetzt hat.
+
+Der Vergleich der beiden Kerzenlaengen zeigt auch, warum es auf
+Tageskerzen nie aufgefallen ist:
+
+    Tageskerzen     Kostenanteil 0,0013-0,0086   Reibung traegt   2 %
+    Viertelstunden  Kostenanteil 0,0094-0,1250   Reibung traegt  30 %
+
+Der Kostenanteil ist rund vierzehnmal so gross, der getragene Anteil rund
+fuenfzehnmal. Das passt zum Mechanismus - aber **zwei Punkte sind keine
+Gerade**, und als solche stehen sie hier auch nicht.
+
+### Was damit nicht erledigt ist
+
+Entfernt wird die Reibung, die im Modell steht: Gebuehr, 1 bp Slippage,
+5 bp bei Stops. Das loest das **algebraische** Problem, an dem Befund 78
+haengengeblieben ist - die Slippage steckt in `gross_pnl` und laesst sich
+nicht abziehen, aber sie laesst sich auf null **setzen**.
+
+Das Kalibrierungsproblem loest es nicht. Ist die echte Slippage auf
+Viertelstunden deutlich groesser als 1 bp, traegt die Reibung mehr als
+30 %. Bei 0,1250 Kostenanteil ist der Hebel dafuer da.
+
+Der ehrliche naechste Schritt waere ein Kippfaktor, der **durch
+Wiederholung** gemessen wird statt durch Zurueckrechnen: dieselbe Suche wie
+in Befund 250, aber ueber `scaled(k)` statt ueber eine Addition - dann
+reagieren Fuellungen, Stops und Risikogrenzen mit, statt festgehalten zu
+werden. Auf Viertelstunden kostet jede Sprosse rund eine Stunde. Das steht
+im Register und nicht hier als Ergebnis.
+
+### Nebenbei
+
+Die Decke dieses Vorrats sagt dasselbe wie die der Tageskerzen, nur
+deutlicher: Die guenstigste Stelle liegt bei n_eff 400, und dort braeuchte
+eine Regel **4,51 Reststreuungen** ueber der Geraden ihrer Familie -
+waehrend reine Auswahl aus 198 Versuchen schon rund 3,25 erzeugt. Das
+Mengentor ist auch hier nicht die billigere Haelfte.
+
+Am Kandidaten aendert sich nichts, kein Gate bewegt sich, kein Versuch wird
+faellig.
+
+Volle Suite 3440 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

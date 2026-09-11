@@ -243,3 +243,71 @@ class TestDerBefehlLaesstBeideLaeufeDurchDieselbeStelle:
 
         assert "+0.000" not in ohne_zeile
         assert "-" in ohne_zeile
+
+
+class TestDieBeidenFragenSindNichtDieselbe:
+    """**Befund 255.** Auf Viertelstunden lag der Kippfaktor bei 2,3 und damit
+    unter ``ERREICHBAR``; das alte Urteil lautete "nicht entschieden". Die
+    Wiederholung ohne Reibung sagt: Sie traegt 30 %, und die Kopplung bleibt
+    negativ.
+
+    Die beiden widersprechen sich nicht - sie beantworten Verschiedenes. Der
+    Faktor fragt, **wie gross** die Reibung sein muesste; die Wiederholung,
+    **wie viel** die traegt, die tatsaechlich im Modell steht. Nur die zweite
+    ist eine Messung.
+
+    Der Test haelt fest, dass beide Zahlen nebeneinander stehen bleiben und
+    die eine die andere nicht ersetzt.
+    """
+
+    @staticmethod
+    def _wie_auf_viertelstunden() -> Reibungsprobe:
+        """Ein kleiner Fall mit demselben Muster: Kippfaktor klein, Kopplung
+        ohne Reibung schwaecher, aber weiter negativ."""
+        # Der Kostenanteil steigt mit der Trade-Zahl - der Mechanismus aus
+        # Befund 78: Wer oefter handelt, haelt kuerzer und streut je Trade
+        # weniger. Ein fuer alle gleicher Anteil verschoebe nur alle Sharpes
+        # um dasselbe und ergaebe ueberhaupt keinen Kippfaktor.
+        anteile = (0.01, 0.05, 0.10, 0.20)
+        return Reibungsprobe(
+            mit=Kostenfrage(
+                punkte=[
+                    _punkt(n, t, s, a)
+                    for (n, t, s), a in zip(MIT, anteile, strict=True)
+                ]
+            ),
+            ohne=Kostenfrage(
+                punkte=[
+                    _punkt(n, t, w)
+                    for (n, t, _), w in zip(
+                        MIT, (0.15, 0.05, 0.20, 0.05), strict=True
+                    )
+                ]
+            ),
+        )
+
+    def test_der_kippfaktor_bleibt_in_der_tabelle_stehen(self) -> None:
+        probe = self._wie_auf_viertelstunden()
+        zeile = next(
+            z for z in probe.tabelle().splitlines() if z.startswith("mit Reibung")
+        )
+
+        assert probe.mit.kippfaktor() is not None
+        assert zeile.split()[-1] != "-"
+
+    def test_ein_kleiner_kippfaktor_macht_das_urteil_nicht_unentschieden(
+        self,
+    ) -> None:
+        """Der Punkt des Befunds: Wo der alte Weg abbrechen musste, sagt der
+        neue eine Zahl."""
+        probe = self._wie_auf_viertelstunden()
+
+        assert (probe.mit.kippfaktor() or 99) < 5.0
+        assert "nicht entschieden" not in probe.urteil()
+        assert probe.anteil_der_reibung is not None
+
+    def test_das_urteil_nennt_den_getragenen_anteil(self) -> None:
+        text = self._wie_auf_viertelstunden().urteil()
+
+        assert "%" in text
+        assert "bleibt die Kopplung negativ" in text

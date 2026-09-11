@@ -1485,10 +1485,16 @@ OFFEN: tuple[Richtung, ...] = (
         "und Slippage auf null, damit steht die Kopplung ohne Reibung direkt "
         "da. Auf Tageskerzen geeicht - dort geht sie von -0,378 auf -0,370, "
         "also 2 % des Weges zur Null, und das deckt sich mit dem Faktor 56. "
-        "Der Viertelstundenlauf kostet rund sechs Stunden und steht aus; "
-        "'cli vorratsdecke -i 15 --reibungslos' rechnet ihn",
+        "**Auf Viertelstunden gemessen** (255): 36 Regeln, -0,267 auf "
+        "-0,186 - die Reibung traegt 30 % und nicht alles. Die Kopplung "
+        "bleibt auch ohne jede Reibung negativ, ist dort also ebenfalls "
+        "keine Eigenschaft der Kosten. Offen bleibt eine Stufe tiefer: "
+        "Entfernt wird die **modellierte** Slippage (1 bp, Stops 5 bp); "
+        "liegt die echte weit darueber, ist der Anteil groesser. Das waere "
+        "durch Wiederholung bei skalierter Reibung zu messen, nicht durch "
+        "Zurueckrechnen",
         78,
-        254,
+        255,
     ),
     # **Acht Punkte reichen dafuer nicht**, und mehr gibt es nicht: Jeder
     # weitere Holdout-Punkt setzt ein Paar voraus, das geprueft werden
