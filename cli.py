@@ -4323,8 +4323,17 @@ def abgleich(
     zwei durchgelassen.
 
     Alle drei sind in ``strategies/BEFUND.md`` beschrieben.
+
+    **Verglichen wird, was gehandelt wird** (Befund 262). ``cli trade`` laeuft
+    ausschliesslich auf ``strategies/champion.json`` - ohne die Datei
+    verweigert es den Dienst. Dieser Befehl nahm bis dahin
+    ``spitzenkandidat()``, also den fest verdrahteten Saatkandidaten. Solange
+    kein Champion zugelassen ist, faellt das zusammen; sobald einer da ist -
+    und das ist das Ziel des ganzen Projekts -, pruefte der letzte Schritt vor
+    dem Geld eine andere Strategie als die, die gleich handelt.
     """
     from backtest.replay import vergleiche
+    from research.admission import lade_champion
     from research.seeds import spitzenkandidat
     from strategy.compiler import compile_genome
 
@@ -4338,13 +4347,29 @@ def abgleich(
         console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
         raise typer.Exit(2)
 
-    genome = spitzenkandidat()
+    champion_pfad = Path(settings.paths.strategies) / "champion.json"
+    genome = lade_champion(champion_pfad)
+    # **Welches Genom geprueft wurde, gehoert in die Ausgabe.** Ein gruenes
+    # "einig" ist wertlos, wenn es die falsche Strategie betraf - dieselbe
+    # Ueberlegung wie bei der Ausschlussliste in Befund 258.
+    if genome is not None:
+        quelle = f"Champion aus {champion_pfad}"
+    else:
+        genome = spitzenkandidat()
+        quelle = "Saatkandidat - es gibt keinen zugelassenen Champion"
     console.print(
         f"\n[bold]Abgleich[/] {symbol} {interval_obj.label}\n"
         f"  Kerzen   {len(frame)}\n"
         f"  Strategie {genome.name} ({genome.genome_id})\n"
+        f"  Herkunft  {quelle}\n"
         f"  Puffer   {puffer} Kerzen\n"
     )
+    if not champion_pfad.exists():
+        console.print(
+            "[yellow]Kein zugelassener Champion.[/] Dieser Lauf prueft den "
+            "Saatkandidaten und ist damit **kein Livegang-Abgleich** - "
+            "'cli trade' wuerde ohne 'champion.json' ohnehin nicht starten.\n"
+        )
 
     ergebnis = vergleiche(frame, lambda: compile_genome(genome), buffer_bars=puffer)
 

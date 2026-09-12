@@ -1440,6 +1440,21 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Scheibe. Die Zahl bleibt, weil jede andere geraten waere",
         261,
     ),
+    # Weiter auf dem Weg des Nutzers: nach 'wettbewerb' kommt 'abgleich'.
+    Richtung(
+        "Der letzte Schritt vor dem Geld prueft die falsche Strategie",
+        "'cli abgleich' traegt im Kopf 'Vor jedem Livegang auszufuehren' - "
+        "gehandelt wird aber von 'cli trade', und das laeuft ausschliesslich "
+        "auf 'strategies/champion.json'; ohne die Datei verweigert es den "
+        "Dienst. 'abgleich' nahm 'spitzenkandidat()', den fest verdrahteten "
+        "Saatkandidaten. Ohne zugelassenen Champion faellt das zusammen - "
+        "deshalb ist es nie aufgefallen; **sobald einer da ist, und das ist "
+        "das Ziel, prueft der letzte Schritt vor dem Geld etwas anderes als "
+        "das, was gleich handelt.** Jetzt laedt 'abgleich' dieselbe Datei wie "
+        "'trade', faellt nur ohne sie auf den Saatkandidaten zurueck und sagt "
+        "in beiden Faellen, welches Genom es geprueft hat",
+        262,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

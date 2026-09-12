@@ -23110,3 +23110,82 @@ faellig.
 
 Volle Suite 3512 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertzweiundsechzig. Der letzte Schritt vor dem Geld
+
+Auf dem Weg des Nutzers kommt nach `wettbewerb` der `abgleich`. Sein Kopf
+sagt, was er ist:
+
+> **Vor jedem Livegang auszufuehren.** Alle Kennzahlen im BEFUND stammen aus
+> dem Backtest; gehandelt wird vom Livebetrieb. Weichen die beiden ab, misst
+> die ganze Zulassung etwas anderes als das, was passieren wird.
+
+Der Befehl ist sorgfaeltig gebaut. Er vergleicht nicht nur das Signal,
+sondern die ganze Entscheidungsflaeche - Einstieg, Ausstieg, Kapitalanteil -
+mit der Begruendung, dass von den drei bisher gefundenen Abweichungen zwei
+sonst durchgerutscht waeren. Bei einer Abweichung sagt er "Nicht live gehen"
+und endet mit Fehlercode.
+
+Nur prueft er die falsche Strategie.
+
+### Zwei Befehle, zwei Quellen
+
+    cli trade      lade_champion(strategies/champion.json)
+    cli abgleich   spitzenkandidat()
+
+`cli trade` laeuft ausschliesslich auf der Champion-Datei. Ohne sie bricht es
+ab - *"Es wird nur gehandelt, was die Zulassungs-Gates bestanden hat"* - und
+es prueft sogar, ob das Instrument dasselbe ist wie bei der Zulassung
+(Befund 106).
+
+`cli abgleich` nahm `spitzenkandidat()`: das fest verdrahtete Genom aus
+`research/seeds.py`.
+
+### Warum das nie aufgefallen ist
+
+Weil es **heute** zusammenfaellt. Es gibt keinen zugelassenen Champion, also
+keine `champion.json`, und der Saatkandidat ist das Einzige, was da ist. Der
+Abgleich laeuft gruen und prueft dabei genau das Richtige.
+
+Er hoert in dem Moment auf, das Richtige zu pruefen, in dem das Projekt sein
+Ziel erreicht: Ein Kandidat besteht alle elf Gates, `write_champion` legt die
+Datei an, der Nutzer fuehrt wie angewiesen `cli abgleich` aus - und bekommt
+ein gruenes Ergebnis ueber eine Strategie, die er nicht handeln wird.
+
+Das ist dieselbe Bauart wie 258 und 260: ein Bauteil, das an der falschen
+Quelle haengt, und ein Kommentar daneben, der sagt, wie es gemeint war. Der
+Unterschied ist der Einsatz - hier ist es der letzte Schritt vor echtem Geld.
+
+### Der Schnitt
+
+`abgleich` laedt jetzt dieselbe Datei wie `trade` und faellt nur dann auf den
+Saatkandidaten zurueck, wenn es keine gibt. In beiden Faellen steht in der
+Ausgabe, was geprueft wurde:
+
+    Strategie Trend 50 Tage mit Konfluenz (111cc2ecd5d53968)
+    Herkunft  Saatkandidat - es gibt keinen zugelassenen Champion
+
+    Kein zugelassener Champion. Dieser Lauf prueft den Saatkandidaten und ist
+    damit kein Livegang-Abgleich - 'cli trade' wuerde ohne 'champion.json'
+    ohnehin nicht starten.
+
+Ein gruenes "einig" ist wertlos, wenn es die falsche Strategie betraf -
+dieselbe Ueberlegung wie bei der stillen Ausschlussliste in Befund 258.
+
+Die vielen Forschungsbefehle behalten `spitzenkandidat()`: Sie vergleichen
+Verfahren und keine Livegaenge. Ein Test haelt diese Trennung fest.
+
+### Was als Naechstes offen bleibt
+
+`cli trade` prueft ueber `lade_bedingungen`, ob das Instrument zu dem passt,
+unter dem zugelassen wurde. `cli abgleich` bekommt sein Symbol aus `--symbol`
+und vergleicht es mit nichts. Ein Abgleich der richtigen Strategie auf dem
+falschen Markt waere derselbe Fehler eine Stufe tiefer. Das steht hier als
+benannte offene Stelle und nicht als stillschweigend Erledigtes - gebaut ist
+es nicht.
+
+Am Kandidaten aendert sich nichts, kein Gate bewegt sich, kein Versuch wird
+faellig.
+
+Volle Suite 3526 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
