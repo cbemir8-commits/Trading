@@ -395,8 +395,16 @@ def parse_proposals(text: str, *, already_tried: set[str] | None = None) -> list
                 Proposal(
                     genome=genome,
                     accepted=False,
-                    reason="schon einmal getestet - zaehlt trotzdem als Versuch, "
-                    "traegt aber nichts bei",
+                    # **Hier kostet er gerade *keinen* Versuch** (Befund
+                    # 259). Bis dahin stand hier "zaehlt trotzdem als
+                    # Versuch" - der Satz aus dem Modulkopf, wo er stimmt:
+                    # Ohne Filter wird ein Doppelgaenger getestet, und
+                    # 'admission' zaehlt jedes Genom, das es erreicht. An
+                    # dieser Stelle ist er aber gerade abgefangen worden und
+                    # erreicht 'admission' nie. Der Nutzer las also im Moment
+                    # der guten Nachricht, er habe etwas verloren.
+                    reason="schon einmal getestet - aussortiert, bevor er "
+                    "einen Versuch kostet",
                 )
             )
             continue

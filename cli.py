@@ -1680,9 +1680,10 @@ def _ask_the_analyst(settings, journal_path: Path) -> list:
     # Ausschlussliste allein aus dem Journal - und 'cli wettbewerb' schreibt
     # keines. Dort war sie also **leer**, waehrend nebenan 45 gemessene
     # Regeln lagen. 'parse_proposals' sagt selbst, was ein Doppelgaenger
-    # kostet: *"schon einmal getestet - zaehlt trotzdem als Versuch, traegt
-    # aber nichts bei"*. Bei 198 von 230 Versuchen ist das der teuerste Posten
-    # im Haus.
+    # kostet - und zwar dann, wenn er **nicht** abgefangen wird: 'admission'
+    # zaehlt jedes Genom, das es erreicht, ob es besteht oder nicht. Ein
+    # abgefangener Doppelgaenger erreicht es nie (Befund 259). Bei 198 von 230
+    # Versuchen ist das der teuerste Posten im Haus.
     #
     # Gelesen wird hier und nicht beim Aufrufer: 'cli vorschlag' hat es
     # richtig gemacht, 'cli wettbewerb' nicht, und zwei Aufrufer, die sich

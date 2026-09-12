@@ -139,9 +139,13 @@ class TestRejection:
         assert parse_proposals("Tut mir leid, das kann ich nicht.") == []
 
     def test_repeat_of_a_tried_idea_is_marked(self) -> None:
-        """Eine Wiederholung zaehlt trotzdem als Versuch in der
-        Mehrfachtest-Korrektur, traegt aber nichts bei - sie gehoert
-        aussortiert, bevor sie einen Walk-Forward kostet."""
+        """Eine Wiederholung traegt nichts bei und gehoert aussortiert,
+        **bevor** sie einen Versuch kostet.
+
+        Ungefiltert kostet sie einen: ``admission`` zaehlt jedes Genom, das
+        es erreicht. Gefiltert erreicht sie es nicht - genau das ist der
+        Zweck (Befund 259).
+        """
         tried = {trend_following().genome_id}
         payload = json.dumps([trend_following().model_dump(mode="json")])
 
@@ -150,6 +154,7 @@ class TestRejection:
         assert len(proposals) == 1
         assert not proposals[0].accepted
         assert "schon einmal getestet" in proposals[0].reason
+        assert "bevor er einen Versuch kostet" in proposals[0].reason
 
     def test_duplicates_within_one_answer_are_dropped(self) -> None:
         proposals = parse_proposals(json.dumps([VALID_GENOME, VALID_GENOME]))

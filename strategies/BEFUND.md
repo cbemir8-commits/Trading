@@ -22892,3 +22892,81 @@ faellig.
 
 Volle Suite 3490 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertneunundfuenfzig. Der Satz, auf den ich mich gestuetzt hatte
+
+Befund 258 hat die leere Ausschlussliste gefunden und sich dabei auf einen
+Satz gestuetzt, den `parse_proposals` ueber einen abgefangenen Doppelgaenger
+ausgibt:
+
+> schon einmal getestet - **zaehlt trotzdem als Versuch**, traegt aber
+> nichts bei
+
+Beim Weiterlesen nachgeprueft, ob das stimmt. Es stimmt nicht - und zwar
+genau dort, wo es steht.
+
+### Die Kette
+
+    parse_proposals   ->  Proposal(accepted=False)
+    AnalystResult.genomes  ->  [p.genome for p in proposals if p.accepted]
+    _ask_the_analyst  ->  return result.genomes
+    admission         ->  for genome in genomes: trials += 1
+
+Ein abgefangener Doppelgaenger ist `accepted=False`, faellt aus `genomes`
+heraus, erreicht `admission` nie - und `admission` ist die einzige Stelle,
+die den Zaehler erhoeht. Der Kommentar dort sagt es ausdruecklich: *"Jeder
+Kandidat erhoeht den Zaehler - auch ein durchgefallener."* Jeder, der
+ankommt. Dieser kommt nicht an.
+
+**An der Ablehnungsstelle kostet ein Doppelgaenger also null.** Das
+Abfangen ist genau das, was den Versuch spart.
+
+### Wo der Satz herkommt und wo er stimmt
+
+Aus dem Modulkopf von `research/analyst.py`:
+
+> Ohne die Historie schlaegt ein Modell in jedem Zyklus ungefaehr dasselbe
+> vor [...] Jeder Wiederholungsversuch zaehlt trotzdem als Versuch in der
+> Mehrfachtest-Korrektur.
+
+Dort ist er **richtig**: Er beschreibt die Welt *ohne* Filter, und in der
+wird der Doppelgaenger getestet und gezaehlt. Dasselbe steht bei
+`write_journal`, ebenfalls richtig.
+
+Falsch wird er beim Umzug. An der Ablehnungsstelle beschreibt er den
+Gegenfall als das, was gerade geschieht - und diese Zeile geht an den
+Nutzer:
+
+    abgelehnt: Trend 50 Tage - schon einmal getestet - zaehlt trotzdem
+               als Versuch, traegt aber nichts bei
+
+Im Moment der guten Nachricht las er, er habe etwas verloren. Jetzt steht
+dort *"aussortiert, bevor er einen Versuch kostet"*.
+
+### Was das fuer Befund 258 heisst
+
+Der **Fund** bleibt: Die Ausschlussliste war im Wettbewerb leer, und ein
+ungefilterter Doppelgaenger kostet tatsaechlich einen Versuch. Die
+**Begruendung** war falsch zitiert - ich habe den Satz uebernommen, ohne die
+Kette nachzugehen, und ihn damit an eine dritte Stelle getragen. Der Fix aus
+258 ist dadurch nicht weniger richtig, sondern besser begruendet: Er wirkt,
+*weil* ein abgefangener Doppelgaenger nichts kostet.
+
+Die Kette steht jetzt als Test - beide Haken einzeln, damit sie nicht
+unbemerkt reisst:
+
+* `genomes` filtert auf `accepted`.
+* `admission` zaehlt jedes Genom, das es erreicht.
+
+### Wo der Satz sonst noch stand
+
+Vier Stellen zitierten ihn. Zwei davon - Modulkopf und `write_journal` -
+bleiben, weil sie die ungefilterte Welt beschreiben. Zwei sind berichtigt:
+der Ablehnungstext und der Kommentar in `_ask_the_analyst`. Der
+Registereintrag zu 258 auch.
+
+Am Kandidaten aendert sich nichts, kein Gate bewegt sich, kein Versuch wird
+faellig.
+
+Volle Suite 3494 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

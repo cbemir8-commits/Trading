@@ -1,10 +1,9 @@
 """Was die KI schon vorgeschlagen hat, muss sie nicht noch einmal vorschlagen.
 
-**Befund 258.** ``parse_proposals`` lehnt einen Doppelgaenger ab und sagt dabei,
-was er kostet:
-
-    *"schon einmal getestet - zaehlt trotzdem als Versuch, traegt aber nichts
-    bei"*
+**Befund 258.** ``admission`` zaehlt **jedes** Genom, das es erreicht - ob es
+besteht oder nicht (*"Jeder Kandidat erhoeht den Zaehler"*). Ein Doppelgaenger,
+den niemand abfaengt, kostet also einen Versuch und traegt nichts bei; einer,
+den ``parse_proposals`` abfaengt, kostet nichts (Befund 259).
 
 Damit das greift, muss ``already_tried`` stimmen. Zwei Aufrufer bauen die
 Menge, und sie bauten sie verschieden:
@@ -107,13 +106,30 @@ class TestDieBestenlisteLiefertDieKennungen:
 class TestWasEinDoppelgaengerKostet:
     """Der Grund, warum das eine Zeile wert ist."""
 
-    def test_parse_proposals_nennt_den_preis(self) -> None:
+    def test_der_ablehnungstext_sagt_was_gerade_passiert_ist(self) -> None:
+        """Er sagte bis Befund 259 das Gegenteil: "zaehlt trotzdem als
+        Versuch" - im Moment, in dem das Abfangen den Versuch gerade spart."""
+        import json as _json
+
         from research.analyst import parse_proposals
+        from research.seeds import spitzenkandidat
 
+        genom = spitzenkandidat()
+        antwort = _json.dumps([genom.model_dump(mode="json")])
+        abgelehnt = parse_proposals(antwort, already_tried={genom.genome_id})
+
+        assert abgelehnt and not abgelehnt[0].accepted
+        grund = abgelehnt[0].reason
+        assert "bevor er einen Versuch kostet" in grund
+        assert "zaehlt trotzdem" not in grund
+
+    def test_der_modulkopf_darf_den_satz_behalten(self) -> None:
+        """Dort stimmt er: Ohne Journal schlaegt das Modell dasselbe wieder
+        vor, und **ungefiltert** kostet jede Wiederholung einen Versuch."""
         quelle = Path("research/analyst.py").read_text(encoding="utf-8")
+        kopf = quelle[: quelle.index("from __future__")]
 
-        assert "zaehlt trotzdem als Versuch" in quelle
-        assert callable(parse_proposals)
+        assert "zaehlt trotzdem als" in kopf
 
     def test_ein_bekanntes_genom_wird_abgelehnt(self) -> None:
         from research.analyst import parse_proposals
@@ -136,3 +152,30 @@ class TestWasEinDoppelgaengerKostet:
 
         assert gesperrt and not gesperrt[0].accepted
         assert "schon einmal getestet" in gesperrt[0].reason
+
+    def test_ein_abgelehnter_vorschlag_erreicht_die_zulassung_nie(self) -> None:
+        """Die Kette, an der alles haengt: ``genomes`` filtert auf
+        ``accepted``, und nur ``genomes`` geht weiter. Waere das anders, waere
+        das Abfangen wirkungslos."""
+        from research.analyst import AnalystResult, Proposal
+        from research.seeds import spitzenkandidat
+
+        genom = spitzenkandidat()
+        ergebnis = AnalystResult(
+            proposals=[
+                Proposal(genome=genom, accepted=False, reason="schon getestet")
+            ]
+        )
+
+        assert ergebnis.genomes == []
+
+    def test_der_wettbewerb_reicht_nur_die_angenommenen_weiter(self) -> None:
+        assert "return result.genomes" in _quelle("_ask_the_analyst")
+
+    def test_die_zulassung_zaehlt_jedes_genom_das_sie_erreicht(self) -> None:
+        """Der andere Haken derselben Kette - ohne ihn spart das Abfangen
+        nichts."""
+        quelle = Path("research/admission.py").read_text(encoding="utf-8")
+
+        assert "Jeder Kandidat erhoeht den Zaehler" in quelle
+        assert "trials += 1" in quelle

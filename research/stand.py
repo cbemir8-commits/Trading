@@ -1384,8 +1384,9 @@ BEHOBEN: tuple[Richtung, ...] = (
     Richtung(
         "Die KI bekam im Wettbewerb keine Ausschlussliste",
         "'parse_proposals' lehnt einen Doppelgaenger ab und sagt dabei, was er "
-        "kostet: *'schon einmal getestet - zaehlt trotzdem als Versuch, traegt "
-        "aber nichts bei'*. Damit das greift, muss 'already_tried' stimmen - "
+        "kostet, wenn er **nicht** abgefangen wird: 'admission' zaehlt jedes "
+        "Genom, das es erreicht (259). Damit das greift, muss 'already_tried' "
+        "stimmen - "
         "und es kam allein aus 'state/journal.json'. Das schreibt nur 'cli "
         "research'; 'cli wettbewerb' nicht. Auf dem Weg, den der Nutzer gehen "
         "soll ('wettbewerb --ki'), war die Liste also **leer**, waehrend die "
@@ -1394,6 +1395,21 @@ BEHOBEN: tuple[Richtung, ...] = (
         "sie selbst und vereinigt beide Quellen; die Zahl steht im Lauf, weil "
         "eine stille Liste von einer leeren nicht zu unterscheiden ist",
         258,
+    ),
+    # Beim Nachlesen des Satzes, auf den sich 258 gestuetzt hat.
+    Richtung(
+        "Der Ablehnungstext sagte das Gegenteil dessen, was er tat",
+        "'parse_proposals' meldete einen abgefangenen Doppelgaenger mit "
+        "'zaehlt trotzdem als Versuch'. Der Satz stammt aus dem Modulkopf, "
+        "wo er stimmt - **ungefiltert** wird ein Doppelgaenger getestet, und "
+        "'admission' zaehlt jedes Genom, das es erreicht. An der "
+        "Ablehnungsstelle ist er aber gerade abgefangen worden und erreicht "
+        "'admission' nie: Dort kostet er null. Der Nutzer las im Moment der "
+        "guten Nachricht, er habe etwas verloren - und Befund 258 hat den "
+        "Satz als Begruendung zitiert. Die Kette ist jetzt festgehalten: "
+        "'genomes' filtert auf 'accepted', nur 'genomes' geht weiter, und "
+        "'admission' zaehlt, was ankommt",
+        259,
     ),
 )
 
