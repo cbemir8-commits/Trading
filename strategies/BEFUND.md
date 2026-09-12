@@ -22666,3 +22666,87 @@ faellig.
 
 Volle Suite 3440 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsechsundfuenfzig. Die Reichweite der Rechnung, nicht die der Reibung
+
+Befund 255 hat den naechsten Schritt benannt: einen Kippfaktor, der **durch
+Wiederholung** gemessen wird statt durch Zurueckrechnen. Gebaut, gefahren -
+und das Ergebnis hat meine Fragestellung umgeworfen, nicht nur beantwortet.
+
+### Was gemessen wurde
+
+`cli vorratsdecke -i D --reibungsleiter "0,2,5,10,25,56"`, sieben ganze
+Durchlaeufe ueber 18 Regeln:
+
+    Faktor   Regeln   r netto
+         0       18    -0.370
+         1       18    -0.378
+         2       18    -0.384
+         5       18    -0.398
+        10       18    -0.421
+        25       18    -0.464
+        56       18    -0.557
+
+Die Kopplung wird mit mehr Reibung nicht schwaecher, sondern **staerker**,
+und zwar durchgehend. Bei Faktor 56 - dort, wo `Kostenfrage` ihr
+Verschwinden meldet - steht sie bei -0,557, weiter von der Null entfernt
+als je zuvor.
+
+Der Grund ist derselbe Mechanismus, den Befund 78 gemessen hat: Mehr
+Reibung trifft die haeufig handelnden Regeln haerter, weil ihr Kostenanteil
+groesser ist. Sie fallen also weiter ab, und das Gefaelle zwischen
+Trade-Zahl und Qualitaet wird steiler. **Reibung aufschlagen verstaerkt die
+Kopplung - es hebt sie nicht auf.**
+
+### Was ich falsch gefragt hatte
+
+Ich bin losgezogen, um den Kippfaktor "nachzumessen", und habe die beiden
+Zahlen im ersten Wurf nebeneinandergestellt, als waeren sie dasselbe. Sind
+sie nicht:
+
+* `Kostenfrage.kippfaktor` rechnet Reibung **heraus**.
+* Die Leiter schlaegt sie **auf**.
+
+Das sind gegenlaeufige Richtungen, und dass die eine die andere nicht
+bestaetigt, ist kein Befund, sondern eine Selbstverstaendlichkeit. Mein
+erstes Urteil hat trotzdem "die beiden Zahlen decken sich nicht" gemeldet.
+Das war die falsche Gegenueberstellung, und sie ist raus.
+
+### Was die richtige ist
+
+`brutto(f)` ist die Kopplung, **wenn** die wahre Reibung das f-fache der
+Gebuehr waere und man sie herausrechnete. Gemeint ist dabei jedes Mal
+dieselbe reibungslose Welt. Die bewegt sich nicht, wenn man die Annahme
+darueber aendert, wie gross die Reibung ist - `brutto(f)` schon:
+
+    brutto( 1) = -0.374    gemessen: -0.370    Abstand 0.004
+    brutto( 5) = -0.357    gemessen: -0.370    Abstand 0.013
+    brutto(10) = -0.334    gemessen: -0.370    Abstand 0.036
+    brutto(25) = -0.247    gemessen: -0.370    Abstand 0.123
+    brutto(50) = -0.050    gemessen: -0.370    Abstand 0.320
+    brutto(56) = +0.001    gemessen: -0.370    Abstand 0.371
+
+Bei Faktor 1 trifft die Naeherung auf vier Tausendstel. Bei Faktor 56 liegt
+sie um den **ganzen Wert** daneben: Sie behauptet eine Null ueber eine Welt,
+die nachgemessen bei -0,370 steht.
+
+**Der Kippfaktor ist damit keine Messung.** Er gibt an, wie weit die
+Rechnung traegt, nicht wie gross die Reibung sein muesste. Er gehoert nicht
+mehr als Beleg zitiert, und der Modulkopf sagt das jetzt.
+
+### Was sich dadurch nicht aendert
+
+Die Schlussfolgerung. *"Die Kopplung liegt nicht an den Kosten"* steht
+weiter - sie ist seit Befund 254/255 direkt gemessen (2 % auf Tageskerzen,
+30 % auf Viertelstunden) und braucht den Faktor nicht. Was faellt, ist ein
+Beleg, nicht das Belegte. Die neue Leiter stuetzt dasselbe aus einer
+dritten Richtung: Selbst 56-fache Reibung laesst die Kopplung stehen.
+
+Und `--reibungslos` ist jetzt genau `--reibungsleiter 0` - zwei Wege in
+denselben Code, nicht zwei Rechnungen.
+
+Am Kandidaten aendert sich nichts, kein Gate bewegt sich, kein Versuch wird
+faellig.
+
+Volle Suite 3471 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

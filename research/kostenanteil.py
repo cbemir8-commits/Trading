@@ -57,6 +57,17 @@ Erst bei rund **29-facher Gebuehr** verschwindet die Kopplung - das waeren
 1,2 % je Roundtrip. Kein Handelsplatz verlangt das. Selbst wenn die Slippage die
 Kosten verdoppelte oder verfuenffachte, bliebe die Kopplung stehen.
 
+**Was dieser Faktor angibt - Befund 256.** Er ist die Reichweite der *Rechnung*
+und nicht die der *Reibung*. ``brutto(f)`` beschreibt immer dieselbe
+reibungslose Welt, behauptet ueber sie aber je nach f etwas anderes; die Welt
+selbst bewegt sich nicht. Nachgemessen auf Tageskerzen (``scaled(0)``): Sie
+steht bei **-0,370**. ``brutto(1)`` sagt -0,374 und trifft damit; ``brutto(56)``
+sagt 0,000 und liegt 0,370 daneben.
+
+Die Schlussfolgerung unten bleibt stehen und ist heute besser belegt als ueber
+den Faktor - sie wird seit Befund 254/255 direkt gemessen, nicht erschlossen.
+Der Faktor selbst gehoert nicht mehr als Beleg zitiert.
+
 Was daraus folgt
 ----------------
 Die Kopplung ist **keine Eigenschaft der Kosten, sondern der Signale**:
@@ -92,6 +103,7 @@ Kostet keinen Versuch: Zerlegt werden Trades, die schon gerechnet sind.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from itertools import pairwise
 
 import numpy as np
 
@@ -442,4 +454,236 @@ class Reibungsprobe:
         )
 
 
-__all__ = ["ERREICHBAR", "Kostenfrage", "Reibungsprobe", "Taktpunkt"]
+__all__ = [
+    "ERREICHBAR",
+    "Kostenfrage",
+    "Reibungsleiter",
+    "Reibungsprobe",
+    "Reibungssprosse",
+    "Taktpunkt",
+]
+
+
+# ---------------------------------------------------------------------------
+# Der Kippfaktor, gemessen statt gerechnet
+# ---------------------------------------------------------------------------
+#
+# ``Kostenfrage.kippfaktor`` sucht, ab welchem Faktor ``sharpe + f * anteil``
+# die Null erreicht. Das haelt die **Trades fest**: Dieselben Ein- und
+# Ausstiege, nur andere Zahlen darunter. Bei Faktor 1 ist das eine gute
+# Naeherung - auf Tageskerzen sagt sie -0,374, gemessen sind es -0,370.
+#
+# Bei Faktor 56 ist es keine mehr. Eine Gebuehr von 2,2 % je Roundtrip
+# aenderte nicht die Zahlen unter denselben Trades, sondern die Trades: Stops
+# lieber, Risikogrenzen frueher, viele Einstiege gar nicht. Was ``kippfaktor``
+# meldet, ist deshalb der Kippunkt **einer Rechnung**, nicht der einer
+# Strategie (Befund 256).
+#
+# ``Reibungsleiter`` misst denselben Punkt durch Wiederholung: jede Sprosse
+# ein ganzer Lauf bei ``CostModel.scaled(k)``.
+
+
+@dataclass(frozen=True, slots=True)
+class Reibungssprosse:
+    """Ein ganzer Katalogdurchlauf bei einem Reibungsfaktor."""
+
+    faktor: float
+    frage: Kostenfrage
+
+    @property
+    def r(self) -> float | None:
+        return self.frage.netto
+
+    @property
+    def regeln(self) -> frozenset[str]:
+        return frozenset(p.name for p in self.frage.punkte)
+
+
+@dataclass(frozen=True, slots=True)
+class Reibungsleiter:
+    """Mehrere Laeufe bei verschiedener Reibung - der Kippunkt als Messung."""
+
+    sprossen: tuple[Reibungssprosse, ...] = ()
+
+    @property
+    def geordnet(self) -> list[Reibungssprosse]:
+        return sorted(self.sprossen, key=lambda s: s.faktor)
+
+    @property
+    def gleiche_regeln(self) -> bool:
+        """Alle Sprossen muessen dieselbe Regelmenge tragen.
+
+        Mit mehr Reibung faellt eine Regel irgendwann unter die Schwelle fuer
+        einen Taktpunkt. Dann verglichen sich verschiedene Populationen -
+        derselbe Fehler, gegen den ``Reibungsprobe.gleiche_regeln`` steht.
+        """
+        mengen = {s.regeln for s in self.sprossen if s.frage.punkte}
+        return len(mengen) <= 1
+
+    @property
+    def belastbar(self) -> bool:
+        return (
+            len(self.sprossen) >= 2
+            and all(s.frage.genug for s in self.sprossen)
+            and self.gleiche_regeln
+        )
+
+    def bei(self, faktor: float) -> Reibungssprosse | None:
+        return next((s for s in self.sprossen if s.faktor == faktor), None)
+
+    @property
+    def probe(self) -> Reibungsprobe | None:
+        """Die Null- und die Einssprosse als ``Reibungsprobe``.
+
+        Damit steht die Zwei-Punkt-Frage aus Befund 254 nicht ein zweites Mal
+        gerechnet da, sondern faellt aus denselben Sprossen.
+        """
+        null, eins = self.bei(0.0), self.bei(1.0)
+        if null is None or eins is None:
+            return None
+        return Reibungsprobe(mit=eins.frage, ohne=null.frage)
+
+    @property
+    def reibungslos(self) -> float | None:
+        """Die Kopplung in der reibungslosen Welt - **gemessen**.
+
+        Der Bezugspunkt fuer alles Weitere: Es gibt genau **eine** solche
+        Welt. Sie bewegt sich nicht, wenn man die Annahme darueber aendert,
+        wie gross die Reibung ist.
+        """
+        null = self.bei(0.0)
+        return null.r if null is not None else None
+
+    def naeherungsfehler(self) -> list[tuple[float, float, float]]:
+        """Was ``brutto(f)`` ueber die reibungslose Welt behauptet - und was
+        dort steht.
+
+        ``Kostenfrage.brutto(f)`` ist die Kopplung, **wenn** die wahre Reibung
+        das f-fache der Gebuehr waere und man sie herausrechnete. Gemeint ist
+        damit immer dieselbe reibungslose Welt; behauptet wird je nach f etwas
+        anderes. Der Abstand zwischen Behauptung und Messung ist der Fehler
+        der Naeherung, und er waechst mit f.
+
+        Je Eintrag: ``(faktor, behauptet, abstand)``.
+        """
+        eins, ohne = self.bei(1.0), self.reibungslos
+        if eins is None or ohne is None:
+            return []
+        aus = []
+        for sprosse in self.geordnet:
+            behauptet = eins.frage.brutto(sprosse.faktor)
+            if behauptet is not None:
+                aus.append((sprosse.faktor, behauptet, abs(behauptet - ohne)))
+        return aus
+
+    @property
+    def kippt_unter_aufschlag(self) -> tuple[float, float] | None:
+        """Zwischen welchen Faktoren **aufgeschlagene** Reibung die Kopplung
+        zur Null bringt.
+
+        Nicht zu verwechseln mit ``Kostenfrage.kippfaktor``: Der rechnet
+        Reibung **heraus**, das hier schlaegt sie **auf**. Beides ist
+        interessant und beides ist etwas anderes.
+
+        Ein gemessenes Paar, keine interpolierte Zahl: Was dazwischen liegt,
+        wurde nicht gerechnet.
+        """
+        if not self.belastbar:
+            return None
+        for links, rechts in pairwise(self.geordnet):
+            a, b = links.r, rechts.r
+            if a is None or b is None:
+                continue
+            if a < 0 <= b:
+                return (links.faktor, rechts.faktor)
+        return None
+
+    @property
+    def gerechneter_kipppunkt(self) -> float | None:
+        """Was ``Kostenfrage.kippfaktor`` am Betriebspunkt dazu sagt."""
+        eins = self.bei(1.0)
+        return eins.frage.kippfaktor() if eins is not None else None
+
+    def tabelle(self) -> str:
+        if not self.sprossen:
+            return "Keine Sprossen gemessen."
+        zeilen = [f"{'Faktor':>8}{'Regeln':>9}{'r netto':>10}", "-" * 27]
+        for s in self.geordnet:
+            zeilen.append(
+                f"{s.faktor:>8g}{len(s.frage.punkte):>9}"
+                + (f"{s.r:>+10.3f}" if s.r is not None else f"{'-':>10}")
+            )
+        return "\n".join(zeilen)
+
+    def urteil(self) -> str:
+        if not self.belastbar:
+            if not self.gleiche_regeln:
+                return (
+                    "**Nicht vergleichbar.** Die Sprossen tragen verschiedene "
+                    "Regelmengen - mit mehr Reibung faellt eine Regel unter "
+                    "die Schwelle fuer einen Taktpunkt, und dann verglichen "
+                    "sich zwei Populationen."
+                )
+            return (
+                "**Zu wenig gemessen.** Es braucht mindestens zwei Sprossen "
+                "mit je vier Regeln."
+            )
+
+        teile: list[str] = []
+        kippt = self.kippt_unter_aufschlag
+        hoechste = self.geordnet[-1]
+
+        if kippt is None:
+            richtung = ""
+            werte = [s.r for s in self.geordnet if s.r is not None]
+            if len(werte) >= 2 and werte[-1] < werte[0]:
+                richtung = (
+                    " Sie wird dabei nicht schwaecher, sondern **staerker** - "
+                    "mehr Reibung trifft die haeufig handelnden Regeln haerter, "
+                    "und genau das ist die Kopplung."
+                )
+            teile.append(
+                f"**Aufgeschlagene Reibung bringt die Kopplung bis Faktor "
+                f"{hoechste.faktor:g} nicht zur Null.** Dort steht sie bei "
+                f"{hoechste.r:+.3f}.{richtung}"
+            )
+        else:
+            unten, oben = kippt
+            teile.append(
+                f"**Aufgeschlagene Reibung bringt sie zwischen Faktor "
+                f"{unten:g} und {oben:g} zur Null.** Jede Sprosse ist ein "
+                f"ganzer Lauf: Fuellungen, Stops und Risikogrenzen reagieren "
+                f"mit."
+            )
+
+        fehler = self.naeherungsfehler()
+        ohne = self.reibungslos
+        if fehler and ohne is not None:
+            grenzfall = max(fehler, key=lambda x: x[2])
+            teile.append(
+                f"**Und die reibungslose Welt ist eine einzige.** Sie steht "
+                f"gemessen bei {ohne:+.3f}. 'brutto(f)' behauptet ueber "
+                f"**dieselbe** Welt je nach f etwas anderes: bei f = 1 "
+                f"{fehler[min(1, len(fehler) - 1)][1]:+.3f}, bei f = "
+                f"{grenzfall[0]:g} schon {grenzfall[1]:+.3f} - "
+                f"{grenzfall[2]:.3f} daneben. Die Naeherung haelt die Trades "
+                f"fest; je weiter hinaus sie rechnet, desto weniger traegt "
+                f"das."
+            )
+            gerechnet = self.gerechneter_kipppunkt
+            if gerechnet is not None:
+                teile.append(
+                    f"**Damit ist der Kippfaktor keine Messung.** "
+                    f"'Kostenfrage' meldet {gerechnet:.1f} - den Punkt, an "
+                    f"dem die Naeherung die Null erreicht. Die Welt, ueber "
+                    f"die sie dort redet, ist nachgemessen worden und steht "
+                    f"bei {ohne:+.3f}. Was der Faktor angibt, ist die "
+                    f"Reichweite der Rechnung und nicht die der Reibung."
+                )
+
+        teile.append(
+            f"{len(self.sprossen)} Sprossen, je ein voller Katalogdurchlauf. "
+            f"Kostet keinen Versuch: derselbe Vorrat unter anderen "
+            f"Handelsbedingungen."
+        )
+        return "\n\n".join(teile)

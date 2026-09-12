@@ -212,8 +212,17 @@ class TestDerBefehlLaesstBeideLaeufeDurchDieselbeStelle:
         )
         return ast.unparse(knoten)
 
-    def test_die_nullkosten_kommen_aus_scaled_null(self) -> None:
-        assert "costs.scaled(Decimal(0))" in self._quelle()
+    def test_die_nullkosten_kommen_aus_dem_kostenmodell(self) -> None:
+        """Nicht aus einem von Hand gebauten Nullmodell: ``scaled`` weiss, was
+        alles zu den Kosten gehoert, und bleibt richtig, wenn dort etwas
+        dazukommt.
+
+        Die genaue Schreibweise stand hier bis Befund 256 als
+        ``scaled(Decimal(0))`` - die Leiter skaliert jetzt auf einen Faktor,
+        und der Test ist zu Recht angeschlagen. Geankert ist er nun an der
+        Anforderung statt an der Schreibweise.
+        """
+        assert "costs.scaled(" in self._quelle()
 
     def test_beide_laeufe_nehmen_dasselbe_genom(self) -> None:
         quelle = self._quelle()
@@ -228,11 +237,13 @@ class TestDerBefehlLaesstBeideLaeufeDurchDieselbeStelle:
 
         assert quelle.count("ohne_zensierte(") == 2
 
-    def test_der_zweite_lauf_ist_abschaltbar(self) -> None:
-        """Er verdoppelt die Laufzeit - auf Viertelstunden sind das Stunden."""
+    def test_die_zusaetzlichen_laeufe_sind_abschaltbar(self) -> None:
+        """Jeder verdoppelt die Laufzeit - auf Viertelstunden sind das
+        Stunden. Ohne Sprossen darf keiner laufen."""
         quelle = self._quelle()
 
-        assert "if reibungslos:" in quelle
+        assert "for faktor in faktoren:" in quelle
+        assert "faktoren = [float(x) for x in reibungsleiter.split(',')" in quelle
 
     def test_eine_nicht_definierte_zahl_steht_nicht_als_null_da(self) -> None:
         """Ohne Reibung ist jeder Kostenanteil null, also hat 'mechanik' keine

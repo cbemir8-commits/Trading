@@ -1492,9 +1492,14 @@ OFFEN: tuple[Richtung, ...] = (
         "Entfernt wird die **modellierte** Slippage (1 bp, Stops 5 bp); "
         "liegt die echte weit darueber, ist der Anteil groesser. Das waere "
         "durch Wiederholung bei skalierter Reibung zu messen, nicht durch "
-        "Zurueckrechnen",
+        "Zurueckrechnen. **Gemessen** (256): Aufgeschlagene Reibung bringt "
+        "die Kopplung bis zum 56-fachen nicht zur Null - sie wird dort mit "
+        "-0,557 sogar staerker als bei -0,378. Und der Kippfaktor selbst ist "
+        "keine Messung: 'brutto(f)' redet ueber dieselbe reibungslose Welt "
+        "und behauptet je nach f etwas anderes; gemessen steht sie bei "
+        "-0,370, behauptet wird bei f = 56 eine Null",
         78,
-        255,
+        256,
     ),
     # **Acht Punkte reichen dafuer nicht**, und mehr gibt es nicht: Jeder
     # weitere Holdout-Punkt setzt ein Paar voraus, das geprueft werden

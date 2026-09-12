@@ -11136,7 +11136,12 @@ def vorratsdecke(
     reibungslos: bool = typer.Option(
         False, "--reibungslos",
         help="Jede Regel zusaetzlich ohne Gebuehr und Slippage - doppelte "
-             "Laufzeit.",
+             "Laufzeit. Kurzform fuer '--reibungsleiter 0'.",
+    ),
+    reibungsleiter: str = typer.Option(
+        "", "--reibungsleiter",
+        help="Reibungsfaktoren, durch Komma - je Sprosse ein ganzer "
+             "Durchlauf. Misst den Kippunkt, statt ihn zurueckzurechnen.",
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
@@ -11165,7 +11170,12 @@ def vorratsdecke(
     from research.admission import load_trials
     from research.familien import familie_von
     from research.gates import stichprobe_wie_im_gate
-    from research.kostenanteil import Kostenfrage, Reibungsprobe, Taktpunkt
+    from research.kostenanteil import (
+        Kostenfrage,
+        Reibungsleiter,
+        Reibungssprosse,
+        Taktpunkt,
+    )
     from research.randschnitt import ohne_zensierte
     from research.seeds import GENERATIONS, passt_zum_intervall, spitzenkandidat
     from research.suchbudget import Kandidat
@@ -11200,22 +11210,32 @@ def vorratsdecke(
     vergleichsgroesse = spitzenkandidat().sizing
     punkte: list[Punkt] = []
     taktpunkte: list[Taktpunkt] = []
-    # **Dieselben Regeln ohne jede Reibung** (Befund 254). 'Kostenfrage' kann
-    # nur die Gebuehr zurueckrechnen - die Slippage steckt im
-    # Ausfuehrungspreis. 'CostModel.scaled(0)' setzt beide auf null, und dann
-    # braucht es kein Faktorargument mehr.
-    ohne_reibung: list[Taktpunkt] = []
-    nullkosten = {
-        x: c.__class__(
-            instrument=c.instrument, risk=c.risk,
-            costs=c.costs.scaled(Decimal(0)), funding=c.funding,
-            initial_equity=c.initial_equity, allow_shorts=c.allow_shorts,
-            enforce_risk_limits=c.enforce_risk_limits,
-            entry_expiry_bars=c.entry_expiry_bars,
-            max_hold_bars=c.max_hold_bars, kalender=c.kalender,
-        )
-        for x, c in configs.items()
-    } if reibungslos else {}
+    # **Dieselben Regeln bei anderer Reibung** (Befund 254/256). 'Kostenfrage'
+    # kann nur die Gebuehr zurueckrechnen - die Slippage steckt im
+    # Ausfuehrungspreis. 'CostModel.scaled(k)' skaliert beide, und ein ganzer
+    # Durchlauf je Faktor misst den Kippunkt, statt ihn zu rechnen.
+    #
+    # '--reibungslos' ist genau '--reibungsleiter 0'. Zwei Wege in denselben
+    # Code, nicht zwei Rechnungen.
+    faktoren = [float(x) for x in reibungsleiter.split(",") if x.strip()]
+    if reibungslos and 0.0 not in faktoren:
+        faktoren.insert(0, 0.0)
+    leiter: dict[float, list[Taktpunkt]] = {f: [] for f in faktoren}
+
+    def _skaliert(faktor: float):
+        return {
+            x: c.__class__(
+                instrument=c.instrument, risk=c.risk,
+                costs=c.costs.scaled(Decimal(str(faktor))), funding=c.funding,
+                initial_equity=c.initial_equity, allow_shorts=c.allow_shorts,
+                enforce_risk_limits=c.enforce_risk_limits,
+                entry_expiry_bars=c.entry_expiry_bars,
+                max_hold_bars=c.max_hold_bars, kalender=c.kalender,
+            )
+            for x, c in configs.items()
+        }
+
+    sprossenkosten = {f: _skaliert(f) for f in faktoren}
     nach_familie: dict[str, list[Punkt]] = {}
     grob_familie: dict[str, list[Punkt]] = {}
     nach_logik: dict[str, list[Punkt]] = {}
@@ -11297,15 +11317,16 @@ def vorratsdecke(
             takt = Taktpunkt.aus_trades(genom.name, gehandelt.all_trades)
             if takt is not None:
                 taktpunkte.append(takt)
-            if reibungslos:
-                frei = ohne_zensierte(
+            for faktor in faktoren:
+                sprosse = ohne_zensierte(
                     run_portfolio_walkforward(
-                        frames, lambda g=genom: compile_genome(g), nullkosten
+                        frames, lambda g=genom: compile_genome(g),
+                        sprossenkosten[faktor],
                     )
                 )
-                nackt = Taktpunkt.aus_trades(genom.name, frei.all_trades)
+                nackt = Taktpunkt.aus_trades(genom.name, sprosse.all_trades)
                 if nackt is not None:
-                    ohne_reibung.append(nackt)
+                    leiter[faktor].append(nackt)
             nach_familie.setdefault(_familie(genom), []).append(punkt)
             grob_familie.setdefault(_familie_grob(genom), []).append(punkt)
             # Die zweite, unabhaengig gebaute Einteilung (Befund 83, nach
@@ -11492,19 +11513,29 @@ def vorratsdecke(
             f"Taktpunkte - dafuer braucht es vier.[/]"
         )
 
-    if reibungslos:
-        probe = Reibungsprobe(
-            mit=frage, ohne=Kostenfrage(punkte=ohne_reibung)
-        )
+    if faktoren:
+        # Der Betriebspunkt gehoert als Sprosse dazu - sonst faehrt die Leiter
+        # an der Stelle vorbei, an der alle uebrigen Zahlen des Projekts
+        # stehen.
+        stufen = [Reibungssprosse(faktor=1.0, frage=frage)] + [
+            Reibungssprosse(faktor=f, frage=Kostenfrage(punkte=leiter[f]))
+            for f in faktoren
+            if f != 1.0
+        ]
+        bild = Reibungsleiter(sprossen=tuple(stufen))
         console.print(
-            "\n[bold]Dieselben Regeln ohne jede Reibung[/]\n"
-            "  [dim]Gebuehr und Slippage auf null - die Frage direkt, statt "
-            "ueber einen Faktor, den die Slippage im Ausfuehrungspreis "
-            "unbeantwortbar macht (Befund 254).[/]\n"
+            "\n[bold]Dieselben Regeln bei anderer Reibung[/]\n"
+            "  [dim]Je Sprosse ein ganzer Durchlauf bei 'CostModel.scaled(k)' "
+            "- Fuellungen, Stops und Risikogrenzen reagieren mit, statt "
+            "festgehalten zu werden (Befund 254/256).[/]\n"
         )
-        console.print(probe.tabelle())
+        console.print(bild.tabelle())
         console.print()
-        console.print(probe.urteil())
+        console.print(bild.urteil())
+        probe = bild.probe
+        if probe is not None:
+            console.print()
+            console.print(probe.urteil())
 
     # **Wo der Bestand in seinem eigenen Vorrat steht.** Der zweite Weg zur
     # selben Aussage wie der Deflated Sharpe - und ein unabhaengiger: Der
