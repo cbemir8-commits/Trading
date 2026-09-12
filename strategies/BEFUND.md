@@ -23337,3 +23337,116 @@ der Umfang - ausgewaehlt wird nichts.
 
 Volle Suite 3554 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertfuenfundsechzig. Gesehen und nie gezahlt
+
+Befund 264 hat den **Umfang** in den Zulassungsnachweis geschrieben - welche
+Beine gerechnet wurden. Was dieser Umfang kostet, ist zum groessten Teil
+Funding: das 8,9-fache der Handelsgebuehren (Befund 100). Also nachgesehen,
+ob die geladenen Raten dort ueberhaupt ankommen.
+
+Sie kamen an zwei Stellen nicht an, und beide lautlos.
+
+### Erstens: zwei Schluesselraeume, eine Variable
+
+    data_store/candles/     BTCUSD_BITSTAMP   ETHUSD_BITSTAMP   ...
+    data_store/funding/     BTCUSDT           ETHUSDT           ...
+
+Kerzen stehen unter dem Kursdatensymbol, Funding unter dem Kontrakt. `cli
+funding` schreibt unter `settings.bybit.symbol`, also `BTCUSDT`. `cli
+wettbewerb` nahm fuer beide Speicher dieselbe Variable - `handelssymbol`.
+
+Gemessen auf einem Wegwerfspeicher:
+
+    geschrieben unter 'BTCUSDT'         30 Raten
+    wettbewerb las 'BTCUSD_BITSTAMP'     0 Zeilen
+    jetzt 'BTCUSDT'                     30 Zeilen -> 30 im Kostenmodell
+
+Gelesen wurde eine Datei, die niemand schreibt. `attach_funding` setzt
+daraufhin ueberall NaN - und was NaN dann anrichtet, steht als Warnung im
+Nachbarbefehl: *"Kandidaten, die darauf aufbauen, handeln nicht - das ist
+dann kein Urteil ueber die Idee, sondern eine fehlende Datei."* **Genau diese
+Lage haette der Wettbewerb auch mit vollem Speicher gehabt**, und dort steht
+keine Warnung.
+
+Gemessen ist der leere Rahmen, nicht der Ausfall: Der Speicher ist leer, also
+hat noch kein Lauf Raten zu verlieren gehabt. Was hier belegt ist, ist die
+Ursache - nicht, wie viele Kandidaten sie gekostet hat.
+
+Von drei lesenden Stellen hatten zwei den richtigen Schluessel: `cli
+finanzierung` rechnet ihn je Markt um, `cli research` liest Kerzen und
+Funding beide unter `settings.bybit.symbol`. Falsch war genau der Befehl, der
+sucht.
+
+### Zweitens: gesehen ist nicht gezahlt
+
+`attach_funding` schreibt die Raten **an die Kerzen**. Dort sind sie ein
+Indikator - etwas, das eine Regel lesen kann. Was der Backtest *berechnet*,
+kommt aus `BacktestConfig.funding`.
+
+`rates=` kommt in der ganzen Anwendung **kein einziges Mal** vor. Der einzige
+Treffer im Verzeichnis steht in `tests/test_costs.py`. Jedes
+`FundingSchedule(...)` des Systems uebergibt allein `default_rate`.
+
+**Wer `cli funding` laufen liess, aenderte damit, was die Strategie sieht -
+nie, was sie zahlt.**
+
+Der Befehl steht als Schritt 2 von vier im Bericht, mit diesem Text:
+
+> Laedt die echten Funding-Raten. [...] Der Kandidat vertraegt bis 6,0 % im
+> Jahr, dann faellt 'Schlechtestes Jahr'; bei 9,8 % faellt
+> 'Parameter-Plateau'. Der Vorgabewert steht bei 10,9 % - also jenseits von
+> beiden. Liegt die wahre Rate darunter, gewinnt der Kandidat Gates zurueck.
+
+Die Kipppunkte stimmen (Befund 250). Nur haette kein Lauf sie erreicht: Der
+Kandidat haette weiter bei 10,9 % gerechnet, egal wie viele Raten im Speicher
+lagen. **Das Versprechen war nicht einloesbar.**
+
+### Gebaut
+
+`schedule_from_frame` macht aus dem geladenen Rahmen das Kostenmodell. Der
+Schluessel muss dabei treffen, was `funding_times_between` baut - schlichte
+`datetime` auf die volle Stunde; ein Schluessel, der danebenliegt, faellt
+still auf den Vorgabewert zurueck, und genau das waere hier nicht zu
+bemerken. Ein Test haelt die Strecke am Stueck: ueber den Parquet-Speicher
+hinein, als Kostenmodell heraus, und am Ende zahlt der Lauf das 7,5-fache.
+
+**Luecken behalten den Vorgabewert.** Eine fehlende Rate ist nicht null.
+
+Je Bein die eigenen Raten - BTC und ETH haben verschiedenes Funding, und ein
+Bein mit den Raten des anderen zu belasten waere schlimmer als der
+Vorgabewert. Der Wettbewerb sagt vor der Suche, wie viele Raten je Markt
+geladen sind, oder warnt, dass keine da sind; eine stille Ladung ist von
+einer leeren sonst nicht zu unterscheiden (dieselbe Ueberlegung wie in
+Befund 258).
+
+Und der Nachweis fuehrt `funding_raten` mit. Ohne diese Zahl sagt
+`funding_satz` ab heute nicht mehr die Wahrheit: Gehen echte Raten ein, ist
+der Vorgabewert nur noch der Wert fuer Luecken. Alle bisherigen Eintraege
+stehen auf null - durchgehend mit dem Vorgabewert gerechnet, und das ist
+richtig so.
+
+### Warum das nicht aufgefallen ist
+
+Weil `data_store/funding/` leer ist. Der Satz *"jede Zahl dieses Projekts
+rechnet mit dem Vorgabewert"* stimmt - er stand nur aus dem falschen Grund
+da. Die beiden Gruende fallen an dem Tag auseinander, an dem jemand Schritt 2
+ausfuehrt, und bis dahin ist die Aussage nicht von sich selbst zu
+unterscheiden. Der Docstring von `cli finanzierung` sagt das jetzt
+ausdruecklich: Heute ist es eine Aussage ueber die Daten, bis 265 war es eine
+ueber den Code.
+
+Dasselbe Muster wie 258, 260 und 262 - ein Bauteil an der falschen Quelle,
+ein Text daneben, der sagt, wie es gemeint war. Vier in Folge auf demselben
+Weg des Nutzers.
+
+### Nicht gemessen
+
+Was die echten Raten kosten. Das braucht Bybit, und die Regionssperre steht.
+Gemessen ist, dass der Weg jetzt traegt: gleicher Rahmen hinein, hoehere
+Zahlung heraus, im gemessenen Verhaeltnis.
+
+Kostet keinen Versuch: gebaut wurde eine Leitung, ausgewaehlt wurde nichts.
+
+Volle Suite 3571 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

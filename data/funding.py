@@ -40,11 +40,13 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from pathlib import Path
 
 import pandas as pd
 import structlog
 
+from backtest.costs import FundingSchedule
 from core.models import FundingRate
 from data.bybit.adapter import MarketDataSource
 
@@ -212,6 +214,42 @@ def backfill_funding(
 
     log.info("funding.geladen", symbol=symbol, neu=written, bis=cursor.isoformat())
     return written
+
+
+def schedule_from_frame(
+    funding: pd.DataFrame, *, default_rate: Decimal | None = None
+) -> FundingSchedule:
+    """Die geladenen Raten als **Kostenmodell** (Befund 265).
+
+    ``attach_funding`` schreibt dieselben Raten an die Kerzen - dort sind sie
+    ein **Indikator**, den eine Regel lesen kann. Was der Backtest *berechnet*,
+    kommt aus ``BacktestConfig.funding``, und dort stand bis hierher ausnahmslos
+    ``FundingSchedule(default_rate=...)`` mit leerem ``rates``: In der ganzen
+    Anwendung gab es keine einzige Stelle, die ``rates=`` gesetzt hat.
+
+    Folge: Wer ``cli funding`` laufen liess, aenderte, was die Strategie
+    **sieht**, nicht, was sie **zahlt**. Der Bericht verspricht dem Nutzer das
+    Gegenteil - *"Bisher rechnet jede Zahl mit dem Vorgabewert"* -, und der
+    Funding-Block ist das 8,9-fache der Handelsgebuehren (Befund 100).
+
+    Luecken behalten den Vorgabewert: Eine fehlende Rate ist nicht null.
+    """
+    zeitplan = FundingSchedule(
+        **({} if default_rate is None else {"default_rate": default_rate})
+    )
+    if funding.empty or "time" not in funding or "funding_rate" not in funding:
+        return zeitplan
+    for zeit, rate in zip(funding["time"], funding["funding_rate"], strict=True):
+        if pd.isna(rate) or pd.isna(zeit):
+            continue
+        # ``to_pydatetime`` und nicht der Zeitstempel selbst: Der Schluessel
+        # muss zu dem passen, was ``funding_times_between`` baut - schlichte
+        # ``datetime`` auf die volle Stunde. Ein Schluessel, der nicht trifft,
+        # faellt still auf den Vorgabewert zurueck, und genau das waere hier
+        # nicht zu bemerken.
+        moment = zeit.to_pydatetime() if hasattr(zeit, "to_pydatetime") else zeit
+        zeitplan.rates[moment] = Decimal(str(rate))
+    return zeitplan
 
 
 def attach_funding(frame: pd.DataFrame, funding: pd.DataFrame) -> pd.DataFrame:

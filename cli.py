@@ -553,7 +553,11 @@ def wettbewerb(
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range
     from data.bybit.errors import BybitError
-    from data.funding import FundingStore, attach_funding
+    from data.funding import (
+        FundingStore,
+        attach_funding,
+        schedule_from_frame,
+    )
     from research.admission import (
         load_trials,
         run_admission,
@@ -619,7 +623,22 @@ def wettbewerb(
         )
         raise typer.Exit(2)
 
-    funding_frame = FundingStore(settings.paths.data_store).read(handelssymbol)
+    # **Der Schluessel ist der Kontrakt, nicht das Kursdatensymbol** (Befund
+    # 265). 'cli funding' schreibt unter 'settings.bybit.symbol', also
+    # 'BTCUSDT'; hier stand 'handelssymbol', also 'BTCUSD_BITSTAMP'. Gelesen
+    # wurde damit eine Datei, die niemand schreibt - null Zeilen, und
+    # 'attach_funding' setzt daraufhin ueberall NaN. Die Funding-Indikatoren
+    # waren auf diesem Weg tot, und zwar lautlos.
+    #
+    # Je Bein die eigenen Raten: BTC und ETH haben verschiedenes Funding, und
+    # ein Bein mit den Raten des anderen zu belasten waere schlimmer als der
+    # Vorgabewert.
+    funding_speicher = FundingStore(settings.paths.data_store)
+    funding_je_markt = {
+        markt: funding_speicher.read(_bybit_kontrakt(markt))
+        for markt in dict.fromkeys([*symbole, handelssymbol])
+    }
+    funding_frame = funding_je_markt[handelssymbol]
     frame = attach_funding(frame, funding_frame)
     sub_frame = store.read(handelssymbol, Interval.M1)
     if sub_frame.empty:
@@ -635,6 +654,10 @@ def wettbewerb(
         risk=settings.risk,
         initial_equity=Decimal("500"),
         kalender=_terminkalender(settings) or None,
+        # **Was geladen wurde, wird auch berechnet** (Befund 265). Bis hierher
+        # gingen die Raten allein an die Kerzen - ein Indikator, den eine Regel
+        # lesen kann. Gezahlt wurde ausnahmslos der Vorgabewert.
+        funding=schedule_from_frame(funding_frame),
     )
 
     # **Gesucht wird auf der Aufstellung, auf der geurteilt wird.**
@@ -663,6 +686,7 @@ def wettbewerb(
                 initial_equity=Decimal("500"),
                 enforce_risk_limits=True,
                 kalender=_terminkalender(settings) or None,
+                funding=schedule_from_frame(funding_je_markt[markt]),
             )
             for markt in symbole
         }
@@ -670,6 +694,25 @@ def wettbewerb(
         # vergleicht das Benchmark-Gate ueber verschiedene Jahre.
         frame = attach_funding(frames[handelssymbol], funding_frame)
         sub_frame = None
+
+    # **Eine stille Ladung ist von einer leeren nicht zu unterscheiden**
+    # (Befund 265). Vor der Suche und nicht in einer Fussnote: Ob mit echten
+    # Raten oder mit dem Vorgabewert gerechnet wird, entscheidet ueber den
+    # groessten Kostenblock des Systems (Befund 100), und beides sieht im
+    # Bericht danach gleich aus.
+    geladen = {m: len(f) for m, f in funding_je_markt.items()}
+    if any(geladen.values()):
+        console.print(
+            "[dim]Funding-Raten aus dem Speicher: "
+            + ", ".join(f"{m} {n}" for m, n in geladen.items())
+            + " - sie werden berechnet, nicht nur angezeigt.[/]"
+        )
+    else:
+        console.print(
+            "[yellow]Keine Funding-Raten im Speicher.[/] Gerechnet wird mit "
+            "dem Vorgabewert - dem groessten Kostenblock des Systems "
+            "(Befund 100). Nachladen: python -m cli funding\n"
+        )
 
     state = Path(settings.paths.state)
     board = Leaderboard(state / "leaderboard.json")
@@ -1334,7 +1377,11 @@ def research(
 
     from backtest.engine import BacktestConfig
     from data.bybit.errors import BybitError
-    from data.funding import FundingStore, attach_funding
+    from data.funding import (
+        FundingStore,
+        attach_funding,
+        schedule_from_frame,
+    )
     from research.admission import (
         load_trials,
         report_payload,
@@ -1432,6 +1479,10 @@ def research(
         instrument=instrument,
         risk=settings.risk,
         initial_equity=Decimal("500"),
+        # Auch hier: geladene Raten gehoeren in die Rechnung und nicht nur
+        # an die Kerzen (Befund 265). Der Schluessel stimmt an dieser Stelle
+        # seit jeher - anders als im Wettbewerb.
+        funding=schedule_from_frame(funding_frame),
     )
 
     trials_path = Path(settings.paths.state) / "trials.json"
@@ -2875,6 +2926,10 @@ def _bedingungen(candidate, configs, interval_obj, versuche: int):
         bestanden=sum(1 for r in candidate.gates.results if r.passed),
         gesamt=len(candidate.gates.results),
         funding_satz=float(werte[0].funding.default_rate) if werte else 0.0,
+        # **Und ob der Satz ueberhaupt galt** (Befund 265). Gehen echte Raten
+        # ein, ist der Vorgabewert nur noch der Wert fuer Luecken - ihn allein
+        # aufzuschreiben waere ab da ein falscher Nachweis.
+        funding_raten=sum(len(c.funding.rates) for c in werte),
         zeitpunkt=datetime.now(UTC).isoformat(),
     )
 
@@ -7265,6 +7320,11 @@ def finanzierung(
     0,01 % je Periode ein - rund 11 % im Jahr fuer eine dauerhaft gehaltene
     Long-Position. ``data_store/funding/`` ist leer; **jede Zahl dieses
     Projekts rechnet mit diesem Vorgabewert.**
+
+    Bis Befund 265 galt dieser Satz auch mit vollem Speicher, und zwar aus
+    einem anderen Grund: Die geladenen Raten gingen an die Kerzen und nie in
+    die Rechnung. Heute stimmt er wieder, weil der Speicher leer ist - was
+    ihn zu einer Aussage ueber die Daten macht und nicht mehr ueber den Code.
 
     Gemessen wird, wie stark das Urteil daran haengt. Am Betriebspunkt ist
     Funding das 8,9-fache der Handelsgebuehren - der groesste Kostenblock des

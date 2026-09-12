@@ -315,6 +315,14 @@ class Zulassungsbedingungen:
     bestanden: int = 0
     gesamt: int = 0
     funding_satz: float = 0.0
+    funding_raten: int = 0
+    """Wie viele **echte** Raten in die Rechnung eingegangen sind (Befund 265).
+
+    Ohne sie sagt ``funding_satz`` nicht die Wahrheit: Seit die geladenen
+    Raten ins Kostenmodell gehen, ist der Vorgabewert nur noch der Wert fuer
+    Luecken. Null heisst "durchgehend mit dem Vorgabewert gerechnet" - so
+    stehen alle bisherigen Eintraege da, und das ist richtig so.
+    """
     zeitpunkt: str = ""
 
     @property
@@ -364,6 +372,8 @@ class Zulassungsbedingungen:
         teile = [f"Instrument {self.markt or 'nicht aufgezeichnet'}"]
         if self.maerkte:
             teile.append(f"{len(self.beine)} Bein(e): {self.maerkte}")
+        if self.funding_raten:
+            teile.append(f"{self.funding_raten} echte Funding-Raten")
         if self.gesamt:
             teile.append(f"{self.bestanden}/{self.gesamt} Gates")
         if self.kapital:

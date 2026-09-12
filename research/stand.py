@@ -1473,6 +1473,31 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Kerzenlaenge, aber kein Symbol",
         263,
     ),
+    # Nach dem Nachweis die Rechnung selbst: Was 264 als Umfang aufschrieb,
+    # kostet Funding - und dem wurde nachgegangen.
+    Richtung(
+        "Die geladenen Funding-Raten wurden gesehen und nie gezahlt",
+        "Zwei Stellen, dieselbe Folge. **Erstens der Schluessel**: 'cli "
+        "funding' schreibt unter dem Kontrakt ('BTCUSDT'), 'cli wettbewerb' "
+        "las unter dem Kursdatensymbol ('BTCUSD_BITSTAMP') - nachgemessen 0 "
+        "gegen 30 Zeilen, und 'attach_funding' setzt daraufhin ueberall NaN - "
+        "die Funding-Indikatoren waeren im Wettbewerb **auch mit vollem "
+        "Speicher** NaN geblieben, und anders als 'cli research' warnt er "
+        "nicht davor. "
+        "**Zweitens die Rechnung**: 'attach_funding' schreibt an die Kerzen, "
+        "gezahlt wird aber ueber 'BacktestConfig.funding' - und 'rates=' kam "
+        "in der ganzen Anwendung kein einziges Mal vor, nur in einem Test. "
+        "Wer 'cli funding' laufen liess, aenderte damit, was die Strategie "
+        "**sieht**, nie, was sie **zahlt**; gezahlt wurde ausnahmslos der "
+        "Vorgabewert. Der Funding-Block ist das 8,9-fache der Gebuehren "
+        "(100), und der Bericht verspricht dem Nutzer genau diesen "
+        "Unterschied. Jetzt baut 'schedule_from_frame' aus den geladenen "
+        "Raten das Kostenmodell - je Bein die eigenen, Luecken behalten den "
+        "Vorgabewert -, der Wettbewerb sagt vor der Suche, wie viele geladen "
+        "sind, und 'funding_raten' steht im Zulassungsnachweis: Ohne "
+        "die Zahl sagt 'funding_satz' ab hier nicht mehr die Wahrheit",
+        265,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -2193,7 +2218,11 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "6,0 % im Jahr, dann faellt 'Schlechtestes Jahr'; bei 9,8 % faellt "
         "'Parameter-Plateau'. Der Vorgabewert steht bei 10,9 % - also "
         "jenseits von beiden. Liegt die wahre Rate darunter, gewinnt der "
-        "Kandidat Gates zurueck, ohne dass sich an ihm etwas aendert.",
+        "Kandidat Gates zurueck, ohne dass sich an ihm etwas aendert. "
+        "**Und seit Befund 265 kommt das auch an:** Bis dahin gingen die "
+        "geladenen Raten allein an die Kerzen - die Strategie sah sie, "
+        "gezahlt wurde weiter der Vorgabewert, und dieser Satz hier "
+        "versprach etwas, das kein Lauf eingeloest haette.",
     ),
     (
         "python -m cli wettbewerb --generation 9",
