@@ -292,6 +292,22 @@ class Zulassungsbedingungen:
 
     markt: str = ""
     """``perpetual`` oder ``spot``. Leer = nicht aufgezeichnet."""
+    maerkte: str = ""
+    """Die Symbole, auf denen gemessen wurde - durch Komma (Befund 264).
+
+    ``markt`` sagt *perpetual oder spot*, nicht *BTC oder XRP*. Die Luecke
+    stand seit Befund 263 benannt da; gemessen hat sie sich als teuer
+    erwiesen: Die elf Gates laufen auf dem **Korb** aus zwei Beinen, und ein
+    einzelnes Bein besteht eines davon nicht.
+
+        Korb (zugelassen)   158 Trades   9,87 % Rueckgang   9/11
+        nur BTC              77 Trades  10,71 %             8/11
+        nur ETH              81 Trades  12,17 %             8/11
+
+    Der Korb zieht den Rueckgang unter den jedes Beins - die beiden fallen
+    nicht gleichzeitig. Wer ein Bein handelt, gibt das auf.
+
+    Leer heisst "nicht aufgezeichnet" und nicht "ein Markt"."""
     kapital: float = 0.0
     intervall: str = ""
     referenzdaten: bool = False
@@ -331,8 +347,23 @@ class Zulassungsbedingungen:
         """
         return bool(self.intervall) and self.intervall == intervall
 
+    @property
+    def beine(self) -> tuple[str, ...]:
+        """Die aufgezeichneten Maerkte, einzeln."""
+        return tuple(x.strip() for x in self.maerkte.split(",") if x.strip())
+
+    def deckt_ab(self, symbole) -> bool:
+        """Laeuft genau das, worauf gemessen wurde?
+
+        Ohne Aufzeichnung "unbekannt" und nicht "passt schon" - wie bei den
+        beiden Geschwistern ``passt_zu`` und ``passt_zur_kerzenlaenge``.
+        """
+        return bool(self.beine) and set(self.beine) == set(symbole)
+
     def als_text(self) -> str:
         teile = [f"Instrument {self.markt or 'nicht aufgezeichnet'}"]
+        if self.maerkte:
+            teile.append(f"{len(self.beine)} Bein(e): {self.maerkte}")
         if self.gesamt:
             teile.append(f"{self.bestanden}/{self.gesamt} Gates")
         if self.kapital:

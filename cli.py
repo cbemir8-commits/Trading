@@ -2228,6 +2228,31 @@ def trade(
             "die Zulassung auf der gewuenschten Kerzenlaenge wiederholen."
         )
         raise typer.Exit(2)
+    # **Und der Umfang** (Befund 264). Die elf Gates laufen auf dem Korb, den
+    # der Wettbewerb gemessen hat; 'LiveTrader' handelt **ein** Symbol. Das
+    # ist keine fehlende Pruefung, sondern eine Luecke in der Bauart - und
+    # gemessen kostet sie ein Gate:
+    #
+    #     Korb 9/11   -   nur BTC 8/11 (Schlechtestes Jahr)
+    #                     nur ETH 8/11 (Drawdown)
+    #
+    # Deshalb wird hier gewarnt und nicht gesperrt: Eine Sperre naehme dem
+    # Projekt den einzigen Handelsweg, den es hat. Was fehlt, ist eine
+    # Entscheidung - Korbhandel bauen oder je Bein zulassen -, und die faellt
+    # nicht in einer Fehlermeldung.
+    if len(bedingungen.beine) > 1 and not bedingungen.deckt_ab(
+        [settings.bybit.symbol]
+    ):
+        console.print(
+            f"[yellow]Zugelassen wurde auf einem Korb aus "
+            f"{len(bedingungen.beine)} Beinen ({bedingungen.maerkte}); "
+            f"gehandelt wird {settings.bybit.symbol} allein.[/]\n"
+            "  Die elf Gates sind auf dem Korb gemessen. Ein einzelnes Bein "
+            "traegt weniger: Der Korb zieht den Rueckgang unter den jedes "
+            "Beins, weil die Beine nicht gleichzeitig fallen (Befund 264).\n"
+            "  Das ist keine Abweichung, die sich hier beheben laesst - der "
+            "Livebetrieb kann nur ein Symbol. Es gehoert nur gewusst.\n"
+        )
     if not bedingungen.vollstaendig:
         console.print(
             "[yellow]Die Champion-Datei traegt keinen Zulassungsnachweis.[/] "
@@ -2837,6 +2862,10 @@ def _bedingungen(candidate, configs, interval_obj, versuche: int):
     werte = list(configs.values()) if hasattr(configs, "values") else [configs]
     return Zulassungsbedingungen(
         markt=_marktart(configs, candidate.genome),
+        # **Worauf gemessen wurde** (Befund 264). Aus den Konfigurationen
+        # gelesen wie alles hier - der Korb steht damit im Nachweis und nicht
+        # nur in einem Bericht.
+        maerkte=",".join(configs) if hasattr(configs, "keys") else "",
         kapital=_startkapital(
             configs if hasattr(configs, "values") else {"x": configs}
         ),

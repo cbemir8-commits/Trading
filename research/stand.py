@@ -1675,6 +1675,23 @@ OFFEN: tuple[Richtung, ...] = (
     # Halb gemessen in 251. Die andere Haelfte braucht Bybit - deshalb steht
     # der Eintrag hier und nicht bei den geschlossenen.
     Richtung(
+        "Zugelassen ist der Korb, handelbar ist ein Bein",
+        "Die elf Gates laufen auf dem Korb aus BTC und ETH; 'LiveTrader' "
+        "handelt genau ein 'instrument.symbol'. Gemessen, was das kostet "
+        "(264): Korb 158 Trades, 9,87 % Rueckgang, **9 von 11**; nur BTC 77 "
+        "Trades, 10,71 %, 8/11 (Schlechtestes Jahr faellt); nur ETH 81 "
+        "Trades, 12,17 %, 8/11 (Drawdown faellt). Jedes Bein verliert ein "
+        "Gate, und ein anderes - der Korb zieht den Rueckgang unter den jedes "
+        "Beins, weil die beiden nicht gleichzeitig fallen. **Was 'cli trade' "
+        "liefe, ist damit nicht das, was bestanden hat.** Der Umfang steht "
+        "jetzt im Nachweis und die Unterdeckung wird gemeldet; gesperrt wird "
+        "sie nicht, das naehme dem Projekt den einzigen Handelsweg. Zu "
+        "entscheiden: Korbhandel bauen oder je Bein zulassen - beides kostet, "
+        "und beides faellt nicht in einer Fehlermeldung",
+        263,
+        264,
+    ),
+    Richtung(
         "Zahlt der Bestand dann, wenn Longs am meisten zahlen?",
         "Seit Befund 100 stand das als Aussage des Engine-Docstrings da, mit "
         "dem Zusatz, es sei nur mit echten Bybit-Raten nachpruefbar. Das "

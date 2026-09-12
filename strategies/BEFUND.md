@@ -23263,3 +23263,77 @@ greifen an dem Tag, an dem es einen gibt.
 
 Volle Suite 3539 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertvierundsechzig. Zugelassen ist der Korb, handelbar ist ein Bein
+
+Befund 263 hat eine Luecke benannt und bewusst offengelassen: Der
+Zulassungsnachweis kennt kein Symbol - nur `perpetual`/`spot` und die
+Kerzenlaenge. Die Begruendung dort war, ein Portfoliokandidat trage mehrere
+Symbole, und was "passt zu" dann heisse, sei eine Entscheidung.
+
+Also nachgemessen, was diese Entscheidung kostet.
+
+### Dieselbe Strategie, derselbe Zeitraum, anderer Umfang
+
+    Umfang                Trades   % p.a.   Rueckgang   Gates   offen
+    Korb (zugelassen)        158    14,34        9,87    9/11   Messlatte, DSR
+    nur BTC                   77    13,87       10,71    8/11   + Schlechtestes Jahr
+    nur ETH                   81    14,13       12,17    8/11   + Drawdown
+
+Gerechnet auf dem gemeinsamen Zeitraum beider Maerkte, damit sich der Umfang
+nicht mit der Historienlaenge vermischt.
+
+**Jedes Bein verliert ein Gate, das der Korb haelt - und ein anderes.** BTC
+faellt am schlechtesten Jahr, ETH am Drawdown.
+
+Der Mechanismus steht in der Tabelle: Der Rueckgang des Korbs (9,87 %) liegt
+**unter** dem jedes einzelnen Beins (10,71 % und 12,17 %). Die beiden fallen
+nicht gleichzeitig. Genau das ist der Beitrag des Korbs, und genau das gibt
+auf, wer ein Bein handelt.
+
+### Und gehandelt wird ein Bein
+
+`LiveTrader` traegt ein `instrument.symbol`, durchgehend. `cli trade` nimmt
+`settings.bybit.symbol` - Vorgabe `BTCUSDT`, ein Wert, kein Korb.
+
+**Was `cli trade` laufen liesse, ist damit nicht das, was bestanden hat.**
+
+Das ist keine vergessene Pruefung wie in 262 und 263, sondern eine Luecke in
+der Bauart: Die Zulassung misst etwas, das der Livebetrieb nicht ausfuehren
+kann. Kein Kommentar sagte hier, wie es gemeint war - es stand einfach
+nirgends.
+
+### Was gebaut wurde, und was nicht
+
+Aufgezeichnet wird der Umfang jetzt: `Zulassungsbedingungen.maerkte`, aus den
+Konfigurationen gelesen wie alles im Nachweis. `deckt_ab` beantwortet die
+Frage mit derselben Regel wie seine beiden Geschwister `passt_zu` und
+`passt_zur_kerzenlaenge` - ohne Aufzeichnung heisst die Antwort "unbekannt"
+und nicht "passt schon".
+
+`cli trade` meldet die Unterdeckung mit der Begruendung, warum sie zaehlt.
+
+**Gesperrt wird sie nicht.** Eine Sperre naehme dem Projekt den einzigen
+Handelsweg, den es hat - der Livebetrieb *kann* nur ein Symbol. Was fehlt,
+ist eine Entscheidung, und sie faellt nicht in einer Fehlermeldung:
+
+* **Korbhandel bauen** - der Livebetrieb fuehrt beide Beine. Das ist die
+  Variante, die das Gemessene handelt, und die teuerste.
+* **Je Bein zulassen** - die Gates laufen auf einem Markt. Dann stimmt, was
+  gehandelt wird, mit dem ueberein, was geprueft wurde; der Kandidat steht
+  dort aber bei 8 von 11, nicht bei 9.
+
+Beides steht im Register. Keines davon faellt hier.
+
+### Warum das nicht schon aufgefallen ist
+
+Weil bisher nie ein Champion zugelassen war. Ohne `champion.json` laeuft
+`cli trade` gar nicht, und die Frage, worauf es ihn denn laufen liesse,
+stellte sich nie. Dasselbe Muster wie in Befund 262: Die Sperre ist latent
+und greift an dem Tag, an dem das Projekt sein Ziel erreicht.
+
+Kostet keinen Versuch: derselbe Kandidat, derselbe Zeitraum, veraendert wird
+der Umfang - ausgewaehlt wird nichts.
+
+Volle Suite 3554 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
