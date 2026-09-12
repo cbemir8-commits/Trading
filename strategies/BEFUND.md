@@ -22823,3 +22823,72 @@ faellig.
 
 Volle Suite 3481 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertachtundfuenfzig. Die leere Ausschlussliste
+
+Befund 257 endet mit einer Aufgabe: Die einzige Regel, die die Kopplung
+nachweislich bricht, ist verloren und muesste aus ihrer Beschreibung neu
+gebaut werden. Wer baut sie? Der Analyst - das einzige Bauteil, das eine
+Regel vorschlagen kann, die es noch nicht gibt (Befund 145).
+
+Also nachgesehen, womit er arbeitet. Und dabei stand ein Satz im Weg, den
+`parse_proposals` ueber einen Doppelgaenger sagt:
+
+> schon einmal getestet - **zaehlt trotzdem als Versuch**, traegt aber
+> nichts bei
+
+Ein wiederholter Vorschlag kostet also einen Versuch und liefert nichts. Bei
+198 von 230 ist das der teuerste Posten im Haus. Damit das nicht passiert,
+gibt es `already_tried` - und den bauen zwei Aufrufer, verschieden:
+
+    cli vorschlag        bekannt = set(board.entries)      <- die Bestenliste
+    _ask_the_analyst     nur aus state/journal.json
+
+`_ask_the_analyst` ist der Weg, ueber den `cli wettbewerb --ki` geht - also
+genau der, der im Bericht unter *"nur auf deinem Rechner"* steht.
+
+### Und das Journal gibt es dort nicht
+
+`write_journal` wird an einer einzigen Stelle gerufen, in `cli research`.
+`cli wettbewerb` schreibt keines. Die Ausschlussliste war dort also nicht
+"duenn", sondern **leer** - und zwar dauerhaft, ueber beliebig viele Laeufe,
+weil kein Lauf je etwas hineinschreibt.
+
+Zwei Meter daneben liegt `state/leaderboard.json` mit 45 gemessenen Regeln.
+`wettbewerb` laedt sie sogar - als `board`, fuer die Kopfzeile - und reicht
+sie nicht weiter.
+
+### Der Schnitt
+
+Gelesen wird die Liste jetzt in `_ask_the_analyst` selbst, nicht beim
+Aufrufer. Das ist dieselbe Entscheidung wie bei `_spotconfigs` (Befund 168):
+Zwei Aufrufer, die sich an dieselbe Einstellung erinnern muessen, laufen
+frueher oder spaeter auseinander - hier waren sie schon auseinander.
+
+Beide Quellen werden vereinigt, nicht ersetzt: Das Journal kann Kandidaten
+tragen, die nie in die Bestenliste kamen.
+
+Und die Zahl steht im Lauf:
+
+    Ausgeschlossen: 45 schon gemessene Regeln (45 aus der Bestenliste,
+    0 nur aus dem Journal).
+
+Ohne diese Zeile ist eine stille Ausschlussliste von einer leeren nicht zu
+unterscheiden - genau daran ist es vorbeigelaufen.
+
+### Was nicht gemessen ist
+
+Ob der Analyst tatsaechlich je einen Doppelgaenger vorgeschlagen hat. Das
+braeuchte einen Modellaufruf, und ohne `LLM__ANTHROPIC_API_KEY` gibt es hier
+keinen. Was hier steht, ist nicht *"es ist passiert"*, sondern *"es war
+nicht verhindert"* - und der Preis dafuer steht im Ablehnungstext des Moduls
+selbst.
+
+Die Bestenliste in diesem Behaelter fehlt ebenfalls (Befund 166), die 45 ist
+also die Zahl aus dem Bericht und nicht aus einem Lauf von hier.
+
+Am Kandidaten aendert sich nichts, kein Gate bewegt sich, kein Versuch wird
+faellig.
+
+Volle Suite 3490 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

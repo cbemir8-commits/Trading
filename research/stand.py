@@ -1379,6 +1379,22 @@ BEHOBEN: tuple[Richtung, ...] = (
         "dass die Regel neu zu bauen waere",
         257,
     ),
+    # Beim Weiterlesen: Wer soll die Regel neu bauen? Der Analyst - und der
+    # bekam im Wettbewerb gar nicht zu wissen, was es schon gibt.
+    Richtung(
+        "Die KI bekam im Wettbewerb keine Ausschlussliste",
+        "'parse_proposals' lehnt einen Doppelgaenger ab und sagt dabei, was er "
+        "kostet: *'schon einmal getestet - zaehlt trotzdem als Versuch, traegt "
+        "aber nichts bei'*. Damit das greift, muss 'already_tried' stimmen - "
+        "und es kam allein aus 'state/journal.json'. Das schreibt nur 'cli "
+        "research'; 'cli wettbewerb' nicht. Auf dem Weg, den der Nutzer gehen "
+        "soll ('wettbewerb --ki'), war die Liste also **leer**, waehrend die "
+        "Bestenliste mit ihren gemessenen Regeln danebenlag - 'cli vorschlag' "
+        "hat sie die ganze Zeit richtig gelesen. Jetzt liest '_ask_the_analyst' "
+        "sie selbst und vereinigt beide Quellen; die Zahl steht im Lauf, weil "
+        "eine stille Liste von einer leeren nicht zu unterscheiden ist",
+        258,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

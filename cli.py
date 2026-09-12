@@ -1676,6 +1676,28 @@ def _ask_the_analyst(settings, journal_path: Path) -> list:
             if candidate.get("genome_id"):
                 tried.add(candidate["genome_id"])
 
+    # **Und die Bestenliste zaehlt genauso** (Befund 258). Bis hierher kam die
+    # Ausschlussliste allein aus dem Journal - und 'cli wettbewerb' schreibt
+    # keines. Dort war sie also **leer**, waehrend nebenan 45 gemessene
+    # Regeln lagen. 'parse_proposals' sagt selbst, was ein Doppelgaenger
+    # kostet: *"schon einmal getestet - zaehlt trotzdem als Versuch, traegt
+    # aber nichts bei"*. Bei 198 von 230 Versuchen ist das der teuerste Posten
+    # im Haus.
+    #
+    # Gelesen wird hier und nicht beim Aufrufer: 'cli vorschlag' hat es
+    # richtig gemacht, 'cli wettbewerb' nicht, und zwei Aufrufer, die sich
+    # daran erinnern muessen, sind einer zu viel (Befund 168).
+    from research.leaderboard import Leaderboard
+
+    gemessen = set(Leaderboard(journal_path.parent / "leaderboard.json").entries)
+    tried |= gemessen
+    if tried:
+        console.print(
+            f"[dim]Ausgeschlossen: {len(tried)} schon gemessene Regeln "
+            f"({len(gemessen)} aus der Bestenliste, "
+            f"{len(tried) - len(gemessen)} nur aus dem Journal).[/]"
+        )
+
     client = AnthropicClient(settings.llm.anthropic_api_key.get_secret_value())
     result = propose(
         client, journal=journal, budget=budget, already_tried=tried,
