@@ -1738,9 +1738,22 @@ OFFEN: tuple[Richtung, ...] = (
         "Haltezeit - gemessen ueber vier Regeln und zwei Saetze ist "
         "'Funding je signierter Wertstunde' derselbe Wert und verdoppelt "
         "sich mit dem Satz. Dass ein ausgeglichenes Buch fast nichts zahlt, "
-        "ist damit Arithmetik der Annahme und kein Befund ueber die Welt",
+        "ist damit Arithmetik der Annahme und kein Befund ueber die Welt. "
+        "**Was eine Kopplung am Urteil aendert, ist gemessen** (266): Auf "
+        "exakt gleichem Mittelwert zahlt ein Zeitplan, der der Marktrichtung "
+        "folgt, 21,8 % mehr (Kopplung 0,5) und 43,5 % (1,0); dieselbe "
+        "Streuung ohne Bezug zum Markt kostet -0,01 %. Es liegt also am "
+        "Zusammenfallen von Rate und Haltezeit, nicht am Schwanken. Am Gate "
+        "kommt davon wenig an - 'Schlechtestes Jahr' verschiebt sich um 0,02 "
+        "und 0,04 Punkte, weil das zusaetzliche Funding in die Aufwaertsjahre "
+        "faellt und das schlechteste ein Abwaertsjahr ist. An der Schwelle "
+        "entscheidet es trotzdem: Der Kipppunkt liegt flach bei 5,99 bis "
+        "6,07 % (250, hier unabhaengig bestaetigt), unter Kopplung 0,5 bei "
+        "5,70 bis 5,80 % und unter 1,0 bei 4,90 bis 5,70 %. **Wie stark "
+        "echtes Funding koppelt, bleibt offen** - weiter die Haelfte, die "
+        "Bybit braucht",
         100,
-        zuletzt=253,
+        zuletzt=266,
     ),
 )
 
@@ -2219,6 +2232,10 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "'Parameter-Plateau'. Der Vorgabewert steht bei 10,9 % - also "
         "jenseits von beiden. Liegt die wahre Rate darunter, gewinnt der "
         "Kandidat Gates zurueck, ohne dass sich an ihm etwas aendert. "
+        "**Gebraucht wird dafuer die Reihe und nicht ihr Mittelwert** "
+        "(266): Folgt die Rate der Marktrichtung, faellt 'Schlechtestes "
+        "Jahr' schon unterhalb von 5,8 % - gleicher Mittelwert, ein Gate "
+        "weniger. "
         "**Und seit Befund 265 kommt das auch an:** Bis dahin gingen die "
         "geladenen Raten allein an die Kerzen - die Strategie sah sie, "
         "gezahlt wurde weiter der Vorgabewert, und dieser Satz hier "

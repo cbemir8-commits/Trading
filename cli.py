@@ -7311,6 +7311,20 @@ def finanzierung(
         False, "--katalog",
         help="Mit --verdichtung: den ganzen Katalog statt nur den Bestand.",
     ),
+    ratenbild: bool = typer.Option(
+        False, "--ratenbild",
+        help="Statt der Leiter: Reicht der Mittelwert, oder zaehlt die Form?",
+    ),
+    mittel: float = typer.Option(
+        0.0, "--mittel",
+        help="Mit --ratenbild: der Mittelwert in Jahresprozent, auf dem "
+             "verglichen wird. 0 nimmt den Vorgabewert.",
+    ),
+    kopplung: float = typer.Option(
+        0.5, "--kopplung",
+        help="Mit --ratenbild: wie stark die Rate der Marktrichtung folgt. "
+             "0,5 heisst plus/minus die Haelfte um den Mittelwert.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Wie viel haengt am angenommenen Funding-Satz?
@@ -7340,6 +7354,13 @@ def finanzierung(
     Aufwaertsphasen? Die Behauptung aus Befund 100 hat zwei Haelften - liegt
     die Haltezeit im Aufwaerts, und sind die Raten dort hoeher. Nur die zweite
     braucht Bybit; die erste steht im eigenen Handelsbuch (Befund 251).
+
+    Mit ``--ratenbild``: Reicht der **Mittelwert**? Leiter und Kipppunkte
+    rechnen mit einem flachen Satz. Echtes Funding schwankt, und die Haltezeit
+    schwankt mit - dann zahlt derselbe Mittelwert verschieden viel, je nach
+    Form. Verglichen wird auf **exakt gleichem Mittelwert**, sonst waere es
+    wieder eine Messung der Hoehe (Befund 266). ``--mittel`` legt ihn fest,
+    ``--kopplung``, wie stark die Rate der Marktrichtung folgt.
 
     **Kostet keinen Versuch.** Derselbe Kandidat auf jeder Sprosse; veraendert
     wird eine Kostenannahme. Der Satz wird insbesondere **nicht** auf den Wert
@@ -7382,7 +7403,7 @@ def finanzierung(
         not laden.read(_bybit_kontrakt(s)).empty for s in symbole
     )
 
-    def lauf(satz: float, regel=None):
+    def lauf(satz: float, regel=None, zeitplaene=None):
         """Ein voller Walk-Forward bei einem angenommenen Satz, mit Gates.
 
         Leiter, Kipppunktsuche und Verdichtung messen dasselbe und muessen es
@@ -7391,6 +7412,12 @@ def finanzierung(
 
         ``regel`` ist der Bestand, wenn nichts anderes dasteht: Nur der
         Katalogdurchlauf gibt hier etwas hinein.
+
+        ``zeitplaene`` setzt je Markt einen eigenen Funding-Zeitplan an die
+        Stelle des flachen Satzes - das Ratenbild braucht das, weil es gerade
+        die **Form** untersucht (Befund 266). Ohne diesen Weg waere dort eine
+        zweite Konfiguration entstanden, und genau davor warnt der Absatz
+        darueber.
         """
         regel = regel if regel is not None else genome
         configs = {
@@ -7399,7 +7426,10 @@ def finanzierung(
                 risk=settings.risk, initial_equity=Decimal("500"),
                 enforce_risk_limits=True,
                 kalender=_terminkalender(settings) or None,
-                funding=FundingSchedule(default_rate=Decimal(str(satz))),
+                funding=(
+                    zeitplaene[x] if zeitplaene
+                    else FundingSchedule(default_rate=Decimal(str(satz)))
+                ),
             )
             for x in symbole
         }
@@ -7567,6 +7597,114 @@ def finanzierung(
         familie = Familienbild(regeln=tuple(zeilen))
         console.print("\n" + familie.tabelle())
         console.print(f"\n[yellow]{familie.urteil()}[/]\n")
+        return
+
+    if ratenbild:
+        from datetime import UTC, timedelta
+
+        from research.finanzierung import PERIODEN_JE_JAHR, jahr_pct
+        from research.ratenbild import (
+            Ratenprobe,
+            flaches_bild,
+            gekoppeltes_bild,
+            richtungsfolge,
+            vergleiche,
+            wechselndes_bild,
+        )
+
+        ziel = mittel / 100 / PERIODEN_JE_JAHR if mittel > 0 else BASISSATZ
+        console.print(
+            f"\n[bold]Reicht der Mittelwert?[/] {' + '.join(symbole)} "
+            f"{interval_obj.label}\n  {jahr_pct(ziel):.2f} % im Jahr, "
+            f"Kopplung {kopplung}\n"
+        )
+
+        # Die Funding-Zeitpunkte ueber den gerechneten Zeitraum - dieselben,
+        # die ``funding_times_between`` aufruft.
+        beginn = min(f["open_time"].iloc[0] for f in frames.values())
+        schluss = max(f["open_time"].iloc[-1] for f in frames.values())
+        zeitpunkte = []
+        tag = beginn.to_pydatetime().replace(tzinfo=UTC).date()
+        letzter = schluss.to_pydatetime().replace(tzinfo=UTC).date() + timedelta(days=2)
+        while tag <= letzter:
+            for stunde in (0, 8, 16):
+                zeitpunkte.append(
+                    datetime(tag.year, tag.month, tag.day, stunde, tzinfo=UTC)
+                )
+            tag += timedelta(days=1)
+
+        # Je Markt die eigene Richtung: ETHs Aufwaertsphasen sind nicht BTCs.
+        richtung = {
+            x: richtungsfolge(
+                [
+                    (t.to_pydatetime().replace(tzinfo=UTC), float(c))
+                    for t, c in zip(
+                        frames[x]["open_time"], frames[x]["close"], strict=True
+                    )
+                ],
+                zeitpunkte,
+                fenster=30,
+            )
+            for x in symbole
+        }
+
+        aufbau = {
+            "flach": lambda x: flaches_bild(zeitpunkte, ziel),
+            "wechselnd": lambda x: wechselndes_bild(zeitpunkte, ziel, hub=kopplung),
+            "gekoppelt": lambda x: gekoppeltes_bild(
+                zeitpunkte, ziel, richtung[x], hub=kopplung
+            ),
+        }
+
+        def durchrechnen(vorlage) -> Ratenprobe:
+            bilder = {x: aufbau[vorlage.name](x) for x in symbole}
+            bericht, gates = lauf(
+                ziel, zeitplaene={x: b.zeitplan for x, b in bilder.items()}
+            )
+            if gates is None:
+                console.print(f"[red]Keine Fenster fuer '{vorlage.name}'.[/]")
+                raise typer.Exit(2)
+            return Ratenprobe(
+                bild=bilder[symbole[0]],
+                bestanden=sum(1 for r in gates.results if r.passed),
+                gesamt=len(gates.results),
+                gefallen=tuple(r.name for r in gates.results if not r.passed),
+                cagr_pct=float(bericht.combined.cagr_pct),
+                rueckgang_pct=float(bericht.combined.max_drawdown_pct),
+                gezahlt=float(bericht.combined.total_funding),
+            )
+
+        ergebnis = vergleiche(
+            [aufbau[name](symbole[0]) for name in aufbau], durchrechnen, ziel=ziel
+        )
+
+        tafel = Table(header_style="bold")
+        tafel.add_column("Form")
+        tafel.add_column("Mittel", justify="right")
+        tafel.add_column("Streuung", justify="right")
+        tafel.add_column("gezahlt", justify="right")
+        tafel.add_column("gegen flach", justify="right")
+        tafel.add_column("Rendite", justify="right")
+        tafel.add_column("Gates", justify="right")
+        for probe in ergebnis.proben:
+            mehr = ergebnis.mehrzahlung(probe.name)
+            tafel.add_row(
+                probe.name,
+                f"{probe.bild.mittel_pct:.2f} %",
+                f"{probe.bild.streuung:.2e}",
+                f"{probe.gezahlt:.2f}",
+                "-" if mehr is None else f"{mehr:+.2f} %",
+                f"{probe.cagr_pct:.2f} %",
+                f"{probe.bestanden}/{probe.gesamt}",
+            )
+        console.print(tafel)
+        console.print(f"\n[yellow]{ergebnis.urteil()}[/]")
+        if not historie:
+            console.print(
+                "[dim]Wie stark echtes Funding der Marktrichtung folgt, ist "
+                "hier nicht gemessen - die Kopplung ist vorgegeben. Dafuer "
+                "braucht es die Raten: python -m cli funding[/]\n"
+            )
         return
 
     if kipppunkt:

@@ -36,6 +36,12 @@ Der Spielraum bis zum ersten Durchfaller ist also **nicht** 11 %, sondern
 Vorgabewert liegt jenseits von beiden Punkten.
 ``cli finanzierung --kipppunkt`` sucht sie je Gate auf 0,11 Punkte genau.
 
+**Beide Zahlen gelten fuer flaches Funding** (Befund 266). Folgt die Rate der
+Marktrichtung - und die Haltezeit dieses Kandidaten tut das (251) -, faellt
+'Schlechtestes Jahr' bei gleichem *Mittelwert* schon zwischen 5,70 und 5,80 %.
+Der Spielraum ist also nicht eine Zahl, sondern eine Zahl je Form:
+``cli finanzierung --ratenbild`` stellt sie nebeneinander.
+
 Die Zahl, die das Verhaeltnis zeigt
 -----------------------------------
     Handelsgebuehren     7,17 EUR

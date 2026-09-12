@@ -23450,3 +23450,159 @@ Kostet keinen Versuch: gebaut wurde eine Leitung, ausgewaehlt wurde nichts.
 
 Volle Suite 3571 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsechsundsechzig. Reicht der Mittelwert?
+
+Befund 265 hat die Leitung gebaut: Geladene Funding-Raten gehen seither in die
+Rechnung und nicht nur an die Kerzen. Damit ist zum ersten Mal eine Frage
+messbar, die vorher gar nicht gestellt werden konnte.
+
+Befund 250 hat gemessen, wo jedes Gate kippt, wenn der Funding-Satz steigt -
+'Schlechtestes Jahr' bei 5,99 bis 6,07 % im Jahr, 'Parameter-Plateau' bei
+9,75 bis 9,84 %. **Beide Zahlen sind mit einem flachen Satz gemessen.** Jede
+Achtstundenperiode traegt denselben Wert.
+
+Echtes Funding ist nicht flach. Und Befund 251 hat gemessen, dass die
+Haltezeit dieses Kandidaten auch nicht gleichmaessig liegt: 37 % der Zeit im
+Markt auf BTC, dabei 93 % des gesamten Anstiegs eingefangen, 62 % des Fundings
+in steigenden Phasen.
+
+Zwei Groessen, die beide schwanken. Wenn sie zusammen schwanken, zahlt derselbe
+Mittelwert mehr. Die Frage ist also nicht *"wie hoch ist die Rate"*, sondern
+**"reicht ihr Mittelwert, um das Urteil zu faellen"** - und die braucht kein
+Bybit.
+
+### Zuerst die Nullprobe
+
+Bevor etwas Neues gemessen wird: Liefert ein *geladener* Zeitplan dasselbe wie
+der flache Satz derselben Hoehe? Wenn nicht, waere alles Folgende eine Messung
+meines eigenen Fehlers aus 265.
+
+Drei Laeufe auf dem Bestand - flach, geladen mit ueberall demselben Satz, und
+geladen mit jeder zweiten Rate fehlend. Alle drei bitgleich, Kennzahlen wie
+Handelsbuch, und bis an die elf Gates: 158 Trades, 12,95 % p.a., 7/11,
+gefallen sind Messlatte, Schlechtestes Jahr, Deflated Sharpe,
+Parameter-Plateau.
+
+Die Leitung aus 265 traegt also - nicht nur auf einer Fixture, sondern an der
+Stelle, an der entschieden wird.
+
+### Der erste Versuch lag an der falschen Stelle
+
+Gemessen wurde zuerst am Vorgabewert, 10,95 % im Jahr. Vier Formen auf exakt
+demselben Mittelwert:
+
+    Form              gezahlt   gegen flach   Gates
+    flach               67,24        +0,00 %   7/11
+    wechselnd           67,24        -0,01 %   7/11
+    gekoppelt 0,5       81,88       +21,76 %   7/11
+    gekoppelt 1,0       96,50       +43,51 %   7/11
+
+Die Mehrzahlung ist deutlich - und **kein Gate bewegt sich**. Der Grund steht
+in Befund 250: 10,95 % liegt jenseits *beider* funding-empfindlicher
+Kipppunkte. Die sind laengst gefallen, das naechste haengt erst 15 Punkte
+weiter oben. Gemessen wurde in einem flachen Stueck der Entscheidungsflaeche.
+
+Das ist mein Fehler und keine Eigenschaft der Sache: Wer wissen will, ob eine
+Form ein Urteil dreht, muss dort messen, wo das Urteil auf der Kippe steht.
+
+### An der Kippe
+
+Dieselben vier Formen auf 5,90 % im Jahr - knapp unter dem flachen Kipppunkt:
+
+    Form              gezahlt   gegen flach   Schlechtestes Jahr   Gates
+    flach               36,23        +0,00 %    -9,99   haelt       9/11
+    wechselnd           36,23        -0,01 %    -9,99   haelt       9/11
+    gekoppelt 0,5       44,11       +21,76 %   -10,01   faellt      8/11
+    gekoppelt 1,0       52,00       +43,51 %   -10,03   faellt      8/11
+
+**Derselbe Mittelwert, ein Gate Unterschied.**
+
+### Es liegt an der Kopplung, nicht am Schwanken
+
+Das ist die Gegenprobe, und sie ist der Kern. `wechselnd` traegt **dieselbe
+Streuung** wie `gekoppelt 0,5` - auf und ab um denselben Betrag, nur ohne
+Bezug zur Marktrichtung. Es zahlt -0,01 % und laesst alle Gates stehen.
+
+Nicht das Schwanken kostet. Erst wenn die hohe Rate mit der Haltezeit
+zusammenfaellt, kostet sie etwas. Genau das ist die Lage, die Befund 251 im
+eigenen Handelsbuch gemessen hat.
+
+### Der Aufschlag ist eine Eigenschaft des Kandidaten
+
++21,76 % und +43,51 % stehen bei **jedem** gemessenen Mittelwert gleich -
+4,90 %, 5,70 %, 5,80 %, 5,90 % und 10,95 % ergeben dieselben zwei Zahlen. Und
+sie sind exakt linear in der Kopplungsstaerke: 43,51 / 21,76 = 1,9995.
+
+Der Aufschlag haengt also nicht am Satzniveau, sondern an der Frage, wie sehr
+die Haltezeit dieses Kandidaten in den Aufwaertsphasen liegt. Das ist eine
+Zahl ueber ihn, nicht ueber den Markt.
+
+### Und die naheliegende Umrechnung traegt trotzdem nicht
+
+Wenn eine Form 21,8 % mehr zahlt, liegt ein flacher Kipppunkt von 5,99 %
+scheinbar bei 5,99 / 1,218 = 4,92 %. Das war meine Vorhersage, und sie ist
+gemessen worden:
+
+    Form             Kipppunkt 'Schlechtestes Jahr'   Vorhersage
+    flach             5,99 bis 6,07 %                 (Befund 250)
+    gekoppelt 0,5     5,70 bis 5,80 %                 4,92 %
+    gekoppelt 1,0     4,90 bis 5,70 %                 4,17 %
+
+Fuer Kopplung 0,5 liegt die Vorhersage 0,8 Punkte daneben, fuer 1,0 kommt sie
+nicht einmal in die richtige Reihenfolge: Sie sagt 4,17 % voraus, gemessen
+haelt das Gate bei 4,90 % noch.
+
+**Der Grund steht im Gate-Wert selbst.** 'Schlechtestes Jahr' hat seine
+Schwelle bei -10,00 %, und die Kopplung bewegt ihn kaum:
+
+    Mittelwert   flach    gekoppelt 0,5   gekoppelt 1,0
+     4,90 %      -9,93        -9,95           -9,96
+     5,70 %      -9,98       -10,00          -10,02
+     5,80 %      -9,99       -10,01          -10,03
+     5,90 %      -9,99       -10,01          -10,03
+
+Ein Aufschlag von 21,8 % auf das **gesamte** Funding verschiebt das
+schlechteste Jahr um 0,02 Punkte, einer von 43,5 % um 0,04. Sauber
+proportional - und winzig. Das zusaetzliche Funding faellt dorthin, wo die
+Rate hoch ist, also in die Aufwaertsjahre. Das schlechteste Jahr ist ein
+Abwaertsjahr und bekommt kaum etwas ab.
+
+Deshalb steht im Modul keine Umrechnung. Sie war gebaut und ist nach dieser
+Messung wieder herausgeflogen - eine Rechnung, die fuer einen Fall zufaellig
+trifft und fuer den naechsten die Reihenfolge verfehlt, ist schlechter als
+keine. Der Kipppunkt je Form wird gemessen.
+
+### Was das fuer den Nutzer heisst
+
+Der Spielraum ist nicht eine Zahl, sondern eine Zahl je Form. Bei einer
+Kopplung von 0,5 schrumpft er von rund 6,0 % auf rund 5,75 % - **0,25 Punkte
+und nicht 21,8 %.**
+
+Und `cli funding` muss die **Reihe** laden, nicht ihren Mittelwert. Ein
+Mittelwert von 5,9 % waere unter flachem Funding eine bestandene Huerde und
+unter gekoppeltem eine gerissene. Seit Befund 265 laedt der Befehl die Reihe
+und rechnet mit ihr; seit hier ist gemessen, warum das noetig ist.
+
+**Wie stark echtes Funding koppelt, ist weiterhin nicht gemessen.** Die
+Kopplung ist hier vorgegeben, nicht beobachtet - das bleibt die Haelfte, die
+Bybit braucht. Gemessen ist die Empfindlichkeit, nicht der Wert.
+
+### Gebaut
+
+`research/ratenbild.py` mit `cli finanzierung --ratenbild`. Die Eigenschaft,
+an der der ganze Befund haengt, steht darin als Code und nicht als Vorsatz:
+`zentriert` zieht jeden Aufbau additiv auf den Zielmittelwert - additiv, weil
+ein Faktor die Streuung mitzoege und dann Form und Staerke nicht mehr zu
+trennen waeren -, `Ratenbild.mittel` rechnet ihn nach, und
+`Ratenvergleich.gleicher_mittelwert` verweigert das Urteil, wenn er verfehlt
+ist. Ein Vergleich auf verschiedenen Mittelwerten faellt sonst nicht auf: Er
+liefert Zahlen, die sich unterscheiden, und sieht aus wie ein Befund.
+
+Kostet keinen Versuch: derselbe Kandidat, derselbe Zeitraum, veraendert wird
+die Form einer Kostenannahme. Ausgewaehlt wird nichts, und keine Form wird
+gewaehlt, weil unter ihr mehr Gates halten - die gemessene Richtung ist
+ohnehin die unguenstigere.
+
+Volle Suite 3606 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
