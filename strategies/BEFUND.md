@@ -23045,3 +23045,68 @@ faellig.
 
 Volle Suite 3505 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihunderteinundsechzig. Die Strecke am Stueck gefahren
+
+Befund 260 hat die Lernschleife an beiden Enden angeschlossen. Geprueft war
+danach jedes Ende **fuer sich**:
+
+    write_journal   gegen einen erfundenen Bericht
+    build_prompt    gegen ein von Hand gebautes Journal
+
+Zwei gruene Tests, und trotzdem keine Zusicherung ueber die Schleife. Wuerde
+einer der beiden einen Schluessel umbenennen - `gate_feedback`, `genome_id`,
+`candidates` -, bliebe jeder Test fuer sich gruen, und die KI bekaeme in
+jeder Runde ein leeres Bild. Genau die Bauart, die dieses Projekt schon in
+168, 250 und 258 gefunden hat: zwei Stellen, eine Wahrheit, und niemand
+vergleicht sie.
+
+Also einmal am Stueck gefahren: echter `AdmissionReport` mit einem
+durchgefallenen Gate -> `write_journal` -> von der Platte gelesen -> beides,
+was der Wettbewerb daraus zieht.
+
+    Ausschlussliste stimmt:  ja      (so liest _ask_the_analyst, Befund 258)
+    Name im Prompt:          ja
+    Wert 1.080 im Prompt:    ja      (so liest build_prompt, Befund 260)
+    Schwelle 1.200:          ja
+    Meldung im Prompt:       ja
+    "Journal ist leer":      nein
+
+Die Schleife traegt. **Das ist kein Fund, sondern eine Zusicherung** - und
+sie hat gefehlt, gerade bei einer Strecke, die seit einem Lauf scharf ist.
+
+### Was dabei auffiel
+
+`build_prompt` nimmt `journal[-6:]`. Die Sechs stammt aus der Zeit, als
+allein `cli research` schrieb: **ein Eintrag je Lauf**, sechs Eintraege also
+sechs unabhaengige Laeufe. Seit Befund 260 schreibt der Wettbewerb je
+**Runde** - und sechs aufeinanderfolgende Runden sind Varianten derselben
+paar Eltern.
+
+Dieselbe Zahl deckt jetzt also eine engere und staerker korrelierte Scheibe
+ab. Das ist eine Nebenwirkung meiner eigenen Aenderung von gestern, und sie
+stand nirgends.
+
+**Verstellt wird sie nicht.** Wofuer die Rueckmeldung da ist, ist das Steuern
+des naechsten Vorschlags, und dafuer sind die juengsten Runden die
+einschlaegigen. Eine andere Zahl waere geraten; messen liesse sie sich erst
+an einem Lauf mit Versuchen, und der gehoert dem Nutzer. Was hier passiert
+ist: Sie steht jetzt kommentiert da, mit dem Datum, an dem ihre Bedeutung
+sich geaendert hat.
+
+### Zwei Testanker, die zu Recht gerissen sind
+
+Der Test, der diesen Kommentar festhaelt, ankerte zuerst auf `"Befund 261"`
+und dann auf `"je **Runde**"`. Beide Male lag der Zeilenumbruch mitten in der
+Wendung. Jetzt ankert er auf `"ein Eintrag je Lauf"` und
+`"aufeinanderfolgende Runden sind Varianten"` - beide innerhalb einer Zeile.
+
+Derselbe Fehler wie in Befund 244 (`ast.unparse` normiert Anfuehrungszeichen)
+und 112 (ein Test riss an einem Zeichenfenster): Ein Anker gehoert an das,
+was gemeint ist, nicht an das, was gerade dasteht.
+
+Am Kandidaten aendert sich nichts, kein Gate bewegt sich, kein Versuch wird
+faellig.
+
+Volle Suite 3512 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

@@ -311,6 +311,18 @@ def build_prompt(
         else:
             parts.append("Nichts. Dies ist die erste Generation.\n")
     else:
+        # **Sechs Eintraege - und was einer ist, hat sich geaendert** (Befund
+        # 261). Die Zahl stammt aus der Zeit, als allein ``cli research``
+        # schrieb: ein Eintrag je Lauf, sechs Eintraege also sechs
+        # unabhaengige Laeufe. Seit Befund 260 schreibt der Wettbewerb je
+        # **Runde**, und sechs aufeinanderfolgende Runden sind Varianten
+        # derselben paar Eltern - dieselbe Zahl deckt jetzt eine engere und
+        # staerker korrelierte Scheibe ab.
+        #
+        # Nicht verstellt: Wofuer die Rueckmeldung da ist, ist das Steuern des
+        # **naechsten** Vorschlags, und dafuer sind die juengsten Runden die
+        # einschlaegigen. Eine andere Zahl waere hier geraten, nicht gemessen.
+        # Gemessen werden koennte sie erst an einem Lauf mit Versuchen.
         for entry in journal[-6:]:
             for candidate in entry.get("candidates", []):
                 verdict = "ZUGELASSEN" if candidate.get("admitted") else "abgelehnt"

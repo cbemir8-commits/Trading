@@ -1426,6 +1426,20 @@ BEHOBEN: tuple[Richtung, ...] = (
         "schreibenden Stellen ohne Trockenlauf-Wache (Befund 116)",
         260,
     ),
+    Richtung(
+        "Die Lernschleife war nur an ihren Enden geprueft",
+        "Schreiber und Leser des Journals hatten je ein eigenes Pruefstueck - "
+        "'write_journal' gegen einen erfundenen Bericht, 'build_prompt' gegen "
+        "ein von Hand gebautes Journal. Laufen die Schluessel auseinander, "
+        "bleiben beide gruen und die Schleife liefe leer weiter; dieselbe "
+        "Bauart wie 168, 250, 258. Jetzt faehrt ein Test die Strecke am "
+        "Stueck: echter Bericht, auf die Platte, zurueck, und beides geprueft, "
+        "was der Wettbewerb daraus zieht - Kennung und Rueckmeldung. Nebenbei "
+        "festgehalten: 'journal[-6:]' meinte bis 260 sechs Laeufe und meint "
+        "jetzt sechs Runden, also eine engere und staerker korrelierte "
+        "Scheibe. Die Zahl bleibt, weil jede andere geraten waere",
+        261,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
