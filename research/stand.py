@@ -1411,6 +1411,21 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'admission' zaehlt, was ankommt",
         259,
     ),
+    # Am anderen Ende derselben Schleife nachgesehen: Wer schreibt eigentlich
+    # das Journal, aus dem 258 mitliest?
+    Richtung(
+        "Der Lernmechanismus war an einem Ende angeschlossen",
+        "Am Ende jeder Wettbewerbsrunde steht: *'Die KI wird nach der Runde "
+        "gefragt, nicht davor: Damit sieht sie im Journal, woran die letzten "
+        "Kandidaten gescheitert sind.'* Der Aufruf steht richtig - nur "
+        "schreibt das Journal dort niemand, 'write_journal' haengt allein an "
+        "'cli research'. Jede Runde fragte die KI also, damit sie sieht, was "
+        "gerade gescheitert ist, und sie sah eine Datei, die es nicht gibt. "
+        "Jetzt schreibt der Wettbewerb sie, je Runde und vor dem Fragen. "
+        "Dabei nachgetragen: 'write_journal' war die einzige der drei "
+        "schreibenden Stellen ohne Trockenlauf-Wache (Befund 116)",
+        260,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

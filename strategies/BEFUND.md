@@ -22970,3 +22970,78 @@ faellig.
 
 Volle Suite 3494 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsechzig. Ein Ende der Schleife war offen
+
+Befund 258 hat dem Analysten im Wettbewerb die Ausschlussliste gegeben und
+las sie aus zwei Quellen: der Bestenliste und dem Journal. Also nachgesehen,
+wer dieses Journal eigentlich schreibt.
+
+Am Ende jeder Wettbewerbsrunde steht dieser Kommentar:
+
+> Die KI wird **nach** der Runde gefragt, nicht davor: Damit sieht sie im
+> Journal, woran die letzten Kandidaten gescheitert sind. Genau das ist der
+> Lernmechanismus, den `analyst.py` im Kopf beschreibt - ohne ihn schlaegt
+> ein Modell in jedem Zyklus ungefaehr dasselbe vor und hebt nur die Huerde.
+
+Der Aufruf steht genau dort, wo der Kommentar ihn haben will. Geschrieben hat
+das Journal dort aber niemand: `write_journal` wird an einer einzigen Stelle
+gerufen, in `cli research`.
+
+**Jede Runde fragte die KI also, damit sie sieht, was gerade gescheitert ist -
+und sie sah eine Datei, die es nicht gibt.** Der Prompt sagte ihr daraufhin
+"Das Research-Journal ist leer", Runde fuer Runde, beliebig lange.
+
+Das ist dieselbe Bauart wie Befund 258, eine Ebene weiter: Dort war die
+Ausschlussliste leer, hier die Rueckmeldung. Beide Male stand das Bauteil da,
+beide Male war es an einem Ende nicht angeschlossen - und beide Male sagte
+ein Kommentar daneben, wie es gemeint war.
+
+### Was das Journal traegt
+
+Nicht nur Namen. `write_journal` haelt je Kandidat fest:
+
+    genome_id, name, rationale, admitted, trades, sharpe,
+    consistency, gate_feedback
+
+`gate_feedback` ist `c.gates.feedback_for_ai()` - also genau die Rueckmeldung,
+die der Modulkopf den eigentlichen Lernmechanismus nennt: *"RSI(14)<25 ist am
+Kosten-Stresstest gescheitert, Profitfaktor 1,08 gegen Schwelle 1,20."*
+
+Ohne sie kann die KI nur vermeiden, was sie schon vorgeschlagen hat. Mit ihr
+kann sie steuern.
+
+### Geschrieben wird je Runde, nicht am Ende
+
+Ein Lauf endet auf drei Arten: Runden aufgebraucht, Champion gefunden, Strg-C.
+Zwei davon springen aus der Schleife. Am Ende zu schreiben hiesse, dass ein
+Abbruch alles mitnimmt, was schon gemessen ist - und gemessen heisst hier: mit
+Versuchen bezahlt.
+
+Die Stelle ist direkt hinter `save_trials`, also vor dem Fragen am Rundenende.
+Ein Test haelt diese Reihenfolge fest; stuende es danach, saehe die Runde ihre
+eigene Messung nicht, und der Kommentar stimmte weiter nicht.
+
+### Nachgetragen: die Trockenlauf-Wache
+
+Drei Stellen schreiben in diesem Projekt dauerhaft: `write_champion`,
+`Leaderboard.save` und `write_journal`. Die ersten beiden pruefen
+`TRADING_TROCKENLAUF` seit Befund 116 - die dritte nicht.
+
+Aufgefallen ist es erst dadurch, dass der Wettbewerb jetzt schreibt: Ein
+Rauchtest haette das Journal angelegt. Die Wache ist nachgetragen, und ein
+Test prueft alle drei zusammen - inklusive des Falls, der leicht durchrutscht:
+nicht nur *"legt nichts an"*, sondern auch *"haengt an ein vorhandenes nichts
+an"*.
+
+### Was nicht gemessen ist
+
+Ob die KI mit der Rueckmeldung bessere Vorschlaege macht. Das braeuchte einen
+Modellaufruf und einen Lauf mit Versuchen - beides nicht von hier. Was hier
+steht, ist: Der Weg dafuer war unterbrochen und ist es nicht mehr.
+
+Am Kandidaten aendert sich nichts, kein Gate bewegt sich, kein Versuch wird
+faellig.
+
+Volle Suite 3505 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

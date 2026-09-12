@@ -554,7 +554,13 @@ def wettbewerb(
     from backtest.portfolio_walkforward import common_range
     from data.bybit.errors import BybitError
     from data.funding import FundingStore, attach_funding
-    from research.admission import load_trials, run_admission, save_trials, write_champion
+    from research.admission import (
+        load_trials,
+        run_admission,
+        save_trials,
+        write_champion,
+        write_journal,
+    )
     from research.leaderboard import Leaderboard
     from research.mutation import breed
     from research.seeds import load_seeds
@@ -764,6 +770,16 @@ def wettbewerb(
                 configs=configs,
             )
             save_trials(trials_path, report.trials_after)
+            # **Das Journal, auf das sich die Runde unten beruft** (Befund
+            # 260). Am Ende der Schleife steht: *"Die KI wird nach der Runde
+            # gefragt [...] damit sie im Journal sieht, woran die letzten
+            # Kandidaten gescheitert sind."* Geschrieben hat es dort niemand -
+            # 'write_journal' wird nur von 'cli research' gerufen. Der
+            # Lernmechanismus war an einem Ende angeschlossen.
+            #
+            # Je Runde und nicht am Ende: Ein Abbruch mit Strg-C oder ein
+            # gefundener Champion soll nicht mitnehmen, was schon gemessen ist.
+            write_journal(report, journal_path)
             for gruppe, quelle in _nach_herkunft(
                 report.candidates, ki_ids, herkunft
             ):

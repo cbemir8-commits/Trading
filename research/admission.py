@@ -466,8 +466,25 @@ def write_journal(report: AdmissionReport, path: Path | str) -> Path:
     wurde und woran es scheiterte. Ohne diese Historie probiert sie dieselben
     Ideen immer wieder - und jeder Wiederholungsversuch zaehlt trotzdem als
     Versuch in der Mehrfachtest-Korrektur.
+
+    **Im Trockenlauf wird nichts geschrieben** (Befund 116). Bis Befund 260
+    fehlte die Wache hier als einziger der drei schreibenden Stellen -
+    ``write_champion`` und ``Leaderboard.save`` haben sie. Aufgefallen ist es,
+    als der Wettbewerb anfing, dieses Journal zu schreiben: Ein Rauchtest
+    haette es angelegt.
     """
+    from research.versuche import TROCKENLAUF, trockenlauf
+
     file = Path(path)
+    if trockenlauf():
+        log.warning(
+            "zulassung.journal_trockenlauf",
+            variable=TROCKENLAUF,
+            pfad=str(file),
+            folge="Das Journal wird NICHT fortgeschrieben.",
+        )
+        return file
+
     file.parent.mkdir(parents=True, exist_ok=True)
 
     entries = []
