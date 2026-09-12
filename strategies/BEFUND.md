@@ -23189,3 +23189,77 @@ faellig.
 
 Volle Suite 3526 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertdreiundsechzig. Aufgezeichnet und nie verglichen
+
+Befund 262 endet mit einer benannten offenen Stelle: `cli abgleich` bekommt
+sein Symbol aus `--symbol` und vergleicht es mit nichts. Nachgesehen - und
+die Stelle war groesser, als sie dort stand.
+
+### Ein Nachweis, eine Pruefung
+
+`Zulassungsbedingungen` haelt seit Befund 106 fest, unter welchen Bedingungen
+ein Champion bestanden hat:
+
+    markt  kapital  intervall  referenzdaten  versuche
+    bestanden  gesamt  funding_satz  zeitpunkt
+
+`cli trade` prueft davon **eines**: `markt`, ueber `passt_zu`. Bei einer
+Abweichung bricht es ab:
+
+> Die Gates gelten fuer das gepruefte Instrument, nicht fuer ein anderes.
+
+`intervall` steht im selben Nachweis. `_bedingungen` schreibt es bei jedem
+Lauf mit - `intervall=interval_obj.value`, direkt aus dem, was gerechnet
+wurde. Verglichen hat es niemand: `bedingungen.intervall` kam in `cli trade`
+kein einziges Mal vor.
+
+Dabei gilt der Satz oben wortgleich. Die elf Gates sind auf **einer**
+Kerzenlaenge gemessen; auf Tageskerzen stehen alle elf (Befund 213), auf
+Viertelstunden raeumt der beste Fund 0,188 seiner Latte (Befund 190). Das
+sind nicht zwei Sichten auf dieselbe Strategie, das sind zwei
+Entscheidungsflaechen.
+
+**`cli trade --intervall 15` haette mit einem auf Tageskerzen zugelassenen
+Champion gehandelt, ohne ein Wort zu sagen.**
+
+### Zwei Haerten fuer zwei Befehle
+
+`passt_zur_kerzenlaenge` steht jetzt neben `passt_zu`, mit derselben Regel
+fuer den leeren Fall: Ohne aufgezeichnete Kerzenlaenge heisst die Antwort
+*"unbekannt"* und nicht *"passt schon"* - alte Dateien werden dadurch nicht
+stillschweigend unbrauchbar.
+
+    cli trade      bricht ab    - dort laeuft Geld
+    cli abgleich   warnt        - dort laeuft die Engine
+
+Der Abgleich auf einer anderen Kerze ist eine sinnvolle Pruefung: Ob Backtest
+und Livebetrieb dieselben Signale erzeugen, ist eine Eigenschaft der Engine.
+Eine **Freigabe** ist es nicht, und die Warnung sagt dazu, was `cli trade` an
+derselben Stelle taete.
+
+### Was weiterhin nicht aufgezeichnet ist
+
+Der Markt selbst. `markt` heisst `perpetual` oder `spot` - nicht BTC oder
+XRP. `report_payload` haelt `markt.symbol` fest, der Zulassungsnachweis in
+`champion.json` nicht.
+
+Ein auf BTC+ETH zugelassener Champion liesse sich also auf einem dritten
+Markt handeln, und nichts im Nachweis widerspraeche. Das ist nicht gebaut,
+sondern benannt - ein Feld hinzuzufuegen ist schnell, aber ein
+Portfoliokandidat traegt **mehrere** Symbole, und was "passt zu" dann heisst,
+ist eine Entscheidung und keine Zeile Code. Ein Test haelt die Luecke fest,
+damit sie nicht in Vergessenheit geraet.
+
+### Beim Testen
+
+Ein Anker riss an `ast.unparse`, das `and not X` zu `and (not X)` klammert -
+zum dritten Mal in dieser Reihe dieselbe Sorte (244, 261). Der Test ankert
+jetzt auf der Wache selbst und nicht auf ihrer Schreibweise.
+
+Am Kandidaten aendert sich nichts, kein Gate bewegt sich, kein Versuch wird
+faellig. Es gibt heute keinen Champion - beide Sperren sind latent und
+greifen an dem Tag, an dem es einen gibt.
+
+Volle Suite 3539 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

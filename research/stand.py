@@ -1455,6 +1455,24 @@ BEHOBEN: tuple[Richtung, ...] = (
         "in beiden Faellen, welches Genom es geprueft hat",
         262,
     ),
+    # Die offene Stelle aus 262, nachgesehen - und sie war groesser.
+    Richtung(
+        "Die Kerzenlaenge stand im Nachweis und wurde nie verglichen",
+        "'Zulassungsbedingungen' haelt seit Befund 106 fest, unter welchen "
+        "Bedingungen ein Champion bestanden hat, und 'cli trade' prueft davon "
+        "**eines**: das Instrument. 'intervall' steht im selben Nachweis, "
+        "'_bedingungen' schreibt es bei jedem Lauf mit - verglichen hat es "
+        "niemand. Dabei gilt die Begruendung wortgleich: Die elf Gates sind "
+        "auf einer Kerzenlaenge gemessen; auf Tageskerzen stehen alle elf "
+        "(213), auf Viertelstunden raeumt der beste Fund 0,188 seiner Latte "
+        "(190). 'cli trade --intervall 15' haette mit einem Tageskerzen-"
+        "Champion gehandelt, ohne ein Wort. Jetzt bricht 'trade' dort ab wie "
+        "beim Instrument, und 'abgleich' warnt - dort laeuft kein Geld, aber "
+        "eine Freigabe ist es auch nicht. **Weiter nicht aufgezeichnet ist "
+        "der Markt selbst**: Der Nachweis kennt 'perpetual/spot' und die "
+        "Kerzenlaenge, aber kein Symbol",
+        263,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

@@ -2208,6 +2208,26 @@ def trade(
             "gewuenschten Instrument wiederholen."
         )
         raise typer.Exit(2)
+    # **Und dieselbe Frage fuer die Kerzenlaenge** (Befund 263). Sie wird seit
+    # jeher aufgezeichnet und war nie verglichen - dabei gilt fuer sie
+    # wortgleich, was oben fuer das Instrument steht: Die elf Gates sind auf
+    # einer Kerzenlaenge gemessen. Auf Tageskerzen stehen alle elf; auf
+    # Viertelstunden raeumt der beste Fund 0,188 seiner Latte (Befund 190).
+    # Hier selbst normiert und nicht aus 'interval_obj' gelesen: Das steht
+    # weiter unten, und die Sperre gehoert neben ihr Geschwister.
+    gehandelte_kerze = Interval(intervall).value
+    if bedingungen.intervall and not bedingungen.passt_zur_kerzenlaenge(
+        gehandelte_kerze
+    ):
+        console.print(
+            f"[red]Zugelassen wurde auf {bedingungen.intervall}, gehandelt "
+            f"werden soll auf {gehandelte_kerze}.[/]\n"
+            f"  Nachweis: {bedingungen.als_text()}\n"
+            "Die Gates gelten fuer die geprueften Kerzen, nicht fuer andere. "
+            f"Entweder mit '--intervall {bedingungen.intervall}' fahren oder "
+            "die Zulassung auf der gewuenschten Kerzenlaenge wiederholen."
+        )
+        raise typer.Exit(2)
     if not bedingungen.vollstaendig:
         console.print(
             "[yellow]Die Champion-Datei traegt keinen Zulassungsnachweis.[/] "
@@ -4370,6 +4390,28 @@ def abgleich(
             "Saatkandidaten und ist damit **kein Livegang-Abgleich** - "
             "'cli trade' wuerde ohne 'champion.json' ohnehin nicht starten.\n"
         )
+    else:
+        # **Die richtige Strategie auf der falschen Kerzenlaenge** waere
+        # derselbe Fehler eine Stufe tiefer - die offene Stelle, die Befund
+        # 262 benannt und nicht gebaut hat (Befund 263).
+        #
+        # Hier wird gewarnt und nicht abgebrochen: Der Abgleich auf einer
+        # anderen Kerze ist eine sinnvolle Pruefung der Engine, nur eben
+        # keine Freigabe. 'cli trade' bricht an derselben Stelle ab, weil
+        # dort Geld laeuft.
+        from research.admission import lade_bedingungen
+
+        bedingungen = lade_bedingungen(champion_pfad)
+        if bedingungen.intervall and not bedingungen.passt_zur_kerzenlaenge(
+            interval_obj.value
+        ):
+            console.print(
+                f"[yellow]Zugelassen wurde auf {bedingungen.intervall}, "
+                f"abgeglichen wird auf {interval_obj.value}.[/] Die elf Gates "
+                f"sind auf der einen Kerzenlaenge gemessen; dieser Lauf sagt "
+                f"damit nichts ueber den Livegang. 'cli trade' wuerde hier "
+                f"abbrechen.\n"
+            )
 
     ergebnis = vergleiche(frame, lambda: compile_genome(genome), buffer_bars=puffer)
 

@@ -315,6 +315,22 @@ class Zulassungsbedingungen:
         """
         return bool(self.markt) and self.markt == markt
 
+    def passt_zur_kerzenlaenge(self, intervall: str) -> bool:
+        """Wurde auf derselben Kerzenlaenge zugelassen, die jetzt laufen soll?
+
+        Das Geschwister von ``passt_zu`` (Befund 263). ``intervall`` wird seit
+        jeher aufgezeichnet - verglichen wurde es nie. Dabei ist es dieselbe
+        Sorte Kollision: Die elf Gates sind auf **einer** Kerzenlaenge
+        gemessen, und auf einer anderen ist es eine andere
+        Entscheidungsflaeche. Der Bericht sagt es selbst - auf Tageskerzen
+        stehen alle elf Gates, auf Viertelstunden raeumt der beste Fund 0,188
+        seiner Latte.
+
+        Ohne aufgezeichnete Kerzenlaenge ist die Antwort **nicht** "passt
+        schon", sondern "unbekannt" - wie bei ``passt_zu``.
+        """
+        return bool(self.intervall) and self.intervall == intervall
+
     def als_text(self) -> str:
         teile = [f"Instrument {self.markt or 'nicht aufgezeichnet'}"]
         if self.gesamt:
