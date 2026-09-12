@@ -1364,6 +1364,21 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Punkte genau und kostet keinen Versuch",
         250,
     ),
+    # Beim Nachsehen, ob die wichtigste offene Richtung ueberhaupt zu
+    # verfolgen ist (256 hatte sie dazu gemacht).
+    Richtung(
+        "Die Bestenliste kannte nur die kleinere ihrer zwei Luecken",
+        "'vergleichbar' meldet mit '?', dass die Huerde zu einer Zahl fehlt - "
+        "dann steht die Zahl wenigstens noch da. Fehlen die **Regeln**, ist "
+        "der Kandidat weg, und dafuer gab es kein Zeichen, keine Zaehlung und "
+        "keine Zeile. Genau so ging 'Neues Hoch im Takt' verloren, die "
+        "einzige gemessene Regel, die die Kopplung bricht (Befund 74). Jetzt "
+        "stehen beide getrennt: '?' fuer die fehlende Huerde, '*' fuer den "
+        "fehlenden Kandidaten - und die teurere nicht als Fussnote. Der "
+        "Registereintrag dazu hielt die Richtung fuer messbar und sagt jetzt, "
+        "dass die Regel neu zu bauen waere",
+        257,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1465,9 +1480,16 @@ OFFEN: tuple[Richtung, ...] = (
         "Einstieg, der nicht am Rauschen haengt",
         "der wiederholbare Ausbruch entkoppelt (haelt 70 % seiner Trades "
         "statt 19 %) und raeumt jede gepflanzte Latte; auf echten Daten war "
-        "er mit 0,2137 je Trade schlechter als der Bestand und braeuchte 324",
+        "er mit 0,2137 je Trade schlechter als der Bestand und braeuchte 324. "
+        "**Diese Regel ist nicht mehr rechenbar** (257): Sie stammt aus einer "
+        "Vorschlagsdatei, die nie versioniert wurde, und die Bestenliste hielt "
+        "damals keine Regeln (Befund 74). Wer die Richtung verfolgen will, "
+        "muss sie aus ihrer Beschreibung neu bauen - und das ist eine neue "
+        "Hypothese und kostet einen Versuch. Seit 256 ist sie trotzdem die "
+        "wichtigste: Die Kopplung ist als Eigenschaft der Signale gemessen, "
+        "ein struktureller Bruch ist der einzige bekannte Weg heraus",
         56,
-        178,
+        257,
     ),
     # Auf Tageskerzen beantwortet (Kippfaktor 56, Befund 187). Der
     # Kostenanteil lag dort bei hoechstens 0,0086 der Trade-Streuung - auf

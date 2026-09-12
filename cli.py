@@ -945,9 +945,13 @@ def _zeige_bestenliste(board, *, limit: int = 10, versuche: int | None = None) -
         # denselben Vergleich gehoert. Das gehoert sichtbar, nicht versteckt.
         wert = eintrag.dsr_bei(versuche) if versuche else eintrag.deflated_sharpe
         marke = "" if eintrag.vergleichbar or not versuche else " ?"
+        # Zwei verschiedene Luecken, zwei verschiedene Zeichen: '?' heisst,
+        # die Huerde zu einer Zahl fehlt; '*' heisst, der Kandidat selbst
+        # fehlt. Das zweite ist teurer (Befund 74/257).
+        name = eintrag.name[:38] + ("" if eintrag.rechenbar else " *")
         zeile = [
             str(platz),
-            f"[{stil}]{eintrag.name[:38]}[/]" if stil else eintrag.name[:38],
+            f"[{stil}]{name}[/]" if stil else name,
             f"{eintrag.gates_bestanden}/{eintrag.gates_gesamt}",
         ]
         if konten:
@@ -965,6 +969,15 @@ def _zeige_bestenliste(board, *, limit: int = 10, versuche: int | None = None) -
             f"[dim]? bei {len(alt)} von {len(board.entries)} Eintraegen: vor "
             f"dieser Aenderung gemessen, Huerde unbekannt. Ihr Wert steht, "
             f"aber er gehoert nicht in denselben Vergleich.[/]"
+        )
+    if weg := board.unrechenbar:
+        console.print(
+            f"[yellow]* bei {len(weg)} von {len(board.entries)} Eintraegen: "
+            f"ohne Regeln gespeichert und damit **nicht mehr rechenbar**. "
+            f"Ihre Zahlen stehen, die Kandidaten sind weg - so ist 'Neues "
+            f"Hoch im Takt' verlorengegangen, die einzige gemessene Regel, "
+            f"die die Kopplung bricht (Befund 74). Neue Eintraege tragen ihre "
+            f"Regeln mit.[/]"
         )
     if len(konten) > 1:
         console.print(

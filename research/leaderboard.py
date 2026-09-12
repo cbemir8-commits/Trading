@@ -185,6 +185,25 @@ class Entry:
         """Laesst sich der Wert auf einen anderen Versuchsstand umrechnen?"""
         return bool(self.versuche and self.sharpe_je_trade > 0 and self.trades >= 3)
 
+    @property
+    def rechenbar(self) -> bool:
+        """Laesst sich dieser Eintrag noch **nachrechnen**?
+
+        Der Unterschied zu ``vergleichbar`` ist der zwischen einer Zahl und
+        einem Kandidaten: Dort fehlt die Huerde, hier fehlen die Regeln. Das
+        zweite ist teurer - eine Zahl, die nicht in den Vergleich gehoert,
+        steht wenigstens noch da; ein Kandidat ohne Regeln ist weg.
+
+        Genau das ist mit 'Neues Hoch im Takt' passiert (Befund 74): die
+        einzige gemessene Regel, die die Kopplung zwischen Trade-Zahl und
+        Qualitaet bricht - und nicht mehr rechenbar, weil die
+        Vorschlagsdatei nie versioniert wurde. Seit Befund 256 ist das
+        besonders teuer: Die Kopplung ist als Eigenschaft der Signale
+        gemessen und nicht wegzuverhandeln, also ist ein struktureller Bruch
+        der einzige bekannte Weg heraus.
+        """
+        return self.genom is not None
+
     def dsr_bei(self, versuche: int) -> float:
         """Der Deflated Sharpe, wie er bei diesem Versuchsstand aussaehe.
 
@@ -431,6 +450,15 @@ class Leaderboard:
         eingetragen. Ihre Zahl steht, aber sie gehoert nicht in denselben
         Vergleich."""
         return [e for e in self.entries.values() if not e.vergleichbar]
+
+    @property
+    def unrechenbar(self) -> list[Entry]:
+        """Eintraege ohne Regeln - ihre Zahlen stehen, sie selbst sind weg.
+
+        Nicht zu verwechseln mit ``unvergleichbar``: Dort fehlt die Huerde
+        zu einer Zahl, hier fehlt der Kandidat zu ihr.
+        """
+        return [e for e in self.entries.values() if not e.rechenbar]
 
     @property
     def admitted(self) -> list[Entry]:

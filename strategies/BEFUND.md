@@ -22750,3 +22750,76 @@ faellig.
 
 Volle Suite 3471 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsiebenundfuenfzig. Eine Zahl ohne Huerde, ein Kandidat ohne Regeln
+
+Befund 256 hat die Kopplung zwischen Trade-Zahl und Qualitaet endgueltig aus
+dem Kostenbereich herausgenommen: Sie haengt an den Signalen, und kein
+Reibungsfaktor - auch nicht das 56-fache - bringt sie zur Null. Damit ist ein
+**struktureller** Bruch der einzige bekannte Weg heraus.
+
+Also nachgesehen, was das Register ueber solche Brueche sagt. Eintrag neun:
+
+> **Einstieg, der nicht am Rauschen haengt:** der wiederholbare Ausbruch
+> entkoppelt (haelt 70 % seiner Trades statt 19 %) und raeumt jede gepflanzte
+> Latte; auf echten Daten war er mit 0,2137 je Trade schlechter als der
+> Bestand und braeuchte 324.
+
+Das liest sich wie eine Richtung, die man weiterverfolgen kann. Nachgesehen,
+ob man kann: **'Neues Hoch im Takt' ist nicht mehr rechenbar.** Die Regel
+stammt aus `sieger.json`, einer Vorschlagsdatei des Analysten, die nie
+versioniert wurde; im Arbeitsbaum gibt es sie nicht, und `git log --all` kennt
+sie auch nicht. Die Bestenliste hielt damals `genome_id`, Namen und
+Kennzahlen - nicht die Regeln.
+
+Das stand seit Befund 74 im Kopf von `Entry.genom`, und `genom` haelt die
+Regeln seither mit. Der Registereintrag hat es nicht erwaehnt. Wer ihn liest,
+haelt die wichtigste offene Richtung fuer messbar.
+
+### Zwei Luecken, ein Zeichen
+
+Die Bestenliste kannte bisher genau eine Luecke:
+
+    ? bei N von M Eintraegen: vor dieser Aenderung gemessen, Huerde
+      unbekannt. Ihr Wert steht, aber er gehoert nicht in denselben
+      Vergleich.
+
+Das ist `vergleichbar`, und es ist die **kleinere** Luecke. Fehlt die Huerde,
+steht die Zahl wenigstens noch da. Fehlen die Regeln, ist der Kandidat weg -
+und dafuer gab es kein Zeichen, keine Zaehlung und keine Zeile.
+
+Jetzt gibt es beides, und getrennt:
+
+* `?` - die Huerde zu einer Zahl fehlt.
+* `*` - der Kandidat zu ihr fehlt.
+
+Die zweite Zeile steht nicht in `dim` wie die erste. Sie nennt auch, was die
+Luecke gekostet hat: dass genau so die einzige Regel verlorenging, die die
+Kopplung nachweislich bricht. Ohne diesen Satz liest sich die Zahl wie
+Buchhaltung.
+
+### Was das fuer die Richtung heisst
+
+Sie bleibt offen und ist jetzt richtig beschrieben: Um ihr zu folgen, muss die
+Regel **aus ihrer Beschreibung neu gebaut** werden. Das ist eine neue
+Hypothese und kostet einen Versuch - der Versuchsstand steht bei 198, das
+Budget endet bei 230. Ob sich das lohnt, ist eine Entscheidung und keine
+Messung; die Beschreibung liegt in den Befunden 55, 73 und 178.
+
+Und die Zahl 324 bleibt eine historische: Sie stammt aus einem Lauf bei
+Versuchsstand 162. Mit 198 waere die Latte hoeher.
+
+### Was hier nicht passiert ist
+
+Ich hatte vermutet, die Luecke sei noch offen - dass ein Lauf beim Nutzer
+seinen Sieger genauso verlieren wuerde. Nachgesehen: nein.
+`_aus_kandidat` schreibt `genom=candidate.genome.model_dump(mode="json")`,
+und das seit Befund 74. Die 45 alten Eintraege bleiben ohne Regeln, weil
+nachtraeglich erfundene schlimmer waeren als eine sichtbare Luecke - und
+sichtbar ist sie ab jetzt auch.
+
+Am Kandidaten aendert sich nichts, kein Gate bewegt sich, kein Versuch wird
+faellig.
+
+Volle Suite 3481 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
