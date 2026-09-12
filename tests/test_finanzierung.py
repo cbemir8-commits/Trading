@@ -30,21 +30,25 @@ from research.finanzierung import (
 
 #: Die gemessene Leiter des Bestands auf BTC + ETH, Tageskerzen, 500 EUR,
 #: Versuchsstand 177. Nachzurechnen mit ``cli finanzierung``.
+#: **Nachgemessen in Befund 267.** Bis dahin standen hier die Renditen eines
+#: alten Laufs - jede rund einen halben Punkt zu hoch, die unterste Zeile bei
+#: 3 von 11. Die Rueckgaenge stimmten exakt, und genau deshalb fiel es nicht
+#: auf. Eine Fixture, die ``GEMESSEN`` heisst, soll auch gemessen sein.
 GEMESSEN: tuple[Stufe, ...] = (
-    Stufe(0.0, 14.83, 9.87, 9, 11, 0.00, 7.17, 776.97,
+    Stufe(0.0, 14.34, 9.87, 9, 11, 0.00, 7.60, 820.0,
           ("Messlatte", "Deflated Sharpe")),
-    Stufe(0.00005, 14.15, 10.25, 9, 11, 31.90, 7.17, 776.97,
+    Stufe(0.00005, 13.64, 10.25, 9, 11, 33.62, 7.60, 820.0,
           ("Messlatte", "Deflated Sharpe")),
-    Stufe(0.0001, 13.47, 10.64, 7, 11, 63.79, 7.17, 776.97,
+    Stufe(0.0001, 12.95, 10.64, 7, 11, 67.24, 7.60, 820.0,
           ("Messlatte", "Schlechtestes Jahr", "Deflated Sharpe",
            "Parameter-Plateau")),
-    Stufe(0.0002, 12.13, 11.41, 7, 11, 127.57, 7.17, 776.97,
+    Stufe(0.0002, 11.61, 11.41, 7, 11, 134.18, 7.60, 820.0,
           ("Messlatte", "Schlechtestes Jahr", "Deflated Sharpe",
            "Parameter-Plateau")),
-    Stufe(0.0003, 10.80, 12.17, 6, 11, 191.35, 7.17, 776.97,
+    Stufe(0.0003, 10.25, 12.17, 6, 11, 201.27, 7.60, 820.0,
           ("Messlatte", "Drawdown", "Schlechtestes Jahr", "Deflated Sharpe",
            "Parameter-Plateau")),
-    Stufe(0.0005, 8.22, 13.68, 3, 11, 318.46, 7.17, 776.97, ()),
+    Stufe(0.0005, 7.61, 13.68, 2, 11, 335.01, 7.60, 820.0, ()),
 )
 
 
@@ -98,7 +102,12 @@ class TestEmpfindlichkeit:
         f = leiter()
 
         assert f.haengt_daran
-        assert f.spanne_gates == (3, 9)
+        # Von der untersten zur obersten Sprosse - die Zahlen kommen aus der
+        # Leiter selbst, damit eine Nachmessung sie nicht bricht (Befund 267).
+        assert f.spanne_gates == (
+            min(s.bestanden for s in GEMESSEN),
+            max(s.bestanden for s in GEMESSEN),
+        )
         erster, zweiter = f.kipppunkte[0]
         assert erster.bestanden == 9 and zweiter.bestanden == 7
         assert zweiter.satz == BASISSATZ
@@ -144,15 +153,36 @@ class TestEhrlichkeit:
         zustande kaemen. Befund 106 hat den Deckel gemessen: Er aendert die
         Zahlen bitgleich nicht. Die Zeile ist der Spot-Fall.
 
-        Was bleibt, muss trotzdem dastehen: 0,17 Punkte fehlen an der
-        Messlatte, und der Satz wird nicht auf den guenstigen Wert gestellt.
+        Was bleibt, muss trotzdem dastehen: Das Messlatten-Gate ist offen, und
+        der Satz wird nicht auf den guenstigen Wert gestellt.
+
+        **Die Luecke wird gerechnet, nicht gefuehrt** (Befund 267). Hier stand
+        "0,17 Punkte" als Zahl im Test - dieselbe, die Befund 165 in
+        ``stand.py`` laengst zurueckgenommen hatte. Ein Test, der eine
+        gepflegte Zahl festhaelt, haelt sie am Leben; deshalb prueft er jetzt
+        die **Herkunft**: gegen ``min_cagr_pct`` und aus der Nullzeile.
         """
+        from research.gates import GateThresholds
+
+        null = next(s for s in GEMESSEN if s.satz == 0)
+        erwartet = GateThresholds().min_cagr_pct - null.cagr
+
         urteil = leiter().urteil()
 
         assert "ist der Spot-Fall" in urteil
         assert "Befund 106 hat das widerlegt" in urteil
-        assert "0,17 Punkte" in urteil
+        assert f"{erwartet:.2f} Punkte" in urteil
         assert "nicht auf den Wert gestellt, bei dem mehr Gates halten" in urteil
+
+    def test_und_sie_gehoert_nicht_der_messlatte(self) -> None:
+        """**Befund 267.** Das Gate heisst 'Messlatte' und faellt an seiner
+        zweiten Bedingung. An der Messlatte selbst ist der Kandidat beim
+        Fuenffachen - wer 'an der Messlatte fehlen 0,66 Punkte' liest, sucht
+        die Luecke an der falschen Stelle."""
+        urteil = leiter().urteil()
+
+        assert "Betriebsschwelle" in urteil
+        assert "nicht an der Messlatte" in urteil
 
     def test_die_richtung_des_fehlers_wird_halbiert_und_nicht_behauptet(
         self,
@@ -207,7 +237,11 @@ class TestEhrlichkeit:
 
         assert "<- Vorgabe" in text
         assert text.count("<- Vorgabe") == 1
-        assert "8.9-faches" in text
+        # Das Vielfache wird gerechnet, nicht gefuehrt: Die genaue Stelle
+        # wandert mit den Daten (8,9 vor Befund 267, 8,8 danach), und ein Test,
+        # der sie festhaelt, haelt eine veraltete Zahl am Leben.
+        punkt = leiter().betriebspunkt
+        assert f"{punkt.vielfaches_der_gebuehren:.1f}-faches" in text
 
 
 class TestStresslage:

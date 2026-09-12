@@ -15,12 +15,20 @@ Wie viel daran haengt
 Der Bestand ueber eine Leiter von Saetzen, sonst alles gleich:
 
     Satz p.a.   Funding    Anteil    Rendite   Rueckgang   Gates
-     0,0 %       0,00 EUR    0,0 %    14,83 %      9,87 %    9/11
-     5,5 %      31,90 EUR    4,1 %    14,15 %     10,25 %    9/11
-    11,0 %      63,79 EUR    8,2 %    13,47 %     10,64 %    7/11   <- Vorgabe
-    21,9 %     127,57 EUR   16,4 %    12,13 %     11,41 %    7/11
-    32,9 %     191,35 EUR   24,6 %    10,80 %     12,17 %    6/11
-    54,8 %     318,46 EUR   40,9 %     8,22 %     13,68 %    3/11
+     0,0 %       0,00 EUR    0,0 %    14,34 %      9,87 %    9/11
+     5,5 %      33,62 EUR    4,1 %    13,64 %     10,25 %    9/11
+    10,9 %      67,24 EUR    8,2 %    12,95 %     10,64 %    7/11   <- Vorgabe
+    21,9 %     134,18 EUR   16,3 %    11,61 %     11,41 %    7/11
+    32,8 %     201,27 EUR   24,4 %    10,25 %     12,17 %    6/11
+    54,8 %     335,01 EUR   40,5 %     7,61 %     13,68 %    2/11
+
+**Diese Tabelle ist eine Momentaufnahme und war 267 Befunde lang eine
+falsche.** Bis dahin stand hier die Fassung von damals - jede Rendite rund
+einen halben Punkt zu hoch (14,83 / 14,15 / 13,47 / 12,13 / 10,80 / 8,22),
+die unterste Zeile bei 3 von 11 Gates. Die Rueckgaenge stimmten exakt, und das
+ist der Grund, warum es nicht auffiel: Die Haelfte, die man prueft, war
+richtig - dasselbe Muster wie in Befund 165, nur eine Datei weiter. Wer die
+heutige Fassung will, laesst ``cli finanzierung`` laufen; die rechnet.
 
 Zwischen 5,5 % und 11 % kippen **zwei Gates** (Schlechtestes Jahr,
 Parameter-Plateau), zwischen 21,9 % und 32,9 % ein drittes (Drawdown).
@@ -44,10 +52,12 @@ Der Spielraum ist also nicht eine Zahl, sondern eine Zahl je Form:
 
 Die Zahl, die das Verhaeltnis zeigt
 -----------------------------------
-    Handelsgebuehren     7,17 EUR
-    Funding             63,79 EUR
+    Handelsgebuehren     7,60 EUR
+    Funding             67,24 EUR
 
-**Funding ist das 8,9-fache der Handelsgebuehren.** Das Projekt hat ein
+**Funding ist rund das Neunfache der Handelsgebuehren.** Die genaue Stelle
+traegt hier nichts und wandert mit den Daten (zuletzt 8,8; in der alten
+Fassung 8,9) - die Groessenordnung ist die Aussage. Das Projekt hat ein
 Kosten-Stress-Gate, ein Kostenanteil-Modul und mehrere Befunde ueber
 Gebuehrenmodelle - und der groesste Kostenblock steht die ganze Zeit auf einem
 Vorgabewert, den niemand geprueft hat.
@@ -95,10 +105,19 @@ Trades, 13,47 %, 10,64 %. Der Kandidat nutzt seinen Hebel an 0,2 % der Balken
 und ist long-only. Die Positionsgroessen kommen also zustande, und die
 Nullzeile **ist** ein Szenario.
 
-Was davon stehen bleibt: Sie ist trotzdem keine bestandene Zulassung. Bei
-14,83 % fehlen 0,17 Punkte an der Messlatte, der Deflated Sharpe bewegt sich
-nicht, und Bybits Spot-Tarif ist nicht gemessen. Der Satz war nicht vorsichtig,
-sondern ungeprueft - ich habe angenommen, die Strategie brauche ihren Hebel.
+Was davon stehen bleibt: Sie ist trotzdem keine bestandene Zulassung. Der
+Deflated Sharpe bewegt sich nicht, Bybits Spot-Tarif ist nicht gemessen, und
+das Messlatten-Gate bleibt offen. Der Satz war nicht vorsichtig, sondern
+ungeprueft - ich habe angenommen, die Strategie brauche ihren Hebel.
+
+**Woran das Messlatten-Gate dort haengt, stand hier zweimal falsch** (Befund
+267). Es hiess "bei 14,83 % fehlen 0,17 Punkte an der Messlatte" - eine
+gepflegte Zahl, die Befund 165 schon in ``stand.py`` zurueckgenommen hatte
+und die hier stehenblieb. Gemessen sind es 14,34 %, und der Kandidat ist an
+der Messlatte gar nicht knapp: 192,01 % gegen eine Latte von 38,03 %, das
+Fuenffache. Offen ist die **zweite** Bedingung des Gates - die Jahresrendite
+gegen die Betriebsschwelle von 15 %. Dort fehlen 0,66 Punkte. Der Bericht
+rechnet die Zahl jetzt, statt sie zu fuehren.
 
 Was der Kosten-Stress-Test davon stresst (Befund 101)
 -----------------------------------------------------
@@ -328,16 +347,26 @@ class Finanzierung:
 
         null = next((s for s in self.geordnet if s.satz == 0), None)
         if null is not None:
+            # Gerechnet und nicht gefuehrt: Bis Befund 267 stand hier "0,17
+            # Punkte" als Prosa - eine Zahl, die Befund 165 in 'stand.py'
+            # schon zurueckgenommen hatte und die hier weiterlief.
+            from research.gates import GateThresholds
+
+            schwelle = GateThresholds().min_cagr_pct
             teile.append(
                 f"**Die Nullzeile ({null.bestanden} von {null.gesamt}) ist der "
                 f"Spot-Fall** - Spot kennt kein Funding. Sie war hier als "
                 f"blosse Empfindlichkeit bezeichnet, mit der Begruendung, ohne "
                 f"Hebel kaemen die gemessenen Positionsgroessen gar nicht "
                 f"zustande. Befund 106 hat das widerlegt: Der Deckel auf 1,0 "
-                f"aendert die Zahlen bitgleich nicht. Was bleibt: An der "
-                f"Messlatte fehlen dort weiter 0,17 Punkte, und der Deflated "
-                f"Sharpe bewegt sich nicht. Der Satz wird auch nicht auf den "
-                f"Wert gestellt, bei dem mehr Gates halten."
+                f"aendert die Zahlen bitgleich nicht. Was bleibt: Der Deflated "
+                f"Sharpe bewegt sich nicht, und das Messlatten-Gate bleibt "
+                f"offen - nicht an der Messlatte, sondern an seiner zweiten "
+                f"Bedingung: {null.cagr:.2f} % im Jahr gegen eine "
+                f"Betriebsschwelle von {schwelle:.0f} %, also "
+                f"{schwelle - null.cagr:.2f} Punkte (Befund 267). Der Satz "
+                f"wird auch nicht auf den Wert gestellt, bei dem mehr Gates "
+                f"halten."
             )
         return "\n\n".join(teile)
 

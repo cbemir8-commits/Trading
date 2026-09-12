@@ -23606,3 +23606,142 @@ ohnehin die unguenstigere.
 
 Volle Suite 3606 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsiebenundsechzig. Das Gate faellt nicht an der Messlatte
+
+Der Bestand steht im Spot-Betriebspunkt bei 9 von 11 Gates. Offen sind
+**Messlatte** und **Deflated Sharpe**. Der Deflated Sharpe haengt am
+Versuchszaehler und laesst sich nicht zurueckdrehen; die Messlatte war mit
+0,66 Punkten die knappste Huerde des Projekts. Also dort nachgesehen.
+
+Gefunden wurde viererlei, und alles gehoert zusammen.
+
+### Erstens: das Gate meldet die Bedingung, die es besteht
+
+`gate_benchmark` prueft zwei Dinge:
+
+* **risikobereinigt mindestens gleichauf** mit Kaufen-und-Halten, wobei die
+  Messlatte auf den Rueckgang der Strategie heruntergefahren wird
+* **kein Feigenblatt** - die Jahresrendite muss ueber `min_cagr_pct` liegen,
+  der Schwelle, unter der sich der Betrieb nicht lohnt (15 %)
+
+Gemessen auf dem Bestand, Spot-Punkt:
+
+    Strategie          192,01 % gesamt bei  9,87 % Rueckgang, 14,34 % p.a.
+    Halten, voll       991,07 % gesamt bei 76,06 % Rueckgang
+    Halten, auf 9,87 % heruntergefahren     38,03 %
+
+**Der Kandidat ist an der Messlatte nicht knapp, sondern beim Fuenffachen.**
+Er faellt an der zweiten Bedingung: 14,34 % gegen 15,00 %, also 0,66 Punkte.
+
+Nur standen in `value` und `threshold` weiterhin Rendite und Messlatte:
+
+    Wert 192,012   Schwelle 38,031   Status DURCHGEFALLEN
+
+Wer die Zahlen liest, sieht das Fuenffache der Huerde und ein rotes Gate. Und
+das sind nicht irgendwelche Zahlen: Sie gehen an zehn Stellen in die Ausgabe -
+Bestenliste, Journal, `gatelage`, `machbarkeit`, jede Gate-Tabelle - und sie
+sind die **einzige** Zahl, die sagt, wie weit ein Gate offen ist.
+
+Die Begruendung im Klartext war die ganze Zeit richtig (*"risikobereinigt
+besser, aber nur 14,3 % im Jahr"*). Nur liest niemand elf Klartexte, wenn eine
+Tabelle danebensteht.
+
+Gebaut: Faellt das Gate allein an der Betriebsschwelle, meldet es die
+Jahresrendite gegen `min_cagr_pct`. In jedem anderen Fall bleibt alles, wie es
+war - ein Gate, das besteht, hat an beiden Bedingungen bestanden, und dort ist
+nichts zu waehlen. Die 45 Eintraege der Bestenliste verschieben sich nicht.
+
+### Zweitens: die richtige Zahl unter falschem Namen
+
+`stand.py` rechnet die Luecke schon lange richtig - `min_cagr_pct - cagr`,
+also gegen die Betriebsschwelle. Genannt hat sie sich *"die Messlatte um 0,66
+Punkte"*.
+
+Die Zahl stimmte, ihr Name nicht. Wer das las, suchte die Luecke an der
+falschen Stelle - und haette bei der Messlatte einen Abstand von 154 Punkten
+gefunden.
+
+### Drittens: eine Zahl, die ein Test am Leben hielt
+
+In `finanzierung.py` stand zweimal *"0,17 Punkte fehlen an der Messlatte"* -
+dieselbe Zahl, die **Befund 165 in `stand.py` bereits zurueckgenommen hatte**.
+Einmal im Modulkopf, einmal in einem **erzeugten Bericht**, also in dem, was
+`cli finanzierung` dem Nutzer ausgibt.
+
+Und in `tests/test_finanzierung.py` stand:
+
+    assert "0,17 Punkte" in urteil
+
+Das ist der Grund, warum sie ueberlebt hat. Ein Test, der eine gepflegte Zahl
+festhaelt, macht sie unsterblich: Jeder Versuch, sie zu rechnen, waere rot
+geworden. Der Test prueft jetzt die **Herkunft** - gegen `min_cagr_pct`, aus
+der Nullzeile - und nicht mehr den Wert.
+
+### Viertens: die Leiter war durchgehend stale
+
+Beim Nachrechnen der Nullzeile fiel auf, dass sie nicht stimmt. Also die ganze
+Leiter nachgemessen (`cli finanzierung`, derselbe Kandidat, dieselbe
+Aufstellung):
+
+    Satz p.a.   behauptet   gemessen   Rueckgang   Gates behauptet / gemessen
+     0,0 %       14,83 %     14,34 %      9,87 %       9/11   9/11
+     5,5 %       14,15 %     13,64 %     10,25 %       9/11   9/11
+    10,9 %       13,47 %     12,95 %     10,64 %       7/11   7/11
+    21,9 %       12,13 %     11,61 %     11,41 %       7/11   7/11
+    32,8 %       10,80 %     10,25 %     12,17 %       6/11   6/11
+    54,8 %        8,22 %      7,61 %     13,68 %       3/11   2/11
+
+**Jede Rendite rund einen halben Punkt zu hoch. Jeder Rueckgang exakt
+richtig.** Und genau deshalb ist es nicht aufgefallen - dieselbe Falle wie in
+Befund 165: Die Haelfte, die man prueft, war richtig.
+
+Auch die Kosten sind gewandert (7,17 auf 7,60 EUR Gebuehren, 63,79 auf 67,24
+EUR Funding, das 8,9-fache auf das 8,8-fache). Wo die genaue Stelle nichts
+traegt, steht jetzt die Groessenordnung - *rund das Neunfache* wandert nicht
+mit den Daten. Wo sie traegt, ist die Tabelle nachgemessen und ausdruecklich
+als Momentaufnahme gekennzeichnet.
+
+Die Fixture in `tests/test_finanzierung.py` heisst `GEMESSEN` und trug die
+alten Zahlen. Sie ist jetzt gemessen.
+
+### Der Nullbefund, und er zaehlt auch
+
+Der Verdacht, mit dem ich angefangen habe, war ein anderer: `evaluate_gates`
+gibt der Messlatte **einen** Rahmen, waehrend der Kandidat einen Korb aus BTC
+und ETH handelt. Der Kommentar dazu sagte: *"'frame' bleibt die Messlatte:
+Buy-and-Hold und die Regime-Einteilung beziehen sich auf einen Markt, und das
+ist richtig so."* - behauptet, nicht gemessen. Und Befund 264 hatte gerade
+gezeigt, dass der Korb Gates haelt, die jedes Bein verliert.
+
+Gemessen, gegen einen gleichgewichteten, taeglich ausgeglichenen Korb:
+
+    Messlatte auf BTC allein    38,03 %
+    Messlatte auf dem Korb      39,63 %
+
+1,6 Punkte, und **kein Gate bewegt sich** - an keinem der beiden
+Betriebspunkte. Der Grund steht in `scaled_hold`: Die Messlatte wird ohnehin
+auf den Rueckgang der Strategie gefahren, und dabei faellt der Unterschied
+zwischen einem Bein und dem Korb weitgehend heraus.
+
+Mein Verdacht war also unbegruendet. Der Satz *"das ist richtig so"* stimmt -
+seit heute gemessen statt behauptet, und das ist der Unterschied, um den es
+in dieser Reihe geht.
+
+### Was davon fuer das Ziel zaehlt
+
+Dem Kandidaten fehlen **0,66 Punkte Jahresrendite** an einer wirtschaftlichen
+Schwelle. Nicht Rendite gegenueber Nichtstun - das schlaegt er um das
+Fuenffache, und zwar bei einem Achtel des Rueckgangs.
+
+Das ist eine andere Lage als "die Messlatte nicht geschafft", und sie war
+bisher nicht zu erkennen. **Gedreht wird an der Schwelle nichts**: Die 15 %
+sind eine wirtschaftliche Entscheidung und stehen als solche im Code. Was sich
+geaendert hat, ist allein, dass jetzt dasteht, welche der beiden Bedingungen
+faellt.
+
+Kostet keinen Versuch: gemessen wurde am vorhandenen Kandidaten, gerechnet
+wurden Berichte, ausgewaehlt wurde nichts.
+
+Volle Suite 3614 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

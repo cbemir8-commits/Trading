@@ -1489,7 +1489,7 @@ BEHOBEN: tuple[Richtung, ...] = (
         "in der ganzen Anwendung kein einziges Mal vor, nur in einem Test. "
         "Wer 'cli funding' laufen liess, aenderte damit, was die Strategie "
         "**sieht**, nie, was sie **zahlt**; gezahlt wurde ausnahmslos der "
-        "Vorgabewert. Der Funding-Block ist das 8,9-fache der Gebuehren "
+        "Vorgabewert. Der Funding-Block ist rund das Neunfache der Gebuehren "
         "(100), und der Bericht verspricht dem Nutzer genau diesen "
         "Unterschied. Jetzt baut 'schedule_from_frame' aus den geladenen "
         "Raten das Kostenmodell - je Bein die eigenen, Luecken behalten den "
@@ -1497,6 +1497,33 @@ BEHOBEN: tuple[Richtung, ...] = (
         "sind, und 'funding_raten' steht im Zulassungsnachweis: Ohne "
         "die Zahl sagt 'funding_satz' ab hier nicht mehr die Wahrheit",
         265,
+    ),
+    # Nachgesehen am Gate, das dem Bestehen am naechsten steht - und dort war
+    # viererlei zu finden, alles derselben Sorte.
+    Richtung(
+        "Das Messlatten-Gate faellt nicht an der Messlatte",
+        "'gate_benchmark' prueft zweierlei: risikobereinigt besser als Halten, "
+        "und eine Jahresrendite ueber der Betriebsschwelle von 15 %. Der "
+        "Bestand ist an der **ersten** nicht knapp, sondern beim Fuenffachen "
+        "(192,01 % gegen eine heruntergefahrene Latte von 38,03 %); offen ist "
+        "die zweite, und dort fehlen 0,66 Punkte. Gemeldet wurden trotzdem "
+        "Rendite und Latte - also die Bedingung, die **bestanden** ist: Wert "
+        "192,012 gegen Schwelle 38,031 bei Status DURCHGEFALLEN, und das an "
+        "zehn Ausgabestellen samt Bestenliste und Journal. Jetzt meldet das "
+        "Gate die bindende Bedingung; bestandene Eintraege aendern sich "
+        "nicht. **Daneben drei stehengebliebene Zahlen**: 'stand.py' rechnete "
+        "die Luecke richtig und nannte sie 'die Messlatte'; 'finanzierung.py' "
+        "fuehrte zweimal '0,17 Punkte' - die Zahl, die Befund 165 in "
+        "'stand.py' laengst zurueckgenommen hatte, hier von einem Test am "
+        "Leben gehalten, einmal davon in einem **erzeugten** Bericht; und die "
+        "Leiter im Modulkopf trug durchgehend die Renditen eines alten Laufs, "
+        "jede rund einen halben Punkt zu hoch (14,83 gegen gemessene 14,34), "
+        "die unterste Zeile bei 3 statt 2 von 11. Die Rueckgaenge stimmten "
+        "exakt - dieselbe Haelfte-richtig-Falle wie in 165. **Nullbefund "
+        "dazu**: Die Messlatte auf einem Bein statt auf dem Korb zu messen "
+        "bewegt sie um 1,6 Punkte (38,03 auf 39,63) und kein Gate - der "
+        "Kommentar 'das ist richtig so' ist damit erstmals gemessen",
+        267,
     ),
 )
 
@@ -1975,8 +2002,8 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
         frage="Funding-Satz",
         zahl="Nie gemessen. `data_store/funding/` ist leer, und der Backtest "
              "setzt den Bybit-Basiswert von 0,01 % je Achtstundenperiode ein "
-             "- rund 11 % im Jahr. Am Betriebspunkt sind das 63,79 Euro gegen "
-             "7,17 Euro Handelsgebuehren, also das **8,9-fache**, und 8,2 % "
+             "- rund 11 % im Jahr. Am Betriebspunkt sind das 67,24 Euro gegen "
+             "7,60 Euro Handelsgebuehren, also rund das **Neunfache**, und 8,2 % "
              "des Bruttogewinns. Die Bilanz reicht ueber die gemessene Leiter "
              "von 9 von 11 (bei 0 %) bis 3 von 11 (bei 55 %); bei 11 % steht "
              "sie auf 7. `cli finanzierung` rechnet es nach.",
@@ -2226,7 +2253,7 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "python -m cli funding --von 2020-03-30",
         "Laedt die echten Funding-Raten. Bisher rechnet jede Zahl mit dem "
         "Vorgabewert, und der ist der groesste Kostenblock des Systems - das "
-        "8,9-fache der Handelsgebuehren (Befund 100). **Wonach zu schauen "
+        "Neunfache der Handelsgebuehren (Befund 100). **Wonach zu schauen "
         "ist, steht seit Befund 250 fest:** Der Kandidat vertraegt bis "
         "6,0 % im Jahr, dann faellt 'Schlechtestes Jahr'; bei 9,8 % faellt "
         "'Parameter-Plateau'. Der Vorgabewert steht bei 10,9 % - also "
@@ -2762,8 +2789,16 @@ class Lage:
         )
         if z.offen:
             luecke = GateThresholds().min_cagr_pct - z.cagr_pct
+            # **Nicht die Messlatte** (Befund 267). Das Gate heisst so, aber
+            # die Luecke wird hier gegen ``min_cagr_pct`` gerechnet - seine
+            # zweite Bedingung. An der Messlatte selbst ist der Kandidat
+            # nicht knapp, sondern beim Fuenffachen. Die Zahl war richtig und
+            # ihr Name falsch; wer das las, suchte die Luecke an der falschen
+            # Stelle.
             zusatz = (
-                f" - die Messlatte um {luecke:.2f} Punkte"
+                f" - beim Messlatten-Gate fehlen {luecke:.2f} Punkte "
+                "Jahresrendite an der Betriebsschwelle, nicht an der "
+                "Messlatte"
                 if any("Messlatte" in g for g in z.offen)
                 else ""
             )

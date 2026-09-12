@@ -7341,7 +7341,7 @@ def finanzierung(
     ihn zu einer Aussage ueber die Daten macht und nicht mehr ueber den Code.
 
     Gemessen wird, wie stark das Urteil daran haengt. Am Betriebspunkt ist
-    Funding das 8,9-fache der Handelsgebuehren - der groesste Kostenblock des
+    Funding rund das Neunfache der Handelsgebuehren - der groesste Kostenblock des
     Systems steht auf einer Annahme.
 
     Mit ``--kipppunkt`` statt der Leiter: Wo genau faellt welches Gate?

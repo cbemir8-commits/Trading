@@ -881,11 +881,19 @@ class TestDerVergleichIstGemessen:
         Geprueft wird der **Auftragsteil**, nicht der ganze Bericht: Im
         Register steht 0,17 weiterhin, und dort gehoert die Zahl auch hin -
         als Geschichte des Eintrags, nicht als Stand.
+
+        **Und sie gehoert nicht der Messlatte** (Befund 267). Gerechnet wird
+        sie gegen ``min_cagr_pct``, also gegen die zweite Bedingung des
+        Gates; an der Messlatte selbst steht der Kandidat beim Fuenffachen.
+        Der Test ankert deshalb auf der Zahl und ihrer Herkunft, nicht auf
+        dem Namen des Gates.
         """
         text = _lage(cagr_pct=12.95, zweitpunkt=self._punkt()).bericht()
         auftrag = text.split("NUR AUF DEINEM RECHNER")[1]
 
-        assert "die Messlatte um 0.66 Punkte" in auftrag
+        assert "0.66 Punkte" in auftrag
+        assert "Betriebsschwelle" in auftrag
+        assert "nicht an der Messlatte" in auftrag
         assert "0,17" not in auftrag
 
     def test_andere_zahlen_ergeben_andere_saetze(self) -> None:
@@ -900,7 +908,7 @@ class TestDerVergleichIstGemessen:
         assert "10 von 11 Gates statt 6" in text
         # Ueber der Schwelle: die Luecke ist negativ und wird trotzdem genannt,
         # weil 'Messlatte' offen gemeldet ist.
-        assert "die Messlatte um -1.50 Punkte" in text
+        assert "-1.50 Punkte" in text
 
     def test_ohne_messung_wird_nichts_erfunden(self) -> None:
         """**Der Fall, der aus einer Luecke eine Behauptung machen wuerde.**

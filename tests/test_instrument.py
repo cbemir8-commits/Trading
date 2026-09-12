@@ -9,8 +9,14 @@ bis auf die letzte Stelle. Damit ist der Hebel nachweislich ungenutzt.
 ``test_spot_ist_ein_szenario_und_keine_notloesung`` - Die Folge. Ohne Funding
 faellt der groesste Kostenblock weg, und mit ihm zwei Gates.
 
-``test_knapp_daneben_bleibt_durchgefallen`` - Die Wache. 14,83 % gegen
-geforderte 15,00 % sind 0,17 Punkte zu wenig, und daran wird nichts gedreht.
+``test_knapp_daneben_bleibt_durchgefallen`` - Die Wache. Die Jahresrendite
+liegt unter den geforderten 15,00 %, und daran wird nichts gedreht.
+
+**Diese Datei hat es immer richtig benannt** (Befund 267): Verglichen wird
+gegen die Betriebsschwelle, nicht gegen die Messlatte. Anderswo hiess dieselbe
+Luecke "an der Messlatte fehlen X Punkte" - an der ist der Kandidat beim
+Fuenffachen. Die Zahlen in den Fixtures unten sind Testmaterial und kein
+Stand; gemessen sind 14,34 % gegen 15,00 %.
 """
 
 from __future__ import annotations
@@ -160,8 +166,10 @@ class TestEhrlichkeit:
     def test_knapp_daneben_bleibt_durchgefallen(self) -> None:
         """**Die Wache.**
 
-        14,83 % gegen 15,00 % sind 0,17 Punkte zu wenig. Die Messlatte steht
-        in beiden Spot-Laeufen weiter unter den offenen Gates.
+        Die Jahresrendite bleibt unter den geforderten 15,00 %. Das
+        Messlatten-Gate steht in beiden Spot-Laeufen weiter unter den offenen
+        Gates - und zwar wegen genau dieser Bedingung, nicht wegen der
+        Messlatte (Befund 267).
         """
         w = wahl()
 

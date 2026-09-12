@@ -398,11 +398,31 @@ def gate_benchmark(
             f"im Jahr. Unter {t.min_cagr_pct:.0f} % lohnt der Betrieb nicht."
         )
 
+    # **Gemeldet wird die Bedingung, an der es haengt** (Befund 267).
+    #
+    # Dieses Gate hat zwei Bedingungen und einen Namen. Faellt es allein an
+    # der Betriebsschwelle, standen hier bis hierher trotzdem Rendite und
+    # Messlatte - also die Bedingung, die **bestanden** ist. Gemessen am
+    # Bestand: Wert 192,012 gegen Schwelle 38,031, Status DURCHGEFALLEN. Wer
+    # die Zahlen liest, sieht das Fuenffache der Huerde und ein rotes Gate.
+    #
+    # ``value`` und ``threshold`` sind nicht Zierrat: Sie gehen in die
+    # Bestenliste, das Journal, ``gatelage`` und jede Gate-Tabelle - und sie
+    # sind die einzige Zahl, die sagt, **wie weit** ein Gate offen ist.
+    #
+    # Faellt die Messlatte-Bedingung, bleibt alles, wie es war; nur der Fall
+    # "risikobereinigt besser, aber zu wenig im Jahr" meldet jetzt die
+    # Jahresrendite gegen ihre Schwelle. Bestehende Eintraege aendern sich
+    # damit nicht - ein Gate, das bestanden hat, hat an beiden bestanden.
+    nur_die_schwelle = besser and not lohnend
+    wert = report.combined.cagr_pct if nur_die_schwelle else eigen
+    huerde = t.min_cagr_pct if nur_die_schwelle else messlatte * t.min_benchmark_edge
+
     return GateResult(
         name="Messlatte",
         status=GateStatus.PASS if besser and lohnend else GateStatus.FAIL,
-        value=round(eigen, 3),
-        threshold=round(messlatte * t.min_benchmark_edge, 3),
+        value=round(wert, 3),
+        threshold=round(huerde, 3),
         message=(
             f"Strategie {report.combined.total_return_pct:+.1f} % bei "
             f"{report.combined.max_drawdown_pct:.1f} % Rueckgang "
@@ -871,8 +891,9 @@ def gate_cost_stress(
     **Was dieses Gate nicht stresst: das Funding.** ``cfg.funding`` wird
     unveraendert durchgereicht. Hier stand bis Befund 101 der Satz, Gebuehren
     und Slippage seien "die einzigen Groessen im Backtest, die man garantiert
-    unterschaetzt". Das ist widerlegt: Beim Bestand stehen 7,17 EUR Gebuehren
-    gegen 63,79 EUR Funding, und der Funding-Satz ist ein ungepruefter
+    unterschaetzt". Das ist widerlegt: Beim Bestand stehen rund 7,60 EUR
+    Gebuehren gegen rund 67,24 EUR Funding, und der Funding-Satz ist ein
+    ungepruefter
     Vorgabewert (Befund 100). Das Gate verdoppelt also den kleineren Posten.
 
     Gemessen kostet die Luecke 34 % der Marge - 942,87 gegen 625,80 EUR -,
@@ -1575,7 +1596,16 @@ def evaluate_gates(
     zwischen Suche und Pruefung, nur eine Ebene tiefer.
 
     ``frame`` bleibt die **Messlatte**: Buy-and-Hold und die Regime-Einteilung
-    beziehen sich auf einen Markt, und das ist richtig so.
+    beziehen sich auf einen Markt.
+
+    Dass das richtig sei, stand hier lange als Behauptung. **Gemessen ist es
+    seit Befund 267**: Gegen einen gleichgewichteten, taeglich ausgeglichenen
+    Korb aus beiden Beinen statt gegen BTC allein steigt die heruntergefahrene
+    Messlatte von 38,03 auf 39,63 - 1,6 Punkte, und kein Gate bewegt sich, an
+    keinem der beiden Betriebspunkte. Der Grund steht in ``scaled_hold``: Die
+    Messlatte wird ohnehin auf den Rueckgang der Strategie gefahren, und
+    dabei faellt der Unterschied zwischen einem Bein und dem Korb weitgehend
+    heraus.
 
     ``referenzdaten`` sagt, ob auf Forschungskerzen gerechnet wird. Ohne
     Angabe wird es aus den Symbolen der Beine erkannt - erkannt und nicht
