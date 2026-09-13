@@ -4005,6 +4005,7 @@ def scan(
     Kandidat lebt.
     """
     from data.reference import PAIRS
+    from research.tageszeit import normal_99
     from research.vorteilsscan import (
         KOSTEN_MAKER_MAKER,
         MIND_ANDERE,
@@ -4223,6 +4224,20 @@ def scan(
 
         beste = zellen[0]
         stabil = pruefe_stabilitaet(close, beste.rueckblick, beste.halten)
+        # **Die Eichung laeuft immer** (Befund 277), nicht nur bei einem
+        # Treffer: Das 99. Perzentil der verschobenen Verteilung sagt, ob die
+        # Latte ueberhaupt richtig steht. Wer das nur bei einem Treffer
+        # rechnet, erfaehrt es nie - die Luecke, aus der Befund 276 entstand.
+        beste_probe = _probe_aus(
+            paar(log_close, beste.rueckblick, beste.halten), beste
+        )
+        if beste_probe is not None:
+            console.print(
+                f"[dim]Eichung der Latte: 99. Perzentil der verschobenen "
+                f"Verteilung {beste_probe.perzentil_99:.2f} gegen "
+                f"{normal_99():.3f} der Normalverteilung, auf "
+                f"L{beste.rueckblick}/H{beste.halten} (Latte {latte:.2f}).[/]"
+            )
         # **Die Schwelle gilt ueber alle Familien** - sonst haette jede
         # Erweiterung des Scans dieselbe Latte bei mehr Gelegenheiten.
         console.print(
@@ -4231,11 +4246,7 @@ def scan(
                 stabil,
                 KOSTEN_MAKER_MAKER,
                 gepruefte_zellen=gesamt,
-                probe=(
-                    _probe_aus(paar(log_close, beste.rueckblick, beste.halten), beste)
-                    if beste.ueber_schwelle(latte)
-                    else None
-                ),
+                probe=beste_probe,
             )
         )
 
@@ -6753,17 +6764,28 @@ def tageszeit(
     Fenster zu pruefen und das beste zu nehmen waere genau die Ueberanpassung,
     gegen die dieser Scan gebaut ist.
 
-    Drei Huerden wie im Vorteilsscan: auffaellig gegen die Zahl der
-    geprueften Fenster, stabil ueber beide Haelften, nach Gebuehren etwas
-    uebrig. Dessen vierte (Befund 276) fehlt hier mit Grund - siehe den Kopf
-    von ``research/tageszeit``. Kostet keinen Versuch.
+    Vier Huerden wie im Vorteilsscan: auffaellig gegen die Zahl der
+    geprueften Fenster, derselbe t-Wert auch gegen eine empirische
+    Nullverteilung, stabil ueber beide Haelften, nach Gebuehren etwas uebrig.
+    Kostet keinen Versuch.
+
+    **Die zweite Huerde ist hier eine andere** (Befund 277): Gewuerfelt wird
+    die Richtung jedes Tagesunterschieds, nicht die Lage eines Teilers - der
+    Vergleich ist gepaart, es gibt keinen Teiler. Gemessen ergab sie, dass
+    die Latte hier **haelt**: Das 99. Perzentil der gewuerfelten Verteilung
+    liegt bei 2,56 bis 2,59 gegen 2,576 der Normalverteilung. Der Befund 276
+    aus dem Vorteilsscan traegt also nicht hierher.
     """
     from research.tageszeit import (
+        normal_99,
         pruefe_stabilitaet,
         scanne_sitzungen,
         scanne_stunden,
+        tagesreihe,
         urteil,
+        vorzeichenprobe,
     )
+    from research.vorteilsscan import schwelle_fuer
 
     _configure_logging(verbose)
     settings = get_settings()
@@ -6807,7 +6829,24 @@ def tageszeit(
 
         bestes = fenster[0] if fenster else None
         stabil = pruefe_stabilitaet(frame, bestes) if bestes is not None else None
-        console.print(urteil(bestes, stabil, geprueft=len(fenster)))
+        # **Die Probe laeuft immer**, nicht nur wenn das Fenster ueber der
+        # Schwelle liegt: Ihr 99. Perzentil ist die Eichung der Latte selbst,
+        # und die gehoert in jeden Lauf. Wer sie nur bei einem Treffer
+        # rechnete, erfuehre nie, ob die Latte ueberhaupt richtig steht -
+        # genau die Luecke, aus der Befund 276 entstanden ist.
+        probe = None
+        if bestes is not None:
+            reihe = tagesreihe(frame, bestes.von, bestes.bis)
+            probe = vorzeichenprobe(reihe) if reihe is not None else None
+        if probe is not None:
+            latte = schwelle_fuer(len(fenster))
+            console.print(
+                f"[dim]Eichung der Latte: 99. Perzentil der gewuerfelten "
+                f"Verteilung {probe.perzentil_99:.2f} gegen {normal_99():.3f} "
+                f"der Normalverteilung, auf der '{bestes.name}' steht "
+                f"(Latte {latte:.2f}).[/]"
+            )
+        console.print(urteil(bestes, stabil, geprueft=len(fenster), probe=probe))
 
     console.print(
         f"\n[dim]Kosten je Roundtrip: {0.04:.2f} % vom Nominalwert. Ein "

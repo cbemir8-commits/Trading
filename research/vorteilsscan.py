@@ -501,11 +501,22 @@ class Rotationsprobe:
     jahrelang. Dann stehen zwar 585 Renditen da, aber nur sechzehn Bloecke -
     und die Latte, die fuer 585 Wuerfe gedacht ist, wird zur Formsache.
 
-    Die Verschiebung nimmt beides mit, weil sie beide Reihen unangetastet
-    laesst: die Traegheit des Teilers **und** die Form der Renditen. Auf
-    Tageskerzen traegt die zweite sichtbar bei - die Preisrueckblick-Spitze
-    wechselt 157-mal auf 1326 Beobachtungen und wird trotzdem von 23
-    Verschiebungen erreicht.
+    **Warum die Latte so weit danebenliegt** - berichtigt in Befund 277.
+    Zuerst stand hier, es sei "die Form der Renditen selbst". Zerlegt man es
+    auf der Preisrueckblick-Spitze von Befund 272 (BTC, Tageskerzen), sagen
+    die Zahlen etwas anderes:
+
+        Teiler      Renditen     99. Perzentil der Null
+        verschoben  echt                           4,14
+        gewuerfelt  echt                           2,80
+        verschoben  gemischt                       2,33
+        gewuerfelt  gemischt                       2,47
+
+    Keiner der beiden Anteile allein tut es. Es ist die **Bauart**: Teiler
+    und Folgerendite stammen aus derselben wandernden Reihe, und ein traeger
+    Teiler schiebt sich beim Verschieben durch die Phasen dieser Wanderung.
+    Ein reiner Irrweg ohne dicke Raender, ohne Regimewechsel und ohne Trend
+    reicht dafuer aus - nachgebaut in ``tests/test_vorzeichenprobe``.
 
     **Sie verwirft nicht pauschal.** Auf Viertelstunden wechselt derselbe
     Teiler 7720-mal auf 14.120 Beobachtungen, und keine einzige von 1764
@@ -522,6 +533,17 @@ class Rotationsprobe:
     rotationen: int
     bloecke: int
     """Wie oft der Teiler ueberhaupt den Zustand wechselt, plus eins."""
+
+    perzentil_99: float
+    """Das 99. Perzentil der verschobenen |t| - die **Eichung der Latte**.
+
+    ``schwelle_fuer`` rechnet mit einer Normalverteilung, deren 99. Perzentil
+    bei 2,576 liegt. Steht diese Zahl weit darueber, ist die Latte zu
+    niedrig - und genau das war sie hier (Befund 276). Sie wird seit 277 in
+    jedem Lauf berichtet und nicht erst, wenn eine Zelle anschlaegt: Wer die
+    Eichung nur bei einem Treffer rechnet, erfaehrt nie, ob die Latte
+    ueberhaupt richtig steht.
+    """
 
     @property
     def anteil(self) -> float:
@@ -599,22 +621,21 @@ def rotationsprobe(
     # ungefaehre: Abgerundet lieferte ein Deckel von 200 schon einmal 210.
     schritt = max(1, -(-(len(teiler) - 1) // hoechstens))
     beobachtet = abs(gemessen.t_wert)
-    haeufiger = 0
-    gezaehlt = 0
+    werte: list[float] = []
     for k in range(schritt, len(teiler), schritt):
         verschoben = zweiteilung(
             vorwaerts, np.roll(teiler, k), rueckblick=rueckblick, halten=halten
         )
-        if verschoben is None:
-            continue
-        gezaehlt += 1
-        if abs(verschoben.t_wert) >= beobachtet:
-            haeufiger += 1
+        if verschoben is not None:
+            werte.append(abs(verschoben.t_wert))
+    if not werte:
+        return None
     return Rotationsprobe(
         beobachtet=beobachtet,
-        haeufiger=haeufiger,
-        rotationen=gezaehlt,
+        haeufiger=int(sum(1 for w in werte if w >= beobachtet)),
+        rotationen=len(werte),
         bloecke=bloecke,
+        perzentil_99=float(np.percentile(werte, 99)),
     )
 
 

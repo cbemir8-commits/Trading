@@ -1682,8 +1682,32 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Ergebnis dreht sich** - was an der Latte scheiterte, scheitert "
         "jetzt frueher. Was die Probe nicht kann, steht dabei: Feiner als "
         "1 von 585 wird sie nicht, verlangt sind 0,029 % - auf dieser "
-        "Stichprobe ist 'nicht belegbar' nicht von 'nicht da' zu trennen",
+        "Stichprobe ist 'nicht belegbar' nicht von 'nicht da' zu trennen. "
+        "**Warum die Latte danebenlag, stand zuerst falsch da** (277): nicht "
+        "'die Form der Renditen', sondern die Bauart - Teiler und "
+        "Folgerendite aus derselben wandernden Reihe. Zerlegt: verschoben "
+        "auf echten Renditen 4,14, gewuerfelt auf echten 2,80, verschoben "
+        "auf gemischten 2,33. Ein reiner Irrweg reicht, um es zu erzeugen",
         276,
+        zuletzt=277,
+    ),
+    # Die Frage, die 276 offengelassen hat - und die Luecke, die dabei
+    # auffiel.
+    Richtung(
+        "Die Eichung der Latte lief nur bei einem Treffer",
+        "Befund 276 hat die Latte des Vorteilsscans als zu niedrig "
+        "nachgewiesen. Dieselbe 'schwelle_fuer' traegt den Tageszeit-Scan, "
+        "und ob der Befund dorthin traegt, war offen. **Gemessen: nein.** "
+        "Dort ist der Vergleich gepaart - innen gegen aussen am selben Tag -, "
+        "also wird nicht ein Teiler verschoben, sondern die Richtung jedes "
+        "Tagesunterschieds gewuerfelt. Das 99. Perzentil dieser Nullverteilung "
+        "liegt bei 2,57 bis 2,58 gegen 2,576 der Normalverteilung, und die "
+        "Tage haengen mit -0,12 bis +0,01 kaum zusammen. Die Latte haelt. "
+        "**Aufgefallen ist dabei die eigentliche Luecke**: Beide Scans "
+        "rechneten ihre Eichung nur, wenn eine Zelle anschlug - wer sie nur "
+        "dann rechnet, erfaehrt nie, ob die Latte ueberhaupt richtig steht. "
+        "Sie steht jetzt in jedem Lauf, in beiden Befehlen",
+        277,
     ),
 )
 

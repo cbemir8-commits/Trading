@@ -24716,3 +24716,100 @@ Kostet keinen Versuch: Gemessen wird die Struktur des Marktes, keine Regel.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
 
 Volle Suite 3743 passed, 1 skipped; ruff check sauber.
+
+## Zweihundertsiebenundsiebzig. Dieselbe Latte, der andere Scan - und eine Berichtigung
+
+Befund 276 hat im Vorteilsscan gefunden, dass `schwelle_fuer` zu niedrig
+steht. Dieselbe Funktion traegt den zweiten Scan dieses Projekts,
+`research/tageszeit`. Ob der Befund dorthin traegt, habe ich am Ende von 276
+als offene Frage hingeschrieben - und offene Fragen werden hier gemessen.
+
+### Die Probe muss zur Bauart passen
+
+Im Vorteilsscan wird der **Teiler verschoben**, weil es einen gibt, der
+stehenbleiben kann. Im Tageszeit-Scan gibt es keinen: `messe` vergleicht
+gepaart je Tag, innen gegen aussen am selben Tag, und beide Zustaende stehen
+jeden Tag nebeneinander. Was dort zufaellig sein soll, ist nicht die
+Zuordnung, sondern die **Richtung** - also wird sie gewuerfelt, zwanzigtausend
+Mal, und die Betraege bleiben unangetastet.
+
+Zwanzigtausend ist gemessen und nicht gegriffen. Bei 5.000 Zuegen schwankte
+der Anteil desselben Fensters ueber fuenf Saaten zwischen 0,16 % und 0,42 % -
+die Schranke lag bei 0,161 %, eine Saat haette das Urteil also gedreht. Bei
+20.000 liegen dieselben fuenf Saaten zwischen 0,245 % und 0,335 %, alle auf
+derselben Seite.
+
+### Gemessen: die Latte haelt dort
+
+    Markt   bestes Fenster   t      99. Perzentil der Null   Normalverteilung
+    BTC     21 Uhr         +2,95                     2,58              2,576
+    ETH     21 Uhr         +2,87                     2,57              2,576
+
+Kein Unterschied, der zaehlt. Die Tagesunterschiede haengen zudem kaum
+zusammen (Autokorrelation -0,12 bis +0,01), und es sind 2350 davon. Befund 63
+steht unveraendert: Nichts erreicht die Schwelle von 3,15, weder unter der
+Normalverteilung noch unter der gewuerfelten.
+
+### Die Luecke, die dabei auffiel
+
+Beide Scans rechneten ihre Probe nur, **wenn eine Zelle anschlug**. Wer die
+Eichung nur bei einem Treffer rechnet, erfaehrt nie, ob die Latte ueberhaupt
+richtig steht - genau die Luecke, aus der Befund 276 entstanden ist, und ich
+hatte sie beim Bauen der Probe gleich wieder eingebaut.
+
+Sie steht jetzt in jedem Lauf, in beiden Befehlen:
+
+    Eichung der Latte: 99. Perzentil der verschobenen Verteilung 4.14
+    gegen 2.576 der Normalverteilung, auf L48/H4 (Latte 3.62).
+
+### Und die Berichtigung an 276
+
+In Befund 276 steht: *"Was dort zusaetzlich wirkt, ist die Form der Renditen
+selbst."* Das war zu schnell geschlossen. Eine studentisierte Statistik ist
+gegen dicke Raender weitgehend unempfindlich - sie stehen im Zaehler und im
+Nenner. Nachgemessen an derselben Zelle (BTC, L48/H4):
+
+    Teiler      Renditen     99. Perzentil der Null   groesstes
+    verschoben  echt                           4,14       10,96
+    gewuerfelt  echt                           2,80        4,79
+    verschoben  gemischt                       2,33        3,40
+    gewuerfelt  gemischt                       2,47        3,06
+
+**Keiner der beiden Anteile allein tut es.** Die Traegheit auf gemischten
+Renditen liegt mit 2,33 sogar unter der Normalverteilung; die echten Renditen
+mit einem gedaechtnislosen Teiler kommen auf 2,80. Zusammen 4,14.
+
+Was zusammenwirkt, war damit noch nicht gesagt. Zwei synthetische Nachbauten
+mit Streuungsregimen und wanderndem Mittel haben es **nicht** reproduziert -
+beide blieben unter der Normalverteilung. Der dritte hat es:
+
+    Reihe                        Teiler verschoben   Teiler gewuerfelt
+    reiner Irrweg                             3,07                2,63
+    Irrweg mit langen Zyklen                  8,87                2,83
+    Irrweg mit fallender Streuung             3,01                2,59
+
+Es ist die **Bauart**: Teiler und Folgerendite stammen aus derselben
+wandernden Reihe. Ein traeger Teiler schiebt sich beim Verschieben durch die
+Phasen dieser Wanderung, und manche Phasen treffen sich. Ein reiner Irrweg
+ohne dicke Raender, ohne Regimewechsel und ohne Trend reicht dafuer aus - das
+ist der Nachbau, den die ersten beiden Versuche nicht getroffen hatten, weil
+dort Teiler und Renditen aus **verschiedenen** Quellen kamen.
+
+Damit ist auch klar, wie weit der Befund reicht: Die Latte des Vorteilsscans
+ist fuer eine preisabgeleitete Familie **strukturell** zu niedrig, auf jedem
+Markt, auch ohne jede Besonderheit der Daten. Der gemessene BTC-Wert von 4,14
+liegt zwischen dem reinen Irrweg (3,07) und dem zyklischen (8,87). Die
+Verschiebungsprobe ist deshalb keine Verschaerfung fuer den Einzelfall,
+sondern die Reparatur einer Huerde, die fuer diese Familie nie richtig stand.
+
+### Was das nicht aendert
+
+Kein Ergebnis dieses Projekts dreht sich. Die Berichtigung betrifft die
+**Erklaerung** in 276, nicht seinen Schluss: Die Marktbreiten-Zelle faellt
+weiter mit 2 von 584, die Preisrueckblick-Spitze mit 23 von 1325. Und Befund
+63 bleibt, wie er war - dort war die Latte von Anfang an richtig geeicht.
+
+Kostet keinen Versuch: Gemessen werden die eigenen Werkzeuge, kein Kandidat.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+Volle Suite 3765 passed, 1 skipped; ruff check sauber.
