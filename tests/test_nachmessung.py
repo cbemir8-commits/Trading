@@ -219,7 +219,7 @@ def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
         # ausdruecklich offengelassen. Befund 274 hat zwei davon nachgeholt -
         # Volumen und Spanne -, mit einer Schwelle ueber alle drei Familien
         # zusammen. Kein Treffer.
-        "Auf der Einstiegsseite ist in diesen Daten nichts Belastbares": 274,
+        "Einstiegsseite": 274,
     }
 
 

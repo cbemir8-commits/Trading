@@ -96,17 +96,21 @@ class TestDasRegisterFuehrtIhn:
 
         assert eintrag is not None
 
-    def test_er_nennt_alle_vier_messungen(self) -> None:
+    def test_er_bleibt_eine_zeile(self) -> None:
+        """**Befund 275.** Hier stand zuerst der ganze Journalabschnitt -
+        1455 Zeichen gegen einen Median von 48. Die Liste ist zum
+        Ueberfliegen da; die Ausfuehrung steht im Laborbuch."""
         eintrag = next(r for r in GESCHLOSSEN if r.befund == 272)
 
-        for zahl in ("+3,69", "+2,88", "-3,99", "+3,02"):
-            assert zahl in eintrag.ergebnis
+        assert len(eintrag.ergebnis) < 300
 
-    def test_und_was_er_nicht_deckt(self) -> None:
+    def test_und_traegt_trotzdem_die_zahl(self) -> None:
+        """Ein Stichwort ohne Zahl waere keine Messung, sondern eine
+        Behauptung."""
         eintrag = next(r for r in GESCHLOSSEN if r.befund == 272)
 
-        assert "nicht gemessen" in eintrag.ergebnis
-        assert "Bybit" in eintrag.ergebnis
+        assert "3,69" in eintrag.ergebnis
+        assert "3,49" in eintrag.ergebnis
 
 
 @pytest.mark.parametrize("markt,kerze", [("BTC", "1d"), ("ETH", "15m")])

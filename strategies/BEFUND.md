@@ -24493,3 +24493,79 @@ Versuchszaehler 198 unveraendert.
 
 Volle Suite 3709 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertfuenfundsiebzig. Die Liste ist keine Akte
+
+Nach dem Eintragen von Befund 274 den Bericht gelesen, den der Nutzer liest -
+`cli stand`. Unter **GEMESSEN UND GESCHLOSSEN** stehen neununddreissig
+Richtungen, jede in ein bis zwei Zeilen:
+
+    Stop-Weite          4 % ist das Maximum, beide Seiten schlechter   Nr. 28
+    Shorts              kein Vorteil in der Gegenrichtung              Nr. 13
+    Woelbung senken     unter 1 mathematisch unmoeglich                Nr. 70
+
+Und dann mein Eintrag, ueber fuenfundzwanzig Zeilen, mit vier Messreihen und
+drei Nebensaetzen.
+
+### Gemessen statt geschaetzt
+
+    Liste          n     Median   p90    laengster
+    GESCHLOSSEN   39         48   129    1455  <- mein Eintrag
+    OFFEN         16        356  1279    2158
+    BEHOBEN      136        203   583    1388
+
+**Das Dreissigfache des Medians** und das Sechsfache des zweitlaengsten (239).
+
+Und die Tabelle zeigt noch etwas: Die drei Listen haben **verschiedene**
+Laengen, und das ist kein Zufall. `OFFEN` und `BEHOBEN` sind Akten - ein
+offener Weg braucht seinen Stand, ein behobener Fehler seine Begruendung.
+`GESCHLOSSEN` ist eine Liste zum Ueberfliegen; ihr Registerkopf sagt es:
+
+> Die Liste beantwortet die Frage *"welche Suchwege sind gemessen zu"*.
+
+### Mein Fehler, zwei Zyklen alt
+
+Ich habe in `GESCHLOSSEN` einen Eintrag geschrieben, wie er nach `BEHOBEN`
+gehoert - und beim Nachmessen in 274 noch angehaengt statt ersetzt. Beides
+hat kein Test gemeldet, weil der Unterschied zwischen Liste und Akte im
+Registerkopf stand und nirgends im Code.
+
+Gekuerzt auf das Format der anderen:
+
+    Einstiegsseite    drei Familien, zwei Maerkte, zwei Kerzenlaengen:
+                      kein Fund haelt der Schwelle stand (bester 3,69
+                      gegen 3,49, in der zweiten Haelfte verschwunden)
+
+145 Zeichen statt 1455. Die Ausfuehrung steht im Laborbuch, wo sie hingehoert -
+in den Abschnitten 272 und 274.
+
+### Die Wache
+
+Kein Eintrag in `GESCHLOSSEN` ueber **300 Zeichen**. Die Grenze ist aus dem
+Bestand abgeleitet und nicht geraten: Der zweitlaengste traegt 239 und ist
+schon grenzwertig; 300 laesst jedem bestehenden Eintrag Luft und schneidet
+Journalabschnitte ab.
+
+Ein zweiter Test haelt fest, dass `BEHOBEN` laenger sein **darf** - sonst
+waere die naechste Vereinfachung, alle drei Listen gleich zu behandeln, und
+damit ginge die Begruendung verloren, die eine Akte ausmacht.
+
+### Und eine Wache, die keine war
+
+Ich hatte daneben eine zweite gebaut: *"Ohne Zahl waere es keine Messung,
+sondern eine Behauptung."* Sie forderte in jedem Eintrag eine Ziffer.
+
+Gemessen: **Zehn Eintraege nennen ihre Zahl als Wort** - *"Guete flach ueber
+sechs Fenster"*, *"unter 1 mathematisch unmoeglich"*. Das ist eine ebenso
+gueltige Form, und die Wache haette erzwungen, dort eine Ziffer
+hineinzuschreiben, damit ein Test gruen wird. Also genau die Sorte Pflege,
+gegen die dieses Register da ist.
+
+Sie ist entfallen und nicht abgeschwaecht worden - eine Wache, die man
+zurechtbiegt, bis sie passt, prueft nichts mehr.
+
+Kostet keinen Versuch: gebaut wurde an der Darstellung, nicht am Kandidaten.
+Versuchszaehler 198 unveraendert.
+
+Volle Suite 3711 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

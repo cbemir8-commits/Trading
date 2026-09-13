@@ -275,30 +275,10 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     ),
     # Der Schritt, den 270 verlangt hat - und die Antwort darauf.
     Richtung(
-        "Auf der Einstiegsseite ist in diesen Daten nichts Belastbares",
-        "270 hat alles ausser den Einstiegen ausgeschlossen. 'cli scan' misst "
-        "genau dort, ohne einen Versuch zu kosten: Sagt der Preisrueckblick "
-        "etwas ueber den Preisvorlauf, mehr als die Gebuehren? Gemessen auf "
-        "allen vier Kombinationen (272): **BTC Tageskerzen** t = +3,69 - "
-        "auffaellig, aber in der zweiten Haelfte verschwunden (3,25 auf "
-        "1,40), und die zweite haette einen Effekt dieser Groesse gesehen. "
-        "**ETH Tageskerzen** t = +2,88 gegen eine Schwelle von 3,23 bei 40 "
-        "Zellen. **BTC Viertelstunden** t = -3,99 - auffaellig, in der "
-        "zweiten Haelfte auf +1,53, das Vorzeichen dreht. **ETH "
-        "Viertelstunden** t = +3,02 gegen 3,42 bei 81 Zellen. Kein einziger "
-        "belastbarer Fund. Auf Viertelstunden liegen die besten Spannen "
-        "ausserdem bei 0,46 bis 0,54 des Roundtrips, also **unter** den "
-        "Kosten - das passt zu Befund 256. **Gilt fuer die Familie des "
-        "Bestands** (Preisrueckblick sagt Preisvorlauf vorher) und fuer diese "
-        "Daten; Funding- oder volumenbasierte Einstiege sind damit nicht "
-        "gemessen gewesen - **jetzt sind sie es** (274): Volumen und Spanne "
-        "als zwei weitere Familien, geteilt am gleitenden Median statt an "
-        "einem festen Wert, und mit einer Schwelle ueber **alle** Familien "
-        "zusammen (105 statt 35 Zellen, Latte 3,49 statt 3,23). Kein "
-        "einziger Treffer: Volumen kommt auf +2,87 / +1,68 / +2,67 / +2,10, "
-        "die Spanne auf +2,85 / -1,88 / +1,91 / +1,33. Damit ist die "
-        "Einstiegsseite auf diesen Daten ueber drei Familien gemessen, und "
-        "mit Bybit-Kerzen ist es neu zu messen",
+        "Einstiegsseite",
+        "drei Familien, zwei Maerkte, zwei Kerzenlaengen: kein Fund haelt der "
+        "Schwelle stand (bester 3,69 gegen 3,49, in der zweiten Haelfte "
+        "verschwunden)",
         272,
         zuletzt=274,
     ),
@@ -1665,6 +1645,25 @@ BEHOBEN: tuple[Richtung, ...] = (
         "bestehende Ueberschrift aendert sich - eine Aenderung daran machte "
         "jede Fundstelle im Laborbuch unauffindbar",
         273,
+    ),
+    # Beim Lesen des Berichts nach 274 aufgefallen.
+    Richtung(
+        "Ein Listeneintrag war als Akte geschrieben",
+        "'GESCHLOSSEN' beantwortet die Frage *welche Suchwege sind gemessen "
+        "zu* - eine Liste zum Ueberfliegen, Median 48 Zeichen. 'OFFEN' und "
+        "'BEHOBEN' sind Akten (Median 356 und 203), weil ein offener Weg "
+        "seinen Stand und ein behobener Fehler seine Begruendung braucht. Der "
+        "Unterschied stand im Registerkopf und nirgends im Code: Mein Eintrag "
+        "zu 272/274 trug **1455 Zeichen** - das Dreissigfache des Medians, "
+        "das Sechsfache des zweitlaengsten - und hat die Liste im Bericht "
+        "erschlagen. Gekuerzt auf 145; die Ausfuehrung steht im Laborbuch. "
+        "Eine Wache haelt 'GESCHLOSSEN' jetzt unter 300 Zeichen (abgeleitet "
+        "aus dem Bestand: der zweitlaengste traegt 239), eine zweite haelt "
+        "fest, dass 'BEHOBEN' laenger sein **darf**. **Eine dritte ist "
+        "entfallen**: Sie forderte in jedem Eintrag eine Ziffer - gemessen "
+        "nennen zehn ihre Zahl als Wort, und die Wache haette erzwungen, "
+        "dort eine Ziffer hineinzuschreiben, damit ein Test gruen wird",
+        275,
     ),
 )
 

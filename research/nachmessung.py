@@ -209,7 +209,7 @@ BEGRIFFE: dict[str, tuple[str, ...]] = {
         "sparsamer gesucht",
         "raeumt bis",
     ),
-    "Auf der Einstiegsseite ist in diesen Daten nichts Belastbares": (
+    "Einstiegsseite": (
         "Vorteilsscan",
         "vorteilsscan",
         "cli scan",

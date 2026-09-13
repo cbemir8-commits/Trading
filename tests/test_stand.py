@@ -1606,3 +1606,53 @@ class TestDieBilanzDerKiIstVollstaendig:
         herkuenfte = {v["herkunft"] for v in versuche if v["kennung"] in namen}
 
         assert herkuenfte == {"gen11 partnersuche"}
+
+
+class TestDieListeBleibtEineListe:
+    """**Befund 275.** ``GESCHLOSSEN`` beantwortet die Frage *welche Suchwege
+    sind gemessen zu* - eine Liste zum Ueberfliegen. ``OFFEN`` und ``BEHOBEN``
+    sind Akten: Ein offener Weg braucht seinen Stand, ein behobener Fehler
+    seine Begruendung.
+
+    Der Unterschied stand im Registerkopf und nirgends im Code. Der Eintrag zu
+    Befund 272/274 wurde deshalb wie ein Journalabschnitt geschrieben - 1455
+    Zeichen gegen einen Median von 48, das Dreissigfache - und hat die ganze
+    Liste im Bericht erschlagen.
+
+    Die Grenze ist aus dem Bestand abgeleitet und nicht geraten: Der
+    zweitlaengste Eintrag traegt 239 Zeichen und ist schon grenzwertig. 300
+    laesst jedem bestehenden Eintrag Luft und schneidet Journalabschnitte ab.
+    """
+
+    #: Kein Eintrag in ``GESCHLOSSEN`` darf laenger sein.
+    GRENZE = 300
+
+    def test_kein_eintrag_sprengt_die_liste(self) -> None:
+        zu_lang = [
+            (r.name, len(r.ergebnis))
+            for r in GESCHLOSSEN
+            if len(r.ergebnis) > self.GRENZE
+        ]
+
+        assert zu_lang == [], (
+            f"Zu lang fuer eine Uebersicht: {zu_lang}. Die Ausfuehrung "
+            f"gehoert ins Laborbuch, hier steht das Stichwort mit seiner Zahl."
+        )
+
+    # **Hier stand eine Wache, die keine war.** Sie forderte in jedem Eintrag
+    # eine Ziffer - "ohne Zahl waere es keine Messung". Gemessen: Zehn
+    # Eintraege nennen ihre Zahl als **Wort** ("Guete flach ueber sechs
+    # Fenster"), und das ist eine ebenso gueltige Form. Die Wache haette
+    # erzwungen, dort eine Ziffer hineinzuschreiben, damit ein Test gruen
+    # wird - also genau die Sorte Pflege, gegen die dieses Register da ist.
+    # Sie ist deshalb entfallen und nicht abgeschwaecht worden.
+
+    def test_die_akten_duerfen_laenger_sein(self) -> None:
+        """``BEHOBEN`` traegt Begruendungen und liegt deshalb hoeher - das
+        ist kein Versehen, sondern der Unterschied zwischen Liste und Akte."""
+        import statistics as st
+
+        kurz = st.median([len(r.ergebnis) for r in GESCHLOSSEN])
+        lang = st.median([len(r.ergebnis) for r in BEHOBEN])
+
+        assert lang > kurz
