@@ -24339,3 +24339,78 @@ Versuchszaehler 198 unveraendert.
 
 Volle Suite 3692 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertdreiundsiebzig. Beim dritten Mal ist es das Muster
+
+Befund 272 hat gefunden, dass `nachmessung.abschnitte` seine Wortliste aus
+`range(1, 200)` baute und damit seit Befund 200 dreiundsiebzig Abschnitte
+nicht sah. Die Wache, die dabei entstand, meldete sofort das Naechste:
+
+    Laborbuch bei 272, benennbar nur bis 299 - 'zahlwort' erweitern,
+    bevor die Abschnitte stumm werden.
+
+**Sieben Befunde Vorlauf.** Bei einem Befund je Zyklus sind das etwa vierzehn
+Stunden.
+
+### Warum die Grenze ueberhaupt da war
+
+`zahlwort` erzeugt die Ueberschriften des Laborbuchs. Der Hunderterbereich kam
+mit Befund 100 dazu, der Zweihunderter mit Befund 200 - jeder als eigener
+`if`-Zweig, jeder mit einem eigenen Absatz im Docstring, und beide nach einer
+ausdruecklichen Regel:
+
+> Dieselbe Regel wie bei 99 und 199: erst bauen, wenn es soweit ist. Ein
+> leerer String findet keine Ueberschrift, und der Test schlaegt an, statt
+> still das Falsche zu liefern.
+
+Die Regel ist gut. Sie verhindert ungetesteten Vorratscode, und sie hat einen
+sichtbaren Ausfall statt eines stillen.
+
+### Warum sie beim dritten Mal falsch wird
+
+Der Ausfall war nur **halb** sichtbar. `zahlwort` lieferte korrekt einen
+leeren String - aber `nachmessung` hatte seinen eigenen Bereich, und der
+blieb bei 199 stehen. Die Korrektur, die in `test_stand` gemacht wurde, kam
+dort nie an. **Siebzig Befunde lang hat niemand gemerkt, dass die Suche nach
+Wiederholungen blind war.**
+
+Ein dritter `if`-Zweig haette dasselbe Risiko neu gestellt: eine Stelle, die
+alle hundert Befunde angefasst werden muss, und beim letzten Mal kam die
+Pflege siebzig Befunde zu spaet.
+
+### Was jetzt dasteht
+
+Eine Tabelle statt einer Kette:
+
+    _HUNDERTER = ("", "Hundert", "Zweihundert", "Dreihundert", ...,
+                  "Neunhundert")
+
+Sie reicht bis **999** - die natuerliche Grenze des Musters, denn darueber
+braucht es "Tausend", und das ist eine andere Ebene mit anderen Regeln.
+
+Die Regel "erst bauen, wenn es soweit ist" gilt damit weiter, nur eine Ebene
+hoeher: Sie gilt jetzt fuer die Tausender, nicht fuer jeden einzelnen
+Hunderter.
+
+    Vorlauf bis zur naechsten Grenze:   vorher 7 Befunde, jetzt 707
+
+### Was sich nicht aendert
+
+**Keine bestehende Ueberschrift.** Die Zahlwoerter von 1 bis 299 sind
+Zeichen fuer Zeichen dieselben - ein Test haelt das ausdruecklich fest. Eine
+Aenderung daran machte jede Fundstelle im Laborbuch unauffindbar, und das
+waere ein groesserer Schaden als die Grenze selbst.
+
+### Was das mit dem Ziel zu tun hat
+
+Mittelbar, aber nicht wenig. Nach Befund 269 ist das Versuchsbudget knapp -
+das Fenster schliesst bei 231, heute stehen 198. Was verhindert, dass
+Versuche in schon gemessene Richtungen gehen, ist das Register und die Suche,
+die seine Verweise prueft. Ein Gedaechtnis, das die letzten dreiundsiebzig
+Eintraege nicht sieht, ist genau dort blind, wo zuletzt gearbeitet wurde.
+
+Kostet keinen Versuch: gebaut wurde an der Buchfuehrung, nicht am Kandidaten.
+Versuchszaehler 198 unveraendert.
+
+Volle Suite 3694 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

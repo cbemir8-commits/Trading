@@ -1639,6 +1639,25 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Abkuehlung",
         271,
     ),
+    # Die Wache aus 272 mit sieben Befunden Vorlauf - also jetzt.
+    Richtung(
+        "Das Laborbuch waechst schneller als seine Benennung",
+        "Befund 272 hat gefunden, dass 'nachmessung.abschnitte' bei 199 "
+        "aufhoerte und damit dreiundsiebzig Abschnitte nicht sah; die neue "
+        "Wache meldete daraufhin nur noch **sieben** Befunde Vorlauf bis zur "
+        "naechsten Grenze. 'zahlwort' reichte bis 299, weil Hundert und "
+        "Zweihundert als je eigener 'if'-Zweig gebaut waren - nach der Regel "
+        "'erst bauen, wenn es soweit ist'. Beim dritten Mal ist das keine "
+        "Sparsamkeit mehr, sondern eine Stelle, die alle hundert Befunde "
+        "angefasst werden muss, und beim letzten Mal kam die Pflege um "
+        "siebzig Befunde zu spaet. Jetzt traegt eine Hundertertabelle alle "
+        "bis **999** - die natuerliche Grenze des Musters, denn darueber "
+        "braucht es 'Tausend'. Die Regel gilt weiter, nur eine Ebene hoeher. "
+        "Der Vorlauf steigt damit von sieben auf 707 Befunde, und keine "
+        "bestehende Ueberschrift aendert sich - eine Aenderung daran machte "
+        "jede Fundstelle im Laborbuch unauffindbar",
+        273,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1911,6 +1930,21 @@ _ZEHNER = (
     "", "Zehn", "Zwanzig", "Dreissig", "Vierzig", "Fuenfzig", "Sechzig",
     "Siebzig", "Achtzig", "Neunzig",
 )
+#: Die Hunderter als **Tabelle** statt als Kette von Sonderfaellen.
+#:
+#: Hundert und Zweihundert standen einzeln da, jeder mit einem eigenen
+#: ``if``-Zweig und einem eigenen Absatz im Docstring - gebaut, als er
+#: gebraucht wurde. Beim dritten Mal ist das keine Sparsamkeit mehr, sondern
+#: eine Stelle, die alle hundert Befunde angefasst werden muss (Befund 273).
+#:
+#: Die Tabelle reicht bis 999, also bis an die natuerliche Grenze des Musters:
+#: Darueber braucht es "Tausend", und das ist eine andere Ebene. Die Regel
+#: "erst bauen, wenn es soweit ist" bleibt damit gewahrt - nur gilt sie jetzt
+#: fuer die Ebene und nicht fuer jeden einzelnen Hunderter.
+_HUNDERTER = (
+    "", "Hundert", "Zweihundert", "Dreihundert", "Vierhundert", "Fuenfhundert",
+    "Sechshundert", "Siebenhundert", "Achthundert", "Neunhundert",
+)
 #: Zahlen, die nicht nach dem Muster gebildet werden. Die Teens (13 bis 19)
 #: heissen "dreizehn" und nicht "dreiundzehn"; bei den Zwanzigern heisst die
 #: Eins "ein" und nicht "eins".
@@ -1936,20 +1970,28 @@ def zahlwort(n: int) -> str:
     liefern. Jetzt wird er gebraucht.
 
     **Und der Zweihunderterbereich mit Befund 200**, aus demselben Grund und
-    nach derselben Regel. Die Grenze rueckt weiter, sie verschwindet nicht:
-    Ueber 299 faellt die Suche wieder sichtbar aus.
+    nach derselben Regel.
+
+    **Beim dritten Mal ist es das Muster, nicht der Bereich** (Befund 273).
+    Hundert und Zweihundert standen als je eigener ``if``-Zweig da; ein
+    dritter waere eine Stelle gewesen, die alle hundert Befunde angefasst
+    werden muss. Jetzt traegt ``_HUNDERTER`` sie alle bis 999 - die
+    natuerliche Grenze des Musters, denn darueber braucht es "Tausend".
+
+    Die Regel "erst bauen, wenn es soweit ist" gilt weiter, nur eine Ebene
+    hoeher: Ueber 999 faellt die Suche sichtbar aus, und
+    ``test_nachmessung`` schlaegt zwanzig Befunde vorher an.
     """
-    if not 1 <= n <= 299:
-        # Dieselbe Regel wie bei 99 und 199: erst bauen, wenn es soweit ist.
-        # Ein leerer String findet keine Ueberschrift, und der Test schlaegt
-        # an, statt still das Falsche zu liefern.
+    if not 1 <= n <= 999:
+        # Dieselbe Regel wie bei 99, 199 und 299: erst bauen, wenn es soweit
+        # ist. Ein leerer String findet keine Ueberschrift, und der Test
+        # schlaegt an, statt still das Falsche zu liefern.
         return ""
-    if n >= 200:
-        rest = zahlwort(n - 200)
-        return f"Zweihundert{rest.lower()}" if rest else "Zweihundert"
     if n >= 100:
-        rest = zahlwort(n - 100)
-        return f"Hundert{rest.lower()}" if rest else "Hundert"
+        hundert, rest_n = divmod(n, 100)
+        rest = zahlwort(rest_n) if rest_n else ""
+        kopf = _HUNDERTER[hundert]
+        return f"{kopf}{rest.lower()}" if rest else kopf
     if n in _SONDER:
         return _SONDER[n]
     if n < 10:

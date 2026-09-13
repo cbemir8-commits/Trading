@@ -163,12 +163,33 @@ class TestZahlwort:
         assert zahlwort(213) == "Zweihundertdreizehn"
         assert zahlwort(221) == "Zweihunderteinundzwanzig"
 
+    def test_beim_dritten_mal_traegt_die_tabelle_alle(self) -> None:
+        """**Befund 273.** Hundert und Zweihundert standen als je eigener
+        ``if``-Zweig da. Ein dritter waere eine Stelle gewesen, die alle
+        hundert Befunde angefasst werden muss - und die beim letzten Mal um
+        siebzig Befunde zu spaet gekommen waere (Befund 272)."""
+        assert zahlwort(300) == "Dreihundert"
+        assert zahlwort(313) == "Dreihundertdreizehn"
+        assert zahlwort(421) == "Vierhunderteinundzwanzig"
+        assert zahlwort(999) == "Neunhundertneunundneunzig"
+
     def test_jenseits_der_grenze_faellt_die_suche_sichtbar_aus(self) -> None:
         """Ein leerer String findet keine Ueberschrift - dann schlaegt der
         Fundstellen-Test an, statt still nichts zu pruefen. Die Grenze ist nur
-        weitergerueckt, nicht verschwunden."""
-        assert zahlwort(300) == ""
+        weitergerueckt, nicht verschwunden: Ueber 999 braucht es "Tausend",
+        und das ist eine andere Ebene."""
+        assert zahlwort(1000) == ""
         assert zahlwort(0) == ""
+
+    def test_die_alten_zahlwoerter_haben_sich_nicht_veraendert(self) -> None:
+        """Die Ueberschriften stehen im Laborbuch - eine Aenderung daran
+        machte jede bestehende Fundstelle unauffindbar."""
+        assert zahlwort(1) == "Eins"
+        assert zahlwort(99) == "Neunundneunzig"
+        assert zahlwort(100) == "Hundert"
+        assert zahlwort(199) == "Hundertneunundneunzig"
+        assert zahlwort(200) == "Zweihundert"
+        assert zahlwort(299) == "Zweihundertneunundneunzig"
 
     def test_darstellung_nennt_ergebnis_und_fundstelle(self) -> None:
         text = str(Richtung("Mehr Maerkte", "keine neue Information", 27))
