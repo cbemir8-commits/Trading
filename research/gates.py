@@ -249,6 +249,29 @@ class GateThresholds:
     min_regime_profit_factor: float = 0.9
     cost_stress_factor: float = 2.0
     min_deflated_sharpe: float = 0.95
+    """Die Latte des haertesten Gates - **und sie ist keine 5-%-Schranke.**
+
+    Gemessen in Befund 278, mit den Trades des Bestands als Form und ohne
+    jeden Vorteil darin:
+
+        Versuche    95. Perzentil der Null    Fehlalarm bei 0,95
+               1                    0,9305                 3,36 %
+              10                    0,6275                 0,02 %
+              50                    0,4298      kein einziger von 5.000
+             198                    0,3070      kein einziger von 5.000
+
+    Bei **einem** Versuch tut die Formel, was ihr Name sagt. Mit jedem
+    weiteren zieht die Deflation die Nullverteilung staerker nach unten, als
+    die Auswahl es verlangt: Sie zieht den erwarteten Bestwert ab, teilt aber
+    durch den Fehler eines **einzelnen** Sharpe, und der ist groesser als die
+    Streuung des Maximums.
+
+    **Die Zahl bleibt trotzdem stehen.** Gates werden in diesem Projekt nicht
+    gelockert, damit etwas besteht - und am wenigsten dann, wenn man weiss,
+    wo der eigene Kandidat liegt. Was hier gemessen wurde, ist die Bedeutung
+    der Zahl, nicht ihr richtiger Wert; die Entscheidung darueber faellt
+    nicht im Code. ``cli abstand --eichung`` rechnet es jederzeit nach.
+    """
 
 
 # ---------------------------------------------------------------------------
@@ -1248,9 +1271,16 @@ def gate_deflated_sharpe(
         status=GateStatus.PASS if passed else GateStatus.FAIL,
         value=dsr,
         threshold=t.min_deflated_sharpe,
+        # **Keine Wahrscheinlichkeit** (Befund 278). Hier stand
+        # *"Wahrscheinlichkeit 46,3 %, dass der Vorteil echt ist"*. Gemessen
+        # ist die Zahl das nicht: Ein Suchlauf ganz ohne Vorteil landet bei
+        # 198 Versuchen im Median bei 0,136, und sein 95. Perzentil liegt bei
+        # 0,307. Die Latte von 0,95 ist also keine 5-%-Schranke, sondern eine
+        # weit strengere - nachzurechnen mit ``cli abstand --eichung``.
         message=(
-            f"Wahrscheinlichkeit {dsr:.1%}, dass der Vorteil nach {trials} "
-            f"Versuchen echt ist (Sharpe je Trade {per_trade_sharpe:.3f}"
+            f"Deflated Sharpe {dsr:.3f} ueber der Latte "
+            f"{t.min_deflated_sharpe:.2f} nach {trials} Versuchen "
+            f"(Sharpe je Trade {per_trade_sharpe:.3f}"
             + (
                 f", {stichprobe.effektiv} von {stichprobe.roh} Trades "
                 f"unabhaengig)"
@@ -1258,9 +1288,11 @@ def gate_deflated_sharpe(
                 else ")"
             )
             if passed
-            else f"Nach {trials} getesteten Hypothesen ist der Vorteil nur zu "
-            f"{dsr:.1%} echt (Sharpe je Trade {per_trade_sharpe:.3f}, Schiefe "
-            f"{skew:+.2f}) - zu wahrscheinlich Zufall."
+            else f"Deflated Sharpe {dsr:.3f} unter der Latte "
+            f"{t.min_deflated_sharpe:.2f} nach {trials} getesteten Hypothesen "
+            f"(Sharpe je Trade {per_trade_sharpe:.3f}, Schiefe {skew:+.2f}). "
+            f"Die Zahl ist keine Wahrscheinlichkeit - was die Latte bedeutet, "
+            f"rechnet 'cli abstand --eichung' nach."
         ),
     )
 

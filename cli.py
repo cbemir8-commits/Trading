@@ -4383,6 +4383,11 @@ def abstand(
         help="Zusaetzlich: Sitzen Stop und Ziele richtig, und wo sitzt der "
              "Ertrag ueberhaupt?",
     ),
+    eichung: bool = typer.Option(
+        False, "--eichung",
+        help="Zusaetzlich: Was bedeutet die Latte des Deflated Sharpe? "
+             "Wie oft nimmt sie ein Suchlauf ohne jeden Vorteil?",
+    ),
     spot: bool = typer.Option(
         False, "--spot",
         help="Auf dem Spot-Punkt rechnen: kein Funding, kein Hebel.",
@@ -4539,6 +4544,52 @@ def abstand(
         "\n[dim]Mehr Daten kosten keinen Versuch, eine neue Idee schon. "
         "Die Reihenfolge folgt daraus.[/]\n"
     )
+
+    if eichung:
+        from research.eichung import nullverteilung
+        from research.gates import GateThresholds
+
+        # **Was die Latte bedeutet** (Befund 278). Gezogen wird aus den
+        # eigenen Trades, auf Mittelwert null geschoben: dieselbe Form, kein
+        # Vorteil. So oft nimmt ein Suchlauf ohne jeden Vorteil die Huerde.
+        null = nullverteilung(
+            [float(x.net_pnl) for x in gehandelt.all_trades],
+            versuche=trials,
+            stichprobe=n,
+            latte=GateThresholds().min_deflated_sharpe,
+        )
+        console.print(f"[bold]Was die Latte bedeutet[/]  ({null.laeufe} Suchlaeufe)\n")
+        console.print(null.beschreibe())
+        eichtafel = Table(header_style="bold")
+        eichtafel.add_column("Versuche", justify="right")
+        eichtafel.add_column("95. Perzentil der Null", justify="right")
+        eichtafel.add_column("Fehlalarm bei 0,95", justify="right")
+        for versuchsstand in sorted({1, 10, 50, trials}):
+            teil = nullverteilung(
+                [float(x.net_pnl) for x in gehandelt.all_trades],
+                versuche=versuchsstand,
+                stichprobe=n,
+                latte=GateThresholds().min_deflated_sharpe,
+                laeufe=max(1000, null.laeufe // 4),
+            )
+            eichtafel.add_row(
+                f"{versuchsstand}{' <-- heute' if versuchsstand == trials else ''}",
+                f"{teil.latte_fuer_fuenf_prozent:.4f}",
+                f"{teil.fehlalarm:.3%}"
+                if teil.fehlalarm > 0
+                else f"< {teil.aufloesung:.3%}",
+            )
+        console.print()
+        console.print(eichtafel)
+        console.print(
+            "\n[dim]**Keine Aufforderung, die Latte zu senken.** Gates werden "
+            "in diesem Projekt nicht gelockert, damit etwas besteht - und "
+            "erst recht nicht, waehrend man weiss, wo der eigene Kandidat "
+            "steht. Gemessen ist, was die Zahl bedeutet, nicht wo sie stehen "
+            "soll. Die gezogenen Versuche sind ausserdem unabhaengig, die "
+            "echten korreliert - also ist das die guenstigste Lesart fuer die "
+            "Latte.[/]\n"
+        )
 
     if zielfenster:
         from research.gates import GateThresholds

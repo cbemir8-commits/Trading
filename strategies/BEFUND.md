@@ -24813,3 +24813,100 @@ Kostet keinen Versuch: Gemessen werden die eigenen Werkzeuge, kein Kandidat.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
 
 Volle Suite 3765 passed, 1 skipped; ruff check sauber.
+
+## Zweihundertachtundsiebzig. Die Latte des haertesten Gates, gemessen
+
+Befund 276 und 277 haben dieselbe Frage an die beiden Scans gestellt: Steht
+die Latte da, wo ihr Name behauptet? Im Vorteilsscan nein, im Tageszeit-Scan
+ja. Dieselbe Frage gehoert an das Gate, das die Zulassung blockiert - und
+dort stand die Antwort nirgends. `cli stand` schreibt seit jeher:
+
+> Wahrscheinlichkeit 46,3 %, dass der Vorteil nach 198 Versuchen echt ist.
+
+Ob die Zahl das **ist**, kam aus einer Formel und nicht aus einer Messung.
+
+### Wie gemessen wird
+
+Aus den eigenen Trades. Ihre 156 Ergebnisse werden auf den Mittelwert null
+verschoben - dieselbe Schiefe (3,49), dieselbe Woelbung (16,19), derselbe
+Schwanz, nur kein Vorteil mehr. Daraus wird ein **ganzer Suchlauf** gezogen:
+198 Kandidaten mit je 156 Trades, davon der beste genommen und durch dieselbe
+Gate-Rechnung geschickt - effektive Stichprobe 115 an die Formel, rohe Zahl
+fuer den Sharpe, Populationsmomente wie im Gate. Fuenftausend solcher
+Suchlaeufe.
+
+Keine Verteilungsannahme: Gezogen wird mit Zuruecklegen aus dem, was da ist.
+Ein Ersatz aus der Normalverteilung haette andere Schwaenze, und gerade die
+gehen ueber Schiefe und Woelbung in die Formel ein.
+
+### Das Ergebnis
+
+    Versuche   95. Perzentil   99. Perzentil   Median   Fehlalarm bei 0,95
+           1          0,9305          0,9808   0,0000              3,36 %
+          10          0,6275          0,7749   0,3039              0,02 %
+          50          0,4298          0,5970   0,1980    kein Lauf von 5.000
+         198          0,3070          0,4233   0,1356    kein Lauf von 5.000
+
+**Bei einem Versuch tut die Formel, was ihr Name sagt.** 95. Perzentil 0,93,
+Fehlalarm 3,36 % - das ist eine 5-%-Schranke, wie sie sein soll.
+
+**Mit jedem weiteren Versuch zieht die Deflation staerker, als die Auswahl es
+verlangt.** Bei 198 liegt das 95. Perzentil der Nullverteilung bei 0,307. Die
+Latte steht bei 0,95, und in fuenftausend Suchlaeufen **ohne jeden Vorteil**
+hat sie kein einziger genommen.
+
+Der Grund steht in der Formel: Sie zieht den erwarteten Bestwert ab und teilt
+durch den Fehler eines **einzelnen** Sharpe. Die Streuung des Maximums ueber
+198 Versuche ist kleiner als die eines einzelnen Schaetzers, also ist der
+Nenner zu gross und die standardisierte Groesse zu klein. Die Nullverteilung
+wird dadurch nicht nur verschoben, sondern gestaucht - ihr Median liegt bei
+0,136.
+
+Ein Nebenbefund aus dem Bauen: Bei **einem** Versuch ist der gezogene Sharpe
+in rund der Haelfte der Laeufe negativ, und `deflated_sharpe_ratio` liefert
+dann glatt 0. Die Nullverteilung hat dort einen Klumpen auf der Null. Ihr
+Median ist deshalb kein taugliches Vergleichsmass ueber Versuchsstaende
+hinweg - verglichen wird der obere Rand.
+
+### Was das heisst und was nicht
+
+**Es heisst:** Der Bestand steht heute bei **0,463** (Perpetual-Punkt, 115
+wirksame Beobachtungen). In der Nullverteilung liegt dieser Wert am
+**99,24. Perzentil** - 0,76 % der Suchlaeufe ohne jeden Vorteil erreichen
+ihn. Nach einer Schranke, die tatsaechlich fuenf Prozent zulaesst (0,307),
+waere sein Vorsprung bei diesem Versuchsstand also auffaellig, nach einer
+Ein-Prozent-Schranke (0,423) ebenfalls. Die Latte von 0,95 ist strenger als
+beide - kein einziger von fuenftausend Nulllaeufen hat sie genommen.
+
+**Es heisst nicht, dass die Latte zu senken waere.** Der Grundsatz dieses
+Projekts lautet: Gates werden nicht gelockert, damit etwas besteht. Er gilt
+hier besonders, weil ich die Messung gemacht habe, *waehrend* ich weiss, wo
+der eigene Kandidat liegt - genau der Vorgang, gegen den die Regel
+geschrieben ist. Die Schwelle ist unveraendert. Geaendert wurde die
+**Botschaft**: Das Gate behauptet keine Wahrscheinlichkeit mehr, sondern
+nennt seinen Wert und seine Latte, und `min_deflated_sharpe` traegt die
+gemessene Tabelle im Docstring.
+
+Und zwei Einschraenkungen, die dazugehoeren:
+
+**Die gezogenen Versuche sind unabhaengig, die echten nicht.** 198 Varianten
+derselben Regel auf derselben Historie sind hoch korreliert; korrelierte
+Versuche liefern ein kleineres Maximum und damit noch weniger Fehlalarme.
+Was hier steht, ist also die **guenstigste** Lesart fuer die Latte - sie ist
+mindestens so streng.
+
+**Fuenftausend Laeufe koennen hoechstens "kein einziger" sagen**, und das
+heisst 1 von 5.001 - also unter 0,02 %. Feiner wird es nur mit mehr Laeufen.
+
+### Gebaut
+
+`research/eichung.py` mit `nullverteilung`, und `cli abstand --eichung`
+rechnet es jederzeit nach - mit derselben effektiven Stichprobe wie das Gate
+(der Fehler aus Befund 135/139 hat hier einen eigenen Test). Der Befehl
+schreibt den Vorbehalt selbst mit aus, damit die Tabelle nicht ohne ihn
+gelesen wird.
+
+Kostet keinen Versuch: Gemessen wird die eigene Latte, kein Kandidat.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+Volle Suite 3791 passed, 1 skipped; ruff check sauber.

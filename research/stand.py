@@ -1709,6 +1709,24 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Sie steht jetzt in jedem Lauf, in beiden Befehlen",
         277,
     ),
+    # Dieselbe Frage am Gate, das die Zulassung blockiert.
+    Richtung(
+        "Der Deflated Sharpe meldete eine Wahrscheinlichkeit, die er nicht ist",
+        "Das Gate schrieb *'Wahrscheinlichkeit 46,3 %, dass der Vorteil echt "
+        "ist'*. Gemessen mit den Trades des Bestands als Form und ohne jeden "
+        "Vorteil darin (5.000 ganze Suchlaeufe): Bei **einem** Versuch stimmt "
+        "die Formel - 95. Perzentil 0,9305, Fehlalarm 3,36 %. Bei 198 liegt "
+        "das 95. Perzentil bei **0,3070**, und kein einziger von 5.000 "
+        "Nulldurchlaeufen erreicht 0,95. Die Deflation zieht den erwarteten "
+        "Bestwert ab, teilt aber durch den Fehler eines **einzelnen** Sharpe, "
+        "und der ist groesser als die Streuung des Maximums. **Die Latte "
+        "bleibt stehen**: Gates werden nicht gelockert, damit etwas besteht, "
+        "und am wenigsten, wenn man weiss, wo der eigene Kandidat liegt. "
+        "Geaendert wurde die Botschaft, nicht die Schwelle. Der Bestand liegt "
+        "mit 0,463 am 99,24. Perzentil dieser Null; nachzurechnen mit "
+        "'cli abstand --eichung'",
+        278,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
