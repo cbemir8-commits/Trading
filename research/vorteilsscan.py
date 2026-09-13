@@ -107,6 +107,45 @@ class Zelle:
         return abs(self.t_wert) >= schwelle
 
 
+def zweiteilung(
+    vorwaerts: np.ndarray,
+    teiler: np.ndarray,
+    *,
+    rueckblick: int,
+    halten: int,
+) -> Zelle | None:
+    """Die Spanne zwischen zwei Zustaenden - fuer **jeden** Teiler.
+
+    ``teiler > 0`` ist der eine Zustand, der Rest der andere; gemessen wird
+    die Differenz der Folgerenditen. Ob der Teiler eine vergangene Rendite
+    ist, ein Volumen ueber seinem Median oder eine Tagesspanne, aendert an
+    der Rechnung nichts (Befund 274).
+
+    **Die Form ist der Kern der Messung**, nicht die Kennzahl: Eine Differenz
+    zwischen zwei Zustaenden enthaelt den Grundtrend nicht - eine bedingte
+    Rendite schon, und bei einem Markt, der sich vervielfacht hat, ist das
+    ueberwiegend Trend und kein Vorteil.
+    """
+    if len(vorwaerts) != len(teiler):
+        raise ValueError("Zu jedem Vorwaertswert gehoert genau ein Teiler.")
+
+    auf, ab = vorwaerts[teiler > 0], vorwaerts[teiler <= 0]
+    if len(auf) < MIND_BEOBACHTUNGEN or len(ab) < MIND_BEOBACHTUNGEN:
+        return None
+
+    differenz = (float(np.mean(auf)) - float(np.mean(ab))) * 100
+    fehler = (
+        np.sqrt(np.var(auf, ddof=1) / len(auf) + np.var(ab, ddof=1) / len(ab)) * 100
+    )
+    return Zelle(
+        rueckblick=rueckblick,
+        halten=halten,
+        beobachtungen=len(vorwaerts),
+        spanne_pct=differenz,
+        t_wert=float(differenz / fehler) if fehler > 0 else 0.0,
+    )
+
+
 def spanne(log_close: np.ndarray, rueckblick: int, halten: int) -> Zelle | None:
     """Aufwaerts-minus-Abwaerts-Spanne fuer ein Rueckblick-Halten-Paar.
 
@@ -120,23 +159,61 @@ def spanne(log_close: np.ndarray, rueckblick: int, halten: int) -> Zelle | None:
 
     vergangen = log_close[rueckblick:-halten] - log_close[: -rueckblick - halten]
     vorwaerts = log_close[rueckblick + halten :] - log_close[rueckblick:-halten]
-    v, f = vergangen[::halten], vorwaerts[::halten]
-
-    auf, ab = f[v > 0], f[v <= 0]
-    if len(auf) < MIND_BEOBACHTUNGEN or len(ab) < MIND_BEOBACHTUNGEN:
-        return None
-
-    differenz = (float(np.mean(auf)) - float(np.mean(ab))) * 100
-    fehler = (
-        np.sqrt(np.var(auf, ddof=1) / len(auf) + np.var(ab, ddof=1) / len(ab)) * 100
-    )
-    return Zelle(
+    return zweiteilung(
+        vorwaerts[::halten],
+        vergangen[::halten],
         rueckblick=rueckblick,
         halten=halten,
-        beobachtungen=len(f),
-        spanne_pct=differenz,
-        t_wert=float(differenz / fehler) if fehler > 0 else 0.0,
     )
+
+
+def spanne_nach_kennzahl(
+    log_close: np.ndarray,
+    kennzahl: np.ndarray,
+    rueckblick: int,
+    halten: int,
+) -> Zelle | None:
+    """Dasselbe, aber geteilt nach einer **anderen** Kennzahl (Befund 274).
+
+    ``kennzahl`` steht je Balken und wird gegen ihren gleitenden Median ueber
+    ``rueckblick`` Balken gehalten: darueber ist der eine Zustand, darunter
+    der andere. Der Median statt eines festen Werts, weil die Groesse ueber
+    Jahre waechst - ein fester Schwellwert waere in der zweiten Haelfte des
+    Zeitraums ein anderer Zustand als in der ersten.
+
+    Gelesen wird die Kennzahl **bis** zum Entscheidungsbalken, die Rendite
+    danach. Ohne diese Trennung misst man die Gegenwart mit sich selbst.
+    """
+    if rueckblick < 1 or halten < 1 or rueckblick + halten >= len(log_close):
+        return None
+    if len(kennzahl) != len(log_close):
+        raise ValueError("Kennzahl und Kurse muessen gleich lang sein.")
+
+    vorwaerts = log_close[rueckblick + halten :] - log_close[rueckblick:-halten]
+    gleitend = _gleitender_median(kennzahl, rueckblick)
+    # ``[rueckblick:-halten]`` wie bei der Rendite: derselbe Entscheidungs-
+    # balken, nur ein anderer Teiler.
+    lage = (kennzahl - gleitend)[rueckblick:-halten]
+    return zweiteilung(
+        vorwaerts[::halten],
+        lage[::halten],
+        rueckblick=rueckblick,
+        halten=halten,
+    )
+
+
+def _gleitender_median(werte: np.ndarray, fenster: int) -> np.ndarray:
+    """Median der letzten ``fenster`` Werte **einschliesslich** des aktuellen.
+
+    Am Anfang, wo das Fenster noch nicht voll ist, steht der Median des
+    bisher Bekannten - kein Blick nach vorn.
+    """
+    werte = np.asarray(werte, dtype=float)
+    aus = np.empty_like(werte)
+    for i in range(len(werte)):
+        von = max(0, i - fenster + 1)
+        aus[i] = np.median(werte[von : i + 1])
+    return aus
 
 
 def scanne(

@@ -3979,6 +3979,7 @@ def scan(
         KOSTEN_MAKER_MAKER,
         pruefe_stabilitaet,
         scanne,
+        schwelle_fuer,
         urteil,
     )
 
@@ -4005,6 +4006,40 @@ def scan(
             console.print(f"[red]{symbol}: zu wenig Daten.[/]")
             continue
 
+        # **Zwei weitere Familien, eine gemeinsame Schwelle** (Befund 274).
+        #
+        # Befund 272 hat die Preisrueckblick-Familie gemessen und
+        # ausdruecklich offengelassen, ob Volumen oder Spanne etwas tragen.
+        # Sie werden **immer** mitgerechnet und nie einzeln: Wer eine Familie
+        # allein scannte, haette dieselbe Latte bei einem Drittel der
+        # Gelegenheiten - genau das Datenbaggern, gegen das dieser Befehl
+        # gebaut ist. Deshalb gibt es hier kein Flag, das sie trennt.
+        import numpy as np
+
+        from research.vorteilsscan import spanne_nach_kennzahl
+
+        log_close = np.log(close)
+        weitere = {
+            "Volumen": frame["volume"].to_numpy(dtype=float),
+            "Spanne": (
+                (frame["high"].to_numpy(dtype=float) - frame["low"].to_numpy(dtype=float))
+                / close
+            ),
+        }
+        nebenfamilien = {
+            name: sorted(
+                (
+                    z
+                    for L in raster
+                    for H in raster
+                    if (z := spanne_nach_kennzahl(log_close, kennzahl, L, H))
+                    is not None
+                ),
+                key=lambda z: -abs(z.t_wert),
+            )
+            for name, kennzahl in weitere.items()
+        }
+
         console.print(
             f"\n[bold]{symbol}[/] {interval_obj.label}, {len(frame)} Kerzen "
             f"({frame['open_time'].iloc[0]:%Y-%m-%d} bis "
@@ -4028,10 +4063,28 @@ def scan(
             )
         console.print(tabelle)
 
+        # Die Nebenfamilien als Zeile, nicht als Tabelle: Gefragt ist, **ob**
+        # dort etwas ist, und die Antwort passt in eine Zeile.
+        gesamt = len(zellen) + sum(len(v) for v in nebenfamilien.values())
+        latte = schwelle_fuer(gesamt)
+        for name, zweig in nebenfamilien.items():
+            if not zweig:
+                console.print(f"[dim]  {name}: zu wenig Beobachtungen.[/]")
+                continue
+            spitze = zweig[0]
+            ueber = sum(1 for z in zweig if abs(z.t_wert) >= latte)
+            console.print(
+                f"[dim]  {name}: bester t = {spitze.t_wert:+.2f} "
+                f"(L{spitze.rueckblick}/H{spitze.halten}, "
+                f"n={spitze.beobachtungen}), ueber der Schwelle: {ueber}[/]"
+            )
+
         beste = zellen[0]
         stabil = pruefe_stabilitaet(close, beste.rueckblick, beste.halten)
+        # **Die Schwelle gilt ueber alle Familien** - sonst haette jede
+        # Erweiterung des Scans dieselbe Latte bei mehr Gelegenheiten.
         console.print(
-            urteil(beste, stabil, KOSTEN_MAKER_MAKER, gepruefte_zellen=len(zellen))
+            urteil(beste, stabil, KOSTEN_MAKER_MAKER, gepruefte_zellen=gesamt)
         )
 
     console.print(

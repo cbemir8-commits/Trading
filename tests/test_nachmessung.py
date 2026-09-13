@@ -215,6 +215,11 @@ def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
         # Zaehler von 198. Dort war der Stand entscheidend, anders als im
         # Katalog; geschlossen bleibt die Richtung durch den Holdout (186).
         "Suchdisziplin als Weg": 194,
+        # Befund 272 hat die Preisrueckblick-Familie gemessen und die anderen
+        # ausdruecklich offengelassen. Befund 274 hat zwei davon nachgeholt -
+        # Volumen und Spanne -, mit einer Schwelle ueber alle drei Familien
+        # zusammen. Kein Treffer.
+        "Auf der Einstiegsseite ist in diesen Daten nichts Belastbares": 274,
     }
 
 

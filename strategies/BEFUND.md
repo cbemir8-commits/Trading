@@ -24414,3 +24414,82 @@ Versuchszaehler 198 unveraendert.
 
 Volle Suite 3694 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertvierundsiebzig. Zwei weitere Familien, eine Schwelle
+
+Befund 272 hat die Einstiegsseite gemessen und leer gefunden - mit einer
+ausdruecklichen Grenze:
+
+> Er gilt fuer **eine Familie**. Der Scan misst, ob der Preisrueckblick etwas
+> ueber den Preisvorlauf sagt. Einstiege, die auf Funding, Volumen oder
+> Marktbreite aufbauen, sind damit **nicht** gemessen und nicht
+> ausgeschlossen.
+
+Zwei davon lassen sich mit den vorhandenen Daten messen: **Volumen** und
+**Spanne** (Hoch minus Tief). Funding bleibt aussen vor - der Speicher ist
+leer, und das ist der Schritt beim Nutzer.
+
+### Die Form ist der Kern, nicht die Kennzahl
+
+`spanne()` teilte bisher nach dem Vorzeichen der vergangenen Rendite und mass
+die Differenz der Folgerenditen. Dieselbe Rechnung funktioniert mit jedem
+Teiler - das steht jetzt als `zweiteilung()` da, und `spanne()` ruft sie auf.
+Keine zweite Rechnung, die auseinanderlaufen kann.
+
+Die neuen Familien teilen am **gleitenden Median** der Kennzahl statt an
+einem festen Wert. Der Grund: Volumen und Spanne wachsen ueber Jahre. Ein
+fester Schwellwert waere in der zweiten Haelfte des Zeitraums ein anderer
+Zustand als in der ersten - und dann misst man den Kalender.
+
+### Der Punkt, an dem so etwas zum Datenbaggern wird
+
+Drei Familien sind dreimal so viele Gelegenheiten. Wer die Schwelle je
+Familie rechnet, hat dieselbe Latte bei dreifacher Chance - genau der Fehler,
+gegen den dieser Scan gebaut ist und gegen den auch das
+Deflated-Sharpe-Gate rechnet.
+
+**Deshalb gilt die Schwelle ueber alle Familien zusammen:**
+
+    eine Familie      35 Zellen    Schwelle 3,23
+    drei Familien    105 Zellen    Schwelle 3,49
+
+Und deshalb gibt es **kein Flag**, das eine Familie allein laufen laesst. Es
+waere die bequemste Art, die Latte zu senken, und ein Test haelt fest, dass es
+keines gibt.
+
+### Das Ergebnis
+
+    Markt / Kerze   Preisrueckblick   Volumen   Spanne   Schwelle
+    BTC 1d                   +3,69     +2,87    +2,85       3,49
+    ETH 1d                   +2,88     +1,68    -1,88       3,48
+    BTC 15m                  -3,99     +2,67    +1,91       3,49
+    ETH 15m                  +3,02     +2,10    +1,33       3,49
+
+**Keine einzige Volumen- oder Spannen-Zelle erreicht die Schwelle.** Die
+beiden Preisrueckblick-Funde, die sie erreichen, sind nach Befund 272 in der
+zweiten Haelfte des Zeitraums verschwunden.
+
+Die hoechsten Nebenwerte liegen bei +2,87 und +2,85 - deutlich unter 3,49 und
+in einer Gegend, in der bei 105 Zellen rein zufaellig mehrere Treffer zu
+erwarten sind.
+
+### Was damit steht und was nicht
+
+**Steht:** Auf den vorhandenen Daten ist die Einstiegsseite ueber drei
+Familien gemessen. Das war nach Befund 270 die letzte Richtung, die noch
+offen war, und sie ist es jetzt nicht mehr - ohne dass ein einziger Versuch
+dafuer ausgegeben wurde.
+
+**Steht nicht:** Funding als Kennzahl (der Speicher ist leer), Marktbreite
+ueber mehr als zwei Maerkte, und alles, was mit Bybit-Daten anders aussehen
+koennte. Das bleibt, was es war: der Schritt beim Nutzer.
+
+Ein Scan ueber drei Familien ist kein Beweis, dass es nichts gibt. Er ist die
+Auskunft, dass in dem, was messbar war, nichts Belastbares steckt - und dass
+weitere Versuche auf diesen Daten die Huerde heben, ohne etwas zu holen.
+
+Kostet keinen Versuch: Gemessen wird die Struktur des Marktes, keine Regel.
+Versuchszaehler 198 unveraendert.
+
+Volle Suite 3709 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

@@ -291,8 +291,16 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         "Kosten - das passt zu Befund 256. **Gilt fuer die Familie des "
         "Bestands** (Preisrueckblick sagt Preisvorlauf vorher) und fuer diese "
         "Daten; Funding- oder volumenbasierte Einstiege sind damit nicht "
-        "gemessen, und mit Bybit-Kerzen ist es neu zu messen",
+        "gemessen gewesen - **jetzt sind sie es** (274): Volumen und Spanne "
+        "als zwei weitere Familien, geteilt am gleitenden Median statt an "
+        "einem festen Wert, und mit einer Schwelle ueber **alle** Familien "
+        "zusammen (105 statt 35 Zellen, Latte 3,49 statt 3,23). Kein "
+        "einziger Treffer: Volumen kommt auf +2,87 / +1,68 / +2,67 / +2,10, "
+        "die Spanne auf +2,85 / -1,88 / +1,91 / +1,33. Damit ist die "
+        "Einstiegsseite auf diesen Daten ueber drei Familien gemessen, und "
+        "mit Bybit-Kerzen ist es neu zu messen",
         272,
+        zuletzt=274,
     ),
 )
 
