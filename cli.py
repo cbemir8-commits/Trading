@@ -3956,6 +3956,24 @@ def scan(
     **beiden Haelften** des Zeitraums dasselbe Vorzeichen hat und nach
     Gebuehren etwas uebrig laesst. Die mittlere Huerde ist die, an der der
     erste 15-Minuten-Fund gescheitert ist.
+
+    **Was der Lauf ueber alle vier Kombinationen ergab** (Befund 272):
+
+        Markt   Kerze   bester t   Urteil
+        BTC     1d        +3,69    auffaellig, zweite Haelfte 1,40
+        ETH     1d        +2,88    Schwelle 3,23 nicht erreicht
+        BTC     15m       -3,99    zweite Haelfte +1,53, Vorzeichen dreht
+        ETH     15m       +3,02    Schwelle 3,42 nicht erreicht
+
+    Kein belastbarer Fund. Das gilt fuer die Familie, aus der der Bestand
+    stammt - Preisrueckblick sagt Preisvorlauf vorher -, nicht fuer jede
+    denkbare Einstiegsidee, und es gilt fuer die Forschungskerzen; mit
+    Bybit-Daten ist es neu zu messen.
+
+    ``--intervall`` ist deshalb bewusst anzugeben: Der Bestand steht auf
+    Tageskerzen, die Vorgabe hier war seit jeher ``15``. Wer den Befehl ohne
+    Nachdenken aufruft, misst die andere Kerzenlaenge als die, auf der sein
+    Kandidat lebt.
     """
     from research.vorteilsscan import (
         KOSTEN_MAKER_MAKER,

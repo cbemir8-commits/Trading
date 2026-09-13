@@ -60,6 +60,42 @@ class Abschnitt:
         return self.von <= zeile <= self.bis
 
 
+def _nach_wort() -> dict[str, int]:
+    """Zahlwort auf Nummer - so weit, wie ``zahlwort`` reicht.
+
+    **Hier stand ``range(1, 200)``** (Befund 272). Seit das Laborbuch die
+    Zweihundert ueberschritten hat, war damit **jeder** Abschnitt darueber
+    fuer diesen Parser unsichtbar - und mit ihm fuer jede Wache, die auf
+    ``abschnitte`` aufbaut. Aufgefallen ist es erst beim ersten geschlossenen
+    Suchweg jenseits von 199: Seine Fundstelle zeigte ins Leere, obwohl der
+    Abschnitt dasteht.
+
+    Dieselbe Grenze hatte ``test_die_liste_reicht_bis_an_die_gegenwart``
+    schon einmal, und dort wurde sie auf 300 hochgesetzt. Die Korrektur ist
+    hier nie angekommen - eine Zahl an zwei Stellen, von denen eine gepflegt
+    wurde.
+
+    Deshalb jetzt gar keine Zahl: Gezaehlt wird, solange ``zahlwort`` ein
+    Wort liefert. Wer die Tabelle dort erweitert, erweitert diesen Parser
+    mit - und wer es vergisst, bekommt die Wache in ``test_nachmessung``.
+    """
+    aus: dict[str, int] = {}
+    n = 1
+    while wort := zahlwort(n):
+        aus[wort.lower()] = n
+        n += 1
+    return aus
+
+
+def hoechste_benennbare() -> int:
+    """Die groesste Nummer, fuer die es ein Zahlwort gibt.
+
+    Die Grenze, an der das Laborbuch stumm wuerde: Ein Befund darueber
+    bekaeme keine Ueberschrift, die dieser Parser lesen kann.
+    """
+    return max(_nach_wort().values())
+
+
 def abschnitte(text: str) -> tuple[Abschnitt, ...]:
     """Zerlegt das Laborbuch in seine Befunde.
 
@@ -69,7 +105,7 @@ def abschnitte(text: str) -> tuple[Abschnitt, ...]:
     abweicht - wird sie hier aus derselben Funktion aufgebaut.
     """
     zeilen = text.splitlines()
-    nach_wort = {zahlwort(n).lower(): n for n in range(1, 200) if zahlwort(n)}
+    nach_wort = _nach_wort()
     roh: list[tuple[int, int, str]] = []
     for i, zeile in enumerate(zeilen):
         treffer = _UEBERSCHRIFT.match(zeile)
@@ -172,6 +208,13 @@ BEGRIFFE: dict[str, tuple[str, ...]] = {
         "hoechster Versuchsstand",
         "sparsamer gesucht",
         "raeumt bis",
+    ),
+    "Auf der Einstiegsseite ist in diesen Daten nichts Belastbares": (
+        "Vorteilsscan",
+        "vorteilsscan",
+        "cli scan",
+        "in der zweiten Haelfte verschwunden",
+        "Einstiegsseite",
     ),
 }
 

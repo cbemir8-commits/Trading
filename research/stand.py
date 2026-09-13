@@ -273,6 +273,27 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         189,
         zuletzt=194,
     ),
+    # Der Schritt, den 270 verlangt hat - und die Antwort darauf.
+    Richtung(
+        "Auf der Einstiegsseite ist in diesen Daten nichts Belastbares",
+        "270 hat alles ausser den Einstiegen ausgeschlossen. 'cli scan' misst "
+        "genau dort, ohne einen Versuch zu kosten: Sagt der Preisrueckblick "
+        "etwas ueber den Preisvorlauf, mehr als die Gebuehren? Gemessen auf "
+        "allen vier Kombinationen (272): **BTC Tageskerzen** t = +3,69 - "
+        "auffaellig, aber in der zweiten Haelfte verschwunden (3,25 auf "
+        "1,40), und die zweite haette einen Effekt dieser Groesse gesehen. "
+        "**ETH Tageskerzen** t = +2,88 gegen eine Schwelle von 3,23 bei 40 "
+        "Zellen. **BTC Viertelstunden** t = -3,99 - auffaellig, in der "
+        "zweiten Haelfte auf +1,53, das Vorzeichen dreht. **ETH "
+        "Viertelstunden** t = +3,02 gegen 3,42 bei 81 Zellen. Kein einziger "
+        "belastbarer Fund. Auf Viertelstunden liegen die besten Spannen "
+        "ausserdem bei 0,46 bis 0,54 des Roundtrips, also **unter** den "
+        "Kosten - das passt zu Befund 256. **Gilt fuer die Familie des "
+        "Bestands** (Preisrueckblick sagt Preisvorlauf vorher) und fuer diese "
+        "Daten; Funding- oder volumenbasierte Einstiege sind damit nicht "
+        "gemessen, und mit Bybit-Kerzen ist es neu zu messen",
+        272,
+    ),
 )
 
 
@@ -2382,7 +2403,13 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "(Befund 166). **Die Generation gehoert dazu**: Die Vorgabe ist 8, ein Viertelstunden-Katalog, und der Backfill darueber laedt Tageskerzen - der Lauf braeche mit leerem Speicher ab (Befund 214). Neun ist der Tageskerzen-Katalog mit den meisten Regeln. So aufgerufen laeuft er **ohne** die Research-KI und "
         "bildet nur Abwandlungen dessen, was der Katalog schon kennt - die "
         "Zeile darunter ist der andere Weg, und welcher richtig ist, steht "
-        "unter 'Was nicht bei mir liegt'. {versuchskosten}",
+        "unter 'Was nicht bei mir liegt'. **Vorher lesen, was Befund 272 "
+        "gemessen hat:** 'cli scan' findet auf BTC und ETH, auf Tages- wie "
+        "Viertelstundenkerzen, keinen belastbaren Vorteil in der Familie, aus "
+        "der der Bestand stammt - wo etwas auffaellt, ist es in der zweiten "
+        "Haelfte des Zeitraums verschwunden. Versuche hier auszugeben hebt "
+        "die Huerde, ohne dass etwas zu holen waere. Das gilt fuer diese "
+        "Daten; mit Bybit-Kerzen ist es neu zu messen. {versuchskosten}",
     ),
     (
         "python -m cli wettbewerb --generation 9 --ki",

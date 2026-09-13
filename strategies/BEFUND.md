@@ -24208,3 +24208,134 @@ vorhandenen Kandidaten, ausgewaehlt wird nichts.
 
 Volle Suite 3676 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertzweiundsiebzig. Die Einstiegsseite ist leer
+
+Nach Befund 270 blieb genau eine Richtung uebrig. Alles andere war gemessen
+ausgeschlossen: breiter werden (268), groesser handeln und ruhiger werden
+(269), an Stop und Zielen drehen sowie die Verlustseite bearbeiten (270), die
+Sperren lockern (271). Was blieb: **mehr Ertrag aus den Gewinnern, ueber die
+Einstiege.**
+
+Eine bessere Einstiegsregel kostet einen Versuch. Und Versuche sind nach
+Befund 269 knapp - das Fenster schliesst bei 231, heute stehen 198 zu Buche.
+Bevor davon welche ausgegeben werden, gehoert die Frage gestellt, die
+`research/vorteilsscan.py` in seinem Kopf selbst stellt:
+
+> Sagt die Vergangenheit etwas ueber die Zukunft, und ist das mehr als die
+> Gebuehren? Erst wenn hier etwas steht, lohnt es, Versuche auszugeben.
+
+Der Scan kostet keinen Versuch - er prueft keine handelbare Regel, sondern die
+Struktur des Marktes.
+
+### Alle vier Kombinationen
+
+    Markt   Kerze   bester t   Urteil
+    BTC     1d        +3,69    auffaellig, zweite Haelfte nur noch 1,40
+    ETH     1d        +2,88    Schwelle 3,23 (40 Zellen) nicht erreicht
+    BTC     15m       -3,99    zweite Haelfte +1,53 - das Vorzeichen dreht
+    ETH     15m       +3,02    Schwelle 3,42 (81 Zellen) nicht erreicht
+
+**Kein einziger belastbarer Fund.**
+
+Die beiden auffaelligen sind die interessanteren. Auf BTC-Tageskerzen faellt
+der Rueckblick ueber 48 Tage mit vier Tagen Haltezeit auf, t = +3,69 - und der
+Scan sagt dazu:
+
+> Auffaellig, aber verschwunden: erste Haelfte t = +3,25, zweite t = +1,40 -
+> und die zweite haette einen Effekt dieser Groesse gesehen (Grenze 1,4665 %).
+
+Der Zusatz ist der wichtige: Es ist nicht so, dass die zweite Haelfte zu klein
+waere, um etwas zu sehen. Sie haette es gesehen. Es war nicht mehr da.
+
+Auf BTC-Viertelstunden ist es noch deutlicher - dort dreht sich das
+**Vorzeichen**, von -2,89 auf +1,53. Was in der ersten Haelfte eine
+Gegenbewegung war, ist in der zweiten keine mehr.
+
+### Und auf Viertelstunden frisst die Reibung den Rest
+
+Die Spalte "in Kosten" sagt, wie oft die gemessene Spanne in einen Roundtrip
+passt. Auf Tageskerzen stehen dort 35 bis 470. Auf Viertelstunden:
+
+    BTC 15m, Rueckblick 4 / Halten 4     0,46x
+    ETH 15m, Rueckblick 48 / Halten 4    0,54x
+
+**Unter eins.** Die beiden meistbesetzten Zellen - 56.000 Beobachtungen -
+tragen weniger, als ein Roundtrip kostet. Das passt genau zu Befund 256, der
+gemessen hat, dass die Reibung auf Viertelstunden 30 % der Kopplung traegt
+gegen 2 % auf Tageskerzen.
+
+### Was der Befund deckt und was nicht
+
+**Er gilt fuer eine Familie.** Der Scan misst, ob der Preisrueckblick etwas
+ueber den Preisvorlauf sagt. Das ist die Familie, aus der der Bestand stammt -
+eine Trendfolge auf Tagesbasis. Einstiege, die auf Funding, Volumen oder
+Marktbreite aufbauen, sind damit **nicht** gemessen und nicht ausgeschlossen.
+
+**Er gilt fuer diese Daten.** Bitstamp-Kassakurse, zwei Maerkte, der Zeitraum,
+der im Speicher liegt. Mit Bybit-Kerzen ist er neu zu messen - das ist ohnehin
+der Schritt, der beim Nutzer liegt.
+
+Ein Nullbefund ohne seine Grenze liest sich wie ein Urteil ueber alles. Dieser
+ist eines ueber eine Familie und einen Datensatz.
+
+### Was daraus folgt
+
+Fuer den Nutzer steht es jetzt dort, wo es gebraucht wird: im Eintrag, der zum
+Wettbewerb schickt. Wer `cli wettbewerb` laufen laesst, gibt Versuche aus - und
+soll vorher wissen, dass die Struktur, auf die eine Trendfolge baut, in diesen
+Daten gemessen nicht mehr da ist.
+
+Das ist keine Aufforderung aufzuhoeren. Es ist die Auskunft, die vor der
+Entscheidung fehlte: Auf **diesen** Daten hebt jeder weitere Versuch die
+Huerde, ohne dass etwas zu holen waere. Mit anderen Daten ist es eine neue
+Messung.
+
+### Ein Detail am Rande
+
+Die Vorgabe von `cli scan` ist `--intervall 15`. Der Bestand steht auf
+Tageskerzen. Wer den Befehl ohne Nachdenken aufruft, misst also die andere
+Kerzenlaenge als die, auf der sein Kandidat lebt - dieselbe Sorte
+stillschweigende Fehlpaarung, die Befund 263 zwischen Zulassung und Handel
+gefunden hat. Der Docstring sagt es jetzt.
+
+### Und eine Luecke, die beim Eintragen auffiel
+
+Dieser Befund ist der erste **geschlossene Suchweg** jenseits von Nummer 199.
+Beim Eintragen ins Register schlug eine Wache an: *"Fundstelle zeigt ins
+Leere"* - der Abschnitt stand im Laborbuch, und der Parser fand ihn nicht.
+
+`research/nachmessung.abschnitte` baute seine Wortliste aus:
+
+    nach_wort = {zahlwort(n).lower(): n for n in range(1, 200) if zahlwort(n)}
+
+**Seit das Laborbuch die Zweihundert ueberschritten hat, war damit jeder
+Abschnitt darueber unsichtbar** - und mit ihm jede Wache, die auf
+`abschnitte` aufbaut. Dreiundsiebzig Befunde, die die Suche nach
+Wiederholungen nie gesehen hat.
+
+Aufgefallen ist es nur, weil dieser Befund der erste seiner Sorte jenseits
+der Grenze ist. Die bisherigen Eintraege gingen alle nach `BEHOBEN` oder
+`OFFEN`, und deren Wachen laufen anders.
+
+Dieselbe Grenze war in `test_stand` schon einmal gefunden und auf 300
+hochgesetzt worden - mit einem Kommentar, der genau davor warnt:
+
+> Bliebe der Bereich bei 199 stehen, waere `neuester` fuer immer 199 und der
+> Test schluege nie wieder an.
+
+Die Korrektur ist in `nachmessung` nie angekommen. **Eine Zahl an zwei
+Stellen, von denen eine gepflegt wurde** - dasselbe Muster wie die 0,17
+Punkte aus Befund 267.
+
+Jetzt steht dort gar keine Zahl mehr: Gezaehlt wird, solange `zahlwort` ein
+Wort liefert. Und weil auch `zahlwort` eine Grenze hat - bei 299 hoert es auf
+-, schlaegt eine neue Wache **zwanzig Befunde vorher** an. Bei 272 sind das
+noch sieben; der Vorlauf ist knapp bemessen, aber er ist da, und die Meldung
+sagt, was zu tun ist.
+
+Kostet keinen Versuch: Der Scan prueft die Struktur des Marktes, keine Regel.
+Versuchszaehler 198 unveraendert.
+
+Volle Suite 3692 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
