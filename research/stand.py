@@ -1745,6 +1745,26 @@ BEHOBEN: tuple[Richtung, ...] = (
         "derselben Zahl Laeufe",
         279,
     ),
+    # Beim Nachsehen aufgefallen, ob der Reglerleiter ein Betriebspunkt fehlt.
+    Richtung(
+        "Die Reglerleiter kannte keinen Betriebspunkt",
+        "'cli vereinbar' faellt ein Ja-Nein-Urteil - *'Rendite >= 15 und "
+        "Rueckgang <= 12 sind nicht zugleich erfuellbar'* - und nannte nicht, "
+        "unter welchen Handelsbedingungen es gilt. Befund 112 hat gemessen, "
+        "dass genau die entscheiden. Die zwoelf gespeicherten "
+        "Machbarkeitsberichte tragen alle 'betriebspunkt: None'; sie stammen "
+        "aus der Zeit vor Befund 242, der das Feld eingefuehrt hat. Der "
+        "Lader legte sie stumm zu einer Leiter zusammen, und bei gleicher "
+        "Stellung haette ein Spot-Punkt einen Perpetual-Punkt ueberschrieben "
+        "- dieselbe Falle, vor der sein eigener Docstring seit jeher fuer die "
+        "Messstaende warnt. Jetzt waehlt 'lade' nach Punkt aus, meldet was "
+        "dabei wegfaellt, und das Urteil nennt seinen Punkt oder sagt, dass "
+        "keiner vermerkt ist. **Und die Leiter ist am Spot-Punkt erstmals "
+        "messbar**: 'cli machbarkeit --spot'. Gemessen ist sie dort noch "
+        "nicht - 'cli vereinbar --spot' meldet null Stellungen, und das "
+        "Messen kostet Versuche",
+        280,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

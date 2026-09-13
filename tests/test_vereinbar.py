@@ -37,13 +37,19 @@ def punkt(stellung: float, cagr: float, rueckgang: float) -> Messpunkt:
 
 
 def bericht(
-    ordner: Path, *, regler: str = "Vola-Ziel", punkte: list[tuple], name: str
+    ordner: Path,
+    *,
+    regler: str = "Vola-Ziel",
+    punkte: list[tuple],
+    name: str,
+    betriebspunkt: str | None = None,
 ) -> Path:
     datei = ordner / name
     datei.write_text(
         json.dumps(
             {
                 "regler": regler,
+                "betriebspunkt": betriebspunkt,
                 "punkte": [
                     {
                         "stellung": s,
@@ -175,7 +181,7 @@ class TestLaden:
         bericht(tmp_path, punkte=[(19.3, 13.17, 9.74)], name="2026-08-08_a.json")
         bericht(tmp_path, punkte=[(19.3, 13.47, 10.64)], name="2026-08-08_b.json")
 
-        geladen = lade(tmp_path)
+        geladen = lade(tmp_path).punkte
 
         assert len(geladen) == 1
         assert geladen[0].wert("cagr") == 13.47
@@ -186,16 +192,16 @@ class TestLaden:
             tmp_path, regler="Stop", punkte=[(4.0, 12.0, 9.0)], name="stop.json"
         )
 
-        assert [p.stellung for p in lade(tmp_path)] == [19.3]
+        assert [p.stellung for p in lade(tmp_path).punkte] == [19.3]
 
     def test_eine_kaputte_datei_kippt_nicht_den_lauf(self, tmp_path: Path) -> None:
         (tmp_path / "kaputt.json").write_text("{kein JSON")
         bericht(tmp_path, punkte=[(19.3, 13.47, 10.64)], name="gut.json")
 
-        assert len(lade(tmp_path)) == 1
+        assert len(lade(tmp_path).punkte) == 1
 
     def test_ein_leerer_ordner_gibt_nichts(self, tmp_path: Path) -> None:
-        assert lade(tmp_path) == []
+        assert lade(tmp_path).punkte == []
 
 
 class TestDritteSchwelle:
@@ -340,3 +346,169 @@ class TestMischpunkte:
 
         assert kennzahlen_der_kurve(np.array([1.0, 2.0]), monate=93.0) == {}
         assert kennzahlen_der_kurve(np.zeros(400), monate=93.0) == {}
+
+
+class TestDerBetriebspunktIstEineEigeneAchse:
+    """**Befund 280.** Befund 112 hat gemessen, dass der Betriebspunkt
+    entscheidet, welche Gates halten. Eine Leiter aus Spot- und
+    Perpetual-Stellungen ist deshalb keine Leiter: Bei gleicher Stellung
+    ueberschreibt die eine die andere, und das Urteil stuende auf einer
+    Mischung, die es so nie gab.
+    """
+
+    def test_ohne_frage_kommt_alles(self, tmp_path: Path) -> None:
+        bericht(
+            tmp_path, punkte=[(19.3, 13.47, 10.64)], name="a.json",
+            betriebspunkt="Perpetual (Hebel 3, mit Funding)",
+        )
+        bericht(
+            tmp_path, punkte=[(21.0, 14.39, 12.50)], name="b.json",
+            betriebspunkt="Spot (kein Hebel, kein Funding)",
+        )
+
+        assert len(lade(tmp_path).punkte) == 2
+
+    def test_wer_fragt_bekommt_nur_seinen_punkt(self, tmp_path: Path) -> None:
+        bericht(
+            tmp_path, punkte=[(19.3, 13.47, 10.64)], name="a.json",
+            betriebspunkt="Perpetual (Hebel 3, mit Funding)",
+        )
+        bericht(
+            tmp_path, punkte=[(21.0, 14.39, 12.50)], name="b.json",
+            betriebspunkt="Spot (kein Hebel, kein Funding)",
+        )
+
+        vorrat = lade(tmp_path, betriebspunkt="Spot")
+
+        assert [p.stellung for p in vorrat.punkte] == [21.0]
+        assert vorrat.fremder_punkt == {"Perpetual (Hebel 3, mit Funding)": 1}
+
+    def test_dieselbe_stellung_ueberschreibt_sich_nicht_mehr(
+        self, tmp_path: Path
+    ) -> None:
+        """Der Kern: Zwei Punkte, dieselbe Stellung, verschiedene
+        Handelsbedingungen - ohne Auswahl gewinnt der juengste Bericht, und
+        das Urteil gaelte fuer keinen von beiden."""
+        bericht(
+            tmp_path, punkte=[(21.0, 14.39, 12.50)], name="a_perp.json",
+            betriebspunkt="Perpetual (Hebel 3, mit Funding)",
+        )
+        bericht(
+            tmp_path, punkte=[(21.0, 15.80, 11.90)], name="b_spot.json",
+            betriebspunkt="Spot (kein Hebel, kein Funding)",
+        )
+
+        ohne = lade(tmp_path).punkte
+        perp = lade(tmp_path, betriebspunkt="Perpetual").punkte
+
+        assert len(ohne) == 1 and ohne[0].wert("cagr") == 15.80
+        assert len(perp) == 1 and perp[0].wert("cagr") == 14.39
+
+    def test_berichte_ohne_vermerk_werden_gemeldet_statt_geraten(
+        self, tmp_path: Path
+    ) -> None:
+        """Vor Befund 242 stand der Punkt nicht im Bericht. Die Vorgabe von
+        damals war der Perpetual-Punkt - aber eine Vorgabe ist keine Messung.
+        """
+        bericht(tmp_path, punkte=[(19.3, 13.47, 10.64)], name="alt.json")
+
+        vorrat = lade(tmp_path, betriebspunkt="Spot")
+
+        assert vorrat.punkte == []
+        assert vorrat.ohne_vermerk == 1
+        assert "vermerkten Betriebspunkt" in vorrat.hinweis()
+        assert "keine Messung" in vorrat.hinweis()
+
+    def test_die_schreibweise_der_klammer_zaehlt_nicht(self, tmp_path: Path) -> None:
+        """Das erste Wort ist der Punkt, die Klammer seine Einzelheiten - ein
+        Aufrufer soll die Zeichenkette nicht nachbauen muessen."""
+        bericht(
+            tmp_path, punkte=[(21.0, 15.80, 11.90)], name="a.json",
+            betriebspunkt="Spot (kein Hebel, kein Funding)",
+        )
+
+        assert len(lade(tmp_path, betriebspunkt="Spot").punkte) == 1
+        assert len(lade(tmp_path, betriebspunkt="spot").punkte) == 1
+
+
+class TestDasUrteilNenntSeinenPunkt:
+    def test_mit_vermerk_steht_er_im_satz(self) -> None:
+        from research.vereinbar import Vereinbarkeit
+
+        v = Vereinbarkeit(
+            regler="Vola-Ziel",
+            punkte=[punkt(*p) for p in GEMESSEN],
+            betriebspunkt="Spot (kein Hebel, kein Funding)",
+        )
+
+        assert "Spot (kein Hebel, kein Funding)" in v.urteil()
+
+    def test_ohne_vermerk_sagt_es_das(self) -> None:
+        """Ein Urteil ohne Betriebspunkt gilt scheinbar immer - gemessen ist
+        es aber unter bestimmten Handelsbedingungen."""
+        from research.vereinbar import Vereinbarkeit
+
+        v = Vereinbarkeit(regler="Vola-Ziel", punkte=[punkt(*p) for p in GEMESSEN])
+
+        assert "steht nicht dabei" in v.urteil()
+        assert v.punkt_name == "nicht vermerkt"
+
+
+class TestDieBefehleFuehrenDenPunkt:
+    """Ohne die beiden Flaggen waere die Frage am Spot-Punkt nicht stellbar."""
+
+    def _quelle(self, name: str) -> str:
+        import ast
+
+        baum = ast.parse(Path("cli.py").read_text(encoding="utf-8"))
+        knoten = next(
+            k
+            for k in ast.walk(baum)
+            if isinstance(k, ast.FunctionDef) and k.name == name
+        )
+        return ast.unparse(knoten)
+
+    def test_machbarkeit_kann_am_spot_punkt_messen(self) -> None:
+        import ast
+
+        baum = ast.parse(Path("cli.py").read_text(encoding="utf-8"))
+        knoten = next(
+            k
+            for k in ast.walk(baum)
+            if isinstance(k, ast.FunctionDef) and k.name == "machbarkeit"
+        )
+
+        assert "spot" in {a.arg for a in knoten.args.args}
+        assert "_ohne_hebel" in ast.unparse(knoten)
+
+    def test_vereinbar_waehlt_den_punkt_aus(self) -> None:
+        quelle = self._quelle("vereinbar")
+
+        assert "betriebspunkt=gefragter_punkt" in quelle
+
+    def test_und_meldet_was_dabei_wegfaellt(self) -> None:
+        """Eine stille Auswahl waere hier besonders teuer: Das Urteil gilt
+        sonst fuer weniger Stellungen, als es behauptet."""
+        quelle = self._quelle("vereinbar")
+
+        assert "vorrat.hinweis()" in quelle
+
+    def test_beide_flaggen_zugleich_sind_keine_leiter(self) -> None:
+        from typer.testing import CliRunner
+
+        from cli import app
+
+        ergebnis = CliRunner().invoke(app, ["vereinbar", "--spot", "--perpetual"])
+
+        assert ergebnis.exit_code == 2
+        assert "keine Leiter" in ergebnis.output
+
+    def test_der_punkt_steht_in_der_ueberschrift(self) -> None:
+        from typer.testing import CliRunner
+
+        from cli import app
+
+        ergebnis = CliRunner().invoke(app, ["vereinbar"])
+
+        assert ergebnis.exit_code == 0
+        assert "Betriebspunkt:" in ergebnis.output

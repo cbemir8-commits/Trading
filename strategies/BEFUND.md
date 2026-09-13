@@ -24979,3 +24979,87 @@ Kostet keinen Versuch: Gemessen wird die eigene Latte, kein Kandidat.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
 
 Volle Suite 3800 passed, 1 skipped; ruff check sauber.
+
+## Zweihundertachtzig. Die Reglerleiter kannte keinen Betriebspunkt
+
+Nach Befund 279 stand fest, wo die verbleibende Arbeit liegt: Am Spot-Punkt
+halten 9 von 11 Gates, offen sind die Messlatte - dort fehlen **0,66 Punkte
+Jahresrendite** - und der Deflated Sharpe. Die Frage, ob sich die 0,66 Punkte
+ueber den Groessenregler schliessen lassen, beantwortet `cli vereinbar`.
+
+### Erst nachsehen
+
+Der erste Anlauf war, dem Bericht ein Feld fuer den Betriebspunkt zu bauen.
+Beim Nachsehen stand es schon da - Befund 242 hat es eingefuehrt, und
+`cli machbarkeit` schreibt es. Dieselbe Lehre wie in Befund 268, diesmal
+rechtzeitig: **Nachsehen kommt vor Bauen.**
+
+Das eigentliche Loch lag daneben.
+
+### Was tatsaechlich fehlte
+
+Alle zwoelf gespeicherten Machbarkeitsberichte tragen `betriebspunkt: None` -
+sie stammen aus der Zeit vor 242. Und `research/vereinbar.lade` hat das Feld
+**nie gelesen**: Es legte alle Berichte eines Reglers zu einer Leiter
+zusammen, verschluesselt nach Stellung. Ein Spot-Punkt und ein
+Perpetual-Punkt bei derselben Stellung haetten sich gegenseitig
+ueberschrieben, der juengste Bericht gewinnt.
+
+Das ist genau die Falle, vor der der Docstring derselben Funktion seit jeher
+warnt - nur fuer eine andere Achse:
+
+> Aeltere stillschweigend mitzumitteln hiesse, zwei Messstaende zu einer
+> Kurve zu verruehren.
+
+Der Betriebspunkt ist dieselbe Sorte Achse, und Befund 112 hat gemessen, dass
+er entscheidet, welche Gates halten. Das Urteil - *"Rendite >= 15 und
+Rueckgang <= 12 sind auf diesem Regler nicht zugleich erfuellbar"* - stand
+deshalb ohne die Bedingung da, unter der es gilt.
+
+### Gebaut
+
+`lade` waehlt jetzt nach Betriebspunkt aus und gibt einen `Vorrat` zurueck:
+die Punkte **und** was aus welchem Grund fehlt. Verglichen wird das erste
+Wort ("Spot", "Perpetual") - die Klammer traegt die Einzelheiten, und kein
+Aufrufer soll die Zeichenkette nachbauen muessen.
+
+Berichte ohne Vermerk werden **gemeldet, nicht geraten**. Die Vorgabe von
+damals war der Perpetual-Punkt, aber eine Vorgabe ist keine Messung:
+
+    $ python -m cli vereinbar --spot
+    45 Stellungen stammen aus Berichten ohne vermerkten Betriebspunkt und
+    sind ausgelassen - vor Befund 242 wurde er nicht geschrieben, und die
+    Vorgabe von damals ist keine Messung.
+
+    Vereinbarkeit auf dem Regler 'Vola-Ziel'  (Betriebspunkt: Spot)
+    Keine Messpunkte - nichts zu entscheiden.
+
+Ohne Flagge steht jetzt **(Betriebspunkt: nicht vermerkt)** in der
+Ueberschrift, und das Urteil sagt denselben Satz noch einmal im Klartext.
+
+Und `cli machbarkeit --spot` gibt es jetzt - vorher war die Leiter am
+Spot-Punkt **gar nicht messbar**.
+
+### Was damit offen ist, und bei wem
+
+Die Leiter am Spot-Punkt ist nicht gemessen. Am Perpetual-Punkt fehlen bei
+der besten Stellung (22) zusammen 0,82 Punkte: Rendite 15,16 %, Rueckgang
+12,82 %. Am Spot-Punkt faellt das Funding weg - das hebt die Rendite und
+senkt den Rueckgang zugleich, und ob eine Stellung dann durch das erlaubte
+Rechteck geht, ist eine offene Frage mit realen Folgen: Sie entscheidet, ob
+am Betriebspunkt ein Gate mehr haelt.
+
+**Gerechnet wird sie hier nicht**, und zwar aus einem Grund, der benannt
+gehoert: Jede gemessene Stufe zaehlt als Versuch. Zehn Stufen sind zehn von
+den 32, die bis zur Budgetgrenze bleiben. Ob das Budget dafuer ausgegeben
+wird, ist eine Entscheidung ueber die Suche - und Befund 234 haelt fest, dass
+sogar ungeklaert ist, ob ein Sweep am Bestand ueberhaupt als Versuch zaehlen
+sollte. Diese Frage in dem Moment zu beantworten, in dem die Antwort mir zehn
+Versuche spart, waere die falsche Reihenfolge.
+
+Der Befehl steht bereit; das Budget gehoert dem Nutzer.
+
+Kostet keinen Versuch: Gebaut wurde am Werkzeug, gemessen nichts Neues.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+Volle Suite 3812 passed, 1 skipped; ruff check sauber.

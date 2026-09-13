@@ -5156,6 +5156,10 @@ def machbarkeit(
              "Positionen und Risikozustand ueberleben die Fenstergrenze - so "
              "wie im Betrieb.",
     ),
+    spot: bool = typer.Option(
+        False, "--spot",
+        help="Auf dem Spot-Punkt messen: kein Funding, kein Hebel.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Gibt es eine Vola-Einstellung, bei der alle elf Gates zugleich halten?
@@ -5183,6 +5187,7 @@ def machbarkeit(
     """
     from decimal import Decimal
 
+    from backtest.costs import FundingSchedule
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from core.report import write_report
@@ -5220,6 +5225,11 @@ def machbarkeit(
             risk=settings.risk, initial_equity=Decimal("500"),
             enforce_risk_limits=True,
             kalender=_terminkalender(settings) or None,
+            **(
+                {"funding": FundingSchedule(default_rate=Decimal("0"))}
+                if spot
+                else {}
+            ),
         )
         for x in symbole
     }
@@ -5232,7 +5242,13 @@ def machbarkeit(
         raise typer.Exit(2)
     schraube = REGLER[regler]
 
+    # **Der Betriebspunkt gehoert auf die Leiter** (Befund 280). Bis hierher
+    # war er nicht waehlbar, und damit stand die Frage "sind Rendite und
+    # Rueckgang vereinbar" nur fuer den Perpetual-Punkt offen - waehrend die
+    # verbleibende Luecke am **Spot**-Punkt liegt (0,66 Punkte statt 2,05).
     vorlage = spitzenkandidat()
+    if spot:
+        vorlage = _ohne_hebel(vorlage)
     ausgang = ausgangswert(vorlage, schraube)
     trials_path = Path(settings.paths.state) / "trials.json"
     trials = load_trials(trials_path)
@@ -7037,6 +7053,14 @@ def vereinbar(
         False, "--mit-jahr",
         help="Das schlechteste Jahr als dritte Schwelle mitpruefen.",
     ),
+    spot: bool = typer.Option(
+        False, "--spot",
+        help="Nur Stellungen vom Spot-Punkt (kein Hebel, kein Funding).",
+    ),
+    perpetual: bool = typer.Option(
+        False, "--perpetual",
+        help="Nur Stellungen vom Perpetual-Punkt.",
+    ),
 ) -> None:
     """Sind Mindestrendite und Rueckgangsgrenze zugleich erfuellbar?
 
@@ -7064,10 +7088,30 @@ def vereinbar(
         lade,
     )
 
-    punkte = lade(Path.cwd() / "reports" / "machbarkeit", regler=regler)
+    # **Der Betriebspunkt ist eine eigene Achse** (Befund 280). Eine Leiter
+    # aus Spot- und Perpetual-Stellungen ist keine Leiter, und ein Urteil
+    # darueber gilt fuer keinen der beiden Punkte.
+    if spot and perpetual:
+        console.print("[red]--spot und --perpetual zugleich ergibt keine Leiter.[/]")
+        raise typer.Exit(2)
+    gefragter_punkt = "Spot" if spot else ("Perpetual" if perpetual else None)
+    vorrat = lade(
+        Path.cwd() / "reports" / "machbarkeit",
+        regler=regler,
+        betriebspunkt=gefragter_punkt,
+    )
+    if vorrat.hinweis():
+        console.print(f"[dim]{vorrat.hinweis()}.[/]")
     lage = Vereinbarkeit(
         regler=regler,
-        punkte=punkte,
+        punkte=vorrat.punkte,
+        betriebspunkt=(
+            gefragter_punkt
+            if gefragter_punkt
+            else next(
+                (p.betriebspunkt for p in vorrat.punkte if p.betriebspunkt), None
+            )
+        ),
         a=Schwelle("Rendite", "cagr", rendite, mindestens=True),
         b=Schwelle("Rueckgang", "rueckgang", rueckgang, mindestens=False),
         # Die dritte Schwelle seit Befund 94. Standardmaessig aus, weil die
@@ -7076,8 +7120,11 @@ def vereinbar(
         weitere=[SCHLECHTESTES_JAHR] if mit_jahr else [],
     )
 
-    console.print(f"\n[bold]Vereinbarkeit[/] auf dem Regler '{regler}'\n")
-    if punkte:
+    console.print(
+        f"\n[bold]Vereinbarkeit[/] auf dem Regler '{regler}'"
+        f"  (Betriebspunkt: {lage.punkt_name})\n"
+    )
+    if vorrat.punkte:
         console.print(lage.tabelle())
     console.print(f"\n{lage.urteil()}\n")
 

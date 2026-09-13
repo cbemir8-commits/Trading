@@ -96,12 +96,72 @@ class Messpunkt:
     stellung: float
     werte: dict[str, float]
 
+    betriebspunkt: str | None = None
+    """Mit Hebel und Funding gemessen, oder ohne - ``None`` heisst **nicht
+    vermerkt**.
+
+    Seit Befund 242 schreibt ``cli machbarkeit`` den Punkt in den Bericht.
+    Aeltere Berichte haben das Feld nicht, und dort ist er nicht zu erraten:
+    Der Vorgabewert war der Perpetual-Punkt, aber eine Vorgabe ist keine
+    Messung (Befund 280).
+    """
+
     def wert(self, kennzahl: str) -> float | None:
         roh = self.werte.get(kennzahl)
         return float(roh) if roh is not None else None
 
 
-def lade(ordner: Path | str, *, regler: str = "Vola-Ziel") -> list[Messpunkt]:
+#: Ergebnis von ``lade``: die Punkte und die, die ausgelassen wurden.
+@dataclass(frozen=True, slots=True)
+class Vorrat:
+    """Was an Punkten dasteht - und was aus welchem Grund fehlt.
+
+    Eine stille Auswahl waere hier besonders teuer: ``Vereinbarkeit`` faellt
+    ein Ja-Nein-Urteil ueber *alle* gemessenen Stellungen, und wenn welche
+    fehlen, gilt es fuer weniger als es behauptet.
+    """
+
+    punkte: list[Messpunkt] = field(default_factory=list)
+    ohne_vermerk: int = 0
+    """Punkte aus Berichten ohne Betriebspunkt - ausgelassen, wenn nach einem
+    bestimmten gefragt wurde."""
+
+    fremder_punkt: dict[str, int] = field(default_factory=dict)
+    """Punkte anderer Betriebspunkte, je Punkt gezaehlt."""
+
+    def hinweis(self) -> str:
+        teile = []
+        if self.ohne_vermerk:
+            teile.append(
+                f"{self.ohne_vermerk} Stellungen stammen aus Berichten **ohne "
+                f"vermerkten Betriebspunkt** und sind ausgelassen - vor Befund "
+                f"242 wurde er nicht geschrieben, und die Vorgabe von damals "
+                f"ist keine Messung"
+            )
+        for punkt, zahl in sorted(self.fremder_punkt.items()):
+            teile.append(f"{zahl} Stellungen gehoeren zu '{punkt}'")
+        return "; ".join(teile)
+
+
+def _passt(vermerkt: str, gefragt: str) -> bool:
+    """Gehoert ein vermerkter Punkt zu dem, nach dem gefragt wurde?
+
+    ``_betriebspunkt`` in ``cli`` schreibt *"Spot (kein Hebel, kein
+    Funding)"* oder *"Perpetual (Hebel 3, mit Funding)"* - das erste Wort ist
+    der Punkt, die Klammer seine Einzelheiten. Verglichen wird deshalb das
+    erste Wort: Wer nach "Spot" fragt, will nicht wissen, wie die Klammer
+    formuliert war, und ein Aufrufer soll die Zeichenkette nicht nachbauen
+    muessen (Befund 280).
+    """
+    return vermerkt.split(" ", 1)[0].casefold() == gefragt.split(" ", 1)[0].casefold()
+
+
+def lade(
+    ordner: Path | str,
+    *,
+    regler: str = "Vola-Ziel",
+    betriebspunkt: str | None = None,
+) -> Vorrat:
     """Die Punkte eines Reglers aus den Machbarkeitsberichten.
 
     Mehrere Berichte desselben Reglers koennen aus verschiedenen Staenden
@@ -110,8 +170,16 @@ def lade(ordner: Path | str, *, regler: str = "Vola-Ziel") -> list[Messpunkt]:
     zusammengelegt: Bei gleicher Stellung gewinnt der juengste Bericht.
     Aeltere stillschweigend mitzumitteln hiesse, zwei Messstaende zu einer
     Kurve zu verruehren.
+
+    **Derselbe Satz gilt fuer den Betriebspunkt** (Befund 280). Eine Leiter
+    aus Spot- und Perpetual-Stellungen ist keine Leiter: Bei gleicher
+    Stellung ueberschreibt die eine die andere, und das Urteil stuende dann
+    auf einer Mischung. ``betriebspunkt`` waehlt deshalb aus, und was dabei
+    wegfaellt, steht in ``Vorrat.hinweis``.
     """
     gefunden: dict[float, Messpunkt] = {}
+    ohne_vermerk = 0
+    fremd: dict[str, int] = {}
     for datei in sorted(Path(ordner).glob("*.json")):
         try:
             daten = json.loads(datei.read_text())
@@ -120,17 +188,29 @@ def lade(ordner: Path | str, *, regler: str = "Vola-Ziel") -> list[Messpunkt]:
         gemessen = daten.get("regler") or daten.get("analyse", {}).get("regler")
         if gemessen != regler:
             continue
+        punkt_der_datei = daten.get("betriebspunkt")
         punkte = daten.get("punkte") or daten.get("analyse", {}).get("punkte") or []
-        for punkt in punkte:
-            kennzahlen = punkt.get("kennzahlen") or {}
-            if not kennzahlen:
+        gueltig = [p for p in punkte if p.get("kennzahlen")]
+        if betriebspunkt is not None:
+            if punkt_der_datei is None:
+                ohne_vermerk += len(gueltig)
                 continue
+            if not _passt(punkt_der_datei, betriebspunkt):
+                fremd[punkt_der_datei] = fremd.get(punkt_der_datei, 0) + len(gueltig)
+                continue
+        for punkt in gueltig:
+            kennzahlen = punkt["kennzahlen"]
             stellung = float(punkt.get("stellung", 0.0))
             gefunden[stellung] = Messpunkt(
                 stellung=stellung,
                 werte={k: float(v) for k, v in kennzahlen.items() if v is not None},
+                betriebspunkt=punkt_der_datei,
             )
-    return sorted(gefunden.values(), key=lambda p: p.stellung)
+    return Vorrat(
+        punkte=sorted(gefunden.values(), key=lambda p: p.stellung),
+        ohne_vermerk=ohne_vermerk,
+        fremder_punkt=fremd,
+    )
 
 
 def kennzahlen_der_kurve(kurve, *, monate: float) -> dict[str, float]:
@@ -202,6 +282,20 @@ class Vereinbarkeit:
     """Zusaetzliche Schwellen, seit Befund 93. ``a`` und ``b`` bleiben, wo
     sie sind - der Reglerfall hat zwei, und eine Umstellung haette jede
     vorhandene Auswertung angefasst, um nichts zu gewinnen."""
+
+    betriebspunkt: str | None = None
+    """Unter welchen Handelsbedingungen die Punkte gemessen wurden.
+
+    **Ohne diese Angabe ist das Urteil unvollstaendig** (Befund 280): Befund
+    112 hat gemessen, dass der Betriebspunkt entscheidet, welche Gates halten,
+    und dieselben zwei Schwellen koennen an einem Punkt vereinbar sein und am
+    anderen nicht. ``None`` heisst, dass die Berichte ihn nicht vermerken -
+    dann sagt ``urteil`` das, statt einen zu unterstellen.
+    """
+
+    @property
+    def punkt_name(self) -> str:
+        return self.betriebspunkt or "nicht vermerkt"
 
     @property
     def schwellen(self) -> tuple[Schwelle, ...]:
@@ -276,6 +370,16 @@ class Vereinbarkeit:
             return "Keine Messpunkte - nichts zu entscheiden."
 
         benannt = " und ".join(str(s) for s in self.schwellen)
+        # **Der Betriebspunkt gehoert in den Satz** (Befund 280). Ohne ihn
+        # gilt das Urteil scheinbar immer - gemessen ist es aber unter
+        # bestimmten Handelsbedingungen, und die entscheiden mit (Befund 112).
+        unter = f" Gemessen am Betriebspunkt '{self.punkt_name}'."
+        if self.betriebspunkt is None:
+            unter = (
+                " **Unter welchen Handelsbedingungen, steht nicht dabei**: "
+                "Die Berichte vermerken keinen Betriebspunkt, und die Vorgabe "
+                "von damals ist keine Messung."
+            )
         if self.treffer:
             stellungen = ", ".join(f"{p.stellung:g}" for p in self.treffer[:4])
             return (
@@ -288,6 +392,7 @@ class Vereinbarkeit:
                 f"nachgezogen, weil dort mehr Gates bestuenden. Genau diese "
                 f"Sorte Anpassung ist das, wogegen die Zulassungsstrecke "
                 f"gebaut ist - und die uebrigen Gates bleiben ohnehin offen."
+                f"{unter}"
             )
 
         eng = self.engste
@@ -315,5 +420,5 @@ class Vereinbarkeit:
             f"haelt alle.{wo}{naeher}\n\n"
             f"Damit ist der Satz aus stand.py beziffert statt behauptet. Was "
             f"daraus folgt, ist eine wirtschaftliche Entscheidung und keine "
-            f"statistische - sie liegt beim Nutzer."
+            f"statistische - sie liegt beim Nutzer.{unter}"
         )
