@@ -102,6 +102,15 @@ class Nullverteilung:
         """
         return self.perzentil(95)
 
+    def lage(self, wert: float) -> float:
+        """Das Perzentil, an dem ein beobachteter Wert in dieser Null steht.
+
+        Die Zahl, die der rohe DSR nicht sagt: Ob 0,59 viel ist, haengt am
+        Versuchsstand, und die Null verschiebt sich mit ihm. Das Perzentil
+        vergleicht beide auf demselben Stand.
+        """
+        return 100.0 * (1.0 - float(np.mean(self.werte >= wert)))
+
     def beschreibe(self) -> str:
         if self.fehlalarm > 0:
             haeufigkeit = f"{self.fehlalarm:.3%}"

@@ -186,6 +186,80 @@ class TestWasDieProbeNichtKann:
         assert LAEUFE > 700
 
 
+class TestDieLageDesBestands:
+    """Der rohe DSR faellt mit jedem Versuch - die Null faellt mit.
+
+    **Befund 279.** Ohne die zweite Haelfte liest sich der erste Teil wie ein
+    Verfall: 0,5881 auf 0,5551, wenn der Rest des Suchbudgets ausgegeben
+    wird. Gemessen bleibt die **Lage** dabei fast stehen, weil sich die
+    Nullverteilung mitbewegt.
+    """
+
+    def test_das_perzentil_liegt_zwischen_null_und_hundert(self) -> None:
+        null = nullverteilung(
+            _handelsartig(), versuche=198, stichprobe=115, laeufe=1000
+        )
+
+        assert 0.0 <= null.lage(0.5) <= 100.0
+
+    def test_ein_wert_ueber_allem_steht_bei_hundert(self) -> None:
+        null = nullverteilung(
+            _handelsartig(), versuche=198, stichprobe=115, laeufe=1000
+        )
+
+        assert null.lage(1.01) == 100.0
+
+    def test_ein_wert_unter_allem_steht_bei_null(self) -> None:
+        null = nullverteilung(
+            _handelsartig(), versuche=198, stichprobe=115, laeufe=1000
+        )
+
+        assert null.lage(-1.0) == 0.0
+
+    def test_das_perzentil_des_fuenf_prozent_punktes_ist_fuenfundneunzig(
+        self,
+    ) -> None:
+        null = nullverteilung(
+            _handelsartig(), versuche=198, stichprobe=115, laeufe=2000
+        )
+
+        assert null.lage(null.latte_fuer_fuenf_prozent) == pytest.approx(95.0, abs=0.2)
+
+    def test_mehr_versuche_senken_den_wert_und_die_null_zugleich(self) -> None:
+        """Der Punkt: Beide Seiten bewegen sich, also sagt der rohe Wert
+        allein nichts darueber, ob die Evidenz schwaecher geworden ist."""
+        from research.gates import deflated_sharpe_ratio
+
+        # Dieselbe Form, aber mit dem Vorsprung des Bestands (0,27 je Trade).
+        # Ohne ihn liefert die Formel bei beiden Versuchsstaenden glatt 0,
+        # und der Vergleich saehe nach Gleichstand aus.
+        roh = _handelsartig()
+        werte = roh - roh.mean() + 0.27 * float(np.std(roh, ddof=1))
+        streuung = float(np.std(werte, ddof=1))
+        sharpe = float(np.mean(werte)) / streuung
+        z = (werte - werte.mean()) / streuung
+        schiefe, woelbung = float(np.mean(z**3)), float(np.mean(z**4))
+
+        lagen = []
+        for versuche in (198, 400):
+            dsr = deflated_sharpe_ratio(
+                observed_sharpe=sharpe,
+                trials=versuche,
+                sample_size=115,
+                skew=schiefe,
+                kurtosis=woelbung,
+            )
+            null = nullverteilung(
+                werte, versuche=versuche, stichprobe=115, laeufe=2000
+            )
+            lagen.append((dsr, null.latte_fuer_fuenf_prozent, null.lage(dsr)))
+
+        # Roher Wert faellt, Latte der Null faellt - die Lage bleibt nahe.
+        assert lagen[1][0] < lagen[0][0]
+        assert lagen[1][1] < lagen[0][1]
+        assert abs(lagen[1][2] - lagen[0][2]) < 5.0
+
+
 class TestDieLatteBleibtStehen:
     """Der Grundsatz, gegen den diese Messung am ehesten missbraucht wuerde."""
 
@@ -205,6 +279,33 @@ class TestDieLatteBleibtStehen:
             "kein Vorschlag"
             in Nullverteilung.latte_fuer_fuenf_prozent.__doc__
         )
+
+    def test_die_frage_steht_beim_nutzer(self) -> None:
+        """**Befund 279.** Gemessen und berichtet reicht nicht: Ob die Latte
+        so stehen bleiben soll, ist eine Geschaeftsentscheidung, und die
+        gehoert in die Liste, die der Nutzer liest."""
+        from research.stand import ENTSCHEIDUNGEN
+
+        eintrag = next(
+            (e for e in ENTSCHEIDUNGEN if "Latte des Deflated Sharpe" in e.frage),
+            None,
+        )
+
+        assert eintrag is not None
+        assert "0,9305" in eintrag.zahl
+        assert "0,3070" in eintrag.zahl
+        assert "Geaendert wurde nichts" in eintrag.warum
+        assert "faellt nicht hier" in eintrag.warum
+
+    def test_und_sie_nennt_ihre_einschraenkungen(self) -> None:
+        from research.stand import ENTSCHEIDUNGEN
+
+        eintrag = next(
+            e for e in ENTSCHEIDUNGEN if "Latte des Deflated Sharpe" in e.frage
+        )
+
+        assert "korreliert" in eintrag.warum
+        assert "kein einziger" in eintrag.warum
 
     def test_der_befehl_sagt_es_auch(self) -> None:
         baum = ast.parse(Path("cli.py").read_text(encoding="utf-8"))
@@ -270,6 +371,42 @@ class TestDerBefehlKenntDieEichung:
             assert "stichprobe" in namen
             stichprobe = next(s for s in aufruf.keywords if s.arg == "stichprobe")
             assert ast.unparse(stichprobe.value) == "n"
+
+    def test_die_tafel_reicht_bis_zur_budgetgrenze(self) -> None:
+        """**Befund 279.** Was der Rest der erlaubten Suche an der Lage des
+        Bestands aendert, gehoert in dieselbe Tafel - sonst liest man den
+        Verfall des rohen Wertes und nicht seine Bedeutung."""
+        baum = ast.parse(Path("cli.py").read_text(encoding="utf-8"))
+        knoten = next(
+            k
+            for k in ast.walk(baum)
+            if isinstance(k, ast.FunctionDef) and k.name == "abstand"
+        )
+        quelle = ast.unparse(knoten)
+
+        assert "BUDGET.grenze" in quelle
+        assert "sein Perzentil" in quelle
+
+    def test_alle_zeilen_haben_dieselbe_aufloesung(self) -> None:
+        """Eine Zeile aus 1.250 Laeufen neben einer aus 5.000 saehe genauso
+        aus und meinte etwas anderes - und das Register zitiert sie."""
+        baum = ast.parse(Path("cli.py").read_text(encoding="utf-8"))
+        knoten = next(
+            k
+            for k in ast.walk(baum)
+            if isinstance(k, ast.FunctionDef) and k.name == "abstand"
+        )
+        for aufruf in ast.walk(knoten):
+            if (
+                isinstance(aufruf, ast.Call)
+                and isinstance(aufruf.func, ast.Name)
+                and aufruf.func.id == "nullverteilung"
+            ):
+                laeufe = next(
+                    (s for s in aufruf.keywords if s.arg == "laeufe"), None
+                )
+                if laeufe is not None:
+                    assert ast.unparse(laeufe.value) == "null.laeufe"
 
 
 def test_die_formel_ist_bei_einem_versuch_nicht_deflationiert() -> None:

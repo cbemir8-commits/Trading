@@ -1715,9 +1715,10 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Das Gate schrieb *'Wahrscheinlichkeit 46,3 %, dass der Vorteil echt "
         "ist'*. Gemessen mit den Trades des Bestands als Form und ohne jeden "
         "Vorteil darin (5.000 ganze Suchlaeufe): Bei **einem** Versuch stimmt "
-        "die Formel - 95. Perzentil 0,9305, Fehlalarm 3,36 %. Bei 198 liegt "
-        "das 95. Perzentil bei **0,3070**, und kein einziger von 5.000 "
-        "Nulldurchlaeufen erreicht 0,95. Die Deflation zieht den erwarteten "
+        "die Formel, bei 198 liegt das 95. Perzentil der Null bei **0,3070**, "
+        "und kein einziger von 5.000 Nulldurchlaeufen erreicht 0,95. Die "
+        "ganze Tafel steht unter den offenen Entscheidungen, weil dort die "
+        "Frage haengt. Die Deflation zieht den erwarteten "
         "Bestwert ab, teilt aber durch den Fehler eines **einzelnen** Sharpe, "
         "und der ist groesser als die Streuung des Maximums. **Die Latte "
         "bleibt stehen**: Gates werden nicht gelockert, damit etwas besteht, "
@@ -1726,6 +1727,23 @@ BEHOBEN: tuple[Richtung, ...] = (
         "mit 0,463 am 99,24. Perzentil dieser Null; nachzurechnen mit "
         "'cli abstand --eichung'",
         278,
+        zuletzt=279,
+    ),
+    # Der Schritt, den 278 schuldig geblieben ist.
+    Richtung(
+        "Der Verfall des DSR stand ohne sein Gegenstueck da",
+        "'cli abstand' meldet, was das Suchen kostet - von 198 auf die "
+        "Budgetgrenze 230 faellt der Wert am Spot-Punkt von 0,5881 auf "
+        "0,5551. Das liest sich als Zerfall der Evidenz. Gemessen (279) "
+        "bewegt sich die **Null mit**: Ihr 95. Perzentil faellt im selben "
+        "Schritt von 0,3075 auf 0,2949, und die Lage des Bestands geht von "
+        "99,88 auf **99,86** - zwei Hundertstel eines Perzentils fuer den "
+        "ganzen Rest des erlaubten Budgets. Beides gilt: Die **noetige "
+        "Guete** steigt mit jedem Versuch (31/221, unveraendert), die **Lage "
+        "der vorhandenen Evidenz** kaum. Die Tafel traegt jetzt beide "
+        "Spalten, reicht bis zur Budgetgrenze und rechnet alle Zeilen mit "
+        "derselben Zahl Laeufe",
+        279,
     ),
 )
 
@@ -2222,6 +2240,41 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "gedeckelt - ``streuung.MINDESTABDECKUNG`` verlangt 90. Die "
               "Annahme bleibt also stehen, und zwar auf absehbare Zeit. Zu "
               "entscheiden bleibt nur, ob das je anders sein soll.",
+    ),
+    Entscheidung(
+        frage="Was die Latte des Deflated Sharpe bedeutet",
+        zahl="Gemessen in Befund 278 - mit den Trades des Bestands als Form "
+             "und ohne jeden Vorteil darin, 5.000 ganze Suchlaeufe je Zeile:"
+             "\n      Versuche   95. Perzentil der Null   Fehlalarm bei 0,95"
+             "\n             1                   0,9305               3,36 %"
+             "\n            10                   0,6275               0,02 %"
+             "\n           198                   0,3070   kein Lauf von 5.000"
+             "\n    Bei **einem** Versuch ist 0,95 eine 5-%-Schranke, wie der "
+             "Name sagt. Bei 198 ist sie strenger als alles, was diese "
+             "Messung aufloesen kann. Am Spot-Punkt steht der Bestand mit "
+             "0,5881 am **99,88. Perzentil** dieser Null, und der Rest des "
+             "Suchbudgets aendert daran fast nichts: 198 auf 230 Versuche "
+             "senkt sein Perzentil von 99,88 auf 99,86, waehrend der rohe "
+             "Wert von 0,5881 auf 0,5551 faellt. `cli abstand --spot --eichung` "
+             "rechnet es nach.",
+        warum="Das Gate ist am Spot-Punkt eines von nur zwei offenen - das "
+              "andere ist die Messlatte, eine Geschaeftsschwelle. Damit "
+              "haengt die Zulassung praktisch an dieser einen Zahl, und was "
+              "sie bedeutet, war bis Befund 278 nicht gemessen.\n    "
+              "**Geaendert wurde nichts.** Die Schwelle steht unveraendert "
+              "bei 0,95, und sie wird nicht gesenkt, damit etwas besteht - "
+              "am wenigsten, wenn die Messung entsteht, waehrend der eigene "
+              "Kandidat dicht an der Frage steht. Zu entscheiden ist, ob die "
+              "Latte weiter auf einer Zahl stehen soll, die bei diesem "
+              "Versuchsstand etwas anderes bedeutet als ihr Name - oder auf "
+              "einem gemessenen Fehlalarmniveau. Beides ist vertretbar; die "
+              "Wahl ist eine Geschaeftsentscheidung und faellt nicht hier."
+              "\n    Zwei Einschraenkungen gehoeren dazu: Die gezogenen "
+              "Versuche sind unabhaengig, die echten korreliert - "
+              "korrelierte liefern ein kleineres Maximum und damit noch "
+              "weniger Fehlalarme, das Gemessene ist also die guenstigste "
+              "Lesart fuer die Latte. Und 5.000 Laeufe koennen hoechstens "
+              "'kein einziger' sagen, also unter 0,02 %.",
     ),
     Entscheidung(
         frage="Funding-Satz",

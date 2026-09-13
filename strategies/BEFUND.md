@@ -24910,3 +24910,72 @@ Kostet keinen Versuch: Gemessen wird die eigene Latte, kein Kandidat.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
 
 Volle Suite 3791 passed, 1 skipped; ruff check sauber.
+
+## Zweihundertneunundsiebzig. Der rohe Wert faellt, die Lage bleibt
+
+Befund 278 hat gemessen, was die Latte des Deflated Sharpe bedeutet, und es
+im Werkzeug festgehalten. Zwei Dinge sind dabei liegengeblieben.
+
+### Erstens: der Betriebspunkt, an dem es entschieden wird
+
+278 hat am Perpetual-Punkt gemessen. Bestanden werden dort 7 von 11 Gates -
+aber `cli stand` sagt seit Befund 112, dass die ganze Arbeit am Betriebspunkt
+haengt, und unter Spot sind es **9 von 11**. Offen bleiben dort genau zwei:
+die Messlatte, eine Geschaeftsschwelle, und der Deflated Sharpe.
+
+Damit haengt die Zulassung praktisch an dieser einen Zahl. Sie gehoert also
+dort gemessen, wo sie wirkt:
+
+    Spot-Punkt, 156 Trades, effektiv 115, Sharpe je Trade 0,2708
+    Schiefe 3,465, Woelbung 15,917, DSR 0,5881
+
+    Versuche   95. Perzentil der Null   DSR Bestand   sein Perzentil
+           1                   0,9307        1,0000           100,00
+          10                   0,6262        0,9885           100,00
+          50                   0,4303        0,8558            99,98
+         198                   0,3075        0,5881            99,88
+         230                   0,2949        0,5551            99,86
+
+**Der Bestand steht am 99,88. Perzentil der Nullverteilung.** 0,12 % der
+Suchlaeufe ohne jeden Vorteil erreichen seinen Wert. Die Latte von 0,95 hat
+kein einziger von fuenftausend genommen.
+
+### Zweitens: der rohe Wert allein liest sich als Verfall
+
+`cli abstand` meldet seit jeher, was das Suchen kostet: *"Ein weiterer
+Versuch kostet 0,0011 DSR-Punkte."* Von 198 auf die Budgetgrenze von 230
+faellt der Wert von 0,5881 auf 0,5551. Das liest sich, als zerfiele die
+Evidenz mit jedem Versuch.
+
+Gemessen bewegt sich die **Null mit**: Ihr 95. Perzentil faellt im selben
+Schritt von 0,3075 auf 0,2949. Die Lage des Bestands geht dabei von 99,88 auf
+**99,86** - zwei Hundertstel eines Perzentils fuer den gesamten Rest des
+erlaubten Suchbudgets.
+
+Beides ist wahr und beides gehoert nebeneinander: Die **noetige Guete** steigt
+mit jedem Versuch (das ist Befund 31/221, unveraendert), und die **Lage der
+vorhandenen Evidenz** in der Nullverteilung tut es kaum. Wer nur die erste
+Haelfte liest, haelt die verbleibende Suche fuer teurer, als sie ist; wer nur
+die zweite liest, haelt sie fuer umsonst.
+
+Die Tafel in `cli abstand --eichung` traegt jetzt beide Spalten und reicht bis
+zur Budgetgrenze, und alle Zeilen entstehen aus derselben Zahl Laeufe - eine
+Zeile aus 1.250 Laeufen neben einer aus 5.000 saehe genauso aus und meinte
+etwas anderes.
+
+### Und die Frage gehoert zum Nutzer
+
+278 hat gemessen und berichtet. Was fehlte, war der Schritt danach: Ob die
+Latte weiter auf einer Zahl stehen soll, die bei diesem Versuchsstand etwas
+anderes bedeutet als ihr Name, ist eine Geschaeftsentscheidung - und die
+gehoert in die Liste, die der Nutzer liest, nicht in einen Laborbucheintrag.
+
+Sie steht jetzt unter **WAS NICHT BEI MIR LIEGT**, mit den Zahlen, mit beiden
+Einschraenkungen (unabhaengige statt korrelierte Versuche; 5.000 Laeufe
+loesen nicht feiner auf als 0,02 %) und mit dem Satz, der nicht verhandelbar
+ist: **Geaendert wurde nichts.**
+
+Kostet keinen Versuch: Gemessen wird die eigene Latte, kein Kandidat.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+Volle Suite 3800 passed, 1 skipped; ruff check sauber.

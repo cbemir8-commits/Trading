@@ -4548,6 +4548,7 @@ def abstand(
     if eichung:
         from research.eichung import nullverteilung
         from research.gates import GateThresholds
+        from research.stand import BUDGET
 
         # **Was die Latte bedeutet** (Befund 278). Gezogen wird aus den
         # eigenen Trades, auf Mittelwert null geschoben: dieselbe Form, kein
@@ -4560,24 +4561,50 @@ def abstand(
         )
         console.print(f"[bold]Was die Latte bedeutet[/]  ({null.laeufe} Suchlaeufe)\n")
         console.print(null.beschreibe())
+        console.print(
+            f"Der Bestand steht bei {ergebnis.dsr:.4f} - das ist das "
+            f"{null.lage(ergebnis.dsr):.2f}. Perzentil dieser Null."
+        )
         eichtafel = Table(header_style="bold")
         eichtafel.add_column("Versuche", justify="right")
         eichtafel.add_column("95. Perzentil der Null", justify="right")
         eichtafel.add_column("Fehlalarm bei 0,95", justify="right")
-        for versuchsstand in sorted({1, 10, 50, trials}):
+        eichtafel.add_column("DSR Bestand", justify="right")
+        eichtafel.add_column("sein Perzentil", justify="right")
+        # Die Budgetgrenze gehoert dazu: Sie sagt, was der Rest der erlaubten
+        # Suche an der **Lage** des Bestands aendert - nicht nur an seinem
+        # rohen Wert, denn die Null wandert mit.
+        for versuchsstand in sorted({1, 10, 50, trials, BUDGET.grenze}):
             teil = nullverteilung(
                 [float(x.net_pnl) for x in gehandelt.all_trades],
                 versuche=versuchsstand,
                 stichprobe=n,
+                # Dieselbe Zahl Laeufe wie oben: Eine Zeile mit groeberer
+                # Aufloesung stuende neben einer feineren und saehe genauso
+                # aus - und das Register zitiert diese Zahlen.
                 latte=GateThresholds().min_deflated_sharpe,
-                laeufe=max(1000, null.laeufe // 4),
+                laeufe=null.laeufe,
+            )
+            dort = bewerte(
+                trades=n,
+                sharpe=sharpe,
+                trials=versuchsstand,
+                skew=schiefe,
+                kurtosis=woelbung,
+            )
+            marke = (
+                " <-- heute"
+                if versuchsstand == trials
+                else (" (Budget)" if versuchsstand == BUDGET.grenze else "")
             )
             eichtafel.add_row(
-                f"{versuchsstand}{' <-- heute' if versuchsstand == trials else ''}",
+                f"{versuchsstand}{marke}",
                 f"{teil.latte_fuer_fuenf_prozent:.4f}",
                 f"{teil.fehlalarm:.3%}"
                 if teil.fehlalarm > 0
                 else f"< {teil.aufloesung:.3%}",
+                f"{dort.dsr:.4f}",
+                f"{teil.lage(dort.dsr):.2f}",
             )
         console.print()
         console.print(eichtafel)
