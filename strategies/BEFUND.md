@@ -24097,3 +24097,114 @@ wurde ein Zugang zu einem vorhandenen Werkzeug.
 
 Volle Suite 3667 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihunderteinundsiebzig. Die Sperren sparen, sie kosten nicht
+
+Befund 270 endet bei den Einstiegen: Dort muesste der Ertrag herkommen, weil
+Ausstiege, Verlustseite, Aufstellung und Positionsgroesse alle gemessen
+ausscheiden. Und die Engine sperrt Einstiege - nach 3 % Tagesverlust, 7 %
+Wochenverlust, bei 15 % Rueckgang faellt der Kill-Switch, dazu das
+Termin-Overlay.
+
+Die naheliegende Vermutung: Diese Sperren kosten Trades, und Trades sind
+genau das, was nach Befund 269 fehlt - mehr effektive Stichprobe senkt die
+Latte des Deflated Sharpe.
+
+### Zuerst ein Fehler aus Befund 269
+
+In 269 hatte ich verglichen:
+
+    **({"enforce_risk_limits": True} if grenzen else {}),
+
+`enforce_risk_limits` hat den **Default `True`**. Das leere Dict schaltet also
+nichts ab - ich habe zweimal denselben Lauf gemessen und aus der Gleichheit
+geschlossen, der Schalter tue nichts. Er tut sehr wohl etwas.
+
+Aufgefallen ist es, weil die Logs voller `risk.wochenlimit`- und
+`risk.kill_switch`-Meldungen stehen und das nicht zu "kein Unterschied"
+passte. Gemessen statt geglaubt - und diesmal richtig verglichen.
+
+### Was die Sperren wirklich kosten
+
+    Aufbau                Trades   % p.a.   Rueckgang   Summe   Sharpe/Trade
+    Grenzen + Kalender       158   14,3391    9,8687 %  766,34        0,2708
+    nur Grenzen              160   14,2697    9,8687 %  763,87        0,2680
+    weder noch               162   14,1915    9,8687 %  761,22        0,2652
+
+**Die Sperren kosten keine Einstiege, die man vermissen wuerde.** Die vier
+Trades, die ohne sie zustande kaemen, bringen zusammen **-5,12 EUR**. Beide
+offenen Gates werden ohne die Sperren schlechter: die Jahresrendite um 0,15
+Punkte, der Sharpe je Trade um 0,0056.
+
+Und der Rueckgang ist in allen drei Faellen **bitgleich** 9,8687 %. Der
+Kill-Switch bei 15 % greift im Walk-Forward also nie - der Rueckgang kommt
+nie dorthin. Was greift, sind Tages- und Wochengrenze (neun Vetos
+`trading_paused`) und der Kalender (sechs `news_blackout`).
+
+Damit faellt auch dieser Weg weg: Die Sperren zu lockern brachte vier
+schlechte Trades und kostete an beiden Gates.
+
+### Der aelteste offene Punkt des Registers
+
+Unter den Vetos steht `news_blackout` - das Termin-Overlay. Im Auftragsregister
+steht es seit **Befund 59**:
+
+> P7: News- und Termin-Overlay - beides gebaut und gemessen; die Wirkung ist
+> nicht belegt.
+
+Isoliert gemessen: Der Kalender traegt 138 Termine, sperrt in acht Jahren
+**sechs** Einstiege und bringt dafuer +2,47 EUR auf 766 - der Sharpe je Trade
+steigt von 0,2680 auf 0,2708.
+
+Das sieht nach einem kleinen Gewinn aus. Und genau hier verlangt dieses
+Projekt eine zweite Frage.
+
+### Leistet es mehr als beliebiges Streichen?
+
+`cli sperrprobe` stellt diese Frage seit Befund 58 - fuer das Schock-Overlay
+und die Abkuehlung. Ihre Begruendung gilt fuer jede Sperre:
+
+> Weniger Trades sind manchmal einfach besser. Wer aus 165 Einstiegen
+> irgendwelche 13 streicht, veraendert Rueckgang und schlechtestes Jahr.
+
+**Der Kalender war dort nie eingetragen.** Die Probe kannte zwei Massnahmen,
+und ausgerechnet die dritte - die, deren Wirkung als offener Punkt im Register
+stand - lief nie durch sie hindurch.
+
+Jetzt eingetragen und gelaufen, dreissig Ziehungen:
+
+    Kennzahl              gemessen    Zufall (Median, Spanne)     Anteil
+    Gates bestanden          6/9      6,000 [6,000 bis 7,000]     100,0 %
+    Rueckgang %            10,64     10,640 [8,864 bis 10,640]     90,0 %
+    Schlechtestes Jahr    -10,32    -10,320 [-10,320 bis -8,470]  100,0 %
+    Sharpe je Trade       0,2677      0,267 [0,256 bis 0,270]      36,7 %
+
+**Der Effekt haelt der Kontrolle nicht stand.** Alle dreissig zufaelligen
+Sperren derselben Groesse halten genauso viele Gates. Es war nicht die
+Auswahl, sondern das Streichen.
+
+### Was davon bleibt
+
+Das Overlay **schadet nicht** - die Bilanz ist leicht positiv, und es erfuellt
+seinen eigentlichen Zweck, naemlich an Terminen mit Sprungrisiko nicht
+einzusteigen. Als **Hebel** ist es nichts: sechs Einstiege in acht Jahren,
+0,3 % der Summe, gegen den Zuwachs, den Befund 269 verlangt.
+
+Der Auftragspunkt kann damit geschlossen werden, und zwar ehrlich: Die Wirkung
+ist belegt und sie ist klein.
+
+### Zur Belastbarkeit
+
+Gezogen wurden **dreissig** statt der vorgesehenen zweihundert - eine Ziehung
+dauert 13,6 Sekunden. Bei einem knappen Ergebnis waere das zu wenig. Hier
+halten **alle** dreissig mit; mehr zu ziehen kann daran nichts drehen, es
+koennte den Anteil nur von 100 % auf knapp darunter bewegen.
+
+Und wie der Befehl selbst sagt: Kosten-Stress und Parameter-Plateau sind in
+der Probe ausgelassen, weil zweihundert Ziehungen davon Stunden waeren.
+
+Kostet keinen Versuch: gemessen wird eine vorhandene Einstellung am
+vorhandenen Kandidaten, ausgewaehlt wird nichts.
+
+Volle Suite 3676 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

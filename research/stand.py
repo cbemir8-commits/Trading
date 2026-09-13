@@ -1593,6 +1593,31 @@ BEHOBEN: tuple[Richtung, ...] = (
         "damit gemessen erledigt, ohne einen Versuch",
         270,
     ),
+    # Der Anschluss an 270 ("ueber die Einstiege") - und dabei der aelteste
+    # offene Auftragspunkt des Registers.
+    Richtung(
+        "Die Sperren kosten keine Einstiege, sie sparen schlechte",
+        "270 endet bei den Einstiegen, und die Engine sperrt welche: nach 3 % "
+        "Tagesverlust, 7 % Wochenverlust, bei 15 % Rueckgang der Kill-Switch, "
+        "dazu der Terminkalender. Gemessen (271), diesmal richtig verglichen "
+        "- 'enforce_risk_limits' hat den Default True, mein Vergleich in 269 "
+        "hat deshalb zweimal denselben Lauf gemessen: Mit allen Sperren 158 "
+        "Trades und 14,3391 % p.a., nur mit den Verlustgrenzen 160 und "
+        "14,2697 %, ohne beides 162 und 14,1915 %. Die vier zusaetzlichen "
+        "Trades bringen zusammen **-5,12 EUR**, der Sharpe je Trade faellt "
+        "von 0,2708 auf 0,2652, und der Rueckgang ist in allen drei Faellen "
+        "bitgleich 9,8687 % - der Kill-Switch greift nie. **Die Sperren sind "
+        "kein Kostenfaktor, sondern ein kleiner Gewinn**; sie abzuschalten "
+        "verschlechterte beide offenen Gates. Damit ist auch der aelteste "
+        "Auftragspunkt geschlossen: Das Termin-Overlay (P7, seit Befund 59 "
+        "als 'Wirkung nicht belegt' gefuehrt) sperrt in acht Jahren sechs "
+        "Einstiege, und in der Sperrprobe halten **100 % der zufaelligen "
+        "Sperren derselben Groesse genauso viele Gates**. Es war nicht die "
+        "Auswahl, sondern das Streichen. 'cli sperrprobe --massnahme "
+        "kalender' prueft das jetzt mit derselben Strenge wie Schock und "
+        "Abkuehlung",
+        271,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -2224,10 +2249,21 @@ class Auftragspunkt:
 
 #: Die Punkte aus dem Auftrag, mit ihrem gemessenen Stand.
 AUFTRAG: tuple[Auftragspunkt, ...] = (
+    # Seit Befund 59 offen, in 271 mit derselben Gegenprobe geschlossen, die
+    # fuer Schock (58) und Abkuehlung (44) gilt.
     Auftragspunkt(
         frage="P7: News- und Termin-Overlay",
-        stand="beides gebaut und gemessen; die Wirkung ist nicht belegt",
-        befund=59,
+        stand="gebaut, gemessen und geprueft (271): Der Kalender traegt 138 "
+              "Termine und sperrt in acht Jahren **sechs** Einstiege. Fuer "
+              "sich genommen bringt das +2,47 EUR auf 766 und hebt den Sharpe "
+              "je Trade von 0,2680 auf 0,2708. In der Sperrprobe haelt der "
+              "Effekt nicht stand: **100 % der zufaelligen Sperren derselben "
+              "Groesse halten genauso viele Gates.** Es war nicht die "
+              "Auswahl, sondern das Streichen. Das Overlay schadet nicht und "
+              "ist zu klein, um zu zaehlen - gegen den Zuwachs, den Befund 269 "
+              "verlangt, faellt es nicht ins Gewicht",
+        befund=271,
+        erledigt=True,
     ),
     # Der Punkt ist erledigt, sein **Auftrag** war es nicht: Befund 180 fand
     # ihn drei Befunde stale, 183 nahm vier Zahlen zurueck, 193 hat sein Ziel

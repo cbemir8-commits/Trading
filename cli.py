@@ -6239,7 +6239,8 @@ def sperrprobe(
     intervall: str = typer.Option("D", "--intervall", "-i"),
     massnahme: str = typer.Option(
         "schock", "--massnahme",
-        help="Welche Trade-Entfernung geprueft wird: schock, abkuehlung.",
+        help="Welche Trade-Entfernung geprueft wird: schock, abkuehlung, "
+             "kalender.",
     ),
     kerzen: int = typer.Option(
         3, "--kerzen", help="Nur fuer abkuehlung: Laenge der Sperrfrist."
@@ -6312,6 +6313,42 @@ def sperrprobe(
             for name, f in frames.items()
         }
         masken = {name: signale[name] & ~mit[name] for name in frames}
+    elif massnahme == "kalender":
+        # **Die dritte Sperre, die diese Probe nie gesehen hat** (Befund 271).
+        #
+        # Schock und Abkuehlung standen hier seit Befund 58 und 44. Das
+        # Termin-Overlay entfernt Einstiege nach derselben Bauart - und seine
+        # Wirkung steht seit Befund 59 als offener Auftragspunkt im Register:
+        # *"beides gebaut und gemessen; die Wirkung ist nicht belegt"*.
+        # Geprueft wurde sie nie mit der Strenge, die fuer die beiden anderen
+        # gilt.
+        kalender = _terminkalender(settings)
+        if not kalender:
+            console.print(
+                "[red]Kein Terminkalender im Speicher.[/] "
+                "[dim]Laden: python -m cli termine[/]"
+            )
+            raise typer.Exit(2)
+        console.print(f"[dim]Terminkalender: {len(kalender)} Termine[/]")
+        from backtest.engine import Backtester
+
+        masken = {}
+        for name, f in frames.items():
+            zeiten = f["open_time"].to_numpy()
+            # **Dieselbe Spannenrechnung wie die Engine**, nicht eine zweite:
+            # Wer sie hier anders misst, sperrt in der Probe andere Kerzen als
+            # im Lauf - und der Unterschied waere nicht zu sehen.
+            spanne = Backtester._kerzenspanne({"open_time": zeiten})
+            gesperrte = np.array(
+                [
+                    kalender.sperre(
+                        pd.Timestamp(t).to_pydatetime(), spanne=spanne
+                    )
+                    is not None
+                    for t in zeiten
+                ]
+            )
+            masken[name] = signale[name] & gesperrte
     else:
         console.print(f"[red]Unbekannte Massnahme '{massnahme}'.[/]")
         raise typer.Exit(2)
