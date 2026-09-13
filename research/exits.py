@@ -238,3 +238,115 @@ def _with_suggestions(a: ExitAnalysis) -> ExitAnalysis:
         captured_share=a.captured_share,
         suggestions=suggestions,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class Ausstiegsgruppe:
+    """Was eine Sorte Ausstieg zum Ergebnis beitraegt."""
+
+    grund: str
+    anzahl: int
+    summe: float
+    mittel: float
+    streuung: float
+
+    def anteil(self, gesamt: float) -> float:
+        return self.summe / gesamt * 100 if gesamt else 0.0
+
+
+@dataclass(frozen=True, slots=True)
+class Ertragsquelle:
+    """Woher der Ertrag kommt, aufgeschluesselt nach Ausstiegsgrund.
+
+    **Die Ergaenzung zu MAE und MFE** (Befund 270). Jene sagen, ob an Stop
+    und Ziel Spielraum liegt. Diese sagt, **wo der Ertrag ueberhaupt sitzt** -
+    und damit, ob eine Verbesserung an der Verlust- oder an der Gewinnseite
+    ansetzen muesste.
+
+    Am Bestand gemessen: Zehn Trades mit ``take_profit`` tragen 81 % des
+    Ertrags, 68 Stops kosten zusammen 18 %. Der noetige Zuwachs aus Befund 269
+    entspricht 97 % der **gesamten** Verlustsumme - die Verlustseite allein
+    traegt ihn also nicht, selbst wenn jeder Verlust auf null ginge.
+    """
+
+    gruppen: tuple[Ausstiegsgruppe, ...]
+    gewinner: int
+    verlierer: int
+    gewinnsumme: float
+    verlustsumme: float
+    """Negativ - die Summe der Verlierer, nicht ihr Betrag."""
+
+    @property
+    def gesamt(self) -> float:
+        return self.gewinnsumme + self.verlustsumme
+
+    @property
+    def trefferquote(self) -> float:
+        n = self.gewinner + self.verlierer
+        return self.gewinner / n * 100 if n else 0.0
+
+    def traegt_die_verlustseite(self, zuwachs: float) -> bool:
+        """Reichte es, **jeden** Verlust auf null zu setzen?
+
+        Die Frage, die vor jeder Arbeit an Stops und Filtern steht. Ist die
+        Antwort nein, muss der Zuwachs aus der Gewinnseite kommen - und dann
+        ist ein engerer Stop die falsche Baustelle, egal wie verlockend die
+        Verlustliste aussieht.
+        """
+        return abs(self.verlustsumme) >= zuwachs
+
+    def urteil(self, zuwachs: float) -> str:
+        anteil = zuwachs / abs(self.verlustsumme) * 100 if self.verlustsumme else 0.0
+        wo = (
+            "Die Verlustseite koennte ihn tragen"
+            if self.traegt_die_verlustseite(zuwachs)
+            else "Die Verlustseite traegt ihn **nicht**"
+        )
+        return (
+            f"Noetig sind {zuwachs:.2f} EUR - das sind {anteil:.1f} % der "
+            f"gesamten Verlustsumme und "
+            f"{zuwachs / self.gewinnsumme * 100 if self.gewinnsumme else 0:.1f} % "
+            f"der Gewinnsumme. {wo}: Selbst jeder Verlust auf null gesetzt "
+            f"braechte {abs(self.verlustsumme):.2f} EUR."
+        )
+
+
+def ertragsquelle(trades: list[Trade]) -> Ertragsquelle:
+    """Das Handelsbuch nach Ausstiegsgrund zerlegen.
+
+    **Strukturell, nicht auswaehlend.** Gefragt ist, was die Bauart tut -
+    nicht, welche einzelnen Trades guenstig lagen. Nach Haltezeit zu
+    sortieren und die kurzen wegzudenken waere das Zweite: Die Haltezeit ist
+    ein **Ergebnis**, kein Einstiegskriterium, und wer danach filtert, hat
+    nichts gelernt.
+    """
+    nach_grund: dict[str, list[float]] = {}
+    for trade in trades:
+        grund = str(getattr(trade, "exit_reason", "") or "unbekannt")
+        nach_grund.setdefault(grund, []).append(float(trade.net_pnl))
+
+    gruppen = tuple(
+        sorted(
+            (
+                Ausstiegsgruppe(
+                    grund=grund,
+                    anzahl=len(werte),
+                    summe=float(np.sum(werte)),
+                    mittel=float(np.mean(werte)),
+                    streuung=float(np.std(werte, ddof=1)) if len(werte) > 1 else 0.0,
+                )
+                for grund, werte in nach_grund.items()
+            ),
+            key=lambda g: -g.summe,
+        )
+    )
+    alle = [float(t.net_pnl) for t in trades]
+    gewinne = [x for x in alle if x > 0]
+    verluste = [x for x in alle if x <= 0]
+    return Ertragsquelle(
+        gruppen=gruppen,
+        gewinner=len(gewinne),
+        verlierer=len(verluste),
+        gewinnsumme=float(np.sum(gewinne)) if gewinne else 0.0,
+        verlustsumme=float(np.sum(verluste)) if verluste else 0.0,
+    )

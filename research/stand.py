@@ -1572,6 +1572,27 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Latte haengt an ihr",
         269,
     ),
+    # Die Anschlussfrage aus 269: Woher kaeme der Ertrag?
+    Richtung(
+        "Am Ausstieg ist nichts zu holen - das Werkzeug lief nur nie",
+        "'research.exits' beantwortet aus MAE und MFE, ob Stop und Ziele "
+        "Spielraum lassen. Aufgerufen wurde es allein in 'cli review', und "
+        "das laedt **Live-Trades** - die es nicht gibt. Dieselbe Bauart wie "
+        "262 und 265: richtig gebaut, an einer leeren Quelle. Auf dem "
+        "Backtest-Buch angewandt (270) sagt es nein: Der Gegenlauf der "
+        "Gewinner liegt im Median bei 0,36 R und bei 90 % unter 0,82 R - ein "
+        "Stop bei 1,0 R schneidet also fast keinen Gewinner ab, enger zu "
+        "gehen kostete welche. Realisiert werden 58 % des Moeglichen. Das "
+        "Urteil des Werkzeugs: *'eine Verbesserung muesste an den "
+        "Einstiegen ansetzen, nicht an den Ausstiegen'*. **Die Zerlegung "
+        "stuetzt es**: Zehn 'take_profit'-Trades tragen 81 % des Ertrags, 68 "
+        "Stops kosten 18 % bei einer Streuung von 1,14 - sie greifen, wo sie "
+        "sollen. Und der Zuwachs aus 269 entspricht **103,7 % der gesamten "
+        "Verlustsumme**: Selbst jeder Verlust auf null gesetzt traegt ihn "
+        "nicht. Die naheliegendste Idee - engerer Stop, weiteres Ziel - ist "
+        "damit gemessen erledigt, ohne einen Versuch",
+        270,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

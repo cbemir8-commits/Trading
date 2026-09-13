@@ -23985,3 +23985,115 @@ ausgewaehlt wird nichts.
 
 Volle Suite 3654 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsiebzig. Am Ausstieg ist nichts zu holen
+
+Befund 269 hat die Richtung beziffert: **Ertrag je Trade bei gleicher
+Streuung**, +25,9 %. Die Anschlussfrage ist, woher dieser Ertrag kaeme - und
+die naheliegendste Antwort waere: engerer Stop, weiteres Ziel.
+
+Dafuer gibt es ein Werkzeug. `research/exits.py` wertet MAE und MFE aus, also
+Gegenlauf und Vorlauf jedes Trades, und leitet daraus ab, ob Stop oder Ziele
+falsch sitzen. Sein Modulkopf warnt sogar vor genau der Falle, die hier
+droht: *"Wer die MAE-Verteilung direkt in Parameter uebersetzt, hat nichts
+gelernt, sondern nur auf einem Umweg ueberangepasst."*
+
+### Und es ist nie gelaufen
+
+`analyse_exits` wird an genau einer Stelle aufgerufen: in `cli review`. Und
+das laedt:
+
+    trades = _load_live_trades(Path(settings.paths.state))
+
+**Live-Trades.** Es gibt keinen Champion, keinen Livebetrieb und keine
+Live-Trades. Der Befehl bricht davor mit *"Noch keine abgeschlossenen
+Trades"* ab.
+
+Dieselbe Bauart wie in Befund 262 (`abgleich` prueft den Saatkandidaten statt
+des Champions) und 265 (die Funding-Raten gehen an die Kerzen statt in die
+Rechnung): ein richtig gebautes Werkzeug an einer Quelle, die leer ist. Der
+Modulkopf sagt es selbst - *"Beide Zahlen sagen etwas ueber die **schon
+gehandelten** Trades"* -, und Backtest-Trades sind gehandelte Trades.
+
+### Auf das Backtest-Buch angewandt
+
+    156 Trades (39 Gewinner)
+    Gegenlauf der Gewinner: Median 0,36 R, 90 % unter 0,82 R
+    Vorlauf:                Median 0,81 R
+    realisiert 58 % des Moeglichen
+
+Das Urteil des Werkzeugs, unveraendert seit es gebaut wurde:
+
+> Aus MAE und MFE ergibt sich kein klarer Spielraum. Stops und Ziele passen
+> zu dem, was der Markt in diesen Trades hergegeben hat - eine Verbesserung
+> muesste an den **Einstiegen** ansetzen, nicht an den Ausstiegen.
+
+Die Zahl, an der das haengt, ist der Gegenlauf: **90 % der Gewinner laufen
+weniger als 0,82 R gegen uns.** Ein Stop bei 1,0 R schneidet also fast keinen
+ab. Enger zu gehen wuerde Gewinner kosten, nicht Verluste sparen - die
+umgekehrte Richtung dessen, was 269 fordert.
+
+### Wo der Ertrag sitzt
+
+    Ausstieg        n     Summe    Mittel   Streuung   Anteil
+    take_profit    10    619,90   61,9896    26,8969    80,9 %
+    signal_exit    78    288,45    3,6981    10,4383    37,6 %
+    stop_loss      68   -142,01   -2,0885     1,1434   -18,5 %
+
+**Zehn Trades tragen vier Fuenftel des Ertrags.** Das ist die Eigenschaft
+einer Trendfolge, und sie hat Folgen: Die Streuung, an der der Deflated
+Sharpe haengt, kommt fast vollstaendig aus diesen wenigen.
+
+Die Stops dagegen sind billig und gleichfoermig - Mittel -2,09 EUR bei einer
+Streuung von 1,14. Sie greifen, wo sie sollen.
+
+### Die Rechnung, die die Verlustseite ausschliesst
+
+Der noetige Zuwachs aus Befund 269 sind 211,50 EUR. Gemessen am Handelsbuch:
+
+    211,50 EUR  =  103,7 % der gesamten Verlustsumme
+                =   21,8 % der Gewinnsumme
+
+**Selbst jeder Verlust auf null gesetzt traegt ihn nicht** - das braechte
+203,96 EUR und damit weniger als noetig.
+
+Damit ist die Verlustseite als Weg ausgeschlossen, und zwar nicht nach
+Gefuehl, sondern mit einer Zahl. Jede Arbeit an Stops, Filtern und
+Fehlausbruechen faellt in diese Kategorie. Was bleibt, ist die Gewinnseite:
+21,8 % mehr aus den Trades, die ohnehin gewinnen.
+
+### Die Falle, die diese Tabelle stellt
+
+Nach Haltezeit zerlegt sieht es verlockend aus: Alles unter vierzehn Tagen
+ist in Summe negativ, alles ueber dreissig Tagen stark positiv. Daraus "kurze
+Trades wegfiltern" zu machen, waere **Kurvenanpassung**.
+
+Die Haltezeit ist ein **Ergebnis**, kein Einstiegskriterium. Man weiss beim
+Einstieg nicht, welcher Trade kurz wird - man weiss es erst, wenn der Stop
+greift. Ein Filter darauf ist ein Filter auf die Zukunft.
+
+Deshalb zerlegt das gebaute Werkzeug nach **Ausstiegsgrund** und nicht nach
+Haltezeit: Der Ausstiegsgrund ist eine Eigenschaft der Bauart, die Haltezeit
+eine des Verlaufs. `ertragsquelle` sagt das im Docstring, damit die naechste
+Zerlegung nicht in dieselbe Richtung laeuft.
+
+### Was daraus folgt
+
+Nach 268 (Aufstellung), 269 (Richtung) und jetzt 270 (Ausstiege) ist der
+Suchraum deutlich enger:
+
+* **nicht** breiter werden - kostet Rendite und Deflated Sharpe (268)
+* **nicht** groesser handeln - reisst das Drawdown-Gate (269)
+* **nicht** ruhiger werden - an der Streuung ist Luft, nicht Not (269)
+* **nicht** an Stop und Zielen drehen - dort sitzt kein Spielraum (270)
+* **nicht** die Verlustseite bearbeiten - sie traegt den Zuwachs nicht (270)
+
+Was bleibt: **21,8 % mehr aus den Gewinnern, ueber die Einstiege.** Das ist
+eng, aber es ist zum ersten Mal eine Richtung, hinter der keine ungeprueften
+Alternativen mehr stehen.
+
+Kostet keinen Versuch: gerechnet auf einem vorhandenen Handelsbuch, gebaut
+wurde ein Zugang zu einem vorhandenen Werkzeug.
+
+Volle Suite 3667 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

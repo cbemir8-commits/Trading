@@ -4144,6 +4144,11 @@ def abstand(
         help="Zusaetzlich: Was fordern Betriebsschwelle und Deflated Sharpe "
              "zusammen - und bis zu welcher Versuchszahl traegt das?",
     ),
+    ausstiege: bool = typer.Option(
+        False, "--ausstiege",
+        help="Zusaetzlich: Sitzen Stop und Ziele richtig, und wo sitzt der "
+             "Ertrag ueberhaupt?",
+    ),
     spot: bool = typer.Option(
         False, "--spot",
         help="Auf dem Spot-Punkt rechnen: kein Funding, kein Hebel.",
@@ -4175,6 +4180,14 @@ def abstand(
 
     Und die Zahl, die daraus folgt: **Bis zu welcher Versuchszahl traegt das
     ueberhaupt noch?** Sie liegt unter dem Suchbudget des Plans.
+
+    Mit ``--ausstiege`` die Anschlussfrage (Befund 270): Wenn Ertrag je Trade
+    gesucht ist - liegt er an Stop und Zielen? ``research.exits`` beantwortet
+    das aus MAE und MFE und lief bisher **nur in ``cli review``**, also auf
+    Live-Trades, die es nicht gibt. Auf dem Backtest-Buch angewandt sagt es
+    nein: Der Gegenlauf der Gewinner liegt im Median bei 0,36 R und bei 90 %
+    unter 0,82 R - ein Stop bei 1,0 R schneidet also fast keinen Gewinner ab.
+    Dazu die Zerlegung, wo der Ertrag sitzt.
     """
     from decimal import Decimal
 
@@ -4376,6 +4389,57 @@ def abstand(
                 f"Trades bei gleichem Ertrag je Trade schieben die Grenze "
                 f"hinaus, mehr Suche nicht.[/]\n"
             )
+
+    if ausstiege:
+        from research.exits import analyse_exits, ertragsquelle
+
+        # **Auf dem Backtest-Buch** (Befund 270). 'analyse_exits' hing bis
+        # hierher allein an 'cli review' und damit an Live-Trades - die es
+        # nicht gibt. Gebaut war das Werkzeug die ganze Zeit richtig.
+        buchtrades = gehandelt.all_trades
+        analyse = analyse_exits(buchtrades)
+        quelle = ertragsquelle(buchtrades)
+
+        console.print("[bold]Sitzen Stop und Ziele richtig?[/]\n")
+        console.print(f"  {analyse.describe()}\n")
+        for vorschlag in analyse.suggestions:
+            console.print(f"  [yellow]- {vorschlag}[/]")
+
+        console.print("\n[bold]Wo sitzt der Ertrag?[/]\n")
+        quelltafel = Table(header_style="bold")
+        quelltafel.add_column("Ausstieg")
+        quelltafel.add_column("n", justify="right")
+        quelltafel.add_column("Summe", justify="right")
+        quelltafel.add_column("Mittel", justify="right")
+        quelltafel.add_column("Streuung", justify="right")
+        quelltafel.add_column("Anteil", justify="right")
+        for gruppe in quelle.gruppen:
+            quelltafel.add_row(
+                gruppe.grund, str(gruppe.anzahl),
+                f"{gruppe.summe:.2f}", f"{gruppe.mittel:.4f}",
+                f"{gruppe.streuung:.4f}",
+                f"{gruppe.anteil(quelle.gesamt):.1f} %",
+            )
+        console.print(quelltafel)
+        console.print(
+            f"\n  {quelle.gewinner} Gewinner ({quelle.trefferquote:.1f} %), "
+            f"{quelle.verlierer} Verlierer\n"
+        )
+
+        # Der Zuwachs aus Befund 269 - auf demselben Buch gerechnet.
+        from research.gates import GateThresholds
+        from research.zielfenster import noetige_summe
+
+        kenn = report.combined
+        fenster = [w for w in report.windows if w.window is not None]
+        if kenn is not None and fenster:
+            jahre = (
+                fenster[-1].window.test_end - fenster[0].window.test_start
+            ).days / 365.25
+            ziel = noetige_summe(jahre, GateThresholds().min_cagr_pct)
+            zuwachs = ziel - float(sum(x.net_pnl for x in report.all_trades))
+            if zuwachs > 0:
+                console.print(f"[yellow]{quelle.urteil(zuwachs)}[/]\n")
 
 
 @app.command()
