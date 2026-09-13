@@ -31,11 +31,21 @@ aus den Daten, sondern aus der Marktstruktur: die drei Handelssitzungen und
 ihre Ueberschneidungen. Dazu die 96 einzelnen Viertelstunden als Landkarte -
 mit der Schwelle, die zu 96 Zellen gehoert, nicht mit der fuer eine.
 
-Dieselben drei Huerden wie im Vorteilsscan
-------------------------------------------
+Drei Huerden wie im Vorteilsscan
+--------------------------------
 1. Auffaellig gegen die Zahl der **geprueften** Zellen, nicht gegen eine.
 2. In **beiden Haelften** des Zeitraums dasselbe Vorzeichen.
 3. Nach Gebuehren etwas uebrig.
+
+Seine vierte - die Verschiebungsprobe aus Befund 276 - steht hier nicht, und
+zwar aus der Bauart heraus: Dort fragt sie, ob ein traeger Teiler den t-Wert
+schon von allein erzeugt. Hier gibt es keinen Teiler, der stehenbleiben
+koennte; ``messe`` vergleicht **gepaart je Tag**, innen gegen aussen am
+selben Tag. Beide Zustaende stehen jeden Tag nebeneinander.
+
+Was damit **nicht** gemessen ist: ob die taeglichen Unterschiede selbst eine
+Form haben, die den t-Wert traegt. Das ist die zweite Haelfte dessen, was die
+Verschiebungsprobe im Vorteilsscan auffaengt, und sie ist hier offen.
 
 Kostet keinen Versuch: Geprueft wird die Struktur der Daten, keine handelbare
 Regel.

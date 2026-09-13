@@ -215,6 +215,8 @@ BEGRIFFE: dict[str, tuple[str, ...]] = {
         "cli scan",
         "in der zweiten Haelfte verschwunden",
         "Einstiegsseite",
+        "Marktbreite",
+        "Verschiebungsprobe",
     ),
 }
 

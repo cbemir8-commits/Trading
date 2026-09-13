@@ -24569,3 +24569,150 @@ Versuchszaehler 198 unveraendert.
 
 Volle Suite 3711 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertsechsundsiebzig. Die vierte Familie und die Latte darunter
+
+Befund 274 hat drei Familien gemessen und eine Luecke benannt: *"Nicht
+gemessen bleiben Funding als Kennzahl (der Speicher ist leer), **Marktbreite
+ueber mehr als zwei Maerkte**, und alles, was mit Bybit-Daten anders aussehen
+koennte."* Vier Forschungsmaerkte liegen auf Tageskerzen im Speicher - die
+mittlere der drei ist also messbar.
+
+### Was die Marktbreite hier ist
+
+Der Anteil der **uebrigen** Maerkte, die ueber denselben Rueckblick gestiegen
+sind. Ohne den gehandelten selbst: Zaehlte er mit, steckte ein Teil seines
+eigenen Rueckblicks in der Kennzahl, und ein Fund liesse sich nicht mehr
+zuordnen - eigener Trend oder fremde Bestaetigung.
+
+Der Vorrat ist die Liste `data.reference.PAIRS` und keine Option. Wer die
+Nachbarmaerkte aussuchen darf, sucht so lange, bis eine Zelle auffaellt. Auf
+Viertelstunden haben nur BTC und ETH Kerzen, also bleibt ein Nachbar - zu
+wenig fuer eine Breite, und der Lauf meldet das, statt die Familie stumm
+wegzulassen.
+
+Gerechnet wird sie mit derselben `zweiteilung` wie die drei anderen; neu ist
+nur der Teiler. Die Breite steht auf dem gemeinsamen Zeitraum aller vier
+Maerkte (3301 Tage, ab 2017-08-16), nicht auf den 5355 Tagen von BTC allein.
+
+Und sie laeuft **nur fuer einen Markt aus dieser Liste**. Der Fall kommt,
+sobald Bybit-Kerzen im Speicher liegen: `BTCUSDT` bekaeme sonst
+`BTCUSD_BITSTAMP` als Nachbarn untergeschoben - derselbe Wert von einer
+anderen Boerse, also der eigene Rueckblick unter fremdem Namen, und damit
+genau das, was diese Familie draussen halten soll. Welches Boersensymbol zu
+welchem Forschungsmarkt gehoert, weiss im Code niemand; solange das so ist,
+wird lieber nicht gemessen als falsch, und der Lauf sagt warum.
+
+### Der erste Fund dieser Reihe
+
+    Markt / Kerze   Preis   Volumen   Spanne   Marktbreite   Schwelle
+    BTC 1d          +3,69     +2,87    +2,85         -3,74       3,62
+    ETH 1d          +2,88     +1,68    -1,88         +3,52       3,61
+
+    (173 gepruefte Zellen auf BTC, 164 auf ETH - die Schwelle gilt
+     ueber alle vier Familien eines Marktes zusammen.)
+
+Die Marktbreite bringt auf BTC als erste Zelle dieser ganzen Scan-Reihe etwas
+ueber die Schwelle: **t = -3,74** bei einer Latte von 3,62 - in beiden
+Haelften stabil, netto **+0,90 % je Trade** nach Kosten. Nach den Regeln, die
+bis zu diesem Befund galten, waere das ein Fund gewesen: *"Hier lohnen sich
+Versuche."*
+
+### Und die Nachfrage, die ihn erledigt
+
+Die Zelle steht auf 585 Beobachtungen. Ihr Zustand wechselt **fuenfzehnmal**:
+
+    Blocklaengen   9  1  49  1  9  248  6  2  1  5  27  3  63  140  19  2
+
+Zwei Bloecke - 248 und 140 - tragen zwei Drittel der Reihe. Ein Rueckblick
+ueber 960 Tage sagt nicht 585-mal etwas Neues; er sagt sechzehnmal etwas und
+wiederholt sich dazwischen. Der t-Wert rechnet mit 585.
+
+Gemessen wird das, indem der Teiler zeitlich **verschoben** wird - alle 584
+Verschiebungen, die Renditen bleiben stehen. Das laesst beide Reihen in ihrer
+eigenen Ordnung, Traegheit hier und Streuung dort, und loest nur, was
+zusammengehoert. Ein Block-Bootstrap braeuchte eine Blocklaenge, und die waere
+ein Regler: kurz gewaehlt faellt die Probe milde aus, lang gewaehlt streng.
+Die Verschiebung hat keinen.
+
+**2 von 584 Verschiebungen erreichen denselben Wert** - 0,34 %, wo bei 173
+geprueften Zellen 0,029 % gefordert waren. Der Fund ist keiner.
+
+### Der eigentliche Befund liegt eine Ebene tiefer
+
+`schwelle_fuer` teilt fuenf Prozent Irrtum auf die geprueften Zellen auf und
+haelt den t-Wert gegen eine Normalverteilung. Das gilt, wenn jede Beobachtung
+ihren Zustand neu wuerfelt. **Keine der vier Familien tut das.**
+
+Auf reinem Rauschen gemessen - Renditen ohne jeden Zusammenhang zum Teiler,
+300 Zuege:
+
+    Teiler                            |t| >= 3,61 *)    Bloecke (Median)
+    langer Rueckblick (traege)             2 / 300                  19
+    ohne Gedaechtnis (flink)               0 / 300                 301
+
+*) die Latte eines Laufs dieser Groesse - 164 Zellen, wie auf ETH.
+
+0,67 % statt der 0,030 %, die sie zusichert - **zwanzigmal so oft**.
+
+Und es ist nicht allein die Traegheit. Die Preisrueckblick-Spitze aus Befund
+272 wechselt 157-mal auf 1326 Beobachtungen, also weit weniger traege - und
+wird trotzdem von **23 von 1325** Verschiebungen erreicht. Was dort zusaetzlich
+wirkt, ist die Form der Renditen selbst; die Verschiebung nimmt beides mit,
+weil sie an keiner der beiden Reihen etwas aendert.
+
+### Die Probe verwirft nicht pauschal
+
+Dieselbe Familie auf Viertelstunden wechselt 7720-mal auf 14.120
+Beobachtungen. Dort erreicht **keine von 1764** Verschiebungen den Wert -3,99,
+und die Zelle scheitert wie in Befund 272 an der zweiten Haelfte. Die Huerde
+trennt also, statt alles abzuraeumen.
+
+### Was sich dadurch nicht aendert
+
+**Kein frueheres Ergebnis dreht sich.** Alle Zellen, die bisher an der Latte
+gescheitert sind, scheitern jetzt frueher oder ebenso. Die Latte war zu
+niedrig, nicht zu hoch - die Richtung der Korrektur nimmt nichts zurueck, sie
+macht Bestehendes sicherer.
+
+Die Huerde steht jetzt **vor** der Stabilitaetspruefung, weil sie dieselbe
+Zahl in Frage stellt: Haelt sie nicht, war schon der Schwellenvergleich
+keiner. Sichtbar wird das bei BTC auf Tageskerzen - der Lauf nennt dort
+seither die Verschiebungsprobe als Grund und nicht mehr die zweite Haelfte.
+Beides galt, das erste ist das grundlegendere.
+
+Der zweite Scan dieses Projekts, `cli tageszeit`, nimmt dieselbe Latte -
+nachgesehen, ob er dieselbe Schwaeche hat. Er hat sie nicht in dieser Form:
+`tageszeit.messe` vergleicht **gepaart je Tag**, innen gegen aussen am selben
+Tag, also gibt es dort keinen Teiler, der stehenbleiben koennte. Offen bleibt
+auch dort die zweite Haelfte der Frage - ob die taeglichen Unterschiede selbst
+eine Form haben, die den t-Wert traegt. Das aendert an Befund 63 nichts: Die
+Schwelle wurde dort **gerissen**, und eine strengere Pruefung kann daran nur
+in dieselbe Richtung wirken. Der Modulkopf haelt die Luecke fest.
+
+### Was die Probe nicht kann, und das steht dabei
+
+584 Verschiebungen koennen hoechstens *"keine einzige"* sagen, und das heisst
+1 von 585 - **0,17 %**. Gefordert sind 0,029 %. Auf dieser Stichprobe ist
+"nicht belegbar" also nicht von "nicht da" zu trennen, und der Lauf schreibt
+das hin, statt es zu verschweigen. Fuer die Marktbreite entscheidet es hier
+nichts: Sie faellt schon an der schwaecheren Form der Kontrolle.
+
+### Was offen bleibt
+
+Funding als Kennzahl (der Speicher ist leer), Marktbreite ueber mehr als vier
+Maerkte, und alles, was mit Bybit-Kerzen anders aussieht.
+
+**Zwei der drei Nachbarn - LTC und XRP - sind die Holdout-Maerkte aus Befund
+174/175.** Waere hier etwas gefunden worden, haette eine Regel darauf ihre
+Gegenprobe schon verbraucht, bevor sie gebaut ist. Gefunden wurde nichts, und
+gemessen wurde die Struktur und keine Regel - der Holdout bleibt unberuehrt.
+Wer die Richtung spaeter doch verfolgt, faengt mit dieser Rechnung an.
+
+Damit ist die Einstiegsseite auf diesen Daten ueber vier Familien gemessen,
+und keiner der 198 Versuche ist dafuer ausgegeben worden.
+
+Kostet keinen Versuch: Gemessen wird die Struktur des Marktes, keine Regel.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+Volle Suite 3743 passed, 1 skipped; ruff check sauber.

@@ -3933,6 +3933,23 @@ def _kandidat_aus_lauf(genome, report, gates):
     return Candidate(genome=genome, walkforward=report, gates=gates)
 
 
+def _probe_aus(reihen, zelle):
+    """Die Verschiebungsprobe zu einer Zelle - aus dem Paar ihrer Familie.
+
+    Jede Familie im Scan baut ihre beiden Reihen anders zusammen, die Probe
+    rechnet mit allen gleich. Sie hier aus dem fertigen Paar zu holen statt
+    die Familie erneut aufzurufen, ist der Grund, warum es die ``paar``-
+    Funktionen ueberhaupt gibt (Befund 276).
+    """
+    from research.vorteilsscan import rotationsprobe
+
+    if reihen is None:
+        return None
+    return rotationsprobe(
+        *reihen, rueckblick=zelle.rueckblick, halten=zelle.halten
+    )
+
+
 @app.command()
 def scan(
     maerkte: str = typer.Option(
@@ -3952,10 +3969,11 @@ def scan(
     Hypothese hebt die Huerde des Deflated-Sharpe-Gates dauerhaft. Erst
     schauen, ob etwas da ist - dann Versuche ausgeben.
 
-    Eine Zelle zaehlt erst als Fund, wenn sie auffaellt (|t| >= 2), in
-    **beiden Haelften** des Zeitraums dasselbe Vorzeichen hat und nach
-    Gebuehren etwas uebrig laesst. Die mittlere Huerde ist die, an der der
-    erste 15-Minuten-Fund gescheitert ist.
+    Eine Zelle zaehlt erst als Fund, wenn sie die Schwelle nimmt, diesen
+    t-Wert auch gegen verschobene Teiler behaelt, in **beiden Haelften** des
+    Zeitraums dasselbe Vorzeichen hat und nach Gebuehren etwas uebrig laesst.
+    Die dritte Huerde ist die, an der der erste 15-Minuten-Fund gescheitert
+    ist; die zweite kam mit Befund 276 dazu.
 
     **Was der Lauf ueber alle vier Kombinationen ergab** (Befund 272):
 
@@ -3965,21 +3983,40 @@ def scan(
         BTC     15m       -3,99    zweite Haelfte +1,53, Vorzeichen dreht
         ETH     15m       +3,02    Schwelle 3,42 nicht erreicht
 
-    Kein belastbarer Fund. Das gilt fuer die Familie, aus der der Bestand
-    stammt - Preisrueckblick sagt Preisvorlauf vorher -, nicht fuer jede
-    denkbare Einstiegsidee, und es gilt fuer die Forschungskerzen; mit
-    Bybit-Daten ist es neu zu messen.
+    **Und was die vierte Familie ergab** (Befund 276): Die Marktbreite - der
+    Anteil der uebrigen Forschungsmaerkte, die im Rueckblick gestiegen sind -
+    liefert auf BTC die erste Zelle dieser Reihe ueber der Schwelle: t =
+    -3,74 bei einer Latte von 3,61, in beiden Haelften, netto +0,90 % je
+    Trade. Sie haelt die Verschiebungsprobe nicht: 585 Beobachtungen, deren
+    Zustand fuenfzehnmal wechselt, und 2 von 584 Verschiebungen erreichen
+    denselben Wert, wo 0,030 % gefordert waren. Dieselbe Probe nimmt auch der
+    Preisrueckblick-Spitze von 272 auf Tageskerzen ihre Grundlage - 23 von
+    1325. Auf Viertelstunden nicht: Dort erreicht keine von 1764
+    Verschiebungen den Wert, und die Zelle scheitert weiter an der zweiten
+    Haelfte. Die Probe verwirft also nicht pauschal.
+
+    Kein belastbarer Fund. Das gilt fuer vier Familien auf zwei Maerkten,
+    nicht fuer jede denkbare Einstiegsidee, und es gilt fuer die
+    Forschungskerzen; mit Bybit-Daten ist es neu zu messen.
 
     ``--intervall`` ist deshalb bewusst anzugeben: Der Bestand steht auf
     Tageskerzen, die Vorgabe hier war seit jeher ``15``. Wer den Befehl ohne
     Nachdenken aufruft, misst die andere Kerzenlaenge als die, auf der sein
     Kandidat lebt.
     """
+    from data.reference import PAIRS
     from research.vorteilsscan import (
         KOSTEN_MAKER_MAKER,
+        MIND_ANDERE,
+        paar,
+        paar_nach_breite,
+        paar_nach_kennzahl,
         pruefe_stabilitaet,
         scanne,
         schwelle_fuer,
+        spanne_nach_breite,
+        stabilitaet_nach_breite,
+        stabilitaet_nach_kennzahl,
         urteil,
     )
 
@@ -3995,6 +4032,17 @@ def scan(
     # Anfang einer Ueberanpassung.
     raster = [4, 8, 16, 32, 48, 96, 192, 480, 960]
 
+    # Der Vorrat fuer die Marktbreite: die Forschungsmaerkte, die es auf
+    # dieser Kerzenlaenge ueberhaupt gibt. ``PAIRS`` steht im Code und nicht
+    # in einer Option - siehe den Kommentar weiter unten.
+    breitenrahmen = {}
+    for s, iv in store.series():
+        if iv != interval_obj or s not in PAIRS:
+            continue
+        gelesen = store.read(s, iv)
+        if not gelesen.empty:
+            breitenrahmen[s] = gelesen
+
     for symbol in symbole:
         frame = store.read(symbol, interval_obj)
         if frame.empty:
@@ -4006,13 +4054,13 @@ def scan(
             console.print(f"[red]{symbol}: zu wenig Daten.[/]")
             continue
 
-        # **Zwei weitere Familien, eine gemeinsame Schwelle** (Befund 274).
+        # **Drei weitere Familien, eine gemeinsame Schwelle** (Befund 274/276).
         #
         # Befund 272 hat die Preisrueckblick-Familie gemessen und
-        # ausdruecklich offengelassen, ob Volumen oder Spanne etwas tragen.
-        # Sie werden **immer** mitgerechnet und nie einzeln: Wer eine Familie
-        # allein scannte, haette dieselbe Latte bei einem Drittel der
-        # Gelegenheiten - genau das Datenbaggern, gegen das dieser Befehl
+        # ausdruecklich offengelassen, ob Volumen, Spanne oder Marktbreite
+        # etwas tragen. Sie werden **immer** mitgerechnet und nie einzeln: Wer
+        # eine Familie allein scannte, haette dieselbe Latte bei einem Viertel
+        # der Gelegenheiten - genau das Datenbaggern, gegen das dieser Befehl
         # gebaut ist. Deshalb gibt es hier kein Flag, das sie trennt.
         import numpy as np
 
@@ -4026,19 +4074,93 @@ def scan(
                 / close
             ),
         }
+        # Je Familie die Zellen **und** die Art, ihre Stabilitaet zu pruefen.
+        # Beides gehoert zusammen: Eine Familie, die ihre Zellen meldet, aber
+        # keine zweite Haelfte kennt, kann die zweite Huerde nicht nehmen
+        # (Befund 276).
         nebenfamilien = {
-            name: sorted(
-                (
-                    z
-                    for L in raster
-                    for H in raster
-                    if (z := spanne_nach_kennzahl(log_close, kennzahl, L, H))
-                    is not None
+            name: (
+                sorted(
+                    (
+                        z
+                        for L in raster
+                        for H in raster
+                        if (z := spanne_nach_kennzahl(log_close, kennzahl, L, H))
+                        is not None
+                    ),
+                    key=lambda z: -abs(z.t_wert),
                 ),
-                key=lambda z: -abs(z.t_wert),
+                lambda z, k=kennzahl, lc=log_close: stabilitaet_nach_kennzahl(
+                    lc, k, z.rueckblick, z.halten
+                ),
+                lambda z, k=kennzahl, lc=log_close: _probe_aus(
+                    paar_nach_kennzahl(lc, k, z.rueckblick, z.halten), z
+                ),
             )
             for name, kennzahl in weitere.items()
         }
+
+        # **Marktbreite** (Befund 276): der einzige Teiler, der nicht in
+        # diesem Markt steht. Der Vorrat ist die feste Liste der
+        # Forschungsmaerkte und keine Wahl - wer die Nachbarn aussuchen
+        # duerfte, bis eine Zelle auffaellt, haette den Scan gegen sich
+        # gedreht.
+        #
+        # Und nur fuer einen Markt **aus dieser Liste**: Sonst bekaeme
+        # 'BTCUSDT' von der Boerse das 'BTCUSD_BITSTAMP' desselben Wertes als
+        # Nachbarn untergeschoben - der eigene Rueckblick unter fremdem Namen,
+        # genau das, was die Breite draussen halten soll. Welches Boersensymbol
+        # zu welchem Forschungsmarkt gehoert, weiss hier niemand; solange das
+        # so ist, wird lieber nicht gemessen als falsch.
+        andere_symbole = (
+            [s for s in breitenrahmen if s != symbol] if symbol in PAIRS else []
+        )
+        if symbol not in PAIRS:
+            zu_wenige_nachbarn = (
+                f"{symbol} steht nicht in der Liste der Forschungsmaerkte - "
+                f"welche davon denselben Wert fuehren, ist hier nicht bekannt"
+            )
+        elif len(andere_symbole) < MIND_ANDERE:
+            zu_wenige_nachbarn = (
+                f"{len(andere_symbole)} andere Maerkte auf "
+                f"{interval_obj.label}, noetig {MIND_ANDERE}"
+            )
+        else:
+            zu_wenige_nachbarn = ""
+        if not zu_wenige_nachbarn:
+            # Innerer Verbund ueber die Zeitstempel: Eine Luecke in einem
+            # Nachbarmarkt wuerde die Breite sonst still verschieben.
+            gemeinsam = frame[["open_time", "close"]].rename(
+                columns={"close": symbol}
+            )
+            for s in andere_symbole:
+                gemeinsam = gemeinsam.merge(
+                    breitenrahmen[s][["open_time", "close"]].rename(
+                        columns={"close": s}
+                    ),
+                    on="open_time",
+                )
+            ziel = np.log(gemeinsam[symbol].to_numpy(dtype=float))
+            nachbarn = [
+                np.log(gemeinsam[s].to_numpy(dtype=float)) for s in andere_symbole
+            ]
+            nebenfamilien[f"Marktbreite ({len(andere_symbole)} andere)"] = (
+                sorted(
+                    (
+                        z
+                        for L in raster
+                        for H in raster
+                        if (z := spanne_nach_breite(ziel, nachbarn, L, H)) is not None
+                    ),
+                    key=lambda z: -abs(z.t_wert),
+                ),
+                lambda z, t=ziel, n=nachbarn: stabilitaet_nach_breite(
+                    t, n, z.rueckblick, z.halten
+                ),
+                lambda z, t=ziel, n=nachbarn: _probe_aus(
+                    paar_nach_breite(t, n, z.rueckblick, z.halten), z
+                ),
+            )
 
         console.print(
             f"\n[bold]{symbol}[/] {interval_obj.label}, {len(frame)} Kerzen "
@@ -4065,9 +4187,9 @@ def scan(
 
         # Die Nebenfamilien als Zeile, nicht als Tabelle: Gefragt ist, **ob**
         # dort etwas ist, und die Antwort passt in eine Zeile.
-        gesamt = len(zellen) + sum(len(v) for v in nebenfamilien.values())
+        gesamt = len(zellen) + sum(len(v) for v, _, _ in nebenfamilien.values())
         latte = schwelle_fuer(gesamt)
-        for name, zweig in nebenfamilien.items():
+        for name, (zweig, stabilitaet_von, probe_von) in nebenfamilien.items():
             if not zweig:
                 console.print(f"[dim]  {name}: zu wenig Beobachtungen.[/]")
                 continue
@@ -4078,13 +4200,43 @@ def scan(
                 f"(L{spitze.rueckblick}/H{spitze.halten}, "
                 f"n={spitze.beobachtungen}), ueber der Schwelle: {ueber}[/]"
             )
+            # Ueber der Schwelle zu liegen ist die erste von vier Huerden.
+            # Wer hier aufhoert, meldet einen Fund, der keiner sein muss.
+            if ueber:
+                console.print(
+                    "    "
+                    + urteil(
+                        spitze,
+                        stabilitaet_von(spitze),
+                        KOSTEN_MAKER_MAKER,
+                        gepruefte_zellen=gesamt,
+                        probe=probe_von(spitze),
+                    )
+                )
+        if zu_wenige_nachbarn:
+            # Eine fehlende Messung wird gemeldet und nicht verschwiegen -
+            # sonst sieht ein Lauf ohne Marktbreite aus wie einer, in dem sie
+            # nichts ergeben hat.
+            console.print(
+                f"[dim]  Marktbreite: nicht gemessen ({zu_wenige_nachbarn}).[/]"
+            )
 
         beste = zellen[0]
         stabil = pruefe_stabilitaet(close, beste.rueckblick, beste.halten)
         # **Die Schwelle gilt ueber alle Familien** - sonst haette jede
         # Erweiterung des Scans dieselbe Latte bei mehr Gelegenheiten.
         console.print(
-            urteil(beste, stabil, KOSTEN_MAKER_MAKER, gepruefte_zellen=gesamt)
+            urteil(
+                beste,
+                stabil,
+                KOSTEN_MAKER_MAKER,
+                gepruefte_zellen=gesamt,
+                probe=(
+                    _probe_aus(paar(log_close, beste.rueckblick, beste.halten), beste)
+                    if beste.ueber_schwelle(latte)
+                    else None
+                ),
+            )
         )
 
     console.print(
@@ -6601,9 +6753,10 @@ def tageszeit(
     Fenster zu pruefen und das beste zu nehmen waere genau die Ueberanpassung,
     gegen die dieser Scan gebaut ist.
 
-    Dieselben drei Huerden wie im Vorteilsscan: auffaellig gegen die Zahl der
+    Drei Huerden wie im Vorteilsscan: auffaellig gegen die Zahl der
     geprueften Fenster, stabil ueber beide Haelften, nach Gebuehren etwas
-    uebrig. Kostet keinen Versuch.
+    uebrig. Dessen vierte (Befund 276) fehlt hier mit Grund - siehe den Kopf
+    von ``research/tageszeit``. Kostet keinen Versuch.
     """
     from research.tageszeit import (
         pruefe_stabilitaet,

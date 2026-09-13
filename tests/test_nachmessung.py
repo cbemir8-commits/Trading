@@ -219,7 +219,12 @@ def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
         # ausdruecklich offengelassen. Befund 274 hat zwei davon nachgeholt -
         # Volumen und Spanne -, mit einer Schwelle ueber alle drei Familien
         # zusammen. Kein Treffer.
-        "Einstiegsseite": 274,
+        # Befund 276: die vierte und letzte mit diesen Daten messbare Familie,
+        # die Marktbreite ueber die drei uebrigen Forschungsmaerkte. Sie bringt
+        # als erste eine Zelle ueber die Schwelle (-3,74 gegen 3,62) und
+        # verliert sie an der Verschiebungsprobe - 2 von 584. Nachgemessen,
+        # nicht nur erwaehnt.
+        "Einstiegsseite": 276,
     }
 
 

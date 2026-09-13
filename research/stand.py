@@ -276,11 +276,11 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     # Der Schritt, den 270 verlangt hat - und die Antwort darauf.
     Richtung(
         "Einstiegsseite",
-        "drei Familien, zwei Maerkte, zwei Kerzenlaengen: kein Fund haelt der "
-        "Schwelle stand (bester 3,69 gegen 3,49, in der zweiten Haelfte "
-        "verschwunden)",
+        "vier Familien, zwei Maerkte, zwei Kerzenlaengen: kein Fund haelt. Die "
+        "Marktbreite kam als erste ueber die Schwelle (-3,74 gegen 3,62) und "
+        "faellt an der Verschiebungsprobe - 2 von 584",
         272,
-        zuletzt=274,
+        zuletzt=276,
     ),
 )
 
@@ -1664,6 +1664,26 @@ BEHOBEN: tuple[Richtung, ...] = (
         "nennen zehn ihre Zahl als Wort, und die Wache haette erzwungen, "
         "dort eine Ziffer hineinzuschreiben, damit ein Test gruen wird",
         275,
+    ),
+    # Gefunden, weil die vierte Familie zum ersten Mal etwas ueber die Latte
+    # gebracht hat - und die Latte der Pruefung nicht standhielt.
+    Richtung(
+        "Die Latte des Scans stand auf einer Normalverteilung",
+        "'schwelle_fuer' teilt fuenf Prozent Irrtum auf die geprueften Zellen "
+        "auf. Das setzt voraus, dass jede Beobachtung ihren Zustand neu "
+        "wuerfelt - **keine der vier Familien tut das**: Ein Rueckblick ueber "
+        "960 Balken haelt seinen Zustand jahrelang. Auf reinem Rauschen "
+        "gemessen kommt ein traeger Teiler in 2 von 300 Zuegen ueber die "
+        "Latte eines Laufs dieser Groesse (3,61 bei 164 Zellen), ein Teiler ohne Gedaechtnis in 0 von 300 - "
+        "zwanzigmal so oft, wie die Latte zusichert. Die Verschiebungsprobe "
+        "haelt den t-Wert jetzt gegen den Teiler in seiner eigenen Ordnung "
+        "und trifft beides: die Marktbreite (2 von 584) und die "
+        "Preisrueckblick-Spitze aus 272 (23 von 1325). **Kein frueheres "
+        "Ergebnis dreht sich** - was an der Latte scheiterte, scheitert "
+        "jetzt frueher. Was die Probe nicht kann, steht dabei: Feiner als "
+        "1 von 585 wird sie nicht, verlangt sind 0,029 % - auf dieser "
+        "Stichprobe ist 'nicht belegbar' nicht von 'nicht da' zu trennen",
+        276,
     ),
 )
 

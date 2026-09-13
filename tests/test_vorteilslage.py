@@ -106,11 +106,19 @@ class TestDasRegisterFuehrtIhn:
 
     def test_und_traegt_trotzdem_die_zahl(self) -> None:
         """Ein Stichwort ohne Zahl waere keine Messung, sondern eine
-        Behauptung."""
+        Behauptung.
+
+        **Welche Zahl, richtet sich nach ``massgeblich``.** Hier standen die
+        3,69 gegen 3,49 aus Befund 272. Seit 276 traegt der Eintrag die Zelle
+        der Marktbreite - sie ist die letzte Messung dieser Richtung und die
+        einzige, die je ueber der Schwelle stand. Die alten Zahlen stehen im
+        Laborbuch, wo sie nicht veralten.
+        """
         eintrag = next(r for r in GESCHLOSSEN if r.befund == 272)
 
-        assert "3,69" in eintrag.ergebnis
-        assert "3,49" in eintrag.ergebnis
+        assert eintrag.massgeblich == 276
+        assert "-3,74" in eintrag.ergebnis
+        assert "3,62" in eintrag.ergebnis
 
 
 @pytest.mark.parametrize("markt,kerze", [("BTC", "1d"), ("ETH", "15m")])
