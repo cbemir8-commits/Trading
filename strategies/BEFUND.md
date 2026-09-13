@@ -23745,3 +23745,107 @@ wurden Berichte, ausgewaehlt wurde nichts.
 
 Volle Suite 3614 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertachtundsechzig. Die Aufstellung am ungehandelten Punkt
+
+Nach Befund 267 steht die Lage des Kandidaten auf zwei Zahlen: Im Spot-Punkt
+haelt er 9 von 11 Gates, offen sind die Betriebsschwelle (0,66 Punkte
+Jahresrendite fehlen) und der Deflated Sharpe (0,588 gegen 0,950). Beide
+brauchen einen **besseren** Kandidaten - weitere Diagnose am vorhandenen
+bringt nichts mehr.
+
+Der einzige Hebel, der ohne Versuchskosten erreichbar ist, ist die
+**Aufstellung**. Befund 264 hat gemessen, dass der Korb aus BTC und ETH den
+Rueckgang unter den jedes einzelnen Beins zieht - Diversifikation. LTC und XRP
+liegen im Speicher, und alle vier reichen bis heute; den gemeinsamen Zeitraum
+begrenzt ETH, also derselbe wie beim Bestand.
+
+### Zuerst ein Fehler von mir
+
+Ich habe die Messung als Probe gebaut und laufen lassen, ohne nachzusehen, ob
+es sie schon gibt. Es gibt sie: `cli marktkombinationen` faehrt alle fuenfzehn
+Kombinationen aus vier Maerkten durch die volle Zulassungsstrecke, und in
+`reports/marktkombinationen/` liegen drei Laeufe davon.
+
+Das kostet nichts ausser meiner Zeit - aber es ist dieselbe Sorte Annahme, die
+diese Befundreihe an anderen Stellen findet. Nachsehen kommt vor Bauen.
+
+### Was die Wiederholung trotzdem gefunden hat
+
+Der Befehl rechnet **nur den Perpetual-Punkt**. Er sagt das auch, eine Zeile
+ueber dem Bericht: *"Das ist derselbe Erstpunkt, auf dem auch 'cli stand'
+primaer rechnet; den Spot-Punkt zeigt jener daneben."* Rechnen konnte er ihn
+nicht.
+
+Und sein Docstring stellt genau dort die entscheidende Frage:
+
+> Steigt der Deflated Sharpe ueber die Schwelle, faellt womoeglich die
+> Messlatte darunter - beide Gates zugleich zu halten ist die eigentliche
+> Frage.
+
+Am Perpetual-Punkt sind **vier** Gates offen, am Spot-Punkt **zwei**. Die
+Frage wurde am Punkt gestellt, der so nicht gehandelt wuerde.
+
+### Am gehandelten Punkt nachgemessen
+
+Alle fuenfzehn Kombinationen, `--spot` (kein Hebel, kein Funding), sonst
+alles gleich:
+
+    Kombination        perpetual   spot     p.a.     DD      DSR
+    BTC+ETH                 7/11   9/11   14,34 %   9,87 %   0,588
+    BTC+ETH+XRP             7/11   9/11   11,32 %   9,84 %   0,461
+    BTC+ETH+LTC+XRP         5/11   9/11    9,95 %  11,68 %   0,417
+    ETH+XRP                 4/11   9/11    9,71 %  10,57 %   0,170
+    ETH                     7/11   8/11   14,13 %  12,17 %   0,346
+    BTC+ETH+LTC             6/11   7/11   11,50 %  11,22 %   0,485
+    BTC                     5/11   5/11   11,04 %  17,58 %   0,462
+    LTC+XRP                 3/11   3/11    8,10 %  17,59 %   0,030
+
+**Die Rangfolge verschiebt sich erheblich.** Drei Aufstellungen sahen am
+ungehandelten Punkt erledigt aus - `BTC+ETH+LTC+XRP` bei 5 von 11, `ETH+XRP`
+bei 4 - und stehen am gehandelten gleichauf mit dem Bestand.
+
+Ich hatte beim Bauen *"die Rangfolge aendert sich nicht"* in den Docstring
+geschrieben. Das galt fuer die vier Aufstellungen meiner Probe und ist fuer
+die fuenfzehn des Befehls falsch. Der volle Lauf hat es widerlegt, bevor es
+committet war.
+
+### Fuer das Ziel ist es ein Nullbefund
+
+**Keine der fuenfzehn Aufstellungen besteht alle Gates**, und der Bestand
+bleibt vorn. Jede Verbreiterung kostet mehr, als sie bringt:
+
+    BTC+ETH        158 Trades   14,34 % p.a.   9,87 % DD   DSR 0,588
+    + XRP          267 Trades   11,32 % p.a.   9,84 % DD   DSR 0,461
+    + LTC + XRP    375 Trades    9,95 % p.a.  11,68 % DD   DSR 0,417
+
+Die Diversifikation **wirkt** sogar: XRP dazuzunehmen senkt den Rueckgang von
+9,87 auf 9,84. Sie kostet dafuer 3,0 Punkte Jahresrendite. Der Sharpe faellt
+mit, und damit der Deflated Sharpe - also genau das Gate, das verbessert
+werden sollte.
+
+Der Mechanismus steht in Befund 174/175: LTC und XRP halten nur 41 % des
+Vorteils je Trade. Diese Messung beziffert die Folge auf Portfolioebene - die
+schwachen Beine verduennen die Rendite schneller, als die Unkorreliertheit den
+Rueckgang senkt.
+
+**Beide offenen Gates werden durch jede Verbreiterung schlechter, nicht
+besser.** Die Luecke an der Betriebsschwelle waechst von 0,66 auf 3,5 bis 5,1
+Punkte, der Abstand zur DSR-Huerde von 0,36 auf 0,47 bis 0,53.
+
+### Was nicht gemessen ist
+
+**Gewichte.** Gerechnet sind gleichgewichtete Koerbe - jedes Bein mit
+demselben Risikobudget. Ein Korb, der LTC und XRP nur halb gewichtet, ist eine
+andere Frage. Sie ist hier bewusst nicht gestellt: Ueber Gewichte zu
+optimieren waere Selektion, und Selektion kostet Versuche und Ueberanpassung.
+Der Deflated Sharpe rechnet genau dagegen.
+
+Gewaehlt wurde hier nichts. Der Bestand war vor der Messung BTC+ETH und ist es
+danach - geprueft wurde, ob Verbreiterung hilft, und sie hilft nicht.
+
+Kostet keinen Versuch: dieselbe Regel auf breiterer Grundlage, derselbe
+Zeitraum, ausgewaehlt wurde nichts.
+
+Volle Suite 3623 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

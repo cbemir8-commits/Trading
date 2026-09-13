@@ -5232,6 +5232,11 @@ def marktkombinationen(
     mindestens: int = typer.Option(
         1, "--mindestens", help="Kleinste Zahl Maerkte je Kombination."
     ),
+    spot: bool = typer.Option(
+        False, "--spot",
+        help="Auf dem Spot-Punkt rechnen: kein Funding, kein Hebel. "
+             "Standard ist der Perpetual-Punkt.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Jede Marktkombination durch die volle Zulassungsstrecke.
@@ -5257,10 +5262,35 @@ def marktkombinationen(
     kosten Rendite. Steigt der Deflated Sharpe ueber die Schwelle, faellt
     womoeglich die Messlatte darunter - beide Gates zugleich zu halten ist die
     eigentliche Frage.
+
+    **Und die stellt sich am Spot-Punkt anders** (Befund 268). Dieser Befehl
+    rechnete nur den Perpetual-Punkt und sagte das auch - dort sind vier Gates
+    offen, am Spot-Punkt nur zwei. Wer hier nach der besten Aufstellung sucht,
+    suchte also am Punkt, der so nicht gehandelt wuerde. ``--spot`` rechnet
+    ihn: kein Funding, kein Hebel, sonst alles gleich. Der Betriebspunkt steht
+    im Bericht, damit zwei Laeufe nicht gleich aussehen.
+
+    **Die Rangfolge verschiebt sich dabei erheblich**, nachgemessen in 268
+    ueber alle fuenfzehn Kombinationen:
+
+        Kombination        perpetual   spot
+        BTC+ETH                 7/11   9/11
+        BTC+ETH+XRP             7/11   9/11
+        BTC+ETH+LTC+XRP         5/11   9/11
+        ETH+XRP                 4/11   9/11
+
+    Vier Aufstellungen stehen am gehandelten Punkt bei 9 von 11, am
+    Perpetual-Punkt bei 7, 7, 5 und 4. Wer nur den einen sieht, haelt drei
+    davon fuer erledigt.
+
+    Der Spitzenreiter bleibt BTC+ETH - und **keine** Aufstellung besteht alle
+    Gates. Breiter zu werden kostet Rendite und Deflated Sharpe, ohne den
+    Rueckgang genug zu senken.
     """
     from decimal import Decimal
     from itertools import combinations
 
+    from backtest.costs import FundingSchedule
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from core.report import write_report
@@ -5285,6 +5315,10 @@ def marktkombinationen(
         roh[symbol] = frame
 
     genome = spitzenkandidat()
+    if spot:
+        # Derselbe Kandidat ohne Hebel - Spot kennt keinen. Befund 106 hat
+        # gemessen, dass der Deckel seine Zahlen bitgleich nicht aendert.
+        genome = _ohne_hebel(genome)
     trials = load_trials(Path(settings.paths.state) / "trials.json")
 
     kombinationen = [
@@ -5308,6 +5342,14 @@ def marktkombinationen(
                 risk=settings.risk, initial_equity=Decimal("500"),
                 enforce_risk_limits=True,
                 kalender=_terminkalender(settings) or None,
+                # Spot kennt kein Funding. Ohne diese Zeile rechnete der
+                # Befehl auch mit '--spot' den Vorgabesatz weiter, und
+                # '_betriebspunkt' haette ihn zu Recht 'perpetual' genannt.
+                **(
+                    {"funding": FundingSchedule(default_rate=Decimal("0"))}
+                    if spot
+                    else {}
+                ),
             )
             for m in kombination
         }
@@ -5368,12 +5410,24 @@ def marktkombinationen(
         )
 
     punkt = _betriebspunkt(genome, configs)
+    # **Der Hinweis muss zum Punkt passen** (Befund 268). Bis '--spot'
+    # dazukam, gab es nur einen Fall, und der Satz war fuer ihn geschrieben.
+    # Mit dem Flag stand da "Betriebspunkt: Spot ... den Spot-Punkt zeigt
+    # jener daneben" - genau die Sorte Text, die 267 anderswo gefunden hat.
+    hinweis = (
+        "Das ist der Punkt, auf den sich die Latten- und Lueckenrechnungen "
+        "beziehen (Befund 108/229); den Perpetual-Punkt rechnet dieser Befehl "
+        "ohne '--spot'."
+        if spot
+        else "Das ist derselbe Erstpunkt, auf dem auch 'cli stand' primaer "
+             "rechnet; den Spot-Punkt zeigt jener daneben, und auf ihn "
+             "beziehen sich die Latten- und Lueckenrechnungen (Befund "
+             "108/229). Mit '--spot' rechnet dieser Befehl ihn selbst."
+    )
     console.print(
-        f"\n[dim]Betriebspunkt: {punkt}. Das ist derselbe Erstpunkt, auf dem "
-        f"auch 'cli stand' primaer rechnet; den Spot-Punkt zeigt jener "
-        f"daneben, und auf ihn beziehen sich die Latten- und "
-        f"Lueckenrechnungen (Befund 108/229). Zahlen sind nur vergleichbar, "
-        f"wenn beide denselben Punkt tragen - deshalb steht er jetzt hier.[/]"
+        f"\n[dim]Betriebspunkt: {punkt}. {hinweis} Zahlen sind nur "
+        f"vergleichbar, wenn beide denselben Punkt tragen - deshalb steht er "
+        f"jetzt hier.[/]"
     )
 
     ziel = write_report(

@@ -1525,6 +1525,28 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Kommentar 'das ist richtig so' ist damit erstmals gemessen",
         267,
     ),
+    # Nach der Diagnose am Kandidaten die Frage, ob die **Aufstellung** noch
+    # etwas hergibt - der einzige Hebel, der keine Versuche kostet.
+    Richtung(
+        "Die Aufstellung wurde am ungehandelten Punkt gewaehlt",
+        "'cli marktkombinationen' faehrt alle fuenfzehn Kombinationen aus vier "
+        "Maerkten durch die Zulassungsstrecke - und rechnete nur den "
+        "Perpetual-Punkt. Sein eigener Docstring nennt die Frage, um die es "
+        "geht ('beide Gates zugleich zu halten'), und stellt sie damit dort, "
+        "wo vier Gates offen sind statt zwei. Am Spot-Punkt nachgemessen "
+        "verschiebt sich die Rangfolge erheblich: BTC+ETH 7 auf 9 von 11, "
+        "BTC+ETH+XRP 7 auf 9, BTC+ETH+LTC+XRP **5 auf 9**, ETH+XRP **4 auf "
+        "9**. Drei Aufstellungen sahen am ungehandelten Punkt erledigt aus "
+        "und stehen am gehandelten gleichauf mit dem Bestand. '--spot' "
+        "rechnet ihn jetzt, der Betriebspunkt stand schon im Bericht. "
+        "**Fuer das Ziel ist es ein Nullbefund**: Keine der fuenfzehn besteht "
+        "alle Gates, BTC+ETH bleibt vorn (14,34 % p.a., DSR 0,588), und jede "
+        "Verbreiterung kostet Rendite und Deflated Sharpe, ohne den Rueckgang "
+        "genug zu senken - BTC+ETH+XRP senkt ihn um 0,03 Punkte und kostet "
+        "3,0 Punkte Rendite. Die 41 % Vorteil je Trade aus 174/175 sind damit "
+        "auf Portfolioebene beziffert",
+        268,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

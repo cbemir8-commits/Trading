@@ -89,11 +89,27 @@ class TestMarktkombinationenTraegtIhn:
 
     def test_er_wird_auch_angezeigt(self) -> None:
         """Ein Vermerk, den nur die Datei traegt, liest niemand, der am
-        Bildschirm sitzt."""
-        quelle = self._quelle()
-        i = quelle.index("_betriebspunkt(genome, configs)")
+        Bildschirm sitzt.
 
-        assert "console.print" in quelle[i : i + 400]
+        **Der Anker lag auf dem Abstand** und riss in Befund 268, als
+        zwischen Messung und Ausgabe ein Hinweistext dazukam - dieselbe Sorte
+        Schreibweisen-Anker wie in 244, 261, 263. Gehalten wird die
+        Anforderung: Der gemessene Punkt geht in eine Bildschirmausgabe.
+        """
+        baum = ast.parse(Path("cli.py").read_text())
+        fn = next(
+            n for n in ast.walk(baum)
+            if isinstance(n, ast.FunctionDef) and n.name == "marktkombinationen"
+        )
+        drucke = [
+            k
+            for k in ast.walk(fn)
+            if isinstance(k, ast.Call) and "console.print" in ast.unparse(k.func)
+        ]
+
+        assert any("punkt" in ast.unparse(k) for k in drucke), (
+            "Der gemessene Betriebspunkt landet in keiner Bildschirmausgabe."
+        )
 
     def test_der_hinweis_ordnet_ihn_ein(self) -> None:
         """Nicht nur "Perpetual", sondern wozu das im Verhaeltnis steht:
