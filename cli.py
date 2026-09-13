@@ -4139,6 +4139,15 @@ def abstand(
         help="Symbole, durch Komma getrennt.",
     ),
     intervall: str = typer.Option("D", "--intervall", "-i"),
+    zielfenster: bool = typer.Option(
+        False, "--zielfenster",
+        help="Zusaetzlich: Was fordern Betriebsschwelle und Deflated Sharpe "
+             "zusammen - und bis zu welcher Versuchszahl traegt das?",
+    ),
+    spot: bool = typer.Option(
+        False, "--spot",
+        help="Auf dem Spot-Punkt rechnen: kein Funding, kein Hebel.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Was fehlt zum Deflated-Sharpe-Gate - und was kostet Weitersuchen?
@@ -4155,11 +4164,23 @@ def abstand(
     Wer breit sucht, entwertet rechnerisch, was er findet. Dieser Befehl sagt
     vorher, was ein weiterer Versuch kostet und was er bringen muesste -
     damit die Suche budgetiert wird statt geraten.
+
+    Mit ``--zielfenster`` kommt die **zweite** offene Bedingung dazu (Befund
+    269). Betriebsschwelle und Deflated Sharpe fordern Verschiedenes von
+    denselben Trades - eine Summe und ein Verhaeltnis -, und seit Befund 104
+    steht die Sorge im Raum, dass eines das andere ausschliesst. Gemessen tun
+    sie das nicht: Wer den Ertrag je Trade hebt, ohne die Streuung
+    mitzunehmen, loest beide zugleich. Wer stattdessen die Positionen
+    vergroessert, loest keines und reisst das Drawdown-Gate.
+
+    Und die Zahl, die daraus folgt: **Bis zu welcher Versuchszahl traegt das
+    ueberhaupt noch?** Sie liegt unter dem Suchbudget des Plans.
     """
     from decimal import Decimal
 
     from rich.table import Table
 
+    from backtest.costs import FundingSchedule
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
@@ -4185,11 +4206,20 @@ def abstand(
 
     frames = common_range(roh)
     genome = spitzenkandidat()
+    if spot:
+        # Spot kennt keinen Hebel - und die beiden offenen Gates stehen an
+        # diesem Punkt (Befund 268).
+        genome = _ohne_hebel(genome)
     configs = {
         x: BacktestConfig(
             instrument=_fallback_instrument(_bybit_kontrakt(x)),
             risk=settings.risk, initial_equity=Decimal("500"),
             kalender=_terminkalender(settings) or None,
+            **(
+                {"funding": FundingSchedule(default_rate=Decimal("0"))}
+                if spot
+                else {}
+            ),
         )
         for x in symbole
     }
@@ -4262,6 +4292,90 @@ def abstand(
         "\n[dim]Mehr Daten kosten keinen Versuch, eine neue Idee schon. "
         "Die Reihenfolge folgt daraus.[/]\n"
     )
+
+    if zielfenster:
+        from research.gates import GateThresholds
+        from research.zielfenster import Handelsbuch, vermesse
+
+        t = GateThresholds()
+        kenn = report.combined
+        if kenn is None:
+            console.print("[red]Keine Kennzahlen - nichts zu vermessen.[/]")
+            raise typer.Exit(2)
+        fenster = [w for w in report.windows if w.window is not None]
+        jahre = (
+            fenster[-1].window.test_end - fenster[0].window.test_start
+        ).days / 365.25
+        pnl = [float(x.net_pnl) for x in gehandelt.all_trades]
+
+        buch = Handelsbuch(
+            trades_gesamt=len(report.all_trades),
+            effektiv=n,
+            mittel=sum(pnl) / len(pnl) if pnl else 0.0,
+            streuung=(
+                (sum((x - sum(pnl) / len(pnl)) ** 2 for x in pnl) / (len(pnl) - 1))
+                ** 0.5
+                if len(pnl) > 1
+                else 0.0
+            ),
+            # **Alle** Trades: Rendite und Rueckgang tragen auch die am
+            # Datenende glattgestellten (Befund 152).
+            summe=float(sum(x.net_pnl for x in report.all_trades)),
+            rueckgang_pct=kenn.max_drawdown_pct,
+            jahre=jahre,
+        )
+        ergebnis = vermesse(
+            buch, versuche=trials,
+            schwelle_pct=t.min_cagr_pct, dsr_ziel=0.95,
+            drawdown_grenze=t.max_oos_drawdown_pct,
+            schiefe=schiefe, woelbung=woelbung,
+        )
+
+        console.print(
+            f"[bold]Was beide offenen Gates zusammen fordern[/]  "
+            f"({buch.jahre:.2f} Jahre, {buch.trades_gesamt} Trades, "
+            f"effektiv {buch.effektiv})\n"
+        )
+        wegtafel = Table(header_style="bold")
+        wegtafel.add_column("Weg")
+        wegtafel.add_column("Ertrag je Trade", justify="right")
+        wegtafel.add_column("Sharpe/Trade", justify="right")
+        wegtafel.add_column("DSR", justify="right")
+        wegtafel.add_column("Rueckgang", justify="right")
+        wegtafel.add_column("traegt")
+        for weg in ergebnis.wege:
+            wegtafel.add_row(
+                weg.name,
+                f"{(weg.faktor - 1) * 100:+.1f} %",
+                f"{weg.sharpe_danach:.4f}",
+                f"{weg.dsr_danach:.4f}",
+                f"{weg.rueckgang_danach:.2f} %",
+                "ja" if weg.traegt else "nein",
+            )
+        console.print(wegtafel)
+        console.print(f"\n[yellow]{ergebnis.urteil()}[/]")
+
+        grenze = ergebnis.budgetgrenze(schiefe=schiefe, woelbung=woelbung)
+        if grenze is None:
+            console.print(
+                "[red]Auch der tragende Weg traegt schon jetzt nicht mehr.[/]\n"
+            )
+        elif grenze.gedeckelt:
+            console.print(
+                f"[dim]Die Suche traegt ueber {grenze.versuche} Versuche "
+                f"hinaus - das Budget ist hier nicht der Engpass.[/]\n"
+            )
+        else:
+            console.print(
+                f"[bold]Das Fenster schliesst sich bei {grenze.versuche} "
+                f"Versuchen.[/] Heute stehen {trials} zu Buche, es bleiben "
+                f"also {grenze.versuche - trials}. Jeder Versuch hebt die "
+                f"Latte dauerhaft; wer weiter sucht, als hier steht, "
+                f"verfehlt das Ziel auch mit dem richtigen Fund.\n"
+                f"[dim]Die Latte haengt an der effektiven Stichprobe - mehr "
+                f"Trades bei gleichem Ertrag je Trade schieben die Grenze "
+                f"hinaus, mehr Suche nicht.[/]\n"
+            )
 
 
 @app.command()

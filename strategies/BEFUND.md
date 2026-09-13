@@ -23849,3 +23849,139 @@ Zeitraum, ausgewaehlt wurde nichts.
 
 Volle Suite 3623 passed, 1 skipped; ruff check sauber.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
+
+## Zweihundertneunundsechzig. Ertrag je Trade, nicht Ruhe
+
+Nach Befund 268 ist die Lage auf zwei Zahlen zusammengeschnurrt. Der Bestand
+haelt am Spot-Punkt 9 von 11 Gates; offen sind:
+
+    Betriebsschwelle   14,34 % gegen 15,00 % im Jahr      0,66 Punkte
+    Deflated Sharpe     0,588 gegen 0,950                 0,362 Punkte
+
+Aufstellung (268) und Funding (265/266) sind ausgereizt. Es bleibt ein
+besserer Kandidat - und der kostet Versuche. Bevor davon welche ausgegeben
+werden, gehoert eine Frage beantwortet, die seit Befund 104 im Docstring von
+`cli marktkombinationen` steht:
+
+> Steigt der Deflated Sharpe ueber die Schwelle, faellt womoeglich die
+> Messlatte darunter - beide Gates zugleich zu halten ist die eigentliche
+> Frage.
+
+Beide fordern etwas von **denselben** Trades, aber Verschiedenes: die
+Betriebsschwelle eine **Summe**, der Deflated Sharpe ein **Verhaeltnis** aus
+Mittelwert und Streuung. Ob das zusammengeht, hat niemand gerechnet.
+
+### Der Ist-Zustand in diesen Groessen
+
+    Trades gesamt 158, davon am Datenende glattgestellt 2
+    fuer die Statistik: roh 156, effektiv 115
+    Mittelwert je Trade    4,9124 EUR
+    Streuung je Trade     18,1418 EUR
+    Sharpe je Trade        0,2708
+    Jahresrendite         14,3391 %   Schwelle 15,0
+    Rueckgang              9,8687 %   Grenze   12,0
+    Deflated Sharpe        0,5881     Huerde    0,95
+    Testzeitraum           8,00 Jahre
+
+Die Schwelle verlangt ueber acht Jahre eine PnL-Summe von 1029,51 EUR; da
+sind 818,01 EUR. **Der Ertrag muss also um 25,9 % steigen** - und die Frage
+ist, *wie*.
+
+### Weg 1: Skalieren - loest nichts und reisst ein drittes Gate
+
+Groessere Positionen bei gleicher Regel. Zaehler und Nenner wachsen um
+denselben Faktor:
+
+    Sharpe je Trade   bleibt 0,2708
+    Deflated Sharpe   bleibt 0,5881 - Huerde 0,95 weiterhin gerissen
+    Rueckgang         9,87 % * 1,2586 = 12,42 %  gegen Grenze 12,0
+
+Die Schwelle waere erfuellt, der Deflated Sharpe unveraendert, und das
+Drawdown-Gate faellt. **Ein Gate gewonnen, eines verloren, das dritte
+unberuehrt.**
+
+### Weg 2: Verbessern - loest beide zugleich
+
+Mehr Ertrag je Trade bei **gleicher** Streuung. Der Nenner bleibt stehen,
+also hebt jeder zusaetzliche Euro den Sharpe mit:
+
+    Sharpe je Trade   0,3408  gegen noetige 0,3387
+    Deflated Sharpe   0,9595  gegen Huerde  0,95
+    Rueckgang         9,87 %  unveraendert
+
+**Die beiden Gates ziehen nicht gegeneinander.** Die Sorge aus Befund 104
+trifft nur den Weg ueber die Positionsgroesse. Ein Fortschritt, der aus der
+Regel kommt, loest beide auf einmal.
+
+Und daraus folgt die Richtung fuer jede weitere Suche: **Gesucht wird Ertrag
+je Trade, nicht Ruhe.** An der Streuung ist der Bestand nicht knapp - er
+haette bis 22,12 EUR Luft und steht bei 18,14. Wer den Rueckgang weiter
+druecken wollte, optimierte an der falschen Stelle. Genau das erklaert auch
+Befund 268: Verbreiterung senkt den Ertrag je Trade und hebt die Trade-Zahl -
+die falsche Richtung in beiden Groessen.
+
+### Die Zahl, die das Budget begrenzt
+
+Der Deflated Sharpe haelt mit 0,01 Luft. Jeder Versuch hebt die Latte
+dauerhaft, also ist die Luft endlich:
+
+    198 Versuche   noetiger Sharpe 0,3387   DSR 0,9595   haelt
+    231 Versuche                             ...         reisst
+
+**Das Fenster schliesst sich bei 231 Versuchen. Der Plan sieht 230 vor.**
+
+Der Puffer ist damit null. Es bleiben rund dreissig Versuche, und wer sie
+ausschoepft, ohne etwas Besseres zu finden, verfehlt das Ziel danach auch mit
+dem richtigen Fund - nicht weil die Strategie schlechter waere, sondern weil
+die Huerde mitgewachsen ist.
+
+Wenn es soweit kommt, hilft **nicht mehr Suche, sondern mehr effektive
+Stichprobe**. Die Latte haengt an ihr und sinkt mit ihr. Gesucht ist damit
+sehr genau: mehr Trades **ohne** Ertragsverlust je Trade.
+
+### Wie belastbar die 231 ist
+
+**Maessig - und das gehoert dazu.** Sie haengt empfindlich an Schiefe und
+Woelbung: mit 3,376/15,415 statt der gemessenen 3,4646/15,9173 faellt sie auf
+214. Siebzehn Versuche Unterschied bei 0,09 in der Schiefe.
+
+Belastbar ist die Groessenordnung, nicht die Stelle: Grenze und Planbudget
+liegen beieinander, und das heisst kein Puffer.
+
+### Zwei Rechenfehler auf dem Weg hierher, beide meine
+
+**Der erste:** Ich habe `bewerte` die **rohe** Trade-Zahl gegeben und bekam
+einen Deflated Sharpe von 0,9196, waehrend das Gate 0,5881 meldet. Das Gate
+rechnet mit der **effektiven** Stichprobe (115 statt 156). Der Docstring von
+`noetiger_sharpe` warnt genau davor, und Befund 139 hat denselben Fehler
+schon einmal gefunden. Die korrigierte Fassung faehrt dieselbe Kette wie
+`cli abstand` und trifft das Gate auf die vierte Stelle.
+
+**Der zweite:** Der noetige Mittelwert war ueber alle 158 Trades gerechnet
+und mit dem Ist-Mittelwert der 156 gehandelten verglichen - daraus wurden
++32,6 % statt +25,9 %. Der Faktor gehoert auf die **Summe**, nicht auf zwei
+verschieden grosse Mittelwerte. Aufgefallen ist es erst, als das Modul die
+Probe sauber nachbaute.
+
+**Und ein dritter beim Testen:** Schiefe und Woelbung standen in der Fixture
+aus einem Lauf ueber alle Trades statt ueber die gehandelten - daher zuerst
+214 statt 231.
+
+Drei Rechenfehler in einem Befund, dessen Gegenstand eine Rechnung ist. Was
+sie gemeinsam haben: Alle drei kommen daher, dass zwei aehnliche Groessen
+nebeneinanderliegen und eine davon die richtige ist - rohe gegen effektive
+Stichprobe, alle gegen gehandelte Trades. Das ist dieselbe Sorte, die 267 in
+den Berichten gefunden hat.
+
+### Was diese Rechnung nicht ist
+
+**Kein Versprechen.** Sie sagt, was noetig waere, nicht dass es zu finden
+ist. Sie haelt Streuung, Momente und Trade-Zahl fest; eine bessere Regel
+haette andere Momente, und die Latte verschoebe sich mit. Es ist eine
+Richtungsangabe und eine Budgetgrenze, kein Fund.
+
+Kostet keinen Versuch: gerechnet wird auf einem vorhandenen Handelsbuch,
+ausgewaehlt wird nichts.
+
+Volle Suite 3654 passed, 1 skipped; ruff check sauber.
+Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.

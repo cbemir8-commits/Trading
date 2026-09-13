@@ -1547,6 +1547,31 @@ BEHOBEN: tuple[Richtung, ...] = (
         "auf Portfolioebene beziffert",
         268,
     ),
+    # Die Frage, die seit Befund 104 im Raum steht und die nach 268 die
+    # einzige verbliebene ist.
+    Richtung(
+        "Die beiden offenen Gates ziehen nicht gegeneinander",
+        "Seit Befund 104 stand die Sorge im Docstring von "
+        "'marktkombinationen': *'Steigt der Deflated Sharpe ueber die "
+        "Schwelle, faellt womoeglich die Messlatte darunter.'* Sie fordern "
+        "Verschiedenes von denselben Trades - die Betriebsschwelle eine "
+        "**Summe**, der Deflated Sharpe ein **Verhaeltnis**. Gemessen (269) "
+        "haengt alles daran, **wie** der Ertrag steigt: Groessere Positionen "
+        "heben Summe und Streuung gleich, lassen den Sharpe je Trade bei "
+        "0,2708 und den DSR bei 0,588 - und treiben den Rueckgang von 9,87 "
+        "auf 12,42 %, also ueber die Grenze. Skalieren loest kein Gate und "
+        "reisst ein drittes. Mehr Ertrag je Trade bei gleicher Streuung "
+        "loest **beide**: +25,9 % heben den Sharpe je Trade auf 0,3408 gegen "
+        "noetige 0,3387, der DSR stuende bei 0,9595, der Rueckgang bliebe. "
+        "**Gesucht wird Ertrag je Trade, nicht Ruhe** - an der Streuung ist "
+        "der Bestand nicht knapp. Daraus folgt die Zahl, die das Budget "
+        "begrenzt: Das Fenster schliesst sich bei **231 Versuchen**, der "
+        "Plan sieht 230 vor - kein Puffer. Die Stelle ist empfindlich (mit "
+        "anderen Momenten 214), die Groessenordnung nicht. Wenn es eng wird, "
+        "hilft nicht mehr Suche, sondern mehr effektive Stichprobe: Die "
+        "Latte haengt an ihr",
+        269,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
