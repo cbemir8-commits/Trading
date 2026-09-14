@@ -25194,3 +25194,106 @@ Versuchszaehler 198 -> 203.
 Suchbudget 73 von 100 verbraucht, 27 bleiben.
 
 Volle Suite 3816 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertzweiundachtzig. Die Begruendung war falsch, also der Umbau
+
+Befund 234 hat einen Mangel gemessen und ihn ausdruecklich **nicht** behoben:
+
+> `save_trials` setzt `grundstock = trials - len(eintraege)`, bucht gemeldete
+> Versuche also in das Feld, dessen Kopf "von vor der Einfuehrung des
+> Verzeichnisses" sagt. [...] Nicht umgebaut: Die Buchung steuert die Haerte
+> des einzigen offenen Gates, und **die fuenf Befehle laufen hier nicht** (sie
+> brauchen Kerzen).
+
+Die Begruendung ist falsch, und ich habe sie selbst widerlegt: In Befund 281
+lief `cli machbarkeit --spot` genau hier, mass fuenf Reglerstellungen und
+buchte sie stumm in den Grundstock - 187 auf 192. Der Befehl braucht
+Boersenkerzen nicht; er laeuft auf den Forschungskerzen, die im Speicher
+liegen.
+
+Damit habe ich die Luecke, die 234 beschreibt, um fuenf vergroessert und im
+selben Zyklus berichtet. Das ist der Anlass hier.
+
+### Was geaendert ist
+
+`cli machbarkeit` und `cli landschaft` schreiben jetzt **Einzelnachweise** -
+dieselbe Buchung, die Korb- und Verbundlaeufe seit jeher benutzen:
+
+    kennung          "Vola-Ziel 21 %"
+    herkunft         "cli machbarkeit --regler vola (Spot)"
+    trades           158
+    sharpe_je_trade  0,2708
+
+Die Summe aendert sich dadurch nicht: `anhaengen` hebt den Zaehler um genau
+die Zahl der Eintraege und laesst den Grundstock unberuehrt. Gemessen auf
+einer Kopie: 187 Grundstock, ein Eintrag, Summe 188 - Grundstock weiter 187.
+
+Bei `landschaft` bleibt `sharpe_je_trade` **leer**. Die Karte fuehrt Gewinn
+und Trade-Zahl, nicht die Guete je Trade, und `None` heisst dort "nicht
+erhoben". Eine 0,0 waere die Behauptung, es gaebe keinen Vorteil - und sie
+ginge in die Streuungsschaetzung ein, die Befund 69 aufbaut.
+
+### Was offen bleibt, und genauer als vorher
+
+Drei Befehle buchen weiter in den Grundstock: `adaptiv`, `research`,
+`wettbewerb`. Das sind **Suchlaeufe und keine Sweeps am Bestand** - bei ihnen
+war nie strittig, ob sie zaehlen, und `wettbewerb` braucht tatsaechlich
+Boersenkerzen. Die Luecke ist also kleiner und genau benannt.
+
+**Die Frage aus 234 selbst bleibt offen**: Ob ein Sweep am Bestand als
+Versuch zaehlen *soll*, ist damit nicht entschieden - und sie in dem Zyklus
+zu entscheiden, in dem ich gerade fuenf Versuche dafuer ausgegeben habe,
+waere die falsche Reihenfolge. Beantwortbar wird sie erst mit den Laeufen,
+die von jetzt an sichtbar sind.
+
+Die 192 im Grundstock bleiben ohne Herkunft. Was meine fuenf waren, steht in
+`reports/machbarkeit/2026-09-14_005951.json` - das ist ihre Herkunft, am
+richtigen Ort. Sie nachtraeglich in Eintraege zu verwandeln waere eine
+Umbuchung, und genau dagegen steht eine Wache.
+
+### Zwei Wachen, die den Mangel beschrieben statt eine Anforderung
+
+`SCHREIBER` und `BUCHFUEHRER` teilten die Befehle danach auf, wer stumm bucht
+und wer Herkunft hinterlaesst. Beide Listen sind gewandert - das war der
+Zweck.
+
+Und eine dritte hielt fest, dass **kein** Eintrag aus einem Sweep stammt. Das
+war nie eine Anforderung: Es *konnte* keiner von dort kommen, weil Sweeps
+stumm buchten. Als Verbot haette sie genau das untersagt, was hier repariert
+wurde. Gehalten wird jetzt, was gemeint war: Wer einzeln verzeichnet ist,
+sagt auch, woher er kommt.
+
+### Und was die Wache dabei ueber sich selbst verraten hat
+
+`tests/test_versuchszaehler_wer.py` haelt fest, **wer** den Zaehler
+fortschreibt: *"Kommt ein sechster dazu, faellt er hier auf."* Sie fand die
+Befehle, indem sie nach `save_trials` suchte.
+
+Als `landschaft` und `machbarkeit` auf Einzelnachweise umgestellt waren,
+waeren sie damit aus der Aufsicht **gefallen** - nicht weil sie aufgehoert
+haetten zu zaehlen, sondern weil sie es anders tun. Eine Wache, die am Namen
+einer Funktion haengt statt an der Wirkung, verliert genau die, die sich
+aendern.
+
+Sie sieht jetzt beide Buchungswege. Und damit stehen dort **sieben** Befehle,
+nicht fuenf: `korb` und `verbund` erhoehen den Zaehler seit jeher ueber
+`_verzeichne` - jeder Einzelnachweis hebt die Summe um eins - und standen nie
+auf einer Liste, deren Kopf "wer den Zaehler schreibt" verspricht.
+
+Der Fund daraus: **`korb` schrieb den Zaehler stumm fort.** Genau das hat
+Befund 233 abgestellt - *"Von fuenf Befehlen, die den Zaehler fortschreiben,
+sagte nur `machbarkeit` von selbst, was er kostet"* -, und `korb` ist es
+durchgerutscht, weil er nicht zu den fuenf gehoerte. Er nennt seine Bilanz
+jetzt wie die anderen.
+
+Zwei weitere Verdachtsfaelle haben sich beim Nachsehen **nicht** bestaetigt:
+Ich hielt die an `_verzeichne` uebergebene Sollsumme fuer den Stand *vor* dem
+Lauf - dann haette die Gegenprobe bei jedem Lauf falsch Alarm geschlagen -
+und die Meldung von `verbund` fuer den falschen Zaehlerstand. Beides ist in
+Ordnung: `trials` wird in der Schleife mitgezaehlt. Aufgeschrieben, weil ein
+geprueftes "stimmt doch" genauso zum Ergebnis gehoert wie ein Fund.
+
+Kostet keinen Versuch: Gebaut wurde an der Buchfuehrung, gemessen nichts Neues.
+Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 3824 passed, 2 skipped; ruff check sauber.

@@ -1960,10 +1960,21 @@ OFFEN: tuple[Richtung, ...] = (
         "Einfuehrung des Verzeichnisses' sagt. Auf einer Kopie gemessen: 5 "
         "gemeldet, Grundstock +5, Einzelnachweise +0. Belegt auch am "
         "Verlauf - 166 auf 187 bei unveraendert 11 Eintraegen, die 21 aus "
-        "Befund 104. Nicht umgebaut: Die Buchung steuert die Haerte des "
-        "einzigen offenen Gates, und die fuenf Befehle laufen hier nicht "
-        "(sie brauchen Kerzen)",
+        "Befund 104. **Die Begruendung, es nicht umzubauen, war falsch** "
+        "(282): Sie lautete, die fuenf Befehle liefen hier nicht, weil sie "
+        "Kerzen brauchen. In Befund 281 lief 'cli machbarkeit --spot' genau "
+        "hier und buchte fuenf Stellungen stumm in den Grundstock, 187 auf "
+        "192. Umgebaut sind jetzt die beiden Befehle, die 234 namentlich "
+        "nennt: 'landschaft' und 'machbarkeit' schreiben Einzelnachweise mit "
+        "Herkunft. Drei buchen weiter in den Grundstock ('adaptiv', "
+        "'research', 'wettbewerb') - Suchlaeufe und keine Sweeps am Bestand, "
+        "bei ihnen war nie strittig, ob sie zaehlen. **Offen bleibt die Frage "
+        "selbst**, ob ein Sweep zaehlen soll; beantwortbar wird sie erst mit "
+        "den Laeufen, die von jetzt an sichtbar sind. Die 192 im Grundstock "
+        "bleiben ohne Herkunft - sie nachtraeglich zu benennen waere eine "
+        "Umbuchung",
         234,
+        zuletzt=282,
     ),
     # Halb gemessen in 251. Die andere Haelfte braucht Bybit - deshalb steht
     # der Eintrag hier und nicht bei den geschlossenen.

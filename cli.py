@@ -3548,6 +3548,11 @@ def korb(
     from research.admission import load_trials
 
     trials = load_trials(trials_path)
+    # Der Stand vor dem Lauf - fuer die Schlussbilanz (Befund 282). Sie fehlte
+    # hier als einzigem der sieben Befehle, die den Zaehler fortschreiben:
+    # 'korb' bucht ueber '_verzeichne' und stand deshalb nicht auf der Liste,
+    # die Befund 233 geprueft hat.
+    vorher = trials
 
     console.print(
         f"\n[bold]Korb[/] {' + '.join(symbole)} {interval_obj.label}\n"
@@ -3615,6 +3620,7 @@ def korb(
 
     _verzeichne(trials_path, gezaehlt, trials)
     console.print(tabelle)
+    console.print(_laufbilanz(vorher, trials))
 
     if bester is None:
         console.print("[red]Kein Kandidat konnte gerechnet werden.[/]")
@@ -5044,9 +5050,10 @@ def landschaft(
 
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range
-    from research.admission import load_trials, save_trials
+    from research.admission import load_trials
     from research.landschaft import kartieren
     from research.seeds import spitzenkandidat
+    from research.versuche import Versuch
 
     _configure_logging(verbose)
     settings = get_settings()
@@ -5106,9 +5113,27 @@ def landschaft(
     console.print(karte.tabelle())
 
     trials_path = Path(settings.paths.state) / "trials.json"
-    neue = max(0, len(karte.punkte) - 1)  # der Kandidat selbst zaehlt nicht neu
+    # Der Kandidat selbst zaehlt nicht neu - er steht bei Faktor 1,0.
+    #
+    # **Mit Einzelnachweis** (Befund 282), aus demselben Grund wie bei
+    # ``machbarkeit``. ``sharpe_je_trade`` bleibt hier ``None``: Die Karte
+    # fuehrt Gewinn und Trade-Zahl, nicht die Guete je Trade. ``None`` heisst
+    # "nicht erhoben" und nicht "kein Vorteil" - der Unterschied entscheidet,
+    # ob ein Punkt in die Streuungsschaetzung darf.
+    gezaehlt = [p for p in karte.punkte if p.faktor != 1.0]
+    neue = [
+        Versuch.jetzt(
+            f"Landschaft Faktor {p.faktor:g} (Leitperiode {p.leitperiode})",
+            herkunft=(
+                f"cli landschaft --regler {regler}" if regler else "cli landschaft"
+            ),
+            trades=int(p.trades),
+        )
+        for p in gezaehlt
+    ]
     vorher = load_trials(trials_path)
-    save_trials(trials_path, vorher + neue)
+    _verzeichne(trials_path, neue, vorher + len(neue))
+    neue = len(neue)
     # **Stumm gezaehlt** (Befund 233). Von fuenf Befehlen, die den Zaehler
     # fortschreiben, sagte nur ``machbarkeit`` von selbst, was er kostet.
     console.print(_laufbilanz(vorher, vorher + neue))
@@ -5191,7 +5216,7 @@ def machbarkeit(
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from core.report import write_report
-    from research.admission import load_trials, save_trials
+    from research.admission import load_trials
     from research.gates import evaluate_gates
     from research.machbarkeit import (
         REGLER,
@@ -5201,6 +5226,7 @@ def machbarkeit(
         stelle_ein,
     )
     from research.seeds import spitzenkandidat
+    from research.versuche import Versuch
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -5358,11 +5384,29 @@ def machbarkeit(
     if zaehlen:
         # Der Ausgangswert des Kandidaten ist bereits gezaehlt - alles andere
         # ist neu gerechnet und gesehen.
-        neue = sum(1 for p in analyse.punkte if abs(p.stellung - ausgang) > 1e-9)
-        save_trials(trials_path, trials + neue)
+        #
+        # **Mit Einzelnachweis** (Befund 282). Hier stand
+        # ``save_trials(trials + neue)``: Die Summe stieg, und die Stellungen
+        # verschwanden im Grundstock - dem Feld, dessen Kopf "von vor der
+        # Einfuehrung des Verzeichnisses" sagt. Genau davon lebt die offene
+        # Frage aus Befund 234: Ob ein Sweep als Versuch zaehlen sollte, ist
+        # aus der Akte nicht zu beantworten, weil man die Sweeps nicht sieht.
+        # Von hier an sieht man sie.
+        punkt_text = "Spot" if spot else "Perpetual"
+        neue = [
+            Versuch.jetzt(
+                f"{schraube.name} {p.stellung:g} {schraube.einheit}".strip(),
+                herkunft=f"cli machbarkeit --regler {regler} ({punkt_text})",
+                trades=int(p.kennzahlen.get("trades", 0)),
+                sharpe_je_trade=p.kennzahlen.get("sharpe_je_trade"),
+            )
+            for p in analyse.punkte
+            if abs(p.stellung - ausgang) > 1e-9
+        ]
+        _verzeichne(trials_path, neue, trials + len(neue))
         console.print(
-            f"[dim]Versuchszaehler {trials} -> {trials + neue} "
-            f"({neue} neue Stellungen).[/]"
+            f"[dim]Versuchszaehler {trials} -> {trials + len(neue)} "
+            f"({len(neue)} neue Stellungen, mit Einzelnachweis).[/]"
         )
 
     console.print(

@@ -51,11 +51,22 @@ from research import versuche as versuchsverzeichnis
 from research.admission import save_trials
 
 #: Befehle, die den Zaehler fortschreiben - ueber ``save_trials``, also in den
-#: Grundstock.
-SCHREIBER = ("adaptiv", "landschaft", "machbarkeit", "research", "wettbewerb")
+#: Grundstock, **ohne Einzelnachweis**.
+#:
+#: Waren fuenf, sind drei (Befund 282): ``landschaft`` und ``machbarkeit``
+#: schreiben jetzt Einzelnachweise. Die drei hier sind Suchlaeufe und keine
+#: Sweeps am Bestand - bei ihnen war nie strittig, ob sie zaehlen, und sie
+#: laufen in diesem Behaelter nicht (``wettbewerb`` braucht Boersenkerzen).
+#: Die Luecke bleibt also, sie ist nur kleiner und genau benannt.
+SCHREIBER = ("adaptiv", "research", "wettbewerb")
 
 #: Befehle, die einen Eintrag **mit Herkunft** hinterlassen.
-BUCHFUEHRER = ("korb", "verbund")
+#:
+#: ``landschaft`` und ``machbarkeit`` sind mit Befund 282 dazugekommen - die
+#: beiden, die Befund 234 namentlich nennt: *"vermessen die Umgebung des
+#: vorhandenen Kandidaten und schreiben dabei den Zaehler fort."* Ob das
+#: zaehlen **soll**, ist weiter offen; dass man es sieht, ist entschieden.
+BUCHFUEHRER = ("korb", "landschaft", "machbarkeit", "verbund")
 
 
 def _befehle_mit(text: str) -> set[str]:
@@ -134,16 +145,27 @@ class TestWasDieAkteHergibt:
 
         assert d["grundstock"] > 10 * len(d["versuche"])
 
-    def test_kein_erfasster_versuch_stammt_aus_einem_sweep(self) -> None:
-        """Was Herkunft traegt, kommt aus Korb- und Verbundlaeufen. Das ist
-        kein Beleg, dass Sweeps nichts beigetragen haben - im Gegenteil,
-        Befund 104 zaehlt 21 davon. Es heisst nur, dass man sie nicht sieht.
-        """
-        herkuenfte = {v["herkunft"] for v in self._zaehler()["versuche"]}
+    def test_jeder_erfasste_versuch_nennt_seine_herkunft(self) -> None:
+        """**Hier stand eine Verbotsliste** (Befund 282).
 
-        assert herkuenfte
-        for h in herkuenfte:
-            assert "landschaft" not in h and "machbarkeit" not in h
+        Sie hielt fest, dass kein Eintrag aus einem Sweep stammt - und das
+        war nie eine Anforderung, sondern die Beschreibung eines Mangels:
+        ``landschaft`` und ``machbarkeit`` buchten stumm in den Grundstock,
+        also *konnte* kein Eintrag von ihnen kommen. Seit 282 koennen sie es,
+        und die alte Zusicherung waere jetzt ein Verbot dessen, was gerade
+        repariert wurde.
+
+        Gehalten wird, was gemeint war: Wer einzeln verzeichnet ist, sagt
+        auch, woher er kommt. Dass heute keine Sweep-Eintraege dastehen,
+        heisst nicht, dass Sweeps nichts beigetragen haben - Befund 104
+        zaehlt 21 davon, und Befund 281 hat fuenf weitere in den Grundstock
+        gebucht, bevor diese Aenderung da war.
+        """
+        eintraege = self._zaehler()["versuche"]
+
+        assert eintraege
+        for v in eintraege:
+            assert v["herkunft"], f"{v['kennung']}: Eintrag ohne Herkunft"
 
 
 #: Der Stand, als diese Wache gebaut wurde. Sie haelt die **Richtung** fest,
@@ -171,3 +193,96 @@ def test_hier_wird_nichts_umgebucht() -> None:
     assert d["grundstock"] + len(d["versuche"]) == d["trials"], (
         "nichts wird zwischen Grundstock und Einzelnachweisen umgebucht"
     )
+
+
+class TestSweepsTragenJetztHerkunft:
+    """**Befund 282.** Die Luecke aus 234, geschlossen fuer alles Neue.
+
+    Befund 234 haelt fest: *"Was sie melden, bucht 'save_trials' in den
+    Grundstock - 187 der 198 Versuche stehen dort ohne Herkunft, als waeren
+    sie Vorgeschichte."* Die Begruendung, es nicht umzubauen, war: *"die
+    fuenf Befehle laufen hier nicht (sie brauchen Kerzen)."*
+
+    **Das stimmt nicht mehr.** In Befund 281 lief 'cli machbarkeit --spot'
+    genau hier und buchte fuenf Stellungen in den Grundstock - 187 auf 192.
+    Die Frage, ob ein Sweep als Versuch zaehlen sollte, bleibt offen; von
+    hier an ist sie wenigstens **beantwortbar**, weil man die Sweeps sieht.
+    """
+
+    @staticmethod
+    def _quelle(name: str) -> str:
+        import ast
+
+        baum = ast.parse(Path("cli.py").read_text(encoding="utf-8"))
+        knoten = next(
+            k
+            for k in ast.walk(baum)
+            if isinstance(k, ast.FunctionDef) and k.name == name
+        )
+        return ast.unparse(knoten)
+
+    def test_machbarkeit_schreibt_einzelnachweise(self) -> None:
+        quelle = self._quelle("machbarkeit")
+
+        assert "_verzeichne(" in quelle
+        assert "Versuch.jetzt(" in quelle
+        assert "herkunft=" in quelle
+        assert "save_trials(" not in quelle, (
+            "die Summe allein laesst die Stellungen im Grundstock verschwinden"
+        )
+
+    def test_landschaft_auch(self) -> None:
+        quelle = self._quelle("landschaft")
+
+        assert "_verzeichne(" in quelle
+        assert "Versuch.jetzt(" in quelle
+        assert "save_trials(" not in quelle
+
+    def test_die_herkunft_nennt_den_befehl(self) -> None:
+        for name in ("machbarkeit", "landschaft"):
+            assert f"cli {name}" in self._quelle(name)
+
+    def test_anhaengen_hebt_die_summe_und_laesst_den_grundstock(
+        self, tmp_path: Path
+    ) -> None:
+        """Der Kern der Buchung: Einzelnachweise **erhoehen** den Zaehler um
+        ihre Zahl und ruehren den Grundstock nicht an. Waere es anders, waere
+        das Eintragen eine Umbuchung - und eine Umbuchung nach unten machte
+        die Mehrfachtest-Korrektur milder.
+        """
+        from research.versuche import Versuch, Verzeichnis, anhaengen, speichern
+
+        ziel = tmp_path / "trials.json"
+        speichern(ziel, Verzeichnis(grundstock=187, eintraege=[]))
+
+        nachher = anhaengen(
+            ziel,
+            [
+                Versuch.jetzt(
+                    "Vola-Ziel 21 %",
+                    herkunft="cli machbarkeit --regler vola (Spot)",
+                    trades=158,
+                    sharpe_je_trade=0.2708,
+                )
+            ],
+        )
+
+        assert nachher.anzahl == 188
+        assert nachher.grundstock == 187
+        assert nachher.eintraege[-1].herkunft.startswith("cli machbarkeit")
+
+    def test_nicht_erhoben_ist_nicht_kein_vorteil(self, tmp_path: Path) -> None:
+        """``landschaft`` fuehrt keine Guete je Trade. ``None`` heisst dort
+        "nicht erhoben" - eine 0,0 waere die Behauptung, es gaebe keinen
+        Vorteil, und sie ginge in die Streuungsschaetzung ein."""
+        from research.versuche import Versuch, Verzeichnis, anhaengen, speichern
+
+        ziel = tmp_path / "trials.json"
+        speichern(ziel, Verzeichnis(grundstock=10, eintraege=[]))
+
+        nachher = anhaengen(
+            ziel, [Versuch.jetzt("Landschaft Faktor 1,2", trades=140)]
+        )
+
+        assert nachher.eintraege[-1].sharpe_je_trade is None
+        assert nachher.sharpes() == []

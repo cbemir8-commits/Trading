@@ -24,7 +24,27 @@ from pathlib import Path
 import pytest
 
 SUCHEN = ("wettbewerb", "research")
-ZAEHLER = (*SUCHEN, "landschaft", "machbarkeit", "adaptiv")
+
+#: Alle Befehle, die den Versuchszaehler fortschreiben.
+#:
+#: **Es waren immer sieben, gelistet waren fuenf** (Befund 282). Diese Wache
+#: suchte nach ``save_trials`` und fand damit genau die Befehle, die in den
+#: Grundstock buchen. ``korb`` und ``verbund`` erhoehen den Zaehler ueber
+#: ``_verzeichne`` - jeder Einzelnachweis hebt ``Verzeichnis.anzahl`` um eins
+#: -, und sie standen hier nie, obwohl der Kopf dieser Datei "wer den Zaehler
+#: schreibt" verspricht.
+#:
+#: Aufgefallen ist es, als ``landschaft`` und ``machbarkeit`` auf
+#: Einzelnachweise umgestellt wurden und beinahe aus der Aufsicht gefallen
+#: waeren. Die Wache haftete am Namen einer Funktion statt an der Wirkung.
+ZAEHLER = (
+    *SUCHEN,
+    "landschaft",
+    "machbarkeit",
+    "adaptiv",
+    "korb",
+    "verbund",
+)
 
 
 def _quelle(name: str) -> str:
@@ -36,21 +56,43 @@ def _quelle(name: str) -> str:
     return ast.unparse(fn)
 
 
+#: Die beiden Wege, auf denen der Zaehler steigt.
+#:
+#: **Beide gehoeren hierher** (Befund 282). Bis dahin suchte diese Wache nur
+#: nach ``save_trials``. Als ``landschaft`` und ``machbarkeit`` auf
+#: Einzelnachweise umgestellt wurden, waeren sie damit aus der Aufsicht
+#: gefallen - nicht weil sie aufgehoert haetten zu zaehlen, sondern weil sie
+#: es anders tun. Eine Wache, die am Namen einer Funktion haengt statt an der
+#: Wirkung, verliert genau die, die sich aendern.
+BUCHUNGEN = ("save_trials", "_verzeichne(")
+
+
 def _schreiber() -> set[str]:
-    """Alle Befehle, die ``save_trials`` aufrufen - gefunden, nicht gelistet."""
+    """Alle Befehle, die den Zaehler fortschreiben - gefunden, nicht gelistet."""
     baum = ast.parse(Path("cli.py").read_text())
     aus = set()
     for n in ast.walk(baum):
-        if isinstance(n, ast.FunctionDef) and "save_trials" in ast.unparse(n):
+        if not isinstance(n, ast.FunctionDef) or n.name.startswith("_"):
+            continue
+        quelle = ast.unparse(n)
+        if any(weg in quelle for weg in BUCHUNGEN):
             aus.add(n.name)
     return aus
 
 
 class TestWerDenZaehlerSchreibt:
-    def test_es_sind_diese_fuenf(self) -> None:
-        """Kommt ein sechster dazu, faellt er hier auf - und muss sich
+    def test_es_sind_diese_sieben(self) -> None:
+        """Kommt ein achter dazu, faellt er hier auf - und muss sich
         entscheiden, ob er Suche ist oder Messung."""
         assert _schreiber() == set(ZAEHLER)
+
+    def test_beide_buchungswege_werden_gesehen(self) -> None:
+        """Der Fehler, den diese Wache selbst beinahe gemacht haette: Sie sah
+        nur einen der beiden Wege (Befund 282)."""
+        quelle = Path("cli.py").read_text()
+
+        assert all(weg in quelle for weg in BUCHUNGEN)
+        assert len(_schreiber()) == len(ZAEHLER)
 
     def test_befund_216_hat_sich_geirrt(self) -> None:
         """Der Anlass dieses Befunds, als Zahl."""
