@@ -354,8 +354,104 @@ def test_der_modulkopf_traegt_die_berichtigung() -> None:
     assert "BERICHTIGT IN BEFUND 287" in kopf
     assert "0,49" in kopf, "die gemessene Intraklassenkorrelation"
     assert "0,0885" in kopf, "und dass sie nicht nachgewiesen ist"
-    # Auf die Aussage geprueft und nicht auf den Zeilenumbruch: "schneidet
-    # in die andere Richtung" bricht im Fliesstext zwischen den beiden
-    # Woertern um, und ein Test, der daran haengt, prueft die Formatierung.
-    assert "Dieselbe Vorsicht schneidet" in kopf, "die Asymmetrie der Vorsicht"
-    assert "aussichtsloser, als belegt ist" in kopf
+    assert "aussichtsloser" in kopf and "als belegt ist" in kopf
+    # **Hier stand die falsche Begruendung von 287** ("Dieselbe Vorsicht
+    # schneidet in die andere Richtung"), und dieser Test hat sie
+    # festgehalten. Eine Wache auf einen Satz haelt auch einen falschen.
+    # Was jetzt gilt, prueft ``TestInWelcheRichtungEineKuerzungWirkt`` an
+    # Zahlen statt an Worten.
+    assert "Dieselbe Vorgabe" in kopf, "die berichtigte Fassung aus 289"
+
+
+class TestInWelcheRichtungEineKuerzungWirkt:
+    """**Befund 289 - die Berichtigung von 287.**
+
+    Befund 287 hat begruendet, warum eine ungekuerzte Stichprobe bei Trades
+    die vorsichtige Seite sei: *"Wer die Stichprobe nicht kuerzt, macht das
+    Gate strenger."* Verkehrt herum - und weil der Satz eine Begruendung war
+    und keine Zahl, hat ihn keine Wache aufgehalten.
+
+    Diese Tests sind die Wache. Sie rechnen die Richtung nach, statt sie zu
+    behaupten.
+    """
+
+    def guete_und_latte(self, n_eff: int) -> tuple[float, float]:
+        from research.referenz import SPOTPUNKT
+        from research.verbund import noetige_guete
+
+        latte = noetige_guete(
+            n_eff, 203, schiefe=SPOTPUNKT.schiefe, woelbung=SPOTPUNKT.woelbung
+        )
+        assert latte is not None
+        return SPOTPUNKT.guete * n_eff**0.5, latte
+
+    def test_die_guete_waechst_schneller_als_die_latte(self) -> None:
+        """Der Grund in einer Zeile: ``sqrt(n)`` gegen einen flachen Anstieg."""
+        klein_g, klein_l = self.guete_und_latte(60)
+        gross_g, gross_l = self.guete_und_latte(240)
+
+        assert gross_g / klein_g > 1.9, "Guete etwa mit der Wurzel"
+        assert gross_l / klein_l < 1.2, "die Latte deutlich flacher"
+
+    def test_dieselbe_regel_besteht_mit_mehr_beobachtungen(self) -> None:
+        """**Der Kern.** Derselbe Sharpe je Trade, nur eine groessere
+        effektive Stichprobe - und aus "durchgefallen" wird "bestanden"."""
+        eng_g, eng_l = self.guete_und_latte(115)
+        weit_g, weit_l = self.guete_und_latte(200)
+
+        assert eng_g < eng_l, f"bei 115 fehlt es: {eng_g:.3f} gegen {eng_l:.3f}"
+        assert weit_g > weit_l, f"bei 200 reicht es: {weit_g:.3f} gegen {weit_l:.3f}"
+
+    def test_eine_kuerzung_erschwert_die_zulassung(self) -> None:
+        """Die Aussage, wie sie im Docstring von ``effektive_stichprobe``
+        steht - hier als Rechnung und nicht als Satz."""
+        ungekuerzt_g, ungekuerzt_l = self.guete_und_latte(200)
+        gekuerzt_g, gekuerzt_l = self.guete_und_latte(100)
+
+        assert ungekuerzt_g - ungekuerzt_l > gekuerzt_g - gekuerzt_l
+
+    def test_die_grenze_wird_von_derselben_kuerzung_weiter(self) -> None:
+        """Und die Gegenrichtung, an derselben Stelle gemessen: Weniger
+        unabhaengige Ziehungen heben die Obergrenze der Trefferquote."""
+        lage = TestDerGemesseneVorrat().lage()
+
+        assert lage.obergrenze(unabhaengige=9) > lage.obergrenze(unabhaengige=18)
+
+    def test_beides_zieht_zugunsten_des_vorhandenen(self) -> None:
+        """**Die berichtigte Aussage von 287, als Rechnung.**
+
+        Nicht zu kuerzen laesst beim Gate den Bestand besser aussehen und bei
+        der Trefferquote die Suche aussichtsloser. Zweimal dieselbe Richtung.
+        """
+        lage = TestDerGemesseneVorrat().lage()
+        gross_g, gross_l = self.guete_und_latte(200)
+        klein_g, klein_l = self.guete_und_latte(100)
+
+        # Gross ist gut fuer den Bestand ...
+        assert (gross_g - gross_l) > (klein_g - klein_l)
+        # ... und schlecht fuer die Aussicht auf einen neuen Versuch.
+        assert lage.obergrenze(unabhaengige=18) < lage.obergrenze(unabhaengige=9)
+
+
+def test_der_modulkopf_traegt_auch_die_zweite_berichtigung() -> None:
+    import research.vorratslage as modul
+
+    kopf = modul.__doc__ or ""
+    assert "BERICHTIGT IN BEFUND 289" in kopf
+    assert "genau andersherum" in kopf
+    assert "nie erleichtern" in kopf, "die Stelle, die es immer richtig sagte"
+    assert "Dieselbe Vorsicht schneidet" not in kopf, "der falsche Satz ist weg"
+
+
+def test_der_irrefuehrende_docstring_ist_berichtigt() -> None:
+    """**Woher der Fehler kam.** Die Kopfzeile von ``designeffekt`` sagte
+    *"gekuerzt nur bei nachgewiesener Abhaengigkeit"*, obwohl die Kuerzung
+    seit dem Umbau auf die stetige Form stetig ist - ``nachgewiesen``
+    entscheidet gar nichts mehr. Ein Kommentar im Rumpf sagte es, die
+    Kopfzeile nicht.
+    """
+    from research.unabhaengigkeit import designeffekt
+
+    kopf = designeffekt.__doc__ or ""
+    assert "stetig gekuerzt" in kopf
+    assert "entscheidet ``nachgewiesen`` gar nichts mehr" in kopf

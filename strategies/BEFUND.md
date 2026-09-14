@@ -25851,3 +25851,100 @@ Kostet keinen Versuch: gezaehlt und nachgerechnet wurde an Zahlen, die im Code
 stehen. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 3888 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertneunundachtzig. Nicht zu kuerzen macht das Gate leichter, nicht strenger
+
+Wieder mein Fehler, zwei Laeufe zuvor - und diesmal nicht in einer Zahl,
+sondern in der **Begruendung**.
+
+Befund 287 hat die Obergrenze der Trefferquote zu einer Spanne gemacht und
+dazu geschrieben, warum das noetig sei:
+
+> Dass dort dann **nicht** gekuerzt wird, ist fuer Trades die vorsichtige
+> Seite: Wer die Stichprobe nicht kuerzt, macht das Gate strenger.
+
+Verkehrt herum.
+
+### Nachgerechnet
+
+Derselbe Kandidat (Sharpe je Trade 0,2708), dieselbe Latte auf seinen eigenen
+Momenten, 203 Versuche - nur die effektive Stichprobe wandert:
+
+    n_eff    Guete    Latte   Luecke   besteht
+       40    1,713    3,619   +1,907   nein
+       60    2,098    3,527   +1,430   nein
+      115    2,904    3,618   +0,714   nein
+      150    3,317    3,677   +0,361   nein
+      200    3,830    3,745   -0,085   **ja**
+      400    5,416    3,899   -1,517   ja
+
+Die Guete waechst mit `sqrt(n)`, die Latte kriecht. Eine **groessere**
+Stichprobe macht das Gate **leichter**; eine Kuerzung macht es strenger.
+
+Und das steht seit jeher richtig da, im Docstring von `effektive_stichprobe`:
+
+> Gewaehlt wird deshalb die Einteilung, die die kleinste Stichprobe
+> uebriglaesst. **Das kann die Zulassung nur erschweren, nie erleichtern** -
+> die einzige Richtung, in die eine solche Entscheidung fallen darf.
+
+Ich habe an derselben Datei zwei Stunden gemessen und den Satz daneben nicht
+gelesen.
+
+### Woher der Fehler kam
+
+Die Kopfzeile von `designeffekt` sagte:
+
+> Effektive Stichprobe - gekuerzt nur bei nachgewiesener Abhaengigkeit.
+
+Daraus habe ich "ohne Nachweis keine Kuerzung, also die vorsichtige Vorgabe"
+gelesen. Zwei Dinge daran sind nicht mehr wahr:
+
+1. **Es gibt keinen Nachweis mehr.** Die Kuerzung ist stetig, kalibriert gegen
+   das 95. Perzentil der Permutationsnull. Ein Kommentar im Rumpf sagt das
+   ausdruecklich - *"ueber die Kuerzung entscheidet er nicht mehr"* -, die
+   Kopfzeile war nicht nachgezogen. Gekuerzt wird auch bei p = 0,20, dann eben
+   wenig.
+2. **Nicht kuerzen ist nicht die vorsichtige Seite.** Es ist die grosszuegige.
+
+Die Kopfzeile ist berichtigt und nennt den Anlass.
+
+### Die Aussage wird dadurch schaerfer, nicht schwaecher
+
+Was ich fuer eine Asymmetrie hielt - *"dieselbe Vorsicht schneidet in die
+andere Richtung"* -, ist in Wahrheit keine. Dieselbe Vorgabe zieht an beiden
+Stellen **in dieselbe Richtung**:
+
+    beim Gate            nicht kuerzen -> grosses n -> der Bestand sieht
+                         besser aus, als belegt ist
+    bei der Obergrenze   nicht kuerzen -> grosses n -> die Suche sieht
+                         aussichtsloser aus, als belegt ist
+
+Zweimal zugunsten des Vorhandenen und gegen einen neuen Versuch. Das ist eine
+unangenehmere Auskunft als die, die ich aufgeschrieben hatte, und eine
+nuetzlichere.
+
+Beim Gate faengt das Projekt es bereits ab: `effektive_stichprobe` nimmt
+ausdruecklich die **strengste** der gemessenen Einteilungen. Bei der
+Obergrenze faengt es Befund 287 ab, mit der Spanne. Beide Male aus dem
+richtigen Grund, einmal aus dem richtig aufgeschriebenen.
+
+### Was daran zu lernen war
+
+Der falsche Satz stand nicht nur im Modulkopf - **ein Test hat ihn
+festgehalten**:
+
+    assert "Dieselbe Vorsicht schneidet" in kopf, "die Asymmetrie der Vorsicht"
+
+Eine Wache auf einen Satz haelt auch einen falschen. Sie hat genau das getan,
+wofuer sie gebaut war, und dabei einen Irrtum konserviert.
+
+Die neuen Tests pruefen deshalb die **Richtung an Zahlen**: dass die Guete
+schneller waechst als die Latte, dass derselbe Sharpe bei n_eff 200 besteht
+und bei 115 nicht, dass eine Kuerzung den Abstand zur Latte vergroessert, und
+dass dieselbe Kuerzung die Obergrenze der Trefferquote hebt. Ein Satz kann
+sich irren; eine Rechnung, die im Widerspruch zum Text steht, faellt auf.
+
+Kostet keinen Versuch: nachgerechnet wurde an Zahlen, die im Projekt stehen.
+Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 3895 passed, 2 skipped; ruff check sauber.

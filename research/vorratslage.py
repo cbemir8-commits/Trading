@@ -48,16 +48,39 @@ Einteilung in sechs.
 
 Gemessen wurde auch, ob sich die Abhaengigkeit **beziffern** laesst: Ueber die
 acht Einstiegsgruppen betraegt die Intraklassenkorrelation der Luecken
-**+0,49** - viel -, aber die Permutationsnull von
-``research/unabhaengigkeit.py`` weist sie mit p = 0,0885 nicht nach, und die
+**+0,49** - viel -, aber der Designeffekt uebersteigt die Permutationsnull von
+``research/unabhaengigkeit.py`` nicht (Faktor 1,0000 bei p = 0,0885), und die
 groebere Einteilung hat mit sechs Bloecken zu wenige fuer eine Messung
 (``MIND_BLOECKE`` ist 8).
 
-Dass dort dann **nicht** gekuerzt wird, ist fuer Trades die vorsichtige Seite:
-Wer die Stichprobe nicht kuerzt, macht das Gate strenger. Hier ist es die
-andere: Nicht kuerzen heisst kleinere Obergrenze heisst *"die Suche ist
-aussichtsloser, als belegt ist"*. **Dieselbe Vorsicht schneidet in die andere
-Richtung**, und deshalb steht hier eine Spanne und keine Zahl.
+BERICHTIGT IN BEFUND 289 - die Begruendung war verkehrt herum
+-------------------------------------------------------------
+Hier stand: *"Dass dort nicht gekuerzt wird, ist fuer Trades die vorsichtige
+Seite: Wer die Stichprobe nicht kuerzt, macht das Gate strenger."* **Das ist
+falsch, und zwar genau andersherum.** Gemessen am Bestand (SR je Trade
+0,2708, Latte auf seinen eigenen Momenten, 203 Versuche):
+
+    n_eff    Guete    Latte   besteht
+       115   2,904    3,618   nein
+       150   3,317    3,677   nein
+       200   3,830    3,745   **ja**
+
+Die Guete waechst mit ``sqrt(n)``, die Latte nur langsam. Eine **groessere**
+Stichprobe macht das Gate also **leichter**, eine Kuerzung macht es strenger -
+so steht es auch im Docstring von ``effektive_stichprobe``: *"Das kann die
+Zulassung nur erschweren, nie erleichtern."*
+
+Damit wird die Aussage nicht schwaecher, sondern schaerfer. Dieselbe Vorgabe
+zieht an beiden Stellen **in dieselbe Richtung**:
+
+    beim Gate            nicht kuerzen -> grosses n -> der Bestand sieht
+                         besser aus, als belegt ist
+    bei dieser Grenze    nicht kuerzen -> grosses n -> die Suche sieht
+                         aussichtsloser aus, als belegt ist
+
+Zweimal zugunsten des Vorhandenen und gegen einen neuen Versuch. Deshalb steht
+hier eine Spanne und keine Zahl - und deshalb waehlt ``effektive_stichprobe``
+beim Gate ausdruecklich die **strengste** gemessene Einteilung.
 
 Was hier **nicht** steht
 ------------------------

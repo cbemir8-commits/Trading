@@ -242,7 +242,15 @@ def designeffekt(
     saat: int = 20260808,
     kalibrierung: float = 1.0 - SIGNIFIKANZ,
 ) -> Effektivwert | None:
-    """Effektive Stichprobe - gekuerzt nur bei nachgewiesener Abhaengigkeit.
+    """Effektive Stichprobe - stetig gekuerzt gegen eine Permutationsnull.
+
+    **Diese Zeile hiess bis Befund 289 "gekuerzt nur bei nachgewiesener
+    Abhaengigkeit".** Das stimmte, solange ein ``if p <= 0,05`` darueber
+    entschied; seit die Kuerzung stetig ist (siehe den Block weiter unten),
+    entscheidet ``nachgewiesen`` gar nichts mehr. Gekuerzt wird, sobald der
+    Designeffekt die Schranke der Null uebersteigt - auch bei p = 0,20, dann
+    eben wenig. Die alte Zeile hat einen Leser dieses Moduls in die Irre
+    gefuehrt, und zwar mich (Befund 287).
 
     Die Permutationsnull ist der Kern: Dieselben Blockgroessen, aber die Werte
     durchgemischt. Damit ist jede Abhaengigkeit zerstoert und trotzdem alles

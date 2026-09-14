@@ -1856,12 +1856,11 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Intraklassenkorrelation der Luecken ueber die acht Gruppen betraegt "
         "**+0,49**, die Permutationsnull weist sie mit p = 0,0885 nicht "
         "nach, und die groebere Einteilung hat mit sechs Bloecken zu wenige "
-        "('MIND_BLOECKE' ist 8). **Und dieses Nicht-Kuerzen ist hier nicht "
-        "die vorsichtige Seite**: Bei Trades macht es das Gate strenger, "
-        "hier macht es die Suche aussichtsloser, als belegt ist. Der Bericht "
-        "nennt deshalb eine Spanne, und ohne Gruppenangabe steht die "
-        "Bedingung im Satz",
+        "('MIND_BLOECKE' ist 8). Der Bericht nennt deshalb eine Spanne, und "
+        "ohne Gruppenangabe steht die Bedingung im Satz. **Die Begruendung "
+        "dazu war in 287 verkehrt herum und ist in 289 berichtigt**",
         287,
+        zuletzt=289,
     ),
     # Dieselbe Frage an die zweite Gerade des Projekts - und sie haelt.
     Richtung(
@@ -1879,6 +1878,25 @@ BEHOBEN: tuple[Richtung, ...] = (
         "bleibt deshalb im Auftrag - anders als der Preis des Tageskatalogs, "
         "und der Auftragstext sagt jetzt beides",
         288,
+    ),
+    # Wieder mein Fehler, und diesmal in der Begruendung selbst.
+    Richtung(
+        "Nicht zu kuerzen macht das Gate leichter, nicht strenger",
+        "Befund 287 hat begruendet, warum eine ungekuerzte Stichprobe bei "
+        "Trades die vorsichtige Seite sei: *'Wer die Stichprobe nicht "
+        "kuerzt, macht das Gate strenger.'* **Verkehrt herum.** Die Guete "
+        "waechst mit der Wurzel der Stichprobe, die Latte nur langsam - "
+        "derselbe Bestand (SR 0,2708) scheitert bei n_eff 115 mit 2,904 "
+        "gegen 3,618 und bestuende bei n_eff 200 mit 3,830 gegen 3,745. So "
+        "steht es auch im Docstring von 'effektive_stichprobe': *'Das kann "
+        "die Zulassung nur erschweren, nie erleichtern.'* **Die Aussage wird "
+        "dadurch schaerfer**: Nicht zu kuerzen laesst beim Gate den Bestand "
+        "besser aussehen und bei der Trefferquote die Suche aussichtsloser - "
+        "zweimal dieselbe Richtung, zugunsten des Vorhandenen. In die Irre "
+        "gefuehrt hat mich die Kopfzeile von 'designeffekt', die noch "
+        "'gekuerzt nur bei nachgewiesener Abhaengigkeit' sagte, obwohl die "
+        "Kuerzung laengst stetig ist; sie ist mitberichtigt",
+        289,
     ),
 )
 
