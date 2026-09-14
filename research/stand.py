@@ -1898,6 +1898,23 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Kuerzung laengst stetig ist; sie ist mitberichtigt",
         289,
     ),
+    # Was 285 verworfen hat, war das Werkzeug - nicht die Sache.
+    Richtung(
+        "Die Kopplung ist echt, sie sitzt nur nicht in der Guete",
+        "Befund 285 hat die Gerade durch den Vorrat verworfen, weil ein "
+        "Punkt sie loescht - und damit stand auch die Kopplung aus 168/169 "
+        "in Frage, auf der das Mengentor geschlossen wurde. Ueber **Raenge** "
+        "gemessen (290), die diese Schwaeche nicht haben: Die Qualitaet je "
+        "Trade faellt mit der Menge, rho = -0,679 bei t = -3,70, und "
+        "**jede** der 18 Auslassungen bleibt ueber |t| = 2 (schwaechste "
+        "-3,11). Die Sache ist also belegt, verworfen war nur das Werkzeug. "
+        "**Auf der Guete ist davon nichts uebrig**: rho = +0,072 bei "
+        "t = +0,29, und **keine** Auslassung raeumt die Schwelle - die "
+        "Wurzel aus der Stichprobe nimmt zurueck, was die Qualitaet je Trade "
+        "verliert. Das Mengentor bleibt damit zu, aber wegen der langsam "
+        "steigenden Latte und nicht wegen zusammenbrechender Qualitaet",
+        290,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1948,9 +1965,16 @@ OFFEN: tuple[Richtung, ...] = (
         "Menge statt Qualitaet",
         "220 wirksame Beobachtungen statt 115 - aber nur bei unveraenderter "
         "Qualitaet, und die haelt in diesem Vorrat nicht: Der Preis steigt "
-        "von 3,78 auf 5,72 Reststreuungen (179). Beide Tore sind dasselbe",
+        "von 3,78 auf 5,72 Reststreuungen (179). **Der Beleg dafuer stand "
+        "auf der Geraden, die 285 verworfen hat**; ueber Raenge gemessen "
+        "(290) faellt zwar die Qualitaet je Trade mit der Menge "
+        "(rho -0,679, jede der 18 Auslassungen haelt), auf der **Guete** "
+        "aber ist davon nichts uebrig (rho +0,072, keine Auslassung haelt). "
+        "Das Tor bleibt zu, aber nur wegen der langsam steigenden Latte "
+        "(+0,28 Guetepunkte von n_eff 60 auf 260) - gegen eine Luecke von "
+        "1,080 ist das kein Weg. Was fehlt, fehlt an der Guete",
         178,
-        179,
+        290,
     ),
     # **Der Eintrag, dessen Fehlen einen Lauf gekostet hat.** Befund 177 hat
     # die Richtung als neue formuliert, 122 Befunde nach ihrer Messung. Eine

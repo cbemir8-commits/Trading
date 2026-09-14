@@ -25948,3 +25948,92 @@ Kostet keinen Versuch: nachgerechnet wurde an Zahlen, die im Projekt stehen.
 Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 3895 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertneunzig. Die Kopplung ist echt, sie sitzt nur nicht in der Guete
+
+Befund 285 hat die Gerade durch den Tageskatalog verworfen: Ohne 'Momentum
+Ruecksetzer' faellt sie unter die Schwelle, und *"eine Decke, die ein Punkt
+loeschen kann, ist keine"*.
+
+Das Verwerfen hatte eine Folge, die ich erst jetzt gezogen habe. **Auf
+derselben Geraden stand das Mengentor.** Befund 178 hatte es geoeffnet - mehr
+Beobachtungen bei gleicher Qualitaet genuegen ebenso wie bessere Qualitaet bei
+gleicher Zahl -, und Befund 179 hat es geschlossen:
+
+> 220 wirksame Beobachtungen statt 115 - aber nur bei unveraenderter
+> Qualitaet, und die haelt in diesem Vorrat nicht: **Der Preis steigt von
+> 3,78 auf 5,72 Reststreuungen.**
+
+Reststreuungen um welche Gerade? Um die, die ein Punkt loescht.
+
+### Rang statt Gerade
+
+Eine Rangkorrelation hat diese Schwaeche nicht: Sie sieht nur die
+Reihenfolge, und ein Punkt ganz rechts unten ist dort ein Rang wie jeder
+andere. Dieselben achtzehn Regeln, zwei Fragen:
+
+    Rang(n_eff, SR je Trade)   rho = -0,679   t = -3,70
+       schwaechste Auslassung: ohne 'Trend-Beteiligung (fair)'  t = -3,11
+       staerkste:              ohne 'Momentum-Beteiligung 90'   t = -4,52
+       **18 von 18 Auslassungen bleiben ueber |t| = 2**
+
+    Rang(n_eff, Guete)         rho = +0,072   t = +0,29
+       schwaechste: ohne 'Langsamer Kreuzer'    t = -0,03
+       staerkste:   ohne 'Momentum Ruecksetzer' t = +1,10
+       **0 von 18 Auslassungen erreichen |t| = 2**
+
+### Zweierlei folgt daraus
+
+**Erstens: Die Kopplung ist echt.** Befund 285 hat das *Werkzeug* verworfen,
+nicht die Sache. Dass die Qualitaet je Trade mit der Handelshaeufigkeit faellt,
+steht rangfest da - kein einziger Punkt traegt es allein. Die kleinste
+Quadrate haben an einem Ausreisser gehangen, die Rangfolge tut es nicht.
+Befund 168/169 behaelt inhaltlich recht.
+
+**Zweitens: Auf der Guete ist davon nichts uebrig.** Und die Guete ist die
+Groesse, die das Gate vergleicht - ``SR * sqrt(n)``. Die Wurzel aus der
+Stichprobe nimmt genau zurueck, was die Qualitaet je Trade verliert. Das ist
+kein knapper Fehlschlag: Auch wenn man den unguenstigsten Punkt entfernt,
+zeigt sich nichts (staerkste Auslassung t = +1,10).
+
+Die vier besten Regeln zeigen es unmittelbar:
+
+    Donchian-Ausbruch 55/20      n_eff  58   Guete 2,484
+    Grosser Trendausbruch        n_eff  57   Guete 2,428
+    Trend-Beteiligung 50 Tage    n_eff 127   Guete 2,278
+    Trendfolge Ausbruch          n_eff 130   Guete 2,157
+
+Ein Faktor zwei in der Trade-Zahl, und die Guete bleibt, wo sie ist.
+
+### Was das fuer das Mengentor heisst
+
+Es bleibt zu - aber aus einem anderen und viel schwaecheren Grund. Nicht weil
+die Qualitaet zusammenbricht, sondern weil die **Latte** mit der Stichprobe
+steigt:
+
+    Latte bei n_eff  60    3,524
+    Latte bei n_eff 115    3,615
+    Latte bei n_eff 260    3,803
+
+Flache Guete gegen eine Latte, die ueber eine Vervierfachung der Stichprobe um
+**0,28 Guetepunkte** steigt. Gegen die Luecke der besten Regel - 1,080 - ist
+das kein Weg, aber es ist auch nicht die Wand, als die es im Register stand.
+
+**Die Folge fuer die Suche ist deutlicher als vorher:** Mehr zu handeln
+rettet nichts und kostet fast nichts. Was fehlt, fehlt an der Guete, und die
+ist in diesem Vorrat bei rund 2,5 gedeckelt, gegen Latten um 3,5.
+
+### Was hier nicht steht
+
+Dass mehr Trades gar nichts brachten. Der Bestand selbst bestuende bei n_eff
+200 (Befund 289) - aber eben nur, wenn er seine Qualitaet je Trade dabei
+**behielte**, und genau das sagt die rangfeste Kopplung voraus: Er behielte
+sie nicht. Die beiden Messungen widersprechen sich nicht; sie sagen, dass der
+Weg ueber die Menge einen Kandidaten braucht, der die Kopplung bricht - und
+das ist eine Aussage ueber den Einstieg, nicht ueber die Trade-Zahl.
+
+Kostet keinen Versuch: gerechnet wurde auf den n_eff- und Guete-Spalten, die
+der Bericht ohnehin druckt. Versuchszaehler 203 unveraendert, Suchbudget 73
+von 100.
+
+Volle Suite 3901 passed, 2 skipped; ruff check sauber.

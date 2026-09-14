@@ -100,7 +100,22 @@ import statistics
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-__all__ = ["Abstand", "Lage", "lage_aus", "obergrenze_der_quote"]
+#: Ab welchem |t| dieses Modul eine Korrelation als belegt ansieht.
+#:
+#: Dieselbe Schwelle wie in ``vorratsdecke``, ``rangtreue`` und
+#: ``verbund`` (Befund 75). Sie steht hier noch einmal, damit das Urteil
+#: keine eigene erfindet.
+MINDEST_T: float = 2.0
+
+__all__ = [
+    "Abstand",
+    "Lage",
+    "Rangbild",
+    "Rangzug",
+    "lage_aus",
+    "obergrenze_der_quote",
+    "rangbild",
+]
 
 
 def obergrenze_der_quote(
@@ -282,6 +297,164 @@ class Lage:
             "aller Strategien** - und kein Grund, eine Latte zu senken."
         )
         return "\n".join(zeilen)
+
+
+@dataclass(frozen=True, slots=True)
+class Rangzug:
+    """Eine Rangkorrelation und was aus ihr wird, wenn eine Regel fehlt.
+
+    **Rang statt Gerade** (Befund 290). Befund 285 hat die angepasste Gerade
+    durch denselben Vorrat verworfen, weil ein einziger Punkt sie loescht.
+    Eine Rangkorrelation hat diese Schwaeche nicht: Sie sieht nur die
+    Reihenfolge, und ein Punkt ganz rechts unten ist dort ein Rang wie jeder
+    andere.
+    """
+
+    rho: float
+    t: float
+    schwaechster: str
+    t_schwaechster: float
+    staerkster: str
+    t_staerkster: float
+    haltende_auslassungen: int
+    auslassungen: int
+
+    @property
+    def traegt(self) -> bool:
+        return abs(self.t) >= MINDEST_T
+
+    @property
+    def fest(self) -> bool:
+        """Traegt sie **jede** einzelne Auslassung?"""
+        return self.traegt and self.haltende_auslassungen == self.auslassungen
+
+    @property
+    def durchweg_leer(self) -> bool:
+        """Und die Gegenrichtung: Traegt sie unter **keiner**?
+
+        Das ist etwas anderes als "nicht belegt". Eine Korrelation, die auch
+        dann nichts zeigt, wenn man den unguenstigsten Punkt entfernt, ist
+        nicht knapp gescheitert - sie ist nicht da.
+        """
+        return not self.traegt and self.haltende_auslassungen == 0
+
+
+def _rangzug(namen: Sequence[str], x: Sequence[float], y: Sequence[float]):
+    from research.rangtreue import rangkorrelation, t_wert
+
+    rho = rangkorrelation(list(x), list(y))
+    if rho is None:
+        return None
+    t = t_wert(rho, len(x))
+    if t is None:
+        return None
+
+    ohne: list[tuple[float, str, float]] = []
+    for i in range(len(x)):
+        xx = [x[j] for j in range(len(x)) if j != i]
+        yy = [y[j] for j in range(len(y)) if j != i]
+        r = rangkorrelation(xx, yy)
+        if r is None:
+            continue
+        tt = t_wert(r, len(xx))
+        if tt is not None:
+            ohne.append((abs(tt), namen[i], tt))
+    if not ohne:
+        return None
+    ohne.sort()
+    return Rangzug(
+        rho=rho,
+        t=t,
+        schwaechster=ohne[0][1],
+        t_schwaechster=ohne[0][2],
+        staerkster=ohne[-1][1],
+        t_staerkster=ohne[-1][2],
+        haltende_auslassungen=sum(1 for k, _, _ in ohne if k >= MINDEST_T),
+        auslassungen=len(ohne),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class Rangbild:
+    """Haengt die Guete an der Trade-Zahl - oder nur die Qualitaet je Trade?
+
+    **Die Frage, an der das Mengentor haengt** (Befund 178/179). Dort stand:
+    Mehr Beobachtungen bei gleicher Qualitaet genuegen ebenso wie bessere
+    Qualitaet bei gleicher Zahl - aber *"die Qualitaet haelt in diesem Vorrat
+    nicht"*. Belegt war das ueber den Preis in Reststreuungen, also ueber die
+    Gerade aus Befund 285.
+
+    Beurteilt wird im Gate aber nicht die Qualitaet je Trade, sondern die
+    **Guete**: ``SR * sqrt(n)``. Ob die an der Menge haengt, ist eine eigene
+    Frage, und sie ist hier zum ersten Mal einzeln gestellt.
+    """
+
+    je_trade: Rangzug
+    guete: Rangzug
+
+    def urteil(self) -> str:
+        zeilen = []
+        if self.je_trade.traegt:
+            zeilen.append(
+                f"**Die Qualitaet je Trade faellt mit der Menge** "
+                f"(rho = {self.je_trade.rho:+.3f}, t = {self.je_trade.t:+.2f})"
+                + (
+                    f", und zwar unter jeder Auslassung - die schwaechste "
+                    f"laesst t = {self.je_trade.t_schwaechster:+.2f} stehen."
+                    if self.je_trade.fest
+                    else f"; ohne '{self.je_trade.schwaechster}' bleibt "
+                    f"t = {self.je_trade.t_schwaechster:+.2f}."
+                )
+            )
+        else:
+            zeilen.append(
+                f"Die Qualitaet je Trade haengt nicht messbar an der Menge "
+                f"(rho = {self.je_trade.rho:+.3f}, t = {self.je_trade.t:+.2f})."
+            )
+        if self.guete.traegt:
+            zeilen.append(
+                f"**Und die Guete haengt mit** (rho = {self.guete.rho:+.3f}, "
+                f"t = {self.guete.t:+.2f}) - dann ist die Menge selbst ein "
+                f"Hebel, in die eine oder andere Richtung."
+            )
+        else:
+            zeilen.append(
+                f"**Die Guete haengt nicht daran** (rho = "
+                f"{self.guete.rho:+.3f}, t = {self.guete.t:+.2f}; unter "
+                f"{self.guete.auslassungen} Auslassungen raeumt "
+                f"{self.guete.haltende_auslassungen} die Schwelle). Die "
+                f"Wurzel aus der Stichprobe nimmt zurueck, was die Qualitaet "
+                f"je Trade verliert."
+            )
+            zeilen.append(
+                "Fuer das Mengentor heisst das: Es ist nicht zu, weil die "
+                "Qualitaet zusammenbricht - sie tut es in der Guete nicht -, "
+                "sondern weil die **Latte** mit der Stichprobe steigt. Das "
+                "ist ein viel kleinerer Effekt, und er ist kein Weg zu einer "
+                "Zulassung: Was fehlt, fehlt an der Guete."
+            )
+        return "\n".join(zeilen)
+
+
+def rangbild(abstaende: Sequence[Abstand]) -> Rangbild | None:
+    """Beide Rangkorrelationen samt Auslassungsprobe.
+
+    ``None``, wenn sich keine rechnen laesst - unter drei Regeln gibt es
+    keine Rangfolge, die etwas sagt.
+    """
+    liste = [a for a in abstaende if a.n_eff > 0]
+    if len(liste) < 4:
+        return None
+    namen = [a.name for a in liste]
+    n_eff = [float(a.n_eff) for a in liste]
+    guete = [a.guete for a in liste]
+    je_trade = [a.guete / a.n_eff**0.5 for a in liste]
+
+    erste = _rangzug(namen, n_eff, je_trade)
+    zweite = _rangzug(namen, n_eff, guete)
+    if erste is None or zweite is None:
+        return None
+    return Rangbild(je_trade=erste, guete=zweite)
 
 
 def lage_aus(abstaende: Sequence[Abstand]) -> Lage | None:

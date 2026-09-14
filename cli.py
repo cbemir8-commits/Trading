@@ -12238,7 +12238,7 @@ def vorratsdecke(
         traegt_eine_familie,
         urteil,
     )
-    from research.vorratslage import Abstand, lage_aus
+    from research.vorratslage import Abstand, lage_aus, rangbild
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -12706,6 +12706,14 @@ def vorratsdecke(
         gruppen = min(len(nach_familie), len(grob_familie)) or None
         console.print()
         console.print(lage.urteil(gruppen=gruppen))
+
+        # **Menge oder Guete?** (Befund 290). Die Gerade oben sagt das ueber
+        # die Qualitaet je Trade und ist dabei von einem Punkt abhaengig.
+        # Die Rangfolge sagt es ueber beide Groessen und ist es nicht.
+        bild = rangbild(abstaende)
+        if bild is not None:
+            console.print()
+            console.print(bild.urteil())
 
 
 def _katalogregel(name: str):

@@ -21,7 +21,13 @@ from __future__ import annotations
 
 import pytest
 
-from research.vorratslage import Abstand, Lage, lage_aus, obergrenze_der_quote
+from research.vorratslage import (
+    MINDEST_T,
+    Abstand,
+    Lage,
+    lage_aus,
+    obergrenze_der_quote,
+)
 
 
 def abstaende(*paare: tuple[float, float]) -> list[Abstand]:
@@ -455,3 +461,84 @@ def test_der_irrefuehrende_docstring_ist_berichtigt() -> None:
     kopf = designeffekt.__doc__ or ""
     assert "stetig gekuerzt" in kopf
     assert "entscheidet ``nachgewiesen`` gar nichts mehr" in kopf
+
+
+class TestMengeOderGuete:
+    """**Befund 290.** Das Mengentor war ueber die Gerade geschlossen worden.
+
+    Befund 178 hat es geoeffnet - mehr Beobachtungen bei gleicher Qualitaet
+    genuegen ebenso wie bessere Qualitaet bei gleicher Zahl. Befund 179 hat
+    es geschlossen: *"die Qualitaet haelt in diesem Vorrat nicht"*, belegt
+    ueber den Preis in Reststreuungen. Genau diese Gerade hat Befund 285
+    verworfen.
+
+    Die Rangfolge hat deren Schwaeche nicht - sie sieht nur die Reihenfolge,
+    und ein Punkt ganz rechts unten ist dort ein Rang wie jeder andere.
+    Gemessen am Katalog:
+
+        Rang(n_eff, SR je Trade)   rho -0,679   t -3,70   18/18 Auslassungen
+        Rang(n_eff, Guete)         rho +0,072   t +0,29    0/18 Auslassungen
+
+    Die Kopplung ist also **echt** - Befund 285 hat das Werkzeug verworfen,
+    nicht die Sache. Sie sitzt aber ganz in der Qualitaet je Trade; auf der
+    Groesse, die das Gate beurteilt, ist nichts davon uebrig.
+    """
+
+    def bild(self):
+        from research.vorratslage import rangbild
+
+        return rangbild(TestDerGemesseneVorrat().lage().abstaende)
+
+    def test_die_kopplung_auf_die_qualitaet_ist_echt_und_fest(self) -> None:
+        zug = self.bild().je_trade
+
+        assert zug.rho < -0.6
+        assert zug.traegt and zug.fest
+        assert zug.haltende_auslassungen == zug.auslassungen
+        assert abs(zug.t_schwaechster) >= 3.0
+
+    def test_auf_der_guete_ist_nichts_davon_uebrig(self) -> None:
+        """**Der Fund.** ``sqrt(n)`` nimmt zurueck, was die Qualitaet
+        verliert - und die Guete ist die Groesse, die das Gate vergleicht."""
+        zug = self.bild().guete
+
+        assert abs(zug.rho) < 0.2
+        assert not zug.traegt
+        assert zug.durchweg_leer, "unter keiner Auslassung zeigt sich etwas"
+
+    def test_durchweg_leer_ist_mehr_als_nicht_belegt(self) -> None:
+        """Eine Korrelation, die auch ohne den unguenstigsten Punkt nichts
+        zeigt, ist nicht knapp gescheitert."""
+        zug = self.bild().guete
+
+        assert zug.haltende_auslassungen == 0
+        assert abs(zug.t_staerkster) < MINDEST_T
+
+    def test_das_urteil_nennt_beide_und_zieht_die_folge(self) -> None:
+        text = self.bild().urteil()
+
+        assert "Qualitaet je Trade faellt mit der Menge" in text
+        assert "Guete haengt nicht daran" in text
+        assert "Latte" in text and "Mengentor" in text
+        assert "fehlt an der Guete" in text
+
+    def test_unter_vier_regeln_wird_nichts_gerechnet(self) -> None:
+        from research.vorratslage import rangbild
+
+        assert rangbild(abstaende((2.0, 3.5), (2.5, 3.5), (3.0, 3.5))) is None
+
+    def test_eine_gebaute_kopplung_wird_erkannt(self) -> None:
+        """Die Gegenprobe: Wo die Guete wirklich an der Menge haengt, sagt das
+        Urteil es - sonst pruefte der Test nur, dass nie etwas gefunden wird.
+        """
+        from research.vorratslage import Abstand, rangbild
+
+        steigend = [
+            Abstand(name=f"R{i}", n_eff=n, guete=0.5 + 0.02 * n, noetig=3.5)
+            for i, n in enumerate((20, 40, 60, 80, 100, 120))
+        ]
+        bild = rangbild(steigend)
+
+        assert bild is not None
+        assert bild.guete.traegt and bild.guete.fest
+        assert "Guete haengt mit" in bild.urteil()
