@@ -25464,3 +25464,110 @@ Kostet keinen Versuch: gebaut wurde an der Maschinerie, gemessen nichts ueber
 eine Strategie. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 3836 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertfuenfundachtzig. Der Preis stand auf einer Geraden, die ein Punkt loescht
+
+Das Register nennt vier offene Gates und sagt dazu, wo die Arbeit liegt. Am
+Spot-Punkt bleiben zwei: die Messlatte - eine Geschaeftsschwelle, die nicht
+hier faellt - und der Deflated Sharpe, zu dem das Register *"durchgemessen,
+alle naheliegenden Wege sind zu"* sagt.
+
+Wenn keine Rechnung mehr offen ist, bleibt die Frage, **womit** entschieden
+wird, ob sich eine neue Idee lohnt. Das ist der Preis in Reststreuungen, und
+er kommt aus `cli vorratsdecke`.
+
+### Was dort stand
+
+    **Die guenstigste Stelle der Strecke liegt bei n_eff 101.** Dort muesste
+    eine Regel 1.68 Reststreuungen ueber der Geraden ihrer eigenen Familie
+    liegen, um die Schwelle zu raeumen.
+
+Eine Zahl mit zwei Nachkommastellen, aus 18 gemessenen Regeln. Zwei Absaetze
+weiter oben im **Modulkopf** von `research/vorratsdecke.py`:
+
+> **Und die Kopplung haelt an einem einzigen Punkt.** Ohne 'Momentum
+> Ruecksetzer' faellt sie auf r = -0,244 bei t = -0,98 und traegt nicht mehr.
+> [...] Eine Decke, die ein Punkt loeschen kann, ist keine.
+
+### Und die Entscheidung war laengst gefallen - an einer von zwei Stellen
+
+Das ist der eigentliche Fund. In `cli._auftragslage`, dem Auftrag an die
+Research-KI, steht seit Befund 183:
+
+> **Nichts von alledem uebergeben - Befund 183.** Hier standen
+> kopplung=-0,714, kopplung_traegt="sma", die Familienzaehlung und der Preis
+> 3,70. [...] Eine Korrelation, die ein Punkt loeschen kann, gehoert nicht in
+> einen Auftrag.
+
+Nachgesehen: `familienpreis` ist `None`, im Auftragstext kommt das Wort
+"Reststreuungen" nicht vor. Die Stelle, an der die Zahl einen Analysten
+gesteuert haette, ist sauber.
+
+Der Bericht war es nicht. Zwei Wege, dieselbe Gerade, zwei verschiedene
+Antworten - und der Vorbehalt hing im Modulkopf statt im Code. Dieselbe
+Klasse wie die Befunde 111 bis 115 und wie 284 einen Lauf zuvor: Wissen liegt
+im System, aber nicht dort, wo es wirkt. Nur ist es hier nicht uebersehen
+worden, sondern **halb angewandt**, und das ist die schwerer zu findende
+Sorte: Wer `_auftragslage` liest, haelt es fuer erledigt.
+
+### Gemessen, jetzt im Code
+
+`einflussprobe` legt die Gerade achtzehnmal neu, jedes Mal ohne eine Regel.
+Auf dem heutigen Vorrat (Tageskerzen, Spot-Punkt, Versuchsstand 203):
+
+    mit allen 18                       r = -0,544   t = -2,59   traegt
+    ohne 'Momentum Ruecksetzer'        r = -0,244   t = -0,97   traegt nicht
+    ohne 'Starker Trend, Momentum'     r = -0,830   t = -5,75   traegt
+
+    17 von 18 Auslassungen lassen die Gerade stehen, eine loescht sie.
+
+Befund 183 notierte dort -0,98, der Lauf sagt -0,97. Nachgesehen statt
+abgehakt: Die Handmessung lief ueber die **gedruckte** Tabelle mit vier
+Nachkommastellen, der Lauf ueber die vollen Werte. Rechnet man die Probe auf
+den gedruckten Zahlen nach, kommt -0,98 heraus. Es ist die Rundung und nicht
+die Rechnung; der Test haelt beide Wege fest.
+
+**Die Gegenrichtung gehoert dazu.** Ohne sie liest sich "haengt an einem
+Punkt" wie "streut breit fuer eine Gerade". Bewegte jede Auslassung ein wenig,
+waere der Vorrat einfach unruhig; hier faellt genau einer heraus, und ein
+anderer macht die Kopplung mehr als doppelt so stark. Das ist keine Unruhe,
+das ist ein Hebel.
+
+### Gebaut
+
+`urteil` haengt die Probe an - dort wird nichts verweigert, denn die Zahlen
+beschreiben richtig, was die angepasste Gerade sagt.
+
+`preisurteil` nennt **keinen Preis mehr**, wenn eine einzelne Regel ihn
+traegt:
+
+    **Kein Preis ablesbar** - die Gerade haengt an einer einzigen Regel. Ohne
+    'Momentum Ruecksetzer' steht t = -0.97 statt -2.59.
+
+Der Unterschied zwischen beiden ist der Zweck. `urteil` beschreibt einen
+Vorrat. Der Preis ist eine **Entscheidungsregel**: wie weit eine neue Idee
+ueber ihrem Vorrat liegen muss, damit ein Versuch sich lohnt. Eine
+Entscheidungsregel, die an einer einzigen Zeile haengt, ist keine Zahl,
+sondern eine Meinung mit zwei Nachkommastellen.
+
+Die Probe laeuft **immer** mit und nicht auf Wunsch - ein Schalter ist etwas,
+das man vergisst, und genau daran hat dieses Modul zwei Befunde lang
+gekrankt. Was ohne Gerade gilt, steht in der Verweigerung daneben: Keine der
+18 gemessenen Regeln kommt in die Naehe ihrer Latte, die beste bei Guete 2,484
+gegen 3,564. Diese Beobachtung braucht keine Gerade und bleibt unberuehrt.
+
+### Was das **nicht** ist
+
+Keine Lockerung. Verweigert wird eine Zahl, die eine Huerde **senken** half -
+der Preis von 1,68 sah billig aus neben den 3,26, die reine Auswahl aus 203
+Versuchen ohnehin erzeugt. Wer ihn glaubte, haette eine neue Idee fuer
+naeher an der Schwelle gehalten, als sie ist.
+
+Und keine Antwort. Womit sich eine neue Idee **stattdessen** messen laesst,
+steht weiter offen; das Register sagt das jetzt ausdruecklich, statt auf eine
+Zahl zu zeigen.
+
+Kostet keinen Versuch: `cli vorratsdecke` misst einen vorhandenen Katalog und
+waehlt nichts aus. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 3852 passed, 2 skipped; ruff check sauber.

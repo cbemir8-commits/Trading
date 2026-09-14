@@ -12231,6 +12231,7 @@ def vorratsdecke(
         Einteilung,
         Punkt,
         baue,
+        einflussprobe,
         familienurteil,
         preisurteil,
         stabilitaetsurteil,
@@ -12461,7 +12462,13 @@ def vorratsdecke(
             f"gibt es keine Latte.[/]"
         )
     console.print()
-    console.print(urteil(decke, lambda n: noetige_guete(n, versuche)))
+    # **Woran die Gerade haengt** (Befund 285). Befund 183 hat gemessen, dass
+    # sie ohne eine einzige Regel unter die Schwelle faellt, und den Satz in
+    # den Modulkopf geschrieben. Gesteuert hat er nichts: Bericht und Preis
+    # standen weiter da, als stuende die Gerade fest. Die Probe laeuft
+    # deshalb **immer** mit - ein Schalter waere etwas, das man vergisst.
+    probe = einflussprobe(punkte)
+    console.print(urteil(decke, lambda n: noetige_guete(n, versuche), probe=probe))
 
     # **Worauf die Kopplung steht.** Befund 168 hat r = -0,714 ueber den
     # ganzen Vorrat gemeldet; Befund 169 hat nachgesehen, wer das traegt.
@@ -12665,6 +12672,7 @@ def vorratsdecke(
                 bestand=decke.rest(SPOTPUNKT.effektiv, SPOTPUNKT.guete)
                 if passt
                 else None,
+                probe=probe,
             )
         )
 

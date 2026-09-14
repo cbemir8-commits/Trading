@@ -24,6 +24,21 @@ und traegt nicht mehr. Ohne einen anderen Punkt wird sie staerker; es ist
 nicht "Ausreisser allgemein", sondern dieser eine, ganz rechts und ganz
 unten. Eine Decke, die ein Punkt loeschen kann, ist keine.
 
+SEIT BEFUND 285 STEHT DAS NICHT MEHR NUR HIER
+---------------------------------------------
+Zwei Befunde lang war der Absatz darueber alles, was es dazu gab - und
+``urteil`` und ``preisurteil`` rechneten weiter, als stuende die Gerade fest.
+``einflussprobe`` laesst jetzt jede Regel einmal weg, ``urteil`` haengt das
+Ergebnis an, und ``preisurteil`` nennt **keinen** Preis, den eine einzelne
+Regel loeschen kann. Gemessen auf dem heutigen Vorrat (18 Regeln,
+Versuchsstand 203): 17 Auslassungen lassen die Gerade stehen, eine loescht
+sie (t = -0,97), und ohne 'Starker Trend, Momentum' waere sie mit t = -5,75
+deutlich staerker als mit allen.
+
+Befund 183 notierte dort -0,98. Der Unterschied ist die Rundung: Die
+Handmessung lief ueber die gedruckte Tabelle mit vier Nachkommastellen, der
+Lauf ueber die vollen Werte.
+
 **Die Familienaussage aus Befund 169 haelt nicht.** Auf 18 Regeln hat unter
 keiner der beiden Indikator-Einteilungen eine Familie mehr die Mehrheit; nach
 Regellogik hat 'Trend' zwoelf von achtzehn, traegt aber selbst nicht
@@ -159,6 +174,7 @@ from __future__ import annotations
 
 import math
 import statistics
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 #: Ab welchem |t| dieses Modul aus einer Korrelation etwas schliesst.
@@ -399,7 +415,7 @@ def baue(punkte: list[Punkt]) -> Decke:
     )
 
 
-def urteil(decke: Decke, noetig_bei) -> str:
+def urteil(decke: Decke, noetig_bei, *, probe: Einflussprobe | None = None) -> str:
     """Was die Decke sagt - und was sie nicht sagt.
 
     ``noetig_bei`` ist eine Funktion ``n_eff -> noetige Guete``; uebergeben
@@ -407,7 +423,17 @@ def urteil(decke: Decke, noetig_bei) -> str:
     von aussen, damit dieses Modul den Versuchszaehler nicht ein zweites Mal
     liest - vier Befunde dieses Projekts handeln von doppelt gepflegten
     Zahlen (158, 159, 165).
+
+    ``probe`` haengt die Auslassungsprobe an (Befund 285). Hier wird nichts
+    verweigert: Diese Zahlen beschreiben, was die angepasste Gerade sagt, und
+    das bleibt richtig. Der Satz dazu, woran sie haengt, gehoert aber in
+    denselben Absatz und nicht in einen Modulkopf.
     """
+    text = _deckentext(decke, noetig_bei)
+    return text if probe is None else f"{text}\n{einflussurteil(probe)}"
+
+
+def _deckentext(decke: Decke, noetig_bei) -> str:
     if not decke.tragfaehig:
         grund = (
             "die Qualitaet faellt nicht mit der Trade-Zahl"
@@ -491,7 +517,12 @@ def urteil(decke: Decke, noetig_bei) -> str:
 
 
 def preisurteil(
-    decke: Decke, noetig_je_trade, *, versuche: int, bestand: float | None = None
+    decke: Decke,
+    noetig_je_trade,
+    *,
+    versuche: int,
+    bestand: float | None = None,
+    probe: Einflussprobe | None = None,
 ) -> str:
     """Was die Menge kostet - der zweite Weg zur selben Aussage.
 
@@ -499,7 +530,32 @@ def preisurteil(
     Stichprobe genuegt ebenso wie bessere Qualitaet bei gleicher. Es steht
     aber unter *"bei unveraenderter Qualitaet"*, und in einem Vorrat mit
     Kopplung ist das keine freie Wahl. Diese Rechnung sagt, was daraus wird.
+
+    **Mit ``probe`` wird kein Preis genannt, den eine einzelne Regel loeschen
+    kann** (Befund 285). Anders als ``urteil``, das beschreibt, was die
+    angepasste Gerade sagt, ist der Preis eine **Entscheidungsregel**: Er
+    steht dafuer, wie weit eine neue Idee ueber ihrem Vorrat liegen muss,
+    damit sich ein Versuch lohnt. Eine Entscheidungsregel, die an einer
+    einzigen Zeile des Vorrats haengt, ist keine Zahl, sondern eine Meinung
+    mit zwei Nachkommastellen.
+
+    Ohne ``probe`` bleibt alles, wie es war - ein Aufrufer, der nicht prueft,
+    bekommt keine stillschweigend geaenderte Antwort.
     """
+    if probe is not None and not probe.haelt:
+        return "\n".join(
+            [
+                f"**Kein Preis ablesbar** - die Gerade haengt an einer "
+                f"einzigen Regel. Ohne '{probe.schwaechster}' steht "
+                f"t = {probe.t_ohne:+.2f} statt {probe.t_mit:+.2f}.",
+                "Ein Preis in Reststreuungen misst den Abstand zu **dieser** "
+                "Geraden. Ist sie nicht belastbar, ist er es auch nicht - und "
+                "eine Zahl, die eine Entscheidung traegt, gehoert dann nicht "
+                "in den Bericht.",
+                "Was davon unberuehrt bleibt, braucht keine Gerade: Keine "
+                "gemessene Regel kommt in die Naehe der Latte.",
+            ]
+        )
     treffer = decke.noetiger_abstand(noetig_je_trade)
     if treffer is None:
         return (
@@ -565,6 +621,135 @@ def _versuche_gerade(punkte: list[Punkt]) -> Decke | None:
         return baue(punkte)
     except ValueError:
         return None
+
+
+def _kraft(decke: Decke | None) -> float:
+    """Wie stark die Kopplung ist - null, wo es gar keine fallende gibt.
+
+    Eine steigende Gerade ist keine schwaechere Decke, sondern **keine**;
+    sie darf im Vergleich nicht ueber einer schwachen fallenden landen, nur
+    weil ihr ``|t|`` gross ist.
+    """
+    if decke is None or decke.steigung >= 0:
+        return 0.0
+    return abs(decke.t)
+
+
+@dataclass(frozen=True, slots=True)
+class Einflussprobe:
+    """Was aus der Geraden wird, wenn **eine einzige** Regel fehlt.
+
+    **Befund 183 hat das gemessen und in den Modulkopf geschrieben** - ohne
+    'Momentum Ruecksetzer' faellt die Kopplung von r = -0,544 auf -0,244 und
+    von t = -2,59 auf t = -0,98, und damit unter die Schwelle, ab der dieses
+    Modul ueberhaupt etwas schliesst. *"Eine Decke, die ein Punkt loeschen
+    kann, ist keine."*
+
+    Gesteuert hat der Satz nichts. ``urteil`` und ``preisurteil`` rechneten
+    weiter, als stuende die Gerade fest, und wer den Bericht las, bekam einen
+    Preis in Reststreuungen, der wie eine Messung aussah. Das ist dieselbe
+    Klasse wie die Befunde 111 bis 115: Wissen liegt im System, aber nicht
+    dort, wo es wirkt.
+    """
+
+    t_mit: float
+    """``t`` der Geraden durch **alle** Punkte."""
+
+    schwaechster: str
+    t_ohne: float
+    traegt_ohne: bool
+    """Die Regel, deren Fehlen am meisten kostet - und was dann bleibt."""
+
+    staerkster: str
+    t_staerkster: float
+    """Die Gegenrichtung: Wessen Fehlen die Kopplung am staerksten macht.
+
+    Sie steht dabei, weil sie den Unterschied zwischen zwei Lagen macht.
+    Streut alles breit, bewegt jede Auslassung ein wenig; haengt es an einem
+    Punkt, faellt genau einer heraus und die anderen tun nichts. Ohne die
+    Gegenrichtung liest sich beides gleich.
+    """
+
+    @property
+    def haelt(self) -> bool:
+        """Traegt die Decke **jede** einzelne Auslassung?"""
+        return self.traegt_ohne
+
+    @property
+    def spanne(self) -> float:
+        """Wie weit ``|t|`` ueber die Auslassungen auseinanderlaeuft."""
+        return abs(self.t_staerkster) - abs(self.t_ohne)
+
+    def beschreibe(self) -> str:
+        return (
+            f"Ohne '{self.schwaechster}': t = {self.t_ohne:+.2f} "
+            f"(mit allen {self.t_mit:+.2f}), ohne '{self.staerkster}': "
+            f"t = {self.t_staerkster:+.2f}"
+        )
+
+
+def einflussprobe(punkte: Sequence[Punkt]) -> Einflussprobe | None:
+    """Jede Regel einmal weglassen und die Gerade neu legen.
+
+    ``None`` bei weniger als vier Regeln: Jede Auslassung muss selbst noch
+    drei Punkte uebriglassen, sonst prueft die Probe nur, dass durch zwei
+    Punkte eine Gerade geht.
+
+    **Die Probe urteilt nicht ueber Ausreisser.** Sie sagt, ob die Aussage
+    dieses Moduls von einer einzelnen Zeile abhaengt - mehr nicht. Ein Punkt,
+    der die Kopplung traegt, kann die ehrlichste Messung des Vorrats sein;
+    eine Aussage, die ohne ihn zusammenfaellt, ist trotzdem keine.
+    """
+    liste = list(punkte)
+    if len(liste) < 4:
+        return None
+    ganz = _versuche_gerade(liste)
+    if ganz is None:
+        return None
+
+    ohne: list[tuple[Punkt, Decke | None]] = [
+        (p, _versuche_gerade([q for q in liste if q is not p])) for p in liste
+    ]
+    schwach_p, schwach_d = min(ohne, key=lambda e: _kraft(e[1]))
+    stark_p, stark_d = max(ohne, key=lambda e: _kraft(e[1]))
+    return Einflussprobe(
+        t_mit=ganz.t,
+        schwaechster=schwach_p.name,
+        t_ohne=schwach_d.t if schwach_d is not None else 0.0,
+        traegt_ohne=schwach_d is not None and schwach_d.tragfaehig,
+        staerkster=stark_p.name,
+        t_staerkster=stark_d.t if stark_d is not None else 0.0,
+    )
+
+
+def einflussurteil(probe: Einflussprobe | None) -> str:
+    """Was die Auslassungsprobe zum Bericht beitraegt."""
+    if probe is None:
+        return (
+            "**Nicht auf Einfluss geprueft** - unter vier Regeln laesst sich "
+            "keine weglassen, ohne dass die Gerade durch drei Punkte geht."
+        )
+    if probe.haelt:
+        return (
+            f"**Die Gerade haelt jede Auslassung.** Am wenigsten traegt sie "
+            f"ohne '{probe.schwaechster}' ({probe.t_ohne:+.2f} gegen "
+            f"{probe.t_mit:+.2f} mit allen), und auch dort bleibt sie ueber "
+            f"der Schwelle von {MINDEST_T:.0f}."
+        )
+    return "\n".join(
+        [
+            f"**Die Gerade haengt an einer einzigen Regel.** Ohne "
+            f"'{probe.schwaechster}' steht t = {probe.t_ohne:+.2f} statt "
+            f"{probe.t_mit:+.2f} - unter der Schwelle von {MINDEST_T:.0f}, ab "
+            f"der dieses Modul ueberhaupt etwas schliesst.",
+            f"Es ist nicht 'Ausreisser allgemein': Ohne "
+            f"'{probe.staerkster}' waere sie mit {probe.t_staerkster:+.2f} "
+            f"staerker als mit allen.",
+            "**Eine Decke, die ein Punkt loeschen kann, ist keine** - die "
+            "Zahlen dieser Geraden beschreiben diesen Vorrat, sie messen ihn "
+            "nicht.",
+        ]
+    )
 
 
 #: Die drei Ausgaenge einer Einteilung - und der dritte ist der Punkt.

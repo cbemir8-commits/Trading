@@ -24,6 +24,8 @@ from research.vorratsdecke import (
     Einteilung,
     Punkt,
     baue,
+    einflussprobe,
+    einflussurteil,
     familienurteil,
     preisurteil,
     stabilitaetsurteil,
@@ -627,3 +629,262 @@ class TestOhneLatteAmScheitel:
         assert "keine Latte" in text
         assert "nicht gesagt" in text
         assert "es fehlen" not in text
+
+
+class TestWoranDieGeradeHaengt:
+    """**Befund 285.** Der Satz stand im Modulkopf und steuerte nichts.
+
+    Befund 183 hat es gemessen: Ohne 'Momentum Ruecksetzer' faellt die
+    Kopplung von t = -2,59 auf t = -0,98 und traegt nicht mehr. *"Eine Decke,
+    die ein Punkt loeschen kann, ist keine."* Danach rechneten ``urteil`` und
+    ``preisurteil`` weiter, als stuende die Gerade fest.
+
+    Der Vorrat hier hat dieselbe Gestalt wie der gemessene und uebertreibt
+    sie: vier Regeln ohne jedes Gefaelle und eine weit rechts unten. Mit
+    allen fuenf sieht die Kopplung erdrueckend aus.
+    """
+
+    def haengt_an_einem(self) -> list[Punkt]:
+        return [
+            Punkt("A", 30, 0.30),
+            Punkt("B", 40, 0.26),
+            Punkt("C", 50, 0.31),
+            Punkt("D", 60, 0.27),
+            Punkt("E", 250, 0.05),
+        ]
+
+    def latte(self, versuche: int = 203):
+        from research.suchbudget import Budget
+
+        return Budget(versuche=versuche).noetig_bei
+
+    def test_die_gerade_sieht_erdrueckend_aus(self) -> None:
+        """Der Ausgangspunkt - sonst prueft der Test nur eine schwache Lage."""
+        decke = baue(self.haengt_an_einem())
+
+        assert decke.tragfaehig
+        assert decke.r < -0.95
+        assert abs(decke.t) > 8
+
+    def test_und_faellt_mit_einer_einzigen_regel(self) -> None:
+        probe = einflussprobe(self.haengt_an_einem())
+
+        assert probe is not None
+        assert not probe.haelt
+        assert probe.schwaechster == "E"
+        assert abs(probe.t_ohne) < MINDEST_T
+
+    def test_die_gegenrichtung_steht_dabei(self) -> None:
+        """Ohne sie liest sich "haengt an einem Punkt" wie "streut breit".
+
+        Bewegt jede Auslassung ein wenig, ist der Vorrat breit; faellt genau
+        eine heraus und die anderen machen die Kopplung sogar staerker, haengt
+        es an ihr.
+        """
+        probe = einflussprobe(self.haengt_an_einem())
+
+        assert probe is not None
+        assert probe.staerkster != probe.schwaechster
+        assert abs(probe.t_staerkster) > abs(probe.t_mit)
+        assert probe.spanne > 5
+
+    def test_ein_breiter_vorrat_haelt_jede_auslassung(self) -> None:
+        """Die Gegenprobe: Die Probe verwirft nicht pauschal."""
+        probe = einflussprobe(gerade(0.40, -0.002, [20, 50, 80, 110, 140], 0.01))
+
+        assert probe is not None
+        assert probe.haelt
+        assert abs(probe.t_ohne) >= MINDEST_T
+
+    def test_unter_vier_regeln_wird_nicht_geprueft(self) -> None:
+        """Jede Auslassung muss drei Punkte uebriglassen - sonst prueft die
+        Probe, dass durch zwei Punkte eine Gerade geht."""
+        assert einflussprobe(gerade(0.4, -0.002, [20, 60, 100])) is None
+        assert "Nicht auf Einfluss geprueft" in einflussurteil(None)
+
+    def test_eine_steigende_gerade_zaehlt_als_geloescht(self) -> None:
+        """Sie ist keine schwaechere Decke, sondern keine.
+
+        Ohne diese Unterscheidung landete eine Auslassung, nach der die
+        Qualitaet mit der Menge **steigt**, ueber einer schwachen fallenden -
+        allein wegen ihres grossen |t|.
+        """
+        punkte = [
+            Punkt("A", 30, 0.10),
+            Punkt("B", 60, 0.14),
+            Punkt("C", 90, 0.18),
+            Punkt("D", 250, 0.02),
+        ]
+        probe = einflussprobe(punkte)
+
+        assert probe is not None
+        assert probe.schwaechster == "D"
+        assert not probe.haelt
+
+
+class TestDerBerichtNenntEsJetzt:
+    """Dieselbe Lehre wie in den Befunden 111 bis 115: Wissen, das im System
+    liegt, aber nicht dort, wo es wirkt, steuert nichts."""
+
+    def punkte(self) -> list[Punkt]:
+        return TestWoranDieGeradeHaengt().haengt_an_einem()
+
+    def latte(self):
+        return TestWoranDieGeradeHaengt().latte()
+
+    def test_das_urteil_haengt_die_probe_an(self) -> None:
+        decke = baue(self.punkte())
+        probe = einflussprobe(self.punkte())
+
+        text = urteil(decke, self.latte(), probe=probe)
+
+        assert "haengt an einer einzigen Regel" in text
+        assert "'E'" in text
+        assert "ist keine" in text
+
+    def test_ohne_probe_bleibt_alles_wie_es_war(self) -> None:
+        """Ein Aufrufer, der nicht prueft, bekommt keine stillschweigend
+        geaenderte Antwort."""
+        decke = baue(self.punkte())
+
+        assert urteil(decke, self.latte()) == urteil(decke, self.latte(), probe=None)
+        assert "haengt an" not in urteil(decke, self.latte())
+
+    def test_der_preis_wird_verweigert(self) -> None:
+        """**Der eigentliche Umbau.** Der Preis ist keine Beschreibung,
+        sondern eine Entscheidungsregel: wie weit eine neue Idee ueber ihrem
+        Vorrat liegen muss, damit sich ein Versuch lohnt."""
+        decke = baue(self.punkte())
+        probe = einflussprobe(self.punkte())
+
+        text = preisurteil(decke, self.latte(), versuche=203, probe=probe)
+
+        assert "Kein Preis ablesbar" in text
+        assert "'E'" in text
+        assert "Reststreuungen ueber der Geraden" not in text
+        assert "guenstigste Stelle" not in text
+
+    def test_und_was_ohne_gerade_gilt_steht_daneben(self) -> None:
+        """Eine Verweigerung, die nichts uebriglaesst, liest sich wie
+        Ratlosigkeit. Die Beobachtung an den Regeln selbst braucht keine
+        Gerade."""
+        decke = baue(self.punkte())
+        probe = einflussprobe(self.punkte())
+
+        text = preisurteil(decke, self.latte(), versuche=203, probe=probe)
+
+        assert "keine Gerade" in text
+        assert "in die Naehe der Latte" in text
+
+    def test_haelt_die_probe_kommt_der_preis(self) -> None:
+        """Sonst waere die Verweigerung keine Pruefung, sondern ein Schalter,
+        der immer aus steht."""
+        punkte = gerade(0.40, -0.002, [20, 50, 80, 110, 140], 0.01)
+        decke = baue(punkte)
+        probe = einflussprobe(punkte)
+
+        text = preisurteil(decke, self.latte(), versuche=203, probe=probe)
+
+        assert probe is not None and probe.haelt
+        assert "Kein Preis ablesbar" not in text
+
+
+#: Der gemessene Vorrat, auf dem Befund 183 und 285 stehen - 18 Regeln,
+#: Tageskerzen, Spot-Punkt, Versuchsstand 203.
+#:
+#: Sie stehen hier als **Zahlen eines Tages**, nicht als Zusicherung ueber den
+#: heutigen Katalog: Wer eine Regel hinzufuegt, aendert sie, und das ist kein
+#: Fehler. Geprueft wird an ihnen die Rechnung, nicht der Bestand.
+VORRAT_285: tuple[tuple[str, int, float], ...] = (
+    ("Donchian-Ausbruch 55/20", 58, 0.3262),
+    ("Grosser Trendausbruch", 57, 0.3215),
+    ("Trend-Beteiligung 50 Tage", 127, 0.2021),
+    ("Trendfolge Ausbruch", 130, 0.1892),
+    ("Trend-Beteiligung 100 Tage", 76, 0.2192),
+    ("Momentum-Beteiligung", 57, 0.2377),
+    ("Trend-Beteiligung (fair gerechnet)", 29, 0.3274),
+    ("Nur mit der Drift", 41, 0.2716),
+    ("EMA-Kreuzung (Messlatte)", 59, 0.2190),
+    ("Trendbeteiligung EMA200", 63, 0.1981),
+    ("Trendbeteiligung mit Puffer", 86, 0.1672),
+    ("Seltener grosser Ausbruch", 40, 0.2384),
+    ("Trend beide Richtungen", 45, 0.2210),
+    ("Momentum-Beteiligung 90 Tage", 45, 0.1887),
+    ("Langsamer Kreuzer (Messlatte 2)", 16, 0.3085),
+    ("Volatilitaets-Ausbruch", 85, 0.0303),
+    ("Starker Trend, Momentum", 58, -0.2483),
+    ("Momentum Ruecksetzer", 254, -0.1358),
+)
+
+
+class TestDieHandmessungVonBefund183:
+    """Dieselbe Rechnung, die dort von Hand gemacht wurde - jetzt im Code.
+
+    Eine Probe, die auf gebauten Punkten funktioniert, kann auf dem wirklichen
+    Vorrat trotzdem etwas anderes sagen. Diese Tests halten die gemessenen
+    Zahlen fest: **r = -0,544 bei t = -2,59** mit allen, **r = -0,244 bei
+    t = -0,98** ohne 'Momentum Ruecksetzer'.
+
+    **Gerechnet wird auf der gedruckten Tabelle**, also auf vier
+    Nachkommastellen. Der Lauf selbst rechnet mit den vollen Werten und kommt
+    auf t = -0,97 und -5,75; Befund 183 hat wie hier gerundet gerechnet. Die
+    Toleranzen unten decken beides ab - der Unterschied ist die Rundung und
+    nicht die Rechnung.
+    """
+
+    def punkte(self) -> list[Punkt]:
+        return [Punkt(n, e, s) for n, e, s in VORRAT_285]
+
+    def test_die_gerade_ist_die_gemessene(self) -> None:
+        decke = baue(self.punkte())
+
+        assert decke.r == pytest.approx(-0.544, abs=0.002)
+        assert decke.t == pytest.approx(-2.59, abs=0.02)
+        assert decke.tragfaehig, "knapp ueber der Schwelle - und das ist der Punkt"
+
+    def test_und_die_eine_regel_loescht_sie(self) -> None:
+        probe = einflussprobe(self.punkte())
+
+        assert probe is not None
+        assert probe.schwaechster == "Momentum Ruecksetzer"
+        assert probe.t_ohne == pytest.approx(-0.975, abs=0.02)
+        assert not probe.haelt
+
+    def test_siebzehn_auslassungen_lassen_sie_stehen(self) -> None:
+        """Der Unterschied zwischen "fragiler Vorrat" und "ein Punkt".
+
+        Waeren es fuenf oder sechs, hiesse der Befund "die Punkte streuen zu
+        breit fuer eine Gerade". Es ist genau einer, und er liegt ganz rechts
+        und ganz unten.
+        """
+        punkte = self.punkte()
+        stehen = [
+            p.name
+            for p in punkte
+            if baue([q for q in punkte if q is not p]).tragfaehig
+        ]
+
+        assert len(stehen) == len(punkte) - 1
+        assert "Momentum Ruecksetzer" not in stehen
+
+    def test_eine_andere_auslassung_macht_sie_staerker(self) -> None:
+        probe = einflussprobe(self.punkte())
+
+        assert probe is not None
+        assert probe.staerkster == "Starker Trend, Momentum"
+        assert probe.t_staerkster == pytest.approx(-5.755, abs=0.03)
+
+
+def test_der_modulkopf_sagt_dass_es_jetzt_wirkt() -> None:
+    """**Befund 285.** Der Kopf trug die Messung und sonst nichts.
+
+    Dieselbe Klasse wie die Befunde 111 bis 115 und wie 284: Wissen liegt im
+    System, aber nicht dort, wo es wirkt. Dieser Test haelt fest, dass der
+    Kopf jetzt auf das Verhalten zeigt - und nicht wieder allein dasteht.
+    """
+    import research.vorratsdecke as modul
+
+    kopf = modul.__doc__ or ""
+    assert "SEIT BEFUND 285" in kopf
+    assert "einflussprobe" in kopf
+    assert "preisurteil" in kopf

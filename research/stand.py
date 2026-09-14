@@ -1806,6 +1806,26 @@ BEHOBEN: tuple[Richtung, ...] = (
         "keine erfundene Reihe",
         284,
     ),
+    # Derselbe Griff wie 284, eine Ebene weiter: eine Messung, die im
+    # Modulkopf stand und nichts steuerte.
+    Richtung(
+        "Der Preis stand auf einer Geraden, die ein Punkt loescht",
+        "Befund 183 hat gemessen, dass die Kopplung des Vorrats ohne "
+        "'Momentum Ruecksetzer' von t = -2,59 auf -0,97 faellt, und den Satz "
+        "*'Eine Decke, die ein Punkt loeschen kann, ist keine'* in den "
+        "Modulkopf geschrieben. Gesteuert hat er nichts: 'urteil' und "
+        "'preisurteil' rechneten weiter, und 'cli vorratsdecke' nannte "
+        "**1,68 Reststreuungen bei n_eff 101** als Preis einer neuen Idee - "
+        "eine Entscheidungsregel, die aussah wie eine Messung. "
+        "'einflussprobe' laesst jetzt jede Regel einmal weg und laeuft immer "
+        "mit; der Bericht nennt das Ergebnis, und der Preis wird verweigert, "
+        "wenn eine einzelne Regel ihn traegt. Gemessen (285): 17 der 18 "
+        "Auslassungen lassen die Gerade stehen, eine loescht sie, und ohne "
+        "'Starker Trend, Momentum' waere sie mit t = -5,75 deutlich staerker "
+        "als mit allen. Die Handmessung von 183 ist damit reproduziert und "
+        "als Wache festgehalten",
+        285,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1889,9 +1909,12 @@ OFFEN: tuple[Richtung, ...] = (
         "Der Preis in Reststreuungen",
         "auf dem berichtigten Vorrat 1,67 bei n_eff 101 statt 3,70 bei 97, "
         "Bestand +1,18 statt +2,41 - und die Gerade selbst haelt an einem "
-        "Punkt (ohne ihn t = -0,98)",
+        "Punkt (ohne ihn t = -0,97). Seit 285 wird deshalb **kein Preis mehr "
+        "genannt**: 17 der 18 Auslassungen lassen die Gerade stehen, eine "
+        "loescht sie. Die Frage, woran sich eine neue Idee sonst messen "
+        "laesst, ist damit offen und nicht beantwortet",
         179,
-        183,
+        285,
     ),
     # **Die Gegenprobe zu 169/179 - und sie war nicht durchfuehrbar.**
     Richtung(
