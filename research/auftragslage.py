@@ -108,18 +108,23 @@ class Auftragslage:
     ziel_spanne: tuple[int, int] = (0, 0)
     """Wie weit das Optimum wandert, wenn die Reststreuung anders liegt.
 
-    Sie ist aus 18 Punkten geschaetzt; ueber ihren Vertrauensbereich liegt
-    das Optimum zwischen 142 und 202 Trades. Die Spanne gehoert in den
+    Sie ist aus ``KATALOGPUNKTE`` geschaetzt; ueber ihren Vertrauensbereich
+    liegt das Optimum zwischen 146 und 185 Trades. Die Spanne gehoert in den
     Auftrag, weil eine einzelne Zahl dort genauer klaenge als sie ist.
+
+    **Die Zahlen sind bei Befund 288 nachgemessen.** Hier stand "aus 18
+    Punkten" und "zwischen 142 und 202" - beides aus der Zeit vor Befund 83,
+    der die Liste auf zweiundzwanzig gebracht hat.
     """
 
     quoten_spanne: tuple[float, float] = (0.0, 0.0)
     """Die Trefferquote - und warum sie als Bereich dasteht.
 
-    Ueber denselben Vertrauensbereich schwankt sie um Faktor 48. Wer sie als
-    einzelne Zahl nennt, behauptet mehr als er weiss (Befund 81). Im Auftrag
-    steht sie trotzdem: Ein Vorschlagender, der sie nicht kennt, haelt den
-    ersten Treffer fuer einen Fund.
+    Ueber denselben Vertrauensbereich schwankt sie um Faktor 22 - bei Befund
+    288 nachgemessen, vorher stand hier 48 aus der Zeit der achtzehn Punkte.
+    Wer sie als einzelne Zahl nennt, behauptet mehr als er weiss (Befund 81).
+    Im Auftrag steht sie trotzdem: Ein Vorschlagender, der sie nicht kennt,
+    haelt den ersten Treffer fuer einen Fund.
     """
 
     bedarf_am_ziel: float = 0.0
@@ -402,10 +407,19 @@ class Auftragslage:
                 "## Wie oft so ein Vorschlag trifft\n",
                 f"Zwischen {q_von:.1%} und {q_bis:.1%} - und das ist die "
                 f"ehrliche Auskunft.",
-                "Die Erwartung stammt aus einer Geraden durch 18 Punkte, und",
+                f"Die Erwartung stammt aus einer Geraden durch "
+                f"{len(KATALOGPUNKTE)} Punkte, und",
                 "ihre Reststreuung ist selbst unsicher; ueber deren",
                 f"Vertrauensbereich schwankt die Quote um Faktor "
                 f"{q_bis / q_von:.0f}.",
+                "",
+                "Diese Gerade traegt jede Auslassung: Faellt eine der "
+                f"{len(KATALOGPUNKTE)} Regeln weg,",
+                "bleibt die Kopplung stehen (Befund 288). Das ist bei der "
+                "Geraden",
+                "des Tageskatalogs **nicht** so, und deren Preis wird deshalb "
+                "seit",
+                "Befund 285 nicht mehr genannt.",
                 "",
                 "Robust ist dagegen, **wohin** zu zielen ist: Das Optimum "
                 "liegt ueber",
@@ -502,34 +516,45 @@ def aus_messungen(
     )
 
 
+#: Die Punkte, aus denen die Trefferquote des Auftrags kommt.
+#:
+#: ``(Trades, Sharpe je Trade)`` je Regel. Sie stehen fest verdrahtet, weil
+#: sie eine **Messung** sind und keine Konfiguration: Die ersten achtzehn
+#: stammen aus Befund 75 (Katalog) und 77 (vier eigens gebaute Regeln), die
+#: letzten vier aus Befund 83 - auf die Ziel-Taktung kalibriert. Wer sie
+#: aendert, aendert einen Befund und soll das an dieser Stelle merken.
+#:
+#: **Sie sind zweiundzwanzig, und der Auftragstext nannte achtzehn** (Befund
+#: 288). Die Zahl stand als Wort im Text, die Liste ist viermal gewachsen -
+#: derselbe Fehler wie in den Befunden 156 bis 159. Sie wird jetzt gezaehlt.
+KATALOGPUNKTE: tuple[tuple[int, float], ...] = (
+    (258, -0.0368), (185, -0.1113), (156, 0.1894), (124, -0.0469),
+    (109, 0.2231), (106, 0.2160), (101, 0.1649), (67, 0.0833),
+    (58, 0.3074), (56, 0.1067), (53, 0.3185), (51, 0.1342),
+    (50, 0.1377), (36, 0.0576), (18, 0.340522), (114, 0.158416),
+    (92, -0.120133), (406, -0.120146),
+    # Befund 83: vier auf die Ziel-Taktung kalibrierte Regeln.
+    (145, 0.138702), (130, -0.170385), (133, -0.191948), (61, 0.223766),
+)
+
+
 def _optimum(
     *, versuche: int, bestand_trades: int, bestand_sharpe: float, karte
 ) -> tuple[int, tuple[int, int], tuple[float, float]]:
     """Das Trefferoptimum aus der gemessenen Kopplung - samt Bandbreite.
 
-    Die 18 Punkte stehen fest verdrahtet, weil sie eine **Messung** sind und
-    keine Konfiguration: Sie stammen aus Befund 75 (Katalog) und 77 (vier
-    eigens gebaute Regeln). Wer sie aendert, aendert einen Befund und soll das
-    an dieser Stelle merken.
+    Die Punkte stehen in ``KATALOGPUNKTE``; dort steht auch, woher sie
+    kommen und warum sie fest verdrahtet sind.
 
     Faellt die Rechnung aus, bleibt es beim alten Verhalten - dann nennt der
     Auftrag nur die Untergrenze, und das ist schlechter, aber nicht falsch.
     """
     from research.partnerkarte import Anwaerter, Katalogkopplung
 
-    punkte = [
-        (258, -0.0368), (185, -0.1113), (156, 0.1894), (124, -0.0469),
-        (109, 0.2231), (106, 0.2160), (101, 0.1649), (67, 0.0833),
-        (58, 0.3074), (56, 0.1067), (53, 0.3185), (51, 0.1342),
-        (50, 0.1377), (36, 0.0576), (18, 0.340522), (114, 0.158416),
-        (92, -0.120133), (406, -0.120146),
-        # Befund 83: vier auf die Ziel-Taktung kalibrierte Regeln.
-        (145, 0.138702), (130, -0.170385), (133, -0.191948), (61, 0.223766),
-    ]
     kopplung = Katalogkopplung(
         anwaerter=[
             Anwaerter(name=f"p{i}", trades=n, sharpe_je_trade=s)
-            for i, (n, s) in enumerate(punkte)
+            for i, (n, s) in enumerate(KATALOGPUNKTE)
         ]
     )
     bereich = kopplung.takt_bereich(ziel=karte.ziel, karte=karte)

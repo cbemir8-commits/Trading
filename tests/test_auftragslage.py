@@ -306,7 +306,12 @@ class TestOptimumImAuftrag:
 
     def test_die_trefferquote_steht_als_bereich_da(self) -> None:
         """Eine einzelne Zahl waere genauer, als sie ist - ueber den
-        Vertrauensbereich der Reststreuung schwankt sie um Faktor 48."""
+        Vertrauensbereich der Reststreuung schwankt sie um Faktor 22
+        (Faktor 48 war der Stand der achtzehn Punkte, Befund 288).
+
+        Geprueft wird die **Groessenordnung** und nicht die Zahl: Sie haengt
+        am Versuchsstand und waere sonst nach jedem Lauf nachzuziehen.
+        """
         aktuell = lage()
         von, bis = aktuell.quoten_spanne
 
@@ -529,3 +534,70 @@ class TestDasBilligeVorfilterStehtImAuftrag:
         ).als_auftrag()
 
         assert "zufallseinstieg" not in ohne
+
+
+class TestDieGeradeHinterDerTrefferquote:
+    """**Befund 288.** Die Quote im Auftrag steht auf einer angepassten
+    Geraden - derselben Bauart wie der Preis, den Befund 285 verweigert hat.
+
+    Zwei Dinge waren daran zu pruefen, und sie gehen verschieden aus.
+    """
+
+    def test_der_text_zaehlt_die_punkte_statt_sie_zu_nennen(self) -> None:
+        """**Der Fund.** Im Text stand *"eine Geraden durch 18 Punkte"*, die
+        Liste hat 22 - seit Befund 83, der vier kalibrierte Regeln
+        hinzugefuegt hat.
+
+        Dass es auffiel, ist kein Zufall: Ein Test in dieser Datei nennt
+        beide Staende im Kommentar (*"165 bei 18 Punkten, 151 bei 22"*). Die
+        Zahl war also bekannt und im Auftragstext trotzdem alt - dieselbe
+        halbe Anwendung wie in Befund 285.
+        """
+        from research.auftragslage import KATALOGPUNKTE
+
+        text = lage().als_auftrag()
+
+        assert f"durch {len(KATALOGPUNKTE)} Punkte" in text
+        assert "durch 18 Punkte" not in text
+
+    def test_und_diese_gerade_traegt_jede_auslassung(self) -> None:
+        """**Die Gegenprobe, und sie faellt anders aus als bei 285.**
+
+        Auf dem Tageskatalog loescht 'Momentum Ruecksetzer' die Kopplung
+        allein. Hier nicht: Keine der 22 Auslassungen bringt sie unter die
+        Schwelle, die schwaechste laesst t = -2,53 stehen.
+
+        Deshalb bleibt die Quote im Auftrag - und deshalb ist dieser Test die
+        Wache: Wer die Liste aendert, bekommt hier gesagt, ob der Satz im
+        Auftragstext noch stimmt.
+        """
+        from research.auftragslage import KATALOGPUNKTE
+        from research.vorratsdecke import Punkt, baue, einflussprobe
+
+        punkte = [
+            Punkt(f"p{i}", n, s) for i, (n, s) in enumerate(KATALOGPUNKTE)
+        ]
+        gerade = baue(punkte)
+        probe = einflussprobe(punkte)
+
+        assert gerade.tragfaehig, f"r = {gerade.r:+.3f}, t = {gerade.t:+.2f}"
+        assert probe is not None
+        assert probe.haelt, probe.beschreibe()
+
+    def test_der_auftrag_sagt_das_auch(self) -> None:
+        """Eine gepruefte Eigenschaft, die nur im Test steht, steuert nichts -
+        die Lehre aus den Befunden 111 bis 115, 284 und 285."""
+        text = lage().als_auftrag()
+
+        assert "traegt jede Auslassung" in text
+        assert "Befund 285" in text, "und woran der Unterschied haengt"
+
+    def test_die_punkte_sind_kein_schalter(self) -> None:
+        """Sie sind eine Messung. Der Test haelt fest, dass sie vollstaendig
+        sind und keine stillschweigend herausfaellt."""
+        from research.auftragslage import KATALOGPUNKTE
+
+        assert len(KATALOGPUNKTE) == len(set(KATALOGPUNKTE)), "doppelte Punkte"
+        assert all(n > 0 for n, _ in KATALOGPUNKTE)
+        assert min(n for n, _ in KATALOGPUNKTE) == 18
+        assert max(n for n, _ in KATALOGPUNKTE) == 406

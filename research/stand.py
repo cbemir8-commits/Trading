@@ -1863,6 +1863,23 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Bedingung im Satz",
         287,
     ),
+    # Dieselbe Frage an die zweite Gerade des Projekts - und sie haelt.
+    Richtung(
+        "Die Gerade im Auftrag nannte die falsche Zahl und traegt trotzdem",
+        "Der Auftrag an die Research-KI nennt eine Trefferquote von 0,5 bis "
+        "12 % und sagt dazu, woher sie kommt: *'eine Geraden durch 18 "
+        "Punkte'*. **Die Liste hat 22** - seit Befund 83, der vier "
+        "kalibrierte Regeln hinzugefuegt hat; ein Test in derselben "
+        "Testdatei nennt beide Staende im Kommentar. Die Zahl stand als Wort "
+        "im Text und ist jetzt gezaehlt, ebenso die Zielspanne (146 bis 185 "
+        "statt 142 bis 202) und der Streufaktor (22 statt 48). **Und die "
+        "Gegenprobe mit dem Werkzeug aus 285 faellt hier anders aus**: Keine "
+        "der 22 Auslassungen bringt die Kopplung unter die Schwelle, die "
+        "schwaechste laesst t = -2,53 stehen (mit allen -2,89). Die Quote "
+        "bleibt deshalb im Auftrag - anders als der Preis des Tageskatalogs, "
+        "und der Auftragstext sagt jetzt beides",
+        288,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

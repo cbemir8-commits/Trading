@@ -25760,3 +25760,94 @@ druckt, und auf Einteilungen, die er ohnehin bildet. Versuchszaehler 203
 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 3884 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertachtundachtzig. Die Gerade im Auftrag nannte die falsche Zahl und traegt trotzdem
+
+Befund 285 hat eine angepasste Gerade verworfen, weil ein einziger Punkt sie
+loescht. Damit stand die Frage im Raum, die ich noch nicht gestellt hatte:
+**Wo steht im Projekt sonst noch eine?**
+
+Eine Stelle gibt es, und sie ist die wichtigste von allen - der Auftrag an die
+Research-KI:
+
+    ## Wie oft so ein Vorschlag trifft
+
+    Zwischen 0.5% und 12.0% - und das ist die ehrliche Auskunft.
+    Die Erwartung stammt aus einer Geraden durch 18 Punkte, und
+    ihre Reststreuung ist selbst unsicher; ueber deren
+    Vertrauensbereich schwankt die Quote um Faktor 22.
+
+Das ist die Zahl, die einem Vorschlagenden sagt, ob sein erster Treffer ein
+Fund ist oder Zufall.
+
+### Der Fund: die Liste hat 22
+
+`_optimum` baut die Kopplung aus einer fest verdrahteten Punktliste.
+Abgezaehlt: **zweiundzwanzig**, nicht achtzehn. Die letzten vier kamen mit
+Befund 83 dazu - *"vier auf die Ziel-Taktung kalibrierte Regeln"*, im Code
+sogar mit Kommentar.
+
+Und es war bekannt. In `tests/test_auftragslage.py` steht seit damals:
+
+> Der Wert wandert mit jeder neuen Messung: 165 bei 18 Punkten, 151 bei 22
+> (Befund 83).
+
+Der Test wurde nachgezogen, der Auftragstext nicht. Dieselbe halbe Anwendung
+wie in Befund 285, wo `_auftragslage` den Preis zurueckhielt und der Bericht
+ihn weiter druckte.
+
+Zwei weitere Zahlen aus derselben Zeit standen in Docstrings und sind
+nachgemessen:
+
+    Zielspanne     142 bis 202 Trades   ->   146 bis 185
+    Streufaktor    48                   ->   22
+
+Die Punktliste heisst jetzt `KATALOGPUNKTE`, steht auf Modulebene, und der
+Text **zaehlt** sie, statt eine Zahl zu nennen.
+
+### Die Gegenprobe - und sie faellt anders aus
+
+Die eigentliche Frage war nicht die Zaehlung, sondern ob diese Gerade
+denselben Fehler hat wie die des Tageskatalogs. `einflussprobe` aus Befund 285
+darauf angesetzt:
+
+    mit allen 22                 r = -0,5431   t = -2,89   traegt
+    schwaechste Auslassung       t = -2,53                 traegt
+    staerkste Auslassung         t = -3,15                 traegt
+
+    Auslassungen, die die Gerade loeschen: 0 von 22
+
+**Sie traegt jede einzelne.** Das ist der Unterschied zum Tageskatalog, wo
+'Momentum Ruecksetzer' allein genuegt, um t von -2,59 auf -0,97 zu druecken.
+
+Der Verdacht war also richtig, das Ergebnis geht dagegen - und das gehoert
+genauso berichtet. Die Quote bleibt im Auftrag, und der Auftragstext sagt
+jetzt selbst, warum:
+
+    Diese Gerade traegt jede Auslassung: Faellt eine der 22 Regeln weg,
+    bleibt die Kopplung stehen (Befund 288). Das ist bei der Geraden
+    des Tageskatalogs **nicht** so, und deren Preis wird deshalb seit
+    Befund 285 nicht mehr genannt.
+
+Ein Test haelt es: Wer `KATALOGPUNKTE` aendert, bekommt gesagt, ob der Satz
+noch stimmt. Eine gepruefte Eigenschaft, die nur im Test steht, steuert nichts
+- das ist die Lehre der Befunde 111 bis 115, und 284 und 285 haben sie
+zweimal wiederholt.
+
+### Warum zwei Geraden verschieden ausgehen
+
+Nicht wegen der Zahl der Punkte - 22 gegen 18 ist kein grosser Unterschied.
+Der Tageskatalog hat mit 'Momentum Ruecksetzer' **einen** Punkt ganz rechts
+(n_eff 254) und ganz unten (SR -0,1358), und er allein zieht die Gerade. Die
+Auftragsliste hat mit 406 Trades zwar einen noch weiter rechts, aber daneben
+noch 258, 185, 156 - die rechte Seite ist besetzt, und kein einzelner Punkt
+traegt sie.
+
+Das ist keine Regel, aus der sich etwas folgern liesse, sondern der Grund im
+Einzelfall. Er steht hier, damit die naechste Gerade nicht wieder von vorn
+geprueft wird.
+
+Kostet keinen Versuch: gezaehlt und nachgerechnet wurde an Zahlen, die im Code
+stehen. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 3888 passed, 2 skipped; ruff check sauber.
