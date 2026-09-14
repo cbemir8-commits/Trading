@@ -295,3 +295,115 @@ def test_die_historie_der_aussicht_stimmt_mit_dem_speicher_ueberein() -> None:
         f"referenz.py nennt {AUSSICHT.historie_tage} Tage Historie, gemessen "
         f"sind {spanne} - die Sammelrate haengt daran."
     )
+
+
+class TestOhneHerkunftKeineVollstaendigePruefung:
+    """**Befund 283.** Die Vorgabe fuer den unbekannten Fall war die erlaubende.
+
+    ``referenzdaten`` wurde aus den Beinen erkannt: ``any(ist_referenz(name)
+    for name in frames or ())``. Ohne ``frames`` lief das auf ``any(())``
+    hinaus, also ``False`` - "nicht als Forschungsmaterial erkannt". Wer das
+    Argument vergass, bekam einen **zulassungsfaehigen** Bericht auf Kerzen,
+    deren Herkunft niemand geprueft hat.
+
+    Gemessen war es kein Fehler: Von 23 Aufrufen im Projekt geben 22 die
+    Herkunft mit, und der eine laeuft als Vorauswahl. Ein Fall, den es nicht
+    gibt, wird trotzdem irgendwann gebaut - und dieser hier haette genau das
+    ausgehebelt, wofuer Befund 102 gebaut wurde.
+    """
+
+    @staticmethod
+    def _lauf():
+        from decimal import Decimal
+
+        import pandas as pd
+
+        from backtest.engine import BacktestConfig
+        from core.config import RiskSettings
+        from strategy.genome import Condition, Genome, Operator, TargetSpec
+        from tests.test_gates import ind, make_report, make_trade, price
+
+        genom = Genome(
+            name="Egal",
+            rationale="Nur fuer die Herkunftsfrage - die Zahlen sind belanglos.",
+            entry_long=[
+                Condition(left=price("close"), op=Operator.GT,
+                          right=ind("ema", period=20))
+            ],
+            targets=[TargetSpec(rr=2.0, portion=1.0)],
+        )
+        bericht = make_report(
+            trades=[make_trade(str(i), index=i) for i in range(40)],
+            sharpe=1.5, drawdown=5.0, profitable_windows=9, total_windows=10,
+        )
+        leer = pd.DataFrame({"open_time": [], "close": []})
+        cfg = BacktestConfig(
+            instrument=None,  # type: ignore[arg-type]
+            risk=RiskSettings(),
+            initial_equity=Decimal("500"),
+        )
+        return genom, bericht, leer, cfg
+
+    def test_die_vollstaendige_pruefung_bricht_ab(self) -> None:
+        from research.gates import evaluate_gates
+
+        genom, bericht, leer, cfg = self._lauf()
+
+        with pytest.raises(ValueError, match="Herkunft der Kerzen unbekannt"):
+            evaluate_gates(genom, bericht, leer, cfg, trials_so_far=10)
+
+    def test_eine_vorauswahl_darf_es(self) -> None:
+        """Sie kann ohnehin keine Zulassung werden - ``vorauswahl`` sperrt
+        sie. Dort waere ein Abbruch nur laestig."""
+        from research.gates import evaluate_gates
+
+        genom, bericht, leer, cfg = self._lauf()
+
+        gates = evaluate_gates(
+            genom, bericht, leer, cfg, trials_so_far=10, run_expensive=False
+        )
+
+        assert not gates.passed
+        assert gates.vorauswahl
+
+    def test_mit_angabe_laeuft_sie_durch(self) -> None:
+        from research.gates import evaluate_gates
+
+        genom, bericht, leer, cfg = self._lauf()
+
+        gates = evaluate_gates(
+            genom, bericht, leer, cfg, trials_so_far=10, referenzdaten=True
+        )
+
+        assert gates.referenzdaten
+        assert not gates.passed
+
+    def test_jeder_aufruf_im_projekt_nennt_seine_herkunft(self) -> None:
+        """Die Wache zur Wache: Ein neuer Aufruf ohne Angabe faellt hier auf,
+        bevor er in einem Lauf abbricht."""
+        import ast
+        from pathlib import Path
+
+        ohne = []
+        for datei in [*Path("research").glob("*.py"), Path("cli.py")]:
+            baum = ast.parse(datei.read_text(encoding="utf-8"))
+            for k in ast.walk(baum):
+                if (
+                    isinstance(k, ast.Call)
+                    and isinstance(k.func, ast.Name)
+                    and k.func.id == "evaluate_gates"
+                ):
+                    namen = {s.arg for s in k.keywords}
+                    if {"frames", "referenzdaten"} & namen:
+                        continue
+                    # Eine Vorauswahl darf es - sie wird nie zur Zulassung.
+                    vorauswahl = any(
+                        s.arg == "run_expensive"
+                        and isinstance(s.value, ast.Constant)
+                        and s.value.value is False
+                        for s in k.keywords
+                    )
+                    if not vorauswahl:
+                        ohne.append(f"{datei}:{k.lineno}")
+
+        assert ohne == [], f"evaluate_gates ohne Herkunftsangabe: {ohne}"

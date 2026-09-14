@@ -1649,10 +1649,35 @@ def evaluate_gates(
     if referenzdaten is None:
         from data.reference import ist_referenz
 
-        # ``any`` und nicht ``all``: Ein Bein aus Forschungsmaterial macht das
-        # ganze Portfolio nicht zulassungsfaehig, und eine Mischung aus
-        # Kassamarkt und Perpetual waere sogar schlechter als beides fuer sich.
-        referenzdaten = any(ist_referenz(name) for name in frames or ())
+        if frames is None:
+            # **Hier stand ``frames or ()``** (Befund 283). Ohne Beine lief
+            # das auf ``any(())`` hinaus, also ``False`` - "nicht als
+            # Forschungsmaterial erkannt". Die Vorgabe fuer den unbekannten
+            # Fall war damit die **erlaubende**: Wer das Argument vergisst,
+            # bekommt einen zulassungsfaehigen Bericht auf Kerzen, deren
+            # Herkunft niemand geprueft hat. Genau davor steht Befund 102.
+            #
+            # Gemessen war es kein Fehler - von 23 Aufrufen geben 22 die
+            # Herkunft mit, und der eine laeuft als Vorauswahl. Ein Fall, den
+            # es nicht gibt, wird trotzdem irgendwann gebaut; deshalb ist er
+            # jetzt ein Fehler und keine stille Annahme.
+            #
+            # Nur fuer die **vollstaendige** Pruefung: Eine Vorauswahl kann
+            # ohnehin keine Zulassung werden (``vorauswahl`` sperrt sie), und
+            # dort waere ein Abbruch nur laestig.
+            if run_expensive:
+                raise ValueError(
+                    "Ohne 'frames' oder 'referenzdaten' ist die Herkunft der "
+                    "Kerzen unbekannt. Eine vollstaendige Pruefung waere damit "
+                    "eine Zulassung auf ungeklaerten Daten - siehe Befund 102."
+                )
+            referenzdaten = False
+        else:
+            # ``any`` und nicht ``all``: Ein Bein aus Forschungsmaterial macht
+            # das ganze Portfolio nicht zulassungsfaehig, und eine Mischung
+            # aus Kassamarkt und Perpetual waere sogar schlechter als beides
+            # fuer sich.
+            referenzdaten = any(ist_referenz(name) for name in frames)
     report = GateReport(
         genome_id=genome.genome_id,
         vorauswahl=not run_expensive,

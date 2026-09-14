@@ -25297,3 +25297,86 @@ Kostet keinen Versuch: Gebaut wurde an der Buchfuehrung, gemessen nichts Neues.
 Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 3824 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertdreiundachtzig. Die Vorgabe fuer den unbekannten Fall war die erlaubende
+
+Der Stand ist gemessen: Am Spot-Punkt halten 9 von 11 Gates, offen sind eine
+Geschaeftsschwelle und der Deflated Sharpe, und beide sind mit den Daten hier
+nicht zu bewegen. Was bleibt, ist der Weg ueber Bybit-Kerzen - und damit die
+Frage, ob die Zulassung dann ueberhaupt richtig umschaltet.
+
+### Zuerst: was ich **nicht** gemacht habe
+
+Das Register nennt seit Befund 256 eine Richtung als die wichtigste:
+
+> **Einstieg, der nicht am Rauschen haengt** [...] Wer die Richtung verfolgen
+> will, muss sie aus ihrer Beschreibung neu bauen - und das ist eine neue
+> Hypothese und kostet einen Versuch.
+
+Nachgesehen, was von der Beschreibung da ist: ein Name ('Neues Hoch im Takt'),
+eine Eigenschaft ("haelt 70 % seiner Trades statt 19 %") und zwei Kennzahlen.
+**Keine Regel.** Sie daraus "neu zu bauen" waere kein Rekonstruieren, sondern
+Erfinden - und das Ergebnis traegt die gemessenen 0,2137 nicht mit, es waere
+eine frische Vermutung.
+
+Fuer frische Vermutungen auf der Einstiegsseite gibt es einen gemessenen
+Vorwert: Die Befunde 272, 274 und 276 haben vier Familien auf zwei Maerkten
+und zwei Kerzenlaengen abgesucht, und nichts hat die eigene Nullverteilung
+ueberlebt. Dafuer Versuche auszugeben, waere gegen die eigenen Messungen
+gehandelt.
+
+### Stattdessen: haelt die Sperre, die alles zusammenhaelt?
+
+`GateReport.passed` verlangt drei Dinge: alle Gates bestanden, keine
+Vorauswahl, **keine Forschungskerzen**. Das dritte ist Befund 102 - der Satz,
+der verhindert, dass "elf von elf" auf Bitstamp dasselbe heisst wie auf
+Bybit. Erkannt wird es aus den Beinen:
+
+    referenzdaten = any(ist_referenz(name) for name in frames or ())
+
+Ohne `frames` ist das `any(())`, also **`False`** - "nicht als
+Forschungsmaterial erkannt". Die Vorgabe fuer den unbekannten Fall ist damit
+die erlaubende: Wer das Argument vergisst, bekommt einen zulassungsfaehigen
+Bericht auf Kerzen, deren Herkunft niemand geprueft hat.
+
+Das ist genau die Bauart, gegen die im selben Modul zweimal gewarnt wird -
+*"Ein Schalter ist etwas, das man vergisst."*
+
+### Gemessen: heute kein Fehler
+
+Alle 23 Aufrufe von `evaluate_gates` in `research/` und `cli.py` abgezaehlt:
+
+    mit 'frames' oder 'referenzdaten'   22
+    ohne                                 1   (cli sperrprobe)
+
+Und der eine laeuft mit `run_expensive=False`, ist also **Vorauswahl** -
+`vorauswahl` sperrt die Zulassung ohnehin. Auch die beiden Testaufrufe ohne
+Angabe sind Vorauswahl.
+
+Es ist also kein Fehler, den es gibt. Es ist einer, der gebaut werden kann,
+und die Stelle, an der er gebaut wuerde, ist die einzige Sperre zwischen
+"gemessen auf Bitstamp" und "zugelassen".
+
+### Gebaut
+
+Eine **vollstaendige** Pruefung ohne Herkunftsangabe bricht ab:
+
+    ValueError: Ohne 'frames' oder 'referenzdaten' ist die Herkunft der
+    Kerzen unbekannt. Eine vollstaendige Pruefung waere damit eine Zulassung
+    auf ungeklaerten Daten - siehe Befund 102.
+
+Eine Vorauswahl darf es weiter: Sie wird nie zur Zulassung, und dort waere
+ein Abbruch nur laestig. Dazu eine Wache, die **jeden** Aufruf im Projekt
+prueft - damit ein neuer hier auffaellt und nicht erst in einem Lauf, der
+Stunden gerechnet hat.
+
+Nicht gewaehlt wurde der andere Weg: `referenzdaten = True` als sichere
+Vorgabe. Er haette dasselbe verhindert, aber der Bericht haette dann
+*"gerechnet auf Forschungskerzen"* behauptet, auch wenn der Aufrufer
+Bybit-Daten hatte und nur das Argument vergass. Eine falsche Begruendung ist
+keine sichere Vorgabe.
+
+Kostet keinen Versuch: Gebaut wurde an der Sperre, gemessen nichts Neues.
+Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 3828 passed, 2 skipped; ruff check sauber.

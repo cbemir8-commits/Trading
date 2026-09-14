@@ -1765,6 +1765,25 @@ BEHOBEN: tuple[Richtung, ...] = (
         "nicht - 'cli vereinbar --spot' meldet null Stellungen, und das "
         "Messen kostet Versuche",
         280,
+        zuletzt=281,
+    ),
+    # Beim Nachsehen gefunden, wie die Zulassung eigentlich umschaltet.
+    Richtung(
+        "Ohne Herkunft galt der Bericht als zulassungsfaehig",
+        "'evaluate_gates' erkennt aus den Beinen, ob auf Forschungskerzen "
+        "gerechnet wurde: 'any(ist_referenz(name) for name in frames or ())'. "
+        "**Ohne 'frames' war das 'any(())', also False** - die Vorgabe fuer "
+        "den unbekannten Fall war damit die erlaubende: Wer das Argument "
+        "vergisst, bekommt einen zulassungsfaehigen Bericht auf Kerzen, deren "
+        "Herkunft niemand geprueft hat. Genau dagegen steht Befund 102. "
+        "**Gemessen war es kein Fehler**: Von 23 Aufrufen geben 22 die "
+        "Herkunft mit, der eine ist 'cli sperrprobe' und laeuft als "
+        "Vorauswahl, die nie zur Zulassung wird. Ein Fall, den es nicht gibt, "
+        "wird trotzdem irgendwann gebaut - eine vollstaendige Pruefung ohne "
+        "Herkunftsangabe bricht jetzt ab, eine Vorauswahl darf es weiter. "
+        "Dazu eine Wache ueber alle Aufrufe, damit ein neuer nicht erst im "
+        "Lauf auffaellt",
+        283,
     ),
 )
 
