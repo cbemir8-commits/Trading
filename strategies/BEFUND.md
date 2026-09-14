@@ -25571,3 +25571,103 @@ Kostet keinen Versuch: `cli vorratsdecke` misst einen vorhandenen Katalog und
 waehlt nichts aus. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 3852 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertsechsundachtzig. Ein Abstand, der keine Gerade braucht
+
+Befund 285 hat den Preis in Reststreuungen verweigert - richtig, aber
+unvollstaendig. Mit ihm ging das Werkzeug, an dem die einzige Entscheidung
+haengt, die dieses Projekt noch taeglich trifft: **Lohnt sich ein Versuch?**
+
+Eine Verweigerung beantwortet das nicht. Sie stehen zu lassen hiesse, die
+Frage dem Gefuehl zu ueberlassen - und das ist schlechter als eine fragile
+Zahl, weil es sich nicht nachpruefen laesst.
+
+### Was ohnehin schon dastand
+
+Die Tabelle von `cli vorratsdecke` druckt seit Befund 191 je Regel zwei
+Zahlen: ihre Guete und die Latte, die bei **ihrer** Stichprobe und **ihrer**
+Verteilungsform gilt.
+
+    Regel                                      n_eff  Guete  noetig
+    Donchian-Ausbruch 55/20                       58  2.484   3.564
+    ...
+    Momentum Ruecksetzer                         254 -2.164   4.209
+
+Der Unterschied der beiden Spalten ist die Luecke. Achtzehn Luecken lagen
+untereinander im Bericht, und **zusammengefasst wurde nie eine davon**. Was
+dastand, war der Preis - die eine Zahl, die eine Anpassung brauchte.
+
+### Gemessen, ohne Gerade
+
+    **Am naechsten kommt 'Donchian-Ausbruch 55/20'** bei n_eff 58:
+    Guete 2.484 gegen eine Latte von 3.564, es fehlen 1.080.
+    Das sind 0.83 Streuungen dieses Vorrats (1.305 Guetepunkte),
+    und der Median aller 18 Luecken liegt bei 2.080.
+
+Die Einheit ist der Punkt. "Es fehlen 1,08" ist eine Zahl ohne Massstab;
+gemessen an der Breite des Vorrats selbst ist es **weniger als ein Schritt von
+der Mitte nach oben**. Die Reststreuung um eine angepasste Gerade war
+dieselbe Idee - nur stand und fiel sie mit der Anpassung.
+
+### Und die Zahl, die "keine von achtzehn" ersetzt
+
+Der Satz *"keine von 18 raeumt ihre Latte"* liest sich wie eine Null. Er ist
+keine. Bei einer wahren Trefferquote von 10 % waeren achtzehn Fehlschlaege
+mit 15 % Wahrscheinlichkeit genau das, was man sieht ($0{,}9^{18}$).
+
+Was sich sagen laesst, ist eine Obergrenze:
+
+    0 von   5   ->  hoechstens 45,1 %
+    0 von  10   ->  hoechstens 25,9 %
+    0 von  18   ->  hoechstens 15,3 %
+    0 von  50   ->  hoechstens  5,8 %
+    0 von 100   ->  hoechstens  3,0 %
+
+Bei 95 % Vertrauen also **hoechstens 15,3 %** - und nie null, bei keiner
+endlichen Zahl von Fehlschlaegen. Das ist der Unterschied zwischen "wir haben
+nichts gefunden" und "es ist nichts da", und dieses Projekt hat ihn schon
+zweimal teuer bezahlt: Befund 75 hat aus fuenf Punkten geschlossen, Befund 181
+hat gezeigt, dass eine zu kleine Aussenmenge als Bestaetigung zaehlte, je
+feiner man schnitt.
+
+### Zwei Verweigerungen
+
+`streuung` ist `None` bei einer einzelnen Regel, statt null zu sein und eine
+Division zu tragen.
+
+`obergrenze` ist `None`, **sobald eine Regel ihre Latte raeumt**. Dann ist die
+Quote zu schaetzen und nicht nach oben abzugrenzen; eine Obergrenze waere dort
+die falsche Auskunft, und der Bericht sagt stattdessen, dass zu pruefen ist.
+
+Ebenso verweigert `obergrenze_der_quote` jede Rechnung mit Treffern: Die
+Einzeiler-Formel gilt fuer den trefferlosen Fall, und eine Formel, die
+trotzdem antwortet, liefert eine erfundene Zahl.
+
+### Was daran wichtiger ist als die Zahlen
+
+Die Luecken werden **eingesammelt, nicht zweitgerechnet**. Die Latte je Regel
+entsteht in der Schleife, die die Tabelle druckt; die Zusammenfassung nimmt
+genau diese Werte. Eine zweite Quelle liefe frueher oder spaeter auseinander -
+davon handeln die Befunde 158, 159 und 165, und der Unterschied waere hier
+sichtbar gewesen: Mit den Vorgabemomenten statt denen der Regel stuenden fuer
+den Donchian-Ausbruch 3,524 statt 3,564 da.
+
+Und die Zeilen stehen **immer** im Bericht, nicht nur wenn die Gerade
+versagt. Eine Auskunft, die erst bei schlechtem Wetter erscheint, liest
+niemand als das, was sie ist.
+
+### Was das nicht ist
+
+Kein Ersatz fuer die Gerade. Wo eine Kopplung traegt, sagt sie mehr als
+achtzehn einzelne Luecken - sie sagt, **wo** auf der Strecke es am billigsten
+ist. Hier traegt sie nicht, und das Register nennt weiter offen, ob sich aus
+ihr ueberhaupt noch etwas lesen laesst.
+
+Und kein Grund, eine Latte zu senken. Eine Obergrenze von 15,3 % ist ein
+Grund, den Vorrat zu wechseln oder die Suche zu beenden - beides
+Entscheidungen, die nicht hier fallen.
+
+Kostet keinen Versuch: gerechnet wird auf Luecken, die der Bericht ohnehin
+druckt. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 3877 passed, 2 skipped; ruff check sauber.

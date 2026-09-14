@@ -12238,6 +12238,7 @@ def vorratsdecke(
         traegt_eine_familie,
         urteil,
     )
+    from research.vorratslage import Abstand, lage_aus
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -12404,6 +12405,11 @@ def vorratsdecke(
     )
     staende: list[tuple[str, int]] = []
     milder: list[tuple[str, float]] = []
+    # **Die Luecken, wie sie in der Tabelle stehen** (Befund 286). Sie werden
+    # hier eingesammelt und nicht zweitgerechnet: Die Latte je Regel entsteht
+    # eine Zeile weiter unten mit **deren** Momenten, und eine zweite Quelle
+    # fuer dieselbe Zahl liefe frueher oder spaeter auseinander.
+    abstaende: list[Abstand] = []
     for p in punkte:
         # **Mit den Momenten dieser Regel** (Befund 191), so wie das Gate es
         # tut. Die Vorgabe waeren die des Bestands.
@@ -12413,6 +12419,12 @@ def vorratsdecke(
         nach_vorgabe = noetige_guete(p.n_eff, versuche)
         if noetig is not None and nach_vorgabe is not None:
             milder.append((p.name, noetig - nach_vorgabe))
+        if noetig is not None:
+            abstaende.append(
+                Abstand(
+                    name=p.name, n_eff=p.n_eff, guete=p.guete, noetig=noetig
+                )
+            )
         # **Bis zu welchem Versuchsstand diese Regel bestanden haette**
         # (Befund 189). Nicht dasselbe wie die Luecke: Sie sagt, wie weit es
         # fehlt, diese Spalte, ob ueberhaupt je eine Suchbreite denkbar war,
@@ -12675,6 +12687,19 @@ def vorratsdecke(
                 probe=probe,
             )
         )
+
+    # **Der Abstand ohne Gerade** (Befund 286). Befund 285 hat den Preis
+    # verweigert und die Frage offengelassen, womit sich eine neue Idee sonst
+    # messen laesst. Diese Zeilen brauchen keine Anpassung: Sie stehen auf den
+    # Luecken der Tabelle darueber und auf der Zahl der Regeln.
+    #
+    # Sie stehen **immer** da und nicht nur, wenn die Gerade versagt - eine
+    # Auskunft, die erst bei schlechtem Wetter erscheint, liest niemand als
+    # das, was sie ist.
+    lage = lage_aus(abstaende)
+    if lage is not None:
+        console.print()
+        console.print(lage.urteil())
 
 
 def _katalogregel(name: str):

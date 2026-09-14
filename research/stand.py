@@ -1826,6 +1826,24 @@ BEHOBEN: tuple[Richtung, ...] = (
         "als Wache festgehalten",
         285,
     ),
+    # Die Frage, die 285 selbst aufgemacht hat - und ihre Antwort.
+    Richtung(
+        "Ein Abstand, der keine Gerade braucht",
+        "Befund 285 hat den Preis in Reststreuungen verweigert und damit das "
+        "Werkzeug mitgenommen, an dem 'lohnt sich ein Versuch?' haengt. "
+        "'research/vorratslage.py' antwortet ohne Anpassung: Jede Regel hat "
+        "eine gemessene Guete und die Latte, die bei **ihrer** Stichprobe "
+        "und **ihrer** Verteilungsform gilt - der Unterschied ist eine "
+        "Beobachtung. Gemessen (286): Am naechsten kommt "
+        "'Donchian-Ausbruch 55/20' mit 2,484 gegen 3,564, es fehlen 1,080 - "
+        "**0,83 Streuungen dieses Vorrats**, Median aller 18 Luecken 2,080. "
+        "Und statt 'keine von 18, also gibt es nichts' steht dort eine Zahl: "
+        "Bei 95 % Vertrauen liegt die Trefferquote dieses Vorrats hoechstens "
+        "bei 15,3 %. Null Treffer aus 18 sind kein Beleg fuer null - bei "
+        "einer wahren Quote von 10 % waeren sie zu 15 % genau das, was man "
+        "sieht",
+        286,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -1911,10 +1929,12 @@ OFFEN: tuple[Richtung, ...] = (
         "Bestand +1,18 statt +2,41 - und die Gerade selbst haelt an einem "
         "Punkt (ohne ihn t = -0,97). Seit 285 wird deshalb **kein Preis mehr "
         "genannt**: 17 der 18 Auslassungen lassen die Gerade stehen, eine "
-        "loescht sie. Die Frage, woran sich eine neue Idee sonst messen "
-        "laesst, ist damit offen und nicht beantwortet",
+        "loescht sie. Seit 286 steht an seiner Stelle die Luecke jeder Regel "
+        "zu ihrer eigenen Latte: beste 1,080 (0,83 Streuungen des Vorrats), "
+        "Median 2,080, Trefferquote hoechstens 15,3 %. Offen bleibt, ob sich "
+        "aus der Kopplung ueberhaupt noch etwas lesen laesst",
         179,
-        285,
+        286,
     ),
     # **Die Gegenprobe zu 169/179 - und sie war nicht durchfuehrbar.**
     Richtung(
