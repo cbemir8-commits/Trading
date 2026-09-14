@@ -115,6 +115,8 @@ __all__ = [
     "lage_aus",
     "obergrenze_der_quote",
     "rangbild",
+    "zielmarken",
+    "zielurteil",
 ]
 
 
@@ -455,6 +457,109 @@ def rangbild(abstaende: Sequence[Abstand]) -> Rangbild | None:
     if erste is None or zweite is None:
         return None
     return Rangbild(je_trade=erste, guete=zweite)
+
+
+@dataclass(frozen=True, slots=True)
+class Zielmarke:
+    """Was eine Regel an **ihrer** Stelle gebraucht haette - und wer das hatte.
+
+    Die Latte steht in Guete; geteilt durch ``sqrt(n_eff)`` wird daraus eine
+    Anforderung an die **Qualitaet je Trade**, und die ist mit den anderen
+    Regeln unmittelbar vergleichbar.
+
+    **Sie gehoert der Regel, nicht der Stichprobengroesse** (Befund 191): Die
+    Latte rechnet mit Schiefe und Woelbung dieser Verteilung. Eine andere
+    Regel bei derselben Trade-Zahl haette eine andere.
+    """
+
+    name: str
+    n_eff: int
+    je_trade: float
+    noetig_je_trade: float
+    erreicht_von: tuple[str, ...]
+    """Regeln des Vorrats, deren Qualitaet je Trade diese Anforderung
+    erreicht - bei welcher Stichprobe auch immer."""
+
+    @property
+    def geraeumt(self) -> bool:
+        return self.je_trade >= self.noetig_je_trade
+
+    @property
+    def je_erreicht(self) -> bool:
+        """Hat irgendeine Regel dieses Vorrats diese Qualitaet je gezeigt?"""
+        return bool(self.erreicht_von)
+
+
+def zielmarken(abstaende: Sequence[Abstand]) -> tuple[Zielmarke, ...]:
+    """Jede Regel als Zielmarke, samt allen, die ihre Anforderung erreichen.
+
+    **Die Frage, die hinter der Luecke steht** (Befund 291): Eine Luecke von
+    1,080 Guetepunkten sagt nicht, ob das viel ist. Umgerechnet auf die
+    Qualitaet je Trade laesst sie sich mit dem vergleichen, was dieser Vorrat
+    tatsaechlich hervorgebracht hat.
+    """
+    liste = [a for a in abstaende if a.n_eff > 0]
+    werte = [(a.name, a.guete / a.n_eff**0.5) for a in liste]
+    marken = []
+    for a in liste:
+        noetig = a.noetig / a.n_eff**0.5
+        marken.append(
+            Zielmarke(
+                name=a.name,
+                n_eff=a.n_eff,
+                je_trade=a.guete / a.n_eff**0.5,
+                noetig_je_trade=noetig,
+                erreicht_von=tuple(n for n, s in werte if s >= noetig),
+            )
+        )
+    return tuple(marken)
+
+
+def zielurteil(marken: Sequence[Zielmarke]) -> str:
+    """Wo die Anforderung in den Bereich faellt, den der Vorrat kennt.
+
+    **Der Fund von Befund 291.** Die noetige Qualitaet je Trade faellt steil
+    mit der Stichprobe - die Latte in Guete steigt langsam, ``sqrt(n)``
+    schneller. An den groessten Stichproben des Vorrats liegt sie deshalb
+    **innerhalb** dessen, was andere Regeln desselben Vorrats gezeigt haben.
+    Nur eben bei kleinen Stichproben.
+    """
+    if not marken:
+        return "**Keine Zielmarken** - ohne gemessene Regeln gibt es nichts."
+    erreichbar = [m for m in marken if m.je_erreicht and not m.geraeumt]
+    if not erreichbar:
+        hoechste = max(marken, key=lambda m: m.je_trade)
+        billigste = min(marken, key=lambda m: m.noetig_je_trade)
+        return (
+            f"**Keine Anforderung dieses Vorrats liegt in seiner eigenen "
+            f"Reichweite.** Am wenigsten verlangt '{billigste.name}' bei "
+            f"n_eff {billigste.n_eff}: {billigste.noetig_je_trade:.4f} je "
+            f"Trade. Die hoechste je gemessene Qualitaet ist "
+            f"{hoechste.je_trade:.4f} ('{hoechste.name}'). Was fehlt, fehlt "
+            f"nicht an der Kombination, sondern an der Qualitaet selbst."
+        )
+    billigste = min(erreichbar, key=lambda m: m.noetig_je_trade)
+    von = [m for m in marken if m.name in billigste.erreicht_von]
+    groesste = max((m.n_eff for m in von), default=0)
+    return "\n".join(
+        [
+            f"**Beide Haelften gibt es - nur nie zusammen.** Am wenigsten "
+            f"verlangt '{billigste.name}' bei n_eff {billigste.n_eff}: "
+            f"{billigste.noetig_je_trade:.4f} je Trade, und sie selbst "
+            f"bringt {billigste.je_trade:.4f}.",
+            f"{len(billigste.erreicht_von)} von {len(marken)} Regeln dieses "
+            f"Vorrats haben diese Qualitaet gezeigt - aber keine davon bei "
+            f"mehr als n_eff {groesste}.",
+            "Die Anforderung ist damit keine unerreichte Groesse, sondern "
+            "eine unerreichte **Verbindung**: viel Qualitaet je Trade **und** "
+            "viele Trades. Genau die schliesst die gemessene Kopplung aus - "
+            "und ein Vorschlag, der sie bricht, waere der Unterschied, den "
+            "der Auftrag verlangt.",
+            "Die Latte gehoert dabei der Regel und nicht der Trade-Zahl: Sie "
+            "rechnet mit deren Schiefe und Woelbung (Befund 191). Eine andere "
+            "Regel an derselben Stelle haette eine andere.",
+        ]
+    )
 
 
 def lage_aus(abstaende: Sequence[Abstand]) -> Lage | None:

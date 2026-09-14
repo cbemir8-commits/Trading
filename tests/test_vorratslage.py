@@ -542,3 +542,85 @@ class TestMengeOderGuete:
         assert bild is not None
         assert bild.guete.traegt and bild.guete.fest
         assert "Guete haengt mit" in bild.urteil()
+
+
+class TestBeideHaelftenGibtEsNurNieZusammen:
+    """**Befund 291.** Eine Luecke in Guetepunkten sagt nicht, ob sie gross ist.
+
+    1,080 gegen 3,564 - viel oder wenig? Auf die Qualitaet je Trade gebracht
+    (Latte geteilt durch ``sqrt(n_eff)``) laesst sie sich mit dem vergleichen,
+    was der Vorrat wirklich hervorgebracht hat. Und dann steht da etwas
+    anderes als "unerreichbar":
+
+        'Momentum Ruecksetzer'      n_eff 254   noetig 0,2641 je Trade
+        'Trend-Beteiligung 50 Tage' n_eff 127   noetig 0,2982 je Trade
+
+    Fuenf Regeln dieses Vorrats haben 0,2641 gezeigt, vier sogar 0,2982 -
+    aber **keine davon oberhalb von n_eff 58**. Was fehlt, ist keine
+    unerreichte Groesse, sondern eine unerreichte Verbindung.
+    """
+
+    def marken(self):
+        from research.vorratslage import zielmarken
+
+        return zielmarken(TestDerGemesseneVorrat().lage().abstaende)
+
+    def test_die_anforderung_faellt_steil_mit_der_stichprobe(self) -> None:
+        """Die Latte in Guete steigt langsam, ``sqrt(n)`` schneller - also
+        faellt die Anforderung je Trade."""
+        marken = {m.n_eff: m.noetig_je_trade for m in self.marken()}
+
+        assert marken[16] > 0.9, "bei 16 Trades ist sie ausserhalb jeder Welt"
+        assert marken[254] < 0.3
+        assert marken[16] > marken[127] > marken[254]
+
+    def test_die_billigste_anforderung_ist_schon_gezeigt_worden(self) -> None:
+        marken = self.marken()
+        billigste = min(marken, key=lambda m: m.noetig_je_trade)
+
+        assert billigste.name == "Momentum Ruecksetzer"
+        assert billigste.noetig_je_trade == pytest.approx(0.2641, abs=0.001)
+        assert len(billigste.erreicht_von) == 5
+        assert billigste.je_erreicht and not billigste.geraeumt
+
+    def test_aber_nie_bei_einer_grossen_stichprobe(self) -> None:
+        """**Der Kern.** Die fuenf, die es koennen, handeln alle selten."""
+        marken = self.marken()
+        billigste = min(marken, key=lambda m: m.noetig_je_trade)
+        koennen = [m for m in marken if m.name in billigste.erreicht_von]
+
+        assert max(m.n_eff for m in koennen) == 58
+        assert billigste.n_eff > 4 * max(m.n_eff for m in koennen)
+
+    def test_keine_regel_raeumt_ihre_eigene_marke(self) -> None:
+        """Sonst waere der Vorrat nicht der, um den es geht."""
+        assert not any(m.geraeumt for m in self.marken())
+
+    def test_das_urteil_nennt_die_verbindung_und_nicht_die_groesse(self) -> None:
+        from research.vorratslage import zielurteil
+
+        text = zielurteil(self.marken())
+
+        assert "nur nie zusammen" in text
+        assert "unerreichte **Verbindung**" in text
+        assert "Kopplung" in text
+        assert "Schiefe und Woelbung" in text, "die Latte gehoert der Regel"
+
+    def test_wo_nichts_in_reichweite_ist_sagt_es_das(self) -> None:
+        """Die Gegenprobe: Bei einem Vorrat, dessen beste Qualitaet unter
+        **jeder** Anforderung liegt, ist es keine Frage der Verbindung."""
+        from research.vorratslage import Abstand, zielmarken, zielurteil
+
+        schwach = [
+            Abstand(name=f"R{i}", n_eff=n, guete=0.2, noetig=9.0)
+            for i, n in enumerate((30, 60, 90, 120))
+        ]
+        text = zielurteil(zielmarken(schwach))
+
+        assert "in seiner eigenen Reichweite" in text
+        assert "an der Qualitaet selbst" in text
+
+    def test_ohne_marken_wird_nichts_behauptet(self) -> None:
+        from research.vorratslage import zielurteil
+
+        assert "Keine Zielmarken" in zielurteil([])

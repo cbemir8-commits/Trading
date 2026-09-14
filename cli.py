@@ -12238,7 +12238,13 @@ def vorratsdecke(
         traegt_eine_familie,
         urteil,
     )
-    from research.vorratslage import Abstand, lage_aus, rangbild
+    from research.vorratslage import (
+        Abstand,
+        lage_aus,
+        rangbild,
+        zielmarken,
+        zielurteil,
+    )
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -12714,6 +12720,13 @@ def vorratsdecke(
         if bild is not None:
             console.print()
             console.print(bild.urteil())
+
+        # **Und was daraus folgt** (Befund 291). Eine Luecke in Guetepunkten
+        # sagt nicht, ob sie gross ist. Auf die Qualitaet je Trade gebracht
+        # laesst sie sich mit dem vergleichen, was dieser Vorrat wirklich
+        # hervorgebracht hat - und dann steht da eine andere Aussage.
+        console.print()
+        console.print(zielurteil(zielmarken(abstaende)))
 
 
 def _katalogregel(name: str):

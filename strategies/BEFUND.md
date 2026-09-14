@@ -26037,3 +26037,78 @@ der Bericht ohnehin druckt. Versuchszaehler 203 unveraendert, Suchbudget 73
 von 100.
 
 Volle Suite 3901 passed, 2 skipped; ruff check sauber.
+
+## Zweihunderteinundneunzig. Beide Haelften gibt es - nur nie zusammen
+
+Befund 290 endete mit einem Satz, der nach einer Zahl verlangt: *"Was fehlt,
+fehlt an der Guete."* Die beste Regel des Katalogs fehlt 1,080 Guetepunkte.
+Ist das viel?
+
+Eine Guete ist ein Produkt aus zwei Groessen, und deshalb sagt ihr Abstand
+nichts, solange man ihn nicht auf eine davon zurueckrechnet.
+
+### Die Anforderung je Trade
+
+Die Latte steht in Guete. Geteilt durch `sqrt(n_eff)` wird daraus eine
+Anforderung an die **Qualitaet je Trade** - und die ist mit jeder anderen
+Regel unmittelbar vergleichbar:
+
+    n_eff    noetig je Trade    hat
+       16             0,9443    +0,3085
+       29             0,6425    +0,3274
+       58             0,4680    +0,3262
+       76             0,3876    +0,2192
+      127             0,2982    +0,2021
+      254             0,2641    -0,1358
+
+Die Anforderung **faellt steil**. Die Latte in Guete steigt langsam,
+`sqrt(n)` waechst schneller - also wird die verlangte Qualitaet je Trade mit
+jeder zusaetzlichen Beobachtung billiger.
+
+### Und dann steht da etwas anderes als "unerreichbar"
+
+Die hoechste je gemessene Qualitaet dieses Vorrats ist **0,3274**
+('Trend-Beteiligung (fair gerechnet)', n_eff 29).
+
+Die billigste Anforderung ist **0,2641** - die von 'Momentum Ruecksetzer' bei
+n_eff 254.
+
+    Fuenf von achtzehn Regeln bringen 0,2641 oder mehr.
+    Vier von achtzehn bringen sogar die 0,2982 von n_eff 127.
+    **Keine einzige davon handelt oefter als n_eff 58.**
+
+Das ist die Aussage des Befunds. Was fehlt, ist keine Qualitaet, die es in
+diesem Vorrat nie gab. Es fehlt die **Verbindung**: dieselbe Qualitaet je
+Trade bei einer Stichprobe, die viermal so gross ist.
+
+### Warum das nicht schon wieder dieselbe Aussage ist
+
+Befund 290 hat gemessen, dass die Kopplung zwischen Menge und Qualitaet je
+Trade rangfest ist (rho -0,679, 18 von 18 Auslassungen halten). Das sagt, dass
+die Verbindung in diesem Vorrat **nicht vorkommt**.
+
+Dieser Befund sagt, **wie weit** sie fehlt - und die Antwort ist: ein Faktor
+vier in der Stichprobe bei gleicher Qualitaet. Nicht ein Faktor zwei in der
+Qualitaet, nicht eine Groesse, die nie jemand gesehen hat. Das ist ein
+anderes Ziel als "1,080 Guetepunkte", und es ist ein Ziel, das sich einem
+Vorschlagenden hinschreiben laesst:
+
+    Qualitaet je Trade >= 0,30 bei n_eff >= 127
+
+Beide Haelften einzeln sind belegt. Zusammen nie.
+
+### Zwei Vorbehalte, die dazugehoeren
+
+**Die Latte gehoert der Regel, nicht der Trade-Zahl** (Befund 191). Sie
+rechnet mit Schiefe und Woelbung dieser Verteilung; eine andere Regel bei
+n_eff 254 haette eine andere Anforderung. Die 0,2641 sind die von 'Momentum
+Ruecksetzer', und dass ausgerechnet die billigste Marke einer Regel mit
+negativer Qualitaet gehoert, ist kein Zufall: Dicke Raender senken die Latte.
+
+**Und es bleibt eine Aussage ueber diesen Vorrat.** Achtzehn Regeln auf
+Tageskerzen, am Spot-Punkt, bei 203 Versuchen.
+
+Kostet keinen Versuch: gerechnet wurde auf den Spalten, die der Bericht
+ohnehin druckt. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 3908 passed, 2 skipped; ruff check sauber.

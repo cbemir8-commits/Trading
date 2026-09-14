@@ -1915,6 +1915,23 @@ BEHOBEN: tuple[Richtung, ...] = (
         "steigenden Latte und nicht wegen zusammenbrechender Qualitaet",
         290,
     ),
+    # Und was die Luecke heisst, wenn man sie je Trade liest.
+    Richtung(
+        "Beide Haelften gibt es - nur nie zusammen",
+        "Eine Luecke von 1,080 Guetepunkten sagt nicht, ob das viel ist. "
+        "Geteilt durch die Wurzel der Stichprobe wird daraus eine "
+        "Anforderung an die Qualitaet je Trade, und die faellt steil: von "
+        "0,9443 bei n_eff 16 auf **0,2641 bei n_eff 254**. Die hoechste je "
+        "gemessene Qualitaet des Vorrats ist 0,3274. Damit liegt die "
+        "billigste Anforderung **innerhalb** dessen, was fuenf der achtzehn "
+        "Regeln gezeigt haben - **aber keine davon oberhalb von n_eff 58**. "
+        "Was fehlt, ist keine unerreichte Groesse, sondern eine unerreichte "
+        "Verbindung: viel Qualitaet je Trade und viele Trades zugleich. "
+        "Genau die schliesst die rangfeste Kopplung aus 290 aus, und genau "
+        "sie waere der Unterschied, den der Auftrag an die Research-KI "
+        "verlangt",
+        291,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
