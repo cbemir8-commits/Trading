@@ -1838,11 +1838,30 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'Donchian-Ausbruch 55/20' mit 2,484 gegen 3,564, es fehlen 1,080 - "
         "**0,83 Streuungen dieses Vorrats**, Median aller 18 Luecken 2,080. "
         "Und statt 'keine von 18, also gibt es nichts' steht dort eine Zahl: "
-        "Bei 95 % Vertrauen liegt die Trefferquote dieses Vorrats hoechstens "
-        "bei 15,3 %. Null Treffer aus 18 sind kein Beleg fuer null - bei "
-        "einer wahren Quote von 10 % waeren sie zu 15 % genau das, was man "
-        "sieht",
+        "Null Treffer aus 18 sind kein Beleg fuer null - bei einer wahren "
+        "Quote von 10 % waeren sie zu 15 % genau das, was man sieht. **Die "
+        "Obergrenze selbst war zu eng** und ist seit 287 eine Spanne",
         286,
+        zuletzt=287,
+    ),
+    # Der Fehler lag bei mir, einen Lauf zuvor.
+    Richtung(
+        "Achtzehn Regeln sind keine achtzehn Einfaelle",
+        "Die Obergrenze aus 286 stand auf '1 - 0,05^(1/n)' mit n = Zahl der "
+        "**Regeln** - das unterstellt, dass jede ein eigener Einfall ist. "
+        "Nach Regellogik heissen **zwoelf von achtzehn 'Trend'**, "
+        "strukturell nach Einstiegsindikator zerfallen sie in acht Gruppen, "
+        "grob in sechs: 15,3 % bei 18 Ziehungen, 31,2 % bei 8, 39,3 % bei 6. "
+        "Beziffern laesst sich die Abhaengigkeit nicht - die "
+        "Intraklassenkorrelation der Luecken ueber die acht Gruppen betraegt "
+        "**+0,49**, die Permutationsnull weist sie mit p = 0,0885 nicht "
+        "nach, und die groebere Einteilung hat mit sechs Bloecken zu wenige "
+        "('MIND_BLOECKE' ist 8). **Und dieses Nicht-Kuerzen ist hier nicht "
+        "die vorsichtige Seite**: Bei Trades macht es das Gate strenger, "
+        "hier macht es die Suche aussichtsloser, als belegt ist. Der Bericht "
+        "nennt deshalb eine Spanne, und ohne Gruppenangabe steht die "
+        "Bedingung im Satz",
+        287,
     ),
 )
 

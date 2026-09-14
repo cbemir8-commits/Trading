@@ -25671,3 +25671,92 @@ Kostet keinen Versuch: gerechnet wird auf Luecken, die der Bericht ohnehin
 druckt. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 3877 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertsiebenundachtzig. Achtzehn Regeln sind keine achtzehn Einfaelle
+
+Der Fehler lag bei mir, einen Lauf zuvor.
+
+Befund 286 hat die Obergrenze der Trefferquote gebaut und sie so gemeldet:
+
+> Bei 95 % Vertrauen liegt sie hoechstens bei 15,3 % - mehr laesst sich aus
+> 18 Messungen nicht ausschliessen.
+
+Die Formel dahinter ist `1 - 0,05^(1/n)`, und sie verlangt **n unabhaengige
+Ziehungen**. Eingesetzt war die Zahl der *Regeln*. Das ist dieselbe Annahme,
+die dieses Projekt bei Trades seit Befund 132 nicht mehr macht - dort steht
+zwischen roher und effektiver Stichprobe ein ganzes Modul.
+
+### Nachgesehen, wie unabhaengig die achtzehn sind
+
+    Regellogik (Befund 83)     'Trend' 12,  'Ausbruch' 1,  ohne Zuordnung 5
+    Einstiegsindikator          8 Gruppen  (4, 3, 3, 3, 2, 1, 1, 1)
+    gleitende zusammen          6 Gruppen  (8, 3, 3, 2, 1, 1)
+
+Zwoelf von achtzehn heissen 'Trend'. Beide strukturellen Einteilungen sind aus
+dem Genom gelesen und keine Meinung - es sind dieselben, mit denen Befund 169
+und 183 gearbeitet haben.
+
+Was die Zahl daraus macht:
+
+    unabhaengige Ziehungen    Obergrenze bei 95 %
+                        18                 15,3 %
+                         8                 31,2 %
+                         6                 39,3 %
+                         2                 77,6 %
+
+Aus "hoechstens 15 %" wird "hoechstens 31 bis 39 %". Das ist kein Detail: Die
+eine Zahl sagt, dass Weitersuchen in diesem Vorrat kaum lohnt, die andere
+laesst es offen.
+
+### Laesst sich die Abhaengigkeit beziffern?
+
+Das waere die bessere Antwort als eine Spanne, und das Projekt hat das
+Werkzeug dafuer: `research/unabhaengigkeit.py` misst einen Designeffekt gegen
+eine Permutationsnull. Angesetzt auf die achtzehn Luecken, gruppiert nach
+Einstiegsindikator:
+
+    8 Bloecke, Groessen 1,1,1,2,3,3,3,4
+    icc = +0,4915    p = 0,0885    nachgewiesen = False    effektiv 18 von 18
+
+Die Intraklassenkorrelation ist **hoch** - fast die Haelfte der Streuung liegt
+zwischen den Gruppen und nicht in ihnen. Nachgewiesen ist sie trotzdem nicht:
+Die Permutationsnull haelt dagegen, und bei acht Bloecken mit drei Einzelgaengern
+hat sie leichtes Spiel. Die groebere Einteilung faellt ganz aus - `MIND_BLOECKE`
+ist 8, sie hat 6.
+
+**Beziffern also nicht. Eingrenzen schon.**
+
+### Und dieselbe Vorsicht schneidet hier in die andere Richtung
+
+`unabhaengigkeit` kuerzt nur bei **nachgewiesener** Abhaengigkeit. Fuer Trades
+ist das die vorsichtige Seite: Wer nicht kuerzt, laesst die Stichprobe gross,
+und eine grosse Stichprobe macht das Gate **strenger**.
+
+Hier ist es umgekehrt. Nicht kuerzen heisst grosses n heisst kleine
+Obergrenze heisst *"die Suche ist aussichtsloser, als belegt ist"*. Dieselbe
+Regel, dieselbe Begruendung, entgegengesetzte Wirkung - und das faellt nur
+auf, wenn man hinsieht, wofuer die Zahl benutzt wird.
+
+Deshalb steht dort jetzt eine Spanne. Und auch ohne Gruppenangabe nennt der
+Satz seine Bedingung:
+
+    ...liegt sie hoechstens bei 15.3%, **wenn** die 18 Regeln 18
+    unabhaengige Ziehungen sind.
+
+Der Bericht uebergibt die **groebste** der strukturellen Einteilungen, also
+die wenigsten Gruppen - das vorsichtige Ende. Eine Gruppenzahl, die groesser
+ist als die Regelzahl oder null, verengt nichts: Das waere eine engere Grenze
+aus dem Nichts, und ein Test haelt es fest.
+
+### Was unberuehrt bleibt
+
+Die Luecken selbst. 'Donchian-Ausbruch 55/20' kommt mit 2,484 gegen 3,564 am
+naechsten, es fehlen 1,080, und keine der achtzehn raeumt ihre Latte. Diese
+Beobachtungen haengen an keiner Unabhaengigkeitsannahme - nur die Frage, was
+sie fuer die **naechste** Ziehung heissen, tut es.
+
+Kostet keinen Versuch: gerechnet wurde auf Luecken, die der Bericht ohnehin
+druckt, und auf Einteilungen, die er ohnehin bildet. Versuchszaehler 203
+unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 3884 passed, 2 skipped; ruff check sauber.

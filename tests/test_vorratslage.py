@@ -11,6 +11,10 @@ das Modul eine Zahl liefern wuerde, wo keine steht.
 Die Faelle sind so gebaut, dass die Antwort **vorher feststeht**: 0 von 20
 ohne Treffer ergibt bei 95 % Vertrauen genau ``1 - 0,05^(1/20)``, und das
 laesst sich von Hand nachrechnen.
+
+**Befund 287 hat die Obergrenze berichtigt**: Sie stand auf der Zahl der
+Regeln, und achtzehn Regeln sind keine achtzehn unabhaengigen Einfaelle. Die
+Tests dazu stehen unten in ``TestAchtzehnRegelnSindKeineAchtzehnEinfaelle``.
 """
 
 from __future__ import annotations
@@ -256,3 +260,102 @@ class TestDerGemesseneVorrat:
         assert grenze is not None
         assert grenze > 1 / len(self.VORRAT) * 0.5
         assert grenze < 0.5, "aus 18 Messungen bleibt trotzdem eine Schranke"
+
+
+class TestAchtzehnRegelnSindKeineAchtzehnEinfaelle:
+    """**Befund 287 - die Berichtigung von 286.**
+
+    Die Obergrenze stand auf ``1 - 0,05^(1/n)``, und ``n`` war die Zahl der
+    **Regeln**. Das unterstellt, dass jede Regel ein eigener Einfall ist.
+    Nach Regellogik heissen zwoelf von achtzehn 'Trend'.
+
+    Gemessen wurde auch, ob sich die Abhaengigkeit beziffern laesst: Ueber die
+    acht Einstiegsgruppen liegt die Intraklassenkorrelation der Luecken bei
+    +0,49, die Permutationsnull weist sie mit p = 0,0885 aber nicht nach - und
+    die groebere Einteilung hat mit sechs Bloecken zu wenige (``MIND_BLOECKE``
+    ist 8). Beziffern laesst es sich also nicht; eingrenzen schon.
+    """
+
+    def lage(self) -> Lage:
+        return TestDerGemesseneVorrat().lage()
+
+    def test_weniger_ziehungen_heben_die_grenze(self) -> None:
+        lage = self.lage()
+
+        assert lage.obergrenze(unabhaengige=18) == pytest.approx(0.1532, abs=0.001)
+        assert lage.obergrenze(unabhaengige=8) == pytest.approx(0.3120, abs=0.001)
+        assert lage.obergrenze(unabhaengige=6) == pytest.approx(0.3930, abs=0.001)
+
+    def test_ohne_angabe_bleibt_es_die_regelzahl(self) -> None:
+        """Der Vorgabewert aendert sich nicht - er wird nur benannt."""
+        lage = self.lage()
+
+        assert lage.obergrenze() == lage.obergrenze(unabhaengige=len(lage.abstaende))
+
+    def test_die_zahl_wird_nie_mehr_unbedingt_genannt(self) -> None:
+        """**Der eigentliche Umbau.** Auch ohne Gruppenangabe steht die
+        Bedingung im Satz - sonst liest sich 15,3 % wieder als Messung."""
+        text = self.lage().urteil()
+
+        assert "unabhaengige Ziehungen sind" in text
+        assert "**wenn**" in text
+
+    def test_mit_gruppen_steht_dort_eine_spanne(self) -> None:
+        text = self.lage().urteil(gruppen=6)
+
+        assert "6 Gruppen" in text
+        assert "39.3%" in text and "15.3%" in text
+        assert "ehrliche Auskunft ist die Spanne" in text
+
+    def test_eine_unsinnige_gruppenzahl_verengt_nichts(self) -> None:
+        """Mehr Gruppen als Regeln waere eine engere Grenze aus dem Nichts -
+        und null Gruppen eine Division durch die Behauptung."""
+        lage = self.lage()
+
+        for unsinn in (0, -3, len(lage.abstaende), len(lage.abstaende) + 5):
+            text = lage.urteil(gruppen=unsinn)
+            assert "Spanne" not in text, unsinn
+
+    def test_die_regeln_zerfallen_wirklich_in_weniger_gruppen(self) -> None:
+        """Die Messung hinter dem Befund - am Katalog, nicht an einer Zahl.
+
+        Geprueft wird die **Richtung** und nicht die Gruppenzahl: Wer ein
+        Genom hinzufuegt, aendert sie, und das ist kein Fehler.
+        """
+        import cli
+        from research.familien import familie_von
+        from research.seeds import GENERATIONS, load_seeds
+
+        katalog = {g.name: g for gen in GENERATIONS for g in load_seeds(gen)}
+        namen = [n for n, _, _, _ in TestDerGemesseneVorrat.VORRAT]
+        assert all(n in katalog for n in namen), "Vorrat nicht im Katalog"
+
+        fein = {cli._familie(katalog[n]) for n in namen}
+        grob = {cli._familie_grob(katalog[n]) for n in namen}
+        logisch = [familie_von(n) for n in namen]
+
+        assert len(fein) < len(namen)
+        assert len(grob) <= len(fein)
+        assert logisch.count("Trend") * 2 > len(namen), (
+            "die Mehrheit derselben Regellogik ist der Grund fuer diesen Befund"
+        )
+
+
+def test_der_modulkopf_traegt_die_berichtigung() -> None:
+    """**Befund 287.** Der Kopf nannte 15,3 % ohne Bedingung.
+
+    Dieselbe Pflicht wie in ``vorratsdecke``: Eine ueberholte Zahl stehen zu
+    lassen, ist der Fehler aus Befund 130 - zwei Laeufe haben dort an einer
+    veralteten Fundstelle nachgeschlagen.
+    """
+    import research.vorratslage as modul
+
+    kopf = modul.__doc__ or ""
+    assert "BERICHTIGT IN BEFUND 287" in kopf
+    assert "0,49" in kopf, "die gemessene Intraklassenkorrelation"
+    assert "0,0885" in kopf, "und dass sie nicht nachgewiesen ist"
+    # Auf die Aussage geprueft und nicht auf den Zeilenumbruch: "schneidet
+    # in die andere Richtung" bricht im Fliesstext zwischen den beiden
+    # Woertern um, und ein Test, der daran haengt, prueft die Formatierung.
+    assert "Dieselbe Vorsicht schneidet" in kopf, "die Asymmetrie der Vorsicht"
+    assert "aussichtsloser, als belegt ist" in kopf

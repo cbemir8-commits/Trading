@@ -32,6 +32,33 @@ von 10 % waeren achtzehn Fehlschlaege nichts Besonderes (0,9^18 = 15 %). Was
 sich sagen laesst, ist eine **Obergrenze** - und die ist eine Zahl, keine
 Vermutung.
 
+BERICHTIGT IN BEFUND 287 - die Obergrenze war zu eng
+----------------------------------------------------
+Befund 286 hat sie auf **achtzehn** Ziehungen gerechnet und damit unterstellt,
+dass achtzehn Regeln achtzehn unabhaengige Einfaelle sind. Sie sind es nicht:
+Nach Regellogik heissen zwoelf von achtzehn 'Trend', und strukturell nach dem
+Einstiegsindikator zerfallen sie in acht Gruppen, nach der groeberen
+Einteilung in sechs.
+
+    unabhaengige Ziehungen    Obergrenze bei 95 %
+                        18                 15,3 %
+                         8                 31,2 %
+                         6                 39,3 %
+                         2                 77,6 %
+
+Gemessen wurde auch, ob sich die Abhaengigkeit **beziffern** laesst: Ueber die
+acht Einstiegsgruppen betraegt die Intraklassenkorrelation der Luecken
+**+0,49** - viel -, aber die Permutationsnull von
+``research/unabhaengigkeit.py`` weist sie mit p = 0,0885 nicht nach, und die
+groebere Einteilung hat mit sechs Bloecken zu wenige fuer eine Messung
+(``MIND_BLOECKE`` ist 8).
+
+Dass dort dann **nicht** gekuerzt wird, ist fuer Trades die vorsichtige Seite:
+Wer die Stichprobe nicht kuerzt, macht das Gate strenger. Hier ist es die
+andere: Nicht kuerzen heisst kleinere Obergrenze heisst *"die Suche ist
+aussichtsloser, als belegt ist"*. **Dieselbe Vorsicht schneidet in die andere
+Richtung**, und deshalb steht hier eine Spanne und keine Zahl.
+
 Was hier **nicht** steht
 ------------------------
 * Kein Ersatz fuer die Gerade. Die Kopplung zwischen Menge und Qualitaet ist
@@ -162,8 +189,15 @@ class Lage:
     def geraeumt(self) -> tuple[Abstand, ...]:
         return tuple(a for a in self.abstaende if a.geraeumt)
 
-    def obergrenze(self, vertrauen: float = 0.95) -> float | None:
+    def obergrenze(
+        self, vertrauen: float = 0.95, *, unabhaengige: int | None = None
+    ) -> float | None:
         """Wie hoch die Trefferquote dieses Vorrats hoechstens liegt.
+
+        ``unabhaengige`` ist die Zahl der **unabhaengigen Ziehungen**. Ohne
+        Angabe ist das die Zahl der Regeln - und genau darin lag der Fehler
+        von Befund 286: Achtzehn Regeln sind keine achtzehn unabhaengigen
+        Ziehungen, wenn zwoelf davon 'Trend' heissen.
 
         ``None``, sobald eine Regel ihre Latte raeumt - dann ist die Quote zu
         schaetzen und nicht nach oben abzugrenzen, und eine Obergrenze waere
@@ -171,9 +205,10 @@ class Lage:
         """
         if self.geraeumt:
             return None
-        return obergrenze_der_quote(len(self.abstaende), 0, vertrauen=vertrauen)
+        anzahl = len(self.abstaende) if unabhaengige is None else unabhaengige
+        return obergrenze_der_quote(anzahl, 0, vertrauen=vertrauen)
 
-    def urteil(self, *, vertrauen: float = 0.95) -> str:
+    def urteil(self, *, vertrauen: float = 0.95, gruppen: int | None = None) -> str:
         naechster = self.naechster
         zeilen = [
             f"**Am naechsten kommt '{naechster.name}'** bei n_eff "
@@ -195,15 +230,30 @@ class Lage:
                 f"ist zu pruefen."
             )
             return "\n".join(zeilen)
-        grenze = self.obergrenze(vertrauen)
+        eng = self.obergrenze(vertrauen)
+        if eng is None:
+            zeilen.append(f"**Keine von {len(self.abstaende)} raeumt ihre Latte.**")
+            return "\n".join(zeilen)
         zeilen.append(
             f"**Keine von {len(self.abstaende)} raeumt ihre Latte.** Das "
             f"heisst nicht, dass die Quote null ist: Bei {vertrauen:.0%} "
-            f"Vertrauen liegt sie hoechstens bei {grenze:.1%} - mehr laesst "
-            f"sich aus {len(self.abstaende)} Messungen nicht ausschliessen."
-            if grenze is not None
-            else f"**Keine von {len(self.abstaende)} raeumt ihre Latte.**"
+            f"Vertrauen liegt sie hoechstens bei {eng:.1%}, **wenn** die "
+            f"{len(self.abstaende)} Regeln {len(self.abstaende)} "
+            f"unabhaengige Ziehungen sind."
         )
+        weit = (
+            self.obergrenze(vertrauen, unabhaengige=gruppen)
+            if gruppen is not None and 0 < gruppen < len(self.abstaende)
+            else None
+        )
+        if weit is not None:
+            zeilen.append(
+                f"Sie sind es nicht: Strukturell zerfallen sie in {gruppen} "
+                f"Gruppen, und auf denen gerechnet steht dort {weit:.1%}. "
+                f"**Die ehrliche Auskunft ist die Spanne** - zwischen "
+                f"{eng:.1%} und {weit:.1%}, je nachdem, wie viel Eigenes in "
+                f"einer Regel steckt, die eine Abwandlung ihrer Nachbarin ist."
+            )
         zeilen.append(
             "**Das ist eine Aussage ueber diesen Vorrat, nicht ueber den Raum "
             "aller Strategien** - und kein Grund, eine Latte zu senken."

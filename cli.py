@@ -12698,8 +12698,14 @@ def vorratsdecke(
     # das, was sie ist.
     lage = lage_aus(abstaende)
     if lage is not None:
+        # **Wie viele unabhaengige Ziehungen das wirklich sind** (Befund 287).
+        # Genommen wird die **groebste** der strukturellen Einteilungen, also
+        # die wenigsten Gruppen: Sie ist das vorsichtige Ende der Spanne, und
+        # die Spanne ist hier die ehrliche Auskunft. Beide Einteilungen sind
+        # aus dem Genom gelesen und keine Meinung.
+        gruppen = min(len(nach_familie), len(grob_familie)) or None
         console.print()
-        console.print(lage.urteil())
+        console.print(lage.urteil(gruppen=gruppen))
 
 
 def _katalogregel(name: str):
