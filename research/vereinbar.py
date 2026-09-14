@@ -14,6 +14,13 @@ inzwischen - der Spitzenkandidat schafft 13,5 % bei 10,6 % Rueckgang, der
 Ausbruch aus Befund 56 schafft 16,5 % bei 21,8 % -, aber zwei Punkte sind
 kein Beleg, sondern zwei Punkte.
 
+**Und sie gilt nur am Perpetual-Punkt** (Befund 281). Dort haelt ueber zehn
+Stellungen keine beide Schwellen; am Spot-Punkt, wo das Funding wegfaellt,
+halten drei von sechs beide zugleich. Der Konflikt ist damit eine Eigenschaft
+der Finanzierungskosten und nicht der Strategie - gegen die Gates gewonnen
+ist damit nichts, denn dort uebernimmt das schlechteste Jahr die Rolle, die
+vorher der Rueckgang hatte.
+
 Was hier gefragt wird - und was ausdruecklich nicht
 ---------------------------------------------------
 Gefragt wird: **Existiert eine Einstellung, in der beide Schwellen zugleich

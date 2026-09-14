@@ -69,6 +69,18 @@ MEHRFACH: dict[str, str] = {
     # trug.
     "6,0%": "Erster Kipppunkt, Schlechtestes Jahr (Befund 250)",
     "9,8%": "Zweiter Kipppunkt, Parameter-Plateau (Befund 250)",
+    # Die Kennzahlen des Spot-Punkts selbst (Befund 281). Sie stehen in
+    # mehreren Eintraegen, weil mehrere Befunde sie zitieren - 264 fuer den
+    # Korb, 268 fuer die Aufstellung, 269 fuer das Skalieren - und seit 281
+    # als **Gegenprobe** in der Reglertafel: Der Lauf muss bei 19,3 genau die
+    # Zahlen liefern, die 'cli abstand --spot' unabhaengig meldet.
+    #
+    # Anders als bei den 3,36 % aus Befund 279, wo dieselbe Tafel zweimal
+    # stand und die Wiederholung entfiel: Hier ist es **eine** Messung, die
+    # verschiedene Befunde zu Recht nennen. Sie aus einem von ihnen zu
+    # streichen machte den Eintrag vager, nicht kuerzer.
+    "14,34%": "Jahresrendite am Spot-Punkt (Befund 108/281)",
+    "9,87%": "Rueckgang am Spot-Punkt (Befund 108/281)",
 }
 
 

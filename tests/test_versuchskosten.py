@@ -51,7 +51,14 @@ class TestDerPreisFaelltMitDemZaehler:
 class TestDieGroessenordnung:
     """Die Zahl, auf die es bei der Entscheidung ankommt."""
 
-    def test_der_rest_des_budgets_kostet_gut_ein_prozent(self) -> None:
+    def test_der_rest_des_budgets_kostet_rund_ein_prozent(self) -> None:
+        """**Hier stand ``approx(0,0118)``** (Befund 281).
+
+        Das war die Zahl bei 198 Versuchen und 32 verbleibenden. Als fuenf
+        davon ausgegeben wurden, fiel der Aufschlag auf 0,98 % - nicht weil
+        sich etwas verschlechtert haette, sondern weil weniger Budget uebrig
+        ist. Die Groessenordnung ist die Aussage, nicht die vierte Stelle.
+        """
         from research.stand import BUDGET
 
         latte = noetige_guete(
@@ -62,7 +69,23 @@ class TestDieGroessenordnung:
         )
         assert latte is not None and spaeter is not None
 
-        assert (spaeter - latte) / latte == pytest.approx(0.0118, abs=5e-4)
+        assert 0.005 <= (spaeter - latte) / latte <= 0.02
+
+    def test_und_er_schrumpft_mit_dem_ausgegebenen_budget(self) -> None:
+        """Der Grund fuer die Spanne oben - gemessen statt behauptet."""
+        from research.stand import BUDGET
+
+        def aufschlag(stand: int) -> float:
+            jetzt = noetige_guete(
+                S.effektiv, stand, schiefe=S.schiefe, woelbung=S.woelbung
+            )
+            ende = noetige_guete(
+                S.effektiv, BUDGET.grenze, schiefe=S.schiefe, woelbung=S.woelbung
+            )
+            assert jetzt is not None and ende is not None
+            return (ende - jetzt) / jetzt
+
+        assert aufschlag(198) > aufschlag(S.versuche) > aufschlag(BUDGET.grenze - 1)
 
     def test_und_die_luecke_ist_zwanzigmal_so_gross(self) -> None:
         """Der Preis des Suchens ist nicht das, was die Suche schwer macht."""

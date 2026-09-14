@@ -293,7 +293,7 @@ class TestDieLatteBleibtStehen:
 
         assert eintrag is not None
         assert "0,9305" in eintrag.zahl
-        assert "0,3070" in eintrag.zahl
+        assert "0,3059" in eintrag.zahl
         assert "Geaendert wurde nichts" in eintrag.warum
         assert "faellt nicht hier" in eintrag.warum
 

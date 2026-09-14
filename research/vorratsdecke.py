@@ -97,7 +97,8 @@ Standardnormalen liegt bei rund ``sqrt(2 ln k)`` - bei 14 sind das 2,30, bei
 **Der Vorsprung des Bestands ist kleiner als das, was reine Auswahl bei
 diesem Versuchsstand ohnehin erzeugt.** Das ist kein Beweis, dass er nichts
 kann - aber es ist dieselbe Aussage, die der Deflated Sharpe aus einer
-voellig anderen Richtung macht (0,5881 gegen 0,95), und die beiden Wege sind
+voellig anderen Richtung macht (0,5881 gegen 0,95 - beides bei 198
+Versuchen gemessen), und die beiden Wege sind
 unabhaengig: Der eine sieht die Verteilung der Trades, der andere die Lage
 des Kandidaten in seiner Grundgesamtheit.
 

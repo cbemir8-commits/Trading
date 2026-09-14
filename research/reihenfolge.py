@@ -49,7 +49,7 @@ Gemessen, mit Fundstelle, und danach geordnet, wer es tun kann:
 
     Sperre        Boersendaten fehlen                     Nutzer   102
     Bedingung     +75 unabhaengige Beobachtungen          keiner   111
-    Bedingung     +24,3 % Guete am Spot-Punkt             Suche    108
+    Bedingung     +24,6 % Guete am Spot-Punkt             Suche    108
     Klaerung      Perpetual oder Spot?                    Nutzer   112
     Klaerung      echte Funding-Raten                     Nutzer   100
 

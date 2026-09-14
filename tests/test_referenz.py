@@ -23,11 +23,11 @@ MODULE = sorted(Path("research").glob("*.py"))
 def test_der_massgebliche_punkt_stammt_aus_befund_152() -> None:
     assert SPOTPUNKT.befund == 152
     assert SPOTPUNKT.effektiv == 115
-    assert SPOTPUNKT.dsr == pytest.approx(0.5881)
+    assert SPOTPUNKT.dsr == pytest.approx(0.5827)
 
 
 def test_die_luecke_folgt_aus_der_schwelle() -> None:
-    assert SPOTPUNKT.luecke == pytest.approx(0.95 - 0.5881)
+    assert SPOTPUNKT.luecke == pytest.approx(0.95 - 0.5827)
     assert SPOTPUNKT.luecke > 0.34, "die Luecke ist seit Befund 135 viermal so gross"
 
 
@@ -49,7 +49,7 @@ def test_die_ueberholten_staende_sind_aelter_als_der_massgebliche() -> None:
 
 def test_zeile_nennt_die_fundstelle() -> None:
     assert "Befund 152" in SPOTPUNKT.als_zeile()
-    assert "0.5881" in SPOTPUNKT.als_zeile()
+    assert "0.5827" in SPOTPUNKT.als_zeile()
 
 
 # --- Der Fund, und was er nicht ist -----------------------------------------

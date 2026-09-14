@@ -68,17 +68,40 @@ class TestDieGemessenenPunkte:
 
     def test_die_latte_des_bestands_ist_nachgerechnet(self) -> None:
         """Mit seiner eigenen Stichprobe und seinen eigenen Momenten - so
-        rechnet das Gate (Befund 193)."""
+        rechnet das Gate (Befund 193).
+
+        **Und bei seinem eigenen Versuchsstand** (Befund 281). Hier stand
+        ``SPOTPUNKT.versuche``, also der heutige Zaehler. Solange er
+        stillstand, war das dasselbe; als er von 198 auf 203 stieg, meldete
+        der Test einen Unterschied, den es nicht gab - die gespeicherte
+        Latte war nie falsch, sie gehoert nur zu 198 Versuchen.
+        """
         tag = next(p for p in GEMESSEN if p.intervall == "D")
+        assert tag.versuche, "eine Latte ohne ihren Versuchsstand sagt nichts"
         latte = noetige_guete(
             SPOTPUNKT.effektiv,
-            SPOTPUNKT.versuche,
+            tag.versuche,
             schiefe=SPOTPUNKT.schiefe,
             woelbung=SPOTPUNKT.woelbung,
         )
 
         assert latte is not None
         assert tag.latte == pytest.approx(latte, abs=5e-3)
+
+    def test_und_sie_waere_heute_hoeher(self) -> None:
+        """Die Latte steigt mit dem Zaehler - das ist der ganze Grund, warum
+        der Versuchsstand zur Zahl gehoert."""
+        tag = next(p for p in GEMESSEN if p.intervall == "D")
+        heute = noetige_guete(
+            SPOTPUNKT.effektiv,
+            SPOTPUNKT.versuche,
+            schiefe=SPOTPUNKT.schiefe,
+            woelbung=SPOTPUNKT.woelbung,
+        )
+
+        assert heute is not None
+        assert SPOTPUNKT.versuche >= tag.versuche
+        assert heute >= tag.latte
 
     def test_die_viertelstunden_stammen_aus_befund_171(self) -> None:
         fein = [p for p in GEMESSEN if p.intervall == "15"]
@@ -296,6 +319,14 @@ class TestBeideZahlenStehenNebeneinander:
 
     @staticmethod
     def _bericht() -> str:
+        """**Der Versuchsstand kommt aus dem Referenzpunkt** (Befund 281).
+
+        Hier stand ``versuche=198``. Der Test rechnet den Preis des Suchens
+        aus ``SPOTPUNKT.versuche`` und sucht ihn im Bericht - eine
+        eingefrorene Vorlage laesst beide auseinanderlaufen, sobald der
+        Zaehler sich bewegt, und genau das ist passiert.
+        """
+        from research.referenz import SPOTPUNKT
         from research.stand import Lage
 
         return Lage(
@@ -303,7 +334,7 @@ class TestBeideZahlenStehenNebeneinander:
             maerkte="BTC + ETH, Tageskerzen",
             trades=156, sharpe_je_trade=0.2708, noetiger_sharpe=0.3367,
             bestanden=9, gesamt=11, offen=("Messlatte", "Deflated Sharpe"),
-            versuche=198, cagr_pct=13.47, rueckgang_pct=10.64,
+            versuche=SPOTPUNKT.versuche, cagr_pct=13.47, rueckgang_pct=10.64,
         ).bericht()
 
     def test_der_bericht_stellt_sie_zusammen(self) -> None:

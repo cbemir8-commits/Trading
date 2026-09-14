@@ -108,6 +108,22 @@ class Betriebspunkt:
     latte: float
     befund: int
 
+    versuche: int = 0
+    """Bei welchem Versuchsstand die **Latte** gerechnet wurde.
+
+    ``0`` heisst: nicht vermerkt. Die Latte haengt am Zaehler - sie steigt
+    mit jedem Versuch -, und eine aufgeschriebene Latte ohne ihren Stand ist
+    eine Zahl ohne ihre Bedingung. Genau daran ist in Befund 281 ein Test
+    zerbrochen: Er hielt die gespeicherte Latte des Bestands gegen die
+    **heute** gerechnete, und als der Zaehler von 198 auf 203 stieg, gingen
+    die beiden auseinander - ohne dass sich an der Messung etwas geaendert
+    haette.
+
+    Dieselbe Lehre wie beim Betriebspunkt in ``research/vereinbar`` (Befund
+    280): Was aufgeschrieben wird, braucht die Umstaende mit, unter denen es
+    gilt. Eingetragen wird nur, was bekannt ist - geraten wird nichts.
+    """
+
     lauf: str = ""
     """Aus welchem Messlauf diese Zeile stammt.
 
@@ -190,6 +206,10 @@ GEMESSEN: tuple[Betriebspunkt, ...] = (
         guete=2.904,
         latte=3.611,
         befund=152,
+        # Bekannt, nicht geraten: Der Test, der diese Latte gegen die
+        # Rechnung haelt, hat bei 198 Versuchen gestimmt und bei 203 nicht
+        # mehr (Befund 281).
+        versuche=198,
     ),
     # **Der Verbundlauf aus Befund 155**, beide Zeilen aus derselben Messung.
     # Nur innerhalb dieses Paares ist der Vergleich zulaessig.

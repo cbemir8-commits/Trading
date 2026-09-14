@@ -146,13 +146,28 @@ class TestWasDieAkteHergibt:
             assert "landschaft" not in h and "machbarkeit" not in h
 
 
+#: Der Stand, als diese Wache gebaut wurde. Sie haelt die **Richtung** fest,
+#: nicht die Zahl: Der Zaehler darf steigen, wenn gemessen wurde - er darf nie
+#: fallen.
+STAND_BEI_BAU = 198
+
+
 def test_hier_wird_nichts_umgebucht() -> None:
     """**Die Zusicherung, die dieser Befund gibt.**
 
     Wie Versuche gebucht werden, steuert die Haerte des einzigen noch offenen
     Gates. Ein Eingriff, der den Zaehler senkte, wuerde die Latte senken - und
-    zwar ohne Messung, weil die betroffenen Befehle hier nicht laufen.
+    zwar ohne Messung.
+
+    **Hier stand ``== 198``** (Befund 281). Das war die Zahl des Tages und
+    nicht die Anforderung: Als 'cli machbarkeit --spot' fuenf Stellungen mass
+    und ordnungsgemaess buchte, schlug die Wache an, obwohl genau der
+    vorgesehene Weg gegangen worden war. Gehalten wird deshalb, was gemeint
+    war - der Zaehler faellt nicht.
     """
     d = json.loads(Path("state/trials.json").read_text())
 
-    assert d["trials"] == 198, "der Zaehler bleibt, wo er ist"
+    assert d["trials"] >= STAND_BEI_BAU, "der Zaehler faellt nicht"
+    assert d["grundstock"] + len(d["versuche"]) == d["trials"], (
+        "nichts wird zwischen Grundstock und Einzelnachweisen umgebucht"
+    )

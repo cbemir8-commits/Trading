@@ -47,15 +47,20 @@ Zwei Rechnungen, gestaffelt nach Sicherheit:
 Betriebspunkt, und der hat sich zweimal bewegt. ``am_punkt(SPOTPUNKT)``
 rechnet sie; am heutigen Punkt sind es:
 
-    Woelbung festgehalten          Max DSR 1,0000 bei 4,71   ab 4,68  (+35 %)
-    entlang der harten Schranke    Max DSR 1,0000 bei 7,27   ab 6,81  (+96 %)
-    entlang der gemessenen Linie   Max DSR 0,6212 bei 6,19   nie erreicht
+    Woelbung festgehalten          Max DSR 1,0000 bei 4,71   ab 4,69  (+35 %)
+    entlang der harten Schranke    Max DSR 1,0000 bei 7,28   ab 6,85  (+98 %)
+    entlang der gemessenen Linie   Max DSR 0,6137 bei 6,19   nie erreicht
 
 Befund 70 hat an seinem Punkt **ab 5,54 (+60 %)** und **Max DSR 0,8724**
 gemessen. Diese beiden Zahlen standen bis Befund 225 hier als heutiger Stand,
-und sie sind es nicht: Die harte Schranke verlangt inzwischen +96 % statt
-+60 %, und der hoechste Wert auf der gemessenen Linie ist von 0,87 auf 0,62
+und sie sind es nicht: Die harte Schranke verlangt inzwischen +98 % statt
++60 %, und der hoechste Wert auf der gemessenen Linie ist von 0,87 auf 0,61
 gefallen. **Der Schluss ist unveraendert** - er ist nur deutlicher geworden.
+
+Dass die Zahlen wandern, ist kein Makel dieses Kopfes, sondern sein Zweck:
+Sie haengen am Versuchsstand, und der ist mit Befund 281 von 198 auf 203
+gestiegen. Ein Test rechnet sie gegen ``am_punkt`` nach und hat den
+Unterschied gemeldet, bevor ihn jemand gelesen hat.
 
 Nachrechnen laesst sich Befund 70 nicht mehr an seinem eigenen Punkt: Die
 ueberholten Eintraege in ``referenz.UEBERHOLT`` tragen keine Schiefe und

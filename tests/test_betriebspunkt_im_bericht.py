@@ -132,7 +132,7 @@ class TestDerBefundSelbst:
 
     def test_der_heutige_punkt_traegt_neun_von_elf(self) -> None:
         assert (SPOTPUNKT.bestanden, SPOTPUNKT.gesamt) == (9, 11)
-        assert round(SPOTPUNKT.dsr, 4) == 0.5881
+        assert round(SPOTPUNKT.dsr, 4) == 0.5827
 
     def test_die_beiden_unterscheiden_sich_deutlich(self) -> None:
         """Der Unterschied ist kein Rundungsrest - er ist der Grund, warum

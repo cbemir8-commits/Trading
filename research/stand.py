@@ -505,7 +505,8 @@ BEHOBEN: tuple[Richtung, ...] = (
     Richtung(
         "Frischer Datenabzug hob den Referenzpunkt",
         "DSR 0,6026 -> 0,7255 durch zwei Trades am Serienende; nach der "
-        "Zensur (Befund 152) steht der Punkt bei 0,5881",
+        "Zensur (Befund 152) stand der Punkt bei 0,5881 - damals, bei 198 "
+        "Versuchen",
         151,
         zuletzt=152,
     ),
@@ -2227,15 +2228,34 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
     ),
     Entscheidung(
         frage="Mindestrendite von 15 % im Jahr",
-        zahl="Gemessen ueber zehn Stellungen des Groessenreglers: **keine** "
-             "haelt beide Schwellen. Bei 20,5 bleibt der Rueckgang mit "
+        zahl="**Es haengt am Betriebspunkt** (Befund 281). Am "
+             "Perpetual-Punkt haelt ueber zehn Stellungen des Groessenreglers "
+             "keine beide Schwellen: Bei 20,5 bleibt der Rueckgang mit "
              "11,29 % unter der Grenze, die Rendite steht bei 14,11 % - es "
-             "fehlen 0,89 Punkte. Eine Stufe weiter (21,0) reisst der "
-             "Rueckgang mit 12,50 %, und die Rendite fehlt immer noch.",
+             "fehlen 0,89 Punkte; eine Stufe weiter (21,0) reisst der "
+             "Rueckgang mit 12,50 %, und die Rendite fehlt immer noch."
+             "\n    Am **Spot**-Punkt, wo das Funding wegfaellt, halten "
+             "**drei von sechs** gemessenen Stellungen beide zugleich:"
+             "\n      Stellung   Rendite   Rueckgang   Gates"
+             "\n          19,3    14,34 %      9,87 %    9/11"
+             "\n          20,5    14,99 %     10,47 %    8/11"
+             "\n            21    15,30 %     11,66 %    9/11"
+             "\n          21,5    15,65 %     11,87 %    9/11"
+             "\n            22    16,17 %     11,85 %    9/11"
+             "\n            25    18,54 %     13,74 %    7/11"
+             "\n    Der behauptete Konflikt der beiden Schwellen ist damit "
+             "eine Eigenschaft des Fundings, nicht der Strategie. **Geloest "
+             "ist nichts**: Er verschiebt sich nur - 'Schlechtestes Jahr' "
+             "haelt bis 19,3, die Messlatte erst ab 21, dazwischen keines von "
+             "beiden. Keine Stellung kommt ueber 9 von 11, und der Deflated "
+             "Sharpe liegt ausser Reichweite des Reglers (er bewegt ihn um "
+             "0,028, es fehlen 0,353).",
         warum="Eine wirtschaftliche Schwelle, kein statistisches Kriterium - "
               "so steht es seit jeher in gates.py. Dass sie mit der "
-              "Rueckgangsgrenze im Konflikt steht, war lange eine Behauptung "
-              "und ist seit Befund 57 beziffert: `cli vereinbar` rechnet es "
+              "Rueckgangsgrenze im Konflikt steht, war lange eine Behauptung, "
+              "ist seit Befund 57 beziffert und seit 281 **auf den "
+              "Perpetual-Punkt eingegrenzt**: `cli vereinbar --spot` und "
+              "`--perpetual` rechnen beide Seiten "
               "jederzeit nach. Die Aufloesung ist eine Geschaeftsentscheidung "
               "- den Kandidaten dorthin zu stellen, wo mehr Gates bestehen, "
               "ist ausdruecklich keine.",
@@ -2268,14 +2288,14 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
              "\n      Versuche   95. Perzentil der Null   Fehlalarm bei 0,95"
              "\n             1                   0,9305               3,36 %"
              "\n            10                   0,6275               0,02 %"
-             "\n           198                   0,3070   kein Lauf von 5.000"
+             "\n           203                   0,3059   kein Lauf von 5.000"
              "\n    Bei **einem** Versuch ist 0,95 eine 5-%-Schranke, wie der "
-             "Name sagt. Bei 198 ist sie strenger als alles, was diese "
-             "Messung aufloesen kann. Am Spot-Punkt steht der Bestand mit "
-             "0,5881 am **99,88. Perzentil** dieser Null, und der Rest des "
-             "Suchbudgets aendert daran fast nichts: 198 auf 230 Versuche "
-             "senkt sein Perzentil von 99,88 auf 99,86, waehrend der rohe "
-             "Wert von 0,5881 auf 0,5551 faellt. `cli abstand --spot --eichung` "
+             "Name sagt. Beim heutigen Stand ist sie strenger als alles, was "
+             "diese Messung aufloesen kann. Am Spot-Punkt steht der Bestand "
+             "mit 0,5826 am **99,86. Perzentil** dieser Null, und der Rest "
+             "des Suchbudgets aendert daran nichts: 203 auf 230 Versuche "
+             "laesst sein Perzentil bei 99,86, waehrend der rohe Wert von "
+             "0,5826 auf 0,5551 faellt. `cli abstand --spot --eichung` "
              "rechnet es nach.",
         warum="Das Gate ist am Spot-Punkt eines von nur zwei offenen - das "
               "andere ist die Messlatte, eine Geschaeftsschwelle. Damit "

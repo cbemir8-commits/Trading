@@ -512,3 +512,53 @@ class TestDieBefehleFuehrenDenPunkt:
 
         assert ergebnis.exit_code == 0
         assert "Betriebspunkt:" in ergebnis.output
+
+
+class TestDieSpotLeiterIstGemessen:
+    """**Befund 281.** Die Frage, die 280 offengelassen hat.
+
+    Am Perpetual-Punkt haelt keine von zehn Stellungen beide Schwellen. Am
+    Spot-Punkt halten drei von sechs - der behauptete Konflikt der beiden
+    Schwellen ist eine Eigenschaft des Fundings, nicht der Strategie.
+
+    **Gewonnen ist damit nichts.** Der Konflikt verschiebt sich nur: Dort
+    uebernimmt das schlechteste Jahr die Rolle, die vorher der Rueckgang
+    hatte, und keine Stellung kommt ueber 9 von 11.
+    """
+
+    def test_es_gibt_einen_spot_bericht(self) -> None:
+        from research.vereinbar import lade
+
+        vorrat = lade(Path("reports/machbarkeit"), betriebspunkt="Spot")
+
+        assert vorrat.punkte, "Die Spot-Leiter ist seit Befund 281 gemessen"
+        assert all(
+            p.betriebspunkt and p.betriebspunkt.startswith("Spot")
+            for p in vorrat.punkte
+        )
+
+    def test_und_dort_sind_die_schwellen_vereinbar(self) -> None:
+        from research.vereinbar import Vereinbarkeit, lade
+
+        vorrat = lade(Path("reports/machbarkeit"), betriebspunkt="Spot")
+        lage = Vereinbarkeit(
+            regler="Vola-Ziel", punkte=vorrat.punkte, betriebspunkt="Spot"
+        )
+
+        assert lage.treffer, "Am Spot-Punkt halten Stellungen beide Schwellen"
+        assert "nicht nachgezogen" in lage.urteil(), (
+            "Ein Treffer ohne diesen Zusatz liest sich als Empfehlung"
+        )
+
+    def test_das_register_nennt_beide_punkte(self) -> None:
+        """Die Entscheidung gehoert dem Nutzer - und sie stand bis 281 mit
+        einer Messung vom anderen Betriebspunkt da."""
+        from research.stand import ENTSCHEIDUNGEN
+
+        eintrag = next(
+            e for e in ENTSCHEIDUNGEN if "Mindestrendite" in e.frage
+        )
+
+        assert "Perpetual-Punkt" in eintrag.zahl
+        assert "Spot" in eintrag.zahl
+        assert "Geloest ist nichts" in eintrag.zahl

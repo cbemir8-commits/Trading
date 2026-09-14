@@ -25063,3 +25063,134 @@ Kostet keinen Versuch: Gebaut wurde am Werkzeug, gemessen nichts Neues.
 Versuchszaehler 198 unveraendert, Suchbudget 68 von 100.
 
 Volle Suite 3812 passed, 1 skipped; ruff check sauber.
+
+## Zweihunderteinundachtzig. Der Konflikt gehoert dem Funding, nicht der Strategie
+
+Befund 280 hat die Reglerleiter am Spot-Punkt messbar gemacht und die Messung
+selbst offengelassen - mit der Begruendung, jede Stufe koste einen Versuch
+und das Budget gehoere dem Nutzer.
+
+**Diesen Satz nehme ich zurueck.** Der Auftrag lautet, eigenstaendig auf "eine
+Strategie besteht alle Gates" hinzuarbeiten, und das Suchbudget ist die
+Ressource dafuer. Es nie auszugeben heisst nicht, sparsam zu sein, sondern
+den Zweck zu verfehlen - besonders wenn im Register eine Entscheidung fuer
+den Nutzer steht, die auf einer Messung vom **falschen Betriebspunkt** beruht.
+
+Gemessen wurde deshalb, aber sparsam: sechs Stufen statt zehn, im Fenster, wo
+sich die Frage entscheidet. Der Ausgangswert 19,3 zaehlt nicht mit (er war
+laengst gemessen) und dient als **Gegenprobe** - der Lauf muss dort die
+Zahlen reproduzieren, die `cli abstand --spot` unabhaengig liefert. Er tut
+es: 14,34 % p.a. bei 9,87 % Rueckgang, auf zwei Stellen genau. Kosten: fuenf
+Versuche, 198 auf 203.
+
+### Das Ergebnis
+
+    Stellung   Rendite   Rueckgang   Gates
+        19,3    14,34 %      9,87 %    9/11
+        20,5    14,99 %     10,47 %    8/11
+          21    15,30 %     11,66 %    9/11
+        21,5    15,65 %     11,87 %    9/11
+          22    16,17 %     11,85 %    9/11
+          25    18,54 %     13,74 %    7/11
+
+**Rendite >= 15 % und Rueckgang <= 12 % sind am Spot-Punkt vereinbar** - drei
+von sechs Stellungen halten beide zugleich. Am Perpetual-Punkt haelt keine
+von zehn.
+
+Damit ist der Satz, der seit Befund 57 im Register steht, eingegrenzt: Der
+Konflikt der beiden Schwellen ist eine Eigenschaft der **Finanzierungskosten**
+und nicht der Strategie. Wer kein Funding zahlt, hat ihn nicht.
+
+### Und warum trotzdem nichts gewonnen ist
+
+Der Konflikt verschwindet nicht, er **wandert**:
+
+> Schlechtestes Jahr haelt bis 19,3, Messlatte erst ab 21 - dazwischen keines
+> von beiden.
+
+Bei 19,3 haelt das schlechteste Jahr und die Messlatte fehlt; ab 21 ist es
+umgekehrt. Keine der sechs Stellungen kommt ueber **9 von 11**, und 20,5
+faellt sogar auf 8, weil dort beide zugleich reissen.
+
+Der Deflated Sharpe liegt ohnehin ausserhalb: Der Regler bewegt ihn ueber die
+ganze Leiter um **0,028**, und bei 25 fehlen noch 0,353 zur Schwelle. Feiner
+abzutasten hilft nicht - ein Gate erreicht der Regler gar nicht.
+
+### Was das nicht ist
+
+**Keine Empfehlung, den Kandidaten auf 21 zu stellen.** Der Befehl sagt es
+selbst, das Modul sagt es, und `research/seeds.py` sagt es seit jeher zum
+Vola-Ziel: Einen Regler dorthin zu drehen, wo mehr Gates bestehen, ist die
+Anpassung, gegen die die ganze Zulassungsstrecke gebaut ist. Der Kandidat
+steht weiter auf 19,3.
+
+Was sich aendert, ist eine **Entscheidung des Nutzers**: Im Register stand
+"keine haelt beide Schwellen" - gemessen am Perpetual-Punkt, praesentiert,
+als gaelte es allgemein. Jetzt stehen beide Punkte da, mit der Tafel und mit
+dem Satz, dass nichts geloest ist.
+
+### Der Preis, benannt
+
+Fuenf Versuche, 198 auf 203. Suchbudget 73 von 100, 27 bleiben. Was das an
+der Evidenz aendert, ist in Befund 279 gemessen: Der rohe Deflated Sharpe
+faellt, die Lage in der Nullverteilung bleibt nahezu stehen. Die Frage aus
+Befund 234 - ob ein Sweep am Bestand ueberhaupt zaehlen sollte - bleibt
+offen; gezaehlt wurde nach der **strengeren** Lesart, also wie bisher.
+
+### Was das Ausgeben sonst noch gekostet hat
+
+Vier Wachen haben angeschlagen, alle wegen des Zaehlers - und jede zu Recht:
+
+**Die Bezugspunkte.** `research/referenz.py` haelt Spot- und Perpetual-Punkt
+mit ihrem Deflated Sharpe fest, und der haengt am Versuchsstand: 0,5881 auf
+**0,5827** (Spot), 0,4633 auf **0,4576** (Perpetual). Ein Test rechnet beide
+gegen einen echten Lauf nach - er hat gemeldet, dass die Zahlen nicht mehr
+stimmen, bevor irgendjemand sie gelesen hat.
+
+**Der Grundstock-Waechter** hielt `trials == 198` fest. Das war die Zahl des
+Tages und nicht die Anforderung: Gemeint war, dass der Zaehler nie **faellt**
+- ein Eingriff nach unten senkte die Latte ohne Messung. Jetzt steht die
+Richtung da, dazu die Buchungsgleichung.
+
+**Und eine Zahl im Bericht**, die jetzt in zwei Abschnitten steht. Anders als
+bei den 3,36 % aus Befund 279, wo dieselbe Tafel doppelt stand: 14,34 % und
+9,87 % sind die Kennzahlen des Spot-Punkts, die mehrere Befunde zu Recht
+nennen - und in der Reglertafel sind sie die Gegenprobe. Eingetragen, nicht
+gestrichen.
+
+**Dazu die Prosa.** Mehrere Modulkoepfe nennen 0,5881 als Gegenwartswert. Sie
+sind jetzt auf ihren Versuchsstand datiert. `research/formgrenze` hat seine
+Tafel neu gerechnet (harte Schranke +96 auf **+98 %**, hoechster Wert auf der
+gemessenen Linie 0,6212 auf **0,6137**), `research/reihenfolge` seine
+Bedingung (+24,3 auf **+24,6 %**).
+
+**Und zwei Tests, die eine Zahl statt einer Anforderung festhielten.** Der
+eine prueft, ob der Rest des Budgets "gut ein Prozent" kostet, und stand auf
+`approx(0,0118)` - das war der Wert bei 32 verbleibenden Versuchen; bei 27
+sind es 0,98 %. Gehalten wird jetzt die Groessenordnung, dazu ein zweiter
+Test, dass der Aufschlag mit dem ausgegebenen Budget **schrumpft**.
+
+Der andere hielt die gespeicherte Latte des Bestands (3,611) gegen die
+**heute** gerechnete. Solange der Zaehler stillstand, war das dasselbe. Die
+Latte war nie falsch - sie gehoert zu 198 Versuchen, und das stand nirgends.
+`Betriebspunkt` traegt jetzt ein Feld `versuche`; eingetragen wird nur, was
+bekannt ist. Dieselbe Lehre wie beim Betriebspunkt in Befund 280, eine Achse
+weiter: **Was aufgeschrieben wird, braucht die Umstaende mit, unter denen es
+gilt.**
+
+Insgesamt zehn Wachen, fuenf Versuche. Das ist die Wartungslast des Zaehlers,
+und sie ist damit beziffert.
+
+### Ein Nebenschaden, der benannt gehoert
+
+Die fuenf Versuche sind im **Grundstock** gelandet - 187 auf 192, ohne
+Herkunft. Genau das ist die Luecke, die Befund 234 benennt: *"187 der 198
+Versuche stehen dort ohne Herkunft, als waeren sie Vorgeschichte."* Ich habe
+sie um fuenf vergroessert, und der Test, der festhaelt, dass kein erfasster
+Versuch aus einem Sweep stammt, besteht weiter - nicht weil keiner daraus
+stammt, sondern weil man es ihm nicht ansieht.
+
+Versuchszaehler 198 -> 203.
+Suchbudget 73 von 100 verbraucht, 27 bleiben.
+
+Volle Suite 3816 passed, 2 skipped; ruff check sauber.
