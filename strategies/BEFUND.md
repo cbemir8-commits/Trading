@@ -25380,3 +25380,87 @@ Kostet keinen Versuch: Gebaut wurde an der Sperre, gemessen nichts Neues.
 Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 3828 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertvierundachtzig. Die Sperre war geprueft, der Erfolgsweg nie gefahren
+
+Befund 283 hat die Herkunftserkennung abgesichert - gegen den Fall, dass sie
+jemand *vergisst*. Beim Nachsehen, was daran sonst noch ungeprueft ist, fiel
+die andere Haelfte auf.
+
+### Der Fund
+
+`GateReport.passed` verlangt drei Dinge. Zwei davon sind gut bewacht:
+
+    test_forschungskerzen_lassen_nicht_zu   elf von elf auf Bitstamp -> keine Zulassung
+    test_die_vorauswahl_bleibt_unberuehrt   teure Gates fehlen -> keine Zulassung
+
+Beide pruefen, dass die Sperre **haelt**. Die Gegenprobe heisst
+`test_boersendaten_lassen_zu` - und die baut ihren Bericht so:
+
+    def bericht(**abweichung) -> GateReport:
+        daten = {"genome_id": "abc", "results": [bestanden(...) for i in range(11)]}
+
+Von Hand. `evaluate_gates` kommt darin nicht vor. Und `tests/test_uebergang.py`,
+die Datei fuer genau den Uebergang auf Bybit-Namen, verweist im Docstring
+ausdruecklich dorthin:
+
+> **Was hier absichtlich fehlt:** Ob `GateReport.passed` bei
+> `referenzdaten=False` wirklich True werden kann. Das steht seit Befund 102 in
+> `tests/test_referenzdaten.py` [...] und braucht keine zweite Fassung.
+
+Es stand dort nicht. Was dort steht, ist die **Bedeutung** von elf von elf.
+Die Strecke - Boersenkerze, Walk-Forward, `evaluate_gates`, Schalter, Urteil -
+ist nie gelaufen.
+
+Dazwischen liegen zwei Uebergaben: `frames` muss in den Aufruf hinein, und
+`ist_referenz` muss ueber die Beine laufen. Beide sind heute richtig. Keine
+hatte eine Wache. Befund 265 war dieselbe Bauart: ein Schluessel, der nicht
+passte, und `attach_funding` setzte lautlos NaN - die Funding-Indikatoren
+waren tot und nichts wurde rot.
+
+### Gefahren
+
+Zwei synthetische Zufallslaeufe ueber 900 Tage, zweimal dieselben Zahlen,
+einmal unter `BTCUSDT`/`ETHUSDT` und einmal unter den Bitstamp-Namen. Sonst
+Zeichen fuer Zeichen derselbe Weg, den `cli wettbewerb` geht - bis hin zur
+Aufloesung ueber `_bybit_kontrakt`, damit beide Laeufe dieselben Kontraktdaten
+bekommen und sich wirklich nur im Schluessel unterscheiden.
+
+    Boerse     referenzdaten=False  vorauswahl=False  passed=False  4/11
+    Forschung  referenzdaten=True   vorauswahl=False  passed=False  4/11
+    Fenster 5   Trades 33   gleiche Status, gleiche Werte
+
+Der Schalter faellt richtig, aus dem Lauf heraus, in beide Richtungen. Dass
+`passed` in beiden Faellen False ist, liegt an den Gates: **eine Zufallsreihe
+besteht nicht**, und sie soll es nicht. Der Test sagt das selbst und prueft es,
+damit die Datei niemand fuer einen Beleg haelt.
+
+Fuer die letzte Stufe werden die Gate-Ergebnisse auf "bestanden" gesetzt - die
+Herkunftsfelder bleiben, wie der Lauf sie hinterlassen hat:
+
+    Boerse     -> passed=True   "alle 11 Gates bestanden"
+    Forschung  -> passed=False  "auf Forschungskerzen - keine Zulassung"
+
+Ein Feldvergleich ueber den ganzen `GateReport` haelt fest, dass genau **ein**
+Feld die beiden trennt.
+
+### Geprueft, ob die Wache beisst
+
+Ein Test, der nur gruen ist, beweist nichts. Beide Richtungen der Erkennung
+mutiert und die Suite wieder gefahren:
+
+    referenzdaten = False   -> 3 rot  (die Forschungsseite)
+    referenzdaten = True    -> 3 rot  (die Boersenseite)
+
+### Was weiter aussteht
+
+Dass **elf von elf aus einem echten Lauf** kommen. Dafuer braucht es eine
+Strategie, die besteht, und die gibt es nicht - eine Reihe zu erfinden, auf
+der alle Gates halten, waere eine Zulassung auf einer erfundenen Strategie.
+Das steht so im Register und im Docstring der Datei, damit niemand den
+Unterschied fuer geschlossen haelt.
+
+Kostet keinen Versuch: gebaut wurde an der Maschinerie, gemessen nichts ueber
+eine Strategie. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 3836 passed, 2 skipped; ruff check sauber.

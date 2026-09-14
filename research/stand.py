@@ -1785,6 +1785,27 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Lauf auffaellt",
         283,
     ),
+    # Die Gegenprobe zu 283: Auch der Erfolgsfall war nie gefahren worden.
+    Richtung(
+        "Der Erfolgsweg der Zulassung war nie gelaufen",
+        "Seit Befund 102 sperrt 'passed' Forschungskerzen, und geprueft war "
+        "seither die **Sperre**. Der Erfolgsfall - Boersenkerzen, "
+        "'referenzdaten=False', Zulassung - stand in einem **von Hand "
+        "gebauten** 'GateReport'; 'tests/test_uebergang.py' verwies im "
+        "Docstring ausdruecklich dorthin, statt ihn zu fahren. Zwischen dem "
+        "Namen im Kerzenspeicher und dem Schalter im Bericht liegen zwei "
+        "Uebergaben, und keine hatte eine Wache - dieselbe Klasse wie 265, "
+        "wo Funding unter dem falschen Schluessel lautlos zu NaN wurde. "
+        "'tests/test_zulassungsweg.py' faehrt die Strecke jetzt zweimal auf "
+        "denselben zwei Zufallsreihen ueber 900 Tage, einmal unter Boersen- "
+        "und einmal unter Forschungsnamen: 5 Fenster, 33 Trades, Zeichen fuer "
+        "Zeichen dieselben Gate-Werte, und genau ein Feld unterscheidet die "
+        "Berichte. Beide Richtungen der Erkennung sind durch Mutation "
+        "geprueft. **Was weiter aussteht**: Dass elf von elf aus einem echten "
+        "Lauf kommen - dafuer braucht es eine Strategie, die besteht, und "
+        "keine erfundene Reihe",
+        284,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

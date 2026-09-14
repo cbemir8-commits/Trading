@@ -8,11 +8,15 @@ Bybit-Namen wirklich traegt, stand nirgends.
 Geprueft wird die Maschinerie, nicht eine Strategie.
 
 **Was hier absichtlich fehlt:** Ob ``GateReport.passed`` bei
-``referenzdaten=False`` wirklich True werden kann. Das steht seit Befund 102
-in ``tests/test_referenzdaten.py`` (``test_boersendaten_lassen_zu``,
-``test_der_echte_lauf_erkennt_es_von_selbst``) und braucht keine zweite
-Fassung. Hier steht nur, was dort nicht steht: die Aufloesung der Symbole und
-die Kontraktdaten dahinter.
+``referenzdaten=False`` wirklich True werden kann. Hier steht nur, was
+nirgends sonst steht: die Aufloesung der Symbole und die Kontraktdaten
+dahinter.
+
+Der Verweis stand bis Befund 284 auf ``tests/test_referenzdaten.py`` allein -
+und der baut seinen Bericht von Hand. Gefahren wird die Strecke in
+``tests/test_zulassungsweg.py``; die beiden teilen sie sich: dort die
+Maschinerie vom Kerzennamen bis zum Schalter, drueben die Bedeutung von elf
+von elf.
 """
 
 from __future__ import annotations

@@ -55,7 +55,13 @@ class TestZulassung:
 
     def test_boersendaten_lassen_zu(self) -> None:
         """Gegenprobe: Ohne das Merkmal aendert sich nichts an der bisherigen
-        Bedeutung von elf von elf."""
+        Bedeutung von elf von elf.
+
+        Der Bericht ist **von Hand gebaut** - hier geht es um die Bedeutung,
+        nicht um die Strecke. Dass ``referenzdaten=False`` auch wirklich aus
+        einem Lauf herauskommt, faehrt seit Befund 284
+        ``tests/test_zulassungsweg.py``.
+        """
         echt = bericht()
 
         assert echt.passed
