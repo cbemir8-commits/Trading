@@ -1969,6 +1969,24 @@ BEHOBEN: tuple[Richtung, ...] = (
         "liegt, was der Katalog gezeigt hat",
         293,
     ),
+    # Die Wache gegen genau diesen Fehler sah ein Fuenftel des Registers an.
+    Richtung(
+        "Die Wache gegen alte Fundstellen sah nur ein Fuenftel an",
+        "Befund 293 hat eine veraltete Fundstelle im meistgelesenen Bericht "
+        "gefunden - und dafuer gibt es seit Befund 130 ein Werkzeug: "
+        "'cli register' sucht, wo eine Richtung **nach** ihrer massgeblichen "
+        "Stelle noch erwaehnt wird. Nachgesehen, was es ansieht: **39 von 208 "
+        "Registereintraegen.** 'BEGRIFFE' deckte genau die geschlossenen "
+        "Richtungen ab, und der Befehl lief nur ueber 'GESCHLOSSEN' - die "
+        "sechzehn **offenen** Richtungen, nach denen gearbeitet wird, waren "
+        "nicht dabei. Keine Fehlfunktion: 'spuren' meldet seit jeher, wo es "
+        "keine Begriffe gibt; gefragt hat nur niemand. Jetzt laeuft die Suche "
+        "ueber 55 Eintraege, sieben der offenen Richtungen haben spaetere "
+        "Erwaehnungen, und der Bericht nennt zum Schluss, was er **nicht** "
+        "ansieht (die 153 behobenen). Eine Wache prueft, dass jede neue "
+        "offene Richtung Begriffe bekommt",
+        294,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

@@ -158,13 +158,20 @@ class Spur:
         )
 
 
-#: Suchbegriffe je geschlossener Richtung.
+#: Suchbegriffe je Richtung - geschlossene **und offene**.
 #:
 #: Bewusst eng gehalten: Eine Trefferliste, die zu lang ist, wird nicht
 #: gelesen, und eine ungelesene Trefferliste ist genau der Zustand, aus dem
 #: Befund 130 entstanden ist. Ein Eintrag ohne Begriffe wird uebersprungen und
 #: als solcher gemeldet - besser eine sichtbare Luecke als ein stiller
 #: Fehlalarm (Befund 118).
+#:
+#: **Bis Befund 294 standen hier nur die geschlossenen Richtungen.** Genau
+#: neununddreissig Namen, und ``cli register`` lief nur ueber ``GESCHLOSSEN``
+#: - die sechzehn **offenen** Richtungen und die 153 behobenen hat diese
+#: Suche nie angesehen. Das war keine Fehlfunktion: ``spuren`` meldet seit
+#: jeher, wo es keine Begriffe gibt. Gefragt hat nur niemand, und die offenen
+#: Richtungen sind die, nach denen gearbeitet wird.
 BEGRIFFE: dict[str, tuple[str, ...]] = {
     "Mehr Maerkte": ("effektive Stichprobe", "mehr Maerkte", "weitere Maerkte"),
     "Dreierverbund": ("Dreierverbund", "Dreier", "drittes Bein", "Beinsumme"),
@@ -217,7 +224,38 @@ BEGRIFFE: dict[str, tuple[str, ...]] = {
         "Einstiegsseite",
         "Marktbreite",
         "Verschiebungsprobe",
+    ),    # --- Die offenen Richtungen (Befund 294) ---------------------------
+    "Holdout auf fremden Maerkten": (
+        "fremden Maerkten", "Holdout-Markt", "LTC und XRP",
     ),
+    "Timing gegen Zufallseinstiege": ("Zufallseinstieg", "zufaellige Einstiege"),
+    "Zertifizierbarkeit der Bauart": ("gepflanzt", "Zertifizierbarkeit"),
+    "Gedeckelter Ausstieg": ("gedeckelter Ausstieg", "Haltedauerdeckel", "max_hold"),
+    "Menge statt Qualitaet": ("Mengentor", "Menge statt Qualitaet"),
+    "Bestand + 'Grosser Trendausbruch'": (
+        "Grosser Trendausbruch", "Trendfolge Ausbruch",
+    ),
+    "Der Preis in Reststreuungen": ("Reststreuung",),
+    "Haengt die Familienaussage am Schnitt?": ("Familienaussage", "Mehrheitsfamilie"),
+    "Einstieg, der nicht am Rauschen haengt": (
+        "Neues Hoch im Takt", "wiederholbare Ausbruch", "am Rauschen",
+    ),
+    "Traegt die Reibung die Kopplung auf kurzen Kerzen?": (
+        "Kostenanteil", "Kippfaktor",
+    ),
+    "Ordnet die Luecke das Verhalten im Holdout?": ("Rangtreue", "Haltequote"),
+    "Tageskerzen ableiten statt laden?": (
+        "Tageskerzen ableiten", "ableiten statt laden",
+    ),
+    "Zaehlt ein Sweep am Bestand als Versuch?": ("Sweep", "Reglerscan"),
+    "Der Grundstock nimmt auch das Neue auf": ("Grundstock", "save_trials"),
+    "Zugelassen ist der Korb, handelbar ist ein Bein": (
+        "Korbhandel", "handelbar ist ein Bein",
+    ),
+    "Zahlt der Bestand dann, wenn Longs am meisten zahlen?": (
+        "Longs am meisten", "Funding-Belastung",
+    ),
+
 }
 
 

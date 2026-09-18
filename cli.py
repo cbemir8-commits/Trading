@@ -11966,15 +11966,20 @@ def register(
     anrichtet.
     """
     from research.nachmessung import spuren
-    from research.stand import GESCHLOSSEN
+    from research.stand import BEHOBEN, GESCHLOSSEN, OFFEN
 
     pfad = Path("strategies/BEFUND.md")
     if not pfad.exists():
         console.print(f"[red]{pfad} nicht gefunden.[/]")
         raise typer.Exit(2)
-    gefunden, ohne = spuren(pfad.read_text(encoding="utf-8"), GESCHLOSSEN)
+    # **Auch die offenen Richtungen** (Befund 294). Bis dahin lief die Suche
+    # allein ueber 'GESCHLOSSEN' - und damit ueber 39 von 208 Eintraegen.
+    # Ausgerechnet die offenen blieben aussen vor, also die, nach denen
+    # gearbeitet wird.
+    text = pfad.read_text(encoding="utf-8")
+    gefunden, ohne = spuren(text, (*GESCHLOSSEN, *OFFEN))
 
-    console.print("\n[bold]GESCHLOSSENE RICHTUNGEN: STEHT DA SPAETER NOCH WAS?[/]\n")
+    console.print("\n[bold]GESCHLOSSENE UND OFFENE RICHTUNGEN: STEHT DA SPAETER NOCH WAS?[/]\n")
     nachgezogen = [s for s in gefunden if s.nachgezogen]
     console.print(
         f"[dim]{len(gefunden)} Eintraege durchsucht, davon {len(nachgezogen)} "
@@ -12015,7 +12020,16 @@ def register(
         )
     console.print(
         f"\n[dim]{len(verdaechtig)} Eintraege haben spaetere Erwaehnungen. Jede "
-        f"davon ist zu lesen,\nbevor jemand ihre Zahlen als Stand ausgibt.[/]\n"
+        f"davon ist zu lesen,\nbevor jemand ihre Zahlen als Stand ausgibt.[/]"
+    )
+    # **Und was diese Suche nicht ansieht** (Befund 294). Eine Zahl dafuer
+    # gehoert unter den Bericht: Ohne sie liest sich "keine weiteren Treffer"
+    # als "nichts mehr offen", und das waere dieselbe Verwechslung, gegen die
+    # 'ohne' oben steht.
+    console.print(
+        f"[yellow]Nicht durchsucht: die {len(BEHOBEN)} behobenen Eintraege.[/] "
+        f"[dim]Sie beschreiben Werkzeuge,\nnicht Richtungen - aber ungeprueft "
+        f"sind sie trotzdem.[/]\n"
     )
 
 

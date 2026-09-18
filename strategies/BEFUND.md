@@ -26263,3 +26263,90 @@ Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von
 100.
 
 Volle Suite 3924 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertvierundneunzig. Die Wache gegen alte Fundstellen sah nur ein Fuenftel an
+
+Befund 293 hat eine veraltete Fundstelle im meistgelesenen Bericht des
+Projekts gefunden: `cli stand` zeigte auf Befund 89, zweihundert Befunde alt.
+
+Dafuer gibt es ein Werkzeug. Seit Befund 130 sucht `cli register`, wo eine
+Richtung **nach** ihrer massgeblichen Fundstelle noch erwaehnt wird - genau
+die Frage, die in 293 zu spaet gestellt wurde.
+
+Also nachgesehen, was dieses Werkzeug eigentlich ansieht.
+
+### 39 von 208
+
+    GESCHLOSSEN    39 Eintraege   39 durchsucht     0 ohne Begriffe
+    OFFEN          16 Eintraege    0 durchsucht    16 ohne Begriffe
+    BEHOBEN       153 Eintraege    0 durchsucht   153 ohne Begriffe
+
+`BEGRIFFE` deckte genau neununddreissig Namen ab - die geschlossenen
+Richtungen -, und `cli register` uebergab nur `GESCHLOSSEN`.
+
+Ausgerechnet die **offenen** Richtungen waren nicht dabei. Das sind die, nach
+denen gearbeitet wird; wenn irgendwo eine Fundstelle veraltet, dann dort.
+
+### Was daran **keine** Fehlfunktion war
+
+`spuren` liefert zwei Listen, und der Docstring sagt seit jeher, welche die
+wichtigere ist:
+
+> Gibt die Spuren zurueck **und** die Namen, fuer die keine Suchbegriffe
+> hinterlegt sind. Die zweite Liste ist der wichtigere Teil: Sie sagt, wo
+> diese Suche gar nicht erst hingesehen hat.
+
+Das Modul hat also die ganze Zeit korrekt gemeldet, dass es nicht hinsieht.
+Nur hat niemand mit den offenen Richtungen gefragt - der Aufrufer uebergab
+sie gar nicht erst, und dann gibt es auch nichts zu melden.
+
+Das ist eine feine, aber wichtige Unterscheidung: **Die Luecke lag nicht im
+Werkzeug, sondern im Umfang seiner Anwendung.** Dieselbe Form wie Befund 285
+(der Preis wurde an einer von zwei Stellen zurueckgehalten) und 288 (die
+Punktzahl war im Test nachgezogen, im Auftragstext nicht).
+
+### Gebaut
+
+Sechzehn Begriffssaetze fuer die offenen Richtungen, vor dem Einbau am
+Laborbuch gemessen statt geraten. Sieben der sechzehn haben spaetere
+Erwaehnungen:
+
+    Bestand + 'Grosser Trendausbruch'   Nr. 193   spaeter: 290, 207, 204, 203, 202
+    Holdout auf fremden Maerkten        Nr. 175   spaeter: 276, 268, 241, 240, 206
+    Zaehlt ein Sweep als Versuch?       Nr. 234   spaeter: 282, 281, 280, 245, 238
+    Timing gegen Zufallseinstiege       Nr. 205   spaeter: 208, 206
+    Zertifizierbarkeit der Bauart       Nr. 178   spaeter: 257, 193
+    Der Preis in Reststreuungen         Nr. 286   spaeter: 290, 288
+    Einstieg, der nicht am Rauschen     Nr. 257   spaeter: 283
+
+**Das sind Verdachtsfaelle und keine Befunde.** Erwaehnt zu werden ist nicht
+dasselbe wie nachgemessen zu werden, und der Unterschied steht im Text. Der
+erste Treffer ist vermutlich genau so ein Fehlalarm: Befund 290 nennt
+'Grosser Trendausbruch' und 'Trendfolge Ausbruch', weil beide in der
+Katalogtabelle stehen - nachgemessen hat er die Richtung nicht.
+
+Genau davor warnt der Modulkopf, und deshalb setzt kein Code `zuletzt`
+selbst. Wer einen Eintrag nachzieht, hat den Befund gelesen.
+
+### Und was der Bericht jetzt zum Schluss sagt
+
+    Nicht durchsucht: die 153 behobenen Eintraege.
+
+Ohne diese Zeile liest sich "43 Eintraege haben spaetere Erwaehnungen" als
+vollstaendige Auskunft. Sie ist es nicht, und die Zahl dafuer gehoert
+darunter - dieselbe Regel wie bei `ohne` eine Ebene hoeher.
+
+Die 153 bleiben vorerst draussen: Sie beschreiben Werkzeuge und keine
+Richtungen, und 153 Begriffssaetze auf einmal waeren geraten statt gemessen.
+Ungeprueft sind sie trotzdem, und jetzt steht es da.
+
+### Die Wache
+
+Ein Test verlangt, dass **jede** offene Richtung Suchbegriffe hat. Ohne ihn
+kehrt die Luecke mit dem naechsten Registereintrag still zurueck - und still
+ist hier das Problem gewesen, nicht falsch.
+
+Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von
+100.
+
+Volle Suite 3929 passed, 2 skipped; ruff check sauber.

@@ -150,7 +150,14 @@ def test_jede_geschlossene_richtung_hat_suchbegriffe(laborbuch: str) -> None:
 
 
 def test_begriffe_nennen_keine_richtung_die_es_nicht_gibt() -> None:
-    namen = {r.name for r in GESCHLOSSEN}
+    """Seit Befund 294 auch ueber die offenen Richtungen.
+
+    Der Zweck bleibt - ein Begriff ohne Richtung sucht ins Leere -, nur der
+    Umfang ist gewachsen: ``cli register`` laeuft jetzt ueber beide Register.
+    """
+    from research.stand import OFFEN
+
+    namen = {r.name for r in (*GESCHLOSSEN, *OFFEN)}
     verwaist = set(BEGRIFFE) - namen
     assert not verwaist, f"Begriffe ohne Richtung: {sorted(verwaist)}"
 
@@ -232,3 +239,74 @@ def test_jede_massgebliche_fundstelle_gibt_es_im_laborbuch(laborbuch: str) -> No
     vorhanden = {a.nummer for a in abschnitte(laborbuch)}
     fehlend = [r.name for r in GESCHLOSSEN if r.massgeblich not in vorhanden]
     assert not fehlend, f"Fundstelle zeigt ins Leere: {fehlend}"
+
+
+class TestDieSucheSiehtAuchDieOffenenAn:
+    """**Befund 294.** ``BEGRIFFE`` deckte genau die 39 geschlossenen
+    Richtungen ab, und ``cli register`` lief nur ueber ``GESCHLOSSEN``.
+
+    Das war keine Fehlfunktion - ``spuren`` meldet seit jeher, wo es keine
+    Begriffe gibt. Gefragt hat nur niemand: Von 208 Registereintraegen hat
+    die Suche 39 angesehen, und ausgerechnet die **offenen** Richtungen, nach
+    denen gearbeitet wird, waren nicht dabei.
+    """
+
+    def test_jede_offene_richtung_hat_suchbegriffe(self) -> None:
+        """**Die Wache.** Eine neue offene Richtung ohne Begriffe laesst die
+        Luecke still zurueckkehren."""
+        from research.nachmessung import BEGRIFFE
+        from research.stand import OFFEN
+
+        fehlend = [r.name for r in OFFEN if r.name not in BEGRIFFE]
+
+        assert fehlend == [], f"offene Richtungen ohne Suchbegriffe: {fehlend}"
+
+    def test_und_jede_geschlossene_weiterhin_auch(self) -> None:
+        from research.nachmessung import BEGRIFFE
+        from research.stand import GESCHLOSSEN
+
+        fehlend = [r.name for r in GESCHLOSSEN if r.name not in BEGRIFFE]
+
+        assert fehlend == []
+
+    def test_die_namen_kollidieren_nicht(self) -> None:
+        """``BEGRIFFE`` schlaegt ueber den Namen nach - zwei Richtungen mit
+        demselben Namen bekaemen stillschweigend dieselben Begriffe."""
+        from research.stand import GESCHLOSSEN, OFFEN
+
+        geschlossen = {r.name for r in GESCHLOSSEN}
+        offen = {r.name for r in OFFEN}
+
+        assert geschlossen & offen == set()
+
+    def test_die_offenen_werden_wirklich_durchsucht(self) -> None:
+        """Nicht nur Begriffe hinterlegt, sondern auch Treffer - sonst waere
+        die Erweiterung eine Liste ohne Wirkung."""
+        from pathlib import Path
+
+        from research.nachmessung import spuren
+        from research.stand import OFFEN
+
+        text = Path("strategies/BEFUND.md").read_text(encoding="utf-8")
+        gefunden, ohne = spuren(text, OFFEN)
+
+        assert ohne == ()
+        assert len(gefunden) == len(OFFEN)
+        assert any(s.offen for s in gefunden), (
+            "keine einzige offene Richtung wird spaeter erwaehnt - das waere "
+            "bei sechzehn Eintraegen ueber hundert Befunde unwahrscheinlich"
+        )
+
+    def test_die_begriffe_fluten_nicht(self) -> None:
+        """Eine Trefferliste, die zu lang ist, wird nicht gelesen - und eine
+        ungelesene Trefferliste ist der Zustand, aus dem Befund 130 kam."""
+        from pathlib import Path
+
+        from research.nachmessung import spuren
+        from research.stand import OFFEN
+
+        text = Path("strategies/BEFUND.md").read_text(encoding="utf-8")
+        gefunden, _ = spuren(text, OFFEN)
+
+        for s in gefunden:
+            assert len(s.offen) <= 25, f"{s.name}: {len(s.offen)} Abschnitte"
