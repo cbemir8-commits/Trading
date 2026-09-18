@@ -26447,3 +26447,78 @@ Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von
 100.
 
 Volle Suite 3936 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertsechsundneunzig. Die Laufzeit war geschaetzt, nicht gemessen
+
+Der 15-Minuten-Katalog ist seit Befund 171 vermessen - 36 Regeln, beste Guete
+0,744 gegen 3,964 - aber die Werkzeuge aus 286 bis 291 (Luecke je Regel,
+Obergrenze der Trefferquote, Rangkopplung, Zielmarke) sind nie auf ihn
+angesetzt worden.
+
+Der Grund steht in meinen eigenen Ueberlegungen zweier Laeufe:
+
+> 15m hat 68x mehr Kerzen → ~4,5 Stunden. Zu langsam fuer einen Zyklus.
+
+Das war eine **Schaetzung**. Gemessen wurde sie nie.
+
+### Gemessen
+
+    ein Walk-Forward auf 15 Minuten, 225.341 Kerzen        61,4 s
+
+Also nachgerechnet: 39 Genome mal 61 s sind 40 Minuten. Machbar. Lauf
+gestartet.
+
+Nach elf Minuten waren drei Genome fertig. **226 Sekunden im Median, nicht
+61.** Die zweite Schaetzung war um den Faktor vier zu niedrig, weil sie nur
+den Walk-Forward zaehlte - der teure Teil sind die Gates: Monte-Carlo,
+Kosten-Stress und Parameter-Plateau rechnen auf zwoelftausend Trades noch
+einmal ganze Backtests.
+
+    Kerzenlaenge   Kerzen     je Genom (Median)
+    1d              3.277                   6 s
+    15m           225.341                 226 s
+
+    Kerzen  x69          Zeit  x38
+
+### Zwei Schaetzungen, zwei Richtungen
+
+Die erste war siebenmal zu hoch und hat eine machbare Messung zwei Laeufe
+lang verhindert. Die zweite war viermal zu niedrig und haette einen Lauf
+begonnen, dessen Dauer niemand kannte.
+
+*"Jede Behauptung wird gemessen, nicht geschaetzt"* steht als Grundsatz ueber
+diesem Projekt. Er gilt fuer Behauptungen ueber den Markt - und offenbar
+genauso fuer Behauptungen darueber, was ich mir vornehmen kann.
+
+Der Fehler in der ersten Schaetzung war der Massstab: Sie rechnete mit dem
+**Kerzenverhaeltnis**. Die Kosten haengen aber an den **Trades**, und die
+wachsen langsamer - Faktor 69 an Kerzen, Faktor 38 an Zeit.
+
+### Gebaut
+
+`research/laufkosten.py` haelt die gemessenen Zahlen, und `cli vorratsdecke`
+nennt sie, bevor der Lauf beginnt:
+
+    39 Genome, rund 2,4 Stunden - gemessen mit 226 s je Genom auf
+    225.341 Kerzen (Befund 296).
+
+Fuer eine Kerzenlaenge, die **nicht** gemessen ist, steht dort keine Zahl:
+
+    Laufzeit fuer '1h' nicht gemessen (bekannt: 15m, 1d) - hier wird nichts
+    hochgerechnet.
+
+Zwei Punkte legen eine Gerade fest, und eine Gerade durch zwei Punkte ist in
+diesem Projekt seit Befund 285 kein Argument. Hier waere sie es noch weniger:
+Die beiden Punkte liegen um Faktor 69 auseinander, und alles dazwischen ist
+unbesetzt.
+
+### Was noch laeuft
+
+Der 15-Minuten-Durchlauf ist gestartet und braucht die gemessenen 2,4
+Stunden. Was er ergibt, gehoert in den naechsten Befund - hier steht, was er
+kostet, und dass diese Zahl jetzt gemessen ist.
+
+Kostet keinen Versuch: `cli vorratsdecke` misst einen vorhandenen Katalog.
+Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 3949 passed, 2 skipped; ruff check sauber.

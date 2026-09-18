@@ -2007,6 +2007,25 @@ BEHOBEN: tuple[Richtung, ...] = (
         "meldet jeder Lauf dieselben dreiundvierzig",
         295,
     ),
+    # Zweimal geschaetzt, wo zu messen gewesen waere - beide Male daneben.
+    Richtung(
+        "Die Laufzeit war geschaetzt, nicht gemessen",
+        "Ob ein Katalogdurchlauf in einen Arbeitsschritt passt, entscheidet, "
+        "ob eine Messung gemacht wird. Diese Entscheidung ist zweimal "
+        "**geschaetzt** worden: erst *'225.000 Kerzen sind 68-mal so viele, "
+        "das dauert Stunden'* - daraufhin blieb der 15-Minuten-Katalog zwei "
+        "Laeufe lang unangesehen -, dann *'39 Genome mal 61 s, also 40 "
+        "Minuten'*. Gemessen: ein Walk-Forward kostet 61 s, ein **Genom** "
+        "aber 226 s im Median, weil die Gates ein Vielfaches des "
+        "Walk-Forward kosten. Beide Schaetzungen lagen daneben, in "
+        "entgegengesetzte Richtungen. 'research/laufkosten.py' haelt jetzt "
+        "die gemessenen Zahlen (1d: 6 s je Genom auf 3.277 Kerzen, 15m: "
+        "226 s auf 225.341), 'cli vorratsdecke' nennt sie **vor** dem Lauf, "
+        "und fuer eine ungemessene Kerzenlaenge gibt es keine Hochrechnung, "
+        "sondern die Aufforderung zu messen - zwei Punkte legen eine Gerade "
+        "fest, und die ist hier kein Argument",
+        296,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

@@ -12260,7 +12260,12 @@ def vorratsdecke(
         Taktpunkt,
     )
     from research.randschnitt import ohne_zensierte
-    from research.seeds import GENERATIONS, passt_zum_intervall, spitzenkandidat
+    from research.seeds import (
+        GENERATIONS,
+        load_seeds,
+        passt_zum_intervall,
+        spitzenkandidat,
+    )
     from research.suchbudget import Kandidat
     from research.verbund import hoechster_versuchsstand, noetige_guete
     from research.vorratsdecke import (
@@ -12294,8 +12299,20 @@ def vorratsdecke(
 
     console.print(
         f"\n[bold]Vorratsdecke[/] {' + '.join(symbole)} {interval_obj.label}, "
-        f"Spot-Punkt, Versuchsstand {versuche}\n"
+        f"Spot-Punkt, Versuchsstand {versuche}"
     )
+    # **Was der Lauf kostet, bevor er laeuft** (Befund 296). Zweimal ist die
+    # Dauer geschaetzt worden, einmal zu hoch (und die Messung unterblieb
+    # zwei Laeufe lang), einmal zu niedrig. Hier steht, was gemessen ist -
+    # und fuer eine ungemessene Kerzenlaenge steht da nichts.
+    from research.laufkosten import auskunft
+
+    wieviele = sum(
+        len(load_seeds(gen))
+        for gen in GENERATIONS
+        if passt_zum_intervall(gen, interval_obj)
+    )
+    console.print(f"[dim]{auskunft(interval_obj.label, wieviele)}[/]\n")
     # Die Groessenlogik, auf die alle gestellt werden - die des Bestands,
     # wie in der Vorauswahl (Befund 56/182).
     vergleichsgroesse = spitzenkandidat().sizing
