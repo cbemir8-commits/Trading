@@ -601,3 +601,68 @@ class TestDieGeradeHinterDerTrefferquote:
         assert all(n > 0 for n, _ in KATALOGPUNKTE)
         assert min(n for n, _ in KATALOGPUNKTE) == 18
         assert max(n for n, _ in KATALOGPUNKTE) == 406
+
+
+class TestWorinDerUnterschiedBestehenMuss:
+    """**Befund 292.** Der Auftrag verlangt seit Befund 196 einen
+    Unterschied und konnte nicht sagen, worin er bestehen soll.
+
+    Befund 291 hat die Zahl dazu gemessen: Die Anforderung an die Qualitaet
+    je Trade faellt mit der Stichprobe und liegt an der groessten gemessenen
+    **innerhalb** dessen, was der Katalog kann - nur nie bei einer grossen
+    Stichprobe.
+    """
+
+    def mit_ziel(self):
+        from research.referenz import VORRATSZIEL
+
+        return aus_messungen(**STAND, vorratsziel=VORRATSZIEL)
+
+    def test_der_abschnitt_steht_im_auftrag(self) -> None:
+        text = self.mit_ziel().als_auftrag()
+
+        assert "Worin der Unterschied bestehen muss" in text
+        assert "nur nie zusammen" in text
+
+    def test_er_nennt_beide_haelften_mit_zahlen(self) -> None:
+        from research.referenz import VORRATSZIEL
+
+        z = VORRATSZIEL
+        text = self.mit_ziel().als_auftrag()
+
+        assert f"{z.beste_je_trade:.4f}" in text
+        assert f"{z.billigste_noetig:.4f}" in text
+        assert f"n_eff {z.billigste_bei}" in text
+        assert f"{z.erreicht_von} von {z.regeln}" in text
+
+    def test_er_sagt_was_kein_unterschied_waere(self) -> None:
+        """Ohne diesen Satz liest sich der Abschnitt als Zielvorgabe und
+        nicht als Abgrenzung."""
+        text = self.mit_ziel().als_auftrag()
+
+        assert "bei wenigen Trades ist gemessen" in text
+        assert "ohne** dabei schlechter zu" in text
+
+    def test_ohne_ziel_bleibt_der_auftrag_wie_vorher(self) -> None:
+        """Ein Aufrufer, der nichts mitgibt, bekommt keinen erfundenen
+        Abschnitt."""
+        ohne = aus_messungen(**STAND)
+
+        assert "Worin der Unterschied" not in ohne.als_auftrag()
+
+    def test_raeumt_eine_regel_faellt_der_abschnitt_weg(self) -> None:
+        """Dann stimmt "nie zusammen" nicht mehr, und ein Auftrag, der es
+        trotzdem behauptet, waere falsch."""
+        from research.referenz import Vorratsregel, _vorratsziel
+
+        ziel = _vorratsziel(
+            (
+                Vorratsregel("A", 30, 0.9000, 4.929, 3.500),
+                Vorratsregel("B", 60, 0.2000, 1.549, 3.500),
+                Vorratsregel("C", 300, 0.2000, 3.464, 3.400),
+            )
+        )
+        text = aus_messungen(**STAND, vorratsziel=ziel).als_auftrag()
+
+        assert not ziel.nie_zusammen
+        assert "Worin der Unterschied" not in text

@@ -535,3 +535,105 @@ def test_die_beiden_betriebspunkte_unterscheiden_sich_nur_im_handel() -> None:
     assert PERPETUALPUNKT.guete < SPOTPUNKT.guete
     assert PERPETUALPUNKT.dsr < SPOTPUNKT.dsr
     assert PERPETUALPUNKT.bestanden < SPOTPUNKT.bestanden
+
+
+class TestDerGemesseneKatalog:
+    """**Befund 292.** Die Tabelle stand in zwei Testdateien nebeneinander.
+
+    Einmal mit Lattenspalte (``test_vorratslage``), einmal ohne
+    (``test_vorratsdecke``) - dieselbe Messung, zwei Quellen. Genau davor
+    warnt der Kopf dieses Moduls, und genau dafuer ist es da.
+    """
+
+    def test_der_katalog_ist_vollstaendig_und_stimmig(self) -> None:
+        from research.referenz import VORRAT_TAGESKERZEN
+
+        assert len(VORRAT_TAGESKERZEN) == 18
+        assert len({r.name for r in VORRAT_TAGESKERZEN}) == 18
+        for r in VORRAT_TAGESKERZEN:
+            assert r.n_eff > 0
+            assert r.guete == pytest.approx(r.je_trade * r.n_eff**0.5, abs=0.002), (
+                f"{r.name}: Guete und Qualitaet je Trade passen nicht zusammen"
+            )
+
+    def test_keine_regel_raeumt_ihre_latte(self) -> None:
+        from research.referenz import VORRAT_TAGESKERZEN
+
+        assert all(r.luecke > 0 for r in VORRAT_TAGESKERZEN)
+
+    def test_die_zahlen_stehen_nur_an_dieser_einen_stelle(self) -> None:
+        """Die Wache gegen eine zweite Fassung.
+
+        Geprueft wird an einer Zahl, die in keiner anderen Rolle vorkommt:
+        der Qualitaet je Trade der ersten Katalogregel.
+
+        **Die Zahl steht nicht im Test**, sondern wird aus dem Katalog
+        geholt - sonst faende die Suche diese Datei und schluege an, weil
+        sie selbst eine zweite Fassung waere.
+        """
+        from pathlib import Path
+
+        from research.referenz import VORRAT_TAGESKERZEN
+
+        gesucht = f"{VORRAT_TAGESKERZEN[0].je_trade:.4f}"
+        treffer = [
+            str(datei)
+            for ordner in ("research", "tests")
+            for datei in Path(ordner).glob("*.py")
+            if gesucht in datei.read_text(encoding="utf-8")
+        ]
+
+        assert treffer == ["research/referenz.py"], treffer
+
+
+class TestWasEinVorschlagBringenMuss:
+    """**Befund 291/292.** Das Ziel wird gerechnet, nicht gepflegt - wie
+    ``SCHUB``. Stuende es als Zahlenliste daneben, waere es eine zweite
+    Quelle zum Katalog."""
+
+    def ziel(self):
+        from research.referenz import VORRATSZIEL
+
+        return VORRATSZIEL
+
+    def test_es_stimmt_mit_der_messung_aus_291_ueberein(self) -> None:
+        z = self.ziel()
+
+        assert z.regeln == 18
+        assert z.beste_je_trade == pytest.approx(0.3274)
+        assert z.beste_bei == 29
+        assert z.billigste_noetig == pytest.approx(0.2641, abs=0.001)
+        assert z.billigste_bei == 254
+        assert z.erreicht_von == 5
+        assert z.aber_hoechstens_bei == 58
+
+    def test_beide_haelften_gibt_es_nur_nie_zusammen(self) -> None:
+        z = self.ziel()
+
+        assert z.nie_zusammen
+        assert z.beste_je_trade > z.billigste_noetig, (
+            "die Anforderung liegt innerhalb dessen, was der Katalog kann"
+        )
+        assert z.faktor > 4
+
+    def test_es_faellt_weg_wenn_eine_regel_raeumt(self) -> None:
+        """Dann ist die Aussage eine andere, und der Auftrag soll sie nicht
+        als "nie zusammen" weitergeben."""
+        from research.referenz import Vorratsregel, _vorratsziel
+
+        geraeumt = (
+            Vorratsregel("A", 30, 0.9000, 4.929, 3.500),
+            Vorratsregel("B", 60, 0.2000, 1.549, 3.500),
+            Vorratsregel("C", 120, 0.1000, 1.095, 3.400),
+        )
+        z = _vorratsziel(geraeumt)
+
+        assert z.geraeumt >= 1
+        assert not z.nie_zusammen, "wo eine Regel raeumt, gibt es sie zusammen"
+
+    def test_das_ziel_laesst_sich_hinschreiben(self) -> None:
+        text = self.ziel().als_ziel()
+
+        assert "Qualitaet je Trade mindestens" in text
+        assert "0.2641" in text
+        assert "n_eff 254" in text

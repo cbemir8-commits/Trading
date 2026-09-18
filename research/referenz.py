@@ -332,6 +332,132 @@ AUSSICHT_VERBUND = Aussicht(
 )
 
 
+@dataclass(frozen=True, slots=True)
+class Vorratsregel:
+    """Eine Regel des Katalogs, wie ``cli vorratsdecke`` sie druckt."""
+
+    name: str
+    n_eff: int
+    je_trade: float
+    guete: float
+    noetig: float
+
+    @property
+    def luecke(self) -> float:
+        return self.noetig - self.guete
+
+
+#: Der gemessene Tageskatalog - 18 Regeln, Spot-Punkt, Versuchsstand 203.
+#:
+#: **Warum er hier steht und nicht in einem Test** (Befund 292): Er stand in
+#: zwei Testdateien nebeneinander, einmal mit und einmal ohne Lattenspalte.
+#: Zwei Quellen fuer dieselbe Messung laufen frueher oder spaeter auseinander
+#: - davon handeln die Befunde 158, 159 und 165, und der Modulkopf hier ist
+#: die Antwort darauf. Wer den Katalog neu misst, aendert ihn an dieser
+#: **einen** Stelle.
+#:
+#: ``noetig`` steht auf den Momenten **dieser** Regel, wie im Gate (Befund
+#: 191), und haengt damit am Versuchsstand. Es sind Zahlen eines Tages, kein
+#: Vertrag: Wer ein Genom hinzufuegt oder weitersucht, aendert sie.
+VORRAT_TAGESKERZEN: tuple[Vorratsregel, ...] = (
+    Vorratsregel("Donchian-Ausbruch 55/20", 58, 0.3262, 2.484, 3.564),
+    Vorratsregel("Grosser Trendausbruch", 57, 0.3215, 2.428, 3.980),
+    Vorratsregel("Trend-Beteiligung 50 Tage", 127, 0.2021, 2.278, 3.361),
+    Vorratsregel("Trendfolge Ausbruch", 130, 0.1892, 2.157, 4.235),
+    Vorratsregel("Trend-Beteiligung 100 Tage", 76, 0.2192, 1.911, 3.379),
+    Vorratsregel("Momentum-Beteiligung", 57, 0.2377, 1.795, 3.439),
+    Vorratsregel("Trend-Beteiligung (fair gerechnet)", 29, 0.3274, 1.763, 3.460),
+    Vorratsregel("Nur mit der Drift", 41, 0.2716, 1.739, 3.883),
+    Vorratsregel("EMA-Kreuzung (Messlatte)", 59, 0.2190, 1.682, 4.166),
+    Vorratsregel("Trendbeteiligung EMA200", 63, 0.1981, 1.573, 3.472),
+    Vorratsregel("Trendbeteiligung mit Puffer", 86, 0.1672, 1.551, 3.533),
+    Vorratsregel("Seltener grosser Ausbruch", 40, 0.2384, 1.508, 3.689),
+    Vorratsregel("Trend beide Richtungen", 45, 0.2210, 1.482, 3.563),
+    Vorratsregel("Momentum-Beteiligung 90 Tage", 45, 0.1887, 1.266, 3.756),
+    Vorratsregel("Langsamer Kreuzer (Messlatte 2)", 16, 0.3085, 1.234, 3.777),
+    Vorratsregel("Volatilitaets-Ausbruch", 85, 0.0303, 0.279, 4.130),
+    Vorratsregel("Starker Trend, Momentum", 58, -0.2483, -1.891, 3.617),
+    Vorratsregel("Momentum Ruecksetzer", 254, -0.1358, -2.164, 4.209),
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Vorratsziel:
+    """Was der Katalog verlangt - und was er je gezeigt hat.
+
+    **Der Befund 291 in Zahlen.** Die Latte steht in Guete; geteilt durch
+    ``sqrt(n_eff)`` wird daraus eine Anforderung an die Qualitaet je Trade,
+    und die faellt steil mit der Stichprobe. An der groessten gemessenen
+    Stichprobe liegt sie **innerhalb** dessen, was andere Regeln desselben
+    Katalogs gezeigt haben - nur eben bei kleinen Stichproben.
+    """
+
+    regeln: int
+    geraeumt: int
+    beste_je_trade: float
+    beste_bei: int
+    billigste_noetig: float
+    billigste_bei: int
+    erreicht_von: int
+    aber_hoechstens_bei: int
+
+    @property
+    def nie_zusammen(self) -> bool:
+        """Gibt es beide Haelften, aber nie an derselben Regel?
+
+        **Und keine Regel, die ihre Latte schon raeumt.** Sonst behauptete
+        der Satz "beide Haelften gibt es, nur nie zusammen" etwas Falsches:
+        Wo eine Regel raeumt, gibt es sie sehr wohl zusammen, und dann ist
+        nicht die Verbindung die Frage, sondern jene Regel.
+        """
+        return (
+            self.geraeumt == 0
+            and self.erreicht_von > 0
+            and self.aber_hoechstens_bei < self.billigste_bei
+        )
+
+    @property
+    def faktor(self) -> float:
+        """Um wie viel die Stichprobe wachsen muesste, bei gleicher Qualitaet."""
+        return self.billigste_bei / self.aber_hoechstens_bei if self.aber_hoechstens_bei else 0.0
+
+    def als_ziel(self) -> str:
+        return (
+            f"Qualitaet je Trade mindestens {self.billigste_noetig:.4f} bei "
+            f"n_eff {self.billigste_bei} - dieselbe Qualitaet, die "
+            f"{self.erreicht_von} von {self.regeln} Regeln zeigen, bei der "
+            f"{self.faktor:.0f}-fachen Stichprobe"
+        )
+
+
+def _vorratsziel(regeln: tuple[Vorratsregel, ...]) -> Vorratsziel:
+    """**Gerechnet, nicht gepflegt** - wie ``SCHUB``.
+
+    Stuende das Ziel als Zahlenliste daneben, waere es eine zweite Quelle zum
+    Katalog darueber, und genau die will dieses Modul verhindern.
+    """
+    offen = [r for r in regeln if r.luecke > 0] or list(regeln)
+    billigste = min(offen, key=lambda r: r.noetig / r.n_eff**0.5)
+    schwelle = billigste.noetig / billigste.n_eff**0.5
+    koennen = [r for r in regeln if r.je_trade >= schwelle]
+    beste = max(regeln, key=lambda r: r.je_trade)
+    return Vorratsziel(
+        regeln=len(regeln),
+        geraeumt=sum(1 for r in regeln if r.luecke <= 0),
+        beste_je_trade=beste.je_trade,
+        beste_bei=beste.n_eff,
+        billigste_noetig=schwelle,
+        billigste_bei=billigste.n_eff,
+        erreicht_von=len(koennen),
+        aber_hoechstens_bei=max((r.n_eff for r in koennen), default=0),
+    )
+
+
+#: Was ein Vorschlag bringen muss, damit er nicht eine schon gemessene Regel
+#: wiederholt (Befund 291/292).
+VORRATSZIEL = _vorratsziel(VORRAT_TAGESKERZEN)
+
+
 def veraltet(text: str) -> tuple[str, ...]:
     """Welche ueberholten Kennzahlen stehen in diesem Text?
 

@@ -26112,3 +26112,78 @@ Kostet keinen Versuch: gerechnet wurde auf den Spalten, die der Bericht
 ohnehin druckt. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 3908 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertzweiundneunzig. Der Auftrag verlangte einen Unterschied und nannte ihn nicht
+
+Sieben Befunde lang ging es um das Werkzeug, mit dem entschieden wird, ob sich
+ein Versuch lohnt. Jetzt steht es, und die Frage ist, wo es wirkt.
+
+Es gibt genau eine Stelle: den Auftrag an die Research-KI. Dort steht seit
+Befund 196 dieser Satz:
+
+> Was einen Vorschlag von den bisherigen unterscheidet, gehoert in seine
+> Begruendung. Ein Vorschlag ohne diesen Unterschied kostet einen Versuch und
+> hebt die Huerde fuer alle folgenden.
+
+**Worin** der Unterschied bestehen soll, stand nirgends. Der Auftrag nannte
+Schwellen (Guete, Trade-Zahl, Holdout-Quote) und eine Warnung - aber keine
+Aussage darueber, welche Sorte Vorschlag schon gemessen ist.
+
+### Jetzt schon
+
+Befund 291 hat die Zahl dazu gemessen, und der Auftrag traegt sie:
+
+    hoechste je gemessene Qualitaet   0.3274  bei n_eff 29
+    billigste Anforderung             0.2641  bei n_eff 254
+
+    5 von 18 Regeln zeigen diese Qualitaet.
+    Keine davon handelt oefter als n_eff 58.
+
+    **Beide Haelften gibt es also, nur nie zusammen.**
+
+Damit ist der Satz pruefbar geworden: Ein Vorschlag mit hoher Qualitaet bei
+wenigen Trades ist gemessen; einer mit vielen Trades bei magerer Qualitaet
+auch. Gesucht ist ein Einstieg, der oft ausloest, **ohne** dabei schlechter zu
+werden - und dass beides bisher nie zusammenkam, ist ueber Raenge belegt und
+haelt jede Auslassung (Befund 290).
+
+### Gerechnet, nicht hineingeschrieben
+
+Die Zahlen stehen nicht im Auftragstext. Sie kommen aus dem gemessenen
+Katalog in `research/referenz.py` und werden dort **gerechnet** - so wie
+`SCHUB` seit Befund 108. Eine Zahlenliste neben der Tabelle waere eine zweite
+Quelle zu ihr, und genau davor warnt der Kopf dieses Moduls.
+
+### Und dabei fiel eine zweite Fassung auf
+
+Die gemessene Tabelle stand in **zwei** Testdateien nebeneinander:
+`tests/test_vorratslage.py` mit Lattenspalte, `tests/test_vorratsdecke.py`
+ohne. Dieselbe Messung, zwei Orte, und beide von mir in den letzten Laeufen
+angelegt.
+
+Sie liegt jetzt in `research/referenz.py`; beide Testdateien leiten sich
+daraus ab. Eine Wache sucht die Qualitaet je Trade der ersten Katalogregel in
+`research/` und `tests/` und verlangt genau einen Treffer - die Zahl dafuer
+holt sie sich aus dem Katalog, sonst faende sie sich selbst.
+
+### Eine Verweigerung, die der Test erzwungen hat
+
+Der erste Entwurf druckte den Abschnitt, sobald es beide Haelften gibt. Ein
+Testfall mit einer Regel, die ihre Latte **raeumt**, hat gezeigt, dass der
+Satz dann falsch ist: Wo eine Regel raeumt, gibt es beide Haelften sehr wohl
+zusammen, und die Frage ist nicht mehr die Verbindung, sondern jene Regel.
+`nie_zusammen` verlangt jetzt zusaetzlich, dass **keine** Regel raeumt.
+
+Das ist die angenehme Sorte Testfehler: Er hat nicht die Umsetzung
+beanstandet, sondern die Aussage.
+
+### Was das nicht ist
+
+Kein neuer Kandidat und keine Lockerung. Der Auftrag ist praeziser geworden,
+nicht milder - er schliesst jetzt ausdruecklich Vorschlaege aus, die eine
+schon gemessene Sorte wiederholen.
+
+Kostet keinen Versuch: gerechnet wurde auf dem vorhandenen Katalog.
+Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 3920 passed, 2 skipped; ruff check sauber.

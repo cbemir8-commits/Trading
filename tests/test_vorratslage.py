@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import pytest
 
+from research.referenz import VORRAT_TAGESKERZEN
 from research.vorratslage import (
     MINDEST_T,
     Abstand,
@@ -200,26 +201,14 @@ class TestDerGemesseneVorrat:
     ist kein Fehler. Geprueft wird an ihnen die Rechnung.
     """
 
-    #: ``(Name, n_eff, Guete, Latte)`` aus ``cli vorratsdecke``.
-    VORRAT = (
-        ("Donchian-Ausbruch 55/20", 58, 2.484, 3.564),
-        ("Grosser Trendausbruch", 57, 2.428, 3.980),
-        ("Trend-Beteiligung 50 Tage", 127, 2.278, 3.361),
-        ("Trendfolge Ausbruch", 130, 2.157, 4.235),
-        ("Trend-Beteiligung 100 Tage", 76, 1.911, 3.379),
-        ("Momentum-Beteiligung", 57, 1.795, 3.439),
-        ("Trend-Beteiligung (fair gerechnet)", 29, 1.763, 3.460),
-        ("Nur mit der Drift", 41, 1.739, 3.883),
-        ("EMA-Kreuzung (Messlatte)", 59, 1.682, 4.166),
-        ("Trendbeteiligung EMA200", 63, 1.573, 3.472),
-        ("Trendbeteiligung mit Puffer", 86, 1.551, 3.533),
-        ("Seltener grosser Ausbruch", 40, 1.508, 3.689),
-        ("Trend beide Richtungen", 45, 1.482, 3.563),
-        ("Momentum-Beteiligung 90 Tage", 45, 1.266, 3.756),
-        ("Langsamer Kreuzer (Messlatte 2)", 16, 1.234, 3.777),
-        ("Volatilitaets-Ausbruch", 85, 0.279, 4.130),
-        ("Starker Trend, Momentum", 58, -1.891, 3.617),
-        ("Momentum Ruecksetzer", 254, -2.164, 4.209),
+    #: ``(Name, n_eff, Guete, Latte)`` - aus ``research.referenz``.
+    #:
+    #: **Die Tabelle stand bis Befund 292 hier**, und eine zweite Fassung
+    #: davon in ``tests/test_vorratsdecke.py``. Zwei Quellen fuer dieselbe
+    #: Messung laufen frueher oder spaeter auseinander; gepflegt wird sie
+    #: jetzt an einer Stelle.
+    VORRAT = tuple(
+        (r.name, r.n_eff, r.guete, r.noetig) for r in VORRAT_TAGESKERZEN
     )
 
     def lage(self) -> Lage:

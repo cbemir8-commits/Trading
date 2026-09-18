@@ -1918,9 +1918,15 @@ def _auftragslage(zustand: Path):
     """
     from research.admission import load_trials
     from research.auftragslage import aus_messungen
-    from research.referenz import SPOTPUNKT
+    from research.referenz import SPOTPUNKT, VORRATSZIEL
 
     return aus_messungen(
+        # **Worin der Unterschied bestehen muss** (Befund 292). Der Auftrag
+        # verlangt seit Befund 196, dass ein Vorschlag sich von den bisherigen
+        # unterscheidet, und konnte nicht sagen, worin. Seit Befund 291 gibt
+        # es die Zahl dazu, und sie wird aus dem gemessenen Katalog
+        # **gerechnet** - nicht hier hineingeschrieben.
+        vorratsziel=VORRATSZIEL,
         versuche=load_trials(zustand / "trials.json"),
         bestand_trades=SPOTPUNKT.effektiv,
         bestand_sharpe=SPOTPUNKT.guete,

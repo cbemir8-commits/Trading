@@ -17,6 +17,7 @@ import math
 
 import pytest
 
+from research.referenz import VORRAT_TAGESKERZEN
 from research.vorratsdecke import (
     MINDEST_T,
     UNGEPRUEFT,
@@ -795,25 +796,8 @@ class TestDerBerichtNenntEsJetzt:
 #: Sie stehen hier als **Zahlen eines Tages**, nicht als Zusicherung ueber den
 #: heutigen Katalog: Wer eine Regel hinzufuegt, aendert sie, und das ist kein
 #: Fehler. Geprueft wird an ihnen die Rechnung, nicht der Bestand.
-VORRAT_285: tuple[tuple[str, int, float], ...] = (
-    ("Donchian-Ausbruch 55/20", 58, 0.3262),
-    ("Grosser Trendausbruch", 57, 0.3215),
-    ("Trend-Beteiligung 50 Tage", 127, 0.2021),
-    ("Trendfolge Ausbruch", 130, 0.1892),
-    ("Trend-Beteiligung 100 Tage", 76, 0.2192),
-    ("Momentum-Beteiligung", 57, 0.2377),
-    ("Trend-Beteiligung (fair gerechnet)", 29, 0.3274),
-    ("Nur mit der Drift", 41, 0.2716),
-    ("EMA-Kreuzung (Messlatte)", 59, 0.2190),
-    ("Trendbeteiligung EMA200", 63, 0.1981),
-    ("Trendbeteiligung mit Puffer", 86, 0.1672),
-    ("Seltener grosser Ausbruch", 40, 0.2384),
-    ("Trend beide Richtungen", 45, 0.2210),
-    ("Momentum-Beteiligung 90 Tage", 45, 0.1887),
-    ("Langsamer Kreuzer (Messlatte 2)", 16, 0.3085),
-    ("Volatilitaets-Ausbruch", 85, 0.0303),
-    ("Starker Trend, Momentum", 58, -0.2483),
-    ("Momentum Ruecksetzer", 254, -0.1358),
+VORRAT_285: tuple[tuple[str, int, float], ...] = tuple(
+    (r.name, r.n_eff, r.je_trade) for r in VORRAT_TAGESKERZEN
 )
 
 

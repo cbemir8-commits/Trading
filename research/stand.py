@@ -1931,6 +1931,25 @@ BEHOBEN: tuple[Richtung, ...] = (
         "sie waere der Unterschied, den der Auftrag an die Research-KI "
         "verlangt",
         291,
+        zuletzt=292,
+    ),
+    # Und damit steht der Unterschied endlich im Auftrag selbst.
+    Richtung(
+        "Der Auftrag verlangte einen Unterschied und nannte ihn nicht",
+        "Seit Befund 196 steht im Auftrag an die Research-KI: *'Was einen "
+        "Vorschlag von den bisherigen unterscheidet, gehoert in seine "
+        "Begruendung.'* **Worin** er bestehen soll, konnte er nicht sagen - "
+        "bis 291 die Zahl dazu gemessen hat. Der Auftrag nennt sie jetzt: "
+        "hoechste je gemessene Qualitaet 0,3274 bei n_eff 29, billigste "
+        "Anforderung 0,2641 bei n_eff 254, gezeigt von 5 der 18 Regeln, "
+        "keine davon oberhalb n_eff 58. Gerechnet wird sie aus dem Katalog, "
+        "nicht hineingeschrieben. **Dabei fiel eine zweite Fassung auf**: "
+        "Die gemessene Tabelle stand in zwei Testdateien nebeneinander, "
+        "einmal mit und einmal ohne Lattenspalte; sie liegt jetzt in "
+        "'research/referenz.py', und eine Wache prueft, dass keine dritte "
+        "entsteht. Der Abschnitt faellt weg, sobald eine Regel ihre Latte "
+        "raeumt - dann gibt es beide Haelften sehr wohl zusammen",
+        292,
     ),
 )
 

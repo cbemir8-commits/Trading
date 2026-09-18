@@ -189,6 +189,20 @@ class Auftragslage:
     familienpreis_bei: int | None = None
     """Die Stichprobe, bei der dieser Preis am niedrigsten ist."""
 
+    vorratsziel: object | None = None
+    """Was der gemessene Katalog verlangt - ``referenz.Vorratsziel``.
+
+    **Der Unterschied, den der Auftrag seit jeher fordert, in Zahlen**
+    (Befund 291/292). Er verlangt, dass ein Vorschlag sich von den bisherigen
+    unterscheidet, und konnte bis hierher nicht sagen, worin: Die Latte je
+    Trade faellt steil mit der Stichprobe, und an der groessten gemessenen
+    liegt sie **innerhalb** dessen, was der Katalog schon gezeigt hat - nur
+    nie bei einer grossen Stichprobe.
+
+    ``None`` heisst "nicht mitgegeben"; dann faellt der Abschnitt weg, und
+    der Auftrag ist wie vorher.
+    """
+
     @property
     def bestand_guete(self) -> float:
         return self.bestand_sharpe * self.bestand_trades**0.5
@@ -442,6 +456,36 @@ class Auftragslage:
                 "schlechter statt besser.",
                 "",
             ]
+
+        ziel = self.vorratsziel
+        if ziel is not None and getattr(ziel, "nie_zusammen", False):
+            zeilen += [
+                "## Worin der Unterschied bestehen muss\n",
+                "Der gemessene Katalog sagt es genauer als jede",
+                "Beschreibung (Befund 291):",
+                "",
+                f"    hoechste je gemessene Qualitaet   {ziel.beste_je_trade:.4f}"
+                f"  bei n_eff {ziel.beste_bei}",
+                f"    billigste Anforderung            {ziel.billigste_noetig:.4f}"
+                f"  bei n_eff {ziel.billigste_bei}",
+                "",
+                "Die Anforderung liegt **unter** dem, was der Katalog kann:",
+                f"{ziel.erreicht_von} von {ziel.regeln} Regeln zeigen diese",
+                "Qualitaet. Keine davon handelt oefter als n_eff",
+                f"{ziel.aber_hoechstens_bei}.",
+                "",
+                "**Beide Haelften gibt es also, nur nie zusammen.** Was fehlt,",
+                "ist keine Qualitaet, die es hier nie gab, sondern dieselbe",
+                f"Qualitaet bei der {ziel.faktor:.0f}-fachen Stichprobe.",
+                "",
+                "Das ist der Unterschied, der gemeint ist: Ein Vorschlag mit",
+                "hoher Qualitaet bei wenigen Trades ist gemessen, einer mit",
+                "vielen Trades bei magerer Qualitaet auch. Gesucht ist ein",
+                "Einstieg, der oft ausloest, **ohne** dabei schlechter zu",
+                "werden - die Kopplung zwischen beidem ist ueber Raenge",
+                "belegt und haelt jede Auslassung (Befund 290).",
+                "",
+            ]
         return "\n".join(zeilen)
 
 
@@ -458,6 +502,7 @@ def aus_messungen(
     familien: tuple[tuple[str, int], ...] = (),
     familienpreis: float | None = None,
     familienpreis_bei: int | None = None,
+    vorratsziel: object | None = None,
 ) -> Auftragslage:
     """Die Lage aus den vorhandenen Rechnungen zusammensetzen.
 
@@ -508,6 +553,7 @@ def aus_messungen(
         familien=familien,
         familienpreis=familienpreis,
         familienpreis_bei=familienpreis_bei,
+        vorratsziel=vorratsziel,
         kosten_je_versuch=preis,
         bestes_ziel=lage[0],
         bedarf_am_ziel=(karte.bedarf(lage[0], 0.72) or bedarf) if lage[0] else bedarf,
