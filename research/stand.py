@@ -1951,6 +1951,24 @@ BEHOBEN: tuple[Richtung, ...] = (
         "raeumt - dann gibt es beide Haelften sehr wohl zusammen",
         292,
     ),
+    # Der meistgelesene Bericht zeigte auf den Stand von vor 200 Befunden.
+    Richtung(
+        "Der Stand nannte die erste Fundstelle statt der letzten",
+        "'cli stand' fuehrt den Deflated Sharpe als durchgemessen und nannte "
+        "dazu **Befund 89** - rund zweihundert Befunde alt und seither "
+        "mehrfach ueberholt (286 bis 291). Wer nachschlug, fand den Stand von "
+        "damals; genau die Falle aus Befund 130, und 'Richtung' sagt seit "
+        "damals: *'Wer eine Fundstelle nennt, muss die letzte nennen.'* "
+        "'research/nachmessung.py' fuehrt beide Zahlen seit jeher, "
+        "'gatelage' tat es nicht - jetzt steht dort 'Nr. 291, zuerst 89'. "
+        "**Und die zweite Haelfte des Satzes war zu stark**: *'Weitere "
+        "Laeufe daran kosten Zeit ohne offene Frage'* las sich als 'hier ist "
+        "nichts mehr zu holen'. Gemeint sind Laeufe **am Gate**; was offen "
+        "bleibt, ist ein Kandidat und keine Rechnung - Befund 291 hat "
+        "gemessen, dass die noetige Qualitaet je Trade innerhalb dessen "
+        "liegt, was der Katalog gezeigt hat",
+        293,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

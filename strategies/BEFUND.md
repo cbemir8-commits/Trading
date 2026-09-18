@@ -26187,3 +26187,79 @@ Kostet keinen Versuch: gerechnet wurde auf dem vorhandenen Katalog.
 Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 3920 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertdreiundneunzig. Der Stand nannte die erste Fundstelle statt der letzten
+
+Befund 292 hat die Messung aus 291 in den Auftrag an die Research-KI gebracht.
+Danach die naheliegende Frage: Steht sie auch da, wo ein **Mensch** nachsieht?
+
+`cli stand` ist der meistgelesene Bericht des Projekts. Er sagte:
+
+> Deflated Sharpe (Nr. 89): durchgemessen, alle naheliegenden Wege sind zu.
+> Weitere Laeufe daran kosten Zeit ohne offene Frage.
+
+Zwei Dinge daran stimmen nicht mehr.
+
+### Die Fundstelle
+
+**Befund 89.** Rund zweihundert Befunde alt. Seither haben 286 bis 291 an
+genau diesem Gate gemessen - die Obergrenze der Trefferquote, die Kopplung
+ueber Raenge, die Anforderung je Trade. Wer der Zeile folgte, fand den Stand
+von damals.
+
+Das ist wortgenau die Falle aus Befund 130, wo ein Registereintrag auf eine
+ueberholte Tabelle zeigte und zwei Laeufe hintereinander in die Irre gefuehrt
+hat. `Richtung` traegt seitdem zwei Felder und sagt im Docstring:
+
+> Wer eine Fundstelle nennt, muss die **letzte** nennen. Die erste ist
+> Geschichte, nicht Stand.
+
+`research/nachmessung.py` fuehrt beide Zahlen seit jeher. `gatelage` fuehrte
+eine. Jetzt steht dort:
+
+    Deflated Sharpe (Nr. 291, zuerst 89): durchgemessen, ...
+
+Die erste Messung bleibt sichtbar - sie erklaert, woher der Befund kommt.
+Nachschlagen soll ein Leser die letzte.
+
+### Der Satz danach
+
+*"Weitere Laeufe daran kosten Zeit ohne offene Frage."*
+
+Gemeint waren Laeufe **am Gate**: Empfindlichkeitsrechnungen, Eichungen,
+Streuungsanalysen. Das stimmt weiterhin - Befund 286 bis 291 haben dort
+nichts gefunden, was eine weitere Rechnung lohnte.
+
+Gelesen wurde es als "an diesem Gate ist nichts mehr zu holen", und das ist
+etwas anderes und falsch. Befund 291 hat gemessen, dass die noetige Qualitaet
+je Trade **innerhalb** dessen liegt, was der Katalog gezeigt hat - fuenf von
+achtzehn Regeln bringen sie, nur keine bei einer grossen Stichprobe. Da ist
+sehr wohl eine offene Frage. Sie haengt nur nicht an einer Rechnung, sondern
+an einem Kandidaten.
+
+Der Satz sagt das jetzt:
+
+> Weitere Laeufe **an diesem Gate** kosten Zeit ohne offene Frage - was offen
+> bleibt, ist ein Kandidat und keine Rechnung.
+
+### Was vorher geprueft und **nicht** gefunden wurde
+
+Vor dieser Arbeit die Gegenprobe zu Befund 292: Kommt der neue Abschnitt
+ueberhaupt im Prompt an, oder endet er in `als_auftrag` und wird von
+`build_prompt` nicht uebernommen? Genau diese halbe Anwendung war Befund 285
+und 288.
+
+Nachgesehen: Der Prompt ist 11.924 Zeichen lang und enthaelt "Worin der
+Unterschied bestehen muss", "nur nie zusammen" und die 0,2641. **Kein Fund** -
+und das gehoert genauso berichtet wie einer.
+
+### Was das nicht ist
+
+Keine Lockerung und keine neue Messung. Eine Fundstelle wurde nachgezogen und
+ein Satz praezisiert, der mehr behauptet hat, als gemessen war - in die
+vorsichtige Richtung, nicht in die bequeme.
+
+Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von
+100.
+
+Volle Suite 3924 passed, 2 skipped; ruff check sauber.

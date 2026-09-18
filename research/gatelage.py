@@ -78,10 +78,17 @@ class Art(StrEnum):
 #: erklaert, entzieht sie der Arbeit - das gehoert benannt, nicht geraten.
 WIRTSCHAFTLICHE_GATES: frozenset[str] = frozenset({"Messlatte"})
 
-#: Gates, an denen die Untersuchung abgeschlossen ist, mit der Fundstelle im
-#: Laborbuch. Ein Eintrag hier heisst nicht "unloesbar", sondern "die
-#: naheliegenden Wege sind gemessen und zu".
-DURCHGEMESSENE_GATES: dict[str, int] = {"Deflated Sharpe": 89}
+#: Gates, an denen die Untersuchung abgeschlossen ist, mit ``(zuerst,
+#: zuletzt)`` im Laborbuch. Ein Eintrag hier heisst nicht "unloesbar", sondern
+#: "die naheliegenden Wege sind gemessen und zu".
+#:
+#: **Zwei Zahlen und nicht eine** (Befund 293). Hier stand ``89``, und damit
+#: schickte der meistgelesene Bericht des Projekts seinen Leser an eine
+#: zweihundert Befunde alte Stelle. Genau davor warnt ``Richtung`` seit
+#: Befund 130: *"Wer eine Fundstelle nennt, muss die letzte nennen. Die erste
+#: ist Geschichte, nicht Stand."* ``research/nachmessung.py`` fuehrt beide
+#: seit jeher; dieses Modul tat es nicht.
+DURCHGEMESSENE_GATES: dict[str, tuple[int, int]] = {"Deflated Sharpe": (89, 291)}
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,6 +101,16 @@ class Hindernis:
     botschaft: str
     art: Art
     fundstelle: int | None = None
+    """Die **massgebliche** Fundstelle - die letzte Messung (Befund 130)."""
+
+    zuerst: int | None = None
+    """Wo es zuerst gemessen wurde, wenn das eine andere Stelle ist.
+
+    Steht daneben und nicht statt der massgeblichen: Die erste Messung ist
+    Geschichte und erklaert, woher der Befund kommt; nachschlagen soll ein
+    Leser die letzte. Dasselbe Paar wie in ``research/nachmessung.py``.
+    """
+
     nur_hier: bool = False
     """Faellt dieses Gate **nur** am berichteten Betriebspunkt durch?
 
@@ -113,10 +130,24 @@ class Hindernis:
         """
         return not (self.wert >= self.schwelle and self.art is Art.WIRTSCHAFTLICH)
 
+    @property
+    def stelle(self) -> str:
+        """Die Fundstelle, wie ein Leser sie nachschlagen soll.
+
+        Mit Komma und nicht mit Klammer: Beide Aufrufer setzen selbst eine
+        drumherum, und "Nr. 291 (zuerst 89)" darin ergaebe eine Klammer in
+        der Klammer.
+        """
+        if self.fundstelle is None:
+            return ""
+        if self.zuerst is not None and self.zuerst != self.fundstelle:
+            return f"Nr. {self.fundstelle}, zuerst {self.zuerst}"
+        return f"Nr. {self.fundstelle}"
+
     def als_zeile(self) -> str:
         kopf = f"{self.name:<20} {self.wert:>10.3f} gegen {self.schwelle:>9.3f}"
         if self.art is Art.DURCHGEMESSEN and self.fundstelle:
-            return f"{kopf}   durchgemessen (Nr. {self.fundstelle})"
+            return f"{kopf}   durchgemessen ({self.stelle})"
         return f"{kopf}   {self.art}"
 
 
@@ -210,12 +241,14 @@ class Gatelage:
             )
         if fertig:
             namen = ", ".join(
-                f"{h.name} (Nr. {h.fundstelle})" if h.fundstelle else h.name
+                f"{h.name} ({h.stelle})" if h.fundstelle else h.name
                 for h in fertig
             )
             teile.append(
                 f"{namen}: durchgemessen, alle naheliegenden Wege sind zu. "
-                f"Weitere Laeufe daran kosten Zeit ohne offene Frage."
+                f"Weitere Laeufe **an diesem Gate** kosten Zeit ohne offene "
+                f"Frage - was offen bleibt, ist ein Kandidat und keine "
+                f"Rechnung."
             )
         if offen:
             namen = ", ".join(h.name for h in offen)
@@ -272,15 +305,17 @@ def ordne(
         if r.passed:
             continue
         if r.name in WIRTSCHAFTLICHE_GATES:
-            art, fundstelle = Art.WIRTSCHAFTLICH, None
+            art, zuerst, fundstelle = Art.WIRTSCHAFTLICH, None, None
         elif r.name in DURCHGEMESSENE_GATES:
-            art, fundstelle = Art.DURCHGEMESSEN, DURCHGEMESSENE_GATES[r.name]
+            zuerst, fundstelle = DURCHGEMESSENE_GATES[r.name]
+            art = Art.DURCHGEMESSEN
         else:
-            art, fundstelle = Art.OFFEN, None
+            art, zuerst, fundstelle = Art.OFFEN, None, None
         hindernisse.append(
             Hindernis(
                 name=r.name, wert=float(r.value), schwelle=float(r.threshold),
                 botschaft=r.message, art=art, fundstelle=fundstelle,
+                zuerst=zuerst,
                 nur_hier=zweitpunkt is not None and r.name not in dort,
             )
         )

@@ -133,10 +133,64 @@ class TestEinordnung:
         eine Behauptung."""
         lage = ordne(GEMESSEN)
         dsr = next(h for h in lage.abgeschlossen)
+        zuerst, zuletzt = DURCHGEMESSENE_GATES["Deflated Sharpe"]
 
-        assert dsr.fundstelle == DURCHGEMESSENE_GATES["Deflated Sharpe"]
+        assert (dsr.zuerst, dsr.fundstelle) == (zuerst, zuletzt)
         assert f"Nr. {dsr.fundstelle}" in lage.urteil()
         assert f"Nr. {dsr.fundstelle}" in dsr.als_zeile()
+
+    def test_und_zwar_die_letzte_zuerst(self) -> None:
+        """**Befund 293.** Hier stand nur die erste Messung - Befund 89, rund
+        zweihundert Befunde alt. Ein Leser schlaegt nach, was der Bericht
+        nennt, und findet damit den Stand von damals.
+
+        Dieselbe Falle wie in Befund 130, und ``Richtung`` sagt es seit
+        damals: *"Wer eine Fundstelle nennt, muss die letzte nennen."*
+        """
+        lage = ordne(GEMESSEN)
+        dsr = next(h for h in lage.abgeschlossen)
+
+        assert dsr.fundstelle > dsr.zuerst, "die massgebliche ist die spaetere"
+        assert dsr.stelle == f"Nr. {dsr.fundstelle}, zuerst {dsr.zuerst}"
+        assert dsr.stelle in dsr.als_zeile()
+        assert dsr.stelle in lage.urteil()
+
+    def test_ohne_nachmessung_steht_dort_eine_zahl(self) -> None:
+        """Wo erste und letzte Messung dieselbe sind, waere "(zuerst X)" nur
+        Laerm."""
+        from research.gatelage import Art, Hindernis
+
+        einzeln = Hindernis(
+            name="X", wert=1.0, schwelle=2.0, botschaft="",
+            art=Art.DURCHGEMESSEN, fundstelle=89, zuerst=89,
+        )
+
+        assert einzeln.stelle == "Nr. 89"
+        assert "zuerst" not in einzeln.als_zeile()
+
+    def test_offene_gates_haben_keine_stelle(self) -> None:
+        from research.gatelage import Art, Hindernis
+
+        offen = Hindernis(
+            name="X", wert=1.0, schwelle=2.0, botschaft="", art=Art.OFFEN
+        )
+
+        assert offen.stelle == ""
+
+    def test_weitere_laeufe_heisst_an_diesem_gate(self) -> None:
+        """**Die zweite Haelfte von Befund 293.**
+
+        Hier stand "Weitere Laeufe daran kosten Zeit ohne offene Frage", und
+        das las sich als "hier ist nichts mehr zu holen". Gemeint waren Laeufe
+        **am Gate** - Empfindlichkeits- und Eichungsrechnungen. Was offen
+        bleibt, ist ein Kandidat: Befund 291 hat gemessen, dass die noetige
+        Qualitaet je Trade innerhalb dessen liegt, was der Katalog gezeigt hat
+        - nur nie bei einer grossen Stichprobe.
+        """
+        urteil = ordne(GEMESSEN).urteil()
+
+        assert "an diesem Gate" in urteil
+        assert "ein Kandidat und keine" in urteil
 
     def test_unbekannte_gates_gelten_als_offen(self) -> None:
         """**Die sichere Richtung.** Ein Gate, das weder als wirtschaftlich
