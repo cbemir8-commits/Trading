@@ -1987,6 +1987,26 @@ BEHOBEN: tuple[Richtung, ...] = (
         "offene Richtung Begriffe bekommt",
         294,
     ),
+    # Die sieben Verdachtsfaelle aus 294 - gelesen statt gesammelt.
+    Richtung(
+        "Sieben Verdachtsfaelle, gelesen und entschieden",
+        "Befund 294 hat sieben offene Richtungen mit spaeteren Erwaehnungen "
+        "gemeldet; das Modul besteht darauf, dass ein Mensch sie liest. "
+        "Getan: **Drei waren Nachmessungen** und sind nachgezogen - 'Zaehlt "
+        "ein Sweep als Versuch?' auf 282 (dort wird die Frage ausdruecklich "
+        "offengehalten und um die Unterscheidung Suchlauf/Sweep geschaerft), "
+        "'Der Preis in Reststreuungen' auf 290 (die Gerade darunter neu "
+        "beurteilt), 'Einstieg, der nicht am Rauschen haengt' auf 283 (dort "
+        "gepruefte, was von der Beschreibung uebrig ist). **Vier waren blosse "
+        "Erwaehnungen** - Regelnamen in Katalogtabellen, ein Werkzeughinweis, "
+        "ein Registerabdruck. Genau das Verhaeltnis, vor dem der Modulkopf "
+        "warnt. Die Vermutung, Registerzitate seien die Hauptquelle der "
+        "Fehlalarme, ist **gemessen und widerlegt**: 11 von 684 Treffern "
+        "stehen in Zitatzeilen, 2 %. Neu ist ein Gedaechtnis ('GELESEN'): Der "
+        "Bericht trennt ungelesene von entschiedenen Erwaehnungen, sonst "
+        "meldet jeder Lauf dieselben dreiundvierzig",
+        295,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -2084,7 +2104,7 @@ OFFEN: tuple[Richtung, ...] = (
         "Median 2,080, Trefferquote hoechstens 15,3 %. Offen bleibt, ob sich "
         "aus der Kopplung ueberhaupt noch etwas lesen laesst",
         179,
-        286,
+        290,
     ),
     # **Die Gegenprobe zu 169/179 - und sie war nicht durchfuehrbar.**
     Richtung(
@@ -2109,7 +2129,7 @@ OFFEN: tuple[Richtung, ...] = (
         "wichtigste: Die Kopplung ist als Eigenschaft der Signale gemessen, "
         "ein struktureller Bruch ist der einzige bekannte Weg heraus",
         56,
-        257,
+        283,
     ),
     # Auf Tageskerzen beantwortet (Kippfaktor 56, Befund 187). Der
     # Kostenanteil lag dort bei hoechstens 0,0086 der Trade-Streuung - auf
@@ -2183,7 +2203,7 @@ OFFEN: tuple[Richtung, ...] = (
         "'save_trials' in den Grundstock - 187 der 198 Versuche stehen dort "
         "ohne Herkunft, als waeren sie Vorgeschichte",
         233,
-        zuletzt=234,
+        zuletzt=282,
     ),
     # Gemessen in 234, absichtlich nicht angefasst.
     Richtung(

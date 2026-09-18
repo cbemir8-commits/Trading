@@ -26350,3 +26350,100 @@ Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von
 100.
 
 Volle Suite 3929 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertfuenfundneunzig. Sieben Verdachtsfaelle, gelesen und entschieden
+
+Befund 294 hat die Suche auf die offenen Richtungen ausgeweitet und sieben
+Eintraege mit spaeteren Erwaehnungen gemeldet. Das Modul besteht darauf, dass
+daraus kein Automatismus wird:
+
+> Erwaehnt zu werden ist nicht dasselbe wie nachgemessen zu werden [...] Wer
+> einen Eintrag nachzieht, hat den Befund gelesen.
+
+Also gelesen.
+
+### Drei waren Nachmessungen
+
+**Zaehlt ein Sweep am Bestand als Versuch? (234 -> 282).** Befund 281 und 282
+greifen die Frage ausdruecklich auf. 282 schaerft sie sogar: *"Das sind
+Suchlaeufe und keine Sweeps am Bestand"* - eine Unterscheidung, die es in 234
+noch nicht gab - und haelt fest: *"Die Frage aus 234 selbst bleibt offen."*
+Wer 234 liest, bekommt die Frage ohne diese Unterscheidung.
+
+**Der Preis in Reststreuungen (286 -> 290).** Befund 290 zitiert die
+Begruendung aus 179 und stellt die Frage darunter neu: *"Reststreuungen um
+welche Gerade? Um die, die ein Punkt loescht."* Das ist die letzte Beurteilung
+der Grundlage, auf der dieser Eintrag steht.
+
+**Einstieg, der nicht am Rauschen haengt (257 -> 283).** Befund 283 hat
+nachgesehen, was von der Beschreibung ueberhaupt da ist - ein Name, eine
+Eigenschaft, zwei Kennzahlen, **keine Regel** - und daraus geschlossen, dass
+"neu bauen" hier Erfinden waere. Das aendert, was der Eintrag bedeutet.
+
+### Vier waren blosse Erwaehnungen
+
+    Bestand + 'Grosser Trendausbruch'   290, 207   Regelnamen in Tabellen
+    Holdout auf fremden Maerkten        276, 268   Zitat des Mechanismus
+    Timing gegen Zufallseinstiege       208, 206   Werkzeughinweis, Registerabdruck
+    Zertifizierbarkeit der Bauart       257, 193   "gepflanzt" in anderem Sinn
+
+Bei 'Grosser Trendausbruch' stehen die Treffer in der Katalogtabelle von
+Befund 290 - die Regel kommt dort vor, weil **jede** Regel dort vorkommt.
+Befund 208 ist ein Abschnitt, der das Register abdruckt.
+
+Drei von sieben also. Genau das Verhaeltnis, vor dem der Modulkopf warnt, und
+der Grund, warum kein Code `zuletzt` selbst setzt.
+
+### Eine Vermutung, gemessen und widerlegt
+
+Beim Lesen entstand der Verdacht, Abschnitte, die das Register **zitieren**,
+seien die Hauptquelle der Fehlalarme - Befund 208 druckt es ab, 257 und 283
+zitieren einzelne Eintraege. Waere das so, liesse sich filtern.
+
+Gemessen ueber alle 684 Treffer: **11 stehen in Zitatzeilen. Zwei Prozent.**
+Die Vermutung traegt nicht, und der Filter ist nicht gebaut worden. Die
+Fehlalarme kommen aus gewoehnlichem Text - aus Regelnamen in Tabellen und aus
+Begriffen, die in mehr als einer Bedeutung vorkommen.
+
+### Was gefehlt hat: ein Gedaechtnis
+
+Die Suche meldete bei jedem Lauf dieselben dreiundvierzig Eintraege. Wer sie
+zweimal liest, hat zweimal gearbeitet; wer sie gar nicht liest, merkt es
+nicht - und genau aus so einer ungelesenen Liste ist Befund 130 entstanden.
+
+`GELESEN` haelt jetzt fest, bis zu welchem Befund die Erwaehnungen einer
+Richtung nachgeschlagen **und entschieden** sind. Der Bericht trennt:
+
+    36 Eintraege haben **ungelesene** spaetere Erwaehnungen.
+     7 Eintraege sind gelesen und entschieden.
+
+Gesetzt wird der Eintrag von Hand, aus demselben Grund, aus dem kein Code
+`zuletzt` setzt. Und "durchgesehen" gilt nur, wo es auch etwas durchzusehen
+gab - sonst zaehlte der Bericht Ruhe als Leistung.
+
+### Der Eintrag haette sich fast selbst widerlegt
+
+Zuerst stand in `GELESEN` die **294** - der Befund, der die Verdachtsfaelle
+gemeldet hat. Die volle Suite fiel darauf durch, einzeln gelaufen war die
+Testdatei gruen.
+
+Der Grund: *Dieser Abschnitt hier* nennt alle sieben Richtungen beim Namen und
+erzeugt damit selbst einen Treffer in Befund 295. Bei "gelesen bis 294" waere
+jede der sieben im selben Lauf wieder als **ungelesen** erschienen, in dem sie
+als gelesen eingetragen wurde.
+
+Die Zahl ist deshalb 295: Der Abschnitt, der die Lesung festhaelt, gehoert zu
+dem, was gelesen ist. Dass es auffiel, verdankt sich der Reihenfolge - erst
+die Testdatei allein (gruen, der Abschnitt fehlte noch), dann die volle Suite
+nach dem Schreiben (rot).
+
+### Was das nicht ist
+
+Keine Messung am Markt. Drei Fundstellen zeigen jetzt auf die letzte statt auf
+eine frueher Messung, vier Verdachtsfaelle sind als solche abgelegt, und die
+naechste Durchsicht faengt bei sechsunddreissig an statt bei dreiundvierzig.
+
+Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von
+100.
+
+Volle Suite 3936 passed, 2 skipped; ruff check sauber.

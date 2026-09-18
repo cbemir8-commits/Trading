@@ -310,3 +310,79 @@ class TestDieSucheSiehtAuchDieOffenenAn:
 
         for s in gefunden:
             assert len(s.offen) <= 25, f"{s.name}: {len(s.offen)} Abschnitte"
+
+
+class TestDieSucheHatJetztEinGedaechtnis:
+    """**Befund 295.** Die Suche meldete bei jedem Lauf dieselben Eintraege.
+
+    Wer sie zweimal liest, hat zweimal gearbeitet; wer sie gar nicht liest,
+    merkt es nicht. ``GELESEN`` haelt fest, bis zu welchem Befund die
+    Erwaehnungen einer Richtung nachgeschlagen **und entschieden** sind.
+    """
+
+    def test_neu_ist_enger_als_offen(self) -> None:
+        from research.nachmessung import Spur
+
+        s = Spur("X", 10, 20, ((30, 1), (40, 2), (15, 1)), gelesen=35)
+
+        assert {n for n, _ in s.offen} == {30, 40}
+        assert {n for n, _ in s.neu} == {40}
+
+    def test_ohne_eintrag_ist_nichts_gelesen(self) -> None:
+        from research.nachmessung import Spur
+
+        s = Spur("X", 10, 20, ((30, 1), (40, 2)))
+
+        assert s.neu == s.offen
+        assert not s.durchgesehen
+
+    def test_durchgesehen_heisst_alles_gelesen(self) -> None:
+        from research.nachmessung import Spur
+
+        s = Spur("X", 10, 20, ((30, 1), (40, 2)), gelesen=40)
+
+        assert s.neu == ()
+        assert s.durchgesehen
+
+    def test_ohne_erwaehnungen_ist_nichts_durchzusehen(self) -> None:
+        """"Durchgesehen" soll Arbeit bedeuten, nicht Abwesenheit von
+        Arbeit - sonst zaehlt der Bericht Ruhe als Leistung."""
+        from research.nachmessung import Spur
+
+        s = Spur("X", 10, 20, (), gelesen=99)
+
+        assert not s.durchgesehen
+
+    def test_gelesen_nennt_nur_richtungen_die_es_gibt(self) -> None:
+        from research.nachmessung import GELESEN
+        from research.stand import GESCHLOSSEN, OFFEN
+
+        namen = {r.name for r in (*GESCHLOSSEN, *OFFEN)}
+        verwaist = set(GELESEN) - namen
+
+        assert not verwaist, f"gelesen ohne Richtung: {sorted(verwaist)}"
+
+    def test_die_sieben_aus_294_sind_entschieden(self) -> None:
+        """Der Zweck des Eintrags: Sie tauchen nicht wieder als neu auf."""
+        from pathlib import Path
+
+        from research.nachmessung import GELESEN, spuren
+        from research.stand import OFFEN
+
+        text = Path("strategies/BEFUND.md").read_text(encoding="utf-8")
+        gefunden, _ = spuren(text, OFFEN)
+        durch = {s.name for s in gefunden if s.durchgesehen}
+
+        assert durch == set(GELESEN) & {s.name for s in gefunden}
+        assert len(durch) == 7
+
+    def test_drei_davon_wurden_nachgezogen(self) -> None:
+        """Gelesen heisst nicht abgehakt: Drei der sieben waren wirkliche
+        Nachmessungen und haben die massgebliche Fundstelle bewegt."""
+        from research.stand import OFFEN
+
+        nach = {r.name: r.massgeblich for r in OFFEN}
+
+        assert nach["Zaehlt ein Sweep am Bestand als Versuch?"] == 282
+        assert nach["Der Preis in Reststreuungen"] == 290
+        assert nach["Einstieg, der nicht am Rauschen haengt"] == 283

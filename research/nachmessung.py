@@ -35,7 +35,7 @@ from dataclasses import dataclass
 
 from research.stand import Richtung, zahlwort
 
-__all__ = ["BEGRIFFE", "Abschnitt", "Spur", "abschnitte", "spuren"]
+__all__ = ["BEGRIFFE", "GELESEN", "Abschnitt", "Spur", "abschnitte", "spuren"]
 
 _UEBERSCHRIFT = re.compile(r"^## ([A-Za-zaeoeueAEOEUEäöüÄÖÜ]+)\.\s*(.*)$")
 
@@ -130,6 +130,8 @@ class Spur:
     fundstelle: int
     massgeblich: int
     spaeter: tuple[tuple[int, int], ...] = ()
+    gelesen: int = 0
+    """Bis zu welchem Befund die Erwaehnungen gelesen sind (Befund 295)."""
 
     @property
     def offen(self) -> tuple[tuple[int, int], ...]:
@@ -139,6 +141,21 @@ class Spur:
         ihr bereits ueberholt.
         """
         return tuple((n, t) for n, t in self.spaeter if n > self.massgeblich)
+
+    @property
+    def neu(self) -> tuple[tuple[int, int], ...]:
+        """Erwaehnungen, die noch niemand gelesen hat.
+
+        ``offen`` sagt, was **nach der Messung** kam; das hier sagt, was
+        seither auch noch **niemand angesehen** hat. Der Unterschied ist die
+        Arbeit, die wirklich offen ist.
+        """
+        return tuple((n, t) for n, t in self.offen if n > self.gelesen)
+
+    @property
+    def durchgesehen(self) -> bool:
+        """Sind alle Erwaehnungen dieser Richtung gelesen?"""
+        return bool(self.offen) and not self.neu
 
     @property
     def nachgezogen(self) -> bool:
@@ -157,6 +174,36 @@ class Spur:
             f"{namen} - zu lesen, nicht zu glauben."
         )
 
+
+#: Bis zu welchem Befund die Verdachtsfaelle einer Richtung **gelesen** sind.
+#:
+#: **Ohne dieses Register hat die Suche kein Gedaechtnis** (Befund 295). Sie
+#: meldet bei jedem Lauf dieselben dreiundvierzig Eintraege, und niemand
+#: sieht, welche davon schon jemand nachgeschlagen hat. Wer sie zweimal
+#: liest, hat zweimal gearbeitet; wer sie gar nicht liest, merkt es nicht.
+#:
+#: Ein Eintrag heisst: "Die Erwaehnungen bis zu diesem Befund sind gelesen
+#: und entschieden." Was danach kommt, ist neu. Gesetzt wird er **von Hand**
+#: und nur von jemandem, der die Abschnitte wirklich gelesen hat - aus
+#: demselben Grund, aus dem kein Code ``Richtung.zuletzt`` setzt.
+GELESEN: dict[str, int] = {
+    # Befund 295: die sieben Verdachtsfaelle aus 294, gelesen und entschieden.
+    # Drei waren Nachmessungen und sind nachgezogen, vier waren Erwaehnungen.
+    #
+    # **Und die Zahl ist 295 und nicht 294**: Der Abschnitt, der die Lesung
+    # festhaelt, nennt jede der sieben Richtungen beim Namen und erzeugt damit
+    # selbst einen Treffer. Bei 294 haette jede der sieben sofort wieder als
+    # ungelesen dagestanden - der Eintrag haette sich selbst widerlegt. Die
+    # volle Suite hat das gefunden; einzeln gelaufen war die Datei gruen, weil
+    # der Abschnitt da noch nicht geschrieben war.
+    "Bestand + 'Grosser Trendausbruch'": 295,
+    "Holdout auf fremden Maerkten": 295,
+    "Zaehlt ein Sweep am Bestand als Versuch?": 295,
+    "Timing gegen Zufallseinstiege": 295,
+    "Zertifizierbarkeit der Bauart": 295,
+    "Der Preis in Reststreuungen": 295,
+    "Einstieg, der nicht am Rauschen haengt": 295,
+}
 
 #: Suchbegriffe je Richtung - geschlossene **und offene**.
 #:
@@ -292,5 +339,10 @@ def spuren(
         geordnet = tuple(
             sorted(gezaehlt.items(), key=lambda kv: (-kv[1], kv[0]))
         )
-        aus.append(Spur(r.name, r.befund, r.massgeblich, geordnet))
+        aus.append(
+            Spur(
+                r.name, r.befund, r.massgeblich, geordnet,
+                gelesen=GELESEN.get(r.name, 0),
+            )
+        )
     return tuple(aus), tuple(ohne)

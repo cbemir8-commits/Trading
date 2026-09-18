@@ -11987,7 +11987,10 @@ def register(
         f"und keine Befunde.[/]\n"
     )
 
-    verdaechtig = [s for s in gefunden if s.offen]
+    # **Was schon gelesen ist, steht unten** (Befund 295). Ohne die Trennung
+    # meldet jeder Lauf dieselben Eintraege, und niemand sieht, welche davon
+    # jemand nachgeschlagen hat.
+    verdaechtig = [s for s in gefunden if s.neu]
     for s in verdaechtig:
         marke = "[green]+[/]" if s.nachgezogen else " "
         stelle = (
@@ -11997,6 +12000,18 @@ def register(
         )
         namen = ", ".join(f"{n} ({t}x)" for n, t in s.offen[:6])
         console.print(f"{marke} {s.name:<30} {stelle:<24} spaeter: {namen}")
+
+    durchgesehen = [s for s in gefunden if s.durchgesehen]
+    if durchgesehen:
+        console.print(
+            f"\n[green]{len(durchgesehen)} Eintraege sind gelesen und "
+            f"entschieden[/] [dim](research/nachmessung.GELESEN):[/]"
+        )
+        for s in durchgesehen:
+            console.print(
+                f"  [dim]{s.name:<44} Nr. {s.massgeblich:<5} "
+                f"gelesen bis {s.gelesen}[/]"
+            )
 
     ruhig = [s for s in gefunden if not s.offen]
     if ruhig:
@@ -12019,8 +12034,9 @@ def register(
             "Fehlalarm - Begriffe stehen\n  in research/nachmessung.BEGRIFFE.[/]"
         )
     console.print(
-        f"\n[dim]{len(verdaechtig)} Eintraege haben spaetere Erwaehnungen. Jede "
-        f"davon ist zu lesen,\nbevor jemand ihre Zahlen als Stand ausgibt.[/]"
+        f"\n[dim]{len(verdaechtig)} Eintraege haben **ungelesene** spaetere "
+        f"Erwaehnungen. Jede davon ist\nzu lesen, bevor jemand ihre Zahlen als "
+        f"Stand ausgibt.[/]"
     )
     # **Und was diese Suche nicht ansieht** (Befund 294). Eine Zahl dafuer
     # gehoert unter den Bericht: Ohne sie liest sich "keine weiteren Treffer"
