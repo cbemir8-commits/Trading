@@ -179,23 +179,48 @@ class TestLesenWasDaIst:
 
 
 class TestKeinWiederaufsetzen:
-    def test_das_modul_bietet_kein_fortsetzen_an(self) -> None:
-        """**Absicht, kein Versehen.** Ein Lauf, der an Genom 18 weitermacht,
-        muesste wissen, dass die ersten siebzehn unter denselben Bedingungen
-        gemessen wurden - gleiche Kerzen, gleicher Versuchsstand, gleicher
-        Code. Eine falsche Fortsetzung waere schlimmer als ein verlorener
-        Lauf.
+    """**Absicht, kein Versehen.** Ein Lauf, der an Genom 18 weitermacht,
+    muesste wissen, dass die ersten siebzehn unter denselben Bedingungen
+    gemessen wurden - gleiche Kerzen, gleicher Versuchsstand, gleicher Code.
+    Eine falsche Fortsetzung waere schlimmer als ein verlorener Lauf.
 
-        Dieser Test haelt die Entscheidung fest, damit sie beim naechsten
-        langen Lauf nicht beilaeufig umgestossen wird.
-        """
+    Befund 300 legt Stuecke **zusammen** und setzt trotzdem nichts fort: Jedes
+    Stueck ist ein vollstaendiger eigener Lauf, und zusammengelegt wird erst
+    hinterher, nachdem die Koepfe Feld fuer Feld verglichen wurden. Behauptet
+    wird nichts.
+
+    Diese Tests halten die Entscheidung fest, damit sie beim naechsten langen
+    Lauf nicht beilaeufig umgestossen wird.
+    """
+
+    def test_das_modul_bietet_kein_fortsetzen_an(self) -> None:
         import research.zwischenstand as modul
 
         namen = {x.lower() for x in dir(modul) if not x.startswith("_")}
-        assert not {
-            n for n in namen if "fortsetz" in n or "resume" in n or "weiter" in n
-        }
-        assert "Protokoll" in modul.__doc__ and "Sicherungspunkt" in modul.__doc__
+        assert not {n for n in namen if "fortsetz" in n or "resume" in n}
+        assert "299" in modul.__doc__ and "300" in modul.__doc__
+
+    def test_beginne_faengt_an_und_knuepft_nicht_hinten_an(
+        self, tmp_path: Path
+    ) -> None:
+        """Die Eigenschaft statt des Satzes: Ein ``Zwischenstand`` auf einer
+        vorhandenen Datei **faengt sie neu an**. Wuerde er anhaengen, stuende
+        ein Kopf von gestern ueber Zeilen von heute - genau das
+        Wiederaufsetzen, das hier abgelehnt ist.
+
+        Ein frueherer Wachtest hier hing an einem Satz im Modulkopf und fiel
+        um, als der Kopf umgeschrieben wurde, obwohl die Entscheidung stand.
+        """
+        erster = _stand(tmp_path, intervall="1d")
+        erster.beginne()
+        erster.halte_fest(regel="Von gestern")
+
+        zweiter = _stand(tmp_path, intervall="1d")
+        zweiter.beginne()
+
+        assert zweiter.pfad == erster.pfad
+        _, messungen = lies(erster.pfad)
+        assert messungen == ()
 
 
 class TestDerPfadNebenDenBerichten:

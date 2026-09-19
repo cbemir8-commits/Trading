@@ -17,7 +17,9 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import hashlib
 import signal
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -12209,6 +12211,242 @@ def paare(
 
 
 
+#: Die Baeume, deren Inhalt die gemessenen Zahlen bestimmt (Befund 300).
+#:
+#: Was hier drinsteht, geht in den Abdruck ein; was nicht drinsteht, bleibt
+#: unbemerkt. 'reports/' und 'strategies/BEFUND.md' fehlen mit Absicht: Ein
+#: festgehaltenes Protokoll oder ein geschriebener Befund aendert keine Zahl,
+#: und wenn sie zaehlten, koennte man zwischen zwei Stuecken nichts ablegen.
+ABDRUCKBAEUME: tuple[str, ...] = ("backtest", "strategy", "research", "cli.py")
+
+
+def _codeabdruck(wurzel: Path | None = None) -> str:
+    """Ein Fingerabdruck des rechnenden Codes.
+
+    **Nicht der Commit-Stand.** Zwischen zwei Stuecken eines Laufs wird
+    committet - Protokolle, Befunde -, und jeder Commit bewegt 'HEAD', ohne
+    eine einzige Zahl zu aendern. Ein Abdruck ueber 'HEAD' wuerde jedes Stueck
+    vom naechsten trennen und die Stueckelung damit unbrauchbar machen.
+
+    Gehasht wird stattdessen der Inhalt der Baeume, die rechnen. Wer waehrend
+    einer laufenden Messreihe daran etwas aendert, bekommt beim Zusammenlegen
+    eine Absage - und das ist richtig so.
+    """
+    wurzel = Path.cwd() if wurzel is None else Path(wurzel)
+    hasch = hashlib.sha256()
+    for name in ABDRUCKBAEUME:
+        ort = wurzel / name
+        dateien = (
+            [ort] if ort.is_file() else sorted(ort.rglob("*.py")) if ort.is_dir() else []
+        )
+        for datei in dateien:
+            if "__pycache__" in datei.parts:
+                continue
+            hasch.update(str(datei.relative_to(wurzel)).encode())
+            hasch.update(datei.read_bytes())
+    return hasch.hexdigest()[:16]
+
+
+def _kerzenabdruck(frames) -> dict[str, dict[str, str]]:
+    """Worauf gemessen wurde: je Markt Zeilen, erste und letzte Kerze.
+
+    Befund 102 haelt fest, dass Kerzen ohne Herkunft Zahlen ohne Bedeutung
+    sind. Zwei Stuecke auf verschieden langen Reihen waeren zwei Messungen.
+    """
+    return {
+        markt: {
+            "zeilen": str(len(rahmen)),
+            "von": str(rahmen.index[0]),
+            "bis": str(rahmen.index[-1]),
+        }
+        for markt, rahmen in sorted(frames.items())
+    }
+
+
+def _katalogabdruck() -> str:
+    """Ein Fingerabdruck des Katalogs - ueber **alle** Generationen.
+
+    Nicht nur ueber die des Intervalls: Eine Regel, die in einer anderen
+    Generation dazukommt, verschiebt keine Messung, aber eine, die aus der
+    eigenen verschwindet, verschiebt die Stueckgrenzen. Der breitere Abdruck
+    ist hier der vorsichtigere.
+    """
+    from research.seeds import GENERATIONS
+
+    namen = [
+        f"{gen}:{bauen().name}"
+        for gen, liste in sorted(GENERATIONS.items())
+        for bauen in liste
+    ]
+    return hashlib.sha256("\n".join(namen).encode()).hexdigest()[:16]
+
+
+@dataclass(slots=True)
+class _GelesenerVorrat:
+    """Ein Vorrat, der aus Protokollen kommt statt aus dem Walk-Forward."""
+
+    quelle: str
+    versuchsstand: int
+    faktoren: list[float]
+    leiter: dict[float, list]
+    punkte: list
+    taktpunkte: list
+    nach_familie: dict[str, list]
+    grob_familie: dict[str, list]
+    nach_logik: dict[str, list]
+    ohne_latte: list[tuple[str, int]]
+    stumm: int
+
+
+def _vorrat_aus_protokollen(
+    aus: str, *, interval_obj, versuche: int
+) -> _GelesenerVorrat:
+    """Einen gemessenen Vorrat aus Stuecken zusammenlesen (Befund 300).
+
+    Nachgerechnet wird nichts: Was in den Protokollen steht, ist gemessen
+    worden, und was nicht drinsteht, gibt es nicht. Die Urteile darunter
+    sehen keinen Unterschied zu einem Lauf am Stueck - **wenn** die Stuecke
+    zusammengehoeren, und genau das prueft ``zusammen`` am Kopf.
+
+    Geurteilt wird auf dem Versuchsstand **des Protokolls** und nicht auf dem
+    von heute: Schon im Lauf entschied der Zaehler, welche Regel ueberhaupt
+    eine Latte bekommt. Ein anderer Zaehler hier wuerde Ausschluesse und
+    Urteile auseinanderlaufen lassen. Steht der Zaehler heute anders, sagt
+    diese Funktion es.
+    """
+    from research.familien import familie_von
+    from research.kostenanteil import Taktpunkt
+    from research.vorratsdecke import Punkt
+    from research.zwischenstand import Uneinig, zusammen
+
+    pfade = [x.strip() for x in aus.split(",") if x.strip()]
+    try:
+        kopf, messungen = zusammen(pfade)
+    except Uneinig as fehler:
+        console.print(f"\n[red]{fehler}[/]")
+        raise typer.Exit(2) from None
+
+    if kopf.get("intervall") != interval_obj.label:
+        console.print(
+            f"\n[red]Die Protokolle sind auf {kopf.get('intervall')} gemessen, "
+            f"verlangt ist {interval_obj.label}.[/] Ein Vorrat gehoert an "
+            f"seine eigene Kerzenlaenge (Befund 190)."
+        )
+        raise typer.Exit(2)
+
+    stand = int(kopf.get("versuchsstand", versuche))
+    if stand != versuche:
+        console.print(
+            f"\n[yellow]Gemessen bei Versuchsstand {stand}, der Zaehler steht "
+            f"heute bei {versuche}.[/] Geurteilt wird auf {stand} - so ist "
+            f"der Lauf in sich stimmig. Fuer heutige Latten neu messen."
+        )
+
+    faktoren = [float(x) for x in kopf.get("reibungsleiter", [])]
+    gelesen = _GelesenerVorrat(
+        quelle=", ".join(pfade),
+        versuchsstand=stand,
+        faktoren=faktoren,
+        leiter={f: [] for f in faktoren},
+        punkte=[], taktpunkte=[], nach_familie={}, grob_familie={},
+        nach_logik={}, ohne_latte=[], stumm=0,
+    )
+
+    # **Jede Regel genau einmal** (Befund 300). Ueberschneiden sich zwei
+    # Stuecke, stuende dieselbe Messung zweimal da und zaehlte doppelt - und
+    # die Zahl der Belege zu erfinden ist genau der Fehler, gegen den die
+    # effektive Stichprobe im Gate steht.
+    gesehen: set[tuple] = set()
+    # **Und dieselbe Regel unter zwei Namen auch nur einmal.** Der Lauf prueft
+    # das mit einer Kennung aus n_eff und Sharpe je Trade - aber nur innerhalb
+    # **eines** Prozesses. Ueber Stueckgrenzen hinweg sieht er es nicht: Beim
+    # ersten Probelauf standen 'Trend-Beteiligung (fair gerechnet)' und
+    # '... voller Einsatz' getrennt da, beide n_eff 29 und SR 0,3274, weil sie
+    # in verschiedene Stuecke fielen. Neunzehn Belege statt achtzehn.
+    #
+    # Die Pruefung gehoert deshalb hierher, wo alle Stuecke beieinander sind.
+    kennungen: set[tuple[int, float]] = set()
+    doppelt: list[str] = []
+    for satz in messungen:
+        name = str(satz.get("regel", ""))
+        ergebnis = satz.get("ergebnis")
+        schluessel = (name, ergebnis, satz.get("faktor"))
+        if schluessel in gesehen:
+            console.print(
+                f"\n[red]'{name}' steht zweimal in den Protokollen "
+                f"({ergebnis}).[/] Ueberschneidende Stuecke wuerden Belege "
+                f"doppelt zaehlen."
+            )
+            raise typer.Exit(2)
+        gesehen.add(schluessel)
+
+        if ergebnis == "sprosse":
+            faktor = float(satz.get("faktor", 1.0))
+            if satz.get("sr_je_trade") is None or faktor not in gelesen.leiter:
+                continue
+            gelesen.leiter[faktor].append(
+                Taktpunkt(
+                    name=name,
+                    trades=int(satz["trades"]),
+                    sharpe_je_trade=float(satz["sr_je_trade"]),
+                    haltedauer_tage=float(satz.get("haltedauer_tage") or 0.0),
+                    kostenanteil=float(satz["kostenanteil"]),
+                )
+            )
+            continue
+        if ergebnis == "kein Kandidat":
+            gelesen.stumm += 1
+            continue
+        if ergebnis == "identisch":
+            continue
+        if ergebnis == "keine Latte":
+            gelesen.ohne_latte.append((name, int(satz["n_eff"])))
+            continue
+        if ergebnis != "gemessen":
+            continue
+
+        kennung = (int(satz["n_eff"]), round(float(satz["sr_je_trade"]), 6))
+        if kennung in kennungen:
+            doppelt.append(name)
+            continue
+        kennungen.add(kennung)
+
+        punkt = Punkt(
+            name,
+            int(satz["n_eff"]),
+            float(satz["sr_je_trade"]),
+            schiefe=satz.get("schiefe"),
+            woelbung=satz.get("woelbung"),
+        )
+        gelesen.punkte.append(punkt)
+        if satz.get("haltedauer_tage") is not None:
+            gelesen.taktpunkte.append(
+                Taktpunkt(
+                    name=name,
+                    trades=int(satz["trades"]),
+                    sharpe_je_trade=float(satz["sr_je_trade"]),
+                    haltedauer_tage=float(satz["haltedauer_tage"]),
+                    kostenanteil=float(satz["kostenanteil"]),
+                )
+            )
+        # Die Familien stehen im Genom und nicht im Protokoll: Sie aus dem
+        # Katalog zu lesen ist eine Quelle, sie mitzuschreiben waere eine
+        # zweite (Befund 286).
+        genom = _katalogregel(name)
+        gelesen.nach_familie.setdefault(_familie(genom), []).append(punkt)
+        gelesen.grob_familie.setdefault(_familie_grob(genom), []).append(punkt)
+        logisch = familie_von(name)
+        if logisch is not None:
+            gelesen.nach_logik.setdefault(logisch, []).append(punkt)
+
+    for name in doppelt:
+        console.print(
+            f"[dim]{name} ist mit einer frueheren Regel identisch (gleiche "
+            f"Stichprobe, gleicher Sharpe je Trade) und zaehlt einmal.[/]"
+        )
+    return gelesen
+
+
 @app.command()
 def vorratsdecke(
     maerkte: str = typer.Option(
@@ -12226,6 +12464,16 @@ def vorratsdecke(
         help="Reibungsfaktoren, durch Komma - je Sprosse ein ganzer "
              "Durchlauf. Misst den Kippunkt, statt ihn zurueckzurechnen.",
     ),
+    stueck: str = typer.Option(
+        "", "--stueck",
+        help="Nur einen Teil des Katalogs messen, z. B. '2/5'. Jedes Stueck "
+             "schreibt ein eigenes Protokoll; '--aus' legt sie zusammen.",
+    ),
+    aus: str = typer.Option(
+        "", "--aus",
+        help="Nicht messen, sondern gemessene Protokolle lesen - Pfade durch "
+             "Komma. Urteilt ueber die Stuecke, als waeren sie ein Lauf.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Was der Vorrat hergibt - und ob das je reichen kann.
@@ -12238,6 +12486,12 @@ def vorratsdecke(
     Gefahren wird der **ganze** Katalog der Generationen, die zu dieser
     Kerzenlaenge gehoeren, am Spot-Punkt. Berichtet wird jede Regel, auch die
     ohne einen einzigen Trade.
+
+    **In Stuecken** (Befund 300). Auf 15 Minuten dauert der ganze Katalog
+    gemessene 3,1 Stunden, und so lange laeuft hier nichts am Stueck. Mit
+    ``--stueck 2/5`` wird ein Fuenftel gemessen; ``--aus a.jsonl,b.jsonl``
+    urteilt hinterher ueber die zusammengelegten Protokolle - aber nur, wenn
+    deren Koepfe Feld fuer Feld uebereinstimmen.
 
     **Kostet keinen Versuch.** Diese Genome stehen laengst im Katalog und
     waren gezaehlt, als sie entstanden; nachgemessen wird ein vorhandener
@@ -12262,7 +12516,6 @@ def vorratsdecke(
     from research.randschnitt import ohne_zensierte
     from research.seeds import (
         GENERATIONS,
-        load_seeds,
         passt_zum_intervall,
         spitzenkandidat,
     )
@@ -12287,6 +12540,7 @@ def vorratsdecke(
         zielurteil,
     )
     from research.zwischenstand import neu as neues_protokoll
+    from research.zwischenstand import scheibe
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -12294,19 +12548,18 @@ def vorratsdecke(
     symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
     versuche = load_trials(Path(settings.paths.state) / "trials.json")
     interval_obj = Interval(intervall)
-    store = CandleStore(settings.paths.data_store)
-    frames = common_range({x: store.read(x, interval_obj) for x in symbole})
-    configs = _spotconfigs(symbole, settings)
 
     console.print(
         f"\n[bold]Vorratsdecke[/] {' + '.join(symbole)} {interval_obj.label}, "
         f"Spot-Punkt, Versuchsstand {versuche}"
     )
-    # Die Groessenlogik, auf die alle gestellt werden - die des Bestands,
-    # wie in der Vorauswahl (Befund 56/182).
-    vergleichsgroesse = spitzenkandidat().sizing
     punkte: list[Punkt] = []
     taktpunkte: list[Taktpunkt] = []
+    nach_familie: dict[str, list[Punkt]] = {}
+    grob_familie: dict[str, list[Punkt]] = {}
+    nach_logik: dict[str, list[Punkt]] = {}
+    ohne_latte: list[tuple[str, int]] = []
+    stumm = 0
     # **Dieselben Regeln bei anderer Reibung** (Befund 254/256). 'Kostenfrage'
     # kann nur die Gebuehr zurueckrechnen - die Slippage steckt im
     # Ausfuehrungspreis. 'CostModel.scaled(k)' skaliert beide, und ein ganzer
@@ -12319,64 +12572,117 @@ def vorratsdecke(
         faktoren.insert(0, 0.0)
     leiter: dict[float, list[Taktpunkt]] = {f: [] for f in faktoren}
 
-    # **Was der Lauf kostet, bevor er laeuft** (Befund 296/298). Zweimal ist
-    # die Dauer geschaetzt worden, einmal zu hoch - und die Messung unterblieb
-    # daraufhin zwei Laeufe lang -, einmal zu niedrig. Hier steht, was gemessen
-    # ist; fuer eine ungemessene Kerzenlaenge steht da nichts. Die Sprossen
-    # gehoeren dazu: Sie kosten je einen weiteren Walk-Forward.
-    from research.laufkosten import auskunft
+    if aus:
+        gelesen = _vorrat_aus_protokollen(
+            aus, interval_obj=interval_obj, versuche=versuche
+        )
+        versuche = gelesen.versuchsstand
+        faktoren, leiter = gelesen.faktoren, gelesen.leiter
+        punkte, taktpunkte = gelesen.punkte, gelesen.taktpunkte
+        nach_familie = gelesen.nach_familie
+        grob_familie = gelesen.grob_familie
+        nach_logik = gelesen.nach_logik
+        ohne_latte, stumm = gelesen.ohne_latte, gelesen.stumm
+        quelle = gelesen.quelle
+        console.print(
+            f"[dim]Gelesen, nicht gemessen: {len(punkte)} Regeln mit Latte, "
+            f"{stumm} ohne Kandidat, aus {len(aus.split(','))} Protokoll(en). "
+            f"Sprossen: {', '.join(f'{f:g}' for f in faktoren) or 'keine'}.[/]\n"
+        )
+    else:
+        store = CandleStore(settings.paths.data_store)
+        frames = common_range({x: store.read(x, interval_obj) for x in symbole})
+        configs = _spotconfigs(symbole, settings)
 
-    wieviele = sum(
-        len(load_seeds(gen))
-        for gen in GENERATIONS
-        if passt_zum_intervall(gen, interval_obj)
-    )
-    console.print(
-        f"[dim]{auskunft(interval_obj.label, wieviele, len(faktoren))}[/]\n"
-    )
+        def _skaliert(faktor: float):
+            return {
+                x: c.__class__(
+                    instrument=c.instrument, risk=c.risk,
+                    costs=c.costs.scaled(Decimal(str(faktor))),
+                    funding=c.funding,
+                    initial_equity=c.initial_equity,
+                    allow_shorts=c.allow_shorts,
+                    enforce_risk_limits=c.enforce_risk_limits,
+                    entry_expiry_bars=c.entry_expiry_bars,
+                    max_hold_bars=c.max_hold_bars, kalender=c.kalender,
+                )
+                for x, c in configs.items()
+            }
 
-    # **Was ein Abbruch uebriglaesst** (Befund 299). Der erste 15-Minuten-Lauf
-    # ist nach drei von neununddreissig Genomen an einem Neustart gestorben -
-    # zwoelf Minuten Rechenzeit, kein Byte auf der Platte. Jede Regel wird
-    # jetzt sofort notiert, und der Kopf sagt, wie viele erwartet werden;
-    # daran sieht man einem abgebrochenen Protokoll an, wo es aufhoerte.
-    protokoll = neues_protokoll(
-        wurzel=Path.cwd(),
-        art="vorratsdecke",
-        maerkte=symbole,
-        intervall=interval_obj.label,
-        versuchsstand=versuche,
-        genome=wieviele,
-        reibungsleiter=faktoren,
-        betriebspunkt="Spot",
-    )
-    protokoll.beginne()
-    console.print(f"[dim]{protokoll.zeile()}[/]\n")
+        sprossenkosten = {f: _skaliert(f) for f in faktoren}
+        # Die Groessenlogik, auf die alle gestellt werden - die des Bestands,
+        # wie in der Vorauswahl (Befund 56/182).
+        vergleichsgroesse = spitzenkandidat().sizing
 
-    def _skaliert(faktor: float):
-        return {
-            x: c.__class__(
-                instrument=c.instrument, risk=c.risk,
-                costs=c.costs.scaled(Decimal(str(faktor))), funding=c.funding,
-                initial_equity=c.initial_equity, allow_shorts=c.allow_shorts,
-                enforce_risk_limits=c.enforce_risk_limits,
-                entry_expiry_bars=c.entry_expiry_bars,
-                max_hold_bars=c.max_hold_bars, kalender=c.kalender,
+        # **Eine Liste fuer Zaehlung, Stueckelung und Lauf** (Befund 300).
+        # Vorher zaehlte 'load_seeds' und lief 'GENERATIONS' - zwei Wege in
+        # dieselbe Tabelle sind zwei Gelegenheiten auseinanderzulaufen
+        # (Befund 184).
+        bauplaene = [
+            bauen
+            for gen, liste in sorted(GENERATIONS.items())
+            if passt_zum_intervall(gen, intervall)
+            for bauen in liste
+        ]
+        ganzer_katalog = len(bauplaene)
+        von, bis = (0, ganzer_katalog)
+        if stueck:
+            try:
+                von, bis = scheibe(ganzer_katalog, stueck)
+            except ValueError as fehler:
+                console.print(f"\n[red]{fehler}[/]")
+                raise typer.Exit(2) from None
+            bauplaene = bauplaene[von:bis]
+
+        # **Was der Lauf kostet, bevor er laeuft** (Befund 296/298). Zweimal
+        # ist die Dauer geschaetzt worden, einmal zu hoch - und die Messung
+        # unterblieb daraufhin zwei Laeufe lang -, einmal zu niedrig. Hier
+        # steht, was gemessen ist; fuer eine ungemessene Kerzenlaenge steht da
+        # nichts. Die Sprossen gehoeren dazu: Sie kosten je einen weiteren
+        # Walk-Forward.
+        from research.laufkosten import auskunft
+
+        console.print(
+            f"[dim]{auskunft(interval_obj.label, len(bauplaene), len(faktoren))}"
+            + (
+                f" Stueck {stueck}: Genom {von + 1} bis {bis} von "
+                f"{ganzer_katalog}."
+                if stueck
+                else ""
             )
-            for x, c in configs.items()
-        }
+            + "[/]\n"
+        )
 
-    sprossenkosten = {f: _skaliert(f) for f in faktoren}
-    nach_familie: dict[str, list[Punkt]] = {}
-    grob_familie: dict[str, list[Punkt]] = {}
-    nach_logik: dict[str, list[Punkt]] = {}
-    ohne_latte: list[tuple[str, int]] = []
-    stumm = 0
-    gesehen: set[tuple[int, float]] = set()
-    for gen, liste in sorted(GENERATIONS.items()):
-        if not passt_zum_intervall(gen, intervall):
-            continue
-        for bauen in liste:
+        # **Was ein Abbruch uebriglaesst** (Befund 299). Der erste
+        # 15-Minuten-Lauf ist nach drei von neununddreissig Genomen an einem
+        # Neustart gestorben - zwoelf Minuten Rechenzeit, kein Byte auf der
+        # Platte. Jede Regel wird jetzt sofort notiert, und der Kopf sagt, wie
+        # viele erwartet werden; daran sieht man einem abgebrochenen Protokoll
+        # an, wo es aufhoerte.
+        #
+        # **Und woran ein Stueck zum anderen passt** (Befund 300): Der Kopf
+        # traegt den Abdruck der Bedingungen - Kerzen, Katalog, Code. Was er
+        # nicht traegt, kann 'zusammen' spaeter nicht pruefen.
+        protokoll = neues_protokoll(
+            wurzel=Path.cwd(),
+            art="vorratsdecke",
+            maerkte=symbole,
+            intervall=interval_obj.label,
+            versuchsstand=versuche,
+            genome=len(bauplaene),
+            reibungsleiter=faktoren,
+            betriebspunkt="Spot",
+            stueck=stueck or f"1/1 ({ganzer_katalog})",
+            kerzen=_kerzenabdruck(frames),
+            katalog=_katalogabdruck(),
+            code=_codeabdruck(),
+        )
+        protokoll.beginne()
+        quelle = str(protokoll.pfad)
+        console.print(f"[dim]{protokoll.zeile()}[/]\n")
+
+        gesehen: set[tuple[int, float]] = set()
+        for bauen in bauplaene:
             # **Alle auf dieselbe Groessenlogik** (Befund 182). Ohne das misst
             # dieser Katalog Groessenlogiken statt Einstiegsstrukturen: Neun
             # von dreissig Tagesgenomen lieferten null Trades, weil ihre
@@ -12502,6 +12808,12 @@ def vorratsdecke(
                     trades=len(sprosse.all_trades),
                     sr_je_trade=None if nackt is None else nackt.sharpe_je_trade,
                     kostenanteil=None if nackt is None else nackt.kostenanteil,
+                    # Fuer 'Kostenfrage' nicht noetig, fuer die Tabelle schon -
+                    # und ein Protokoll, aus dem sich der Lauf nicht
+                    # nachbauen laesst, ist nur die halbe Rettung (Befund 300).
+                    haltedauer_tage=(
+                        None if nackt is None else nackt.haltedauer_tage
+                    ),
                 )
             nach_familie.setdefault(_familie(genom), []).append(punkt)
             grob_familie.setdefault(_familie_grob(genom), []).append(punkt)
@@ -12517,7 +12829,7 @@ def vorratsdecke(
         console.print(
             f"\n[yellow]Nur {len(punkte)} verschiedene Regeln handeln auf "
             f"{interval_obj.label} - daraus laesst sich keine Gerade legen.[/]\n"
-            f"[dim]Was gemessen wurde, steht trotzdem in {protokoll.pfad}.[/]"
+            f"[dim]Was gemessen wurde, steht trotzdem in {quelle}.[/]"
         )
         raise typer.Exit(2)
 
@@ -12852,7 +13164,11 @@ def vorratsdecke(
 
     # Am Ende noch einmal: Wer den Lauf im Hintergrund hat laufen lassen,
     # sucht die Zeile vom Anfang sonst in drei Stunden Ausgabe (Befund 299).
-    console.print(f"\n[dim]Zeile fuer Zeile mitgeschrieben in {protokoll.pfad}[/]")
+    console.print(
+        "\n[dim]"
+        + ("Gelesen aus " if aus else "Zeile fuer Zeile mitgeschrieben in ")
+        + f"{quelle}[/]"
+    )
 
 
 def _katalogregel(name: str):

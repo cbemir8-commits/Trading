@@ -1,0 +1,6 @@
+{"begonnen": "2026-09-19T03:08:23+00:00", "maerkte": ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"], "intervall": "1d", "versuchsstand": 203, "genome": 5, "reibungsleiter": [], "betriebspunkt": "Spot", "stueck": "4/6", "kerzen": {"BTCUSD_BITSTAMP": {"zeilen": "3301", "von": "0", "bis": "3300"}, "ETHUSD_BITSTAMP": {"zeilen": "3301", "von": "0", "bis": "3300"}}, "katalog": "37bbbebd565551c0", "code": "30a554a2c22142ef", "art": "kopf"}
+{"regel": "Gegen die ueberhitzte Long-Seite", "ergebnis": "kein Kandidat", "trades": 0, "art": "messung"}
+{"regel": "Trend-Beteiligung (fair gerechnet)", "ergebnis": "gemessen", "trades": 51, "n_eff": 29, "sr_je_trade": 0.3274041699577338, "guete": 1.763125413765472, "schiefe": 2.9962245316637577, "woelbung": 11.381722024838092, "haltedauer_tage": 46.607843137254896, "kostenanteil": 0.0013810644475632863, "art": "messung"}
+{"regel": "Beteiligt, ausser es ist ueberhitzt", "ergebnis": "kein Kandidat", "trades": 0, "art": "messung"}
+{"regel": "Carry-Beteiligung", "ergebnis": "kein Kandidat", "trades": 0, "art": "messung"}
+{"regel": "Trend-Beteiligung 200 Tage", "ergebnis": "identisch", "n_eff": 29, "sr_je_trade": 0.3274041699577338, "art": "messung"}

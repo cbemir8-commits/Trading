@@ -1,1 +1,2 @@
 {"begonnen": "2026-09-19T01:55:57+00:00", "maerkte": ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"], "intervall": "15m", "versuchsstand": 203, "genome": 39, "reibungsleiter": [0.0], "betriebspunkt": "Spot", "art": "kopf"}
+{"regel": "Trendfolge Ausbruch", "ergebnis": "gemessen", "trades": 6668, "n_eff": 5442, "sr_je_trade": -0.15113566099511302, "guete": -11.149264497218935, "schiefe": 0.9613556354946842, "woelbung": 2.895587974270792, "haltedauer_tage": 0.11566436712657469, "kostenanteil": 0.08536559382885044, "art": "messung"}

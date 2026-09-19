@@ -26788,3 +26788,104 @@ bemerkt wurde. Die Messung, um die es geht, steht weiter aus.
 Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 3984 passed, 2 skipped; ruff check sauber.
+
+## Dreihundert. Ein Lauf, der laenger dauert als ein Arbeitszug
+
+Befund 299 hat den Zwischenstand gebaut und den Reibungslauf neu gestartet.
+Beim Nachsehen eine Stunde spaeter: **ein** Genom gemessen, der Prozess weg,
+die Maschine frisch hochgefahren.
+
+### Erst jetzt die richtige Frage gestellt
+
+Zweimal derselbe Ausgang, und beide Male habe ich "Neustart" notiert, als
+waere das Wetter. Die Zeiten sagen etwas anderes:
+
+    Lauf 1   gestartet, Arbeitszug endete, nach ~12 Minuten tot (3 von 39)
+    Lauf 2   01:55:57 gestartet, letzte Zeile 02:01:42, Arbeitszug endete
+             gegen 01:59 - nach ~6 Minuten tot (1 von 39)
+
+Beide Male hoerte der Lauf wenige Minuten nach dem Ende meines Arbeitszugs
+auf. Die Maschine wird eingezogen, sobald die Sitzung still ist; ein Prozess
+im Hintergrund ueberlebt das nicht.
+
+Damit ist ein dreistuendiger Lauf hier nicht "riskant". Er ist **unmoeglich**,
+solange er am Stueck laufen soll. Das haette mir beim ersten Mal auffallen
+koennen, und der Grund, warum es das nicht tat, ist unangenehm einfach: Ich
+habe die Ursache nicht gemessen, sondern benannt.
+
+### Was daraus folgt
+
+Der Lauf muss in Stuecke, die einzeln durchlaufen.
+
+    cli vorratsdecke -i 15 --reibungsleiter 0 --stueck 1/39
+    ...
+    cli vorratsdecke -i 15 --aus <alle Protokolle>
+
+Jedes Stueck ist ein vollstaendiger eigener Lauf mit eigenem Protokoll.
+`--aus` urteilt hinterher ueber die zusammengelegten Stuecke und rechnet
+nichts nach: Was in den Protokollen steht, ist gemessen worden.
+
+### Und damit gegen Befund 299?
+
+Befund 299 hat ein Wiederaufsetzen abgelehnt, und zwar mit diesem Satz:
+
+> Ein Lauf, der an Genom 18 weitermacht, muesste wissen, dass die ersten
+> siebzehn unter **denselben** Bedingungen gemessen wurden [...] Das laesst
+> sich behaupten und schwer pruefen.
+
+Der Satz stimmt, und die Ablehnung bleibt. `zusammen` umgeht sie nicht,
+sondern beantwortet sie: Die Koepfe werden **Feld fuer Feld verglichen**, und
+wo sie auseinandergehen, gibt es eine Absage mit beiden Werten im Text. Was
+sich nicht behaupten lassen soll, wird geprueft.
+
+Der Preis steht auf der anderen Seite der Rechnung: Was der Kopf nicht traegt,
+kann er nicht pruefen. Er traegt jetzt einen Abdruck von Kerzen (Zeilen,
+erste, letzte je Markt), vom Katalog und vom rechnenden Code.
+
+### Der Codeabdruck ist nicht `git HEAD`
+
+Naheliegend waere der Commit-Stand. Er waere auch falsch: Zwischen zwei
+Stuecken wird committet - Protokolle, Befunde -, und jeder dieser Commits
+bewegt `HEAD`, ohne eine einzige Zahl zu aendern. Ein Abdruck ueber `HEAD`
+trennte jedes Stueck vom naechsten, und die Stueckelung waere gebaut und
+unbenutzbar.
+
+Gehasht wird deshalb der **Inhalt** von `backtest/`, `strategy/`, `research/`
+und `cli.py`. Wer waehrend einer laufenden Messreihe daran etwas aendert,
+bekommt beim Zusammenlegen eine Absage - und das ist richtig so.
+
+### Die Gegenprobe, und was sie gefunden hat
+
+Sechs Stuecke des Tageskatalogs gemessen, zusammengelegt, gegen den Lauf am
+Stueck gehalten. Der erste Versuch ergab **19** Regeln mit Latte statt 18.
+
+Der Grund: Der Lauf erkennt dieselbe Regel unter zwei Namen an einer Kennung
+aus `n_eff` und Sharpe je Trade - aber nur innerhalb **eines** Prozesses.
+"Trend-Beteiligung (fair gerechnet)" und "Trend-Beteiligung voller Einsatz"
+sind beide n_eff 29 und SR 0,3274, lagen aber in verschiedenen Stuecken. Die
+Stueckelung haette die Zahl der Belege erfunden - genau der Fehler, gegen den
+die effektive Stichprobe im Gate steht.
+
+Die Pruefung gehoert dorthin, wo alle Stuecke beieinanderliegen, also ins
+Zusammenlegen. Danach:
+
+    Tabelle und alle Urteile Zeichen fuer Zeichen identisch mit dem Lauf am
+    Stueck - Luecke 1,080, Quote 15,3 bis 39,3 %, rho -0,679 gegen +0,072.
+
+Der Unterschied in der Ausgabe sind die Fortschrittszeilen und die Herkunft.
+Sonst nichts.
+
+Dass die Gegenprobe ueberhaupt etwas gefunden hat, ist der beste Teil daran.
+Ohne sie haette die erste 15-Minuten-Messung in Stuecken eine stille
+Doppelzaehlung enthalten.
+
+### Nebenbei aufgeraeumt
+
+Die Zahl der Genome wurde ueber `load_seeds` gezaehlt und ueber `GENERATIONS`
+gefahren - zwei Wege in dieselbe Tabelle, wie sie Befund 184 schon einmal
+teuer gemacht haben. Jetzt ist es eine Liste, und die Stueckgrenzen stehen
+auf genau der.
+
+Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 4075 passed, 2 skipped; ruff check sauber.

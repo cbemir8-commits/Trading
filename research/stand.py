@@ -2082,6 +2082,31 @@ BEHOBEN: tuple[Richtung, ...] = (
         "gemessen - das ist ein Protokoll, kein Sicherungspunkt",
         299,
     ),
+    # Die Ablehnung aus 299 bleibt - beantwortet wird sie trotzdem.
+    Richtung(
+        "Ein Lauf, der laenger dauert als ein Arbeitszug",
+        "Der neu gestartete 15-Minuten-Lauf endete nach **einem** Genom. "
+        "Beide Abbrueche kamen wenige Minuten nach dem Ende meines "
+        "Arbeitszugs (12 Minuten beim ersten Mal, knapp 6 beim zweiten): Die "
+        "Maschine wird eingezogen, sobald die Sitzung still ist. Ein "
+        "dreistuendiger Lauf im Hintergrund ist hier damit nicht riskant, "
+        "sondern **unmoeglich** - er muss in Stuecke. 'vorratsdecke --stueck "
+        "2/5' misst einen Teil, '--aus a,b,c' urteilt ueber die "
+        "zusammengelegten Protokolle. Zusammengelegt wird nur, was "
+        "zusammengehoert: 'zusammen' vergleicht die Koepfe Feld fuer Feld und "
+        "nennt jeden Unterschied - das ist die Antwort auf 299, wo dieselbe "
+        "Gleichheit nur **behauptet** worden waere. Dafuer traegt der Kopf "
+        "jetzt einen Abdruck von Kerzen, Katalog und rechnendem Code; der "
+        "Codeabdruck steht auf dem **Inhalt** von backtest/strategy/research/"
+        "cli.py und nicht auf 'git HEAD', sonst trennte jeder Commit zwischen "
+        "zwei Stuecken den Lauf. Gegenprobe gemessen: sechs Stuecke des "
+        "Tageskatalogs, zusammengelegt, ergeben Tabelle und Urteile Zeichen "
+        "fuer Zeichen wie der Lauf am Stueck - nachdem ein Fehler behoben "
+        "war, den die Gegenprobe zeigte: Die Pruefung auf Doppelgaenger sah "
+        "nur innerhalb eines Prozesses, und zwei identische Regeln in "
+        "verschiedenen Stuecken ergaben 19 Belege statt 18",
+        300,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
