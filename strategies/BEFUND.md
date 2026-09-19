@@ -27314,3 +27314,83 @@ Entscheidungen. Danach ist kein Register mehr ohne Marke.
 Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 4144 passed, 2 skipped; ruff check sauber.
+
+## Dreihundertsechs. Eine Entscheidung gestellt, die 283 schon beantwortet hatte
+
+Befund 305 hat eine zehnte Entscheidung unter `ENTSCHEIDUNGEN` gesetzt:
+
+    'Neues Hoch im Takt' neu bauen - ein Versuch
+
+Mit den Zahlen daneben: haelt 70 % seiner Trades statt 19 %, raeumt jede
+gepflanzte Latte, auf echten Daten 0,2137 je Trade. Und dem Satz, die
+Entscheidung sei, ob einer der 27 verbleibenden Versuche dorthin geht.
+
+Das war falsch gestellt, und zwar an der Stelle, die zaehlt.
+
+### Was 283 schon nachgesehen hatte
+
+> Nachgesehen, was von der Beschreibung da ist: ein Name ('Neues Hoch im
+> Takt'), eine Eigenschaft ("haelt 70 % seiner Trades statt 19 %") und zwei
+> Kennzahlen. **Keine Regel.** Sie daraus "neu zu bauen" waere kein
+> Rekonstruieren, sondern Erfinden - und das Ergebnis traegt die gemessenen
+> 0,2137 nicht mit, es waere eine frische Vermutung.
+>
+> Fuer frische Vermutungen auf der Einstiegsseite gibt es einen gemessenen
+> Vorwert: Die Befunde 272, 274 und 276 haben vier Familien auf zwei Maerkten
+> und zwei Kerzenlaengen abgesucht, und nichts hat die eigene
+> Nullverteilung ueberlebt. Dafuer Versuche auszugeben, waere gegen die
+> eigenen Messungen gehandelt.
+
+Die Frage war also nicht offen. Sie war gemessen beantwortet, mit einem
+Vorwert, und 305 hat sie als neutrale Abwaegung wieder aufgemacht - samt
+Zahlen, die ein Nachbau ausdruecklich **nicht** mitbringt.
+
+### Warum es passiert ist
+
+Ich habe die Zusammenfassung des Registereintrags gelesen:
+
+> Wer die Richtung verfolgen will, muss sie aus ihrer Beschreibung neu bauen
+> - und das ist eine neue Hypothese und kostet einen Versuch. Seit 256 ist
+> sie trotzdem die wichtigste.
+
+Das steht da, es stimmt, und es ist **unvollstaendig**: Die
+Schlussfolgerung von 283 - dass es kein Rekonstruieren waere und dass der
+Vorwert dagegen steht - stand nicht im Eintrag, sondern nur im Befund.
+`zuletzt` zeigte auf 283; gelesen habe ich 283 nicht.
+
+Das ist dieselbe Bauart wie in Befund 302, wo 255 gemessen hatte und der
+Eintrag auf 297 zeigte. Damals lagen 47 Befunde dazwischen, diesmal einer.
+Es ist also nicht die Menge an Geschichte, die das erzeugt, sondern die
+Gewohnheit, die Zusammenfassung fuer den Stand zu halten.
+
+### Was jetzt gilt
+
+Die Entscheidung ist zurueckgenommen - neun statt zehn. Und der
+Registereintrag traegt die Schlussfolgerung von 283 jetzt **selbst**:
+
+> Was von der Beschreibung da ist, hat 283 nachgesehen: ein Name, eine
+> Eigenschaft und zwei Kennzahlen - keine Regel. [...] Die Richtung bleibt
+> offen, ein Weg dorthin ist sie nicht.
+
+Zwei Tests halten das fest: dass der Eintrag nicht unter den Entscheidungen
+steht, und dass die offene Richtung die Schlussfolgerung im eigenen Text
+traegt.
+
+### Und die Korrektur nach aussen
+
+Im Bericht zu Befund 305 steht, eine Entscheidung liege neu beim Nutzer.
+Das stimmt nicht. Es liegen weiter neun Entscheidungen dort, und keine davon
+ist neu. Der strukturelle Bruch bleibt die wichtigste offene **Richtung** -
+aber der einzige beschriebene Kandidat dafuer ist keiner, und ein Versuch
+dafuer waere gegen die eigenen Messungen gehandelt.
+
+### Was daraus folgt
+
+Die Regel, die 130, 304 und 305 fuer die Fundstellen durchgesetzt haben,
+gilt fuer den **Inhalt** genauso: Eine Zusammenfassung, die neben dem Befund
+steht, auf den sie zeigt, ist kein Stand. Wer einen Eintrag benutzt, um eine
+Entscheidung zu stellen, liest vorher den Befund - nicht die Zeile.
+
+Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 4145 passed, 2 skipped; ruff check sauber.

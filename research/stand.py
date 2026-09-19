@@ -2210,6 +2210,25 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Entscheidungen steht, wird nicht getroffen, sondern vertagt",
         305,
     ),
+    # Der Fehler aus 305, einen Befund spaeter bemerkt - von mir, nicht von
+    # einem Test.
+    Richtung(
+        "Eine Entscheidung gestellt, die 283 schon beantwortet hatte",
+        "305 hat \"'Neues Hoch im Takt' neu bauen - ein Versuch\" unter die "
+        "ENTSCHEIDUNGEN gesetzt und dabei die 70 %/19 % und die 0,2137 "
+        "zitiert, als braechte ein Nachbau sie mit. Befund 283 hatte genau "
+        "das nachgesehen: Von der Beschreibung sind ein Name, eine "
+        "Eigenschaft und zwei Kennzahlen da - **keine Regel**; ein Nachbau "
+        "waere Erfinden, und gegen frische Vermutungen auf der Einstiegsseite "
+        "steht ein gemessener Vorwert (272/274/276: vier Familien, zwei "
+        "Maerkte, zwei Kerzenlaengen, nichts hat die eigene Nullverteilung "
+        "ueberlebt). Ursache: Ich habe die **Zusammenfassung** der offenen "
+        "Richtung gelesen und nicht den Befund, auf den sie zeigt - dieselbe "
+        "Bauart wie in 302, und diesmal mit nur einem Befund Abstand. Die "
+        "Entscheidung ist zurueckgenommen, und der Eintrag traegt die "
+        "Schlussfolgerung von 283 jetzt selbst",
+        306,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -2326,11 +2345,18 @@ OFFEN: tuple[Richtung, ...] = (
         "er mit 0,2137 je Trade schlechter als der Bestand und braeuchte 324. "
         "**Diese Regel ist nicht mehr rechenbar** (257): Sie stammt aus einer "
         "Vorschlagsdatei, die nie versioniert wurde, und die Bestenliste hielt "
-        "damals keine Regeln (Befund 74). Wer die Richtung verfolgen will, "
-        "muss sie aus ihrer Beschreibung neu bauen - und das ist eine neue "
-        "Hypothese und kostet einen Versuch. Seit 256 ist sie trotzdem die "
+        "damals keine Regeln (Befund 74). Seit 256 ist sie trotzdem die "
         "wichtigste: Die Kopplung ist als Eigenschaft der Signale gemessen, "
-        "ein struktureller Bruch ist der einzige bekannte Weg heraus",
+        "ein struktureller Bruch ist der einzige bekannte Weg heraus. "
+        "**Was von der Beschreibung da ist, hat 283 nachgesehen**: ein Name, "
+        "eine Eigenschaft und zwei Kennzahlen - **keine Regel**. Sie daraus "
+        "neu zu bauen waere kein Rekonstruieren, sondern Erfinden, und das "
+        "Ergebnis traegt die gemessenen 0,2137 nicht mit. Fuer frische "
+        "Vermutungen auf der Einstiegsseite gibt es einen gemessenen Vorwert "
+        "(272/274/276: vier Familien, zwei Maerkte, zwei Kerzenlaengen, "
+        "nichts hat die eigene Nullverteilung ueberlebt) - dafuer Versuche "
+        "auszugeben, waere gegen die eigenen Messungen gehandelt. Die "
+        "Richtung bleibt offen, ein Weg dorthin ist sie nicht",
         56,
         283,
     ),
@@ -2935,37 +2961,22 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
         # Frage als bei 74/77 - das gehoert in die Entscheidung.
         zuletzt=292,
     ),
-    # **Die billigste Fassung derselben Frage** (Befund 305). Der Eintrag
-    # 'Einstieg, der nicht am Rauschen haengt' nennt sie seit 283 als die
-    # wichtigste offene Richtung und sagt, dass sie einen Versuch kostet -
-    # aber er steht unter den Richtungen, nicht unter den Entscheidungen.
-    # Eine Entscheidung, die nirgends unter den Entscheidungen steht, wird
-    # nicht getroffen, sondern vertagt.
-    Entscheidung(
-        frage="'Neues Hoch im Takt' neu bauen - ein Versuch",
-        zahl="Gegen gepflanzte Latten hat diese Struktur als einzige "
-             "**entkoppelt** (Befund 283): Sie haelt 70 % ihrer Trades statt "
-             "19 % und raeumt jede gepflanzte Latte. Auf echten Daten war sie "
-             "mit 0,2137 je Trade schlechter als der Bestand und braeuchte "
-             "n_eff 324.\n    Rechenbar ist sie nicht mehr (257): Sie stammt "
-             "aus einer Vorschlagsdatei, die nie versioniert wurde. Sie neu "
-             "zu bauen heisst, sie aus ihrer Beschreibung zu bauen - eine "
-             "neue Hypothese, und die kostet **einen** Versuch von 27, die "
-             "bis zur Abbruchmarke 230 bleiben.",
-        warum="Seit Befund 256 ist die Kopplung von Haeufigkeit und Guete "
-              "als Eigenschaft der **Signale** gemessen, auf Tageskerzen wie "
-              "auf Viertelstunden (302). Ein struktureller Bruch ist der "
-              "einzige bekannte Weg heraus, und dies ist der einzige "
-              "beschriebene Kandidat dafuer.\n    Dagegen steht dasselbe wie "
-              "bei der Research-KI: Jeder Versuch hebt die Huerde des "
-              "Deflated Sharpe fuer alle folgenden (71). Und es ist nicht "
-              "dieselbe Regel, sondern eine nach ihrer Beschreibung gebaute "
-              "- ob sie die gemessene Entkopplung mitbringt, ist offen.\n"
-              "    Zu entscheiden ist, ob einer der 27 verbleibenden "
-              "Versuche hierhin geht.",
-        befund=56,
-        zuletzt=283,
-    ),
+    # **Hier stand in Befund 305 eine zehnte Entscheidung, und sie war
+    # falsch gestellt** (Befund 306). "'Neues Hoch im Takt' neu bauen - ein
+    # Versuch" las sich wie eine offene Abwaegung und zitierte die 70 %/19 %
+    # und die 0,2137, als brachte ein Nachbau sie mit.
+    #
+    # Befund 283 hatte genau das schon nachgesehen und verneint: Von der
+    # Beschreibung sind ein Name, eine Eigenschaft und zwei Kennzahlen da -
+    # keine Regel. Ein Nachbau waere Erfinden, und fuer frische Vermutungen
+    # auf der Einstiegsseite steht ein gemessener Vorwert dagegen (272, 274,
+    # 276). Die Richtung bleibt offen; ein Weg dorthin ist sie nicht, und
+    # eine Entscheidung ist sie damit auch nicht.
+    #
+    # Entstanden ist der Fehler daraus, dass ich die Zusammenfassung der
+    # offenen Richtung gelesen habe und nicht den Befund, auf den sie zeigt -
+    # dieselbe Bauart wie in 302. Der Eintrag traegt die Schlussfolgerung
+    # von 283 jetzt selbst.
 )
 
 

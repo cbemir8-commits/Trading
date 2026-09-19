@@ -97,20 +97,30 @@ class TestDasEchteRegister:
         assert "254" in ki.zahl
         assert ki.massgeblich == 292
 
-    def test_der_strukturelle_bruch_steht_unter_den_entscheidungen(self) -> None:
-        """Seit Befund 283 nennt das Register 'Einstieg, der nicht am
-        Rauschen haengt' als die wichtigste offene Richtung und sagt, dass
-        sie einen Versuch kostet - unter den **Richtungen**.
+    def test_der_strukturelle_bruch_ist_keine_entscheidung(self) -> None:
+        """**Die Berichtigung aus Befund 306.**
 
-        Eine Entscheidung, die nirgends unter den Entscheidungen steht, wird
-        nicht getroffen, sondern vertagt.
+        Befund 305 hat hier "'Neues Hoch im Takt' neu bauen - ein Versuch"
+        eingetragen, als waere es eine offene Abwaegung. Befund 283 hatte
+        genau das schon nachgesehen: Von der Beschreibung sind ein Name, eine
+        Eigenschaft und zwei Kennzahlen da - **keine Regel**. Ein Nachbau
+        waere Erfinden, und gegen frische Vermutungen auf der Einstiegsseite
+        steht ein gemessener Vorwert (272/274/276).
+
+        Entstanden war der Fehler daraus, die Zusammenfassung der offenen
+        Richtung zu lesen statt den Befund, auf den sie zeigt.
         """
-        bruch = next(
-            (e for e in ENTSCHEIDUNGEN if "Neues Hoch im Takt" in e.frage), None
-        )
-        assert bruch is not None
-        assert "einen Versuch" in bruch.zahl or "ein Versuch" in bruch.frage
-        assert bruch.massgeblich == 283
+        assert not [e for e in ENTSCHEIDUNGEN if "Neues Hoch im Takt" in e.frage]
+
+    def test_die_offene_richtung_traegt_die_schlussfolgerung_selbst(self) -> None:
+        """Damit die Zusammenfassung nicht wieder etwas anderes sagt als der
+        Befund, auf den sie zeigt - dieselbe Bauart wie in 302."""
+        from research.stand import OFFEN
+
+        r = next(x for x in OFFEN if x.name == "Einstieg, der nicht am Rauschen haengt")
+        assert r.massgeblich == 283
+        assert "keine Regel" in r.ergebnis
+        assert "Erfinden" in r.ergebnis
 
     def test_jede_entscheidung_traegt_alle_drei_texte(self) -> None:
         for e in ENTSCHEIDUNGEN:

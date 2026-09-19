@@ -214,8 +214,16 @@ GELESEN: dict[str, int] = {
     # am Wort "gepflanzt", und 305 zitiert damit Befund 283, statt entlang
     # dieser Achse etwas nachzumessen. Genau der Unterschied, den 'Spur' nicht
     # sehen kann und den dieser Eintrag festhaelt.
-    "Zertifizierbarkeit der Bauart": 305,
-    "Einstieg, der nicht am Rauschen haengt": 305,
+    #
+    # **Und in 306 noch einmal beide** - zum zweiten Mal in Folge, aus
+    # demselben Grund: Ein Befund, der ueber den strukturellen Bruch
+    # schreibt, nennt zwangslaeufig "gepflanzt" und "am Rauschen". Der
+    # Unterschied bleibt derselbe: 306 hat 'Einstieg, der nicht am Rauschen
+    # haengt' wirklich gelesen - und dabei gefunden, dass die
+    # Zusammenfassung des Eintrags neben Befund 283 stand -, waehrend
+    # 'Zertifizierbarkeit der Bauart' wieder nur zitiert wird.
+    "Zertifizierbarkeit der Bauart": 306,
+    "Einstieg, der nicht am Rauschen haengt": 306,
 }
 
 #: Suchbegriffe je Richtung - geschlossene **und offene**.
