@@ -2190,6 +2190,26 @@ BEHOBEN: tuple[Richtung, ...] = (
         "im Laborbuch geben, und die nachgezogenen stehen ausgeschrieben da",
         304,
     ),
+    # Dasselbe noch einmal, ein Register weiter - und dort ohne jede Marke.
+    Richtung(
+        "Die Entscheidungen des Nutzers standen ohne Fundstelle da",
+        "'Entscheidung' hatte drei freie Textfelder und keine Fundstelle; die "
+        "Befundnummern standen als Prosa mitten im Satz, ungeprueft - die "
+        "Bauart, die 212 an der Historienkurve abgestellt hat. Das Register, "
+        "das den Nutzer um eine Entscheidung bittet, war damit das einzige "
+        "ohne Marke. Und es war veraltet: Der Eintrag zur Research-KI nannte "
+        "als Anforderung '120 Trades bei Guete ueber 0,23' aus Befund 74/75, "
+        "waehrend 291/292 laengst **0,2641 je Trade bei n_eff 254** gemessen "
+        "hatten - wer danach entscheidet, entscheidet auf einer Latte von vor "
+        "zweihundert Befunden. Neun von zehn Eintraegen tragen jetzt ihre "
+        "Fundstelle, aus ihrem **eigenen** Text gelesen; die "
+        "Wochenverlustgrenze bleibt ohne, weil sie auf keiner Messung steht. "
+        "Dazu kommt die Entscheidung, die seit 283 nur unter den Richtungen "
+        "stand: 'Neues Hoch im Takt' neu bauen, ein Versuch von 27 bis zur "
+        "Abbruchmarke - eine Entscheidung, die nirgends unter den "
+        "Entscheidungen steht, wird nicht getroffen, sondern vertagt",
+        305,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -2605,11 +2625,58 @@ BUDGET = Suchbudget()
 
 @dataclass(frozen=True, slots=True)
 class Entscheidung:
-    """Ein offener Punkt, der nicht bei mir liegt."""
+    """Ein offener Punkt, der nicht bei mir liegt.
+
+    **Mit Fundstelle seit Befund 305.** ``Richtung`` traegt seit 130 eine,
+    ``Auftragspunkt`` seit 304 - und ausgerechnet das Register, das den
+    Nutzer um eine Entscheidung bittet, hatte gar keine. Die Nummern standen
+    als Prosa im Text, ungeprueft; genau die Bauart, die Befund 212 an der
+    Historienkurve abgestellt hat.
+
+    Das ist hier nicht Ordnungsliebe: Wer eine dieser Fragen entscheidet,
+    soll nachschlagen koennen, worauf die Zahl steht - und sehen, ob sie noch
+    die neueste ist. Der Eintrag zur Research-KI nannte als Anforderung "120
+    Trades bei Guete ueber 0,23" aus Befund 74/75, waehrend 291 und 292
+    laengst 0,2641 je Trade bei n_eff 254 gemessen hatten.
+
+    ``befund`` bleibt freiwillig: Nicht jede Entscheidung steht auf einer
+    Messung. Die Wochenverlustgrenze ist eine Betriebsfrage, und eine
+    erfundene Fundstelle waere schlimmer als keine.
+    """
 
     frage: str
     zahl: str
     warum: str
+    befund: int = 0
+    zuletzt: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.zuletzt is not None and self.befund <= 0:
+            raise ValueError(
+                f"'{self.frage}': eine Nachmessung ohne Erstmessung - dann "
+                f"ist nicht zu sagen, was sie nachgemessen hat."
+            )
+        if self.zuletzt is not None and self.zuletzt <= self.befund:
+            raise ValueError(
+                f"'{self.frage}': Nachmessung in Befund {self.zuletzt} liegt "
+                f"nicht nach der Erstmessung in {self.befund} - dann ist es "
+                f"keine Nachmessung."
+            )
+
+    @property
+    def massgeblich(self) -> int:
+        """Die Fundstelle, in der die gueltigen Zahlen stehen."""
+        return self.zuletzt or self.befund
+
+    @property
+    def stelle(self) -> str:
+        """Wie die Fundstelle im Bericht dasteht."""
+        if not self.befund:
+            return "ohne Messung"
+        if self.zuletzt is None:
+            return f"Nr. {self.befund}"
+        # Komma statt zweiter Klammer - Befund 293.
+        return f"Nr. {self.zuletzt}, zuerst {self.befund}"
 
 
 #: Was der Nutzer entscheiden muss - benannt und beziffert, nicht beantwortet.
@@ -2640,6 +2707,7 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "vertretbar; das eine zu waehlen, ist eine Geschaeftsfrage und "
               "faellt nicht hier. **Gelockert wird nichts**, solange sie "
               "nicht gefallen ist.",
+        befund=162,
     ),
     Entscheidung(
         frage="Mindestrendite von 15 % im Jahr",
@@ -2674,6 +2742,8 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "jederzeit nach. Die Aufloesung ist eine Geschaeftsentscheidung "
               "- den Kandidaten dorthin zu stellen, wo mehr Gates bestehen, "
               "ist ausdruecklich keine.",
+        befund=57,
+        zuletzt=281,
     ),
     Entscheidung(
         frage="Die geratene Eingabe im Deflated Sharpe",
@@ -2695,6 +2765,7 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "gedeckelt - ``streuung.MINDESTABDECKUNG`` verlangt 90. Die "
               "Annahme bleibt also stehen, und zwar auf absehbare Zeit. Zu "
               "entscheiden bleibt nur, ob das je anders sein soll.",
+        befund=69,
     ),
     Entscheidung(
         frage="Was die Latte des Deflated Sharpe bedeutet",
@@ -2730,6 +2801,7 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "weniger Fehlalarme, das Gemessene ist also die guenstigste "
               "Lesart fuer die Latte. Und 5.000 Laeufe koennen hoechstens "
               "'kein einziger' sagen, also unter 0,02 %.",
+        befund=278,
     ),
     Entscheidung(
         frage="Funding-Satz",
@@ -2755,6 +2827,7 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "dieser Sandbox, keine des Systems. Auf dem eigenen Rechner: "
               "`python -m cli funding --von 2020-03-30`, sofern das Konto "
               "Perpetuals fuehrt.",
+        befund=250,
     ),
     Entscheidung(
         frage="Umfang des Kosten-Stress-Tests",
@@ -2773,6 +2846,7 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "in Befund 96. Dafuer spricht, dass ein Gate messen sollte, was "
               "es zu messen behauptet. Der Standard wurde nicht angefasst; "
               "die Entscheidung liegt beim Nutzer.",
+        befund=96,
     ),
     Entscheidung(
         frage="Kontogroesse",
@@ -2797,6 +2871,8 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "haelt nur, solange das Konto klein bleibt. Wer auf 2000 Euro "
               "aufstockt, aendert an der Strategie nichts und reisst es "
               "trotzdem.",
+        befund=95,
+        zuletzt=96,
     ),
     Entscheidung(
         frage="Wochenverlustgrenze",
@@ -2807,8 +2883,14 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
     ),
     Entscheidung(
         frage="Soll die Research-KI mitlaufen",
-        zahl="Neun gemessene Vorschlaege, keiner hat die Latte geraeumt "
-             "(gebraucht: 120 Trades bei Guete ueber 0,23, Befund 74/75)."
+        zahl="**Verlangt ist heute etwas anderes als damals** (291/292): "
+             "0,2641 je Trade bei n_eff 254 - und der Tageskatalog hat beide "
+             "Haelften gezeigt, nie zusammen. Fuenf von 18 Regeln haben diese "
+             "Qualitaet je Trade erreicht, keine davon ueber n_eff 58. Wer "
+             "die Zahlen unten liest, liest die Latte von damals.\n    "
+             "Neun gemessene Vorschlaege, keiner hat die Latte geraeumt "
+             "(gebraucht war damals: 120 Trades bei Guete ueber 0,23, "
+             "Befund 74/75)."
              "\n    Fuenf aus Befund 76, noch unter dem alten Auftrag, der "
              "den Deflated Sharpe nicht nannte und auf 100 Trades zielte: "
              "vier mit 68 bis 123 Trades, keiner ueber 0,25."
@@ -2847,6 +2929,42 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "Kandidat; ob das den Aufschlag wert ist, ist eine "
               "Geschaeftsfrage und faellt nicht hier. Beide Wege stehen als "
               "Befehlszeile unter 'Nur auf deinem Rechner'.",
+        befund=74,
+        # 292 hat dem Auftrag an die KI gesagt, worin der Unterschied
+        # bestehen muss. Wer sie heute laufen laesst, stellt eine andere
+        # Frage als bei 74/77 - das gehoert in die Entscheidung.
+        zuletzt=292,
+    ),
+    # **Die billigste Fassung derselben Frage** (Befund 305). Der Eintrag
+    # 'Einstieg, der nicht am Rauschen haengt' nennt sie seit 283 als die
+    # wichtigste offene Richtung und sagt, dass sie einen Versuch kostet -
+    # aber er steht unter den Richtungen, nicht unter den Entscheidungen.
+    # Eine Entscheidung, die nirgends unter den Entscheidungen steht, wird
+    # nicht getroffen, sondern vertagt.
+    Entscheidung(
+        frage="'Neues Hoch im Takt' neu bauen - ein Versuch",
+        zahl="Gegen gepflanzte Latten hat diese Struktur als einzige "
+             "**entkoppelt** (Befund 283): Sie haelt 70 % ihrer Trades statt "
+             "19 % und raeumt jede gepflanzte Latte. Auf echten Daten war sie "
+             "mit 0,2137 je Trade schlechter als der Bestand und braeuchte "
+             "n_eff 324.\n    Rechenbar ist sie nicht mehr (257): Sie stammt "
+             "aus einer Vorschlagsdatei, die nie versioniert wurde. Sie neu "
+             "zu bauen heisst, sie aus ihrer Beschreibung zu bauen - eine "
+             "neue Hypothese, und die kostet **einen** Versuch von 27, die "
+             "bis zur Abbruchmarke 230 bleiben.",
+        warum="Seit Befund 256 ist die Kopplung von Haeufigkeit und Guete "
+              "als Eigenschaft der **Signale** gemessen, auf Tageskerzen wie "
+              "auf Viertelstunden (302). Ein struktureller Bruch ist der "
+              "einzige bekannte Weg heraus, und dies ist der einzige "
+              "beschriebene Kandidat dafuer.\n    Dagegen steht dasselbe wie "
+              "bei der Research-KI: Jeder Versuch hebt die Huerde des "
+              "Deflated Sharpe fuer alle folgenden (71). Und es ist nicht "
+              "dieselbe Regel, sondern eine nach ihrer Beschreibung gebaute "
+              "- ob sie die gemessene Entkopplung mitbringt, ist offen.\n"
+              "    Zu entscheiden ist, ob einer der 27 verbleibenden "
+              "Versuche hierhin geht.",
+        befund=56,
+        zuletzt=283,
     ),
 )
 
@@ -3519,7 +3637,10 @@ class Lage:
         )
         zeilen += ["", "WAS NICHT BEI MIR LIEGT", "-" * 72]
         for e in ENTSCHEIDUNGEN:
-            zeilen += [f"  {e.frage}", f"    {e.zahl}", f"    {e.warum}", ""]
+            # **Die Fundstelle daneben** (Befund 305). Wer entscheidet, soll
+            # nachschlagen koennen, worauf die Zahl steht - und sehen, ob sie
+            # die neueste ist.
+            zeilen += [f"  {e.frage}  ({e.stelle})", f"    {e.zahl}", f"    {e.warum}", ""]
         zeilen += ["NUR AUF DEINEM RECHNER", "-" * 72]
         for befehl, warum in BEIM_NUTZER:
             # ``replace`` und nicht ``format``: Die uebrigen Texte duerfen

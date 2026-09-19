@@ -200,9 +200,22 @@ GELESEN: dict[str, int] = {
     "Holdout auf fremden Maerkten": 295,
     "Zaehlt ein Sweep am Bestand als Versuch?": 295,
     "Timing gegen Zufallseinstiege": 295,
-    "Zertifizierbarkeit der Bauart": 295,
     "Der Preis in Reststreuungen": 295,
-    "Einstieg, der nicht am Rauschen haengt": 295,
+    # **Befund 305 hat beide erneut angesehen** - und es war zweimal etwas
+    # anderes.
+    #
+    # 'Einstieg, der nicht am Rauschen haengt' ist gelesen und **entschieden
+    # worden**: Der Eintrag nennt seit 283 einen strukturellen Bruch als den
+    # einzigen bekannten Weg aus der Kopplung und sagt, dass er einen Versuch
+    # kostet. Das ist eine Abwaegung mit Preis, also eine Entscheidung; sie
+    # steht seit 305 unter ENTSCHEIDUNGEN statt nur unter den Richtungen.
+    #
+    # 'Zertifizierbarkeit der Bauart' ist nur **erwaehnt**: Der Treffer haengt
+    # am Wort "gepflanzt", und 305 zitiert damit Befund 283, statt entlang
+    # dieser Achse etwas nachzumessen. Genau der Unterschied, den 'Spur' nicht
+    # sehen kann und den dieser Eintrag festhaelt.
+    "Zertifizierbarkeit der Bauart": 305,
+    "Einstieg, der nicht am Rauschen haengt": 305,
 }
 
 #: Suchbegriffe je Richtung - geschlossene **und offene**.

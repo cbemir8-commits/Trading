@@ -27226,3 +27226,91 @@ nachsieht - und dass sie sagt, wann sie zuletzt gemessen wurde.
 Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 4130 passed, 2 skipped; ruff check sauber.
+
+## Dreihundertfuenf. Die Entscheidungen des Nutzers standen ohne Fundstelle da
+
+Befund 304 hat `Auftragspunkt` ein `zuletzt` gegeben. Beim Nachsehen, was
+sonst noch auf einer alten Zahl steht, fiel das Register daneben auf.
+
+### Drei freie Textfelder
+
+    @dataclass(frozen=True, slots=True)
+    class Entscheidung:
+        frage: str
+        zahl: str
+        warum: str
+
+Keine Fundstelle. `Richtung` traegt eine seit Befund 130, `Auftragspunkt`
+seit gestern - und ausgerechnet das Register, das den Nutzer um eine
+**Entscheidung** bittet, hatte gar keine.
+
+Die Nummern standen trotzdem drin: als Prosa mitten im Satz, "seit Befund 95
+ist beziffert", "gemessen in Befund 278". Acht von neun Eintraegen nannten so
+mindestens einen Befund. Geprueft hat das nichts - dieselbe Bauart, die
+Befund 212 an der Historienkurve abgestellt hat.
+
+### Und es war veraltet
+
+Der Eintrag *"Soll die Research-KI mitlaufen"* nannte als Anforderung:
+
+> gebraucht: 120 Trades bei Guete ueber 0,23 (Befund 74/75)
+
+Gemessen ist seit Befund 291 etwas anderes: **0,2641 je Trade bei n_eff 254**,
+und der Tageskatalog hat beide Haelften gezeigt, nie zusammen (292). Wer
+diese Entscheidung nach dem Eintrag faellt, faellt sie auf einer Latte von vor
+zweihundert Befunden.
+
+Das ist keine Kleinigkeit an einem Eintrag, dessen ganzer Zweck es ist,
+jemandem eine Zahl fuer eine Abwaegung zu geben.
+
+### Was jetzt gilt
+
+`Entscheidung` traegt `befund` und `zuletzt` mit derselben Pruefung wie
+`Richtung` und `Auftragspunkt`, und der Bericht setzt die Marke neben die
+Frage:
+
+    Kontogroesse  (Nr. 96, zuerst 95)
+    Soll die Research-KI mitlaufen  (Nr. 292, zuerst 74)
+    Wochenverlustgrenze  (ohne Messung)
+
+Die Fundstellen sind aus dem **eigenen Text** jedes Eintrags gelesen, nicht
+gewaehlt. Ein Test haelt fest, dass die Marke auch im Text vorkommt - sonst
+waeren es zwei Behauptungen statt einer.
+
+`befund` bleibt freiwillig. Die Wochenverlustgrenze steht auf keiner Messung,
+sondern auf einer Bauentscheidung, und eine erfundene Fundstelle waere
+schlimmer als keine. Dass es genau **eine** solche gibt, steht ausgeschrieben
+in einem Test.
+
+### Die Entscheidung, die nirgends unter den Entscheidungen stand
+
+Das Register nennt seit Befund 256 einen strukturellen Bruch als den einzigen
+bekannten Weg aus der Kopplung, und seit 283 den einzigen beschriebenen
+Kandidaten dafuer:
+
+> der wiederholbare Ausbruch entkoppelt (haelt 70 % seiner Trades statt 19 %)
+> und raeumt jede gepflanzte Latte [...] Seit 256 ist sie trotzdem die
+> wichtigste.
+
+Auf echten Daten war er mit 0,2137 je Trade schlechter als der Bestand und
+braeuchte n_eff 324. Rechenbar ist er nicht mehr (257) - die Vorschlagsdatei
+wurde nie versioniert. Ihn aus seiner Beschreibung neu zu bauen ist eine neue
+Hypothese und kostet **einen Versuch** von 27, die bis zur Abbruchmarke 230
+bleiben.
+
+Das ist eine Abwaegung mit einem Preis, also eine Entscheidung - und sie stand
+unter den *Richtungen*. Eine Entscheidung, die nirgends unter den
+Entscheidungen steht, wird nicht getroffen, sondern vertagt. Jetzt steht sie
+dort, beziffert und nicht beantwortet.
+
+### Was das nicht ist
+
+Kein Messbefund, und auch kein Schritt Richtung Zulassung. Es ist der dritte
+Befund in Folge an derselben Stelle: Die Register dieses Projekts tragen die
+Antworten, und wer sie liest, muss sehen koennen, wie alt sie sind. 130 hat
+das fuer die Richtungen gelernt, 304 fuer den Auftrag, 305 fuer die
+Entscheidungen. Danach ist kein Register mehr ohne Marke.
+
+Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 4144 passed, 2 skipped; ruff check sauber.
