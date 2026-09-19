@@ -44,7 +44,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-__all__ = ["MESSUNGEN", "Laufkosten", "auskunft", "dauer"]
+__all__ = [
+    "MESSUNGEN",
+    "Laufkosten",
+    "auskunft",
+    "auskunft_ohne_gates",
+    "dauer",
+    "dauer_ohne_gates",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,6 +128,48 @@ def dauer(intervall: str, genome: int, sprossen: int = 0) -> float | None:
     return (kosten.je_genom + zusatz) * genome
 
 
+def _zeitwort(sekunden: float) -> str:
+    """Sekunden so, wie ein Mensch sie vor einem Lauf lesen will."""
+    if sekunden < 90:
+        return f"rund {sekunden:.0f} Sekunden"
+    if sekunden < 5400:
+        return f"rund {sekunden / 60:.0f} Minuten"
+    return f"rund {sekunden / 3600:.1f} Stunden".replace(".", ",")
+
+
+def dauer_ohne_gates(intervall: str, genome: int, stufen: int = 1) -> float | None:
+    """Ein Lauf, der **nur** Walk-Forwards rechnet, in Sekunden.
+
+    Die Reibungsfrage braucht Taktpunkte und keine Gates (Befund 301). Dann
+    kostet jede Stufe eine Sprosse - der Betriebspunkt eingeschlossen -, und
+    der Genompreis mit Gates taucht gar nicht auf.
+
+    Das ist derselbe Massstabsfehler wie in 296 und 298, nur ein drittes Mal
+    vermieden: Wer hier mit ``je_genom`` rechnete, kaeme auf das Dreifache.
+    """
+    kosten = MESSUNGEN.get(intervall)
+    if kosten is None or kosten.je_sprosse is None or genome < 0 or stufen < 0:
+        return None
+    return kosten.je_sprosse * stufen * genome
+
+
+def auskunft_ohne_gates(intervall: str, genome: int, stufen: int = 1) -> str:
+    """Die Zeile vor einem Lauf, der nur Walk-Forwards rechnet."""
+    sekunden = dauer_ohne_gates(intervall, genome, stufen)
+    if sekunden is None:
+        gemessen = ", ".join(sorted(MESSUNGEN))
+        return (
+            f"Laufzeit fuer '{intervall}' nicht gemessen (bekannt: {gemessen}) "
+            f"- hier wird nichts hochgerechnet."
+        )
+    kosten = MESSUNGEN[intervall]
+    return (
+        f"{genome} Genome mal {stufen} Stufe{'n' if stufen != 1 else ''}, "
+        f"{_zeitwort(sekunden)} - gemessen mit {kosten.je_sprosse:.0f} s je "
+        f"Walk-Forward (Befund {kosten.sprosse_gemessen_in}), ohne Gates."
+    )
+
+
 def auskunft(intervall: str, genome: int, sprossen: int = 0) -> str:
     """Die Zeile, die vor einem langen Lauf dasteht."""
     sekunden = dauer(intervall, genome, sprossen)
@@ -131,12 +180,7 @@ def auskunft(intervall: str, genome: int, sprossen: int = 0) -> str:
             f"- hier wird nichts hochgerechnet."
         )
     kosten = MESSUNGEN[intervall]
-    if sekunden < 90:
-        zeit = f"rund {sekunden:.0f} Sekunden"
-    elif sekunden < 5400:
-        zeit = f"rund {sekunden / 60:.0f} Minuten"
-    else:
-        zeit = f"rund {sekunden / 3600:.1f} Stunden".replace(".", ",")
+    zeit = _zeitwort(sekunden)
     # Der Tausenderpunkt wird auf der **Zahl** gesetzt und nicht auf dem
     # fertigen Satz: Ein pauschales replace(",", ".") traf auch das Komma
     # hinter "Genome" und machte daraus einen Punkt.

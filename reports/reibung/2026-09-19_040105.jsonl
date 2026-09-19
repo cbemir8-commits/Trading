@@ -1,0 +1,11 @@
+{"begonnen": "2026-09-19T04:01:05+00:00", "maerkte": ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"], "intervall": "1d", "betriebspunkt": "Spot", "genome": 5, "leiter": [0.0, 1.0], "stueck": "3/6", "kerzen": {"BTCUSD_BITSTAMP": {"zeilen": "3301", "von": "0", "bis": "3300"}, "ETHUSD_BITSTAMP": {"zeilen": "3301", "von": "0", "bis": "3300"}}, "katalog": "37bbbebd565551c0", "code": "768efef9262751c1", "art": "kopf"}
+{"regel": "Trendbeteiligung EMA200", "ergebnis": "takt", "faktor": 1.0, "trades": 66, "sr_je_trade": 0.19811967841679365, "haltedauer_tage": 16.0, "kostenanteil": 0.003006623963260059, "art": "messung"}
+{"regel": "Trendbeteiligung EMA200", "ergebnis": "takt", "faktor": 0.0, "trades": 66, "sr_je_trade": 0.20270892389930825, "haltedauer_tage": 16.0, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Trendbeteiligung mit Puffer", "ergebnis": "takt", "faktor": 1.0, "trades": 308, "sr_je_trade": 0.1672237125865026, "haltedauer_tage": 13.006493506493506, "kostenanteil": 0.0033248234433475377, "art": "messung"}
+{"regel": "Trendbeteiligung mit Puffer", "ergebnis": "takt", "faktor": 0.0, "trades": 308, "sr_je_trade": 0.17477047556660275, "haltedauer_tage": 13.006493506493506, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Momentum-Beteiligung", "ergebnis": "takt", "faktor": 1.0, "trades": 101, "sr_je_trade": 0.23770103582453525, "haltedauer_tage": 12.049504950495049, "kostenanteil": 0.0036642846912081713, "art": "messung"}
+{"regel": "Momentum-Beteiligung", "ergebnis": "takt", "faktor": 0.0, "trades": 101, "sr_je_trade": 0.2429363498617593, "haltedauer_tage": 12.049504950495049, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Ausbruch ohne Long-Ueberhitzung", "ergebnis": "kein Takt", "faktor": 1.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Ausbruch ohne Long-Ueberhitzung", "ergebnis": "kein Takt", "faktor": 0.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Funding-Carry Long", "ergebnis": "kein Takt", "faktor": 1.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Funding-Carry Long", "ergebnis": "kein Takt", "faktor": 0.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}

@@ -349,7 +349,17 @@ class Reibungsprobe:
 
     @property
     def belastbar(self) -> bool:
-        return self.mit.genug and self.ohne.genug and self.gleiche_regeln
+        return (
+            self.mit.genug
+            and self.ohne.genug
+            # **Und beide muessen eine Zahl hergeben** (Befund 301), aus
+            # demselben Grund wie in ``Reibungsleiter.belastbar``: Vier
+            # Abwandlungen derselben Regel haben dieselbe Trade-Zahl, und dann
+            # gibt es keine Korrelation - auch wenn es vier Regeln sind.
+            and self.mit.netto is not None
+            and self.ohne.netto is not None
+            and self.gleiche_regeln
+        )
 
     @property
     def anteil_der_reibung(self) -> float | None:
@@ -409,6 +419,12 @@ class Reibungsprobe:
                     f"eine Regel kann im einen Lauf genug Trades haben und im "
                     f"anderen nicht - verglichen wuerden dann zwei "
                     f"Populationen."
+                )
+            if self.mit.genug and self.ohne.genug:
+                return (
+                    "**Keine Kopplung bestimmbar.** Genug Regeln, aber keine "
+                    "Streuung - stehen alle bei derselben Trade-Zahl oder "
+                    "demselben Sharpe je Trade, gibt es keine Korrelation."
                 )
             return (
                 "**Zu wenige Punkte.** Fuer eine Korrelation braucht es vier "
@@ -525,6 +541,14 @@ class Reibungsleiter:
         return (
             len(self.sprossen) >= 2
             and all(s.frage.genug for s in self.sprossen)
+            # **Und jede Sprosse muss eine Zahl hergeben** (Befund 301).
+            # ``genug`` zaehlt nur die Regeln. Tragen alle dieselbe Trade-Zahl
+            # - fuenf Abwandlungen derselben Vola-Ziel-Regel etwa -, ist die
+            # Korrelation nicht bestimmt und ``r`` None. Bis hierher hat das
+            # niemand bemerkt, weil der einzige Aufrufer immer den ganzen
+            # Katalog gefahren hat; das erste Stueck aus fuenf Verwandten
+            # liess ``urteil`` mit einem TypeError abbrechen.
+            and all(s.r is not None for s in self.sprossen)
             and self.gleiche_regeln
         )
 
@@ -623,6 +647,13 @@ class Reibungsleiter:
                     "Regelmengen - mit mehr Reibung faellt eine Regel unter "
                     "die Schwelle fuer einen Taktpunkt, und dann verglichen "
                     "sich zwei Populationen."
+                )
+            if any(s.frage.genug and s.r is None for s in self.sprossen):
+                return (
+                    "**Keine Kopplung bestimmbar.** Eine Sprosse hat genug "
+                    "Regeln, aber keine Streuung - stehen alle bei derselben "
+                    "Trade-Zahl oder demselben Sharpe je Trade, gibt es dort "
+                    "keine Korrelation. Vier Verwandte sind keine Messung."
                 )
             return (
                 "**Zu wenig gemessen.** Es braucht mindestens zwei Sprossen "

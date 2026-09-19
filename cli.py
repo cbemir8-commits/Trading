@@ -13171,6 +13171,335 @@ def vorratsdecke(
     )
 
 
+@app.command()
+def reibung(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    leiter: str = typer.Option(
+        "0", "--leiter",
+        help="Reibungsfaktoren neben dem Betriebspunkt, durch Komma.",
+    ),
+    stueck: str = typer.Option(
+        "", "--stueck", help="Nur einen Teil des Katalogs messen, z. B. '2/5'.",
+    ),
+    aus: str = typer.Option(
+        "", "--aus", help="Gemessene Protokolle lesen statt messen.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Traegt die Reibung die gemessene Kopplung? (Befund 301)
+
+    Dieselbe Frage wie in ``vorratsdecke --reibungsleiter``, und **ohne die
+    Gates**. Das ist der ganze Zweck: Die Frage braucht nur Taktpunkte -
+    Trades, Sharpe je Trade, Haltedauer, Kostenanteil -, und die kommen aus
+    dem Walk-Forward. Die effektive Stichprobe, die Latte und die Decke
+    braucht sie nicht, und die kosten auf 15 Minuten zwei Drittel der Zeit
+    (Befund 298: 226 s je Genom, davon 61 s Walk-Forward).
+
+    Gemessen statt gerechnet: 123 s je Genom statt 287 - fuer denselben
+    Befund. Der Katalog auf 15 Minuten kostet damit rund 80 Minuten statt
+    3,8 Stunden.
+
+    **Kostet keinen Versuch.** Nachgemessen wird ein vorhandener Katalog;
+    ausgewaehlt wird nichts.
+    """
+    from decimal import Decimal
+
+    from backtest.portfolio_walkforward import (
+        common_range,
+        run_portfolio_walkforward,
+    )
+    from research.kostenanteil import (
+        Kostenfrage,
+        Reibungsleiter,
+        Reibungssprosse,
+        Taktpunkt,
+    )
+    from research.randschnitt import ohne_zensierte
+    from research.seeds import GENERATIONS, passt_zum_intervall, spitzenkandidat
+    from research.zwischenstand import neu as neues_protokoll
+    from research.zwischenstand import scheibe
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    interval_obj = Interval(intervall)
+    faktoren = [float(x) for x in leiter.split(",") if x.strip()]
+
+    console.print(
+        f"\n[bold]Reibungsleiter[/] {' + '.join(symbole)} "
+        f"{interval_obj.label}, Spot-Punkt"
+    )
+
+    #: Je Faktor die gemessenen Taktpunkte; 1.0 ist der Betriebspunkt selbst.
+    punkte_je_faktor: dict[float, list] = {f: [] for f in {1.0, *faktoren}}
+
+    if aus:
+        quelle = _reibung_aus_protokollen(
+            aus, interval_obj=interval_obj, punkte_je_faktor=punkte_je_faktor
+        )
+    else:
+        store = CandleStore(settings.paths.data_store)
+        frames = common_range({x: store.read(x, interval_obj) for x in symbole})
+        configs = _spotconfigs(symbole, settings)
+        vergleichsgroesse = spitzenkandidat().sizing
+
+        def _skaliert(faktor: float):
+            return {
+                x: c.__class__(
+                    instrument=c.instrument, risk=c.risk,
+                    costs=c.costs.scaled(Decimal(str(faktor))),
+                    funding=c.funding, initial_equity=c.initial_equity,
+                    allow_shorts=c.allow_shorts,
+                    enforce_risk_limits=c.enforce_risk_limits,
+                    entry_expiry_bars=c.entry_expiry_bars,
+                    max_hold_bars=c.max_hold_bars, kalender=c.kalender,
+                )
+                for x, c in configs.items()
+            }
+
+        kosten = {1.0: configs, **{f: _skaliert(f) for f in faktoren}}
+        bauplaene = [
+            bauen
+            for gen, liste in sorted(GENERATIONS.items())
+            if passt_zum_intervall(gen, intervall)
+            for bauen in liste
+        ]
+        ganzer_katalog = len(bauplaene)
+        von, bis = 0, ganzer_katalog
+        if stueck:
+            try:
+                von, bis = scheibe(ganzer_katalog, stueck)
+            except ValueError as fehler:
+                console.print(f"\n[red]{fehler}[/]")
+                raise typer.Exit(2) from None
+            bauplaene = bauplaene[von:bis]
+
+        # **Was das kostet, bevor es laeuft** (Befund 296/298/301). Jede Stufe
+        # ist ein Walk-Forward ohne Gates - der Betriebspunkt eingeschlossen.
+        # Wer hier mit dem Genompreis rechnete, kaeme auf das Dreifache; das
+        # waere derselbe Massstabsfehler ein drittes Mal.
+        from research.laufkosten import auskunft_ohne_gates
+
+        console.print(
+            f"[dim]{auskunft_ohne_gates(interval_obj.label, len(bauplaene), len(kosten))}"
+            + (f" Stueck {stueck}: Genom {von + 1} bis {bis} von "
+               f"{ganzer_katalog}." if stueck else "")
+            + "[/]\n"
+        )
+
+        protokoll = neues_protokoll(
+            wurzel=Path.cwd(), art="reibung",
+            maerkte=symbole, intervall=interval_obj.label,
+            betriebspunkt="Spot", genome=len(bauplaene),
+            leiter=sorted(kosten), stueck=stueck or f"1/1 ({ganzer_katalog})",
+            kerzen=_kerzenabdruck(frames), katalog=_katalogabdruck(),
+            code=_codeabdruck(),
+        )
+        protokoll.beginne()
+        quelle = str(protokoll.pfad)
+        console.print(f"[dim]{protokoll.zeile()}[/]\n")
+
+        def _messe(genom, faktor: float):
+            """Eine Stufe rechnen - ohne sie schon festzuhalten.
+
+            Getrennt, weil der Betriebspunkt erst gerechnet und dann
+            beurteilt wird: Ein Doppelgaenger bekommt eine **andere** Zeile
+            als eine gezaehlte Regel, und zwei Zeilen zu derselben Stufe
+            liessen das Zusammenlegen spaeter zu Recht abbrechen.
+            """
+            lauf = ohne_zensierte(
+                run_portfolio_walkforward(
+                    frames, lambda g=genom: compile_genome(g), kosten[faktor]
+                )
+            )
+            return (
+                Taktpunkt.aus_trades(genom.name, lauf.all_trades),
+                len(lauf.all_trades),
+            )
+
+        def _halte(genom, faktor: float, takt, trades: int) -> None:
+            protokoll.halte_fest(
+                regel=genom.name,
+                ergebnis="takt" if takt is not None else "kein Takt",
+                faktor=faktor,
+                trades=trades,
+                sr_je_trade=None if takt is None else takt.sharpe_je_trade,
+                haltedauer_tage=None if takt is None else takt.haltedauer_tage,
+                kostenanteil=None if takt is None else takt.kostenanteil,
+            )
+            if takt is not None:
+                punkte_je_faktor[faktor].append(takt)
+
+        # **Dieselbe Regel unter zwei Namen zaehlt einmal** (Befund 182/301).
+        # Der Tageskatalog enthaelt sechs solche Paare; sie mitzuzaehlen hiesse,
+        # die Zahl der Belege zu erfinden. Entschieden wird **am
+        # Betriebspunkt** und dann fuer alle Stufen - faellt eine Regel nur auf
+        # einer Stufe heraus, tragen die Stufen verschiedene Regelmengen und
+        # die Leiter ist nicht mehr belastbar.
+        #
+        # Deshalb laeuft der Betriebspunkt zuerst: Ein Doppelgaenger spart so
+        # auch die uebrigen Stufen.
+        gesehen: set[tuple[int, float]] = set()
+        for bauen in bauplaene:
+            # Dieselbe Groessenlogik wie im Katalogdurchlauf (Befund 182) -
+            # sonst misst auch das hier Groessenlogiken statt Einstiege.
+            genom = _ohne_hebel(
+                bauen().model_copy(update={"sizing": vergleichsgroesse})
+            )
+            takt, trades = _messe(genom, 1.0)
+            kennung = (
+                None
+                if takt is None
+                else (takt.trades, round(takt.sharpe_je_trade, 6))
+            )
+            if kennung is not None and kennung in gesehen:
+                protokoll.halte_fest(
+                    regel=genom.name, ergebnis="identisch", faktor=1.0,
+                    trades=trades,
+                )
+                console.print(
+                    f"  [dim]{genom.name[:44]:<44} identisch mit einer "
+                    f"frueheren Regel[/]"
+                )
+                continue
+            if kennung is not None:
+                gesehen.add(kennung)
+            _halte(genom, 1.0, takt, trades)
+            for faktor in sorted(f for f in kosten if f != 1.0):
+                _halte(genom, faktor, *_messe(genom, faktor))
+            console.print(
+                f"  [dim]{genom.name[:44]:<44} "
+                + " ".join(
+                    f"{f:g}:{len(punkte_je_faktor[f])}" for f in sorted(kosten)
+                )
+                + "[/]"
+            )
+
+    # **Nur Regeln, die auf jeder Stufe einen Taktpunkt haben.** Sonst
+    # verglichen sich verschiedene Populationen - derselbe Fehler, gegen den
+    # 'Reibungsleiter.gleiche_regeln' steht.
+    gemeinsam = set.intersection(
+        *({p.name for p in liste} for liste in punkte_je_faktor.values())
+    ) if punkte_je_faktor else set()
+    verloren = {
+        f: sorted({p.name for p in liste} - gemeinsam)
+        for f, liste in punkte_je_faktor.items()
+    }
+    for faktor, namen in sorted(verloren.items()):
+        for name in namen:
+            console.print(
+                f"[dim]{name} hat bei Faktor {faktor:g} keinen Gegenpart auf "
+                f"jeder Stufe und faellt heraus.[/]"
+            )
+
+    sprossen = tuple(
+        Reibungssprosse(
+            faktor=faktor,
+            frage=Kostenfrage(
+                punkte=[p for p in liste if p.name in gemeinsam]
+            ),
+        )
+        for faktor, liste in sorted(punkte_je_faktor.items())
+    )
+    bild = Reibungsleiter(sprossen=sprossen)
+    console.print(
+        f"\n[bold]Dieselben Regeln bei anderer Reibung[/] - "
+        f"{len(gemeinsam)} Regeln auf {len(sprossen)} Stufen\n"
+        "[dim]Je Stufe ein ganzer Durchlauf bei 'CostModel.scaled(k)' - "
+        "Fuellungen, Stops und Risikogrenzen reagieren mit, statt "
+        "festgehalten zu werden (Befund 254/256).[/]\n"
+    )
+    console.print(bild.tabelle())
+    console.print()
+    console.print(bild.urteil())
+    probe = bild.probe
+    if probe is not None:
+        console.print()
+        console.print(probe.urteil())
+    console.print(
+        "\n[dim]"
+        + ("Gelesen aus " if aus else "Zeile fuer Zeile mitgeschrieben in ")
+        + f"{quelle}[/]"
+    )
+
+
+def _reibung_aus_protokollen(
+    aus: str, *, interval_obj, punkte_je_faktor: dict[float, list]
+) -> str:
+    """Taktpunkte aus zusammengelegten Protokollen (Befund 301).
+
+    Dieselbe Pruefung wie in ``vorratsdecke --aus``: ``zusammen`` vergleicht
+    die Koepfe, und dieselbe Regel darf nicht zweimal zaehlen.
+    """
+    from research.kostenanteil import Taktpunkt
+    from research.zwischenstand import Uneinig, zusammen
+
+    pfade = [x.strip() for x in aus.split(",") if x.strip()]
+    try:
+        kopf, messungen = zusammen(pfade)
+    except Uneinig as fehler:
+        console.print(f"\n[red]{fehler}[/]")
+        raise typer.Exit(2) from None
+
+    if kopf.get("intervall") != interval_obj.label:
+        console.print(
+            f"\n[red]Die Protokolle sind auf {kopf.get('intervall')} gemessen, "
+            f"verlangt ist {interval_obj.label}.[/]"
+        )
+        raise typer.Exit(2)
+
+    punkte_je_faktor.clear()
+    punkte_je_faktor.update({float(f): [] for f in kopf.get("leiter", [1.0])})
+
+    gesehen: set[tuple] = set()
+    # Doppelgaenger werden **am Betriebspunkt** entschieden und dann ueberall
+    # ausgeschlossen: Faellt eine Regel nur auf einer Stufe heraus, tragen die
+    # Stufen verschiedene Regelmengen und die Leiter ist nicht mehr belastbar.
+    kennungen: dict[tuple, str] = {}
+    doppelt: set[str] = set()
+    for satz in messungen:
+        name = str(satz.get("regel", ""))
+        faktor = float(satz.get("faktor", 1.0))
+        if (name, faktor) in gesehen:
+            console.print(
+                f"\n[red]'{name}' steht bei Faktor {faktor:g} zweimal in den "
+                f"Protokollen.[/] Ueberschneidende Stuecke wuerden Belege "
+                f"doppelt zaehlen."
+            )
+            raise typer.Exit(2)
+        gesehen.add((name, faktor))
+        if satz.get("ergebnis") != "takt" or faktor not in punkte_je_faktor:
+            continue
+        if faktor == 1.0:
+            kennung = (int(satz["trades"]), round(float(satz["sr_je_trade"]), 6))
+            if kennung in kennungen:
+                doppelt.add(name)
+                continue
+            kennungen[kennung] = name
+        punkte_je_faktor[faktor].append(
+            Taktpunkt(
+                name=name,
+                trades=int(satz["trades"]),
+                sharpe_je_trade=float(satz["sr_je_trade"]),
+                haltedauer_tage=float(satz.get("haltedauer_tage") or 0.0),
+                kostenanteil=float(satz["kostenanteil"]),
+            )
+        )
+    for faktor, liste in punkte_je_faktor.items():
+        punkte_je_faktor[faktor] = [p for p in liste if p.name not in doppelt]
+    for name in sorted(doppelt):
+        console.print(
+            f"[dim]{name} ist am Betriebspunkt mit einer frueheren Regel "
+            f"identisch und zaehlt einmal.[/]"
+        )
+    return ", ".join(pfade)
+
+
 def _katalogregel(name: str):
     """Ein Genom aus dem Katalog, beim Namen genannt.
 

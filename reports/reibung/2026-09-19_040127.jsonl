@@ -1,0 +1,10 @@
+{"begonnen": "2026-09-19T04:01:27+00:00", "maerkte": ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"], "intervall": "1d", "betriebspunkt": "Spot", "genome": 5, "leiter": [0.0, 1.0], "stueck": "4/6", "kerzen": {"BTCUSD_BITSTAMP": {"zeilen": "3301", "von": "0", "bis": "3300"}, "ETHUSD_BITSTAMP": {"zeilen": "3301", "von": "0", "bis": "3300"}}, "katalog": "37bbbebd565551c0", "code": "768efef9262751c1", "art": "kopf"}
+{"regel": "Gegen die ueberhitzte Long-Seite", "ergebnis": "kein Takt", "faktor": 1.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Gegen die ueberhitzte Long-Seite", "ergebnis": "kein Takt", "faktor": 0.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Trend-Beteiligung (fair gerechnet)", "ergebnis": "takt", "faktor": 1.0, "trades": 51, "sr_je_trade": 0.3274041699577338, "haltedauer_tage": 46.607843137254896, "kostenanteil": 0.0013810644475632863, "art": "messung"}
+{"regel": "Trend-Beteiligung (fair gerechnet)", "ergebnis": "takt", "faktor": 0.0, "trades": 51, "sr_je_trade": 0.3288570618704327, "haltedauer_tage": 46.607843137254896, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Beteiligt, ausser es ist ueberhitzt", "ergebnis": "kein Takt", "faktor": 1.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Beteiligt, ausser es ist ueberhitzt", "ergebnis": "kein Takt", "faktor": 0.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Carry-Beteiligung", "ergebnis": "kein Takt", "faktor": 1.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Carry-Beteiligung", "ergebnis": "kein Takt", "faktor": 0.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Trend-Beteiligung 200 Tage", "ergebnis": "identisch", "faktor": 1.0, "trades": 51, "art": "messung"}

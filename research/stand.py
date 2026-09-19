@@ -2107,6 +2107,29 @@ BEHOBEN: tuple[Richtung, ...] = (
         "verschiedenen Stuecken ergaben 19 Belege statt 18",
         300,
     ),
+    # Derselbe Massstabsfehler wie 296 und 298 - diesmal vermieden, bevor er
+    # eine Messung verhindert hat.
+    Richtung(
+        "Die Reibungsfrage braucht die Gates nicht",
+        "Der 15-Minuten-Katalog mit einer Reibungssprosse kostet gemessene "
+        "3,8 Stunden - und davon sind zwei Drittel Gates, die die Frage gar "
+        "nicht braucht: 'Kostenfrage' steht auf Taktpunkten (Trades, Sharpe "
+        "je Trade, Haltedauer, Kostenanteil), nicht auf effektiver "
+        "Stichprobe, Latte oder Decke. 'cli reibung' rechnet nur die "
+        "Walk-Forwards, mit '--stueck' und '--aus' wie in 300: 123 s je "
+        "Genom statt 287, der Katalog in rund 80 Minuten statt 3,8 Stunden. "
+        "Die Gegenprobe auf Tageskerzen ergab Urteil und Zahlen Zeichen fuer "
+        "Zeichen gleich, ob am Stueck oder aus sechs Stuecken gelesen - und "
+        "reproduziert Befund 78: r -0,056 am Betriebspunkt gegen -0,052 ohne "
+        "jede Reibung, 7 % des Weges zur Null, die Kopplung gehoert den "
+        "Signalen. Zwei Fehler hat die Stueckelung dabei ans Licht gebracht: "
+        "'Reibungsleiter.urteil' und 'Reibungsprobe.urteil' stuerzten ab, "
+        "wenn eine Sprosse genug Regeln, aber keine Streuung hatte (vier "
+        "Abwandlungen derselben Vola-Ziel-Regel, alle mit derselben "
+        "Trade-Zahl - r ist dann None); und der erste Wurf von 'cli reibung' "
+        "zaehlte Doppelgaenger mit, 25 Regeln statt 19",
+        301,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

@@ -75,6 +75,7 @@ HARMLOS: frozenset[str] = frozenset({
     "marktkombinationen", "nachpruefung", "nullprobe", "paare",
     "partner", "phasen", "plateaubild", "quality",
     "quelle", "rangprobe", "referenz", "register",
+    "reibung",
     "regler", "rennen", "review", "scan",
     "schock", "sperrprobe", "stand", "status",
     "streuung", "suchbudget", "tageszeit", "taktung",
@@ -84,7 +85,12 @@ HARMLOS: frozenset[str] = frozenset({
 
 #: Was der Lauf ergeben hat - als Zahl, damit ein spaeterer Lauf sich daran
 #: messen kann.
-GELAUFEN = 52
+#:
+#: 53 seit Befund 301: 'reibung' ist auf echten Tageskerzen gefahren worden -
+#: ganz, in sechs Stuecken und aus Protokollen gelesen -, und hat dabei zwei
+#: Fehler gezeigt, die jetzt behoben sind. Die Zahl steigt nur, wenn ein
+#: Befehl wirklich gelaufen ist; sonst waere sie eine Behauptung.
+GELAUFEN = 53
 TRACEBACKS = 0
 SAUBER_ABGELEHNT = ("quelle", "review", "vorschlag")
 

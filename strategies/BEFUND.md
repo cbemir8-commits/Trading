@@ -26889,3 +26889,84 @@ auf genau der.
 Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 4075 passed, 2 skipped; ruff check sauber.
+
+## Dreihunderteins. Die Reibungsfrage braucht die Gates nicht
+
+Befund 300 hat die Stueckelung gebaut, und das erste Stueck auf 15 Minuten
+gemessen: **5 Minuten 48** fuer ein Genom mit einer Sprosse. Neununddreissig
+davon sind 3,8 Stunden, verteilt auf neununddreissig Aufrufe.
+
+Bevor ich das anfange, die Frage, die ich seit Befund 296 dreimal zu spaet
+gestellt habe: **Wofuer bezahle ich das eigentlich?**
+
+### Zwei Drittel fuer etwas, das die Frage nicht braucht
+
+Die offene Frage lautet: Traegt die Reibung die Kopplung auf kurzen Kerzen?
+Beantwortet wird sie von `Kostenfrage` und `Reibungsleiter`, und die stehen
+auf **Taktpunkten** - Trades, Sharpe je Trade, Haltedauer, Kostenanteil. Alle
+vier fallen aus dem Walk-Forward.
+
+Was sie **nicht** brauchen: die effektive Stichprobe, die Latte, die Decke,
+die Lage, das Ziel. Und genau die kosten (Befund 298):
+
+    je Genom mit Gates      226 s
+    je Walk-Forward          61 s
+
+Der Betriebspunkt und eine Sprosse sind zwei Walk-Forwards: 123 s statt 287.
+Der Katalog kostet damit **rund 80 Minuten statt 3,8 Stunden**.
+
+`cli reibung -i 15 --leiter 0` misst genau das und nichts sonst, mit
+`--stueck` und `--aus` aus Befund 300. Die Kostenzeile steht wieder auf
+gemessenen Zahlen; `laufkosten.dauer_ohne_gates` rechnet je Stufe eine
+Sprosse. Wer hier mit dem Genompreis rechnete, kaeme auf das Dreifache - das
+waere der Massstabsfehler aus 296 und 298 zum dritten Mal, und diesmal ist er
+**vor** dem Lauf aufgefallen.
+
+### Die Gegenprobe, und zwei Fehler darin
+
+Tageskatalog, einmal am Stueck und einmal in sechs Stuecken gelesen. Urteil
+und Zahlen Zeichen fuer Zeichen gleich. Nebenbei reproduziert das Befund 78
+als direkte Messung:
+
+    Faktor 0   r = -0,052     (ohne jede Reibung)
+    Faktor 1   r = -0,056     (Betriebspunkt)
+
+Sieben Prozent des Weges zur Null. **Die Kopplung gehoert den Signalen, nicht
+den Kosten** - auf Tageskerzen.
+
+Bis dahin war es aber nicht ruhig:
+
+**Erstens ein Absturz.** Stueck 6 von 6 besteht aus fuenf Abwandlungen
+derselben Vola-Ziel-Regel; alle haben dieselbe Trade-Zahl. Dann ist die
+Korrelation nicht bestimmt und `r` ist `None` - und `Reibungsleiter.urteil`
+hat das formatiert:
+
+    TypeError: unsupported format string passed to NoneType.__format__
+
+`belastbar` hat nur `genug` geprueft, also die **Zahl** der Regeln, nicht ob
+daraus eine Korrelation wird. Aufgefallen ist das nie, weil der einzige
+Aufrufer immer den ganzen Katalog gefahren hat. `Reibungsprobe` hatte
+dieselbe Luecke. Beide sagen jetzt "Keine Kopplung bestimmbar" statt
+abzustuerzen.
+
+**Zweitens eine Doppelzaehlung, schon wieder.** Der erste Wurf von `cli
+reibung` meldete 25 Regeln, das Lesen aus Stuecken 19. Recht hatte das Lesen:
+Der Tageskatalog enthaelt sechs Regelpaare, die unter zwei Namen dasselbe
+sind. `vorratsdecke` prueft das seit jeher, mein neuer Befehl nicht.
+
+Entschieden wird jetzt **am Betriebspunkt** und dann fuer alle Stufen - faellt
+eine Regel nur auf einer Stufe heraus, tragen die Stufen verschiedene
+Regelmengen, und dagegen steht `gleiche_regeln`. Nebeneffekt: Ein
+Doppelgaenger spart auch seine uebrigen Stufen.
+
+### Was das nicht ist
+
+Wieder kein Messbefund ueber eine Strategie. Es ist die dritte Runde
+derselben Lektion: Der Preis einer Messung ist selbst eine Behauptung, und
+Behauptungen werden hier gemessen. Zweimal hat mich das eine machbare Messung
+kosten lassen (296), einmal fast einen Lauf ins Blaue (298). Diesmal hat es
+drei Stunden gespart.
+
+Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 4094 passed, 2 skipped; ruff check sauber.
