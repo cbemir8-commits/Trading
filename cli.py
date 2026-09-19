@@ -2299,19 +2299,12 @@ def trade(
     # Projekt den einzigen Handelsweg, den es hat. Was fehlt, ist eine
     # Entscheidung - Korbhandel bauen oder je Bein zulassen -, und die faellt
     # nicht in einer Fehlermeldung.
-    if len(bedingungen.beine) > 1 and not bedingungen.deckt_ab(
-        [settings.bybit.symbol]
-    ):
-        console.print(
-            f"[yellow]Zugelassen wurde auf einem Korb aus "
-            f"{len(bedingungen.beine)} Beinen ({bedingungen.maerkte}); "
-            f"gehandelt wird {settings.bybit.symbol} allein.[/]\n"
-            "  Die elf Gates sind auf dem Korb gemessen. Ein einzelnes Bein "
-            "traegt weniger: Der Korb zieht den Rueckgang unter den jedes "
-            "Beins, weil die Beine nicht gleichzeitig fallen (Befund 264).\n"
-            "  Das ist keine Abweichung, die sich hier beheben laesst - der "
-            "Livebetrieb kann nur ein Symbol. Es gehoert nur gewusst.\n"
-        )
+    #
+    # **Der Text steht in 'unterdeckung'** (Befund 308), damit pruefbar ist,
+    # ob er erscheint - und nicht nur, ob er im Quelltext steht.
+    unterdeckung = bedingungen.unterdeckung(settings.bybit.symbol)
+    if unterdeckung:
+        console.print(f"[yellow]{unterdeckung}[/]")
     if not bedingungen.vollstaendig:
         console.print(
             "[yellow]Die Champion-Datei traegt keinen Zulassungsnachweis.[/] "

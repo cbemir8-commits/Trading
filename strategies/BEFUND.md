@@ -27468,3 +27468,70 @@ Vorschlag dort haette Versuche gekostet.
 Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 4168 passed, 2 skipped; ruff check sauber.
+
+## Dreihundertacht. Die Warnung vor dem Handel war am Quelltext geprueft
+
+Befund 264 hat gemessen, was es kostet, ein Bein zu handeln, wenn der Korb
+zugelassen wurde:
+
+    Korb (zugelassen)   158 Trades   9,87 % Rueckgang   9/11
+    nur BTC              77 Trades  10,71 %             8/11  (Schlechtestes Jahr)
+    nur ETH              81 Trades  12,17 %             8/11  (Drawdown)
+
+Jedes Bein verliert ein Gate, und ein anderes. `cli trade` warnt seitdem
+davor - und das ist richtig so, denn sperren waere schlimmer: Der Livebetrieb
+kann nur ein Symbol, eine Sperre naehme dem Projekt den einzigen Handelsweg.
+
+### Wie die Warnung geprueft war
+
+```python
+quelle = _quelle("trade")
+assert "deckt_ab(" in quelle
+assert "yellow" in danach
+assert "Befund 264" in quelle
+```
+
+Der Test las `cli.py` als **Zeichenkette**. Er prueft damit, dass der Code so
+aussieht wie erwartet - nicht, dass die Warnung erscheint. Beides faellt
+auseinander, sobald jemand die Bedingung davor aendert: Rutscht die Warnung
+hinter etwas, das nie zutrifft, bleibt der Test gruen und die Warnung stumm.
+
+Genau dagegen steht in diesem Projekt sonst ueberall der Satz aus Befund 289:
+**Eine Wache auf einen Satz haelt auch einen falschen.** Nur stand er hier
+ausgerechnet vor der Zeile, hinter der echtes Geld liegt.
+
+### Was jetzt gilt
+
+Der Text steht in `Zulassungsbedingungen.unterdeckung(symbol)` - bei den
+Daten, ueber die er urteilt, und aufrufbar:
+
+    Korb aus 2 Beinen, gehandelt BTC      -> Meldung, nennt Umfang und Grund
+    Korb aus 2 Beinen, beide gedeckt      -> None
+    Nachweis ueber 1 Bein                 -> None
+    Nachweis ohne Aufzeichnung            -> None
+
+Die Tests rufen sie auf. Am Quelltext bleibt genau eine Frage, die sich nur
+dort stellen laesst: ob der Befehl sie **holt** und an dieser Stelle nicht
+abbricht.
+
+`None` statt eines leeren Strings, weil "nichts zu melden" und "eine leere
+Meldung" zwei Dinge sind - und weil der Aufrufer dann nicht raten muss, ob
+er eine Leerzeile drucken soll.
+
+### Wie verbreitet ist das?
+
+Gezaehlt statt geschaetzt: **37 von 179 Testdateien** lesen Quelltext mit
+`ast.parse`. Nicht alle davon sind falsch - manche pruefen wirklich Struktur
+("diese Zahl steht nur an einer Stelle", "jeder Befehl ist eingeteilt", und
+die Verdrahtungswachen aus 303 und 307). Falsch ist es dort, wo Quelltext als
+**Ersatz** fuer eine Verhaltenspruefung dient, die moeglich waere.
+
+Umgebaut wurde die eine, die vor echtem Geld steht. Die uebrigen sind nicht
+angefasst: Sechsunddreissig Dateien in einem Zug umzubauen waere ein grosser
+Eingriff mit kleinem Einzelnutzen, und welche davon Ersatz sind und welche
+Struktur pruefen, steht in keiner Liste - das waere selbst wieder eine
+Behauptung.
+
+Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 4171 passed, 2 skipped; ruff check sauber.

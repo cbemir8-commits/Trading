@@ -94,35 +94,70 @@ class TestDeckungIstNichtVermutung:
 
 
 class TestDerLivebetriebSagtEsUndSperrtNicht:
-    def test_die_unterdeckung_faellt_auf(self) -> None:
-        quelle = _quelle("trade")
+    """**Befund 308: am Verhalten geprueft, nicht am Quelltext.**
 
-        assert "deckt_ab(" in quelle
-        assert "bedingungen.beine" in quelle
+    Bis hierher lasen diese Tests ``cli.py`` als Zeichenkette und suchten
+    'deckt_ab(', 'yellow' und 'Befund 264'. Das haelt, solange niemand den
+    Code anfasst - und es haelt auch dann noch, wenn die Warnung hinter einer
+    Bedingung verschwindet, die nie zutrifft. Genau dagegen steht sonst
+    ueberall in diesem Projekt der Satz, dass eine Wache auf einen Satz auch
+    einen falschen haelt.
 
-    def test_es_wird_gewarnt_und_nicht_abgebrochen(self) -> None:
-        """Eine Sperre naehme dem Projekt den einzigen Handelsweg - der
-        Livebetrieb kann nur ein Symbol."""
-        quelle = _quelle("trade")
-        stelle = quelle.index("deckt_ab(")
-        danach = quelle[stelle : stelle + 900]
+    Der Text steht deshalb in ``Zulassungsbedingungen.unterdeckung`` und wird
+    hier aufgerufen.
+    """
 
-        assert "yellow" in danach
-        assert "typer.Exit" not in danach
+    def test_ein_bein_aus_einem_korb_wird_gemeldet(self) -> None:
+        text = Zulassungsbedingungen(maerkte=KORB).unterdeckung("BTCUSD_BITSTAMP")
 
-    def test_die_warnung_nennt_was_es_kostet(self) -> None:
+        assert text is not None
+        assert "2 Beinen" in text
+        assert "BTCUSD_BITSTAMP allein" in text
+
+    def test_die_meldung_nennt_was_es_kostet(self) -> None:
         """Ohne die Begruendung liest sie sich wie eine Formalie."""
-        quelle = _quelle("trade")
+        text = Zulassungsbedingungen(maerkte=KORB).unterdeckung("BTCUSD_BITSTAMP")
 
-        assert "nicht gleichzeitig fallen" in quelle
-        assert "Befund 264" in quelle
+        assert "nicht gleichzeitig fallen" in text
+        assert "Befund 264" in text
 
-    def test_bei_einem_einzelnen_bein_im_nachweis_schweigt_er(self) -> None:
+    def test_ein_fremdes_symbol_ebenso(self) -> None:
+        text = Zulassungsbedingungen(maerkte=KORB).unterdeckung("XRPUSD_BITSTAMP")
+
+        assert text is not None and "XRPUSD_BITSTAMP allein" in text
+
+    def test_der_gedeckte_korb_schweigt(self) -> None:
+        """Handelbar ist er nicht - aber das ist nicht die Frage dieser
+        Zeile, und eine Warnung ohne Anlass wird ueberlesen."""
+        b = Zulassungsbedingungen(maerkte="BTCUSD_BITSTAMP")
+
+        assert b.unterdeckung("BTCUSD_BITSTAMP") is None
+
+    def test_ein_einzelnes_bein_im_nachweis_schweigt_auch(self) -> None:
         """Wurde auf einem Markt zugelassen und laeuft auf ihm, gibt es
-        nichts zu melden - die Warnung haengt an ``len(beine) > 1``."""
-        quelle = _quelle("trade")
+        nichts zu melden."""
+        b = Zulassungsbedingungen(maerkte="BTCUSD_BITSTAMP")
 
-        assert "len(bedingungen.beine) > 1" in quelle
+        assert b.unterdeckung("ETHUSD_BITSTAMP") is None, (
+            "ein Nachweis ueber ein Bein sagt nichts ueber ein anderes - "
+            "das ist Sache von 'passt_zu', nicht dieser Zeile"
+        )
+
+    def test_ohne_aufzeichnung_schweigt_er(self) -> None:
+        """Darueber spricht die eigene Zeile zum fehlenden Nachweis."""
+        assert Zulassungsbedingungen().unterdeckung("BTCUSD_BITSTAMP") is None
+
+    def test_der_befehl_ruft_sie_auf_und_bricht_nicht_ab(self) -> None:
+        """Was sich am Text noch pruefen laesst, ist die **Verdrahtung**:
+        dass der Befehl die Meldung holt und dass an dieser Stelle kein
+        Abbruch steht. Eine Sperre naehme dem Projekt den einzigen
+        Handelsweg, den es hat.
+        """
+        quelle = _quelle("trade")
+        stelle = quelle.index("unterdeckung(")
+        danach = quelle[stelle : stelle + 400]
+
+        assert "typer.Exit" not in danach
 
 
 class TestAlteDateienBleibenLesbar:

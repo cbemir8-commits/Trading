@@ -2250,6 +2250,25 @@ BEHOBEN: tuple[Richtung, ...] = (
         "der Titel ist berichtigt",
         307,
     ),
+    # Die Wache vor dem echten Geld hing an einer Zeichenkette.
+    Richtung(
+        "Die Warnung vor dem Handel war am Quelltext geprueft",
+        "Befund 264 hat 'cli trade' warnen lassen, wenn ein einzelnes Bein "
+        "gehandelt wird, waehrend der Korb zugelassen wurde - gemessen kostet "
+        "das ein Gate (Korb 9/11, nur BTC 8/11, nur ETH 8/11). Geprueft war "
+        "die Warnung, indem der Test 'cli.py' als Zeichenkette las und "
+        "'deckt_ab(', 'yellow' und 'Befund 264' darin suchte. Das haelt auch "
+        "dann noch, wenn die Warnung hinter eine Bedingung rutscht, die nie "
+        "zutrifft - eine Wache auf einen Satz haelt auch einen falschen "
+        "(289). Der Text steht jetzt in "
+        "'Zulassungsbedingungen.unterdeckung(symbol)' und wird im Test "
+        "**aufgerufen**: Korb gegen ein Bein meldet, gedeckter Korb schweigt, "
+        "ein Nachweis ohne Aufzeichnung schweigt. Am Quelltext bleibt nur die "
+        "Verdrahtung - dass der Befehl sie holt und dort nicht abbricht. "
+        "Gemessen, wie verbreitet die Bauart ist: 37 von 179 Testdateien "
+        "lesen Quelltext; umgebaut wurde die eine, die vor echtem Geld steht",
+        308,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

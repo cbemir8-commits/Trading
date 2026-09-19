@@ -368,6 +368,39 @@ class Zulassungsbedingungen:
         """
         return bool(self.beine) and set(self.beine) == set(symbole)
 
+    def unterdeckung(self, symbol: str) -> str | None:
+        """Was zu sagen ist, wenn weniger gehandelt wird als zugelassen wurde.
+
+        **Befund 264/308.** Die elf Gates laufen auf dem Korb, den der
+        Wettbewerb gemessen hat; ``LiveTrader`` handelt **ein** Symbol. Das
+        ist keine fehlende Pruefung, sondern eine Luecke in der Bauart - und
+        gemessen kostet sie ein Gate:
+
+            Korb 9/11   -   nur BTC 8/11 (Schlechtestes Jahr)
+                            nur ETH 8/11 (Drawdown)
+
+        ``None`` heisst: nichts zu melden. Das gilt fuer den gedeckten Korb,
+        fuer einen Nachweis mit **einem** Bein - dann ist ein Symbol genau
+        der Umfang - und fuer einen Nachweis ohne Aufzeichnung, ueber den
+        eine eigene Zeile spricht.
+
+        Der Text steht hier und nicht im Befehl: So laesst sich pruefen, ob er
+        **erscheint**, statt ob er im Quelltext steht. Die Tests zu Befund 264
+        lasen ``cli.py`` als Zeichenkette - eine Wache, die haelt, waehrend
+        die Warnung hinter einer Bedingung verschwindet, die nie zutrifft.
+        """
+        if len(self.beine) <= 1 or self.deckt_ab([symbol]):
+            return None
+        return (
+            f"Zugelassen wurde auf einem Korb aus {len(self.beine)} Beinen "
+            f"({self.maerkte}); gehandelt wird {symbol} allein.\n"
+            "  Die elf Gates sind auf dem Korb gemessen. Ein einzelnes Bein "
+            "traegt weniger: Der Korb zieht den Rueckgang unter den jedes "
+            "Beins, weil die Beine nicht gleichzeitig fallen (Befund 264).\n"
+            "  Das ist keine Abweichung, die sich hier beheben laesst - der "
+            "Livebetrieb kann nur ein Symbol. Es gehoert nur gewusst.\n"
+        )
+
     def als_text(self) -> str:
         teile = [f"Instrument {self.markt or 'nicht aufgezeichnet'}"]
         if self.maerkte:
