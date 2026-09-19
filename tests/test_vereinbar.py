@@ -23,6 +23,7 @@ import pytest
 from research.vereinbar import (
     RENDITE,
     RUECKGANG,
+    SCHLECHTESTES_JAHR,
     Messpunkt,
     Schwelle,
     Vereinbarkeit,
@@ -562,3 +563,105 @@ class TestDieSpotLeiterIstGemessen:
         assert "Perpetual-Punkt" in eintrag.zahl
         assert "Spot" in eintrag.zahl
         assert "Geloest ist nichts" in eintrag.zahl
+
+
+class TestEinFehlenderWertIstKeineGerisseneSchwelle:
+    """**Befund 309.** ``cli vereinbar --spot --mit-jahr`` meldete an allen
+    sechs Stellungen *"Schlechtestes Jahr fehlt"* und schloss daraus
+    *"nicht zugleich erfuellbar"*. Keiner der sechs Berichte traegt diesen
+    Wert: Die Kapitalkurven sind zu kurz fuer ein Jahresfenster, und
+    ``kennzahlen_der_kurve`` laesst den Schluessel dann weg.
+
+    "Nicht gemessen" und "gerissen" sind zwei verschiedene Auskuenfte - die
+    eine sagt etwas ueber den Kandidaten, die andere ueber die Akte.
+    """
+
+    def _mit_dritter(self, *punkte: Messpunkt) -> Vereinbarkeit:
+        return Vereinbarkeit(
+            regler="Vola-Ziel",
+            punkte=list(punkte),
+            weitere=[SCHLECHTESTES_JAHR],
+            betriebspunkt="spot",
+        )
+
+    def test_die_schwelle_sagt_es_selbst(self) -> None:
+        assert SCHLECHTESTES_JAHR.beurteile(None) == "Schlechtestes Jahr nicht gemessen"
+        assert SCHLECHTESTES_JAHR.beurteile(-20.0) == "Schlechtestes Jahr fehlt"
+        assert SCHLECHTESTES_JAHR.beurteile(-5.0) is None
+
+    def test_eine_obergrenze_reisst_und_fehlt_nicht(self) -> None:
+        assert RUECKGANG.beurteile(20.0) == "Rueckgang reisst"
+        assert RUECKGANG.beurteile(None) == "Rueckgang nicht gemessen"
+
+    def test_die_tabelle_unterscheidet_beides(self) -> None:
+        text = self._mit_dritter(punkt(21, 15.3, 11.66)).tabelle()
+
+        assert "Schlechtestes Jahr nicht gemessen" in text
+        assert "Schlechtestes Jahr fehlt" not in text
+
+    def test_das_urteil_verweigert_sich(self) -> None:
+        """**Der Kern.** Ein Nein ueber eine Zahl, die es nirgends gibt,
+        waere eine Behauptung ueber die Akte, nicht ueber den Kandidaten."""
+        text = self._mit_dritter(
+            punkt(21, 15.3, 11.66), punkt(22, 16.17, 11.85)
+        ).urteil()
+
+        assert "Kein Urteil ueber Schlechtestes Jahr" in text
+        assert "nicht zugleich erfuellbar" not in text
+
+    def test_und_sagt_trotzdem_was_messbar_ist(self) -> None:
+        """Die Verweigerung darf nicht die Auskunft mitnehmen, die es gibt."""
+        text = self._mit_dritter(
+            punkt(21, 15.3, 11.66), punkt(22, 16.17, 11.85)
+        ).urteil()
+
+        assert "Rendite >= 15 und Rueckgang <= 12 sind vereinbar" in text
+
+    def test_mit_werten_urteilt_sie_wieder(self) -> None:
+        """Die Verweigerung haengt am fehlenden Wert, nicht an der dritten
+        Schwelle als solcher."""
+        gemessen = Messpunkt(
+            stellung=21,
+            werte={"cagr": 15.3, "rueckgang": 11.66, "schlechtestes_jahr": -20.0},
+        )
+        text = self._mit_dritter(gemessen).urteil()
+
+        assert "Kein Urteil" not in text
+        assert "nicht zugleich erfuellbar" in text
+
+    def test_ungemessen_nennt_genau_die_leeren(self) -> None:
+        gemischt = Vereinbarkeit(
+            regler="Vola-Ziel",
+            punkte=[punkt(21, 15.3, 11.66)],
+            weitere=[SCHLECHTESTES_JAHR],
+        )
+
+        assert gemischt.ungemessen == (SCHLECHTESTES_JAHR,)
+
+    def test_ein_einziger_wert_reicht_gegen_die_verweigerung(self) -> None:
+        """``ungemessen`` heisst **kein einziger** Punkt - sonst wuerde eine
+        halb gefuellte Spalte das Urteil kippen."""
+        halb = Vereinbarkeit(
+            regler="Vola-Ziel",
+            punkte=[
+                punkt(21, 15.3, 11.66),
+                Messpunkt(
+                    stellung=22,
+                    werte={
+                        "cagr": 16.17, "rueckgang": 11.85,
+                        "schlechtestes_jahr": -5.0,
+                    },
+                ),
+            ],
+            weitere=[SCHLECHTESTES_JAHR],
+        )
+
+        assert halb.ungemessen == ()
+        assert "Kein Urteil" not in halb.urteil()
+
+    def test_ein_treffer_braucht_weiter_alle_werte(self) -> None:
+        """``treffer`` zaehlt einen Punkt ohne Wert nicht mit - ein fehlender
+        Wert erfuellt nichts, auch wenn er nichts reisst."""
+        ohne = self._mit_dritter(punkt(21, 15.3, 11.66))
+
+        assert ohne.treffer == []

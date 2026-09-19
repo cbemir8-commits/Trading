@@ -2269,6 +2269,28 @@ BEHOBEN: tuple[Richtung, ...] = (
         "lesen Quelltext; umgebaut wurde die eine, die vor echtem Geld steht",
         308,
     ),
+    # Diesmal in die verbietende Richtung: Der unbekannte Fall bekam ein Nein.
+    Richtung(
+        "Ein fehlender Wert wurde als gerissene Schwelle gemeldet",
+        "'cli vereinbar --spot --mit-jahr' meldete an **allen sechs** "
+        "Stellungen 'Schlechtestes Jahr fehlt' und schloss daraus, die drei "
+        "Schwellen seien 'nicht zugleich erfuellbar'. Keiner der sechs "
+        "Berichte traegt diesen Wert: Die Kapitalkurven sind zu kurz fuer ein "
+        "Jahresfenster, und 'kennzahlen_der_kurve' laesst den Schluessel dann "
+        "weg. 'erfuellt(None)' ist False - richtig, ein Wert, den es nicht "
+        "gibt, erfuellt nichts -, aber daraus 'gerissen' zu machen ist eine "
+        "Aussage ueber den Kandidaten, wo nur eine ueber die Akte zu haben "
+        "war. Dieselbe Bauart wie 283, nur in die andere Richtung: Dort war "
+        "die Vorgabe fuer den unbekannten Fall die erlaubende, hier die "
+        "verbietende. 'Schwelle.beurteile' trennt beides, und das Urteil "
+        "verweigert sich ueber eine Schwelle, zu der kein Punkt einen Wert "
+        "traegt - sagt aber weiter, was messbar ist (Rendite und Rueckgang "
+        "sind vereinbar, 3 von 6 Stellungen). Dabei gemessen: '--perpetual' "
+        "findet **null** Stellungen, weil die aelteren Berichte keinen "
+        "Betriebspunkt tragen; die Entscheidung 'Mindestrendite' versprach, "
+        "beide Seiten liessen sich jederzeit nachrechnen",
+        309,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -2803,9 +2825,12 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "so steht es seit jeher in gates.py. Dass sie mit der "
               "Rueckgangsgrenze im Konflikt steht, war lange eine Behauptung, "
               "ist seit Befund 57 beziffert und seit 281 **auf den "
-              "Perpetual-Punkt eingegrenzt**: `cli vereinbar --spot` und "
-              "`--perpetual` rechnen beide Seiten "
-              "jederzeit nach. Die Aufloesung ist eine Geschaeftsentscheidung "
+              "Perpetual-Punkt eingegrenzt**. Nachrechnen laesst sich heute "
+              "nur die eine Seite: `cli vereinbar --spot` liest sechs "
+              "Stellungen, `--perpetual` meldet **null** - die aelteren "
+              "Berichte tragen keinen Betriebspunkt und werden seit 242/280 "
+              "ausgelassen, weil eine Vorgabe keine Messung ist (Befund 309). "
+              "Die Aufloesung ist eine Geschaeftsentscheidung "
               "- den Kandidaten dorthin zu stellen, wo mehr Gates bestehen, "
               "ist ausdruecklich keine.",
         befund=57,

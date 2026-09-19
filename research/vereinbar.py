@@ -80,6 +80,24 @@ class Schwelle:
             return None
         return wert - self.grenze if self.mindestens else self.grenze - wert
 
+    def beurteile(self, wert: float | None) -> str | None:
+        """Was zu dieser Schwelle zu sagen ist - ``None``, wenn erfuellt.
+
+        **Befund 309.** ``erfuellt(None)`` ist ``False``, und das ist richtig:
+        Ein Wert, den es nicht gibt, erfuellt nichts. Falsch war, daraus in
+        der Tabelle *"Schlechtestes Jahr fehlt"* zu machen - als waere
+        gemessen worden und die Schwelle gerissen. Am Spot-Punkt stand das
+        an **allen sechs** Stellungen, und keine davon hatte den Wert.
+
+        "Nicht gemessen" und "gerissen" sind zwei verschiedene Auskuenfte.
+        Die eine sagt etwas ueber den Kandidaten, die andere ueber die Akte.
+        """
+        if wert is None:
+            return f"{self.name} nicht gemessen"
+        if self.erfuellt(wert):
+            return None
+        return f"{self.name} " + ("fehlt" if self.mindestens else "reisst")
+
     def __str__(self) -> str:
         zeichen = ">=" if self.mindestens else "<="
         return f"{self.name} {zeichen} {self.grenze:g}"
@@ -309,6 +327,22 @@ class Vereinbarkeit:
         return (self.a, self.b, *self.weitere)
 
     @property
+    def ungemessen(self) -> tuple[Schwelle, ...]:
+        """Schwellen, zu denen **kein einziger** Punkt einen Wert traegt.
+
+        **Befund 309.** Eine solche Schwelle macht jedes "nicht zugleich
+        erfuellbar" unhaltbar: Die Aussage stuende dann auf einer Zahl, die
+        es nirgends gibt. Am Spot-Punkt betraf das 'Schlechtestes Jahr' - die
+        Kapitalkurven der sechs Berichte sind zu kurz fuer ein Jahresfenster,
+        und ``kennzahlen_der_kurve`` laesst den Schluessel dann weg.
+        """
+        return tuple(
+            s
+            for s in self.schwellen
+            if all(p.wert(s.kennzahl) is None for p in self.punkte)
+        )
+
+    @property
     def treffer(self) -> list[Messpunkt]:
         """Punkte, die **alle** Schwellen zugleich erfuellen."""
         return [
@@ -361,11 +395,9 @@ class Vereinbarkeit:
             for schwelle in self.schwellen:
                 wert = p.wert(schwelle.kennzahl)
                 werte += f"{wert if wert is not None else float('nan'):>10.2f}%"
-                if not schwelle.erfuellt(wert):
-                    marken.append(
-                        f"{schwelle.name} "
-                        + ("fehlt" if schwelle.mindestens else "reisst")
-                    )
+                marke = schwelle.beurteile(wert)
+                if marke is not None:
+                    marken.append(marke)
             zeilen.append(
                 f"{p.stellung:>9g}{werte}  "
                 f"{', '.join(marken) or 'alle erfuellt'}"
@@ -400,6 +432,26 @@ class Vereinbarkeit:
                 f"Sorte Anpassung ist das, wogegen die Zulassungsstrecke "
                 f"gebaut ist - und die uebrigen Gates bleiben ohnehin offen."
                 f"{unter}"
+            )
+
+        # **Ein Nein ueber eine ungemessene Schwelle ist keins** (Befund 309).
+        # Vorher stand hier "nicht zugleich erfuellbar", waehrend der Grund
+        # war, dass 'Schlechtestes Jahr' in keinem der sechs Berichte steht.
+        if self.ungemessen:
+            fehlen = ", ".join(s.name for s in self.ungemessen)
+            uebrig = [s for s in self.schwellen if s not in self.ungemessen]
+            rest = Vereinbarkeit(
+                regler=self.regler, punkte=self.punkte,
+                a=uebrig[0], b=uebrig[1] if len(uebrig) > 1 else uebrig[0],
+                weitere=uebrig[2:], betriebspunkt=self.betriebspunkt,
+            ).urteil() if len(uebrig) >= 2 else ""
+            return (
+                f"**Kein Urteil ueber {fehlen}.** Keiner der "
+                f"{len(self.punkte)} Berichte traegt diesen Wert - das ist "
+                f"eine Luecke in der Akte und kein Befund ueber den "
+                f"Kandidaten. Wer daraus 'nicht erfuellbar' liest, liest "
+                f"eine Zahl, die es nirgends gibt.{unter}"
+                + (f"\n\nUeber die uebrigen Schwellen:\n\n{rest}" if rest else "")
             )
 
         eng = self.engste

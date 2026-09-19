@@ -27535,3 +27535,83 @@ Behauptung.
 Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 4171 passed, 2 skipped; ruff check sauber.
+
+## Dreihundertneun. Ein fehlender Wert wurde als gerissene Schwelle gemeldet
+
+Auf der Suche nach einer Frage, die hier noch messbar ist, bin ich bei der
+einen geblieben, die am Spot-Punkt offen aussieht: Gibt es eine Stellung des
+Groessenreglers, an der Mindestrendite **und** schlechtestes Jahr zugleich
+halten? `cli vereinbar` liest dafuer vorhandene Berichte und kostet nichts.
+
+Die Ausgabe:
+
+    Stellung    Rendite  Rueckgang Schlechtes  Urteil
+        19.3     14.34%      9.87%       nan%  Rendite fehlt,
+                                               Schlechtestes Jahr fehlt
+        ...
+          25     18.54%     13.74%       nan%  Rueckgang reisst,
+                                               Schlechtestes Jahr fehlt
+
+    **... sind auf diesem Regler nicht zugleich erfuellbar.**
+
+### `nan` an allen sechs Stellungen
+
+Der Wert ist nicht schlecht, er ist **nicht da**. `kennzahlen_der_kurve`
+setzt `schlechtestes_jahr` nur, wenn die Kapitalkurve ein volles
+Jahresfenster hergibt; bei diesen sechs Berichten tut sie das nicht, und der
+Schluessel fehlt.
+
+`Schwelle.erfuellt(None)` gibt `False` zurueck, und das ist richtig: Ein
+Wert, den es nicht gibt, erfuellt nichts. Falsch war, was die Tabelle daraus
+machte - *"Schlechtestes Jahr fehlt"*, wie bei einer gemessenen und
+gerissenen Schwelle. Und falsch war der Schluss: **"nicht zugleich
+erfuellbar"** ueber eine Zahl, die nirgends steht.
+
+Das ist dieselbe Bauart wie Befund 283, nur in die andere Richtung:
+
+    283   Die Vorgabe fuer den unbekannten Fall war die **erlaubende**.
+    309   Die Vorgabe fuer den unbekannten Fall war die **verbietende**.
+
+Beide Male bekommt der unbekannte Fall ein Urteil, das die Daten nicht
+hergeben. Und `_fehlbetrag` im selben Modul macht es seit jeher richtig - es
+gibt `None` zurueck, wenn ein Wert fehlt, und `engste` laesst den Punkt
+weg. Die Unterscheidung war da, nur nicht ueberall.
+
+### Was jetzt gilt
+
+`Schwelle.beurteile(wert)` trennt die drei Faelle: erfuellt (`None`), *nicht
+gemessen*, *fehlt/reisst*. Die Tabelle nennt sie beim Namen, und das Urteil
+verweigert sich ueber eine Schwelle, zu der **kein einziger** Punkt einen
+Wert traegt:
+
+    **Kein Urteil ueber Schlechtestes Jahr.** Keiner der 6 Berichte traegt
+    diesen Wert - das ist eine Luecke in der Akte und kein Befund ueber den
+    Kandidaten.
+
+Die Verweigerung nimmt die Auskunft nicht mit, die es gibt. Darunter steht
+weiter, was messbar ist: **Rendite >= 15 und Rueckgang <= 12 sind
+vereinbar**, 3 von 6 Stellungen halten beide (21, 21.5, 22).
+
+`ungemessen` verlangt bewusst **kein einziger** Punkt und nicht "irgendein
+Punkt": Eine halb gefuellte Spalte ist eine duenne Messung, keine fehlende,
+und ein Urteil daraus ist besser als keins.
+
+### Und eine zweite Luecke, beim Nachsehen
+
+Die Entscheidung *"Mindestrendite von 15 % im Jahr"* verspricht:
+
+> `cli vereinbar --spot` und `--perpetual` rechnen beide Seiten jederzeit
+> nach.
+
+Gemessen: `--perpetual` findet **null** Stellungen. Die 45 vorhandenen
+stammen aus Berichten ohne vermerkten Betriebspunkt und werden seit Befund
+242/280 ausgelassen - zu Recht, denn die Vorgabe von damals ist keine
+Messung. Nachrechenbar ist heute genau eine der beiden Seiten.
+
+Die Zahlen aus Befund 281 bleiben stehen; sie sind gemessen. Was nicht
+stimmte, war das Versprechen, sie liessen sich jederzeit wiederholen.
+
+Kostet keinen Versuch: gelesen wurden vorhandene Berichte. Versuchszaehler
+203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 4180 passed, 2 skipped; ruff check sauber.
