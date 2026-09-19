@@ -63,6 +63,27 @@ class Laufkosten:
     gemessen_in: int
     """Der Befund, in dem die Messung entstanden ist."""
 
+    je_sprosse: float | None = None
+    """Sekunden je Genom und **Sprosse der Reibungsleiter**.
+
+    Eine Sprosse rechnet denselben Walk-Forward noch einmal mit anderer
+    Gebuehr, aber **ohne** die Gates - und die sind der teure Teil. Wer die
+    Leiter mit dem vollen Genompreis hochrechnet, kommt deutlich zu hoch
+    heraus: auf 15 Minuten 226 s gegen tatsaechlich 61 s je Sprosse.
+
+    Das ist derselbe Fehler wie in Befund 296, eine Ebene tiefer - dort war
+    der falsche Massstab die Kerzenzahl, hier waere es der Genompreis.
+    """
+
+    sprosse_gemessen_in: int | None = None
+    """Der Befund zum **Sprossenpreis** - eine eigene Messung.
+
+    Er steht getrennt, weil er es ist: ``je_genom`` stammt aus Befund 296,
+    ``je_sprosse`` aus 298. Eine gemeinsame Fundstelle waere bequem und
+    falsch, und dieses Projekt hat an genau der Sorte Bequemlichkeit schon
+    zweimal verloren (130, 293).
+    """
+
 
 #: Die gemessenen Laufzeiten, je Kerzenlaenge (Befund 296).
 #:
@@ -70,26 +91,39 @@ class Laufkosten:
 #: hinnehmbar: Eine veraltete **Messung** ist immer noch besser als eine
 #: frische Schaetzung, und die Fundstelle steht daneben.
 MESSUNGEN: dict[str, Laufkosten] = {
-    "1d": Laufkosten(kerzen=3_277, je_genom=6.0, gemessen_in=296),
-    "15m": Laufkosten(kerzen=225_341, je_genom=226.0, gemessen_in=296),
+    "1d": Laufkosten(
+        kerzen=3_277, je_genom=6.0, gemessen_in=296,
+        je_sprosse=2.2, sprosse_gemessen_in=298,
+    ),
+    "15m": Laufkosten(
+        kerzen=225_341, je_genom=226.0, gemessen_in=296,
+        je_sprosse=61.4, sprosse_gemessen_in=298,
+    ),
 }
 
 
-def dauer(intervall: str, genome: int) -> float | None:
+def dauer(intervall: str, genome: int, sprossen: int = 0) -> float | None:
     """Wie lange ein Katalogdurchlauf hier dauert, in Sekunden.
 
+    ``sprossen`` sind die Stufen der Reibungsleiter; jede kostet einen
+    weiteren Walk-Forward je Genom, aber keine Gates.
+
     ``None`` fuer eine Kerzenlaenge, die nicht gemessen ist - **nicht** eine
-    hochgerechnete Zahl. Wer eine braucht, misst sie.
+    hochgerechnete Zahl. Wer eine braucht, misst sie. Ebenso ``None``, wenn
+    Sprossen verlangt werden und deren Preis hier nicht gemessen ist.
     """
     kosten = MESSUNGEN.get(intervall)
-    if kosten is None or genome < 0:
+    if kosten is None or genome < 0 or sprossen < 0:
         return None
-    return kosten.je_genom * genome
+    if sprossen and kosten.je_sprosse is None:
+        return None
+    zusatz = (kosten.je_sprosse or 0.0) * sprossen
+    return (kosten.je_genom + zusatz) * genome
 
 
-def auskunft(intervall: str, genome: int) -> str:
+def auskunft(intervall: str, genome: int, sprossen: int = 0) -> str:
     """Die Zeile, die vor einem langen Lauf dasteht."""
-    sekunden = dauer(intervall, genome)
+    sekunden = dauer(intervall, genome, sprossen)
     if sekunden is None:
         gemessen = ", ".join(sorted(MESSUNGEN))
         return (
@@ -107,7 +141,13 @@ def auskunft(intervall: str, genome: int) -> str:
     # fertigen Satz: Ein pauschales replace(",", ".") traf auch das Komma
     # hinter "Genome" und machte daraus einen Punkt.
     kerzen = f"{kosten.kerzen:,}".replace(",", ".")
+    leiter = (
+        f" plus {sprossen} Sprosse{'n' if sprossen != 1 else ''} zu "
+        f"{kosten.je_sprosse:.0f} s (Befund {kosten.sprosse_gemessen_in})"
+        if sprossen and kosten.je_sprosse is not None
+        else ""
+    )
     return (
         f"{genome} Genome, {zeit} - gemessen mit {kosten.je_genom:.0f} s je "
-        f"Genom auf {kerzen} Kerzen (Befund {kosten.gemessen_in})."
+        f"Genom{leiter} auf {kerzen} Kerzen (Befund {kosten.gemessen_in})."
     )

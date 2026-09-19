@@ -95,3 +95,59 @@ class TestWasNichtGemessenIst:
 
     def test_negative_genome_sind_keine_auskunft(self) -> None:
         assert dauer("1d", -1) is None
+
+
+class TestDieReibungsleiter:
+    """**Befund 298.** Eine Sprosse kostet einen Walk-Forward, kein Genom.
+
+    Wer die Leiter mit dem vollen Genompreis hochrechnet, kommt deutlich zu
+    hoch heraus - auf 15 Minuten 226 s gegen tatsaechlich 61 s. Derselbe
+    Fehler wie in Befund 296, eine Ebene tiefer: dort war der falsche
+    Massstab die Kerzenzahl, hier waere es der Genompreis.
+    """
+
+    def test_eine_sprosse_kostet_weniger_als_ein_genom(self) -> None:
+        for kosten in MESSUNGEN.values():
+            assert kosten.je_sprosse is not None
+            assert kosten.je_sprosse < kosten.je_genom
+
+    def test_die_sprossen_kommen_dazu(self) -> None:
+        ohne = dauer("15m", 39)
+        mit = dauer("15m", 39, 1)
+
+        assert mit > ohne
+        assert mit - ohne == pytest.approx(39 * MESSUNGEN["15m"].je_sprosse)
+
+    def test_keine_sprosse_aendert_nichts(self) -> None:
+        assert dauer("1d", 30, 0) == dauer("1d", 30)
+
+    def test_der_text_nennt_die_sprossen_und_ihre_fundstelle(self) -> None:
+        text = auskunft("15m", 39, 1)
+
+        assert "1 Sprosse " in text
+        assert f"Befund {MESSUNGEN['15m'].sprosse_gemessen_in}" in text
+
+    def test_der_plural_stimmt(self) -> None:
+        assert "1 Sprosse " in auskunft("1d", 30, 1)
+        assert "4 Sprossen " in auskunft("1d", 30, 4)
+
+    def test_zwei_messungen_zwei_fundstellen(self) -> None:
+        """**Der Punkt, an dem dieses Projekt zweimal verloren hat** (130,
+        293): Eine gemeinsame Fundstelle fuer zwei Messungen waere bequem
+        und falsch."""
+        for kosten in MESSUNGEN.values():
+            assert kosten.sprosse_gemessen_in != kosten.gemessen_in
+
+    def test_ohne_gemessenen_sprossenpreis_gibt_es_keine_zahl(self) -> None:
+        """Dieselbe Verweigerung wie bei einer ungemessenen Kerzenlaenge."""
+        from research.laufkosten import Laufkosten
+
+        roh = Laufkosten(kerzen=1000, je_genom=5.0, gemessen_in=1)
+
+        assert roh.je_sprosse is None
+        # Ueber die oeffentliche Schnittstelle: ein Intervall ohne
+        # Sprossenpreis liefert fuer Sprossen nichts.
+        assert dauer("gibtsnicht", 10, 1) is None
+
+    def test_negative_sprossen_sind_keine_auskunft(self) -> None:
+        assert dauer("1d", 30, -1) is None

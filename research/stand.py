@@ -2046,6 +2046,23 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Aussenmenge zu klein",
         297,
     ),
+    # Derselbe Fehler wie 296, eine Ebene tiefer - diesmal vor dem Lauf bemerkt.
+    Richtung(
+        "Eine Sprosse kostet einen Walk-Forward, kein Genom",
+        "Befund 297 hat die Reibungsfrage auf Viertelstunden offengelassen: "
+        "Kippfaktor 2, in Reichweite der Slippage - und die laesst sich aus "
+        "vorhandenen Trades nicht abziehen. Messen laesst sie sich trotzdem, "
+        "denn die **Reibungsleiter** rechnet ganze Durchlaeufe mit anderer "
+        "Gebuehr, statt zurueckzurechnen (Befund 254). Was das kostet, war "
+        "wieder nicht gemessen: Der naheliegende Ansatz - je Sprosse ein "
+        "voller Genompreis - haette auf 15 Minuten 4,8 Stunden ergeben. "
+        "Gemessen ist der Walk-Forward allein (1d **2,2 s**, 15m **61,4 s**), "
+        "denn eine Sprosse rechnet keine Gates; der Lauf kostet damit 3,1 "
+        "statt 4,8 Stunden. 'laufkosten' fuehrt den Sprossenpreis mit eigener "
+        "Fundstelle - zwei Messungen, zwei Fundstellen -, und ohne gemessenen "
+        "Sprossenpreis gibt es fuer Sprossen keine Zahl",
+        298,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

@@ -12301,18 +12301,6 @@ def vorratsdecke(
         f"\n[bold]Vorratsdecke[/] {' + '.join(symbole)} {interval_obj.label}, "
         f"Spot-Punkt, Versuchsstand {versuche}"
     )
-    # **Was der Lauf kostet, bevor er laeuft** (Befund 296). Zweimal ist die
-    # Dauer geschaetzt worden, einmal zu hoch (und die Messung unterblieb
-    # zwei Laeufe lang), einmal zu niedrig. Hier steht, was gemessen ist -
-    # und fuer eine ungemessene Kerzenlaenge steht da nichts.
-    from research.laufkosten import auskunft
-
-    wieviele = sum(
-        len(load_seeds(gen))
-        for gen in GENERATIONS
-        if passt_zum_intervall(gen, interval_obj)
-    )
-    console.print(f"[dim]{auskunft(interval_obj.label, wieviele)}[/]\n")
     # Die Groessenlogik, auf die alle gestellt werden - die des Bestands,
     # wie in der Vorauswahl (Befund 56/182).
     vergleichsgroesse = spitzenkandidat().sizing
@@ -12329,6 +12317,22 @@ def vorratsdecke(
     if reibungslos and 0.0 not in faktoren:
         faktoren.insert(0, 0.0)
     leiter: dict[float, list[Taktpunkt]] = {f: [] for f in faktoren}
+
+    # **Was der Lauf kostet, bevor er laeuft** (Befund 296/298). Zweimal ist
+    # die Dauer geschaetzt worden, einmal zu hoch - und die Messung unterblieb
+    # daraufhin zwei Laeufe lang -, einmal zu niedrig. Hier steht, was gemessen
+    # ist; fuer eine ungemessene Kerzenlaenge steht da nichts. Die Sprossen
+    # gehoeren dazu: Sie kosten je einen weiteren Walk-Forward.
+    from research.laufkosten import auskunft
+
+    wieviele = sum(
+        len(load_seeds(gen))
+        for gen in GENERATIONS
+        if passt_zum_intervall(gen, interval_obj)
+    )
+    console.print(
+        f"[dim]{auskunft(interval_obj.label, wieviele, len(faktoren))}[/]\n"
+    )
 
     def _skaliert(faktor: float):
         return {

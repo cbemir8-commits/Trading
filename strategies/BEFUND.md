@@ -26616,3 +26616,71 @@ Kostet keinen Versuch: 36 Genome aus dem Katalog, ausgewaehlt wurde nichts.
 Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 3953 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertachtundneunzig. Eine Sprosse kostet einen Walk-Forward, kein Genom
+
+Befund 297 hat die Reibungsfrage auf Viertelstunden offengelassen:
+
+> **Hier koennten es die Kosten sein.** Bei 2-facher Gebuehr verschwindet die
+> Korrelation [...] und die Slippage steckt im Ausfuehrungspreis, laesst sich
+> aus den Trades also nicht abziehen.
+
+Der letzte Halbsatz stimmt - **fuer das Zurueckrechnen**. Messen laesst sie
+sich trotzdem: Die Reibungsleiter aus Befund 254 faehrt ganze Durchlaeufe mit
+skalierter Gebuehr, statt den Kippunkt aus vorhandenen Trades zu rechnen. Das
+war ihr ganzer Zweck.
+
+Also anzusetzen: `cli vorratsdecke -i 15 --reibungsleiter 0`.
+
+### Und schon wieder die Frage, was das kostet
+
+Der naheliegende Ansatz: Eine Sprosse ist ein zweiter Durchlauf, also noch
+einmal 226 s je Genom - 39 mal 452 s, **4,8 Stunden**. Bei der Dauer haette
+ich es vermutlich gelassen.
+
+Das waere derselbe Fehler wie in Befund 296 gewesen, eine Ebene tiefer: dort
+der falsche Massstab die Kerzenzahl, hier der Genompreis. Eine Sprosse rechnet
+den Walk-Forward noch einmal, **aber keine Gates** - und die sind der teure
+Teil.
+
+Gemessen:
+
+    Kerzenlaenge   je Genom (mit Gates)   je Sprosse (nur Walk-Forward)
+    1d                             6 s                          2,2 s
+    15m                          226 s                         61,4 s
+
+Die Gates kosten auf 15 Minuten also rund 165 s von 226 - **zwei Drittel**.
+Der Lauf mit einer Sprosse kostet 3,1 Stunden statt 4,8.
+
+    39 Genome, rund 3,1 Stunden - gemessen mit 226 s je Genom plus
+    1 Sprosse zu 61 s (Befund 298) auf 225.341 Kerzen (Befund 296).
+
+### Zwei Messungen, zwei Fundstellen
+
+`je_genom` stammt aus Befund 296, `je_sprosse` aus diesem hier. Beide stehen
+im selben Objekt, und es waere bequem gewesen, eine Fundstelle fuer beide zu
+nennen.
+
+Genau daran hat dieses Projekt zweimal verloren: Befund 130 (ein Eintrag zeigte
+auf eine Tabelle, die zwei Befunde spaeter ersetzt war) und Befund 293 (`cli
+stand` nannte eine Fundstelle von vor zweihundert Befunden). `Laufkosten`
+fuehrt deshalb `sprosse_gemessen_in` getrennt.
+
+### Die Verweigerung bleibt
+
+Ohne gemessenen Sprossenpreis gibt es fuer Sprossen keine Zahl - dieselbe
+Regel wie fuer eine ungemessene Kerzenlaenge. Was hier steht, ist gemessen
+oder es steht nicht da.
+
+### Was laeuft
+
+Der Durchlauf mit `--reibungsleiter 0` ist gestartet und braucht die
+gemessenen 3,1 Stunden. Er beantwortet die Frage aus Befund 256 und 297: Haengt
+die Kopplung auf kurzen Kerzen an den Signalen oder an der Reibung? Auf
+Tageskerzen war sie es nicht (Kippfaktor 29). Was auf Viertelstunden
+herauskommt, gehoert in den naechsten Befund.
+
+Kostet keinen Versuch: gemessen wurde Rechenzeit, nicht ein Kandidat.
+Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 3961 passed, 2 skipped; ruff check sauber.
