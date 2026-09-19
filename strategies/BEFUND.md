@@ -27145,3 +27145,84 @@ lief.
 Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 4119 passed, 2 skipped; ruff check sauber.
+
+## Dreihundertvier. Der Auftragspunkt kannte keine Nachmessung
+
+Befund 303 hat gebaut, dass ein langer Lauf vorher fragt, was das Register
+schon sagt. Diesmal habe ich **selbst** gefragt, bevor ich etwas anfing - und
+die Antwort war unbequem.
+
+### Die vier wiederkehrenden Punkte sind beantwortet
+
+Der Auftrag nennt in jeder Runde dieselben offenen Punkte. Nachgesehen:
+
+    P7: News- und Termin-Overlay        erledigt, Befund 271
+    Research-KI im Wettbewerb nutzen    erledigt, Befund 196
+    Generation 6/7 auf 15-Minuten       erledigt, Befund 29
+    Generation 5 auf Tageskerzen        erledigt, Befund 64
+
+Alle vier stehen in `AUFTRAG` und werden von `cli stand` gedruckt - auch mit
+`--kurz`. Sie waren nie unsichtbar. Gelesen hat sie nur niemand, ich
+eingeschlossen.
+
+Zum News-Teil von P7 gibt es sogar ein eigenes Modul, `research/schock.py`,
+und es erklaert, warum genau dieser Teil **nicht** gebaut wird:
+
+> Ein Overlay, das eine Schlagzeile vom 12. Maerz 2020 kennt und deshalb am
+> 11. Maerz nicht einsteigt, misst nicht Vorsicht, sondern Hellsicht.
+
+Gebaut wurde stattdessen, was kausal zulaessig ist: die Reaktion auf den
+**Abdruck** eines Schocks, der schon in abgeschlossenen Kerzen steht. Der
+Terminteil ist gebaut, gemessen und an der Sperrprobe gescheitert - 138
+Termine, sechs gesperrte Einstiege in acht Jahren, und 100 % der zufaelligen
+Sperren gleicher Groesse halten genauso viele Gates.
+
+### Die eigentliche Baustelle
+
+Zwei dieser vier Staende waren **veraltet**, und zwar strukturell:
+`Auftragspunkt` hat gar kein Feld fuer eine Nachmessung.
+
+    Generation 6/7 auf 15-Minuten   zeigte auf Nr. 29:  14 Regeln, 1 von 9 Gates
+    tatsaechlich zuletzt             Nr. 297:            36 Regeln, 1 mit
+                                                         positiver Guete
+
+`Richtung` hat genau diese Lehre in Befund 130 gezogen - eine erste
+Fundstelle ist Geschichte und kein Stand. `Auftragspunkt` ist 174 Befunde
+spaeter immer noch ohne `zuletzt` dagestanden, und das im **einzigen**
+Register, das die Fragen des Auftraggebers beantwortet. Dort veraltet es am
+teuersten.
+
+Der Docstring der Klasse sagt selbst, wozu es sie gibt:
+
+> Beinahe waeren vierzehn Versuche fuer eine Messung ausgegeben worden, die
+> es schon gab.
+
+Die Klasse hat den Fehler verhindert, den sie verhindern sollte. Was sie
+nicht konnte: verhindern, dass ihre eigenen Eintraege veralten.
+
+### Was jetzt gilt
+
+`Auftragspunkt` traegt `zuletzt` und `massgeblich`, mit derselben Pruefung
+wie `Richtung` (eine Nachmessung, die nicht spaeter liegt, ist keine). Die
+Marke steht in der Komma-Form aus Befund 293 - `Nr. 297, zuerst 29` und nicht
+`Nr. 297 (zuerst 29)` in einer weiteren Klammer.
+
+Zwei Punkte sind nachgezogen, und die Wache aus 130 gilt jetzt auch hier:
+Jede massgebliche Fundstelle muss es im Laborbuch geben, und die
+nachgezogenen stehen ausgeschrieben in einem Test. Wer eine Zeile hinzufuegt,
+hat den Befund gelesen.
+
+**'Generation 5 auf Tageskerzen' ist ausdruecklich nicht nachgezogen.** Dass
+es dazu Spaeteres gibt - 182, 184, 291 -, ist plausibel; geprueft habe ich es
+nicht, und eine plausible Fundstelle ist keine. Das steht so auch im Test.
+
+### Was daran nicht geloest ist
+
+Der Auftrag kommt von aussen, und ein Register im Repository kann ihn nicht
+aendern. Die vier Punkte werden weiter in jeder Runde genannt werden. Was
+sich geaendert hat, ist nur, dass die Antwort jetzt stimmt, wenn jemand
+nachsieht - und dass sie sagt, wann sie zuletzt gemessen wurde.
+
+Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 4130 passed, 2 skipped; ruff check sauber.

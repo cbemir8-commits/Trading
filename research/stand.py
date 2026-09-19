@@ -2173,6 +2173,23 @@ BEHOBEN: tuple[Richtung, ...] = (
         "**erster** Stelle gefunden wird",
         303,
     ),
+    # Dieselbe Lehre wie 130, 174 Befunde spaeter und im falschesten Register.
+    Richtung(
+        "Der Auftragspunkt kannte keine Nachmessung",
+        "'Richtung' traegt seit Befund 130 ein 'zuletzt', weil eine erste "
+        "Fundstelle Geschichte ist und kein Stand. 'Auftragspunkt' hatte "
+        "keines - und das ausgerechnet im einzigen Register, das die Punkte "
+        "des Auftraggebers beantwortet. Der Punkt 'Generation 6/7 auf "
+        "15-Minuten' zeigte auf Befund 29 mit 14 Regeln, waehrend 297 "
+        "denselben Vorrat mit **36** gemessen hatte; 'Research-KI im "
+        "Wettbewerb nutzen' zeigte auf 196, obwohl 292 dem Auftrag an die KI "
+        "gesagt hat, worin der Unterschied bestehen muss. Beide nachgezogen, "
+        "'Generation 5 auf Tageskerzen' ausdruecklich **nicht** - dass es "
+        "dazu Spaeteres gibt, ist plausibel und war nicht geprueft. Die Wache "
+        "aus 130 gilt jetzt auch hier: Jede massgebliche Fundstelle muss es "
+        "im Laborbuch geben, und die nachgezogenen stehen ausgeschrieben da",
+        304,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -2851,12 +2868,23 @@ class Auftragspunkt:
 
     ``befund`` ist Pflicht, sobald ein Punkt als erledigt gilt: Erledigt ohne
     Fundstelle ist eine Behauptung.
+
+    ``zuletzt`` seit Befund 304 - und es ist derselbe Mangel, den ``Richtung``
+    in Befund 130 abgelegt hat, hier nur 174 Befunde spaeter bemerkt. Der
+    Punkt "Generation 6/7 auf 15-Minuten" zeigte auf Befund 29 ("alle 14
+    gemessen, 1 von 9 Gates"), waehrend Befund 297 denselben Vorrat mit 36
+    Regeln nachgemessen hat. Wer eine Fundstelle nennt, muss die **letzte**
+    nennen; die erste ist Geschichte, nicht Stand.
+
+    Dass ausgerechnet dieses Register veraltet, ist das Teure daran: Es ist
+    das einzige, das die Punkte des Auftraggebers beantwortet.
     """
 
     frage: str
     stand: str
     befund: int = 0
     erledigt: bool = True
+    zuletzt: int | None = None
 
     def __post_init__(self) -> None:
         if self.erledigt and self.befund <= 0:
@@ -2864,9 +2892,28 @@ class Auftragspunkt:
                 f"'{self.frage}' gilt als erledigt, hat aber keine Fundstelle "
                 f"im BEFUND - das waere eine Behauptung."
             )
+        if self.zuletzt is not None and self.zuletzt <= self.befund:
+            raise ValueError(
+                f"'{self.frage}': Nachmessung in Befund {self.zuletzt} liegt "
+                f"nicht nach der Erstmessung in {self.befund} - dann ist es "
+                f"keine Nachmessung."
+            )
+
+    @property
+    def massgeblich(self) -> int:
+        """Die Fundstelle, in der der gueltige Stand steht."""
+        return self.zuletzt or self.befund
 
     def __str__(self) -> str:
-        marke = f"Nr. {self.befund}" if self.befund else "offen"
+        if not self.befund:
+            marke = "offen"
+        elif self.zuletzt is None:
+            marke = f"Nr. {self.befund}"
+        else:
+            # Komma und keine zweite Klammer: 'Nr. 297 (zuerst 29)' stuende
+            # hier in einer Klammer und ergaebe eine geschachtelte - genau
+            # das hat Befund 293 an derselben Stelle abgestellt.
+            marke = f"Nr. {self.zuletzt}, zuerst {self.befund}"
         return f"{'OK' if self.erledigt else '--'} {self.frage:34} {self.stand}  ({marke})"
 
 
@@ -2897,13 +2944,24 @@ AUFTRAG: tuple[Auftragspunkt, ...] = (
         frage="Research-KI im Wettbewerb nutzen",
         stand="genutzt, vier Vorschlaege gemessen - alle schlechter; der "
               "Auftrag nennt seit 196 auch, dass sieben Partner die "
-              "Kriterien erfuellt haben und draussen durchgefallen sind",
+              "Kriterien erfuellt haben und draussen durchgefallen sind. "
+              "Seit 292 nennt er ausserdem, **worin** der Unterschied "
+              "bestehen muss: viel Qualitaet je Trade **und** viele Trades - "
+              "beide Haelften gibt es im Katalog, nie zusammen",
         befund=196,
+        zuletzt=292,
     ),
+    # **Nachgezogen in Befund 304.** Der Stand zeigte auf Nummer 29 und nannte
+    # 14 Regeln; Befund 297 hat denselben Vorrat mit **36** gemessen, und das
+    # Ergebnis ist haerter, nicht milder.
     Auftragspunkt(
         frage="Generation 6/7 auf 15-Minuten",
-        stand="alle 14 gemessen: 1 von 9 Gates, -9 bis -44 % p.a.",
+        stand="der ganze 15-Minuten-Vorrat nachgemessen (297): 1 von 36 "
+              "Regeln hat positive Guete, der Median der Luecken liegt bei "
+              "11,3 Guetepunkten gegen 2,1 auf Tageskerzen - dieser Vorrat "
+              "hat keine Decke, er hat keinen Boden",
         befund=29,
+        zuletzt=297,
     ),
     Auftragspunkt(
         frage="Generation 5 auf Tageskerzen",
