@@ -21,12 +21,14 @@ from pathlib import Path
 import pytest
 
 from research.vereinbar import (
+    AUS_DEM_GATE,
     RENDITE,
     RUECKGANG,
     SCHLECHTESTES_JAHR,
     Messpunkt,
     Schwelle,
     Vereinbarkeit,
+    _werte_des_punktes,
     lade,
 )
 
@@ -665,3 +667,77 @@ class TestEinFehlenderWertIstKeineGerisseneSchwelle:
         ohne = self._mit_dritter(punkt(21, 15.3, 11.66))
 
         assert ohne.treffer == []
+
+
+class TestDerWertStandInDerselbenDatei:
+    """**Befund 310.** Befund 309 hat ``nan`` richtig als "nicht gemessen"
+    gemeldet - und die Ursache **geraten**: die Kapitalkurve sei zu kurz fuer
+    ein Jahresfenster.
+
+    Sie ist es nicht. ``kennzahlen`` traegt trades, cagr, rueckgang,
+    sharpe_je_trade, schiefe und woelbung; das schlechteste Jahr steht in
+    derselben Datei unter ``gates['Schlechtestes Jahr']['wert']``, mit
+    Schwelle und Urteil daneben. Gesucht wurde an der falschen Stelle.
+    """
+
+    def test_der_wert_kommt_aus_dem_gate(self) -> None:
+        werte = _werte_des_punktes(
+            {
+                "stellung": 21,
+                "kennzahlen": {"cagr": 15.3, "rueckgang": 11.66},
+                "gates": {
+                    "Schlechtestes Jahr": {
+                        "bestanden": False, "wert": -11.38, "schwelle": -10.0
+                    }
+                },
+            }
+        )
+
+        assert werte["schlechtestes_jahr"] == pytest.approx(-11.38)
+
+    def test_die_kennzahlen_bleiben_die_quelle(self) -> None:
+        """Wo beide etwas sagen, gewinnt ``kennzahlen`` - heute tritt der
+        Fall nicht ein, aber die Regel soll feststehen und nicht vom Zufall
+        der Reihenfolge abhaengen."""
+        werte = _werte_des_punktes(
+            {
+                "kennzahlen": {"cagr": 15.3, "schlechtestes_jahr": -5.0},
+                "gates": {"Schlechtestes Jahr": {"wert": -11.38}},
+            }
+        )
+
+        assert werte["schlechtestes_jahr"] == pytest.approx(-5.0)
+
+    def test_ohne_gate_bleibt_der_wert_weg(self) -> None:
+        """Und dann greift die Verweigerung aus Befund 309 - nicht ein
+        stillschweigender Ersatzwert."""
+        werte = _werte_des_punktes({"kennzahlen": {"cagr": 15.3}})
+
+        assert "schlechtestes_jahr" not in werte
+
+    def test_ein_gate_ohne_wert_ebenso(self) -> None:
+        werte = _werte_des_punktes(
+            {
+                "kennzahlen": {"cagr": 15.3},
+                "gates": {"Schlechtestes Jahr": {"bestanden": False}},
+            }
+        )
+
+        assert "schlechtestes_jahr" not in werte
+
+    def test_nur_diese_eine_kennzahl_kommt_von_dort(self) -> None:
+        """Die Liste steht ausgeschrieben da. Alles aus den Gates zu ziehen
+        waere bequem und machte aus zwei Quellen eine Mischung."""
+        assert AUS_DEM_GATE == {"schlechtestes_jahr": "Schlechtestes Jahr"}
+
+    def test_am_echten_bericht(self) -> None:
+        """Gegen die Datei, die den Befund ausgeloest hat - sechs Stellungen
+        am Spot-Punkt, und jede traegt jetzt ihr schlechtestes Jahr."""
+        vorrat = lade(Path("reports/machbarkeit"), betriebspunkt="spot")
+        if not vorrat.punkte:
+            pytest.skip("keine Spot-Berichte im Behaelter")
+
+        fehlend = [
+            p.stellung for p in vorrat.punkte if p.wert("schlechtestes_jahr") is None
+        ]
+        assert fehlend == [], f"ohne schlechtestes Jahr: {fehlend}"

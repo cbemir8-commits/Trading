@@ -181,6 +181,40 @@ def _passt(vermerkt: str, gefragt: str) -> bool:
     return vermerkt.split(" ", 1)[0].casefold() == gefragt.split(" ", 1)[0].casefold()
 
 
+#: Kennzahlen, die der Bericht nur im **Gate** fuehrt, nicht in ``kennzahlen``.
+#:
+#: **Befund 310.** ``kennzahlen`` traegt trades, cagr, rueckgang,
+#: sharpe_je_trade, schiefe, woelbung - und kein schlechtestes Jahr. Der Wert
+#: steht trotzdem in derselben Datei, unter ``gates['Schlechtestes Jahr']``,
+#: mit Schwelle und Urteil daneben. ``vereinbar`` hat an der falschen Stelle
+#: gesucht und ``nan`` gemeldet; Befund 309 hat daraufhin die Auskunft
+#: berichtigt und die **Ursache** geraten - die Kurve sei zu kurz fuer ein
+#: Jahresfenster. Sie ist es nicht.
+AUS_DEM_GATE: dict[str, str] = {"schlechtestes_jahr": "Schlechtestes Jahr"}
+
+
+def _werte_des_punktes(punkt: dict) -> dict[str, float]:
+    """Die Kennzahlen eines Berichtspunkts - aus beiden Stellen.
+
+    Zuerst ``kennzahlen``; was dort fehlt und im Gate steht, kommt von dort.
+    Die Reihenfolge ist Absicht: ``kennzahlen`` ist die Quelle, das Gate die
+    Ergaenzung, und wo beide etwas sagen, gewinnt die Quelle.
+    """
+    werte = {
+        k: float(v)
+        for k, v in (punkt.get("kennzahlen") or {}).items()
+        if v is not None
+    }
+    gates = punkt.get("gates") or {}
+    for kennzahl, gate in AUS_DEM_GATE.items():
+        if kennzahl in werte:
+            continue
+        roh = (gates.get(gate) or {}).get("wert")
+        if roh is not None:
+            werte[kennzahl] = float(roh)
+    return werte
+
+
 def lade(
     ordner: Path | str,
     *,
@@ -224,11 +258,10 @@ def lade(
                 fremd[punkt_der_datei] = fremd.get(punkt_der_datei, 0) + len(gueltig)
                 continue
         for punkt in gueltig:
-            kennzahlen = punkt["kennzahlen"]
             stellung = float(punkt.get("stellung", 0.0))
             gefunden[stellung] = Messpunkt(
                 stellung=stellung,
-                werte={k: float(v) for k, v in kennzahlen.items() if v is not None},
+                werte=_werte_des_punktes(punkt),
                 betriebspunkt=punkt_der_datei,
             )
     return Vorrat(

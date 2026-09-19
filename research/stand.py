@@ -2291,6 +2291,25 @@ BEHOBEN: tuple[Richtung, ...] = (
         "beide Seiten liessen sich jederzeit nachrechnen",
         309,
     ),
+    # Die Ursache aus 309 war geraten. Nachgesehen: Der Wert stand die ganze
+    # Zeit in derselben Datei.
+    Richtung(
+        "Die Ursache des fehlenden Werts war geraten",
+        "309 hat 'nan' richtig als 'nicht gemessen' gemeldet und die Ursache "
+        "aus dem Code **abgelesen statt nachgesehen**: die Kapitalkurve sei "
+        "zu kurz fuer ein Jahresfenster. Sie ist es nicht. Der Bericht traegt "
+        "das schlechteste Jahr im Gate-Eintrag - mit Schwelle und Urteil "
+        "daneben -, waehrend 'vereinbar' nur 'kennzahlen' liest, und dort "
+        "steht es nicht. 'lade' nimmt es jetzt aus beiden Stellen; "
+        "'AUS_DEM_GATE' nennt die eine Kennzahl, um die es geht, damit aus "
+        "zwei Quellen keine Mischung wird. **Damit ist die Frage beantwortet, "
+        "die 309 offenlassen musste**: Rendite, Rueckgang und schlechtestes "
+        "Jahr sind am Spot-Punkt nicht zugleich erfuellbar; der Uebergang "
+        "liegt zwischen 20,5 und 21, und bei 20,5 fehlen zusammen 0,20 "
+        "Punkte - 0,01 an der Rendite, 0,19 am schlechtesten Jahr. Gelesen "
+        "wurden vorhandene Berichte, das kostet keinen Versuch",
+        310,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -2830,6 +2849,12 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "Stellungen, `--perpetual` meldet **null** - die aelteren "
               "Berichte tragen keinen Betriebspunkt und werden seit 242/280 "
               "ausgelassen, weil eine Vorgabe keine Messung ist (Befund 309). "
+              "**Mit der dritten Schwelle gemessen** (310): Rendite >= 15, "
+              "Rueckgang <= 12 und Schlechtestes Jahr >= -10 sind auf diesem "
+              "Regler nicht zugleich erfuellbar; der Uebergang liegt zwischen "
+              "20,5 und 21, und am wenigsten fehlt bei 20,5 - zusammen **0,20 "
+              "Punkte** (Rendite 14,99 %, also 0,01 zu wenig, und "
+              "Schlechtestes Jahr -10,19 %, also 0,19 zu weit). "
               "Die Aufloesung ist eine Geschaeftsentscheidung "
               "- den Kandidaten dorthin zu stellen, wo mehr Gates bestehen, "
               "ist ausdruecklich keine.",

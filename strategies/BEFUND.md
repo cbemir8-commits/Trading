@@ -27615,3 +27615,85 @@ Kostet keinen Versuch: gelesen wurden vorhandene Berichte. Versuchszaehler
 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 4180 passed, 2 skipped; ruff check sauber.
+
+## Dreihundertzehn. Die Ursache war geraten, der Wert stand daneben
+
+Befund 309 endete mit einer Verweigerung: *"Kein Urteil ueber Schlechtestes
+Jahr - keiner der 6 Berichte traegt diesen Wert."* Das war richtig ueber das,
+was `vereinbar` sah. Die **Ursache** habe ich dazugeschrieben:
+
+> Die Kapitalkurven sind zu kurz fuer ein Jahresfenster, und
+> `kennzahlen_der_kurve` laesst den Schluessel dann weg.
+
+Das habe ich aus dem Code abgelesen. Nachgesehen habe ich nicht.
+
+### In die Datei geschaut
+
+    kennzahlen: trades, cagr, rueckgang, sharpe_je_trade, schiefe, woelbung
+    gates:      ... "Schlechtestes Jahr": {"bestanden": true,
+                                           "wert": -9.61,
+                                           "schwelle": -10.0} ...
+
+Der Wert steht in **derselben Datei**, im selben Punkt, eine Ebene daneben -
+mit Schwelle und Urteil dazu. `vereinbar` liest nur `kennzahlen`, und dort
+steht er nicht.
+
+Die Kurve ist nicht zu kurz. Gesucht wurde an der falschen Stelle.
+
+### Was das heisst
+
+Der Umbau aus 309 bleibt richtig: Ein fehlender Wert darf nicht als gerissene
+Schwelle gelten, und `beurteile`/`ungemessen` trennen das weiter. Falsch war
+die Ursache - und damit die praktische Folge, die Frage sei aus den
+vorhandenen Berichten nicht zu beantworten. Sie war es die ganze Zeit.
+
+`lade` nimmt den Wert jetzt aus beiden Stellen. `AUS_DEM_GATE` nennt genau
+die eine Kennzahl, um die es geht:
+
+```python
+AUS_DEM_GATE = {"schlechtestes_jahr": "Schlechtestes Jahr"}
+```
+
+Nicht "alles aus den Gates": Das waere bequem und machte aus zwei Quellen
+eine Mischung. `kennzahlen` bleibt die Quelle, das Gate ist die Ergaenzung,
+und wo beide etwas sagen, gewinnt die Quelle - der Fall tritt heute nicht
+ein, aber die Regel soll feststehen.
+
+### Und damit die Antwort
+
+    Stellung    Rendite  Rueckgang  Schlechtes  Urteil
+        19.3     14.34%      9.87%      -9.61%  Rendite fehlt
+        20.5     14.99%     10.47%     -10.19%  Rendite fehlt,
+                                                Schlechtestes Jahr fehlt
+          21     15.30%     11.66%     -11.38%  Schlechtestes Jahr fehlt
+        21.5     15.65%     11.87%     -11.58%  Schlechtestes Jahr fehlt
+          22     16.17%     11.85%     -11.54%  Schlechtestes Jahr fehlt
+          25     18.54%     13.74%     -13.40%  Rueckgang reisst,
+                                                Schlechtestes Jahr fehlt
+
+**Rendite >= 15, Rueckgang <= 12 und Schlechtestes Jahr >= -10 sind auf
+diesem Regler nicht zugleich erfuellbar.** Der Uebergang liegt zwischen 20,5
+und 21: Unterhalb fehlt die Rendite, oberhalb reisst das schlechteste Jahr.
+Die beiden Fenster ueberlappen nicht.
+
+Am naechsten kommt **20,5**, und zwar dicht: zusammen **0,20 Punkte** - 0,01
+an der Rendite (14,99 statt 15,00) und 0,19 am schlechtesten Jahr (-10,19
+statt -10,00).
+
+Das ist eine Aussage ueber die **Schwellen**, keine Empfehlung: Den
+Kandidaten dorthin zu stellen, wo mehr Gates bestehen, ist genau die
+Anpassung, gegen die die Zulassungsstrecke gebaut ist. Und der Deflated
+Sharpe faellt an jeder der sechs Stellungen ohnehin - er ist als einziges
+Gate mit `aussichtslos: true` vermerkt, Abstand 0,353.
+
+### Was ich daraus mitnehme
+
+Zwei Befunde hintereinander an derselben Zahl: 309 hat die Auskunft
+berichtigt und die Ursache geraten, 310 hat nachgesehen. Der Satz, der hier
+sonst fuer Messungen gilt, gilt auch fuer Ursachen - **eine plausible
+Erklaerung aus dem Code ist keine Messung an den Daten.**
+
+Kostet keinen Versuch: gelesen wurden vorhandene Berichte. Versuchszaehler
+203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 4186 passed, 2 skipped; ruff check sauber.
