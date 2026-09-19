@@ -32,12 +32,19 @@ from dataclasses import dataclass
 __all__ = [
     "AUSSICHT",
     "AUSSICHT_VERBUND",
+    "BILD_15_MINUTEN",
+    "BILD_TAGESKERZEN",
     "PERPETUALPUNKT",
     "SCHUB",
     "SPOTPUNKT",
     "UEBERHOLT",
+    "VORRATSZIEL",
+    "VORRAT_TAGESKERZEN",
     "Aussicht",
     "Referenzpunkt",
+    "Vorratsbild",
+    "Vorratsregel",
+    "Vorratsziel",
     "veraltet",
 ]
 
@@ -456,6 +463,67 @@ def _vorratsziel(regeln: tuple[Vorratsregel, ...]) -> Vorratsziel:
 #: Was ein Vorschlag bringen muss, damit er nicht eine schon gemessene Regel
 #: wiederholt (Befund 291/292).
 VORRATSZIEL = _vorratsziel(VORRAT_TAGESKERZEN)
+
+
+@dataclass(frozen=True, slots=True)
+class Vorratsbild:
+    """Die Kurzfassung eines gemessenen Katalogs - fuer den Vergleich.
+
+    **Warum nur die Kurzfassung** (Befund 297): Die 36 Regeln des
+    15-Minuten-Katalogs stehen nicht als Tabelle hier, weil niemand sie
+    einzeln braucht - anders als beim Tageskatalog, aus dem ``VORRATSZIEL``
+    gerechnet wird. Was gebraucht wird, ist der Vergleich der beiden Bilder,
+    und dafuer genuegen diese Zahlen. Die vollstaendige Messung steht im
+    Laborbuch.
+    """
+
+    befund: int
+    kerzenlaenge: str
+    regeln: int
+    mit_vorteil: int
+    """Regeln mit positiver Guete."""
+
+    beste_guete: float
+    beste_je_trade: float
+    billigste_noetig: float
+    rho_je_trade: float
+    rho_guete: float
+    """Rangkorrelation von n_eff mit der Qualitaet je Trade und mit der Guete.
+
+    **Auf den beiden Katalogen genau gegenlaeufig** - das ist der Befund.
+    """
+
+    @property
+    def in_reichweite(self) -> bool:
+        """Hat der Katalog die noetige Qualitaet je Trade je gezeigt?"""
+        return self.beste_je_trade >= self.billigste_noetig
+
+
+#: Der Tageskatalog, wie Befund 290/291 ihn gemessen hat.
+BILD_TAGESKERZEN = Vorratsbild(
+    befund=291,
+    kerzenlaenge="1d",
+    regeln=18,
+    mit_vorteil=16,
+    beste_guete=2.484,
+    beste_je_trade=0.3274,
+    billigste_noetig=0.2641,
+    rho_je_trade=-0.679,
+    rho_guete=+0.072,
+)
+
+#: Der 15-Minuten-Katalog, gemessen in Befund 297.
+BILD_15_MINUTEN = Vorratsbild(
+    befund=297,
+    kerzenlaenge="15m",
+    regeln=36,
+    mit_vorteil=1,
+    beste_guete=0.703,
+    beste_je_trade=0.0304,
+    billigste_noetig=0.0494,
+    rho_je_trade=-0.260,
+    rho_guete=-0.701,
+)
 
 
 def veraltet(text: str) -> tuple[str, ...]:

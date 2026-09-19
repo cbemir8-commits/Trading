@@ -2026,6 +2026,26 @@ BEHOBEN: tuple[Richtung, ...] = (
         "fest, und die ist hier kein Argument",
         296,
     ),
+    # Derselbe Apparat auf einem zweiten Vorrat - fast alles faellt anders aus.
+    Richtung(
+        "Der 15-Minuten-Katalog hat keinen Boden",
+        "Die Werkzeuge aus 285 bis 291 zum ersten Mal auf den zweiten Vorrat "
+        "angesetzt (36 Regeln, 225.341 Kerzen, 2,4 Stunden). **Ein Bild, das "
+        "dem Tageskatalog fast ueberall widerspricht**: nur **1 von 36** "
+        "Regeln hat positive Guete (beste 0,703 gegen Latte 3,854; auf 1d "
+        "waren es 16 von 18). Die Rangkopplung dreht sich um - auf 1d sitzt "
+        "sie in der Qualitaet je Trade (rho -0,679) und nicht in der Guete "
+        "(+0,072), hier umgekehrt (-0,260 gegen **-0,701**): Wo die Qualitaet "
+        "negativ ist, vervielfacht mehr Handeln den Verlust. Die Zielmarke "
+        "faellt in den anderen Zweig: Die billigste Anforderung (0,0494 je "
+        "Trade) liegt **ueber** der hoechsten je gemessenen Qualitaet "
+        "(0,0304) - hier fehlt nicht die Verbindung, sondern die Qualitaet "
+        "selbst. Trefferquote hoechstens 8,0 bis 13,9 %. Die Einflussprobe "
+        "schlaegt auch hier an (ohne 'Trendbeteiligung mit Puffer' t = -1,73 "
+        "statt -2,19), und kein Familienschnitt konnte pruefen - jede "
+        "Aussenmenge zu klein",
+        297,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -2178,9 +2198,9 @@ OFFEN: tuple[Richtung, ...] = (
         "-0,557 sogar staerker als bei -0,378. Und der Kippfaktor selbst ist "
         "keine Messung: 'brutto(f)' redet ueber dieselbe reibungslose Welt "
         "und behauptet je nach f etwas anderes; gemessen steht sie bei "
-        "-0,370, behauptet wird bei f = 56 eine Null",
+        "-0,370, behauptet wird bei f = 56 eine Null. **Auf Viertelstunden neu gemessen (297)**: Kippfaktor 2, also rund 0,1 % je Roundtrip - in der Reichweite der Slippage, und damit bleibt unentschieden, ob die Kopplung dort an den Signalen oder an der Reibung haengt",
         78,
-        256,
+        297,
     ),
     # **Acht Punkte reichen dafuer nicht**, und mehr gibt es nicht: Jeder
     # weitere Holdout-Punkt setzt ein Paar voraus, das geprueft werden

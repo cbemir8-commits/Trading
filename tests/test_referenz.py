@@ -637,3 +637,53 @@ class TestWasEinVorschlagBringenMuss:
         assert "Qualitaet je Trade mindestens" in text
         assert "0.2641" in text
         assert "n_eff 254" in text
+
+
+class TestZweiKataloge:
+    """**Befund 297.** Derselbe Apparat auf einem zweiten Vorrat - und fast
+    jede Aussage faellt andersherum aus.
+
+    Das ist der Wert einer zweiten Messung: Ein Werkzeug, das auf beiden
+    Katalogen dasselbe sagt, beschreibt womoeglich sich selbst. Diese hier
+    sagen Verschiedenes, und zwar dort, wo die Kataloge sich unterscheiden.
+    """
+
+    def bilder(self):
+        from research.referenz import BILD_15_MINUTEN, BILD_TAGESKERZEN
+
+        return BILD_TAGESKERZEN, BILD_15_MINUTEN
+
+    def test_der_tageskatalog_hat_einen_boden(self) -> None:
+        tag, viertel = self.bilder()
+
+        assert tag.mit_vorteil > tag.regeln / 2
+        assert viertel.mit_vorteil == 1, "35 von 36 sind negativ"
+
+    def test_die_rangkopplung_faellt_gegenlaeufig_aus(self) -> None:
+        """**Der Kern.** Auf Tageskerzen sitzt die Kopplung in der Qualitaet
+        je Trade und nicht in der Guete; auf Viertelstunden genau umgekehrt.
+
+        Das ist kein Widerspruch: Wo die Qualitaet je Trade negativ ist,
+        vervielfacht mehr Handeln den Verlust, statt ihn auszugleichen.
+        """
+        tag, viertel = self.bilder()
+
+        assert abs(tag.rho_je_trade) > abs(tag.rho_guete)
+        assert abs(viertel.rho_guete) > abs(viertel.rho_je_trade)
+        assert tag.rho_guete > 0 > viertel.rho_guete
+
+    def test_nur_der_tageskatalog_hat_die_noetige_qualitaet_je_gezeigt(
+        self,
+    ) -> None:
+        """Befund 291: auf 1d gibt es beide Haelften, nur nie zusammen.
+        Auf 15m fehlt die Qualitaet selbst."""
+        tag, viertel = self.bilder()
+
+        assert tag.in_reichweite
+        assert not viertel.in_reichweite
+        assert viertel.beste_je_trade < viertel.billigste_noetig
+
+    def test_beide_tragen_ihre_fundstelle(self) -> None:
+        for bild in self.bilder():
+            assert bild.befund > 0
+            assert bild.regeln > 0

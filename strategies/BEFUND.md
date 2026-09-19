@@ -26522,3 +26522,97 @@ Kostet keinen Versuch: `cli vorratsdecke` misst einen vorhandenen Katalog.
 Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 3949 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertsiebenundneunzig. Der 15-Minuten-Katalog hat keinen Boden
+
+Die Werkzeuge aus Befund 285 bis 291 sind auf **einem** Vorrat entstanden -
+achtzehn Regeln auf Tageskerzen. Ein Werkzeug, das nur einen Datensatz
+gesehen hat, beschreibt moeglicherweise diesen Datensatz und nicht die Sache.
+
+Der zweite Vorrat liegt seit Befund 171 im Speicher: 36 Regeln auf
+Viertelstunden. Befund 296 hat gemessen, was er kostet - 2,4 Stunden -, und
+der Lauf ist durch.
+
+### Was gemessen wurde
+
+    Regel                          n_eff  SR/Trade   Guete  noetig
+    Trendbeteiligung mit Puffer      536    0.0304   0.703   3.854
+    Seltener grosser Ausbruch       1110    0.0044   0.145   4.160
+    Starker Trend, Momentum         1958   -0.0282  -1.248   4.270
+    ...
+    Momentum Ruecksetzer            7857   -0.2092 -18.540   4.379
+
+**Eine von 36 Regeln hat positive Guete.** Auf Tageskerzen waren es sechzehn
+von achtzehn. Der Median der Luecken liegt bei 11,3 Guetepunkten gegen 2,1 auf
+1d.
+
+Der Bericht sagt dazu den Satz aus Befund 188:
+
+> **Dieser Vorrat hat keine Decke - er hat keinen Boden.** Die Gerade liegt
+> schon bei null Trades bei -0.0882 und faellt weiter.
+
+### Jedes Werkzeug faellt in den anderen Zweig
+
+Das ist der eigentliche Ertrag. Die Verzweigungen, die ich in 285 bis 291 mit
+gebauten Faellen getestet habe, sind hier auf echten Daten gelaufen - und
+zwar auf der jeweils **anderen** Seite:
+
+    Einflussprobe (285)   haengt an einer Regel - wie auf 1d, aber an einer
+                          anderen: ohne 'Trendbeteiligung mit Puffer'
+                          t = -1,73 statt -2,19. Preis wieder verweigert.
+
+    Familienschnitte      auf 1d konnte einer von drei pruefen, hier **keiner**:
+                          jede Aussenmenge zu klein. Befund 181s Wache greift.
+
+    Rangbild (290)        1d: Kopplung in der Qualitaet je Trade (rho -0,679),
+                          Guete frei (+0,072).
+                          15m: Qualitaet frei (-0,260, t -1,57), **Guete
+                          gekoppelt** (rho -0,701, t -5,73).
+
+    Zielmarke (291)       1d: "beide Haelften gibt es, nur nie zusammen".
+                          15m: "keine Anforderung liegt in eigener Reichweite" -
+                          billigste 0,0494 je Trade gegen beste je gemessene
+                          0,0304.
+
+    Obergrenze (286/287)  8,0 % bei 36 Ziehungen, 13,9 % bei 20 Gruppen.
+
+Die Umkehrung der Rangkopplung ist kein Widerspruch, sondern eine Folge: Wo
+die Qualitaet je Trade negativ ist, **vervielfacht** mehr Handeln den
+Verlust, statt ihn auszugleichen. Auf 1d hebt die Wurzel aus der Stichprobe
+die fallende Qualitaet auf; hier zieht sie mit nach unten.
+
+### Und eine offene Richtung ist neu gemessen
+
+'Traegt die Reibung die Kopplung auf kurzen Kerzen?' (Befund 256) stand mit
+Kippfaktor 2 offen. Der Lauf bestaetigt es:
+
+> **Hier koennten es die Kosten sein.** Bei 2-facher Gebuehr verschwindet die
+> Korrelation - das waeren rund 0,1 % je Roundtrip. Das liegt in der
+> Reichweite dessen, was allein die Slippage ausmachen kann - und die steckt
+> im Ausfuehrungspreis, laesst sich aus den Trades also nicht abziehen.
+
+Auf Tageskerzen war der Kippfaktor 29 und die Frage damit entschieden (es
+sind die Signale). Hier ist sie **nicht** entschieden, und das Urteil von dort
+gilt hier nicht. Der Registereintrag zeigt jetzt auf 297.
+
+### Was das fuer die Suche heisst
+
+Nichts Gutes und nichts Ueberraschendes. Der AUFTRAG hielt seit Befund 171
+fest: *"34 von 36 Regeln negativ, beste Guete 0,744 gegen 3,964."* Heute sind
+es 35 von 36 und 0,703 gegen 3,854 - dieselbe Aussage mit dem heutigen
+Gate-Stand.
+
+Neu ist, **woran** es liegt: nicht an einer ungluecklichen Kombination,
+sondern an der Qualitaet je Trade. Auf Viertelstunden traegt in diesem
+Katalog kein Einstieg.
+
+Und eine Warnung an mich selbst: Der Bestand steht auf 1d. Der Bericht sagt
+ausdruecklich *"Wo der Bestand darin steht: nicht gerechnet"* - genau die
+Falle aus Befund 190, wo ein auf Tageskerzen gemessener Kandidat gegen die
+Gerade eines Vorrats stand, den er nie gehandelt hat, und dabei als bester
+Stand der Projektgeschichte aussah.
+
+Kostet keinen Versuch: 36 Genome aus dem Katalog, ausgewaehlt wurde nichts.
+Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 3953 passed, 2 skipped; ruff check sauber.
