@@ -1,0 +1,7 @@
+{"begonnen": "2026-09-19T06:35:18+00:00", "maerkte": ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"], "intervall": "1d", "betriebspunkt": "Spot", "genome": 5, "leiter": [0.0, 1.0], "stueck": "6/6", "kerzen": {"BTCUSD_BITSTAMP": {"zeilen": "3301", "von": "0", "bis": "3300"}, "ETHUSD_BITSTAMP": {"zeilen": "3301", "von": "0", "bis": "3300"}}, "katalog": "37bbbebd565551c0", "code": "4cf791c482014aff", "art": "kopf"}
+{"regel": "Trend-Beteiligung voller Einsatz", "ergebnis": "takt", "faktor": 1.0, "trades": 51, "sr_je_trade": 0.3274041699577338, "haltedauer_tage": 46.607843137254896, "kostenanteil": 0.0013810644475632863, "art": "messung"}
+{"regel": "Trend-Beteiligung voller Einsatz", "ergebnis": "takt", "faktor": 0.0, "trades": 51, "sr_je_trade": 0.3288570618704327, "haltedauer_tage": 46.607843137254896, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Trend mit Vola-Ziel 20 %", "ergebnis": "identisch", "faktor": 1.0, "trades": 51, "art": "messung"}
+{"regel": "Trend mit Vola-Ziel 22 %", "ergebnis": "identisch", "faktor": 1.0, "trades": 51, "art": "messung"}
+{"regel": "Vola-Ziel, kurzes Messfenster", "ergebnis": "identisch", "faktor": 1.0, "trades": 51, "art": "messung"}
+{"regel": "Vola-Ziel, langes Messfenster", "ergebnis": "identisch", "faktor": 1.0, "trades": 51, "art": "messung"}

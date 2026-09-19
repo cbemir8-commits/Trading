@@ -27063,3 +27063,85 @@ Zahl war zu schoen.
 Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 4094 passed, 2 skipped; ruff check sauber.
+
+## Dreihundertdrei. Das Register wusste es, gefragt hat es niemand
+
+Befund 302 endet mit einem Eingestaendnis: 106 Minuten gemessen, und die Zahl
+stand seit Befund 255 im Register. Dieser Befund baut die Lehre daraus ein,
+statt sie aufzuschreiben und zu vergessen.
+
+### Erst die Frage, welcher Fehler es war
+
+Zwei Kandidaten, und der naheliegende ist der falsche.
+
+**Kandidat 1: Der Eintrag widersprach sich.** Stimmt - 255 hatte gemessen,
+297 hat mit dem gerechneten Kippfaktor wieder aufgemacht, und `zuletzt` zeigte
+auf 297. Eine Wache dagegen waere eine Textsuche nach "gemessen" **und**
+"offen" im selben Eintrag. Gemessen, wie oft die anschlaegt: genau einmal im
+ganzen Register - und dieser eine Treffer ist ein **Fehlalarm**. Der Eintrag
+"Zahlt der Bestand dann, wenn Longs am meisten zahlen?" misst den Hebel und
+sagt ausdruecklich, was offen bleibt ("Gemessen ist der Hebel, nicht der
+Ausschlag"). Eine Wache mit einer Trefferquote von 0 von 1 ist keine.
+
+**Kandidat 2: Ich habe nicht nachgesehen.** Mein eigener Ablauf beginnt mit
+"kurz pruefen: Was ist der Stand?". Angesehen habe ich `leaderboard.json`,
+`reports/` und den letzten Commit - nicht den Registereintrag zu der Frage,
+die ich gerade messen wollte. Das Nachsehen war ein **Vorsatz** und keine
+Zeile im Ablauf.
+
+Vorsaetze halten nicht. Zeilen im Ablauf halten.
+
+### Was jetzt passiert
+
+`research/vorwissen.py` sucht zu den Stichworten eines Laufs die passenden
+Registereintraege - in `GESCHLOSSEN`, `OFFEN` **und** `BEHOBEN`, in Name und
+Text. `cli reibung` und `cli vorratsdecke` schreiben sie hin, bevor sie
+messen:
+
+    Bevor gemessen wird - was das Register dazu schon sagt:
+      geschlossen: Traegt die Reibung die Kopplung auf kurzen Kerzen?
+                   (Nr. 302, zuerst 78)
+          Sie traegt einen Teil und nicht alles: 2 % des Weges zur Null ...
+      ...
+    **12 davon nennen eine Messung.** Lesen kostet eine Minute, dieser Lauf
+    rund 106 Minuten. Wiederholen ist oft richtig - es unwissentlich zu tun
+    nicht.
+
+Die letzte Zeile ist der Punkt. Die gemessene Laufzeit steht daneben, weil
+der Vergleich die eigentliche Aussage ist.
+
+### Drei Entscheidungen, die es haette anders geben koennen
+
+**Es haelt nichts auf.** Kein Abbruch, keine Rueckfrage. Eine Messung zu
+wiederholen ist oft richtig - 302 hat 255 auf einem unabhaengig gebauten Weg
+bestaetigt, und das ist mehr wert als eine Wiederholung desselben Codes.
+Falsch war nicht der Lauf, falsch war, ihn ohne die Antwort zu starten.
+
+**Es urteilt nicht.** Ob ein Eintrag die Frage wirklich beantwortet, steht im
+Text. `gemessen` ist ein Hinweis, kein Befund - dieselbe Regel wie bei `Spur`
+in `nachmessung`: Eine Suche, die Verdachtsfaelle liefert, ist nuetzlich; eine
+Suche, deren Treffer man ungeprueft uebernimmt, ist schlimmer als keine.
+
+**Es kuerzt.** "Kopplung" trifft achtzehn Eintraege, und achtzehn Absaetze vor
+einem Lauf liest niemand - dann waere die Auskunft so wirkungslos wie keine.
+Gezeigt werden fuenf, der Rest wird gezaehlt. Die Reihenfolge: geschlossene
+zuerst, dann nach Zahl der Treffer, und ein Wort im **Namen** zaehlt doppelt,
+weil ein Eintrag mit dem Wort im Namen davon handelt und nicht nur davon
+spricht. Ein Test haelt fest, dass die Reibungsfrage damit an **erster**
+Stelle steht.
+
+### Nebenbei zwei kleine Sachen
+
+Die Stichworte stehen in `vorwissen.STICHWORTE` und nicht in `cli.py` -
+sonst pruefte der Test eine zweite Fassung und ginge irgendwann an der echten
+vorbei. Zwei weitere Tests halten fest, dass jeder Eintrag zu einem echten
+Befehl gehoert und von ihm auch abgerufen wird.
+
+Und: Die Lage stand zuerst in eckigen Klammern (`[geschlossen]`). Die Ausgabe
+laeuft durch `rich`, das ist dort ein Auszeichnungsbefehl - der Text
+verschwand spurlos. Aufgefallen im ersten Rauchtest, weil er auf echten Daten
+lief.
+
+Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 4119 passed, 2 skipped; ruff check sauber.

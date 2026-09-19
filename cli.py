@@ -12211,6 +12211,24 @@ def paare(
 
 
 
+def _zeige_vorwissen(befehl: str, *, kosten: str = "") -> None:
+    """Vor einem langen Lauf: Was steht dazu schon im Register? (Befund 303)
+
+    Haelt nichts auf und entscheidet nichts - es steht nur da, wo es vorher
+    nicht stand. In Befund 302 hat ein Lauf 106 Minuten gebraucht, um eine
+    Zahl zu bestaetigen, die seit 255 im Register stand.
+
+    Die Stichworte stehen in ``vorwissen.STICHWORTE`` und nicht hier: Sonst
+    haengt die Wache im Test an einer zweiten Fassung.
+    """
+    from research.vorwissen import STICHWORTE, auskunft
+
+    begriffe = STICHWORTE.get(befehl, ())
+    if not begriffe:
+        return
+    console.print(f"[dim]{auskunft(*begriffe, kosten=kosten)}[/]\n")
+
+
 #: Die Baeume, deren Inhalt die gemessenen Zahlen bestimmt (Befund 300).
 #:
 #: Was hier drinsteht, geht in den Abdruck ein; was nicht drinsteht, bleibt
@@ -12642,8 +12660,9 @@ def vorratsdecke(
         # Walk-Forward.
         from research.laufkosten import auskunft
 
+        zeit = auskunft(interval_obj.label, len(bauplaene), len(faktoren))
         console.print(
-            f"[dim]{auskunft(interval_obj.label, len(bauplaene), len(faktoren))}"
+            f"[dim]{zeit}"
             + (
                 f" Stueck {stueck}: Genom {von + 1} bis {bis} von "
                 f"{ganzer_katalog}."
@@ -12652,6 +12671,8 @@ def vorratsdecke(
             )
             + "[/]\n"
         )
+        # **Was das Register dazu schon sagt** (Befund 303) - siehe 302.
+        _zeige_vorwissen("vorratsdecke", kosten=zeit)
 
         # **Was ein Abbruch uebriglaesst** (Befund 299). Der erste
         # 15-Minuten-Lauf ist nach drei von neununddreissig Genomen an einem
@@ -13285,12 +13306,20 @@ def reibung(
         # waere derselbe Massstabsfehler ein drittes Mal.
         from research.laufkosten import auskunft_ohne_gates
 
+        zeit = auskunft_ohne_gates(
+            interval_obj.label, len(bauplaene), len(kosten)
+        )
         console.print(
-            f"[dim]{auskunft_ohne_gates(interval_obj.label, len(bauplaene), len(kosten))}"
+            f"[dim]{zeit}"
             + (f" Stueck {stueck}: Genom {von + 1} bis {bis} von "
                f"{ganzer_katalog}." if stueck else "")
             + "[/]\n"
         )
+        # **Was das Register dazu schon sagt** (Befund 303). In 302 hat ein
+        # Lauf 106 Minuten gebraucht, um eine Zahl zu bestaetigen, die seit
+        # Befund 255 im Register stand. Gelesen hatte sie niemand, weil das
+        # Nachsehen ein Vorsatz war und keine Zeile im Ablauf.
+        _zeige_vorwissen("reibung", kosten=zeit)
 
         protokoll = neues_protokoll(
             wurzel=Path.cwd(), art="reibung",

@@ -2153,6 +2153,26 @@ BEHOBEN: tuple[Richtung, ...] = (
         "zaehlte Doppelgaenger mit, 25 Regeln statt 19",
         301,
     ),
+    # Der Werkzeugfehler hinter Befund 302 - nicht im Code, im Ablauf.
+    Richtung(
+        "Das Register wusste es, gefragt hat es niemand",
+        "Befund 302 hat 106 Minuten gemessen, um eine Zahl zu bestaetigen, "
+        "die seit 255 im Register stand. Der Eintrag war da und lesbar; das "
+        "Nachsehen war ein Vorsatz und keine Zeile im Ablauf. "
+        "'research/vorwissen.py' sucht die Registereintraege zu den "
+        "Stichworten eines Laufs - in GESCHLOSSEN, OFFEN **und** BEHOBEN, in "
+        "Name und Text - und 'cli reibung' wie 'cli vorratsdecke' schreiben "
+        "sie hin, bevor sie messen, mit der gemessenen Laufzeit daneben: "
+        "Lesen kostet eine Minute, der Lauf 106. Die Stichworte stehen in "
+        "'STICHWORTE' und nicht in 'cli.py', sonst haenge die Wache an einer "
+        "zweiten Fassung (130, 286, 292). **Aufgehalten wird nichts**: Eine "
+        "Messung zu wiederholen ist oft richtig - 302 hat 255 auf einem "
+        "unabhaengig gebauten Weg bestaetigt. Falsch war nicht der Lauf, "
+        "falsch war, ihn ohne die Antwort zu starten. Ein Test haelt fest, "
+        "dass die Reibungsfrage mit den Stichworten von 'cli reibung' an "
+        "**erster** Stelle gefunden wird",
+        303,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
