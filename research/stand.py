@@ -2310,6 +2310,25 @@ BEHOBEN: tuple[Richtung, ...] = (
         "wurden vorhandene Berichte, das kostet keinen Versuch",
         310,
     ),
+    # Die Lehre aus 187/190/280, nur auf der Titelseite - dort hat sie am
+    # laengsten gefehlt.
+    Richtung(
+        "Der Stand nannte seinen Betriebspunkt nicht",
+        "Die Kopfzeilen von 'cli stand' nannten Kandidat, Maerkte, "
+        "Kerzenlaenge, Trades, Rendite, Rueckgang, Gates und Versuche - und "
+        "nicht den Punkt, an dem das alles gemessen ist. Dabei entscheidet er "
+        "mit, welche Gates halten: Derselbe Kandidat steht am Perpetual-Punkt "
+        "bei 7 von 11 und am Spot-Punkt bei 9 von 11 (106), und die offenen "
+        "Gates sind andere. Der zweite Punkt wurde im selben Lauf **gemessen** "
+        "und nur fuer einen Auftragstext benutzt. Jetzt steht er im Kopf: "
+        "'Auch gemessen  Spot: 9 von 11, offen: Messlatte, Deflated Sharpe' - "
+        "eine Zahl und kein Rat, denn den Kandidaten dorthin zu stellen, wo "
+        "mehr Gates bestehen, ist die Anpassung, gegen die die "
+        "Zulassungsstrecke gebaut ist. Fehlt die Angabe, steht "
+        "'Betriebspunkt nicht angegeben' da; eine stille Luecke waere der "
+        "Zustand von vorher",
+        311,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -3339,6 +3358,24 @@ class Lage:
     (Befund 148).
     """
 
+    betriebspunkt: str = ""
+    """Unter welchen Handelsbedingungen **diese** Zahlen gemessen sind.
+
+    **Befund 311.** Die Kopfzeilen nannten Kandidat, Maerkte, Kerzenlaenge,
+    Trades, Rendite, Rueckgang, Gates und Versuche - und nicht den Punkt.
+    Dabei entscheidet er mit, welche Gates halten: Derselbe Kandidat steht am
+    Perpetual-Punkt bei 7 von 11 und am Spot-Punkt bei 9 von 11 (Befund 106),
+    und die offenen Gates sind andere. Wer die Uebersicht liest, bekam eine
+    von zwei Zahlen ohne den Hinweis, dass es zwei gibt.
+
+    Dieselbe Lehre wie in 187 (das Kostenurteil sprach die Antwort von
+    Tageskerzen), 190 (ein Vorrat gehoert an seine Kerzenlaenge) und 280
+    (ohne Betriebspunkt ist das Urteil unvollstaendig) - nur auf der
+    Titelseite, wo sie am laengsten gefehlt hat.
+
+    Leer heisst "nicht angegeben" und wird als solches gedruckt.
+    """
+
     zweitpunkt: object | None = None
     """Der andere Betriebspunkt, gemessen - oder ``None``.
 
@@ -3654,6 +3691,31 @@ class Lage:
                     ]
         return zeilen
 
+    def _zweitzeile(self) -> list[str]:
+        """Der andere gemessene Punkt, in einer Zeile (Befund 311).
+
+        Er steht im Kopf und nicht weiter unten, weil er dieselbe Frage
+        anders beantwortet: Am Spot-Punkt haelt derselbe Kandidat mehr Gates,
+        und welche offen bleiben, ist eine andere Liste.
+
+        **Keine Empfehlung.** Den Kandidaten dorthin zu stellen, wo mehr
+        Gates bestehen, ist genau die Anpassung, gegen die die
+        Zulassungsstrecke gebaut ist - deshalb steht hier eine Zahl und kein
+        Rat.
+        """
+        punkt = self.zweitpunkt
+        if punkt is None:
+            return []
+        bestanden = getattr(punkt, "bestanden", None)
+        gesamt = getattr(punkt, "gesamt", None)
+        if bestanden is None or not gesamt:
+            return []
+        offen = ", ".join(getattr(punkt, "offen", ()) or ()) or "keines"
+        return [
+            f"  Auch gemessen  {getattr(punkt, 'name', '?')}: "
+            f"{bestanden} von {gesamt}, offen: {offen}"
+        ]
+
     def bericht(self, *, kurz: bool = False) -> str:
         """Der Stand als Text - vollstaendig oder auf das Handelnde gekuerzt.
 
@@ -3681,7 +3743,12 @@ class Lage:
             "STAND",
             "=" * 72,
             f"  Kandidat   {self.kandidat}",
-            f"  Gemessen   {self.maerkte}",
+            # **Der Punkt gehoert in den Kopf** (Befund 311). Ohne ihn liest
+            # sich '7 von 11' wie der Stand des Kandidaten; er ist der Stand
+            # an **einem** von zwei gemessenen Punkten.
+            f"  Gemessen   {self.maerkte}, "
+            f"{self.betriebspunkt or 'Betriebspunkt nicht angegeben'}",
+            *self._zweitzeile(),
             f"  Ergebnis   {self.trades} Trades{self._zensurhinweis()}, "
             f"{self.cagr_pct:.2f} % p.a., {self.rueckgang_pct:.2f} % Rueckgang",
             f"  Gates      {self.bestanden} von {self.gesamt}",

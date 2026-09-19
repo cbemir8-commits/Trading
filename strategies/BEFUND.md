@@ -27697,3 +27697,68 @@ Kostet keinen Versuch: gelesen wurden vorhandene Berichte. Versuchszaehler
 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 4186 passed, 2 skipped; ruff check sauber.
+
+## Dreihundertelf. Der Stand nannte seinen Betriebspunkt nicht
+
+Die Titelseite dieses Projekts:
+
+    STAND
+    ======================================================================
+      Kandidat   Trend 50 Tage mit Konfluenz
+      Gemessen   BTCUSD_BITSTAMP + ETHUSD_BITSTAMP, 1d
+      Ergebnis   156 Trades, 12.95 % p.a., 10.64 % Rueckgang
+      Gates      7 von 11
+      Versuche   203
+
+Kandidat, Maerkte, Kerzenlaenge, Trades, Rendite, Rueckgang, Gates,
+Versuche - und **nicht**, unter welchen Handelsbedingungen das gemessen ist.
+
+### Warum das nicht egal ist
+
+Derselbe Kandidat, dieselben Daten, anderer Betriebspunkt:
+
+    Perpetual (Hebel, Funding)   7 von 11
+    Spot (kein Hebel, kein F.)   9 von 11
+
+Und es sind nicht dieselben zwei Gates mehr, sondern eine andere Liste: Am
+Perpetual-Punkt stehen Messlatte, Schlechtestes Jahr, Deflated Sharpe und
+Parameter-Plateau offen, am Spot-Punkt nur **Messlatte und Deflated Sharpe**.
+Wer "7 von 11, vier offen" liest, bildet sich eine andere Vorstellung von der
+Entfernung als wer "9 von 11, zwei offen" liest.
+
+Das ist keine neue Messung. Befund 106 hat den Unterschied beziffert, und
+`cli stand` **misst den zweiten Punkt im selben Lauf** - `_spotpunkt` faehrt
+denselben Kandidaten ohne Hebel und ohne Funding durch alle elf Gates. Das
+Ergebnis wurde bisher nur fuer einen Auftragstext weiter unten benutzt.
+
+Die Zahl war da. Sie stand nur nicht dort, wo die Frage gestellt wird.
+
+### Dieselbe Lehre, zum vierten Mal
+
+    187   Das Kostenurteil sprach die Antwort von Tageskerzen - unbedingt.
+    190   Ein Vorrat gehoert an seine eigene Kerzenlaenge.
+    280   Ohne Betriebspunkt ist das Urteil unvollstaendig.
+    311   ... und das gilt auch fuer die Titelseite.
+
+Es ist jedes Mal derselbe Satz: **Eine Zahl ohne ihre Bedingungen ist keine
+Auskunft.** Dreimal in Werkzeugen behoben, die jemand aufruft, wenn er schon
+weiss, was er sucht - und nicht in der Uebersicht, die man zuerst
+aufschlaegt.
+
+### Wie es jetzt aussieht
+
+      Gemessen   BTCUSD_BITSTAMP + ETHUSD_BITSTAMP, 1d,
+                 Perpetual (mit Hebel und Funding)
+      Auch gemessen  Spot: 9 von 11, offen: Messlatte, Deflated Sharpe
+
+Eine Zahl und kein Rat. Den Kandidaten dorthin zu stellen, wo mehr Gates
+bestehen, ist genau die Anpassung, gegen die die Zulassungsstrecke gebaut
+ist - der Satz steht in `seeds.py`, und er gilt hier genauso.
+
+Fehlt die Angabe, steht `Betriebspunkt nicht angegeben` da. Eine stille
+Luecke waere der Zustand von vorher, nur mit einem ruhigeren Gewissen.
+
+Kostet keinen Versuch: Der zweite Punkt lief ohnehin mit. Versuchszaehler
+203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 4193 passed, 2 skipped; ruff check sauber.

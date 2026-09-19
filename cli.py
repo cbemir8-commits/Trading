@@ -10838,6 +10838,11 @@ def stand(
     lage = Lage(
         kandidat=genome.name,
         maerkte=f"{' + '.join(symbole)}, {interval_obj.label}",
+        # **Der Punkt, an dem diese Zahlen stehen** (Befund 311). Die
+        # Konfiguration oben faehrt den Bybit-Kontrakt mit Hebel und Funding -
+        # das ist der Perpetual-Punkt. 'zweitpunkt' misst denselben Kandidaten
+        # am Spot-Punkt, und dort halten andere Gates.
+        betriebspunkt="Perpetual (mit Hebel und Funding)",
         zweitpunkt=zweitpunkt,
         trades=len(gehandelt.all_trades),
         effektiv=stichprobe.effektiv,

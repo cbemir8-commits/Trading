@@ -1656,3 +1656,79 @@ class TestDieListeBleibtEineListe:
         lang = st.median([len(r.ergebnis) for r in BEHOBEN])
 
         assert lang > kurz
+
+
+class TestDerKopfNenntSeinenBetriebspunkt:
+    """**Befund 311.** Die Kopfzeilen nannten Kandidat, Maerkte, Kerzenlaenge,
+    Trades, Rendite, Rueckgang, Gates und Versuche - und nicht den Punkt.
+
+    Dabei entscheidet er mit, welche Gates halten: Derselbe Kandidat steht am
+    Perpetual-Punkt bei 7 von 11 und am Spot-Punkt bei 9 von 11, und die
+    offenen Gates sind andere. Wer die Uebersicht las, bekam eine von zwei
+    Zahlen ohne den Hinweis, dass es zwei gibt.
+
+    Dieselbe Lehre wie 187, 190 und 280 - nur auf der Titelseite.
+    """
+
+    def _punkt(self, **abweichung):
+        from research.betriebspunkt import Betriebspunkt
+
+        daten = {
+            "name": "Spot",
+            "trades": 156,
+            "cagr_pct": 14.34,
+            "rueckgang_pct": 9.87,
+            "guete": 0.2708,
+            "dsr": 0.5827,
+            "bestanden": 9,
+            "gesamt": 11,
+            "offen": ("Messlatte", "Deflated Sharpe"),
+        }
+        daten.update(abweichung)
+        return Betriebspunkt(**daten)
+
+    def test_er_steht_in_der_kopfzeile(self) -> None:
+        text = _lage(betriebspunkt="Perpetual (mit Hebel und Funding)").bericht()
+
+        assert "Perpetual (mit Hebel und Funding)" in text.split("Ergebnis")[0]
+
+    def test_ohne_angabe_sagt_er_das(self) -> None:
+        """Leer heisst 'nicht angegeben' und nicht 'egal' - eine stille
+        Luecke waere genau der Zustand vor diesem Befund."""
+        text = _lage().bericht()
+
+        assert "Betriebspunkt nicht angegeben" in text
+
+    def test_der_andere_punkt_steht_daneben(self) -> None:
+        text = _lage(zweitpunkt=self._punkt()).bericht()
+
+        assert "Auch gemessen  Spot: 9 von 11" in text
+        assert "Messlatte, Deflated Sharpe" in text
+
+    def test_er_steht_im_kopf_und_nicht_irgendwo(self) -> None:
+        """Weiter unten wuerde er die Frage nicht beantworten, die der Kopf
+        stellt."""
+        text = _lage(zweitpunkt=self._punkt()).bericht()
+
+        assert "Auch gemessen" in text.split("Ergebnis")[0]
+
+    def test_ohne_zweitpunkt_keine_zeile(self) -> None:
+        """**Nur im Kopf geprueft**, nicht im ganzen Bericht: Der
+        Registereintrag zu diesem Befund zitiert die Zeile, und eine Suche
+        ueber den gesamten Text faende sie dort - eine Wache, die auf das
+        Archiv anschlaegt, prueft nicht mehr den Kopf."""
+        assert "Auch gemessen" not in _lage().bericht().split("Ergebnis")[0]
+
+    def test_ein_zweitpunkt_ohne_gates_schweigt(self) -> None:
+        """Eine Zeile '0 von 0' waere schlimmer als keine."""
+        text = _lage(zweitpunkt=self._punkt(bestanden=0, gesamt=0)).bericht()
+
+        assert "Auch gemessen" not in text.split("Ergebnis")[0]
+
+    def test_ein_zweitpunkt_ohne_offene_gates(self) -> None:
+        """Alle bestanden heisst 'keines' und nicht eine leere Liste."""
+        text = _lage(
+            zweitpunkt=self._punkt(bestanden=11, offen=())
+        ).bericht()
+
+        assert "Auch gemessen  Spot: 11 von 11, offen: keines" in text
