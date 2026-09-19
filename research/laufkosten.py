@@ -71,24 +71,33 @@ class Laufkosten:
     """Der Befund, in dem die Messung entstanden ist."""
 
     je_sprosse: float | None = None
-    """Sekunden je Genom und **Sprosse der Reibungsleiter**.
+    """Sekunden je **Walk-Forward**, ohne Gates.
 
-    Eine Sprosse rechnet denselben Walk-Forward noch einmal mit anderer
-    Gebuehr, aber **ohne** die Gates - und die sind der teure Teil. Wer die
-    Leiter mit dem vollen Genompreis hochrechnet, kommt deutlich zu hoch
-    heraus: auf 15 Minuten 226 s gegen tatsaechlich 61 s je Sprosse.
+    Ein Walk-Forward ohne Gates ist, was eine Sprosse der Reibungsleiter
+    kostet und was ``cli reibung`` je Stufe rechnet. Wer damit den vollen
+    Genompreis ansetzt, kommt deutlich zu hoch heraus: auf 15 Minuten 226 s
+    gegen tatsaechlich rund 81 s.
 
     Das ist derselbe Fehler wie in Befund 296, eine Ebene tiefer - dort war
     der falsche Massstab die Kerzenzahl, hier waere es der Genompreis.
     """
 
     sprosse_gemessen_in: int | None = None
-    """Der Befund zum **Sprossenpreis** - eine eigene Messung.
+    """Der Befund zum **Walk-Forward-Preis** - eine eigene Messung.
 
     Er steht getrennt, weil er es ist: ``je_genom`` stammt aus Befund 296,
-    ``je_sprosse`` aus 298. Eine gemeinsame Fundstelle waere bequem und
+    ``je_sprosse`` aus 302. Eine gemeinsame Fundstelle waere bequem und
     falsch, und dieses Projekt hat an genau der Sorte Bequemlichkeit schon
     zweimal verloren (130, 293).
+    """
+
+    sprosse_aus: str = ""
+    """**Wie** der Walk-Forward-Preis gemessen wurde - nicht nur, wo.
+
+    Befund 298 hat 61,4 s fuer 15 Minuten notiert und die Methode nicht.
+    Gemessen wurden spaeter 81 s, und warum die alte Zahl 25 % zu niedrig
+    war, laesst sich nicht mehr sagen - genau deshalb steht das hier
+    (Befund 302).
     """
 
 
@@ -100,11 +109,16 @@ class Laufkosten:
 MESSUNGEN: dict[str, Laufkosten] = {
     "1d": Laufkosten(
         kerzen=3_277, je_genom=6.0, gemessen_in=296,
-        je_sprosse=2.2, sprosse_gemessen_in=298,
+        je_sprosse=2.26, sprosse_gemessen_in=302,
+        sprosse_aus="54 Walk-Forwards in einem Lauf von 'cli reibung', 121,8 s",
     ),
     "15m": Laufkosten(
         kerzen=225_341, je_genom=226.0, gemessen_in=296,
-        je_sprosse=61.4, sprosse_gemessen_in=298,
+        je_sprosse=81.0, sprosse_gemessen_in=302,
+        sprosse_aus=(
+            "78 Walk-Forwards in 13 Stuecken von 'cli reibung', 106 Minuten; "
+            "Median ueber die Stuecke, Prozessstart eingerechnet"
+        ),
     ),
 }
 

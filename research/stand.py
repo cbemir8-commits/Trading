@@ -116,6 +116,29 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     # statt -0,26), und die Aussage wird haerter - der Achsenabschnitt ist
     # negativ, es gibt also **keine** Stichprobengroesse mit Vorteil je
     # Trade, nicht nur keine, die reicht. Dieselben zwei Regeln sind positiv.
+    # **Der Eintrag, der sich selbst widersprochen hat** (Befund 302).
+    #
+    # 255 hat es auf Viertelstunden gemessen: -0,267 auf -0,186, die Reibung
+    # traegt 30 %. 256 hat im selben Eintrag festgehalten, dass der
+    # **gerechnete** Kippfaktor keine Messung ist. 297 hat die Richtung
+    # trotzdem wieder aufgemacht - mit genau diesem Kippfaktor (2), und der
+    # Eintrag stand danach auf 'unentschieden', obwohl die Messung drei
+    # Saetze weiter oben stand.
+    #
+    # 302 hat sie auf einem zweiten, unabhaengig gebauten Weg wiederholt
+    # ('cli reibung', ohne Gates, in 13 Stuecken) und ist bei denselben
+    # Zahlen herausgekommen: -0,267 und -0,186 ueber 36 Regeln. Das ist eine
+    # Bestaetigung und war trotzdem 106 Minuten fuer etwas, das schon
+    # dastand. Wer hier etwas anfuegt, sagt dazu, was mit dem Frueheren ist.
+    Richtung(
+        "Traegt die Reibung die Kopplung auf kurzen Kerzen?",
+        "Sie traegt einen Teil und nicht alles: 2 % des Weges zur Null auf "
+        "Tageskerzen, 30 % auf Viertelstunden (-0,267 auf -0,186 ueber 36 "
+        "Regeln). Ohne jede Reibung bleibt die Kopplung negativ - sie "
+        "gehoert den Signalen",
+        78,
+        zuletzt=302,
+    ),
     Richtung(
         "15-Minuten-Kerzen",
         "36 Regeln auf 225.000 Kerzen: 34 negativ; die Gerade beginnt schon "
@@ -2253,38 +2276,6 @@ OFFEN: tuple[Richtung, ...] = (
         "ein struktureller Bruch ist der einzige bekannte Weg heraus",
         56,
         283,
-    ),
-    # Auf Tageskerzen beantwortet (Kippfaktor 56, Befund 187). Der
-    # Kostenanteil lag dort bei hoechstens 0,0086 der Trade-Streuung - auf
-    # Viertelstunden ist er das nicht mehr, und ein Urteil von einem
-    # Betriebspunkt gilt am anderen nicht.
-    # **Nicht zu schliessen, in keine Richtung.** Entscheiden liesse es sich
-    # nur mit einer Messung der Slippage, und die steckt im
-    # Ausfuehrungspreis - aus den Trades ist sie nicht zu trennen.
-    Richtung(
-        "Traegt die Reibung die Kopplung auf kurzen Kerzen?",
-        "auf Tageskerzen nein (Kostenanteil 0,0013 bis 0,0086, Kippfaktor "
-        "56). Auf Viertelstunden offen: Kostenanteil 0,0094 bis 0,1250 und "
-        "Kippfaktor 2 - das schafft die Slippage allein. **Der Kippfaktor "
-        "ist nicht mehr noetig** (254): 'CostModel.scaled(0)' setzt Gebuehr "
-        "und Slippage auf null, damit steht die Kopplung ohne Reibung direkt "
-        "da. Auf Tageskerzen geeicht - dort geht sie von -0,378 auf -0,370, "
-        "also 2 % des Weges zur Null, und das deckt sich mit dem Faktor 56. "
-        "**Auf Viertelstunden gemessen** (255): 36 Regeln, -0,267 auf "
-        "-0,186 - die Reibung traegt 30 % und nicht alles. Die Kopplung "
-        "bleibt auch ohne jede Reibung negativ, ist dort also ebenfalls "
-        "keine Eigenschaft der Kosten. Offen bleibt eine Stufe tiefer: "
-        "Entfernt wird die **modellierte** Slippage (1 bp, Stops 5 bp); "
-        "liegt die echte weit darueber, ist der Anteil groesser. Das waere "
-        "durch Wiederholung bei skalierter Reibung zu messen, nicht durch "
-        "Zurueckrechnen. **Gemessen** (256): Aufgeschlagene Reibung bringt "
-        "die Kopplung bis zum 56-fachen nicht zur Null - sie wird dort mit "
-        "-0,557 sogar staerker als bei -0,378. Und der Kippfaktor selbst ist "
-        "keine Messung: 'brutto(f)' redet ueber dieselbe reibungslose Welt "
-        "und behauptet je nach f etwas anderes; gemessen steht sie bei "
-        "-0,370, behauptet wird bei f = 56 eine Null. **Auf Viertelstunden neu gemessen (297)**: Kippfaktor 2, also rund 0,1 % je Roundtrip - in der Reichweite der Slippage, und damit bleibt unentschieden, ob die Kopplung dort an den Signalen oder an der Reibung haengt",
-        78,
-        297,
     ),
     # **Acht Punkte reichen dafuer nicht**, und mehr gibt es nicht: Jeder
     # weitere Holdout-Punkt setzt ein Paar voraus, das geprueft werden

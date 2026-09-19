@@ -232,6 +232,14 @@ def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
         # verliert sie an der Verschiebungsprobe - 2 von 584. Nachgemessen,
         # nicht nur erwaehnt.
         "Einstiegsseite": 276,
+        # Befund 255 hat es auf Viertelstunden gemessen (-0,267 auf -0,186),
+        # Befund 297 hat die Richtung mit dem **gerechneten** Kippfaktor
+        # wieder aufgemacht, obwohl 256 im selben Eintrag steht und sagt,
+        # dass der keine Messung ist. Befund 302 hat sie auf einem zweiten,
+        # unabhaengig gebauten Weg wiederholt und ist bei denselben Zahlen
+        # herausgekommen - Bestaetigung, und 106 Minuten fuer etwas, das
+        # schon dastand.
+        "Traegt die Reibung die Kopplung auf kurzen Kerzen?": 302,
     }
 
 

@@ -26970,3 +26970,96 @@ drei Stunden gespart.
 Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 4094 passed, 2 skipped; ruff check sauber.
+
+## Dreihundertzwei. Gemessen, bestaetigt - und es stand schon da
+
+Der 15-Minuten-Reibungslauf ist durch. Dreizehn Stuecke, 78 Walk-Forwards,
+**106 Minuten**, kein Abbruch.
+
+    Faktor 0   r = -0,186     (ohne jede Reibung)
+    Faktor 1   r = -0,267     (Betriebspunkt)
+    36 Regeln auf beiden Stufen
+
+Die Reibung hebt **30 %** des Weges zur Null auf. Ohne sie bleibt die
+Kopplung deutlich negativ: Auch auf Viertelstunden gehoert sie den
+**Signalen** und nicht den Kosten. Der gerechnete Kippfaktor (2,3) sagt dazu
+nichts - er behauptet fuer dieselbe reibungslose Welt eine Null, gemessen
+steht sie bei -0,186.
+
+Damit ist die Richtung aus Befund 78 geschlossen.
+
+### Und jetzt der unangenehme Teil
+
+Diese Zahlen standen schon im Register. Wortwoertlich:
+
+> **Auf Viertelstunden gemessen** (255): 36 Regeln, -0,267 auf -0,186 - die
+> Reibung traegt 30 % und nicht alles.
+
+Befund 255. Gemessen. Im selben Eintrag, drei Saetze ueber dem Satz, auf den
+ich gehandelt habe.
+
+### Wie der Eintrag sich selbst widersprochen hat
+
+Der Eintrag ist ueber Jahre gewachsen, und seine Saetze widersprechen
+einander:
+
+    255   gemessen: -0,267 auf -0,186, die Reibung traegt 30 %
+    256   der **gerechnete** Kippfaktor ist keine Messung
+    297   "Kippfaktor 2 ... damit bleibt unentschieden"
+
+297 hat die Richtung mit genau dem Kippfaktor wieder aufgemacht, den 256 im
+selben Eintrag als untauglich festgehalten hatte. Und weil `zuletzt` auf 297
+zeigt, stand der Eintrag danach auf "unentschieden" - die Messung drei Saetze
+weiter oben war unsichtbar.
+
+Befund 293 hat den spiegelbildlichen Fehler behoben: `cli stand` nannte die
+**erste** Fundstelle statt der letzten. Hier ist es andersherum - die letzte
+ueberschreibt eine bessere fruehere, still.
+
+Ich habe den Eintrag vor dem Lauf nicht gelesen. Schritt 1 meines eigenen
+Ablaufs heisst "kurz pruefen: Was ist der Stand?", und ich habe
+`leaderboard.json`, `reports/` und den letzten Commit angesehen - nicht den
+Registereintrag zu der Frage, die ich gerade messen wollte.
+
+### Was trotzdem bleibt
+
+**Eine unabhaengige Bestaetigung.** 302 hat einen anderen Weg genommen als
+255: eigener Befehl, ohne Gates, in dreizehn Stuecken gemessen, aus
+Protokollen zusammengelegt. Dieselben Zahlen auf drei Nachkommastellen. Das
+ist mehr wert als eine Wiederholung desselben Codes - aber es war nicht das,
+wofuer ich die 106 Minuten ausgegeben habe.
+
+**Ein geschlossener Eintrag.** Die Richtung steht jetzt in `GESCHLOSSEN`, mit
+einer Zeile statt mit einem Absatz, der sich selbst widerspricht.
+
+**Und drei Werkzeuge** (299, 300, 301), die beim naechsten langen Lauf
+tragen. Der hier waere ohne sie nicht durchgelaufen.
+
+### Der Preis einer Messung, zum vierten Mal
+
+`dauer_ohne_gates` hat 80 Minuten vorhergesagt, gebraucht wurden 106. Der
+Grund steht in `MESSUNGEN`: 61,4 s je Walk-Forward auf 15 Minuten, aus
+Befund 298. Jetzt gemessen ueber 78 Walk-Forwards in dreizehn Stuecken:
+
+    1d     2,26 s je Walk-Forward (54 gemessen)   - die alte Zahl haelt (2,2)
+    15m      81 s je Walk-Forward (78 gemessen)   - die alte Zahl war 61,4
+
+Die Tageszahl stimmt auf 3 % genau, die Viertelstundenzahl war 25 % zu
+niedrig. Warum, laesst sich nicht sagen: Befund 298 hat die Zahl notiert und
+**nicht, wie sie zustande kam**. Eine Vermutung habe ich geprueft und
+verworfen - der reibungslose Durchlauf ist nicht billiger als der am
+Betriebspunkt, sondern teurer (98 s gegen 90 s ueber dieselben drei Genome).
+
+Der Eintrag traegt jetzt die Zahl, die Stueckzahl **und** die Art der
+Messung. Wer sie das naechste Mal nachrechnet, soll sehen, woran er sie
+misst.
+
+Und damit ist auch eine Zahl aus Befund 301 zu berichtigen: Dort stand "123 s
+je Genom statt 287" und "rund 80 Minuten statt 3,8 Stunden". Mit dem
+gemessenen Walk-Forward sind es **162 s statt 307** und 106 Minuten - knapp
+die Haelfte gespart, nicht zwei Drittel. Der Befehl lohnt sich weiter, die
+Zahl war zu schoen.
+
+Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 4094 passed, 2 skipped; ruff check sauber.

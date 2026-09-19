@@ -1,0 +1,55 @@
+{"begonnen": "2026-09-19T06:11:41+00:00", "maerkte": ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"], "intervall": "1d", "betriebspunkt": "Spot", "genome": 30, "leiter": [0.0, 1.0], "stueck": "1/1 (30)", "kerzen": {"BTCUSD_BITSTAMP": {"zeilen": "3301", "von": "0", "bis": "3300"}, "ETHUSD_BITSTAMP": {"zeilen": "3301", "von": "0", "bis": "3300"}}, "katalog": "37bbbebd565551c0", "code": "24a44a03fc76c0c0", "art": "kopf"}
+{"regel": "Trendfolge Ausbruch", "ergebnis": "takt", "faktor": 1.0, "trades": 138, "sr_je_trade": 0.1891653086788988, "haltedauer_tage": 13.992753623188406, "kostenanteil": 0.005502424297177364, "art": "messung"}
+{"regel": "Trendfolge Ausbruch", "ergebnis": "takt", "faktor": 0.0, "trades": 138, "sr_je_trade": 0.19770192899508737, "haltedauer_tage": 13.992753623188406, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Momentum Ruecksetzer", "ergebnis": "takt", "faktor": 1.0, "trades": 264, "sr_je_trade": -0.13577725733767215, "haltedauer_tage": 10.02651515151515, "kostenanteil": 0.008572207212521004, "art": "messung"}
+{"regel": "Momentum Ruecksetzer", "ergebnis": "takt", "faktor": 0.0, "trades": 264, "sr_je_trade": -0.12361433246278963, "haltedauer_tage": 10.02651515151515, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Volatilitaets-Ausbruch", "ergebnis": "takt", "faktor": 1.0, "trades": 103, "sr_je_trade": 0.030277247919807977, "haltedauer_tage": 26.436893203883496, "kostenanteil": 0.005305435567500802, "art": "messung"}
+{"regel": "Volatilitaets-Ausbruch", "ergebnis": "takt", "faktor": 0.0, "trades": 103, "sr_je_trade": 0.038106293571044926, "haltedauer_tage": 26.436893203883496, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Mean Reversion Uebertreibung", "ergebnis": "takt", "faktor": 1.0, "trades": 7, "sr_je_trade": -0.47239532970735015, "haltedauer_tage": 12.142857142857144, "kostenanteil": 0.01075137510499156, "art": "messung"}
+{"regel": "Mean Reversion Uebertreibung", "ergebnis": "takt", "faktor": 0.0, "trades": 7, "sr_je_trade": -0.4570273954760548, "haltedauer_tage": 12.142857142857144, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "EMA-Kreuzung (Messlatte)", "ergebnis": "takt", "faktor": 1.0, "trades": 71, "sr_je_trade": 0.21900259446169454, "haltedauer_tage": 35.971830985915496, "kostenanteil": 0.0043121030761358765, "art": "messung"}
+{"regel": "EMA-Kreuzung (Messlatte)", "ergebnis": "takt", "faktor": 0.0, "trades": 71, "sr_je_trade": 0.22611966351597354, "haltedauer_tage": 35.971830985915496, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Grosser Trendausbruch", "ergebnis": "takt", "faktor": 1.0, "trades": 58, "sr_je_trade": 0.3215399030328446, "haltedauer_tage": 61.13793103448276, "kostenanteil": 0.002255575960506059, "art": "messung"}
+{"regel": "Grosser Trendausbruch", "ergebnis": "takt", "faktor": 0.0, "trades": 58, "sr_je_trade": 0.325097832096497, "haltedauer_tage": 61.13793103448276, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Nur mit der Drift", "ergebnis": "takt", "faktor": 1.0, "trades": 41, "sr_je_trade": 0.2715767120551143, "haltedauer_tage": 43.5609756097561, "kostenanteil": 0.0028324592606327067, "art": "messung"}
+{"regel": "Nur mit der Drift", "ergebnis": "takt", "faktor": 0.0, "trades": 41, "sr_je_trade": 0.2761773236349412, "haltedauer_tage": 43.5609756097561, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Starker Trend, Momentum", "ergebnis": "takt", "faktor": 1.0, "trades": 58, "sr_je_trade": -0.2483151054212405, "haltedauer_tage": 60.60344827586207, "kostenanteil": 0.0031129006640350444, "art": "messung"}
+{"regel": "Starker Trend, Momentum", "ergebnis": "takt", "faktor": 0.0, "trades": 58, "sr_je_trade": -0.24352074921906378, "haltedauer_tage": 60.60344827586207, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Seltener grosser Ausbruch", "ergebnis": "takt", "faktor": 1.0, "trades": 40, "sr_je_trade": 0.23836599659519708, "haltedauer_tage": 50.1, "kostenanteil": 0.0016994802522613424, "art": "messung"}
+{"regel": "Seltener grosser Ausbruch", "ergebnis": "takt", "faktor": 0.0, "trades": 40, "sr_je_trade": 0.24103742661049407, "haltedauer_tage": 50.1, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Langsamer Kreuzer (Messlatte 2)", "ergebnis": "takt", "faktor": 1.0, "trades": 16, "sr_je_trade": 0.3085031215335381, "haltedauer_tage": 91.5, "kostenanteil": 0.0014841827844075603, "art": "messung"}
+{"regel": "Langsamer Kreuzer (Messlatte 2)", "ergebnis": "takt", "faktor": 0.0, "trades": 16, "sr_je_trade": 0.3109460370654131, "haltedauer_tage": 91.5, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Trendbeteiligung EMA200", "ergebnis": "takt", "faktor": 1.0, "trades": 66, "sr_je_trade": 0.19811967841679365, "haltedauer_tage": 16.0, "kostenanteil": 0.003006623963260059, "art": "messung"}
+{"regel": "Trendbeteiligung EMA200", "ergebnis": "takt", "faktor": 0.0, "trades": 66, "sr_je_trade": 0.20270892389930825, "haltedauer_tage": 16.0, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Trendbeteiligung mit Puffer", "ergebnis": "takt", "faktor": 1.0, "trades": 308, "sr_je_trade": 0.1672237125865026, "haltedauer_tage": 13.006493506493506, "kostenanteil": 0.0033248234433475377, "art": "messung"}
+{"regel": "Trendbeteiligung mit Puffer", "ergebnis": "takt", "faktor": 0.0, "trades": 308, "sr_je_trade": 0.17477047556660275, "haltedauer_tage": 13.006493506493506, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Momentum-Beteiligung", "ergebnis": "takt", "faktor": 1.0, "trades": 101, "sr_je_trade": 0.23770103582453525, "haltedauer_tage": 12.049504950495049, "kostenanteil": 0.0036642846912081713, "art": "messung"}
+{"regel": "Momentum-Beteiligung", "ergebnis": "takt", "faktor": 0.0, "trades": 101, "sr_je_trade": 0.2429363498617593, "haltedauer_tage": 12.049504950495049, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Ausbruch ohne Long-Ueberhitzung", "ergebnis": "kein Takt", "faktor": 1.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Ausbruch ohne Long-Ueberhitzung", "ergebnis": "kein Takt", "faktor": 0.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Funding-Carry Long", "ergebnis": "kein Takt", "faktor": 1.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Funding-Carry Long", "ergebnis": "kein Takt", "faktor": 0.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Gegen die ueberhitzte Long-Seite", "ergebnis": "kein Takt", "faktor": 1.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Gegen die ueberhitzte Long-Seite", "ergebnis": "kein Takt", "faktor": 0.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Trend-Beteiligung (fair gerechnet)", "ergebnis": "takt", "faktor": 1.0, "trades": 51, "sr_je_trade": 0.3274041699577338, "haltedauer_tage": 46.607843137254896, "kostenanteil": 0.0013810644475632863, "art": "messung"}
+{"regel": "Trend-Beteiligung (fair gerechnet)", "ergebnis": "takt", "faktor": 0.0, "trades": 51, "sr_je_trade": 0.3288570618704327, "haltedauer_tage": 46.607843137254896, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Beteiligt, ausser es ist ueberhitzt", "ergebnis": "kein Takt", "faktor": 1.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Beteiligt, ausser es ist ueberhitzt", "ergebnis": "kein Takt", "faktor": 0.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Carry-Beteiligung", "ergebnis": "kein Takt", "faktor": 1.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Carry-Beteiligung", "ergebnis": "kein Takt", "faktor": 0.0, "trades": 0, "sr_je_trade": null, "haltedauer_tage": null, "kostenanteil": null, "art": "messung"}
+{"regel": "Trend-Beteiligung 200 Tage", "ergebnis": "identisch", "faktor": 1.0, "trades": 51, "art": "messung"}
+{"regel": "Trend-Beteiligung 100 Tage", "ergebnis": "takt", "faktor": 1.0, "trades": 108, "sr_je_trade": 0.21918577720236695, "haltedauer_tage": 24.055555555555557, "kostenanteil": 0.0019801571289011777, "art": "messung"}
+{"regel": "Trend-Beteiligung 100 Tage", "ergebnis": "takt", "faktor": 0.0, "trades": 108, "sr_je_trade": 0.22133768145826677, "haltedauer_tage": 24.055555555555557, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Trend-Beteiligung 50 Tage", "ergebnis": "takt", "faktor": 1.0, "trades": 158, "sr_je_trade": 0.2021496068526822, "haltedauer_tage": 17.20253164556962, "kostenanteil": 0.0018016061455137387, "art": "messung"}
+{"regel": "Trend-Beteiligung 50 Tage", "ergebnis": "takt", "faktor": 0.0, "trades": 158, "sr_je_trade": 0.20385555736827526, "haltedauer_tage": 17.20253164556962, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Trend beide Richtungen", "ergebnis": "takt", "faktor": 1.0, "trades": 101, "sr_je_trade": 0.2209550762873277, "haltedauer_tage": 44.30693069306931, "kostenanteil": 0.0017876793737149931, "art": "messung"}
+{"regel": "Trend beide Richtungen", "ergebnis": "takt", "faktor": 0.0, "trades": 101, "sr_je_trade": 0.2229454076358853, "haltedauer_tage": 44.30693069306931, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Donchian-Ausbruch 55/20", "ergebnis": "takt", "faktor": 1.0, "trades": 58, "sr_je_trade": 0.32615544081352144, "haltedauer_tage": 49.44827586206896, "kostenanteil": 0.0013275566703580943, "art": "messung"}
+{"regel": "Donchian-Ausbruch 55/20", "ergebnis": "takt", "faktor": 0.0, "trades": 58, "sr_je_trade": 0.32761136939398106, "haltedauer_tage": 49.44827586206896, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Momentum-Beteiligung 90 Tage", "ergebnis": "takt", "faktor": 1.0, "trades": 101, "sr_je_trade": 0.18868365885492883, "haltedauer_tage": 21.752475247524753, "kostenanteil": 0.0017014105037323078, "art": "messung"}
+{"regel": "Momentum-Beteiligung 90 Tage", "ergebnis": "takt", "faktor": 0.0, "trades": 101, "sr_je_trade": 0.19033605083044053, "haltedauer_tage": 21.752475247524753, "kostenanteil": 0.0, "art": "messung"}
+{"regel": "Trend-Beteiligung voller Einsatz", "ergebnis": "identisch", "faktor": 1.0, "trades": 51, "art": "messung"}
+{"regel": "Trend mit Vola-Ziel 20 %", "ergebnis": "identisch", "faktor": 1.0, "trades": 51, "art": "messung"}
+{"regel": "Trend mit Vola-Ziel 22 %", "ergebnis": "identisch", "faktor": 1.0, "trades": 51, "art": "messung"}
+{"regel": "Vola-Ziel, kurzes Messfenster", "ergebnis": "identisch", "faktor": 1.0, "trades": 51, "art": "messung"}
+{"regel": "Vola-Ziel, langes Messfenster", "ergebnis": "identisch", "faktor": 1.0, "trades": 51, "art": "messung"}

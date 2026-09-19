@@ -45,11 +45,19 @@ class TestWasDerLaufOhneGatesKostet:
         erwartet = MESSUNGEN["15m"].je_sprosse * 2 * 39
         assert dauer_ohne_gates("15m", 39, 2) == pytest.approx(erwartet)
 
-    def test_es_ist_ein_bruchteil_des_katalogdurchlaufs(self) -> None:
-        """Die ganze Begruendung dieses Befunds in einer Zeile."""
+    def test_es_ist_deutlich_billiger_als_der_katalogdurchlauf(self) -> None:
+        """Die Begruendung dieses Befehls - mit der **gemessenen** Zahl.
+
+        Befund 301 hat hier "123 s statt 287" behauptet, auf einem
+        Walk-Forward-Preis von 61,4 s aus Befund 298. Gemessen sind 81 s
+        (Befund 302), also 162 s statt 307: knapp die Haelfte gespart und
+        nicht zwei Drittel. Der Befehl lohnt sich weiter, die Zahl war zu
+        schoen.
+        """
         mit_gates = dauer("15m", 39, 1)
         ohne = dauer_ohne_gates("15m", 39, 2)
-        assert ohne < mit_gates / 2
+        assert ohne < 0.6 * mit_gates
+        assert ohne > 0.4 * mit_gates, "so billig war es nie"
 
     def test_eine_ungemessene_kerzenlaenge_bekommt_keine_zahl(self) -> None:
         assert dauer_ohne_gates("4h", 39, 2) is None
