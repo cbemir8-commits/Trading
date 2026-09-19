@@ -27394,3 +27394,77 @@ Entscheidung zu stellen, liest vorher den Befund - nicht die Zeile.
 Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 4145 passed, 2 skipped; ruff check sauber.
+
+## Dreihundertsieben. Die Befehle fuer den Nutzer waren nie geprueft
+
+`BEIM_NUTZER` ist die einzige Stelle, an der dieses Projekt jemanden bittet,
+etwas auf seinem eigenen Rechner zu tun. Sechs Zeilen zum Kopieren. Zweimal
+ist genau daran etwas schiefgegangen:
+
+    Befund 167   ', dann wettbewerb' stand als Prosa hinter dem Backfill -
+                 wer die Zeile kopierte, bekam
+                 'Got unexpected extra argument(s)'.
+    Befund 214   'cli wettbewerb' ohne '--generation' nimmt die Vorgabe 8,
+                 einen Viertelstunden-Katalog. Nach einem Tages-Backfill
+                 braeche der Lauf mit leerem Speicher ab.
+
+Beide Male war der Text richtig gemeint und falsch benutzbar. Beide Male ist
+er danach von Hand berichtigt worden. **Geprueft hat ihn nie etwas.**
+
+### Parsen statt ausfuehren
+
+Die Zeilen lassen sich hier nicht ausfuehren - Bybit ist gesperrt, Daten
+fehlen, ein Wettbewerb kostet Versuche. Sie lassen sich aber **lesen**:
+`typer.main.get_command(app)` gibt die echte Befehlsstruktur, und
+`Command.parse_args` prueft Befehl, Optionen und Typen, ohne den Rumpf
+aufzurufen.
+
+Damit faellt auf, was 167 gekostet hat - und alles, was in dieselbe Richtung
+geht: ein Tippfehler in einer Option, ein fehlender Wert, ein Wert vom
+falschen Typ. Alle sechs Zeilen sind heute sauber; der Test steht fuer das
+naechste Mal.
+
+### Zwei Querpruefungen, die das Parsen nicht leistet
+
+Befund 214 haette es **nicht** gefunden: Dort war jede Option gueltig, nur
+zog der Befehl seine Vorgabe aus einer anderen Kerzenlaenge als der Backfill
+zwei Zeilen darueber. Das ist keine Syntaxfrage, sondern eine Rechnung:
+
+    Backfill laedt          --intervall D
+    Wettbewerb nennt        --generation 9
+    VORGESEHEN[9] sagt      'D'                   passt
+
+Dazu die Regel aus Befund 213: Alle elf Gates stehen auf **Tageskerzen**, und
+ein Backfill auf 15 Minuten laedt Forschungsmaterial statt einer
+Zulassungsgrundlage. Der Test verlangt deshalb `--intervall D` und
+vergleicht jede genannte Generation gegen `VORGESEHEN`.
+
+Das ist Befund 214 als Rechnung statt als Erinnerung.
+
+### Was dabei auffiel
+
+Der einzige offene Punkt im Auftrag hiess:
+
+    backfill 15m + wettbewerb beim Nutzer
+
+Sein eigener Text sagt etwas anderes: Die 15-Minuten-Kerzen sind **da**, der
+Katalog darauf ist gemessen (34 von 36 negativ, in Befund 297 auf 36 Regeln
+bestaetigt), und was fehlt, sind **Bybit-Tageskerzen**. Alle sechs Befehle
+sagen dasselbe. Nur der Titel sagte "15m" - und der Titel ist das, was in
+einer Uebersicht gelesen wird.
+
+Der Punkt heisst jetzt `backfill Bybit-TAGESkerzen beim Nutzer` und sagt im
+ersten Satz, was er nicht ist.
+
+### Warum das mehr ist als Kosmetik
+
+Wer der alten Zeile folgt, laedt 225.000 Viertelstundenkerzen je Markt und
+sucht darauf einen Kandidaten. Der Vorrat auf dieser Kerzenlaenge ist
+gemessen: **eine** von 36 Regeln hat positive Guete, der Median der Luecken
+liegt bei 11,3 Guetepunkten gegen 2,1 auf Tageskerzen (297). Es waeren
+Stunden fuer eine Frage, deren Antwort dasteht - und jeder gemessene
+Vorschlag dort haette Versuche gekostet.
+
+Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 4168 passed, 2 skipped; ruff check sauber.

@@ -2229,6 +2229,27 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Schlussfolgerung von 283 jetzt selbst",
         306,
     ),
+    # Die Zeilen, die jemand auf seinem eigenen Rechner einfuegt - bisher von
+    # keinem Test angesehen.
+    Richtung(
+        "Die Befehle fuer den Nutzer waren nie gegen die Kommandozeile geprueft",
+        "'BEIM_NUTZER' ist die einzige Stelle, an der dieses Projekt jemanden "
+        "bittet, etwas auf seinem Rechner zu tun, und zweimal ist genau daran "
+        "etwas schiefgegangen: 167 (Prosa statt Befehlszeile, "
+        "'Got unexpected extra argument(s)') und 214 (ohne '--generation' "
+        "gilt die Vorgabe 8, ein Viertelstunden-Katalog - nach einem "
+        "Tages-Backfill braeche der Lauf ab). Die sechs Zeilen werden jetzt "
+        "gegen die echte Befehlsstruktur **geparst** - Befehl, Optionen, "
+        "Typen -, ohne Boerse und ohne Daten, und zwei Querpruefungen "
+        "kommen dazu: Der Backfill muss Tageskerzen laden (213: alle elf "
+        "Gates stehen darauf), und die im Wettbewerb genannte Generation muss "
+        "laut 'VORGESEHEN' zu genau dieser Kerzenlaenge gehoeren - das ist "
+        "214 als Rechnung statt als Erinnerung. Dabei fiel auf, dass der "
+        "offene Auftragspunkt 'backfill 15m + wettbewerb' hiess, waehrend "
+        "sein eigener Text und alle Befehle Bybit-**Tages**kerzen verlangen; "
+        "der Titel ist berichtigt",
+        307,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -3107,11 +3128,16 @@ AUFTRAG: tuple[Auftragspunkt, ...] = (
     # Bybit. Damit ist die Forschung wieder moeglich; die Zulassung bleibt an
     # den Boersendaten und die an der Regionssperre.
     Auftragspunkt(
-        frage="backfill 15m + wettbewerb beim Nutzer",
-        stand="15-Minuten-Forschungskerzen wieder da (225.000 je Markt, "
-              "Bitstamp) und der Katalog darauf gemessen: 34 von 36 Regeln "
-              "negativ, beste Guete 0,744 gegen 3,964. Fuer die Zulassung "
-              "braucht es Bybit-Kerzen - und die nur beim Nutzer",
+        frage="backfill Bybit-TAGESkerzen beim Nutzer",
+        stand="**Nicht 15 Minuten** (Befund 307): Die 15-Minuten-Kerzen sind "
+              "da (225.000 je Markt, Bitstamp) und der Katalog darauf "
+              "gemessen - 34 von 36 Regeln negativ, beste Guete 0,744 gegen "
+              "3,964, und 297 hat das auf 36 Regeln bestaetigt. Offen ist "
+              "etwas anderes: Alle elf Gates stehen auf **Tageskerzen** "
+              "(213), und jede Zahl dieses Projekts steht auf "
+              "Bitstamp-Kassakursen. Gebraucht werden Bybit-Tageskerzen, und "
+              "die gibt es nur beim Nutzer - die Zeilen dafuer stehen unter "
+              "'Nur auf deinem Rechner'",
         befund=171,
         erledigt=False,
     ),
