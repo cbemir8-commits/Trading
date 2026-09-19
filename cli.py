@@ -12286,6 +12286,7 @@ def vorratsdecke(
         zielmarken,
         zielurteil,
     )
+    from research.zwischenstand import neu as neues_protokoll
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -12333,6 +12334,24 @@ def vorratsdecke(
     console.print(
         f"[dim]{auskunft(interval_obj.label, wieviele, len(faktoren))}[/]\n"
     )
+
+    # **Was ein Abbruch uebriglaesst** (Befund 299). Der erste 15-Minuten-Lauf
+    # ist nach drei von neununddreissig Genomen an einem Neustart gestorben -
+    # zwoelf Minuten Rechenzeit, kein Byte auf der Platte. Jede Regel wird
+    # jetzt sofort notiert, und der Kopf sagt, wie viele erwartet werden;
+    # daran sieht man einem abgebrochenen Protokoll an, wo es aufhoerte.
+    protokoll = neues_protokoll(
+        wurzel=Path.cwd(),
+        art="vorratsdecke",
+        maerkte=symbole,
+        intervall=interval_obj.label,
+        versuchsstand=versuche,
+        genome=wieviele,
+        reibungsleiter=faktoren,
+        betriebspunkt="Spot",
+    )
+    protokoll.beginne()
+    console.print(f"[dim]{protokoll.zeile()}[/]\n")
 
     def _skaliert(faktor: float):
         return {
@@ -12382,6 +12401,11 @@ def vorratsdecke(
                     f"  [dim]{genom.name[:44]:<44} "
                     f"{len(gehandelt.all_trades):>4} Trades - kein Kandidat[/]"
                 )
+                protokoll.halte_fest(
+                    regel=genom.name,
+                    ergebnis="kein Kandidat",
+                    trades=len(gehandelt.all_trades),
+                )
                 continue
             stichprobe = stichprobe_wie_im_gate(
                 gehandelt.all_trades,
@@ -12399,6 +12423,12 @@ def vorratsdecke(
                     f"  [dim]{genom.name[:44]:<44} identisch mit einer "
                     f"frueheren Regel[/]"
                 )
+                protokoll.halte_fest(
+                    regel=genom.name,
+                    ergebnis="identisch",
+                    n_eff=stichprobe.effektiv,
+                    sr_je_trade=kandidat.sharpe_je_trade,
+                )
                 continue
             gesehen.add(kennung)
             # **Nur Regeln, fuer die es ueberhaupt eine Latte gibt.** Wo
@@ -12410,6 +12440,12 @@ def vorratsdecke(
             # danach.
             if noetige_guete(stichprobe.effektiv, versuche) is None:
                 ohne_latte.append((genom.name, stichprobe.effektiv))
+                protokoll.halte_fest(
+                    regel=genom.name,
+                    ergebnis="keine Latte",
+                    n_eff=stichprobe.effektiv,
+                    trades=len(gehandelt.all_trades),
+                )
                 continue
             punkt = Punkt(
                 genom.name,
@@ -12429,6 +12465,23 @@ def vorratsdecke(
             takt = Taktpunkt.aus_trades(genom.name, gehandelt.all_trades)
             if takt is not None:
                 taktpunkte.append(takt)
+            # **Gemessene Groessen, keine Urteile** (Befund 299). Hier steht,
+            # was der Walk-Forward hergegeben hat; die Latte und der hoechste
+            # Versuchsstand entstehen weiter unten aus genau diesen Zahlen und
+            # dem Versuchsstand aus dem Kopf. Beides auch hier abzulegen
+            # hiesse, dieselbe Zahl aus zwei Quellen zu fuehren.
+            protokoll.halte_fest(
+                regel=genom.name,
+                ergebnis="gemessen",
+                trades=len(gehandelt.all_trades),
+                n_eff=punkt.n_eff,
+                sr_je_trade=punkt.sharpe_je_trade,
+                guete=punkt.guete,
+                schiefe=punkt.schiefe,
+                woelbung=punkt.woelbung,
+                haltedauer_tage=None if takt is None else takt.haltedauer_tage,
+                kostenanteil=None if takt is None else takt.kostenanteil,
+            )
             for faktor in faktoren:
                 sprosse = ohne_zensierte(
                     run_portfolio_walkforward(
@@ -12439,6 +12492,17 @@ def vorratsdecke(
                 nackt = Taktpunkt.aus_trades(genom.name, sprosse.all_trades)
                 if nackt is not None:
                     leiter[faktor].append(nackt)
+                # Jede Sprosse einzeln und sofort: Bei einer Leiter kostet ein
+                # Genom ein Vielfaches, und ein Abbruch mittendrin soll nicht
+                # auch noch die schon gerechnete Grundmessung mitnehmen.
+                protokoll.halte_fest(
+                    regel=genom.name,
+                    ergebnis="sprosse",
+                    faktor=faktor,
+                    trades=len(sprosse.all_trades),
+                    sr_je_trade=None if nackt is None else nackt.sharpe_je_trade,
+                    kostenanteil=None if nackt is None else nackt.kostenanteil,
+                )
             nach_familie.setdefault(_familie(genom), []).append(punkt)
             grob_familie.setdefault(_familie_grob(genom), []).append(punkt)
             # Die zweite, unabhaengig gebaute Einteilung (Befund 83, nach
@@ -12452,7 +12516,8 @@ def vorratsdecke(
     if len(punkte) < 3:
         console.print(
             f"\n[yellow]Nur {len(punkte)} verschiedene Regeln handeln auf "
-            f"{interval_obj.label} - daraus laesst sich keine Gerade legen.[/]"
+            f"{interval_obj.label} - daraus laesst sich keine Gerade legen.[/]\n"
+            f"[dim]Was gemessen wurde, steht trotzdem in {protokoll.pfad}.[/]"
         )
         raise typer.Exit(2)
 
@@ -12784,6 +12849,10 @@ def vorratsdecke(
         # hervorgebracht hat - und dann steht da eine andere Aussage.
         console.print()
         console.print(zielurteil(zielmarken(abstaende)))
+
+    # Am Ende noch einmal: Wer den Lauf im Hintergrund hat laufen lassen,
+    # sucht die Zeile vom Anfang sonst in drei Stunden Ausgabe (Befund 299).
+    console.print(f"\n[dim]Zeile fuer Zeile mitgeschrieben in {protokoll.pfad}[/]")
 
 
 def _katalogregel(name: str):

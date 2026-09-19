@@ -26684,3 +26684,107 @@ Kostet keinen Versuch: gemessen wurde Rechenzeit, nicht ein Kandidat.
 Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 3961 passed, 2 skipped; ruff check sauber.
+
+## Zweihundertneunundneunzig. Drei Stunden Messung, nichts auf der Platte
+
+Der Lauf aus Befund 298 - `cli vorratsdecke -i 15 --reibungsleiter 0`, gemessene
+3,1 Stunden - ist nach **drei von neununddreissig** Genomen an einem Neustart
+des Rechners gestorben. Uebrig blieb: nichts. Zwoelf Minuten Rechenzeit, drei
+fertig gemessene Regeln, kein Byte davon auf der Platte.
+
+Mein erster Gedanke war, den Lauf einfach neu zu starten. Der zweite war
+besser.
+
+### Das ist kein Sonderfall
+
+Jede lange Messung in diesem Projekt sammelt ihre Ergebnisse im Arbeitsspeicher
+und schreibt am Ende einen Bericht. Bei sechs Sekunden je Genom faellt das nie
+auf. Bei 3,1 Stunden ist es der Unterschied zwischen "gemessen" und "war mir zu
+riskant" - und genau diese Sorte Abwaegung hat in Befund 296 schon einmal zwei
+Laeufe lang eine machbare Messung verhindert.
+
+Ein Werkzeug, das nur bei kurzen Laeufen traegt, verhindert lange Laeufe.
+
+### Was jetzt passiert
+
+`research/zwischenstand.py`: eine Zeile je Messung, sofort geschrieben, mit
+`flush`. Mehr nicht.
+
+    Zwischenstand: reports/vorratsdecke/2026-09-19_013439.jsonl - jede Messung
+    wird sofort geschrieben, ein Abbruch verliert hoechstens die laufende.
+
+Die Zeile steht **vor** dem Lauf da, nicht danach. Und weil ein
+Dreistundenlauf im Hintergrund faehrt, steht sie am Ende noch einmal - sonst
+sucht man sie in drei Stunden Ausgabe.
+
+`vorratsdecke` notiert jedes Genom, auch die, die nichts hergeben: `gemessen`,
+`kein Kandidat`, `identisch`, `keine Latte`, und jede Sprosse der
+Reibungsleiter einzeln. Die Sprosse einzeln, weil ein Genom mit Leiter ein
+Vielfaches kostet und ein Abbruch mittendrin nicht auch noch die schon
+gerechnete Grundmessung mitnehmen soll.
+
+### Der Kopf zuerst - und warum keine Schlusszeile
+
+Der Kopf traegt die Bedingungen: Maerkte, Kerzenlaenge, Versuchsstand,
+Betriebspunkt, erwartete Genomzahl. Ohne ihn waeren die Zeilen Zahlen ohne
+Herkunft - dasselbe, was Befund 102 fuer Kerzen und Befund 130 fuer Fundstellen
+verhindert.
+
+Naheliegend waere, am Ende eine Zeile "fertig" anzuhaengen. Das waere genau
+falsch herum: **Der Lauf, der abbricht, kommt nie dazu, sie zu schreiben.** Im
+Kopf steht stattdessen, wie viele Messungen erwartet werden. Wer ein Protokoll
+mit 3 Messungen und `"genome": 39` im Kopf findet, sieht sofort, woran er ist.
+
+### Kein Wiederaufsetzen - Absicht, nicht Faulheit
+
+Der bequeme naechste Schritt waere, den Lauf bei Genom 18 anschliessen zu
+lassen. Dagegen spricht etwas Grundsaetzliches: Eine Fortsetzung muesste
+behaupten, die ersten siebzehn seien unter **denselben** Bedingungen gemessen
+worden - gleiche Kerzen, gleicher Versuchsstand, gleicher Code. Behaupten laesst
+sich das leicht und pruefen schwer, und ein stillschweigend falsch
+zusammengesetzter Lauf waere schlimmer als ein verlorener.
+
+Was hier entsteht, ist deshalb ein **Protokoll** und kein Sicherungspunkt. Der
+Gewinn ist trotzdem da: Wer wiederholt, hat die Zahlen der ersten Haelfte schon
+gesehen und weiss vorher, ob sich das Wiederholen lohnt.
+
+Ein Test haelt diese Entscheidung fest, damit sie beim naechsten langen Lauf
+nicht beilaeufig umgestossen wird.
+
+### Die Buchfuehrung darf den Lauf nicht kosten
+
+`json.dumps` wirft bei einem `Decimal` oder einem `Path` im Wert. Ein
+dreistuendiger Lauf, der an seiner eigenen Rettungsleine stirbt, waere eine
+Pointe, auf die ich verzichte: `default=str` notiert solche Werte als Text.
+Ebenso steht das Feld `art` **zuletzt** im Satz - eine Bedingung, die zufaellig
+so heisst, darf nicht dazu fuehren, dass die Datei nicht mehr lesbar ist. Dann
+geht lieber die eine Angabe verloren als das ganze Protokoll.
+
+Und beim Lesen wird eine abgeschnittene letzte Zeile **uebergangen** statt
+gemeldet. Genau so sieht eine Datei aus, in die mitten im Schreiben
+hineingestartet wurde - das ist der Normalfall, fuer den es dieses Modul gibt.
+
+### Der Rauchtest
+
+`cli vorratsdecke -i D`, voller Durchlauf auf echten Kerzen. Das Protokoll
+zaehlt am Ende:
+
+    Kopf: "genome": 30
+    18 gemessen + 6 identisch + 5 kein Kandidat + 1 keine Latte = 30
+
+Jedes Genom des Katalogs steht drin, auch die, die nichts hergeben - sonst
+haette man nach einem Abbruch keine Ahnung, ob ein fehlender Name nie
+gerechnet wurde oder nur nichts ergab. Die Urteile des Laufs sind unveraendert
+(Luecke 1,080 = 0,83 Streuungen, Quote 15,3 bis 39,3 %, rho -0,679 je Trade
+gegen +0,072 in der Guete): Der Zwischenstand schreibt mit, er rechnet nicht
+mit.
+
+### Was das nicht ist
+
+Kein Messbefund. Hier steht keine neue Zahl ueber den Vorrat, ueber ein Gate
+oder ueber eine Strategie - hier steht ein Werkzeugfehler, der beim Zuschlagen
+bemerkt wurde. Die Messung, um die es geht, steht weiter aus.
+
+Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 3984 passed, 2 skipped; ruff check sauber.

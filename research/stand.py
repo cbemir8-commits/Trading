@@ -2063,6 +2063,25 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Sprossenpreis gibt es fuer Sprossen keine Zahl",
         298,
     ),
+    # Kein Messbefund, sondern ein Werkzeugfehler - bemerkt, als er zuschlug.
+    Richtung(
+        "Drei Stunden Messung, nichts auf der Platte",
+        "Der 15-Minuten-Lauf aus Befund 298 ist nach drei von 39 Genomen an "
+        "einem Neustart gestorben, und uebrig blieb nichts: zwoelf Minuten "
+        "Rechenzeit, kein Byte. Das ist kein Sonderfall - **jede** lange "
+        "Messung hier sammelt im Arbeitsspeicher und schreibt am Ende, und "
+        "bei 3,1 Stunden faengt man irgendwann gar nicht erst an. "
+        "'zwischenstand' schreibt jetzt eine Zeile je Messung, sofort und "
+        "mit 'flush'; 'vorratsdecke' legt sie unter 'reports/vorratsdecke/' "
+        "ab und nennt den Pfad vor dem Lauf. Der Kopf steht **zuerst** und "
+        "traegt die Bedingungen samt erwarteter Genomzahl - daran sieht man "
+        "einem abgebrochenen Protokoll an, wo es aufhoerte; eine Schlusszeile "
+        "koennte das nicht, denn genau der abbrechende Lauf schreibt sie nie. "
+        "**Kein Wiederaufsetzen**: Ein Lauf, der an Genom 18 anschliesst, "
+        "muesste behaupten, die ersten 17 seien unter denselben Bedingungen "
+        "gemessen - das ist ein Protokoll, kein Sicherungspunkt",
+        299,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
