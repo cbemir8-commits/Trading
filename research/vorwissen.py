@@ -164,11 +164,13 @@ def auskunft(*begriffe: str, kosten: str = "", zeige: int = 5) -> str:
     """
     treffer = was_schon_dasteht(*begriffe)
     if not treffer:
-        return (
+        zeilen = [
             "Das Register sagt zu diesen Stichworten nichts "
             f"({', '.join(begriffe)}) - es ist also wirklich neu, "
             "oder die Stichworte passen nicht."
-        )
+        ]
+        return "\n".join(_mit_berichten(zeilen, begriffe))
+
     gezeigt = treffer[:zeige]
     zeilen = [
         "Bevor gemessen wird - was das Register dazu schon sagt:",
@@ -187,4 +189,19 @@ def auskunft(*begriffe: str, kosten: str = "", zeige: int = 5) -> str:
             + (f", dieser Lauf {kosten}" if kosten else "")
             + ". Wiederholen ist oft richtig - es unwissentlich zu tun nicht."
         )
-    return "\n".join(zeilen)
+    return "\n".join(_mit_berichten(zeilen, begriffe))
+
+
+def _mit_berichten(zeilen: list[str], begriffe: tuple[str, ...]) -> list[str]:
+    """Den Berichtsordner anhaengen - Befund 319.
+
+    **Auch und gerade dann, wenn das Register schweigt.** Genau so sah
+    Befund 318 aus: Das Register sagte nichts, die Auskunft war damit zu
+    Ende, und die Antwort lag seit einer Woche unter
+    ``reports/marktkombinationen``. Ein Vorwissen, das nur die eine Quelle
+    kennt, schickt einen bei der anderen ins Messer.
+    """
+    from research.berichtslage import auskunft as berichte
+
+    block = berichte(*begriffe)
+    return [*zeilen, "", *block.splitlines()] if block else zeilen

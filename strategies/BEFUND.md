@@ -28398,3 +28398,75 @@ Zahlen und sagt, welche zu welcher Frage gehoert; `research/historie.py` sagt
 "fuer den Korb" statt "hier" und traegt die Tabelle oben. Damit bleibt
 "Historie" als Quelle der fehlenden Beobachtungen geschlossen - aber aus
 einem gemessenen Grund und nicht, weil es die Richtung nicht gaebe.
+
+## Dreihundertneunzehn. Das Vorwissen kannte nur eine der beiden Quellen
+
+Befund 318 endet mit einem Eingestaendnis: Ich habe gemessen, was seit einer
+Woche im Berichtsordner stand. Dieser Befund ist die Lehre daraus.
+
+### Zweimal derselbe Lauf, zweimal eine andere Quelle
+
+    Befund 302   Die Antwort stand im Register.        106 Minuten.
+    Befund 318   Die Antwort stand in reports/.        ein paar Minuten.
+
+Nach 302 ist `research/vorwissen.py` gebaut worden: vor einem langen Lauf die
+passenden Registereintraege heraussuchen und hinschreiben. Es hat in 318
+auch gearbeitet - und nichts gefunden, weil im Register wirklich nichts
+stand.
+
+Und dann war es zu Ende. Der Code sah so aus:
+
+    treffer = was_schon_dasteht(*begriffe)
+    if not treffer:
+        return (
+            "Das Register sagt zu diesen Stichworten nichts ..."
+        )
+
+**Genau dann ist der Berichtsordner die einzige Quelle, die noch etwas sagen
+koennte** - und genau dann sagte das Vorwissen: nichts da, fang an.
+
+Der eigene Ablauf nennt beide Quellen, Schritt 1, woertlich: *"Was ist der
+Stand? (state/leaderboard.json, **reports/**, letzter Commit)"*. Abgefragt
+war eine.
+
+### Was jetzt dasteht
+
+`research/berichtslage.py` liest den Ordner: welche Arten es gibt, wie viele
+Berichte je Art, wann der neueste entstand, und was er als Urteil traegt.
+`vorwissen` haengt das an - in **beiden** Zweigen, mit und ohne
+Registertreffer. Mit den Stichworten aus 318:
+
+    Und was im Berichtsordner schon liegt:
+      machbarkeit             13 Berichte, neuester 2026-09-14_005951
+      marktkombinationen       4 Berichte, neuester 2026-09-13_010559
+          Kein Kandidat besteht alle Gates. Am weitesten kommt 'BTC+ETH' ...
+      nachpruefung             5 Berichte, neuester 2026-08-22_072620
+      reibung                 24 Berichte, neuester 2026-09-19_063518
+      teststaerke             12 Berichte, neuester 2026-09-02_211500
+      vorratsdecke             9 Berichte, neuester 2026-09-19_033534
+      zulassung                7 Berichte, neuester 2026-08-23_045908
+    **1 von 7 Arten beruehrt diese Frage.** Aufschlagen kostet eine Minute.
+
+Die eine Zeile haette gereicht. `cli register` zeigt dieselbe Lage, damit sie
+auch zu haben ist, ohne einen Lauf zu starten - in 318 habe ich ein
+Probierskript gefahren, und das ruft kein `_zeige_vorwissen`.
+
+### Warum nur beim Treffer ein Urteil dasteht
+
+Sieben Urteile vor jedem Lauf liest niemand, und was niemand liest, wirkt
+nicht. Die Kopfzeilen stehen immer da - sie sind kurz und sagen, dass es die
+Art ueberhaupt gibt. Der Satz kommt dazu, wo ein Stichwort anschlaegt, im
+Namen der Art oder im Urteil selbst.
+
+### Was die Auskunft nicht ist
+
+**Sie urteilt nicht.** Ob ein Bericht die Frage wirklich beantwortet, sagt
+sein Inhalt und kein Dateiname - dieselbe Regel, die in `nachmessung` und in
+`vorwissen` schon steht: Eine Suche, die Verdachtsfaelle liefert, ist
+nuetzlich; eine Suche, deren Treffer man ungeprueft uebernimmt, ist
+schlimmer als keine.
+
+**Und sie haelt nichts auf.** Eine Messung zu wiederholen ist oft richtig.
+Befund 302 hat 255 auf einem unabhaengig gebauten Weg bestaetigt, und das war
+mehr wert als eine Wiederholung desselben Codes. Falsch war beide Male nicht
+der Lauf - falsch war, ihn zu starten, ohne die Antwort zu kennen.

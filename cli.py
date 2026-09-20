@@ -12241,6 +12241,28 @@ def register(
         f"[dim]Sie beschreiben Werkzeuge,\nnicht Richtungen - aber ungeprueft "
         f"sind sie trotzdem.[/]\n"
     )
+    # **Die zweite Quelle** (Befund 319). Das Register ist nicht der einzige
+    # Ort, an dem eine Antwort schon steht - Befund 318 hat eine Messung
+    # wiederholt, deren Ergebnis seit einer Woche in
+    # 'reports/marktkombinationen' lag. Wer fragt "was wissen wir schon?",
+    # bekommt beide Quellen und nicht die eine.
+    from research.berichtslage import berichtslage
+
+    arten = berichtslage()
+    if arten:
+        gesamt = sum(a.anzahl for a in arten)
+        console.print(
+            f"[bold]Und {gesamt} Berichte in {len(arten)} Arten[/] "
+            f"[dim](reports/):[/]"
+        )
+        for a in arten:
+            console.print(f"  [dim]{a.kopfzeile()}[/]")
+            if a.urteil:
+                console.print(f"      [dim]{a.urteil[:100]}[/]")
+        console.print(
+            "\n[dim]Die Berichte sind nicht durchsucht, nur aufgezaehlt - "
+            "was drinsteht, sagt\nihr Inhalt und kein Dateiname.[/]\n"
+        )
 
 
 @app.command()

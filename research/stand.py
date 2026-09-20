@@ -2489,6 +2489,28 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Zahl; das ist ihre Grenze und steht als solche da",
         317,
     ),
+    # Die Lehre aus meinem eigenen Fehler in 318, eine Ebene tiefer als 303.
+    Richtung(
+        "Das Vorwissen kannte nur eine der beiden Quellen",
+        "Befund 302 hat 106 Minuten gekostet, weil die Antwort im "
+        "**Register** stand; die Lehre war 'research/vorwissen.py'. Befund "
+        "318 hat dieselbe Sorte Lauf wiederholt, nur stand die Antwort "
+        "diesmal im **Berichtsordner** - 'reports/marktkombinationen' vom "
+        "13. September, BTC allein 5 von 11. Und das Register sagte zu der "
+        "Frage nichts, also war 'vorwissen' nach einem Satz zu Ende: genau "
+        "dann ist die zweite Quelle die einzige, die noch etwas sagen "
+        "koennte. Der eigene Ablauf nennt beide ausdruecklich ('Was ist der "
+        "Stand? state/leaderboard.json, **reports/**, letzter Commit'), "
+        "abgefragt war eine. 'research/berichtslage.py' liest jetzt, welche "
+        "Arten es gibt, wie viele Berichte je Art, wann der neueste entstand "
+        "und was er als Urteil traegt; 'vorwissen' haengt das an - **auch "
+        "und gerade, wenn das Register schweigt** -, und 'cli register' "
+        "zeigt es. Mit den Stichworten, mit denen ich in 318 gemessen habe, "
+        "faellt der richtige Bericht sofort auf. **Geurteilt wird nicht**: "
+        "Was in einem Bericht steht, sagt sein Inhalt und kein Dateiname - "
+        "dieselbe Regel wie in 'nachmessung' und 'vorwissen'",
+        319,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
