@@ -27951,3 +27951,99 @@ gezeigt. Aus demselben Umbau stammte eine zweite Unsauberkeit: Die Summe der
 Beingewinne lief kurzzeitig ueber `float` statt `Decimal` - bei einem Gate,
 das nur das Vorzeichen benutzt, ist das genau die falsche Stelle zum Runden.
 Beides steht jetzt als Test.
+
+## Dreihundertvierzehn. Die Karte, die das Gate als Aufloesung anbietet, hatte denselben Riss
+
+Befund 313 hat zwei Gates geprueft - Plateau und Kosten-Stress - und gefunden,
+dass ihre durchgehenden Laeufe ab der ersten dauerhaften Sperre nicht mehr
+handeln. Die naheliegende Anschlussfrage: Welche Messungen stehen sonst noch
+auf so einem Lauf?
+
+Der Bestand ist ueberschaubar. Ausserhalb des Walk-Forward ruft genau fuenf
+Mal etwas `Backtester(...).run(...)` auf einer ganzen Reihe auf:
+
+    research/gates.py:948     gate_cost_stress          Befund 313
+    research/gates.py:1136    gate_parameter_plateau    Befund 313
+    cli.py:9047               freigabe                  Befund 313, absichtlich
+    cli.py:8899               plateaubild               offen
+    cli.py:8190               finanzierung --stress     offen
+    research/landschaft.py    kartieren                 offen
+
+Die erste der offenen Stellen ist keine beliebige. Das Plateau-Gate **weigert
+sich ausdruecklich**, die Breite des Gebiets zu nennen, und verweist dafuer
+auf `plateaubild`:
+
+    Wie weit das Gebiet nach unten reicht, sagen zwei Punkte nicht
+    ('cli plateaubild' misst es)
+
+### Gemessen
+
+Zwoelf Faktoren von 0,70 bis 1,30 auf sechs Stellgroessen, BTC + ETH,
+Tageskerzen - einmal wie der Befehl misst, einmal zu Ende gemessen:
+
+                             MIT Sperren            OHNE Sperren
+    gesperrte Punkte         72 von 72              0 von 72
+    verhinderte Einstiege    5800                   0
+
+    alle gemeinsam           Flanke  0,45  0,70-1,15    Flanke  0,60  0,70-1,30
+    sma(period=50)           Flanke  0,45  0,70-1,15    Flanke  0,60  0,70-1,30
+    sma(period=200)          wirkungslos  0,60         wirkungslos  0,60
+    roc(period=90)           wirkungslos  0,60         wirkungslos  0,60
+    rsi(period=14)           wirkungslos  0,60         wirkungslos  0,60
+    Vola-Fenster             Flanke  0,60             Flanke  0,60
+
+**Jeder einzelne Punkt der Karte** steht auf einem Lauf, der aufgehoert hat zu
+handeln. Die Karte meldet das Gebiet **25 % schmaler** als es ist, und ihre
+obere Kante liegt bei 1,15 statt bei 1,30.
+
+Betroffen sind genau die zwei Achsen, an denen auch das Gate scheitert: "alle
+gemeinsam" und `sma(period=50)`. Die vier wirkungslosen Regler aendern sich
+nicht - dort ist ohnehin nichts zu verschieben.
+
+Damit hat die Karte, auf die das Gate als Aufloesung verweist, denselben Riss
+wie das Gate. Wer der Kette folgt - Gate sagt "Kante", Karte sagt "0,70 bis
+1,15" - bekommt zweimal dieselbe Sperre als Landschaft erklaert.
+
+### Die dritte Stelle
+
+`cli finanzierung --stress` misst die Luecke des Kosten-Stress-Gates und
+liefert die Zahl, die im Eintrag "Umfang des Kosten-Stress-Tests" steht.
+Auch hier 245 verhinderte Einstiege. Zu Ende gemessen steigt die Einbusse
+durch den Gebuehren-Stress von 1,3 % auf 3,0 %.
+
+Das **Urteil** kippt nicht - der Kandidat bleibt in beiden Faellen im Plus -,
+und die drei Zahlen des Eintrags (942,87 / 625,80 / 34 %) sind unveraendert:
+sie sind Verhaeltnisse innerhalb derselben Messart.
+
+### Die vierte Stelle, und warum sie ungemessen bleibt
+
+`research/landschaft.py` tastet mit derselben Schleife ab. Umgebaut ist sie
+mit; **gemessen ist sie nicht**, und das mit Absicht: `cli landschaft` bucht
+seit Befund 282 Einzelnachweise in den Versuchszaehler. Ihn zum Nachsehen zu
+starten hoebe die Latte des Deflated Sharpe fuer jeden kuenftigen Kandidaten.
+Was hier steht, ist also, dass sie dieselbe Bauart hat - nachzulesen im Code,
+nicht nachgemessen. Beim naechsten echten Lauf sagt sie es selbst.
+
+### Was geaendert wurde, und was nicht
+
+**Keine Zahl ist angefasst.** Gerechnet wird ueberall weiter durchgehend;
+Breite, Form, tragfaehiger Bereich und die Stresswerte sind dieselben. Was
+dazugekommen ist, steht in allen drei Faellen **vor** dem Ergebnis, nicht
+dahinter:
+
+    72 von 72 gemessenen Punkten wurden nicht zu Ende gemessen. [...]
+    die Breiten unten sind dann eine Untergrenze.
+
+Vorn, weil die Breite die Kopfzahl dieses Befehls ist. Wer "0,70 bis 1,15"
+liest und aufhoert, soll nicht darunter erfahren, dass die Punkte gar nicht
+bis zum Ende gelaufen sind.
+
+Ein Test haelt fest, dass Form, Breite und Bereich **nicht** davon abhaengen,
+ob die Sperren mitgegeben wurden - dieselbe Zeile, die in 313 den Vorbehalt
+von einer Lockerung getrennt hat.
+
+Und einer haelt fest, was hier leicht schiefgegangen waere: `baue` wirft
+Punkte mit `None` heraus. Waeren die Sperren als Liste nach Position
+mitgegeben worden, verschoeben sie sich gegen die Faktoren, sobald ein
+Nachbar wegfaellt. Sie gehen deshalb ueber den Faktor, und ein Test setzt
+eine auffaellige Zahl auf genau den Punkt, der herausfaellt.

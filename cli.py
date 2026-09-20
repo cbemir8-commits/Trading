@@ -8160,6 +8160,7 @@ def finanzierung(
         from backtest.engine import Backtester
         from backtest.metrics import compute_metrics
         from research.finanzierung import Stresslage
+        from research.freigabe import stillgelegt
         from research.gates import GateThresholds
 
         faktor = Decimal(str(GateThresholds().cost_stress_factor))
@@ -8167,7 +8168,10 @@ def finanzierung(
             f"\n[bold]Was der Kosten-Stress stresst[/] (Faktor {faktor})\n"
         )
 
+        gesperrt_gesamt = 0
+
         def stresslauf(*, gebuehren: bool, funding: bool) -> float:
+            nonlocal gesperrt_gesamt
             gewinn = 0.0
             for x in symbole:
                 grund = BacktestConfig(
@@ -8188,6 +8192,7 @@ def finanzierung(
                     max_hold_bars=grund.max_hold_bars,
                 )
                 ergebnis = Backtester(cfg).run(frames[x], compile_genome(genome))
+                gesperrt_gesamt += stillgelegt(ergebnis.veto_reasons)
                 gewinn += float(
                     compute_metrics(
                         ergebnis.trades, ergebnis.equity_curve,
@@ -8197,11 +8202,19 @@ def finanzierung(
                 )
             return gewinn
 
+        # Die drei Laeufe der Reihe nach, damit ``gesperrt_gesamt`` alle
+        # drei traegt - ein Schluesselwortargument wird vor dem Aufruf
+        # ausgewertet, die Reihenfolge im Konstruktor waere hier also keine
+        # verlaessliche Zusage.
+        ohne = stresslauf(gebuehren=False, funding=False)
+        gebaut = stresslauf(gebuehren=True, funding=False)
+        mit = stresslauf(gebuehren=True, funding=True)
         lage = Stresslage(
             faktor=float(faktor),
-            ohne_stress=stresslauf(gebuehren=False, funding=False),
-            wie_gebaut=stresslauf(gebuehren=True, funding=False),
-            mit_funding=stresslauf(gebuehren=True, funding=True),
+            ohne_stress=ohne,
+            wie_gebaut=gebaut,
+            mit_funding=mit,
+            gesperrt=gesperrt_gesamt,
         )
         for beschriftung, wert in (
             ("ohne Stress", lage.ohne_stress),
@@ -8862,6 +8875,7 @@ def plateaubild(
 
     from backtest.engine import BacktestConfig, Backtester
     from backtest.portfolio_walkforward import common_range
+    from research.freigabe import stillgelegt
     from research.gates import skaliere_perioden, stellgroessen
     from research.plateaubild import baue
     from research.seeds import spitzenkandidat
@@ -8893,13 +8907,19 @@ def plateaubild(
     beine = [(frames[x], configs[x]) for x in symbole]
     genome = spitzenkandidat()
 
-    def gewinn(g) -> float:
-        return float(
-            sum(
-                Backtester(cfg).run(teil, compile_genome(g)).net_profit
-                for teil, cfg in beine
-            )
-        )
+    def gewinn(g) -> tuple[float, int]:
+        """Der Gewinn ueber die Beine - und was eine Dauersperre gekostet hat.
+
+        Die Sperren gehoeren hierher und nicht in eine zweite Schleife: Der
+        Lauf, der den Gewinn liefert, ist derselbe, der abgeschaltet wurde
+        (Befund 314).
+        """
+        summe, sperren = Decimal(0), 0
+        for teil, cfg in beine:
+            lauf = Backtester(cfg).run(teil, compile_genome(g))
+            summe += lauf.net_profit
+            sperren += stillgelegt(lauf.veto_reasons)
+        return float(summe), sperren
 
     werte = [float(f) for f in faktoren.split(",") if f.strip()]
     console.print(
@@ -8908,8 +8928,9 @@ def plateaubild(
         f"  Faktoren   {len(werte)} von {min(werte):.2f} bis {max(werte):.2f}\n"
     )
 
-    basis = gewinn(genome)
+    basis, _ = gewinn(genome)
     kurven: dict[str, list] = {}
+    sperren: dict[str, dict[float, int]] = {}
     # "Alle gemeinsam" zuerst, dann jede Stellgroesse einzeln - dieselbe
     # Aufteilung wie in ``nachbarschaft``, damit die Zeilen mit denen des
     # Gates vergleichbar bleiben.
@@ -8918,6 +8939,7 @@ def plateaubild(
     ]
     for name, kennung in aufgaben:
         punkte = []
+        je_faktor: dict[float, int] = {}
         for f in werte:
             nachbar = (
                 skaliere_perioden(genome, f)
@@ -8927,14 +8949,23 @@ def plateaubild(
             if nachbar is None or nachbar.genome_id == genome.genome_id:
                 punkte.append((f, None))
                 continue
-            punkte.append((f, gewinn(nachbar)))
+            wert, gesperrt = gewinn(nachbar)
+            punkte.append((f, wert))
+            je_faktor[f] = gesperrt
         kurven[name] = punkte
+        sperren[name] = je_faktor
 
-    landschaft = baue(kurven, basis=basis)
+    landschaft = baue(kurven, basis=basis, sperren=sperren)
     console.print(f"[dim]Gewinn bei Faktor 1,00: {basis:.0f}[/]\n")
     console.print(landschaft.tabelle())
     eng = landschaft.engste
-    farbe = "yellow" if eng is not None and eng.breite < 0.5 else "green"
+    # Gesperrte Punkte faerben mit: Eine Breite, die auf abgeschalteten
+    # Laeufen steht, ist eine Untergrenze und keine gruene Auskunft.
+    farbe = (
+        "yellow"
+        if landschaft.gesperrte_punkte or (eng is not None and eng.breite < 0.5)
+        else "green"
+    )
     console.print(f"\n[{farbe}]{landschaft.urteil()}[/]\n")
     console.print(
         "[dim]Der Versuchszaehler bleibt unveraendert - variiert wurden die "

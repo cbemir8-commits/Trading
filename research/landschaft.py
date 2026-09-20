@@ -47,6 +47,7 @@ import pandas as pd
 import structlog
 
 from backtest.engine import BacktestConfig, Backtester
+from research.freigabe import stillgelegt
 from research.gates import _operand_kennung, skaliere_perioden
 from strategy.compiler import compile_genome
 from strategy.genome import Genome
@@ -84,9 +85,24 @@ class Punkt:
     bliebe dort konstant und taugte nicht als Beschriftung.
     """
 
+    gesperrt: int = 0
+    """Einstiege, die an diesem Punkt eine **dauerhafte** Sperre verhindert
+    hat - Befund 314.
+
+    Diese Karte tastet mit durchgehenden Backtests ab, einem Risk-Officer
+    ueber die ganze Reihe. Not-Aus und Wochenlimit sind Zustaende und keine
+    Uhren: Greift einer, handelt der Punkt bis zum letzten Balken nicht mehr.
+    Ein ``-`` in der Tabelle heisst dann nicht "hier endet das Gebiet",
+    sondern "hier griff die Sperre".
+    """
+
     @property
     def profitabel(self) -> bool:
         return self.gewinn > 0
+
+    @property
+    def zu_ende_gemessen(self) -> bool:
+        return self.gesperrt == 0
 
 
 @dataclass(slots=True)
@@ -135,33 +151,65 @@ class Landschaft:
                 beste = kette
         return any(abs(p.faktor - self.mitte) < 1e-9 for p in beste)
 
+    @property
+    def gesperrte_punkte(self) -> int:
+        return sum(1 for p in self.punkte if p.gesperrt)
+
+    @property
+    def verhinderte_einstiege(self) -> int:
+        return sum(p.gesperrt for p in self.punkte)
+
+    def _vorbehalt(self) -> str:
+        """Was die Karte ueber sich selbst sagen muss - Befund 314.
+
+        Steht **vor** dem Urteil und nicht dahinter: Wer "Grat" liest und
+        aufhoert, soll nicht erst darunter erfahren, dass die Punkte gar
+        nicht zu Ende gemessen wurden.
+        """
+        if not self.gesperrte_punkte:
+            return ""
+        return (
+            f"**{self.gesperrte_punkte} von {len(self.punkte)} Punkten "
+            f"wurden nicht zu Ende gemessen** - eine dauerhafte Sperre hat "
+            f"dort {self.verhinderte_einstiege} Einstiege verhindert und "
+            f"laeuft bis zur manuellen Freigabe, die ein durchgehender Lauf "
+            f"nie bekommt. Ein '-' kann damit der Zeitpunkt der Sperre sein "
+            f"statt das Ende des Gebiets ('cli freigabe' misst es). "
+        )
+
     def urteil(self) -> str:
         if not self.punkte:
             return "Nichts abgetastet."
+        vorbehalt = self._vorbehalt()
         if self.zusammenhaengend <= 1:
             return (
-                f"Grat: Nur {self.zusammenhaengend} zusammenhaengender Punkt von "
-                f"{len(self.punkte)}. Der Treffer haengt an der Parameterwahl."
+                f"{vorbehalt}Grat: Nur {self.zusammenhaengend} "
+                f"zusammenhaengender Punkt von {len(self.punkte)}. Der "
+                f"Treffer haengt an der Parameterwahl."
             )
         if not self.mitte_liegt_im_plateau:
             return (
-                f"Der Kandidat liegt **neben** dem Plateau. Laengste Kette "
-                f"{self.zusammenhaengend} Punkte, er gehoert nicht dazu."
+                f"{vorbehalt}Der Kandidat liegt **neben** dem Plateau. "
+                f"Laengste Kette {self.zusammenhaengend} Punkte, er gehoert "
+                f"nicht dazu."
             )
         return (
-            f"Plateau: {self.zusammenhaengend} zusammenhaengende Punkte von "
-            f"{len(self.punkte)}, der Kandidat mittendrin."
+            f"{vorbehalt}Plateau: {self.zusammenhaengend} zusammenhaengende "
+            f"Punkte von {len(self.punkte)}, der Kandidat mittendrin."
         )
 
     def tabelle(self) -> str:
         spalte = "Leitperiode" if self.regler == "alle gemeinsam" else self.regler[:12]
-        zeilen = [f"{'Faktor':>7} {spalte:>12} {'Trades':>7} {'Gewinn':>11}  "]
+        zeilen = [
+            f"{'Faktor':>7} {spalte:>12} {'Trades':>7} {'Gewinn':>11} "
+            f"{'gesperrt':>9}  "
+        ]
         for p in self.punkte:
             marke = "  <== Kandidat" if abs(p.faktor - self.mitte) < 1e-9 else ""
             zeichen = "+" if p.profitabel else "-"
             zeilen.append(
                 f"{p.faktor:>7.2f} {p.wert or p.leitperiode:>12} {p.trades:>7} "
-                f"{p.gewinn:>11.2f} {zeichen}{marke}"
+                f"{p.gewinn:>11.2f} {p.gesperrt:>9} {zeichen}{marke}"
             )
         return "\n".join(zeilen)
 
@@ -274,10 +322,12 @@ def kartieren(
 
         je_markt: dict[str, float] = {}
         trades = 0
+        gesperrt = 0
         for name, frame in frames.items():
             ergebnis = Backtester(configs[name]).run(frame, compile_genome(variante))
             je_markt[name] = float(ergebnis.net_profit)
             trades += len(ergebnis.trades)
+            gesperrt += stillgelegt(ergebnis.veto_reasons)
 
         punkt = Punkt(
             faktor=faktor,
@@ -286,6 +336,7 @@ def kartieren(
             trades=trades,
             je_markt=je_markt,
             wert=stellwert(genome, variante, nur),
+            gesperrt=gesperrt,
         )
         landschaft.punkte.append(punkt)
 

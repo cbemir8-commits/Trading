@@ -2384,6 +2384,35 @@ BEHOBEN: tuple[Richtung, ...] = (
         "messen die Form jetzt ohne Verlustgrenzen",
         313,
     ),
+    # 313 hat zwei Gates geprueft. Dieselbe Bauart steht an drei weiteren
+    # Stellen - darunter genau die, auf die das Gate verweist.
+    Richtung(
+        "Die Karte, die das Gate als Aufloesung anbietet, hatte denselben Riss",
+        "Das Plateau-Gate nennt die Breite des Gebiets nicht und verweist "
+        "dafuer auf 'cli plateaubild'. Ausserhalb des Walk-Forward rechnen "
+        "genau fuenf Stellen einen durchgehenden Backtest; 313 hat die zwei "
+        "Gates geprueft, hier sind die drei uebrigen. **Die Karte misst "
+        "denselben Artefakt**: Von zwoelf Faktoren auf sechs Stellgroessen "
+        "sind **72 von 72 Punkten** gesperrt, zusammen 5800 verhinderte "
+        "Einstiege. Zu Ende gemessen ist die engste Achse 0,60 breit und "
+        "traegt von 0,70 bis 1,30; so wie der Befehl misst, sind es 0,45 "
+        "und 0,70 bis 1,15 - die Karte meldet das Gebiet **25 % schmaler**, "
+        "und ihre obere Kante liegt bei 1,15 statt 1,30. Betroffen sind "
+        "dieselben zwei Achsen wie beim Gate ('alle gemeinsam', "
+        "'sma(period=50)'); die vier wirkungslosen aendern sich nicht. "
+        "'cli finanzierung --stress' ist die dritte Stelle: 245 verhinderte "
+        "Einstiege, die Einbusse durch den Gebuehren-Stress steigt zu Ende "
+        "gemessen von 1,3 % auf 3,0 % - das Urteil (bleibt im Plus) kippt "
+        "nicht, und die 942,87 / 625,80 / 34 % aus dem Eintrag zum "
+        "Stress-Umfang sind unveraendert. **Gerechnet wird ueberall weiter "
+        "durchgehend**, keine Zahl ist angefasst: Beide Karten und die "
+        "Stresslage sagen jetzt, wie viele ihrer Punkte nicht zu Ende "
+        "gemessen wurden, und dass ihre Breite damit eine Untergrenze ist. "
+        "'cli landschaft' ist die vierte Stelle und ebenso umgebaut, aber "
+        "**nicht gemessen**: Der Befehl bucht seit 282 Versuche, ihn zum "
+        "Nachsehen zu starten hoebe die Latte des Deflated Sharpe",
+        314,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

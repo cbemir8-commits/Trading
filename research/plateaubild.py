@@ -92,6 +92,32 @@ class Achse:
     basis: float
     """Der Gewinn bei Faktor 1,00 - der Punkt, an dem der Kandidat steht."""
 
+    gesperrt: tuple[int, ...] = ()
+    """Je gemessenem Faktor: Einstiege, die eine **dauerhafte** Sperre
+    verhindert hat - Befund 314.
+
+    Leer heisst "nicht erhoben", nicht "keine". Wer diese Achse ohne die
+    Zahlen baut, bekommt dieselbe Karte wie vorher; wer sie mitgibt, sieht,
+    welche Punkte ueberhaupt bis zum letzten Balken gelaufen sind.
+    """
+
+    @property
+    def gesperrte_punkte(self) -> int:
+        return sum(1 for n in self.gesperrt if n)
+
+    @property
+    def verhinderte_einstiege(self) -> int:
+        return sum(self.gesperrt)
+
+    @property
+    def zu_ende_gemessen(self) -> bool:
+        """Ist diese Achse auf Laeufen gemessen, die niemand abgeschaltet hat?
+
+        Nur dann beschreibt ihre Breite das Parametergebiet. Sonst
+        beschreibt sie, wann die Sperre griff - siehe ``research/freigabe.py``.
+        """
+        return self.gesperrte_punkte == 0
+
     @property
     def spannweite(self) -> float:
         """Wie stark der Gewinn ueber den Bereich schwankt, relativ zur Basis."""
@@ -259,6 +285,18 @@ class Landschaft:
         wirksam = self.wirksame
         return min(wirksam, key=lambda a: a.breite) if wirksam else None
 
+    @property
+    def punkte_gesamt(self) -> int:
+        return sum(len(a.faktoren) for a in self.achsen)
+
+    @property
+    def gesperrte_punkte(self) -> int:
+        return sum(a.gesperrte_punkte for a in self.achsen)
+
+    @property
+    def verhinderte_einstiege(self) -> int:
+        return sum(a.verhinderte_einstiege for a in self.achsen)
+
     def tabelle(self) -> str:
         if not self.achsen:
             return "Keine Achsen gemessen."
@@ -294,12 +332,29 @@ class Landschaft:
             )
 
         eng = self.engste
-        teile = [
+        teile = []
+        # **Zuerst, weil es alles darunter einschraenkt.** Die Breite ist die
+        # Kopfzahl dieses Befehls; ist sie nicht die Breite des
+        # Parametergebiets, muss das vor ihr stehen und nicht hinter ihr.
+        if self.gesperrte_punkte:
+            teile.append(
+                f"**{self.gesperrte_punkte} von {self.punkte_gesamt} "
+                f"gemessenen Punkten wurden nicht zu Ende gemessen.** Eine "
+                f"dauerhafte Sperre - Not-Aus oder Wochenlimit - hat dort "
+                f"zusammen {self.verhinderte_einstiege} Einstiege verhindert "
+                f"und laeuft bis zur manuellen Freigabe, die ein "
+                f"durchgehender Lauf nie bekommt. Wo ein Punkt ins Negative "
+                f"faellt, kann das der Zeitpunkt der Sperre sein statt das "
+                f"Ende des Gebiets; die Breiten unten sind dann eine "
+                f"**Untergrenze**. 'cli freigabe' misst den Unterschied "
+                f"(Befund 313/314)."
+            )
+        teile.append(
             f"**{len(wirksam)} von {len(self.achsen)} Stellgroessen wirken "
             f"ueberhaupt.** Die uebrigen aendern den Gewinn um weniger als "
             f"{WIRKUNGSLOS:.0%} - dass die Strategie gegen sie unempfindlich "
             f"ist, sagt nichts ueber ihre Robustheit."
-        ]
+        )
         if eng is not None:
             bereich = eng.tragfaehig
             spanne = f"{bereich[0]:.2f} bis {bereich[1]:.2f}" if bereich else "keinen"
@@ -329,24 +384,41 @@ class Landschaft:
         return "\n\n".join(teile)
 
 
-def baue(kurven: dict[str, list[tuple[float, float | None]]], *, basis: float):
+def baue(
+    kurven: dict[str, list[tuple[float, float | None]]],
+    *,
+    basis: float,
+    sperren: dict[str, dict[float, int]] | None = None,
+):
     """Aus gemessenen Gewinnkurven eine Landschaft bauen.
 
     ``kurven`` bildet Stellgroessennamen auf ``(Faktor, Gewinn)``-Paare ab;
     ``None`` als Gewinn heisst "dieser Nachbar ist mit dem Kandidaten
     identisch" und faellt heraus.
+
+    ``sperren`` nennt je Stellgroesse und Faktor, wie viele Einstiege eine
+    dauerhafte Sperre verhindert hat (Befund 314). Es ist **freiwillig**:
+    Ohne die Angabe entsteht dieselbe Karte wie bisher, nur ohne den
+    Vorbehalt - ein Aufrufer, der die Zahl nicht hat, soll keine Null
+    behaupten muessen.
     """
     achsen = []
     for name, punkte in kurven.items():
         gefiltert = [(f, g) for f, g in punkte if g is not None]
         if not gefiltert:
             continue
+        je_faktor = (sperren or {}).get(name, {})
         achsen.append(
             Achse(
                 name=name,
                 faktoren=tuple(f for f, _ in gefiltert),
                 gewinne=tuple(float(g) for _, g in gefiltert),
                 basis=basis,
+                gesperrt=(
+                    tuple(int(je_faktor.get(f, 0)) for f, _ in gefiltert)
+                    if sperren is not None
+                    else ()
+                ),
             )
         )
     return Landschaft(achsen=achsen)

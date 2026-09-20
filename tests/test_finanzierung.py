@@ -300,6 +300,38 @@ class TestStresslage:
         assert "Standard wird nicht angefasst" in urteil
         assert "Entscheidung und keine Messung" in urteil
 
+    def test_die_sperren_der_durchgehenden_laeufe_stehen_vorn(self) -> None:
+        """**Befund 314.** Auch diese drei Laeufe sind durchgehend: ein
+        Risk-Officer ueber die ganze Reihe, ohne Fenstergrenze und damit
+        ohne die Freigabe, mit der die Engine im Walk-Forward rechnet. Auf
+        echten Tageskerzen sind es 245 verhinderte Einstiege.
+
+        Wer die Prozentzahl liest und aufhoert, soll vorher wissen, worauf
+        sie gerechnet ist.
+        """
+        urteil = self.lage(gesperrt=245).urteil()
+
+        assert "245 Einstiege" in urteil
+        assert urteil.index("dauerhafte Sperre") < urteil.index(
+            "verdoppelt den kleineren Posten"
+        )
+
+    def test_ohne_sperren_bleibt_das_urteil_wie_vorher(self) -> None:
+        """Die Gegenprobe: Der Vorbehalt erscheint nur, wenn es einen gibt -
+        sonst haette jeder Bericht ihn und niemand laese ihn."""
+        urteil = self.lage().urteil()
+
+        assert "dauerhafte Sperre" not in urteil
+        assert urteil.startswith("**Der Kosten-Stress verdoppelt")
+
+    def test_die_zahlen_haengen_nicht_an_der_angabe(self) -> None:
+        """**Die Zeile, die den Vorbehalt von einer Aenderung trennt.**"""
+        ohne, mit = self.lage(), self.lage(gesperrt=245)
+
+        assert mit.uebersehene_marge == ohne.uebersehene_marge
+        assert mit.anteil_uebersehen == ohne.anteil_uebersehen
+        assert mit.urteil_kippt == ohne.urteil_kippt
+
     def test_ohne_marge_kippt_die_verhaeltniszahl_nicht(self) -> None:
         leer = self.lage(wie_gebaut=0.0, mit_funding=0.0)
 

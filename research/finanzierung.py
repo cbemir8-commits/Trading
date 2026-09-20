@@ -385,6 +385,16 @@ class Stresslage:
     wie_gebaut: float
     mit_funding: float
 
+    gesperrt: int = 0
+    """Einstiege, die eine **dauerhafte** Sperre verhindert hat - Befund 314.
+
+    Auch diese drei Laeufe sind durchgehend: ein Risk-Officer ueber die
+    ganze Reihe, ohne Fenstergrenze und damit ohne die Freigabe, mit der
+    die Engine im Walk-Forward rechnet. Die Anteile unten sind deshalb auf
+    einer Strategie gerechnet, die ab der ersten Sperre nicht mehr
+    gehandelt hat.
+    """
+
     @property
     def besteht_wie_gebaut(self) -> bool:
         return self.wie_gebaut > 0
@@ -416,14 +426,25 @@ class Stresslage:
         return self.besteht_wie_gebaut and not self.besteht_mit_funding
 
     def urteil(self) -> str:
-        teile = [
+        teile = []
+        if self.gesperrt:
+            teile.append(
+                f"**Diese drei Laeufe sind durchgehend gemessen, und eine "
+                f"dauerhafte Sperre hat dabei {self.gesperrt} Einstiege "
+                f"verhindert** - sie laeuft bis zur manuellen Freigabe, die "
+                f"ein Lauf ohne Fenstergrenze nie bekommt. Die Betraege "
+                f"unten gelten fuer eine Strategie, die ab der ersten "
+                f"Sperre nicht mehr gehandelt hat ('cli freigabe' misst den "
+                f"Unterschied, Befund 313/314)."
+            )
+        teile.append(
             f"**Der Kosten-Stress verdoppelt den kleineren Posten.** Mit "
             f"Faktor {self.faktor:g} faellt der Nettogewinn von "
             f"{self.ohne_stress:.2f} auf {self.wie_gebaut:.2f} EUR; wird das "
             f"Funding mitverdoppelt, sind es {self.mit_funding:.2f} EUR - "
             f"{self.uebersehene_marge:.2f} EUR oder "
             f"{self.anteil_uebersehen:.0%} weniger."
-        ]
+        )
         if self.urteil_kippt:
             teile.append(
                 "**Und das Urteil kippt damit.** Was das Gate bestehen laesst, "
