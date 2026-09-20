@@ -28146,3 +28146,94 @@ eigentlich?" - je einen echten Fehler gefunden. Dieser vierte hat keinen
 gefunden, und das gehoert genauso hingeschrieben: Ein Verdacht, der sich
 nicht bestaetigt, ist eine Messung und kein verlorener Zyklus. Was bleibt,
 ist eine Wache an einer Stelle, die bisher keine hatte.
+
+## Dreihundertsechzehn. Die Entfernung zum Ziel galt fuer den anderen Betriebspunkt
+
+Beim Durchlesen von `cli stand` sind mir zwei Zahlen fuer dieselbe Groesse
+aufgefallen - die Zahl der unabhaengigen Beobachtungen, die das
+Deflated-Sharpe-Gate verlangt:
+
+    WAS DEN ZUSTAND AENDERN KANN    115 sind da, 190 traegt das DSR-Gate
+    WORAN DAS HAERTESTE GATE HAENGT unabhaengige Trades 115 -> 220,336
+
+Der erste Verdacht war eine veraltete Zahl. Der war falsch: Befund 235 hat
+genau diese Zeile schon von einer geschriebenen in eine gerechnete verwandelt,
+und ein Test bindet sie an `SPOTPUNKT.noetiges_n()`.
+
+Beide Zahlen sind richtig. Sie gehoeren zu **verschiedenen Betriebspunkten**:
+
+    SPOT       guete 0,2708   noetiges_n 190
+    PERPETUAL  guete 0,2535   noetiges_n 221
+
+Ohne Funding ist die Guete je Trade hoeher, und ein besserer Sharpe je Trade
+verlangt weniger Evidenz. Das ist keine Feinheit, sondern der halbe
+Unterschied zwischen den beiden Punkten, der dieses Projekt seit Befund 112
+begleitet.
+
+### Wo es weh tut
+
+Nicht an den zwei Zahlen oben - die stehen in verschiedenen Abschnitten und
+sagen verschiedene Dinge. Sondern hier:
+
+    WIE WEIT ES NOCH IST
+      Bestand allein   mindestens 2152 Tage (5.9 Jahre) fuer 75 fehlende
+                       Beobachtungen  (Befund 159)
+
+Das ist der Abschnitt, in dem der Bericht sagt, wie lang der Weg noch ist.
+Die Zahl kommt aus `AUSSICHT`, und `AUSSICHT` ist am **Spot**-Punkt gerechnet.
+Der Kopf desselben Berichts sagt seit Befund 311:
+
+    Gemessen   BTCUSD_BITSTAMP + ETHUSD_BITSTAMP, 1d, Perpetual (mit Hebel
+               und Funding)
+
+Am gemeldeten Punkt fehlen nicht 75 Beobachtungen, sondern **106**, und bei
+derselben Sammelrate sind das nicht 5,9 Jahre, sondern **8,3**:
+
+    Betriebspunkt   noetig   fehlend   Tage   Jahre
+    Perpetual          221       106   3042     8,3
+    Spot               190        75   2152     5,9
+
+Der Bericht hat das Projekt um **zweieinhalb Jahre naeher am Ziel** gezeigt,
+als es an dem Punkt ist, den er selbst meldet.
+
+### Warum das niemandem auffiel
+
+Weil beide Haelften fuer sich korrekt sind und beide getestet. `AUSSICHT`
+rechnet richtig, und dass sie am Spot-Punkt rechnet, ist Absicht und
+festgeschrieben. Der Kopf nennt richtig den Perpetual-Punkt, seit 311. Nur
+sagte keine der beiden Stellen, dass sie von verschiedenen Punkten reden.
+
+Es ist derselbe Riss wie in Befund 230 - dort sagte das Urteil +15 % und
+derselbe Abschnitt +24,3 %, *"und nichts sagte, dass es zwei Punkte sind"*.
+Der Kommentar dazu steht acht Zeilen ueber der Stelle, die hier falsch stand.
+
+### Was geaendert wurde
+
+`Aussicht` traegt jetzt ihren Betriebspunkt, und `als_zeile` schreibt ihn an.
+`AUSSICHT_ERSTPUNKT` rechnet dieselbe Entfernung am gemeldeten Punkt - selbes
+`heute`, selbe Historie, selbe Sammelrate, nur die verlangte Evidenz ist eine
+andere. Der Abschnitt stellt sie voran und sagt in drei Zeilen, worin sich die
+beiden unterscheiden:
+
+    Bestand allein   mindestens 3042 Tage (8.3 Jahre) fuer 106 fehlende
+                     Beobachtungen  (Perpetual, Befund 159)
+    derselbe am Spot mindestens 2152 Tage (5.9 Jahre) fuer 75 fehlende
+                     Beobachtungen  (Spot, Befund 159)
+    bester Verbund   mindestens 1747 Tage (4.8 Jahre) fuer 72 fehlende
+                     Beobachtungen  (Befund 159)
+
+**Gerechnet ist nichts neu.** Beide Zahlen liessen sich vorher schon aus
+`referenz.py` ableiten; sichtbar war nur eine.
+
+Der Verbund bekommt keine Angabe. Sein Betriebspunkt ist nirgends
+festgehalten, und eine geratene waere schlimmer als keine - `betriebspunkt`
+ist deshalb freiwillig, und wer ihn nicht setzt, bekommt die Zeile wie
+bisher.
+
+### Die Richtung des Fehlers
+
+Sie ist die unangenehme. Ein Bericht, der die Entfernung **unterschaetzt**,
+liest sich wie Fortschritt. Haette er 8,3 statt 5,9 Jahre gesagt, waere es
+jemandem aufgefallen; andersherum nicht. Dass der Kopf den schlechteren Punkt
+meldet und der Koerper die bessere Zahl, ist genau die Kombination, die nicht
+auffaellt.

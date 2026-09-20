@@ -695,6 +695,15 @@ class TestDerKerzenbestand:
         assert "15-Minuten" in punkt.stand
 
 
+#: Die Ueberschrift als **Abschnitt**, nicht als Zeichenkette - Befund 316.
+#:
+#: Der Registereintrag zu 316 nennt den Abschnitt beim Namen, und die
+#: Registereintraege stehen selbst im Bericht. Eine Suche nach der blossen
+#: Zeichenkette findet dann den Eintrag statt der Ueberschrift - derselbe
+#: Zusammenstoss wie in Befund 311, wo ein Eintrag "Auch gemessen" zitierte.
+ENTFERNUNGSABSCHNITT = "WIE WEIT ES NOCH IST\n" + "-" * 72
+
+
 class TestDieAussichtImBericht:
     """**Befund 160.** ``AUSSICHT`` rechnet die Entfernung seit Befund 132 und
     war an keiner Stelle angezeigt.
@@ -710,9 +719,37 @@ class TestDieAussichtImBericht:
 
         bericht = _lage(bestanden=7, gesamt=11, offen=("Deflated Sharpe",)).bericht()
 
-        assert "WIE WEIT ES NOCH IST" in bericht
+        assert ENTFERNUNGSABSCHNITT in bericht
         assert AUSSICHT.als_zeile() in bericht
         assert AUSSICHT_VERBUND.als_zeile() in bericht
+
+    def test_der_gemeldete_punkt_steht_zuerst(self) -> None:
+        """**Befund 316.** ``AUSSICHT`` ist am Spot-Punkt gerechnet, der Kopf
+        des Berichts nennt seit Befund 311 'Perpetual' - und bis hierher
+        stand nur die Spot-Zeile da. Sie ist 2,4 Jahre guenstiger.
+
+        Die Zeile des gemeldeten Punktes gehoert damit nach oben, und die
+        andere daneben statt an ihre Stelle: Beide sind richtig, nur eben
+        fuer verschiedene Handelsbedingungen.
+        """
+        from research.referenz import AUSSICHT, AUSSICHT_ERSTPUNKT
+
+        bericht = _lage(bestanden=7, gesamt=11, offen=("Deflated Sharpe",)).bericht()
+
+        assert AUSSICHT_ERSTPUNKT.als_zeile() in bericht
+        assert bericht.index(AUSSICHT_ERSTPUNKT.als_zeile()) < bericht.index(
+            AUSSICHT.als_zeile()
+        )
+
+    def test_der_bericht_sagt_worin_sich_die_beiden_unterscheiden(self) -> None:
+        """Zwei Entfernungen nebeneinander ohne Erklaerung waeren ein
+        Widerspruch statt einer Auskunft."""
+        bericht = _lage(bestanden=7, gesamt=11, offen=("Deflated Sharpe",)).bericht()
+
+        abschnitt = bericht.split(ENTFERNUNGSABSCHNITT)[1].split("Wovon der")[0]
+
+        assert "Berichtet wird Perpetual" in abschnitt
+        assert "Derselbe Kandidat, dieselben Kerzen" in abschnitt
 
     def test_die_zahl_steht_nur_dort_und_nicht_in_der_prosa(self) -> None:
         """**Die Lehre aus 156 bis 159.** Eine gerechnete Zahl gehoert nicht
@@ -729,7 +766,7 @@ class TestDieAussichtImBericht:
     def test_ein_zugelassener_kandidat_braucht_keine_entfernung(self) -> None:
         fertig = _lage(bestanden=11, gesamt=11, offen=())
 
-        assert "WIE WEIT ES NOCH IST" not in fertig.bericht()
+        assert ENTFERNUNGSABSCHNITT not in fertig.bericht()
 
     def test_die_einordnung_nennt_was_die_zeit_nicht_loest(self) -> None:
         """**Die unbequeme Haelfte.** Von vier offenen Gates haengt eines an

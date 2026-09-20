@@ -2440,6 +2440,31 @@ BEHOBEN: tuple[Richtung, ...] = (
         "derselben Stelle auf 672 statt 600 gesprungen waere",
         315,
     ),
+    # Befund 311 hat den Kopf beschriftet. Zwei Abschnitte tiefer stand
+    # weiter eine Zahl vom anderen Punkt.
+    Richtung(
+        "Die Entfernung zum Ziel galt fuer den anderen Betriebspunkt",
+        "'WIE WEIT ES NOCH IST' ist der Abschnitt, in dem dieser Bericht "
+        "sagt, wie lang der Weg noch ist - und er nannte **2152 Tage (5,9 "
+        "Jahre)** unter einem Kopf, der seit Befund 311 ausdruecklich "
+        "'Perpetual' sagt. Die Zahl kommt aus 'AUSSICHT', und die ist am "
+        "**Spot**-Punkt gerechnet; ein Test bindet sie seit Befund 235 an "
+        "'SPOTPUNKT.noetiges_n()'. Beides war fuer sich richtig, und genau "
+        "deshalb ist es keinem aufgefallen. Die noetige Evidenz haengt aber "
+        "an der Guete je Trade und die am Funding: **190 Beobachtungen am "
+        "Spot-Punkt gegen 221 am Erstpunkt**, also 75 fehlende gegen 106 - "
+        "und bei derselben Sammelrate 5,9 Jahre gegen **8,3**. Der Bericht "
+        "hat das Projekt um zweieinhalb Jahre naeher am Ziel gezeigt, als "
+        "es an dem Punkt ist, den er meldet. Behoben ist die Anzeige: "
+        "'Aussicht' traegt jetzt ihren Betriebspunkt, 'AUSSICHT_ERSTPUNKT' "
+        "rechnet dieselbe Entfernung am gemeldeten Punkt, und der Abschnitt "
+        "stellt sie voran und sagt, worin sich die beiden unterscheiden. "
+        "**Gerechnet ist nichts neu** - beide Zahlen standen schon vorher "
+        "in 'referenz.py', nur eine davon war sichtbar. Der Verbund bekommt "
+        "keine Angabe: Sein Punkt ist nirgends festgehalten, und eine "
+        "geratene waere schlimmer als keine",
+        316,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -3732,16 +3757,37 @@ class Lage:
         Zwoelfmonatsfenster und hat die Schwelle bei 2547 Tagen Historie
         gerissen; seither steht es bei -10,3 gegen -10,00 (Befund 161).
         """
-        from research.referenz import AUSSICHT, AUSSICHT_VERBUND, SPOTPUNKT
+        from research.referenz import (
+            AUSSICHT,
+            AUSSICHT_ERSTPUNKT,
+            AUSSICHT_VERBUND,
+            SPOTPUNKT,
+        )
 
         if self.zugelassen:
             return []
+        # **Die Entfernung haengt am Betriebspunkt** (Befund 316). ``AUSSICHT``
+        # ist auf dem Spot-Punkt gerechnet - ein Test bindet sie daran -, und
+        # bis hierher stand sie unter einem Kopf, der seit Befund 311
+        # 'Perpetual' sagt. Der Unterschied ist keine Feinheit: 75 fehlende
+        # Beobachtungen gegen 106, 5,9 Jahre gegen 8,3. Wer nur die erste
+        # Zeile liest, haelt das Projekt fuer zweieinhalb Jahre naeher am
+        # Ziel, als es an dem Punkt ist, den der Bericht meldet.
         zeilen = [
             "",
             "WIE WEIT ES NOCH IST",
             "-" * 72,
-            f"  Bestand allein   {AUSSICHT.als_zeile()}",
+            f"  Bestand allein   {AUSSICHT_ERSTPUNKT.als_zeile()}",
+            f"  derselbe am Spot {AUSSICHT.als_zeile()}",
             f"  bester Verbund   {AUSSICHT_VERBUND.als_zeile()}",
+            "",
+            f"  **Berichtet wird {AUSSICHT_ERSTPUNKT.betriebspunkt}** - die "
+            f"erste Zeile gilt. Ohne Funding",
+            "  ist die Guete je Trade hoeher und die Schwelle verlangt weniger",
+            f"  Evidenz: {AUSSICHT.noetig} Beobachtungen statt "
+            f"{AUSSICHT_ERSTPUNKT.noetig}, also "
+            f"{AUSSICHT_ERSTPUNKT.jahre - AUSSICHT.jahre:.1f} Jahre weniger.",
+            "  Derselbe Kandidat, dieselben Kerzen - nur der andere Punkt.",
             "",
             "  Untergrenzen, keine Termine - die Sammelrate ist die des",
             "  laengsten gemessenen Fensters (siehe research/referenz.py).",

@@ -31,6 +31,7 @@ from dataclasses import dataclass
 
 __all__ = [
     "AUSSICHT",
+    "AUSSICHT_ERSTPUNKT",
     "AUSSICHT_VERBUND",
     "BILD_15_MINUTEN",
     "BILD_TAGESKERZEN",
@@ -268,6 +269,17 @@ class Aussicht:
     historie_tage: int
     befund: int
 
+    betriebspunkt: str = ""
+    """Auf welchem Betriebspunkt ``noetig`` gerechnet ist - Befund 316.
+
+    ``noetig`` haengt an der Guete je Trade, und die haengt am Funding:
+    Am Spot-Punkt sind es 190 Beobachtungen, am Perpetual-Punkt 221. Die
+    Entfernung, die daraus wird, unterscheidet sich um zweieinhalb Jahre.
+
+    Leer heisst "nicht angegeben", und dann steht im Bericht auch keiner -
+    eine geratene Angabe waere schlimmer als keine.
+    """
+
     def __post_init__(self) -> None:
         if self.historie_tage <= 0:
             raise ValueError("Ohne Historie laesst sich keine Sammelrate rechnen.")
@@ -307,18 +319,47 @@ class Aussicht:
         return self.tage / 365.25
 
     def als_zeile(self) -> str:
+        herkunft = (
+            f"({self.betriebspunkt}, Befund {self.befund})"
+            if self.betriebspunkt
+            else f"(Befund {self.befund})"
+        )
         return (
             f"mindestens {self.tage} Tage ({self.jahre:.1f} Jahre) fuer "
-            f"{self.fehlend} fehlende Beobachtungen  (Befund {self.befund})"
+            f"{self.fehlend} fehlende Beobachtungen  {herkunft}"
         )
 
 
 #: Der Abstand zur Schwelle, in Zeit. Untergrenze - siehe ``Aussicht``.
+#:
+#: **Auf dem Spot-Punkt gerechnet** (``SPOTPUNKT.noetiges_n()``, gehalten von
+#: einem Test). Das war bis Befund 316 nirgends angeschrieben, und der
+#: Bericht setzt diese Zeile unter einen Kopf, der 'Perpetual' sagt.
 AUSSICHT = Aussicht(
     noetig=190,
     heute=115,
     historie_tage=3300,
     befund=159,
+    betriebspunkt="Spot",
+)
+
+#: Dieselbe Rechnung am **Erstpunkt** - dem, den der Bericht meldet.
+#:
+#: Ohne Funding ist die Guete je Trade hoeher (0,2708 gegen 0,2535), und ein
+#: besserer Sharpe je Trade verlangt weniger Beobachtungen: 190 statt 221.
+#: Die Entfernung wird damit am gemeldeten Punkt **zweieinhalb Jahre
+#: groesser** als die Zeile darueber - dieselbe Sammelrate, dieselbe
+#: Historie, nur der andere Betriebspunkt.
+#:
+#: Dass beide dieselben ``heute`` und ``historie_tage`` tragen, ist kein
+#: Versehen: Es ist derselbe Kandidat auf denselben Kerzen. Verschieden ist
+#: allein, wie viel Evidenz die Schwelle bei dieser Guete verlangt.
+AUSSICHT_ERSTPUNKT = Aussicht(
+    noetig=221,
+    heute=115,
+    historie_tage=3300,
+    befund=159,
+    betriebspunkt="Perpetual",
 )
 
 #: Dieselbe Rechnung fuer den **besten gemessenen Kandidaten** - den Verbund

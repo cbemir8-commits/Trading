@@ -396,6 +396,75 @@ class TestDieSammelrate:
         assert AUSSICHT.historie_tage == AUSSICHT_VERBUND.historie_tage
 
 
+class TestDieEntfernungHaengtAmBetriebspunkt:
+    """**Befund 316.** ``AUSSICHT`` ist am Spot-Punkt gerechnet - ein Test
+    bindet ``noetig`` an ``SPOTPUNKT.noetiges_n()``. Der Bericht setzt sie
+    seit jeher unter einen Kopf, der seit Befund 311 ausdruecklich
+    'Perpetual' sagt, und nichts wies darauf hin.
+
+    Der Unterschied ist keine Feinheit. ``noetig`` haengt an der Guete je
+    Trade, und die haengt am Funding: 190 Beobachtungen am Spot-Punkt gegen
+    221 am Erstpunkt, 75 fehlende gegen 106 - und damit 5,9 Jahre gegen 8,3.
+    Wer nur die eine Zeile las, hielt das Projekt fuer zweieinhalb Jahre
+    naeher am Ziel, als es an dem Punkt ist, den der Bericht meldet.
+    """
+
+    def test_der_erstpunkt_rechnet_mit_seinem_eigenen_n(self) -> None:
+        """**Die Wache, wortgleich zu der fuer den Spot-Punkt.** Wer die
+        Guete des Erstpunkts nachzieht und ``noetig`` vergisst, faellt
+        hier auf."""
+        from research.referenz import AUSSICHT_ERSTPUNKT, PERPETUALPUNKT
+
+        assert AUSSICHT_ERSTPUNKT.noetig == PERPETUALPUNKT.noetiges_n()
+
+    def test_der_erstpunkt_ist_weiter_weg(self) -> None:
+        """Die Richtung, die unterschlagen war: Funding kostet Guete, und
+        weniger Guete verlangt mehr Evidenz."""
+        from research.referenz import AUSSICHT, AUSSICHT_ERSTPUNKT, PERPETUALPUNKT
+
+        assert PERPETUALPUNKT.guete < SPOTPUNKT.guete
+        assert AUSSICHT_ERSTPUNKT.noetig > AUSSICHT.noetig
+        assert AUSSICHT_ERSTPUNKT.fehlend > AUSSICHT.fehlend
+        assert AUSSICHT_ERSTPUNKT.jahre > AUSSICHT.jahre
+
+    def test_und_zwar_um_mehr_als_zwei_jahre(self) -> None:
+        """Als Zahl, damit ein Nachziehen auffaellt, das sie einebnet."""
+        from research.referenz import AUSSICHT, AUSSICHT_ERSTPUNKT
+
+        assert AUSSICHT_ERSTPUNKT.jahre - AUSSICHT.jahre > 2.0
+
+    def test_verschieden_ist_allein_die_verlangte_evidenz(self) -> None:
+        """Derselbe Kandidat auf denselben Kerzen - waeren auch ``heute``
+        oder die Historie verschieden, verglichen die beiden Zeilen zwei
+        Dinge und nicht zwei Betriebspunkte."""
+        from research.referenz import AUSSICHT, AUSSICHT_ERSTPUNKT
+
+        assert AUSSICHT_ERSTPUNKT.heute == AUSSICHT.heute
+        assert AUSSICHT_ERSTPUNKT.historie_tage == AUSSICHT.historie_tage
+        assert (
+            AUSSICHT_ERSTPUNKT.rate_je_tausend_tage == AUSSICHT.rate_je_tausend_tage
+        )
+
+    def test_jede_zeile_nennt_ihren_punkt(self) -> None:
+        from research.referenz import AUSSICHT, AUSSICHT_ERSTPUNKT
+
+        assert "(Spot, Befund" in AUSSICHT.als_zeile()
+        assert "(Perpetual, Befund" in AUSSICHT_ERSTPUNKT.als_zeile()
+
+    def test_ohne_angabe_wird_keiner_behauptet(self) -> None:
+        """Eine geratene Angabe waere schlimmer als keine - der Verbund
+        traegt keine, weil sein Punkt nicht festgehalten ist."""
+        from dataclasses import replace
+
+        from research.referenz import AUSSICHT, AUSSICHT_VERBUND
+
+        ohne = replace(AUSSICHT, betriebspunkt="")
+
+        assert AUSSICHT_VERBUND.betriebspunkt == ""
+        assert "(Befund 159)" in ohne.als_zeile()
+        assert "Spot" not in ohne.als_zeile()
+
+
 class TestJederStandKenntSeineKerzenlaenge:
     """**Befund 190.** Ohne dieses Feld stand der Bestand auf jeder Geraden.
 
