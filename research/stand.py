@@ -2413,6 +2413,33 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Nachsehen zu starten hoebe die Latte des Deflated Sharpe",
         314,
     ),
+    # Nachgesehen, weil 313/314 dieselbe Bauart zeigten - diesmal war nichts
+    # kaputt. Der Eintrag steht trotzdem hier: Die Wache ist neu.
+    Richtung(
+        "Die Naht zwischen zwei Fenstern war zu - nur ungesichert",
+        "Drei Gates lesen die verkettete Kapitalkurve (Drawdown, "
+        "Schlechtestes Jahr, Monte-Carlo), und '_combine' normierte jedes "
+        "Fenster auf das **Anfangskapital**, obwohl es die Kurve erst ab "
+        "'test_start' anschneidet. Haette waehrend der Aufwaermphase etwas "
+        "gehandelt, saesse an **jeder** Fenstergrenze ein Sprung, den alle "
+        "drei als Kursbewegung laesen - und ein Drawdown ist keine "
+        "Fehlermeldung. **Gemessen: Der Verdacht war falsch.** Alle 32 "
+        "Fenster beginnen exakt bei 500,0000, und zwar nicht zufaellig: "
+        "'_run_window' setzt 'run_start = test_start - warmup_bars * "
+        "bar_step', die Engine beginnt bei Zeile 'max(warmup_bars, 1)' - "
+        "der erste handelbare Balken **ist** 'test_start'. Die Zusage steht "
+        "aber in zwei Dateien, die dieselbe Aufwaermphase gleich meinen "
+        "muessen, und nichts prueft sie; Luecken in der Reihe verschieben "
+        "in die harmlose Richtung, mehr Zeilen als erwartet in die andere. "
+        "Seit 315 normiert '_combine' auf den **eigenen** Startwert des "
+        "Fensters - die Kette ist dann stetig, ohne die Zusage zu brauchen. "
+        "**Keine Zahl bewegt sich**: Rendite, CAGR, Rueckgang, Sharpe, "
+        "Nettogewinn und alle elf Gatewerte sind vorher wie nachher "
+        "bitgleich, gegengerechnet auf den echten Tageskerzen. Vier Tests "
+        "halten die Zusage fest, einer weist nach, dass die alte Formel an "
+        "derselben Stelle auf 672 statt 600 gesprungen waere",
+        315,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

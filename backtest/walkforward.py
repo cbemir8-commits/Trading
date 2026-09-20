@@ -697,7 +697,29 @@ def _combine(windows: list[WindowResult], initial_equity: Decimal) -> Metrics:
         # Richtig ist die Verkettung der Renditen: Jedes Fenster wirkt als
         # Faktor auf das, was vom Vorgaenger uebrig blieb. Ein Konto, das auf
         # null faellt, bleibt danach bei null - so wie in der Wirklichkeit.
-        factor = curve["equity"] / float(initial_equity)
+        #
+        # **Normiert wird auf den Stand bei Testbeginn, nicht auf das
+        # Anfangskapital** (Befund 315). Die beiden sind heute gleich, und
+        # zwar nicht zufaellig: ``_run_window`` setzt ``run_start =
+        # test_start - warmup_bars * bar_step``, und die Engine beginnt bei
+        # Zeile ``max(warmup_bars, 1)`` - der erste handelbare Balken eines
+        # Fensters **ist** damit ``test_start``. Gemessen ueber 32 Fenster
+        # auf echten Tageskerzen: alle beginnen exakt bei 500,0000.
+        #
+        # Das ist aber eine Zusage, die in zwei Dateien zugleich stehen
+        # muss. Faellt sie irgendwann - eine Aufwaermphase, die laenger ist
+        # als die Indikatoren brauchen, ein anderer Startindex, eine Reihe,
+        # deren mittlerer Kerzenabstand die Zeilen ueberschaetzt -, dann
+        # oeffnet sich an **jeder** Fenstergrenze ein Sprung, und drei Gates
+        # lesen ihn als Kursbewegung: Drawdown, Schlechtestes Jahr,
+        # Monte-Carlo. Der eigene Startwert macht die Kette stetig, ohne die
+        # Zusage zu brauchen.
+        basis = float(curve["equity"].iloc[0])
+        if basis <= 0:
+            # Kann bei einem frischen Fenster nicht vorkommen; faellt auf das
+            # alte Verhalten zurueck, statt durch Null zu teilen.
+            basis = float(initial_equity)
+        factor = curve["equity"] / basis
         shifted = curve.copy()
         shifted["equity"] = (offset * factor).clip(lower=0.0)
         pieces.append(shifted)

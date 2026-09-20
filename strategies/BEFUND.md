@@ -28047,3 +28047,102 @@ Punkte mit `None` heraus. Waeren die Sperren als Liste nach Position
 mitgegeben worden, verschoeben sie sich gegen die Faktoren, sobald ein
 Nachbar wegfaellt. Sie gehen deshalb ueber den Faktor, und ein Test setzt
 eine auffaellige Zahl auf genau den Punkt, der herausfaellt.
+
+## Dreihundertfuenfzehn. Die Naht zwischen zwei Fenstern war zu - nur ungesichert
+
+Nach 313 und 314 lag die Frage nahe, wo noch eine Konstruktion eine Zahl
+formt, ohne dass jemand hinsieht. Der naechste Kandidat war die verkettete
+Kapitalkurve: `_combine` klebt die Fensterkurven zusammen, und **drei Gates**
+lesen genau sie - Drawdown, Schlechtestes Jahr, Monte-Carlo. Der Drawdown hat
+davon noch 1,36 Punkte Reserve, das schlechteste Jahr ist bereits gerissen.
+
+### Der Verdacht
+
+`_combine` schneidet jede Fensterkurve bei `test_start` an und rechnet dann:
+
+    factor = curve["equity"] / float(initial_equity)
+
+Der Backtest des Fensters beginnt aber frueher - bei `run_start = test_start -
+warmup_bars * bar_step`. Waere waehrend dieser Aufwaermphase etwas gehandelt
+worden, stuende die Kurve bei `test_start` nicht mehr auf dem Anfangskapital,
+und der Faktor waere beim ersten Testbalken schon ungleich eins. Ergebnis:
+ein Sprung an **jeder** Fenstergrenze, den drei Gates als Kursbewegung lesen.
+
+### Gemessen - und der Verdacht war falsch
+
+32 Fenster, BTC + ETH, echte Tageskerzen. Der Stand der Kurve bei Testbeginn:
+
+    Fenster  1 bis 32     500.0000     Abweichung +0.0000 %
+
+**Alle 32.** Und das ist kein Glueck, sondern Bauart. Die Engine beginnt zu
+handeln bei
+
+    start = max(strategy.warmup_bars, 1)
+
+also bei **Zeile** `warmup_bars` des Fensterrahmens. Der Rahmen beginnt bei
+`test_start - warmup_bars * bar_step`. Auf einer luekenlosen Reihe ist Zeile
+`warmup_bars` genau `test_start`: Der erste handelbare Balken eines Fensters
+**ist** der Testbeginn. Waehrend der Aufwaermphase kann nichts eroeffnet
+werden, weil die Engine sie gar nicht betritt.
+
+Beim Spitzenkandidaten ist `warmup_bars` 201 - abgeleitet aus dem
+200-Tage-Schnitt der Konfluenz.
+
+### Warum hier trotzdem etwas steht
+
+Die Zusage haengt an **zwei Dateien**: `backtest/walkforward.py` rechnet den
+Zeitversatz, `backtest/engine.py` den Zeilenversatz. Beide muessen dieselbe
+Aufwaermphase gleich meinen. Zwei Stellen mit derselben Regel sind in diesem
+Projekt schon mehrfach auseinandergelaufen - das steht in einem halben Dutzend
+Docstrings als Begruendung fuer genau diese Sorte Wache.
+
+Und faellt die Zusage, meldet es niemand. Ein Drawdown ist keine
+Fehlermeldung; er waere nur groesser.
+
+Die Richtungen sind dabei nicht symmetrisch. Luecken in der Reihe machen die
+Zeilen zwischen `run_start` und `test_start` **weniger** als `warmup_bars` -
+die Engine beginnt dann spaeter als der Testbeginn, und das ist harmlos. Die
+gefaehrliche Richtung braucht mehr Zeilen als erwartet, also einen mittleren
+Kerzenabstand, der die tatsaechliche Dichte ueberschaetzt. Erreichbar ist das
+heute nicht leicht; unmoeglich ist es nicht.
+
+### Was geaendert wurde
+
+`_combine` normiert jetzt auf den **eigenen** Startwert des Fensters:
+
+    basis = float(curve["equity"].iloc[0])
+    factor = curve["equity"] / basis
+
+Damit ist die Kette stetig, ohne die Zusage zu brauchen - und sie bildet
+ausserdem genau das ab, was der Docstring der Funktion seit jeher behauptet:
+*"Jedes Fenster wirkt als Faktor auf das, was vom Vorgaenger uebrig blieb."*
+Der Faktor eines Fensters ist seine eigene Rendite, nicht sein Verhaeltnis zu
+einer Zahl von aussen.
+
+**Keine Zahl bewegt sich.** Gegengerechnet auf den echten Tageskerzen, vorher
+gegen nachher, auf zehn Stellen:
+
+    Rendite 164,8348063802    CAGR 12,9509748139    Rueckgang 10,6400949940
+    Sharpe 1,4350225206       Nettogewinn 824,1740319009    158 Trades
+
+und alle elf Gatewerte bitgleich, bis auf die letzte Stelle.
+
+### Die Wache
+
+Vier Tests halten die Zusage fest - zwei am Quelltext der beiden Dateien,
+einer als Rechnung ueber den Zeilenversatz, einer als echter Walk-Forward
+ueber synthetische Tageskerzen, der jedes Fenster auf dem Anfangskapital
+beginnen sieht.
+
+Und einer prueft, dass die Wache Zaehne hat: Mit einem zweiten Fenster, das
+bei 560 statt 500 beginnt und in sich flach laeuft, waere die Kette unter der
+alten Formel auf **672** gesprungen statt auf 600 zu bleiben. Gegen die alte
+Formel laufen gelassen, faellt dieser Test - gegen die neue nicht.
+
+### Was das ueber den Ablauf sagt
+
+Drei Zyklen hintereinander hat dieselbe Frage - "worauf steht diese Zahl
+eigentlich?" - je einen echten Fehler gefunden. Dieser vierte hat keinen
+gefunden, und das gehoert genauso hingeschrieben: Ein Verdacht, der sich
+nicht bestaetigt, ist eine Messung und kein verlorener Zyklus. Was bleibt,
+ist eine Wache an einer Stelle, die bisher keine hatte.
