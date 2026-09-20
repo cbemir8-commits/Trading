@@ -2559,6 +2559,31 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Urteil sagen, was nicht geurteilt hat. Gemessen wird unveraendert",
         321,
     ),
+    # Dieselbe Verwechslung, eine Stelle weiter - und dort schlimmer.
+    Richtung(
+        "Nicht zu handeln war die beste Art, Gates zu bestehen",
+        "321 hat 'passed heisst nicht durchgefallen' auf der "
+        "Teststaerke-Leiter gefunden. Die Nachfrage, wo dieselbe "
+        "Verwechslung sonst noch eine Zahl traegt, fuehrt zum "
+        "Katalogdurchlauf - und dort ist sie groesser. Gemessen in "
+        "'reports/nachpruefung': **33 von 54 Regeln haben null Trades**, und "
+        "jede steht mit **5 von 11** da. Die fuenf sind Deflated Sharpe, "
+        "Drawdown, Monte-Carlo, Regime-Aufteilung und Schlechtestes Jahr - "
+        "auf einer leeren Handelsliste setzen sie aus, und Aussetzen zaehlt "
+        "als Bestehen. **Nicht zu handeln war damit die beste Art, diese "
+        "fuenf Gates zu bestehen**, und die Rangfolge hat es uebernommen: "
+        "Sechs Regeln, die wirklich gehandelt haben, standen unter jeder, "
+        "die es nie versucht hat - darunter 'Trendbeteiligung mit Puffer' "
+        "mit **302 Trades** und 4 von 11; drei weitere lagen gleichauf. "
+        "'Ergebnis' traegt jetzt 'uebersprungen', dazu 'geurteilt' und "
+        "'bestanden_echt'; Rangfolge, Tabelle und Urteil rechnen damit, und "
+        "'zugelassen' verlangt - wie schon bei 'vorauswahl' -, dass jedes "
+        "Gate geurteilt hat. **Die Kopfzeile aendert sich nicht**: Die "
+        "Spitze handelt 51 bis 152 Trades, also ueber jeder Aussetzschwelle "
+        "(20 fuer Monte-Carlo, 30 fuer die beiden anderen). Gemessen wird "
+        "unveraendert",
+        322,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

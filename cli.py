@@ -5593,7 +5593,7 @@ def nachpruefung(
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from core.report import write_report
     from research.admission import load_trials
-    from research.gates import evaluate_gates
+    from research.gates import GateStatus, evaluate_gates
     from research.leaderboard import Leaderboard
     from research.nachpruefung import Ergebnis, Nachpruefung
     from research.seeds import GENERATIONS, spitzenkandidat
@@ -5716,6 +5716,12 @@ def nachpruefung(
             bestanden=sum(1 for r in gates.results if r.passed),
             gesamt=len(gates.results),
             offen=tuple(r.name for r in gates.results if not r.passed),
+            # **Was nicht geurteilt hat** (Befund 322). Ohne diese Spalte
+            # steht eine Regel ohne einen einzigen Trade mit 5 von 11 da -
+            # den fuenf, die auf einer leeren Handelsliste aussetzen.
+            uebersprungen=tuple(
+                r.name for r in gates.results if r.status is GateStatus.SKIP
+            ),
             trades=len(bericht.all_trades),
             cagr_pct=k.cagr_pct if k else 0.0,
             rueckgang_pct=k.max_drawdown_pct if k else 0.0,

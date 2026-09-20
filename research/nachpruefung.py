@@ -62,6 +62,40 @@ class Ergebnis:
     die zusaetzliche Backtests brauchen und deshalb ausgelassen wurden.
     """
 
+    uebersprungen: tuple[str, ...] = ()
+    """Gates, die **nicht geurteilt haben** - Befund 322.
+
+    Dieselbe stille Aufwertung wie bei ``vorauswahl``, nur aus anderer
+    Ursache: ``GateResult.passed`` heisst "nicht durchgefallen", und mehrere
+    Gates setzen bei zu kleiner Stichprobe aus. Wer **gar nicht handelt**,
+    bekommt sie alle gutgeschrieben.
+
+    Gemessen im Katalogdurchlauf (``reports/nachpruefung``): 33 von 54
+    Regeln haben **null** Trades, und jede steht dort mit **5 von 11** -
+    Deflated Sharpe, Drawdown, Monte-Carlo, Regime-Aufteilung und
+    Schlechtestes Jahr sind auf einer leeren Handelsliste nicht zu
+    verfehlen.
+
+    Damit rangierten **sechs** Regeln, die wirklich gehandelt haben, unter
+    jeder, die es nie versucht hat - darunter 'Trendbeteiligung mit Puffer'
+    mit 302 Trades und 4 von 11 -, und drei weitere lagen gleichauf.
+    """
+
+    @property
+    def geurteilt(self) -> int:
+        """Gates, die wirklich ein Urteil gefaellt haben."""
+        return max(self.gesamt - len(self.uebersprungen), 0)
+
+    @property
+    def bestanden_echt(self) -> int:
+        """Bestandene Gates ohne die uebersprungenen.
+
+        Die Zahl, die sich zwischen zwei Regeln vergleichen laesst:
+        ``bestanden`` zaehlt Gates mit, die nie geurteilt haben, und wie
+        viele das sind, haengt an der Trade-Zahl.
+        """
+        return max(self.bestanden - len(self.uebersprungen), 0)
+
     @property
     def zugelassen(self) -> bool:
         """**Eine Vorauswahl kann nichts zulassen.**
@@ -70,9 +104,14 @@ class Ergebnis:
         "alle Gates bestanden" im Bericht gestanden - waehrend zwei Gates gar
         nicht gelaufen sind. Das ist genau die Sorte stiller Aufwertung, gegen
         die die ganze Zulassungsstrecke gebaut ist.
+
+        **Und ein ausgesetztes Gate ebenso wenig** (Befund 322): Es ist
+        derselbe Satz, nur ist die Ursache nicht die Vorauswahl, sondern eine
+        Stichprobe, die fuer das Gate nicht reicht.
         """
         return (
             not self.vorauswahl
+            and not self.uebersprungen
             and self.gesamt > 0
             and self.bestanden == self.gesamt
         )
@@ -109,9 +148,17 @@ class Nachpruefung:
 
         Nicht nach Rendite: Die hat in diesem Projekt schon zweimal einen
         Kandidaten nach oben getragen, der an einer Risikogrenze scheiterte.
+
+        **Gezaehlt werden die Gates, die geurteilt haben** (Befund 322).
+        Vorher stand hier ``e.bestanden``, und das schliesst ausgesetzte
+        Gates ein: Eine Regel mit null Trades bekam fuenf davon
+        gutgeschrieben und rangierte damit ueber sechs Regeln, die wirklich
+        gehandelt haben. Verglichen wurden zwei verschiedene Nenner.
         """
         return sorted(
-            self.ergebnisse, key=lambda e: (e.bestanden, e.dsr), reverse=True
+            self.ergebnisse,
+            key=lambda e: (e.bestanden_echt, e.dsr),
+            reverse=True,
         )
 
     @property
@@ -155,8 +202,13 @@ class Nachpruefung:
             "-" * 84,
         ]
         for e in self.rangfolge[:hoechstens]:
+            # **Geurteilt, nicht gutgeschrieben** (Befund 322). Stuende hier
+            # 'bestanden/gesamt', laese sich eine Regel ohne einen einzigen
+            # Trade als '5/11' - die fuenf sind die, die auf einer leeren
+            # Handelsliste aussetzen.
             zeilen.append(
-                f"{e.name[:44]:44} {e.bestanden:>3}/{e.gesamt:<3} "
+                f"{e.name[:44]:44} "
+                f"{e.bestanden_echt:>3}/{e.geurteilt:<3} "
                 f"{e.trades:>7} {e.cagr_pct:>7.2f}% {e.rueckgang_pct:>6.2f}% "
                 f"{e.dsr:>7.3f}"
             )
@@ -179,9 +231,26 @@ class Nachpruefung:
         fehlend = ", ".join(bester.offen) if bester.offen else "-"
         text = (
             f"Kein Kandidat besteht alle Gates. Am weitesten kommt "
-            f"'{bester.name}' mit {bester.bestanden} von {bester.gesamt}; "
-            f"offen bleiben: {fehlend}."
+            f"'{bester.name}' mit {bester.bestanden_echt} von "
+            f"{bester.geurteilt}; offen bleiben: {fehlend}."
         )
+        # **Wie viele gar nicht geurteilt wurden** (Befund 322). Ohne diese
+        # Zeile liest sich eine Rangliste, in der zwei Drittel der Regeln nie
+        # gehandelt haben, wie ein Vergleich von Regeln.
+        stumm = [e for e in self.ergebnisse if e.uebersprungen]
+        if stumm:
+            ohne_trade = sum(1 for e in stumm if e.trades == 0)
+            text += (
+                f" **Bei {len(stumm)} von {len(self.ergebnisse)} Kandidaten "
+                f"hat nicht jedes Gate geurteilt**"
+                + (
+                    f", {ohne_trade} davon ohne einen einzigen Trade"
+                    if ohne_trade
+                    else ""
+                )
+                + " - gezaehlt sind hier nur die Gates, die ein Urteil "
+                "gefaellt haben."
+            )
 
         # **Die Zahl bestandener Gates ist ein schlechtes Mass fuer Naehe.**
         #

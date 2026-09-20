@@ -28694,3 +28694,138 @@ die Latte geraeumt. Der strukturelle Bruch aus 283 ist damit nicht gefunden.
 Wer die Zeile anders liest, haelt einen bestandenen Labortest fuer einen
 Kandidaten - und genau das ist der Unterschied, um den es in diesem ganzen
 Befund geht.
+
+## Dreihundertzweiundzwanzig. Nicht zu handeln war die beste Art, Gates zu bestehen
+
+Befund 321 hat gefunden, dass `GateResult.passed` "nicht durchgefallen"
+heisst und ein ausgesetztes Gate damit zu den bestandenen zaehlt. Die
+Nachfrage lag nahe: Wo traegt dieselbe Verwechslung sonst noch eine Zahl?
+
+Gesucht habe ich nicht im Code - dort gibt es zwei Dutzend Stellen, die
+`bestanden` so bilden, und fuer die meisten ist es richtig. Gesucht habe ich
+in den Berichten, mit der Frage, wo eine Zeile mit **zu kleiner Stichprobe**
+eine Gate-Zahl traegt:
+
+    marktkombinationen     60 Zeilen,   0 davon unter 30 Trades
+    nachpruefung          179 Zeilen, 116 davon unter 30 Trades
+    machbarkeit             - (keine Trade-Spalte)
+    zulassung               - (keine Trade-Spalte)
+
+### Der Katalogdurchlauf
+
+Im neuesten Bericht, 54 Regeln:
+
+    54 Regeln
+    33 davon mit **null** Trades
+    38 davon unter 30 Trades
+    16 ab 30 Trades
+
+Und die 33 ohne einen einzigen Trade stehen dort **alle** bei genau
+`5 von 11`. Ein Beispiel:
+
+    Trendfolge Ausbruch | 0 Trades | 5/11
+      offen: Stichprobengroesse, Messlatte, Out-of-Sample-Sharpe,
+             Bestaendigkeit, Kosten-Stress, Parameter-Plateau
+
+Die fuenf, die nicht offen sind, sind die, die auf einer leeren Handelsliste
+aussetzen:
+
+    Deflated Sharpe        skip   unter 30 Trades
+    Monte-Carlo            skip   unter 20 Trades
+    Regime-Aufteilung      skip   unter 30 Trades
+    Drawdown                      keine Kurve, kein Rueckgang
+    Schlechtestes Jahr            kein Jahr, kein schlechtes
+
+**Nicht zu handeln war damit die beste Art, diese fuenf Gates zu bestehen.**
+
+### Und die Rangfolge hat es uebernommen
+
+`rangfolge` sortierte nach `bestanden`. Damit stand jede Regel ohne Trade mit
+ihren gutgeschriebenen 5 ueber allem, was weniger als 5 erreicht hat -
+gemessen sechs Regeln, die wirklich gehandelt haben:
+
+    Trendbeteiligung mit Puffer          302 Trades   4/11
+    Trend beide Richtungen                84 Trades   3/11
+    Trendbeteiligung EMA200               66 Trades   3/11
+    Trend-Beteiligung voller Einsatz      43 Trades   3/11
+    Trend-Beteiligung 100 Tage           101 Trades   2/11
+    Momentum-Beteiligung 90 Tage          94 Trades   2/11
+
+Drei weitere lagen mit genau 5 gleichauf. Eine Regel mit **302 Trades** stand
+unter einer, die nie eine Position eroeffnet hat.
+
+### Was geaendert wurde
+
+Das Modul hatte den Gedanken schon - fuer eine andere Ursache. `vorauswahl`
+haelt seit jeher fest:
+
+    Ohne diese Klausel haette ein Kandidat, der neun von neun besteht, als
+    "alle Gates bestanden" im Bericht gestanden - waehrend zwei Gates gar
+    nicht gelaufen sind. Das ist genau die Sorte stiller Aufwertung, gegen
+    die die ganze Zulassungsstrecke gebaut ist.
+
+Derselbe Satz, andere Ursache. `Ergebnis` traegt jetzt `uebersprungen`, dazu
+`geurteilt` und `bestanden_echt`. Rangfolge, Tabelle und Urteil rechnen
+damit, und `zugelassen` verlangt - wie bei `vorauswahl` -, dass jedes Gate
+geurteilt hat.
+
+Aus `5/11` wird damit `0/6`: null bestanden von sechs, die ueberhaupt ein
+Urteil gefaellt haben. Das ist keine schlechtere Note, sondern die erste, die
+sich mit einer anderen Regel vergleichen laesst.
+
+### Die Gegenprobe
+
+**Die Kopfzeile des Berichts aendert sich nicht.** Die Spitze handelt 51 bis
+152 Trades, also ueber jeder Aussetzschwelle - `Trend mit Vola-Ziel 22 %` mit
+8 von 11 bleibt, wo es war. Was sich aendert, ist der untere Teil der Liste,
+und dort ist es keine Umbewertung, sondern das Ende einer Gutschrift.
+
+Ein Test haelt beides gegen den Berichtsordner: dass die Spitze genug Trades
+hat, und dass es die 33 Regeln ohne Trade und die sechs darunter wirklich
+gibt. Eine zweite Gegenprobe setzt die alte Sortierung wieder ein und sieht
+zwei Tests fallen.
+
+### Eine Zahl, die ich erst falsch hatte
+
+Im ersten Entwurf stand "acht Regeln, die wirklich gehandelt haben". Beim
+Nachzaehlen waren es **sechs** unter 5 und drei gleichauf. Die Acht war aus
+der Verteilung geschaetzt und nicht gezaehlt - genau die Sorte Zahl, die
+dieses Laborbuch nicht tragen soll. Gezaehlt steht sie jetzt da.
+
+### Woher die Nullen kommen
+
+Beim Lesen fiel der Name 'Trendfolge Ausbruch' auf - im Register steht er mit
+**n_eff 251** als bester Verbundpartner (Befund 193), hier mit **null
+Trades**. Kein Widerspruch, sondern zwei verschiedene Messungen: Dort die
+Vereinigung mit dem Bestand, hier die Regel allein.
+
+Die eigentliche Ursache steht in `research/seeds.VORGESEHEN`. Der
+Katalogdurchlauf lief auf **Tageskerzen**, und die Generationen sind auf
+verschiedene Kerzenlaengen vorgesehen:
+
+    Generation ohne Trade   Anzahl   vorgesehen fuer
+             7                  8         15 Minuten
+             8                  8         15 Minuten
+             6                  3         15 Minuten
+             2                  5         (nicht vermerkt)
+             1                  4         (nicht vermerkt)
+             4                  3         (nicht vermerkt)
+             5                  2         Tageskerzen
+
+**19 der 33 sind Viertelstundenregeln auf Tageskerzen.** Sie koennen dort
+nicht handeln - ihre Bedingungen feuern nie -, und jede steht trotzdem mit
+5 von 11 da.
+
+Das macht den Befund schaerfer, nicht milder: Die gutgeschriebenen Gates
+verdecken nicht nur eine zu kleine Stichprobe, sondern eine Regel, die auf
+diesen Daten gar nicht laufen kann. Mit `0/6` statt `5/11` ist das zu sehen.
+
+Ob `nachpruefung` solche Paarungen kuenftig ueberspringen oder markieren
+soll, ist eine eigene Frage - Befund 64 hat die Zuordnung als Daten
+hinterlegt und die Fehlpaarung im Wettbewerb gesperrt, hier gilt sie nicht.
+Sie steht hier als offene Frage und nicht als Aenderung.
+
+**Und die Lesung dazu:** 'Bestand + Grosser Trendausbruch' (184/193) ist
+**erwaehnt, nicht nachgemessen** - der Treffer haengt am Namen 'Trendfolge
+Ausbruch', und die n_eff 251 von dort sind die Vereinigung mit dem Bestand,
+nicht die Regel allein. Nichts nachzuziehen.

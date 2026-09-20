@@ -196,7 +196,12 @@ GELESEN: dict[str, int] = {
     # ungelesen dagestanden - der Eintrag haette sich selbst widerlegt. Die
     # volle Suite hat das gefunden; einzeln gelaufen war die Datei gruen, weil
     # der Abschnitt da noch nicht geschrieben war.
-    "Bestand + 'Grosser Trendausbruch'": 295,
+    # **Befund 322** nennt 'Trendfolge Ausbruch' als Beispiel einer Regel
+    # ohne einen einzigen Trade. Erwaehnt, nicht nachgemessen: Die n_eff
+    # 251 des Eintrags sind die **Vereinigung** mit dem Bestand, die Null
+    # ist die Regel **allein** auf Tageskerzen - zwei Messungen, kein
+    # Widerspruch.
+    "Bestand + 'Grosser Trendausbruch'": 322,
     "Holdout auf fremden Maerkten": 295,
     "Zaehlt ein Sweep am Bestand als Versuch?": 295,
     "Timing gegen Zufallseinstiege": 295,

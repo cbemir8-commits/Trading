@@ -17,6 +17,10 @@ Zwei Tests tragen die Datei:
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import pytest
+
 from research.nachpruefung import Ergebnis, Nachpruefung
 
 
@@ -240,3 +244,154 @@ class TestVorauswahl:
 
         assert lauf.zugelassen == []
         assert "Kein Kandidat besteht alle Gates" in lauf.urteil()
+
+
+# ---------------------------------------------------------------------------
+#  Nicht zu handeln ist kein Bestehen - Befund 322
+# ---------------------------------------------------------------------------
+class TestUebersprungeneGatesWerdenNichtGutgeschrieben:
+    """**Dieselbe stille Aufwertung wie bei ``vorauswahl``, andere Ursache.**
+
+    ``GateResult.passed`` heisst "nicht durchgefallen", und mehrere Gates
+    setzen bei zu kleiner Stichprobe aus: Monte-Carlo unter 20 Trades,
+    Regime-Aufteilung und Deflated Sharpe unter 30. Wer **gar nicht
+    handelt**, bekommt sie alle gutgeschrieben.
+
+    Gemessen in ``reports/nachpruefung``: 33 von 54 Regeln haben null
+    Trades, und jede steht dort mit **5 von 11**. Sechs Regeln, die wirklich
+    gehandelt haben, rangierten darunter - eine davon mit 302 Trades.
+    """
+
+    @staticmethod
+    def _ergebnis(**abweichung):
+        daten = {
+            "genome_id": "a", "name": "Regel", "generation": 9,
+            "bestanden": 5, "gesamt": 11, "trades": 0,
+            "offen": (
+                "Stichprobengroesse", "Messlatte", "Out-of-Sample-Sharpe",
+                "Bestaendigkeit", "Kosten-Stress", "Parameter-Plateau",
+            ),
+            "uebersprungen": (
+                "Deflated Sharpe", "Drawdown", "Monte-Carlo",
+                "Regime-Aufteilung", "Schlechtestes Jahr",
+            ),
+        }
+        daten.update(abweichung)
+        return Ergebnis(**daten)
+
+    def test_geurteilt_zaehlt_nur_die_gelaufenen(self) -> None:
+        e = self._ergebnis()
+
+        assert e.geurteilt == 6
+        assert e.bestanden_echt == 0
+
+    def test_ohne_uebersprungene_bleibt_alles_wie_vorher(self) -> None:
+        e = self._ergebnis(uebersprungen=(), bestanden=8, offen=("Messlatte",))
+
+        assert e.geurteilt == e.gesamt
+        assert e.bestanden_echt == e.bestanden
+
+    def test_eine_regel_ohne_trades_kann_nichts_zulassen(self) -> None:
+        """Der Satz aus ``vorauswahl``, eine Ursache weiter."""
+        voll = self._ergebnis(bestanden=11, offen=())
+
+        assert not voll.zugelassen
+
+    def test_wer_handelt_steht_ueber_wer_nicht_handelt(self) -> None:
+        """**Der Kern.** Vorher rangierte die Regel ohne Trades mit ihren
+        gutgeschriebenen 5 von 11 ueber die, die 302-mal gehandelt hat."""
+        ohne = self._ergebnis(genome_id="a", name="nie gehandelt")
+        mit = self._ergebnis(
+            genome_id="b", name="302 Trades", trades=302,
+            bestanden=4, gesamt=11, uebersprungen=(),
+            offen=("a", "b", "c", "d", "e", "f", "g"),
+        )
+        pruefung = Nachpruefung(ergebnisse=[ohne, mit])
+
+        assert pruefung.rangfolge[0] is mit
+        assert pruefung.bester is mit
+
+    def test_das_urteil_nennt_die_stummen(self) -> None:
+        pruefung = Nachpruefung(
+            ergebnisse=[
+                self._ergebnis(),
+                self._ergebnis(
+                    genome_id="b", name="handelt", trades=51, bestanden=8,
+                    uebersprungen=(), offen=("Messlatte",),
+                ),
+            ]
+        )
+        text = pruefung.urteil()
+
+        assert "nicht jedes Gate geurteilt" in text
+        assert "ohne einen einzigen Trade" in text
+
+    def test_ohne_stumme_bleibt_das_urteil_wie_vorher(self) -> None:
+        pruefung = Nachpruefung(
+            ergebnisse=[
+                self._ergebnis(
+                    trades=51, bestanden=8, uebersprungen=(),
+                    offen=("Messlatte",),
+                )
+            ]
+        )
+        text = pruefung.urteil()
+
+        assert "nicht jedes Gate geurteilt" not in text
+        assert "8 von 11" in text
+
+    def test_die_tabelle_zeigt_den_geurteilten_nenner(self) -> None:
+        """'5/11' fuer eine Regel ohne Trade ist die Zahl, um die es geht."""
+        pruefung = Nachpruefung(ergebnisse=[self._ergebnis()])
+        text = pruefung.tabelle()
+
+        assert "  0/6" in text
+        assert "5/11" not in text
+
+
+class TestDieAlteRangfolgeAendertSichNurUnten:
+    """**Die Gegenprobe gegen den echten Bericht.**
+
+    Die Spitze der Rangliste handelt 51 bis 152 Trades - ueber jeder
+    Aussetzschwelle (20 fuer Monte-Carlo, 30 fuer Regime-Aufteilung und
+    Deflated Sharpe). **Die Kopfzeile des Berichts aendert sich damit
+    nicht**; was sich aendert, ist, dass 33 Regeln ohne Trade nicht mehr
+    ueber handelnden Regeln stehen.
+    """
+
+    BERICHTE = Path("reports/nachpruefung")
+
+    def _zeilen(self):
+        import json
+
+        dateien = sorted(self.BERICHTE.glob("*.json"))
+        if not dateien:
+            pytest.skip("keine Nachpruefungen im Berichtsordner")
+        return json.loads(dateien[-1].read_text(encoding="utf-8"))["ergebnisse"]
+
+    def test_die_spitze_hat_genug_trades(self) -> None:
+        zeilen = self._zeilen()
+        spitze = sorted(zeilen, key=lambda r: -r["bestanden"])[:3]
+
+        assert spitze, "leerer Bericht"
+        for r in spitze:
+            assert r["trades"] >= 30, r
+
+    def test_es_gibt_regeln_ohne_einen_einzigen_trade(self) -> None:
+        """Sonst liefe der Befund ins Leere."""
+        ohne = [r for r in self._zeilen() if r["trades"] == 0]
+
+        assert len(ohne) >= 20, len(ohne)
+
+    def test_und_sie_stehen_dort_alle_bei_fuenf_von_elf(self) -> None:
+        ohne = [r for r in self._zeilen() if r["trades"] == 0]
+
+        assert {r["bestanden"] for r in ohne} == {5}
+
+    def test_sechs_handelnde_regeln_standen_darunter(self) -> None:
+        """Die Zahl aus dem Befund, gegen den Bericht gehalten."""
+        mit = [r for r in self._zeilen() if r["trades"] >= 30]
+        drunter = [r for r in mit if r["bestanden"] < 5]
+
+        assert len(drunter) == 6
+        assert max(r["trades"] for r in drunter) == 302
