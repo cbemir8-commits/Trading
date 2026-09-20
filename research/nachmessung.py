@@ -222,8 +222,27 @@ GELESEN: dict[str, int] = {
     # haengt' wirklich gelesen - und dabei gefunden, dass die
     # Zusammenfassung des Eintrags neben Befund 283 stand -, waehrend
     # 'Zertifizierbarkeit der Bauart' wieder nur zitiert wird.
-    "Zertifizierbarkeit der Bauart": 306,
-    "Einstieg, der nicht am Rauschen haengt": 306,
+    # **Befund 321, und zum dritten Mal dieselben beiden** - ein Befund ueber
+    # die gepflanzte Leiter nennt zwangslaeufig "gepflanzt", und 321 nennt
+    # ausserdem 'Neues Hoch im Takt'.
+    #
+    # 'Zertifizierbarkeit der Bauart' ist **benutzt, nicht nachgemessen**:
+    # Ihr Satz "Pflanzen nimmt die Stichprobe mit" ist die Ursache des
+    # Befundes - je staerker gepflanzt, desto weniger Trades, desto eher
+    # setzt der Deflated Sharpe aus. Gemessen hat 321 die Buchfuehrung und
+    # nicht die Achse; die massgebliche Fundstelle bleibt 178.
+    #
+    # 'Einstieg, der nicht am Rauschen haengt' ist gelesen und **ausdruecklich
+    # nicht nachgezogen**: 321 berichtet, dass 'Neues Hoch im Takt' bei 10,
+    # 20 und 35 % gepflanzter Varianz alle elf Gates besteht. Das ist eine
+    # Aussage ueber die **gepflanzte** Reihe und keine ueber den
+    # strukturellen Bruch - 'cli teststaerke' sagt selbst, ein gepflanztes
+    # Regime sei sauberer als jeder Markt. Auf echten Daten steht die Regel
+    # in den neun gemessenen Vorschlaegen (ENTSCHEIDUNGEN, Nr. 292), und
+    # dort hat keiner die Latte geraeumt. Wer 321 anders liest, haelt einen
+    # bestandenen Labortest fuer einen Kandidaten.
+    "Zertifizierbarkeit der Bauart": 321,
+    "Einstieg, der nicht am Rauschen haengt": 321,
 }
 
 #: Suchbegriffe je Richtung - geschlossene **und offene**.

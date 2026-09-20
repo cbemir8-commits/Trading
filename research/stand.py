@@ -2533,6 +2533,32 @@ BEHOBEN: tuple[Richtung, ...] = (
         "statt es abzuhaken",
         320,
     ),
+    # Und weiter mit dem, was 320 sichtbar gemacht hat: den zwoelf
+    # Teststaerke-Berichten, die nie jemand gelesen hat.
+    Richtung(
+        "Ein Gate, das nicht lief, zaehlte als bestanden",
+        "'cli teststaerke' pflanzt einen Trend in die echte Reihe und fragt, "
+        "ob die Zulassungsstrecke ueberhaupt etwas durchlaesst. Seine "
+        "folgenreichste Auskunft lautet *'Die Strecke laesst etwas durch - "
+        "an den Gates liegt es nicht'*, und sie haengt an 'bestanden == "
+        "gesamt'. 'GateResult.passed' heisst aber 'status is not FAIL', ein "
+        "**uebersprungenes** Gate steckt also in 'bestanden'. Der Deflated "
+        "Sharpe setzt unter 30 Trades aus - und das Pflanzen senkt die "
+        "Trade-Zahl, wie 176/178 schon festhalten ('Pflanzen nimmt die "
+        "Stichprobe mit'). Je staerker der gepflanzte Vorteil, desto eher "
+        "urteilt das haerteste Gate gar nicht mehr, und desto besser sieht "
+        "die Sprosse aus. Gemessen ueber alle 76 Sprossen im "
+        "Berichtsordner: **31 liegen unter 30 Trades**, und auf jeder steht "
+        "der Deflated Sharpe mit 0,0000 unter den bestandenen; eine liest "
+        "sich als '10/11, offen: Messlatte', als stuende nur noch die "
+        "Geschaeftsschwelle im Weg. **Keine bisherige Aussage haengt "
+        "daran**: Alle elf je gemeldeten 11/11 stammen von 'Neues Hoch im "
+        "Takt' und handeln 86 bis 124 Trades - ein Test haelt das fest. "
+        "'Stufe' traegt jetzt 'uebersprungen', 'voll' verlangt zusaetzlich, "
+        "dass jedes Gate gelaufen ist (eine **Verschaerfung**), Tabelle und "
+        "Urteil sagen, was nicht geurteilt hat. Gemessen wird unveraendert",
+        321,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

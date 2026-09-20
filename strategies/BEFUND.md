@@ -28562,3 +28562,135 @@ Das gilt auch fuer die Tests von 319: Sie waren gruen. Sie pruefen den Fall
 Urteil trifft" hat keiner gestellt, weil ich beim Schreiben dieselbe Annahme
 hatte wie beim Bauen. Ein Testfall, der aus derselben Annahme stammt wie der
 Code, prueft sie nicht.
+
+## Dreihunderteinundzwanzig. Ein Gate, das nicht lief, zaehlte als bestanden
+
+Befund 320 hat die Berichtslage repariert und dabei sichtbar gemacht, was ich
+eigentlich lesen wollte: die zwoelf `teststaerke`-Berichte. Sie beantworten
+eine erstrangige Frage - *"Liesse die Zulassungsstrecke ueberhaupt etwas
+durch?"* - und im Register stand dazu nur Werkzeugkram, kein Ergebnis.
+
+### Was mir beim Lesen auffiel
+
+Die Leiter des Bestands, Saat 11, 198 Versuche:
+
+    gepflanzt  Trades  SR/Trade     DSR   Gates  offen
+          0 %     160    0,2649  0,4908    7/11  Messlatte, Schlechtestes Jahr,
+                                                 Deflated Sharpe, Plateau
+          5 %      75    0,1815  0,0218    7/11  Messlatte, OoS-Sharpe,
+                                                 Bestaendigkeit, Deflated Sharpe
+         10 %      49    0,5519  0,7788    9/11  Messlatte, Deflated Sharpe
+         20 %      29    0,5678  0,0000   10/11  Messlatte
+         35 %      17    0,6999  0,0000    8/11  Stichprobengroesse, Messlatte,
+                                                 Plateau
+         50 %      12    1,2039  0,0000    9/11  Stichprobengroesse, Messlatte
+
+Die Zeile bei 20 % liest sich als: zehn von elf Gates bestanden, offen nur die
+Geschaeftsschwelle. Daneben steht **DSR 0,0000** - und das Gate ist nicht
+unter "offen".
+
+### Die Ursache
+
+    if len(trades) < 30:
+        return GateResult(status=GateStatus.SKIP, value=0.0, ...)
+
+Bei 29 Trades laeuft der Deflated Sharpe nicht. Und:
+
+    @property
+    def passed(self) -> bool:
+        return self.status is not GateStatus.FAIL
+
+Ein uebersprungenes Gate ist nicht durchgefallen, zaehlt also zu
+`bestanden`. Fuer den Zulassungsbericht ist das richtig - ein nicht
+gelaufenes Gate ist kein Durchfaller, und der Bericht sagt es an anderer
+Stelle. Auf dieser Leiter ist es irrefuehrend.
+
+Denn die Leiter hat eine eingebaute Neigung: **Pflanzen senkt die
+Trade-Zahl.** Das steht seit Befund 176/178 im Register - *"Pflanzen nimmt
+die Stichprobe mit"* - und ist hier an den Zahlen zu sehen: 160, 75, 49, 29,
+17, 12. Je staerker der gepflanzte Vorteil, desto weniger handelt eine
+Trendfolge, desto eher setzt das haerteste Gate aus, und desto besser sieht
+die Sprosse aus.
+
+### Warum das mehr ist als eine schiefe Spalte
+
+`Leiter.urteil` spricht bei einer vollen Sprosse den folgenreichsten Satz
+aus, den dieser Befehl kennt:
+
+    **Die Strecke laesst etwas durch.** [...] Damit ist die Frage
+    beantwortet: An den Gates liegt es nicht. Was fehlt, ist ein Vorteil
+    dieser Groesse - nicht eine mildere Schwelle.
+
+Dieser Satz hing an `bestanden == gesamt`. Eine Sprosse mit 29 Trades, auf
+der alle uebrigen zehn Gates halten, haette ihn ausgeloest - auf einem Lauf,
+auf dem das haerteste Gate nie geurteilt hat. Und die Richtung ist die
+gefaehrliche: Er laesst die Strecke **durchlaessiger** aussehen, als sie ist.
+
+### Gemessen, wie oft das vorkommt
+
+Ueber alle 76 Sprossen in den zwoelf Berichten:
+
+    Sprossen gesamt                                76
+    davon unter 30 Trades                          31
+    davon mit bestanden == gesamt                  11
+
+**31 von 76** - auf jeder steht der Deflated Sharpe mit 0,0000 unter den
+bestandenen.
+
+Und die Gegenprobe, die entscheidet, ob hier etwas umgeschrieben wird: Alle
+**elf** je gemeldeten `11/11` stammen von 'Neues Hoch im Takt' und handeln
+**86 bis 124** Trades, also weit ueber der Grenze. **Keine bisherige Aussage
+haengt an einem uebersprungenen Gate.** Ein Test haelt das gegen den
+Berichtsordner fest.
+
+### Was geaendert wurde
+
+`Stufe` traegt jetzt `uebersprungen`. `voll` verlangt zusaetzlich, dass jedes
+Gate gelaufen ist - eine **Verschaerfung**, und damit von der Sorte, die
+dieses Projekt erlaubt: Ein Gate wird nicht gelockert, damit etwas besteht,
+und hier wird eines strenger, damit etwas **nicht** besteht, was nie geprueft
+wurde. Tabelle und Urteil sagen, was nicht geurteilt hat.
+
+**Gemessen wird unveraendert.** Die Trade-Zahlen, die Guete, der DSR und die
+Zahl der bestandenen Gates sind dieselben; hinzugekommen ist, was fehlt.
+
+### Und die Antwort auf die eigentliche Frage
+
+Sie steht weiterhin da, und sie ist belastbar: 'Neues Hoch im Takt' besteht
+bei 10 %, 20 % und 35 % gepflanzter Varianz **alle elf Gates** - mit 124, 113
+und 87 Trades, also ohne Ausnahme. Die Strecke laesst etwas durch. An den
+Gates liegt es nicht.
+
+Das war schon vor diesem Befund wahr. Neu ist, dass es aus dem richtigen
+Grund dasteht.
+
+### Und was dabei zu lesen war
+
+Ein Befund ueber die gepflanzte Leiter nennt zwangslaeufig "gepflanzt", und
+dieser nennt ausserdem 'Neues Hoch im Takt'. Damit standen zwei offene
+Richtungen wieder als ungelesen da. Beide angesehen:
+
+**'Zertifizierbarkeit der Bauart'** (176/178) ist **benutzt, nicht
+nachgemessen**. Ihr Satz *"Pflanzen nimmt die Stichprobe mit"* ist die
+Ursache dieses Befundes. Gemessen habe ich die Buchfuehrung und nicht die
+Achse; die massgebliche Fundstelle bleibt 178.
+
+**'Einstieg, der nicht am Rauschen haengt'** (283) ist gelesen und
+**ausdruecklich nicht nachgezogen** - und hier gehoert ein Satz dazu, damit
+dieser Befund nicht falsch gelesen wird.
+
+Oben steht: 'Neues Hoch im Takt' besteht bei 10, 20 und 35 % gepflanzter
+Varianz alle elf Gates. Das ist eine Aussage ueber die **gepflanzte** Reihe.
+`cli teststaerke` sagt es selbst im Kopf:
+
+    Der Test ist zur Strecke freundlich: Ein gepflanztes Regime ist sauberer
+    als jeder Markt. Kommt nichts durch, ist das belastbar - kommt etwas
+    durch, heisst es nur, dass es nicht an den Gates liegt.
+
+Auf **echten** Daten steht dieselbe Regel unter den neun gemessenen
+Vorschlaegen der Research-KI (ENTSCHEIDUNGEN, Nr. 292), und dort hat keiner
+die Latte geraeumt. Der strukturelle Bruch aus 283 ist damit nicht gefunden.
+
+Wer die Zeile anders liest, haelt einen bestandenen Labortest fuer einen
+Kandidaten - und genau das ist der Unterschied, um den es in diesem ganzen
+Befund geht.

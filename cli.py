@@ -6275,7 +6275,11 @@ def teststaerke(
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.admission import load_trials
-    from research.gates import evaluate_gates, stichprobe_wie_im_gate
+    from research.gates import (
+        GateStatus,
+        evaluate_gates,
+        stichprobe_wie_im_gate,
+    )
     from research.randschnitt import ohne_zensierte
     from research.seeds import spitzenkandidat
     from research.suchbudget import Kandidat
@@ -6437,6 +6441,18 @@ def teststaerke(
                         bestanden=sum(1 for r in gates.results if r.passed),
                         gesamt=len(gates.results),
                         offen=tuple(r.name for r in gates.failures),
+                        # **Was nicht geurteilt hat** (Befund 321). 'passed'
+                        # heisst 'nicht durchgefallen', ein uebersprungenes
+                        # Gate steckt also in 'bestanden'. Der Deflated
+                        # Sharpe setzt unter 30 Trades aus, und das Pflanzen
+                        # senkt die Trade-Zahl - ohne diese Spalte sieht eine
+                        # Sprosse umso besser aus, je weniger sie gemessen
+                        # hat.
+                        uebersprungen=tuple(
+                            r.name
+                            for r in gates.results
+                            if r.status is GateStatus.SKIP
+                        ),
                         cagr_pct=(
                             bericht.combined.cagr_pct if bericht.combined else 0.0
                         ),

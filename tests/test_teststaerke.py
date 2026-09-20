@@ -15,6 +15,8 @@ keinen Bezugspunkt.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -603,3 +605,155 @@ class TestDieZeitImMarkt:
 
         assert halt_wenig < halt_viel, "die Haltedauer ist nicht gewachsen"
         assert wenig.trades / viel.trades < 0.15, "die Einstiege sind eingebrochen"
+
+
+# ---------------------------------------------------------------------------
+#  Ein Gate, das nicht gelaufen ist, zaehlt nicht als bestanden - Befund 321
+# ---------------------------------------------------------------------------
+class TestUebersprungeneGatesZaehlenNicht:
+    """**Der Satz, um den es geht.** ``Leiter.urteil`` sagt bei einer vollen
+    Sprosse:
+
+        Die Strecke laesst etwas durch. [...] Damit ist die Frage
+        beantwortet: An den Gates liegt es nicht.
+
+    Das ist die folgenreichste Auskunft dieses Befehls. Sie hing an
+    ``bestanden == gesamt``, und ``GateResult.passed`` heisst ``status is not
+    FAIL`` - ein **uebersprungenes** Gate steckt also in ``bestanden``.
+
+    Der Deflated Sharpe setzt unter 30 Trades aus, und das Pflanzen senkt die
+    Trade-Zahl (Befund 176/178: "Pflanzen nimmt die Stichprobe mit"). Je
+    staerker der gepflanzte Vorteil, desto eher urteilt das haerteste Gate
+    gar nicht mehr - und desto besser sieht die Sprosse aus.
+
+    Gemessen ueber die 76 Sprossen im Berichtsordner: **31 liegen unter 30
+    Trades**, und auf jeder steht der Deflated Sharpe mit 0,0000 unter den
+    bestandenen. Eine davon liest sich als *"10/11, offen: Messlatte"* - als
+    stuende nur noch die Geschaeftsschwelle im Weg.
+    """
+
+    @staticmethod
+    def _stufe(**abweichung):
+        daten = {
+            "anteil": 0.2, "trades": 29, "sharpe": 1.4,
+            "sharpe_je_trade": 0.5678, "dsr": 0.0,
+            "bestanden": 11, "gesamt": 11, "offen": (),
+            "effektiv": 27, "tage_im_markt": 210,
+        }
+        daten.update(abweichung)
+        return Stufe(**daten)
+
+    def test_eine_sprosse_mit_uebersprungenem_gate_ist_nicht_voll(self) -> None:
+        mit = self._stufe(uebersprungen=("Deflated Sharpe",))
+
+        assert not mit.voll
+
+    def test_ohne_uebersprungene_bleibt_sie_voll(self) -> None:
+        """Die Gegenrichtung: Die Verschaerfung trifft **nur** den Fall, um
+        den es geht."""
+        assert self._stufe().voll
+
+    def test_eine_durchgefallene_bleibt_durchgefallen(self) -> None:
+        assert not self._stufe(bestanden=10, offen=("Messlatte",)).voll
+
+    def test_die_leiter_meldet_dann_keinen_durchlass(self) -> None:
+        """**Der Kern.** Ohne die Verschaerfung stuende hier "Die Strecke
+        laesst etwas durch" - auf einer Sprosse, auf der das haerteste Gate
+        nie geurteilt hat."""
+        leiter = Leiter(
+            versuche=203,
+            stufen=[self._stufe(uebersprungen=("Deflated Sharpe",))],
+        )
+
+        assert "laesst etwas durch" not in leiter.urteil()
+        assert "Keine Stufe besteht alle Gates" in leiter.urteil()
+
+    def test_und_sagt_dazu_was_nicht_gelaufen_ist(self) -> None:
+        leiter = Leiter(
+            versuche=203,
+            stufen=[self._stufe(uebersprungen=("Deflated Sharpe",))],
+        )
+        text = leiter.urteil()
+
+        assert "nicht jedes Gate gelaufen" in text
+        assert "Deflated Sharpe" in text
+        assert "ohne geurteilt zu haben" in text
+
+    def test_die_tabelle_zeigt_es_unter_der_zeile(self) -> None:
+        """Sonst liest sich '10/11, offen: Messlatte' als vollstaendige
+        Auskunft."""
+        leiter = Leiter(
+            versuche=203,
+            stufen=[
+                self._stufe(
+                    bestanden=10, offen=("Messlatte",),
+                    uebersprungen=("Deflated Sharpe",),
+                )
+            ],
+        )
+        text = leiter.tabelle()
+
+        assert "nicht gelaufen: Deflated Sharpe" in text
+
+    def test_ohne_uebersprungene_bleibt_die_tabelle_wie_vorher(self) -> None:
+        leiter = Leiter(versuche=203, stufen=[self._stufe()])
+
+        assert "nicht gelaufen" not in leiter.tabelle()
+
+    def test_die_grenze_steht_im_gate_und_nicht_hier(self) -> None:
+        """Woher die 30 kommen - eine zweite Fassung dieser Zahl liefe
+        irgendwann daneben."""
+        import inspect
+
+        from research import gates
+
+        quelle = inspect.getsource(gates.gate_deflated_sharpe)
+
+        assert "len(trades) < 30" in quelle
+        assert "GateStatus.SKIP" in quelle
+
+
+class TestDieAltenBerichteAendernSichNicht:
+    """**Die Zeile, die diese Verschaerfung von einem Umschreiben trennt.**
+
+    Alle elf Sprossen, die in ``reports/teststaerke`` je ``11/11`` gemeldet
+    haben, stammen von 'Neues Hoch im Takt' und handeln 86 bis 124 Trades -
+    also weit ueber der Grenze von 30. **Keine bisherige Aussage haengt an
+    einem uebersprungenen Gate**; geaendert hat sich, was kuenftig moeglich
+    ist.
+    """
+
+    BERICHTE = Path("reports/teststaerke")
+
+    def _sprossen(self):
+        import json
+
+        dateien = sorted(self.BERICHTE.glob("*.json"))
+        if not dateien:
+            pytest.skip("keine Teststaerke-Berichte im Ordner")
+        for datei in dateien:
+            daten = json.loads(datei.read_text(encoding="utf-8"))
+            for stufen in daten.get("varianten", {}).values():
+                yield from stufen
+
+    def test_jede_volle_sprosse_hatte_genug_trades(self) -> None:
+        volle = [s for s in self._sprossen() if s["bestanden"] == s["gesamt"]]
+
+        assert volle, "keine volle Sprosse - der Test praeft nichts"
+        for s in volle:
+            assert s["trades"] >= 30, s
+
+    def test_es_gibt_sprossen_unter_der_grenze(self) -> None:
+        """Sonst liefe der Test darueber leer und die Verschaerfung waere
+        gegenstandslos."""
+        duenn = [s for s in self._sprossen() if s["trades"] < 30]
+
+        assert len(duenn) >= 20, len(duenn)
+
+    def test_und_dort_steht_der_deflated_sharpe_auf_null(self) -> None:
+        """Der Beleg, dass er dort ausgesetzt hat und nicht schlecht war."""
+        duenn = [s for s in self._sprossen() if s["trades"] < 30]
+
+        for s in duenn:
+            assert s["dsr"] == 0.0, s
+            assert "Deflated Sharpe" not in s["offen"], s

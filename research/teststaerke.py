@@ -213,9 +213,35 @@ class Stufe:
     haelt, aendert die Schlussfolgerung vollstaendig.
     """
 
+    uebersprungen: tuple[str, ...] = ()
+    """Gates, die auf dieser Sprosse **nicht gelaufen sind** - Befund 321.
+
+    ``GateResult.passed`` heisst ``status is not FAIL``, ein uebersprungenes
+    Gate zaehlt also zu ``bestanden``. Fuer den Zulassungsbericht ist das
+    richtig - ein nicht gelaufenes Gate ist kein Durchfaller. Auf dieser
+    Leiter ist es irrefuehrend: Der Deflated Sharpe setzt unter 30 Trades
+    aus, und das Pflanzen **senkt die Trade-Zahl** (Befund 176/178). Je
+    staerker der gepflanzte Vorteil, desto eher laeuft das haerteste Gate
+    gar nicht mehr - und desto besser sieht die Sprosse aus.
+
+    Gemessen ueber alle 76 Sprossen im Berichtsordner: **31 liegen unter 30
+    Trades**, und auf jeder davon steht der Deflated Sharpe mit 0,0000 unter
+    den bestandenen.
+    """
+
     @property
     def voll(self) -> bool:
-        return self.gesamt > 0 and self.bestanden == self.gesamt
+        """Alle Gates bestanden - und **alle gelaufen**.
+
+        Ohne die zweite Haelfte kann ``Leiter.urteil`` den Satz "Die Strecke
+        laesst etwas durch, an den Gates liegt es nicht" auf einer Sprosse
+        aussprechen, auf der das haerteste Gate nie geurteilt hat.
+        """
+        return (
+            self.gesamt > 0
+            and self.bestanden == self.gesamt
+            and not self.uebersprungen
+        )
 
     tage_im_markt: int | None = None
     """Summe der Haltedauern - die Groesse, die den Verfall wirklich erklaert.
@@ -400,6 +426,15 @@ class Leiter:
                 f"{'-' if noetig is None else f'{noetig:.2f}':>7} {dsr:>7} "
                 f"{s.bestanden:>3}/{s.gesamt:<3}  {', '.join(s.offen) or '-'}"
             )
+            # **Was nicht gelaufen ist, gehoert unter die Zeile** (321).
+            # Sonst liest sich '10/11, offen: Messlatte' so, als stuende nur
+            # noch die Geschaeftsschwelle im Weg.
+            if s.uebersprungen:
+                zeilen.append(
+                    f"{'':>10} {'':>7} {'':>9} {'':>6} {'':>9} {'':>7} "
+                    f"{'':>7} {'':>7} {'':>7}  nicht gelaufen: "
+                    f"{', '.join(s.uebersprungen)}"
+                )
         return "\n".join(zeilen)
 
     def urteil(self) -> str:
@@ -432,6 +467,18 @@ class Leiter:
             f"{staerkste.anteil:.0%} gepflanzter Varianz ({staerkste.bestanden} "
             f"von {staerkste.gesamt}).{woran}"
         )
+        # **Eine Sprosse, auf der ein Gate nicht lief, zaehlt anders**
+        # (Befund 321). Die Zahl 'bestanden' schliesst uebersprungene Gates
+        # ein, und das Pflanzen senkt die Trade-Zahl - je staerker der
+        # gepflanzte Vorteil, desto eher setzt der Deflated Sharpe aus.
+        stumm = [s for s in self.stufen if s.uebersprungen]
+        if stumm:
+            namen = sorted({n for s in stumm for n in s.uebersprungen})
+            kopf += (
+                f" **Auf {len(stumm)} von {len(self.stufen)} Sprossen ist "
+                f"nicht jedes Gate gelaufen** ({', '.join(namen)}) - dort "
+                f"zaehlt es zu den bestandenen, ohne geurteilt zu haben."
+            )
 
         # Der Vorbehalt steht **vor** der Schlussfolgerung, nicht dahinter.
         # Wer ihn hinten anhaengt, hat die Aussage schon getroffen.
