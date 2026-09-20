@@ -69,7 +69,7 @@ WIRKT_NACH_AUSSEN: dict[str, str] = {
 HARMLOS: frozenset[str] = frozenset({
     "abstand", "anwaerter", "aufloesung", "betriebspunkt",
     "decke", "duerre", "evidenz", "finanzierung",
-    "form", "front", "gatemuster", "haelften",
+    "form", "freigabe", "front", "gatemuster", "haelften",
     "holdout", "instrument", "jahresbild", "koernung",
     "konfluenz", "kontorisiko", "kosten", "leverage",
     "marktkombinationen", "nachpruefung", "nullprobe", "paare",
@@ -90,7 +90,10 @@ HARMLOS: frozenset[str] = frozenset({
 #: ganz, in sechs Stuecken und aus Protokollen gelesen -, und hat dabei zwei
 #: Fehler gezeigt, die jetzt behoben sind. Die Zahl steigt nur, wenn ein
 #: Befehl wirklich gelaufen ist; sonst waere sie eine Behauptung.
-GELAUFEN = 53
+#:
+#: 54 seit Befund 313: 'freigabe' ist an beiden Betriebspunkten auf echten
+#: Tageskerzen gefahren worden.
+GELAUFEN = 54
 TRACEBACKS = 0
 SAUBER_ABGELEHNT = ("quelle", "review", "vorschlag")
 

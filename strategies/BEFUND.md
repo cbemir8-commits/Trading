@@ -27820,3 +27820,134 @@ letzte Schritt vor dem Geld.
 Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 4197 passed, 2 skipped; ruff check sauber.
+
+## Dreihundertdreizehn. Das Plateau-Gate las eine Form aus Laeufen, die abgeschaltet waren
+
+Der Stand meldet am Perpetual-Punkt vier offene Gates, und der Bericht nennt
+zwei davon *"hier liegt die Arbeit"*: Schlechtestes Jahr und Parameter-Plateau.
+Die Begruendung des Plateau-Gates lautete:
+
+    alle gemeinsam traegt nur 50% - nach unten traegt sie, nach oben kippt sie
+    ins Negative - das ist die Kante eines Gebiets, keine Nadelspitze.
+
+Beim Lesen der Protokolle fiel etwas anderes auf. Zwischen `portfolio.fertig`
+und `gates.ausgewertet` steht ein Schwall von Meldungen:
+
+    [critical] risk.kill_switch  drawdown_pct=15.00033  hoechststand=500
+               kapital=424.998  hinweis='Alles glattstellen. Nur manuell
+               zurueckholbar.'
+
+Ein Hoechststand von genau 500 ist der Startbetrag. Dort hat ein Lauf nie
+etwas verdient und ist gleich zu Anfang abgeschaltet worden.
+
+### Die Annahme steht in der Engine - und gilt hier nicht
+
+`Backtester._officer` legt je Lauf einen frischen `RiskOfficer` an und
+begruendet das selbst:
+
+    Kein `state_path`: Jeder Lauf beginnt frei. Im Walk-Forward heisst das,
+    dass jedes Testfenster mit einem frischen Officer startet - was der
+    Annahme entspricht, dass der Nutzer einen ausgeloesten Not-Aus zwischen
+    den Fenstern manuell freigibt. **Ohne diese Annahme bliebe jedes Fenster
+    nach dem ersten Not-Aus fuer immer stumm, und der Backtest waere in der
+    anderen Richtung falsch.**
+
+Ein Walk-Forward hat Fenstergrenzen, also Freigaben. Zwei Gates rechnen aber
+keinen Walk-Forward: `gate_parameter_plateau` faehrt zwoelf Nachbarn und
+`gate_cost_stress` den Kandidaten - beide als **einen durchgehenden**
+Backtest je Bein, acht Jahre ohne Grenze. Der Satz oben beschreibt genau
+diesen Lauf und nennt ihn falsch.
+
+Drei Sperren sind Zustaende und keine Uhren:
+
+    kill_switch       TradingState.KILLED        nur reset_kill_switch()
+    trading_paused    TradingState.PAUSED        nur resume()
+    close_only        TradingState.CLOSE_ONLY    nur manuell
+
+Kein Backtest ruft eine davon auf. `daily_loss_limit` (24 Stunden) und
+`news_blackout` laufen dagegen von selbst ab. Das Wochenlimit setzt
+ausdruecklich `paused_until = None  # bis zur manuellen Freigabe` - keine
+Pause von Stunden, sondern das Ende der Reihe.
+
+### Gemessen
+
+`cli freigabe`, Perpetual, BTC + ETH, Tageskerzen:
+
+    Nachbar                durchgehend   Walk-Forward   gesperrt   Urteil
+    alle gemeinsam x0,8       +1093,21        +659,10         79   + / +
+    alle gemeinsam x1,2        -103,63        +233,04        110   - / +
+    sma(period=50) x0,8        +867,56        +619,96         79   + / +
+    sma(period=50) x1,2        -103,90        +239,08        109   - / +
+    sma(period=200) x0,8       +932,16        +748,36         75   + / +
+    sma(period=200) x1,2       +939,43        +729,70         75   + / +
+    roc(period=90) x0,8        +957,29        +724,59         75   + / +
+    roc(period=90) x1,2        +956,73        +747,92         75   + / +
+    rsi(period=14) x0,8        +964,11        +749,65         75   + / +
+    rsi(period=14) x1,2       +1025,25        +745,78         75   + / +
+    Vola-Fenster x0,8          +801,89        +859,82        117   + / +
+    Vola-Fenster x1,2          +964,22        +670,19         76   + / +
+
+    Gate-Wert                    0,500          1,000              Schwelle 0,600
+
+**12 von 12 Nachbarn wurden nicht zu Ende gemessen**, zusammen 1020
+verhinderte Einstiege. Bei zweien entscheidet das ueber das Vorzeichen - und
+es sind genau die beiden, an denen das Gate scheitert. Je Bein nachgesehen:
+
+    alle gemeinsam x1,2   BTC  22 statt 70 Trades   Wochenlimit, letzter Trade 03.09.2020
+                          ETH  25 statt 87 Trades   Kill-Switch, letzter Trade 11.05.2020
+    sma(period=50) x1,2   BTC  22 statt 70 Trades   Wochenlimit, letzter Trade 03.09.2020
+                          ETH  26 statt 87 Trades   Kill-Switch, letzter Trade 30.06.2020
+
+Die Reihe laeuft bis 2026. Beide Nachbarn haben die letzten sechs Jahre nicht
+gehandelt. Was das Gate dort als "kippt ins Negative" gelesen hat, ist der
+Zeitpunkt der Sperre - nicht die Form des Gebiets.
+
+### Die Gegenproben
+
+Ein Befund, der nur dort geprueft wird, wo er dem eigenen Kandidaten nuetzt,
+ist keiner. Zwei Proben in die andere Richtung:
+
+**Am Spot-Punkt** besteht das Gate unter beiden Messarten - 1,000 gegen
+1,000, bei 737 gesperrten Einstiegen. Die Sperren wirken dort genauso, nur
+kippt keiner der Nachbarn.
+
+**Das Kosten-Stress-Gate** benutzt denselben durchgehenden Lauf und ist davon
+genauso betroffen: Marge +945,06 mit Sperren gegen +2316,29 ohne. Sein Urteil
+aendert sich nicht - es besteht in beiden Faellen.
+
+### Was geaendert wurde, und was nicht
+
+**Gerechnet wird unveraendert durchgehend.** Wert und Urteil des Gates sind
+dieselben, die Schwelle ist unberuehrt. Geaendert ist die Botschaft: Wo die
+gescheiterten Nachbarn gesperrt wurden, steht jetzt das - und keine Randlage.
+`randlage` leistet denselben Verzicht schon fuer die fehlende Seite
+("einseitig gemessen"); dies ist die zweite Art, auf die ein Punkt fehlen
+kann.
+
+Dass die Frage damit nicht entschieden ist, ist Absicht. Ob das Gate seine
+Nachbarn durchgehend oder im Walk-Forward messen soll, verschoebe es von
+"durchgefallen" auf "bestanden" - und die Frage entsteht, waehrend der eigene
+Kandidat genau daran haengt. Dieselbe Lage wie in Befund 278, dieselbe
+Antwort: messen, hinschreiben, nicht selbst entscheiden. Sie steht jetzt in
+`ENTSCHEIDUNGEN`.
+
+### Was dabei noch auffiel
+
+Zwei Dinge, die ohne diese Messung stehen geblieben waeren:
+
+Die **Tests aus Befund 163** pruefen die Randlage auf `kurs(laenge=180,
+staerke=0.0025)` - und auch dort loest der Kill-Switch aus. Die Zahlen, mit
+denen 163 "Nadelspitze" gegen "Kante" abgegrenzt hat, standen also schon
+damals auf Laeufen, die nicht zu Ende gemessen wurden. Sie messen die Form
+jetzt ohne Verlustgrenzen; dass das Gate **mit** ihnen dieselbe Wertung
+faellt, haelt ein eigener Test fest.
+
+Und beim Umbau habe ich mir selbst einen Fehler gebaut: Die Begruendung stand
+zuerst vor der Fallunterscheidung, also auch im Erfolgsfall - `randlage`
+antwortet dort "traegt", und dafuer hat `_RANDSATZ` keinen Eintrag. Ein
+`KeyError` in jedem bestandenen Plateau-Gate. Der vorhandene Test
+`test_die_wertung_liegt_nie_ueber_dem_alten_zwei_punkte_wert` hat ihn sofort
+gezeigt. Aus demselben Umbau stammte eine zweite Unsauberkeit: Die Summe der
+Beingewinne lief kurzzeitig ueber `float` statt `Decimal` - bei einem Gate,
+das nur das Vorzeichen benutzt, ist das genau die falsche Stelle zum Runden.
+Beides steht jetzt als Test.

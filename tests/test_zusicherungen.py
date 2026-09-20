@@ -72,6 +72,19 @@ BEGRUENDET: dict[str, str] = {
         "einbaut, beantwortet die Frage im Vorbeigehen - die Zusicherung "
         "haelt diese Grenze."
     ),
+    "test_er_kostet_keinen_versuch": (
+        "Gehalten wird: **Ein Gate zu erklaeren darf die Latte eines "
+        "anderen nicht heben** (Befund 313). 'cli freigabe' rechnet genau "
+        "die zwoelf Nachbarn nach, die das Plateau-Gate bei jedem Lauf "
+        "ohnehin rechnet - zaehlte er, kostete das Nachlesen einer "
+        "Gate-Begruendung Versuche, und die Huerde des Deflated Sharpe "
+        "stiege fuer alle folgenden Kandidaten. Das waere ein Preis aufs "
+        "Hinsehen. Die offene Frage aus 233/234 beruehrt das nicht: Sie "
+        "gilt Sweeps, die etwas **finden** koennen - 'landschaft' sucht "
+        "einen besseren Punkt, 'machbarkeit' eine Vola-Stufe, bei der alle "
+        "elf Gates halten. 'freigabe' sortiert nichts und waehlt nichts "
+        "aus; aus ihm kann kein Kandidat hervorgehen."
+    ),
 }
 
 

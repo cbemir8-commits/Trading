@@ -2346,6 +2346,44 @@ BEHOBEN: tuple[Richtung, ...] = (
         "keinem der beiden Befehle noch einmal ausgeschrieben steht",
         312,
     ),
+    # Derselbe Riss wie in 882 von gates.py - eine Achse weiter. Dort war es
+    # der Markt, hier ist es die Sperrlage.
+    Richtung(
+        "Das Plateau-Gate las eine Form aus Laeufen, die abgeschaltet waren",
+        "Die Engine legt je Lauf einen frischen Risk-Officer an und "
+        "begruendet das selbst: Im Walk-Forward startet jedes Fenster frei, "
+        "*'was der Annahme entspricht, dass der Nutzer einen ausgeloesten "
+        "Not-Aus zwischen den Fenstern manuell freigibt. Ohne diese Annahme "
+        "bliebe jedes Fenster nach dem ersten Not-Aus fuer immer stumm, und "
+        "der Backtest waere in der anderen Richtung falsch.'* Genau diesen "
+        "Lauf rechnen zwei Gates: Plateau und Kosten-Stress fahren "
+        "**durchgehende** Backtests je Bein, acht Jahre ohne Fenstergrenze "
+        "und damit ohne Freigabe. Not-Aus und Wochenlimit sind Zustaende und "
+        "keine Uhren - nur 'resume' und 'reset_kill_switch' heben sie auf, "
+        "und die ruft kein Backtest. Gemessen (313, Perpetual): **12 von 12 "
+        "Nachbarn** wurden nicht zu Ende gemessen, zusammen 1020 verhinderte "
+        "Einstiege. Bei zweien entscheidet das ueber das Vorzeichen - und es "
+        "sind genau die beiden, an denen das Gate scheitert: 'alle "
+        "gemeinsam' x1,2 mit -103,63 durchgehend gegen +233,04 im "
+        "Walk-Forward, 'sma(period=50)' x1,2 mit -103,90 gegen +239,08. Ihr "
+        "BTC-Bein hielt das Wochenlimit am 03.09.2020 an, ihr ETH-Bein der "
+        "Kill-Switch am 11.05. bzw. 30.06.2020; die restlichen sechs Jahre "
+        "handelten sie nicht mehr. **Was das Gate dort sah, war der "
+        "Zeitpunkt der Sperre und nicht die Form des Gebiets** - und seine "
+        "Botschaft nannte es 'die Kante eines Gebiets'. Behoben ist die "
+        "Botschaft: Wo die gescheiterten Nachbarn gesperrt wurden, steht "
+        "jetzt das und keine Randlage - derselbe Verzicht, den 'randlage' "
+        "fuer die fehlende Seite schon leistet ('einseitig gemessen'). "
+        "**Gerechnet wird unveraendert durchgehend**, Wert und Urteil des "
+        "Gates sind dieselben; 'cli freigabe' misst beide Messarten "
+        "nebeneinander. Die Gegenprobe gehoert dazu: Am Spot-Punkt besteht "
+        "das Gate so oder so (1,000 gegen 1,000), und der Kosten-Stress "
+        "bleibt mit +945,06 gegen +2316,29 in beiden Faellen bestanden - "
+        "der Riss faellt also nicht dorthin, wo er dem eigenen Kandidaten "
+        "nuetzt. Auch die Tests aus 163 standen auf gesperrten Laeufen; sie "
+        "messen die Form jetzt ohne Verlustgrenzen",
+        313,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -2954,6 +2992,48 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "Lesart fuer die Latte. Und 5.000 Laeufe koennen hoechstens "
               "'kein einziger' sagen, also unter 0,02 %.",
         befund=278,
+    ),
+    Entscheidung(
+        frage="Womit das Plateau-Gate seine Nachbarn misst",
+        zahl="Das Gate faehrt seine zwoelf Nachbarn als **durchgehenden** "
+             "Backtest je Bein - acht Jahre, ein Risk-Officer, keine "
+             "Fenstergrenze. Die Engine rechnet im Walk-Forward "
+             "ausdruecklich damit, dass ein ausgeloester Not-Aus zwischen "
+             "den Fenstern freigegeben wird, und nennt einen Lauf ohne diese "
+             "Annahme *'in der anderen Richtung falsch'*. Gemessen (313, "
+             "Perpetual, BTC + ETH):"
+             "\n      Nachbar                durchgehend   Walk-Forward"
+             "\n      alle gemeinsam x1,2       -103,63        +233,04"
+             "\n      sma(period=50) x1,2       -103,90        +239,08"
+             "\n      Gate-Wert                   0,500          1,000"
+             "\n    12 von 12 Nachbarn wurden nicht zu Ende gemessen, "
+             "zusammen 1020 verhinderte Einstiege; die beiden oben haben ab "
+             "Mai bzw. September 2020 nicht mehr gehandelt. `cli freigabe` "
+             "rechnet es nach.",
+        warum="**Geaendert wurde nichts.** Gerechnet wird weiter "
+              "durchgehend, Wert und Urteil des Gates stehen unveraendert - "
+              "geaendert ist nur, dass die Botschaft keine Form mehr "
+              "behauptet, die an einem abgeschalteten Lauf nicht gemessen "
+              "wurde.\n    Zu entscheiden ist, welche der beiden Messarten "
+              "das Gate meint. Fuer den durchgehenden Lauf spricht, dass er "
+              "die Verlustgrenzen ernst nimmt, wie sie im Betrieb gelten: "
+              "Wer nicht freigibt, handelt nicht mehr. Fuer den "
+              "Walk-Forward spricht, dass jede andere Zahl dieses Projekts "
+              "so entsteht - und dass ein Gate, das ueber die Form eines "
+              "Parametergebiets urteilt, den Zeitpunkt einer Sperre nicht "
+              "als Form lesen sollte.\n    Es ist eine "
+              "Geschaeftsentscheidung, weil sie ein Gate von "
+              "'durchgefallen' auf 'bestanden' verschoebe - am "
+              "Perpetual-Punkt von 7 auf 8 von 11 -, und weil sie entsteht, "
+              "waehrend der eigene Kandidat genau daran haengt. Dieselbe "
+              "Lage wie in Befund 278, und dieselbe Antwort: messen, "
+              "hinschreiben, nicht selbst entscheiden.\n    Die Gegenprobe "
+              "gehoert dazu, damit der Befund nicht nur dort geprueft ist, "
+              "wo er nuetzt: Am **Spot**-Punkt besteht das Gate unter beiden "
+              "Messarten (1,000 gegen 1,000), und das Kosten-Stress-Gate, "
+              "das denselben durchgehenden Lauf benutzt, bleibt mit +945,06 "
+              "gegen +2316,29 in beiden Faellen bestanden.",
+        befund=313,
     ),
     Entscheidung(
         frage="Funding-Satz",

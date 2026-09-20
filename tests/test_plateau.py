@@ -396,6 +396,32 @@ class TestRandlage:
         assert randlage(proben) == "Kante nach oben"
 
 
+@pytest.fixture
+def ohne_sperren(config: BacktestConfig) -> BacktestConfig:
+    """Derselbe Aufbau, aber ohne Verlustgrenzen - Befund 313.
+
+    **Warum die Form nur so zu pruefen ist.** Eine Randlage liest aus zwei
+    Nachbarn die Form eines Gebiets. Das setzt voraus, dass beide bis zum
+    letzten Balken gelaufen sind. Not-Aus und Wochenlimit sind aber
+    Zustaende und keine Uhren: Greift einer, handelt der Lauf bis zum Ende
+    der Reihe nicht mehr, und was dann als "faellt durch" dasteht, ist der
+    Zeitpunkt der Sperre und nicht die Form.
+
+    Auf ``kurs(laenge=180, staerke=0.0025)`` passiert genau das - der
+    Kill-Switch loest aus. Die Zahlen aus Befund 163 unten standen also
+    schon damals auf Laeufen, die nicht zu Ende gemessen wurden; gemerkt hat
+    es niemand, weil das Gate die Sperren wegwarf.
+    """
+    return BacktestConfig(
+        instrument=config.instrument,
+        risk=config.risk,
+        costs=config.costs,
+        funding=config.funding,
+        initial_equity=config.initial_equity,
+        enforce_risk_limits=False,
+    )
+
+
 class TestDieBotschaftTrifftDieForm:
     """Dieselben Daten, derselbe Kandidat - und zwei verschiedene Formen.
 
@@ -408,10 +434,15 @@ class TestDieBotschaftTrifftDieForm:
     Der alte Text hat fuer beide dasselbe Wort gedruckt. Genau das trennen die
     zwei folgenden Tests - und sie schlagen fehl, wenn jemand die
     Unterscheidung wieder herausnimmt.
+
+    Gemessen wird hier **ohne Verlustgrenzen** (``ohne_sperren``), damit die
+    Nachbarn bis zum letzten Balken laufen und die Form ueberhaupt entsteht -
+    die Begruendung steht an der Fixture. Dass das Gate mit Grenzen dieselbe
+    Wertung faellt, haelt ``test_das_urteil_bleibt_unveraendert`` fest.
     """
 
     def test_beide_seiten_weg_heisst_weiterhin_nadelspitze(
-        self, config: BacktestConfig
+        self, ohne_sperren: BacktestConfig
     ) -> None:
         """**Das Wort verschwindet nicht, es bekommt seinen Fall zurueck.**
 
@@ -419,7 +450,7 @@ class TestDieBotschaftTrifftDieForm:
         ist "Nadelspitze" die richtige Auskunft.
         """
         ergebnis = gate_parameter_plateau(
-            spitzenkandidat(), kurs(laenge=180, staerke=0.0025), config,
+            spitzenkandidat(), kurs(laenge=180, staerke=0.0025), ohne_sperren,
             GateThresholds(),
         )
 
@@ -430,7 +461,7 @@ class TestDieBotschaftTrifftDieForm:
         assert _RANDSATZ["Kante nach oben"] not in ergebnis.message
 
     def test_nur_eine_seite_weg_heisst_kante(
-        self, config: BacktestConfig, monkeypatch: pytest.MonkeyPatch
+        self, ohne_sperren: BacktestConfig, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Derselbe Kandidat, dieselben Daten, **echt gerechnete** Nachbarn -
         nur auf die gemeinsame Verschiebung eingeschraenkt.
@@ -451,13 +482,87 @@ class TestDieBotschaftTrifftDieForm:
         )
 
         ergebnis = gate_parameter_plateau(
-            genome, kurs(laenge=180, staerke=0.0025), config, GateThresholds()
+            genome, kurs(laenge=180, staerke=0.0025), ohne_sperren,
+            GateThresholds(),
         )
 
         assert ergebnis.status is GateStatus.FAIL, "das Urteil bleibt"
         assert ergebnis.value == 0.5
         assert _RANDSATZ["Kante nach unten"] in ergebnis.message
         assert _RANDSATZ["Nadelspitze"] not in ergebnis.message
+
+class TestDieBotschaftBehauptetKeineFormDieFehlt:
+    """Dieselbe Reihe, dieselbe Wertung - und zwei verschiedene Begruendungen.
+
+    **Befund 313.** Das Gate faehrt seine Nachbarn als *durchgehenden*
+    Backtest ueber die ganze Reihe: ein Risk-Officer, keine Fenstergrenze
+    und damit nie die manuelle Freigabe, mit der die Engine im Walk-Forward
+    ausdruecklich rechnet. Greift eine dauerhafte Sperre, handelt der
+    Nachbar bis zum letzten Balken nicht mehr - und was als "faellt durch"
+    dasteht, ist der Zeitpunkt der Sperre und nicht die Form des Gebiets.
+
+    Auf ``kurs(laenge=180, staerke=0.0025)`` passiert genau das. Die beiden
+    Tests darunter sind deshalb ein Paar: **gleicher Wert, gleiches Urteil,
+    andere Begruendung.** Genau daran ist diese Aenderung von einer
+    Lockerung zu unterscheiden.
+    """
+
+    def test_mit_sperren_nennt_sie_die_sperre_statt_der_form(
+        self, config: BacktestConfig
+    ) -> None:
+        ergebnis = gate_parameter_plateau(
+            spitzenkandidat(), kurs(laenge=180, staerke=0.0025), config,
+            GateThresholds(),
+        )
+
+        assert ergebnis.status is GateStatus.FAIL
+        assert ergebnis.value == 0.0
+        assert "nicht zu Ende gemessen" in ergebnis.message
+        assert "cli freigabe" in ergebnis.message
+        assert _RANDSATZ["Nadelspitze"] not in ergebnis.message
+
+    def test_ohne_sperren_steht_die_form_wieder_da(
+        self, ohne_sperren: BacktestConfig
+    ) -> None:
+        ergebnis = gate_parameter_plateau(
+            spitzenkandidat(), kurs(laenge=180, staerke=0.0025), ohne_sperren,
+            GateThresholds(),
+        )
+
+        assert ergebnis.status is GateStatus.FAIL
+        assert ergebnis.value == 0.0
+        assert _RANDSATZ["Nadelspitze"] in ergebnis.message
+        assert "nicht zu Ende gemessen" not in ergebnis.message
+
+    def test_wert_und_urteil_sind_in_beiden_faellen_dieselben(
+        self, config: BacktestConfig, ohne_sperren: BacktestConfig
+    ) -> None:
+        """**Die Zeile, die diese Aenderung von einer Lockerung trennt.**
+
+        Dass die Wertung hier zufaellig in beiden Faellen gleich ausfaellt,
+        ist nicht der Punkt - der Punkt ist, dass die Botschaft sie nicht
+        anfasst. Auf echten Tageskerzen faellt sie **verschieden** aus
+        (0,500 gegen 1,000), und auch dort bleibt das Gate bei seinem Wert:
+        gerechnet wird weiter durchgehend.
+        """
+        mit = gate_parameter_plateau(
+            spitzenkandidat(), kurs(laenge=180, staerke=0.0025), config,
+            GateThresholds(),
+        )
+        ohne = gate_parameter_plateau(
+            spitzenkandidat(), kurs(laenge=180, staerke=0.0025), ohne_sperren,
+            GateThresholds(),
+        )
+
+        assert mit.value == ohne.value
+        assert mit.status is ohne.status
+        assert mit.threshold == ohne.threshold == GateThresholds().min_plateau_ratio
+        assert mit.message != ohne.message
+
+
+class TestDasUrteilBleibt:
+    """Die Wertung des Gates ueberlebt jede Aenderung an seiner Botschaft -
+    erst Befund 163, dann 313."""
 
     def test_das_urteil_bleibt_unveraendert(self, config: BacktestConfig) -> None:
         """**Die Zeile, die diese Aenderung von einer Lockerung trennt.**

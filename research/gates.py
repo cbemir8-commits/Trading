@@ -50,6 +50,7 @@ from backtest.walkforward import (
 )
 from core.models import Trade
 from research.benchmark import buy_and_hold_over_windows, scaled_hold
+from research.freigabe import sperrsatz, stillgelegt
 from research.randschnitt import ohne_zensierte
 from research.unabhaengigkeit import effektive_stichprobe
 from research.zeitskala import STUFEN, nach_kalender
@@ -1100,6 +1101,15 @@ def gate_parameter_plateau(
     erwuenschte: Weil die gemeinsame Verschiebung eine der Stellgroessen ist,
     liegt das Minimum nie ueber dem alten Zwei-Punkte-Wert - das Gate kann
     durch den groesseren Bereich nirgends milder werden, nur strenger.
+
+    **Jeder Nachbar laeuft durchgehend ueber die ganze Reihe** - ein Officer
+    fuer acht Jahre, ohne Fenstergrenze und damit ohne die manuelle Freigabe,
+    mit der die Engine im Walk-Forward rechnet. Eine Sperre, die einmal
+    greift, laeuft hier bis zum letzten Balken. Was das Gate dann sieht, ist
+    nicht mehr die Form des Gebiets, sondern der Zeitpunkt der Sperre;
+    ``research/freigabe.py`` misst den Unterschied, und die Botschaft unten
+    sagt es, statt eine Randlage zu behaupten. **Gerechnet wird weiter wie
+    bisher** - der Wert des Gates und sein Urteil aendern sich nicht.
     """
     nachbarn = list(nachbarschaft(genome, variation))
     if not nachbarn:
@@ -1114,20 +1124,25 @@ def gate_parameter_plateau(
     beine = _beine(frames, configs, frame, config)
     je_stellgroesse: dict[str, list[bool]] = {}
     seiten: dict[str, list[tuple[float, bool]]] = {}
+    gesperrt: dict[str, list[int]] = {}
     namen: dict[str, str] = {}
     for stellgroesse, faktor, neighbour in nachbarn:
-        gewinn = sum(
-            Backtester(cfg)
-            .run(
+        # Die Summe bleibt in ``Decimal`` - ueber ``float`` gerechnet koennte
+        # eine Summe, die sich genau aufhebt, knapp neben der Null landen und
+        # das Vorzeichen kippen, an dem dieses Gate alles festmacht.
+        gewinn = Decimal(0)
+        sperren = 0
+        for teil, cfg in beine:
+            lauf = Backtester(cfg).run(
                 teil,
                 compile_genome(neighbour),
                 sub_frame=sub_frame if len(beine) == 1 else None,
             )
-            .net_profit
-            for teil, cfg in beine
-        )
+            gewinn += lauf.net_profit
+            sperren += stillgelegt(lauf.veto_reasons)
         je_stellgroesse.setdefault(stellgroesse.kennung, []).append(gewinn > 0)
         seiten.setdefault(stellgroesse.kennung, []).append((faktor, gewinn > 0))
+        gesperrt.setdefault(stellgroesse.kennung, []).append(sperren)
         namen[stellgroesse.kennung] = stellgroesse.name
 
     quoten = {
@@ -1143,19 +1158,50 @@ def gate_parameter_plateau(
         for k in sorted(quoten, key=lambda k: (quoten[k], namen[k]))
     )
 
+    if passed:
+        botschaft = (
+            f"Schwaechste Richtung {namen[schwaechste]} mit {ratio:.0%} "
+            f"({gesamt} von {len(nachbarn)} Nachbarn insgesamt profitabel). "
+            f"{uebersicht}"
+        )
+    else:
+        # **Was die gescheiterten Nachbarn gescheitert hat, gehoert zum
+        # Urteil.** Ein Nachbar, dessen Lauf unterwegs dauerhaft gesperrt
+        # wurde, ist kein gemessener Punkt des Gebiets - er sagt, wann die
+        # Sperre griff. Aus so einem Punkt eine Randlage zu lesen, behauptet
+        # eine Form, die nie gemessen wurde; ``randlage`` vermeidet denselben
+        # Fehler schon fuer die fehlende Seite ("einseitig gemessen").
+        #
+        # Nur im Fehlschlag-Zweig, und das ist kein Stilfrage: ``randlage``
+        # antwortet "traegt", wenn nichts durchgefallen ist, und dafuer hat
+        # ``_RANDSATZ`` keinen Eintrag. Wer den Satz vorzieht, baut einen
+        # KeyError in den Erfolgsfall.
+        #
+        # Der Wert des Gates und sein Urteil bleiben unberuehrt - hier steht
+        # nur, was gemessen wurde.
+        gefallen_gesperrt = sum(
+            sperre
+            for (_faktor, ok), sperre in zip(
+                seiten[schwaechste], gesperrt[schwaechste], strict=True
+            )
+            if not ok
+        )
+        grund = (
+            sperrsatz(gefallen_gesperrt)
+            if gefallen_gesperrt
+            else _RANDSATZ[randlage(seiten[schwaechste])]
+        )
+        botschaft = (
+            f"{namen[schwaechste]} traegt nur {ratio:.0%} - "
+            f"{grund}. {uebersicht}"
+        )
+
     return GateResult(
         name="Parameter-Plateau",
         status=GateStatus.PASS if passed else GateStatus.FAIL,
         value=ratio,
         threshold=t.min_plateau_ratio,
-        message=(
-            f"Schwaechste Richtung {namen[schwaechste]} mit {ratio:.0%} "
-            f"({gesamt} von {len(nachbarn)} Nachbarn insgesamt profitabel). "
-            f"{uebersicht}"
-            if passed
-            else f"{namen[schwaechste]} traegt nur {ratio:.0%} - "
-            f"{_RANDSATZ[randlage(seiten[schwaechste])]}. {uebersicht}"
-        ),
+        message=botschaft,
     )
 
 

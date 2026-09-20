@@ -8944,6 +8944,158 @@ def plateaubild(
 
 
 @app.command()
+def freigabe(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    spot: bool = typer.Option(
+        False, "--spot", help="Ohne Hebel und ohne Funding messen."
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Wer gibt den Not-Aus frei, wenn ein Lauf keine Fenster hat?
+
+    Die Engine legt fuer jeden Lauf einen frischen ``RiskOfficer`` an und
+    begruendet das selbst: Im Walk-Forward startet jedes Testfenster frisch,
+    *"was der Annahme entspricht, dass der Nutzer einen ausgeloesten Not-Aus
+    zwischen den Fenstern manuell freigibt. Ohne diese Annahme bliebe jedes
+    Fenster nach dem ersten Not-Aus fuer immer stumm, und der Backtest waere
+    in der anderen Richtung falsch."*
+
+    Zwei Gates rechnen aber keinen Walk-Forward, sondern **einen
+    durchgehenden Backtest je Bein**: das Plateau-Gate ueber zwoelf Nachbarn,
+    der Kosten-Stress ueber den Kandidaten. Ein durchgehender Lauf hat keine
+    Fenstergrenze - also nie eine Freigabe. Genau die Lage, die der Satz
+    oben falsch nennt.
+
+    Dieser Befehl misst jeden Nachbarn zweimal: durchgehend, wie das Gate es
+    tut, und im Walk-Forward, wie jede andere Zahl dieses Projekts entsteht.
+    Daneben steht, wie viele Einstiege eine **dauerhafte** Sperre verhindert
+    hat - Not-Aus und Wochenlimit sind Zustaende und keine Uhren, nur
+    ``resume`` und ``reset_kill_switch`` heben sie auf, und die ruft kein
+    Backtest.
+
+    **Aendert nichts.** Kein Gate, keine Schwelle, kein Parameter. Ob das
+    Plateau-Gate seine Nachbarn kuenftig im Walk-Forward messen soll,
+    verschoebe ein Gate von "durchgefallen" auf "bestanden" - diese Frage
+    entsteht, waehrend der eigene Kandidat dicht daneben steht, und faellt
+    deshalb nicht hier (dieselbe Lage wie in Befund 278).
+
+    Kostet keinen Versuch: Gemessen wird die Nachbarschaft eines vorhandenen
+    Kandidaten, genau wie das Gate sie ohnehin misst.
+    """
+    from decimal import Decimal
+
+    from backtest.costs import FundingSchedule
+    from backtest.engine import BacktestConfig, Backtester
+    from backtest.portfolio_walkforward import (
+        common_range,
+        run_portfolio_walkforward,
+    )
+    from research.freigabe import Freigabelage, Lauf, stillgelegt
+    from research.gates import GateThresholds, nachbarschaft
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+    store = CandleStore(settings.paths.data_store)
+
+    roh = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if frame.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = frame
+    frames = common_range(roh)
+
+    genome = spitzenkandidat()
+    if spot:
+        genome = _ohne_hebel(genome)
+    configs = {
+        x: BacktestConfig(
+            instrument=_fallback_instrument(_bybit_kontrakt(x)),
+            risk=settings.risk, initial_equity=Decimal("500"),
+            enforce_risk_limits=True,
+            kalender=_terminkalender(settings) or None,
+            **(
+                {"funding": FundingSchedule(default_rate=Decimal("0"))}
+                if spot else {}
+            ),
+        )
+        for x in symbole
+    }
+    beine = [(frames[x], configs[x]) for x in symbole]
+    punkt = "Spot (kein Hebel, kein Funding)" if spot else "Perpetual"
+
+    console.print(
+        f"\n[bold]Freigabe[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Kandidat      {genome.name}\n"
+        f"  Betriebspunkt {punkt}\n"
+    )
+    _zeige_vorwissen("freigabe")
+
+    def durchlauf(g) -> tuple[float, int, int]:
+        """Durchgehend je Bein - genau wie die beiden Gates es rechnen."""
+        gewinn, sperren, trades = 0.0, 0, 0
+        for teil, cfg in beine:
+            r = Backtester(cfg).run(teil, compile_genome(g))
+            gewinn += float(r.net_profit)
+            sperren += stillgelegt(r.veto_reasons)
+            trades += len(r.trades)
+        return gewinn, sperren, trades
+
+    b_gewinn, b_sperren, b_trades = durchlauf(genome)
+    console.print(
+        f"[dim]Der Kandidat selbst, durchgehend: {b_gewinn:+.2f} bei "
+        f"{b_trades} Trades, {b_sperren} Einstiege dauerhaft gesperrt.[/]\n"
+    )
+
+    nachbarn = list(nachbarschaft(genome, 0.2))
+    laeufe = []
+    with console.status("") as anzeige:
+        for i, (stellgroesse, faktor, nachbar) in enumerate(nachbarn, 1):
+            anzeige.update(
+                f"[dim]{i}/{len(nachbarn)}  {stellgroesse.name} x{faktor:g}[/]"
+            )
+            gewinn, sperren, trades = durchlauf(nachbar)
+            bericht = run_portfolio_walkforward(
+                frames, lambda nachbar=nachbar: compile_genome(nachbar), configs
+            )
+            wf = (
+                sum(float(t.net_pnl) for t in bericht.all_trades)
+                if bericht.windows else 0.0
+            )
+            laeufe.append(
+                Lauf(
+                    stellgroesse=stellgroesse.name,
+                    kennung=stellgroesse.kennung,
+                    faktor=faktor,
+                    durchgehend=gewinn,
+                    walkforward=wf,
+                    gesperrt=sperren,
+                    trades=trades,
+                )
+            )
+
+    lage = Freigabelage(tuple(laeufe), schwelle=GateThresholds().min_plateau_ratio)
+    console.print(lage.tabelle())
+    farbe = "yellow" if lage.stillgelegte else "green"
+    console.print(f"\n[{farbe}]{lage.urteil()}[/]\n")
+    console.print(
+        "[dim]Die beiden Spalten sind nicht gegeneinander aufzurechnen: Der "
+        "Walk-Forward handelt nur seine Testfenster, der durchgehende Lauf "
+        "die ganze Reihe. Verglichen wird das Vorzeichen - mehr benutzt das "
+        "Gate auch nicht.[/]"
+    )
+
+
+@app.command()
 def zeitachse(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",

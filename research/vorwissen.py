@@ -51,6 +51,7 @@ __all__ = ["STICHWORTE", "Fundstueck", "auskunft", "was_schon_dasteht"]
 STICHWORTE: dict[str, tuple[str, ...]] = {
     "reibung": ("Reibung", "Kopplung", "Kostenanteil", "Kippfaktor"),
     "vorratsdecke": ("Vorrat", "Kopplung", "Trade-Zahl", "Decke"),
+    "freigabe": ("Sperre", "Kill-Switch", "Plateau", "Risk-Officer"),
 }
 
 #: Die drei Register, in der Reihenfolge, in der sie zaehlen.
