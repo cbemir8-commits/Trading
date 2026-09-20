@@ -2701,9 +2701,20 @@ OFFEN: tuple[Richtung, ...] = (
         "jetzt im Nachweis und die Unterdeckung wird gemeldet; gesperrt wird "
         "sie nicht, das naehme dem Projekt den einzigen Handelsweg. Zu "
         "entscheiden: Korbhandel bauen oder je Bein zulassen - beides kostet, "
-        "und beides faellt nicht in einer Fehlermeldung",
+        "und beides faellt nicht in einer Fehlermeldung. **Die 8/11 sind "
+        "nicht der Preis der zweiten Wahl** (318): Sie messen den Korb, auf "
+        "ein Bein gekuerzt, auf **demselben** Zeitraum - die richtige Frage "
+        "fuer 'was liefe cli trade'. Wer ein Bein **zulaesst**, misst es auf "
+        "seiner eigenen Reihe, und BTC reicht bis 2012 statt bis 2017 "
+        "zurueck. Dort steht es bei **5 von 11** (117 Trades, DSR 0,4620; "
+        "offen zusaetzlich Out-of-Sample-Sharpe, Drawdown, Bestaendigkeit) - "
+        "gemessen in 'reports/marktkombinationen', nicht neu. Die laengere "
+        "Reihe hilft dem Bein durchaus, nur nicht genug: Die unabhaengigen "
+        "Beobachtungen steigen von 67 auf 107 - und bleiben unter den **115** "
+        "des Korbes auf der kuerzeren Reihe. **Das zweite Bein wiegt mehr als "
+        "2054 zusaetzliche Tage des ersten**",
         263,
-        264,
+        318,
     ),
     Richtung(
         "Zahlt der Bestand dann, wenn Longs am meisten zahlen?",

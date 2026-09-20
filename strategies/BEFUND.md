@@ -28318,3 +28318,83 @@ Das ist dieselbe Grenze, die schon im Kopf von `test_zusicherungen.py` steht:
 *"Diese Wache deckt die Bauart ab, nicht die Absicht."* Sie hier ebenfalls
 hinzuschreiben ist kein Eingestaendnis, sondern die Bedienungsanleitung - wer
 sie fuer mehr haelt, verlaesst sich auf etwas, das sie nicht leistet.
+
+## Dreihundertachtzehn. Was ein Bein kostet, wenn man es wirklich zulaesst
+
+### Zuerst: Ich habe etwas nachgemessen, das schon dastand
+
+Der Speicher meldet BTC mit 5355 Tageskerzen und ETH mit 3301. Die elf Gates
+laufen auf dem gemeinsamen Bereich, also auf 3300 Tagen - 2054 BTC-Tage
+bleiben liegen. Dazu steht in `research/historie.py`:
+
+    Der hat in die andere Richtung gemessen - mehr Historie, weiter zurueck -
+    und diese Richtung gibt es hier nicht mehr: Der gemeinsame Bereich
+    beginnt am 16.08.2017, weil dort die ETH-Reihe beginnt.
+
+Das sah nach einer Luecke aus, und ich habe gemessen: BTC allein auf seiner
+ganzen Reihe, Spot- und Perpetual-Punkt.
+
+Das Ergebnis stand schon in `reports/marktkombinationen/2026-09-13_010559.json`
+- vom 13. September, eine Woche alt:
+
+    BTC   117 Trades   DSR 0,4620   5/11
+          offen: Messlatte, Out-of-Sample-Sharpe, Drawdown,
+                 Schlechtestes Jahr, Bestaendigkeit, Deflated Sharpe
+
+Meine Messung: 117 Trades, DSR 0,4560, 5/11, dieselben sechs Gates. Der
+Unterschied in der vierten Stelle ist der Zaehlerstand (198 damals, 203
+heute). `cli marktkombinationen` faehrt jede Kombination auf ihrem **eigenen**
+gemeinsamen Bereich, bei einem Markt also auf seiner ganzen Reihe - die Frage
+war beantwortet, bevor ich sie gestellt habe.
+
+Das ist der Fehler aus Befund 302, nur billiger: Dort waren es 106 Minuten,
+hier ein paar. Gefunden habe ich ihn, weil ich vor dem Bauen in die Berichte
+gesehen habe - nicht, weil ich vor dem Messen hineingesehen haette. Der
+Ablauf sagt "Was ist der Stand?" als Schritt 1, und `reports/` steht dort
+ausdruecklich.
+
+### Was nicht dastand
+
+Zwei Dinge, und das zweite zaehlt.
+
+**Die unabhaengigen Beobachtungen.** Der Bericht speichert `trades`, `dsr`,
+`cagr_pct`, `rueckgang_pct` und die Gates - nicht `n_eff`. Genau die Zahl
+haengt aber am haertesten Gate:
+
+    Umfang                          Tage   Trades   n_eff   DSR      Gates
+    Korb BTC+ETH, gemeinsam         3300      158     115   0,5826    9/11
+    BTC allein, gemeinsam           3300       77      67   0,1077    8/11
+    BTC allein, ganze Reihe         5354      117     107   0,4560    5/11
+
+Die laengere Reihe **wirkt**: 67 auf 107 unabhaengige Beobachtungen sind
++60 %, und der Deflated Sharpe steigt von 0,11 auf 0,46. Sie reicht nur
+nicht - 107 bleiben unter den 115, die der Korb auf der **kuerzeren** Reihe
+liefert.
+
+**Das zweite Bein wiegt mehr als 2054 zusaetzliche Tage des ersten.**
+
+### Und damit die Zahl, die in der offenen Entscheidung fehlte
+
+Befund 264 endet mit: *"Zu entscheiden: Korbhandel bauen oder je Bein
+zulassen."* Die Zahlen daneben lauten: Korb 9/11, nur BTC 8/11, nur ETH 8/11.
+
+Die 8/11 messen den Korb, **auf ein Bein gekuerzt, auf demselben Zeitraum**.
+Das ist die richtige Zahl fuer die Frage, die 264 gestellt hat - "was liefe
+`cli trade`, und ist das, was bestanden hat?".
+
+Es ist nicht die Zahl fuer die Frage, mit der der Eintrag endet. Wer ein Bein
+**zulaesst**, misst es auf seiner eigenen Reihe, und dort steht BTC bei
+**5 von 11**. Drei Gates mehr fallen, weil die Jahre 2012 bis 2017 den
+Absturz von 2014/15 tragen: Out-of-Sample-Sharpe, Drawdown, Bestaendigkeit.
+
+Der Eintrag gab dem Nutzer damit 8/11 als Preis der zweiten Wahl, gemessen
+sind 5/11. Dieselbe Gestalt wie Befund 316: eine Zahl, die unter einem
+anderen Umfang gemessen wurde, als die Frage meint, der sie antwortet.
+
+### Was geaendert wurde
+
+Nichts gerechnet, nichts verstellt. Der Eintrag zu 264 nennt jetzt beide
+Zahlen und sagt, welche zu welcher Frage gehoert; `research/historie.py` sagt
+"fuer den Korb" statt "hier" und traegt die Tabelle oben. Damit bleibt
+"Historie" als Quelle der fehlenden Beobachtungen geschlossen - aber aus
+einem gemessenen Grund und nicht, weil es die Richtung nicht gaebe.

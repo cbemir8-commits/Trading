@@ -31,10 +31,36 @@ Zwei Dinge stehen darin, und beide sind wichtig.
 Historie kuerzt, bekommt keine bessere Regel, sondern weniger Evidenz.
 
 Das ist **keine Widerlegung von Befund 14.** Der hat in die andere Richtung
-gemessen - mehr Historie, weiter zurueck - und diese Richtung gibt es hier
-nicht mehr: Der gemeinsame Bereich beginnt am 16.08.2017, weil dort die
-ETH-Reihe beginnt. Gemessen ist die Richtung, die fuer die naechste
+gemessen - mehr Historie, weiter zurueck - und diese Richtung gibt es **fuer
+den Korb** nicht mehr: Der gemeinsame Bereich beginnt am 16.08.2017, weil
+dort die ETH-Reihe beginnt. Gemessen ist die Richtung, die fuer die naechste
 Entscheidung zaehlt.
+
+**Fuer ein einzelnes Bein gibt es sie sehr wohl** (Befund 318). Die
+BTC-Reihe beginnt am 01.01.2012, also 2054 Tage frueher - 5355 Balken gegen
+3301. Hier stand bis Befund 318 nur "diese Richtung gibt es hier nicht
+mehr", und das las sich wie eine Aussage ueber das Projekt statt ueber den
+Korb.
+
+Gemessen ist sie laengst, in ``reports/marktkombinationen`` (jede Kombination
+laeuft auf ihrem **eigenen** gemeinsamen Bereich, bei einem Markt also auf
+seiner ganzen Reihe), und die unabhaengigen Beobachtungen sind in Befund 318
+dazugekommen:
+
+    Umfang                          Tage   Trades   n_eff   DSR      Gates
+    Korb BTC+ETH, gemeinsam         3300      158     115   0,5826    9/11
+    BTC allein, gemeinsam           3300       77      67   0,1077    8/11
+    BTC allein, ganze Reihe         5354      117     107   0,4560    5/11
+
+**Die laengere Reihe hilft dem Bein, nur nicht genug.** Von 67 auf 107
+unabhaengige Beobachtungen ist ein Zuwachs von 60 %, und der Deflated Sharpe
+steigt von 0,11 auf 0,46 - die Richtung wirkt also. Sie bleibt trotzdem unter
+den 115 des Korbes auf der **kuerzeren** Reihe, und sie kostet drei weitere
+Gates: Die Jahre 2012 bis 2017 tragen den Absturz von 2014/15, und
+Out-of-Sample-Sharpe, Drawdown und Bestaendigkeit fallen dort.
+
+Damit bleibt "Historie" als Quelle der fehlenden Beobachtungen geschlossen -
+aber aus einem gemessenen Grund und nicht, weil es die Richtung nicht gaebe.
 
 **Zweitens: der Deflated Sharpe haengt fast nur an n.** Bei gleichbleibender
 Guete faellt er von 0,8640 auf 0,1347, wenn die Historie von 3277 auf 1451
