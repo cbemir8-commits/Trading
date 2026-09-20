@@ -2465,6 +2465,30 @@ BEHOBEN: tuple[Richtung, ...] = (
         "geratene waere schlimmer als keine",
         316,
     ),
+    # Die Wache zu 316 - und danach gesucht statt gelesen, diesmal ohne
+    # zweiten Fund. Dieselbe Reihenfolge wie 230/231.
+    Richtung(
+        "Die Wache von 231 sah nur die eine Gestalt des Fehlers",
+        "231 sucht **Doppelgaenger**: dieselbe Groesse, zwei Abschnitte, "
+        "zwei Prozentwerte. Befund 316 hatte die andere Gestalt - eine "
+        "Groesse, die nur **einmal** dastand, und zwar mit dem Wert des "
+        "anderen Betriebspunkts. Kein Doppelgaenger, keine Prozentzahl; die "
+        "Wache konnte es nicht sehen. Dazu kommt jetzt eine zweite Regel, "
+        "ebenso mechanisch: Jeder 'Aussicht'-Stand muss seinen "
+        "Betriebspunkt nennen oder mit Grund in 'OHNE_PUNKT' stehen - die "
+        "Bauart von 'MEHRFACH'. Eine Gegenprobe nimmt das Etikett wieder "
+        "weg und sieht die Wache fallen. **Gesucht und nichts gefunden**: "
+        "Von den Feldern, in denen sich die beiden Punkte unterscheiden "
+        "(Guete, DSR, Schiefe, Woelbung, bestandene Gates, Fundstelle, "
+        "noetiges n), steht die verlangte Evidenz fuer **beide** Punkte da "
+        "(190 und 221); die vier Kommazahlen kommen im Bericht nicht in "
+        "ihrer Rohform vor, und die uebrigen sind einstellige oder "
+        "dreistellige Ganzzahlen, die sich mechanisch nicht zuordnen "
+        "lassen - '7' steht in jedem zweiten Satz. Die Wache deckt damit "
+        "die Groessen ab, die ein eigenes Objekt tragen, und nicht jede "
+        "Zahl; das ist ihre Grenze und steht als solche da",
+        317,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

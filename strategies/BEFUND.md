@@ -28237,3 +28237,84 @@ liest sich wie Fortschritt. Haette er 8,3 statt 5,9 Jahre gesagt, waere es
 jemandem aufgefallen; andersherum nicht. Dass der Kopf den schlechteren Punkt
 meldet und der Koerper die bessere Zahl, ist genau die Kombination, die nicht
 auffaellt.
+
+## Dreihundertsiebzehn. Die Wache von 231 sah nur die eine Gestalt des Fehlers
+
+Befund 316 war der dritte seiner Art - nach 229 ("Zweitpunkt fuer Erstpunkt
+gehalten") und 230 ("Zwei Luecken in einem Bericht"). Drei Mal dieselbe
+Sache: eine Zahl, die zum einen Betriebspunkt gehoert, steht unter dem
+anderen.
+
+Nach 230 ist eine Wache gebaut worden (Befund 231). Warum hat sie 316 nicht
+gefunden?
+
+### Weil es die andere Gestalt war
+
+231 sucht **Doppelgaenger**: derselbe Prozentwert in zwei Abschnitten, mit
+zwei verschiedenen Zahlen. So sah 230 aus - +15,0 % im Urteil, +24,3 % einen
+Abschnitt weiter.
+
+316 sah anders aus:
+
+    WIE WEIT ES NOCH IST
+      Bestand allein   mindestens 2152 Tage (5.9 Jahre) fuer 75 fehlende
+                       Beobachtungen  (Befund 159)
+
+Eine Zahl, **einmal** genannt, an genau einer Stelle. Kein Doppelgaenger,
+kein Prozentwert. Die Wache hatte nichts, woran sie haette anschlagen
+koennen.
+
+### Die zweite Regel
+
+Sie ist genauso mechanisch wie die erste, nur greift sie am Objekt statt am
+Text: Jeder `Aussicht`-Stand des Projekts muss seinen Betriebspunkt nennen
+oder mit Grund in `OHNE_PUNKT` stehen - dieselbe Bauart wie `MEHRFACH`.
+
+Die Staende werden aus dem Modul gelesen, nicht aus einer zweiten Liste, die
+danebenlaufen koennte. Wer morgen `AUSSICHT_15MINUTEN` anlegt und sie ohne
+Etikett in den Bericht haengt, faellt hier auf.
+
+Eine Gegenprobe nimmt `AUSSICHT` das Etikett wieder weg und sieht die Wache
+fallen - ohne sie waere nicht zu sagen, ob sie eine Gefahr abwehrt oder eine
+Selbstverstaendlichkeit feststellt.
+
+### Gesucht, und diesmal nichts gefunden
+
+Dieselbe Reihenfolge wie bei 230/231: erst die Wache, dann die Frage, ob es
+einen zweiten Fall gibt.
+
+Punktabhaengig heisst, dass `SPOTPUNKT` und `PERPETUALPUNKT` verschiedene
+Werte liefern. Gemessen, welche Felder das sind und wo ihre Werte im Bericht
+stehen:
+
+    Feld          Spot      Perpetual   im Bericht
+    guete         0,2708    0,2535      nicht in Rohform
+    dsr           0,5827    0,4576      nicht in Rohform
+    schiefe       3,4646    3,4934      nicht in Rohform
+    woelbung      15,9173   16,1849     nicht in Rohform
+    bestanden     9         7           beide, vielfach
+    befund        152       235         beide
+    noetiges_n    190       221         beide, seit 316
+
+Die vier Kommazahlen kommen im Bericht nicht in ihrer Rohform vor - er
+formatiert sie anders oder nennt sie gar nicht. Die verlangte Evidenz steht
+seit Befund 316 fuer beide Punkte da. Bleiben `bestanden` und `befund`:
+ein- und dreistellige Ganzzahlen, die sich mechanisch nicht zuordnen lassen.
+Mein Suchmuster hat die "7" aus `bestanden` in "PUNKTE AUS DEM AUFTRAG"
+gemeldet - dort steht sie aus ganz anderem Anlass. Das ist ein Fehlalarm des
+Musters und kein Fund.
+
+**Kein zweiter Fall von 316.**
+
+### Was die Wache nicht kann
+
+Sie deckt die Groessen ab, die ein **eigenes Objekt** tragen. Eine Zahl, die
+irgendwo im Text ausgerechnet und hingeschrieben wird, sieht sie nicht -
+dagegen hilft nur, was `referenz.py` seit Befund 136 tut und was 235 fuer die
+Handlungsliste durchgesetzt hat: die Zahl an eine Rechnung binden statt sie
+zu schreiben.
+
+Das ist dieselbe Grenze, die schon im Kopf von `test_zusicherungen.py` steht:
+*"Diese Wache deckt die Bauart ab, nicht die Absicht."* Sie hier ebenfalls
+hinzuschreiben ist kein Eingestaendnis, sondern die Bedienungsanleitung - wer
+sie fuer mehr haelt, verlaesst sich auf etwas, das sie nicht leistet.
