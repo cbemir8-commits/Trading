@@ -395,3 +395,84 @@ class TestDieAlteRangfolgeAendertSichNurUnten:
 
         assert len(drunter) == 6
         assert max(r["trades"] for r in drunter) == 302
+
+
+class TestDerBerichtIstAelterAlsDieWache:
+    """**Befund 323 - die Berichtigung zu 322.**
+
+    322 hat aus dem Katalogbericht geschlossen, dass ``cli nachpruefung``
+    Generationen fremder Kerzenlaengen mitmisst, und daraus eine "offene
+    Frage" gemacht. Sie war seit Befund 217 beantwortet: Der Befehl
+    ueberspringt sie und sagt es (``tests/test_nachpruefung_kerzen.py``).
+
+    Der Grund war ein Datum. Der Bericht stammt vom 22.08.2026, die Wache
+    vom 06.09.2026 - fuenfzehn Tage juenger. Was im Bericht steht, war bei
+    seiner Entstehung richtig und ist seither nicht mehr moeglich.
+
+    Diese Tests halten die berichtigten Zahlen an ``VORGESEHEN`` fest: Wer
+    die Zuordnung aendert, aendert sie mit, statt sie im Laborbuch
+    veralten zu lassen.
+    """
+
+    BERICHTE = Path("reports/nachpruefung")
+
+    def _zeilen(self):
+        import json
+
+        dateien = sorted(self.BERICHTE.glob("*.json"))
+        if not dateien:
+            pytest.skip("keine Nachpruefungen im Berichtsordner")
+        return json.loads(dateien[-1].read_text(encoding="utf-8"))["ergebnisse"]
+
+    def test_die_wache_gibt_es_und_sie_greift_hier(self) -> None:
+        """Der Satz, den 322 bestritten hat - am Quelltext geprueft."""
+        import ast
+
+        baum = ast.parse(Path("cli.py").read_text(encoding="utf-8"))
+        quelle = next(
+            ast.unparse(n)
+            for n in ast.walk(baum)
+            if isinstance(n, ast.FunctionDef) and n.name == "nachpruefung"
+        )
+
+        assert "passt_zum_intervall" in quelle
+        assert "uebersprungen" in quelle
+
+    def test_dreiundzwanzig_zeilen_wuerden_heute_wegfallen(self) -> None:
+        """Genau die Zahl aus Befund 217, gegen den Bericht gerechnet."""
+        from research.seeds import passt_zum_intervall
+
+        weg = [
+            r for r in self._zeilen()
+            if not passt_zum_intervall(r["generation"], "D")
+        ]
+
+        assert len(weg) == 23
+
+    def test_vierzehn_regeln_ohne_trade_bleiben(self) -> None:
+        """**Der Kern von 322, nach der Berichtigung.** Sie sind hier zu
+        Recht und handeln trotzdem nicht."""
+        from research.seeds import passt_zum_intervall
+
+        bleiben = [
+            r for r in self._zeilen()
+            if r["trades"] == 0 and passt_zum_intervall(r["generation"], "D")
+        ]
+
+        assert len(bleiben) == 14
+
+    def test_zwoelf_davon_haben_keine_vermerkte_kerzenlaenge(self) -> None:
+        """Was offen bleibt: Generation 1, 2 und 4 stehen auf ``None``, und
+        eine fehlende Angabe ist keine Ablehnung (Befund 184)."""
+        from research.seeds import VORGESEHEN, passt_zum_intervall
+
+        bleiben = [
+            r for r in self._zeilen()
+            if r["trades"] == 0 and passt_zum_intervall(r["generation"], "D")
+        ]
+        ohne_angabe = [
+            r for r in bleiben if VORGESEHEN.get(r["generation"]) is None
+        ]
+
+        assert len(ohne_angabe) == 12
+        assert {r["generation"] for r in ohne_angabe} == {1, 2, 4}

@@ -2581,8 +2581,16 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Gate geurteilt hat. **Die Kopfzeile aendert sich nicht**: Die "
         "Spitze handelt 51 bis 152 Trades, also ueber jeder Aussetzschwelle "
         "(20 fuer Monte-Carlo, 30 fuer die beiden anderen). Gemessen wird "
-        "unveraendert",
+        "unveraendert. **Berichtigt (323)**: Der Bericht, aus dem die 33 "
+        "stammen, ist vom 22.08. und damit **aelter als die Wache aus "
+        "Befund 217** (06.09.); von den 33 sind 19 Viertelstundenregeln, "
+        "die heute uebersprungen wuerden. Bleiben **14**, die auch heute "
+        "null Mal handeln und je fuenf Gates gutgeschrieben bekamen - "
+        "zwoelf davon aus Generationen ohne vermerkte Kerzenlaenge (1, 2, "
+        "4). Der Befund selbst steht unveraendert, falsch war nur die "
+        "Ursachenzuschreibung",
         322,
+        323,
     ),
 )
 

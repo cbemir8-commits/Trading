@@ -28829,3 +28829,88 @@ Sie steht hier als offene Frage und nicht als Aenderung.
 **erwaehnt, nicht nachgemessen** - der Treffer haengt am Namen 'Trendfolge
 Ausbruch', und die n_eff 251 von dort sind die Vereinigung mit dem Bestand,
 nicht die Regel allein. Nichts nachzuziehen.
+
+## Dreihundertdreiundzwanzig. Die offene Frage aus 322 war seit zwei Wochen beantwortet
+
+Befund 322 endet mit einem Absatz, der falsch ist. Er lautet:
+
+    Ob `nachpruefung` solche Paarungen kuenftig ueberspringen oder markieren
+    soll, ist eine eigene Frage - Befund 64 hat die Zuordnung als Daten
+    hinterlegt und die Fehlpaarung im Wettbewerb gesperrt, hier gilt sie
+    nicht.
+
+**Sie gilt hier sehr wohl, seit Befund 217.** Der Code steht in `cli.py`,
+zwanzig Zeilen ueber der Stelle, die ich in 322 geaendert habe:
+
+    if not passt_zum_intervall(nummer, interval_obj.value):
+        uebersprungen.append(nummer)
+        continue
+
+Mit Hinweis im Klartext, mit der Empfehlung `-i 15`, und mit einer eigenen
+Testdatei - `tests/test_nachpruefung_kerzen.py`, elf Tests.
+
+### Wie das passiert ist
+
+Ich habe den Bericht gelesen und daraus auf den Code geschlossen.
+
+    reports/nachpruefung/2026-08-22_072620.json   der Bericht
+    Befund 217, Commit vom 2026-09-06               die Wache
+
+Der Bericht ist **fuenfzehn Tage aelter als die Wache**. Was in ihm steht,
+war zum Zeitpunkt seiner Entstehung richtig und ist seither nicht mehr
+moeglich. Ich habe eine Eigenschaft der Vergangenheit als Eigenschaft der
+Gegenwart hingeschrieben - und dann sogar eine "offene Frage" daraus
+gemacht, die seit zwei Wochen beantwortet ist.
+
+Das ist derselbe Fehler wie in Befund 310: *"Die Ursache war geraten, der
+Wert stand daneben."* Hier stand die Antwort nicht daneben, sondern
+zwanzig Zeilen weiter oben in der Datei, die ich gerade bearbeitet habe.
+
+Und es ist eine Wiederholung von Befund 318 mit vertauschten Rollen: Dort
+habe ich gemessen, statt in den Bericht zu sehen; hier habe ich in den
+Bericht gesehen, statt den Code zu lesen. Ein Bericht traegt ein Datum, und
+das Datum gehoert zur Aussage.
+
+### Was das an 322 aendert - und was nicht
+
+Nachgerechnet, mit dem heutigen `VORGESEHEN` gegen denselben Bericht:
+
+    54 Regeln im Bericht
+    23 davon wuerden heute uebersprungen   (Generation passt nicht zu -i D)
+    31 liefen heute noch
+
+    33 Regeln ohne einen einzigen Trade
+    19 davon sind Viertelstundenregeln     -> heute nicht mehr dabei
+    14 bleiben
+
+Die 23 sind genau die Zahl aus Befund 217 ("dreiundzwanzig von
+dreiundfuenfzig", plus der Bestand).
+
+**Der Kern von 322 steht unveraendert.** Vierzehn Regeln handeln auch heute
+null Mal und bekamen dafuer je fuenf Gates gutgeschrieben:
+
+    Generation 2   5 Regeln   keine Kerzenlaenge vermerkt
+    Generation 1   4 Regeln   keine Kerzenlaenge vermerkt
+    Generation 4   3 Regeln   keine Kerzenlaenge vermerkt
+    Generation 5   2 Regeln   Tageskerzen - richtig hier
+
+Sie sind hier zu Recht, und sie handeln trotzdem nicht. Die Gutschrift war
+real, die Rangfolge war real, und `0/6` statt `5/11` ist weiterhin richtig.
+
+**Falsch war nur die Ursachenzuschreibung** - nicht die Messung, nicht der
+Befund, nicht die Korrektur.
+
+### Was bleibt
+
+Zwoelf der vierzehn stammen aus Generationen, fuer die **keine**
+Kerzenlaenge vermerkt ist (1, 2 und 4 stehen in `VORGESEHEN` auf `None`).
+`passt_zum_intervall` laesst sie ueberall durch, mit der ausdruecklichen
+Begruendung *"eine fehlende Angabe ist keine Ablehnung"* (Befund 184).
+
+Das ist vertretbar und bleibt, wie es ist. Aber es heisst: Von den vierzehn
+Regeln ohne Trade sind zwoelf solche, bei denen niemand weiss, ob sie auf
+Tageskerzen gehoeren. Ob diese drei Generationen eine Kerzenlaenge bekommen
+sollten, ist eine Frage an jemanden, der weiss, wofuer sie gebaut wurden -
+sie steht hier als Frage und nicht als Aenderung.
+
+Und diesmal steht sie hier, nachdem ich den Code gelesen habe.
