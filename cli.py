@@ -4993,6 +4993,17 @@ def abgleich(
                 f"damit nichts ueber den Livegang. 'cli trade' wuerde hier "
                 f"abbrechen.\n"
             )
+        # **Und derselbe Satz fuer den Umfang** (Befund 312). Die
+        # Kerzenlaenge wird seit 263 geprueft, die Beine nie - dabei laufen
+        # die elf Gates auf dem Korb, und ein einzelnes Bein verliert
+        # gemessen ein Gate (264). Ein gruenes "einig" auf einem Bein sagt
+        # ueber den Korb nichts.
+        #
+        # Derselbe Text wie in 'cli trade' und aus derselben Quelle (308):
+        # Zwei Fassungen liefen frueher oder spaeter auseinander.
+        unterdeckung = bedingungen.unterdeckung(symbol)
+        if unterdeckung:
+            console.print(f"[yellow]{unterdeckung}[/]")
 
     ergebnis = vergleiche(frame, lambda: compile_genome(genome), buffer_bars=puffer)
 

@@ -160,6 +160,45 @@ class TestDerLivebetriebSagtEsUndSperrtNicht:
         assert "typer.Exit" not in danach
 
 
+class TestAuchDerAbgleichSagtEs:
+    """**Befund 312.** ``cli abgleich`` traegt im Kopf *"Vor jedem Livegang
+    auszufuehren"*. Seit Befund 263 warnt er, wenn die Kerzenlaenge nicht die
+    zugelassene ist - den **Umfang** hat er nie angesehen.
+
+    Damit konnte ein gruenes *"einig ueber 5355 Balken"* auf einem Bein
+    stehen, waehrend die elf Gates auf dem Korb gemessen sind. Gemessen
+    kostet das ein Gate (264).
+
+    Was hier geprueft wird, ist die **Verdrahtung** - der Text selbst und
+    seine Faelle stehen in ``TestDerLivebetriebSagtEsUndSperrtNicht`` und
+    werden dort aufgerufen (Befund 308).
+    """
+
+    def test_er_fragt_nach_der_unterdeckung(self) -> None:
+        assert "unterdeckung(" in _quelle("abgleich")
+
+    def test_und_bricht_dabei_nicht_ab(self) -> None:
+        """Ein Abgleich auf einem Bein ist eine sinnvolle Pruefung der
+        Engine, nur eben keine Freigabe - genau wie bei der Kerzenlaenge."""
+        quelle = _quelle("abgleich")
+        stelle = quelle.index("unterdeckung(")
+        assert "typer.Exit" not in quelle[stelle : stelle + 400]
+
+    def test_die_kerzenlaenge_wird_weiter_geprueft(self) -> None:
+        """Die neue Wache darf die aeltere nicht verdraengen (263)."""
+        assert "passt_zur_kerzenlaenge(" in _quelle("abgleich")
+
+    def test_beide_befehle_nehmen_denselben_text(self) -> None:
+        """**Der eigentliche Punkt dieser Klasse.** Zwei Fassungen desselben
+        Satzes laufen frueher oder spaeter auseinander - deshalb steht er in
+        ``Zulassungsbedingungen`` und nicht zweimal in ``cli.py``.
+        """
+        satz = "Die elf Gates sind auf dem Korb gemessen"
+        for name in ("trade", "abgleich"):
+            assert satz not in _quelle(name), name
+        assert satz in Zulassungsbedingungen(maerkte=KORB).unterdeckung("BTCUSD_BITSTAMP")
+
+
 class TestAlteDateienBleibenLesbar:
     def test_ein_nachweis_ohne_maerkte_laedt(self, tmp_path: Path) -> None:
         pfad = tmp_path / "champion.json"

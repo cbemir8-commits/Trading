@@ -27762,3 +27762,61 @@ Kostet keinen Versuch: Der zweite Punkt lief ohnehin mit. Versuchszaehler
 203 unveraendert, Suchbudget 73 von 100.
 
 Volle Suite 4193 passed, 2 skipped; ruff check sauber.
+
+## Dreihundertzwoelf. Der Abgleich sah die Kerzenlaenge an, den Umfang nie
+
+Beim Pruefen statt Suchen ist `cli abgleich` gelaufen - der Befehl, der im
+Kopf traegt: *"Vor jedem Livegang auszufuehren."* Ergebnis gruen:
+
+    Einig ueber 5355 Balken - 129 Signale, identisch.
+
+Beim Lesen des Codes danach fiel auf, was er dabei **nicht** ansieht.
+
+### Zwei Pruefungen, eine davon fehlt
+
+Seit Befund 263 vergleicht `abgleich` die Kerzenlaenge mit der zugelassenen:
+
+    Zugelassen wurde auf D, abgeglichen wird auf 15. Die elf Gates sind auf
+    der einen Kerzenlaenge gemessen; dieser Lauf sagt damit nichts ueber den
+    Livegang.
+
+Genau derselbe Satz gilt fuer den **Umfang**, und dort stand nichts. Die elf
+Gates laufen auf dem Korb aus BTC und ETH; `abgleich` nimmt ein Symbol
+(`--symbol`, Vorgabe BTCUSD_BITSTAMP). Ein gruenes "einig" kann also auf
+einem Bein stehen, waehrend zugelassen der Korb ist - und gemessen kostet das
+ein Gate:
+
+    Korb (zugelassen)   158 Trades   9,87 % Rueckgang   9/11
+    nur BTC              77 Trades  10,71 %             8/11  (Schlechtestes Jahr)
+    nur ETH              81 Trades  12,17 %             8/11  (Drawdown)
+
+`cli trade` warnt davor seit Befund 264. Der letzte Schritt **davor** nicht.
+
+### Was jetzt gilt
+
+`abgleich` ruft `Zulassungsbedingungen.unterdeckung(symbol)` auf - dieselbe
+Funktion, die `cli trade` seit Befund 308 benutzt, und denselben Text aus
+derselben Quelle. Gewarnt und nicht abgebrochen, aus demselben Grund wie bei
+der Kerzenlaenge: Ein Abgleich auf einem Bein ist eine sinnvolle Pruefung der
+Engine, nur eben keine Freigabe.
+
+Ein Test haelt fest, dass der Satz in **keinem** der beiden Befehle noch
+einmal ausgeschrieben steht. Zwei Fassungen desselben Satzes laufen frueher
+oder spaeter auseinander - das ist in diesem Projekt oft genug passiert, um
+es nicht noch einmal zu versuchen.
+
+### Warum es hier nicht aufgefallen ist
+
+In diesem Behaelter gibt es keinen zugelassenen Champion. Der Zweig, in dem
+die Pruefung sitzt, laeuft nur **mit** `champion.json` - ohne sie sagt der
+Befehl zu Recht, er sei "kein Livegang-Abgleich". Die Luecke war also nur im
+Code zu sehen und nicht im Lauf; gegengeprueft habe ich sie am echten
+Ladeweg, mit einem Nachweis ueber zwei Beine in einer Wegwerfdatei.
+
+Das ist dieselbe Sorte Stelle wie in Befund 262: Solange kein Champion
+zugelassen ist, faellt nichts auf - und sobald einer da ist, ist es der
+letzte Schritt vor dem Geld.
+
+Kostet keinen Versuch. Versuchszaehler 203 unveraendert, Suchbudget 73 von 100.
+
+Volle Suite 4197 passed, 2 skipped; ruff check sauber.

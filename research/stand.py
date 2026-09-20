@@ -2329,6 +2329,23 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Zustand von vorher",
         311,
     ),
+    # Die Wache aus 308 fehlte dort, wo derselbe Satz genauso gilt.
+    Richtung(
+        "Der Abgleich sah die Kerzenlaenge an, den Umfang nie",
+        "'cli abgleich' traegt im Kopf 'Vor jedem Livegang auszufuehren' und "
+        "prueft seit Befund 263, ob die Kerzenlaenge die zugelassene ist - "
+        "den **Umfang** hat er nie angesehen. Ein gruenes 'einig ueber 5355 "
+        "Balken' konnte damit auf einem Bein stehen, waehrend die elf Gates "
+        "auf dem Korb gemessen sind; gemessen kostet das ein Gate (264: Korb "
+        "9/11, nur BTC 8/11 an 'Schlechtestes Jahr', nur ETH 8/11 am "
+        "Drawdown). 'cli trade' warnt seit 264 davor, der letzte Schritt "
+        "davor nicht. Jetzt ruft auch er 'unterdeckung' auf - **denselben** "
+        "Text aus derselben Quelle (308), gewarnt und nicht abgebrochen, wie "
+        "bei der Kerzenlaenge: Ein Abgleich auf einem Bein prueft die Engine "
+        "und ist keine Freigabe. Ein Test haelt fest, dass der Satz in "
+        "keinem der beiden Befehle noch einmal ausgeschrieben steht",
+        312,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
