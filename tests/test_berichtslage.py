@@ -200,3 +200,112 @@ class TestDerBerichtsartSelbst:
 
         assert "1 Bericht," in eins.kopfzeile()
         assert "4 Berichte," in viele.kopfzeile()
+
+
+# ---------------------------------------------------------------------------
+#  Was die erste Fassung uebersehen hat - Befund 320
+# ---------------------------------------------------------------------------
+class TestDerTrefferHaengtAmBegriffNichtAmSatz:
+    """**Mein eigener Fehler aus Befund 319**, einen Zyklus spaeter gefunden.
+
+    ``auskunft`` zaehlte einen Treffer nur, wo **auch** ein Urteil dastand::
+
+        if a.urteil and a.passt_zu(begriffe):
+
+    Vier der sieben Arten tragen aber keinen zusammenfassenden Satz -
+    ``reibung``, ``teststaerke``, ``vorratsdecke`` und (bis zur zweiten
+    Haelfte dieses Befundes) ``zulassung``. Wer nach "Teststaerke" fragte,
+    bekam die Zeile *"keiner davon beruehrt die Begriffe dieses Laufs"*,
+    obwohl die Art genau so heisst.
+
+    Eine Wache gegen falsche Auskuenfte, die selbst eine falsche Auskunft
+    gibt - und zwar in der gefaehrlichen Richtung: Sie sagt "nichts da".
+    """
+
+    @pytest.fixture
+    def ohne_satz(self, tmp_path: Path) -> Path:
+        wurzel = tmp_path / "reports"
+        (wurzel / "teststaerke").mkdir(parents=True)
+        (wurzel / "teststaerke" / "2026-09-02_211500.json").write_text(
+            json.dumps({"saat": 11, "varianten": {}, "versuche": 198})
+        )
+        return wurzel
+
+    def test_eine_art_ohne_satz_gilt_trotzdem_als_treffer(
+        self, ohne_satz: Path
+    ) -> None:
+        text = auskunft("Teststaerke", wurzel=ohne_satz)
+
+        assert "beruehrt diese Frage" in text
+        assert "keiner davon beruehrt" not in text
+
+    def test_und_sie_sagt_dass_kein_satz_dasteht(self, ohne_satz: Path) -> None:
+        """Sonst sieht die Zeile aus wie ein Bericht ohne Inhalt."""
+        text = auskunft("Teststaerke", wurzel=ohne_satz)
+
+        assert "kein zusammenfassender Satz" in text
+
+    def test_die_treffer_sind_markiert(self, ordner: Path) -> None:
+        """Bei sieben Zeilen muss zu sehen sein, welche gemeint ist."""
+        text = auskunft("marktkombinationen", wurzel=ordner)
+        treffer = [z for z in text.splitlines() if z.startswith("  ->")]
+
+        assert len(treffer) == 1
+        assert "marktkombinationen" in treffer[0]
+
+    def test_ohne_treffer_ist_nichts_markiert(self, ordner: Path) -> None:
+        text = auskunft("Zwiebelsuppe", wurzel=ordner)
+
+        assert not [z for z in text.splitlines() if z.startswith("  ->")]
+
+
+class TestBeideSatzfelder:
+    """Die zweite Haelfte von Befund 320: ``zulassung`` nennt sein Feld
+    ``zusammenfassung`` und stand deshalb ohne Satz da."""
+
+    def test_urteil_wird_gelesen(self, tmp_path: Path) -> None:
+        wurzel = tmp_path / "reports"
+        (wurzel / "a").mkdir(parents=True)
+        (wurzel / "a" / "1.json").write_text(json.dumps({"urteil": "so steht es"}))
+
+        assert berichtslage(wurzel)[0].urteil == "so steht es"
+
+    def test_zusammenfassung_auch(self, tmp_path: Path) -> None:
+        wurzel = tmp_path / "reports"
+        (wurzel / "zulassung").mkdir(parents=True)
+        (wurzel / "zulassung" / "1.json").write_text(
+            json.dumps({"zusammenfassung": "54 Strategien geprueft, 0 zugelassen."})
+        )
+
+        assert "0 zugelassen" in berichtslage(wurzel)[0].urteil
+
+    def test_urteil_geht_vor(self, tmp_path: Path) -> None:
+        """Traegt ein Bericht beide, gilt das Urteil - es ist das Feld, das
+        die drei aelteren Arten seit jeher schreiben."""
+        wurzel = tmp_path / "reports"
+        (wurzel / "a").mkdir(parents=True)
+        (wurzel / "a" / "1.json").write_text(
+            json.dumps({"urteil": "erstes", "zusammenfassung": "zweites"})
+        )
+
+        assert berichtslage(wurzel)[0].urteil == "erstes"
+
+    def test_ein_leeres_feld_gilt_als_keines(self, tmp_path: Path) -> None:
+        """Sonst stuende eine leere Zeile da, wo "kein Satz" gemeint ist."""
+        wurzel = tmp_path / "reports"
+        (wurzel / "a").mkdir(parents=True)
+        (wurzel / "a" / "1.json").write_text(
+            json.dumps({"urteil": "", "zusammenfassung": "der zweite traegt es"})
+        )
+
+        assert berichtslage(wurzel)[0].urteil == "der zweite traegt es"
+
+    def test_die_felder_stehen_an_einer_stelle(self) -> None:
+        """Zwei Listen derselben Feldnamen laufen auseinander."""
+        import inspect
+
+        from research import berichtslage as modul
+
+        quelle = inspect.getsource(modul._urteil)
+
+        assert "SATZFELDER" in quelle

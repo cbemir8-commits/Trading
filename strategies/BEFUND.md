@@ -28470,3 +28470,95 @@ schlimmer als keine.
 Befund 302 hat 255 auf einem unabhaengig gebauten Weg bestaetigt, und das war
 mehr wert als eine Wiederholung desselben Codes. Falsch war beide Male nicht
 der Lauf - falsch war, ihn zu starten, ohne die Antwort zu kennen.
+
+## Dreihundertzwanzig. Die Wache gegen falsche Auskuenfte gab selbst eine
+
+Befund 319 hat `research/berichtslage.py` gebaut, damit vor einem Lauf
+dasteht, was der Berichtsordner schon hergibt. Einen Zyklus spaeter habe ich
+das Werkzeug zum ersten Mal wirklich benutzt - und es hat gelogen.
+
+### Die Frage und die Antwort
+
+Ich wollte wissen, was die zwoelf `teststaerke`-Berichte sagen; die Art
+beantwortet eine erstrangige Frage, *"Liesse die Zulassungsstrecke ueberhaupt
+etwas durch?"*, und ich hatte sie nie gelesen. Also gefragt:
+
+    auskunft("Teststaerke", "Zulassungsstrecke", "Variante", "Saat")
+
+Die Antwort:
+
+    teststaerke             12 Berichte, neuester 2026-09-02_211500
+    ...
+    74 Berichte, keiner davon beruehrt die Begriffe dieses Laufs
+
+Die Art heisst "teststaerke". Der Begriff war "Teststaerke".
+
+### Die Ursache
+
+    if a.urteil and a.passt_zu(begriffe):
+
+Ein Treffer zaehlte nur, wo **auch** ein zusammenfassender Satz dastand. Wie
+viele Arten tragen einen?
+
+    machbarkeit           Urteil   ja
+    marktkombinationen    Urteil   ja
+    nachpruefung          Urteil   ja
+    reibung                        nein
+    teststaerke                    nein
+    vorratsdecke                   nein
+    zulassung                      nein
+
+**Vier von sieben.** Mehr als die Haelfte des Ordners konnte nie als
+einschlaegig gemeldet werden - und der Schlusssatz sagte dann nicht "nichts
+gefunden", sondern "keiner davon beruehrt die Begriffe dieses Laufs". Eine
+Wache gegen falsche Auskuenfte, die selbst eine gibt, und zwar in der
+Richtung, in der sie schadet: Sie sagt "nichts da".
+
+Das ist derselbe Fehler, den ich in Befund 303 fuer das Register behoben
+habe, in dem Werkzeug, das ihn fuer den Berichtsordner beheben sollte.
+
+### Die zweite Haelfte
+
+Beim Nachsehen, warum `zulassung` keinen Satz traegt, stellte sich heraus:
+Es traegt einen, nur heisst das Feld anders.
+
+    zulassung   zusammenfassung   "54 Strategien in 12 Laeufen geprueft,
+                                   0 zugelassen. Vorn: Trend 50 Tage ..."
+
+`_urteil` las nur `urteil`. `SATZFELDER` liest jetzt beide, `urteil` zuerst -
+es ist das Feld, das die drei aelteren Arten seit jeher schreiben.
+
+Damit tragen vier der sieben Arten einen Satz, und die drei ohne sind die
+Protokolle aus Befund 299: Sie haben einen Kopf mit Bedingungen und
+absichtlich keine Zusammenfassung.
+
+### Was jetzt dasteht
+
+    Und was im Berichtsordner schon liegt:
+        machbarkeit             13 Berichte, neuester 2026-09-14_005951
+        ...
+      ->teststaerke             12 Berichte, neuester 2026-09-02_211500
+            (kein zusammenfassender Satz - was gemessen wurde, steht in der Datei)
+        ...
+    **1 von 7 Arten beruehrt diese Frage.** Aufschlagen kostet eine Minute.
+
+Der Pfeil, weil bei sieben Zeilen zu sehen sein muss, welche gemeint ist. Und
+der Satz in Klammern, weil eine Zeile ohne alles sonst aussieht wie ein
+Bericht ohne Inhalt.
+
+Eine Gegenprobe setzt die alte Bedingung wieder ein und sieht zwei Tests
+fallen - ohne sie waere nicht zu sagen, ob sie eine Gefahr abwehren oder eine
+Selbstverstaendlichkeit feststellen.
+
+### Was ich daraus mitnehme
+
+Ein Zyklus zwischen Bau und Fund. Gefunden habe ich es nicht durch
+Nachdenken, sondern weil ich das Werkzeug beim naechsten Mal **benutzt** habe,
+statt es als erledigt abzuhaken - mit einer echten Frage, deren Antwort ich
+nicht kannte.
+
+Das gilt auch fuer die Tests von 319: Sie waren gruen. Sie pruefen den Fall
+"Art mit Urteil trifft" und den Fall "nichts trifft" - den Fall "Art ohne
+Urteil trifft" hat keiner gestellt, weil ich beim Schreiben dieselbe Annahme
+hatte wie beim Bauen. Ein Testfall, der aus derselben Annahme stammt wie der
+Code, prueft sie nicht.

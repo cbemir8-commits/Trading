@@ -2511,6 +2511,28 @@ BEHOBEN: tuple[Richtung, ...] = (
         "dieselbe Regel wie in 'nachmessung' und 'vorwissen'",
         319,
     ),
+    # Mein eigener Fehler aus 319, beim ersten Gebrauch aufgefallen.
+    Richtung(
+        "Die Wache gegen falsche Auskuenfte gab selbst eine",
+        "Beim ersten Gebrauch der Berichtslage habe ich nach 'Teststaerke' "
+        "gefragt und die Antwort bekommen: *'keiner davon beruehrt die "
+        "Begriffe dieses Laufs'* - obwohl eine Berichtsart genau so heisst "
+        "und zwoelf Berichte traegt. Ursache: 'auskunft' zaehlte einen "
+        "Treffer nur, wo **auch** ein Urteil dastand ('if a.urteil and "
+        "a.passt_zu(...)'). **Vier der sieben Arten tragen keinen Satz** - "
+        "reibung, teststaerke, vorratsdecke und zulassung -, also konnte "
+        "mehr als die Haelfte des Ordners nie als einschlaegig gemeldet "
+        "werden. Und der Fehler zeigte in die gefaehrliche Richtung: Er "
+        "sagte 'nichts da'. Behoben ist zweierlei: Der Treffer haengt jetzt "
+        "am Begriff und nicht am Satz, mit einer Marke in der Zeile und dem "
+        "ausdruecklichen Hinweis, dass kein Satz dasteht; und 'zulassung' "
+        "bekommt seinen Satz, weil es sein Feld 'zusammenfassung' nennt - "
+        "'SATZFELDER' liest beide. Eine Gegenprobe setzt die alte Bedingung "
+        "wieder ein und sieht zwei Tests fallen. Ein Zyklus zwischen Bau "
+        "und Fund, und gefunden nur, weil ich das Werkzeug benutzt habe "
+        "statt es abzuhaken",
+        320,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

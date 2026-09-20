@@ -68,14 +68,19 @@ class Berichtsart:
     Schreibern ein Zeitstempel, deshalb sortiert er wie ein Datum."""
 
     urteil: str = ""
-    """Das Urteilsfeld des neuesten Berichts, falls er eines traegt.
+    """Der zusammenfassende Satz des neuesten Berichts, falls er einen traegt.
 
-    Leer heisst "kein Urteilsfeld" und nicht "kein Urteil": Die Protokolle
-    aus Befund 299 tragen einen Kopf mit Bedingungen, aber keinen Satz.
+    Gelesen wird ``urteil`` und - seit Befund 320 - ersatzweise
+    ``zusammenfassung``: Die Zulassungsberichte nennen ihr Feld so, und ohne
+    das stand die ganze Art ohne Satz da.
+
+    Leer heisst "kein Satz" und **nicht** "nichts gemessen": Die Protokolle
+    aus Befund 299 tragen einen Kopf mit Bedingungen, aber keine
+    Zusammenfassung. Vier der sieben Arten sind so.
     """
 
     def passt_zu(self, begriffe: tuple[str, ...]) -> bool:
-        """Beruehrt einer der Begriffe diese Art - im Namen oder im Urteil?"""
+        """Beruehrt einer der Begriffe diese Art - im Namen oder im Satz?"""
         heu = f"{self.art} {self.urteil}".casefold()
         return any(b.casefold() in heu for b in begriffe if b)
 
@@ -84,8 +89,17 @@ class Berichtsart:
         return f"{self.art:22} {self.anzahl:3} {wort}, neuester {self.neuester}"
 
 
+#: Wie die Berichtsarten ihren zusammenfassenden Satz nennen.
+#:
+#: Zwei Namen, weil es zwei gibt: ``machbarkeit``, ``marktkombinationen`` und
+#: ``nachpruefung`` schreiben ``urteil``, die Zulassungsberichte
+#: ``zusammenfassung``. Befund 320 hat die zweite Haelfte nachgetragen.
+SATZFELDER = ("urteil", "zusammenfassung")
+
+
 def _urteil(datei: Path) -> str:
-    """Das Urteilsfeld einer Berichtsdatei - leer, wenn keines dasteht.
+    """Der zusammenfassende Satz einer Berichtsdatei - leer, wenn keiner
+    dasteht.
 
     Faengt breit ab: Eine unlesbare Datei ist ein Grund hinzusehen und kein
     Grund, den Befehl abzubrechen, der sie nur nebenbei liest.
@@ -95,7 +109,12 @@ def _urteil(datei: Path) -> str:
         kopf = json.loads(roh if datei.suffix == ".json" else roh.splitlines()[0])
     except (OSError, ValueError, IndexError):
         return ""
-    return str(kopf.get("urteil", "")) if isinstance(kopf, dict) else ""
+    if not isinstance(kopf, dict):
+        return ""
+    for feld in SATZFELDER:
+        if kopf.get(feld):
+            return str(kopf[feld])
+    return ""
 
 
 def berichtslage(wurzel: Path | None = None) -> tuple[Berichtsart, ...]:
@@ -139,11 +158,23 @@ def auskunft(*begriffe: str, wurzel: Path | None = None, breite: int = 100) -> s
     zeilen = ["Und was im Berichtsordner schon liegt:"]
     getroffen = 0
     for a in arten:
-        zeilen.append(f"  {a.kopfzeile()}")
-        if a.urteil and a.passt_zu(begriffe):
-            getroffen += 1
+        trifft = a.passt_zu(begriffe)
+        # **Der Treffer haengt am Begriff, nicht am Satz** (Befund 320). Die
+        # erste Fassung zaehlte nur, wo auch ein Urteil dastand - und vier
+        # der sieben Arten tragen keines. Wer nach 'teststaerke' fragte,
+        # bekam "keiner beruehrt diese Frage", obwohl die Art so heisst.
+        zeilen.append(f"  {'->' if trifft else '  '}{a.kopfzeile()}")
+        if not trifft:
+            continue
+        getroffen += 1
+        if a.urteil:
             kurz = a.urteil if len(a.urteil) <= breite else a.urteil[:breite] + " ..."
-            zeilen.append(f"      {kurz}")
+            zeilen.append(f"        {kurz}")
+        else:
+            zeilen.append(
+                "        (kein zusammenfassender Satz - was gemessen wurde, "
+                "steht in der Datei)"
+            )
 
     gesamt = sum(a.anzahl for a in arten)
     if getroffen:
