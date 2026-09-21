@@ -46,9 +46,11 @@ class TestDerBefundSelbst:
         assert params["--intervall"] == "D"
         assert params["--generation"] == "", "leer heisst: alle"
 
-    def test_dreiundzwanzig_von_dreiundfuenfzig_gehoeren_nicht_auf_tageskerzen(
+    def test_achtundzwanzig_von_dreiundfuenfzig_gehoeren_nicht_auf_tageskerzen(
         self,
     ) -> None:
+        """23 seit Befund 217, 28 seit Befund 326 - dazugekommen sind die
+        fuenf Regeln der Generation 2."""
         gesamt = sum(len(v) for v in GENERATIONS.values())
         fremd = sum(
             len(GENERATIONS[g])
@@ -57,7 +59,7 @@ class TestDerBefundSelbst:
         )
 
         assert gesamt == 53
-        assert fremd == 23
+        assert fremd == 28
 
 
 class TestFremdeGenerationenWerdenUebersprungen:

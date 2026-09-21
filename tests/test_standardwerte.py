@@ -116,11 +116,15 @@ class TestHerleitung:
         assert _standardintervall(8) == "15"
 
     def test_generationen_ohne_vorgabe_bekommen_tageskerzen(self) -> None:
-        """1 bis 4 haben keine Vorgabe. Tageskerzen, weil dort der Kandidat
-        steht und dort die Kataloge liegen, die eine Vorgabe haben."""
+        """1, 3 und 4 haben keine Vorgabe. Tageskerzen, weil dort der
+        Kandidat steht und dort die Kataloge liegen, die eine Vorgabe haben.
+
+        Generation 2 stand bis Befund 326 auch hier; sie ist gemessen auf
+        '15' gewandert.
+        """
         from cli import _standardintervall
 
-        for generation in (1, 2, 3, 4):
+        for generation in (1, 3, 4):
             assert VORGESEHEN[generation] is None
             assert _standardintervall(generation) == "D"
 

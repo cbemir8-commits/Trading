@@ -438,8 +438,13 @@ class TestDerBerichtIstAelterAlsDieWache:
         assert "passt_zum_intervall" in quelle
         assert "uebersprungen" in quelle
 
-    def test_dreiundzwanzig_zeilen_wuerden_heute_wegfallen(self) -> None:
-        """Genau die Zahl aus Befund 217, gegen den Bericht gerechnet."""
+    def test_achtundzwanzig_zeilen_wuerden_heute_wegfallen(self) -> None:
+        """23 bei Befund 217, **28 seit Befund 326**.
+
+        Dazugekommen sind die fuenf Regeln der Generation 2: Sie handeln auf
+        Tageskerzen null Mal und auf Viertelstunden 1444 Mal und stehen
+        seither auf '15'.
+        """
         from research.seeds import passt_zum_intervall
 
         weg = [
@@ -447,11 +452,12 @@ class TestDerBerichtIstAelterAlsDieWache:
             if not passt_zum_intervall(r["generation"], "D")
         ]
 
-        assert len(weg) == 23
+        assert len(weg) == 28
 
-    def test_vierzehn_regeln_ohne_trade_bleiben(self) -> None:
-        """**Der Kern von 322, nach der Berichtigung.** Sie sind hier zu
-        Recht und handeln trotzdem nicht."""
+    def test_neun_regeln_ohne_trade_bleiben(self) -> None:
+        """**Der Kern von 322, nach zwei Berichtigungen.** 33 bei 322, 14
+        nach 323, neun nach 326 - jedes Mal, weil ein Grund fuer das
+        Schweigen gefunden wurde und nicht, weil die Schwelle nachgab."""
         from research.seeds import passt_zum_intervall
 
         bleiben = [
@@ -459,10 +465,10 @@ class TestDerBerichtIstAelterAlsDieWache:
             if r["trades"] == 0 and passt_zum_intervall(r["generation"], "D")
         ]
 
-        assert len(bleiben) == 14
+        assert len(bleiben) == 9
 
-    def test_zwoelf_davon_haben_keine_vermerkte_kerzenlaenge(self) -> None:
-        """Was offen bleibt: Generation 1, 2 und 4 stehen auf ``None``, und
+    def test_sieben_davon_haben_keine_vermerkte_kerzenlaenge(self) -> None:
+        """Was offen bleibt: Generation 1 und 4 stehen auf ``None``, und
         eine fehlende Angabe ist keine Ablehnung (Befund 184)."""
         from research.seeds import VORGESEHEN, passt_zum_intervall
 
@@ -474,5 +480,27 @@ class TestDerBerichtIstAelterAlsDieWache:
             r for r in bleiben if VORGESEHEN.get(r["generation"]) is None
         ]
 
-        assert len(ohne_angabe) == 12
-        assert {r["generation"] for r in ohne_angabe} == {1, 2, 4}
+        assert len(ohne_angabe) == 7
+        assert {r["generation"] for r in ohne_angabe} == {1, 4}
+
+    def test_drei_der_sieben_sind_keine_frage_der_kerzenlaenge(self) -> None:
+        """**Befund 326.** Die drei aus Generation 4 brauchen die
+        Finanzierungsrate; der Kassamarkt hat keine. Keine Zeile in
+        ``VORGESEHEN`` kann das heilen - ``research/kennzahlen.py`` haelt
+        sie vor dem Lauf heraus.
+
+        Damit sind von den zwoelf offenen Faellen aus Befund 322/323 noch
+        **vier** offen, alle aus Generation 1.
+        """
+        from research.seeds import VORGESEHEN, passt_zum_intervall
+
+        ohne_angabe = [
+            r for r in self._zeilen()
+            if r["trades"] == 0
+            and passt_zum_intervall(r["generation"], "D")
+            and VORGESEHEN.get(r["generation"]) is None
+        ]
+        finanzierung = [r for r in ohne_angabe if r["generation"] == 4]
+
+        assert len(finanzierung) == 3
+        assert len(ohne_angabe) - len(finanzierung) == 4

@@ -2588,9 +2588,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "null Mal handeln und je fuenf Gates gutgeschrieben bekamen - "
         "zwoelf davon aus Generationen ohne vermerkte Kerzenlaenge (1, 2, "
         "4). Der Befund selbst steht unveraendert, falsch war nur die "
-        "Ursachenzuschreibung",
+        "Ursachenzuschreibung. **Aufgeloest (326)**: Die zwoelf waren zwei "
+        "Fragen. Generation 2 handelt auf Tageskerzen null Mal und steht "
+        "gemessen auf '15'; damit fallen heute 28 statt 23 Zeilen weg und "
+        "neun statt vierzehn Regeln bleiben. Von denen sind drei "
+        "Finanzierungsregeln, die der Kassamarkt nicht messen kann - offen "
+        "bleiben **vier**, alle aus Generation 1",
         322,
-        323,
+        326,
     ),
     # Die Lehre aus 323, im Werkzeug statt im Kopf.
     Richtung(
@@ -2632,6 +2637,44 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'research/costfloor.py' war das einzige Forschungsmodul ohne einen "
         "einzigen Test und hat jetzt 22",
         325,
+    ),
+    # Die offene Frage aus 322/323 - und sie war nicht eine Frage, sondern
+    # zwei in derselben Verkleidung.
+    Richtung(
+        "Fuenf Regeln brauchten eine Kennzahl, die es hier nicht gibt",
+        "Befund 322/323 liess zwoelf Regeln offen, die null Mal handeln, "
+        "'aus Generationen ohne vermerkte Kerzenlaenge (1, 2, 4)'. Mit der "
+        "Methode aus Befund 170 ueber beide Maerkte gemessen (Kandidaten je "
+        "Generation, D gegen 15): Generation 1 **1/5** mit 6 Trades gegen "
+        "5/5 mit 670; Generation 2 **0/5 mit 0 Trades** gegen 5/5 mit 1444; "
+        "Generation 4 **0/3 auf beiden**. Damit sind es zwei Fragen. "
+        "Generation 2 traegt den Fingerabdruck der Generation 8 aus Befund "
+        "170 und steht jetzt auf '15' - diesmal in beide Richtungen "
+        "belegbar, weil die Viertelstunden seit Befund 171 im Speicher "
+        "liegen. **Generation 4 ist keine Frage der Kerzenlaenge**: Alle "
+        "drei Regeln stuetzen sich auf die Finanzierungsrate, und Bitstamp "
+        "ist Kassamarkt - 'funding_avg' und 'funding_zscore' sind auf allen "
+        "5355 Tagesbalken leer, jeder Vergleich mit NaN ist falsch. Am "
+        "schaerfsten bei 'Ausbruch ohne Long-Ueberhitzung': Sein Einstieg "
+        "ist derselbe Donchian-50-Ausbruch wie in Generation 2, der "
+        "nachweislich handelt; null Trades kommen allein aus dem Filter "
+        "'funding_zscore < 1,5', der eine *ungewoehnliche* Lage "
+        "ausschliessen soll und ohne Zahl **jeden** Balken ausschliesst. "
+        "**Unerwartet**: Es sind fuenf von 53, nicht drei - zwei gehoeren "
+        "zu Generation 5, der Generation des Spitzenkandidaten, und "
+        "erklaeren deren '1 von 3 Kandidaten, 6 Trades' ohne Vermutung. "
+        "'research/kennzahlen.py' misst das vor dem Lauf, mit demselben "
+        "'prepare'-Aufruf wie der Backtest; 'wettbewerb' und 'rangprobe' "
+        "lassen die stummen Regeln draussen. Das ist der Grund, warum es "
+        "das Gate angeht: 'jede gewertete Regel ist ein Versuch' (Befund "
+        "170), und Versuche heben die Huerde des Deflated Sharpe fuer alle "
+        "anderen. **Kein Urteil ueber die Regeln** - mit "
+        "Finanzierungsdaten laufen sie von selbst wieder mit. **Generation "
+        "1 bleibt bewusst auf 'None'**: Ihre fuenfte Regel handelt sechs "
+        "Mal, und sechs Trades reichen 'Kandidat.aus_trades'. Nach dem "
+        "Mass, das dieses Projekt schon hat, ist sie auf 'D' zu Hause; sie "
+        "umzubuchen hiesse, das Mass fuer ein Bauchgefuehl zu uebergehen",
+        326,
     ),
 )
 

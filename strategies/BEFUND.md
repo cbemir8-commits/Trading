@@ -29084,3 +29084,133 @@ Und `research/costfloor.py` hat jetzt zweiundzwanzig Tests. Der wichtigste
 ist der, der die Gleichheit oben ueber fuenf Stop-Weiten nachrechnet: Er
 haelt fest, dass der vierte Wert der Tabelle das ist, was seine Spalte
 behauptet.
+
+## Dreihundertsechsundzwanzig. Fuenf Regeln brauchten eine Kennzahl, die es hier nicht gibt
+
+Befund 322 fand 33 Regeln, die null Mal handeln und trotzdem je fuenf von elf
+Gates gutgeschrieben bekamen. Befund 323 berichtigte die Zahl auf vierzehn und
+liess eine Frage offen:
+
+    zwoelf davon aus Generationen ohne vermerkte Kerzenlaenge (1, 2, 4)
+
+Das klang nach **einer** Frage - einer fehlenden Zeile in `VORGESEHEN`.
+
+### Gemessen
+
+Mit der Methode aus Befund 170/173 (beide Maerkte, kein Walk-Forward,
+Schwelle ist `Kandidat.aus_trades`), fuer alle zehn Generationen auf beiden
+Kerzenlaengen. Die drei offenen:
+
+    Gen  vorg  hold  kuehl | D: Kand/Regeln  Trades | 15: Kand/Regeln  Trades
+      1  None   180      8 |      1/5             6 |      5/5            670
+      2  None   480     24 |      0/5             0 |      5/5           1444
+      4  None   240     24 |      0/3             0 |      0/3              0
+
+Zur Kontrolle liefen die bekannten mit: Generation 8 liefert auf Tageskerzen
+null Kandidaten, 6 und 7 ebenso. Das ist genau der Befund 170, reproduziert -
+die Methode misst, was sie messen soll.
+
+### Es sind zwei Fragen
+
+**Generation 2 ist eine Frage der Kerzenlaenge.** Alle fuenf Regeln schweigen
+auf Tageskerzen und handeln auf Viertelstunden. Das ist die Lage der
+Generation 8, diesmal in **beide** Richtungen belegbar: Befund 170 hatte keine
+Viertelstunden im Speicher und konnte nur das Gegenteil zeigen. `VORGESEHEN[2]`
+steht jetzt auf `"15"`.
+
+**Generation 4 ist keine.** Sie schweigt auf beiden. Keine Kerzenlaenge
+erklaert das, und keine Zeile in `VORGESEHEN` kann es heilen.
+
+### Woran es liegt
+
+Alle drei Regeln der Generation 4 stuetzen sich auf die Finanzierungsrate:
+
+    Ausbruch ohne Long-Ueberhitzung    Filter   funding_zscore(90) < 1,5
+    Funding-Carry Long                 Einstieg funding_avg(21)    < 0
+    Gegen die ueberhitzte Long-Seite   Einstieg funding_zscore(90) > 2
+
+Gemessen wird auf `BTCUSD_BITSTAMP` und `ETHUSD_BITSTAMP` - **Kassamarkt**.
+Dort gibt es keine Finanzierungsrate. Beide Kennzahlen sind auf allen 5355
+Tagesbalken leer, und jeder Vergleich mit `NaN` ist falsch.
+
+Am schaerfsten ist der erste Fall. Sein Einstieg ist ein schlichter
+Donchian-50-Ausbruch, derselbe wie in Generation 2, und der handelt
+nachweislich. Die null Trades kommen allein aus dem **Filter**: Geschrieben
+ist er, um eine *ungewoehnliche* Lage auszuschliessen - "nur wenn die Longs
+nicht ueberhitzt sind". Wo die Zahl fehlt, schliesst er **jeden** Balken aus.
+
+Eine fehlende Angabe liest sich als Ablehnung. Genau davor warnt
+`passt_zum_intervall` seit Befund 184 - nur eben fuer Kerzenlaengen.
+
+### Es waren nicht drei, sondern fuenf
+
+Die Pruefung ueber den ganzen Katalog:
+
+    D:   5 von 53 Regeln stumm
+    15:  5 von 53 Regeln stumm   (dieselben fuenf)
+
+Zwei davon gehoeren zu **Generation 5** - der Generation des
+Spitzenkandidaten:
+
+    Beteiligt, ausser es ist ueberhitzt   funding_zscore(90) leer
+    Carry-Beteiligung                     funding_avg(7)     leer
+
+Das erklaert deren Messung "1 von 3 Kandidaten, 6 Trades" ohne jede Vermutung.
+Auf dieser Liste haette ich Generation 5 nicht gesucht.
+
+### Warum das das Gate angeht
+
+Aus Befund 170, ueber dieselbe Bauart: *"jede gewertete Regel ist ein
+Versuch"*. Eine Regel, die auf dieser Reihe nichts ausloesen **kann**, kostet
+trotzdem einen Versuch, und Versuche heben die Huerde des Deflated Sharpe fuer
+alle anderen. Das ist das Gate, an dem das Projekt steht - 0,5826 gegen 0,95.
+
+### Was gebaut wurde
+
+`research/kennzahlen.py` fragt vor dem Lauf, welche Kennzahlen ein Genom
+braucht und welche davon auf dieser Reihe durchweg leer sind. Gerechnet wird
+mit `compile_genome(...).prepare(frame)` - **demselben** Aufruf, den der
+Backtest macht. Befund 170 hat sich einmal daran verhoben, die Pruefung anders
+zu rechnen als die Messung; dann prueft sie eine andere Frage.
+
+`cli wettbewerb` und `cli rangprobe` lassen die stummen Regeln draussen und
+schreiben hin, welche und warum.
+
+### Was das ausdruecklich nicht heisst
+
+**Kein Urteil ueber die Regeln.** Leer heisst "auf dieser Reihe nicht zu
+haben" und nicht "schlecht". Dieselben fuenf sind am Perpetual-Betriebspunkt
+mit echten Finanzierungsdaten eine offene Frage - und zwar eine, die sich
+messen laesst, sobald die Daten da sind. Die Pruefung misst bei jedem Lauf
+neu; sie laufen dann von selbst wieder mit, ohne dass jemand eine Liste
+pflegt.
+
+**Keine Anlaufzeit.** Jede Kennzahl ist am Anfang ihrer Reihe leer, solange
+ihr Fenster nicht voll ist. Gefragt ist `durchweg` leer. Alles andere waere
+eine Warnung, die immer angeht - und die ist keine (Befund 324).
+
+### Generation 1 bleibt bewusst unbestimmt
+
+Vier ihrer fuenf Regeln schweigen auf Tageskerzen. Die fuenfte handelt sechs
+Mal, und sechs Trades reichen `Kandidat.aus_trades`. Nach dem Mass, das dieses
+Projekt schon hat, ist Generation 1 auf "D" zu Hause.
+
+Sie umzubuchen hiesse, das Mass fuer ein Bauchgefuehl zu uebergehen - und das
+waere dasselbe wie ein Gate zu lockern, damit etwas besteht. Sie bleibt auf
+`None`, und die Frage bleibt offen.
+
+### Was die Zahlen aus 322/323 jetzt sagen
+
+Gegen denselben Bericht gerechnet:
+
+    Befund   Zeilen, die heute wegfielen   Regeln ohne Trade, die bleiben
+      217                23                            -
+      322                 -                           33
+      323                23                           14
+      326                28                            9
+
+Von den neun sind drei die Finanzierungsregeln der Generation 4 - jetzt
+erklaert. Offen bleiben **vier**, alle aus Generation 1.
+
+Jedes Mal ist die Zahl gefallen, weil ein Grund fuer das Schweigen gefunden
+wurde. Kein einziges Mal, weil eine Schwelle nachgegeben hat.

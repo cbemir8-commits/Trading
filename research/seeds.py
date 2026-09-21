@@ -2286,9 +2286,33 @@ GENERATIONS = {
 #: derselbe Einstieg).
 #:
 #: ``tests/test_generationszuordnung.py`` misst das jetzt bei jedem Lauf.
+#:
+#: **Generation 2 stand bis Befund 326 auf ``None``.** Gemessen ueber beide
+#: Maerkte, mit derselben Methode wie bei Generation 8:
+#:
+#:     Gen  auf D: Kandidaten/Regeln  Trades   auf 15: Kand/Regeln  Trades
+#:       1            1/5                  6          5/5             670
+#:       2            0/5                  0          5/5            1444
+#:       4            0/3                  0          0/3               0
+#:
+#: Alle fuenf Regeln der Generation 2 schweigen auf Tageskerzen und handeln
+#: auf Viertelstunden. Das ist die Lage der Generation 8 aus Befund 170, nur
+#: diesmal in **beide** Richtungen belegbar - 170 hatte keine Viertelstunden
+#: im Speicher und konnte nur das Gegenteil zeigen.
+#:
+#: **Generation 1 bleibt auf ``None``, und das ist kein Versehen.** Vier ihrer
+#: fuenf Regeln schweigen auf Tageskerzen, die fuenfte handelt sechs Mal - und
+#: sechs Trades reichen ``Kandidat.aus_trades``. Nach dem Mass, das dieses
+#: Projekt schon hat, ist Generation 1 auf "D" zu Hause. Es umzubuchen hiesse,
+#: das Mass fuer ein Bauchgefuehl zu uebergehen.
+#:
+#: **Generation 4 ist keine Frage der Kerzenlaenge.** Sie schweigt auf beiden,
+#: weil alle drei Regeln die Finanzierungsrate brauchen und der Kassamarkt
+#: keine hat. Keine Zeile hier kann das heilen; das misst
+#: ``research/kennzahlen.py`` vor dem Lauf.
 VORGESEHEN: dict[int, str | None] = {
     1: None,
-    2: None,
+    2: "15",
     3: None,
     4: None,
     5: "D",

@@ -560,6 +560,7 @@ def wettbewerb(
         attach_funding,
         schedule_from_frame,
     )
+    from research import kennzahlen
     from research.admission import (
         load_trials,
         run_admission,
@@ -756,6 +757,34 @@ def wettbewerb(
         _pruefe_generation(generation, interval_obj)
         aktuell = load_seeds(generation)
         herkunft = "Katalog"
+
+    # **Befund 326.** Eine Regel kann aus zwei Gruenden nichts ausloesen:
+    # falsche Kerzenlaenge - dagegen steht ``passt_zum_intervall`` - oder eine
+    # Kennzahl, die es auf dieser Reihe nicht gibt. Am Kassa-Betriebspunkt
+    # sind das die fuenf Finanzierungsregeln aus den Generationen 4 und 5.
+    # Gewertet zu werden kostet jede einen Versuch, und jeder Versuch hebt die
+    # Huerde des Deflated Sharpe fuer alle anderen.
+    verstummt = kennzahlen.stumme(list(aktuell), frame)
+    if verstummt:
+        blind = {x.genom for x in verstummt}
+        aktuell = [g for g in aktuell if g.name not in blind]
+        console.print(
+            f"[yellow]{len(verstummt)} Regeln bleiben draussen[/] - sie "
+            f"stuetzen sich auf Kennzahlen, die diese Reihe nicht hat:"
+        )
+        for x in verstummt:
+            console.print(f"  {x.satz()}")
+        console.print(
+            "  [dim]Kein Urteil ueber die Regeln - sie sind hier nicht zu "
+            "messen. Mit Finanzierungsdaten laufen sie von selbst wieder "
+            "mit.[/]\n"
+        )
+        if not aktuell:
+            console.print(
+                "[red]Keine Regel dieser Generation ist auf dieser Reihe zu "
+                "messen.[/]"
+            )
+            raise typer.Exit(2)
 
     # **Der Wettbewerb konnte bis hierher nur abwandeln, was er schon kennt.**
     #
@@ -8743,6 +8772,7 @@ def rangprobe(
 
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research import kennzahlen
     from research.admission import load_trials
     from research.gates import evaluate_gates
     from research.rangprobe import Doppel, Rangprobe, schranke
@@ -8791,6 +8821,18 @@ def rangprobe(
         g for g in VORGESEHEN if passt_zum_intervall(g, intervall)
     ):
         kandidaten.extend(load_seeds(generation))
+
+    # **Befund 326.** ``passt_zum_intervall`` haelt Regeln von der falschen
+    # Kerzenlaenge fern; es gibt aber einen zweiten Grund, aus dem eine Regel
+    # hier nichts ausloesen kann - eine Kennzahl, die es auf dieser Reihe
+    # nicht gibt. Am Kassa-Betriebspunkt sind das die fuenf
+    # Finanzierungsregeln. Gewertet zu werden kostet jede einen Versuch, und
+    # Versuche heben die Huerde des Deflated Sharpe fuer alle anderen.
+    verstummt = kennzahlen.stumme(kandidaten, erster)
+    if verstummt:
+        blind = {x.genom for x in verstummt}
+        kandidaten = [g for g in kandidaten if g.name not in blind]
+
     if not kandidaten:
         console.print(
             f"[red]Kein Katalog fuer {interval_obj.label} vorgesehen.[/]"
@@ -8803,6 +8845,18 @@ def rangprobe(
         f"  Konto      {kapital:,.0f} EUR in beiden Laeufen\n"
         f"  Versuche   {trials} in beiden Laeufen\n"
     )
+    if verstummt:
+        console.print(
+            f"[yellow]{len(verstummt)} Regeln bleiben draussen[/] - sie "
+            f"stuetzen sich auf Kennzahlen, die diese Reihe nicht hat:"
+        )
+        for x in verstummt:
+            console.print(f"  {x.satz()}")
+        console.print(
+            "  [dim]Kein Urteil ueber die Regeln - sie sind hier nicht zu "
+            "messen. Mit Finanzierungsdaten laufen sie von selbst wieder "
+            "mit.[/]\n"
+        )
 
     doppel = []
     # Der Sharpe gehoert nicht in ``Doppel`` - dort steht, was fuer das

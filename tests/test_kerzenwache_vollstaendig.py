@@ -117,12 +117,15 @@ class TestWasAufTageskerzenNichtHingehoert:
 
         assert falsch / gesamt > 0.35
 
-    def test_es_sind_die_generationen_sechs_bis_acht(self) -> None:
+    def test_es_sind_die_generationen_zwei_sechs_sieben_acht(self) -> None:
+        """6 bis 8 seit Befund 170, Generation 2 seit Befund 326: null
+        Trades auf Tageskerzen ueber alle fuenf Regeln, 1444 auf
+        Viertelstunden."""
         nicht_auf_d = {
             n for n in GENERATIONS if not passt_zum_intervall(n, "D")
         }
 
-        assert nicht_auf_d == {6, 7, 8}
+        assert nicht_auf_d == {2, 6, 7, 8}
         assert all(VORGESEHEN.get(n) == "15" for n in nicht_auf_d)
 
     def test_generationen_ohne_vorgabe_gelten_ueberall(self) -> None:

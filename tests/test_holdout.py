@@ -162,24 +162,45 @@ class TestDieRegelWirdBeimNamenGenannt:
         with pytest.raises(typer.Exit):
             _katalogregel("Gibt es nicht")
 
-    def test_gesucht_wird_ueber_alle_generationen(self) -> None:
-        """**Die Lehre aus Befund 184.** Wer nach Intervall filtert, schliesst
-        die vier nicht festgelegten Generationen aus - und genau in ihnen
-        steht 'Grosser Trendausbruch'."""
+    @staticmethod
+    def _heimat(name: str) -> int:
         from cli import _katalogregel
-        from research.seeds import GENERATIONS, VORGESEHEN
+        from research.seeds import GENERATIONS
 
-        gefunden = _katalogregel("Grosser Trendausbruch")
+        gefunden = _katalogregel(name)
         heimat = [
             gen
             for gen, liste in GENERATIONS.items()
             if any(b().name == gefunden.name for b in liste)
         ]
-
         assert heimat, "die Regel muss in einer Generation stehen"
-        assert VORGESEHEN.get(heimat[0]) is None, (
-            "dieser Test prueft gerade den None-Fall"
-        )
+        return heimat[0]
+
+    def test_gesucht_wird_ueber_alle_generationen(self) -> None:
+        """**Die Lehre aus Befund 184.** ``_katalogregel`` sucht ueber den
+        ganzen Katalog; wer stattdessen nach Kerzenlaenge filtert, findet
+        'Grosser Trendausbruch' auf Tageskerzen nicht.
+
+        Bis Befund 326 lag das daran, dass seine Generation 2 auf ``None``
+        stand und sechs Aufrufstellen in ``cli.py`` genau die ausschlossen.
+        Seit 326 steht sie gemessen auf '15' - der Grund hat sich geaendert,
+        die Lehre nicht: Ein Filter nach "D" findet diese Regel nie.
+        """
+        from research.seeds import passt_zum_intervall
+
+        heimat = self._heimat("Grosser Trendausbruch")
+
+        assert not passt_zum_intervall(heimat, "D")
+
+    def test_auch_die_ohne_vermerkte_kerzenlaenge(self) -> None:
+        """Der ``None``-Fall, an dem Befund 184 haengt - mit einer Regel, die
+        heute noch dort steht. 'Trendfolge Ausbruch' gehoert zu Generation 1,
+        und die bleibt nach Befund 326 bewusst unbestimmt."""
+        from research.seeds import VORGESEHEN
+
+        heimat = self._heimat("Trendfolge Ausbruch")
+
+        assert VORGESEHEN.get(heimat) is None
 
 
 class TestDieSiebenAusBefund184:
