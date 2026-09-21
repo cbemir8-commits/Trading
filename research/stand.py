@@ -2673,8 +2673,40 @@ BEHOBEN: tuple[Richtung, ...] = (
         "1 bleibt bewusst auf 'None'**: Ihre fuenfte Regel handelt sechs "
         "Mal, und sechs Trades reichen 'Kandidat.aus_trades'. Nach dem "
         "Mass, das dieses Projekt schon hat, ist sie auf 'D' zu Hause; sie "
-        "umzubuchen hiesse, das Mass fuer ein Bauchgefuehl zu uebergehen",
+        "umzubuchen hiesse, das Mass fuer ein Bauchgefuehl zu uebergehen. "
+        "**Berichtigt (327)**: Die Begruendung ueber das Gate war "
+        "ueberzogen. Nachgerechnet sind fuenf Versuche 0,0054 DSR-Punkte "
+        "gegen eine Luecke von 0,3673 - **1,5 %**. Der Fund selbst steht; "
+        "was falsch war, ist die Groessenordnung daneben",
         326,
+        327,
+    ),
+    # Die eigene Begruendung aus 326 nachgerechnet - mit einem Werkzeug, das
+    # seit Befund 139 dafuer dasteht.
+    Richtung(
+        "Die Versuchsersparnis aus 326 war 1,5 Prozent der Luecke",
+        "Befund 326 hat fuenf stumme Regeln aus dem Katalog genommen und das "
+        "mit dem Deflated-Sharpe-Gate begruendet: 'jede gewertete Regel ist "
+        "ein Versuch', und das Projekt steht bei 0,5827 gegen 0,95. Der "
+        "Mechanismus stimmt, die Zahl daneben habe ich nie nachgerechnet - "
+        "obwohl 'research/erreichbarkeit.py' genau dafuer seit Befund 139 im "
+        "Haus ist und 'cli abstand' sie ausgibt. Gemessen am SPOTPUNKT: ein "
+        "Versuch 0,0011 Punkte, fuenf 0,0054, zehn 0,0106, ein ganzer "
+        "Katalog von 53 Regeln 0,0510 - gegen eine Luecke von **0,3673**. "
+        "Fuenf Versuche sind 1,5 % davon, der ganze Katalog 14 %. **Dazu "
+        "faellt der Zaehler gar nicht**: 'save_trials' laesst einen "
+        "niedrigeren Stand nicht durch, weil das die Mehrfachtest-Korrektur "
+        "milder machen wuerde - die fuenf sind nicht zurueckgeholt, sie "
+        "kommen kuenftig nicht mehr dazu. **Versuchsdisziplin haelt den "
+        "Abstand, sie schliesst ihn nicht.** Geschlossen wird er ueber die "
+        "Stichprobe (190 wirksame Trades noetig, 115 da) oder ueber die "
+        "Guete je Trade (0,3374 noetig, 0,2708 da); das erste ist das, was "
+        "mehr Historie kauft, und genau darauf wartet der Auftrag beim "
+        "Nutzer. 'Erreichbarkeit.kosten(n)' rechnet das jetzt fuer jede "
+        "Zahl und weist eine negative Frage ab; 'bericht()' schreibt den "
+        "Anteil an der Luecke dazu, weil '0,0106' niemandem etwas sagt und "
+        "'2,9 % der Luecke' schon",
+        327,
     ),
 )
 

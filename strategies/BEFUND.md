@@ -29214,3 +29214,90 @@ erklaert. Offen bleiben **vier**, alle aus Generation 1.
 
 Jedes Mal ist die Zahl gefallen, weil ein Grund fuer das Schweigen gefunden
 wurde. Kein einziges Mal, weil eine Schwelle nachgegeben hat.
+
+## Dreihundertsiebenundzwanzig. Die Versuchsersparnis aus 326 war 1,5 Prozent der Luecke
+
+Befund 326 hat fuenf Regeln aus dem Katalog genommen, die auf dieser Reihe
+nichts ausloesen koennen, und das so begruendet:
+
+> "jede gewertete Regel ist ein Versuch", und Versuche heben die Huerde des
+> Deflated Sharpe fuer alle anderen. Dort steht das Projekt, 0,5826 gegen 0,95.
+
+Der Mechanismus stimmt. Die Zahl daneben habe ich nie nachgerechnet - in einem
+Projekt, dessen erster Grundsatz lautet, dass jede Behauptung gemessen wird und
+nicht geschaetzt.
+
+Das Werkzeug dafuer liegt seit Befund 139 im Haus. `research/erreichbarkeit.py`
+beantwortet genau diese Frage, `cli abstand` gibt sie aus, und es waere ein
+Aufruf gewesen.
+
+### Nachgerechnet
+
+Am Spitzenkandidaten, Spot (`referenz.SPOTPUNKT`: 115 wirksame Trades, Guete je
+Trade 0,2708, Schiefe 3,46, Woelbung 15,92, 203 Versuche). Die Rechnung trifft
+den verzeichneten Stand auf vier Stellen - 0,5827 - also ist es derselbe Fall:
+
+    Versuche   DSR
+           1   1,0000
+          10   0,9885
+          21   0,9529   <- hier faellt er unter die Latte
+          50   0,8559
+         198   0,5882
+         203   0,5827   <- der Stand
+         500   0,3904
+
+Und was ein Betrag kostet:
+
+    ein Versuch         0,0011 DSR-Punkte
+    fuenf Versuche      0,0054
+    zehn Versuche       0,0106
+    ein ganzer Katalog  0,0510   (53 Regeln)
+
+    Luecke zur Latte    0,3673
+
+**Fuenf Versuche sind 1,5 % der Luecke.** Der ganze Katalog waere 14 %.
+
+### Und der Zaehler faellt gar nicht
+
+`admission.save_trials` laesst einen niedrigeren Stand nicht durch:
+
+> Ein Lauf, der weniger meldet als der vorige, hat sich verzaehlt oder mit
+> einem Ersatzwert gerechnet. In beiden Faellen ist der hoehere Stand der
+> richtige.
+
+Die 203 sind ausgegeben. Befund 326 hat also nicht fuenf Versuche
+zurueckgeholt - es hat fuenf verhindert, die kuenftig dazugekommen waeren. Das
+ist ein vermiedener Verlust, keine Rueckgabe, und die Tabelle oben laedt genau
+zur falschen Lesart ein: "bei 21 Versuchen stuende er drueber" ist wahr und
+nutzlos, weil von 203 kein Weg auf 21 fuehrt.
+
+### Was der Fund wert bleibt
+
+Er bleibt richtig. Fuenf Regeln, die eine Kennzahl brauchen, die es auf dieser
+Reihe nicht gibt, gehoeren nicht in die Wertung - Rechenzeit, Rangfolge und
+Versuchszaehler sind drei getrennte Gruende dafuer, und einer davon musste nicht
+gross sein. Falsch war nur, den kleinsten davon als Weg zum Gate zu verkaufen.
+
+### Was der Hebel stattdessen ist
+
+    Bei gleicher Guete je Trade:  190 wirksame Trades noetig, 115 da (fehlen 75)
+    Bei gleicher Trade-Zahl:      Guete 0,3374 noetig, 0,2708 da (Faktor 1,25)
+
+Beides ist erreichbar - Faktor 1,65 beziehungsweise 1,25, nicht Groessenordnungen.
+Und das erste ist genau das, was mehr Historie kauft. Damit zeigt die Rechnung
+auf den Auftrag, der beim Nutzer liegt, und nicht auf Katalogpflege.
+
+**Versuchsdisziplin haelt den Abstand, sie schliesst ihn nicht.**
+
+### Was gebaut wurde
+
+`Erreichbarkeit.kosten(n)` rechnet den Betrag fuer jede Versuchszahl statt nur
+fuer eins und zehn, und weist eine **negative** Frage mit einem Grund ab: "was
+braechte es, fuenf Versuche zurueckzunehmen" hat keine Antwort.
+
+`bericht()` schreibt den Anteil an der Luecke dazu. `0,0106` sagt niemandem
+etwas; `2,9 % der Luecke` schon. Genau dieser Satz haette Befund 326 gestoppt.
+
+Der Modulkopf trug noch die Zahlen eines frueheren Kandidaten (154 Trades,
+0,251) unter der Ueberschrift "am aktuellen Kandidaten". Er traegt jetzt die
+gemessenen - und den Absatz darueber, wie die Tabelle **nicht** zu lesen ist.

@@ -3,14 +3,15 @@
 Das Deflated-Sharpe-Gate ist die haerteste Huerde im System, und es hat eine
 Eigenschaft, die man leicht uebersieht: **Es wird mit jedem Versuch schwerer.**
 Die Zahl der getesteten Hypothesen steht im Zaehler der Huerde, nicht nur in
-der Buchhaltung. Gemessen am aktuellen Kandidaten (154 Trades, Sharpe je Trade
-0,251):
+der Buchhaltung. Gemessen am Spitzenkandidaten am Spot-Punkt (115 wirksame
+Trades, Guete je Trade 0,2708 - ``referenz.SPOTPUNKT``):
 
-    10 Versuche  -> DSR 0,994
-    50 Versuche  -> DSR 0,916
-    95 Versuche  -> DSR 0,837
-   200 Versuche  -> DSR 0,713
-   500 Versuche  -> DSR 0,535
+     1 Versuch   -> DSR 1,000
+    10 Versuche  -> DSR 0,989
+    21 Versuche  -> DSR 0,953   <- hier faellt er unter die Latte
+    50 Versuche  -> DSR 0,856
+   203 Versuche  -> DSR 0,583   <- der Stand
+   500 Versuche  -> DSR 0,390
 
 Derselbe Kandidat, dieselben Daten, dieselbe Rechnung. Nur die Suche davor war
 laenger. Wer breit sucht, macht das, was er findet, wertlos - und zwar
@@ -20,6 +21,25 @@ Daraus folgt eine Arbeitsweise, die diesem Projekt bisher gefehlt hat: **Vor
 jedem weiteren Versuch ausrechnen, was er kostet und was er bringen muesste.**
 Ein Einfall, der den Sharpe je Trade um 2 % hebt, aber fuenf Versuche kostet,
 ist ein Rueckschritt. Das laesst sich vorher wissen, nicht erst hinterher.
+
+Was die Tabelle **nicht** sagt - Befund 327
+-------------------------------------------
+Sie laedt dazu ein, sie rueckwaerts zu lesen: "bei 21 Versuchen stuende er
+drueber, also bringt jeder gesparte Versuch etwas". Beides ist falsch.
+
+**Der Zaehler faellt nicht.** ``admission.save_trials`` laesst einen
+niedrigeren Stand nicht durch, weil ein fallender Zaehler die
+Mehrfachtest-Korrektur milder machen wuerde. Die 203 sind ausgegeben; von 203
+auf 21 fuehrt kein Weg.
+
+**Und die Betraege sind klein.** Von 203 aus kostet ein weiterer Versuch
+0,0011 Punkte, zehn kosten 0,0106 - gegen eine Luecke von 0,3673. Selbst
+hundert vermiedene Versuche decken einen Bruchteil davon.
+
+Versuchsdisziplin **haelt** den Abstand also, sie schliesst ihn nicht.
+Geschlossen wird er ueber die Stichprobe (190 wirksame Trades noetig, 115 da)
+oder ueber die Guete je Trade (0,3374 noetig, 0,2708 da) - und von beidem ist
+das erste das, was mehr Historie kauft.
 
 Dieses Modul beantwortet drei Fragen:
 
@@ -140,6 +160,14 @@ class Erreichbarkeit:
     kosten_naechster_versuch: float
     kosten_zehn_versuche: float
 
+    #: Die Form der Trade-Verteilung, mit der ``dsr`` gerechnet wurde. Sie
+    #: gehoert hierher, seit ``kosten`` dieselbe Rechnung fuer eine andere
+    #: Versuchszahl noch einmal anstellt - mit den Vorgaben statt den
+    #: gemessenen Werten kaeme eine andere Kurve heraus als die, auf der
+    #: ``dsr`` liegt.
+    schiefe: float = 0.0
+    woelbung: float = 3.0
+
     @property
     def bestanden(self) -> bool:
         return self.dsr >= self.ziel
@@ -149,6 +177,37 @@ class Erreichbarkeit:
         if self.trades_noetig is None:
             return None
         return max(0, self.trades_noetig - self.trades)
+
+    def kosten(self, versuche: int) -> float:
+        """Was ``versuche`` weitere Versuche an DSR-Punkten kosten - Befund 327.
+
+        ``kosten_naechster_versuch`` und ``kosten_zehn_versuche`` sind die
+        Faelle 1 und 10 davon; hier steht die Rechnung dahinter, weil die
+        Frage selten genau eins oder zehn lautet.
+
+        **Die Zahl geht nur in eine Richtung.** ``versuche`` kleiner null
+        waere die Frage "was braechte es, fuenf Versuche zurueckzunehmen", und
+        die hat keine Antwort: ``admission.save_trials`` laesst den Zaehler
+        nie fallen, weil ein fallender Zaehler die Mehrfachtest-Korrektur
+        milder machen wuerde. Ein ausgegebener Versuch ist ausgegeben.
+
+        Was eine Ersparnis wert ist, steht deshalb hier **als vermiedener
+        Verlust**: ``kosten(5)`` ist, was fuenf Regeln kosten, die man kuenftig
+        nicht mehr wertet - nicht, was ihr Weglassen zurueckholt.
+        """
+        if versuche < 0:
+            raise ValueError(
+                "Der Versuchszaehler faellt nicht - eine Ersparnis ist ein "
+                "vermiedener Verlust, keine Rueckgabe. Nach 'kosten(n)' mit "
+                "n >= 0 fragen."
+            )
+        return self.dsr - _dsr(
+            self.sharpe,
+            self.trades,
+            self.trials + versuche,
+            self.schiefe,
+            self.woelbung,
+        )
 
     def bericht(self) -> str:
         zeilen = [
@@ -188,6 +247,20 @@ class Erreichbarkeit:
             f"Ein weiterer Versuch kostet {self.kosten_naechster_versuch:.4f} "
             f"DSR-Punkte, zehn kosten {self.kosten_zehn_versuche:.4f}."
         )
+        # **Der Satz, der Befund 326 gefehlt hat.** Dort stand eine Ersparnis
+        # von fuenf Versuchen als Fortschritt Richtung Gate. Gemessen sind
+        # das 0,0054 Punkte gegen eine Luecke von 0,3673 - und der Zaehler
+        # faellt ohnehin nicht, die fuenf waeren nur nie dazugekommen.
+        luecke = self.ziel - self.dsr
+        wieviel = (
+            self.kosten_zehn_versuche / luecke if luecke > 0 else 0.0
+        )
+        zeilen.append(
+            f"Der Zaehler faellt nie - gespart wird nur, was noch nicht "
+            f"ausgegeben ist. Selbst zehn vermiedene Versuche decken "
+            f"{wieviel:.1%} der Luecke von {luecke:.4f}: Versuchsdisziplin "
+            f"haelt den Abstand, sie schliesst ihn nicht."
+        )
         if self.fehlende_trades:
             zeilen.append(
                 "Mehr Daten kosten keinen Versuch - eine neue Idee schon. "
@@ -222,6 +295,8 @@ def bewerte(
         kosten_naechster_versuch=jetzt
         - _dsr(sharpe, trades, trials + 1, skew, kurtosis),
         kosten_zehn_versuche=jetzt - _dsr(sharpe, trades, trials + 10, skew, kurtosis),
+        schiefe=skew,
+        woelbung=kurtosis,
     )
 
 
