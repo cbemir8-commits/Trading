@@ -28914,3 +28914,72 @@ sollten, ist eine Frage an jemanden, der weiss, wofuer sie gebaut wurden -
 sie steht hier als Frage und nicht als Aenderung.
 
 Und diesmal steht sie hier, nachdem ich den Code gelesen habe.
+
+## Dreihundertvierundzwanzig. Die Berichtslage nannte das Datum und nicht das Alter
+
+Befund 323 war mein Fehler, und dies ist die Lehre daraus - im Werkzeug
+statt im Kopf.
+
+### Was die Auskunft sagte, als ich sie gebraucht haette
+
+    nachpruefung             5 Berichte, neuester 2026-08-22_072620
+
+Das ist richtig und es hat mich nicht aufgehalten. Ein Zeitstempel unter
+sieben anderen liest sich wie eine Sortiermarke. Was dort haette stehen
+muessen:
+
+    nachpruefung             5 Berichte, neuester 2026-08-22_072620 (30 Tage alt)
+
+Dreissig Tage, waehrend ich genau diesen Befehl bearbeitet habe. Das liest
+sich anders.
+
+Am Tag, an dem ich Befund 322 geschrieben habe, waren es 29 - und die Wache,
+die ich als nicht vorhanden bezeichnet habe, war zu dem Zeitpunkt schon
+vierzehn Tage alt.
+
+### Was jetzt dasteht
+
+Jede Zeile traegt ihr Alter, und unter der Liste steht bei **jedem** Aufruf:
+
+    Jeder Bericht beschreibt den Code von seinem Datum. Wer aus ihm auf den
+    heutigen schliesst, schliesst ueber die Zeit hinweg - das Alter sagt,
+    wie weit.
+
+Der Satz steht immer da, nicht nur bei alten Berichten: Er beschreibt, was
+ein Bericht **ist**, und nicht, was mit einem bestimmten nicht stimmt.
+
+Heute sieht die Lage so aus:
+
+    machbarkeit             13 Berichte, neuester 2026-09-14 ( 7 Tage alt)
+    marktkombinationen       4 Berichte, neuester 2026-09-13 ( 8 Tage alt)
+    nachpruefung             5 Berichte, neuester 2026-08-22 (30 Tage alt)
+    reibung                 24 Berichte, neuester 2026-09-19 ( 2 Tage alt)
+    teststaerke             12 Berichte, neuester 2026-09-02 (19 Tage alt)
+    vorratsdecke             9 Berichte, neuester 2026-09-19 ( 2 Tage alt)
+    zulassung                7 Berichte, neuester 2026-08-23 (29 Tage alt)
+
+### Was ich ausdruecklich nicht gebaut habe
+
+Der naheliegende Gedanke war ein **Codeabdruck** im Bericht: Dann liesse
+sich sagen, ob der rechnende Code sich seither wirklich geaendert hat, statt
+nur, wie viel Zeit vergangen ist. Die JSONL-Protokolle aus Befund 299 tragen
+so einen Abdruck schon.
+
+Er waere hier unbrauchbar. `_codeabdruck` hasht `backtest/`, `strategy/`,
+`research/` und `cli.py` - und **jeder** Befund fasst `research/stand.py`
+an. Der Abdruck von heute weicht damit vom Abdruck jedes Berichts ab, auch
+wenn an der rechnenden Logik seit Wochen nichts passiert ist. Die Warnung
+ginge bei jedem Bericht an, und eine Warnung, die immer angeht, ist keine.
+
+Fuer seinen eigentlichen Zweck - zwei Stuecke **eines** Laufs zusammenlegen -
+ist er richtig, denn dort liegen Minuten dazwischen und kein Befund. Hier
+waere es dasselbe Werkzeug am falschen Problem.
+
+### Die Grenze der neuen Angabe
+
+**Das Alter sagt nicht, dass ein Bericht falsch ist.** Ein Jahr alter Bericht
+ueber unveraenderten Code ist so gut wie heute geschrieben; ein zwei Tage
+alter kann von einem Befehl stammen, der gestern umgebaut wurde.
+
+Es sagt, **wie weit der Schluss traegt** - und genau diese Groesse hat in 323
+gefehlt. Mehr verspricht die Zeile nicht, und das steht auch so im Modul.

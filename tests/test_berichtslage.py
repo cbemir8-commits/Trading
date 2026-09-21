@@ -25,6 +25,7 @@ Die Tests hier halten dreierlei fest:
 from __future__ import annotations
 
 import json
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -309,3 +310,75 @@ class TestBeideSatzfelder:
         quelle = inspect.getsource(modul._urteil)
 
         assert "SATZFELDER" in quelle
+
+
+# ---------------------------------------------------------------------------
+#  Ein Bericht beschreibt den Code von seinem Datum - Befund 324
+# ---------------------------------------------------------------------------
+class TestDasAlterStehtDabei:
+    """**Die Lehre aus Befund 323.**
+
+    Dort habe ich aus ``reports/nachpruefung/2026-08-22_072620.json``
+    geschlossen, dass ``cli nachpruefung`` Generationen fremder
+    Kerzenlaengen mitmisst - und daraus eine "offene Frage" gemacht. Sie war
+    beantwortet: Die Wache stammt von Befund 217, Commit vom **06.09.2026**,
+    fuenfzehn Tage **nach** dem Bericht.
+
+    Die Auskunft nannte das Datum und sagte nicht, wie alt es ist. Ein
+    Zeitstempel unter sieben anderen liest sich nicht wie eine Warnung; "30
+    Tage alt" schon.
+
+    **Das Alter sagt nicht, dass ein Bericht falsch ist.** Ein Jahr alter
+    Bericht ueber unveraenderten Code ist so gut wie heute geschrieben. Es
+    sagt, wie weit der Schluss traegt - und das ist genau die Groesse, die
+    in 323 gefehlt hat.
+    """
+
+    HEUTE = date(2026, 9, 21)
+
+    def test_das_alter_kommt_aus_dem_dateinamen(self) -> None:
+        art = Berichtsart(
+            art="nachpruefung", anzahl=5, neuester="2026-08-22_072620"
+        )
+
+        assert art.alter(self.HEUTE) == 30
+
+    def test_ohne_datum_wird_keines_behauptet(self) -> None:
+        """Eine geratene Zahl waere schlechter als keine."""
+        art = Berichtsart(art="x", anzahl=1, neuester="handgelegt")
+
+        assert art.alter(self.HEUTE) is None
+        assert "alt" not in art.kopfzeile(self.HEUTE)
+
+    def test_die_kopfzeile_beugt_auch_das_tageswort(self) -> None:
+        heute = Berichtsart(art="x", anzahl=1, neuester="2026-09-21_000000")
+        gestern = Berichtsart(art="x", anzahl=1, neuester="2026-09-20_000000")
+        alt = Berichtsart(art="x", anzahl=1, neuester="2026-08-22_000000")
+
+        assert "(heute)" in heute.kopfzeile(self.HEUTE)
+        assert "(1 Tag alt)" in gestern.kopfzeile(self.HEUTE)
+        assert "(30 Tage alt)" in alt.kopfzeile(self.HEUTE)
+
+    def test_der_satz_steht_immer_da(self, ordner: Path) -> None:
+        """Auch ohne alten Bericht: Er beschreibt, was ein Bericht **ist**,
+        nicht was mit diesem nicht stimmt."""
+        mit = auskunft("marktkombinationen", wurzel=ordner)
+        ohne = auskunft("Zwiebelsuppe", wurzel=ordner)
+
+        for text in (mit, ohne):
+            assert "von seinem Datum" in text
+            assert "Befund 323/324" in text
+
+    def test_der_bericht_aus_323_haette_sein_alter_gezeigt(self) -> None:
+        """**Die Gegenprobe.** Am Tag, an dem ich 322 geschrieben habe,
+        stand der Bericht auf 29 Tagen - und die Wache, die ich bestritten
+        habe, war zu dem Zeitpunkt schon vierzehn Tage alt."""
+        bericht = Berichtsart(
+            art="nachpruefung", anzahl=5, neuester="2026-08-22_072620"
+        )
+        wache_vom = date(2026, 9, 6)
+        als_ich_schrieb = date(2026, 9, 20)
+
+        assert bericht.alter(als_ich_schrieb) == 29
+        assert (als_ich_schrieb - wache_vom).days == 14
+        assert "(29 Tage alt)" in bericht.kopfzeile(als_ich_schrieb)

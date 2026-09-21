@@ -2592,6 +2592,24 @@ BEHOBEN: tuple[Richtung, ...] = (
         322,
         323,
     ),
+    # Die Lehre aus 323, im Werkzeug statt im Kopf.
+    Richtung(
+        "Die Berichtslage nannte das Datum und nicht das Alter",
+        "Befund 323 ist entstanden, weil ich aus einem Bericht vom 22.08. "
+        "auf den Code von heute geschlossen habe - die Wache, die ich "
+        "bestritten habe, stammt vom 06.09. und war schon vierzehn Tage "
+        "alt, als ich schrieb. Die Auskunft aus 319 nannte den Zeitstempel "
+        "und sagte nicht, wie alt er ist; ein Datum unter sieben anderen "
+        "liest sich nicht wie eine Warnung, **'30 Tage alt' schon**. Die "
+        "Kopfzeile traegt es jetzt, und unter der Liste steht bei jedem "
+        "Aufruf: Ein Bericht beschreibt den Code **von seinem Datum**. "
+        "Ausdruecklich **kein** Codeabdruck: '_codeabdruck' hasht auch "
+        "'research/', und da jeder Befund das Register anfasst, wuerde er "
+        "bei **jedem** Bericht 'Code geaendert' melden - eine Warnung, die "
+        "immer angeht, ist keine. Das Alter sagt auch nicht, dass ein "
+        "Bericht falsch ist; es sagt, wie weit der Schluss traegt",
+        324,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

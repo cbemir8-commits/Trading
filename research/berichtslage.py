@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 __all__ = ["WURZEL", "Berichtsart", "auskunft", "berichtslage"]
@@ -84,9 +85,33 @@ class Berichtsart:
         heu = f"{self.art} {self.urteil}".casefold()
         return any(b.casefold() in heu for b in begriffe if b)
 
-    def kopfzeile(self) -> str:
+    def alter(self, heute: date | None = None) -> int | None:
+        """Wie viele Tage alt der neueste Bericht dieser Art ist - Befund 324.
+
+        ``None``, wenn im Dateinamen kein Datum steht. Alle Schreiber setzen
+        einen Zeitstempel davor, aber eine von Hand abgelegte Datei muss das
+        nicht - und eine geratene Zahl waere schlechter als keine.
+        """
+        try:
+            gemacht = date.fromisoformat(self.neuester[:10])
+        except ValueError:
+            return None
+        return ((heute or date.today()) - gemacht).days
+
+    def kopfzeile(self, heute: date | None = None) -> str:
         wort = "Bericht" if self.anzahl == 1 else "Berichte"
-        return f"{self.art:22} {self.anzahl:3} {wort}, neuester {self.neuester}"
+        tage = self.alter(heute)
+        alt = ""
+        if tage is not None:
+            alt = (
+                " (heute)"
+                if tage == 0
+                else f" ({tage} Tag{'e' if tage != 1 else ''} alt)"
+            )
+        return (
+            f"{self.art:22} {self.anzahl:3} {wort}, "
+            f"neuester {self.neuester}{alt}"
+        )
 
 
 #: Wie die Berichtsarten ihren zusammenfassenden Satz nennen.
@@ -188,4 +213,12 @@ def auskunft(*begriffe: str, wurzel: Path | None = None, breite: int = 100) -> s
             f"{gesamt} Berichte, keiner davon beruehrt die Begriffe dieses "
             f"Laufs - das heisst nicht, dass keiner die Antwort traegt."
         )
+    # **Der Satz, der Befund 323 gekostet hat.** Er steht hier immer, nicht
+    # nur bei alten Berichten: Ein Bericht ist zu jedem Zeitpunkt eine
+    # Aussage ueber den Code von seinem Datum.
+    zeilen.append(
+        "Jeder Bericht beschreibt den Code **von seinem Datum**. Wer aus ihm "
+        "auf den heutigen schliesst, schliesst ueber die Zeit hinweg - das "
+        "Alter sagt, wie weit (Befund 323/324)."
+    )
     return "\n".join(zeilen)
