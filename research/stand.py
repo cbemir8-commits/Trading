@@ -2610,6 +2610,29 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Bericht falsch ist; es sagt, wie weit der Schluss traegt",
         324,
     ),
+    # Weg von den Werkzeugen, zurueck an die Zahlen - und gleich beim
+    # einzigen Forschungsmodul ohne Test faellig geworden.
+    Richtung(
+        "'Gebuehren je Trade' waren die Kosten zweier Trades",
+        "'cli kosten' rechnet um, was Gebuehren als Anteil am **Risiko** "
+        "kosten - die Umrechnung, an der schnelles Handeln haengt. Die "
+        "Spalte 'Gebuehren je Trade' zeigte 'cost_win_r + cost_loss_r', "
+        "also was ein Gewinner **und** ein Verlierer zusammen kosten. Ein "
+        "Trade ist aber das eine oder das andere; die Summe beschreibt ein "
+        "**Paar**. Bei 1 % Stop standen dort 0,165 R statt 0,088 R (das "
+        "1,9-fache), bei 0,15 % Stop 1,100 R statt 0,495 R (2,2-fach). "
+        "**Die richtige Zahl war die ganze Zeit da**: 'floor_table' gibt "
+        "sie als vierten Wert zurueck, und die Schleife warf ihn mit '_' "
+        "weg - dieselbe Bauart wie 152, 154, 155 und 160. Nachgerechnet "
+        "ist sie der Erwartungswert bei der noetigen Trefferquote und folgt "
+        "aus der Nullbedingung; ein Test prueft die Gleichheit ueber fuenf "
+        "Stop-Weiten. Gewinner- und Verliererpreis stehen jetzt daneben, "
+        "damit die Zahl einzuordnen ist. **Die noetige Trefferquote war nie "
+        "betroffen** - sie kommt aus 'required_win_rate' und war richtig. "
+        "'research/costfloor.py' war das einzige Forschungsmodul ohne einen "
+        "einzigen Test und hat jetzt 22",
+        325,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

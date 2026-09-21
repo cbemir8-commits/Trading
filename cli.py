@@ -1173,7 +1173,7 @@ def kosten(
     Stop-Distanz gerade eben nicht zu verlieren.
     """
     from backtest.costs import CostModel
-    from research.costfloor import floor_table
+    from research.costfloor import cost_floor, floor_table
 
     settings = get_settings()
     # Die Gebuehrensaetze stehen im Kostenmodell des Backtests, nicht in den
@@ -1187,16 +1187,32 @@ def kosten(
     table.add_column("Stop-Distanz", justify="right")
     table.add_column("noetige Trefferquote", justify="right")
     table.add_column("Gebuehren je Trade", justify="right")
+    table.add_column("Gewinner", justify="right")
+    table.add_column("Verlierer", justify="right")
 
     ohne_kosten = 1.0 / (rr + 1.0)
-    for stop, quote, gebuehren, _ in floor_table(rr=rr, costs=costs):
+    # **Die erwarteten Gebuehren je Trade, nicht die Summe zweier Faelle**
+    # (Befund 325). Hier stand 'cost_win_r + cost_loss_r' - was ein
+    # Gewinner **und** ein Verlierer zusammen kosten. Ein Trade ist aber das
+    # eine oder das andere; die Summe beschreibt ein Paar. Die richtige Zahl
+    # rechnet 'floor_table' als vierten Wert mit, und der wurde weggeworfen.
+    for stop, quote, _summe, je_trade in floor_table(rr=rr, costs=costs):
         stil = "red" if quote > 0.5 else "yellow" if quote > 0.45 else "green"
+        boden = cost_floor(stop, costs)
         table.add_row(
             f"{stop:.2f} %",
             f"[{stil}]{quote:.1%}[/]",
-            f"{gebuehren:.3f} R",
+            f"{je_trade:.3f} R",
+            f"[dim]{boden.cost_win_r:.3f} R[/]",
+            f"[dim]{boden.cost_loss_r:.3f} R[/]",
         )
     console.print(table)
+    console.print(
+        "[dim]'Je Trade' ist der Erwartungswert bei der noetigen "
+        "Trefferquote - ein Trade zahlt entweder den Gewinner- oder den "
+        "Verliererpreis,\nnie beide. Der Verlierer ist die teure Seite: "
+        "Einstieg als Maker, Stop als Taker, und der Stop rutscht.[/]"
+    )
 
     console.print(
         f"\nOhne Gebuehren waeren [bold]{ohne_kosten:.1%}[/] noetig.\n"

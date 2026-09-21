@@ -28983,3 +28983,104 @@ alter kann von einem Befehl stammen, der gestern umgebaut wurde.
 
 Es sagt, **wie weit der Schluss traegt** - und genau diese Groesse hat in 323
 gefehlt. Mehr verspricht die Zeile nicht, und das steht auch so im Modul.
+
+## Dreihundertfuenfundzwanzig. "Gebuehren je Trade" waren die Kosten zweier Trades
+
+Nach sechs Zyklen am Lese-Werkzeug - drei davon Korrekturen an meinem eigenen -
+wollte ich zurueck an die Zahlen. Gesucht habe ich nicht nach einem Fehler,
+sondern nach einer Stelle, an der noch nie jemand hingesehen hat: Welches
+Modul hat keinen Test?
+
+    138 Module, 3 ohne direkten Import in Tests:
+        data/bybit/trading.py     332 Zeilen
+        install.py                181 Zeilen
+        research/costfloor.py     134 Zeilen
+
+Die ersten beiden sind Boersenanbindung und Installer - dort ist es
+erklaerlich. Das dritte ist ein **Forschungsmodul**, und sein eigener Kopf
+sagt, warum das nicht passt:
+
+    Weil es eine pruefbare Zahl ist und keine Meinung.
+
+### Was die Tabelle zeigte
+
+`cli kosten` rechnet um, was Gebuehren als Anteil am Risiko kosten - die
+Umrechnung, an der schnelles Handeln haengt. Ihre dritte Spalte:
+
+    Stop-Distanz   noetige Trefferquote   Gebuehren je Trade
+          1.00 %                  43.5%              0.165 R
+
+Die 0,165 R sind `cost_win_r + cost_loss_r`. Das Modul dokumentiert beide
+Felder einzeln und unmissverstaendlich:
+
+    cost_win_r    Gewinner: Einstieg und Ausstieg beide als Maker.
+    cost_loss_r   Verlierer: Einstieg als Maker, Stop als Taker - plus
+                  Slippage.
+
+Ein Trade ist das eine **oder** das andere. Er kostet 0,040 R oder 0,125 R,
+nie 0,165 R. Die Summe beschreibt ein **Paar** aus einem Gewinner und einem
+Verlierer.
+
+### Die richtige Zahl war die ganze Zeit da
+
+`floor_table` gibt vier Werte je Zeile zurueck. Der vierte ist
+`edge_needed_r`, und die Schleife in `cli.py` lautete:
+
+    for stop, quote, gebuehren, _ in floor_table(rr=rr, costs=costs):
+
+Der weggeworfene Wert ist genau der gesuchte. Nachgerechnet ueber alle neun
+Stop-Weiten:
+
+     Stop        W        L      W+L        p     edge   p*W+(1-p)*L
+     0.15   0.2667   0.8333   1.1000   0.5978   0.4946        0.4946
+     0.20   0.2000   0.6250   0.8250   0.5556   0.3889        0.3889
+     0.50   0.0800   0.2500   0.3300   0.4682   0.1704        0.1704
+     1.00   0.0400   0.1250   0.1650   0.4352   0.0880        0.0880
+     3.00   0.0133   0.0417   0.0550   0.4120   0.0300        0.0300
+
+`edge_needed_r` **ist** der erwartete Gebuehrenbetrag je Trade bei der
+noetigen Trefferquote. Das ist kein Zufall, sondern folgt aus der
+Nullbedingung: Wenn die Erwartung nach Gebuehren null ist, dann ist der
+Rohvorteil davor gerade die erwarteten Gebuehren.
+
+    p(rr - W) - (1-p)(1 + L) = 0   =>   p*rr - (1-p) = p*W + (1-p)*L
+    \_________________________/         \___________/   \___________/
+       Nullbedingung                     edge_needed_r    erwartete Gebuehren
+
+Das ist derselbe Riss wie in den Befunden 152, 154, 155 und 160: gebaut,
+gerechnet, richtig - und nicht angeschlossen.
+
+### Um wie viel es danebenlag
+
+    Stop     angezeigt   richtig   Faktor
+    1.00 %     0.165 R   0.088 R     1.88
+    0.15 %     1.100 R   0.495 R     2.22
+
+Der Fehler geht in die **vorsichtige** Richtung: Er laesst das Handeln
+teurer aussehen, als es ist. Das ist kein Trost - eine Zahl, die um das
+Doppelte danebenliegt, stuetzt keine Entscheidung, in welche Richtung auch
+immer sie faellt.
+
+### Was nicht betroffen war
+
+**Die noetige Trefferquote.** Sie kommt aus `required_win_rate`, rechnet mit
+`cost_win_r` und `cost_loss_r` getrennt und war immer richtig - 43,5 % bei
+1 % Stop, 59,8 % bei 0,15 %. Das ist die Zahl, auf die es in diesem Befehl
+ankommt, und genau sie stand richtig da.
+
+Deshalb ist der Fehler auch nie aufgefallen: Die Kopfzahl stimmte, und die
+Nebenspalte las niemand nach.
+
+### Was jetzt dasteht
+
+    Stop-Distanz  noetige Trefferquote  Gebuehren je Trade  Gewinner  Verlierer
+          1.00 %                 43.5%             0.088 R   0.040 R    0.125 R
+
+Mit einem Satz darunter, der sagt, was "je Trade" heisst: der Erwartungswert
+bei der noetigen Trefferquote - ein Trade zahlt entweder den Gewinner- oder
+den Verliererpreis, nie beide.
+
+Und `research/costfloor.py` hat jetzt zweiundzwanzig Tests. Der wichtigste
+ist der, der die Gleichheit oben ueber fuenf Stop-Weiten nachrechnet: Er
+haelt fest, dass der vierte Wert der Tabelle das ist, was seine Spalte
+behauptet.
