@@ -12,7 +12,8 @@ Dieser Lauf hat nachgesehen, wo dieselbe Zahl sonst noch steht.
 
 **Neun Anzeigestellen in ``cli.py``** geben ein rohes ``bestanden/gesamt``
 aus, und **einundzwanzig Datentypen** in ``research/`` tragen ein Feld
-``bestanden``. Drei davon wissen von Uebersprungenem. Achtzehn nicht.
+``bestanden``. Drei wissen von Uebersprungenem, eines behandelt es eine Schicht
+vorher, zwei halten verzeichnete Staende - bei fuenfzehn ist die Frage offen.
 
 Der erste Treffer war handfest: ``cli nachpruefung`` zeigte in seiner
 Fortschrittszeile ``5/9`` fuer eine Regel ohne einen einzigen Trade und sieben
@@ -40,6 +41,8 @@ import dataclasses
 import importlib
 import pkgutil
 
+import pytest
+
 import research
 
 #: Typen, die ``uebersprungen`` tragen und ``bestanden_echt`` daraus rechnen.
@@ -52,11 +55,33 @@ MIT_SKIPINFO: frozenset[str] = frozenset({
 #: Typen, die **verzeichnete** Staende halten und keinen Gate-Lauf ausfuehren.
 #:
 #: Ihre Zahlen sind von Hand eingetragene Messwerte mit Fundstelle, kein
-#: Ergebnis einer Auswertung - dort gibt es nichts zu ueberspringen. Das ist
-#: der einzige Grund, den dieser Lauf **belegen** kann.
+#: Ergebnis einer Auswertung - dort gibt es nichts zu ueberspringen.
 VERZEICHNET: dict[str, str] = {
     "research.referenz.Referenzpunkt": "feste Referenzstaende mit Befundnummer",
     "research.historie.Historienstufe": "gemessene Fenster aus Befund 133",
+}
+
+#: Typen, deren **Modul** das Aussetzen behandelt, bevor die Zahl entsteht.
+#:
+#: **Die Berichtigung an Befund 332** (Befund 333). Das Verzeichnis hat nach dem
+#: Feldnamen ``uebersprungen`` auf der Datenklasse eingeteilt - ein Stellvertreter
+#: fuer die Faehigkeit, nicht die Faehigkeit. ``gatemuster`` behandelt das
+#: Aussetzen in ``lade``, also **eine Schicht vorher**:
+#:
+#:     gemessen = {name: bool(stand.get("bestanden"))
+#:                 for name, stand in gates.items()
+#:                 if isinstance(stand, dict) and not stand.get("uebersprungen")}
+#:
+#: Ein ausgesetztes Gate fehlt damit am Messpunkt, ``Gatemuster.namen`` liefert
+#: nur die auf **allen** Punkten beurteilten, und das Wort "beurteilt" im
+#: Bericht stimmt. Die Datenklasse braucht das Feld nicht - und stand trotzdem
+#: unter den offenen Faellen.
+#:
+#: Genau die Falle, die Befund 332 im eigenen Laborbuch beschrieben hat: Ein
+#: Test, der aus derselben Annahme stammt wie die Behebung, kann die
+#: uebersehene Stelle nicht finden.
+VORGELAGERT: dict[str, str] = {
+    "research.gatemuster.Gatelage": "lade() laesst uebersprungene Gates weg",
 }
 
 #: Typen, bei denen die Frage **offen** ist - aufgelistet, nicht geprueft.
@@ -67,6 +92,16 @@ VERZEICHNET: dict[str, str] = {
 #:
 #: Was hier steht, heisst: Der Typ traegt eine Gate-Zahl, kann aber nicht sagen,
 #: ob jedes Gate geurteilt hat. Ob ihn das heute trifft, ist nicht gemessen.
+#: **Gemessen (333): heute setzt bei diesem Kandidaten kein Gate aus.** Der
+#: Spitzenkandidat liefert am Spot-Punkt 158 Trades, und alle elf Gates faellen
+#: ein Urteil - null Aussetzer. Die rohen Paare dieser Typen sind damit
+#: **richtig**, solange sie denselben Kandidaten auf der ganzen Reihe fahren.
+#:
+#: Offen bleibt eine **Bedingung**, nicht ein Verdacht: Ein Aussetzen braucht
+#: weniger als 30 Trades (20 fuer Monte-Carlo). Eine Leiter, die die Trade-Zahl
+#: darunter drueckt, bekaeme hier eine geschenkte Zahl - und keiner dieser Typen
+#: koennte es sagen. 'cli koernung' gemessen: 152 bis 158 Trades ueber vierzehn
+#: Sprossen, also weit darueber.
 OFFEN: frozenset[str] = frozenset({
     "research.admission.Zulassungsbedingungen",
     "research.aufloesung.Messung",
@@ -75,7 +110,6 @@ OFFEN: frozenset[str] = frozenset({
     "research.decke.Fenster",
     "research.decke.Stufe",
     "research.finanzierung.Stufe",
-    "research.gatemuster.Gatelage",
     "research.instrument.Gebuehrenstufe",
     "research.instrument.Lauf",
     "research.koernung.Gatewert",
@@ -117,7 +151,7 @@ class TestDasVerzeichnisIstVollstaendig:
         Sie faellt in der sicheren Richtung aus: Unbekannt ist ein Fehler, nicht
         stillschweigend in Ordnung.
         """
-        bekannt = MIT_SKIPINFO | set(VERZEICHNET) | OFFEN
+        bekannt = MIT_SKIPINFO | set(VERZEICHNET) | set(VORGELAGERT) | OFFEN
 
         unbekannt = sorted(set(_traeger()) - bekannt)
 
@@ -128,16 +162,17 @@ class TestDasVerzeichnisIstVollstaendig:
         )
 
     def test_das_verzeichnis_nennt_keine_typen_die_es_nicht_gibt(self) -> None:
-        bekannt = MIT_SKIPINFO | set(VERZEICHNET) | OFFEN
+        bekannt = MIT_SKIPINFO | set(VERZEICHNET) | set(VORGELAGERT) | OFFEN
 
         verwaist = sorted(bekannt - set(_traeger()))
 
         assert verwaist == []
 
     def test_keine_doppelte_einordnung(self) -> None:
-        assert not MIT_SKIPINFO & OFFEN
-        assert not MIT_SKIPINFO & set(VERZEICHNET)
-        assert not OFFEN & set(VERZEICHNET)
+        felder = (MIT_SKIPINFO, frozenset(VERZEICHNET), frozenset(VORGELAGERT), OFFEN)
+        for i, a in enumerate(felder):
+            for b in felder[i + 1 :]:
+                assert not a & b
 
 
 class TestDieEinordnungStimmtMitDemQuelltext:
@@ -202,6 +237,105 @@ class TestDieFortschrittszeileDerNachpruefung:
 def test_die_zahl_der_offenen_faelle_steht_fest() -> None:
     """Damit ein spaeterer Lauf sich daran messen kann - und damit das
     Verzeichnis nicht unbemerkt waechst."""
-    assert len(OFFEN) == 16
+    assert len(OFFEN) == 15
     assert len(MIT_SKIPINFO) == 3
+    assert len(VORGELAGERT) == 1
     assert len(_traeger()) == 21
+
+
+# **Die Messung, die Befund 332 offen gelassen hat** (Befund 333).
+#
+# 332 hat sechzehn Typen aufgelistet, die eine Gate-Zahl tragen und nicht sagen
+# koennen, ob jedes Gate geurteilt hat - und ausdruecklich offen gelassen, ob das
+# heute etwas trifft. Die drei Tests unten beantworten es fuer den Fall, an dem
+# die meisten davon haengen.
+#
+# Gemessen: Spot-Betriebspunkt, Portfolio-Walk-Forward BTC + ETH auf
+# Tageskerzen, 158 Trades - **alle elf Gates faellen ein Urteil, null
+# Aussetzer**. Die rohen Paare sind damit richtig, und 'cli stand' zaehlt mit
+# seinen "9 von 11" keine geschenkte Zahl mit.
+#
+# Sie sind die Wache dazu: Sinkt die Trade-Zahl unter 30 - oder kommt eine neue
+# Aussetz-Bedingung dazu -, dann werden die rohen Paare falsch, und das faellt
+# hier auf und nicht in einem Bericht.
+
+
+@pytest.fixture(scope="module")
+def gates():
+    """Die elf Gates am Spitzenkandidaten, wie die Zulassung sie rechnet.
+
+    Modulweit und nicht klassenweit: Eine klassenweite Fixture stolpert hier in
+    ``_pytest.fixtures`` (``assert not self._finalizers``).
+    """
+    from pathlib import Path
+
+    import cli
+    from backtest.portfolio_walkforward import (
+        common_range,
+        run_portfolio_walkforward,
+    )
+    from core.config import get_settings
+    from core.models import Interval
+    from data.store import CandleStore
+    from research.admission import load_trials
+    from research.gates import GateThresholds, evaluate_gates
+    from research.seeds import spitzenkandidat
+    from strategy.compiler import compile_genome
+
+    symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
+    e = get_settings()
+    frames = common_range(
+        {x: CandleStore(e.paths.data_store).read(x, Interval("D")) for x in symbole}
+    )
+    configs = cli._spotconfigs(symbole, e)
+    genom = cli._ohne_hebel(spitzenkandidat())
+    lauf = run_portfolio_walkforward(
+        frames, lambda g=genom: compile_genome(g), configs
+    )
+    return evaluate_gates(
+        genom,
+        lauf,
+        frames[symbole[0]],
+        configs[symbole[0]],
+        trials_so_far=load_trials(Path(e.paths.state) / "trials.json"),
+        thresholds=GateThresholds(),
+        frames=frames,
+        configs=configs,
+    )
+
+@pytest.mark.daten
+@pytest.mark.langsam
+def test_alle_elf_faellen_ein_urteil(gates) -> None:
+        from research.gates import GateStatus
+
+        ausgesetzt = [
+            r.name for r in gates.results if r.status is GateStatus.SKIP
+        ]
+
+        assert len(gates.results) == 11
+        assert ausgesetzt == [], (
+            f"Diese Gates setzen aus: {ausgesetzt}. Damit sind die rohen Paare "
+            f"aus OFFEN geschenkte Zahlen - siehe Befund 332/333."
+        )
+
+@pytest.mark.daten
+@pytest.mark.langsam
+def test_die_neun_bestandenen_sind_echt_bestanden(gates) -> None:
+        """Ohne Aussetzer ist 'passed' dasselbe wie 'PASS' - genau das macht
+        die Kopfzahl von 'cli stand' belastbar."""
+        from research.gates import GateStatus
+
+        echt = sum(1 for r in gates.results if r.status is GateStatus.PASS)
+
+        assert sum(1 for r in gates.results if r.passed) == echt == 9
+
+@pytest.mark.daten
+@pytest.mark.langsam
+def test_die_trade_zahl_liegt_ueber_jeder_aussetzschwelle(gates) -> None:
+        """Die Bedingung, an der es haengt: 20 fuer Monte-Carlo, 30 fuer
+        Regime-Aufteilung und Deflated Sharpe."""
+        stichprobe = next(
+            r for r in gates.results if r.name == "Stichprobengroesse"
+        )
+
+        assert stichprobe.value >= 30

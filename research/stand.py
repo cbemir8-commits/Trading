@@ -2739,7 +2739,7 @@ BEHOBEN: tuple[Richtung, ...] = (
 #: als "gemessen und zu". Ein Eintrag hier ist eine Zusage, keine Ablage.
 OFFEN: tuple[Richtung, ...] = (
     Richtung(
-        "Sechzehn Gate-Zahlen ohne Auskunft ueber Uebersprungenes",
+        "Fuenfzehn Gate-Zahlen ohne Auskunft ueber Uebersprungenes",
         "Befund 321/322 hat 'uebersprungen' in 'teststaerke.Stufe' und "
         "'nachpruefung.Ergebnis' nachgetragen, weil 'GateResult.passed' ein "
         "ausgesetztes Gate als bestanden zaehlt. Nachgesehen (332): **21 "
@@ -2755,8 +2755,20 @@ OFFEN: tuple[Richtung, ...] = (
         "'cli nachpruefung' zeigte '5/9' fuer eine Regel ohne einen einzigen "
         "Trade, die Tabelle sieben Zeilen weiter '2/6'. "
         "'tests/test_gatezahlen.py' fuehrt das Verzeichnis und zwingt jeden "
-        "neuen Typ zur Einordnung",
+        "neuen Typ zur Einordnung. **Nachgemessen (333)**: Beim "
+        "Spitzenkandidaten setzt am Spot-Punkt **kein einziges** Gate aus - 158 "
+        "Trades, elf Urteile, null Aussetzer. Die rohen Paare sind damit "
+        "richtig, und die Kopfzahl '9 von 11' zaehlt keine geschenkte Zahl "
+        "mit. Offen bleibt eine **Bedingung** statt eines Verdachts: unter 30 "
+        "Trades (20 fuer Monte-Carlo) bekaeme eine Leiter eine geschenkte "
+        "Zahl, und keiner dieser Typen koennte es sagen; 'cli koernung' liegt "
+        "mit 152 bis 158 Trades weit darueber. Drei Tests wachen darueber. "
+        "**Berichtigt**: 'gatemuster.Gatelage' stand zu Unrecht hier - 'lade' "
+        "laesst uebersprungene Gates weg, also eine Schicht vor der "
+        "Datenklasse. Eingeteilt hatte ich nach dem Feldnamen, und das ist ein "
+        "Stellvertreter fuer die Faehigkeit, nicht die Faehigkeit",
         332,
+        333,
     ),
     Richtung(
         "Holdout auf fremden Maerkten",

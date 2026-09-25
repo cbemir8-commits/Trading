@@ -29847,3 +29847,103 @@ schon.
 
 Ein Verzeichnis ueber **alle** Traeger ist die Form, die das aushaelt: Es stammt
 nicht aus der Annahme, sondern aus dem Quelltext.
+
+## Dreihundertdreiunddreissig. Ein Stellvertreter fuer die Faehigkeit, nicht die Faehigkeit
+
+Befund 332 hat sechzehn Datentypen aufgelistet, die eine Gate-Zahl tragen und
+nicht sagen koennen, ob jedes Gate geurteilt hat - und ausdruecklich offen
+gelassen, ob das heute etwas trifft. Dieser Lauf hat beides nachgeholt: die
+Messung, und eine Berichtigung am Verzeichnis selbst.
+
+### Erst die Fehlsuche, und die gehoert dazu
+
+Zwei Verdachtsfaelle nachgesehen, beide leer:
+
+`cli koernung --gates` faehrt denselben Kandidaten ueber vierzehn Kontostaende.
+Die Vermutung war, dass kleine Konten an der Mengenrundung scheitern, die
+Trade-Zahl einbricht und Gates aussetzen. Gemessen: **152 bis 158 Trades** ueber
+alle vierzehn Sprossen, Nenner durchweg elf. Kein Aussetzer.
+
+`cli decke` sollte der wahrscheinlichste Fall sein, weil es um
+Stichprobengroesse geht. Seine Leiter variiert aber die **Kosten**, nicht die
+Trade-Zahl: fuenf Zeilen, dieselbe Strategie. Kein Aussetzer.
+
+`cli finanzierung` zeigt sechs Saetze, alle mit Nenner elf - und **beantwortet
+die Frage gar nicht**. Genau das ist der Punkt: Ein ausgesetztes Gate steckt in
+`bestanden` und laesst `gesamt` bei elf. Wer die Ausgabe liest, kann es nicht
+sehen. Die Lage ist nicht "vielleicht falsch beschriftet", sondern "aus der
+eigenen Ausgabe nicht zu beantworten".
+
+### Dann die Messung, die es beantwortet
+
+Statt sechzehn Module einzeln zu befragen, einmal die Quelle: Setzt beim
+Spitzenkandidaten ueberhaupt ein Gate aus?
+
+    === Spot, 158 Trades, 203 Versuche ===
+      Stichprobengroesse       PASS
+      Messlatte                FAIL
+      Out-of-Sample-Sharpe     PASS
+      Drawdown                 PASS
+      Schlechtestes Jahr       PASS
+      Bestaendigkeit           PASS
+      Monte-Carlo              PASS
+      Regime-Aufteilung        PASS
+      Deflated Sharpe          FAIL
+      Kosten-Stress            PASS
+      Parameter-Plateau        PASS
+
+      Gates insgesamt : 11
+      passed==True    : 9
+      davon ausgesetzt: 0
+
+**Null Aussetzer.** Alle elf faellen ein Urteil, und die neun bestandenen sind
+echte PASS. Damit ist die Kopfzahl von `cli stand` belastbar - "9 von 11" zaehlt
+keine geschenkte Zahl mit -, und dasselbe gilt fuer jeden der fuenfzehn Typen,
+solange er denselben Kandidaten auf der ganzen Reihe fahrt.
+
+Was offen bleibt, ist damit eine **Bedingung** statt eines Verdachts: Unter 30
+Trades (20 fuer Monte-Carlo) setzen Gates aus, und dann bekaeme eine Leiter eine
+geschenkte Zahl, ohne es sagen zu koennen. Drei Tests wachen darueber - sinkt
+die Trade-Zahl, faellt es dort auf und nicht in einem Bericht.
+
+### Und die Berichtigung an Befund 332
+
+`gatemuster.Gatelage` stand zu Unrecht auf der offenen Liste. Das Modul
+behandelt das Aussetzen in `lade`, also **eine Schicht vor** der Datenklasse:
+
+```python
+gemessen = {name: bool(stand.get("bestanden"))
+            for name, stand in gates.items()
+            if isinstance(stand, dict) and not stand.get("uebersprungen")}
+```
+
+Ein ausgesetztes Gate fehlt am Messpunkt, `Gatemuster.namen` liefert nur die auf
+**allen** Punkten beurteilten, und das Wort "beurteilt" im Bericht stimmt. Der
+Docstring von `lade` sagt es sogar ausdruecklich: *"Uebersprungen heisst 'nicht
+beurteilbar'; es als Nein zu verbuchen erfaende ein Urteil, das nie gefaellt
+wurde."* Die Datenklasse braucht das Feld nicht.
+
+Eingeteilt hatte ich nach dem **Feldnamen** `uebersprungen` auf der
+Datenklasse - ein Stellvertreter fuer die Faehigkeit, nicht die Faehigkeit.
+
+Das ist bemerkenswert, weil Befund 332 genau davor warnt, im eigenen
+Laborbuch, ein Absatz vor dem Ende:
+
+> Ich behebe an der Stelle, die ich gerade lese, und der Test, den ich dazu
+> schreibe, prueft genau diese Stelle - er kann die uebersehene nicht finden,
+> weil er aus derselben Annahme stammt wie die Behebung.
+
+Ich habe den Satz geschrieben und im selben Lauf ein Verzeichnis auf einen
+Stellvertreter gebaut. Die Form war richtig - ein Verzeichnis ueber alle
+Traeger, aus dem Quelltext statt aus der Annahme -, das Kriterium nicht.
+
+### Was jetzt dasteht
+
+    mit 'uebersprungen'    3   teststaerke.Stufe, nachpruefung.Ergebnis,
+                               machbarkeit.Stand
+    vorgelagert behandelt  1   gatemuster.Gatelage - lade() filtert
+    verzeichnete Staende   2   referenz.Referenzpunkt, historie.Historienstufe
+    offen                 15
+
+Und drei Messungen, die die fuenfzehn tragen, statt einer Liste, die sie nur
+nennt.
