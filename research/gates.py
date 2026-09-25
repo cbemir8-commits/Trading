@@ -50,7 +50,7 @@ from backtest.walkforward import (
 )
 from core.models import Trade
 from research.benchmark import buy_and_hold_over_windows, scaled_hold
-from research.freigabe import sperrsatz, stillgelegt
+from research.freigabe import bestandsatz, sperrsatz, stillgelegt
 from research.randschnitt import ohne_zensierte
 from research.unabhaengigkeit import effektive_stichprobe
 from research.zeitskala import STUFEN, nach_kalender
@@ -1159,11 +1159,19 @@ def gate_parameter_plateau(
     )
 
     if passed:
+        # **Befund 330.** Hier stand der Satz ohne jeden Hinweis auf
+        # Stilllegungen - gemessen am Spitzenkandidaten mit Wert 1,0000,
+        # "12 von 12 Nachbarn profitabel", und **alle zwoelf** waren
+        # stillgelegt (737 verhinderte Einstiege). Befund 313 hat 'gesperrt'
+        # eingesammelt und nur an den Fehlschlag gehaengt; der Erfolgsfall ist
+        # aber genau der, in dem niemand nachsieht.
+        alle_gesperrt = sum(1 for w in gesperrt.values() for s in w if s)
+        alle_einstiege = sum(sum(w) for w in gesperrt.values())
         botschaft = (
             f"Schwaechste Richtung {namen[schwaechste]} mit {ratio:.0%} "
             f"({gesamt} von {len(nachbarn)} Nachbarn insgesamt profitabel). "
             f"{uebersicht}"
-        )
+        ) + bestandsatz(alle_gesperrt, len(nachbarn), alle_einstiege)
     else:
         # **Was die gescheiterten Nachbarn gescheitert hat, gehoert zum
         # Urteil.** Ein Nachbar, dessen Lauf unterwegs dauerhaft gesperrt

@@ -243,6 +243,43 @@ def sperrsatz(gesperrt: int) -> str:
     )
 
 
+def bestandsatz(gesperrt_punkte: int, punkte: int, einstiege: int) -> str:
+    """Was neben einem **bestandenen** Plateau stehen muss - Befund 330.
+
+    ``sperrsatz`` gibt es seit Befund 313, und es haengt nur am
+    Fehlschlag-Zweig des Gates. Gemessen am Spitzenkandidaten, Spot:
+
+        Parameter-Plateau   PASS, Wert 1,0000 gegen Schwelle 0,60
+        Nachbarn            12 von 12 profitabel
+        davon stillgelegt   12 von 12
+        verhinderte Einstiege 737
+
+    Die volle Punktzahl steht also auf zwoelf Laeufen, von denen **keiner** zu
+    Ende gemessen wurde - und die Botschaft schwieg dazu, weil der Satz nur im
+    anderen Zweig stand. Dieselbe Bauart wie Befund 321/322: Was nicht gemessen
+    wurde, zaehlte als bestanden.
+
+    **Wert und Urteil des Gates bleiben unberuehrt.** Ob ein stillgelegter
+    Nachbar ueberhaupt zaehlen darf, liegt als Entscheidung beim Nutzer (Befund
+    313). Hier steht nur, was gemessen wurde - und was nicht.
+    """
+    if not gesperrt_punkte:
+        return ""
+    alle = gesperrt_punkte == punkte
+    wer = (
+        "**kein einziger Nachbar wurde zu Ende gemessen**"
+        if alle
+        else f"**{gesperrt_punkte} von {punkte} Nachbarn** wurden nicht zu "
+        f"Ende gemessen"
+    )
+    return (
+        f" {wer} - eine dauerhafte Sperre hat dort {einstiege} Einstiege "
+        f"verhindert und laeuft bis zur manuellen Freigabe, die in einem "
+        f"durchgehenden Lauf nie kommt. Die Quote oben sagt damit nicht, "
+        f"welche Form das Gebiet hat ('cli freigabe' misst es)."
+    )
+
+
 def quoten_je_stellgroesse(
     laeufe: Sequence[Lauf], *, walkforward: bool = False
 ) -> dict[str, float]:

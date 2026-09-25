@@ -177,10 +177,33 @@ class Landschaft:
             f"statt das Ende des Gebiets ('cli freigabe' misst es). "
         )
 
+    @property
+    def zu_ende_gemessen(self) -> bool:
+        """Wurde **jeder** Punkt bis zum letzten Balken gehandelt?"""
+        return self.gesperrte_punkte == 0
+
     def urteil(self) -> str:
         if not self.punkte:
             return "Nichts abgetastet."
         vorbehalt = self._vorbehalt()
+        # **Befund 330.** Befund 314 hat den Vorbehalt davorgestellt und das
+        # Urteil stehen gelassen - und das Urteil behauptete danach weiter
+        # eine Form ("Plateau: 12 zusammenhaengende Punkte von 12"), obwohl
+        # kein einziger Punkt zu Ende gemessen war. Gemessen an
+        # 'rsi(period=14)': 12 von 12 stillgelegt, 900 verhinderte Einstiege,
+        # und darunter stand die guenstigste Lesart, die es gibt.
+        #
+        # Die Zahlen bleiben alle stehen. Was wegfaellt, ist der **Name** der
+        # Form, denn den hat diese Karte nicht gemessen.
+        if self.gesperrte_punkte == len(self.punkte):
+            return (
+                f"{vorbehalt}**Eine Form ist damit nicht gemessen.** "
+                f"{len(self.profitabel)} von {len(self.punkte)} Punkten "
+                f"stehen am Ende im Plus, {self.zusammenhaengend} davon "
+                f"zusammenhaengend - aber jeder dieser Punkte endet an seiner "
+                f"Sperre und nicht am Rand des Gebiets. Ob hier ein Plateau "
+                f"oder ein Grat liegt, sagt diese Karte nicht."
+            )
         if self.zusammenhaengend <= 1:
             return (
                 f"{vorbehalt}Grat: Nur {self.zusammenhaengend} "

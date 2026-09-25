@@ -3390,8 +3390,22 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "wo er nuetzt: Am **Spot**-Punkt besteht das Gate unter beiden "
               "Messarten (1,000 gegen 1,000), und das Kosten-Stress-Gate, "
               "das denselben durchgehenden Lauf benutzt, bleibt mit +945,06 "
-              "gegen +2316,29 in beiden Faellen bestanden.",
+              "gegen +2316,29 in beiden Faellen bestanden."
+              "\n    **Berichtigt (330)**: Der Satz oben - 'geaendert ist nur, "
+              "dass die Botschaft keine Form mehr behauptet' - war fuer den "
+              "**bestandenen** Fall falsch. 'sperrsatz' hing nur am "
+              "Fehlschlag-Zweig; besteht das Gate, schwieg die Botschaft "
+              "weiter. Am Spot-Punkt besteht es immer, also hat die Behebung "
+              "aus 313 an dem Betriebspunkt, den dieses Projekt berichtet, "
+              "nie gegriffen. Gemessen (330, Spot, BTC + ETH): Wert 1,0000 "
+              "gegen Schwelle 0,60, 12 von 12 Nachbarn profitabel - und **12 "
+              "von 12 stillgelegt, 737 verhinderte Einstiege**. Die Zahl fuer "
+              "Spot stand bis hier nicht da, nur die 1020 fuer Perpetual. "
+              "'bestandsatz' schreibt es jetzt auch beim Bestehen hin; Wert "
+              "und Urteil bleiben weiter unberuehrt, und die Entscheidung "
+              "bleibt offen.",
         befund=313,
+        zuletzt=330,
     ),
     Entscheidung(
         frage="Funding-Satz",

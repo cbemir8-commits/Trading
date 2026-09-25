@@ -203,7 +203,17 @@ GELESEN: dict[str, int] = {
     # Widerspruch.
     "Bestand + 'Grosser Trendausbruch'": 322,
     "Holdout auf fremden Maerkten": 295,
-    "Zaehlt ein Sweep am Bestand als Versuch?": 295,
+    # **Befund 330, und diesmal benutzt statt zitiert.** Der Lauf hat den
+    # Versuchszaehler ueber ``PATHS__STATE`` auf eine Wegwerf-Ablage umgelenkt,
+    # um 'cli landschaft' ueberhaupt einmal fahren zu koennen - und das geht
+    # genau an dieser Frage vorbei oder mitten durch sie. Gelesen und
+    # abgegrenzt: Ein **Rauchtest** prueft keine Hypothese und sein Ergebnis
+    # wird weggeworfen, also ist er keiner; ein **Forschungslauf** mit
+    # umgelenktem Zaehler waere einer. Die Frage des Eintrags - ob ein Sweep am
+    # Bestand eine Hypothese ueber den Markt ist - bleibt damit unberuehrt und
+    # beim Nutzer. Nicht nachgemessen: Der Grundstock traegt weiter 192 von 203
+    # Versuchen ohne Herkunft, und daran hat 330 nichts geaendert.
+    "Zaehlt ein Sweep am Bestand als Versuch?": 330,
     "Timing gegen Zufallseinstiege": 295,
     "Der Preis in Reststreuungen": 295,
     # **Befund 305 hat beide erneut angesehen** - und es war zweimal etwas

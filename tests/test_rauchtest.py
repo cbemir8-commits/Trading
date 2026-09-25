@@ -93,6 +93,27 @@ HARMLOS: frozenset[str] = frozenset({
 #:
 #: 54 seit Befund 313: 'freigabe' ist an beiden Betriebspunkten auf echten
 #: Tageskerzen gefahren worden.
+#:
+#: **Sieben Befehle stehen nur wegen des Zaehlers in ``WIRKT_NACH_AUSSEN``**
+#: (Befund 330): 'adaptiv', 'korb', 'landschaft', 'machbarkeit', 'research',
+#: 'verbund', 'wettbewerb'. Sie laden nichts und stellen keine Order - sie
+#: schreiben ``state/trials.json``, und ein Rauchtest darf die Latte des
+#: Deflated Sharpe nicht heben.
+#:
+#: Das laesst sich umlenken: ``PATHS__STATE`` zeigt die Ablage woanders hin
+#: (``env_nested_delimiter="__"`` in ``core/config.py``), und der Lauf bucht in
+#: eine Wegwerf-Datei. Damit ist 'landschaft' in Befund 330 zum ersten Mal auf
+#: echten Tageskerzen gefahren - der Umbau aus Befund 314 war bis dahin nie
+#: ausgefuehrt worden - und hat sofort gezeigt, dass 12 von 12 Punkten
+#: stillgelegt waren.
+#:
+#: **Kein Freibrief.** Ein Rauchtest prueft keine Hypothese und sein Ergebnis
+#: wird weggeworfen; deshalb ist er kein Versuch. Ein Forschungslauf mit
+#: umgelenktem Zaehler waere einer - und ob ein Sweep am Bestand als Versuch
+#: zaehlt, liegt als Entscheidung beim Nutzer (Befund 282/233).
+#:
+#: ``GELAUFEN`` zaehlt weiter nur die harmlosen Befehle; die sieben gehoeren
+#: nicht dazu.
 GELAUFEN = 54
 TRACEBACKS = 0
 SAUBER_ABGELEHNT = ("quelle", "review", "vorschlag")

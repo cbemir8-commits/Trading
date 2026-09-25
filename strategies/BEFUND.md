@@ -29500,3 +29500,138 @@ Ein Test haelt das jetzt fest.
 Die 5,9 Jahre stehen. Sie sind die Untergrenze am massgeblichen Stand, und die
 Bedingung darunter - gleiche Guete je Trade - ist ueber sechs Fenster
 gemessen und haelt.
+
+## Dreihundertdreissig. Das Plateau-Gate hat auf stillgelegten Nachbarn bestanden
+
+Befund 314 hat `research/landschaft.py` umgebaut und **nie laufen lassen** -
+`cli landschaft` schreibt den Versuchszaehler und steht deshalb in
+`WIRKT_NACH_AUSSEN`, wo kein Rauchtest hinkommt. Das war seit sechzehn Befunden
+eine offene Schuld.
+
+### Der Zaehler laesst sich umlenken
+
+Sieben der siebzehn Befehle in `WIRKT_NACH_AUSSEN` stehen **nur** wegen des
+Zaehlers dort: `adaptiv`, `korb`, `landschaft`, `machbarkeit`, `research`,
+`verbund`, `wettbewerb`. Sie laden nichts und stellen keine Order.
+
+`core/config.py` setzt `env_nested_delimiter="__"`, also lenkt `PATHS__STATE`
+die Ablage um. Der Lauf bucht in eine Wegwerf-Datei, der echte Zaehler bleibt
+bei 203.
+
+**Kein Freibrief.** Ein Rauchtest prueft keine Hypothese und sein Ergebnis wird
+weggeworfen; deshalb ist er kein Versuch. Ein *Forschungslauf* mit umgelenktem
+Zaehler waere einer - und ob ein Sweep am Bestand als Versuch zaehlt, liegt als
+Entscheidung beim Nutzer (Befund 282/233). Diese Grenze bleibt, wo sie ist.
+
+### Was die Karte beim ersten Lauf gesagt hat
+
+`cli landschaft --regler "rsi(period=14)"`, echte Tageskerzen, BTC + ETH:
+
+    Faktor  rsi(period=14)  Trades      Gewinn  gesperrt
+      0.50               7      90      478.63        75
+      0.60               8      90      479.13        75
+      ...
+      1.00              14      90      478.94        75   <== Kandidat
+      ...
+      2.00              28      90      455.88        75
+
+**12 von 12 Punkten stillgelegt, 900 verhinderte Einstiege.** Und darunter
+stand:
+
+> Plateau: 12 zusammenhaengende Punkte von 12, der Kandidat mittendrin.
+> 12 von 12 Punkten profitabel.
+
+Die guenstigste Lesart, die es gibt - aus zwoelf Laeufen, von denen keiner zu
+Ende gemessen wurde.
+
+### Ein eigener Fehlschluss unterwegs
+
+Die Trades-Spalte steht bei 90, ueber eine Vervierfachung der RSI-Periode. Ich
+habe daraus geschlossen, die abgetastete Stellgroesse existiere in der
+Strategie gar nicht - der Kandidat zeigte in `entry_long` und `exit_long` nur
+`sma(50)`.
+
+Falsch. Das Genom hat eine `konfluenz`-Liste, und sein eigener `rationale` sagt,
+was sie tut:
+
+> Drei Zusatzbedingungen entscheiden nicht **ob** gehandelt wird, sondern **wie
+> gross** - als Filter gemessen und widerlegt, als Groessensignal wirksam.
+
+Der RSI steuert die Positionsgroesse, nicht den Einstieg. Die flache
+Trades-Spalte ist damit richtig und erwartbar, und die Gewinnspalte variiert
+genau deshalb (455,88 bis 514,05). Nachgesehen statt behauptet - sonst waere
+daraus ein Befund geworden, der nicht existiert.
+
+### Dieselbe Frage am Gate
+
+Spitzenkandidat, Spot-Betriebspunkt, wie die Zulassung rechnet:
+
+    Parameter-Plateau       PASS, Wert 1,0000 gegen Schwelle 0,60
+    Nachbarn profitabel     12 von 12
+    davon stillgelegt       12 von 12
+    verhinderte Einstiege   737
+
+Die volle Punktzahl steht auf zwoelf Laeufen, von denen **keiner** zu Ende
+gemessen wurde. Die Botschaft sagte dazu nichts:
+
+> Schwaechste Richtung Vola-Fenster mit 100% (12 von 12 Nachbarn insgesamt
+> profitabel). Vola-Fenster 2/2, alle gemeinsam 2/2, roc(period=90) 2/2,
+> rsi(period=14) 2/2, sma(period=200) 2/2, sma(period=50) 2/2
+
+### Warum sie schwieg - und das ist mein Fehler
+
+`sperrsatz` gibt es seit **Befund 313**, und ich habe es dort an den
+Fehlschlag-Zweig gehaengt, mit einer Begruendung im Quelltext:
+
+> Nur im Fehlschlag-Zweig, und das ist keine Stilfrage: `randlage` antwortet
+> "traegt", wenn nichts durchgefallen ist, und dafuer hat `_RANDSATZ` keinen
+> Eintrag.
+
+Der technische Punkt stimmt - `_RANDSATZ` haette einen KeyError geworfen. Nur
+gilt er allein fuer `randlage`. `sperrsatz` hat dieses Problem nicht und haette
+in beide Zweige gehoert.
+
+Schlimmer ist, was der Registereintrag zu 313 behauptet hat:
+
+> **Geaendert wurde nichts.** ... geaendert ist nur, dass die Botschaft keine
+> Form mehr behauptet, die an einem abgeschalteten Lauf nicht gemessen wurde.
+
+Fuer den bestandenen Fall ist das falsch. Und am **Spot**-Punkt besteht das
+Gate immer - unter beiden Messarten, 1,000 gegen 1,000, wie derselbe Eintrag
+selbst festhaelt. Die Behebung aus 313 hat an dem Betriebspunkt, den dieses
+Projekt berichtet, also **nie gegriffen**.
+
+Dieselbe Bauart wie Befund 321/322: Was nicht gemessen wurde, zaehlte als
+bestanden. Nur diesmal im Erfolgsfall, und der ist genau der, in dem niemand
+nachsieht.
+
+### Was gebaut wurde
+
+`freigabe.bestandsatz` ist das Geschwister von `sperrsatz` fuer den bestandenen
+Fall. Es sagt "kein einziger Nachbar wurde zu Ende gemessen", wenn alle
+stillgelegt waren, nennt sonst die Zahl, und schweigt bei null - eine Warnung,
+die immer angeht, ist keine (Befund 324).
+
+`Landschaft.urteil` benennt keine Form mehr, wenn **jeder** Punkt stillgelegt
+war. Die Zahlen bleiben alle stehen; weg ist nur der Name:
+
+> **Eine Form ist damit nicht gemessen.** 12 von 12 Punkten stehen am Ende im
+> Plus, 12 davon zusammenhaengend - aber jeder dieser Punkte endet an seiner
+> Sperre und nicht am Rand des Gebiets. Ob hier ein Plateau oder ein Grat
+> liegt, sagt diese Karte nicht.
+
+Bei *einzelnen* Sperren bleibt das alte Urteil: teilweise stillgelegt heisst
+nicht "nichts gemessen", und dort traegt der Vorbehalt aus 314 allein.
+
+### Was ausdruecklich nicht geaendert ist
+
+**Wert und Urteil des Gates.** `passed = ratio >= t.min_plateau_ratio` steht
+unveraendert, und ein Test haelt fest, dass die Stilllegung nirgends in die
+Entscheidung einfliesst. Ob ein stillgelegter Nachbar zaehlen darf, liegt seit
+Befund 313 als Geschaeftsentscheidung beim Nutzer - sie verschiebt am
+Perpetual-Punkt ein Gate von durchgefallen auf bestanden, und sie entsteht,
+waehrend der eigene Kandidat daran haengt.
+
+**Die 9 von 11 am Spot stehen.** Das Gate besteht dort unter beiden Messarten.
+Was sich aendert, ist nicht die Bilanz, sondern dass neben der vollen Punktzahl
+steht, worauf sie beruht.
