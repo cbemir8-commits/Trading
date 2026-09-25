@@ -29745,3 +29745,105 @@ sofort mit allen elf nach (`if not run_expensive and
 gates.geprueftes_bestanden`). Nachgesehen statt aufgeschrieben - sonst waere
 daraus ein Befund geworden, den es nicht gibt. Das ist in diesem und im letzten
 Zyklus je einmal passiert.
+
+## Dreihundertzweiunddreissig. Dieselbe Regel, zwei Nenner, sieben Zeilen Abstand
+
+Befund 321 hat gefunden, dass `GateResult.passed` wahr ist, sobald der Status
+nicht `FAIL` lautet - ein **uebersprungenes** Gate zaehlt damit als bestanden.
+321 hat das fuer `teststaerke.Stufe` behoben, 322 fuer `nachpruefung.Ergebnis`.
+
+Dieser Lauf hat nachgesehen, wo dieselbe Zahl sonst noch steht. Der Anlass war
+ein Nebenbefund aus dem Rauchtest in Befund 331: Die Bestenliste des Wettbewerbs
+meldet "4/9 Gates", und ich wollte wissen, wie viele Nenner dieses Projekt
+eigentlich fuehrt.
+
+### Der handfeste Fall
+
+`cli nachpruefung -g 4,5 -i D --schnell`, echte Tageskerzen, im Trockenlauf:
+
+    Fortschrittszeile    Ausbruch ohne Long-Ueberhitzung   5/9   0 Trades
+    ...
+    Tabelle              Ausbruch ohne Long-Ueberhitzung   2/6   0 Trades
+
+Dieselbe Regel, zwei Nenner, sieben Zeilen Abstand. Befund 322 hat
+`bestanden_echt` / `geurteilt` gebaut und in **Tabelle, Rangfolge und Urteil**
+verdrahtet. Die Fortschrittszeile, eine Zeile nach dem Bau des Objekts, druckt
+weiter `ergebnis.bestanden / ergebnis.gesamt`:
+
+```python
+ergebnis = Ergebnis(..., bestanden=sum(1 for r in gates.results if r.passed), ...)
+console.print(f"... {ergebnis.bestanden:>2}/{ergebnis.gesamt:<2} ...")
+```
+
+Die Zahl, die 321/322 abschaffen wollten, ist die erste, die man sieht.
+
+Behoben und auf echten Daten nachgemessen - die Zeile zeigt jetzt `2/6` und
+haengt `(nicht jedes Gate geurteilt)` an. Die Regel mit 46 Trades steht
+unveraendert bei `4/9`, weil bei ihr nichts ausgesetzt hat.
+
+### Und was die Suche danach ergab
+
+**Neun Anzeigestellen** in `cli.py` geben ein rohes `bestanden/gesamt` aus:
+`marktkombinationen`, `koernung`, `instrument` (zweimal), `finanzierung`,
+`machbarkeit`, `decke`, `regler` (zweimal).
+
+**Einundzwanzig Datentypen** in `research/` tragen ein Feld `bestanden`. Davon:
+
+    mit 'uebersprungen'   3   teststaerke.Stufe (321), nachpruefung.Ergebnis
+                              (322), machbarkeit.Stand
+    verzeichnete Staende  2   referenz.Referenzpunkt, historie.Historienstufe
+                              - feste Werte mit Fundstelle, kein Gate-Lauf
+    offen                16
+
+Sechzehn Typen tragen eine Gate-Zahl und koennen nicht sagen, ob jedes Gate
+geurteilt hat.
+
+### Was dieser Befund ausdruecklich nicht behauptet
+
+**Dass die sechzehn heute falsche Zahlen zeigen, ist nicht gemessen.**
+
+Ein Aussetzen braucht seine Bedingungen: zu wenige Trades (20 fuer Monte-Carlo,
+30 fuer Regime-Aufteilung und Deflated Sharpe), keine variierbaren Perioden,
+`run_expensive` aus. Ob die in einem gegebenen Lauf auftreten, haengt an seinen
+Eingaben.
+
+Nachgesehen habe ich bei `cli decke` - dem wahrscheinlichsten Kandidaten, weil
+es um Stichprobengroesse geht. Seine Leiter variiert aber die **Kosten**, nicht
+die Trade-Zahl: fuenf Zeilen, dieselbe Strategie, 7/11 bis 9/11, kein
+Uebersprungenes. Der Verdacht hat sich dort nicht bestaetigt.
+
+Deshalb ist das hier ein **Verzeichnis und keine Reparatur**. Sechzehn Module mit
+`uebersprungen` zu durchziehen, ohne einen einzigen belegten Fall, waere Arbeit
+auf Verdacht - und die Zahlen, die dabei entstehen, waeren nicht besser belegt
+als die alten.
+
+### Was gebaut wurde
+
+`tests/test_gatezahlen.py` fuehrt das Verzeichnis: jeder Datentyp mit einer
+Gate-Zahl steht in genau einem von drei Feldern, und ein neuer zwingt zur
+Einordnung. Unbekannt ist ein Fehler, nicht stillschweigend in Ordnung -
+dieselbe Bauart wie `WIRKT_NACH_AUSSEN` in `test_rauchtest.py`, und aus demselben
+Grund bewusst als Liste statt als "alles Uebrige": Sonst waere das Verzeichnis
+per Konstruktion vollstaendig und der Test tautologisch.
+
+Dazu prueft es, dass die Einordnung mit dem Quelltext uebereinstimmt - wer in
+`OFFEN` steht und das Feld traegt, ist behoben und nur nicht umgetragen.
+
+Der Eintrag steht unter `OFFEN` im Register, mit der Zahl sechzehn, damit ein
+spaeterer Lauf sich daran messen kann.
+
+### Die Bauart
+
+Das ist innerhalb von drei Zyklen der dritte Fall derselben Sorte: Befund 313
+hat `sperrsatz` an einen von zwei Zweigen gehaengt (330 hat es gefunden), Befund
+330 hat ein Teilmittel gebaut, wo ein vollstaendiges lag (331), und Befund 322
+hat drei von vier Anzeigewegen verdrahtet (dieser).
+
+Gemeinsam ist nicht Nachlaessigkeit, sondern der Zuschnitt: Ich behebe an der
+Stelle, die ich gerade lese, und der Test, den ich dazu schreibe, prueft genau
+diese Stelle - er kann die uebersehene nicht finden, weil er aus derselben
+Annahme stammt wie die Behebung. Genau das war Befund 320, und dort stand es
+schon.
+
+Ein Verzeichnis ueber **alle** Traeger ist die Form, die das aushaelt: Es stammt
+nicht aus der Annahme, sondern aus dem Quelltext.

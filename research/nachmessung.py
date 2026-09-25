@@ -275,6 +275,14 @@ GELESEN: dict[str, int] = {
 #: jeher, wo es keine Begriffe gibt. Gefragt hat nur niemand, und die offenen
 #: Richtungen sind die, nach denen gearbeitet wird.
 BEGRIFFE: dict[str, tuple[str, ...]] = {
+    # Befund 332: Die Begriffe sind die Namen der Sache, nicht die des
+    # Eintrags - ein spaeterer Befund ueber ausgesetzte Gates schreibt
+    # "uebersprungen" oder "bestanden_echt", nicht "sechzehn Gate-Zahlen".
+    "Sechzehn Gate-Zahlen ohne Auskunft ueber Uebersprungenes": (
+        "uebersprungen",
+        "bestanden_echt",
+        "geurteilt",
+    ),
     "Mehr Maerkte": ("effektive Stichprobe", "mehr Maerkte", "weitere Maerkte"),
     "Dreierverbund": ("Dreierverbund", "Dreier", "drittes Bein", "Beinsumme"),
     "Mehr Historie": ("mehr Historie", "laengere Historie"),

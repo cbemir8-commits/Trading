@@ -5776,10 +5776,17 @@ def nachpruefung(
             vorauswahl=schnell,
         )
         lauf.ergebnisse.append(ergebnis)
+        # **Befund 332.** Hier stand 'bestanden/gesamt' - das rohe Paar, in dem
+        # ein uebersprungenes Gate als bestanden zaehlt. Befund 322 hat
+        # 'bestanden_echt/geurteilt' gebaut und in Tabelle, Rangfolge und
+        # Urteil verdrahtet; diese Zeile blieb stehen. Fuer eine Regel ohne
+        # einen einzigen Trade stand hier '5/9' und sieben Zeilen weiter in
+        # der Tabelle '2/6' - und die erste Zahl liest man zuerst.
+        stumm = "  (nicht jedes Gate geurteilt)" if ergebnis.uebersprungen else ""
         console.print(
             f"[dim]  {i:>2}/{len(kandidaten)} {genome.name[:42]:44} "
-            f"{ergebnis.bestanden:>2}/{ergebnis.gesamt:<2} "
-            f"{ergebnis.trades:>4} Trades  DSR {ergebnis.dsr:.3f}[/]"
+            f"{ergebnis.bestanden_echt:>2}/{ergebnis.geurteilt:<2} "
+            f"{ergebnis.trades:>4} Trades  DSR {ergebnis.dsr:.3f}{stumm}[/]"
         )
 
     if not lauf.ergebnisse:

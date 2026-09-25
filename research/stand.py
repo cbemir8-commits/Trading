@@ -2739,6 +2739,26 @@ BEHOBEN: tuple[Richtung, ...] = (
 #: als "gemessen und zu". Ein Eintrag hier ist eine Zusage, keine Ablage.
 OFFEN: tuple[Richtung, ...] = (
     Richtung(
+        "Sechzehn Gate-Zahlen ohne Auskunft ueber Uebersprungenes",
+        "Befund 321/322 hat 'uebersprungen' in 'teststaerke.Stufe' und "
+        "'nachpruefung.Ergebnis' nachgetragen, weil 'GateResult.passed' ein "
+        "ausgesetztes Gate als bestanden zaehlt. Nachgesehen (332): **21 "
+        "Datentypen** in 'research/' tragen ein Feld 'bestanden', drei wissen "
+        "von Uebersprungenem, zwei halten verzeichnete Staende ohne Gate-Lauf "
+        "- bei **sechzehn** ist die Frage offen. Neun Anzeigestellen in "
+        "'cli.py' geben ein rohes Paar aus. **Nicht gemessen** ist, ob die "
+        "sechzehn heute falsche Zahlen zeigen: Ein Aussetzen braucht seine "
+        "Bedingungen (zu wenige Trades, keine variierbaren Perioden, "
+        "'run_expensive' aus), und 'cli decke' etwa fuehrt seine Leiter mit "
+        "derselben Strategie und aehnlicher Trade-Zahl - dort trat keines "
+        "auf. Gemessen und behoben ist ein Fall: Die Fortschrittszeile von "
+        "'cli nachpruefung' zeigte '5/9' fuer eine Regel ohne einen einzigen "
+        "Trade, die Tabelle sieben Zeilen weiter '2/6'. "
+        "'tests/test_gatezahlen.py' fuehrt das Verzeichnis und zwingt jeden "
+        "neuen Typ zur Einordnung",
+        332,
+    ),
+    Richtung(
         "Holdout auf fremden Maerkten",
         "LTC und XRP halten 41 % des Vorteils je Trade; die Marktrichtung "
         "ist seit 175 herausgerechnet, die Korrelation von 0,685 bleibt",
