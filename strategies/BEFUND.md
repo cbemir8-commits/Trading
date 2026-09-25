@@ -29635,3 +29635,113 @@ waehrend der eigene Kandidat daran haengt.
 **Die 9 von 11 am Spot stehen.** Das Gate besteht dort unter beiden Messarten.
 Was sich aendert, ist nicht die Bilanz, sondern dass neben der vollen Punktzahl
 steht, worauf sie beruht.
+
+## Dreihunderteinunddreissig. Ich habe ein Teilmittel gebaut, wo ein vollstaendiges lag
+
+Befund 330 hat `cli landschaft` zum ersten Mal laufen lassen. Der Befehl steht
+in `WIRKT_NACH_AUSSEN`, weil er den Versuchszaehler schreibt, und ich habe mir
+dafuer ein Mittel gebaut: `PATHS__STATE` lenkt die Zustandsablage um, der Lauf
+bucht in eine Wegwerf-Datei.
+
+Fuer `landschaft` war das richtig. Es schreibt sonst nichts.
+
+### Dann dasselbe Mittel auf `cli wettbewerb`
+
+Der naechste Schritt dieses Zyklus war, `cli wettbewerb` zu rauchtesten - der
+Befehl, den der Nutzer nach dem Backfill ausfuehren soll, und der seit Befund
+326 die Kennzahlen-Wache traegt, ohne je auf echten Daten gelaufen zu sein.
+
+Er lief, und er lief richtig:
+
+    2 Regeln bleiben draussen - sie stuetzen sich auf Kennzahlen, die diese
+    Reihe nicht hat:
+      Beteiligt, ausser es ist ueberhitzt: funding_zscore(period=90) ...
+      Carry-Beteiligung: funding_avg(period=7) ...
+
+Die Verdrahtung aus Befund 326 tut auf echten Daten genau das, was sie soll.
+
+**Und dann hat er einen Bericht abgelegt, ihn committet und gepusht.**
+`e00ffb7`. `wettbewerb` schreibt mehr als den Zaehler: Journal, Bestenliste,
+Berichtsdatei - und `_send_report` committet und pusht sie. `PATHS__STATE` deckt
+davon nichts.
+
+### Das war Befund 117, noch einmal
+
+Der Docstring von `core.report.publish` beschreibt denselben Vorfall:
+
+> **Im Trockenlauf wird nichts gesendet** (Befund 117). Das ist die sichtbarste
+> Schreibstelle von allen: Sie committet **und pusht**, und ein Rauchtest landet
+> damit in der Projekthistorie, wo er wie ein Lauf aussieht. Genau das ist
+> passiert - `54770ec` ist der Bericht meines eigenen Rauchtests, committet um
+> 04:59:08 und mit dem naechsten Push mitgegangen.
+
+`e00ffb7` ist der Zwilling von `54770ec`, neun Jahre spaeter im Projektzaehler.
+
+### Das vollstaendige Mittel lag seit Befund 116 bereit
+
+`TRADING_TROCKENLAUF`. Sein eigener Docstring sagt, was es deckt - und er sagt
+auch, dass der Vertrag einmal zu eng war und erweitert wurde:
+
+> **Der Vertrag war zu eng, und ich bin selbst darauf hereingefallen** (Befund
+> 116). ... Jetzt gilt der Name: Wer die Variable setzt, hinterlaesst nichts -
+> Zaehler, Bestenliste und Berichte gleichermassen.
+
+Gemessen, nicht angenommen - `cli wettbewerb` mit der Variable:
+
+    Versuche vorher   203        Berichtsordner   8 Dateien
+    Versuche nachher  203        Berichtsordner   8 Dateien
+    Arbeitsbaum       sauber
+
+Und fuenf ausdrueckliche Abmeldungen im Protokoll: `zaehler.trockenlauf`,
+`zulassung.journal_trockenlauf`, `bestenliste.trockenlauf`,
+`bericht.trockenlauf`, `senden.trockenlauf`.
+
+### Warum ich es nicht gefunden habe
+
+Der Vorflug aus den Befunden 319/320/324 fragt Register und Berichtsordner, was
+zu einer **Messung** schon bekannt ist. Genau dafuer war er gebaut - gegen die
+Wiederholungen aus 302 und 318.
+
+Vor einem **Werkzeug** habe ich ihn nicht gefragt. "Wie fahre ich einen Befehl,
+ohne Spuren zu hinterlassen" ist keine Messfrage, also lief die Wache nicht -
+und die Antwort stand seit fuenfzehn Befunden im Haus, in einem Docstring, der
+den heutigen Fehler wortwoertlich vorwegnimmt.
+
+Dieselbe Bauart wie 302 und 318, nur eine Ebene versetzt: nicht eine Messung
+wiederholt, sondern ein Werkzeug nachgebaut.
+
+### Was der Bericht in der Historie anrichtet
+
+Er sieht aus wie ein gezaehlter Lauf und ist keiner. Die Datei nennt
+`versuche: 204`, der Zaehler steht bei 203 - eine Zahl, zu der es keinen
+gebuchten Versuch gibt. Genau die Sorte Widerspruch, gegen die
+`nachmessung`, `berichtslage` und `referenz` in diesem Projekt gebaut sind.
+
+Deshalb zurueckgenommen, und zwar **nach vorn**: `git revert`, kein
+force-push. Der Commit ist gepusht; ihn aus der Historie zu schneiden waere die
+unehrlichere Spur. Der Revert nennt den Grund.
+
+### Was gebaut wurde
+
+Die Notiz in `tests/test_rauchtest.py` nennt jetzt `TRADING_TROCKENLAUF` als das
+Mittel und `PATHS__STATE` als das, was es ist: eine Teilabdeckung, die fuer
+`landschaft` reichte und fuer `wettbewerb` nicht.
+
+Die Gruende in `WIRKT_NACH_AUSSEN` waren zu knapp. "schreibt den
+Versuchszaehler" bei `wettbewerb` und `research` laesst jemanden den Zaehler
+abdecken und fertig sein; sie nennen jetzt Bestenliste, Bericht und das Senden.
+
+`tests/test_trockenlauf_deckt_alles.py` haelt fest, dass die Wache **in** der
+Sendestelle sitzt und vor der `enabled`-Pruefung greift - nicht in einer
+Aufrufstelle, wo sie eine Vereinbarung waere statt einer Wache. Dazu die
+Gegenprobe: ohne die Variable ist `publish` nicht abgeschaltet.
+
+### Nebenbei geprueft und in Ordnung
+
+Die Bestenliste meldete "Gates 4/9", wo jede andere Zahl des Projekts auf elf
+lautet. Das ist Absicht: `--schnell` ist Vorgabe und laesst die beiden teuren
+Gates aus, und `run_admission` prueft einen Kandidaten, der die neun besteht,
+sofort mit allen elf nach (`if not run_expensive and
+gates.geprueftes_bestanden`). Nachgesehen statt aufgeschrieben - sonst waere
+daraus ein Befund geworden, den es nicht gibt. Das ist in diesem und im letzten
+Zyklus je einmal passiert.

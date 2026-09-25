@@ -52,12 +52,12 @@ WIRKT_NACH_AUSSEN: dict[str, str] = {
     "korb": "schreibt den Versuchszaehler",
     "landschaft": "schreibt den Versuchszaehler",
     "machbarkeit": "schreibt den Versuchszaehler",
-    "research": "schreibt den Versuchszaehler",
+    "research": "schreibt den Zaehler und committet einen Bericht",
     "setup": "schreibt Zugangsdaten",
     "termine": "laedt aus dem Netz",
     "trade": "stellt Orders",
     "verbund": "schreibt den Versuchszaehler",
-    "wettbewerb": "schreibt den Versuchszaehler",
+    "wettbewerb": "schreibt Zaehler, Bestenliste und Bericht - und pusht",
 }
 
 #: Die Befehle, die ein Rauchtest starten darf - **einzeln aufgezaehlt.**
@@ -94,23 +94,30 @@ HARMLOS: frozenset[str] = frozenset({
 #: 54 seit Befund 313: 'freigabe' ist an beiden Betriebspunkten auf echten
 #: Tageskerzen gefahren worden.
 #:
-#: **Sieben Befehle stehen nur wegen des Zaehlers in ``WIRKT_NACH_AUSSEN``**
-#: (Befund 330): 'adaptiv', 'korb', 'landschaft', 'machbarkeit', 'research',
-#: 'verbund', 'wettbewerb'. Sie laden nichts und stellen keine Order - sie
-#: schreiben ``state/trials.json``, und ein Rauchtest darf die Latte des
-#: Deflated Sharpe nicht heben.
+#: **Sieben Befehle stehen wegen ihrer Schreibstellen in ``WIRKT_NACH_AUSSEN``**
+#: (Befund 330/331): 'adaptiv', 'korb', 'landschaft', 'machbarkeit',
+#: 'research', 'verbund', 'wettbewerb'. Sie laden nichts und stellen keine
+#: Order - aber sie schreiben, und ein Rauchtest darf nichts hinterlassen.
 #:
-#: Das laesst sich umlenken: ``PATHS__STATE`` zeigt die Ablage woanders hin
-#: (``env_nested_delimiter="__"`` in ``core/config.py``), und der Lauf bucht in
-#: eine Wegwerf-Datei. Damit ist 'landschaft' in Befund 330 zum ersten Mal auf
-#: echten Tageskerzen gefahren - der Umbau aus Befund 314 war bis dahin nie
-#: ausgefuehrt worden - und hat sofort gezeigt, dass 12 von 12 Punkten
-#: stillgelegt waren.
+#: **Das Mittel dafuer heisst ``TRADING_TROCKENLAUF=1``** und steht seit Befund
+#: 116/117 bereit. Es deckt *alle* Schreibstellen auf einmal - Zaehler,
+#: Journal, Bestenliste, Berichtsdatei und das Committen-und-Senden -, und ein
+#: Lauf meldet jede einzelne ausdruecklich ab. Gemessen in Befund 331 an 'cli
+#: wettbewerb': Versuche 203 vor und nach dem Lauf, Berichtsordner unveraendert,
+#: Arbeitsbaum sauber.
+#:
+#: **Befund 330 hat stattdessen ``PATHS__STATE`` benutzt** - eine Umlenkung, die
+#: nur den Zaehler deckt. 'landschaft' schreibt sonst nichts und lief damit
+#: richtig; 'wettbewerb' aber legt einen Bericht ab, **committet ihn und
+#: pusht**. Genau das ist in Befund 331 passiert (``e00ffb7``), und es ist die
+#: Wiederholung von Befund 117, dessen Docstring in ``core/report.py`` denselben
+#: Vorfall beschreibt (``54770ec``). Wer hier einen Befehl rauchtestet, setzt
+#: die Variable und verlaesst sich nicht auf eine Teilabdeckung.
 #:
 #: **Kein Freibrief.** Ein Rauchtest prueft keine Hypothese und sein Ergebnis
-#: wird weggeworfen; deshalb ist er kein Versuch. Ein Forschungslauf mit
-#: umgelenktem Zaehler waere einer - und ob ein Sweep am Bestand als Versuch
-#: zaehlt, liegt als Entscheidung beim Nutzer (Befund 282/233).
+#: wird weggeworfen; deshalb ist er kein Versuch. Ein Forschungslauf im
+#: Trockenlauf waere einer - und ob ein Sweep am Bestand als Versuch zaehlt,
+#: liegt als Entscheidung beim Nutzer (Befund 282/233).
 #:
 #: ``GELAUFEN`` zaehlt weiter nur die harmlosen Befehle; die sieben gehoeren
 #: nicht dazu.
