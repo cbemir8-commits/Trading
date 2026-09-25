@@ -86,6 +86,22 @@ class Richtung:
         return f"{self.name:22} {self.ergebnis:40} {stelle}"
 
 
+def _aussicht_jahre() -> float:
+    """Die massgebliche Entfernung zur Schwelle, in Jahren - Befund 329.
+
+    Lokal geholt, weil ``referenz`` beim Import dieses Moduls schon steht und
+    eine Handzahl im Register sonst weiterlaeuft: Genau das ist mit der "5,6"
+    im Eintrag zu Befund 138 passiert, waehrend ``AUSSICHT`` bei 5,9 stand.
+    """
+    from research.referenz import AUSSICHT
+
+    return AUSSICHT.jahre
+
+
+#: Dieselbe Zahl, schon in der Schreibweise des Registers (Komma, eine
+#: Nachkommastelle) - damit sie in einen Satz passt, ohne ihn zu verbiegen.
+_AUSSICHT_JAHRE: str = f"{_aussicht_jahre():.1f}".replace(".", ",")
+
 #: Die Richtungen, die gemessen und abgeschlossen sind.
 #:
 #: Reihenfolge: wie sie untersucht wurden. Jede Zeile ist eine Messung, keine
@@ -436,8 +452,15 @@ BEHOBEN: tuple[Richtung, ...] = (
     ),
     Richtung(
         "Zeit bis zur Schwelle veraltet",
-        "1,8 Jahre galten fuer n = 152; jetzt mindestens 5,6",
+        # **Gerechnet statt gepflegt** (Befund 329). Hier stand "jetzt
+        # mindestens 5,6" - eine Handzahl, die auf 5,9 weitergelaufen ist,
+        # waehrend 'AUSSICHT' sie jeden Tag neu ausrechnet. Dieselbe Bauart,
+        # die Befund 158 bei 'Aussicht.rate_je_tausend_tage' aufgeraeumt hat.
+        f"1,8 Jahre galten fuer n = 152; jetzt mindestens {_AUSSICHT_JAHRE}. "
+        f"Die alte Zahl lebt weiter in 'historie.GEMESSEN.fehlende_tage()' - "
+        f"seit Befund 329 nennt deren Urteil den massgeblichen Wert daneben",
         138,
+        329,
     ),
     Richtung(
         "Latte auf roher Trade-Zahl",

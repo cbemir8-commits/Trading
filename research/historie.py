@@ -254,7 +254,48 @@ class Historienkurve:
                 f"{rate:.1f} je 1000 Tagen sind das rund {tage} Tage "
                 f"({tage / 365.25:.1f} Jahre) - hochgerechnet, nicht gemessen."
             )
+            # **Befund 329.** Der Satz davor stand hier allein, und er nennt
+            # eine Entfernung zur selben Schwelle, die 'referenz.AUSSICHT'
+            # anders beziffert - auf dieser Leiter 1,8 Jahre, massgeblich
+            # 5,9. Der Grund ist die Stichprobe: Diese Fenster sind vor
+            # Befund 135 gemessen, also vor der Quartalseinteilung. Der
+            # Modulkopf nennt das fuer n und DSR; die **daraus gerechnete**
+            # Entfernung stand ohne Hinweis da, und sie ist die Zahl, die
+            # jemand mitnimmt.
+            teile.append(_abstandsvergleich(tage, ref.effektiv, self.ziel or 0))
         return " ".join(teile)
+
+
+def _abstandsvergleich(tage: int, eigenes_n: int, eigenes_ziel: int) -> str:
+    """Die eigene Entfernung neben die massgebliche stellen - Befund 329.
+
+    Lokal eingefuehrt, damit ``referenz`` dieses Modul nicht kennen muss: Die
+    Richtung ist "Leiter schaut auf den Stand", nicht umgekehrt.
+
+    ``eigenes_n`` und ``eigenes_ziel`` kommen von der Kurve, die gerade
+    urteilt - **nicht** aus ``GEMESSEN``. Eine Kurve, die ein Test selbst
+    baut, soll ihre eigenen Zahlen im Satz sehen und nicht fremde.
+
+    Stimmen beide Entfernungen ueberein, steht hier nichts Warnendes - eine
+    Warnung, die immer angeht, ist keine (Befund 324).
+    """
+    from research.referenz import AUSSICHT
+
+    massgeblich = AUSSICHT.tage
+    if massgeblich <= 0 or abs(massgeblich - tage) <= max(30, tage // 20):
+        return (
+            f"Der massgebliche Stand nennt {massgeblich} Tage "
+            f"({massgeblich / 365.25:.1f} Jahre) - dasselbe Bild."
+        )
+    return (
+        f"**Massgeblich ist das nicht.** Diese Fenster sind vor Befund 135 "
+        f"gemessen, also ohne die Quartalseinteilung; dort zaehlen "
+        f"{eigenes_n} unabhaengige Beobachtungen statt {AUSSICHT.heute}, und "
+        f"die Schwelle verlangt {AUSSICHT.noetig} statt {eigenes_ziel}. "
+        f"Gerechnet auf dem Stand, der gilt, sind es {massgeblich} Tage "
+        f"({massgeblich / 365.25:.1f} Jahre) - 'research/referenz.py', "
+        f"AUSSICHT."
+    )
 
 
 #: Die sechs gemessenen Fenster aus Befund 133, als Daten statt als Prosa.
@@ -266,6 +307,13 @@ class Historienkurve:
 #:
 #: Der Stand von n und DSR ist seit Befund 135 ueberholt (siehe Kopf); die
 #: **Form** der Kurve ist es nicht, und um die geht es hier.
+#:
+#: **``ziel`` gehoert zu den ueberholten Zahlen** (Befund 329). 181 ist die
+#: Stichprobe, die die Schwelle vor der Quartalseinteilung verlangte;
+#: massgeblich sind 190 (``referenz.SPOTPUNKT.noetiges_n()``). Der Kopf nannte
+#: bis 329 nur n und DSR - und aus allen dreien zusammen faellt die
+#: Entfernung, die dieses Modul ausrechnet. Sie steht deshalb seither nie
+#: mehr ohne den massgeblichen Wert daneben.
 GEMESSEN: Historienkurve = Historienkurve(
     stufen=(
         Historienstufe("2017-08-16", 3277, 152, 152, 0.2765, 0.8640, 9, 11),

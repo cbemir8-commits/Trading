@@ -29393,3 +29393,110 @@ war der Weg, auf dem sie messbar eingebrochen ist.
 Wenn die neuen Kerzen da sind, ist die erste Frage also nicht "wie viele Trades
 sind es jetzt", sondern "ist die Guete je Trade geblieben". Erst die zweite
 Antwort macht die erste zu einem Fortschritt.
+
+## Dreihundertneunundzwanzig. Zwei Entfernungen zur selben Schwelle, Faktor 3,3
+
+Befund 328 liess eine Frage offen: Die ganze Entfernungsrechnung haengt daran,
+dass die Guete je Trade nicht faellt, wenn die Historie waechst. Gemessen war
+das nirgends - dachte ich.
+
+### Die Antwort lag im Haus
+
+`research/historie.py` misst genau das ueber sechs Fenster, seit Befund 133:
+
+        ab       Tage  Trades   eff    Guete     DSR   Gates
+    2017-08-16   3277     152   152   0,2765  0,8640    9/11
+    2018-08-16   2912     137   136   0,2734  0,7659    9/11
+    2019-08-16   2547     111   103   0,2705  0,4792    9/11
+    2020-03-30   2320     103   103   0,2396  0,2969    8/11
+    2021-08-16   1816      72    72   0,2711  0,2209    9/11
+    2022-08-16   1451      52    52   0,2903  0,1347    9/11
+
+Kein Trend, nur Streuung um 0,27. `guete_haengt_an_der_laenge()` gibt `False`
+zurueck. Die Bedingung aus Befund 328 haelt - in der Richtung, die fuer den
+Korb ueberhaupt messbar ist (die andere gibt es nicht, weil die ETH-Reihe am
+16.08.2017 beginnt).
+
+Das ist der zweite Nutzen des Vorflugs aus Befund 319/320/324, und diesmal hat
+er einen ganzen Messlauf gespart.
+
+### Was beim Nachlesen auffiel
+
+Dasselbe Modul rechnet eine **Entfernung zur Schwelle** aus, als lebende
+Methode:
+
+    GEMESSEN.fehlende_tage()  ->   649 Tage (1,8 Jahre)
+    referenz.AUSSICHT.tage    ->  2152 Tage (5,9 Jahre)
+
+Dieselbe Frage, derselbe Betriebspunkt, **Faktor 3,3**. Beide gerechnet, beide
+lebendig, und **kein Test, der sie aneinanderbindet**.
+
+### Woran es liegt
+
+An der Stichprobe. Die sechs Fenster sind vor Befund 135 gemessen, also ohne
+die Quartalseinteilung, die das Gate seither zusaetzlich anlegt. Der Modulkopf
+sagt das auch:
+
+> Die Zahlen oben rechnen mit **n = 152** und einem Deflated Sharpe von 0,8640.
+> Beides ist seit **Befund 135** ueberholt.
+
+Nur deckt dieser Satz nicht alles ab, was in die Entfernung eingeht:
+
+    n      152  gegen  115   <- genannt
+    DSR  0,8640  gegen 0,5827 <- genannt
+    ziel    181  gegen  190   <- nicht genannt
+
+Und die Entfernung selbst, die aus allen dreien faellt, stand ohne jeden
+Hinweis da - mit einem Zusatz, der in die falsche Richtung beruhigt:
+*"hochgerechnet, nicht gemessen"*. Das warnt vor der Extrapolation, nicht
+davor, dass die Eingaben ueberholt sind.
+
+Die Probe darauf: Dieselbe Maschinerie mit den massgeblichen Zahlen gefuettert
+trifft `AUSSICHT` **auf den Tag** - 2152. Der Unterschied sitzt in den
+Eingaben, nicht in einem Fehler auf einer der beiden Seiten.
+
+### Und im Register stand es als behoben
+
+Seit Befund 138, unter **BEHOBEN**:
+
+> Zeit bis zur Schwelle veraltet - 1,8 Jahre galten fuer n = 152; jetzt
+> mindestens 5,6
+
+Behoben war die Beschriftung des Modulkopfs. Die Methode gab weiter 649
+zurueck. Und die Handzahl 5,6 war inzwischen selbst auf 5,9 weitergelaufen,
+waehrend `AUSSICHT` sie jeden Tag neu ausrechnet - dieselbe Bauart, die Befund
+158 bei `Aussicht.rate_je_tausend_tage` aufgeraeumt hat.
+
+### Was gebaut wurde
+
+**Die Messung bleibt stehen.** Sie ist an ihrem Tag so entstanden, und sie
+nachtraeglich umzurechnen hiesse, eine historische Messung zu faelschen.
+
+Geaendert ist die Beschriftung der Zahl, die daraus faellt. `urteil()` stellt
+die massgebliche Entfernung daneben, mit Grund:
+
+> Bis zur Schwelle fehlen 29 Beobachtungen; bei 44.7 je 1000 Tagen sind das
+> rund 649 Tage (1.8 Jahre) - hochgerechnet, nicht gemessen. **Massgeblich ist
+> das nicht.** Diese Fenster sind vor Befund 135 gemessen, also ohne die
+> Quartalseinteilung; dort zaehlen 152 unabhaengige Beobachtungen statt 115,
+> und die Schwelle verlangt 190 statt 181. Gerechnet auf dem Stand, der gilt,
+> sind es 2152 Tage (5,9 Jahre).
+
+Stimmen beide ueberein, steht dort nur noch "dasselbe Bild" - eine Warnung,
+die immer angeht, ist keine (Befund 324).
+
+`ziel = 181` ist jetzt als ueberholt ausgewiesen, und der Registereintrag
+rechnet seine Jahreszahl, statt sie zu pflegen.
+
+### Ein eigener Fehlgriff
+
+Der Vergleichssatz las im ersten Anlauf `GEMESSEN` aus dem Modul statt die
+Kurve, die gerade urteilt. `urteil()` ist eine Methode auf **jeder**
+`Historienkurve`; eine selbst gebaute haette fremde Zahlen ueber sich gelesen.
+Ein Test haelt das jetzt fest.
+
+### Was bleibt
+
+Die 5,9 Jahre stehen. Sie sind die Untergrenze am massgeblichen Stand, und die
+Bedingung darunter - gleiche Guete je Trade - ist ueber sechs Fenster
+gemessen und haelt.
