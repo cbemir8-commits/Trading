@@ -1,0 +1,119 @@
+{
+  "art": "wettbewerb",
+  "zeitpunkt": "2026-09-25T18:58:16.050459+00:00",
+  "runde": 1,
+  "markt": {
+    "symbol": "BTCUSD_BITSTAMP",
+    "intervall": "1d"
+  },
+  "lauf": {
+    "kandidaten": 1,
+    "zugelassen": 0,
+    "runde": 1,
+    "laeufe": 1
+  },
+  "zusammenfassung": "1 Strategien in 1 Laeufen geprueft, 0 zugelassen. Vorn: Trend-Beteiligung (fair gerechnet) (4/9 Gates, Erwartung +1.000 R)",
+  "bestenliste": [
+    {
+      "genome_id": "66e04da1281c8cd1",
+      "name": "Trend-Beteiligung (fair gerechnet)",
+      "generation": 5,
+      "intervall": "D",
+      "kapital": 500.0,
+      "referenzdaten": true,
+      "herkunft": "Katalog",
+      "geprueft": 1,
+      "zuerst": "2026-09-25T18:58:16.010497+00:00",
+      "zuletzt": "2026-09-25T18:58:16.010497+00:00",
+      "zugelassen": false,
+      "gates_bestanden": 4,
+      "gates_gesamt": 9,
+      "gescheitert_an": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Deflated Sharpe"
+      ],
+      "trades": 46,
+      "erwartung_r": 0.9997,
+      "sharpe": 0.783,
+      "rendite_pct": 67.65,
+      "max_drawdown_pct": 13.54,
+      "fenster_profitabel": 0.533,
+      "hypothese": "Long ueber dem 200er-Schnitt, raus darunter. Identisch zur dritten Generation; nur Positionsgroesse und Stop folgen jetzt der Bauform statt der Wettformel. Kontrollversuch: Ein Unterschied liegt dann an unserem Aufbau, nicht an der Idee.",
+      "deflated_sharpe": 0.0729,
+      "versuche": 204,
+      "sharpe_je_trade": 0.305063,
+      "schiefe": 3.8838,
+      "woelbung": 20.3284,
+      "genom": {
+        "name": "Trend-Beteiligung (fair gerechnet)",
+        "rationale": "Long ueber dem 200er-Schnitt, raus darunter. Identisch zur dritten Generation; nur Positionsgroesse und Stop folgen jetzt der Bauform statt der Wettformel. Kontrollversuch: Ein Unterschied liegt dann an unserem Aufbau, nicht an der Idee.",
+        "entry_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "cross_above",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 200
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "entry_short": [],
+        "filters": [],
+        "konfluenz": [],
+        "exit_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "lt",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 200
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "exit_short": [],
+        "stop": {
+          "kind": "percent",
+          "atr_period": 14,
+          "multiple": 1.5,
+          "percent": 15.0
+        },
+        "targets": [
+          {
+            "rr": 20.0,
+            "portion": 1.0
+          }
+        ],
+        "sizing": {
+          "kind": "kapitalanteil",
+          "konviktion_bonus": 0.0,
+          "target_vol_pct": 25.0,
+          "vol_period": 30,
+          "fraction": 0.5
+        },
+        "cooldown_bars": 0,
+        "max_hold_bars": 0
+      }
+    }
+  ]
+}
