@@ -329,6 +329,18 @@ class Aussicht:
             f"{self.fehlend} fehlende Beobachtungen  {herkunft}"
         )
 
+    #: **Die Bedingung, unter der die Zeile ueberhaupt gilt** - Befund 328.
+    #:
+    #: ``noetig`` kommt aus ``erreichbarkeit.noetige_trades``, und dessen
+    #: Zusage lautet "bei **unveraenderter** Qualitaet je Trade". Wer die
+    #: Zeile liest, liest eine Zeitangabe; die Bedingung stand nirgends.
+    BEDINGUNG = (
+        "Gilt bei unveraenderter Guete je Trade. Sammeln die neuen "
+        "Beobachtungen schlechter, waechst die noetige Zahl mit dem Quadrat "
+        "des Rueckgangs - gemessen in 'reports/marktkombinationen': "
+        "zweieinhalbmal so viele Trades, Deflated Sharpe 29 % niedriger."
+    )
+
 
 #: Der Abstand zur Schwelle, in Zeit. Untergrenze - siehe ``Aussicht``.
 #:

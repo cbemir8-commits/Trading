@@ -4045,6 +4045,11 @@ class Lage:
             "",
             "  Untergrenzen, keine Termine - die Sammelrate ist die des",
             "  laengsten gemessenen Fensters (siehe research/referenz.py).",
+            "",
+            # **Befund 328.** Drei Zeilen in Tagen, und die Bedingung, unter
+            # der sie ueberhaupt gelten, stand nirgends. 'noetig' kommt aus
+            # 'noetige_trades' - "bei unveraenderter Qualitaet je Trade".
+            f"  {AUSSICHT.BEDINGUNG}",
         ]
         # **Auf welchem Betriebspunkt lohnt die Suche?** (Befund 220.) Die
         # Frage stand nirgends beziffert, obwohl beide Punkte gemessen sind.

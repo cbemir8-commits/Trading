@@ -146,6 +146,54 @@ def noetiger_sharpe(
     return hoch
 
 
+def erlaubter_gueteverlust(
+    *,
+    effektiv: int,
+    guete: float,
+    trials: int,
+    skew: float = 0.0,
+    kurtosis: float = 3.0,
+    ziel: float = 0.95,
+) -> float | None:
+    """Wie weit die Guete je Trade fallen darf, wenn die Stichprobe waechst.
+
+    **Die Bedingung unter ``AUSSICHT``** (Befund 328). Die Entfernung zur
+    Schwelle steht dort in Tagen: 75 fehlende Beobachtungen, mindestens 2152
+    Tage. Gerechnet ist sie mit ``noetige_trades``, und dessen Zusage lautet
+    ausdruecklich *"bei **unveraenderter** Qualitaet je Trade"*. Wer sie liest,
+    liest eine Zeitangabe; die Bedingung daneben steht nirgends.
+
+    Sie ist nicht akademisch. Im einzigen gemessenen Fall, in dem das Projekt
+    Beobachtungen tatsaechlich hinzugewonnen hat, ist sie gebrochen
+    (``reports/marktkombinationen``, 13.09.):
+
+        BTC+ETH             158 Trades   DSR 0,5881   CAGR 14,34 %
+        BTC+ETH+LTC         266 Trades   DSR 0,4855   CAGR 11,50 %
+        BTC+ETH+XRP         267 Trades   DSR 0,4609   CAGR 11,32 %
+        BTC+ETH+LTC+XRP     375 Trades   DSR 0,4175   CAGR  9,95 %
+
+    Zweieinhalbmal so viele Trades, und der Deflated Sharpe faellt um 29 %.
+
+    Rueckgabe: der Anteil, um den die Guete fallen darf, als Zahl zwischen 0
+    und 1. Bei ``effektiv`` gleich ``noetig`` ist er null - dort ist kein
+    Verlust mehr erlaubt. ``None``, wenn diese Stichprobe die Schwelle mit
+    keiner Guete erreicht.
+
+    Die Faustregel dahinter: Die Pruefgroesse waechst mit ``Guete * Wurzel(n)``,
+    also verlangt eine halb so gute Regel rund die vierfache Stichprobe. **Mehr
+    Beobachtungen helfen, solange die Guete langsamer faellt als eins durch
+    Wurzel n.**
+    """
+    if guete <= 0:
+        return None
+    noetig = noetiger_sharpe(
+        effektiv=effektiv, trials=trials, skew=skew, kurtosis=kurtosis, ziel=ziel
+    )
+    if noetig is None:
+        return None
+    return 1.0 - noetig / guete
+
+
 @dataclass(frozen=True, slots=True)
 class Erreichbarkeit:
     """Der Abstand zum Deflated-Sharpe-Gate, in beide Richtungen aufgeloest."""

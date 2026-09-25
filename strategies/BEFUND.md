@@ -29301,3 +29301,95 @@ etwas; `2,9 % der Luecke` schon. Genau dieser Satz haette Befund 326 gestoppt.
 Der Modulkopf trug noch die Zahlen eines frueheren Kandidaten (154 Trades,
 0,251) unter der Ueberschrift "am aktuellen Kandidaten". Er traegt jetzt die
 gemessenen - und den Absatz darueber, wie die Tabelle **nicht** zu lesen ist.
+
+## Dreihundertachtundzwanzig. Die Entfernung zur Schwelle gilt nur bei gleicher Guete
+
+`cli stand` sagt seit Befund 160, wie weit es noch ist:
+
+    derselbe am Spot  mindestens 2152 Tage (5,9 Jahre) fuer 75 fehlende
+                      Beobachtungen
+
+Befund 327 hat diese Zeile gerade zum Hebel des Projekts erklaert: nicht
+Versuchsdisziplin schliesst die Luecke, sondern die Stichprobe. Also gehoert
+nachgesehen, woran die Zeile haengt.
+
+### Woran sie haengt
+
+`AUSSICHT.noetig` ist 190, und die Zahl kommt aus
+`erreichbarkeit.noetige_trades`. Dessen Zusage steht in seinem eigenen Kopf:
+
+> Wie viele Trades braeuchte es bei **unveraenderter** Qualitaet je Trade?
+
+Der Kopf von `Aussicht` widmet der **anderen** Annahme drei Absaetze und eine
+Tabelle - der Sammelrate ueber sechs Historienfenster, samt der ehrlichen
+Feststellung, dass sie nicht monoton ist (Befund 138/158). Zur Guete steht
+dort nichts. Wer die Zeile liest, liest eine Zeitangabe.
+
+### Warum das nicht akademisch ist
+
+Im einzigen gemessenen Fall, in dem das Projekt Beobachtungen wirklich
+hinzugewonnen hat, ist die Bedingung gebrochen. Aus
+`reports/marktkombinationen/2026-09-13_010559.json`, derselbe Kern, nur mehr
+Maerkte:
+
+    BTC+ETH             158 Trades   DSR 0,5881   CAGR 14,34 %   9/11
+    BTC+ETH+LTC         266 Trades   DSR 0,4855   CAGR 11,50 %   7/11
+    BTC+ETH+XRP         267 Trades   DSR 0,4609   CAGR 11,32 %   9/11
+    BTC+ETH+LTC+XRP     375 Trades   DSR 0,4175   CAGR  9,95 %   9/11
+
+**Zweieinhalbmal so viele Trades, und der Deflated Sharpe faellt um 29 %.**
+Der Ertrag fiel mit - die Messlatte reisst also ebenfalls. Mehr
+Beobachtungen sind nicht von sich aus besser.
+
+Das ist kein Widerspruch zur Rechnung, sondern ihre Bedingung: Die
+Pruefgroesse waechst mit `Guete * Wurzel(n)`. Bei 2,37-facher Stichprobe haette
+die Guete auf `1/Wurzel(2,37)` = 65 % fallen duerfen, ohne dass etwas
+verloren geht. Sie ist weiter gefallen.
+
+### Das Quadratgesetz
+
+Gemessen am Spitzenkandidaten, Spot, 203 Versuche:
+
+    Guete je Trade   noetige wirksame Beobachtungen
+    0,2708 (heute)         190   (1,7x heute)
+    0,2573 (-5 %)          214   (1,9x)
+    0,2437 (-10 %)         242   (2,1x)
+    0,2302 (-15 %)         276   (2,4x)
+    0,2166 (-20 %)         316   (2,7x)
+    0,1896 (-30 %)         426   (3,7x)
+
+Und in die andere Richtung - wieviel Guete eine groessere Stichprobe erlaubt:
+
+    n_eff   erlaubter Gueteverlust
+      115        -24,6 %   (heute fehlt Guete, statt uebrig zu sein)
+      190          0,0 %   (die Definition von 'noetig')
+      250        +11,3 %
+      375        +25,9 %
+      500        +34,9 %
+
+Die Zahl waechst mit dem Quadrat des Rueckgangs und bleibt **endlich**: Selbst
+ein Drittel der heutigen Guete ist mit Daten zu heilen. Das Gate ist nicht
+unerreichbar, es ist teuer - und wie teuer, haengt daran, ob die neuen
+Beobachtungen so gut sind wie die alten.
+
+### Was gebaut wurde
+
+`erreichbarkeit.erlaubter_gueteverlust` rechnet die Bedingung aus, in der
+Richtung, in der die Frage gestellt wird: "Wenn ich auf n Beobachtungen komme,
+wie weit darf die Guete dabei fallen?"
+
+`Aussicht.BEDINGUNG` traegt den Satz, und `_aussichtszeilen` zeigt ihn unter
+den drei Entfernungen. Befund 160 und 208 waren beide dieselbe Bauart - eine
+gepflegte Zahl, die an keiner Stelle angezeigt wurde. Eine gepflegte
+**Bedingung** ist nicht besser dran.
+
+### Was das fuer den Auftrag beim Nutzer heisst
+
+Er bleibt richtig, und er bekommt eine Pruefung dazu. Mehr Historie auf
+**denselben** zwei Maerkten ist der Weg, auf dem die Guete plausibel gleich
+bleibt - dieselbe Regel, dieselben Instrumente, nur laenger. Mehr **Maerkte**
+war der Weg, auf dem sie messbar eingebrochen ist.
+
+Wenn die neuen Kerzen da sind, ist die erste Frage also nicht "wie viele Trades
+sind es jetzt", sondern "ist die Guete je Trade geblieben". Erst die zweite
+Antwort macht die erste zu einem Fortschritt.
