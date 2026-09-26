@@ -193,6 +193,30 @@ class Stufe:
     brutto: float = 0.0
     gescheitert: tuple[str, ...] = ()
 
+    uebersprungen: tuple[str, ...] = ()
+    """Gates, die auf dieser Sprosse **nicht geurteilt haben** - Befund 337.
+
+    ``Stufe`` war einer der fuenfzehn Traeger aus Befund 332: Sie zeigte
+    ``bestanden/gesamt``, und ``GateResult.passed`` ist wahr, sobald der Status
+    nicht ``FAIL`` lautet - ein ausgesetztes Gate zaehlte also als bestanden.
+
+    Hier ist das kein Verdacht: Diese Leiter **verschlechtert die Strategie
+    absichtlich**. Auf der obersten Sprosse (54,8 % im Jahr) bleibt von 14,34 %
+    Rendite noch 7,61 %, und je weniger Trades uebrig sind, desto eher setzen
+    Monte-Carlo (unter 20) und Regime-Aufteilung wie Deflated Sharpe (unter 30)
+    aus. Genau dort steht die Zahl, an der eine offene Entscheidung haengt.
+    """
+
+    @property
+    def geurteilt(self) -> int:
+        """Gates, die ein Urteil gefaellt haben."""
+        return max(self.gesamt - len(self.uebersprungen), 0)
+
+    @property
+    def bestanden_echt(self) -> int:
+        """Bestandene ohne die uebersprungenen."""
+        return max(self.bestanden - len(self.uebersprungen), 0)
+
     @property
     def jahr_pct(self) -> float:
         return jahr_pct(self.satz)

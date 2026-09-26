@@ -8166,7 +8166,7 @@ def finanzierung(
     from data.funding import FundingStore
     from research.admission import load_trials
     from research.finanzierung import BASISSATZ, Finanzierung, Stufe
-    from research.gates import evaluate_gates
+    from research.gates import GateStatus, evaluate_gates
     from research.seeds import spitzenkandidat
     from strategy.compiler import compile_genome
 
@@ -8580,13 +8580,24 @@ def finanzierung(
             gebuehren=sum(float(t.fees) for t in bericht.all_trades),
             brutto=sum(float(t.gross_pnl) for t in bericht.all_trades),
             gescheitert=tuple(r.name for r in gates.results if not r.passed),
+            # **Befund 337.** Diese Leiter verschlechtert die Strategie
+            # absichtlich, und je weniger Trades uebrig sind, desto eher setzt
+            # ein Gate aus - gezaehlt wurde es trotzdem als bestanden.
+            uebersprungen=tuple(
+                r.name for r in gates.results if r.status is GateStatus.SKIP
+            ),
         )
         stufen.append(stufe)
+        stumm = (
+            f"  ({len(stufe.uebersprungen)} ohne Urteil)"
+            if stufe.uebersprungen
+            else ""
+        )
         console.print(
             f"[dim]  {stufe.jahr_pct:>5.1f} % p.a.  Funding "
             f"{stufe.funding:>7.2f} EUR  Rendite {stufe.cagr:>6.2f} %  "
             f"Rueckgang {stufe.rueckgang:>5.2f} %  "
-            f"{stufe.bestanden}/{stufe.gesamt} Gates[/]"
+            f"{stufe.bestanden_echt}/{stufe.geurteilt} Gates{stumm}[/]"
         )
 
     bild = Finanzierung(

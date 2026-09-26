@@ -30190,3 +30190,79 @@ Eintrag, der jetzt "alles in Ordnung" sagte, waere die Gegenuebertreibung.
 Die Wache aus 335 hat beim **ersten** Lauf einen echten Fall gefunden, in dem
 eine offene Entscheidung des Nutzers auf Zahlen vom falschen Betriebspunkt
 stand. Acht Verdachtsfaelle stehen noch offen.
+
+## Dreihundertsiebenunddreissig. Eine Handzahl in der Funding-Entscheidung, ein Gate zu gut
+
+Zweiter Verdachtsfall aus der Wache von Befund 335: **'Funding-Satz'**,
+Fundstelle Befund 250, spaeter viermal in Befund 326 erwaehnt. Ausgewaehlt, weil
+es der groesste Kostenblock des Systems ist - Funding kostet am Betriebspunkt
+das 8,8-fache der Handelsgebuehren - und weil der Eintrag sagt, der Kandidat
+gewinne Gates zurueck, wenn die wahre Rate unter dem Vorgabewert liegt.
+
+### Die Handzahl
+
+Der Eintrag: *"Die Bilanz reicht ueber die gemessene Leiter von 9 von 11 (bei
+0 %) bis **3** von 11 (bei 55 %)."*
+
+`cli finanzierung` rechnet dieselbe Leiter jeden Lauf neu und sagt in seinem
+eigenen Urteil: *"Ueber die gemessene Leiter reicht die Bilanz von 9 bis **2**
+von 11 Gates."*
+
+    Satz p.a.    Rendite   Rueckgang   Gates
+        0.0 %    14.34 %      9.87 %    9/11
+        5.5 %    13.64 %     10.25 %    9/11
+       10.9 %    12.95 %     10.64 %    7/11   <- Vorgabe
+       21.9 %    11.61 %     11.41 %    7/11
+       32.8 %    10.25 %     12.17 %    6/11
+       54.8 %     7.61 %     13.68 %    2/11
+
+Ein Gate schlechter als verzeichnet - und in der **unguenstigen** Richtung, also
+nicht die Sorte Abweichung, die von selbst auffaellt.
+
+Dieselbe Bauart wie die "5,6" in Befund 329 und die "0,17 Punkte" in Befund 267:
+Eine Zahl, die einmal gemessen und dann gepflegt wurde, waehrend ein Befehl sie
+daneben neu ausrechnet.
+
+### Mitgemessen: eine der fuenfzehn aus Befund 332
+
+`finanzierung.Stufe` stand auf der offenen Liste aus Befund 332 - sie zeigte
+`bestanden/gesamt`, und `passed` ist wahr, sobald der Status nicht `FAIL`
+lautet.
+
+Hier war das kein Verdacht, sondern der **wahrscheinlichste Fall von allen**:
+Diese Leiter verschlechtert die Strategie absichtlich, bis von 14,34 % Rendite
+7,61 % bleiben. Wenn irgendwo ein Gate aussetzt und als bestanden zaehlt, dann
+dort.
+
+**Gemessen setzt auf keiner der sechs Sprossen ein Gate aus.** Funding ist eine
+Kosten- und keine Einstiegsgroesse: Die Trade-Zahl bleibt oben, alle elf urteilen,
+und `bestanden_echt/geurteilt` stimmt mit dem rohen Paar ueberein. Das Feld ist
+trotzdem da - damit es auffaellt, wenn sich das aendert.
+
+Damit stehen 14 von urspruenglich 16 offen, und die zwei geschlossenen sind
+beide **durch Messung** geschlossen und nicht durch Umbau auf Verdacht.
+
+### Was gebaut wurde
+
+`Stufe` traegt `uebersprungen` und rechnet `bestanden_echt` / `geurteilt`
+daraus; die Anzeige nennt die ehrliche Zahl und haengt bei einem Aussetzer
+"(N ohne Urteil)" an.
+
+Der Eintrag steht auf `2`, sagt was dort vorher stand, und nennt die
+Aussetzer-Messung. Fundstelle Nr. 337, zuerst 250.
+
+`tests/test_fundingleiter.py` bindet alle sechs Sprossen an einen gemessenen
+Lauf **und** prueft, dass keine aussetzt. Wandert eine, faellt es dort auf - und
+nicht in einer Entscheidung, wie die "3" es zwei Befunde lang getan hat.
+
+### Was am Eintrag richtig bleibt
+
+Fast alles, und der wichtigste Teil zuerst: Der Vorgabewert ist der
+**Basiswert** und nicht der Durchschnitt, der Bestand ist eine Long-Trendfolge
+und im Markt, wenn Longs am meisten zahlen - liegt die wahre Rate darueber,
+steht der Kandidat schlechter da als gemeldet. Diese Richtung ist seit Befund
+251 gemessen und durch diesen Lauf nicht beruehrt.
+
+Auch "das Neunfache" war keine Drift: 67,24 / 7,60 = 8,85, und der Befehl
+schreibt 8,8. Gepruefte Zahlen, die stimmen, gehoeren genauso berichtet wie die
+eine, die nicht stimmte.

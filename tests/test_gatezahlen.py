@@ -47,6 +47,10 @@ import research
 
 #: Typen, die ``uebersprungen`` tragen und ``bestanden_echt`` daraus rechnen.
 MIT_SKIPINFO: frozenset[str] = frozenset({
+    # Befund 337: nachgetragen, weil diese Leiter die Strategie absichtlich
+    # verschlechtert - dort waere ein Aussetzer am ehesten zu erwarten.
+    # Gemessen setzt auf keiner der sechs Sprossen ein Gate aus.
+    "research.finanzierung.Stufe",
     "research.machbarkeit.Stand",
     "research.nachpruefung.Ergebnis",
     "research.teststaerke.Stufe",
@@ -109,7 +113,6 @@ OFFEN: frozenset[str] = frozenset({
     "research.betriebspunkt.Betriebspunkt",
     "research.decke.Fenster",
     "research.decke.Stufe",
-    "research.finanzierung.Stufe",
     "research.instrument.Gebuehrenstufe",
     "research.instrument.Lauf",
     "research.koernung.Gatewert",
@@ -237,8 +240,8 @@ class TestDieFortschrittszeileDerNachpruefung:
 def test_die_zahl_der_offenen_faelle_steht_fest() -> None:
     """Damit ein spaeterer Lauf sich daran messen kann - und damit das
     Verzeichnis nicht unbemerkt waechst."""
-    assert len(OFFEN) == 15
-    assert len(MIT_SKIPINFO) == 3
+    assert len(OFFEN) == 14
+    assert len(MIT_SKIPINFO) == 4
     assert len(VORGELAGERT) == 1
     assert len(_traeger()) == 21
 

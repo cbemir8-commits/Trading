@@ -3477,7 +3477,7 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
              "- rund 11 % im Jahr. Am Betriebspunkt sind das 67,24 Euro gegen "
              "7,60 Euro Handelsgebuehren, also rund das **Neunfache**, und 8,2 % "
              "des Bruttogewinns. Die Bilanz reicht ueber die gemessene Leiter "
-             "von 9 von 11 (bei 0 %) bis 3 von 11 (bei 55 %); bei 11 % steht "
+             "von 9 von 11 (bei 0 %) bis **2** von 11 (bei 55 %); bei 11 % steht "
              "sie auf 7. `cli finanzierung` rechnet es nach.",
         warum="Der groesste Kostenblock des Systems steht auf einem "
               "Vorgabewert - und **beide** Gates, die am Funding haengen "
@@ -3493,8 +3493,17 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "Entwicklungscontainer nicht erreichbar - das ist eine Sperre "
               "dieser Sandbox, keine des Systems. Auf dem eigenen Rechner: "
               "`python -m cli funding --von 2020-03-30`, sofern das Konto "
-              "Perpetuals fuehrt.",
+              "Perpetuals fuehrt.\n    **Berichtigt (337)**: Die unterste "
+              "Sprosse stand hier als '3 von 11' - eine Handzahl. 'cli "
+              "finanzierung' rechnet sie jeden Lauf neu und sagt **2**, also "
+              "ein Gate schlechter als verzeichnet. Nachgemessen ist dabei "
+              "auch, dass auf **keiner** der sechs Sprossen ein Gate aussetzt "
+              "(Befund 332): Funding ist eine Kosten- und keine "
+              "Einstiegsgroesse, die Trade-Zahl bleibt oben, und "
+              "'bestanden_echt/geurteilt' stimmt mit dem rohen Paar ueberein. "
+              "Die Leiter 9/9/7/7/6/2 ist damit an einen Test gebunden",
         befund=250,
+        zuletzt=337,
     ),
     Entscheidung(
         frage="Umfang des Kosten-Stress-Tests",
