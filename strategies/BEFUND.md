@@ -30118,3 +30118,75 @@ angeht, ist keine.
 `AUFTRAG` und `BEIM_NUTZER` sind Befehle fuer den Rechner des Nutzers, keine
 Messungen - dort gibt es nichts, was veralten kann. Genannt werden sie
 trotzdem, damit die Summe stimmt.
+
+## Dreihundertsechsunddreissig. Die Wache hat beim ersten Lauf etwas gefunden
+
+Befund 335 hat die Staleness-Wache auf die Entscheidungen ausgeweitet und neun
+Eintraege mit Verdachtsfaellen gemeldet. Diesen Lauf aufzuschieben waere genau
+Befund 318 gewesen: eine Suche bauen und ihre Treffer nicht lesen.
+
+Der staerkste Verdacht: **'Feste Schwellen auf laufenden Extrema'**, Fundstelle
+Befund 162, spaeter achtmal in Befund 310 erwaehnt.
+
+### Was der Eintrag sagt
+
+    Drawdown            8,29 -> 10,64   Schwelle 12,00
+    Schlechtestes Jahr  5,97 -> -10,32  Schwelle -10,00
+    Monte-Carlo         7,83 ->   9,69  Schwelle 15,00
+
+    'Schlechtestes Jahr' ist bei 2547 Tagen gerissen. Der Rueckgang ist bereits
+    um 2,35 Punkte gewachsen und hat noch 1,36 Reserve - eine Wiederholung des
+    bereits Gemessenen genuegt, um auch ihn zu reissen.
+
+Befund 310 hatte an derselben Stelle einen anderen Wert notiert: bei Vola-Ziel
+19,3 am Spot-Punkt steht 'Schlechtestes Jahr' auf **-9,61 %** - es haelt.
+
+### Gemessen, beide Punkte
+
+                          Spot        Perpetual   Schwelle
+    Drawdown             9,87  PASS   10,64  PASS   12,00
+    Schlechtestes Jahr  -9,61  PASS  -10,32  FAIL  -10,00
+    Monte-Carlo          8,33  PASS    9,69  PASS   15,00
+
+**Die drei Zahlen des Eintrags sind die Perpetual-Zahlen** - 10,64, -10,32,
+9,69, auf die zweite Stelle genau. Befund 162 liegt vor Befund 311, der den
+Betriebspunkt eingefuehrt hat, und der Eintrag nannte keinen.
+
+Am **Spot**-Punkt, den `referenz` den massgeblichen nennt, ist **keines der drei
+gerissen**.
+
+Dieselbe Bauart wie Befund 316/317: eine Zahl unter einem Kopf, der ihren
+Betriebspunkt nicht nennt. Nur diesmal in einer offenen Entscheidung - und
+gefunden von der Wache, einen Zyklus nachdem sie gebaut wurde.
+
+### Was sich fuer die Entscheidung aendert
+
+Nicht die Richtung. Alle drei Werte wachsen mit der Historie, ein Maximum kann
+nicht fallen, und die Frage - ob eine feste Schwelle auf einem laufenden Extrem
+gemeint ist - steht unveraendert.
+
+Was sich aendert, ist die **Dringlichkeit**. Der Eintrag argumentiert mit "noch
+1,36 Reserve" beim Rueckgang. Das ist der Perpetual-Wert; am Spot-Punkt sind es
+**2,13** - 57 % mehr Spielraum. Und 'Schlechtestes Jahr' ist dort nicht
+gerissen, sondern hat 0,39 Reserve.
+
+Wer die Entscheidung auf Basis des alten Eintrags getroffen haette, haette einen
+Gate-Ausfall behoben, den es am massgeblichen Punkt nicht gibt.
+
+### Was gebaut wurde
+
+Der Eintrag traegt jetzt beide Spalten, sagt ausdruecklich, dass die alten
+Zahlen die Perpetual-Zahlen sind, und berichtigt den Satz ueber das Reissen. Die
+Fundstelle ist nachgezogen: Nr. 336, zuerst 162.
+
+`tests/test_extremaschwellen.py` bindet die sechs Werte an einen gemessenen Lauf
+an beiden Punkten - wenn einer wandert, faellt es dort auf und nicht in einer
+Entscheidung. Dazu zwei Tests, die den Eintrag selbst pruefen: dass er beide
+Punkte nennt, **und** dass er die Richtung des Befundes aufrechterhaelt. Ein
+Eintrag, der jetzt "alles in Ordnung" sagte, waere die Gegenuebertreibung.
+
+### Was daran das Bemerkenswerte ist
+
+Die Wache aus 335 hat beim **ersten** Lauf einen echten Fall gefunden, in dem
+eine offene Entscheidung des Nutzers auf Zahlen vom falschen Betriebspunkt
+stand. Acht Verdachtsfaelle stehen noch offen.

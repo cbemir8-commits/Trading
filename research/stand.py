@@ -3280,7 +3280,20 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
              "\n    'Schlechtestes Jahr' ist bei 2547 Tagen gerissen. Der "
              "Rueckgang ist bereits um 2,35 Punkte gewachsen und hat noch "
              "1,36 Reserve - eine Wiederholung des bereits Gemessenen "
-             "genuegt, um auch ihn zu reissen.",
+             "genuegt, um auch ihn zu reissen."
+             "\n    **Das sind die Perpetual-Zahlen** (336). Befund 162 liegt "
+             "vor 311, der den Betriebspunkt eingefuehrt hat, und der Eintrag "
+             "nannte keinen. Beide Punkte heute gemessen:"
+             "\n                            Spot        Perpetual   Schwelle"
+             "\n      Drawdown             9,87  PASS   10,64  PASS   12,00"
+             "\n      Schlechtestes Jahr  -9,61  PASS  -10,32  FAIL  -10,00"
+             "\n      Monte-Carlo          8,33  PASS    9,69  PASS   15,00"
+             "\n    **Am massgeblichen Spot-Punkt ist keines der drei "
+             "gerissen.** 'Schlechtestes Jahr' haelt dort mit 0,39 Reserve, "
+             "und der Rueckgang hat 2,13 statt 1,36 - also 57 % mehr "
+             "Spielraum, als der Satz oben annimmt. Die Richtung des Befundes "
+             "steht unveraendert (alle drei wachsen mit der Historie), nur "
+             "die Dringlichkeit haengt am Betriebspunkt",
         warum="Ein Maximum kann nicht fallen und ein Minimum nicht steigen. "
               "Wer laenger misst, misst zwangslaeufig ein groesseres Extrem - "
               "unabhaengig davon, ob die Strategie besser oder schlechter "
@@ -3296,6 +3309,7 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "faellt nicht hier. **Gelockert wird nichts**, solange sie "
               "nicht gefallen ist.",
         befund=162,
+        zuletzt=336,
     ),
     Entscheidung(
         frage="Mindestrendite von 15 % im Jahr",
