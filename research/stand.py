@@ -3665,7 +3665,18 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
              "gegen eine Schwelle von 0,8 - Unabhaengigkeit ist **leicht**. "
              "Das Nadeloehr ist die Kopplung von Haeufigkeit und Guete, und "
              "sie haben Befund 75 von n = 14 (r = -0,533) auf n = 18 "
-             "(r = -0,602, t = -3,02) gehoben.",
+             "(r = -0,602, t = -3,02) gehoben."
+             "\n    **Nachgemessen (342): Die vier 'noetig'-Zahlen sind nicht "
+             "nachrechenbar.** Sie haengen an Trade-Zahl **und** "
+             "Verteilungsform, und die Form steht je Regel nirgends - das "
+             "Verzeichnis fuehrt Trades und Guete. Keine Kombination aus "
+             "Zaehlerstand und Form holt die vier zurueck; mit der Form des "
+             "Bestands und heutigem Zaehler waeren es 1,4554 / 0,3387 / "
+             "0,3725 / 0,1936, also deutlich hoeher. Wer 'noetig 0,9047' "
+             "gegen 0,3405 liest, liest eine Latte von damals. Seit 342 "
+             "schreibt das Verzeichnis Schiefe und Woelbung mit; die elf "
+             "vorhandenen Eintraege bleiben ohne, und erfundene waeren "
+             "schlimmer als keine",
         warum="Nach Befund 145 sind alle gemessenen Richtungen leer, und was "
               "fehlt, ist eine Regel, die es noch nicht gibt. Der Katalog "
               "kann sie nicht liefern (Befund 75), 'breed' bildet nur "
@@ -3676,6 +3687,21 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "(Befund 71), dazu kommen Modellkosten gegen das Monatsbudget. "
               "Eine Serie erfolgloser Vorschlaege macht den Bestand also "
               "messbar schlechter."
+              "\n    **'Keine Kleinigkeit' war ungerechnet, und gerechnet ist "
+              "es eine** (342). Vom Spot-Punkt aus, gegen eine Luecke von "
+              "0,3673: ein Vorschlag 0,0011 DSR-Punkte (0,3 %), die neun "
+              "bereits ausgegebenen 0,0095 (2,6 %), zwanzig 0,0207 (5,6 %). "
+              "In der Waehrung, die zaehlt - noetige Trades - sind es 190 "
+              "heute, 192 nach neun weiteren, 194 nach zwanzig. Teuer wird es "
+              "erst in der Groessenordnung einer Serie: fuenfzig Vorschlaege "
+              "kosten 0,0484 (13,2 %, 198 Trades), hundert 0,0878 (23,9 %, "
+              "204 Trades). **Das ist dieselbe Ueberzeichnung wie in Befund "
+              "326, nur in der anderen Richtung**: Dort war eine Ersparnis "
+              "als Fortschritt gebucht, hier ein Preis als Abschreckung - "
+              "beide ohne Rechnung. Der Einwand gegen die KI steht damit auf "
+              "den Modellkosten und den neun Nieten, nicht auf dem Deflated "
+              "Sharpe; wer eine Handvoll Vorschlaege will, bezahlt sie mit "
+              "wenigen Prozent der Luecke."
               "\n    Zu entscheiden ist damit, ob neun erfolglose Versuche "
               "gegen diese Quelle sprechen oder ob sie zu wenige sind, um "
               "etwas zu sagen. Beides ist vertretbar: Neun Nieten sind kein "
@@ -3689,7 +3715,10 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
         # 292 hat dem Auftrag an die KI gesagt, worin der Unterschied
         # bestehen muss. Wer sie heute laufen laesst, stellt eine andere
         # Frage als bei 74/77 - das gehoert in die Entscheidung.
-        zuletzt=292,
+        #
+        # 342 hat den Preis gerechnet, den 292 nur behauptet hat, und die
+        # vier 'noetig'-Zahlen als nicht nachrechenbar ausgewiesen.
+        zuletzt=342,
     ),
     # **Hier stand in Befund 305 eine zehnte Entscheidung, und sie war
     # falsch gestellt** (Befund 306). "'Neues Hoch im Takt' neu bauen - ein

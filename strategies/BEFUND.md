@@ -30592,3 +30592,97 @@ dem Bestand zur Messlatte fehlen, und die sind gemessen.
 `tests/test_spotleiter.py` bindet die vier Gate-Werte an einen gemessenen Lauf,
 den Vergleich mit der gespeicherten Zeile und die Einzelquelle an die Berichte
 auf der Platte.
+
+## Dreihundertzweiundvierzig. "Keine Kleinigkeit" war ungerechnet
+
+Siebter Verdachtsfall aus der Wache von Befund 335: **'Soll die Research-KI
+mitlaufen'**, Fundstelle Befund 74, massgeblich 292 - und der offene Punkt, den
+der Auftrag jedes Mal nennt.
+
+Das `warum` des Eintrags fuehrt den Preis als Gegenargument:
+
+    "Dagegen steht der Preis, und er ist keine Kleinigkeit: Jeder Vorschlag
+     zaehlt als Versuch und hebt die Huerde des Deflated Sharpe fuer alle
+     folgenden (Befund 71) ... Eine Serie erfolgloser Vorschlaege macht den
+     Bestand also messbar schlechter."
+
+Beziffert war er nicht - obwohl `Erreichbarkeit.kosten` seit Befund 327 im Haus
+ist und `cli abstand` sie ausgibt.
+
+### Gerechnet
+
+Vom Spot-Punkt aus, gegen eine Luecke von 0,3673:
+
+    Vorschlaege   DSR danach   Kosten   Anteil Luecke   noetige Trades
+              0       0,5827   0,0000            0,0%              190
+              1       0,5817   0,0011            0,3%              191
+              9       0,5732   0,0095            2,6%              192
+             20       0,5621   0,0207            5,6%              194
+             50       0,5343   0,0484           13,2%              198
+            100       0,4950   0,0878           23,9%              204
+
+Die neun Vorschlaege, die es schon gab, haben **2,6 %** der Luecke gekostet. In
+der Waehrung, die zaehlt - noetige Trades -, sind es zwei: 190 heute, 192 nach
+neun weiteren. Teuer wird es erst in der Groessenordnung einer Serie.
+
+**Das ist dieselbe Ueberzeichnung wie in Befund 326, nur in der anderen
+Richtung.** Dort war eine Ersparnis von fuenf Versuchen als Fortschritt Richtung
+Gate gebucht; Befund 327 hat sie auf 1,5 % der Luecke zurueckgerechnet. Hier war
+ein Preis als Abschreckung gefuehrt. Beide ohne Rechnung, beide in derselben
+Groessenordnung - und beide Male habe ich die Zahl nicht angesehen, obwohl das
+Werkzeug dafuer daneben lag.
+
+Der Einwand gegen die KI steht damit auf den **Modellkosten** und den **neun
+Nieten**, nicht auf dem Deflated Sharpe. Wer eine Handvoll Vorschlaege will,
+bezahlt sie mit wenigen Prozent der Luecke. Entschieden ist damit nichts - die
+Frage bleibt beim Nutzer, nur mit einer Zahl statt einer Behauptung.
+
+### Und die vier Latten sind nicht nachrechenbar
+
+Der Eintrag nennt fuer die vier Vorschlaege aus Befund 77 die damals noetige
+Guete: `0,9047 / 0,2652 / 0,2967 / 0,1514`. Nachgerechnet trifft sie keine
+Kombination aus Zaehlerstand und Verteilungsform - geprueft mit der Normalform
+und mit der Form des Bestands, bei Staenden von 5 bis 203 Versuchen.
+
+Der Grund: Die Latte des Deflated Sharpe haengt an der Trade-Zahl **und** an
+Schiefe und Woelbung. Das Verzeichnis fuehrt Trades und Guete je Trade - die
+Form steht je Regel nirgends. Mit der Form des Bestands und heutigem Zaehler
+waeren es `1,4554 / 0,3387 / 0,3725 / 0,1936`, also deutlich hoeher; wer
+"noetig 0,9047" gegen 0,3405 liest, liest eine Latte von damals.
+
+Das ist dieselbe Luecke, die Befund 340 auf der Varianzseite gefunden hat: nicht
+eine fehlende Messung, sondern ein fehlendes Feld.
+
+### Was gebaut wurde
+
+`Versuch.schiefe` und `.woelbung`, beide freiwillig, dazu `.form_bekannt`
+("beide oder keine") und `Verzeichnis.mit_form`. Gelesen und geschrieben werden
+sie durch dasselbe Format; alte Dateien bleiben lesbar, und `None` heisst
+weiterhin "nicht erhoben".
+
+Angeschlossen an alle drei Stellen, die eine Form haben: `_versuch` (der
+gemeinsame Weg), `cli machbarkeit` (aus denselben Kennzahlen) und `cli verbund`.
+`cli landschaft` bleibt ohne - die Karte fuehrt Gewinn und Trade-Zahl, und eine
+erfundene Form waere schlimmer als keine.
+
+Die elf vorhandenen Eintraege bleiben ohne Form. Sie nachzutragen hiesse, sie zu
+erfinden.
+
+`tests/test_kipreis.py` bindet die sieben Preisstufen, die vier Latten und den
+Weg der Form durch Speichern und Laden.
+
+### Ein Nebenbefund zu den Tests selbst
+
+Die volle Suite fiel an `test_die_ki_entscheidung_nennt_die_heutige_latte`, weil
+der Test `massgeblich == 292` festhielt. Das ist die zweite solche Stelle in drei
+Befunden - 341 hatte dieselbe Bauart bei `GELESEN`.
+
+Die Unterscheidung, die dabei herauskommt: Wo die Fundstelle **die Aussage** des
+Tests ist ("dieser Befund hat den Eintrag nachgezogen"), gehoert sie festgenagelt
+- dann meldet sich der Test bei der naechsten Nachmessung, und das ist ihr Zweck.
+Wo sie nur **nebenher** mitgeprueft wird - hier lautet die Aussage "der Eintrag
+nennt die Anforderung von 291" -, gehoert ein "mindestens" hin, sonst faellt der
+Test fuer nichts.
+
+Geaendert wurde nur die eine Stelle. Die Fundstellen in den Befund-eigenen Tests
+(336 bis 342) bleiben feste Zahlen: Dort ist das Nachziehen der Befund.

@@ -1923,6 +1923,12 @@ def _versuch(kennung: str, report, *, herkunft: str):
         kennung,
         trades=len(trades),
         sharpe_je_trade=kandidat.sharpe_je_trade if kandidat is not None else None,
+        # **Schiefe und Woelbung gehen mit** (Befund 342). Derselbe Kandidat
+        # traegt sie schon; ohne sie ist die Latte dieses Versuchs spaeter
+        # nicht mehr zu rechnen - genau daran sind die vier Zahlen aus
+        # Befund 77 nicht mehr zu pruefen.
+        schiefe=kandidat.schiefe if kandidat is not None else None,
+        woelbung=kandidat.woelbung if kandidat is not None else None,
         herkunft=herkunft,
     )
 
@@ -5456,6 +5462,9 @@ def machbarkeit(
                 herkunft=f"cli machbarkeit --regler {regler} ({punkt_text})",
                 trades=int(p.kennzahlen.get("trades", 0)),
                 sharpe_je_trade=p.kennzahlen.get("sharpe_je_trade"),
+                # Die Form steht in denselben Kennzahlen - Befund 342.
+                schiefe=p.kennzahlen.get("schiefe"),
+                woelbung=p.kennzahlen.get("woelbung"),
             )
             for p in analyse.punkte
             if abs(p.stellung - ausgang) > 1e-9
@@ -9885,6 +9894,10 @@ def verbund(
                     sharpe_je_trade=(
                         kandidat.sharpe_je_trade if kandidat is not None else None
                     ),
+                    # Befund 342: Die Form gehoert dazu, sonst ist die Latte
+                    # dieses Versuchs spaeter nicht mehr zu rechnen.
+                    schiefe=kandidat.schiefe if kandidat is not None else None,
+                    woelbung=kandidat.woelbung if kandidat is not None else None,
                     herkunft="verbund",
                 )
             ],

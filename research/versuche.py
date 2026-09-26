@@ -130,6 +130,17 @@ class Versuch:
     die Streuung ueber die Versuche messen, statt sie zu raten. ``None``
     heisst "nicht erhoben" und nicht "kein Vorteil" - der Unterschied
     entscheidet, ob ein Punkt in die Schaetzung darf.
+
+    **Schiefe und Woelbung seit Befund 342.** Sie gehen in den Deflated
+    Sharpe ein, und ohne sie laesst sich die Latte eines Versuchs
+    **nachtraeglich nicht mehr rechnen**. Genau das ist aufgefallen: Der
+    Eintrag zur Research-KI nennt fuer vier Vorschlaege die damals noetige
+    Guete (0,9047 / 0,2652 / 0,2967 / 0,1514), und keine Kombination aus
+    Zaehlerstand und Verteilungsform holt sie zurueck - weil die Form je
+    Regel nirgends steht. Trade-Zahl und Guete allein genuegen nicht.
+
+    ``None`` heisst auch hier "nicht erhoben". Die elf vorhandenen Eintraege
+    bleiben ohne Form, und erfundene waere schlimmer als keine.
     """
 
     kennung: str
@@ -137,6 +148,17 @@ class Versuch:
     trades: int = 0
     sharpe_je_trade: float | None = None
     herkunft: str = ""
+    schiefe: float | None = None
+    woelbung: float | None = None
+
+    @property
+    def form_bekannt(self) -> bool:
+        """Laesst sich die Latte dieses Versuchs nachrechnen?
+
+        Beide Groessen oder keine: Mit nur einer von ihnen muesste die andere
+        vorgegeben werden, und eine halb gemessene Form ist eine geratene.
+        """
+        return self.schiefe is not None and self.woelbung is not None
 
     @classmethod
     def jetzt(cls, kennung: str, **rest) -> Versuch:
@@ -173,6 +195,16 @@ class Verzeichnis:
     def belegt(self) -> int:
         return len(self.sharpes())
 
+    @property
+    def mit_form(self) -> int:
+        """Wie viele Eintraege ihre Verteilungsform mittragen - Befund 342.
+
+        Die Latte eines Versuchs haengt an Trade-Zahl **und** Form. Wer nur
+        die erste hat, kann sie nicht zurueckrechnen; genau daran sind die
+        vier Zahlen aus Befund 77 nicht mehr zu pruefen.
+        """
+        return sum(1 for v in self.eintraege if v.form_bekannt)
+
     def erweitert(self, versuche: list[Versuch]) -> Verzeichnis:
         return Verzeichnis(
             grundstock=self.grundstock, eintraege=[*self.eintraege, *versuche]
@@ -206,6 +238,16 @@ def laden(pfad: Path | str) -> Verzeichnis:
                         else None
                     ),
                     herkunft=str(e.get("herkunft", "")),
+                    schiefe=(
+                        float(e["schiefe"])
+                        if e.get("schiefe") is not None
+                        else None
+                    ),
+                    woelbung=(
+                        float(e["woelbung"])
+                        if e.get("woelbung") is not None
+                        else None
+                    ),
                 )
                 for e in daten.get("versuche", [])
             ]

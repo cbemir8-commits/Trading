@@ -91,11 +91,18 @@ class TestDasEchteRegister:
 
     def test_die_ki_entscheidung_nennt_die_heutige_latte(self) -> None:
         """**Der Fund, der diesen Befund ausgeloest hat.** Der Eintrag
-        nannte die Anforderung aus Befund 74/75; gemessen ist sie seit 291."""
+        nannte die Anforderung aus Befund 74/75; gemessen ist sie seit 291.
+
+        Die Fundstelle steht als "mindestens" da und nicht als Zahl: Jede
+        weitere Nachmessung zieht sie hoch - 342 hat den Preis gerechnet -,
+        und ein Test, der sie festhaelt, faellt dann fuer nichts. Geprueft
+        wird, dass die Anforderung von 291 drinsteht, nicht wann zuletzt
+        jemand hingesehen hat.
+        """
         ki = next(e for e in ENTSCHEIDUNGEN if "Research-KI" in e.frage)
         assert "0,2641" in ki.zahl
         assert "254" in ki.zahl
-        assert ki.massgeblich == 292
+        assert ki.massgeblich >= 292
 
     def test_der_strukturelle_bruch_ist_keine_entscheidung(self) -> None:
         """**Die Berichtigung aus Befund 306.**
