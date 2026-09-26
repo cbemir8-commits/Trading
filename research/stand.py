@@ -3240,6 +3240,23 @@ class Entscheidung:
         return self.zuletzt or self.befund
 
     @property
+    def name(self) -> str:
+        """Dasselbe wie ``frage`` - Befund 335.
+
+        Damit ``nachmessung.spuren`` eine Entscheidung ansehen kann, ohne dass
+        es sie kennen muss: Es braucht ``name``, ``befund`` und ``massgeblich``,
+        und die beiden anderen stehen schon da.
+
+        **Warum das noetig wurde.** Die Wache lief seit Befund 294 ueber
+        'GESCHLOSSEN' und 'OFFEN' - 56 von 261 Eintraegen - und nannte am Ende,
+        was sie nicht ansieht: die behobenen. Die **Entscheidungen** standen in
+        dieser Rechnung gar nicht, und sie sind die Eintraege, auf die der
+        Nutzer handelt. Neun von ihnen tragen eine Fundstelle, die bis Befund 69
+        zurueckreicht.
+        """
+        return self.frage
+
+    @property
     def stelle(self) -> str:
         """Wie die Fundstelle im Bericht dasteht."""
         if not self.befund:

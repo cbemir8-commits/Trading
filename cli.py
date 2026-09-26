@@ -12263,8 +12263,15 @@ def register(
     Befund 118 gezeigt hat, was eine ungeprueft uebernommene Textsuche
     anrichtet.
     """
-    from research.nachmessung import spuren
-    from research.stand import BEHOBEN, GESCHLOSSEN, OFFEN
+    from research.nachmessung import BEGRIFFE, ENTSCHEIDUNGSBEGRIFFE, spuren
+    from research.stand import (
+        AUFTRAG,
+        BEHOBEN,
+        BEIM_NUTZER,
+        ENTSCHEIDUNGEN,
+        GESCHLOSSEN,
+        OFFEN,
+    )
 
     pfad = Path("strategies/BEFUND.md")
     if not pfad.exists():
@@ -12274,10 +12281,26 @@ def register(
     # allein ueber 'GESCHLOSSEN' - und damit ueber 39 von 208 Eintraegen.
     # Ausgerechnet die offenen blieben aussen vor, also die, nach denen
     # gearbeitet wird.
+    #
+    # **Und die Entscheidungen** (Befund 335). Die standen in der Rechnung von
+    # 294 gar nicht: Sie nannte am Ende die behobenen als das Unbesehene, und
+    # die Entscheidungen fehlten in beiden Listen - obwohl der Nutzer auf sie
+    # handelt und ihre Fundstellen bis Befund 69 zurueckreichen.
+    #
+    # 'Wochenverlustgrenze' bleibt draussen, weil sie keine Fundstelle traegt:
+    # Ohne Erstmessung gilt jeder spaetere Abschnitt als spaeter, und eine
+    # Wache, die alles meldet, meldet nichts.
     text = pfad.read_text(encoding="utf-8")
-    gefunden, ohne = spuren(text, (*GESCHLOSSEN, *OFFEN))
+    entschieden = tuple(e for e in ENTSCHEIDUNGEN if e.befund)
+    gefunden, ohne = spuren(
+        text,
+        (*GESCHLOSSEN, *OFFEN, *entschieden),
+        {**BEGRIFFE, **ENTSCHEIDUNGSBEGRIFFE},
+    )
 
-    console.print("\n[bold]GESCHLOSSENE UND OFFENE RICHTUNGEN: STEHT DA SPAETER NOCH WAS?[/]\n")
+    console.print(
+        "\n[bold]RICHTUNGEN UND ENTSCHEIDUNGEN: STEHT DA SPAETER NOCH WAS?[/]\n"
+    )
     nachgezogen = [s for s in gefunden if s.nachgezogen]
     console.print(
         f"[dim]{len(gefunden)} Eintraege durchsucht, davon {len(nachgezogen)} "
@@ -12340,10 +12363,28 @@ def register(
     # gehoert unter den Bericht: Ohne sie liest sich "keine weiteren Treffer"
     # als "nichts mehr offen", und das waere dieselbe Verwechslung, gegen die
     # 'ohne' oben steht.
+    # **Die Rechnung war unvollstaendig** (Befund 335). Hier stand allein "die
+    # behobenen Eintraege" - die Entscheidungen, Auftraege und Nutzerpunkte
+    # kamen in der Summe gar nicht vor. Wer die Zeile las, hielt alles ausser
+    # den behobenen fuer durchsucht.
+    ohne_fundstelle = [e.frage for e in ENTSCHEIDUNGEN if not e.befund]
+    unbesehen = (
+        len(BEHOBEN) + len(AUFTRAG) + len(BEIM_NUTZER) + len(ohne_fundstelle)
+    )
     console.print(
-        f"[yellow]Nicht durchsucht: die {len(BEHOBEN)} behobenen Eintraege.[/] "
-        f"[dim]Sie beschreiben Werkzeuge,\nnicht Richtungen - aber ungeprueft "
-        f"sind sie trotzdem.[/]\n"
+        f"[yellow]Nicht durchsucht: {unbesehen} von "
+        f"{len(gefunden) + len(ohne) + unbesehen} Eintraegen[/] [dim]- die "
+        f"{len(BEHOBEN)} behobenen\n(sie beschreiben Werkzeuge, nicht "
+        f"Richtungen), {len(AUFTRAG)} Auftraege und {len(BEIM_NUTZER)} "
+        f"Nutzerpunkte\n(beides Befehle, keine Messungen)"
+        + (
+            f", dazu {len(ohne_fundstelle)} Entscheidung ohne\nFundstelle "
+            f"({', '.join(ohne_fundstelle)}): keine Erstmessung, die veralten "
+            f"koennte."
+            if ohne_fundstelle
+            else "."
+        )
+        + "[/]\n"
     )
     # **Die zweite Quelle** (Befund 319). Das Register ist nicht der einzige
     # Ort, an dem eine Antwort schon steht - Befund 318 hat eine Messung

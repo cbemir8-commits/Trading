@@ -35,7 +35,15 @@ from dataclasses import dataclass
 
 from research.stand import Richtung, zahlwort
 
-__all__ = ["BEGRIFFE", "GELESEN", "Abschnitt", "Spur", "abschnitte", "spuren"]
+__all__ = [
+    "BEGRIFFE",
+    "ENTSCHEIDUNGSBEGRIFFE",
+    "GELESEN",
+    "Abschnitt",
+    "Spur",
+    "abschnitte",
+    "spuren",
+]
 
 _UEBERSCHRIFT = re.compile(r"^## ([A-Za-zaeoeueAEOEUEäöüÄÖÜ]+)\.\s*(.*)$")
 
@@ -274,6 +282,50 @@ GELESEN: dict[str, int] = {
 #: Suche nie angesehen. Das war keine Fehlfunktion: ``spuren`` meldet seit
 #: jeher, wo es keine Begriffe gibt. Gefragt hat nur niemand, und die offenen
 #: Richtungen sind die, nach denen gearbeitet wird.
+#: Suchbegriffe fuer die **Entscheidungen** - Befund 335.
+#:
+#: Sie standen bis hierher gar nicht in der Rechnung der Wache: Befund 294 hat
+#: sie von 'GESCHLOSSEN' auf 'GESCHLOSSEN + OFFEN' erweitert und zum Schluss
+#: genannt, was sie nicht ansieht - die behobenen. Die Entscheidungen fehlten in
+#: beiden Listen, und es sind die Eintraege, auf die der Nutzer handelt. Ihre
+#: Fundstellen reichen bis Befund 69 zurueck, also 265 Befunde.
+#:
+#: 'Wochenverlustgrenze' fehlt hier mit Absicht: Sie traegt keine Fundstelle -
+#: eine Betriebsfrage, keine Messung -, und ohne Erstmessung gilt **jeder**
+#: spaetere Abschnitt als spaeter. Eine Wache, die dort alles meldet, meldet
+#: nichts.
+ENTSCHEIDUNGSBEGRIFFE: dict[str, tuple[str, ...]] = {
+    "Feste Schwellen auf laufenden Extrema": (
+        "laufendes Extrem",
+        "Schlechtestes Jahr",
+        "feste Schwelle",
+    ),
+    "Mindestrendite von 15 % im Jahr": (
+        "Mindestrendite",
+        "Betriebsschwelle",
+        "Messlatte",
+    ),
+    "Die geratene Eingabe im Deflated Sharpe": (
+        "sharpe_variance",
+        "geratene Eingabe",
+        "Streuung der Sharpe",
+    ),
+    "Was die Latte des Deflated Sharpe bedeutet": (
+        "Eichung",
+        "Nullprobe",
+        "keine Wahrscheinlichkeit",
+    ),
+    "Womit das Plateau-Gate seine Nachbarn misst": (
+        "durchgehend",
+        "sperrsatz",
+        "stillgelegt",
+    ),
+    "Funding-Satz": ("Funding-Satz", "Finanzierungsrate", "funding_avg"),
+    "Umfang des Kosten-Stress-Tests": ("Kosten-Stress", "Kostendecke"),
+    "Kontogroesse": ("Kontoleiter", "Koernung", "Mengenschritt"),
+    "Soll die Research-KI mitlaufen": ("Research-KI", "analyst", "Vorschlag"),
+}
+
 BEGRIFFE: dict[str, tuple[str, ...]] = {
     # Befund 332: Die Begriffe sind die Namen der Sache, nicht die des
     # Eintrags - ein spaeterer Befund ueber ausgesetzte Gates schreibt

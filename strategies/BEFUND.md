@@ -30028,3 +30028,93 @@ vorkommen.
 
 Er sagt, wie weit der Schluss traegt. Das ist bei einer Entscheidung, die noch
 nicht gefallen ist, mehr wert als bei einem abgelegten Befund.
+
+## Dreihundertfuenfunddreissig. Die Wache sah die Entscheidungen nicht an
+
+Befund 334 hat die Entscheidungstabelle um ihr Alter ergaenzt. Die
+Anschlussfrage liegt eine Ebene hoeher: Das Register selbst datiert nach
+Befundnummern, und **was wacht darueber, dass eine Entscheidung nicht auf einer
+ueberholten Messung steht?**
+
+Es gibt so eine Wache, seit Befund 130: `cli register` sucht, wo eine Richtung
+**nach** ihrer massgeblichen Fundstelle noch erwaehnt wird. Befund 294 hat
+gefunden, dass sie nur `GESCHLOSSEN` ansah - 39 von 208 Eintraegen - und sie auf
+`OFFEN` erweitert, mit einer Zeile am Schluss, die nennt was sie nicht ansieht:
+die behobenen.
+
+### Was in dieser Rechnung fehlte
+
+    GESCHLOSSEN         40   durchsucht
+    OFFEN               16   durchsucht
+    BEHOBEN            184   genannt
+    AUFTRAG              5   in der Summe nicht vorgekommen
+    ENTSCHEIDUNGEN      10   in der Summe nicht vorgekommen
+    BEIM_NUTZER          6   in der Summe nicht vorgekommen
+
+56 durchsucht, 184 genannt, 21 nirgends. Wer die Schlusszeile las - "nicht
+durchsucht: die behobenen Eintraege" -, hielt alles ausser den behobenen fuer
+geprueft.
+
+Darunter die **Entscheidungen**: die Eintraege, auf die der Nutzer handelt.
+
+### Wie alt ihre Fundstellen sind
+
+    Befund   96   Umfang des Kosten-Stress-Tests
+    Befund   96   Kontogroesse
+    Befund   69   Die geratene Eingabe im Deflated Sharpe
+    Befund  162   Feste Schwellen auf laufenden Extrema
+    Befund  250   Funding-Satz
+    Befund  278   Was die Latte des Deflated Sharpe bedeutet
+    Befund  281   Mindestrendite von 15 % im Jahr
+    Befund  292   Soll die Research-KI mitlaufen
+    Befund  330   Womit das Plateau-Gate seine Nachbarn misst
+
+Das Projekt steht bei 335. Die aelteste Fundstelle einer offenen Entscheidung
+liegt **265 Befunde** zurueck, und nichts hat dazwischen geprueft, ob spaetere
+Arbeit sie ueberholt hat.
+
+### Was die Wache jetzt findet
+
+Acht der neun haben spaetere Erwaehnungen. Zwei Beispiele:
+
+    Umfang des Kosten-Stress-Tests   Nr. 96    spaeter: 127, 314, 101, 102
+    Feste Schwellen auf laufenden Extrema  Nr. 162  spaeter: 310 (8x), 164, 266
+
+Befund 314 hat `finanzierung` und die Stresslage angefasst; Befund 310 hat die
+dritte Schwelle gemessen. Das sind **Verdachtsfaelle und keine Befunde** - so
+sagt es der Bericht, und so ist es gemeint. Der Wert liegt darin, dass sie
+ueberhaupt auftauchen.
+
+### Was gebaut wurde
+
+`Entscheidung.name` gibt `frage` zurueck - damit `spuren` eine Entscheidung
+ansehen kann, ohne sie kennen zu muessen; `befund` und `massgeblich` standen
+schon da.
+
+`nachmessung.ENTSCHEIDUNGSBEGRIFFE` haelt die Suchbegriffe der neun. Ein Test
+verlangt, dass jede Entscheidung mit Fundstelle welche hat - und ein zweiter,
+dass die Worte im Laborbuch **ueberhaupt vorkommen**. Begriffe, die nirgends
+treffen, sind schlimmer als keine: Die Wache laeuft, findet nichts und sieht aus
+wie ein Freispruch.
+
+`cli register` durchsucht jetzt 65 Eintraege und rechnet am Schluss auf:
+
+    Nicht durchsucht: 196 von 261 Eintraegen - die 184 behobenen (sie
+    beschreiben Werkzeuge, nicht Richtungen), 5 Auftraege und 6 Nutzerpunkte
+    (beides Befehle, keine Messungen), dazu 1 Entscheidung ohne Fundstelle
+    (Wochenverlustgrenze): keine Erstmessung, die veralten koennte.
+
+65 plus 196 ist 261. Vorher ging die Rechnung nicht auf, und das war nicht zu
+sehen, weil keine Summe dastand.
+
+### Wer bewusst draussen bleibt
+
+`Wochenverlustgrenze` traegt keine Fundstelle - eine Betriebsfrage, keine
+Messung. Ohne Erstmessung gilt **jeder** spaetere Abschnitt als spaeter, und
+eine Wache, die dort alles meldet, meldet nichts. Dasselbe Argument wie bei
+`bestandsatz` in Befund 330 und beim Altersatz in 334: Eine Warnung, die immer
+angeht, ist keine.
+
+`AUFTRAG` und `BEIM_NUTZER` sind Befehle fuer den Rechner des Nutzers, keine
+Messungen - dort gibt es nichts, was veralten kann. Genannt werden sie
+trotzdem, damit die Summe stimmt.
