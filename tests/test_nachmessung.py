@@ -192,7 +192,10 @@ def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
     nachgezogen = {r.name: r.zuletzt for r in GESCHLOSSEN if r.zuletzt}
     assert nachgezogen == {
         "Mehr Maerkte": 133,
-        "Mehr Historie": 132,
+        # Befund 344 hat beziffert, was "mehr Historie" waere: 104 rohe
+        # Trades, also sechs Jahre - und rueckwaerts gesperrt, weil ETH
+        # den gemeinsamen Anfang setzt.
+        "Mehr Historie": 344,
         "Vola-Ziel": 129,
         "Gewinnziel": 129,
         "Termin-Overlay": 127,

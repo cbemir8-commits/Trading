@@ -328,7 +328,9 @@ class TestDieAnderenFamilienStehenImRegister:
 
         eintrag = next(r for r in GESCHLOSSEN if r.name == "Mehr Historie")
         assert eintrag.befund == 14
-        assert eintrag.zuletzt == 132
+        # Befund 344 hat die Richtung beziffert: 104 rohe Trades fehlen, bei
+        # 17,3 im Jahr sechs Jahre - und rueckwaerts ist nichts zu holen.
+        assert eintrag.zuletzt == 344
 
     def test_die_kostenfamilie_ist_jetzt_auch_darin(self):
         from research.stand import GESCHLOSSEN

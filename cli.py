@@ -3551,6 +3551,23 @@ def _korb_daten(symbole: list[str], interval_obj: Interval, settings):
     return frames, configs, spanne
 
 
+def _anfaenge(symbole: list[str], interval_obj: Interval, settings) -> dict:
+    """Die erste Kerze je Bein - **vor** dem gemeinsamen Schnitt (Befund 344).
+
+    ``_korb_daten`` schneidet auf die gemeinsame Spanne, und genau das ist hier
+    die Frage: Welches Bein setzt den Anfang, und wie viele Tage des anderen
+    bleiben ungenutzt. Beim Bestand sind es 2054 - BTC reicht bis 2012, ETH
+    erst bis 2017.
+    """
+    store = CandleStore(settings.paths.data_store)
+    aus = {}
+    for symbol in symbole:
+        frame = store.read(symbol, interval_obj)
+        if not frame.empty:
+            aus[symbol] = frame["open_time"].min().date()
+    return aus
+
+
 @app.command()
 def korb(
     maerkte: str = typer.Option(
@@ -4602,6 +4619,24 @@ def abstand(
         "\n[dim]Mehr Daten kosten keinen Versuch, eine neue Idee schon. "
         "Die Reihenfolge folgt daraus.[/]\n"
     )
+
+    # **Und wie viel Historie das waere** (Befund 344). Der Satz darueber
+    # steht hier seit Befund 139 und liest sich wie eine Aufgabe, die man
+    # erledigen kann. Gerechnet ist er eine Aussage darueber, ob das geht.
+    from research.datenbedarf import bedarf
+
+    anfaenge = _anfaenge(symbole, interval_obj, settings)
+    gemeinsam = next(iter(frames.values()))
+    lage_daten = bedarf(
+        roh=stichprobe.roh,
+        effektiv=n,
+        noetig_effektiv=ergebnis.trades_noetig,
+        spanne_tage=(
+            gemeinsam["open_time"].max() - gemeinsam["open_time"].min()
+        ).days,
+        anfaenge=anfaenge,
+    )
+    console.print(f"[dim]{lage_daten.bericht()}[/]\n")
 
     if eichung:
         from research.eichung import nullverteilung

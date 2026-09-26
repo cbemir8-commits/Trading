@@ -30785,3 +30785,96 @@ nachliefern, die vorher fehlte.
 `tests/test_eichbasis.py` bindet die fuenf Zeilen der Eichtafel, die
 Empfindlichkeit gegen einen fehlenden Trade und die Regel, dass keine
 Entscheidung mehr auf einer Messung von vor 330 steht.
+
+## Dreihundertvierundvierzig. "Erst die Datenbasis ausschoepfen" ist erledigt
+
+`cli abstand` gibt seit Befund 139 zwei Zeilen aus:
+
+    Mehr Daten kosten keinen Versuch, eine neue Idee schon.
+    Erst die Datenbasis ausschoepfen, dann suchen.
+
+Das liest sich wie eine Aufgabe, die man erledigen kann, und das Register stuetzt
+es: *"Geschlossen wird er ueber die Stichprobe (191 wirksame Trades noetig, 115
+da) ... das erste ist das, was mehr Historie kauft, und genau darauf wartet der
+Auftrag beim Nutzer."* **Wie viel Historie das ist, stand nirgends.**
+
+### Drei gemessene Groessen
+
+Nichts davon ist geschaetzt:
+
+    Verhaeltnis roh -> wirksam   115 von 156        73,7 %   (stichprobe_wie_im_gate)
+    noetig wirksam               191                         (erreichbarkeit.noetige_trades)
+    Rate                         156 auf 3300 Tagen 17,3 im Jahr
+
+Daraus: 191 wirksame brauchen rund **260 rohe**, es fehlen **104**, und die
+kosten bei dieser Rate **2200 Tage - sechs Jahre**.
+
+### Und die Richtung ist gesperrt
+
+    BTCUSD_BITSTAMP   5355 Tage   2012-01-01 -> 2026-08-29
+    ETHUSD_BITSTAMP   3301 Tage   2017-08-16 -> 2026-08-29
+    gemeinsam         3301 Tage   2017-08-16 -> 2026-08-29
+
+Der gemeinsame Anfang ist von **ETH** gesetzt. Die 2054 zusaetzlichen Tage von
+BTC kann ein Portfolio-Backtest nicht nutzen, und dass BTC allein schlechter
+steht, ist gemessen: 117 Trades, 107 unabhaengige, DSR 0,4620, 5 von 11 (Befund
+318). Bitstamp hat vor 2017-08 keine ETH-Kerzen. **Rueckwaerts geht also
+nichts**, und vorwaerts sind es sechs Jahre.
+
+### Was das heisst
+
+Drei Hebel waren zu pruefen, und alle drei sind gemessen und negativ:
+
+    mehr Maerkte        BTC+ETH 0,588 -> BTC+ETH+XRP 0,461 -> alle vier 0,418   (268)
+    laengere Reihe      2054 Tage mehr auf einem Bein: 107 gegen 115 wirksame   (318)
+    Versuchsdisziplin   zehn gesparte Versuche decken 2,9 % der Luecke          (327)
+
+Damit ist "erst die Datenbasis ausschoepfen" **keine offene Aufgabe mehr,
+sondern erledigt**. Dieser Kandidat kommt auf diesem Paar nicht durch das Gate.
+Der Weg fuehrt ueber die **Guete je Trade** - 0,337 noetig, 0,271 da, Faktor
+1,25 - oder ueber eine Geschaeftsentscheidung zur Latte, und die liegt beim
+Nutzer (Befund 278/343).
+
+Das ist kein Grund, die Latte zu senken. Es ist der Grund, es nicht mehr von der
+Datenseite zu erwarten.
+
+### Was die Zahl nicht sagt
+
+Sie unterstellt, dass Guete, Verhaeltnis und Rate so bleiben, und einen
+**stehenden** Versuchszaehler - jeder weitere Versuch hebt die noetige Zahl
+(Befund 327). Befund 75 hat gemessen, dass Trade-Zahl und Guete gegeneinander
+laufen; das war ueber Regeln hinweg und nicht innerhalb einer, also ist die
+Richtung offen und die sechs Jahre sind die freundliche Lesart.
+
+Und sie gilt fuer **Tageskerzen**. Der Speicher haelt inzwischen auch
+Viertelstunden von 2020-03-30 bis heute (225.941 Balken auf BTC, 225.341 auf
+ETH) - dort waechst eine Stichprobe viel schneller. Nur braucht es dafuer eine
+Regel, die da etwas findet: Die vierzehn gemessenen 15-Minuten-Kandidaten
+stehen bei -9 bis -44 % im Jahr.
+
+### Was gebaut wurde
+
+`research/datenbedarf.py` mit `Datenbedarf` und `bedarf()`: Verhaeltnis, noetige
+rohe Trades (aufgerundet - ein halber Trade ist keiner), Rate, noetige Tage und
+Jahre, und die ungenutzten Tage des laengeren Beins. Unsinn wird abgewiesen -
+mehr wirksame als rohe Trades waere ein vertauschtes Argumentpaar und ergaebe
+eine zu kleine Huerde.
+
+`cli abstand` rechnet es bei jedem Lauf mit, mit den Zahlen des Gates und nicht
+mit eigenen. `_anfaenge` liest die ersten Kerzen **vor** dem gemeinsamen
+Schnitt - danach waere die Frage nach dem laengeren Bein nicht mehr zu stellen.
+
+Der Eintrag 'Mehr Historie' traegt die Zahl; Fundstelle Nr. 344, zuerst 14.
+
+`tests/test_datenbedarf.py` bindet die drei Groessen an einen gemessenen Lauf.
+
+### Ein Nebenbefund an mir selbst
+
+Den Registereintrag hatte ich zuerst mit **872 Zeichen** geschrieben - eine
+Ausfuehrung mit Tabellen und Begruendung, in eine Liste, deren Median bei 48
+Zeichen liegt. Die Wache aus Befund 274 hat es sofort gemeldet: *"Die Ausfuehrung
+gehoert ins Laborbuch, hier steht das Stichwort mit seiner Zahl."*
+
+Genau der Fehler, gegen den 274 gebaut wurde, und ich habe ihn wiederholt. Der
+Eintrag traegt jetzt 257 Zeichen; die Ausfuehrung steht hier, wo sie hingehoert.
+Ein Test in `test_datenbedarf.py` haelt die Grenze fuer diesen Eintrag fest.

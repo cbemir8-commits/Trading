@@ -119,9 +119,12 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
     ),
     Richtung(
         "Mehr Historie",
-        "Guete flach ueber sechs Fenster, DSR haengt an n",
+        "Guete flach ueber sechs Fenster, DSR haengt an n. **Beziffert (344)**: "
+        "104 rohe Trades fehlen, bei 17,3 im Jahr sechs Jahre - rueckwaerts "
+        "nichts zu holen, ETH setzt den Anfang auf 2017-08. Die Datenseite ist "
+        "damit ausgeschoepft; 'cli abstand' rechnet es mit",
         14,
-        zuletzt=132,
+        zuletzt=344,
     ),
     # Befund 145 hat dasselbe noch einmal gemessen - mit der Einteilung des
     # Gates (135), am Spot-Punkt (108) und mit der Zerlegung in brutto und
