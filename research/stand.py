@@ -2427,7 +2427,13 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Einstiege, die Einbusse durch den Gebuehren-Stress steigt zu Ende "
         "gemessen von 1,3 % auf 3,0 % - das Urteil (bleibt im Plus) kippt "
         "nicht, und die 942,87 / 625,80 / 34 % aus dem Eintrag zum "
-        "Stress-Umfang sind unveraendert. **Gerechnet wird ueberall weiter "
+        "Stress-Umfang sind unveraendert. **Berichtigt (339): die 245 waren "
+        "die Summe dreier Laeufe** - je Lauf sind es 75, 75 und 95, dieselbe "
+        "Sperre dreimal gezaehlt. Und der Unterschied 75 zu 95 ist kein "
+        "Nebending: Mit verdoppeltem Funding schaltet die Sperre zwanzig "
+        "Trades frueher ab, also steckten in den 34 % Gebuehr **und** "
+        "fruehzeitiges Abschalten. Auf gleichem Trade-Satz sind es 29,6 %. "
+        "**Gerechnet wird ueberall weiter "
         "durchgehend**, keine Zahl ist angefasst: Beide Karten und die "
         "Stresslage sagen jetzt, wie viele ihrer Punkte nicht zu Ende "
         "gemessen wurden, und dass ihre Breite damit eine Untergrenze ist. "
@@ -2435,6 +2441,7 @@ BEHOBEN: tuple[Richtung, ...] = (
         "**nicht gemessen**: Der Befehl bucht seit 282 Versuche, ihn zum "
         "Nachsehen zu starten hoebe die Latte des Deflated Sharpe",
         314,
+        339,
     ),
     # Nachgesehen, weil 313/314 dieselbe Bauart zeigten - diesmal war nichts
     # kaputt. Der Eintrag steht trotzdem hier: Die Wache ist neu.
@@ -3512,7 +3519,22 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
              "mitverdoppeltem Funding faellt die Marge von 942,87 auf 625,80 "
              "Euro, das sind **34 %**. Das Urteil kippt dabei nicht: Der "
              "Bestand bleibt auch dann im Plus. `cli finanzierung --stress` "
-             "rechnet es nach.",
+             "rechnet es nach."
+             "\n    **Nachgemessen (339): 29,6 %, nicht 34 %.** Alle drei "
+             "Betraege stehen auf die Stelle - 955,76 ohne Stress, 942,87 wie "
+             "gebaut, 625,80 mit Funding - und 942,87 ist der Gatewert selbst "
+             "(+109,64 BTC, +833,23 ETH), Eintrag und Gate messen also "
+             "dasselbe. Der **Anteil** misst aber zweierlei. Diese Laeufe sind "
+             "durchgehend, und eine dauerhafte Sperre verhindert dabei 75 "
+             "Einstiege - mit verdoppeltem Funding **95**, weil sie zwanzig "
+             "Trades frueher abschaltet (91 Trades gegen 71). In den 317,06 "
+             "EUR steckt damit die Gebuehr **und** das fruehere Abschalten. Auf "
+             "demselben Trade-Satz gemessen, ohne Risikoaufsicht und damit "
+             "ohne Sperre, sind es 166 Trades in beiden Stufen und **29,6 %**: "
+             "2318,32 gegen 1632,86 Euro. Die Richtung des Eintrags bleibt - "
+             "der ausgelassene Posten ist der groessere, und das Urteil kippt "
+             "auch ohne Sperre nicht -, aber 34 % war nicht, was doppeltes "
+             "Funding kostet",
         warum="Betroffen ist die Aussagekraft des Gates, nicht sein Ergebnis "
               "hier - deshalb ist es keine dringende Korrektur, sondern eine "
               "Abwaegung. Dagegen spricht die Vergleichbarkeit: Alle 45 "
@@ -3521,8 +3543,11 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "ihnen unvergleichbar - dieselbe Kollision wie beim Kontostand "
               "in Befund 96. Dafuer spricht, dass ein Gate messen sollte, was "
               "es zu messen behauptet. Der Standard wurde nicht angefasst; "
-              "die Entscheidung liegt beim Nutzer.",
+              "die Entscheidung liegt beim Nutzer. **Die Zahl, auf der sie "
+              "steht, ist seit 339 29,6 % und nicht 34 %** - kleiner, aber "
+              "immer noch der groessere Posten.",
         befund=96,
+        zuletzt=339,
     ),
     Entscheidung(
         frage="Kontogroesse",

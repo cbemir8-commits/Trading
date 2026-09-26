@@ -259,14 +259,15 @@ class TestStresslage:
         """**Der Test dieser Klasse.**
 
         ``gate_cost_stress`` verdoppelt ``cfg.costs`` und reicht
-        ``funding=cfg.funding`` unveraendert durch. Gemessen kostet das 34 %
+        ``funding=cfg.funding`` unveraendert durch. Gemessen kostet das 33,6 %
         der Marge - beim Posten, der laut Befund 100 das 8,9-fache der
-        Gebuehren ist.
+        Gebuehren ist. Wie viel davon Gebuehr und wie viel ein fruehzeitiges
+        Abschalten ist, trennt Befund 339.
         """
         lage = self.lage()
 
         assert lage.uebersehene_marge == pytest.approx(317.07, abs=0.02)
-        assert lage.anteil_uebersehen == pytest.approx(0.34, abs=0.01)
+        assert lage.anteil_uebersehen == pytest.approx(0.336, abs=0.002)
         assert "verdoppelt den kleineren Posten" in lage.urteil()
 
     def test_das_urteil_kippt_hier_nicht(self) -> None:
@@ -301,17 +302,22 @@ class TestStresslage:
         assert "Entscheidung und keine Messung" in urteil
 
     def test_die_sperren_der_durchgehenden_laeufe_stehen_vorn(self) -> None:
-        """**Befund 314.** Auch diese drei Laeufe sind durchgehend: ein
-        Risk-Officer ueber die ganze Reihe, ohne Fenstergrenze und damit
-        ohne die Freigabe, mit der die Engine im Walk-Forward rechnet. Auf
-        echten Tageskerzen sind es 245 verhinderte Einstiege.
+        """**Befund 314, je Lauf seit 339.** Auch diese drei Laeufe sind
+        durchgehend: ein Risk-Officer ueber die ganze Reihe, ohne
+        Fenstergrenze und damit ohne die Freigabe, mit der die Engine im
+        Walk-Forward rechnet. Auf echten Tageskerzen verliert jeder Lauf 75
+        Einstiege, der strengste 95.
+
+        Bis 339 stand hier die **Summe** der drei, 245 - dieselbe Sperre
+        dreimal gezaehlt. Die Aufteilung steht in
+        ``tests/test_kostenstress.py``.
 
         Wer die Prozentzahl liest und aufhoert, soll vorher wissen, worauf
         sie gerechnet ist.
         """
-        urteil = self.lage(gesperrt=245).urteil()
+        urteil = self.lage(sperren=(75, 75, 95)).urteil()
 
-        assert "245 Einstiege" in urteil
+        assert "je Lauf 75, 75, 95 Einstiege" in urteil
         assert urteil.index("dauerhafte Sperre") < urteil.index(
             "verdoppelt den kleineren Posten"
         )
@@ -326,7 +332,7 @@ class TestStresslage:
 
     def test_die_zahlen_haengen_nicht_an_der_angabe(self) -> None:
         """**Die Zeile, die den Vorbehalt von einer Aenderung trennt.**"""
-        ohne, mit = self.lage(), self.lage(gesperrt=245)
+        ohne, mit = self.lage(), self.lage(sperren=(75, 75, 95))
 
         assert mit.uebersehene_marge == ohne.uebersehene_marge
         assert mit.anteil_uebersehen == ohne.anteil_uebersehen

@@ -100,6 +100,12 @@ MEHRFACH: dict[str, str] = {
     # streichen machte den Eintrag vager, nicht kuerzer.
     "14,34%": "Jahresrendite am Spot-Punkt (Befund 108/281)",
     "9,87%": "Rueckgang am Spot-Punkt (Befund 108/281)",
+    # Der Funding-Anteil auf gleichem Trade-Satz (Befund 339). Eine Messung,
+    # zwei Eintraege, die sie brauchen: die offene Entscheidung zum
+    # Stress-Umfang steht darauf, und der behobene Eintrag zu Befund 314
+    # berichtigt mit ihr seine eigene Zahl. Aus einem von beiden gestrichen
+    # waere der Eintrag vager, nicht kuerzer - derselbe Fall wie bei 14,34 %.
+    "29,6%": "Funding-Anteil ohne Sperre (Befund 339), Entscheidung und Register",
 }
 
 

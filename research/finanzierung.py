@@ -409,15 +409,38 @@ class Stresslage:
     wie_gebaut: float
     mit_funding: float
 
-    gesperrt: int = 0
-    """Einstiege, die eine **dauerhafte** Sperre verhindert hat - Befund 314.
+    sperren: tuple[int, ...] = ()
+    """Verhinderte Einstiege **je Lauf**, in der Reihenfolge der drei Laeufe.
 
     Auch diese drei Laeufe sind durchgehend: ein Risk-Officer ueber die
     ganze Reihe, ohne Fenstergrenze und damit ohne die Freigabe, mit der
     die Engine im Walk-Forward rechnet. Die Anteile unten sind deshalb auf
     einer Strategie gerechnet, die ab der ersten Sperre nicht mehr
     gehandelt hat.
+
+    **Je Lauf seit Befund 339, vorher die Summe.** Befund 314 hat hier eine
+    einzige Zahl gefuehrt und alle drei Laeufe darin addiert: 245, waehrend
+    jeder einzelne Lauf 75 oder 95 Einstiege verliert. Wer das neben die 75
+    von ``cli freigabe`` legte, sah einen Faktor drei und keine
+    Uebereinstimmung. Die Summe zaehlt dieselbe Sperre dreimal und ist die
+    Menge von nichts.
+
+    Der **Unterschied** zwischen den Laeufen ist dagegen eine Aussage: Mit
+    verdoppeltem Funding sind es 95 statt 75, weil die Sperre zwanzig
+    Einstiege frueher abschaltet. Genau das steckt dann mit im Margenverlust.
     """
+
+    ohne_sperre_gebaut: float = 0.0
+    """Derselbe Lauf 'wie gebaut', aber ohne Risk-Officer - Befund 339.
+
+    Ohne Officer gibt es keine dauerhafte Sperre (``engine.py``: "ohne
+    Officer gibt es keine Sperre"), also auch kein Abschalten mitten in der
+    Reihe. Nur so vergleichen die beiden Stressstufen **denselben**
+    Trade-Satz, und nur dann ist der Anteil eine Aussage ueber Kosten.
+    """
+
+    ohne_sperre_funding: float = 0.0
+    """Derselbe Lauf 'mit Funding', ohne Risk-Officer - Befund 339."""
 
     @property
     def besteht_wie_gebaut(self) -> bool:
@@ -449,17 +472,48 @@ class Stresslage:
         """
         return self.besteht_wie_gebaut and not self.besteht_mit_funding
 
+    @property
+    def sperrzuwachs(self) -> int:
+        """Wie viele Einstiege der letzte Lauf zusaetzlich verliert.
+
+        Positiv heisst: Der strengere Stress schaltet die Strategie **frueher
+        ab**, und der Margenverlust unten ist nicht allein ein Kostenposten.
+        """
+        return self.sperren[-1] - self.sperren[0] if self.sperren else 0
+
+    @property
+    def anteil_rein(self) -> float | None:
+        """Der Anteil auf demselben Trade-Satz - ohne Sperre, Befund 339.
+
+        ``None``, solange die zwei Vergleichslaeufe fehlen: Ein stillschweigend
+        auf 0 gerechneter Anteil waere schlimmer als keiner.
+        """
+        if not self.ohne_sperre_gebaut:
+            return None
+        return (
+            self.ohne_sperre_gebaut - self.ohne_sperre_funding
+        ) / self.ohne_sperre_gebaut
+
     def urteil(self) -> str:
         teile = []
-        if self.gesperrt:
+        if self.sperren:
+            je_lauf = ", ".join(str(n) for n in self.sperren)
+            zusatz = (
+                f" Der letzte Lauf verliert {self.sperrzuwachs} Einstiege "
+                f"mehr als der erste: Mit verdoppeltem Funding schaltet die "
+                f"Sperre **frueher** ab, und das steckt im Margenverlust "
+                f"unten mit drin."
+                if self.sperrzuwachs > 0
+                else ""
+            )
             teile.append(
                 f"**Diese drei Laeufe sind durchgehend gemessen, und eine "
-                f"dauerhafte Sperre hat dabei {self.gesperrt} Einstiege "
+                f"dauerhafte Sperre hat je Lauf {je_lauf} Einstiege "
                 f"verhindert** - sie laeuft bis zur manuellen Freigabe, die "
                 f"ein Lauf ohne Fenstergrenze nie bekommt. Die Betraege "
                 f"unten gelten fuer eine Strategie, die ab der ersten "
                 f"Sperre nicht mehr gehandelt hat ('cli freigabe' misst den "
-                f"Unterschied, Befund 313/314)."
+                f"Unterschied, Befund 313/314).{zusatz}"
             )
         teile.append(
             f"**Der Kosten-Stress verdoppelt den kleineren Posten.** Mit "
@@ -467,8 +521,18 @@ class Stresslage:
             f"{self.ohne_stress:.2f} auf {self.wie_gebaut:.2f} EUR; wird das "
             f"Funding mitverdoppelt, sind es {self.mit_funding:.2f} EUR - "
             f"{self.uebersehene_marge:.2f} EUR oder "
-            f"{self.anteil_uebersehen:.0%} weniger."
+            f"{self.anteil_uebersehen:.1%} weniger."
         )
+        if (rein := self.anteil_rein) is not None:
+            teile.append(
+                f"**Davon sind {rein:.1%} die Kosten selbst.** Ohne "
+                f"Risk-Officer - und damit ohne die dauerhafte Sperre - "
+                f"vergleichen beide Stufen denselben Trade-Satz: "
+                f"{self.ohne_sperre_gebaut:.2f} gegen "
+                f"{self.ohne_sperre_funding:.2f} EUR. Der Rest der "
+                f"{self.anteil_uebersehen:.1%} oben ist das fruehere "
+                f"Abschalten und keine Gebuehr (Befund 339)."
+            )
         if self.urteil_kippt:
             teile.append(
                 "**Und das Urteil kippt damit.** Was das Gate bestehen laesst, "

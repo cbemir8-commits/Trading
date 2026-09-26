@@ -8251,11 +8251,23 @@ def finanzierung(
             f"\n[bold]Was der Kosten-Stress stresst[/] (Faktor {faktor})\n"
         )
 
-        gesperrt_gesamt = 0
+        def stresslauf(
+            *, gebuehren: bool, funding: bool, officer: bool = True
+        ) -> tuple[float, int]:
+            """Ein durchgehender Lauf je Markt - Gewinn und verhinderte
+            Einstiege **dieses** Laufs.
 
-        def stresslauf(*, gebuehren: bool, funding: bool) -> float:
-            nonlocal gesperrt_gesamt
+            Bis Befund 339 addierte diese Funktion die Sperren aller Laeufe in
+            eine Zahl ausserhalb. Die Summe zaehlt dieselbe Sperre dreimal;
+            gefragt ist, wie viele Einstiege **ein** Lauf verliert - und ob
+            der strengere Stress mehr verliert als der mildere.
+
+            ``officer=False`` schaltet die Risikoaufsicht ab und damit die
+            dauerhafte Sperre. Erst dann vergleichen zwei Stressstufen
+            denselben Trade-Satz.
+            """
             gewinn = 0.0
+            gesperrt = 0
             for x in symbole:
                 grund = BacktestConfig(
                     instrument=_fallback_instrument(_bybit_kontrakt(x)),
@@ -8273,9 +8285,10 @@ def finanzierung(
                     allow_shorts=grund.allow_shorts,
                     entry_expiry_bars=grund.entry_expiry_bars,
                     max_hold_bars=grund.max_hold_bars,
+                    enforce_risk_limits=officer,
                 )
                 ergebnis = Backtester(cfg).run(frames[x], compile_genome(genome))
-                gesperrt_gesamt += stillgelegt(ergebnis.veto_reasons)
+                gesperrt += stillgelegt(ergebnis.veto_reasons)
                 gewinn += float(
                     compute_metrics(
                         ergebnis.trades, ergebnis.equity_curve,
@@ -8283,21 +8296,24 @@ def finanzierung(
                         total_fees=ergebnis.total_fees,
                     ).net_profit
                 )
-            return gewinn
+            return gewinn, gesperrt
 
-        # Die drei Laeufe der Reihe nach, damit ``gesperrt_gesamt`` alle
-        # drei traegt - ein Schluesselwortargument wird vor dem Aufruf
-        # ausgewertet, die Reihenfolge im Konstruktor waere hier also keine
-        # verlaessliche Zusage.
-        ohne = stresslauf(gebuehren=False, funding=False)
-        gebaut = stresslauf(gebuehren=True, funding=False)
-        mit = stresslauf(gebuehren=True, funding=True)
+        ohne, sperren_ohne = stresslauf(gebuehren=False, funding=False)
+        gebaut, sperren_gebaut = stresslauf(gebuehren=True, funding=False)
+        mit, sperren_mit = stresslauf(gebuehren=True, funding=True)
+        # Zwei Gegenproben ohne Risikoaufsicht: Was die Gebuehren kosten und
+        # was das fruehere Abschalten kostet, steckt oben in einer Zahl
+        # zusammen (Befund 339).
+        rein_gebaut, _ = stresslauf(gebuehren=True, funding=False, officer=False)
+        rein_mit, _ = stresslauf(gebuehren=True, funding=True, officer=False)
         lage = Stresslage(
             faktor=float(faktor),
             ohne_stress=ohne,
             wie_gebaut=gebaut,
             mit_funding=mit,
-            gesperrt=gesperrt_gesamt,
+            sperren=(sperren_ohne, sperren_gebaut, sperren_mit),
+            ohne_sperre_gebaut=rein_gebaut,
+            ohne_sperre_funding=rein_mit,
         )
         for beschriftung, wert in (
             ("ohne Stress", lage.ohne_stress),

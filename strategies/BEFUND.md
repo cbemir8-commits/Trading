@@ -30346,3 +30346,85 @@ fuenf Bestaetigungen; Fundstelle Nr. 338, zuerst 95.
 `tests/test_kontoleiter.py` bindet fuenf Sprossen an einen gemessenen Lauf -
 Trades, DSR, Rueckgang, Gate-Bilanz und die Abwesenheit von Aussetzern. Ein Test
 haette die 0,77 gefunden.
+
+## Dreihundertneununddreissig. Ein Prozentsatz, der zwei Dinge misst
+
+Vierter Verdachtsfall aus der Wache von Befund 335: **'Umfang des
+Kosten-Stress-Tests'**, Fundstelle Befund 96, spaeter in 101, 102, 127 und 314
+erwaehnt.
+
+Der Eintrag sagt: Das Gate verdoppelt Gebuehren und Slippage - den kleineren
+Posten - und laesst das Funding unveraendert. Mit mitverdoppeltem Funding faellt
+die Marge von 942,87 auf 625,80 Euro, **34 %**, ohne dass das Urteil kippt.
+
+### Was stimmt
+
+Alles, was der Eintrag als Betrag nennt, auf die Stelle:
+
+    ohne Stress    955,76 EUR
+    wie gebaut     942,87 EUR
+    mit Funding    625,80 EUR
+    Luecke         317,06 EUR
+
+Und ein Punkt, der nicht dastand und den er braucht: **942,87 ist der Gatewert
+selbst**, gemessen an `gate_cost_stress` mit beiden Beinen (`+109,64` BTC,
+`+833,23` ETH). Eintrag und Gate messen also dasselbe - beide durchgehend, mit
+einem Backtester ueber die ganze Reihe. Nach Befund 313, wo genau dieses Gate
+durchgehend +945,06 und im Walk-Forward +2316,29 liefert, war das nicht
+selbstverstaendlich.
+
+### Was nicht stimmt
+
+Der **Anteil**. 34 % ist nicht, was doppeltes Funding kostet - in der Zahl steckt
+noch etwas anderes:
+
+    Lauf                        Trades  gesperrt     Gewinn
+    wie gebaut, mit Officer         91        75    942,87
+    mit Funding, mit Officer        71        95    625,80
+    wie gebaut, ohne Officer       166         0   2318,32
+    mit Funding, ohne Officer      166         0   1632,86
+
+Der dritte Lauf verliert **zwanzig Trades** an eine dauerhafte Sperre, die im
+zweiten noch nicht gefeuert hat: 95 verhinderte Einstiege statt 75. Das
+verdoppelte Funding druckt die Kurve tiefer, die Sperre greift frueher, und ab
+da handelt die Strategie nicht mehr. Von den 317,06 Euro ist also ein Teil
+Gebuehr und ein Teil **fruehzeitiges Abschalten**.
+
+Getrennt wird es, indem dieselben zwei Stufen ohne Risikoaufsicht laufen - ohne
+Officer gibt es keine dauerhafte Sperre, und dann stehen in beiden Stufen
+dieselben 166 Trades. Dort kostet das verdoppelte Funding **29,6 %**.
+
+**Die Richtung des Eintrags bleibt.** Der ausgelassene Posten ist der groessere,
+und das Urteil kippt auch ohne Sperre nicht: 1632,86 Euro sind ebenfalls im Plus.
+Die Entscheidung, die beim Nutzer liegt, steht jetzt auf 29,6 % statt 34 % -
+kleiner, und immer noch der groessere Posten.
+
+### Und die 245 aus Befund 314
+
+Derselbe Befehl schrieb seit 314: "eine dauerhafte Sperre hat dabei **245**
+Einstiege verhindert". Das war meine eigene Zeile, und die Zahl ist die Summe
+ueber drei Laeufe - `75 + 75 + 95`. Sie zaehlt dieselbe Sperre dreimal und ist
+die Menge von nichts. Wer sie neben die 75 von `cli freigabe` legte, sah einen
+Faktor drei und keine Uebereinstimmung.
+
+Je Lauf berichtet, wird aus dem Fehler eine Aussage: **75, 75, 95** - der
+Unterschied ist genau der Fund oben.
+
+### Was gebaut wurde
+
+`Stresslage.sperren` haelt die Sperren je Lauf statt ihrer Summe; `.sperrzuwachs`
+nennt den Unterschied, `.anteil_rein` den Anteil auf gleichem Trade-Satz und
+`None`, solange die Gegenproben fehlen. `cli finanzierung --stress` fuehrt sie
+mit: fuenf Laeufe statt drei, zwei davon ohne Officer.
+
+Der Docstring von `gate_cost_stress` trug die 34 % ohne den Vorbehalt und nennt
+jetzt beide Zahlen. Der Eintrag in `stand.py` ebenso; Fundstelle Nr. 339, zuerst
+96.
+
+`tests/test_kostenstress.py` bindet die fuenf Laeufe an die gemessenen Betraege
+und an die Abwesenheit von Sperren ohne Officer.
+
+Und die Wache von Befund 231 hat mitgeredet: Die 29,6 % stehen jetzt in zwei
+Abschnitten des Berichts - in der offenen Entscheidung und im berichtigten
+Eintrag zu 314 -, und ein neuer Doppelgaenger gehoert angesehen. Angesehen und
+eingetragen: Es ist **eine** Messung, die beide Eintraege zu Recht nennen.

@@ -920,11 +920,22 @@ def gate_cost_stress(
     ungepruefter
     Vorgabewert (Befund 100). Das Gate verdoppelt also den kleineren Posten.
 
-    Gemessen kostet die Luecke 34 % der Marge - 942,87 gegen 625,80 EUR -,
+    Gemessen kostet die Luecke 33,6 % der Marge - 942,87 gegen 625,80 EUR -,
     ohne das Urteil ueber den Bestand zu drehen. Ob der Stress kuenftig auch
     das Funding umfassen soll, steht als Entscheidung in ``stand.py``: Alle
     bisherigen Eintraege sind unter dem schwaecheren Stress gemessen.
     ``cli finanzierung --stress`` rechnet die Luecke nach.
+
+    **Was in diesen 33,6 % noch steckt (Befund 339).** Dieser Lauf ist
+    durchgehend, also mit einem Risk-Officer ueber die ganze Reihe und ohne
+    die Fenstergrenze, an der der Walk-Forward wieder freigibt. Eine
+    dauerhafte Sperre verhindert dabei 75 Einstiege - und bei verdoppeltem
+    Funding 95, weil sie zwanzig Trades frueher abschaltet. Der Anteil mischt
+    damit zwei Dinge. Auf demselben Trade-Satz gemessen (166 Trades, ohne
+    Officer) kostet das verdoppelte Funding **29,6 %**: 2318,32 gegen 1632,86
+    EUR. Die Richtung des Befunds bleibt - der ausgelassene Posten ist der
+    groessere, und das Urteil dreht auch ohne Sperre nicht -, aber 33,6 % ist
+    nicht "was doppeltes Funding kostet".
 
     Bei mehreren Beinen zaehlt die **Summe**: Gehandelt wird das Portfolio, und
     ein Bein, das die doppelten Kosten allein nicht traegt, ist kein Grund zur
