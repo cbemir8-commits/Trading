@@ -210,6 +210,14 @@ class Streuung:
     stichprobe: int = 0
     """Die effektive Trade-Zahl des Kandidaten - Grundlage der Annahme."""
 
+    grenze: int = 0
+    """Der Versuchsstand, bei dem das Suchbudget abbricht - ``stand.BUDGET``.
+
+    Nur zum Rechnen der Obergrenze; ``0`` heisst "nicht angegeben". Der Wert
+    wird hier nicht hergestellt, weil das Budget eine Abmachung ist und keine
+    Messung - er kommt von aussen herein.
+    """
+
     @property
     def gemessen(self) -> float | None:
         """Die Standardabweichung der bekannten Versuchs-Sharpes.
@@ -252,6 +260,39 @@ class Streuung:
         ersetzen senkt eine Huerde, und diese Entscheidung faellt nicht hier.
         """
         return self.gemessen is not None and self.abdeckung >= MINDESTABDECKUNG
+
+    @property
+    def deckel(self) -> float | None:
+        """Die hoechste Abdeckung, die bis zum Budgetende noch erreichbar ist.
+
+        **Befund 340.** Der Registereintrag behauptete seit Befund 69, die
+        Abdeckung sei "auf hoechstens 40 % gedeckelt" - als Prosa, ungerechnet.
+        Gerechnet ist es einfach: Jeder **kuenftige** Versuch kann einen Punkt
+        beitragen, kein vergangener mehr. Der Grundstock hat keine
+        Einzelnachweise, und nachtraegliche Berichte waeren erfunden.
+
+        Damit ist die Obergrenze ``(Punkte + Rest) / Grenze``. Sie ist eine
+        Obergrenze und keine Erwartung: Sie nimmt an, dass **jeder** der
+        verbleibenden Versuche seinen Sharpe je Trade mitbringt.
+
+        ``None``, solange keine Grenze angegeben ist - eine Obergrenze ohne
+        Budget waere eine erfundene Zahl.
+        """
+        if self.grenze <= 0:
+            return None
+        rest = max(0, self.grenze - self.versuche)
+        return min(1.0, (len(self.punkte) + rest) / self.grenze)
+
+    @property
+    def erreichbar(self) -> bool:
+        """Laesst ``MINDESTABDECKUNG`` sich im Budget ueberhaupt noch holen?
+
+        ``False`` heisst: Diese Frage entscheidet sich nicht durch
+        Weitersuchen. Sie haette ein Verzeichnis gebraucht, das von Anfang an
+        mitschreibt.
+        """
+        deckel = self.deckel
+        return deckel is not None and deckel >= MINDESTABDECKUNG
 
     def je_quelle(self) -> dict[str, tuple[int, float | None, float, float]]:
         """Anzahl, Streuung, Minimum und Maximum je Herkunft.
@@ -374,7 +415,24 @@ class Streuung:
             f"Was fehlt, ist keine Messung, sondern ein Verzeichnis: "
             f"'state/trials.json' haelt eine einzige Zahl fest. Stuende dort "
             f"zu jedem Versuch sein Sharpe je Trade, waere diese Groesse "
-            f"messbar statt geraten."
+            f"messbar statt geraten.{self._deckelsatz()}"
+        )
+
+    def _deckelsatz(self) -> str:
+        """Und ob sich das im Budget noch aendern kann - Befund 340."""
+        deckel = self.deckel
+        if deckel is None or self.erreichbar:
+            return ""
+        rest = max(0, self.grenze - self.versuche)
+        return (
+            f"\n\n**Und im Suchbudget ist sie nicht mehr zu holen.** Selbst "
+            f"wenn jeder der {rest} verbleibenden Versuche seinen Sharpe "
+            f"mitbringt, sind es {len(self.punkte) + rest} von {self.grenze} "
+            f"Punkten - {deckel:.0%} gegen die verlangten "
+            f"{MINDESTABDECKUNG:.0%}. Kein vergangener Versuch kann einen "
+            f"Punkt nachliefern: Der Grundstock hat keine Einzelnachweise, "
+            f"und nachtraegliche Berichte waeren erfunden. Diese Frage "
+            f"entscheidet sich also nicht durch Weitersuchen."
         )
 
 
@@ -446,9 +504,14 @@ class Empfindlichkeit:
                 f"Bereich; an dieser Eingabe entscheidet sich hier nichts."
             )
         richtung = "unter" if angenommen > kipp else "ueber"
+        # 'darueber' stand hier fest, obwohl die Richtung eine Zeile hoeher
+        # gerechnet wird (Befund 340). Heute liegt die Annahme oben und der
+        # Satz stimmte zufaellig; mit einer engeren Annahme hiesse es
+        # "23 % darueber", wo 23 % darunter gemeint waeren.
+        lage = "darueber" if angenommen > kipp else "darunter"
         return (
             f"{stand} Das Urteil kippt bei sqrt(V) = {kipp:.4f}; die Annahme "
-            f"liegt {abs(angenommen / kipp - 1):.0%} darueber.\n\n"
+            f"liegt {abs(angenommen / kipp - 1):.0%} {lage}.\n\n"
             f"**Damit haengt das strengste Gate des Projekts an einer Zahl, "
             f"die nie gemessen wurde.** Jede Schaetzung {richtung} {kipp:.4f} "
             f"dreht das Ergebnis - und genau deshalb darf sie nicht aus einer "

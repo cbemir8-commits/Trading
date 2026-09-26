@@ -10465,6 +10465,7 @@ def streuung(
         stichprobe_wie_im_gate,
     )
     from research.seeds import spitzenkandidat
+    from research.stand import BUDGET
     from research.streuung import Empfindlichkeit, Streuung, sammle
     from research.suchbudget import Kandidat
     from strategy.compiler import compile_genome
@@ -10514,6 +10515,9 @@ def streuung(
         ),
         versuche=versuche,
         stichprobe=stichprobe.effektiv,
+        # Das Budget kommt von aussen herein: Es ist eine Abmachung, und die
+        # Obergrenze der Abdeckung haengt daran (Befund 340).
+        grenze=BUDGET.grenze,
     )
     angenommen = lage.angenommen or 0.0
 

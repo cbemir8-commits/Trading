@@ -30428,3 +30428,105 @@ Und die Wache von Befund 231 hat mitgeredet: Die 29,6 % stehen jetzt in zwei
 Abschnitten des Berichts - in der offenen Entscheidung und im berichtigten
 Eintrag zu 314 -, und ein neuer Doppelgaenger gehoert angesehen. Angesehen und
 eingetragen: Es ist **eine** Messung, die beide Eintraege zu Recht nennen.
+
+## Dreihundertvierzig. Der Weg durch die Wand zeigte in die falsche Richtung
+
+Fuenfter Verdachtsfall aus der Wache von Befund 335, und der mit dem hoechsten
+Einsatz: **'Die geratene Eingabe im Deflated Sharpe'**, Fundstelle Befund 69 -
+271 Befunde ohne Nachmessung, und der Eintrag steht auf dem Gate, das die
+Zulassung am Spot-Punkt allein blockiert.
+
+Er las sich wie ein Weg durch die Wand:
+
+    "Das Gate braucht die Streuung der Sharpe-Schaetzer ueber die Versuche.
+     Gemessen wird sie nicht - es springt die Ersatzannahme 1/(n-1) ein, hier
+     sqrt(V) = 0,0808. Das Urteil kippt bei 0,0657, also 23 % darunter. Aus
+     den 28 Versuchen, die ihren Sharpe je Trade mittragen, kaemen 0,0608 -
+     und damit 0,97 statt 0,79."
+
+Wer das heute liest, liest: In einer geratenen Eingabe liegen 0,18 DSR-Punkte,
+und das strengste Gate waere mit einer Messung bestanden.
+
+### Gemessen, und die Richtung hat sich gedreht
+
+    Annahme im Gate            0,0909
+    Streuung der 61 Punkte     0,1072     breiter, nicht enger
+    DSR mit der Annahme        0,5958
+    DSR mit der Messung        0,2761     tiefer durchgefallen
+    Kippunkt                   0,0636     Annahme 43 % darueber
+
+Die bekannten Versuche streuen **breiter** als die Annahme, nicht enger. Sie
+einzusetzen hiesse nicht, das Gate zu bestehen, sondern es deutlicher zu
+verfehlen - 0,2761 gegen 0,5958.
+
+Der Grund ist kein Rechenfehler von damals, sondern ein anderer Datenstand:
+0,0808 war die Annahme bei einer groesseren Stichprobe (Befund 135 senkte die
+wirksame Trade-Zahl), und die 28 damals bekannten Punkte stammten fast alle aus
+Reglerscans um den Bestand. Heute stehen 11 Einzelnachweise aus dem Verzeichnis
+daneben, und die streuen fuer sich mit **0,2067**.
+
+Damit ist auch die Entscheidung kleiner, als sie aussah. Sie ist nicht "Messung
+statt Annahme" - wer die Messung einsetzte, verlore Gates. Zu entscheiden bleibt
+nur, ob das Verzeichnis kuenftig jeden Versuch mitschreibt.
+
+### Was stimmt, und was hier nicht nachmessbar ist
+
+Der **Deckel** stimmt. Der Eintrag sagte "bis zum Abbruch bei 230 Versuchen auf
+hoechstens 40 % gedeckelt" - als Prosa, ungerechnet. Gerechnet sind es 38 %:
+Jeder kuenftige Versuch kann einen Punkt beitragen, kein vergangener mehr, also
+`61 + 27` von `230`. Der Grundstock hat keine Einzelnachweise, und nachtraegliche
+Berichte waeren erfunden.
+
+Die **Bestenliste** ist hier nicht nachmessbar. `state/*` ist nicht eingecheckt,
+`state/leaderboard.json` liegt nur auf dem Rechner des Nutzers; die Quelle
+steuert in diesem Klon null Punkte bei. Ihre 0,1030 aus dem Eintrag sind damit
+weder bestaetigt noch widerlegt - und das gehoert so dastehen und nicht als
+"falsch".
+
+### Ein Nebenbefund im Satz darunter
+
+`Empfindlichkeit.urteil` rechnet die Richtung des Abstands eine Zeile vor dem
+Satz aus - und schrieb sie dann fest:
+
+    richtung = "unter" if angenommen > kipp else "ueber"
+    ...
+    f"die Annahme liegt {abs(angenommen / kipp - 1):.0%} darueber."
+
+Heute liegt die Annahme oben, also stimmte der Satz zufaellig. Mit einer engeren
+Annahme haette dort "23 % darueber" gestanden, wo 23 % **darunter** gemeint sind
+- genau der Satz, der im Eintrag von Befund 69 steht.
+
+### Was gebaut wurde
+
+`Streuung.deckel` rechnet die Obergrenze der Abdeckung, `.erreichbar` sagt, ob
+`MINDESTABDECKUNG` im Budget ueberhaupt noch zu holen ist, und `urteil()` nennt
+beides mit dem Grund. `cli streuung` gibt die Grenze aus `stand.BUDGET` hinein -
+das Budget ist eine Abmachung an einer Stelle, keine zweite Zahl daneben.
+
+Die Richtung im Empfindlichkeitssatz haengt jetzt an derselben Rechnung wie die
+Aussage danach.
+
+Der Eintrag traegt die gedrehte Richtung, die heutigen Zahlen, das nicht
+Nachmessbare als solches und die eine Bestaetigung; Fundstelle Nr. 340, zuerst
+69.
+
+`tests/test_streuungsdeckel.py` bindet die fuenf Zahlen an einen gemessenen Lauf,
+den Deckel an seine Rechnung und beide Richtungen des Abstands.
+
+### Und die Wache hat sofort zurueckgemeldet
+
+Die volle Suite fiel an einer Stelle: Der offene Punkt *'Zaehlt ein Sweep am
+Bestand als Versuch?'* war bis 330 durchgesehen, und der Abschnitt hier nennt
+Reglerscans wieder. Diesmal haengt eine Zahl daran - die Abdeckung ist
+`Punkte / Versuche`, der Nenner kommt aus dem Zaehler, und **50 der 61 Punkte
+stammen aus Reglerscans**.
+
+Ob die als Versuche gebucht wurden, ist hier nicht zu sagen: Die elf Eintraege
+mit Herkunft nennen `verbund`, `gen11 partnersuche` und `gen12 kalibriert`,
+keinen Reglerscan, und die restlichen 192 tragen gar keine.
+
+Gelesen und abgegrenzt: **Die Richtung haengt nicht daran.** Zaehlen die Scans
+mit, sind es 61 von 203 und ein Deckel von 38 %; zaehlen sie nicht, bleiben die
+elf Einzelnachweise - 5 %, und hoechstens 38 von 230, also 17 %. Gegen die
+verlangten 90 % reicht keine der beiden Lesarten. Die Frage selbst bleibt beim
+Nutzer.

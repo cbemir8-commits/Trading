@@ -3370,7 +3370,21 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
              "Ersatzannahme 1/(n-1) ein, hier sqrt(V) = 0,0808. Das Urteil "
              "kippt bei 0,0657, also **23 % darunter**. Aus den 28 Versuchen, "
              "die ihren Sharpe je Trade mittragen, kaemen 0,0608 - und damit "
-             "0,97 statt 0,79. `cli streuung` rechnet es nach.",
+             "0,97 statt 0,79. `cli streuung` rechnet es nach."
+             "\n    **Nachgemessen (340), und die Richtung hat sich gedreht.** "
+             "Der Satz oben liest sich wie ein Weg durch die Wand: messen, und "
+             "das Gate besteht mit 0,97. Heute ist es umgekehrt. Die Annahme "
+             "liegt bei **0,0909**, die Streuung der bekannten Versuche bei "
+             "**0,1072** - also **breiter** als die Annahme, nicht enger. "
+             "Eingesetzt gaebe sie DSR **0,2761** statt 0,5958; das Gate faellt "
+             "damit tiefer durch, nicht hindurch. Gekippt wird bei 0,0636, und "
+             "die Annahme liegt **43 % darueber**. Von 203 Versuchen liegen 61 "
+             "vor (30 %), nicht 28 von 166. Die breiteste Quelle ist heute das "
+             "Verzeichnis mit 0,2067; die Bestenliste ist in diesem Klon nicht "
+             "nachmessbar ('state/*' ist nicht eingecheckt), ihre 0,1030 sind "
+             "also weder bestaetigt noch widerlegt. **Was stimmt**, ist der "
+             "Deckel: gerechnet sind es 38 %, der Eintrag sagte 'hoechstens "
+             "40 %'",
         warum="Die 0,0608 werden nicht eingesetzt, und zwar nicht aus "
               "Vorsicht: Von 166 Versuchen liegen 28 vor, und was fehlt, "
               "fehlt am unteren Ende - Berichte entstehen ueber Reglerscans "
@@ -3382,8 +3396,17 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "Abbruch des Suchbudgets bei 230 Versuchen auf hoechstens 40 % "
               "gedeckelt - ``streuung.MINDESTABDECKUNG`` verlangt 90. Die "
               "Annahme bleibt also stehen, und zwar auf absehbare Zeit. Zu "
-              "entscheiden bleibt nur, ob das je anders sein soll.",
+              "entscheiden bleibt nur, ob das je anders sein soll."
+              "\n    **Seit 340 ist der Deckel gerechnet und nicht geschaetzt** "
+              "(``Streuung.deckel``): Jeder kuenftige Versuch kann einen Punkt "
+              "beitragen, kein vergangener mehr, also 61 + 27 von 230 = 38 %. "
+              "Und die Entscheidung ist damit kleiner geworden, als sie aussah: "
+              "Die gemessene Streuung wuerde die Huerde nicht senken, sondern "
+              "heben. Wer sie einsetzte, verlore Gates - zu entscheiden ist "
+              "also nicht 'Messung statt Annahme', sondern nur, ob das "
+              "Verzeichnis kuenftig jeden Versuch mitschreibt.",
         befund=69,
+        zuletzt=340,
     ),
     Entscheidung(
         frage="Was die Latte des Deflated Sharpe bedeutet",

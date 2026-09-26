@@ -221,7 +221,20 @@ GELESEN: dict[str, int] = {
     # Bestand eine Hypothese ueber den Markt ist - bleibt damit unberuehrt und
     # beim Nutzer. Nicht nachgemessen: Der Grundstock traegt weiter 192 von 203
     # Versuchen ohne Herkunft, und daran hat 330 nichts geaendert.
-    "Zaehlt ein Sweep am Bestand als Versuch?": 330,
+    #
+    # **Befund 340 nennt Reglerscans wieder, und diesmal haengt eine Zahl
+    # daran.** Die Abdeckung der Streuung ist ``Punkte / Versuche``: Der
+    # Nenner kommt aus dem Zaehler, und 50 der 61 Punkte im Zaehler stammen
+    # aus Reglerscans. Ob die als Versuche gebucht wurden, ist hier nicht zu
+    # sagen - die 11 Eintraege mit Herkunft nennen 'verbund', 'gen11
+    # partnersuche' und 'gen12 kalibriert', keinen Reglerscan, und die
+    # restlichen 192 tragen gar keine. Gelesen und abgegrenzt: Die
+    # **Richtung** des Befunds haengt nicht daran. Zaehlen die Scans mit, sind
+    # es 61 von 203 und ein Deckel von 38 %; zaehlen sie nicht, bleiben die 11
+    # Einzelnachweise, also 5 % und hoechstens 38 von 230 - 17 %. Gegen die
+    # verlangten 90 % reicht keine der beiden Lesarten. Die Frage selbst
+    # bleibt unberuehrt und beim Nutzer.
+    "Zaehlt ein Sweep am Bestand als Versuch?": 340,
     "Timing gegen Zufallseinstiege": 295,
     "Der Preis in Reststreuungen": 295,
     # **Befund 305 hat beide erneut angesehen** - und es war zweimal etwas
