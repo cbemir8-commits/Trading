@@ -98,6 +98,10 @@ class TestDasEchteRegister:
             # bestehen muss - wer sie neu laufen laesst, bekommt einen
             # anderen Auftrag als bei 196.
             "Research-KI im Wettbewerb nutzen": 292,
+            # 345 hat gemessen, worauf beim Vergleich zu achten ist: Eine
+            # kuerzere Reihe zeigt mehr Gates, und Bybit ist spaeter
+            # gestartet als Bitstamp.
+            "backfill Bybit-TAGESkerzen beim Nutzer": 345,
         }
 
     def test_der_stand_nennt_seine_fundstelle_auch_im_text(self) -> None:

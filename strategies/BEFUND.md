@@ -30878,3 +30878,95 @@ gehoert ins Laborbuch, hier steht das Stichwort mit seiner Zahl."*
 Genau der Fehler, gegen den 274 gebaut wurde, und ich habe ihn wiederholt. Der
 Eintrag traegt jetzt 257 Zeichen; die Ausfuehrung steht hier, wo sie hingehoert.
 Ein Test in `test_datenbedarf.py` haelt die Grenze fuer diesen Eintrag fest.
+
+## Dreihundertfuenfundvierzig. Vier Monate spaeter angefangen, ein Gate mehr
+
+Der einzige offene Auftrag beim Nutzer lautet seit Befund 171: **Bybit-Tageskerzen
+laden.** Alle elf Gates stehen auf Tageskerzen (213), und jede Zahl dieses
+Projekts steht auf Bitstamp-Kassakursen - die sind nicht das gehandelte
+Instrument. Die Zeile dafuer nennt `--von 2017-08-16`, den Anfang der
+Bitstamp-Reihe.
+
+Bybit ist spaeter gestartet. Die Reihe wird also kuerzer, und damit stellt sich
+eine Frage, die nie gestellt wurde: **Wie weit haengt die Gate-Bilanz daran, wo
+die Reihe anfaengt?**
+
+### Gemessen
+
+Derselbe Kandidat, dieselben Daten, nur spaeter angefangen - keine neue
+Hypothese und damit kein Versuch:
+
+    ab            Tage  Trades  n_eff   Guete     CAGR  Rueckg.     DSR  Gates
+    2017-08-16    3300     156    115  0,2708   14,34%    9,87%  0,5826   9/11
+    2018-01-01    3162     147    109  0,2878   17,54%   10,07%  0,6490  10/11
+    2019-01-01    2797     127    108  0,2941   18,81%   10,07%  0,6841  10/11
+    2020-01-01    2432     109    109  0,2478   10,55%   10,07%  0,3766   9/11
+    2021-01-01    2066      88     88  0,2320   11,81%   10,07%  0,1684   9/11
+    2022-01-01    1701      68     68  0,2926   16,72%   10,07%  0,2703  10/11
+
+**138 Tage weniger am Anfang, und die Messlatte haelt.** Die Jahresrendite steigt
+von 14,34 % auf 17,54 % - ueber die Betriebsschwelle von 15 % -, und aus 9 von 11
+werden 10.
+
+Das ist genau das Gate, von dem Befund 341 sagt, die Entscheidung stehe "auf den
+0,66 Punkten, die dem Bestand zur Messlatte fehlen". Diese 0,66 Punkte sind keine
+Eigenschaft der Strategie. Sie sind eine Eigenschaft des Zeitraums.
+
+### Was das nicht ist
+
+**Kein Weg durch das Gate.** Den Anfang zu verschieben, weil dort mehr Gates
+halten, ist die Anpassung, gegen die die ganze Zulassungsstrecke gebaut ist -
+derselbe Satz, mit dem Befund 281 verbietet, den Groessenregler dorthin zu
+stellen, wo mehr besteht. Die Leiter ist eine Warnung und kein Angebot.
+
+**Und das Bindende bleibt bindend.** Der Deflated Sharpe kommt auf keiner
+Sprosse ueber **0,6841** und damit nirgends an 0,95. Das ist die beruhigende
+Haelfte: Was die Zulassung wirklich blockiert, laesst sich durch einen anderen
+Reihenanfang nicht wegschneiden. Die CAGR-Schwelle kann man wegschneiden, die
+Mehrfachtest-Korrektur nicht.
+
+### Zwei Nebenbeobachtungen
+
+**Der Rueckgang ist auf jeder kuerzeren Sprosse 10,07 %** und auf der vollen
+9,87 % - die laengere Reihe hat den *kleineren* Rueckgang. Kein Widerspruch: Ein
+spaeterer Anfang verschiebt die Fenstergrenzen, die Sprossen sind also keine
+Teilmengen der vollen Reihe.
+
+**Ab 2020 fallen roh und wirksam zusammen** (109/109, 88/88, 68/68). Die
+Quartalseinteilung aus Befund 135 greift dort nicht mehr - was die kuerzeren
+Reihen verlieren, sind vor allem korrelierte Trades.
+
+### Was gebaut wurde
+
+`research/reichweite.py` mit `Sprosse` und `Leiter`: `.flattert` sagt, ob eine
+kuerzere Reihe mehr Gates zeigt, `.dsr_bleibt_offen`, ob das bindende Gate
+ueberall bindend bleibt, und `urteil()` nennt beides samt dem Grund. Bei
+Gleichstand ist die **laengste** Sprosse die beste - sonst waere die kuerzeste
+automatisch die "beste", und genau diese Lesart soll der Bericht verhindern.
+
+`cli abstand --reichweite` rechnet die Leiter nach. Der Auftragspunkt und die
+Backfill-Zeile unter 'Nur auf deinem Rechner' tragen die Warnung; Fundstelle
+Nr. 345, zuerst 171.
+
+`tests/test_reichweite.py` bindet die sechs Sprossen an einen gemessenen Lauf
+und die beiden Urteilsrichtungen.
+
+### Und zwei Wachen haben sofort zurueckgemeldet
+
+**Die Wache aus Befund 332/333.** `Sprosse` traegt eine Gate-Bilanz und stand
+damit als zweiundzwanzigster Traeger im Verzeichnis - ohne sagen zu koennen, ob
+jedes Gate geurteilt hat. Statt ihn in die offene Liste zu legen (dreizehn stehen
+dort), ist er gleich mit `uebersprungen` gebaut: Kuerzere Reihen sind genau der
+Fall, in dem Gates aussetzen - Monte-Carlo braucht 20 Trades, Regime-Aufteilung
+und Deflated Sharpe je 30. Gemessen setzt auf keiner der sechs Sprossen eines
+aus, auf der kuerzesten stehen 68 Trades.
+
+Das Feld heisst **`uebersprungen`** und nicht `ausgesetzt`: `finanzierung.Stufe`
+fuehrt unter diesem Namen dieselbe Zahl, `koernung.Gatelauf.ausgesetzt` die
+Namensliste. Ein drittes Wort fuer dieselbe Sache waere die Sorte Abweichung,
+die Befund 333 an einem Stellvertreter gefunden hat.
+
+**Die Wache aus Befund 231.** Die 17,54 % stehen jetzt in zwei Abschnitten des
+Berichts - im Auftragspunkt und in der Backfill-Befehlszeile. Angesehen und
+eingetragen: Beide brauchen sie, der Punkt erklaert die Warnung und die Zeile
+traegt sie dorthin, wo jemand sie kopiert.

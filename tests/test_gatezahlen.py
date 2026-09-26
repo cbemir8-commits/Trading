@@ -59,6 +59,12 @@ MIT_SKIPINFO: frozenset[str] = frozenset({
     "research.machbarkeit.Stand",
     "research.nachpruefung.Ergebnis",
     "research.teststaerke.Stufe",
+    # Befund 345: gleich mit 'uebersprungen' gebaut statt in die offene Liste
+    # gelegt. Diese Leiter verkuerzt die Reihe absichtlich, und kuerzere Reihen
+    # sind genau der Fall, in dem Gates aussetzen - Monte-Carlo braucht 20
+    # Trades, Regime-Aufteilung und Deflated Sharpe je 30. Gemessen setzt auf
+    # keiner der sechs Sprossen eines aus (68 Trades auf der kuerzesten).
+    "research.reichweite.Sprosse",
 })
 
 #: Typen, die **verzeichnete** Staende halten und keinen Gate-Lauf ausfuehren.
@@ -249,9 +255,9 @@ def test_die_zahl_der_offenen_faelle_steht_fest() -> None:
     """Damit ein spaeterer Lauf sich daran messen kann - und damit das
     Verzeichnis nicht unbemerkt waechst."""
     assert len(OFFEN) == 13
-    assert len(MIT_SKIPINFO) == 5
+    assert len(MIT_SKIPINFO) == 6
     assert len(VORGELAGERT) == 1
-    assert len(_traeger()) == 21
+    assert len(_traeger()) == 22
 
 
 # **Die Messung, die Befund 332 offen gelassen hat** (Befund 333).

@@ -3900,9 +3900,20 @@ AUFTRAG: tuple[Auftragspunkt, ...] = (
               "(213), und jede Zahl dieses Projekts steht auf "
               "Bitstamp-Kassakursen. Gebraucht werden Bybit-Tageskerzen, und "
               "die gibt es nur beim Nutzer - die Zeilen dafuer stehen unter "
-              "'Nur auf deinem Rechner'",
+              "'Nur auf deinem Rechner'. **Worauf beim Vergleich zu achten "
+              "ist** (345): Bybit ist spaeter gestartet als Bitstamp, der "
+              "Bericht wird also eine kuerzere Reihe haben - und eine kuerzere "
+              "Reihe zeigt hier **mehr** Gates. Gemessen auf denselben Daten, "
+              "nur spaeter angefangen: ab 2018-01-01 steigt die Jahresrendite "
+              "von 14,34 auf 17,54 %, die Messlatte haelt, und aus 9 von 11 "
+              "werden 10. Das ist kein Fortschritt, sondern ein anderer "
+              "Zeitraum. Der Deflated Sharpe bleibt auf jeder Sprosse offen "
+              "(hoechstens 0,6841 gegen 0,95) - das Bindende laesst sich so "
+              "nicht wegschneiden. 'cli abstand --reichweite' rechnet die "
+              "Leiter nach",
         befund=171,
         erledigt=False,
+        zuletzt=345,
     ),
 )
 
@@ -3950,7 +3961,13 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "System das auch: Ein Bericht auf Forschungskerzen gilt nie als "
         "zugelassen, egal wie viele Gates halten. **Das Intervall gehoert "
         "dazu**: Ohne '-i' laedt der Befehl 1m/15m/1h/4h und **keine** "
-        "Tageskerzen - und auf denen stehen alle elf Gates (Befund 213).",
+        "Tageskerzen - und auf denen stehen alle elf Gates (Befund 213). "
+        "**Und die Reihe wird kuerzer, als '--von' verspricht**: Bybit ist "
+        "spaeter gestartet als Bitstamp. Eine kuerzere Reihe zeigt hier mehr "
+        "Gates - ab 2018-01 halten 10 von 11 und nicht 9, weil die "
+        "Jahresrendite von 14,34 auf 17,54 % steigt (Befund 345). Wer die "
+        "neue Bilanz neben die heutige legt, vergleicht zwei Zeitraeume und "
+        "nicht zwei Boersen; 'cli abstand --reichweite' zeigt die Leiter.",
     ),
     (
         "python -m cli funding --von 2020-03-30",

@@ -106,6 +106,11 @@ MEHRFACH: dict[str, str] = {
     # berichtigt mit ihr seine eigene Zahl. Aus einem von beiden gestrichen
     # waere der Eintrag vager, nicht kuerzer - derselbe Fall wie bei 14,34 %.
     "29,6%": "Funding-Anteil ohne Sperre (Befund 339), Entscheidung und Register",
+    # Die Jahresrendite ab 2018 (Befund 345). Sie steht im Auftragspunkt und in
+    # der Backfill-Befehlszeile, und beide brauchen sie: Der Punkt erklaert die
+    # Warnung, die Zeile traegt sie dorthin, wo jemand sie kopiert. Eine
+    # Messung, zwei Stellen - derselbe Fall wie bei 14,34 %.
+    "17,54%": "Jahresrendite ab 2018 (Befund 345), Auftrag und Befehlszeile",
 }
 
 

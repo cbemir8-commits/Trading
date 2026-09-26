@@ -4463,6 +4463,11 @@ def abstand(
         help="Zusaetzlich: Was bedeutet die Latte des Deflated Sharpe? "
              "Wie oft nimmt sie ein Suchlauf ohne jeden Vorteil?",
     ),
+    reichweite: bool = typer.Option(
+        False, "--reichweite",
+        help="Zusaetzlich: Wie haengt die Gate-Bilanz daran, wo die Reihe "
+             "anfaengt? Derselbe Kandidat, spaeter angefangen.",
+    ),
     spot: bool = typer.Option(
         False, "--spot",
         help="Auf dem Spot-Punkt rechnen: kein Funding, kein Hebel.",
@@ -4637,6 +4642,95 @@ def abstand(
         anfaenge=anfaenge,
     )
     console.print(f"[dim]{lage_daten.bericht()}[/]\n")
+
+    if reichweite:
+        import pandas as pd
+
+        from research.gates import GateStatus, GateThresholds, evaluate_gates
+        from research.reichweite import Leiter, Sprosse
+
+        # **Derselbe Kandidat, spaeter angefangen** (Befund 345). Keine neue
+        # Hypothese und damit kein Versuch - gefragt ist, wie weit die
+        # Gate-Bilanz am Reihenanfang haengt.
+        store = CandleStore(settings.paths.data_store)
+        ganz = {s: store.read(s, interval_obj) for s in symbole}
+        gemeinsam_ab = max(f["open_time"].min() for f in ganz.values())
+        anfaenge = [gemeinsam_ab] + [
+            pd.Timestamp(f"{jahr}-01-01", tz="UTC")
+            for jahr in range(gemeinsam_ab.year + 1, gemeinsam_ab.year + 6)
+        ]
+        sprossen = []
+        for grenze in anfaenge:
+            teil = common_range(
+                {
+                    name: f[f["open_time"] >= grenze].reset_index(drop=True)
+                    for name, f in ganz.items()
+                }
+            )
+            erster_teil = next(iter(teil.values()))
+            tage = (
+                erster_teil["open_time"].max() - erster_teil["open_time"].min()
+            ).days
+            if tage < 450:
+                continue
+            teilbericht = run_portfolio_walkforward(
+                teil, lambda g=genome: compile_genome(g), configs
+            )
+            if not teilbericht.windows or teilbericht.combined is None:
+                continue
+            teil_gehandelt = ohne_zensierte(teilbericht)
+            _, teil_sharpe, _, _ = kennzahlen_aus_pnl(
+                [x.net_pnl for x in teil_gehandelt.all_trades]
+            )
+            teil_stichprobe = stichprobe_wie_im_gate(
+                teil_gehandelt.all_trades,
+                beine=getattr(teilbericht, "beine", None),
+                bloecke=[
+                    [float(x.net_pnl) for x in w.trades]
+                    for w in teil_gehandelt.windows
+                ],
+            )
+            teil_gates = evaluate_gates(
+                genome, teilbericht, teil[symbole[0]], configs[symbole[0]],
+                trials_so_far=trials, thresholds=GateThresholds(),
+                frames=teil, configs=configs,
+            )
+            sprossen.append(
+                Sprosse(
+                    ab=str(grenze.date()),
+                    tage=tage,
+                    trades=teil_stichprobe.roh,
+                    effektiv=teil_stichprobe.effektiv,
+                    guete=teil_sharpe,
+                    cagr=teilbericht.combined.cagr_pct,
+                    rueckgang=teilbericht.combined.max_drawdown_pct,
+                    dsr=next(
+                        r.value for r in teil_gates.results
+                        if r.name == "Deflated Sharpe"
+                    ),
+                    bestanden=sum(1 for r in teil_gates.results if r.passed),
+                    gesamt=len(teil_gates.results),
+                    # Kuerzere Reihen sind genau der Fall, in dem Gates
+                    # aussetzen (Befund 332): Monte-Carlo braucht 20 Trades,
+                    # Regime-Aufteilung und Deflated Sharpe je 30.
+                    uebersprungen=sum(
+                        1 for r in teil_gates.results
+                        if r.status is GateStatus.SKIP
+                    ),
+                )
+            )
+        if not sprossen:
+            console.print("[red]Keine Sprosse mit genug Historie.[/]")
+            raise typer.Exit(2)
+        leiter = Leiter(
+            sprossen=tuple(sprossen),
+            ziel_dsr=GateThresholds().min_deflated_sharpe,
+        )
+        console.print("[bold]Wie weit haengt es am Reihenanfang[/]\n")
+        console.print(leiter.tabelle())
+        console.print(
+            f"\n[{'red' if leiter.flattert else 'yellow'}]{leiter.urteil()}[/]\n"
+        )
 
     if eichung:
         from research.eichung import nullverteilung
