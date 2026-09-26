@@ -30266,3 +30266,83 @@ steht der Kandidat schlechter da als gemeldet. Diese Richtung ist seit Befund
 Auch "das Neunfache" war keine Drift: 67,24 / 7,60 = 8,85, und der Befehl
 schreibt 8,8. Gepruefte Zahlen, die stimmen, gehoeren genauso berichtet wie die
 eine, die nicht stimmte.
+
+## Dreihundertachtunddreissig. Fuenf Zahlen stimmten, eine war zweihundertvierzig Befunde alt
+
+Dritter Verdachtsfall aus der Wache von Befund 335: **'Kontogroesse'**,
+Fundstelle Befund 95/96, spaeter in 98, 100, 102 und 126 erwaehnt.
+
+### Was stimmt
+
+Fuenf Zahlen des Eintrags treffen auf die Stelle:
+
+    Rueckgang bei    300 Euro     9,92 %
+    Rueckgang bei 100.000 Euro   12,95 %
+    Kippgrenze des Gates         rund 1150 Euro
+    Bilanz unten                 8 von 11
+    Bilanz ab 1500 Euro          6 von 11
+
+Und die **Aussage** ueber den Deflated Sharpe stimmt auch: Er wandert ueber einen
+333-fachen Kontobereich nur um **0,0224** und ist damit einer der neun, die
+stillstehen, waehrend Rueckgang und schlechtestes Jahr wandern. Das war der Punkt
+des Eintrags.
+
+Gepruefte Zahlen, die stimmen, gehoeren genauso berichtet wie die eine, die nicht
+stimmte - sonst liest sich jede Nachmessung wie ein Fehlerprotokoll.
+
+### Was nicht stimmt
+
+Der **Wert**. Der Eintrag nennt `0,772 bis 0,786`; gemessen sind es:
+
+      Konto  Trades      DSR  Rueckgang   Gates
+        300     152   0.4803      9.92 %    8/11
+        500     158   0.4579     10.64 %    7/11
+       1500     158   0.4729     12.36 %    6/11
+      10000     158   0.4730     12.84 %    6/11
+     100000     158   0.4723     12.95 %    6/11
+
+**0,4579 bis 0,4803** - rund 0,31 niedriger. Die alten Zahlen stammen von vor
+Befund 135, wo die Quartalseinteilung die wirksame Stichprobe von 152 auf 112
+senkte, und von einem niedrigeren Versuchsstand; heute sind es 203. Beides senkt
+den Wert, und beides ist lange dokumentiert - nur eben nicht hier.
+
+Zweihundertvierzig Befunde lang stand in einer offenen Entscheidung ein
+Deflated Sharpe, den das Projekt seit Befund 135 nicht mehr hat.
+
+### Und wieder eine der Fragen aus Befund 332
+
+`koernung.Gatewert` konnte nicht sagen, ob ein Gate geurteilt hat. Hier war das
+naherliegend, denn diese Leiter bewegt die Trade-Zahl **wirklich**: Auf der
+untersten Sprosse sind es 152 statt 158, weil die Mindestmenge der Boerse
+Einstiege verhindert. Das ist der Unterschied zu `finanzierung` aus Befund 337,
+wo Funding nur Kosten sind und die Trade-Zahl oben bleibt.
+
+**Gemessen bleibt es ueber alle vierzehn Sprossen bei elf Urteilen.** 152 liegt
+weit ueber der Aussetzschwelle von 30. Das Feld steht trotzdem da.
+
+Damit sind 3 der urspruenglichen 16 geschlossen, alle drei **durch Messung**.
+Dreizehn stehen offen.
+
+### Ein Nebenbefund zur Form des Verzeichnisses
+
+`koernung.Gatewert` heisst das Feld `geurteilt` und nicht `uebersprungen`: Ein
+`Gatewert` ist **ein** Gate und keine Sprosse, also ein Ja/Nein und keine Liste.
+
+Der Test aus Befund 332 hing am Feldnamen - genau der Fehler, den Befund 333 an
+`gatemuster` gefunden hat. Er prueft jetzt die **Faehigkeit**: ob der Typ eines
+der beiden Felder traegt. Zweimal derselbe Stellvertreter waere einer zu viel
+gewesen.
+
+### Was gebaut wurde
+
+`Gatewert.geurteilt`, und `Gatelauf.bestanden` / `.gesamt` rechnen damit;
+`.ausgesetzt` nennt die Namen. Der Vorgabewert ist "hat geurteilt" - die sichere
+Richtung, denn dann stimmt die Zahl mit der alten ueberein und ein Aussetzer muss
+ausdruecklich gemeldet werden.
+
+Der Eintrag traegt die gemessenen Werte, den Grund fuer die Abweichung und die
+fuenf Bestaetigungen; Fundstelle Nr. 338, zuerst 95.
+
+`tests/test_kontoleiter.py` bindet fuenf Sprossen an einen gemessenen Lauf -
+Trades, DSR, Rueckgang, Gate-Bilanz und die Abwesenheit von Aussetzern. Ein Test
+haette die 0,77 gefunden.

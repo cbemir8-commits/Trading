@@ -7631,7 +7631,7 @@ def koernung(
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
-    from research.gates import GateThresholds, evaluate_gates
+    from research.gates import GateStatus, GateThresholds, evaluate_gates
     from research.koernung import (
         Gatelauf,
         Gateleiter,
@@ -7708,6 +7708,10 @@ def koernung(
                 Gatewert(
                     name=r.name, bestanden=bool(r.passed),
                     wert=float(r.value), schwelle=float(r.threshold),
+                    # **Befund 338.** Diese Leiter bewegt die Trade-Zahl (152
+                    # statt 158 bei 300 Euro), also kann hier ein Gate
+                    # aussetzen - und zaehlte bis hierher als bestanden.
+                    geurteilt=r.status is not GateStatus.SKIP,
                 )
                 for r in bericht_gates.results
             ),

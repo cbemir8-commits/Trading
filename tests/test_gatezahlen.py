@@ -51,6 +51,11 @@ MIT_SKIPINFO: frozenset[str] = frozenset({
     # verschlechtert - dort waere ein Aussetzer am ehesten zu erwarten.
     # Gemessen setzt auf keiner der sechs Sprossen ein Gate aus.
     "research.finanzierung.Stufe",
+    # Befund 338: dieselbe Begruendung - die Kontoleiter bewegt die Trade-Zahl
+    # (152 statt 158 bei 300 Euro). Gemessen setzt auf keiner der vierzehn
+    # Sprossen ein Gate aus. Das Feld heisst hier 'geurteilt', weil ein
+    # 'Gatewert' ein einzelnes Gate ist und keine Sprosse.
+    "research.koernung.Gatewert",
     "research.machbarkeit.Stand",
     "research.nachpruefung.Ergebnis",
     "research.teststaerke.Stufe",
@@ -115,7 +120,6 @@ OFFEN: frozenset[str] = frozenset({
     "research.decke.Stufe",
     "research.instrument.Gebuehrenstufe",
     "research.instrument.Lauf",
-    "research.koernung.Gatewert",
     "research.ratenbild.Ratenprobe",
     "research.regler.Stellung",
     "research.sperrprobe.Ergebnis",
@@ -183,15 +187,19 @@ class TestDieEinordnungStimmtMitDemQuelltext:
         traeger = _traeger()
 
         for name in MIT_SKIPINFO:
-            assert "uebersprungen" in traeger[name], name
+            # 'koernung.Gatewert' nennt es 'geurteilt': Es ist **ein** Gate und
+            # keine Sprosse, also ein Ja/Nein und keine Liste. Befund 333 hat
+            # gelernt, nicht am Feldnamen zu haengen - hier steht deshalb die
+            # Faehigkeit und nicht ein Name.
+            assert traeger[name] & {"uebersprungen", "geurteilt"}, name
 
     def test_wer_in_offen_steht_traegt_es_nicht(self) -> None:
         """Sonst waere er behoben und nur nicht umgetragen."""
         traeger = _traeger()
 
         for name in OFFEN:
-            assert "uebersprungen" not in traeger[name], (
-                f"{name} traegt 'uebersprungen' - gehoert nach MIT_SKIPINFO"
+            assert not traeger[name] & {"uebersprungen", "geurteilt"}, (
+                f"{name} kann das Aussetzen melden - gehoert nach MIT_SKIPINFO"
             )
 
     def test_die_verzeichneten_halten_feste_werte(self) -> None:
@@ -240,8 +248,8 @@ class TestDieFortschrittszeileDerNachpruefung:
 def test_die_zahl_der_offenen_faelle_steht_fest() -> None:
     """Damit ein spaeterer Lauf sich daran messen kann - und damit das
     Verzeichnis nicht unbemerkt waechst."""
-    assert len(OFFEN) == 14
-    assert len(MIT_SKIPINFO) == 4
+    assert len(OFFEN) == 13
+    assert len(MIT_SKIPINFO) == 5
     assert len(VORGELAGERT) == 1
     assert len(_traeger()) == 21
 

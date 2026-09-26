@@ -394,6 +394,24 @@ class Gatewert:
     wert: float
     schwelle: float = 0.0
 
+    geurteilt: bool = True
+    """Hat dieses Gate auf dieser Sprosse ueberhaupt geurteilt - Befund 338?
+
+    ``bestanden`` kam aus ``GateResult.passed``, und das ist wahr, sobald der
+    Status nicht ``FAIL`` lautet: Ein ausgesetztes Gate zaehlte als bestanden
+    (Befund 321/322/332).
+
+    Hier ist das ein naherliegender Fall, denn diese Leiter bewegt die
+    Trade-Zahl wirklich: Auf der untersten Sprosse (300 Euro) sind es 152
+    statt 158, weil die Mindestmenge der Boerse Einstiege verhindert. Unter 30
+    setzen 'Regime-Aufteilung' und 'Deflated Sharpe' aus, unter 20
+    'Monte-Carlo'.
+
+    Gemessen (338) bleibt es ueber alle fuenf Sprossen bei elf Urteilen -
+    152 Trades sind weit von 30 entfernt. Das Feld steht trotzdem hier, damit
+    es auffaellt, wenn eine Sprosse dorthin rutscht.
+    """
+
 
 @dataclass(frozen=True, slots=True)
 class Gatelauf:
@@ -404,11 +422,17 @@ class Gatelauf:
 
     @property
     def bestanden(self) -> int:
-        return sum(1 for g in self.gates if g.bestanden)
+        """Bestandene **ohne** die ausgesetzten - Befund 338."""
+        return sum(1 for g in self.gates if g.bestanden and g.geurteilt)
 
     @property
     def gesamt(self) -> int:
-        return len(self.gates)
+        """Gates, die ein Urteil gefaellt haben."""
+        return sum(1 for g in self.gates if g.geurteilt)
+
+    @property
+    def ausgesetzt(self) -> tuple[str, ...]:
+        return tuple(g.name for g in self.gates if not g.geurteilt)
 
     def gate(self, name: str) -> Gatewert | None:
         return next((g for g in self.gates if g.name == name), None)

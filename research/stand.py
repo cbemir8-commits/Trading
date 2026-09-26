@@ -3539,7 +3539,19 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
              "Kapitalkurve. Neun stehen still, darunter der Deflated Sharpe "
              "(0,772 bis 0,786 ueber den ganzen Bereich). Die Bilanz laeuft "
              "von 8 von 11 bei 300 Euro auf **6 von 11** ab 1500 Euro; die "
-             "hier gemeldeten 7 von 11 gelten fuer 500 Euro.",
+             "hier gemeldeten 7 von 11 gelten fuer 500 Euro."
+             "\n    **Nachgemessen (338).** Fuenf Zahlen dieses Eintrags "
+             "stimmen auf die Stelle: 9,92 % Rueckgang bei 300 Euro, 12,95 % "
+             "bei 100.000, die Kippgrenze bei rund 1150 Euro, 8 von 11 unten, "
+             "6 von 11 ab 1500. Die **Aussage** ueber den Deflated Sharpe "
+             "stimmt auch - er wandert ueber einen 333-fachen Kontobereich nur "
+             "um 0,0224 und ist damit einer der neun stillstehenden. Sein "
+             "**Wert** ist ueberholt: gemessen 0,4579 bis 0,4803 statt 0,772 "
+             "bis 0,786. Die alten Zahlen stammen von vor Befund 135 (die "
+             "Quartalseinteilung senkte die wirksame Stichprobe von 152 auf "
+             "112) und von einem niedrigeren Versuchsstand; heute sind es 203. "
+             "Und auf keiner der Sprossen setzt ein Gate aus - die 152 Trades "
+             "der untersten liegen weit ueber der Aussetzschwelle von 30",
         warum="Dort bestimmt nicht mehr die Strategie die Positionsgroesse, "
               "sondern die Boerse - die Risikosteuerung greift bei der Haelfte "
               "der Trades nicht. Es ist damit auch keine reine "
@@ -3548,7 +3560,7 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "aufstockt, aendert an der Strategie nichts und reisst es "
               "trotzdem.",
         befund=95,
-        zuletzt=96,
+        zuletzt=338,
     ),
     Entscheidung(
         frage="Wochenverlustgrenze",
