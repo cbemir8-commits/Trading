@@ -29947,3 +29947,84 @@ Traeger, aus dem Quelltext statt aus der Annahme -, das Kriterium nicht.
 
 Und drei Messungen, die die fuenfzehn tragen, statt einer Liste, die sie nur
 nennt.
+
+## Dreihundertvierunddreissig. Die Entscheidungstabelle nannte ihr Alter nicht
+
+Dieser Zyklus hat an der Front angefangen statt an den Werkzeugen: Von den
+beiden am Spot-Punkt offenen Gates ist die **Messlatte** mit 0,66 Punkten das
+naehere, und ich hatte sie in keinem der letzten Laeufe angesehen.
+
+### Der Vorflug hat die Frage beantwortet, bevor ich gemessen habe
+
+Befund 267: `gate_benchmark` prueft zweierlei - risikobereinigt besser als
+Halten (192,01 % gegen 38,03 %, also beim Fuenffachen, nicht knapp) und eine
+Jahresrendite ueber 15 %. Die zweite bindet, und dort fehlen 0,66 Punkte.
+
+Und die Entscheidung dazu liegt schon auf dem Tisch, mit Messung. `cli
+vereinbar --spot`:
+
+     Stellung    Rendite  Rueckgang  Urteil
+         19.3     14.34%      9.87%  Rendite fehlt   <- der Bestand
+         20.5     14.99%     10.47%  Rendite fehlt
+           21     15.30%     11.66%  alle erfuellt
+         21.5     15.65%     11.87%  alle erfuellt
+           22     16.17%     11.85%  alle erfuellt
+           25     18.54%     13.74%  Rueckgang reisst
+
+Drei Stellungen des Vola-Ziels erfuellen Rendite und Rueckgang zugleich. Mit der
+dritten Schwelle (Schlechtestes Jahr >= -10) sind alle drei nicht zugleich
+erfuellbar - Befund 310. Es ist eine wirtschaftliche Schwelle, keine
+statistische, und sie liegt als Geschaeftsentscheidung beim Nutzer.
+
+Also kein Fund an der Front. Das ist das fuenfte Mal in diesen Zyklen, dass der
+Vorflug einen Messlauf erspart hat, und es ist der Grund, warum er existiert.
+
+### Was beim Nachsehen auffiel
+
+`cli vereinbar` liest **gespeicherte Berichte**, keine frischen Laeufe. Der
+juengste Machbarkeitsbericht ist vom **14.09.**;
+`backtest/walkforward._combine` hat sich am **20.09.** geaendert (Befund 315) -
+die Funktion, aus deren verketteter Kapitalkurve Rendite und Rueckgang gelesen
+werden.
+
+Die Tabelle, an der eine offene Geschaeftsentscheidung haengt, stammt also von
+vor einer Aenderung an genau der Groesse, die sie zeigt.
+
+**Sie ist gueltig.** Befund 315 hat gegengerechnet:
+
+> **Keine Zahl bewegt sich**: Rendite, CAGR, Rueckgang, Sharpe, Nettogewinn und
+> alle elf Gatewerte sind vorher wie nachher bitgleich, gegengerechnet auf den
+> echten Tageskerzen.
+
+Nur konnte man ihr das nicht ansehen. Um es festzustellen, waren vier Schritte
+von Hand noetig: Berichtsdatum nachsehen, 315er Datum nachsehen, pruefen was 315
+angefasst hat, dessen Gegenrechnung lesen. Die Tabelle selbst trug **nicht
+einmal das Datum**.
+
+Befund 324 hat genau das fuer die Berichtslage nachgetragen, mit der
+Begruendung: *ein Datum unter sieben anderen liest sich nicht wie eine Warnung,
+"30 Tage alt" schon*. Der engere Fall - eine Tabelle, an der eine Entscheidung
+haengt - war uebersehen.
+
+### Was gebaut wurde
+
+`Messpunkt` traegt jetzt `gemessen` (den Berichtsnamen) und rechnet `alter()`
+daraus. `Vorrat.altersatz()` fasst es zusammen, und `cli vereinbar` gibt es nach
+dem Urteil aus:
+
+    Die Stellungen sind 12 Tage alt. Jede Messung beschreibt den Code **von
+    ihrem Datum** - was seither an der Kapitalkurve geaendert wurde, steht nicht
+    darin (Befund 315/324/334).
+
+Bei mehreren Bericht-Staenden steht eine Spanne, bei undatierten Dateien steht
+nichts - eine Warnung, die immer angeht, ist keine.
+
+### Was der Satz ausdruecklich nicht sagt
+
+Dass die Zahlen falsch seien. Sie sind es nicht, und 315 hat es gegengerechnet.
+Ein Satz, der mehr behauptet, waere selbst eine ungemessene Aussage - ein Test
+haelt fest, dass die Worte "falsch", "ungueltig" und "veraltet" darin nicht
+vorkommen.
+
+Er sagt, wie weit der Schluss traegt. Das ist bei einer Entscheidung, die noch
+nicht gefallen ist, mehr wert als bei einem abgelegten Befund.

@@ -7257,6 +7257,11 @@ def vereinbar(
     if vorrat.punkte:
         console.print(lage.tabelle())
     console.print(f"\n{lage.urteil()}\n")
+    # **Befund 334.** An dieser Tabelle haengt eine offene
+    # Geschaeftsentscheidung, und sie stand ohne Altersangabe da - waehrend
+    # Befund 324 dasselbe fuer die Berichtslage schon nachgetragen hatte.
+    if (satz := vorrat.altersatz()):
+        console.print(f"[dim]{satz}[/]\n")
 
 
 @app.command()

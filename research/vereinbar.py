@@ -54,6 +54,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from datetime import date
 from itertools import pairwise
 from pathlib import Path
 
@@ -131,9 +132,26 @@ class Messpunkt:
     Messung (Befund 280).
     """
 
+    gemessen: str = ""
+    """Der Dateiname des Berichts ohne Endung, aus dem dieser Punkt stammt -
+    Befund 334.
+
+    Bei allen Schreibern ein Zeitstempel, deshalb sortiert er wie ein Datum.
+    Leer heisst "nicht zu ermitteln", und dann steht auch kein Alter da: eine
+    geratene Angabe waere schlimmer als keine (wie in ``berichtslage``).
+    """
+
     def wert(self, kennzahl: str) -> float | None:
         roh = self.werte.get(kennzahl)
         return float(roh) if roh is not None else None
+
+    def alter(self, heute: date | None = None) -> int | None:
+        """Wie viele Tage alt die Messung dieses Punktes ist."""
+        try:
+            gemacht = date.fromisoformat(self.gemessen[:10])
+        except ValueError:
+            return None
+        return ((heute or date.today()) - gemacht).days
 
 
 #: Ergebnis von ``lade``: die Punkte und die, die ausgelassen wurden.
@@ -153,6 +171,38 @@ class Vorrat:
 
     fremder_punkt: dict[str, int] = field(default_factory=dict)
     """Punkte anderer Betriebspunkte, je Punkt gezaehlt."""
+
+    def altersatz(self, heute: date | None = None) -> str:
+        """Wie alt die Messungen sind, auf denen das Urteil steht - Befund 334.
+
+        **Warum das hier hingehoert und nicht nur in die Berichtslage.** Befund
+        324 hat das Alter in ``berichtslage`` nachgetragen, weil ein Datum unter
+        sieben anderen sich nicht wie eine Warnung liest. Diese Tabelle ist der
+        engere Fall: An ihr haengt eine offene **Geschaeftsentscheidung** - die
+        Mindestrendite von 15 % -, und sie stand ohne jede Altersangabe da.
+
+        Was der Satz nicht sagt, ist "die Zahlen sind falsch". Er sagt, wie weit
+        der Schluss traegt. Nachgesehen (334): Der juengste Machbarkeitsbericht
+        ist vom 14.09., und ``_combine`` hat sich am 20.09. geaendert (Befund
+        315) - die Funktion, aus deren Kurve Rendite und Rueckgang gelesen
+        werden. 315 hat gegengerechnet, dass **keine Zahl sich bewegt**; ohne
+        diesen Satz waere die Tabelle nicht zu benutzen gewesen, und dass er
+        existiert, konnte man ihr nicht ansehen.
+        """
+        alter = [a for p in self.punkte if (a := p.alter(heute)) is not None]
+        if not alter:
+            return ""
+        jung, alt = min(alter), max(alter)
+        spanne = (
+            f"{jung} Tage alt"
+            if jung == alt
+            else f"{jung} bis {alt} Tage alt"
+        )
+        return (
+            f"Die Stellungen sind {spanne}. Jede Messung beschreibt den Code "
+            f"**von ihrem Datum** - was seither an der Kapitalkurve geaendert "
+            f"wurde, steht nicht darin (Befund 315/324/334)."
+        )
 
     def hinweis(self) -> str:
         teile = []
@@ -263,6 +313,7 @@ def lade(
                 stellung=stellung,
                 werte=_werte_des_punktes(punkt),
                 betriebspunkt=punkt_der_datei,
+                gemessen=datei.stem,
             )
     return Vorrat(
         punkte=sorted(gefunden.values(), key=lambda p: p.stellung),
