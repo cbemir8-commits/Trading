@@ -122,7 +122,41 @@ class Nullverteilung:
             f"Latte von {self.latte:.2f} in {haeufigkeit} der Faelle. Das 95. "
             f"Perzentil dieser Nullverteilung liegt bei "
             f"{self.latte_fuer_fuenf_prozent:.4f}, der Median bei "
-            f"{self.perzentil(50):.4f}."
+            f"{self.perzentil(50):.4f}.\n{self.grundlagensatz()}"
+        )
+
+    def grundlagensatz(self) -> str:
+        """Woraus gezogen wurde - und wie viel Genauigkeit das hergibt.
+
+        **Befund 343.** Die Saat ist fest, damit die Eichung nicht vom Tag
+        abhaengt. Sie haengt dafuer von der **Trade-Liste** ab, aus der gezogen
+        wird, und die wandert mit dem Kandidaten und den Daten. Genau daran
+        sind die Zahlen aus Befund 278 nicht mehr zu reproduzieren: Der Eintrag
+        nennt 0,9305 und 3,36 %, heute kommen 0,9307 und 3,200 % heraus - kein
+        Zufall, sondern eine andere Grundlage.
+
+        Gemessen (343, je ein Trade weniger, zehn Proben): Das 95. Perzentil
+        wandert um 0,0058, der Fehlalarm um 0,78 Punkte - **ein Viertel seines
+        eigenen Werts**. Die Zeilen mit "kein einziger Lauf" bleiben dagegen in
+        jeder Probe stehen; sie sind grob und deshalb belastbar.
+
+        Deshalb steht die Zahl hier mit ihrer Grundlage daneben. Vier Stellen
+        ohne sie sind eine Genauigkeit, die es nicht gibt.
+        """
+        if self.fehlalarm > 0:
+            genauigkeit = (
+                " Ein Trade mehr oder weniger in dieser Liste verschiebt den "
+                "Fehlalarm um rund ein Viertel seines Werts (Befund 343) - die "
+                "Stellen hinter dem Komma sind Grundlage und nicht Praezision."
+            )
+        else:
+            genauigkeit = (
+                " 'Kein einziger Lauf' haelt dieser Verschiebung stand: Die "
+                "Aussage ist grob und deshalb belastbar (Befund 343)."
+            )
+        return (
+            f"Gezogen aus {self.roh} Trades des Bestands, mit fester Saat "
+            f"({self.laeufe} Laeufe).{genauigkeit}"
         )
 
 

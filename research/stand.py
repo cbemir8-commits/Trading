@@ -3443,7 +3443,21 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
              "des Suchbudgets aendert daran nichts: 203 auf 230 Versuche "
              "laesst sein Perzentil bei 99,86, waehrend der rohe Wert von "
              "0,5826 auf 0,5551 faellt. `cli abstand --spot --eichung` "
-             "rechnet es nach.",
+             "rechnet es nach."
+             "\n    **Nachgemessen (343): Der Schluss haelt, zwei Stellen "
+             "nicht.** Die tragenden Zeilen kommen auf die Stelle wieder: bei "
+             "203 Versuchen 0,3059 und kein Lauf von 5.000, der Bestand am "
+             "99,86. Perzentil, bei 230 derselbe Rang und 0,5551. Die "
+             "**Einzelversuchszeile** nicht: heute 0,9307 und 3,200 % statt "
+             "0,9305 und 3,36 %, bei zehn Versuchen 0,6262 statt 0,6275. Die "
+             "Saat ist fest, also ist das kein Zufall - gezogen wird aus den "
+             "Trades des Bestands, und die Liste hat sich bewegt. Gemessen "
+             "(je ein Trade weniger, zehn Proben): Das 95. Perzentil wandert "
+             "um 0,0058, der Fehlalarm um 0,78 Punkte, **ein Viertel seines "
+             "eigenen Werts**. Bei 203 und 230 Versuchen bleibt dagegen in "
+             "jeder Probe 'kein einziger Lauf' stehen. Vier Stellen sind hier "
+             "also Grundlage und nicht Praezision; `Nullverteilung."
+             "grundlagensatz` schreibt sie seit 343 dazu",
         warum="Das Gate ist am Spot-Punkt eines von nur zwei offenen - das "
               "andere ist die Messlatte, eine Geschaeftsschwelle. Damit "
               "haengt die Zulassung praktisch an dieser einen Zahl, und was "
@@ -3461,8 +3475,16 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "korrelierte liefern ein kleineres Maximum und damit noch "
               "weniger Fehlalarme, das Gemessene ist also die guenstigste "
               "Lesart fuer die Latte. Und 5.000 Laeufe koennen hoechstens "
-              "'kein einziger' sagen, also unter 0,02 %.",
+              "'kein einziger' sagen, also unter 0,02 %."
+              "\n    **Eine dritte seit 343**: Die Eichung haengt an der "
+              "Trade-Liste des Bestands, nicht nur an der Latte. Sie ist "
+              "damit keine Eigenschaft der Schwelle, sondern eine Messung "
+              "**an diesem Kandidaten** - und sie ist neu zu rechnen, wenn er "
+              "oder seine Daten sich bewegen. Fuer die Entscheidung aendert "
+              "das nichts: Das Ergebnis, auf dem sie steht, hat jede Probe "
+              "ueberlebt.",
         befund=278,
+        zuletzt=343,
     ),
     Entscheidung(
         frage="Womit das Plateau-Gate seine Nachbarn misst",

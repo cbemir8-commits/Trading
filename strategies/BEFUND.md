@@ -30686,3 +30686,102 @@ Test fuer nichts.
 
 Geaendert wurde nur die eine Stelle. Die Fundstellen in den Befund-eigenen Tests
 (336 bis 342) bleiben feste Zahlen: Dort ist das Nachziehen der Befund.
+
+## Dreihundertdreiundvierzig. Der Schluss haelt, zwei Stellen nicht
+
+Achter und letzter Verdachtsfall aus der Wache von Befund 335: **'Was die Latte
+des Deflated Sharpe bedeutet'**, Fundstelle Befund 278 - die einzige
+Entscheidung, die seit ihrer Erstmessung nie wieder angesehen worden war, und
+sie steht auf dem Gate, das die Zulassung am Spot-Punkt allein blockiert.
+
+### Was stimmt
+
+Die tragenden Zeilen kommen auf die Stelle wieder:
+
+    Versuche   95. Perzentil   Fehlalarm bei 0,95   DSR Bestand   Perzentil
+         203          0,3059   kein Lauf von 5000        0,5826       99,86
+         230          0,2949   kein Lauf von 5000        0,5551       99,86
+
+Der Schluss des Eintrags steht damit unveraendert: Bei diesem Versuchsstand ist
+0,95 strenger als alles, was diese Messung aufloesen kann, und der Rest des
+Suchbudgets aendert an der **Lage** des Bestands nichts - nur an seinem rohen
+Wert.
+
+### Was nicht stimmt
+
+Die **Einzelversuchszeile**. Heute sind es `0,9307` und `3,200 %`, der Eintrag
+nennt `0,9305` und `3,36 %`; bei zehn Versuchen `0,6262` statt `0,6275`.
+
+Das waere leicht als Rauschen abzutun - ist es aber nicht: `eichung.SAAT` ist
+**fest**, und der Modulkopf sagt auch, warum ("Eine Eichung, deren Ergebnis vom
+Tag abhaengt, ist keine"). Bei fester Saat und fester Laufzahl kann nur eine
+andere **Eingabe** die Zahlen bewegen. Gezogen wird aus den Trades des Bestands,
+und diese Liste hat sich zwischen 278 und heute bewegt.
+
+### Wie viel daran haengt
+
+Gemessen, je ein Trade weniger, zehn Proben, feste Saat:
+
+    95. Perzentil   0,9270 bis 0,9328   Spanne 0,0058
+    Fehlalarm       2,880 bis 3,660 %   Spanne 0,78 Punkte = 24 % des Werts
+
+**Ein einziger Trade verschiebt den Fehlalarm um ein Viertel seines Werts.** Vier
+Stellen hinter dem Komma sind hier also Grundlage und nicht Praezision.
+
+Und die Gegenprobe, die den Eintrag traegt: Bei 203 und 230 Versuchen bleibt in
+**jeder** Probe "kein einziger Lauf" stehen. Die groben Aussagen sind belastbar,
+die feinen nicht - und genau die groben sind es, auf denen die Entscheidung
+steht.
+
+### Die dritte Einschraenkung
+
+Der Eintrag nannte zwei Einschraenkungen (unabhaengige statt korrelierter
+Versuche; 5.000 Laeufe koennen hoechstens "kein einziger" sagen). Die dritte
+folgt aus dem Obigen: **Die Eichung ist eine Messung an diesem Kandidaten und
+keine Eigenschaft der Schwelle.** Bewegt er sich oder bewegen sich seine Daten,
+ist sie neu zu rechnen.
+
+### Was gebaut wurde
+
+`Nullverteilung.grundlagensatz` nennt die Trade-Zahl, aus der gezogen wurde, die
+feste Saat und die Laufzahl - und sagt, welche Sorte Aussage gerade dasteht: eine
+feine, die um ein Viertel wandert, oder ein "kein einziger Lauf", das haelt.
+`beschreibe()` traegt ihn mit, also gibt `cli abstand --eichung` ihn aus.
+
+Der Eintrag traegt die bestaetigten Zeilen, die zwei abweichenden Stellen mit
+ihrem Grund und die dritte Einschraenkung; Fundstelle Nr. 343, zuerst 278.
+
+### Damit ist die Wache aus Befund 335 durch
+
+Acht Nachmessungen, 336 bis 343, und alle neun Entscheidungen mit Fundstelle
+tragen jetzt eine Messung von 330 oder spaeter:
+
+    336   Feste Schwellen auf laufenden Extrema        zuerst 162
+    337   Funding-Satz                                 zuerst 250
+    338   Kontogroesse                                 zuerst  95
+    339   Umfang des Kosten-Stress-Tests               zuerst  96
+    340   Die geratene Eingabe im Deflated Sharpe      zuerst  69
+    341   Mindestrendite von 15 % im Jahr              zuerst  57
+    342   Soll die Research-KI mitlaufen               zuerst  74
+    343   Was die Latte des Deflated Sharpe bedeutet   zuerst 278
+    330   Womit das Plateau-Gate seine Nachbarn misst  zuerst 313
+
+Die Wochenverlustgrenze bleibt draussen: Sie ist eine Bauentscheidung ohne
+Messung dahinter, und ohne Erstmessung gilt jeder spaetere Abschnitt als
+spaeter.
+
+**Was dabei herauskam**, in einem Satz je Fall: drei veraltete Gate-Werte (336),
+eine Handzahl und ein zu gutes Gate (337), ein zweihundertvierzig Befunde alter
+Deflated Sharpe (338), ein Prozentsatz, der zwei Wirkungen mischte (339), eine
+Richtung, die sich gedreht hatte (340), eine Leiter auf einer Datei (341), ein
+Preis, der nie gerechnet war (342), und zwei Stellen, die Grundlage statt
+Praezision sind (343).
+
+**Acht Laeufe, acht Funde - und kein einziges Gate bewegt.** Keine Schwelle ist
+gesenkt worden, kein Kandidat umgestellt. Was sich geaendert hat, sind Zahlen in
+Eintraegen, auf die der Nutzer handelt, und drei neue Felder, die eine Auskunft
+nachliefern, die vorher fehlte.
+
+`tests/test_eichbasis.py` bindet die fuenf Zeilen der Eichtafel, die
+Empfindlichkeit gegen einen fehlenden Trade und die Regel, dass keine
+Entscheidung mehr auf einer Messung von vor 330 steht.
