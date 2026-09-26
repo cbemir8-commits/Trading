@@ -246,9 +246,12 @@ class TestDieWacheHatZurueckgemeldet:
     neu da."""
 
     def test_der_eintrag_ist_nachgezogen(self) -> None:
+        """Nicht auf 340 festgenagelt, sondern "mindestens": Jeder spaetere
+        Befund, der Reglerscans erwaehnt, zieht den Stand weiter - und ein Test,
+        der die Zahl festhaelt, faellt dann fuer nichts."""
         from research.nachmessung import GELESEN
 
-        assert GELESEN["Zaehlt ein Sweep am Bestand als Versuch?"] == 340
+        assert GELESEN["Zaehlt ein Sweep am Bestand als Versuch?"] >= 340
 
     def test_beide_lesarten_verfehlen_die_schwelle(self) -> None:
         """Die Abgrenzung ist gerechnet und nicht behauptet: 61 von 203 gegen

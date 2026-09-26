@@ -234,7 +234,13 @@ GELESEN: dict[str, int] = {
     # Einzelnachweise, also 5 % und hoechstens 38 von 230 - 17 %. Gegen die
     # verlangten 90 % reicht keine der beiden Lesarten. Die Frage selbst
     # bleibt unberuehrt und beim Nutzer.
-    "Zaehlt ein Sweep am Bestand als Versuch?": 340,
+    #
+    # **Befund 341 nennt sie ausdruecklich** - und zwar als Grund, etwas
+    # **nicht** zu tun: Fuenf der sechs Spot-Stellungen sind nicht nachgemessen,
+    # weil das ein Reglerscan waere. Nichts zu entscheiden, nichts
+    # nachzumessen; die Erwaehnung ist die Anwendung der offenen Frage und
+    # nicht ein neuer Fund zu ihr.
+    "Zaehlt ein Sweep am Bestand als Versuch?": 341,
     "Timing gegen Zufallseinstiege": 295,
     "Der Preis in Reststreuungen": 295,
     # **Befund 305 hat beide erneut angesehen** - und es war zweimal etwas

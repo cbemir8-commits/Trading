@@ -3341,7 +3341,21 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
              "haelt bis 19,3, die Messlatte erst ab 21, dazwischen keines von "
              "beiden. Keine Stellung kommt ueber 9 von 11, und der Deflated "
              "Sharpe liegt ausser Reichweite des Reglers (er bewegt ihn um "
-             "0,028, es fehlen 0,353).",
+             "0,028, es fehlen 0,353)."
+             "\n    **Nachgemessen (341).** Die Zeile des Bestands reproduziert "
+             "auf dem Code von heute exakt: Messlatte 14,3390 gegen 15, "
+             "Rueckgang 9,8687 gegen 12, Schlechtestes Jahr -9,61 gegen -10, "
+             "Deflated Sharpe 0,5826 - 9 von 11, zwei offen. Das ist keine "
+             "neue Hypothese und kostet keinen Versuch: derselbe Kandidat, "
+             "dieselben Daten, seine eigene Stellung."
+             "\n    **Die anderen fuenf Stellungen sind nicht nachgemessen, "
+             "und sie stehen alle in einer Datei** - dem einzigen "
+             "Machbarkeitsbericht mit vermerktem Betriebspunkt, vom 14.09. "
+             "'Drei von sechs' ist damit eine Messung und nicht sechs; "
+             "`Vorrat.einzelquelle` sagt das jetzt im Bericht. Sie einzeln "
+             "nachzumessen waere ein Reglerscan und damit die offene Frage "
+             "'Zaehlt ein Sweep am Bestand als Versuch?' - deshalb steht es "
+             "hier und wurde nicht einfach gefahren",
         warum="Eine wirtschaftliche Schwelle, kein statistisches Kriterium - "
               "so steht es seit jeher in gates.py. Dass sie mit der "
               "Rueckgangsgrenze im Konflikt steht, war lange eine Behauptung, "
@@ -3359,9 +3373,15 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "Schlechtestes Jahr -10,19 %, also 0,19 zu weit). "
               "Die Aufloesung ist eine Geschaeftsentscheidung "
               "- den Kandidaten dorthin zu stellen, wo mehr Gates bestehen, "
-              "ist ausdruecklich keine.",
+              "ist ausdruecklich keine."
+              "\n    **Seit 341 ist der Stand des Bestands nachgemessen und "
+              "die Herkunft der Leiter benannt**: Seine Zeile stimmt auf vier "
+              "Stellen, die uebrigen fuenf stammen aus einer einzigen Datei. "
+              "An der Entscheidung aendert das nichts - sie steht auf den "
+              "0,66 Punkten, die dem Bestand zur Messlatte fehlen, und die "
+              "sind gemessen.",
         befund=57,
-        zuletzt=281,
+        zuletzt=341,
     ),
     Entscheidung(
         frage="Die geratene Eingabe im Deflated Sharpe",

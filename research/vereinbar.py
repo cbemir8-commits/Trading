@@ -201,7 +201,38 @@ class Vorrat:
         return (
             f"Die Stellungen sind {spanne}. Jede Messung beschreibt den Code "
             f"**von ihrem Datum** - was seither an der Kapitalkurve geaendert "
-            f"wurde, steht nicht darin (Befund 315/324/334)."
+            f"wurde, steht nicht darin (Befund 315/324/334).{self._quellsatz()}"
+        )
+
+    @property
+    def quellen(self) -> tuple[str, ...]:
+        """Aus wie vielen Berichten die Leiter zusammengesetzt ist - Befund 341.
+
+        Das Alter allein verschweigt das Entscheidende: Sechs Stellungen, alle
+        gleich alt, sehen nach sechs Messungen aus. Am Spot-Punkt sind es
+        **eine** Datei - der einzige Machbarkeitsbericht, der einen
+        Betriebspunkt vermerkt.
+        """
+        return tuple(
+            sorted({p.gemessen for p in self.punkte if p.gemessen})
+        )
+
+    @property
+    def einzelquelle(self) -> bool:
+        """Haengt die ganze Leiter an einem einzigen Bericht?"""
+        return len(self.quellen) == 1 and len(self.punkte) > 1
+
+    def _quellsatz(self) -> str:
+        """Und woraus die Leiter besteht - Befund 341."""
+        if not self.einzelquelle:
+            return ""
+        return (
+            f"\n\n**Und sie stehen alle in einer Datei.** Die {len(self.punkte)} "
+            f"Stellungen kommen aus '{self.quellen[0]}' - dem einzigen Bericht "
+            f"dieses Betriebspunkts. Gleiches Alter heisst hier also nicht "
+            f"'gleich frisch gemessen', sondern 'einmal gemessen'. Faellt "
+            f"diese Datei weg, meldet die Tabelle nichts, und die offene "
+            f"Entscheidung steht ohne ihre Zahlen da."
         )
 
     def hinweis(self) -> str:

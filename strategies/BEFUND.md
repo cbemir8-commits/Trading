@@ -30530,3 +30530,65 @@ mit, sind es 61 von 203 und ein Deckel von 38 %; zaehlen sie nicht, bleiben die
 elf Einzelnachweise - 5 %, und hoechstens 38 von 230, also 17 %. Gegen die
 verlangten 90 % reicht keine der beiden Lesarten. Die Frage selbst bleibt beim
 Nutzer.
+
+## Dreihunderteinundvierzig. Drei von sechs war eine Messung, nicht sechs
+
+Sechster Verdachtsfall aus der Wache von Befund 335: **'Mindestrendite von 15 %
+im Jahr'**, Fundstelle Befund 57, massgeblich 281 - und **eines der zwei Gates,
+die am Spot-Punkt ueberhaupt noch offen sind**. Das andere ist der Deflated
+Sharpe.
+
+### Nachgemessen: die Zeile des Bestands stimmt
+
+Ein voller Walk-Forward am Spot-Punkt, auf dem Code von heute:
+
+    Messlatte            14,3390   gegen  15       fehlt
+    Rueckgang             9,8687   gegen  12       haelt
+    Schlechtestes Jahr   -9,6100   gegen -10       haelt
+    Deflated Sharpe       0,5826   gegen   0,95    fehlt
+                                                   9 von 11
+
+Der Bericht vom 14.09. haelt fuer dieselbe Stellung `cagr 14,3391` und
+`rueckgang 9,8687` fest. Beides kommt heute wieder heraus - vier Stellen.
+
+Das kostet **keinen Versuch**, und das ist hier keine Formalie: derselbe
+Kandidat, dieselben Daten, seine eigene Stellung. Es wird keine Hypothese
+geprueft, sondern der Code gegen seine eigene Vergangenheit.
+
+### Und die uebrigen fuenf stehen alle in einer Datei
+
+`cli vereinbar --spot` liest sechs Stellungen und traegt seit Befund 334 ihr
+Alter mit: "Die Stellungen sind 12 Tage alt." Was nicht dabeistand: Alle sechs
+kommen aus **einer** Datei, `reports/machbarkeit/2026-09-14_005951.json` - dem
+einzigen Machbarkeitsbericht, der einen Betriebspunkt vermerkt. Die 45 uebrigen
+Stellungen fallen aus, weil vor Befund 242 keiner geschrieben wurde.
+
+Gleiches Alter sieht nach sechs gleich frischen Messungen aus. Es sind sechs
+Zeilen **einer** Messung. Und damit ist "drei von sechs Stellungen halten beide
+Schwellen" - das Argument, das den Konflikt der Schwellen auf das Funding
+zurueckfuehrt - eine Messung und nicht sechs. Faellt die Datei weg, meldet die
+Tabelle nichts, und die offene Entscheidung steht ohne ihre Zahlen da.
+
+### Warum die fuenf nicht nachgemessen sind
+
+Sie einzeln nachzumessen ist ein **Reglerscan**, und ob ein Sweep am Bestand ein
+Versuch ist, ist eine offene Frage beim Nutzer (Befund 282/330/340). Sie durch
+Fahren zu beantworten hiesse, sie zu entscheiden - und jeder gebuchte Versuch
+hebt die Huerde des Deflated Sharpe fuer alles andere.
+
+Deshalb steht die Luecke im Eintrag und nicht in einem Bericht, den ich schnell
+erzeugt habe.
+
+### Was gebaut wurde
+
+`Vorrat.quellen` nennt die Berichte, aus denen eine Leiter besteht;
+`.einzelquelle` sagt, ob es einer ist, und `altersatz()` schreibt es dazu. Der
+Eintrag traegt die nachgemessene Zeile, die Einzelquelle und den Grund, warum
+die fuenf offen bleiben; Fundstelle Nr. 341, zuerst 57.
+
+An der Entscheidung aendert das nichts: Sie steht auf den **0,66 Punkten**, die
+dem Bestand zur Messlatte fehlen, und die sind gemessen.
+
+`tests/test_spotleiter.py` bindet die vier Gate-Werte an einen gemessenen Lauf,
+den Vergleich mit der gespeicherten Zeile und die Einzelquelle an die Berichte
+auf der Platte.
