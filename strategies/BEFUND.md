@@ -31669,3 +31669,112 @@ nicht - eine Dateisperre gilt auf einer Maschine. Und **das Journal** (
 was zwei Laeufe dort anrichten, ist nicht gemessen. Die Sperre verhindert es
 heute, aber nur solange beide Beine dieselbe Ablage benutzen - wer dem zweiten
 Bein `PATHS__STATE` gibt, hat auch zwei Journale.
+
+## Dreihundertvierundfuenfzig. Zwei Forschungslaeufe verlieren Versuche
+
+Befund 353 hat den Risikozustand gesichert. Die Datei daneben ist
+``state/trials.json``, und sie steuert etwas, das dem Projekt noch naeher an
+die Wurzel geht: **die Haerte des Deflated-Sharpe-Gates.**
+
+Ein Wettbewerb liest den Zaehler am Anfang und schreibt ihn am Ende. Dazwischen
+liegen Stunden. Zwei Laeufe, die beide bei 203 anfangen, melden 208 und 210:
+
+    A (5) vor B (7)   Zaehler 210, richtig waeren 215   -> 5 Versuche weg
+    B (7) vor A (5)   Zaehler 210, richtig waeren 215   -> 5 Versuche weg
+
+In beiden Reihenfolgen dasselbe, und das ist kein Zufall: ``save_trials`` nimmt
+eine **Summe**. Wer eine Summe schreibt, die er aus einem veralteten Stand
+gebildet hat, ueberschreibt damit alles, was seither dazugekommen ist.
+
+### Was fuenf Versuche wert sind
+
+Gerechnet mit den Zahlen des Bestands (n_eff 115, Guete je Trade 0,2708):
+
+    203 Versuche   noetige Guete 0,4202
+    210 Versuche   noetige Guete 0,4212
+    215 Versuche   noetige Guete 0,4220
+
+Die Latte liegt 0,0007 Guetepunkte tiefer - **0,49 % der Luecke.** Das ist
+klein, und es gehoert so gesagt: Kein Kandidat besteht deshalb, der sonst
+durchfaellt. Es ist auch nicht die Groesse, die hier zaehlt, sondern die
+Richtung. Ein zu tiefer Zaehler macht die Mehrfachtest-Korrektur **milder**, und
+``save_trials`` wusste das die ganze Zeit - seine Meldung zum abgewiesenen
+fallenden Zaehler sagt genau diesen Satz. Die Wache gegen den fallenden Zaehler
+stand; der Weg ueber eine veraltete Summe ging daneben vorbei.
+
+### Bei den Einzelnachweisen ist es schlimmer als eine Zahl
+
+``anhaengen`` traegt die Versuche mit Herkunft ein, und sein Docstring warnt
+selbst vor genau diesem Fehler: *"Lesen und Schreiben in einem Griff, weil
+beides zusammengehoert: Wer lokal zaehlt und am Ende eine Summe schreibt, kann
+den Stand verlieren."* Der Satz stand da, der Griff war aber nicht gesichert.
+Zwei verschraenkte Griffe, gemessen:
+
+    A traegt A1, A2 ein       B traegt B1, B2, B3 ein
+    danach in der Datei:      B1, B2, B3
+
+Die zwei Nachweise des ersten Laufs sind **ganz weg**, samt ihrer Herkunft - und
+die Herkunft ist das, was in Befund 234 offen steht: 192 von 203 Versuchen haben
+keine.
+
+### Der erste Test war keiner
+
+Acht Prozesse gleichzeitig starten und nachsehen, ob Nachweise fehlen:
+
+    ohne Sperre: 8 von 8 Einzelnachweisen, Zaehler 8
+    mit Sperre : 8 von 8 Einzelnachweisen, Zaehler 8
+
+Beide Zeilen gruen, und die erste haette rot sein muessen. Der Grund ist
+banal: Pythons Startaufwand ist groesser als das Lesen und Schreiben von wenigen
+Kilobyte, also treffen sich die acht nie. **Ein Test, der den Fehler nicht
+zeigt, prueft nichts** - das gilt auch dann, wenn er hinterher gruen ist,
+weil man gerade etwas behoben hat.
+
+Die Tests stehen deshalb deterministisch: das Verschraenken von Hand, das die
+echte Zeitfolge nachbildet (lesen am Anfang, schreiben Stunden spaeter), und die
+Eigenschaft der Sperre, dass der Griff sich **nicht teilen laesst** - gegen
+einen echten zweiten Prozess, samt Neustart nach dessen Absturz.
+
+### Der Baustein wohnt jetzt in core
+
+``core/dateisperre.py`` haelt, was 353 in ``execution/einzelbetrieb.py``
+gebaut hat: die nicht blockierende Sperre vom Kern, aus demselben Grund wie
+dort - ``os.kill(pid, 0)`` beendet den Prozess unter Windows, und PIDs werden
+wiederverwendet. Dazu kommt ``gesperrt(pfad)``, das **wartet**:
+
+* Beim Handel wird **nicht** gewartet. Ein zweiter Handelslauf soll nicht in
+  eine Reihe, er soll gar nicht.
+* Beim Zaehler wird gewartet. Zwei Forschungslaeufe duerfen nebeneinander
+  laufen - sie duerfen nur nicht gleichzeitig schreiben.
+
+Die Sperre liegt auf einer Nebendatei (``trials.json.sperre``), weil beide
+Zaehler dieses Projekts ihre Datei ueber ``tmp`` und ``replace`` ersetzen: Eine
+Sperre auf der ersetzten Datei haelt nach dem ersten Schreiben nichts mehr. Und
+die Nebendatei wird nicht geloescht - das waere ein Wettlauf gegen einen
+zweiten Lauf, der sie schon geoeffnet hat.
+
+### Umbuchen statt verwerfen
+
+Eine Sperre allein rettet die Versuche nicht: Wer eine veraltete Summe meldet,
+wird jetzt abgewiesen statt zu ueberschreiben - die Versuche sind trotzdem weg.
+Deshalb nimmt ``save_trials`` jetzt ``neue=n``: Ist der Zaehler unterdessen
+gestiegen, werden die eigenen n auf den **vorgefundenen** Stand gebucht.
+
+    Stand auf der Platte 210, gemeldet 208 mit neue=5   ->  215
+
+Das ist **nicht wiederholungsfest**: Wer denselben Lauf zweimal speichert,
+nachdem ein anderer den Zaehler bewegt hat, bucht zweimal. Die Richtung ist
+gewaehlt. Zu viele Versuche machen das Gate haerter, zu wenige machen es milder -
+von zwei Fehlern ist das hier der tragbare.
+
+Ohne ``neue`` bleibt es beim alten Verhalten. Ein Aufrufer, der seinen Zuwachs
+nicht kennt, soll keinen erfinden.
+
+### Ein neuer Nachbar in state/
+
+``state/`` traegt jetzt eine Datei mehr: ``trials.json.sperre``, leer und
+dauerhaft. Ein Test hat das gefunden, und er hatte halb recht - er sicherte zu,
+dass **genau eine** Datei neben dem Zaehler liegt, und meinte damit "kein halbes
+``.tmp`` bleibt liegen". Das sind zwei Aussagen, und nur die zweite war gemeint.
+Jetzt zaehlt er die erlaubte Nachbarschaft auf und prueft das ``.tmp`` getrennt;
+eine dritte Datei faellt weiter auf.

@@ -35,9 +35,11 @@ kein Randfall. Und PIDs werden wiederverwendet: Irgendein fremder Prozess mit
 derselben Nummer laesst die Sperre ewig stehen.
 
 Deshalb kommt die Aussage vom Kern: eine nicht blockierende Dateisperre
-(``flock`` beziehungsweise ``msvcrt.locking``). Sie haelt, solange der Prozess
-lebt, und der Kern gibt sie frei, wenn er stirbt - bei jedem Ende, auch bei
-``kill -9``. Die PID in der Datei ist **Auskunft fuer die Meldung**, nicht die
+(``core.dateisperre.sperre_versuchen``, also ``flock`` beziehungsweise
+``msvcrt.locking``). Sie haelt, solange der Prozess lebt, und der Kern gibt sie
+frei, wenn er stirbt - bei jedem Ende, auch bei ``kill -9``. Derselbe Baustein
+sichert seit Befund 354 den Versuchszaehler; dort wird allerdings **gewartet**
+statt abgelehnt, weil zwei Forschungslaeufe nebeneinander laufen duerfen. Die PID in der Datei ist **Auskunft fuer die Meldung**, nicht die
 Grundlage der Entscheidung.
 
 Was diese Sperre nicht ist
@@ -62,6 +64,8 @@ from pathlib import Path
 from typing import IO
 
 import structlog
+
+from core.dateisperre import sperre_versuchen
 
 log = structlog.get_logger(__name__)
 
@@ -136,30 +140,6 @@ class BereitsInBetrieb(RuntimeError):  # noqa: N818 - deutsche Namen, wie uebera
             "gelten dann **je Bein** und nicht je Konto, also zweimal die "
             "Tagesgrenze auf einem Konto."
         )
-
-
-def _sperre(datei: IO[str]) -> bool:
-    """Die Datei nicht blockierend sperren. ``False`` heisst: schon gesperrt.
-
-    Zwei Kerne, ein Zweck. ``fcntl`` fehlt unter Windows, ``msvcrt`` ueberall
-    sonst - deshalb der Import in der Funktion und nicht oben.
-    """
-    try:
-        import fcntl
-    except ImportError:  # pragma: no cover - nur unter Windows
-        import msvcrt
-
-        try:
-            msvcrt.locking(datei.fileno(), msvcrt.LK_NBLCK, 1)
-        except OSError:
-            return False
-        return True
-
-    try:
-        fcntl.flock(datei.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except OSError:
-        return False
-    return True
 
 
 def sperrpfad(zustand: Path | str) -> Path:
@@ -255,7 +235,7 @@ def belege(
     datei_pfad = sperrpfad(pfad)
     datei_pfad.parent.mkdir(parents=True, exist_ok=True)
     datei = datei_pfad.open("a+")
-    if not _sperre(datei):
+    if not sperre_versuchen(datei):
         datei.close()
         fremd = belegung(pfad)
         log.error(

@@ -186,12 +186,24 @@ class TestTrialCounter:
         assert load_trials(path) == 166
 
     def test_counter_is_written_atomically(self, tmp_path: Path) -> None:
+        """Kein halbes ``.tmp`` bleibt liegen.
+
+        **Die Nachbarschaft ist aufgezaehlt und nicht offen** (Befund 354): Seit
+        der Griff gesperrt laeuft, liegt ``trials.json.sperre`` daneben - ein
+        gewollter Nachbar, kein Rest eines halben Schreibvorgangs. Vorher stand
+        hier "genau diese eine Datei", was beides in einen Topf warf. Eine
+        **dritte** Datei faellt weiter auf.
+        """
         path = tmp_path / "trials.json"
         save_trials(path, 5)
         save_trials(path, 6)
 
         assert load_trials(path) == 6
-        assert [p.name for p in tmp_path.iterdir()] == ["trials.json"]
+        assert sorted(p.name for p in tmp_path.iterdir()) == [
+            "trials.json",
+            "trials.json.sperre",
+        ]
+        assert not list(tmp_path.glob("*.tmp")), "ein halber Schreibvorgang"
 
 
 # ---------------------------------------------------------------------------

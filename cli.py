@@ -843,7 +843,14 @@ def wettbewerb(
                 frames=frames,
                 configs=configs,
             )
-            save_trials(trials_path, report.trials_after)
+            # 'neue' mitgeben (Befund 354): Hat ein anderer Lauf den
+            # Zaehler unterdessen bewegt, werden die eigenen Versuche auf den
+            # vorgefundenen Stand gebucht statt verworfen.
+            save_trials(
+                trials_path,
+                report.trials_after,
+                neue=report.trials_after - trials_before,
+            )
             # **Das Journal, auf das sich die Runde unten beruft** (Befund
             # 260). Am Ende der Schleife steht: *"Die KI wird nach der Runde
             # gefragt [...] damit sie im Journal sieht, woran die letzten
@@ -1604,7 +1611,12 @@ def research(
         run_expensive=not schnell,
         on_progress=show,
     )
-    save_trials(trials_path, report.trials_after)
+    save_trials(
+        trials_path,
+        report.trials_after,
+        # Befund 354: nicht verwerfen, wenn der Zaehler unterdessen stieg.
+        neue=report.trials_after - trials_before,
+    )
     console.print(_laufbilanz(trials_before, report.trials_after))
     write_journal(report, Path(settings.paths.state) / "journal.json")
 
@@ -6460,7 +6472,7 @@ def adaptiv(
         genome, bericht, erster, configs[symbole[0]], trials_so_far=trials,
         frames=frames, configs=configs,
     )
-    save_trials(trials_path, trials)
+    save_trials(trials_path, trials, neue=1)  # Befund 354
 
     k = bericht.combined
     console.print(

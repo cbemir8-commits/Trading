@@ -2774,6 +2774,33 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Prozess sie fest",
         353,
     ),
+    # Befund 354: dieselbe Frage, eine Datei weiter. 353 hat den
+    # Risikozustand gesichert - der Zaehler daneben stand offen.
+    Richtung(
+        "Zwei Forschungslaeufe verlieren Versuche",
+        "Der Zaehler steuert die Haerte des Deflated-Sharpe-Gates und liegt "
+        "in einer Datei; ein Wettbewerb liest ihn am Anfang und schreibt ihn "
+        "Stunden spaeter. Gemessen: Zwei Laeufe ab 203 melden 208 und 210, der "
+        "Zaehler landet in **beiden** Reihenfolgen auf 210 statt 215 - fuenf "
+        "Versuche weg. Gerechnet mit den Zahlen des Bestands (n_eff 115, Guete "
+        "0,2708) senkt das die Latte von 0,4220 auf 0,4212, also **0,49 % der "
+        "Luecke**. Klein, und in der Richtung, die dieses Projekt nicht geht - "
+        "'save_trials' wusste das schon, seine Meldung zum abgewiesenen "
+        "fallenden Zaehler sagt es. Bei den Einzelnachweisen ist es "
+        "schlimmer als eine Zahl: Die zwei Nachweise des einen Laufs sind ganz "
+        "weg, samt der Herkunft, die in Befund 234 offen steht. Behoben mit "
+        "dem Baustein aus 353, jetzt in 'core/dateisperre.py': Der Griff "
+        "'laden - erweitern - speichern' laeuft unter einer Sperre, und hier "
+        "wird **gewartet** statt abgelehnt, weil zwei Forschungslaeufe "
+        "nebeneinander laufen duerfen. Dazu bucht 'save_trials(..., neue=n)' "
+        "die eigenen Versuche auf den vorgefundenen Stand, wenn der Zaehler "
+        "unterdessen gestiegen ist, statt sie zu verwerfen - nicht "
+        "wiederholungsfest, und das ist die gewaehlte Richtung: zu viele "
+        "Versuche machen das Gate haerter, zu wenige milder. **Und der erste "
+        "Test war keiner**: Acht Prozesse gleichzeitig verloren auch ohne "
+        "Sperre nichts, weil Pythons Start laenger dauert als der Griff",
+        354,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

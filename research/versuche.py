@@ -66,6 +66,8 @@ from pathlib import Path
 
 import structlog
 
+from core.dateisperre import gesperrt
+
 log = structlog.get_logger(__name__)
 
 #: Format mit Einzelnachweis. Format 1 war ``{"trials": n}``.
@@ -313,7 +315,16 @@ def anhaengen(pfad: Path | str, versuche: list[Versuch]) -> Verzeichnis:
 
     Lesen und Schreiben in einem Griff, weil beides zusammengehoert: Wer
     lokal zaehlt und am Ende eine Summe schreibt, kann den Stand verlieren.
+
+    **Und der Griff ist gesperrt** (Befund 354). Dieser Satz stand hier, und
+    er reichte nicht: Zwei Laeufe, die ihn beide ordentlich ausfuehren, lesen
+    denselben Stand und schreiben beide ihre Summe. Gemessen mit zwei
+    verschraenkten Griffen auf einer Datei - die zwei Einzelnachweise des
+    ersten Laufs waren danach **weg**, samt ihrer Herkunft, und der Zaehler
+    stand zwei zu tief. Ein zu tiefer Zaehler macht die
+    Mehrfachtest-Korrektur milder.
     """
-    verzeichnis = laden(pfad).erweitert(versuche)
-    speichern(pfad, verzeichnis)
+    with gesperrt(pfad):
+        verzeichnis = laden(pfad).erweitert(versuche)
+        speichern(pfad, verzeichnis)
     return verzeichnis

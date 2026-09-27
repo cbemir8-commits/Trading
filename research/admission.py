@@ -41,6 +41,7 @@ from backtest.walkforward import (
     WalkForwardSplitter,
     run_walkforward,
 )
+from core.dateisperre import gesperrt
 from research import versuche as versuchsverzeichnis
 from research.gatebilanz import Gatebilanz, erschlossen_bei
 from research.gates import GateReport, GateThresholds, evaluate_gates
@@ -121,7 +122,7 @@ def load_trials(path: Path | str) -> int:
     return versuchsverzeichnis.laden(path).anzahl
 
 
-def save_trials(path: Path | str, trials: int) -> None:
+def save_trials(path: Path | str, trials: int, *, neue: int | None = None) -> None:
     """Den Stand festschreiben - **nie nach unten**.
 
     Ein Lauf, der weniger meldet als der vorige, hat sich verzaehlt oder mit
@@ -130,20 +131,62 @@ def save_trials(path: Path | str, trials: int) -> None:
 
     Einzelnachweise gehen ueber ``versuche.anhaengen``; diese Funktion
     schreibt nur die Summe und laesst vorhandene Eintraege unberuehrt.
+
+    Gleichzeitige Laeufe
+    --------------------
+    **Befund 354.** Diese Funktion nimmt eine **Summe**, und zwei Laeufe, die
+    beide bei 203 angefangen haben, melden 208 und 210. Gemessen: Der Zaehler
+    landet auf 210 statt auf 215, in jeder Reihenfolge - fuenf Versuche weg.
+    Das senkt die Latte des Deflated-Sharpe-Gates um 0,0007 Guetepunkte, also
+    0,49 % der Luecke. Klein, und in die eine Richtung, die dieses Projekt
+    nicht geht.
+
+    Dagegen zwei Dinge. Der Griff ist **gesperrt**, damit nicht zwei Laeufe
+    denselben Stand lesen. Und wer ``neue`` mitgibt, verliert seine Versuche
+    auch dann nicht, wenn der Zaehler unter ihm gestiegen ist: Dann werden sie
+    auf den **vorgefundenen** Stand gebucht statt verworfen.
+
+    Ohne ``neue`` bleibt es beim alten Verhalten - die Summe zaehlt, und ein zu
+    niedriger Stand wird abgewiesen.
+
+    **Die Buchung ist nicht wiederholungsfest**, und das ist die gewaehlte
+    Richtung: Wer denselben Lauf zweimal speichert, nachdem der Zaehler unter
+    ihm gestiegen ist, buchte seine Versuche zweimal. Zu viele Versuche machen
+    das Gate haerter, zu wenige machen es milder - von zwei Fehlern ist das
+    hier der tragbare.
     """
-    verzeichnis = versuchsverzeichnis.laden(path)
-    if trials < verzeichnis.anzahl:
-        log.error(
-            "zulassung.zaehler_wuerde_fallen",
-            pfad=str(path),
-            stand=verzeichnis.anzahl,
-            gemeldet=trials,
-            folge="Der hoehere Stand bleibt stehen - ein fallender Zaehler "
-            "macht die Mehrfachtest-Korrektur milder",
-        )
-        return
-    verzeichnis.grundstock = trials - len(verzeichnis.eintraege)
-    versuchsverzeichnis.speichern(path, verzeichnis)
+    with gesperrt(path):
+        verzeichnis = versuchsverzeichnis.laden(path)
+        if trials < verzeichnis.anzahl:
+            if neue:
+                # **Nicht verwerfen, umbuchen** (Befund 354). Der Stand ist
+                # unter uns gestiegen; die eigenen Versuche gehoeren obendrauf.
+                gesamt = verzeichnis.anzahl + neue
+                log.warning(
+                    "zulassung.zaehler_umgebucht",
+                    pfad=str(path),
+                    vorgefunden=verzeichnis.anzahl,
+                    gemeldet=trials,
+                    neue=neue,
+                    stand=gesamt,
+                    grund="Ein anderer Lauf hat den Zaehler bewegt - die "
+                    "eigenen Versuche werden auf den vorgefundenen Stand "
+                    "gebucht statt verworfen",
+                )
+                verzeichnis.grundstock = gesamt - len(verzeichnis.eintraege)
+                versuchsverzeichnis.speichern(path, verzeichnis)
+                return
+            log.error(
+                "zulassung.zaehler_wuerde_fallen",
+                pfad=str(path),
+                stand=verzeichnis.anzahl,
+                gemeldet=trials,
+                folge="Der hoehere Stand bleibt stehen - ein fallender Zaehler "
+                "macht die Mehrfachtest-Korrektur milder",
+            )
+            return
+        verzeichnis.grundstock = trials - len(verzeichnis.eintraege)
+        versuchsverzeichnis.speichern(path, verzeichnis)
 
 
 def run_admission(
