@@ -100,6 +100,40 @@ class TestDieZeilenPassenZueinander:
             _, argumente = _zerlegt(zeile)
             assert self._wert(argumente, "--intervall") == "D", zeile
 
+    def test_jede_zeile_laedt_und_sucht_auf_dem_zulassungskorb(self) -> None:
+        """**Befund 357, und es ist der dritte Fall dieser Datei.**
+
+        Jede Zeile war gueltig, jede Option gab es, die Kerzenlaenge stimmte -
+        und zusammen konnten die Zeilen den Korb nicht herstellen, auf dem jede
+        Zulassungszahl dieses Projekts steht. ``cli backfill`` lud **ein**
+        Symbol, das konfigurierte, und kein Schalter aenderte das; ``cli
+        wettbewerb`` ohne ``-m`` sucht auf einem Bein. Gemessen ist der
+        Unterschied: BTC allein 5 von 11 gegen 9 von 11 auf dem Korb (264/318).
+
+        Und es ist nicht umkehrbar: Der Wettbewerb bucht seine Versuche
+        rundenweise, und ein zu tiefer Zaehler waere das einzige, was diese
+        Latte je senken koennte.
+        """
+        from cli import ZULASSUNGSKORB
+
+        betroffen = [
+            b
+            for b, _ in BEIM_NUTZER
+            if " backfill " in f" {b} " or " wettbewerb " in f" {b} "
+        ]
+        assert betroffen, "weder Backfill noch Wettbewerb unter den Befehlen"
+        for zeile in betroffen:
+            _, argumente = _zerlegt(zeile)
+            gewaehlt = self._wert(argumente, "-m") or self._wert(
+                argumente, "--maerkte"
+            )
+            assert gewaehlt is not None, f"ohne Maerkte: {zeile}"
+            genannt = [x.strip() for x in gewaehlt.split(",") if x.strip()]
+            assert set(ZULASSUNGSKORB) <= set(genannt), (
+                f"{zeile} laesst {set(ZULASSUNGSKORB) - set(genannt)} aus - "
+                f"der Zulassungskorb ist {', '.join(ZULASSUNGSKORB)}"
+            )
+
     def test_der_wettbewerb_nennt_seine_generation(self) -> None:
         """**Befund 214**: Ohne '--generation' gilt die Vorgabe, und die ist
         ein Viertelstunden-Katalog."""

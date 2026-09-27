@@ -31944,3 +31944,89 @@ Dreimal in Folge dasselbe: 354 hat eine Zahl von Hand gerechnet, 355 hat sie
 berichtigt und die Rechnung an den Punkt gebunden, 356 findet die Felder, die
 der Punkt selbst nicht gegen die Messung haelt. Jedes Mal war die Warnung schon
 irgendwo aufgeschrieben. Was fehlte, war nie die Einsicht - es war die Bindung.
+
+## Dreihundertsiebenundfuenfzig. Der Backfill lud ein Symbol, der Zulassungskorb hat zwei
+
+Diesmal nicht gelesen, sondern **gefahren**: die Zeilen, die dieses Projekt dem
+Nutzer gibt, auf einer Wegwerf-Ablage mit Bybit-Symbolnamen und
+`TRADING_TROCKENLAUF=1`. Der Kopf des Laufs sagt alles:
+
+    Wettbewerb BTCUSDT 1d
+      Historie   2012-01-01 bis 2026-08-29
+
+**Ein Bein.** Und dazu die volle BTC-Reihe seit 2012 statt des gemeinsamen
+Zeitraums mit ETH ab 2017-08-16 - `common_range` hat bei einem Markt nichts zu
+schneiden.
+
+Jede Zulassungszahl dieses Projekts steht auf dem Korb aus BTC und ETH (Befunde
+264/318):
+
+    Korb (zugelassen)   158 Trades   9,87 % Rueckgang   9/11
+    nur BTC              77 Trades  10,71 %             8/11
+    nur ETH              81 Trades  12,17 %             8/11
+    BTC auf eigener Reihe  117 Trades                   5/11
+
+Die Ursache liegt eine Zeile hoeher: **`cli backfill` laedt genau ein Symbol** -
+`settings.bybit.symbol` - und kein Schalter aenderte das. Auf Bybit-Kerzen
+konnte der Korb also nie entstehen. Die Zeile, die der Nutzer kopiert, sagte es
+nicht; ihr `--von 2017-08-16` ist ETHs Startdatum und fuer BTC allein ohne Sinn,
+die Absicht war also immer der Korb.
+
+### Was daran nicht umkehrbar ist
+
+`cli wettbewerb` bucht seine Versuche **rundenweise**. Ein gebuchter Versuch
+kommt nicht zurueck: `save_trials` laesst den Zaehler nie fallen, weil ein
+fallender Zaehler die Mehrfachtest-Korrektur milder machte - dieselbe Regel, die
+Befund 354 verteidigt hat.
+
+Eine Suche auf einem Bein kostet damit genau dieselbe Latte wie eine auf dem
+Korb, und sie kann sie nicht einholen. Das ist der Unterschied zu einem
+gewoehnlichen Bedienfehler: Man kann ihn bemerken und trotzdem nicht rueckgaengig
+machen.
+
+### Vorher gemessen, dass der Weg selbst traegt
+
+Bevor ich etwas geaendert habe, dieselben Daten unter beiden Namen - Bitstamp-
+Tageskerzen einmal als `BTCUSD_BITSTAMP,ETHUSD_BITSTAMP` und einmal, kopiert,
+als `BTCUSDT,ETHUSDT`:
+
+    Donchian-Ausbruch 55/20      6/11   55 Trades   15.82%   19.45%   0.066
+    Trend-Beteiligung 50 Tage    5/11  148 Trades   15.38%   29.16%   0.112
+    ...
+
+**Zeile fuer Zeile identisch.** Der Symbolname allein aendert nichts - weder in
+`nachpruefung` noch im Wettbewerb, und der Trockenlauf bestaetigt auch das
+Buchen: *"Dieser Lauf hat keinen Versuch gekostet. Zaehler unveraendert bei
+203."* Das war die Frage, mit der ich angefangen habe, und sie ist beantwortet,
+bevor der eigentliche Fund kam.
+
+### Was gebaut ist
+
+`cli backfill` nimmt jetzt `-m` und laedt jeden genannten Markt; die Tabelle
+bekommt eine Spalte "Markt", und die Abdeckungspruefung laeuft je Markt. Die
+Vorgabe bleibt das konfigurierte Symbol - geaendert ist, dass sie sich aendern
+laesst.
+
+Fehlt ein Bein des Korbs, sagt der Befehl es, mit Preis und vollstaendigem
+Ersatzbefehl. **Verboten wird es nicht**: Ein einzelnes Symbol nachzuladen ist
+ein gueltiger Wunsch, und wer den Korb nicht will, soll nicht kaempfen muessen.
+
+`cli.ZULASSUNGSKORB` haelt die beiden Namen an einer Stelle - damit die Warnung,
+die Instruktion und die Wache dieselbe Liste lesen.
+
+### Die Wache ist die dritte ihrer Art
+
+`tests/test_nutzerbefehle.py` fuehrt die Zeilen gegen die echte
+Befehlsstruktur, und ihr Kopf zaehlt zwei Vorfaelle:
+
+    Befund 167   ', dann wettbewerb' stand als Prosa hinter dem Backfill
+    Befund 214   'wettbewerb' ohne '--generation' nimmt einen 15-Minuten-Katalog
+
+Beide Male war jede Zeile fuer sich gueltig und das Paar unbrauchbar. Dieser
+Befund ist der dritte Fall, eine Ebene weiter: nicht die Kerzenlaenge, sondern
+die **Aufstellung**. Die Wache prueft sie jetzt mit - gegen `ZULASSUNGSKORB`,
+nicht gegen zwei hingeschriebene Namen.
+
+Dass ich es beim Lesen nicht gesehen habe, ist der Punkt: Die Zeilen sind
+sorgfaeltig geschrieben und erklaeren sogar, warum das Intervall dazugehoert.
+Was fehlte, stand nicht im Text - es fehlte im Text.

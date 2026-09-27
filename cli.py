@@ -320,6 +320,11 @@ def backfill(
     intervalle: list[str] = typer.Option(
         None, "--intervall", "-i", help="Bybit-Codes, z.B. 15 60 240. Standard: 1 15 60 240."
     ),
+    maerkte: str = typer.Option(
+        "", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt. Leer = das konfigurierte allein. "
+             "Der Zulassungskorb ist BTCUSDT,ETHUSDT.",
+    ),
     neu: bool = typer.Option(False, "--neu", help="Nicht fortsetzen, komplett neu laden."),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
@@ -327,6 +332,14 @@ def backfill(
 
     Laeuft resumierbar: Ein Abbruch kostet hoechstens eine Seite. Der naechste
     Aufruf setzt hinter der letzten vollstaendigen Kerze an.
+
+    **Mehrere Maerkte seit Befund 357.** Vorher lud dieser Befehl genau ein
+    Symbol - das konfigurierte -, und kein Schalter aenderte das. Damit konnte
+    der Korb aus BTC und ETH, auf dem jede Zulassungszahl dieses Projekts steht,
+    auf Bybit-Kerzen nie entstehen: Der Nutzer laedt, was ihm gesagt wird, und
+    'cli wettbewerb' sucht danach auf **einem** Bein. Gemessen ist, was das
+    kostet - BTC allein steht bei 5 von 11 gegen 9 von 11 auf dem Korb -, und
+    die Versuche dafuer sind gebucht und nicht zurueckzuholen.
     """
     _configure_logging(verbose)
     settings = get_settings()
@@ -336,15 +349,37 @@ def backfill(
     start = _parse_date(von)
     end = _parse_date(bis) if bis else datetime.now(UTC)
     selected = [Interval(code) for code in intervalle] if intervalle else DEFAULT_INTERVALS
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()] or [
+        settings.bybit.symbol
+    ]
 
-    total_requests = sum(estimate_requests(i, start, end) for i in selected)
+    total_requests = sum(estimate_requests(i, start, end) for i in selected) * len(
+        symbole
+    )
     console.print(
-        f"[bold]Backfill[/] {settings.bybit.symbol} "
+        f"[bold]Backfill[/] {' + '.join(symbole)} "
         f"{start:%Y-%m-%d} bis {end:%Y-%m-%d}\n"
         f"Zeitreihen: {', '.join(i.label for i in selected)}\n"
         f"Geschaetzt ~{total_requests} Anfragen, "
         f"~{total_requests / 8 / 60:.0f} Minuten\n"
     )
+    # **Der Korb, oder die Warnung dazu** (Befund 357). Wer weniger laedt, als
+    # die Zulassung braucht, merkt es sonst erst, wenn 'cli wettbewerb' auf
+    # einem Bein sucht - und dann sind die Versuche gebucht.
+    fehlend = [x for x in ZULASSUNGSKORB if x not in symbole]
+    if fehlend:
+        console.print(
+            f"[yellow]Der Zulassungskorb ist "
+            f"{', '.join(ZULASSUNGSKORB)}; hier fehlt "
+            f"{', '.join(fehlend)}.[/]\n"
+            f"[dim]Jede Zulassungszahl dieses Projekts steht auf dem Korb - BTC "
+            f"allein kommt auf 5 von 11 gegen 9 von 11 (Befunde 264/318). Ein "
+            f"Wettbewerb auf einem Bein kostet dieselben Versuche und kann das "
+            f"nicht einholen. Vollstaendig laden:\n"
+            f"  python -m cli backfill -m {','.join(ZULASSUNGSKORB)} "
+            f"--intervall {' --intervall '.join(i.value for i in selected)} "
+            f"--von {start:%Y-%m-%d}[/]\n"
+        )
 
     backfiller = Backfiller(market, store, rate_limiter=RateLimiter(8.0))
 
@@ -352,27 +387,34 @@ def backfill(
         if progress.requests % 25 == 0:
             console.print(f"  [dim]{progress.describe()}[/]")
 
-    results = backfiller.run_many(
-        settings.bybit.symbol,
-        selected,
-        start=start,
-        end=end,
-        resume=not neu,
-        on_progress=show,
-    )
+    ergebnisse: dict[str, dict] = {}
+    for symbol in symbole:
+        if len(symbole) > 1:
+            console.print(f"[bold]{symbol}[/]")
+        ergebnisse[symbol] = backfiller.run_many(
+            symbol,
+            selected,
+            start=start,
+            end=end,
+            resume=not neu,
+            on_progress=show,
+        )
 
     table = Table(title="Backfill abgeschlossen", header_style="bold")
+    table.add_column("Markt")
     table.add_column("Zeitreihe")
     table.add_column("Neue Kerzen", justify="right")
     table.add_column("Anfragen", justify="right")
     table.add_column("Dauer", justify="right")
-    for interval, progress in results.items():
-        table.add_row(
-            interval.label,
-            f"{progress.candles_written:,}".replace(",", "."),
-            str(progress.requests),
-            f"{progress.elapsed.total_seconds():.0f}s",
-        )
+    for symbol, results in ergebnisse.items():
+        for interval, progress in results.items():
+            table.add_row(
+                symbol,
+                interval.label,
+                f"{progress.candles_written:,}".replace(",", "."),
+                str(progress.requests),
+                f"{progress.elapsed.total_seconds():.0f}s",
+            )
     console.print(table)
 
     # Deckt der Speicher wirklich den angeforderten Zeitraum ab?
@@ -386,20 +428,22 @@ def backfill(
     # Ein Walk-Forward auf zehn Tagen Historie ist wertlos. Diese Pruefung
     # kostet nichts und faengt jede Variante des Problems ab, auch kuenftige.
     requested_days = max(1, (end - start).days)
-    for interval in selected:
-        coverage = store.coverage(settings.bybit.symbol, interval)
-        if coverage.is_empty or coverage.start is None or coverage.end is None:
-            console.print(f"[red]{interval.label}: nichts im Speicher.[/]")
-            continue
-        covered_days = max(1, (coverage.end - coverage.start).days)
-        if covered_days < requested_days * 0.5:
-            console.print(
-                f"[red]{interval.label}: nur {covered_days} von "
-                f"{requested_days} angeforderten Tagen im Speicher[/] "
-                f"({coverage.start:%Y-%m-%d} bis {coverage.end:%Y-%m-%d}).\n"
-                "[yellow]Der Backfill lief durch, hat aber kaum Daten geholt. "
-                "Ein Walk-Forward darauf waere wertlos.[/]"
-            )
+    for symbol in symbole:
+        for interval in selected:
+            coverage = store.coverage(symbol, interval)
+            wo = f"{symbol} {interval.label}"
+            if coverage.is_empty or coverage.start is None or coverage.end is None:
+                console.print(f"[red]{wo}: nichts im Speicher.[/]")
+                continue
+            covered_days = max(1, (coverage.end - coverage.start).days)
+            if covered_days < requested_days * 0.5:
+                console.print(
+                    f"[red]{wo}: nur {covered_days} von "
+                    f"{requested_days} angeforderten Tagen im Speicher[/] "
+                    f"({coverage.start:%Y-%m-%d} bis {coverage.end:%Y-%m-%d}).\n"
+                    "[yellow]Der Backfill lief durch, hat aber kaum Daten "
+                    "geholt. Ein Walk-Forward darauf waere wertlos.[/]"
+                )
 
     console.print("\n[dim]Naechster Schritt: python -m cli quality[/]")
 
@@ -1857,6 +1901,17 @@ _KONTRAKT_ZU_SYMBOL = {
     "LTCUSD_BITSTAMP": "LTCUSDT",
     "XRPUSD_BITSTAMP": "XRPUSDT",
 }
+
+#: Die Maerkte, auf denen dieses Projekt zulaesst - Befund 357.
+#:
+#: **Jede Zulassungszahl steht auf diesem Korb** (Befunde 264/318): 9 von 11 auf
+#: BTC + ETH, 8 von 11 auf ein Bein gekuerzt, 5 von 11 fuer BTC auf seiner
+#: eigenen Reihe. Der Korb zieht den Rueckgang unter den jedes Beins, weil die
+#: beiden nicht gleichzeitig fallen.
+#:
+#: Steht hier, weil 'cli backfill' bis Befund 357 **ein** Symbol geladen hat -
+#: das konfigurierte - und damit der Korb auf Bybit-Kerzen nie entstehen konnte.
+ZULASSUNGSKORB = ("BTCUSDT", "ETHUSDT")
 
 #: Bekannte Bybit-Spezifikationen je Perpetual, fuer den Fall, dass die Boerse
 #: gerade nicht erreichbar ist. Schrittweite, Mindest- und Hoechstmenge sind

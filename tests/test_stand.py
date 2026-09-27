@@ -1495,7 +1495,9 @@ class TestBeideWegeDesWettbewerbsStehenDa:
         text = _lage().bericht()
 
         assert "Soll die Research-KI mitlaufen" in text
-        assert "wettbewerb --generation 9 --ki" in text
+        # Ohne die Maerkte: Die stehen seit Befund 357 in der Zeile und sind
+        # fuer diese Zusicherung beilaeufig - gemeint ist der KI-Weg.
+        assert "--generation 9 --ki" in text
 
 
 class TestDieFalscheGatezahlKommtNichtWieder:

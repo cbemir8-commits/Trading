@@ -2850,6 +2850,31 @@ BEHOBEN: tuple[Richtung, ...] = (
         "der Stelle, an der sich das Versuchsfenster schliesst (233 gegen 235)",
         356,
     ),
+    # Befund 357: gefunden beim **Durchfahren** der Zeilen, die dem Nutzer
+    # gegeben werden - nicht beim Lesen. Jede war gueltig, zusammen konnten
+    # sie den Korb nicht herstellen.
+    Richtung(
+        "Der Backfill lud ein Symbol, der Zulassungskorb hat zwei",
+        "'cli backfill' laedt 'settings.bybit.symbol' - eines - und kein "
+        "Schalter aenderte das. Jede Zulassungszahl dieses Projekts steht "
+        "aber auf dem Korb aus BTC und ETH (264/318), und auf Bybit-Kerzen "
+        "konnte der damit nie entstehen. Die Zeile fuer den Nutzer sagte es "
+        "nicht, und die daneben ('cli wettbewerb --generation 9') sucht ohne "
+        "'-m' auf **einem** Markt: Gefahren zeigt der Kopf des Laufs "
+        "'Wettbewerb BTCUSDT 1d, Historie 2012-01-01 bis 2026-08-29' - ein "
+        "Bein, und dazu die volle BTC-Reihe statt des gemeinsamen Zeitraums, "
+        "weil 'common_range' bei einem Markt nichts zu schneiden hat. **Teuer "
+        "ist das nicht umkehrbar**: BTC allein steht bei 5 von 11 gegen 9, und "
+        "der Wettbewerb bucht seine Versuche rundenweise - ein gebuchter "
+        "Versuch kommt nicht zurueck, weil ein fallender Zaehler die "
+        "Mehrfachtest-Korrektur milder machte. Jetzt nimmt 'backfill' ein "
+        "'-m', meldet fehlende Beine des Korbs samt Preis und vollstaendigem "
+        "Befehl, und die Zeilen in 'BEIM_NUTZER' nennen beide Maerkte. Der "
+        "dritte Fall dieser Art in 'test_nutzerbefehle.py' (167, 214) - "
+        "gueltige Zeilen, die zusammen nicht passen; die Wache prueft jetzt "
+        "auch die Aufstellung",
+        357,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -4136,7 +4161,7 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "`cli instrument` rechnet es nach.",
     ),
     (
-        "python -m cli backfill --intervall D --von 2017-08-16",
+        "python -m cli backfill -m BTCUSDT,ETHUSDT --intervall D --von 2017-08-16",
         "Laedt Bybit-Kerzen. **Ohne sie kann nichts zugelassen werden** - "
         "jede Zahl dieses Projekts steht auf Bitstamp-Kassakursen, und die "
         "sind nicht das gehandelte Instrument. Seit Befund 102 sagt das "
@@ -4149,7 +4174,12 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "Gates - ab 2018-01 halten 10 von 11 und nicht 9, weil die "
         "Jahresrendite von 14,34 auf 17,54 % steigt (Befund 345). Wer die "
         "neue Bilanz neben die heutige legt, vergleicht zwei Zeitraeume und "
-        "nicht zwei Boersen; 'cli abstand --reichweite' zeigt die Leiter.",
+        "nicht zwei Boersen; 'cli abstand --reichweite' zeigt die Leiter. "
+        "**Und '-m' gehoert dazu** (Befund 357): Bis dahin lud dieser Befehl "
+        "**ein** Symbol - das konfigurierte BTCUSDT - und kein Schalter "
+        "aenderte das. Der Korb aus BTC und ETH, auf dem jede Zulassungszahl "
+        "steht, konnte auf Bybit-Kerzen also nie entstehen; wer danach ohne "
+        "'-m' sucht, sucht auf einem Bein, und das steht bei 5 von 11.",
     ),
     (
         "python -m cli funding --von 2020-03-30",
@@ -4171,7 +4201,7 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "versprach etwas, das kein Lauf eingeloest haette.",
     ),
     (
-        "python -m cli wettbewerb --generation 9",
+        "python -m cli wettbewerb -m BTCUSDT,ETHUSDT --generation 9",
         "Sucht auf den geladenen Kerzen einen Kandidaten. Bis Befund 167 "
         "stand dieser Schritt als ', dann wettbewerb' hinter dem Backfill in "
         "derselben Zeile - keine Befehlszeile, sondern Prosa: Wer sie "
@@ -4189,7 +4219,7 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "Daten; mit Bybit-Kerzen ist es neu zu messen. {versuchskosten}",
     ),
     (
-        "python -m cli wettbewerb --generation 9 --ki",
+        "python -m cli wettbewerb -m BTCUSDT,ETHUSDT --generation 9 --ki",
         "Dasselbe, aber die Research-KI schlaegt je Runde zusaetzlich neue "
         "Kandidaten vor. Das ist das einzige gebaute Bauteil, das eine Regel "
         "vorschlagen kann, die es noch nicht gibt - und nach Befund 145 ist "
