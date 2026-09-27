@@ -220,7 +220,11 @@ class TestDerRegistereintrag:
         eintrag = self._eintrag()
 
         assert eintrag.befund == 332
-        assert eintrag.massgeblich == 347
+        # **"Mindestens", weil der Eintrag geteilt ist.** 346, 347 und 348
+        # haben ihn alle bewegt, und dreimal in Folge hat eine feste Zahl in
+        # einem fremden Test dafuer gebrochen. Wo die Fundstelle die Aussage
+        # ist, steht sie fest; hier ist die Aussage die Leiter.
+        assert eintrag.massgeblich >= 347
 
 
 @pytest.mark.daten

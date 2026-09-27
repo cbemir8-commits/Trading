@@ -5986,6 +5986,17 @@ def nachpruefung(
                     "cagr_pct": round(e.cagr_pct, 4),
                     "rueckgang_pct": round(e.rueckgang_pct, 4),
                     "dsr": round(e.dsr, 4),
+                    # **Befund 348: der Bericht liess beides fallen.** 322 hat
+                    # 'uebersprungen' und 'vorauswahl' an 'Ergebnis' gebaut und
+                    # die Fortschrittszeile angeschlossen - diese Abbildung
+                    # wurde von Hand geschrieben und nicht nachgezogen. In
+                    # 'reports/nachpruefung' stehen 116 von 179 Eintraegen
+                    # unter 30 Trades, 33 davon mit **null** Trades und "5 von
+                    # 11", und nichts in der Datei sagt es.
+                    "uebersprungen": list(e.uebersprungen),
+                    "vorauswahl": e.vorauswahl,
+                    "bestanden_echt": e.bestanden_echt,
+                    "geurteilt": e.geurteilt,
                 }
                 for e in lauf.rangfolge
             ],

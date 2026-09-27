@@ -29,10 +29,23 @@ import pytest
 from research.aussetzer import Berichtslage, Punktlage, lese
 from research.regler import Stellung
 
-#: Was die Berichte auf der Platte hergeben (Befund 346).
+#: Was die **Reglerberichte** hergeben (Befund 346) - eine von fuenf Formen.
 PUNKTE = 83
 DATEIEN = 13
 KLEINSTE_TRADE_ZAHL = 75
+
+#: Was **alle** Formen hergeben (Befund 348).
+JE_FORM: dict[str, tuple[int, int]] = {
+    # Form: Eintraege, davon unter einer Aussetzschwelle
+    "punkte": (83, 0),
+    "kombinationen": (60, 0),
+    "bestenliste": (141, 22),
+    "stufen": (91, 37),
+    "ergebnisse": (179, 116),
+}
+ALLE = 554
+UNTER_SCHWELLE = 175
+OHNE_HANDEL = 109
 
 
 def _punkt(**rest) -> Punktlage:
@@ -110,21 +123,43 @@ class TestDieBerichtslage:
 
 
 class TestDasLesenDerBerichte:
-    def test_die_platte_liefert_die_gemessenen_zahlen(self) -> None:
+    def test_die_reglerpunkte_liefern_die_zahlen_von_346(self) -> None:
+        """Was Befund 346 gelesen hat, stimmt weiter - nur war es eine von
+        fuenf Formen und nicht "alles, was geschrieben wurde" (Befund 348)."""
+        punkte = [p for p in lese("reports").punkte if p.form == "punkte"]
+
+        assert len(punkte) == PUNKTE
+        assert len({p.datei for p in punkte}) == DATEIEN
+        assert min(p.trades for p in punkte) == KLEINSTE_TRADE_ZAHL
+        assert all(p.gates == 11 for p in punkte)
+        assert not any(p.erschlossene_aussetzer for p in punkte)
+
+    def test_alle_fuenf_formen_werden_gelesen(self) -> None:
+        """**Der Befund von 348.** 347 hat gezeigt, dass eine Form fehlte -
+        es fehlten drei."""
         lage = lese("reports")
 
-        assert len(lage.punkte) == PUNKTE
-        assert lage.dateien == DATEIEN
-        assert lage.kleinste_trade_zahl == KLEINSTE_TRADE_ZAHL
+        assert lage.je_form == JE_FORM
+        assert len(lage.punkte) == ALLE
 
-    def test_und_keinen_einzigen_aussetzer(self) -> None:
-        """**Der Befund.** Die Bedingung aus 332 ist nicht eingetreten - und
-        nirgends in die Naehe gekommen."""
+    def test_und_175_liegen_unter_einer_schwelle(self) -> None:
+        lage = lese("reports")
+
+        assert len(lage.erschlossen) == UNTER_SCHWELLE
+        assert len(lage.ohne_handel) == OHNE_HANDEL
+
+    def test_keiner_meldet_es_selbst(self) -> None:
+        """Die harte Auskunft fehlt ueberall: kein Bericht traegt das Feld."""
         lage = lese("reports")
 
         assert lage.mit_aussetzern == ()
-        assert lage.knappe == ()
-        assert all(p.gates == 11 for p in lage.punkte)
+
+    def test_das_urteil_trennt_gemeldet_von_erschlossen(self) -> None:
+        urteil = lese("reports").urteil()
+
+        assert "Keiner meldet einen Aussetzer" in urteil
+        assert "muss** ein Gate ausgesetzt haben" in urteil
+        assert "Schluss aus der Trade-Zahl und keine Meldung" in urteil
 
     def test_ein_fehlender_ordner_ist_kein_fehler(self) -> None:
         assert lese("gibt-es-nicht").punkte == ()
@@ -257,6 +292,23 @@ class TestDerRegistereintrag:
         # "Mindestens": Jede weitere Schliessung zieht die Fundstelle hoch,
         # und dieser Test prueft die Messung von 346, nicht ihr Datum.
         assert eintrag.massgeblich >= 346
+
+    def test_der_nachpruefungsbericht_traegt_es_jetzt(self) -> None:
+        """**Befund 348.** 322 hat 'uebersprungen' an 'Ergebnis' gebaut; die
+        von Hand geschriebene Abbildung liess es fallen."""
+        import ast
+        from pathlib import Path
+
+        baum = ast.parse(Path("cli.py").read_text(encoding="utf-8"))
+        quelle = next(
+            ast.unparse(n)
+            for n in ast.walk(baum)
+            if isinstance(n, ast.FunctionDef) and n.name == "nachpruefung"
+        )
+
+        assert "'uebersprungen': list(e.uebersprungen)" in quelle
+        assert "'vorauswahl': e.vorauswahl" in quelle
+        assert "'bestanden_echt': e.bestanden_echt" in quelle
 
     def test_der_befehl_sagt_es(self) -> None:
         import ast

@@ -2777,11 +2777,15 @@ OFFEN: tuple[Richtung, ...] = (
         "laesst uebersprungene Gates weg, also eine Schicht vor der "
         "Datenklasse. Eingeteilt hatte ich nach dem Feldnamen, und das ist ein "
         "Stellvertreter fuer die Faehigkeit, nicht die Faehigkeit. "
-        "**Nachgemessen an allem, was geschrieben wurde** (346): 83 Messpunkte "
-        "aus 13 Berichten, zehn Regler - **kein einziger Aussetzer**, jeder "
-        "Punkt mit elf Gates, kleinste Trade-Zahl 75. Damit ist die Bedingung "
-        "nicht nur nicht eingetreten, sie ist nirgends in die Naehe gekommen; "
-        "'research/aussetzer.py' liest es nach und 'cli register' sagt es. "
+        "**Nachgemessen (346), und die Aussage war zu breit (348)**: 83 Messpunkte "
+        "aus 13 Berichten, zehn Regler - kein einziger Aussetzer, jeder Punkt "
+        "mit elf Gates, kleinste Trade-Zahl 75. Das galt fuer die **Regler**, "
+        "nicht fuer alle Berichte: Es gibt fuenf Formen, 346 las eine. Ueber "
+        "alle 554 Eintraege liegen **175 unter einer Aussetzschwelle** und "
+        "**109 haben null Trades** - in 'reports/nachpruefung' steht jeder "
+        "davon mit '5 von 11'. Keiner der 554 meldet einen Aussetzer, weil "
+        "kein Bericht das Feld traegt; 'cli nachpruefung' liess es beim "
+        "Schreiben fallen und schreibt es seit 348. "
         "**Und einer der dreizehn ist zu** (346): 'regler.Stellung' traegt "
         "'uebersprungen', 'geurteilt' und 'bestanden_echt' - zuerst diese, weil "
         "auf ihrer Leiter die offene Entscheidung zur Messlatte steht (281/341) "
@@ -2793,7 +2797,7 @@ OFFEN: tuple[Richtung, ...] = (
         "zeigte 9,0 / 7,7 / 9,0 statt der geurteilten **7,7 / 5,0 / 6,0** und "
         "las sich damit, als helfe ein gepflanzter Trend. Elf stehen offen",
         332,
-        347,
+        348,
     ),
     Richtung(
         "Holdout auf fremden Maerkten",

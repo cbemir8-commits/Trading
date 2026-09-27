@@ -31128,3 +31128,89 @@ Auch die drei Registertests aus Befund 346 haben gemeldet: Sie hielten "Zwoelf",
 die Zahl 12 und die Fundstelle 346 fest. Zwei davon pruefen jetzt den
 **Abgleich** statt der Zahl - der Name muss zur Liste passen, welche Zahl es ist,
 sagt der jeweils neueste Befund.
+
+## Dreihundertachtundvierzig. "An allem, was geschrieben wurde" war zu viel gesagt
+
+Befund 346 hat die Berichte auf uebersprungene Gates abgesucht und gemeldet:
+*"Nachgemessen an allem, was geschrieben wurde - kein einziger Aussetzer."* Der
+Satz war falsch, und zwar auf die Art, die dieses Projekt am haeufigsten
+produziert: **Die Messung war richtig, ihre Reichweite behauptet.**
+
+Befund 347 hat die erste Luecke gefunden - die Teststaerke-Berichte fuehren
+`stufen` und nicht `punkte`, also standen sie nicht in der Suche. Es fehlten
+drei.
+
+### Fuenf Formen, eine gelesen
+
+    Form            Eintraege  unter Schwelle
+    punkte                 83               0   <- das las Befund 346
+    kombinationen          60               0
+    bestenliste           141              22
+    stufen                 91              37
+    ergebnisse            179             116
+    zusammen              554             175
+
+**175 von 554 Eintraegen liegen unter einer Aussetzschwelle** - 30 fuer
+Regime-Aufteilung und Deflated Sharpe, 20 fuer Monte-Carlo. **109 haben null
+Trades**, und in `reports/nachpruefung` steht jeder davon mit **5 von 11**:
+Deflated Sharpe, Drawdown, Monte-Carlo, Regime-Aufteilung und Schlechtestes Jahr
+sind auf einer leeren Handelsliste nicht zu verfehlen.
+
+Befund 322 hat genau das an der Fortschrittszeile behoben. Die **Datei** sagt es
+bis heute nicht.
+
+### Warum keiner es meldet
+
+Kein einziger der 554 Eintraege traegt ueberhaupt ein Feld `uebersprungen`. Bei
+den alten Berichten liegt es am Alter - das Feld ist juenger. Bei
+`cli nachpruefung` nicht: Der Befehl baut seine Abbildung **von Hand** und
+schreibt zehn Felder von `Ergebnis` heraus, aber nicht `uebersprungen` und nicht
+`vorauswahl`. Beide sind seit 322 da, gerechnet und in der Zeile gezeigt - und
+beim Schreiben fallen gelassen. Dieselbe Bauart wie 152, 154, 155, 160, 325,
+330, 337, 338, 339, 342: gebaut, gerechnet, nicht angeschlossen.
+
+### Zwei Arten von Auskunft, getrennt
+
+**Gemeldet** heisst: Der Eintrag traegt das Feld. Das ist hart und steht in
+keiner der 554 Zeilen.
+
+**Erschlossen** heisst: Die Trade-Zahl liegt unter einer Schwelle, also *muss*
+ein Gate ausgesetzt haben. Das ist ein Schluss und keine Meldung, und der
+Bericht sagt das auch so.
+
+Die Trennung ist der Punkt. Ohne sie waere aus einer Ableitung eine Messung
+geworden - und genau dieser Sprung war der Fehler in 346.
+
+### Was gebaut wurde
+
+`aussetzer.FORMEN` fuehrt alle fuenf Formen als Daten, `SCHWELLEN` die
+Aussetzschwellen. `Punktlage` traegt `form`, `kennung`, `erschlossene_aussetzer`
+und `zu_gut`; `Berichtslage` bekommt `erschlossen`, `ohne_handel`, `je_form` und
+eine `tabelle()`.
+
+Eingeordnet wird ueber das **Kennungsfeld** und nicht ueber den Listennamen:
+`cli teststaerke` legt Stufen unter `varianten` ab, und beim ersten Anlauf zu
+diesem Befund kamen 782 statt 554 Eintraege heraus, weil jeder Varianteneintrag
+allen fuenf Formen zugeschlagen wurde. Das ist derselbe Fehler wie in 333 - nach
+dem Namen eingeteilt statt nach der Sache -, diesmal innerhalb einer Stunde
+gefunden.
+
+`cli nachpruefung` schreibt `uebersprungen`, `vorauswahl`, `bestanden_echt` und
+`geurteilt` in den Bericht. Alte Dateien werden nicht angefasst: Ein
+nachtraeglich eingesetztes Feld waere erfunden.
+
+Der Registereintrag traegt die Berichtigung und Fundstelle 348.
+
+`tests/test_aussetzer.py` bindet die fuenf Formen mit ihren Zahlen, die 175 und
+die 109 - und haelt fest, was Befund 346 gelesen hat und was nicht.
+
+### Und zum dritten Mal dieselbe Testbauart
+
+Die Suite fiel an `test_die_fundstelle_ist_nachgezogen` aus Befund 347, weil sie
+`massgeblich == 347` festhielt und der gemeinsame Eintrag jetzt auf 348 steht.
+Dasselbe in 342, 346 und 347.
+
+Die Regel, die daraus folgt und jetzt im Test steht: **Ein Eintrag, den mehrere
+Befunde bewegen, wird mit "mindestens" geprueft.** Wo die Fundstelle die Aussage
+des Tests ist, bleibt sie eine feste Zahl - wo sie nebenher mitlaeuft, ist eine
+feste Zahl ein Test, der fuer nichts bricht.
