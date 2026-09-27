@@ -15,9 +15,14 @@ eine Untergrenze: Es koennen mehr Gates ausgesetzt haben, etwa wenn
 ``run_expensive`` aus war. Wo ein Typ seine Aussetzer **gemeldet** bekommt, ist
 die Zahl genau, und dort gewinnt sie.
 
-Acht Typen mischen die Bilanz bei. Offen bleiben drei - genau die, die keine
+Acht Typen mischen die Bilanz bei. Offen blieben drei - genau die, die keine
 Trade-Zahl tragen: ``admission.Zulassungsbedingungen``,
 ``instrument.Gebuehrenstufe``, ``ratenbild.Ratenprobe``.
+
+**Und das war eine Fehleinteilung** (Befund 352). Gefragt hatte ich, was die
+Datenklasse traegt; zu fragen war, was am Bauplatz liegt - dort lagen Trade-Zahl
+**und** Gate-Bericht, also die genauere, gemeldete Zahl. Die drei tragen sie
+jetzt; ``tests/test_zulassungsbilanz.py`` bindet ihre Bauplaetze.
 """
 
 from __future__ import annotations
@@ -203,31 +208,33 @@ class TestDieAchtTraegerSindEchteTypen:
 
 
 class TestDasVerzeichnisIstNachgezogen:
-    def test_acht_erschliessen_drei_bleiben_offen(self) -> None:
+    def test_acht_erschliessen_und_nichts_bleibt_offen(self) -> None:
+        """Befund 350 hat acht angeschlossen und drei ausgenommen; **352** hat
+        gezeigt, dass deren Bauplatz die Trade-Zahl und den Gate-Bericht
+        hatte."""
         from tests.test_gatezahlen import MIT_ERSCHLOSSENEM, OFFEN
 
         assert len(MIT_ERSCHLOSSENEM) == 8
-        assert sorted(OFFEN) == [
-            "research.admission.Zulassungsbedingungen",
-            "research.instrument.Gebuehrenstufe",
-            "research.ratenbild.Ratenprobe",
-        ]
+        assert not OFFEN
 
-    def test_die_drei_tragen_keine_trade_zahl(self) -> None:
-        """Deshalb sind sie offen und nicht aus Bequemlichkeit."""
-        from tests.test_gatezahlen import OFFEN, _traeger
+    def test_die_ehemals_drei_tragen_jetzt_beides(self) -> None:
+        from tests.test_gatezahlen import _traeger
 
         traeger = _traeger()
 
-        for name in OFFEN:
-            assert "trades" not in traeger[name], name
+        for name in (
+            "research.admission.Zulassungsbedingungen",
+            "research.instrument.Gebuehrenstufe",
+            "research.ratenbild.Ratenprobe",
+        ):
+            assert "trades" in traeger[name], name
+            assert "uebersprungen" in traeger[name], name
 
     def test_der_registereintrag_nennt_beides(self) -> None:
         from research.stand import OFFEN as OFFENE_RICHTUNGEN
 
         eintrag = next(r for r in OFFENE_RICHTUNGEN if "Gate-Zahlen" in r.name)
 
-        assert eintrag.name.startswith("Drei")
         assert "wurde ein Mechanismus" in eintrag.ergebnis
         assert "schwaechere" in eintrag.ergebnis
         assert eintrag.massgeblich >= 350

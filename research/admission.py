@@ -42,6 +42,7 @@ from backtest.walkforward import (
     run_walkforward,
 )
 from research import versuche as versuchsverzeichnis
+from research.gatebilanz import Gatebilanz, erschlossen_bei
 from research.gates import GateReport, GateThresholds, evaluate_gates
 from strategy.compiler import compile_genome
 from strategy.genome import Genome
@@ -269,7 +270,7 @@ def pick_champion(admitted: list[Candidate]) -> Candidate | None:
 
 
 @dataclass(frozen=True, slots=True)
-class Zulassungsbedingungen:
+class Zulassungsbedingungen(Gatebilanz):
     """Unter welchen Bedingungen ein Champion bestanden hat.
 
     **Warum das in die Datei gehoert.** ``champion.json`` ist die Datei, an der
@@ -314,6 +315,23 @@ class Zulassungsbedingungen:
     versuche: int = 0
     bestanden: int = 0
     gesamt: int = 0
+
+    trades: int = 0
+    """Wie viele Trades der Zulassung zugrunde lagen - Befund 352.
+
+    **Der Nachweis sagte, woraufhin bestanden wurde, und nicht auf wie viel.**
+    Er fuehrt Instrument, Kontostand, Datenquelle und Versuchsstand; die
+    Stichprobe fehlte. Damit stand "9 von 11" in der Datei, an der das echte
+    Geld haengt, ohne die Zahl, die sagt, ob alle elf ueberhaupt geurteilt
+    haben.
+    """
+
+    uebersprungen: int = 0
+    """Gates ohne Urteil, **gemeldet** - aus ``GateResult.status``.
+
+    Am Bauplatz liegt der ganze Gate-Bericht; die genaue Zahl war die ganze
+    Zeit zu haben. Eingeteilt hatte ich nach dem, was die Datenklasse traegt.
+    """
     funding_satz: float = 0.0
     funding_raten: int = 0
     """Wie viele **echte** Raten in die Rechnung eingegangen sind (Befund 265).
@@ -329,6 +347,36 @@ class Zulassungsbedingungen:
     def vollstaendig(self) -> bool:
         """Traegt der Nachweis genug, um ihn pruefen zu koennen?"""
         return bool(self.markt) and self.gesamt > 0
+
+    @property
+    def stichprobe_bekannt(self) -> bool:
+        """Ist die Trade-Zahl aufgezeichnet? **Eine Null heisst hier "nein".**
+
+        Anders als bei den Geschwistern dieses Mechanismus, die im
+        Arbeitsspeicher entstehen und immer eine echte Zahl mitbekommen: Dieser
+        Nachweis wird **gelesen**, und jede Datei, die vor Befund 352 geschrieben
+        wurde, traegt an dieser Stelle eine Null. Sie bedeutet "nicht
+        aufgezeichnet" - wie bei ``funding_raten``.
+        """
+        return self.trades > 0
+
+    @property
+    def uebersprungen_erschlossen(self) -> tuple[str, ...]:
+        """Ohne aufgezeichnete Stichprobe wird **nichts** erschlossen.
+
+        Sonst waere jeder alte Nachweis auf einen Schlag um drei Gates
+        schlechter - nicht gemessen, sondern aus einer Null gefolgert, die
+        "unbekannt" heisst. Das ist die vorsichtige Richtung und trotzdem eine
+        Behauptung ohne Messung. Was der Nachweis stattdessen tut: **sagen, dass
+        er es nicht weiss** (siehe ``als_text``).
+
+        Ausgeschrieben statt ``super()``: Ein ``dataclass(slots=True)`` baut die
+        Klasse neu, und die namenlose Form findet dann die Elternklasse nicht
+        mehr.
+        """
+        if not self.stichprobe_bekannt:
+            return ()
+        return erschlossen_bei(self.trades)
 
     def passt_zu(self, markt: str) -> bool:
         """Wurde unter demselben Instrument zugelassen, das jetzt laufen soll?
@@ -408,7 +456,16 @@ class Zulassungsbedingungen:
         if self.funding_raten:
             teile.append(f"{self.funding_raten} echte Funding-Raten")
         if self.gesamt:
-            teile.append(f"{self.bestanden}/{self.gesamt} Gates")
+            # **Die ehrliche Bilanz** (Befund 352). ``bilanzsatz`` gibt das rohe
+            # Paar zurueck, solange nichts ausgesetzt hat - der Satz bleibt also
+            # kurz, wo es nichts zu sagen gibt.
+            teile.append(self.bilanzsatz())
+        if self.gesamt and not self.stichprobe_bekannt:
+            teile.append("Stichprobe nicht aufgezeichnet")
+        elif self.trades and not self.bilanz_zu_gut:
+            # Bei zu guter Bilanz nennt ``bilanzsatz`` die Zahl schon - zweimal
+            # dieselbe Zahl in einer Zeile liest sich wie zwei Angaben.
+            teile.append(f"{self.trades} Trades")
         if self.kapital:
             teile.append(f"{self.kapital:,.0f} EUR Konto")
         if self.intervall:

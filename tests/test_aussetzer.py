@@ -23,6 +23,7 @@ waere dort besonders teuer.
 from __future__ import annotations
 
 import json
+from typing import ClassVar
 
 import pytest
 
@@ -258,20 +259,36 @@ class TestDerRegistereintrag:
 
         return next(r for r in OFFEN if "Gate-Zahlen" in r.name)
 
+    #: Die Zahl im Namen, ausgeschrieben.
+    WORTE: ClassVar[dict[int, str]] = {
+        1: "Eine", 2: "Zwei", 3: "Drei", 4: "Vier", 5: "Fuenf",
+        6: "Sechs", 7: "Sieben", 8: "Acht", 9: "Neun", 10: "Zehn",
+        11: "Elf", 12: "Zwoelf", 13: "Dreizehn", 14: "Vierzehn",
+        15: "Fuenfzehn", 16: "Sechzehn",
+    }
+
     def test_der_name_zaehlt_die_liste_und_nicht_irgendwas(self) -> None:
         """Der Name ist eine Zahl, und Zahlen veralten - deshalb steht der
         **Abgleich** hier und nicht die Zahl. Wer einen Fall schliesst, zieht
-        beide nach; Befund 347 hat es getan (zwoelf auf elf)."""
+        beide nach; Befund 347 hat es getan (zwoelf auf elf), 352 hat die Zahl
+        ganz entfernt.
+
+        **Der leere Fall ist die andere Haelfte** (352): Ohne offenen Typ darf
+        der Name keine Zahl behaupten. Eine Wache, die nur bei nichtleerer
+        Liste prueft, waere genau dann still, wenn ein "Drei" im Namen am
+        meisten in die Irre fuehrt.
+        """
         from tests.test_gatezahlen import OFFEN as OFFENE_TYPEN
 
-        worte = {
-            1: "Eine", 2: "Zwei", 3: "Drei", 4: "Vier", 5: "Fuenf",
-            6: "Sechs", 7: "Sieben", 8: "Acht", 9: "Neun", 10: "Zehn",
-            11: "Elf", 12: "Zwoelf", 13: "Dreizehn", 14: "Vierzehn",
-            15: "Fuenfzehn", 16: "Sechzehn",
-        }
+        name = self._eintrag().name
 
-        assert self._eintrag().name.startswith(worte[len(OFFENE_TYPEN)])
+        if OFFENE_TYPEN:
+            assert name.startswith(self.WORTE[len(OFFENE_TYPEN)])
+        else:
+            behauptet = [w for w in self.WORTE.values() if name.startswith(w)]
+            assert behauptet == [], (
+                f"Kein Typ steht offen, der Name sagt '{behauptet[0]}'"
+            )
 
     def test_die_messung_steht_drin(self) -> None:
         ergebnis = self._eintrag().ergebnis

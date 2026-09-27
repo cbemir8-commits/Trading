@@ -2964,6 +2964,7 @@ def _bedingungen(candidate, configs, interval_obj, versuche: int):
     Datenquelle aus dem Gate-Bericht. Nichts davon wird danebengeschrieben.
     """
     from research.admission import Zulassungsbedingungen
+    from research.gates import GateStatus
 
     werte = list(configs.values()) if hasattr(configs, "values") else [configs]
     return Zulassungsbedingungen(
@@ -2980,6 +2981,18 @@ def _bedingungen(candidate, configs, interval_obj, versuche: int):
         versuche=versuche,
         bestanden=sum(1 for r in candidate.gates.results if r.passed),
         gesamt=len(candidate.gates.results),
+        # **Die Stichprobe und die Aussetzer** (Befund 352). Der Nachweis sagte,
+        # woraufhin bestanden wurde, und nicht auf wie viel - obwohl beides
+        # hier vorliegt.
+        # Kein 'getattr' mit Ruecknull: 'Candidate.trades' ist eine
+        # Eigenschaft ueber 'walkforward.all_trades'. Verschwindet sie, soll
+        # der Lauf abbrechen und nicht stillschweigend eine Null in die Datei
+        # schreiben, an der das echte Geld haengt - das waere genau die
+        # Bauart aus Befund 351.
+        trades=int(candidate.trades),
+        uebersprungen=sum(
+            1 for r in candidate.gates.results if r.status is GateStatus.SKIP
+        ),
         funding_satz=float(werte[0].funding.default_rate) if werte else 0.0,
         # **Und ob der Satz ueberhaupt galt** (Befund 265). Gehen echte Raten
         # ein, ist der Vorgabewert nur noch der Wert fuer Luecken - ihn allein
@@ -8068,6 +8081,7 @@ def instrument(
         # Traegt der Spot-Vorteil auch den hoeheren Spot-Tarif? Gemessen wird
         # mit Vielfachen des Perpetual-Tarifs, weil der echte Spot-Satz aus
         # diesem Container nicht nachzuschlagen ist.
+        from research.gates import GateStatus
         from research.instrument import Gebuehrenstufe, Tragfaehigkeit
         from research.suchbudget import Budget, Kandidat
 
@@ -8104,11 +8118,18 @@ def instrument(
                     r.name for r in ergebnisse.results if not r.passed
                 ),
                 gebuehren=sum(float(t.fees) for t in bericht.all_trades),
+                # Befund 352: Beides lag hier die ganze Zeit - die Trade-Zahl
+                # und der Status je Gate.
+                trades=len(list(bericht.all_trades)),
+                uebersprungen=sum(
+                    1 for r in ergebnisse.results if r.status is GateStatus.SKIP
+                ),
             )
             console.print(
                 f"[dim]  x{faktor:<5g} DSR {stufe.dsr:.4f}  "
                 f"Guete {stufe.guete:.4f}  {stufe.cagr:>6.2f} % p.a.  "
-                f"{stufe.bestanden}/{stufe.gesamt} Gates[/]"
+                f"{stufe.bestanden_ehrlich}/{stufe.geurteilt_ehrlich} Gates"
+                f"{stufe.marke}[/]"
             )
             return stufe, eintrag, float(dsr.threshold)
 
@@ -8596,6 +8617,7 @@ def finanzierung(
         from datetime import UTC, timedelta
 
         from research.finanzierung import PERIODEN_JE_JAHR, jahr_pct
+        from research.gatebilanz import FUSSNOTE
         from research.ratenbild import (
             Ratenprobe,
             flaches_bild,
@@ -8665,6 +8687,11 @@ def finanzierung(
                 cagr_pct=float(bericht.combined.cagr_pct),
                 rueckgang_pct=float(bericht.combined.max_drawdown_pct),
                 gezahlt=float(bericht.combined.total_funding),
+                # Befund 352: dasselbe hier.
+                trades=len(list(bericht.all_trades)),
+                uebersprungen=sum(
+                    1 for r in gates.results if r.status is GateStatus.SKIP
+                ),
             )
 
         ergebnis = vergleiche(
@@ -8688,9 +8715,13 @@ def finanzierung(
                 f"{probe.gezahlt:.2f}",
                 "-" if mehr is None else f"{mehr:+.2f} %",
                 f"{probe.cagr_pct:.2f} %",
-                f"{probe.bestanden}/{probe.gesamt}",
+                f"{probe.bestanden_ehrlich}/{probe.geurteilt_ehrlich}"
+                + probe.marke,
             )
         console.print(tafel)
+        # Ein Sternchen ohne Erklaerung ist ein Raetsel (Befund 351/352).
+        if any(x.bilanz_zu_gut for x in ergebnis.proben):
+            console.print(f"[dim]{FUSSNOTE}[/]")
         console.print(f"\n[yellow]{ergebnis.urteil()}[/]")
         if not historie:
             console.print(

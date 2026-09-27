@@ -2751,7 +2751,12 @@ BEHOBEN: tuple[Richtung, ...] = (
 #: als "gemessen und zu". Ein Eintrag hier ist eine Zusage, keine Ablage.
 OFFEN: tuple[Richtung, ...] = (
     Richtung(
-        "Drei Gate-Zahlen ohne Auskunft ueber Uebersprungenes",
+        # **Der Name traegt keine Zahl mehr** (Befund 352). Er hat sie von 332
+        # bis 351 getragen - sechzehn, zwoelf, elf, drei - und jede Zahl war
+        # eine, die jemand nachziehen musste. Jetzt ist keine offen, und die
+        # Wache in 'test_aussetzer.py' prueft das Gegenteil: dass der Name
+        # **keine** Zahl behauptet, solange die Liste leer ist.
+        "Gate-Zahlen ohne Auskunft ueber Uebersprungenes",
         "Befund 321/322 hat 'uebersprungen' in 'teststaerke.Stufe' und "
         "'nachpruefung.Ergebnis' nachgetragen, weil 'GateResult.passed' ein "
         "ausgesetztes Gate als bestanden zaehlt. Nachgesehen (332): **21 "
@@ -2812,12 +2817,31 @@ OFFEN: tuple[Richtung, ...] = (
         "unter 30 setzen Regime-Aufteilung und Deflated Sharpe aus, unter 20 auch "
         "Monte-Carlo. Acht Typen mischen 'gatebilanz.Gatebilanz' bei und sagen "
         "damit, ob ihre Bilanz zu gut ist. Das ist die **schwaechere** Auskunft: "
-        "eine Untergrenze, keine Meldung. Offen bleiben die drei ohne Trade-Zahl "
-        "- 'admission.Zulassungsbedingungen', 'instrument.Gebuehrenstufe', "
-        "'ratenbild.Ratenprobe'. Drei "
-        "stehen offen",
+        "eine Untergrenze, keine Meldung. "
+        "**Und die letzten drei waren die leichtesten** (352): Sie galten als "
+        "nicht beantwortbar, weil die **Datenklasse** keine Trade-Zahl traegt. "
+        "Ihr **Bauplatz** hatte sie die ganze Zeit - und dazu den ganzen "
+        "Gate-Bericht, also die gemeldete Zahl, die genauer ist als die "
+        "erschlossene. Eingeteilt hatte ich nach dem, was der Typ traegt, statt "
+        "nach dem, was zu haben ist: dieselbe Verwechslung wie in 333 und 349, "
+        "eine Ebene tiefer. Alle sechzehn sind damit nachgezogen. Der "
+        "Zulassungsnachweis in 'champion.json' - die Datei, an der das echte "
+        "Geld haengt - fuehrt jetzt Stichprobe und Aussetzer und sagt bei alten "
+        "Dateien 'Stichprobe nicht aufgezeichnet', weil eine Null dort "
+        "'unbekannt' heisst und nicht 'null Trades'. **Offen bleibt zweierlei**: "
+        "Acht der sechzehn erschliessen nur eine Untergrenze - 'run_expensive' "
+        "aus oder eine feste Periode setzt mehr aus, als die Trade-Zahl verraet; "
+        "und die 554 Berichte, die vor 348 geschrieben wurden, tragen ihre rohen "
+        "Paare weiter, darunter 109 mit null Trades. **Und ein halber Anschluss "
+        "mehr**: 'Tragfaehigkeit.tabelle' zeigte neben der schon gestellten "
+        "Treppe weiter das rohe Paar, und 'bruchstelle' verglich rohe Zahlen - "
+        "ein hoeherer Tarif drueckt die Trade-Zahl unter 30, drei Gates setzen "
+        "aus und zaehlen als bestanden, also faellt die rohe Bilanz nicht und "
+        "die Bruchstelle bleibt unsichtbar. An den gemessenen Stufen aendert es "
+        "nichts (alle weit ueber 30 Trades) - eine Bedingung, keine gefundene "
+        "Fehlmessung. Kein Typ steht mehr offen",
         332,
-        350,
+        352,
     ),
     Richtung(
         "Holdout auf fremden Maerkten",

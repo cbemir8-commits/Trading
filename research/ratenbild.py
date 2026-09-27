@@ -88,6 +88,7 @@ from statistics import fmean, pstdev
 
 from backtest.costs import FundingSchedule
 from research.finanzierung import FEINHEIT, PERIODEN_JE_JAHR, jahr_pct
+from research.gatebilanz import Gatebilanz
 
 #: Wie genau der Mittelwert getroffen sein muss, damit ein Vergleich der Form
 #: einer ist. Dieselbe Feinheit wie in ``research.finanzierung``: Sie liegt
@@ -232,7 +233,7 @@ def _letzter_index(stempel: Sequence[datetime], zeit: datetime) -> int | None:
 
 
 @dataclass(frozen=True, slots=True)
-class Ratenprobe:
+class Ratenprobe(Gatebilanz):
     """Ein Bild, durchgerechnet."""
 
     bild: Ratenbild
@@ -242,6 +243,16 @@ class Ratenprobe:
     cagr_pct: float
     rueckgang_pct: float
     gezahlt: float
+
+    trades: int = 0
+    """Wie viele Trades das Bild gehandelt hat - Befund 352.
+
+    Wie bei ``instrument.Gebuehrenstufe``: Der Bauplatz hatte sie, die
+    Datenklasse nicht, und eingeteilt worden war nach der Datenklasse.
+    """
+
+    uebersprungen: int = 0
+    """Gates ohne Urteil, **gemeldet** - aus ``GateResult.status``."""
 
     @property
     def name(self) -> str:

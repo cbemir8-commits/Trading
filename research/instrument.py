@@ -323,7 +323,7 @@ class Instrumentenwahl:
 
 
 @dataclass(frozen=True, slots=True)
-class Gebuehrenstufe:
+class Gebuehrenstufe(Gatebilanz):
     """Ein Spot-Lauf bei einem Vielfachen des Perpetual-Tarifs."""
 
     faktor: float
@@ -334,6 +334,25 @@ class Gebuehrenstufe:
     gesamt: int
     gescheitert: tuple[str, ...] = ()
     gebuehren: float = 0.0
+
+    trades: int = 0
+    """Wie viele Trades die Stufe gehandelt hat - Befund 352.
+
+    **Sie fehlte, und deshalb galt dieser Typ als nicht beantwortbar.** Befund
+    350 hat aus elf offenen Faellen acht an die erschlossene Bilanz gehaengt und
+    drei ausgenommen, weil sie keine Trade-Zahl tragen. Der **Bauplatz** hatte sie
+    die ganze Zeit: ``bericht.all_trades`` steht dort zwei Zeilen darueber.
+    Eingeteilt hatte ich nach dem, was die Datenklasse traegt, statt nach dem,
+    was zu haben ist.
+    """
+
+    uebersprungen: int = 0
+    """Gates ohne Urteil, **gemeldet** - aus ``GateResult.status``.
+
+    Die genauere Auskunft, und auch sie war am Bauplatz zu haben: Dort liegt
+    der ganze Gate-Bericht. ``Gatebilanz.uebersprungen_ehrlich`` nimmt das
+    Maximum aus gemeldet und erschlossen.
+    """
 
 
 @dataclass(slots=True)
@@ -388,9 +407,15 @@ class Tragfaehigkeit:
 
     @property
     def bruchstelle(self) -> tuple[Gebuehrenstufe, Gebuehrenstufe] | None:
-        """Zwischen welchen Faktoren die Gate-Zahl faellt."""
+        """Zwischen welchen Faktoren die Gate-Zahl faellt.
+
+        **Verglichen wird die geurteilte Zahl** (Befund 352). Ein hoeherer
+        Tarif drueckt die Trade-Zahl; faellt sie dabei unter 30, setzen Gates
+        aus und werden roh als bestanden gezaehlt. Der rohe Vergleich haette
+        genau dort keinen Bruch gesehen, wo der Tarif ihn verursacht.
+        """
         for links, rechts in pairwise(self.geordnet):
-            if rechts.bestanden < links.bestanden:
+            if rechts.bestanden_ehrlich < links.bestanden_ehrlich:
                 return links, rechts
         return None
 
@@ -411,11 +436,18 @@ class Tragfaehigkeit:
             "-" * 74,
         ]
         for s in self.geordnet:
+            # **Befund 352.** Hier stand 'bestanden/gesamt' - das rohe Paar.
+            # Die Treppe in 'cli instrument' war schon auf die geurteilte Zahl
+            # gestellt, diese Tabelle nicht; genau der halbe Anschluss, den
+            # Befund 351 an der Bestenliste gefunden hat.
             zeilen.append(
                 f"{'x' + format(s.faktor, 'g'):>10}{s.dsr:>9.4f}{s.guete:>9.4f}"
-                f"{s.cagr:>9.2f} %{f'{s.bestanden}/{s.gesamt}':>8}  "
+                f"{s.cagr:>9.2f} %"
+                f"{f'{s.bestanden_ehrlich}/{s.geurteilt_ehrlich}':>8}{s.marke}  "
                 + ", ".join(s.gescheitert)
             )
+        if any(s.bilanz_zu_gut for s in self.stufen):
+            zeilen.append(FUSSNOTE)
         return "\n".join(zeilen)
 
     def urteil(self) -> str:
@@ -450,8 +482,8 @@ class Tragfaehigkeit:
             teile.append(
                 f"**Der Vorteil traegt bis zum {links.faktor:g}-fachen des "
                 f"Perpetual-Tarifs.** Beim {rechts.faktor:g}-fachen faellt die "
-                f"Bilanz von {links.bestanden} auf {rechts.bestanden} von "
-                f"{rechts.gesamt}"
+                f"Bilanz von {links.bestanden_ehrlich} auf "
+                f"{rechts.bestanden_ehrlich} von {rechts.geurteilt_ehrlich}"
                 + (f" - es kippt: {', '.join(sorted(neu))}." if neu else ".")
             )
         else:

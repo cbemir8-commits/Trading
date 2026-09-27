@@ -33,6 +33,18 @@ Typ die Frage beantworten kann und welcher nicht, und es zwingt jeden neuen dazu
 sich einzuordnen. Dieselbe Bauart wie ``WIRKT_NACH_AUSSEN`` in
 ``test_rauchtest.py`` - unbekannt ist ein Fehler, nicht stillschweigend in
 Ordnung.
+
+**Stand nach Befund 352.** Aus dem Verzeichnis ist ueber zwoelf Befunde eine
+Reparatur geworden; ``OFFEN`` ist leer:
+
+    gemeldet        12   tragen 'uebersprungen' aus 'GateResult.status'
+    erschlossen      8   rechnen es aus der Trade-Zahl (Befund 350)
+    verzeichnet      2   halten Staende ohne Gate-Lauf
+    vorgelagert      2   eine Schicht davor
+    offen            0
+
+Die leere Liste bleibt stehen - sie ist die Stelle fuer den naechsten Typ, der
+die Frage nicht beantworten kann.
 """
 
 from __future__ import annotations
@@ -77,6 +89,12 @@ MIT_SKIPINFO: frozenset[str] = frozenset({
     # 'gates_bestanden'. Traegt jetzt 'gates_uebersprungen', und der
     # Rangschluessel rechnet mit 'gates_bestanden_echt'.
     "research.leaderboard.Entry",
+    # Befund 352: die letzten drei. Ihr Bauplatz hatte Trade-Zahl **und**
+    # Gate-Bericht - die gemeldete Zahl ist die genauere, und sie war die
+    # ganze Zeit zu haben.
+    "research.admission.Zulassungsbedingungen",
+    "research.instrument.Gebuehrenstufe",
+    "research.ratenbild.Ratenprobe",
 })
 
 #: Typen, die **verzeichnete** Staende halten und keinen Gate-Lauf ausfuehren.
@@ -156,14 +174,16 @@ MIT_ERSCHLOSSENEM: frozenset[str] = frozenset({
 
 #: Typen, bei denen die Frage **offen** ist - aufgelistet, nicht geprueft.
 #:
-#: **Drei sind es noch** (Befund 350), und es sind genau die, die keine
-#: Trade-Zahl tragen: ohne sie ist nichts zu erschliessen, und gemeldet wird
-#: ihnen auch nichts.
-OFFEN: frozenset[str] = frozenset({
-    "research.admission.Zulassungsbedingungen",
-    "research.instrument.Gebuehrenstufe",
-    "research.ratenbild.Ratenprobe",
-})
+#: **Leer seit Befund 352**, und das ist keine Erledigung durch Wegdefinieren:
+#: Die letzten drei galten als nicht beantwortbar, weil sie keine Trade-Zahl
+#: tragen. Ihr **Bauplatz** hatte sie die ganze Zeit - und dazu den ganzen
+#: Gate-Bericht, also die genauere, gemeldete Zahl. Eingeteilt worden war nach
+#: dem, was die Datenklasse traegt, statt nach dem, was zu haben ist.
+#:
+#: Die Liste bleibt stehen. Sie ist die Stelle, an die ein neuer Typ kommt, der
+#: die Frage nicht beantworten kann - und der Test darueber zwingt dazu, ihn
+#: einzuordnen statt zu uebersehen.
+OFFEN: frozenset[str] = frozenset()
 
 
 #: Feldnamen, die eine **Gate-Bilanz** tragen - Befund 349.
@@ -313,11 +333,15 @@ class TestDieErschlossenenKoennenEsWirklich:
         for name in MIT_ERSCHLOSSENEM:
             assert "trades" in traeger[name], name
 
-    def test_und_die_offenen_tragen_keine(self) -> None:
-        """Die Gegenprobe: Die drei sind nicht aus Bequemlichkeit offen."""
-        traeger = _traeger()
+    def test_die_offene_liste_ist_leer_und_bleibt_gepruft(self) -> None:
+        """**Seit Befund 352.** Ein leerer Rest ist kein Grund, die Liste
+        abzuschaffen: Sie ist die Stelle, an die ein neuer Typ kommt, der die
+        Frage nicht beantworten kann.
+        """
+        assert not OFFEN
 
-        for name in OFFEN:
+        traeger = _traeger()
+        for name in OFFEN:  # pragma: no cover - leer, und das ist die Aussage
             assert "trades" not in traeger[name], name
 
 
@@ -394,8 +418,8 @@ class TestDieFortschrittszeileDerNachpruefung:
 def test_die_zahl_der_offenen_faelle_steht_fest() -> None:
     """Damit ein spaeterer Lauf sich daran messen kann - und damit das
     Verzeichnis nicht unbemerkt waechst."""
-    assert len(OFFEN) == 3
-    assert len(MIT_SKIPINFO) == 9
+    assert not OFFEN, "seit Befund 352 leer - und das bleibt zu pruefen"
+    assert len(MIT_SKIPINFO) == 12
     assert len(MIT_ERSCHLOSSENEM) == 8
     assert len(VORGELAGERT) == 2
     assert len(OHNE_BILANZFELD) == 4

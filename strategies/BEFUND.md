@@ -31424,3 +31424,137 @@ Eigenschaften ueberhaupt irgendwo gerufen werden.
 Der Bauplan der acht steht **ausgeschrieben** und wird nicht aus den Feldtypen
 geraten: Der erste Anlauf tat das und fiel an `Marktsatz`, das mindestens einen
 Markt verlangt. Ausgeschrieben ist laenger und haelt.
+
+## Dreihundertzweiundfuenfzig. Die letzten drei waren die leichtesten
+
+Befund 332 hat sechzehn Typen aufgelistet, deren Gate-Bilanz nicht sagt, ob alle
+gezaehlten Gates ueberhaupt geurteilt haben. 338, 346, 347 und 349 haben fuenf
+davon einzeln nachgezogen, 350 acht auf einmal, 351 hat den Mechanismus dann
+wirklich angeschlossen - dreizehn. Drei blieben offen, mit derselben Begruendung
+jedes Mal:
+
+> Sie tragen keine Trade-Zahl, also ist nichts zu erschliessen.
+
+Das war die falsche Frage. Eingeteilt hatte ich nach dem, was die
+**Datenklasse** traegt. Nachzusehen war, was am **Bauplatz** liegt:
+
+    instrument.Gebuehrenstufe    cli.py: 'bericht.all_trades' zwei Zeilen darueber
+    ratenbild.Ratenprobe         dasselbe
+    admission.Zulassungsbedingungen  'candidate.trades' - eine Eigenschaft ueber
+                                     'walkforward.all_trades'
+
+Und weil an allen drei Stellen der **ganze Gate-Bericht** liegt, war nicht nur
+die erschlossene Zahl zu haben, sondern die **gemeldete**: `GateResult.status`
+sagt es je Gate, statt es aus der Trade-Zahl zu folgern. Die drei waren also
+nicht schwerer als die anderen dreizehn - sie waren leichter, und sie bekommen
+die genauere Auskunft.
+
+Das ist die dritte Fassung derselben Verwechslung. In 333 war ein **Feldname**
+der Stellvertreter fuer "kann es melden", in 349 die Suche nach dem Wort
+`bestanden`, hier die Datenklasse als Stellvertreter fuer "die Zahl ist zu
+haben". Jedes Mal habe ich den Stellvertreter geprueft und die Faehigkeit
+gemeint.
+
+### Gemessen, nicht angenommen
+
+Der Bauplatz des Zulassungsnachweises, auf echten Kerzen durchgefahren - BTC +
+ETH Forschungskerzen auf Tagesbasis, der Bestand, alle elf Gates, 203 Versuche,
+Perpetual-Punkt:
+
+    Trades            160
+    Uebersprungen       0   (gemeldet, nicht erschlossen)
+    roh               7/11
+    ehrlich           7/11  ohne Vorbehalt
+
+Alle elf urteilen, das rohe Paar war dort also richtig - und die sieben decken
+sich mit der Zahl, die Befund 106 fuer den Perpetual-Punkt gemessen hat. Der
+Unterschied ist nicht die Zahl, sondern dass sie jetzt **belegt** ist: Vorher
+stand "7 von 11" in der Datei, an der das echte Geld haengt, ohne die
+Stichprobe, aus der es kam.
+
+### Eine Null, die "unbekannt" heisst
+
+`Zulassungsbedingungen` ist der einzige der sechzehn Typen, der **gelesen**
+wird. Jede `champion.json` von vor diesem Befund traegt an der Stelle der
+Trade-Zahl eine Null - und die heisst dort "nicht aufgezeichnet", nicht "null
+Trades". Aus ihr drei ausgesetzte Gates zu folgern waere eine Behauptung ohne
+Messung. Dass sie in die vorsichtige Richtung geht, macht sie nicht zu einer
+Messung.
+
+Der Nachweis erschliesst deshalb nichts, wo die Stichprobe fehlt, und sagt es
+dafuer:
+
+    Instrument perpetual, 11/11 Gates, Stichprobe nicht aufgezeichnet, ...
+
+Mit Stichprobe steht die ehrliche Bilanz da, mit der rohen daneben:
+
+    Instrument spot, 5/8 Gates (Deflated Sharpe, Monte-Carlo,
+    Regime-Aufteilung setzen bei 12 Trades aus); roh 8/11, ...
+
+Nebenbei ein Fallstrick: `dataclass(slots=True)` baut die Klasse neu, und die
+namenlose Form von `super()` findet danach ihre Elternklasse nicht mehr. Die
+ueberschriebene Eigenschaft ruft `erschlossen_bei` deshalb direkt.
+
+Und eine zweite Stelle ist lauter geworden: `_bedingungen` las die Trade-Zahl
+zuerst mit `getattr(candidate, "trades", 0)`. Das haette bei einer Umbenennung
+still eine Null in die Datei geschrieben, an der das echte Geld haengt - also
+genau die Bauart aus 351. Jetzt steht `candidate.trades` da und der Lauf bricht
+ab, wenn es die Eigenschaft nicht mehr gibt.
+
+### Und wieder der halbe Anschluss
+
+Die Treppe in `cli instrument` zeigt jetzt die geurteilte Zahl - die Tabelle
+direkt darunter, `Tragfaehigkeit.tabelle`, zeigte weiter das rohe Paar. Genau
+die Haelfte, die Befund 351 an der Bestenliste gefunden hat, im selben Befehl.
+
+Dahinter lag mehr als eine Anzeige. `Tragfaehigkeit.bruchstelle` sucht den
+Faktor, bei dem die Gate-Bilanz faellt, und verglich dazu rohe Zahlen:
+
+    x1   158 Trades   9/11   alle elf geurteilt
+    x2    12 Trades   9/11   drei setzen aus, also 6 von 8
+
+Roh gelesen faellt da nichts - neun bleibt neun. Der hoehere Tarif drueckt die
+Trade-Zahl unter dreissig, drei Gates setzen aus und werden als bestanden
+gezaehlt, und die Suche nach der Bruchstelle sieht **genau dort** keinen Bruch,
+wo der Tarif ihn verursacht. Verglichen wird jetzt die geurteilte Zahl; das
+Urteil nennt sie auch.
+
+Ob das an den echten Messungen etwas aendert, ist damit nicht gesagt: Die
+gemessenen Stufen lagen alle weit ueber dreissig Trades. Es ist eine Bedingung,
+die eintreten kann, keine gefundene Fehlmessung.
+
+### Das Verzeichnis ist leer, und die Liste bleibt
+
+`tests/test_gatezahlen.py` fuehrt das Verzeichnis seit 332 - inzwischen
+vierundzwanzig Typen, weil 349 sechs weitere unter anderen Feldnamen gefunden
+hat. Der Stand:
+
+    gemeldet        12   tragen 'uebersprungen' aus 'GateResult.status'
+    erschlossen      8   rechnen es aus der Trade-Zahl (Befund 350)
+    verzeichnet      2   halten Staende ohne Gate-Lauf
+    vorgelagert      2   eine Schicht davor
+    offen            0
+
+Die Liste `OFFEN` bleibt trotzdem stehen. Sie ist die Stelle, an die ein neuer
+Typ kommt, der die Frage nicht beantworten kann, und der Test darueber zwingt
+dazu, ihn einzuordnen statt ihn zu uebersehen.
+
+Der Registereintrag traegt seit 332 eine Zahl im Namen - sechzehn, zwoelf, elf,
+drei - und jede war eine, die jemand nachziehen musste. Jetzt traegt er keine.
+Die Wache in `test_aussetzer.py` prueft bei leerer Liste das Gegenteil von
+vorher: dass der Name **keine** Zahl behauptet. Eine Wache, die nur bei
+nichtleerer Liste prueft, waere genau dann still, wenn ein "Drei" im Namen am
+meisten in die Irre fuehrt.
+
+### Was offen bleibt
+
+Zweierlei, und beides steht im Register:
+
+**Acht der sechzehn erschliessen nur eine Untergrenze.** Ist `run_expensive`
+aus oder laesst sich keine Periode variieren, setzen mehr Gates aus, als die
+Trade-Zahl verraet. Die Untergrenze sagt verlaesslich, **dass** eine Bilanz zu
+gut ist, nicht immer um wie viel.
+
+**Die alten Berichte behalten ihre rohen Paare.** 554 Eintraege aus der Zeit
+vor 348, darunter 109 mit null Trades und "5 von 11". Neu geschriebene tragen
+das Feld; die auf der Platte werden nicht nachtraeglich gerichtet.
