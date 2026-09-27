@@ -33,7 +33,24 @@ from __future__ import annotations
 
 from research.aussetzer import SCHWELLEN
 
-__all__ = ["Gatebilanz", "erschlossen_bei"]
+__all__ = ["FUSSNOTE", "MARKE", "Gatebilanz", "erschlossen_bei"]
+
+#: Das Zeichen an einer Bilanz, die Gates ohne Urteil mitzaehlt - Befund 351.
+#:
+#: Ein Zeichen und keine zweite Spalte: Die Tabellen dieses Projekts sind
+#: ausgerichtet, und eine Spalte, die in neunundneunzig von hundert Zeilen leer
+#: ist, kostet Breite ohne Auskunft.
+MARKE = "*"
+
+#: Was das Zeichen bedeutet. Gehoert unter jede Tabelle, die es zeigen kann.
+#:
+#: **Sonst ist es ein Raetsel.** Befund 351 hat die Bilanzen ehrlich gemacht und
+#: waere ohne diesen Satz bei einem Sternchen ohne Erklaerung geblieben.
+FUSSNOTE = (
+    "* Die rohe Bilanz zaehlt Gates mit, die bei dieser Trade-Zahl nicht "
+    "geurteilt haben - unter 30 Regime-Aufteilung und Deflated Sharpe, unter "
+    "20 auch Monte-Carlo (Befund 350/351)."
+)
 
 
 def erschlossen_bei(trades: int) -> tuple[str, ...]:
@@ -91,6 +108,11 @@ class Gatebilanz:
     def bestanden_ehrlich(self) -> int:
         """Bestandene ohne die, die nie geurteilt haben."""
         return max(self.bestanden - self.uebersprungen_ehrlich, 0)
+
+    @property
+    def marke(self) -> str:
+        """``MARKE``, wenn die rohe Bilanz zu gut ist - sonst leer."""
+        return MARKE if self.bilanz_zu_gut else ""
 
     @property
     def bilanz_zu_gut(self) -> bool:

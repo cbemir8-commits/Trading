@@ -31365,3 +31365,62 @@ entsprechend um; Fundstelle Nr. 350, zuerst 332.
 `tests/test_gatebilanz.py` bindet die Schwellen, beide Richtungen des Vorrangs
 und alle acht Traeger - dazu die Gegenprobe am Bestand: 158 Trades, `9/11 Gates`,
 kein Vorbehalt.
+
+## Dreihunderteinundfuenfzig. Gebaut, gerechnet, nicht angeschlossen - diesmal von mir, gestern
+
+Befund 350 hat `gatebilanz.Gatebilanz` gebaut und an acht Typen gehaengt. Elf
+offene Faelle wurden zu drei, die Tests waren gruen, der Bericht geschrieben.
+
+**Und niemand hat den Mechanismus gerufen.** Gesucht in `cli.py` und allen
+Modulen unter `research/`:
+
+    bilanzsatz          0 Aufrufe
+    bestanden_ehrlich   0
+    geurteilt_ehrlich   0
+    bilanz_zu_gut       0
+
+Die Anzeigen zeigten weiter das rohe Paar. Das ist die Bauart, die dieses
+Projekt elf Mal gefunden hat - 152, 154, 155, 160, 325, 330, 337, 338, 339, 342,
+348 - und diesmal steht sie in meiner Arbeit vom Vortag.
+
+### Angeschlossen
+
+Neun Stellen, jede in dem Modul, dem der Typ gehoert:
+
+    aufloesung.Aufloesung.tabelle      aufstellung.Marktsatz.als_zeile
+    betriebspunkt.Betriebspunkt.als_zeile   decke.Stufe.als_zeile
+    instrument.Instrumentenwahl.tabelle     sperrprobe.Lage (Zeile der echten Sperre)
+    stand.Lage.urteil                  stand.Lage.bericht
+    cli.py: die Gate-Spalte der Bestenliste
+
+Die letzte ist ein Nachtrag zu Befund 349: Der hat Rangschluessel und
+Zusammenfassung auf die geurteilte Zahl gestellt - **die Spalte in der Tabelle
+nicht.** Zwei von drei Stellen ist genau die Haelfte des Fehlers, den 349
+beschreibt.
+
+### Ein Zeichen, und es wird erklaert
+
+Eine Bilanz, die Gates ohne Urteil mitzaehlt, traegt ein `*`; `Gatebilanz.marke`
+liefert es, `gatebilanz.MARKE` haelt es an einer Stelle. Ein Zeichen und keine
+zweite Spalte: Die Tabellen sind ausgerichtet, und eine Spalte, die fast immer
+leer ist, kostet Breite ohne Auskunft.
+
+Unter jeder Tabelle, die das Zeichen zeigen **kann**, steht `FUSSNOTE` - und nur
+dann, wenn wirklich eine Zeile markiert ist. Ein Sternchen ohne Erklaerung waere
+ein Raetsel; eine Fussnote unter jeder Tabelle waere Grundrauschen.
+
+Im Urteil von `stand.Lage` steht die rohe Zahl im Klartext daneben, weil dort
+Platz ist: *"steht bei 2 von 8 (roh 5 von 11 - 3 Gates haben bei 0 Trades nicht
+geurteilt)"*.
+
+### Die Wache dagegen
+
+`tests/test_bilanzanzeige.py` baut jeden der acht Traeger mit **null Trades und
+"5 von 11"** und prueft seine eigene Anzeige: Sie muss die geurteilte Bilanz
+zeigen und den Vorbehalt kennzeichnen. Dazu die Gegenprobe bei 158 Trades - dort
+steht `9/11 Gates` ohne Zusatz - und ein Test, der nachsieht, dass die vier
+Eigenschaften ueberhaupt irgendwo gerufen werden.
+
+Der Bauplan der acht steht **ausgeschrieben** und wird nicht aus den Feldtypen
+geraten: Der erste Anlauf tat das und fiel an `Marktsatz`, das mindestens einen
+Markt verlangt. Ausgeschrieben ist laenger und haelt.

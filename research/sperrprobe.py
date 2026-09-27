@@ -126,7 +126,8 @@ class Sperrprobe:
             f"{'Anteil':>8}",
             "-" * 76,
             f"{'Gates bestanden':<20} "
-            f"{self.echt.bestanden:>7}/{self.echt.gesamt:<2} "
+            f"{self.echt.bestanden_ehrlich:>7}/"
+            f"{self.echt.geurteilt_ehrlich:<2}{self.echt.marke} "
             f"{spanne(lambda z: float(z.bestanden)):>34} {self.p_gates:>7.1%}",
             f"{'Rueckgang %':<20} {self.echt.rueckgang_pct:>10.2f} "
             f"{spanne(lambda z: z.rueckgang_pct):>34} {self.p_rueckgang:>7.1%}",

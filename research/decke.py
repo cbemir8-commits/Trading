@@ -546,7 +546,9 @@ class Stufe(Gatebilanz):
     def als_zeile(self) -> str:
         return (
             f"{self.name:<28} {self.trades:>4} Trades  Guete {self.guete:.4f}  "
-            f"DSR {self.dsr:.4f}  {self.bestanden}/{self.gesamt}"
+            f"DSR {self.dsr:.4f}  "
+            f"{self.bestanden_ehrlich}/{self.geurteilt_ehrlich}"
+            + self.marke
             + (f"  offen: {', '.join(self.offen)}" if self.offen else "")
         )
 

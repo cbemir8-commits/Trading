@@ -1042,7 +1042,10 @@ def _zeige_bestenliste(board, *, limit: int = 10, versuche: int | None = None) -
         zeile = [
             str(platz),
             f"[{stil}]{name}[/]" if stil else name,
-            f"{eintrag.gates_bestanden}/{eintrag.gates_gesamt}",
+            # **Befund 351**: 349 hat Rangschluessel und Zusammenfassung
+            # auf die geurteilte Zahl gestellt - diese Spalte nicht.
+            f"{eintrag.gates_bestanden_echt}/{eintrag.gates_geurteilt}"
+            + ("*" if eintrag.gates_uebersprungen else ""),
         ]
         if konten:
             zeile.append(f"{eintrag.kapital:,.0f}" if eintrag.kapital else "?")

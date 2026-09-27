@@ -121,7 +121,8 @@ class Marktsatz(Gatebilanz):
         return (
             f"{self.name:<24} {self.trades:>6} {self.effektiv:>5} "
             f"{self.guete:>7.4f} {self.dsr:>7.4f} "
-            f"{self.bestanden:>3}/{self.gesamt}"
+            f"{self.bestanden_ehrlich:>3}/{self.geurteilt_ehrlich}"
+            + self.marke
         )
 
 

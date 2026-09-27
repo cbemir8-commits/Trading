@@ -139,7 +139,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from itertools import pairwise
 
-from research.gatebilanz import Gatebilanz
+from research.gatebilanz import FUSSNOTE, Gatebilanz
 
 
 @dataclass(frozen=True, slots=True)
@@ -239,8 +239,17 @@ class Instrumentenwahl:
             zeilen.append(
                 f"{lauf.name[:25]:<26}{lauf.trades:>8}{lauf.cagr:>9.2f} %"
                 f"{lauf.rueckgang:>10.2f} %"
-                f"{f'{lauf.bestanden}/{lauf.gesamt}':>8}"
+                f"{f'{lauf.bestanden_ehrlich}/{lauf.geurteilt_ehrlich}':>8}"
+                + lauf.marke
             )
+        if any(
+            lauf is not None and lauf.bilanz_zu_gut
+            for lauf in (
+                self.mit_hebel, self.ohne_hebel, self.spot, self.spot_gestresst,
+                *self.weitere,
+            )
+        ):
+            zeilen.append(FUSSNOTE)
         return "\n".join(zeilen)
 
     def urteil(self) -> str:

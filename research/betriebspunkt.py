@@ -116,7 +116,9 @@ class Betriebspunkt(Gatebilanz):
         return (
             f"{self.name:<12} {self.trades:>4} Trades, {self.cagr_pct:>6.2f} % p.a., "
             f"{self.rueckgang_pct:>5.2f} % Rueckgang   "
-            f"{self.bestanden}/{self.gesamt} Gates{marke}"
+            f"{self.bestanden_ehrlich}/{self.geurteilt_ehrlich} Gates"
+            + self.marke
+            + marke
         )
 
 

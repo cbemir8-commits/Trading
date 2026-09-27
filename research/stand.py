@@ -4189,7 +4189,15 @@ class Lage(Gatebilanz):
         fehlend = ", ".join(self.offen) if self.offen else "-"
         text = (
             f"Kein zugelassener Kandidat. '{self.kandidat}' steht bei "
-            f"{self.bestanden} von {self.gesamt}; offen: {fehlend}."
+            f"{self.bestanden_ehrlich} von {self.geurteilt_ehrlich}"
+            + (
+                f" (roh {self.bestanden} von {self.gesamt} - "
+                f"{len(self.uebersprungen_erschlossen)} Gates haben bei "
+                f"{self.trades} Trades nicht geurteilt)"
+                if self.bilanz_zu_gut
+                else ""
+            )
+            + f"; offen: {fehlend}."
         )
         if self.faktor is not None:
             # **Als Zuwachs formuliert, nicht als Verhaeltnis.** Der erste
@@ -4513,7 +4521,8 @@ class Lage(Gatebilanz):
             *self._zweitzeile(),
             f"  Ergebnis   {self.trades} Trades{self._zensurhinweis()}, "
             f"{self.cagr_pct:.2f} % p.a., {self.rueckgang_pct:.2f} % Rueckgang",
-            f"  Gates      {self.bestanden} von {self.gesamt}",
+            f"  Gates      {self.bestanden_ehrlich} von "
+            f"{self.geurteilt_ehrlich}{self.marke}",
             f"  Versuche   {self.versuche}",
             f"  Suchbudget {BUDGET.zeile(self.versuche)}",
             "",

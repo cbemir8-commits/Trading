@@ -78,7 +78,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from research.gatebilanz import Gatebilanz
+from research.gatebilanz import FUSSNOTE, Gatebilanz
 
 #: Ab welchem Anteil fein aufgeloester Balken die Probe ueberhaupt etwas sagt.
 #:
@@ -185,7 +185,8 @@ class Aufloesung:
             zeilen.append(
                 f"{m.name[:15]:<16}{m.trades:>8}{m.cagr:>9.2f} %"
                 f"{m.rueckgang:>10.2f} %{m.sharpe:>9.3f}"
-                f"{f'{m.bestanden}/{m.gesamt}':>8}"
+                f"{f'{m.bestanden_ehrlich}/{m.geurteilt_ehrlich}':>8}"
+                + m.marke
             )
         zeilen.append("-" * 62)
         zeilen.append(
@@ -202,6 +203,9 @@ class Aufloesung:
                     )
                 )
             )
+        # Ein Sternchen ohne Erklaerung ist ein Raetsel (Befund 351).
+        if any(m.bilanz_zu_gut for m in (self.pessimistisch, self.aufgeloest)):
+            zeilen.append(FUSSNOTE)
         return "\n".join(zeilen)
 
     def urteil(self) -> str:
