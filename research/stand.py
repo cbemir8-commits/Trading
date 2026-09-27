@@ -2749,7 +2749,7 @@ BEHOBEN: tuple[Richtung, ...] = (
 #: als "gemessen und zu". Ein Eintrag hier ist eine Zusage, keine Ablage.
 OFFEN: tuple[Richtung, ...] = (
     Richtung(
-        "Fuenfzehn Gate-Zahlen ohne Auskunft ueber Uebersprungenes",
+        "Zwoelf Gate-Zahlen ohne Auskunft ueber Uebersprungenes",
         "Befund 321/322 hat 'uebersprungen' in 'teststaerke.Stufe' und "
         "'nachpruefung.Ergebnis' nachgetragen, weil 'GateResult.passed' ein "
         "ausgesetztes Gate als bestanden zaehlt. Nachgesehen (332): **21 "
@@ -2776,9 +2776,19 @@ OFFEN: tuple[Richtung, ...] = (
         "**Berichtigt**: 'gatemuster.Gatelage' stand zu Unrecht hier - 'lade' "
         "laesst uebersprungene Gates weg, also eine Schicht vor der "
         "Datenklasse. Eingeteilt hatte ich nach dem Feldnamen, und das ist ein "
-        "Stellvertreter fuer die Faehigkeit, nicht die Faehigkeit",
+        "Stellvertreter fuer die Faehigkeit, nicht die Faehigkeit. "
+        "**Nachgemessen an allem, was geschrieben wurde** (346): 83 Messpunkte "
+        "aus 13 Berichten, zehn Regler - **kein einziger Aussetzer**, jeder "
+        "Punkt mit elf Gates, kleinste Trade-Zahl 75. Damit ist die Bedingung "
+        "nicht nur nicht eingetreten, sie ist nirgends in die Naehe gekommen; "
+        "'research/aussetzer.py' liest es nach und 'cli register' sagt es. "
+        "**Und einer der dreizehn ist zu** (346): 'regler.Stellung' traegt "
+        "'uebersprungen', 'geurteilt' und 'bestanden_echt' - zuerst diese, weil "
+        "auf ihrer Leiter die offene Entscheidung zur Messlatte steht (281/341) "
+        "und eine geschenkte Zahl dort besonders teuer waere. Zwoelf stehen "
+        "offen",
         332,
-        333,
+        346,
     ),
     Richtung(
         "Holdout auf fremden Maerkten",

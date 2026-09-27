@@ -30970,3 +30970,66 @@ die Befund 333 an einem Stellvertreter gefunden hat.
 Berichts - im Auftragspunkt und in der Backfill-Befehlszeile. Angesehen und
 eingetragen: Beide brauchen sie, der Punkt erklaert die Warnung und die Zeile
 traegt sie dorthin, wo jemand sie kopiert.
+
+## Dreihundertsechsundvierzig. Nachgemessen an allem, was geschrieben wurde
+
+Befund 332 hat sechzehn Datentypen aufgelistet, die eine Gate-Bilanz tragen und
+nicht sagen koennen, ob jedes Gate **geurteilt** hat. Der Grund steht in
+`GateResult.passed`: Wahr ist es, solange ein Gate nicht durchgefallen ist - und
+ein uebersprungenes Gate ist nicht durchgefallen. "9 von 11" kann damit zweierlei
+heissen.
+
+332 hat ausdruecklich **nicht** gemessen, ob es heute etwas trifft. 333 hat es
+fuer den Spitzenkandidaten nachgeholt: 158 Trades, elf Urteile, null Aussetzer.
+Fuer die **Leitern** blieb es offen - und genau dort waere es teuer, denn eine
+Leiter drueckt die Trade-Zahl.
+
+### Gemessen
+
+An der einzigen Stelle, die es rueckwirkend hergibt: den geschriebenen
+Berichten. Jeder Reglerpunkt in `reports/` traegt seine Gates mit einem Feld
+`uebersprungen` - dieselbe Quelle, aus der `gatemuster.lade` seit Befund 333 die
+ausgesetzten Gates herausnimmt.
+
+    Messpunkte              83
+    Berichtsdateien         13
+    Regler                  10
+    Punkte mit elf Gates    83
+    Aussetzer                0
+    kleinste Trade-Zahl     75   (Schwellen: 30 und 20)
+
+**Kein einziger Aussetzer, und nirgends in der Naehe.** Der tiefste Punkt liegt
+bei 75 Trades - dem Deckel von 40 Kerzen aus Befund 177 -, also beim 2,5-fachen
+der hoechsten Aussetzschwelle. Kein Punkt liegt unter 60.
+
+Das ist kein Freispruch fuer die Zukunft. Es ist die Auskunft, die den offenen
+Faellen gefehlt hat: nicht "koennte falsch sein", sondern "ist es auf allem, was
+geschrieben wurde, nicht".
+
+### Und einer der dreizehn ist zu
+
+`regler.Stellung` traegt jetzt `uebersprungen`, dazu `geurteilt` und
+`bestanden_echt`; `als_zeile()` zeigt das ehrliche Paar und nennt Aussetzer
+ausdruecklich.
+
+Bewusst dieser zuerst: Auf der Reglerleiter steht die offene Entscheidung zur
+**Messlatte** (Befund 281, nachgemessen in 341), und eine geschenkte Zahl waere
+dort besonders teuer. Zwoelf Faelle stehen noch offen.
+
+### Was gebaut wurde
+
+`research/aussetzer.py` mit `Punktlage`, `Berichtslage` und `lese()`. Ein Punkt
+ohne Gate-Angabe zaehlt **nicht** mit: Ihn als "kein Aussetzer" zu fuehren waere
+selbst eine geschenkte Zahl. Kaputte Dateien werden uebergangen, ohne die
+Auskunft ueber die anderen zu verlieren.
+
+`cli register` liest es mit. Der Befehl zaehlt die Berichte seit Befund 319 nur
+auf ("was drinsteht, sagt ihr Inhalt und kein Dateiname") - **eine** Sache wird
+jetzt doch gelesen, und zwar die, bei der ein Schweigen als Freispruch gelesen
+wuerde.
+
+Der Eintrag heisst jetzt 'Zwoelf Gate-Zahlen ohne Auskunft ueber
+Uebersprungenes'; Fundstelle Nr. 346, zuerst 332.
+
+`tests/test_aussetzer.py` bindet die drei gemessenen Zahlen an die Berichte auf
+der Platte, beide Urteilsrichtungen und das neue Feld der Reglerleiter.

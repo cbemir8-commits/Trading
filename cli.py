@@ -12131,7 +12131,7 @@ def regler(
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
-    from research.gates import evaluate_gates
+    from research.gates import GateStatus, evaluate_gates
     from research.regler import (
         ARTEN,
         Klaerungskosten,
@@ -12244,6 +12244,13 @@ def regler(
                     gesamt=len(ergebnisse.results),
                     offen=tuple(r.name for r in ergebnisse.results if not r.passed),
                     dsr=float(wert.value) if wert is not None else None,
+                    # Befund 346: Ein uebersprungenes Gate zaehlt in
+                    # 'passed' als bestanden. Auf dieser Leiter steht die
+                    # offene Entscheidung zur Messlatte.
+                    uebersprungen=sum(
+                        1 for r in ergebnisse.results
+                        if r.status is GateStatus.SKIP
+                    ),
                 )
             )
         return Reglerleiter(name, tuple(gemessen))
@@ -12585,6 +12592,18 @@ def register(
             "\n[dim]Die Berichte sind nicht durchsucht, nur aufgezaehlt - "
             "was drinsteht, sagt\nihr Inhalt und kein Dateiname.[/]\n"
         )
+        # **Eine Sache wird doch gelesen** (Befund 346): ob irgendwo ein Gate
+        # gar nicht geurteilt hat. Das ist die Auskunft, die den dreizehn
+        # offenen Faellen aus Befund 332 gefehlt hat - und sie steht in
+        # denselben Dateien.
+        from research.aussetzer import lese as aussetzer_lesen
+
+        lage_gates = aussetzer_lesen(Path.cwd() / "reports")
+        if lage_gates.punkte:
+            console.print(
+                f"[{'red' if lage_gates.mit_aussetzern else 'dim'}]"
+                f"{lage_gates.urteil()}[/]\n"
+            )
 
 
 @app.command()

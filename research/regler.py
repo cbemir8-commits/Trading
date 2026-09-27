@@ -197,6 +197,36 @@ class Stellung:
     offen: tuple[str, ...] = ()
     dsr: float | None = None
 
+    uebersprungen: int = 0
+    """Gates, die an dieser Stellung gar nicht geurteilt haben - Befund 346.
+
+    ``GateResult.passed`` ist wahr, solange ein Gate nicht durchgefallen ist,
+    und ein **uebersprungenes** Gate ist nicht durchgefallen (Befund 321/322).
+    Ohne dieses Feld sieht eine Stellung mit acht Urteilen und drei Aussetzern
+    wie eine mit elf Urteilen aus.
+
+    **Warum diese Leiter zuerst** (von dreizehn offenen Faellen aus Befund
+    332): Auf ihr steht die offene Entscheidung zur Messlatte. Befund 281 hat
+    sechs Spot-Stellungen gemessen, 341 hat sie nachgesehen - und eine
+    geschenkte Zahl waere dort besonders teuer.
+
+    **Gemessen (346): Es trifft heute nicht.** Ueber alle 13
+    Berichtsdateien - 83 Messpunkte aus zehn Reglern - hat jeder elf Gates und
+    **keiner** einen Aussetzer; die kleinste Trade-Zahl ist 75, gegen
+    Aussetzschwellen von 30 und 20. Das Feld steht trotzdem da: Ein Regler,
+    der die Trade-Zahl unter 30 drueckt, ist gebaut und nur nicht gefahren.
+    """
+
+    @property
+    def geurteilt(self) -> int:
+        """Gates mit einem Urteil - die ehrliche Bezugsgroesse."""
+        return self.gesamt - self.uebersprungen
+
+    @property
+    def bestanden_echt(self) -> int:
+        """Bestandene ohne die uebersprungenen."""
+        return max(0, self.bestanden - self.uebersprungen)
+
     def __post_init__(self) -> None:
         if self.gesamt <= 0:
             raise ValueError("Eine Stellung ohne Gates ist keine Messung.")
@@ -209,6 +239,11 @@ class Stellung:
             raise ValueError(
                 f"{len(self.offen)} offene Gates passen nicht zu "
                 f"{self.bestanden} von {self.gesamt} bestandenen."
+            )
+        if not 0 <= self.uebersprungen <= self.gesamt:
+            raise ValueError(
+                f"{self.uebersprungen} uebersprungene von {self.gesamt} Gates "
+                f"ergibt keinen Sinn."
             )
 
     @property
@@ -224,7 +259,12 @@ class Stellung:
             f"{self.wert:>6.1f} {self.trades:>6} {self.rendite:>7.2f}% "
             f"{self.rueckgang:>7.2f}% "
             + (f"{self.dsr:>7.4f} " if self.dsr is not None else "")
-            + f"{self.bestanden:>3}/{self.gesamt}"
+            + f"{self.bestanden_echt:>3}/{self.geurteilt}"
+            + (
+                f" ({self.uebersprungen} ausgesetzt)"
+                if self.uebersprungen
+                else ""
+            )
             + (f"  {', '.join(self.offen)}" if self.offen else "")
         )
 
