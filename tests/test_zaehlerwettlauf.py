@@ -16,13 +16,15 @@ in Befund 234 offen steht (192 von 203 Versuchen ohne).
 
 Was fuenf verlorene Versuche wert sind
 --------------------------------------
-Gerechnet mit den Zahlen des Bestands (n_eff 115, Guete je Trade 0,2708):
+Gerechnet mit den Zahlen des Bestands (n_eff 115, Guete je Trade 0,2708) **und
+seinen gemessenen Momenten** - mit den Vorgaben kommt eine andere Kurve heraus,
+und daran ist die erste Fassung dieser Zahlen gescheitert (Befund 355):
 
-    203 Versuche   noetige Guete 0,4202
-    210 Versuche   noetige Guete 0,4212
-    215 Versuche   noetige Guete 0,4220
+    203 Versuche   noetige Guete 0,3374
+    210 Versuche   noetige Guete 0,3383
+    215 Versuche   noetige Guete 0,3389
 
-Die Latte liegt also 0,0007 Guetepunkte tiefer - **0,49 % der Luecke**. Klein,
+Die Latte liegt also 0,0006 Guetepunkte tiefer - **0,92 % der Luecke**. Klein,
 und trotzdem in die eine Richtung, die dieses Projekt nicht geht: Ein zu tiefer
 Zaehler macht die Mehrfachtest-Korrektur milder. ``save_trials`` wusste das
 schon, seine eigene Meldung sagt es beim abgewiesenen fallenden Zaehler.
@@ -52,7 +54,6 @@ import pytest
 
 from core.dateisperre import NichtZuSperren, gesperrt
 from research.admission import load_trials, save_trials
-from research.erreichbarkeit import noetiger_sharpe
 from research.versuche import Versuch, anhaengen, laden, speichern
 
 #: Wie lange auf einen Kindprozess gewartet wird, in Sekunden.
@@ -107,17 +108,21 @@ class TestDerFundSelbst:
         assert "A1" not in namen
 
     def test_was_fuenf_verlorene_versuche_an_der_latte_aendern(self) -> None:
-        """**Die Zahl zum Fund.** Ohne sie waere "die Latte sinkt" eine
-        Richtung ohne Groesse - und dieses Projekt schaetzt nicht."""
-        eff, guete = 115, 0.2708
+        """**Die Zahl zum Fund**, und sie kommt vom Betriebspunkt.
 
-        richtig = noetiger_sharpe(effektiv=eff, trials=215)
-        zu_tief = noetiger_sharpe(effektiv=eff, trials=210)
+        Hier stand sie zuerst von Hand gerechnet, mit den Vorgabemomenten -
+        und war dadurch falsch (Befund 355). ``SPOTPUNKT.noetige_guete``
+        nimmt die gemessenen.
+        """
+        from research.referenz import SPOTPUNKT
+
+        richtig = SPOTPUNKT.noetige_guete(versuche=215)
+        zu_tief = SPOTPUNKT.noetige_guete(versuche=210)
 
         assert zu_tief < richtig, "ein zu tiefer Zaehler senkt die Latte"
-        assert (richtig - zu_tief) == pytest.approx(0.0007, abs=0.0002)
-        assert (richtig - zu_tief) / (richtig - guete) == pytest.approx(
-            0.0049, abs=0.002
+        assert (richtig - zu_tief) == pytest.approx(0.0006, abs=0.0002)
+        assert (richtig - zu_tief) / SPOTPUNKT.gueteluecke(versuche=215) == (
+            pytest.approx(0.0092, abs=0.002)
         )
 
 
@@ -292,7 +297,7 @@ class TestDasRegisterHaeltDenFund:
 
         eintrag = next(r for r in BEHOBEN if r.befund == 354)
 
-        assert "0,49" in eintrag.ergebnis, "die gemessene Groesse fehlt"
+        assert "0,92" in eintrag.ergebnis, "die gemessene Groesse fehlt"
         assert "Einzelnachweise" in eintrag.ergebnis or (
             "Nachweise" in eintrag.ergebnis
         ), "der schlimmere Teil fehlt"

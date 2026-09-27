@@ -31690,13 +31690,19 @@ gebildet hat, ueberschreibt damit alles, was seither dazugekommen ist.
 
 Gerechnet mit den Zahlen des Bestands (n_eff 115, Guete je Trade 0,2708):
 
-    203 Versuche   noetige Guete 0,4202
-    210 Versuche   noetige Guete 0,4212
-    215 Versuche   noetige Guete 0,4220
+    203 Versuche   noetige Guete 0,3374
+    210 Versuche   noetige Guete 0,3383
+    215 Versuche   noetige Guete 0,3389
 
-Die Latte liegt 0,0007 Guetepunkte tiefer - **0,49 % der Luecke.** Das ist
+Die Latte liegt 0,0006 Guetepunkte tiefer - **0,92 % der Luecke.** Das ist
 klein, und es gehoert so gesagt: Kein Kandidat besteht deshalb, der sonst
-durchfaellt. Es ist auch nicht die Groesse, die hier zaehlt, sondern die
+durchfaellt.
+
+> **Berichtigt in Befund 355.** Hier standen zuerst 0,4202 / 0,4212 / 0,4220
+> und "0,49 % der Luecke". Diese Zahlen sind mit den **Vorgabemomenten**
+> gerechnet (Schiefe 0, Woelbung 3) statt mit den gemessenen des Bestands
+> (3,4646 und 15,9173). Die Wirkung des Fundes war dadurch als halb so gross
+> gemeldet, wie sie ist. Es ist auch nicht die Groesse, die hier zaehlt, sondern die
 Richtung. Ein zu tiefer Zaehler macht die Mehrfachtest-Korrektur **milder**, und
 ``save_trials`` wusste das die ganze Zeit - seine Meldung zum abgewiesenen
 fallenden Zaehler sagt genau diesen Satz. Die Wache gegen den fallenden Zaehler
@@ -31778,3 +31784,82 @@ dass **genau eine** Datei neben dem Zaehler liegt, und meinte damit "kein halbes
 ``.tmp`` bleibt liegen". Das sind zwei Aussagen, und nur die zweite war gemeint.
 Jetzt zaehlt er die erlaubte Nachbarschaft auf und prueft das ``.tmp`` getrennt;
 eine dritte Datei faellt weiter auf.
+
+## Dreihundertfuenfundfuenfzig. Die Luecke von Hand gerechnet, mit den falschen Momenten
+
+Befund 354 hat beziffert, was fuenf verlorene Versuche an der Latte des
+Deflated-Sharpe-Gates aendern. **Die Zahl war falsch, und sie war zu klein.**
+
+    veroeffentlicht   noetige Guete 0,4220   Luecke 0,1512   Wirkung 0,49 %
+    richtig           noetige Guete 0,3389   Luecke 0,0681   Wirkung 0,92 %
+
+Der Fehler ist ein Aufruf von `noetiger_sharpe` **ohne die Momente**. Die
+Vorgaben sind Schiefe 0 und Woelbung 3; der Bestand hat 3,4646 und 15,9173. Ein
+Lauf mit 156 Trades, dessen Ertrag an wenigen sehr grossen Gewinnern haengt, ist
+nicht normalverteilt - und das Gate weiss das, `deflated_sharpe_ratio` nimmt
+beide Momente entgegen.
+
+Die gemeldete Wirkung meines eigenen Fundes war damit **halb so gross wie der
+Fund**. In der Richtung, die bequem ist.
+
+### Die Gegenprobe lag bereit
+
+Der Bestand hat einen veroeffentlichten Deflated Sharpe von 0,5827:
+
+    mit den gemessenen Momenten   0,5827   - auf die Stelle
+    mit den Vorgaben              0,5473
+
+Wer eine Zahl ueber den Bestand rechnet und dabei dessen eigenen DSR nicht
+trifft, rechnet auf einer anderen Kurve. Dieser Abgleich kostet eine Zeile und
+haette den Fehler in dem Moment gezeigt, in dem er entstand.
+
+### Die Warnung stand da. Zweimal.
+
+`Erreichbarkeit.schiefe` sagt es: *"mit den Vorgaben statt den gemessenen Werten
+kaeme eine andere Kurve heraus als die, auf der `dsr` liegt."*
+
+`Referenzpunkt.schiefe` sagt es noch genauer, und beschreibt denselben Unfall in
+der anderen Richtung: *"In Befund 152 habe ich `AUSSICHT.heute` nachgezogen und
+`noetig` stehen lassen [...] Die genannte Entfernung war dadurch sechs Befunde
+lang zu kurz (Befund 158)."*
+
+Zwei Docstrings, beide gelesen, beide in derselben Woche zitiert. **Ein Satz in
+Prosa haelt niemanden auf.** Was 158 daraus gemacht hat, ist die Abhilfe:
+`noetiges_n` rechnet mit den Momenten des Punkts, statt eine gepflegte Zahl
+danebenzustellen. Die Schwester dazu fehlte.
+
+### Was gebaut ist
+
+`Referenzpunkt.noetige_guete(versuche=...)`, `.gueteluecke()` und
+`.gueteanteil()` - alle drei mit den Momenten **des Punkts**:
+
+    203 Versuche   noetig 0,3374   Luecke 0,0666   +24,6 %
+    210 Versuche   noetig 0,3383   Luecke 0,0675   +24,9 %
+    215 Versuche   noetig 0,3389   Luecke 0,0681   +25,1 %
+
+Damit ist die Zahl nur noch auf einem Weg zu bekommen, und auf dem richtigen.
+Das deckt sich mit der Reihe, in der das Projekt die Luecke seit Befund 70
+nennt: +13 % damals, +24,3 % in 222, heute rund +25 %.
+
+Berichtigt sind der Registereintrag zu 354, der Abschnitt im Laborbuch - mit
+Vermerk, denn ein Laborbuch wird nicht ueberschrieben - und der Test, der die
+falsche Zahl schon festgehalten hatte. Der hatte sie sogar mit Toleranz
+festgenagelt, also war die naechste Rechnung mit denselben falschen Momenten
+gruen gewesen.
+
+### Und dann noch einmal dieselbe Sorte Fehler
+
+Der neue Test sollte die Zahl gegen Befund 269 halten und behauptete, 0,3387
+sei die Latte bei 231 Versuchen. Ist sie nicht - sie liegt dort bei 0,3408, und
+0,3387 gehoert zu rund 213.
+
+Diesmal hat es die Wache gemeldet, bevor etwas veroeffentlicht war. Und die
+Berichtigung ist der bessere Test: Befund 269 sagt, +25,9 % loesen das Gate und
+*"das Fenster schliesst sich bei 231 Versuchen"* - das heisst, bei 231 verlangt
+die Schwelle genau das, was +25,9 % liefern. Aus dem Betriebspunkt gerechnet:
+
+    0,2708 * 1,259           = 0,3409
+    noetig bei 231 Versuchen = 0,3408
+
+Die 231 sind damit keine gepflegte Zahl mehr, sondern eine, die aus dem Punkt
+herausfaellt.

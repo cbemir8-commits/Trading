@@ -2783,8 +2783,10 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Stunden spaeter. Gemessen: Zwei Laeufe ab 203 melden 208 und 210, der "
         "Zaehler landet in **beiden** Reihenfolgen auf 210 statt 215 - fuenf "
         "Versuche weg. Gerechnet mit den Zahlen des Bestands (n_eff 115, Guete "
-        "0,2708) senkt das die Latte von 0,4220 auf 0,4212, also **0,49 % der "
-        "Luecke**. Klein, und in der Richtung, die dieses Projekt nicht geht - "
+        "0,2708) senkt das die Latte von 0,3389 auf 0,3383, also **0,92 % der "
+        "Luecke** - berichtigt in 355, zuerst stand hier 0,49 % aus einer "
+        "Rechnung mit Vorgabemomenten. Klein, und in der Richtung, die dieses "
+        "Projekt nicht geht - "
         "'save_trials' wusste das schon, seine Meldung zum abgewiesenen "
         "fallenden Zaehler sagt es. Bei den Einzelnachweisen ist es "
         "schlimmer als eine Zahl: Die zwei Nachweise des einen Laufs sind ganz "
@@ -2800,6 +2802,28 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Test war keiner**: Acht Prozesse gleichzeitig verloren auch ohne "
         "Sperre nichts, weil Pythons Start laenger dauert als der Griff",
         354,
+    ),
+    # Befund 355: die Berichtigung zu 354, und sie ist mein eigener Fehler.
+    Richtung(
+        "Die Luecke von Hand gerechnet, mit den falschen Momenten",
+        "Befund 354 hat beziffert, was fuenf verlorene Versuche an der Latte "
+        "aendern - mit 'noetiger_sharpe' von Hand und **ohne die Momente**. Die "
+        "Vorgaben sind Schiefe 0 und Woelbung 3, der Bestand hat 3,4646 und "
+        "15,9173. Damit stand dort noetige Guete 0,4220 statt 0,3389, eine "
+        "Luecke von 0,1512 statt 0,0681 und eine Wirkung von 0,49 % statt "
+        "**0,92 %** - die eigene Meldung war halb so gross wie der Fund. Die "
+        "Gegenprobe haette es sofort gezeigt: Mit den gemessenen Momenten kommt "
+        "der veroeffentlichte Deflated Sharpe des Bestands von **0,5827** auf "
+        "die Stelle heraus, mit den Vorgaben 0,5473. Berichtigt sind "
+        "Registereintrag, Laborbuch und der Test, der die falsche Zahl schon "
+        "festgehalten hatte. Gebaut ist die Abhilfe: "
+        "'Referenzpunkt.noetige_guete', '.gueteluecke' und '.gueteanteil' "
+        "rechnen mit den Momenten des Punkts, wie 'noetiges_n' seit 158 - "
+        "dessen Docstring nennt denselben Unfall in der anderen Richtung. Die "
+        "Warnung stand also in zwei Docstrings und hat nicht gereicht; ein "
+        "Satz in Prosa haelt niemanden auf, eine Eigenschaft, die die richtige "
+        "Zahl liefert, schon",
+        355,
     ),
 )
 

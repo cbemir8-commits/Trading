@@ -131,6 +131,59 @@ class Referenzpunkt:
                 return n
         return None
 
+    def noetige_guete(self, *, versuche: int | None = None) -> float | None:
+        """Welche Guete je Trade die Schwelle bei **dieser** Stichprobe verlangt.
+
+        Das Geschwister von ``noetiges_n``: Dort steht die Frage "wie viele
+        Beobachtungen", hier "wie gut je Trade". Beide rechnen mit den
+        **eigenen Momenten** dieses Punkts.
+
+        **Und genau daran ist eine Zahl in Befund 354 gescheitert** (355). Ich
+        habe die noetige Guete mit ``noetiger_sharpe`` von Hand gerechnet und
+        die Vorgabemomente stehen lassen - Schiefe 0, Woelbung 3 statt der
+        gemessenen 3,4646 und 15,9173. Das ergibt 0,4202 statt 0,3374, eine
+        Luecke von 0,1512 statt 0,0681, und die gemeldete Wirkung des Fundes
+        war dadurch **halb so gross** wie sie ist. Die Gegenprobe haette es
+        sofort gezeigt: Mit den gemessenen Momenten kommt der veroeffentlichte
+        Deflated Sharpe von 0,5827 auf die Stelle heraus, mit den Vorgaben
+        0,5473.
+
+        Deshalb steht die Zahl jetzt hier und nicht in einem Text: Wer sie von
+        hier nimmt, bekommt sie mit den Momenten, zu denen sie gehoert.
+
+        ``None`` ohne Verteilungsform, und ``None``, wenn auch ein sehr hoher
+        Sharpe nicht genuegt - beides ist ehrlicher als eine Zahl.
+        """
+        if self.schiefe is None or self.woelbung is None:
+            return None
+        from research.erreichbarkeit import noetiger_sharpe
+
+        return noetiger_sharpe(
+            effektiv=self.effektiv,
+            trials=self.versuche if versuche is None else versuche,
+            skew=self.schiefe,
+            kurtosis=self.woelbung,
+            ziel=self.schwelle,
+        )
+
+    def gueteluecke(self, *, versuche: int | None = None) -> float | None:
+        """Wie viele Guetepunkte je Trade noch fehlen."""
+        noetig = self.noetige_guete(versuche=versuche)
+        return None if noetig is None else noetig - self.guete
+
+    def gueteanteil(self, *, versuche: int | None = None) -> float | None:
+        """Um welchen **Anteil** die Guete je Trade steigen muesste.
+
+        Die Form, in der das Projekt die Luecke seit Befund 70 nennt: "+13 %",
+        spaeter +24,3 % (222), heute rund +25 % - dieselbe Rechnung, jeweils
+        auf dem Stand des Tages. ``None`` bei einer Guete von null oder
+        darunter: "um wieviel Prozent besser als nichts" ist keine Auskunft.
+        """
+        luecke = self.gueteluecke(versuche=versuche)
+        if luecke is None or self.guete <= 0:
+            return None
+        return luecke / self.guete
+
     def als_zeile(self) -> str:
         return (
             f"{self.name:<24} {self.trades:>4} Trades, n = {self.effektiv:>3}, "
