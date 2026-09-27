@@ -541,8 +541,10 @@ def noetige_guete(
     -------------------------------------------------
     Der Deflated Sharpe rechnet mit Schiefe und Woelbung **der beurteilten
     Verteilung** - so macht es ``gates.py``, das sie aus den Trades des
-    Kandidaten nimmt. Ohne Angabe stehen hier die Vorgaben aus ``suchbudget``,
-    und das sind die **gemessenen des Bestands** (3,473 und 15,951).
+    Kandidaten nimmt. Ohne Angabe stehen hier die Vorgaben aus ``suchbudget``:
+    3,473 und 15,951, am Bestand aufgenommen - **aber nicht seine heutigen**
+    (Befund 356). Die lauten 3,4646 und 15,9173 und stehen in
+    ``referenz.SPOTPUNKT``.
 
     Das ist keine neutrale Wahl: Starke rechte Schiefe und dicke Raender
     **senken** die Latte. Bei n_eff 115 verlangt sie mit den Momenten des

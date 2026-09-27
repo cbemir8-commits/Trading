@@ -2825,6 +2825,31 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Zahl liefert, schon",
         355,
     ),
+    # Befund 356: der Sweep nach 355 - wo stehen noch Zahlen ueber den
+    # Bestand, die niemand gegen den Lauf haelt?
+    Richtung(
+        "Guete und Momente des Referenzpunkts waren ungebunden",
+        "Der Test, der 'referenz.SPOTPUNKT' gegen einen echten Lauf haelt, "
+        "band Trades, DSR, Gate-Bilanz und - ueber die Formel - die effektive "
+        "Stichprobe. **Guete, Schiefe und Woelbung nicht**, obwohl er sie "
+        "ausrechnet: Sie gingen als Eingang in die Formel und wurden mit der "
+        "gepflegten Angabe nie verglichen. Ausgerechnet die drei, an denen "
+        "Befund 355 gescheitert ist und von denen 'zielfenster' sagt, dass 0,09 "
+        "Unterschied in der Schiefe die Grenze des Versuchsbudgets um siebzehn "
+        "Versuche verschiebt. Heute auf echten Kerzen nachgerechnet und alle "
+        "vier bestaetigt: 156 gehandelte Trades, Guete 0,2708, Schiefe 3,4646, "
+        "Woelbung 15,9173, DSR 0,5826 - 'SPOTPUNKT' stimmt auf die letzte "
+        "Stelle. Jetzt gebunden, samt der Gegenprobe ueber **alle** 158 Trades "
+        "(3,376/15,415), also der Verwechslung, die 'zielfenster' als einen von "
+        "zwei eigenen Rechenfehlern fuehrt. **Und ein zweiter Fund beim "
+        "Hinsehen**: Fuenf Stellen nennen die Vorgaben aus 'suchbudget' "
+        "(3,473/15,951) 'die gemessenen des Bestands'. Sind sie nicht - nur "
+        "nahe dran. Umgestellt werden sie nicht, das waere die Latte jeder "
+        "Katalogregel und damit eine Messung; die Beschriftung ist berichtigt "
+        "und der Abstand gemessen: 0,38 % der Luecke, und **zwei Versuche** an "
+        "der Stelle, an der sich das Versuchsfenster schliesst (233 gegen 235)",
+        356,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

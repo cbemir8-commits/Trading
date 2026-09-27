@@ -893,18 +893,70 @@ class TestDieMomenteGehoerenZurRegel:
     Das Deflated-Sharpe-Gate rechnet mit Schiefe und Woelbung **der
     beurteilten Verteilung** - ``gates.py`` nimmt sie aus den Trades des
     Kandidaten. ``noetige_guete`` hat sie nie durchgereicht und damit die
-    Vorgaben aus ``suchbudget`` benutzt: 3,473 und 15,951, die **gemessenen
-    des Bestands**.
+    Vorgaben aus ``suchbudget`` benutzt: 3,473 und 15,951, am Bestand
+    aufgenommen - **nicht seine heutigen**, die lauten 3,4646 und 15,9173
+    (Befund 356).
 
     Das ist keine neutrale Wahl. Starke rechte Schiefe und dicke Raender
     senken die Latte deutlich - eine Regel mit gewoehnlicherer Verteilung
     wurde dadurch zu milde gemessen.
     """
 
-    def test_die_vorgabe_ist_die_form_des_bestands(self) -> None:
+    def test_die_vorgabe_ist_am_bestand_aufgenommen(self) -> None:
         from research.suchbudget import SCHIEFE, WOELBUNG
 
         assert (SCHIEFE, WOELBUNG) == (3.473, 15.951)
+
+    def test_aber_es_sind_nicht_seine_heutigen(self) -> None:
+        """**Befund 356.** Fuenf Stellen nannten die Vorgabe "die gemessenen
+        des Bestands". Sie ist es nicht - nur nahe dran.
+
+        Umgestellt wird sie nicht: Das aendert die Latte jeder Katalogregel,
+        also eine Messung und keine Aufraeumarbeit. Festgehalten wird, dass es
+        zwei Paare sind, damit das dritte Mal keiner das eine fuer das andere
+        nimmt.
+        """
+        from research.referenz import SPOTPUNKT
+        from research.suchbudget import SCHIEFE, WOELBUNG
+
+        assert (SPOTPUNKT.schiefe, SPOTPUNKT.woelbung) != (SCHIEFE, WOELBUNG)
+        assert abs(SCHIEFE - SPOTPUNKT.schiefe) < 0.01, "nahe dran, nicht gleich"
+        assert abs(WOELBUNG - SPOTPUNKT.woelbung) < 0.05
+
+    def test_und_was_der_unterschied_an_der_latte_kostet(self) -> None:
+        """Gemessen, damit "nahe dran" eine Groesse hat: 0,38 % der Luecke -
+        und zwei Versuche an der Stelle, an der das Fenster sich schliesst."""
+        from research.erreichbarkeit import noetiger_sharpe
+        from research.referenz import SPOTPUNKT
+        from research.suchbudget import SCHIEFE, WOELBUNG
+
+        def latte(schiefe: float, woelbung: float, versuche: int) -> float:
+            return noetiger_sharpe(
+                effektiv=SPOTPUNKT.effektiv, trials=versuche,
+                skew=schiefe, kurtosis=woelbung,
+            )
+
+        eigen = latte(SPOTPUNKT.schiefe, SPOTPUNKT.woelbung, SPOTPUNKT.versuche)
+        vorgabe = latte(SCHIEFE, WOELBUNG, SPOTPUNKT.versuche)
+
+        assert eigen - vorgabe == pytest.approx(0.00025, abs=5e-5)
+        assert (eigen - vorgabe) / SPOTPUNKT.gueteluecke() == pytest.approx(
+            0.0038, abs=0.001
+        )
+
+        erreicht = SPOTPUNKT.guete * 1.259
+        fenster = {
+            name: next(
+                v for v in range(150, 400)
+                if latte(schiefe, woelbung, v) > erreicht
+            )
+            for name, (schiefe, woelbung) in (
+                ("eigen", (SPOTPUNKT.schiefe, SPOTPUNKT.woelbung)),
+                ("vorgabe", (SCHIEFE, WOELBUNG)),
+            )
+        }
+
+        assert fenster == {"eigen": 233, "vorgabe": 235}
 
     def test_eine_neutrale_verteilung_verlangt_deutlich_mehr(self) -> None:
         """**Der tragende Test** - die Zahlen aus Befund 191."""

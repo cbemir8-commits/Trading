@@ -218,9 +218,10 @@ class Rennen:
 
     **Die Huerde gehoert zu ihm, nicht zum Bestand** (Befund 192). ``huerde``
     hat die Momente nie gesetzt und damit die Vorgaben aus ``suchbudget``
-    benutzt - 3,473 und 15,951, die des Bestands. Fuer den Bestand selbst
-    ist das fast richtig; fuer jeden anderen Kandidaten ist es die falsche
-    Verteilung, und starke Schiefe senkt die Huerde deutlich.
+    benutzt - 3,473 und 15,951, am Bestand aufgenommen. Fuer den Bestand selbst
+    ist das fast richtig, und "fast" ist hier genau: Seine heutigen Momente sind
+    3,4646 und 15,9173 (Befund 356). Fuer jeden anderen Kandidaten ist es die
+    falsche Verteilung, und starke Schiefe senkt die Huerde deutlich.
 
     Das ist derselbe Fehler wie in Befund 191, an der zweiten Stelle. Dort
     sass er in ``noetige_guete``, hier in ``Rennen.huerde`` - und er schlaegt

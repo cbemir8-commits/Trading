@@ -31863,3 +31863,84 @@ die Schwelle genau das, was +25,9 % liefern. Aus dem Betriebspunkt gerechnet:
 
 Die 231 sind damit keine gepflegte Zahl mehr, sondern eine, die aus dem Punkt
 herausfaellt.
+
+## Dreihundertsechsundfuenfzig. Guete und Momente waren nie gegen den Lauf gehalten
+
+Nach Befund 355 die naechstliegende Frage: **Wo stehen noch Zahlen ueber den
+Bestand, die niemand gegen eine Messung haelt?**
+
+`referenz.py` gibt es genau dafuer - sein Kopf sagt es selbst: *"Ein Test
+vergleicht die Angabe mit dem, was das Gate heute liefert - laeuft sie weg,
+faellt es dort auf."* Der Test existiert, ist langsam und gruen, und er bindet:
+
+    trades      156      gegen die fertig gehandelten Trades des Laufs
+    dsr      0,5827      gegen den Wert des Gates
+    bestanden     9      gegen die Gate-Bilanz
+    gesamt       11      dito
+    effektiv    115      ueber die Formel, weil es in keiner Gate-Meldung steht
+
+**Nicht gebunden waren `guete`, `schiefe` und `woelbung`** - und das ist die
+feine Stelle: Der Test *rechnet sie aus*. Sie gehen als Eingang in die
+Formelprobe des Deflated Sharpe und wurden mit der gepflegten Angabe nie
+verglichen. Eine Zahl, die durch einen Test hindurchlaeuft, ist nicht geprueft.
+
+Ausgerechnet diese drei. Befund 355 ist an ihnen gescheitert, und `zielfenster`
+sagt ueber sie: *"Sie haengt empfindlich an Schiefe und Woelbung: Mit
+3,376/15,415 statt der gemessenen 3,4646/15,9173 faellt sie auf 214 - siebzehn
+Versuche Unterschied bei 0,09 in der Schiefe."*
+
+### Nachgerechnet, auf echten Kerzen
+
+Der Spot-Punkt, BTC + ETH Forschungskerzen auf Tagesbasis, der Bestand ohne
+Hebel und ohne Funding:
+
+    158 Trades roh, davon 2 am Datenende beendet
+    156 gehandelt   Guete 0,2708   Schiefe 3,4646   Woelbung 15,9173
+    Gate: Deflated Sharpe 0,5826, Messlatte 14,34 % gegen 15 %
+
+**`SPOTPUNKT` stimmt auf die letzte Stelle** - alle vier Zahlen. Das ist der
+angenehme Fall: Die Pflege hat gehalten, nur die Wache fehlte.
+
+Der erste Anlauf dieser Messung nahm alle 158 Trades und kam auf Guete 0,2848,
+Schiefe 3,3762, Woelbung 15,4151 - keine Uebereinstimmung. Das ist genau die
+Verwechslung, die `zielfenster` als einen ihrer zwei eigenen Rechenfehler
+fuehrt, und sie war hier ein Zwischenschritt statt einer Veroeffentlichung, weil
+die Gegenprobe gegen `SPOTPUNKT` sofort widersprach. Beide Sorten stehen jetzt
+im Test fest, mit der Zusicherung, dass sie sich unterscheiden.
+
+### Der zweite Fund: fuenf falsche Beschriftungen
+
+`suchbudget.SCHIEFE = 3.473` und `WOELBUNG = 15.951`. Fuenf Stellen nennen sie
+"die gemessenen des Bestands":
+
+    suchbudget.py      "Voreingestellt sind die des Spitzenkandidaten"
+    verbund.py         "das sind die **gemessenen des Bestands**"
+    wettrennen.py      "die des Bestands. Fuer den Bestand selbst fast richtig"
+    stand.py           "(3,473/15,951 - den Momenten des Bestands)"
+    test_verbund.py    "die **gemessenen des Bestands**"
+
+Sie sind es nicht. Die gemessenen sind 3,4646 und 15,9173. `wettrennen` ist der
+einzige, der ehrlich "fast richtig" sagt - und `cli.py` musste an **zwei**
+Stellen einen Kommentar dagegen schreiben (*"Sie aehneln einander (3,4646 gegen
+3,473), sind aber nicht dieselben"*, Befunde 191/192). Wenn zwei Aufrufstellen
+eine Warnung gegen eine Beschriftung brauchen, ist die Beschriftung falsch.
+
+**Umgestellt werden die Konstanten nicht.** Sie sind die Vorgabe fuer die Linie
+des **Katalogs**; wer sie auf den Punkt umstellt, aendert die Latte jeder
+Katalogregel - das waere eine Messung und keine Aufraeumarbeit. Berichtigt ist
+die Beschriftung, und der Abstand ist jetzt gemessen statt "fast":
+
+    Latte je Trade   eigene Momente 0,33736   Vorgabe 0,33711
+    Unterschied      0,00025 Guetepunkte  =  0,38 % der Luecke
+    Fenster schliesst bei   233 Versuchen   gegen   235
+
+Zwei Versuche an der Stelle, an der laut `zielfenster` *"der Puffer null"* ist.
+Das ist kein grosser Fehler, aber es ist einer an einer Zahl, gegen die geplant
+wird.
+
+### Was das Muster ist
+
+Dreimal in Folge dasselbe: 354 hat eine Zahl von Hand gerechnet, 355 hat sie
+berichtigt und die Rechnung an den Punkt gebunden, 356 findet die Felder, die
+der Punkt selbst nicht gegen die Messung haelt. Jedes Mal war die Warnung schon
+irgendwo aufgeschrieben. Was fehlte, war nie die Einsicht - es war die Bindung.

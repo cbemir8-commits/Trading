@@ -48,9 +48,28 @@ from research.gates import GateThresholds, deflated_sharpe_ratio
 #: nicht danebengeschrieben. Wer sie dort aendert, aendert sie hier mit.
 ZIEL = GateThresholds().min_deflated_sharpe
 
-#: Schiefe und Woelbung, mit denen die Linie gerechnet wird. Voreingestellt
-#: sind die des Spitzenkandidaten: Beide gehen in den Deflated Sharpe ein, und
-#: eine Normalverteilung anzunehmen waere hier deutlich zu freundlich.
+#: Schiefe und Woelbung, mit denen die Linie gerechnet wird.
+#:
+#: Eine **Vorgabe fuer den Katalog**, aufgenommen am Spitzenkandidaten: Beide
+#: gehen in den Deflated Sharpe ein, und eine Normalverteilung anzunehmen waere
+#: hier deutlich zu freundlich.
+#:
+#: **Es sind nicht seine heutigen Momente** (Befund 356). Die stehen in
+#: ``referenz.SPOTPUNKT`` und lauten 3,4646 und 15,9173 - aus den 156
+#: gehandelten Trades, heute auf echten Kerzen nachgerechnet. Diese beiden hier
+#: stammen aus einer aelteren Aufnahme; sie liegen nahe daran, sind aber nicht
+#: dieselben, und fuenf Stellen im Projekt haben sie "die gemessenen des
+#: Bestands" genannt.
+#:
+#: Sie bleiben trotzdem stehen. Wer sie auf den Punkt umstellt, aendert die
+#: Latte **jeder** Katalogregel - eine Messung, keine Aufraeumarbeit. Was der
+#: Bestand betrifft, rechnet mit seinen eigenen Momenten: ``cli`` tut das an
+#: zwei Stellen ausdruecklich (Befunde 191/192), und ``Referenzpunkt`` liefert
+#: sie seit Befund 355 selbst.
+#:
+#: Was der Unterschied kostet, ist gemessen: 0,00025 Guetepunkte je Trade an
+#: der Latte (0,38 % der Luecke) und **zwei Versuche** an der Stelle, an der
+#: sich das Versuchsfenster schliesst - 233 gegen 235.
 SCHIEFE = 3.473
 WOELBUNG = 15.951
 

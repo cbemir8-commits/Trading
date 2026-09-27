@@ -233,6 +233,39 @@ def test_der_referenzpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
         f"{aus_referenz:.4f}, das Gate liefert aber {float(dsr.value):.4f}."
     )
 
+    # **Guete und Momente waren die einzigen Felder ohne Bindung** (Befund
+    # 356). Sie standen hier schon ausgerechnet - als **Eingang** der Formel
+    # oben, nie mit der gepflegten Angabe verglichen. Und sie sind die
+    # empfindlichen: 'zielfenster' haelt fest, dass die Grenze des
+    # Versuchsbudgets bei 0,09 Unterschied in der Schiefe um siebzehn
+    # Versuche wandert, Befund 355 hat mit den falschen Momenten eine eigene
+    # Messung halb so gross gemeldet.
+    assert float(pnls.mean() / streuung) == pytest.approx(
+        SPOTPUNKT.guete, abs=5e-4
+    ), "referenz.py nennt eine andere Guete je Trade als der Lauf"
+    assert float(np.mean(zentriert**3)) == pytest.approx(
+        SPOTPUNKT.schiefe, abs=5e-4
+    ), "referenz.py nennt eine andere Schiefe als der Lauf"
+    assert float(np.mean(zentriert**4)) == pytest.approx(
+        SPOTPUNKT.woelbung, abs=5e-3
+    ), "referenz.py nennt eine andere Woelbung als der Lauf"
+
+    # **Die Gegenprobe zur Verwechslung, die schon passiert ist.**
+    # 'zielfenster' nennt sie als einen von zwei eigenen Rechenfehlern: Wer
+    # die Momente ueber **alle** Trades nimmt statt ueber die gehandelten,
+    # bekommt 3,376/15,415 und daraus 214 statt 231 Versuchen. Beide Zahlen
+    # stehen hier fest, damit die Sorten nicht wieder durcheinandergehen.
+    alle = np.array(
+        [float(x.net_pnl) for x in bericht.all_trades], dtype=float
+    )
+    alle_zentriert = (alle - alle.mean()) / alle.std(ddof=1)
+    assert len(alle) == len(gehandelt) + len(zensiert)
+    assert float(np.mean(alle_zentriert**3)) == pytest.approx(3.376, abs=5e-3)
+    assert float(np.mean(alle_zentriert**4)) == pytest.approx(15.415, abs=5e-2)
+    assert float(np.mean(alle_zentriert**3)) != pytest.approx(
+        SPOTPUNKT.schiefe, abs=5e-3
+    ), "die beiden Sorten sind nicht mehr auseinanderzuhalten"
+
 
 # --- Die Aussicht (Befund 138) ----------------------------------------------
 
