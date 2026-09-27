@@ -69,6 +69,10 @@ MIT_SKIPINFO: frozenset[str] = frozenset({
     # auf der Reglerleiter steht die offene Entscheidung zur Messlatte
     # (281/341), und eine geschenkte Zahl waere dort besonders teuer.
     "research.regler.Stellung",
+    # Befund 347: der zweite - und der erste, bei dem es **zutraf**. Ein
+    # gepflanzter Trend drueckt die Trade-Zahl unter die Aussetzschwellen;
+    # bei 20 % Anteil setzen vier Gates aus, bei 35 % acht, bei 50 % neun.
+    "research.ziehung.Ziehung",
 })
 
 #: Typen, die **verzeichnete** Staende halten und keinen Gate-Lauf ausfuehren.
@@ -133,7 +137,6 @@ OFFEN: frozenset[str] = frozenset({
     "research.ratenbild.Ratenprobe",
     "research.sperrprobe.Ergebnis",
     "research.stand.Lage",
-    "research.ziehung.Ziehung",
 })
 
 
@@ -257,8 +260,8 @@ class TestDieFortschrittszeileDerNachpruefung:
 def test_die_zahl_der_offenen_faelle_steht_fest() -> None:
     """Damit ein spaeterer Lauf sich daran messen kann - und damit das
     Verzeichnis nicht unbemerkt waechst."""
-    assert len(OFFEN) == 12
-    assert len(MIT_SKIPINFO) == 7
+    assert len(OFFEN) == 11
+    assert len(MIT_SKIPINFO) == 8
     assert len(VORGELAGERT) == 1
     assert len(_traeger()) == 22
 

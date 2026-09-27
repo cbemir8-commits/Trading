@@ -31033,3 +31033,98 @@ Uebersprungenes'; Fundstelle Nr. 346, zuerst 332.
 
 `tests/test_aussetzer.py` bindet die drei gemessenen Zahlen an die Berichte auf
 der Platte, beide Urteilsrichtungen und das neue Feld der Reglerleiter.
+
+## Dreihundertsiebenundvierzig. Die Leiter, auf der Befund 54 steht, zaehlte falsch
+
+Befund 321/322 hat `uebersprungen` in `teststaerke.Stufe` nachgetragen - in der
+Leiter einer **einzelnen** Saat. `ziehung.Ziehung` mittelt dieselbe Leiter ueber
+Saaten und blieb stehen. Nach Befund 346, der zwoelf solche Faelle gezaehlt und
+einen geschlossen hat, war das der naechste Verdacht - und der erste, bei dem es
+**zutrifft**.
+
+### Warum es hier zutreffen musste
+
+Die Leiter pflanzt einen Trend in die echte Reihe und faehrt den Anteil hoch.
+Befund 54 hat daraus die Aussage gezogen, die dieses Projekt seither traegt:
+
+    "Qualitaet und Menge sind gekoppelt. Ein groesserer Trend heisst laengeres
+     Halten heisst weniger Trades. Auf rund 3300 Tagen je Bein gibt es keine
+     Einstellung, bei der beides zugleich reicht."
+
+Weniger Trades ist hier also nicht Nebenwirkung, sondern der Mechanismus. Und
+unter 30 Trades setzen Regime-Aufteilung und Deflated Sharpe aus, unter 20 auch
+Monte-Carlo.
+
+### Gemessen, drei Saaten
+
+    Anteil   Trades           geurteilt   Aussetzer
+        0%   160,0 +-0,0        7,0       -
+        5%    86,0 +-14,9       7,3       -
+       10%    60,7 +-13,9       8,7       -
+       20%    30,0 +-6,6        7,7       4 Gates in 2 von 3 Ziehungen
+       35%    20,0 +-4,4        5,0       8 Gates in 3 von 3
+       50%    16,7 +-5,7        6,0       9 Gates in 3 von 3
+
+Die alte Spalte zeigte oben **9,0 / 7,7 / 9,0** - also mehr als die 0-%-Sprosse
+mit 7,0. Sie las sich, als helfe ein gepflanzter Trend dem Kandidaten durch die
+Gates. Geurteilt sind es **7,7 / 5,0 / 6,0**, und damit deutlich schlechter.
+
+### Die Richtung von Befund 54 wird dadurch staerker
+
+Das ist der Teil, der gesagt gehoert: Die Berichtigung schwaecht die Aussage
+nicht, sie stuetzt sie. Wer die alten Zahlen las, konnte hoffen, ein staerkeres
+Signal kaufe Gates; nach der Berichtigung faellt die Bilanz mit dem Anteil, so
+wie es die Kopplung verlangt. Die Absage an die Regelfamilie steht damit auf
+saubereren Zahlen als vorher.
+
+### Der Beleg lag seit sechs Wochen da
+
+`reports/teststaerke/2026-08-14_171333.json`:
+
+    anteil 0,20   trades 29   bestanden 10 von 11   dsr 0,0
+    anteil 0,35   trades 17   bestanden  8 von 11   dsr 0,0
+    anteil 0,50   trades 12   bestanden  9 von 11   dsr 0,0
+
+`dsr 0,0` bei 29 Trades heisst nicht "kein Vorteil", sondern "uebersprungen" -
+die Schwelle liegt bei 30. Die Datei traegt kein Feld, das es sagt, und deshalb
+war es nicht zu sehen. Befund 346 hat die Berichte auf genau das abgesucht und
+keinen Aussetzer gefunden; er las die **Reglerberichte**, weil nur die ein
+`gates`-Objekt je Punkt fuehren. Die Teststaerke-Berichte fuehren `stufen`, und
+die standen nicht in dieser Suche.
+
+### Was gebaut wurde
+
+`Ziehung.uebersprungen`, `.geurteilt` und `.bestanden_echt`, dazu
+`Sprosse.aussetzer` und `.ziehungen_mit_aussetzern`. `werte()` liest ueber
+`getattr`, also mittelt `mittel('bestanden_echt')` ohne weiteres Feld.
+
+`cli teststaerke --saaten` mittelt jetzt die geurteilte Bilanz und schreibt die
+Aussetzer daneben - ohne die Anmerkung liest sich "5,0" wie eine Bilanz aus elf
+Urteilen. Unsinn wird abgewiesen: mehr Uebersprungene als Gates, mehr Bestandene
+als Gates, null Gates.
+
+Der Eintrag heisst jetzt 'Elf Gate-Zahlen ohne Auskunft ueber Uebersprungenes';
+Fundstelle Nr. 347, zuerst 332.
+
+`tests/test_ziehungsaussetzer.py` bindet die sechs Sprossen an einen gemessenen
+Lauf, die Zeile aus dem Augustbericht und die beiden Lesarten.
+
+### Und die Wache hat einen Eintrag hochgehoben
+
+Die volle Suite meldete 'Zertifizierbarkeit der Bauart' (Befund 176/178) als neu
+erwaehnt - der Eintrag sagt: *"keine gepflanzte Sprosse besteht - das gilt aber
+nur entlang dieser Achse: Pflanzen nimmt die Stichprobe mit."*
+
+Genau diese Einschraenkung ist der Mechanismus des Befunds hier. Also ist es
+keine Erwaehnung, sondern eine **Nachmessung**: Der Eintrag traegt jetzt die
+berichtigten Zahlen und Fundstelle 347.
+
+Damit steht er nicht mehr im Leseverzeichnis `GELESEN`, und das ist richtig: Wo
+die Fundstelle selbst auf dem neuesten Abschnitt steht, liegt keine Erwaehnung
+mehr dahinter, die zu lesen waere. Aus sieben gelesenen Richtungen werden sechs -
+der staerkere Zustand, nicht der Verlust eines Eintrags.
+
+Auch die drei Registertests aus Befund 346 haben gemeldet: Sie hielten "Zwoelf",
+die Zahl 12 und die Fundstelle 346 fest. Zwei davon pruefen jetzt den
+**Abgleich** statt der Zahl - der Name muss zur Liste passen, welche Zahl es ist,
+sagt der jeweils neueste Befund.

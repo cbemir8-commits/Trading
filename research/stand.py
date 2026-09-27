@@ -2749,7 +2749,7 @@ BEHOBEN: tuple[Richtung, ...] = (
 #: als "gemessen und zu". Ein Eintrag hier ist eine Zusage, keine Ablage.
 OFFEN: tuple[Richtung, ...] = (
     Richtung(
-        "Zwoelf Gate-Zahlen ohne Auskunft ueber Uebersprungenes",
+        "Elf Gate-Zahlen ohne Auskunft ueber Uebersprungenes",
         "Befund 321/322 hat 'uebersprungen' in 'teststaerke.Stufe' und "
         "'nachpruefung.Ergebnis' nachgetragen, weil 'GateResult.passed' ein "
         "ausgesetztes Gate als bestanden zaehlt. Nachgesehen (332): **21 "
@@ -2785,10 +2785,15 @@ OFFEN: tuple[Richtung, ...] = (
         "**Und einer der dreizehn ist zu** (346): 'regler.Stellung' traegt "
         "'uebersprungen', 'geurteilt' und 'bestanden_echt' - zuerst diese, weil "
         "auf ihrer Leiter die offene Entscheidung zur Messlatte steht (281/341) "
-        "und eine geschenkte Zahl dort besonders teuer waere. Zwoelf stehen "
-        "offen",
+        "und eine geschenkte Zahl dort besonders teuer waere. **Und der "
+        "zweite, bei dem es zutrifft** (347): 'ziehung.Ziehung' mittelt die "
+        "Teststaerke-Leiter ueber Saaten, und ein gepflanzter Trend drueckt die "
+        "Trade-Zahl unter die Schwellen. Gemessen ueber drei Saaten setzen bei "
+        "20 % Anteil vier Gates aus, bei 35 % acht, bei 50 % neun - die Spalte "
+        "zeigte 9,0 / 7,7 / 9,0 statt der geurteilten **7,7 / 5,0 / 6,0** und "
+        "las sich damit, als helfe ein gepflanzter Trend. Elf stehen offen",
         332,
-        346,
+        347,
     ),
     Richtung(
         "Holdout auf fremden Maerkten",
@@ -2819,9 +2824,14 @@ OFFEN: tuple[Richtung, ...] = (
         "Zertifizierbarkeit der Bauart",
         "keine gepflanzte Sprosse besteht - das gilt aber nur entlang dieser "
         "Achse: Pflanzen nimmt die Stichprobe mit, und die Latte ist ein Tal "
-        "mit Boden bei n_eff 60, kein Hang",
+        "mit Boden bei n_eff 60, kein Hang. **Und die Zahlen dazu sind seit 347 "
+        "sauberer**: Genau weil Pflanzen die Stichprobe mitnimmt, fiel sie auf "
+        "den oberen Sprossen unter die Aussetzschwellen, und die Bilanz zaehlte "
+        "uebersprungene Gates mit (9,0 statt 7,7 bei 20 %, 7,7 statt 5,0 bei "
+        "35 %). Die Aussage aendert sich nicht, sie steht besser da: "
+        "Geurteilt faellt die Bilanz mit dem Anteil",
         176,
-        178,
+        347,
     ),
     Richtung(
         "Gedeckelter Ausstieg",

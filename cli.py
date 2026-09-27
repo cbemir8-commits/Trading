@@ -3017,7 +3017,7 @@ def _teststaerke_ueber_saaten(
     **Kostet keinen Versuch.** Geprueft wird die Strecke, keine Regel.
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
-    from research.gates import evaluate_gates
+    from research.gates import GateStatus, evaluate_gates
     from research.suchbudget import Kandidat
     from research.teststaerke import pflanze_trend, regimefolge
     from research.ziehung import Leiter, Sprosse, Ziehung
@@ -3077,6 +3077,13 @@ def _teststaerke_ueber_saaten(
                         dsr=float(dsr) if dsr is not None else 0.0,
                         bestanden=sum(1 for r in gates.results if r.passed),
                         gesamt=len(gates.results),
+                        # Befund 347: Ein gepflanzter Trend drueckt die
+                        # Trade-Zahl unter die Aussetzschwellen, und dann
+                        # zaehlt 'passed' uebersprungene Gates mit.
+                        uebersprungen=sum(
+                            1 for r in gates.results
+                            if r.status is GateStatus.SKIP
+                        ),
                         cagr_pct=(
                             float(bericht.combined.cagr_pct)
                             if bericht.combined else 0.0
@@ -3105,7 +3112,16 @@ def _teststaerke_ueber_saaten(
         console.print(
             f"  {anteil:>7.0%}  {spalte('trades', 1):>14}  "
             f"{spalte('sharpe_je_trade', 4):>17}  {spalte('dsr', 4):>17}  "
-            f"{spalte('bestanden', 1):>11}"
+            f"{spalte('bestanden_echt', 1):>11}"
+            # **Die ehrliche Spalte** (Befund 347): Gemittelt wird, was
+            # geurteilt hat. Wo Gates aussetzen, steht es daneben - sonst
+            # liest die Zahl sich wie eine Bilanz aus elf Urteilen.
+            + (
+                f"  [yellow]({s.aussetzer} Gates ohne Urteil in "
+                f"{s.ziehungen_mit_aussetzern} von {s.anzahl} Ziehungen)[/]"
+                if s.aussetzer
+                else ""
+            )
         )
 
     # Die Schranke steigt mit der Zahl der Vergleiche - fuenf Sprossen ueber

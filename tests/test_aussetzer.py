@@ -223,13 +223,18 @@ class TestDerRegistereintrag:
 
         return next(r for r in OFFEN if "Gate-Zahlen" in r.name)
 
-    def test_die_zahl_im_namen_folgt_der_liste(self) -> None:
-        """Der Name ist eine Zahl, und Zahlen veralten - deshalb steht sie in
-        einem Test und nicht nur im Text."""
+    def test_der_name_zaehlt_die_liste_und_nicht_irgendwas(self) -> None:
+        """Der Name ist eine Zahl, und Zahlen veralten - deshalb steht der
+        **Abgleich** hier und nicht die Zahl. Wer einen Fall schliesst, zieht
+        beide nach; Befund 347 hat es getan (zwoelf auf elf)."""
         from tests.test_gatezahlen import OFFEN as OFFENE_TYPEN
 
-        assert self._eintrag().name.startswith("Zwoelf")
-        assert len(OFFENE_TYPEN) == 12
+        worte = {
+            11: "Elf", 12: "Zwoelf", 13: "Dreizehn", 14: "Vierzehn",
+            15: "Fuenfzehn", 16: "Sechzehn",
+        }
+
+        assert self._eintrag().name.startswith(worte[len(OFFENE_TYPEN)])
 
     def test_die_messung_steht_drin(self) -> None:
         ergebnis = self._eintrag().ergebnis
@@ -238,16 +243,20 @@ class TestDerRegistereintrag:
         assert "kleinste Trade-Zahl 75" in ergebnis
 
     def test_der_geschlossene_fall_steht_drin(self) -> None:
+        """Was Befund 346 geschlossen hat - die Zahl der noch offenen ist
+        Sache des jeweils neuesten Befunds."""
         ergebnis = self._eintrag().ergebnis
 
         assert "'regler.Stellung' traegt" in ergebnis
-        assert "Zwoelf stehen\noffen" in ergebnis or "Zwoelf stehen offen" in ergebnis
+        assert "besonders teuer waere" in ergebnis
 
     def test_die_fundstelle_ist_nachgezogen(self) -> None:
         eintrag = self._eintrag()
 
         assert eintrag.befund == 332
-        assert eintrag.massgeblich == 346
+        # "Mindestens": Jede weitere Schliessung zieht die Fundstelle hoch,
+        # und dieser Test prueft die Messung von 346, nicht ihr Datum.
+        assert eintrag.massgeblich >= 346
 
     def test_der_befehl_sagt_es(self) -> None:
         import ast

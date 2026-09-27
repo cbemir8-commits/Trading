@@ -385,7 +385,11 @@ class TestDieSucheHatJetztEinGedaechtnis:
         durch = {s.name for s in gefunden if s.durchgesehen}
 
         assert durch == set(GELESEN) & {s.name for s in gefunden}
-        assert len(durch) == 7
+        # **Sechs und nicht mehr sieben** (Befund 347): 'Zertifizierbarkeit
+        # der Bauart' ist von "gelesen" auf "nachgemessen" gehoben - seine
+        # Fundstelle steht auf 347, also liegt keine Erwaehnung mehr dahinter.
+        # Das ist der staerkere Zustand, nicht der Verlust eines Eintrags.
+        assert len(durch) == 6
 
     def test_drei_davon_wurden_nachgezogen(self) -> None:
         """Gelesen heisst nicht abgehakt: Drei der sieben waren wirkliche

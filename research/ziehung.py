@@ -75,6 +75,47 @@ class Ziehung:
     gesamt: int
     cagr_pct: float = 0.0
 
+    uebersprungen: int = 0
+    """Gates, die bei dieser Ziehung gar nicht geurteilt haben - Befund 347.
+
+    ``GateResult.passed`` ist wahr, solange ein Gate nicht durchgefallen ist,
+    und ein **uebersprungenes** Gate ist nicht durchgefallen. Befund 321/322
+    hat das in ``teststaerke.Stufe`` behoben - also in der Leiter einer
+    einzelnen Saat. Hier, wo dieselbe Leiter ueber Saaten gemittelt wird, blieb
+    es stehen.
+
+    **Und es trifft zu**: Ein gepflanzter Trend heisst laengeres Halten heisst
+    weniger Trades. In 'reports/teststaerke/2026-08-14_171333.json' stehen bei
+    einem Anteil von 20 % **29 Trades** und "10 von 11" - bei einem Deflated
+    Sharpe von 0,0, also einem Gate, das nie geurteilt hat. Bei 35 % sind es 17
+    Trades, bei 50 % zwoelf. Die Aussetzschwellen liegen bei 30 (Regime,
+    Deflated Sharpe) und 20 (Monte-Carlo).
+    """
+
+    def __post_init__(self) -> None:
+        if self.gesamt <= 0:
+            raise ValueError("Eine Ziehung ohne Gates ist keine Messung.")
+        if not 0 <= self.bestanden <= self.gesamt:
+            raise ValueError(
+                f"{self.bestanden} von {self.gesamt} bestandenen Gates ergibt "
+                f"keinen Sinn."
+            )
+        if not 0 <= self.uebersprungen <= self.gesamt:
+            raise ValueError(
+                f"{self.uebersprungen} uebersprungene von {self.gesamt} Gates "
+                f"ergibt keinen Sinn."
+            )
+
+    @property
+    def geurteilt(self) -> int:
+        """Gates mit einem Urteil - die ehrliche Bezugsgroesse."""
+        return self.gesamt - self.uebersprungen
+
+    @property
+    def bestanden_echt(self) -> int:
+        """Bestandene ohne die uebersprungenen."""
+        return max(0, self.bestanden - self.uebersprungen)
+
 
 @dataclass(slots=True)
 class Sprosse:
@@ -104,6 +145,15 @@ class Sprosse:
         if self.einzeln:
             return None
         return stdev(self.werte(groesse))
+
+    @property
+    def aussetzer(self) -> int:
+        """Uebersprungene Gates ueber alle Ziehungen dieser Sprosse."""
+        return sum(z.uebersprungen for z in self.ziehungen)
+
+    @property
+    def ziehungen_mit_aussetzern(self) -> int:
+        return sum(1 for z in self.ziehungen if z.uebersprungen)
 
     def spanne(self, groesse: str) -> tuple[float, float] | None:
         werte = self.werte(groesse)

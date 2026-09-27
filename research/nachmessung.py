@@ -283,7 +283,13 @@ GELESEN: dict[str, int] = {
     # in den neun gemessenen Vorschlaegen (ENTSCHEIDUNGEN, Nr. 292), und
     # dort hat keiner die Latte geraeumt. Wer 321 anders liest, haelt einen
     # bestandenen Labortest fuer einen Kandidaten.
-    "Zertifizierbarkeit der Bauart": 321,
+    # **Befund 347 hat diesen Eintrag von "gelesen" auf "nachgemessen"
+    # gehoben**, und deshalb steht er hier nicht mehr: Seine Fundstelle ist
+    # 347, also liegt keine Erwaehnung mehr dahinter, die zu lesen waere.
+    # Gemessen wurde genau die Einschraenkung, die der Eintrag selbst nennt -
+    # Pflanzen nimmt die Stichprobe mit, und oben fiel sie unter die
+    # Aussetzschwellen. Ein Buchungseintrag daneben waere eine zweite
+    # Wahrheit ueber denselben Stand.
     "Einstieg, der nicht am Rauschen haengt": 321,
 }
 
@@ -349,7 +355,7 @@ BEGRIFFE: dict[str, tuple[str, ...]] = {
     # Befund 332: Die Begriffe sind die Namen der Sache, nicht die des
     # Eintrags - ein spaeterer Befund ueber ausgesetzte Gates schreibt
     # "uebersprungen" oder "bestanden_echt", nicht "sechzehn Gate-Zahlen".
-    "Zwoelf Gate-Zahlen ohne Auskunft ueber Uebersprungenes": (
+    "Elf Gate-Zahlen ohne Auskunft ueber Uebersprungenes": (
         "uebersprungen",
         "bestanden_echt",
         "geurteilt",
