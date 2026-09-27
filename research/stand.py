@@ -2795,9 +2795,19 @@ OFFEN: tuple[Richtung, ...] = (
         "Trade-Zahl unter die Schwellen. Gemessen ueber drei Saaten setzen bei "
         "20 % Anteil vier Gates aus, bei 35 % acht, bei 50 % neun - die Spalte "
         "zeigte 9,0 / 7,7 / 9,0 statt der geurteilten **7,7 / 5,0 / 6,0** und "
-        "las sich damit, als helfe ein gepflanzter Trend. Elf stehen offen",
+        "las sich damit, als helfe ein gepflanzter Trend. **Und die Suche "
+        "selbst war zu eng** (349): Sie ging nach einem Feld namens "
+        "'bestanden', und sechs Typen tragen dieselbe Bilanz unter anderem "
+        "Namen - darunter 'leaderboard.Entry' mit 'gates_bestanden', die "
+        "Liste, auf der das Projekt rangiert (141 Eintraege, 22 unter 30 "
+        "Trades, 8 mit null). Derselbe Stellvertreter-Fehler wie in 333, eine "
+        "Ebene hoeher. Der Eintrag traegt jetzt 'gates_uebersprungen', und "
+        "der Rangschluessel rechnet mit 'gates_bestanden_echt'; die Wirkung "
+        "auf die Rangfolge ist begrenzt, weil der Deflated Sharpe vor der "
+        "Gate-Zahl steht und bei zu kleiner Stichprobe selbst aussetzt. Elf "
+        "stehen offen",
         332,
-        348,
+        349,
     ),
     Richtung(
         "Holdout auf fremden Maerkten",

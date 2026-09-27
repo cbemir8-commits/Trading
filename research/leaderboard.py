@@ -127,6 +127,36 @@ class Entry:
     zugelassen: bool = False
     gates_bestanden: int = 0
     gates_gesamt: int = 0
+
+    gates_uebersprungen: int = 0
+    """Gates, die gar nicht geurteilt haben - Befund 349.
+
+    ``GateResult.passed`` ist wahr, solange ein Gate nicht durchgefallen ist,
+    und ein **uebersprungenes** Gate ist nicht durchgefallen. Befund 321/322
+    hat das an zwei Stellen behoben, 332 hat ein Verzeichnis der Typen
+    angelegt, die es nicht sagen koennen - und **dieser Typ stand nicht
+    darin**: Die Suche ging nach einem Feld namens ``bestanden``, hier heisst
+    es ``gates_bestanden``. Derselbe Stellvertreter-Fehler wie in Befund 333,
+    eine Ebene hoeher.
+
+    In ``reports/zulassung`` stehen 141 Eintraege, **22 davon unter 30
+    Trades** (Befund 348). Die Wirkung auf die Rangfolge ist begrenzt, weil
+    der Deflated Sharpe vor der Gate-Zahl steht und bei zu kleiner Stichprobe
+    selbst aussetzt - sie entscheidet Gleichstaende und die angezeigte Zahl.
+
+    0 heisst "keiner" und bei alten Eintraegen "nicht erhoben"; beides ist
+    hier dasselbe, weil eine 0 den Rang nicht veraendert.
+    """
+
+    @property
+    def gates_geurteilt(self) -> int:
+        """Gates mit einem Urteil - die ehrliche Bezugsgroesse."""
+        return max(self.gates_gesamt - self.gates_uebersprungen, 0)
+
+    @property
+    def gates_bestanden_echt(self) -> int:
+        """Bestandene ohne die uebersprungenen."""
+        return max(self.gates_bestanden - self.gates_uebersprungen, 0)
     gescheitert_an: list[str] = field(default_factory=list)
 
     trades: int = 0
@@ -253,7 +283,10 @@ class Entry:
         return (
             self.zugelassen,
             round(self.deflated_sharpe, 3),
-            self.gates_bestanden,
+            # **Die geurteilten und nicht die rohen** (Befund 349): Ein
+            # ausgesetztes Gate zaehlt sonst als bestanden, und bei
+            # Gleichstand im Deflated Sharpe entscheidet genau diese Stelle.
+            self.gates_bestanden_echt,
             self.erwartung_r,
             self.sharpe,
         )
@@ -434,7 +467,7 @@ class Leaderboard:
             key=lambda e: (
                 e.zugelassen,
                 round(e.dsr_bei(versuche), 3),
-                e.gates_bestanden,
+                e.gates_bestanden_echt,
                 e.erwartung_r,
                 e.sharpe,
             ),
@@ -483,7 +516,14 @@ class Leaderboard:
         return (
             f"{len(self.entries)} Strategien in {self.laeufe} Laeufen geprueft, "
             f"{len(self.admitted)} zugelassen. "
-            f"Vorn: {spitze.name} ({spitze.gates_bestanden}/{spitze.gates_gesamt} Gates, "
+            f"Vorn: {spitze.name} ({spitze.gates_bestanden_echt}/"
+            f"{spitze.gates_geurteilt} Gates"
+            + (
+                f", {spitze.gates_uebersprungen} ausgesetzt"
+                if spitze.gates_uebersprungen
+                else ""
+            )
+            + ", "
             f"Erwartung {spitze.erwartung_r:+.3f} R)"
         )
 
@@ -492,6 +532,10 @@ def _aus_kandidat(
     candidate, *, generation: int, herkunft: str, versuche: int = 0,
     intervall: str = "", kapital: float = 0.0,
 ) -> Entry:
+    # Lokal, weil ``research.gates`` dieses Modul nicht braucht und ein Import
+    # oben einen Kreis schliessen wuerde.
+    from research.gates import GateStatus
+
     combined = candidate.walkforward.combined
     return Entry(
         genome_id=candidate.genome.genome_id,
@@ -507,6 +551,11 @@ def _aus_kandidat(
         zugelassen=candidate.admitted,
         gates_bestanden=sum(1 for r in candidate.gates.results if r.passed),
         gates_gesamt=len(candidate.gates.results),
+        # Befund 349: Der Bericht traegt den Status je Gate, die Bestenliste
+        # hielt nur das rohe Paar.
+        gates_uebersprungen=sum(
+            1 for r in candidate.gates.results if r.status is GateStatus.SKIP
+        ),
         gescheitert_an=[r.name for r in candidate.gates.failures],
         trades=candidate.trades,
         erwartung_r=round(combined.expectancy_r, 4) if combined else 0.0,

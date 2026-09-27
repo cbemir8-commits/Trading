@@ -73,6 +73,10 @@ MIT_SKIPINFO: frozenset[str] = frozenset({
     # gepflanzter Trend drueckt die Trade-Zahl unter die Aussetzschwellen;
     # bei 20 % Anteil setzen vier Gates aus, bei 35 % acht, bei 50 % neun.
     "research.ziehung.Ziehung",
+    # Befund 349: erst durch die berichtigte Suche gefunden - das Feld heisst
+    # 'gates_bestanden'. Traegt jetzt 'gates_uebersprungen', und der
+    # Rangschluessel rechnet mit 'gates_bestanden_echt'.
+    "research.leaderboard.Entry",
 })
 
 #: Typen, die **verzeichnete** Staende halten und keinen Gate-Lauf ausfuehren.
@@ -105,6 +109,9 @@ VERZEICHNET: dict[str, str] = {
 #: uebersehene Stelle nicht finden.
 VORGELAGERT: dict[str, str] = {
     "research.gatemuster.Gatelage": "lade() laesst uebersprungene Gates weg",
+    # Befund 349: 'Doppel.handelt' nimmt Genome ohne Trades aus dem Vergleich,
+    # und 'rangprobe' benutzt es auch - also eine Schicht vor der Bilanz.
+    "research.rangprobe.Doppel": "handelt() nimmt Genome ohne Trades heraus",
 }
 
 #: Typen, bei denen die Frage **offen** ist - aufgelistet, nicht geprueft.
@@ -140,8 +147,49 @@ OFFEN: frozenset[str] = frozenset({
 })
 
 
+#: Feldnamen, die eine **Gate-Bilanz** tragen - Befund 349.
+#:
+#: Befund 332 hat nach einem Feld namens ``bestanden`` gesucht und daraus ein
+#: Verzeichnis gemacht. Sechs Typen tragen dieselbe Bilanz unter anderem Namen
+#: und waren damit unsichtbar - darunter ``leaderboard.Entry`` mit
+#: ``gates_bestanden``, die Liste, auf der das ganze Projekt rangiert.
+#:
+#: Das ist derselbe Fehler wie in Befund 333, eine Ebene hoeher: eingeteilt
+#: nach dem Namen statt nach der Sache. Gesucht wird deshalb nach einem
+#: **Muster** und die Ausnahmen stehen ausgeschrieben darunter.
+BILANZFELDER: tuple[str, ...] = (
+    "bestanden",
+    "gates_bestanden",
+    "grob_bestanden",
+    "fein_bestanden",
+)
+
+#: Typen, die **keine Bilanz als Feld** tragen - und deshalb nicht hierher.
+#:
+#: Die Suche findet Bilanz**felder**. Diese vier halten stattdessen den Gate-
+#: Bericht selbst oder rechnen die Bilanz als Eigenschaft aus; wer sie liest,
+#: hat den Status je Gate vor sich. Sie stehen hier nur, damit sie nicht als
+#: "uebersehen" gelten - ein Verzeichniseintrag waere falsch, es gibt nichts
+#: nachzutragen.
+#:
+#: **Und genau deshalb hat Befund 332 zwei von ihnen nicht gefunden**, obwohl
+#: sie eine Gate-Zahl anzeigen: ``koernung.Gatelauf`` rechnet ``bestanden`` als
+#: Eigenschaft, ``aussetzer.Punktlage`` zaehlt selbst.
+OHNE_BILANZFELD: dict[str, str] = {
+    "research.admission.Candidate": "haelt GateReport, Status je Gate",
+    "research.machbarkeit.Punkt": "haelt dict[str, Stand], Stand traegt uebersprungen",
+    "research.aussetzer.Punktlage": "zaehlt selbst, was uebersprungen ist (346)",
+    "research.koernung.Gatelauf": "bestanden ist Eigenschaft, skipbewusst seit 338",
+}
+
+
 def _traeger() -> dict[str, frozenset[str]]:
-    """Jeder Datentyp in ``research/`` mit einem Feld ``bestanden``."""
+    """Jeder Datentyp in ``research/`` mit einer Gate-Bilanz.
+
+    **Nicht mehr nur ``bestanden``** (Befund 349): Gesucht wird ueber
+    ``BILANZFELDER``, weil sechs Typen dieselbe Bilanz unter anderem Namen
+    tragen und damit nie im Verzeichnis standen.
+    """
     gefunden: dict[str, frozenset[str]] = {}
     for modul in pkgutil.iter_modules(research.__path__):
         vollname = f"research.{modul.name}"
@@ -158,7 +206,7 @@ def _traeger() -> dict[str, frozenset[str]]:
             if getattr(obj, "__module__", "") != vollname:
                 continue
             felder = frozenset(f.name for f in dataclasses.fields(obj))
-            if "bestanden" in felder:
+            if felder & set(BILANZFELDER):
                 gefunden[f"{vollname}.{name}"] = felder
     return gefunden
 
@@ -187,8 +235,25 @@ class TestDasVerzeichnisIstVollstaendig:
 
         assert verwaist == []
 
+    def test_die_ohne_bilanzfeld_sind_die_andere_bevoelkerung(self) -> None:
+        """**Sie gehoeren ausdruecklich nicht ins Verzeichnis** (Befund 349).
+
+        Die Suche findet Bilanz**felder**; diese vier halten den Bericht oder
+        rechnen die Bilanz als Eigenschaft. Sie stehen aufgeschrieben, damit sie
+        nicht als "uebersehen" gelten - und dieser Test haelt fest, dass sie
+        nicht doch in die Suche geraten. Waere einer davon dort, gehoerte er
+        eingeordnet und nicht erklaert.
+        """
+        assert set(OHNE_BILANZFELD) & set(_traeger()) == set()
+
     def test_keine_doppelte_einordnung(self) -> None:
-        felder = (MIT_SKIPINFO, frozenset(VERZEICHNET), frozenset(VORGELAGERT), OFFEN)
+        felder = (
+            MIT_SKIPINFO,
+            frozenset(VERZEICHNET),
+            frozenset(VORGELAGERT),
+            frozenset(OHNE_BILANZFELD),
+            OFFEN,
+        )
         for i, a in enumerate(felder):
             for b in felder[i + 1 :]:
                 assert not a & b
@@ -203,7 +268,14 @@ class TestDieEinordnungStimmtMitDemQuelltext:
             # keine Sprosse, also ein Ja/Nein und keine Liste. Befund 333 hat
             # gelernt, nicht am Feldnamen zu haengen - hier steht deshalb die
             # Faehigkeit und nicht ein Name.
-            assert traeger[name] & {"uebersprungen", "geurteilt"}, name
+            # **Nicht der Name, die Faehigkeit** - und diesmal auch nicht
+            # der *genaue* Name: 'leaderboard.Entry' nennt es
+            # 'gates_uebersprungen' (Befund 349). Befund 333 hat die Lehre
+            # aufgeschrieben, 349 hat sie zum dritten Mal gebraucht.
+            assert any(
+                "uebersprungen" in feld or "geurteilt" in feld
+                for feld in traeger[name]
+            ), name
 
     def test_wer_in_offen_steht_traegt_es_nicht(self) -> None:
         """Sonst waere er behoben und nur nicht umgetragen."""
@@ -261,9 +333,10 @@ def test_die_zahl_der_offenen_faelle_steht_fest() -> None:
     """Damit ein spaeterer Lauf sich daran messen kann - und damit das
     Verzeichnis nicht unbemerkt waechst."""
     assert len(OFFEN) == 11
-    assert len(MIT_SKIPINFO) == 8
-    assert len(VORGELAGERT) == 1
-    assert len(_traeger()) == 22
+    assert len(MIT_SKIPINFO) == 9
+    assert len(VORGELAGERT) == 2
+    assert len(OHNE_BILANZFELD) == 4
+    assert len(_traeger()) == 24
 
 
 # **Die Messung, die Befund 332 offen gelassen hat** (Befund 333).

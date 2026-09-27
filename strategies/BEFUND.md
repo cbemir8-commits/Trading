@@ -31214,3 +31214,88 @@ Die Regel, die daraus folgt und jetzt im Test steht: **Ein Eintrag, den mehrere
 Befunde bewegen, wird mit "mindestens" geprueft.** Wo die Fundstelle die Aussage
 des Tests ist, bleibt sie eine feste Zahl - wo sie nebenher mitlaeuft, ist eine
 feste Zahl ein Test, der fuer nichts bricht.
+
+## Dreihundertneunundvierzig. Die Suche fand nur, was so hiess
+
+Befund 332 hat ein Verzeichnis der Typen angelegt, die eine Gate-Bilanz tragen
+und nicht sagen koennen, ob jedes Gate geurteilt hat. Es steht unter einem Test,
+der jeden neuen Typ zur Einordnung zwingt - und die Suche dahinter war eine
+Zeile:
+
+    if "bestanden" in felder:
+
+### Sechs Typen tragen dieselbe Bilanz anders
+
+    research.leaderboard.Entry        gates_bestanden / gates_gesamt
+    research.rangprobe.Doppel         grob_bestanden / fein_bestanden
+    research.admission.Candidate      gates (GateReport)
+    research.machbarkeit.Punkt        gates (dict[str, Stand])
+    research.koernung.Gatelauf        bestanden als Eigenschaft
+    research.aussetzer.Punktlage      zaehlt selbst
+
+Keiner von ihnen stand im Verzeichnis, und der Test hat nie gemeldet, weil er
+dieselbe Zeile benutzt wie die Einteilung. Das ist der Fehler aus Befund 333 -
+ein Stellvertreter fuer die Faehigkeit, nicht die Faehigkeit -, nur eine Ebene
+hoeher: nicht in der **Einordnung**, sondern in der **Suche**. Und derselbe Satz
+gilt wieder, den 332 ins eigene Laborbuch geschrieben hat: *Ein Test, der aus
+derselben Annahme stammt wie die Behebung, kann die uebersehene Stelle nicht
+finden.*
+
+### Fuenf sind gedeckt, einer nicht
+
+`Doppel.handelt` nimmt Genome ohne Trades aus dem Vergleich und wird dort auch
+benutzt. `machbarkeit.Stand` traegt `uebersprungen`. `koernung.Gatelauf` ist seit
+Befund 338 skipbewusst. `aussetzer.Punktlage` zaehlt selbst. `admission.Candidate`
+haelt den ganzen Bericht, also den Status je Gate.
+
+**Der sechste ist die Bestenliste** - `leaderboard.Entry`, die Liste, auf der das
+ganze Projekt rangiert. Sie hielt `gates_bestanden` als rohe Summe ueber
+`r.passed`. In `reports/zulassung` stehen **141 Eintraege, 22 unter 30 Trades, 8
+mit null**.
+
+### Wie gross die Wirkung ist
+
+Kleiner, als es klingt, und das gehoert dazu: Der Rangschluessel ist
+`(zugelassen, deflated_sharpe, gates, erwartung_r, sharpe)`. Wer zu wenige
+Trades hat, verliert den Deflated Sharpe **zuerst** - er setzt selbst aus und
+steht dann bei 0,0. Die Gate-Zahl entscheidet also Gleichstaende, nicht die
+Spitze der Liste.
+
+Was sie sehr wohl entscheidet: die **angezeigte** Zahl. "Vorn: X (8/11 Gates)"
+las sich wie acht Urteile.
+
+### Was gebaut wurde
+
+`Entry.gates_uebersprungen` mit `.gates_geurteilt` und `.gates_bestanden_echt`;
+`_aus_kandidat` liest den Status je Gate; `rang_schluessel` und `ranked()`
+rechnen mit der geurteilten Zahl; die Zusammenfassung zeigt das ehrliche Paar und
+nennt Aussetzer ausdruecklich. Der Vorgabewert 0 laesst jeden alten Eintrag
+genau so stehen, wie er war - eine 0 veraendert den Rang nicht.
+
+Die Suche im Verzeichnis geht jetzt ueber `BILANZFELDER` statt ueber einen Namen.
+Dazu eine zweite Liste, `OHNE_BILANZFELD`: vier Typen, die **keine** Bilanz als
+Feld tragen und deshalb ausdruecklich nicht ins Verzeichnis gehoeren - mit einem
+Test, der festhaelt, dass sie nicht doch in die Suche geraten.
+
+Und die Faehigkeitspruefung fragt zum dritten Mal genauer: nicht `{"uebersprungen",
+"geurteilt"}` als Namen, sondern ob ein Feld diese Worte **enthaelt** - `Entry`
+nennt es `gates_uebersprungen`.
+
+`tests/test_bestenlistenbilanz.py` bindet die Zahlen der gespeicherten Listen,
+den Rangschluessel in beide Richtungen und die Einordnung aller sechs.
+
+### Und ein Doppel war schwaecher als sein Original
+
+Zwoelf Tests in `test_wettbewerb.py` fielen mit `'FakeGate' object has no
+attribute 'status'`. Das echte `GateResult` traegt einen Status; das Doppel
+kannte nur `passed`.
+
+Damit standen zwei Wege offen. Der eine: in der Bestenliste gegen eine fehlende
+Eigenschaft absichern - also die Produktion an einen Stub anpassen und die
+Auskunft still verlieren, wo sie fehlt. Der andere: das Doppel dem echten Typ
+gleichmachen.
+
+Der zweite ist richtig, und `FakeGate` hat jetzt einen `status` (samt einem
+Schalter `uebersprungen`, mit dem ein Test den Fall ueberhaupt erst bauen kann).
+Ein Doppel, das weniger kann als sein Original, verschiebt die Anpassung in die
+Produktion - und dort ist sie nicht zu sehen.

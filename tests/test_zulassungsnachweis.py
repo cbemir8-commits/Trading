@@ -40,8 +40,21 @@ from research.seeds import spitzenkandidat
 class FakeGates:
     def __init__(self, bestanden: int, gesamt: int) -> None:
         self.referenzdaten = True
+        # Befund 349: Die Bestenliste liest ``status``, also traegt das Doppel
+        # ihn auch - ein Stub, der weniger kann als der echte Typ, verschiebt
+        # die Anpassung in die Produktion.
+        from research.gates import GateStatus
+
         self.results = [
-            type("R", (), {"passed": i < bestanden})() for i in range(gesamt)
+            type(
+                "R",
+                (),
+                {
+                    "passed": i < bestanden,
+                    "status": GateStatus.PASS if i < bestanden else GateStatus.FAIL,
+                },
+            )()
+            for i in range(gesamt)
         ]
 
 

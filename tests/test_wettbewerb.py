@@ -49,9 +49,24 @@ class FakeGate:
     passed: bool
     wert: float = 0.0
 
+    uebersprungen: bool = False
+    """**Befund 349.** Das echte ``GateResult`` traegt einen ``status``, und die
+    Bestenliste liest ihn jetzt. Ein Doppel ohne ihn haette zwei Wege gelassen:
+    die Bestenliste gegen eine fehlende Eigenschaft abzusichern - also die
+    Produktion an einen Stub anzupassen - oder das Doppel dem echten Typ
+    gleichzumachen. Das zweite ist richtig."""
+
     @property
     def value(self) -> float:
         return self.wert
+
+    @property
+    def status(self):
+        from research.gates import GateStatus
+
+        if self.uebersprungen:
+            return GateStatus.SKIP
+        return GateStatus.PASS if self.passed else GateStatus.FAIL
 
 
 @dataclass
