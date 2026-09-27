@@ -35,6 +35,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from research.gatebilanz import Gatebilanz
+
 
 @dataclass(frozen=True, slots=True)
 class Richtung:
@@ -2749,7 +2751,7 @@ BEHOBEN: tuple[Richtung, ...] = (
 #: als "gemessen und zu". Ein Eintrag hier ist eine Zusage, keine Ablage.
 OFFEN: tuple[Richtung, ...] = (
     Richtung(
-        "Elf Gate-Zahlen ohne Auskunft ueber Uebersprungenes",
+        "Drei Gate-Zahlen ohne Auskunft ueber Uebersprungenes",
         "Befund 321/322 hat 'uebersprungen' in 'teststaerke.Stufe' und "
         "'nachpruefung.Ergebnis' nachgetragen, weil 'GateResult.passed' ein "
         "ausgesetztes Gate als bestanden zaehlt. Nachgesehen (332): **21 "
@@ -2804,10 +2806,18 @@ OFFEN: tuple[Richtung, ...] = (
         "Ebene hoeher. Der Eintrag traegt jetzt 'gates_uebersprungen', und "
         "der Rangschluessel rechnet mit 'gates_bestanden_echt'; die Wirkung "
         "auf die Rangfolge ist begrenzt, weil der Deflated Sharpe vor der "
-        "Gate-Zahl steht und bei zu kleiner Stichprobe selbst aussetzt. Elf "
+        "Gate-Zahl steht und bei zu kleiner Stichprobe selbst aussetzt. "
+        "**Und aus elf offenen Faellen wurde ein Mechanismus** (350): Wer bestanden, "
+        "gesamt und trades traegt, erschliesst die Antwort aus der Trade-Zahl - "
+        "unter 30 setzen Regime-Aufteilung und Deflated Sharpe aus, unter 20 auch "
+        "Monte-Carlo. Acht Typen mischen 'gatebilanz.Gatebilanz' bei und sagen "
+        "damit, ob ihre Bilanz zu gut ist. Das ist die **schwaechere** Auskunft: "
+        "eine Untergrenze, keine Meldung. Offen bleiben die drei ohne Trade-Zahl "
+        "- 'admission.Zulassungsbedingungen', 'instrument.Gebuehrenstufe', "
+        "'ratenbild.Ratenprobe'. Drei "
         "stehen offen",
         332,
-        349,
+        350,
     ),
     Richtung(
         "Holdout auf fremden Maerkten",
@@ -4060,7 +4070,7 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
 
 
 @dataclass(slots=True)
-class Lage:
+class Lage(Gatebilanz):
     """Der gemessene Stand - alles daran kommt aus einer Messung."""
 
     kandidat: str

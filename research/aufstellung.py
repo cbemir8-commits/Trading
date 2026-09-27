@@ -72,11 +72,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import sqrt
 
+from research.gatebilanz import Gatebilanz
+
 __all__ = ["Aufstellungsreihe", "Marktsatz"]
 
 
 @dataclass(frozen=True, slots=True)
-class Marktsatz:
+class Marktsatz(Gatebilanz):
     """Eine Aufstellung von Maerkten und was der Kandidat darauf leistet."""
 
     name: str

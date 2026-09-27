@@ -70,6 +70,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from research.gatebilanz import Gatebilanz
+
 #: Was den Betriebspunkt festlegt, aber hier nicht zu klaeren ist.
 OFFENE_TATSACHE = (
     "Bietet das Bybit-Konto des Nutzers Perpetuals an? Bybit EU fuehrt unter "
@@ -78,7 +80,7 @@ OFFENE_TATSACHE = (
 
 
 @dataclass(frozen=True, slots=True)
-class Betriebspunkt:
+class Betriebspunkt(Gatebilanz):
     """Ein Stand des Kandidaten unter bestimmten Handelsbedingungen."""
 
     name: str

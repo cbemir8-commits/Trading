@@ -199,6 +199,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from research.gatebilanz import Gatebilanz
 from research.gates import deflated_sharpe_ratio
 
 #: Schwelle des Deflated-Sharpe-Gates.
@@ -459,7 +460,7 @@ class Stichprobenbedarf:
 
 
 @dataclass(frozen=True, slots=True)
-class Fenster:
+class Fenster(Gatebilanz):
     """Ein Datenfenster mit dem, was der Kandidat darin leistet."""
 
     name: str
@@ -531,7 +532,7 @@ class Fensterlage:
 
 
 @dataclass(frozen=True, slots=True)
-class Stufe:
+class Stufe(Gatebilanz):
     """Ein Lauf mit einer weiteren abgeschalteten Bremse."""
 
     name: str

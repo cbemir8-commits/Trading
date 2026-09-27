@@ -43,9 +43,11 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from research.gatebilanz import Gatebilanz
+
 
 @dataclass(frozen=True, slots=True)
-class Ergebnis:
+class Ergebnis(Gatebilanz):
     """Was ein Lauf mit gesperrten Einstiegen erreicht hat."""
 
     trades: int

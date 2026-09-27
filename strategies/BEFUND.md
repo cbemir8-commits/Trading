@@ -31299,3 +31299,69 @@ Der zweite ist richtig, und `FakeGate` hat jetzt einen `status` (samt einem
 Schalter `uebersprungen`, mit dem ein Test den Fall ueberhaupt erst bauen kann).
 Ein Doppel, das weniger kann als sein Original, verschiebt die Anpassung in die
 Produktion - und dort ist sie nicht zu sehen.
+
+## Dreihundertfuenfzig. Aus elf offenen Faellen ein Mechanismus
+
+Befund 332 hat sechzehn Typen aufgelistet, die eine Gate-Bilanz tragen und nicht
+sagen koennen, ob jedes Gate geurteilt hat. Fuenf sind seither einzeln
+nachgezogen worden - 338 die Kontoleiter, 346 die Reglerleiter, 347 die
+Teststaerke-Ziehungen, 349 die Bestenliste -, jeder mit eigenem Feld, eigenem
+Befehl, eigenem Test.
+
+**Elf standen noch offen, und einzeln waeren das elf Male dasselbe gewesen.**
+Also nicht elf Male, sondern einmal.
+
+### Der Mechanismus
+
+`research/gatebilanz.py`: Wer `bestanden`, `gesamt` und `trades` traegt, mischt
+`Gatebilanz` bei und bekommt vier Eigenschaften - `uebersprungen_ehrlich`,
+`geurteilt_ehrlich`, `bestanden_ehrlich`, `bilanz_zu_gut` - plus einen
+`bilanzsatz()`.
+
+Gerechnet wird aus den Schwellen, die schon als Daten dastehen
+(`aussetzer.SCHWELLEN`): unter 30 Trades setzen Regime-Aufteilung und Deflated
+Sharpe aus, unter 20 auch Monte-Carlo.
+
+    Messung(name="Trendfolge Ausbruch", trades=0, bestanden=5, gesamt=11)
+    -> "2/8 Gates (Deflated Sharpe, Monte-Carlo, Regime-Aufteilung setzen
+        bei 0 Trades aus); roh 5/11"
+
+**Eine Beimischung und keine Basisklasse mit Feldern**: Die Typen sind teils
+`frozen`, teils `slots`, und ein geerbtes Feld haette jede Signatur veraendert.
+Eigenschaften aendern nichts.
+
+### Erschlossen ist schwaecher als gemeldet, und es heisst auch so
+
+Die Unterscheidung aus Befund 348 bleibt. **Erschlossen** ist eine Untergrenze:
+Es koennen mehr Gates ausgesetzt haben, etwa wenn `run_expensive` aus war oder
+keine Periode variierbar ist - das erschliesst keine Trade-Zahl. Fuer den Zweck
+genuegt sie: Sie sagt verlaesslich, **dass** eine Bilanz zu gut ist, nur nicht
+immer um wie viel.
+
+Wo ein Typ seine Aussetzer **gemeldet** bekommt, gewinnt die Meldung - aber nur
+nach oben:
+
+    gemeldet 4, erschlossen 2   ->   4
+    gemeldet 0, erschlossen 3   ->   3
+
+Die zweite Zeile ist die, die den Mechanismus ehrlich haelt. Ohne sie waere eine
+nicht gefuellte Meldung die verbindliche Auskunft, und ein Typ koennte sich durch
+Nichtstun freisprechen.
+
+### Acht angeschlossen, drei bleiben offen
+
+    aufloesung.Messung          betriebspunkt.Betriebspunkt   decke.Fenster
+    aufstellung.Marktsatz       instrument.Lauf               decke.Stufe
+    sperrprobe.Ergebnis         stand.Lage
+
+Offen bleiben genau die drei **ohne Trade-Zahl**:
+`admission.Zulassungsbedingungen`, `instrument.Gebuehrenstufe`,
+`ratenbild.Ratenprobe`. Ohne sie ist nichts zu erschliessen, und gemeldet wird
+ihnen auch nichts - das ist keine Bequemlichkeit, und ein Test haelt es fest.
+
+Aus sechzehn sind damit drei geworden, und der Eintrag im Register heisst
+entsprechend um; Fundstelle Nr. 350, zuerst 332.
+
+`tests/test_gatebilanz.py` bindet die Schwellen, beide Richtungen des Vorrangs
+und alle acht Traeger - dazu die Gegenprobe am Bestand: 158 Trades, `9/11 Gates`,
+kein Vorbehalt.

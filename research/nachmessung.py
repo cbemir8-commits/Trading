@@ -209,7 +209,12 @@ GELESEN: dict[str, int] = {
     # 251 des Eintrags sind die **Vereinigung** mit dem Bestand, die Null
     # ist die Regel **allein** auf Tageskerzen - zwei Messungen, kein
     # Widerspruch.
-    "Bestand + 'Grosser Trendausbruch'": 322,
+    # **Befund 350** nennt 'Trendfolge Ausbruch' als Beispiel einer Bilanz, die
+    # zu gut ist: null Trades, "5 von 11". Das ist genau die Eigenschaft, die
+    # der Eintrag schon fuehrt (null Trades auf Tageskerzen), nur als
+    # Vorfuehrung eines Mechanismus. Gelesen und abgegrenzt: kein neuer Fund
+    # zu dieser Richtung.
+    "Bestand + 'Grosser Trendausbruch'": 350,
     "Holdout auf fremden Maerkten": 295,
     # **Befund 330, und diesmal benutzt statt zitiert.** Der Lauf hat den
     # Versuchszaehler ueber ``PATHS__STATE`` auf eine Wegwerf-Ablage umgelenkt,
@@ -355,7 +360,7 @@ BEGRIFFE: dict[str, tuple[str, ...]] = {
     # Befund 332: Die Begriffe sind die Namen der Sache, nicht die des
     # Eintrags - ein spaeterer Befund ueber ausgesetzte Gates schreibt
     # "uebersprungen" oder "bestanden_echt", nicht "sechzehn Gate-Zahlen".
-    "Elf Gate-Zahlen ohne Auskunft ueber Uebersprungenes": (
+    "Drei Gate-Zahlen ohne Auskunft ueber Uebersprungenes": (
         "uebersprungen",
         "bestanden_echt",
         "geurteilt",

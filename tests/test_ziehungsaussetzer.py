@@ -197,11 +197,14 @@ class TestDerRegistereintrag:
 
         return next(r for r in OFFEN if "Gate-Zahlen" in r.name)
 
-    def test_der_name_folgt_der_liste(self) -> None:
-        from tests.test_gatezahlen import OFFEN as OFFENE_TYPEN
+    def test_die_leiter_steht_im_eintrag(self) -> None:
+        """Den **Abgleich** von Name und Liste prueft
+        ``test_aussetzer.py``; hier steht die Aussage dieses Befunds. Eine
+        zweite feste Zahl waere ein zweiter Test, der fuer nichts bricht -
+        dreimal ist das schon passiert (342, 346, 347)."""
+        ergebnis = self._eintrag().ergebnis
 
-        assert self._eintrag().name.startswith("Elf")
-        assert len(OFFENE_TYPEN) == 11
+        assert "ziehung.Ziehung" in ergebnis
 
     def test_die_gemessenen_zahlen_stehen_drin(self) -> None:
         ergebnis = self._eintrag().ergebnis

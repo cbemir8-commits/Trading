@@ -132,18 +132,37 @@ VORGELAGERT: dict[str, str] = {
 #: darunter drueckt, bekaeme hier eine geschenkte Zahl - und keiner dieser Typen
 #: koennte es sagen. 'cli koernung' gemessen: 152 bis 158 Trades ueber vierzehn
 #: Sprossen, also weit darueber.
-OFFEN: frozenset[str] = frozenset({
-    "research.admission.Zulassungsbedingungen",
+#: Typen, die die Antwort aus der **Trade-Zahl** erschliessen - Befund 350.
+#:
+#: Sie tragen ``bestanden``, ``gesamt`` und ``trades`` und mischen
+#: ``gatebilanz.Gatebilanz`` bei. Damit sagen sie, ob ihre Bilanz zu gut ist,
+#: ohne dass jemand ein Feld nachtraegt.
+#:
+#: **Das ist die schwaechere Auskunft, und das steht so da.** Erschlossen ist
+#: eine Untergrenze: Unter 30 Trades setzen Regime-Aufteilung und Deflated
+#: Sharpe aus, unter 20 auch Monte-Carlo - es koennen mehr sein, etwa wenn
+#: ``run_expensive`` aus war. Wo ein Typ seine Aussetzer gemeldet bekommt,
+#: gehoert er nach ``MIT_SKIPINFO``; dort ist die Zahl genau.
+MIT_ERSCHLOSSENEM: frozenset[str] = frozenset({
     "research.aufloesung.Messung",
     "research.aufstellung.Marktsatz",
     "research.betriebspunkt.Betriebspunkt",
     "research.decke.Fenster",
     "research.decke.Stufe",
-    "research.instrument.Gebuehrenstufe",
     "research.instrument.Lauf",
-    "research.ratenbild.Ratenprobe",
     "research.sperrprobe.Ergebnis",
     "research.stand.Lage",
+})
+
+#: Typen, bei denen die Frage **offen** ist - aufgelistet, nicht geprueft.
+#:
+#: **Drei sind es noch** (Befund 350), und es sind genau die, die keine
+#: Trade-Zahl tragen: ohne sie ist nichts zu erschliessen, und gemeldet wird
+#: ihnen auch nichts.
+OFFEN: frozenset[str] = frozenset({
+    "research.admission.Zulassungsbedingungen",
+    "research.instrument.Gebuehrenstufe",
+    "research.ratenbild.Ratenprobe",
 })
 
 
@@ -218,7 +237,13 @@ class TestDasVerzeichnisIstVollstaendig:
         Sie faellt in der sicheren Richtung aus: Unbekannt ist ein Fehler, nicht
         stillschweigend in Ordnung.
         """
-        bekannt = MIT_SKIPINFO | set(VERZEICHNET) | set(VORGELAGERT) | OFFEN
+        bekannt = (
+            MIT_SKIPINFO
+            | MIT_ERSCHLOSSENEM
+            | set(VERZEICHNET)
+            | set(VORGELAGERT)
+            | OFFEN
+        )
 
         unbekannt = sorted(set(_traeger()) - bekannt)
 
@@ -229,7 +254,13 @@ class TestDasVerzeichnisIstVollstaendig:
         )
 
     def test_das_verzeichnis_nennt_keine_typen_die_es_nicht_gibt(self) -> None:
-        bekannt = MIT_SKIPINFO | set(VERZEICHNET) | set(VORGELAGERT) | OFFEN
+        bekannt = (
+            MIT_SKIPINFO
+            | MIT_ERSCHLOSSENEM
+            | set(VERZEICHNET)
+            | set(VORGELAGERT)
+            | OFFEN
+        )
 
         verwaist = sorted(bekannt - set(_traeger()))
 
@@ -249,6 +280,7 @@ class TestDasVerzeichnisIstVollstaendig:
     def test_keine_doppelte_einordnung(self) -> None:
         felder = (
             MIT_SKIPINFO,
+            MIT_ERSCHLOSSENEM,
             frozenset(VERZEICHNET),
             frozenset(VORGELAGERT),
             frozenset(OHNE_BILANZFELD),
@@ -257,6 +289,36 @@ class TestDasVerzeichnisIstVollstaendig:
         for i, a in enumerate(felder):
             for b in felder[i + 1 :]:
                 assert not a & b
+
+
+class TestDieErschlossenenKoennenEsWirklich:
+    """**Befund 350.** Elf offene Faelle waeren elf Male dasselbe gewesen."""
+
+    def test_jeder_traegt_die_beimischung(self) -> None:
+        import importlib
+
+        from research.gatebilanz import Gatebilanz
+
+        for name in MIT_ERSCHLOSSENEM:
+            modul, klasse = name.rsplit(".", 1)
+            obj = getattr(importlib.import_module(modul), klasse)
+
+            assert issubclass(obj, Gatebilanz), name
+
+    def test_jeder_traegt_eine_trade_zahl(self) -> None:
+        """Ohne sie ist nichts zu erschliessen - dann gehoert der Typ nach
+        OFFEN."""
+        traeger = _traeger()
+
+        for name in MIT_ERSCHLOSSENEM:
+            assert "trades" in traeger[name], name
+
+    def test_und_die_offenen_tragen_keine(self) -> None:
+        """Die Gegenprobe: Die drei sind nicht aus Bequemlichkeit offen."""
+        traeger = _traeger()
+
+        for name in OFFEN:
+            assert "trades" not in traeger[name], name
 
 
 class TestDieEinordnungStimmtMitDemQuelltext:
@@ -332,8 +394,9 @@ class TestDieFortschrittszeileDerNachpruefung:
 def test_die_zahl_der_offenen_faelle_steht_fest() -> None:
     """Damit ein spaeterer Lauf sich daran messen kann - und damit das
     Verzeichnis nicht unbemerkt waechst."""
-    assert len(OFFEN) == 11
+    assert len(OFFEN) == 3
     assert len(MIT_SKIPINFO) == 9
+    assert len(MIT_ERSCHLOSSENEM) == 8
     assert len(VORGELAGERT) == 2
     assert len(OHNE_BILANZFELD) == 4
     assert len(_traeger()) == 24

@@ -265,6 +265,8 @@ class TestDerRegistereintrag:
         from tests.test_gatezahlen import OFFEN as OFFENE_TYPEN
 
         worte = {
+            1: "Eine", 2: "Zwei", 3: "Drei", 4: "Vier", 5: "Fuenf",
+            6: "Sechs", 7: "Sieben", 8: "Acht", 9: "Neun", 10: "Zehn",
             11: "Elf", 12: "Zwoelf", 13: "Dreizehn", 14: "Vierzehn",
             15: "Fuenfzehn", 16: "Sechzehn",
         }

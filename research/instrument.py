@@ -139,9 +139,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from itertools import pairwise
 
+from research.gatebilanz import Gatebilanz
+
 
 @dataclass(frozen=True, slots=True)
-class Lauf:
+class Lauf(Gatebilanz):
     """Ein Durchlauf unter bestimmten Handelsbedingungen."""
 
     name: str

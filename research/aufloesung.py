@@ -78,6 +78,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from research.gatebilanz import Gatebilanz
+
 #: Ab welchem Anteil fein aufgeloester Balken die Probe ueberhaupt etwas sagt.
 #:
 #: Eine gesetzte Grenze und keine hergeleitete - sie steht hier, damit die
@@ -92,7 +94,7 @@ MEHRDEUTIG = ("stop_loss", "take_profit", "liquidation")
 
 
 @dataclass(frozen=True, slots=True)
-class Messung:
+class Messung(Gatebilanz):
     """Ein Lauf, in den Zahlen, an denen sich ein Unterschied zeigen wuerde."""
 
     name: str
