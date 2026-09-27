@@ -2743,6 +2743,37 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'2,9 % der Luecke' schon",
         327,
     ),
+    # Befund 353: gefunden beim Nachsehen, was die offene Frage 263/318
+    # ("Korbhandel bauen oder je Bein zulassen") im Livebetrieb kostet. Der
+    # Weg, zu dem sie einlaedt, loescht den Kill-Switch.
+    Richtung(
+        "Zwei Handelslaeufe loeschen den Kill-Switch",
+        "'state/risk.json' haengt nicht am Symbol, also teilen zwei 'cli "
+        "trade' sich die Datei - und jeder haelt seinen Zustand im Speicher. "
+        "Gemessen mit zwei 'RiskOfficer' auf einem Pfad: Das BTC-Bein sieht "
+        "500 auf 400 fallen, der Kill-Switch springt, die Datei sagt "
+        "'killed'; das ETH-Bein hat beim Start 'active' gelesen und "
+        "schreibt es beim naechsten Speichern zurueck - Zustand und "
+        "'kill_reason' sind weg, und 'load_risk_state' liest nach einem "
+        "Neustart wieder 'active'. Die eine Sperre, die laut ihrer eigenen "
+        "Meldung nur manuell zurueckholbar ist, faellt still. Zwei Wege "
+        "fuehren hin: ein zweites Fenster, oder der Korb als zwei Beine - "
+        "wozu 'unterdeckung' den Nutzer seit 264 selbst einlaedt. Jetzt "
+        "belegt 'cli trade' den Zustand mit einer nicht blockierenden "
+        "Dateisperre (execution/einzelbetrieb.py), vor der "
+        "Boersenanbindung und nur ohne '--trocken'. Die Aussage kommt vom "
+        "Kern und nicht von einer gespeicherten PID: 'os.kill(pid, 0)' "
+        "beendet den Prozess unter Windows, und PIDs werden "
+        "wiederverwendet - der Kern gibt die Sperre dagegen bei jedem Ende "
+        "frei, auch bei 'kill -9', gemessen mit einem echten zweiten "
+        "Prozess. **Und beim Messen ein zweiter Fund**: Ohne ein "
+        "Verzeichnis der gehaltenen Sperren haengt die Sperre daran, dass "
+        "der Aufrufer das Ergebnis festhaelt - weggeworfen, schliesst das "
+        "Aufraeumen die Datei und loest sie; der zweite Lauf kam durch, "
+        "waehrend der erste lief. Sie gehoert dem Prozess, also haelt der "
+        "Prozess sie fest",
+        353,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -3064,9 +3095,16 @@ OFFEN: tuple[Richtung, ...] = (
         "Reihe hilft dem Bein durchaus, nur nicht genug: Die unabhaengigen "
         "Beobachtungen steigen von 67 auf 107 - und bleiben unter den **115** "
         "des Korbes auf der kuerzeren Reihe. **Das zweite Bein wiegt mehr als "
-        "2054 zusaetzliche Tage des ersten**",
+        "2054 zusaetzliche Tage des ersten**. **Und der Weg 'je Bein' hat "
+        "jetzt einen Preis** (353): Zwei 'cli trade' teilen sich "
+        "'state/risk.json' - gemessen loescht das zweite Bein den Kill-Switch "
+        "des ersten, weil jeder seinen Zustand im Speicher haelt und ganz "
+        "zurueckschreibt. Gesperrt wird das jetzt "
+        "('execution/einzelbetrieb.py'); wer trotzdem zwei Beine will, braucht "
+        "zwei Ablagen ('PATHS__STATE') - und dann gelten die Verlustgrenzen je "
+        "Bein statt je Konto, also zweimal die Tagesgrenze auf einem Konto",
         263,
-        318,
+        353,
     ),
     Richtung(
         "Zahlt der Bestand dann, wenn Longs am meisten zahlen?",

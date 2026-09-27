@@ -2417,6 +2417,29 @@ def trade(
         )
         raise typer.Exit(2)
 
+    # -- 3b. Nur ein Handelslauf je Konto ------------------------------------
+    # **Befund 353.** 'state/risk.json' haengt nicht am Symbol, also teilen
+    # sich zwei Laeufe die Datei - und jeder haelt seinen Zustand im Speicher.
+    # Gemessen: Der Kill-Switch des einen wird vom naechsten Speichern des
+    # anderen ueberschrieben, und nach einem Neustart steht das abgeschaltete
+    # System wieder auf 'active'.
+    #
+    # **Vor der Boersenanbindung**, aus demselben Grund wie der Kill-Switch
+    # darueber: Wer nicht handeln darf, soll sich nicht erst anmelden.
+    #
+    # **Nur ohne '--trocken'.** Ein Trockenlauf liest den Zustand und schreibt
+    # ihn nicht; ihn zu sperren hiesse, dass niemand den Plan nachsehen darf,
+    # waehrend das System handelt.
+    betrieb = None
+    if not trocken:
+        from execution.einzelbetrieb import BereitsInBetrieb, belege
+
+        try:
+            betrieb = belege(state_path, symbol=settings.bybit.symbol)
+        except BereitsInBetrieb as exc:
+            console.print(f"[red]{exc}[/]")
+            raise typer.Exit(2) from exc
+
     # -- 4. Boersenanbindung -------------------------------------------------
     store = CandleStore(settings.paths.data_store)
     market = BybitMarketData(settings.bybit)
@@ -2535,7 +2558,14 @@ def trade(
                 "[yellow]Die Position laeuft weiter. Ihr Stop liegt an der Boerse.[/]"
             )
 
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    finally:
+        # Die Sperre faellt auch ohne dies - der Kern gibt sie mit dem Prozess
+        # frei. Hier steht sie, damit die Auskunftsdatei nach einem geordneten
+        # Ende verschwindet und nicht wie ein laufender Betrieb aussieht.
+        if betrieb is not None:
+            betrieb.gib_frei()
 
 
 @app.command()

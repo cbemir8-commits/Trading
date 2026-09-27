@@ -31558,3 +31558,114 @@ gut ist, nicht immer um wie viel.
 **Die alten Berichte behalten ihre rohen Paare.** 554 Eintraege aus der Zeit
 vor 348, darunter 109 mit null Trades und "5 von 11". Neu geschriebene tragen
 das Feld; die auf der Platte werden nicht nachtraeglich gerichtet.
+
+## Dreihundertdreiundfuenfzig. Zwei Handelslaeufe loeschen den Kill-Switch
+
+Die offene Frage aus Befund 263/318 lautet: Zugelassen ist der Korb aus BTC und
+ETH, `LiveTrader` handelt **ein** Symbol - Korbhandel bauen oder je Bein
+zulassen? Bevor man das entscheidet, gehoert nachgesehen, was der naheliegende
+Weg kostet. Er kostet mehr als gedacht.
+
+`cli trade` legt seinen Risikozustand unter `state/risk.json` ab, und dieser
+Pfad **haengt nicht am Symbol**. Zwei Laeufe teilen sich die Datei, jeder liest
+sie beim Start und haelt seinen Zustand im Speicher, und `RiskOfficer.save`
+schreibt ihn ganz. Gemessen mit zwei echten `RiskOfficer` auf einem Pfad:
+
+    BTC-Bein sieht 500 -> 400 EUR   Kill-Switch springt, Datei: killed
+    ETH-Bein hat 'active' gelesen   und speichert als naechstes
+    Datei danach                    active, kill_reason leer
+
+**Die Sperre ist weg**, und nach einem Neustart liest `load_risk_state` wieder
+`active`: Ein abgeschaltetes System steht auf. Das ist die eine Sperre, deren
+eigene Meldung sagt *"Alles glattstellen. Nur manuell zurueckholbar."*
+
+Es bleibt auch keine Spur: Nicht nur `trading_state` geht verloren, auch
+`kill_reason` steht danach leer da.
+
+### Zwei Wege fuehren hin, und keiner ist abwegig
+
+Der eine ist ein zweites Fenster - `cli trade` zweimal gestartet, weil der erste
+Lauf vergessen wurde. Der andere ist der Korb als zwei Beine, und dazu laedt das
+Projekt selbst ein: `Zulassungsbedingungen.unterdeckung` sagt dem Nutzer seit
+Befund 264, dass zugelassen der Korb ist und gehandelt ein Bein wird. Zwei
+Laeufe sind die naheliegende Antwort darauf.
+
+### Die Aussage kommt vom Kern, nicht von einer PID
+
+`LiveTrader` ist darauf gebaut, dass der Prozess jederzeit sterben und neu
+starten darf; sein Docstring nennt das den Unterschied zwischen Spielzeug und
+Betrieb. Eine Sperre, die einen Stromausfall ueberlebt, nimmt genau diese
+Eigenschaft - danach liesse sich nicht mehr starten.
+
+Eine gespeicherte PID zu pruefen hat zwei Fehler, und der erste ist der
+schlimmere: **`os.kill(pid, 0)` beendet den Prozess unter Windows.** CPython
+ruft dort `TerminateProcess` mit dem Signal als Exitcode; nur
+`CTRL_C_EVENT`/`CTRL_BREAK_EVENT` gehen einen anderen Weg. Dieses Projekt hat
+ein `start.bat`, Windows ist kein Randfall - eine Lebendigkeitspruefung haette
+den laufenden Handel abgeschossen. Der zweite Fehler ist die
+Wiederverwendung: Irgendein fremder Prozess mit derselben Nummer laesst die
+Sperre ewig stehen.
+
+Deshalb ist es eine nicht blockierende Dateisperre (`flock`, unter Windows
+`msvcrt.locking`) auf `risk.json.betrieb`. Der Kern gibt sie bei **jedem** Ende
+frei, auch bei `kill -9`. Gemessen mit einem echten zweiten Prozess:
+
+    Fremder Prozess haelt           zweiter Lauf abgelehnt
+    Prozess mit kill -9 getoetet    Sperrdatei liegt noch da
+    Neustart                        konnte sofort belegen
+
+Die PID in der Datei ist **Auskunft fuer die Meldung** und nicht die Grundlage
+der Entscheidung. Sie liegt **neben** dem Zustand und nicht darin: `save`
+schreibt in eine Nebendatei und ersetzt den Zustand damit, und eine Sperre auf
+einer Datei, die ersetzt wird, haelt nach dem ersten Speichern nichts mehr.
+
+### Der zweite Fund kam beim Messen
+
+Der erste Anlauf der Sperre war gruen im selben Prozess und **fiel gegen einen
+echten zweiten**: Der zweite Lauf kam durch, waehrend der erste lief.
+
+Der Grund ist die Lebensdauer. Die Sperre haengt am offenen Dateideskriptor. Wer
+das Ergebnis von `belege` wegwirft, laesst das Objekt aufraeumen, das Aufraeumen
+schliesst die Datei - und der Kern loest mit dem letzten Deskriptor die Sperre.
+Ein Aufrufer, der `belege(...)` schreibt und nichts zuweist, haelt also nichts
+und erfaehrt es nicht.
+
+Die Sperre gehoert dem **Prozess** und nicht einer Variablen, also haelt der
+Prozess sie fest: ein Modulverzeichnis der gehaltenen Sperren, aus dem
+`gib_frei` wieder austraegt. Danach haelt auch ein weggeworfenes Ergebnis.
+
+Das ist der Grund, warum die Prozess-Tests in `tests/test_einzelbetrieb.py` mit
+`subprocess` arbeiten und nicht mit zwei Objekten. Eine Sperre, die nur im
+selben Prozess geprueft wird, ist nicht geprueft.
+
+### Die Meldung nennt den Preis des Auswegs
+
+Ein Verbot ohne Begruendung wird umgangen. Die Meldung sagt deshalb, was
+passiert waere - der Kill-Switch verschwindet -, wer gerade laeuft (Symbol, PID,
+seit wann), und was der Ausweg kostet:
+
+> Entweder den laufenden beenden - oder dem zweiten Bein eine eigene Ablage
+> geben (`PATHS__STATE`). Das kostet: Die Verlustgrenzen gelten dann **je Bein**
+> und nicht je Konto, also zweimal die Tagesgrenze auf einem Konto.
+
+Damit ist der Weg "je Bein zulassen" nicht verboten, sondern **bepreist** - und
+die offene Entscheidung aus 263/318 hat eine Zahl mehr, die vorher nicht
+dastand.
+
+### Was nicht gesperrt wird, und was offen bleibt
+
+Ein Trockenlauf sperrt nicht: Er liest den Zustand und schreibt ihn nicht.
+Wuerde er sperren, koennte niemand den Handelsplan nachsehen, waehrend das
+System laeuft.
+
+Das Dashboard sperrt auch nicht, und es braucht das nicht: Es schreibt den
+Zustand nirgends, sondern legt einen Befehl ab (`web.journal.send_command`), den
+die laufende Schleife liest. Ein Eingriff geht damit durch den Prozess, der die
+Datei haelt.
+
+Offen bleiben zwei Dinge. **Zwei Rechner an einem Konto** faengt diese Sperre
+nicht - eine Dateisperre gilt auf einer Maschine. Und **das Journal** (
+`state/journal.json`, `LiveJournal`) ist auf denselben geteilten Pfad gebaut;
+was zwei Laeufe dort anrichten, ist nicht gemessen. Die Sperre verhindert es
+heute, aber nur solange beide Beine dieselbe Ablage benutzen - wer dem zweiten
+Bein `PATHS__STATE` gibt, hat auch zwei Journale.
