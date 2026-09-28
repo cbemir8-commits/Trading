@@ -848,18 +848,22 @@ def wettbewerb(
         bekannt = {g.genome_id for g in aktuell}
         return [g for g in neu if g.genome_id not in bekannt]
 
-    ki_ids: set[str] = set()
-    if ki:
-        zusatz = _vorschlaege()
-        if zusatz:
-            aktuell = list(aktuell) + zusatz
-            ki_ids = {g.genome_id for g in zusatz}
-
     # **Was der Lauf kostet, gehoert an sein Ende** (Befund 232). Bis dahin
     # sagte die Schlusszeile, wie viele Strategien geprueft wurden - nicht,
     # wie viele Versuche das waren. Genau die sind die knappe Groesse: Jeder
     # hebt die Latte fuer alle kuenftigen, und das Budget hat eine Grenze.
+    #
+    # **Gelesen wird der Stand jetzt vor der KI** (Befund 358): Ist das
+    # Suchbudget aufgebraucht, bricht die Schleife unten sofort ab - ein
+    # Vorschlag davor waere bezahlt und nie gemessen.
     versuche_am_anfang = load_trials(trials_path)
+
+    ki_ids: set[str] = set()
+    if ki and _noch_zu_holen(versuche_am_anfang, ueber_budget=ueber_budget):
+        zusatz = _vorschlaege()
+        if zusatz:
+            aktuell = list(aktuell) + zusatz
+            ki_ids = {g.genome_id for g in zusatz}
 
     try:
         while runden == 0 or runde < runden:
@@ -976,14 +980,31 @@ def wettbewerb(
             # Genau das ist der Lernmechanismus, den ``analyst.py`` im Kopf
             # beschreibt - ohne ihn schlaegt ein Modell in jedem Zyklus
             # ungefaehr dasselbe vor und hebt nur die Huerde.
-            zusatz = _vorschlaege()
+            #
+            # **Aber nur, wenn die Antwort noch gebraucht wird** (Befund 358).
+            # Gemessen mit '--runden 1': Die KI wurde zweimal gefragt und
+            # einmal benutzt - der Vorschlag nach der letzten Runde landet in
+            # 'aktuell', und dann endet die Schleife. Ein Modellaufruf kostet
+            # echtes Geld aus dem Forschungsbudget, und dieser war jedes Mal
+            # umsonst.
+            #
+            weitere_runde = (runden == 0 or runde < runden) and _noch_zu_holen(
+                report.trials_after, ueber_budget=ueber_budget
+            )
+            zusatz = _vorschlaege() if weitere_runde else []
             ki_ids = {g.genome_id for g in zusatz}
             aktuell = list(aktuell) + zusatz
 
             if not aktuell:
                 console.print(
                     "[yellow]Keine neuen Varianten mehr moeglich"
-                    + (" und kein Vorschlag der KI." if ki else ".")
+                    # Nur behaupten, was zutrifft: Wer nicht gefragt wurde, hat
+                    # auch nichts vorgeschlagen.
+                    + (
+                        " und kein Vorschlag der KI."
+                        if ki and weitere_runde
+                        else "."
+                    )
                     + "[/]"
                 )
                 break
@@ -3548,6 +3569,26 @@ def _versuchspreis() -> str:
         woelbung=SPOTPUNKT.woelbung,
     )
     return "einen unbestimmten Betrag" if preis is None else f"{preis:.6f}"
+
+
+def _noch_zu_holen(versuche: int, *, ueber_budget: bool) -> bool:
+    """Wird eine Antwort der KI noch gemessen - oder ist sie schon vergeblich?
+
+    **Befund 358.** Ein Modellaufruf kostet Geld aus dem Forschungsbudget, und
+    'cli wettbewerb --ki' hat einen bezahlt, den es nicht mehr brauchte:
+    gemessen mit '--runden 1' zwei Aufrufe, einer benutzt. Der Vorschlag nach
+    der letzten Runde landet in 'aktuell', und dann endet die Schleife.
+
+    Dasselbe am Rand des Suchbudgets, an beiden Enden der Schleife: Ist die
+    Abmachung aus dem Plan aufgebraucht, bricht die Schleife ab - was davor
+    geholt wurde, ist bezahlt und ungemessen.
+
+    'BUDGET.erschoepft' statt '_budget_erschoepft' daneben: Der Blick nach vorn
+    soll nicht melden, was die Schleife gleich selbst meldet.
+    """
+    from research.stand import BUDGET
+
+    return ueber_budget or not BUDGET.erschoepft(versuche)
 
 
 def _budget_erschoepft(versuche: int, *, ueber_budget: bool) -> bool:

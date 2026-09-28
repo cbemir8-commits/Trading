@@ -2875,6 +2875,40 @@ BEHOBEN: tuple[Richtung, ...] = (
         "auch die Aufstellung",
         357,
     ),
+    # Befund 358: derselbe Weg wie 357 - die Zeile fuer den Nutzer gefahren
+    # statt gelesen. Diesmal die mit der KI, der einzige Pfad mit fremder
+    # Leitung und darum nie durchgelaufen.
+    Richtung(
+        "Die KI wurde einmal zu oft gefragt",
+        "'cli wettbewerb --ki' fragt die Research-KI nach jeder Runde, damit "
+        "sie im Journal sieht, woran die Kandidaten gescheitert sind - und "
+        "nach der **letzten** Runde auch. Gemessen mit '--runden 1' und einem "
+        "Doppel an ihrer Stelle: **zwei Aufrufe, einer benutzt.** Der zweite "
+        "Vorschlag landet in 'aktuell', dann endet die Schleife. Ein "
+        "Modellaufruf kostet Geld aus dem Forschungsbudget, das 'budget.json' "
+        "fuehrt und begrenzt. Dasselbe am anderen Ende: Steht der Zaehler "
+        "schon ueber dem Suchbudget, bricht die Schleife sofort ab - der "
+        "Vorschlag davor war bezahlt und ungemessen. Beide Stellen fragen "
+        "jetzt '_noch_zu_holen' und damit vorausschauend; gemessen sind es "
+        "danach 1 Aufruf bei einer Runde und 2 bei zwei, und der Vorschlag "
+        "laeuft weiter mit (Bestenliste mit herkunft 'KI-Vorschlag', Zaehler "
+        "+8 fuer sieben Katalogregeln und einen Vorschlag). **Der erste Anlauf "
+        "fand nichts**, weil das Doppel eine Generation-5-Regel nur "
+        "umbenannt hat - dieselbe genome_id, also ein Doppelgaenger, und die "
+        "Abwehr aus 258 hat ihn zu Recht verworfen. Die Kennung ist der Hash "
+        "ueber die Regeln, nicht ueber den Namen. **Und beim Pruefen habe ich "
+        "Befund 117 wiederholt**: Der Test kann 'TRADING_TROCKENLAUF' nicht "
+        "setzen, weil er Bestenliste und Zaehler geschrieben sehen muss - und "
+        "'write_report' nimmt als Wurzel das Arbeitsverzeichnis, nicht eine "
+        "Einstellung, wonach 'publish' committet und pusht. Achtzehn Berichte "
+        "meiner eigenen Laeufe sind so in die Projekthistorie gewandert, drei "
+        "davon irrefuehrend (sie nennen BTCUSDT, gerechnet auf kopierten "
+        "Bitstamp-Kerzen). Zurueckgenommen durch Loeschen in '0989511', nicht "
+        "durch Umschreiben der Historie; der Test arbeitet jetzt in einem "
+        "Wegwerf-Verzeichnis, wo es kein '.git' gibt, und eine Wache zaehlt die "
+        "Berichte im Projekt vorher und nachher",
+        358,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

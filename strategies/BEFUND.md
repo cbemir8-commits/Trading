@@ -32030,3 +32030,112 @@ nicht gegen zwei hingeschriebene Namen.
 Dass ich es beim Lesen nicht gesehen habe, ist der Punkt: Die Zeilen sind
 sorgfaeltig geschrieben und erklaeren sogar, warum das Intervall dazugehoert.
 Was fehlte, stand nicht im Text - es fehlte im Text.
+
+## Dreihundertachtundfuenfzig. Die KI wurde einmal zu oft gefragt
+
+Wieder gefahren statt gelesen, wie bei Befund 357 einen Tag vorher - diesmal die
+Zeile mit der KI. Sie ist die einzige unter den Zeilen fuer den Nutzer, die eine
+**fremde Leitung** braucht, und genau darum war sie nie durchgelaufen.
+
+Mit einem Doppel an der Stelle der Research-KI und `--runden 1`:
+
+    KI-Aufrufe   2
+    benutzt      1
+
+`cli wettbewerb --ki` fragt die KI **nach** jeder Runde - absichtlich, damit sie
+im Journal sieht, woran die letzten Kandidaten gescheitert sind. Nach der
+**letzten** Runde fragt sie auch. Der Vorschlag landet in `aktuell`, die
+Schleifenbedingung ist dann falsch, und die Schleife endet.
+
+Ein Modellaufruf kostet echtes Geld aus dem Forschungsbudget, das `budget.json`
+fuehrt und auf einen Monatsbetrag begrenzt. Dieser war jedes Mal umsonst.
+
+### Dasselbe am anderen Ende
+
+Der Aufruf **vor** der Schleife hat denselben Fehler, nur mit einer anderen
+Bedingung: Steht der Zaehler schon ueber dem Suchbudget, bricht die Schleife
+beim ersten Durchlauf ab - noch vor der ersten Runde. Der Vorschlag davor waere
+bezahlt und nie gemessen.
+
+Das ist kein hypothetischer Fall: Der Zaehler steht bei 203, das Suchbudget des
+Plans bei 230, und der Lauf meldet selbst *"80 von 100 verbraucht"*. Wer nach
+dem Budget noch einmal `--ki` fuehrt, bezahlt genau diesen Aufruf.
+
+Beide Stellen fragen jetzt `_noch_zu_holen(stand, ueber_budget=...)`:
+Rundenzahl und Suchbudget, vorausschauend. Gemessen danach: **1 Aufruf** bei
+einer Runde, **2** bei zwei - gekuerzt ist der letzte, nicht der
+Lernmechanismus.
+
+### Was dabei nicht kaputtgehen durfte
+
+Der Vorschlag muss weiter wirklich mitlaufen, und das ist gemessen:
+
+    Runde 1 - 8 Kandidaten (Katalog + 1 von der KI), 203 Versuche bisher
+    ...
+    Dieser Lauf hat 8 Versuche gekostet (203 -> 211)
+
+    Bestenliste: 8 Eintraege
+      KI-Vorschlag Attrappe    herkunft='KI-Vorschlag'
+
+Sieben Katalogregeln und ein Vorschlag sind acht Kandidaten, acht Versuche und
+acht Eintraege - mit Herkunft, sonst waere die Frage "traegt die KI etwas bei"
+hinterher nicht mehr beantwortbar.
+
+### Der erste Anlauf fand nichts, und das war auch eine Messung
+
+Das erste Doppel hat eine Generation-5-Regel **umbenannt** und als Vorschlag
+zurueckgegeben. Der Lauf zeigte `neu: KI-Vorschlag Attrappe` und danach *"Runde
+1 - 7 Kandidaten (Katalog)"* - sieben, nicht acht.
+
+Kein Fehler, sondern die Abwehr aus Befund 258 bei der Arbeit: `genome_id` ist
+der Hash ueber die **Regeln**, nicht ueber den Namen, und
+`Trend-Beteiligung (fair gerechnet)` aus Generation 5 ist zeichengleich mit
+`Trend-Beteiligung 200 Tage` aus Generation 9 - dieselbe Kennung `66e04da1`. Der
+Doppelgaenger wurde verworfen, bevor er einen Versuch kostet.
+
+Erst eine verschobene Periode macht einen neuen Kandidaten. Der Test im Haus
+prueft das jetzt mit, damit die naechste Attrappe nicht wieder aus Versehen ein
+Doppelgaenger ist.
+
+### Und warum der Lauf im Test zwei Minuten dauert und nicht fuenf
+
+Der erste Zuschnitt hat je Zusicherung einen Wettbewerb gefahren - fuenf Laeufe
+fuer zwei Messungen. Jetzt gibt es zwei Laeufe (eine Runde, zwei Runden) als
+modulweite Vorrichtung, und die Zusicherungen lesen deren Ergebnis. Dieselbe
+Aussage, 2:05 statt 4:51.
+
+### Und beim Pruefen habe ich Befund 117 wiederholt
+
+Der Test kann `TRADING_TROCKENLAUF` nicht setzen - er muss Bestenliste und
+Zaehler **geschrieben** sehen, das ist der halbe Fund. Also lief der Wettbewerb
+ohne die Wache, und der Berichtspfad haengt nicht an derselben Bedingung:
+
+* `write_report` nimmt als Wurzel das **Arbeitsverzeichnis**, keine Einstellung.
+* `publish` committet den Bericht danach - und pusht.
+
+Achtzehn Berichte meiner eigenen Testlaeufe sind so in die Projekthistorie
+gewandert. Drei davon sind zusaetzlich irrefuehrend: Sie nennen `BTCUSDT`,
+gerechnet wurden sie auf kopierten Bitstamp-Kerzen unter diesem Namen.
+
+Der Docstring von `core.report.publish` beschreibt das Wort fuer Wort, als
+Befund 117:
+
+> Das ist die sichtbarste Schreibstelle von allen: Sie committet **und pusht**,
+> und ein Rauchtest landet damit in der Projekthistorie, wo er wie ein Lauf
+> aussieht. Genau das ist passiert - `54770ec` ist der Bericht meines eigenen
+> Rauchtests, committet um 04:59:08 und mit dem naechsten Push mitgegangen.
+
+Dieselbe Stelle, zum zweiten Mal, und diesmal habe ich die vorhandene Wache aus
+eigenem Antrieb umgangen - im Wissen, dass sie Schreibstellen abschaltet, ohne
+nachzusehen **welche**.
+
+Zurueckgenommen ist es durch **Loeschen** in `0989511` und nicht durch
+Umschreiben der Historie: Die achtzehn Commits bleiben lesbar, die
+irrefuehrenden Dateien sind weg. Eine gepushte Historie umzuschreiben, um eine
+eigene Panne unsichtbar zu machen, waere der teurere Fehler.
+
+Der Test arbeitet jetzt in einem Wegwerf-Verzeichnis. Dort gibt es kein `.git`,
+`publish` meldet `NO_REPO`, und der Bericht entsteht trotzdem - nur woanders.
+Beides ist gewacht: dass im Projekt **kein** Bericht dazukommt, und dass im
+Wegwerf-Verzeichnis **einer** entsteht. Ein Test, der das Schreiben ganz
+verhindert, prueft den Lauf nicht mehr.
