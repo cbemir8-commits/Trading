@@ -1,0 +1,873 @@
+{
+  "art": "wettbewerb",
+  "zeitpunkt": "2026-09-28T01:15:33.056330+00:00",
+  "runde": 1,
+  "markt": {
+    "symbol": "BTCUSD_BITSTAMP",
+    "intervall": "1d"
+  },
+  "lauf": {
+    "kandidaten": 8,
+    "zugelassen": 0,
+    "runde": 1,
+    "laeufe": 2
+  },
+  "zusammenfassung": "8 Strategien in 2 Laeufen geprueft, 0 zugelassen. Vorn: Trend-Beteiligung 50 Tage (5/9 Gates, Erwartung +0.406 R)",
+  "bestenliste": [
+    {
+      "genome_id": "1670b6d3b84c5431",
+      "name": "Trend-Beteiligung 50 Tage",
+      "generation": 9,
+      "intervall": "D",
+      "kapital": 500.0,
+      "referenzdaten": true,
+      "herkunft": "Katalog",
+      "geprueft": 1,
+      "zuerst": "2026-09-28T01:15:33.003663+00:00",
+      "zuletzt": "2026-09-28T01:15:33.003663+00:00",
+      "zugelassen": false,
+      "gates_bestanden": 5,
+      "gates_gesamt": 9,
+      "gates_uebersprungen": 0,
+      "gescheitert_an": [
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Monte-Carlo",
+        "Deflated Sharpe"
+      ],
+      "trades": 148,
+      "erwartung_r": 0.4062,
+      "sharpe": 1.004,
+      "rendite_pct": 214.04,
+      "max_drawdown_pct": 29.16,
+      "fenster_profitabel": 0.516,
+      "hypothese": "Long ueber dem 50-Tage-Schnitt, raus darunter. Schnellere Marke als die 200 - mehr Trades, aber auch mehr Fehlausbrueche. Die Frage ist, was ueberwiegt.",
+      "deflated_sharpe": 0.1108,
+      "versuche": 211,
+      "sharpe_je_trade": 0.20593,
+      "schiefe": 4.527,
+      "woelbung": 26.424,
+      "genom": {
+        "name": "Trend-Beteiligung 50 Tage",
+        "rationale": "Long ueber dem 50-Tage-Schnitt, raus darunter. Schnellere Marke als die 200 - mehr Trades, aber auch mehr Fehlausbrueche. Die Frage ist, was ueberwiegt.",
+        "entry_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "cross_above",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 50
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "entry_short": [],
+        "filters": [],
+        "konfluenz": [],
+        "exit_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "lt",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 50
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "exit_short": [],
+        "stop": {
+          "kind": "percent",
+          "atr_period": 14,
+          "multiple": 1.5,
+          "percent": 15.0
+        },
+        "targets": [
+          {
+            "rr": 20.0,
+            "portion": 1.0
+          }
+        ],
+        "sizing": {
+          "kind": "kapitalanteil",
+          "konviktion_bonus": 0.0,
+          "target_vol_pct": 25.0,
+          "vol_period": 30,
+          "fraction": 0.5
+        },
+        "cooldown_bars": 0,
+        "max_hold_bars": 0
+      }
+    },
+    {
+      "genome_id": "66e04da1281c8cd1",
+      "name": "Trend-Beteiligung 200 Tage",
+      "generation": 9,
+      "intervall": "D",
+      "kapital": 500.0,
+      "referenzdaten": true,
+      "herkunft": "Katalog",
+      "geprueft": 1,
+      "zuerst": "2026-09-28T01:15:33.002996+00:00",
+      "zuletzt": "2026-09-28T01:15:33.002996+00:00",
+      "zugelassen": false,
+      "gates_bestanden": 4,
+      "gates_gesamt": 9,
+      "gates_uebersprungen": 0,
+      "gescheitert_an": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Deflated Sharpe"
+      ],
+      "trades": 46,
+      "erwartung_r": 0.9997,
+      "sharpe": 0.783,
+      "rendite_pct": 67.65,
+      "max_drawdown_pct": 13.54,
+      "fenster_profitabel": 0.533,
+      "hypothese": "Long ueber dem 200-Tage-Schnitt. Der bisherige Spitzenkandidat, unveraendert als Vergleichsmassstab.",
+      "deflated_sharpe": 0.0729,
+      "versuche": 211,
+      "sharpe_je_trade": 0.305063,
+      "schiefe": 3.8838,
+      "woelbung": 20.3284,
+      "genom": {
+        "name": "Trend-Beteiligung 200 Tage",
+        "rationale": "Long ueber dem 200-Tage-Schnitt. Der bisherige Spitzenkandidat, unveraendert als Vergleichsmassstab.",
+        "entry_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "cross_above",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 200
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "entry_short": [],
+        "filters": [],
+        "konfluenz": [],
+        "exit_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "lt",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 200
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "exit_short": [],
+        "stop": {
+          "kind": "percent",
+          "atr_period": 14,
+          "multiple": 1.5,
+          "percent": 15.0
+        },
+        "targets": [
+          {
+            "rr": 20.0,
+            "portion": 1.0
+          }
+        ],
+        "sizing": {
+          "kind": "kapitalanteil",
+          "konviktion_bonus": 0.0,
+          "target_vol_pct": 25.0,
+          "vol_period": 30,
+          "fraction": 0.5
+        },
+        "cooldown_bars": 0,
+        "max_hold_bars": 0
+      }
+    },
+    {
+      "genome_id": "1aada7d4c2d3d6e1",
+      "name": "Donchian-Ausbruch 55/20",
+      "generation": 9,
+      "intervall": "D",
+      "kapital": 500.0,
+      "referenzdaten": true,
+      "herkunft": "Katalog",
+      "geprueft": 1,
+      "zuerst": "2026-09-28T01:15:33.004183+00:00",
+      "zuletzt": "2026-09-28T01:15:33.004183+00:00",
+      "zugelassen": false,
+      "gates_bestanden": 4,
+      "gates_gesamt": 9,
+      "gates_uebersprungen": 0,
+      "gescheitert_an": [
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Monte-Carlo",
+        "Deflated Sharpe"
+      ],
+      "trades": 55,
+      "erwartung_r": 0.6645,
+      "sharpe": 0.923,
+      "rendite_pct": 223.74,
+      "max_drawdown_pct": 19.45,
+      "fenster_profitabel": 0.538,
+      "hypothese": "Long beim Ausbruch ueber das 55-Tage-Hoch, raus beim 20-Tage-Tief. Die aelteste dokumentierte Trendfolgeregel. Hypothese: Extremwerte geben weniger Fehlsignale als ein Durchschnitt, der auf jeden Schlusskurs reagiert.",
+      "deflated_sharpe": 0.0649,
+      "versuche": 211,
+      "sharpe_je_trade": 0.239466,
+      "schiefe": 2.9526,
+      "woelbung": 12.1081,
+      "genom": {
+        "name": "Donchian-Ausbruch 55/20",
+        "rationale": "Long beim Ausbruch ueber das 55-Tage-Hoch, raus beim 20-Tage-Tief. Die aelteste dokumentierte Trendfolgeregel. Hypothese: Extremwerte geben weniger Fehlsignale als ein Durchschnitt, der auf jeden Schlusskurs reagiert.",
+        "entry_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "cross_above",
+            "right": {
+              "kind": "indicator",
+              "name": "swing_high",
+              "params": {
+                "period": 55
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "entry_short": [],
+        "filters": [],
+        "konfluenz": [],
+        "exit_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "lt",
+            "right": {
+              "kind": "indicator",
+              "name": "swing_low",
+              "params": {
+                "period": 20
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "exit_short": [],
+        "stop": {
+          "kind": "percent",
+          "atr_period": 14,
+          "multiple": 1.5,
+          "percent": 15.0
+        },
+        "targets": [
+          {
+            "rr": 20.0,
+            "portion": 1.0
+          }
+        ],
+        "sizing": {
+          "kind": "kapitalanteil",
+          "konviktion_bonus": 0.0,
+          "target_vol_pct": 25.0,
+          "vol_period": 30,
+          "fraction": 0.5
+        },
+        "cooldown_bars": 0,
+        "max_hold_bars": 0
+      }
+    },
+    {
+      "genome_id": "b16ed11ad8f1a327",
+      "name": "KI-Vorschlag Attrappe",
+      "generation": 9,
+      "intervall": "D",
+      "kapital": 500.0,
+      "referenzdaten": true,
+      "herkunft": "KI-Vorschlag",
+      "geprueft": 1,
+      "zuerst": "2026-09-28T01:15:33.004857+00:00",
+      "zuletzt": "2026-09-28T01:15:33.004857+00:00",
+      "zugelassen": false,
+      "gates_bestanden": 6,
+      "gates_gesamt": 9,
+      "gates_uebersprungen": 0,
+      "gescheitert_an": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Deflated Sharpe"
+      ],
+      "trades": 55,
+      "erwartung_r": 0.8105,
+      "sharpe": 0.901,
+      "rendite_pct": 94.23,
+      "max_drawdown_pct": 10.22,
+      "fenster_profitabel": 0.667,
+      "hypothese": "Long ueber dem 200er-Schnitt, raus darunter. Identisch zur dritten Generation; nur Positionsgroesse und Stop folgen jetzt der Bauform statt der Wettformel. Kontrollversuch: Ein Unterschied liegt dann an unserem Aufbau, nicht an der Idee.",
+      "deflated_sharpe": 0.0528,
+      "versuche": 211,
+      "sharpe_je_trade": 0.268694,
+      "schiefe": 4.2563,
+      "woelbung": 24.0805,
+      "genom": {
+        "name": "KI-Vorschlag Attrappe",
+        "rationale": "Long ueber dem 200er-Schnitt, raus darunter. Identisch zur dritten Generation; nur Positionsgroesse und Stop folgen jetzt der Bauform statt der Wettformel. Kontrollversuch: Ein Unterschied liegt dann an unserem Aufbau, nicht an der Idee.",
+        "entry_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "cross_above",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 213
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "entry_short": [],
+        "filters": [],
+        "konfluenz": [],
+        "exit_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "lt",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 213
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "exit_short": [],
+        "stop": {
+          "kind": "percent",
+          "atr_period": 14,
+          "multiple": 1.5,
+          "percent": 15.0
+        },
+        "targets": [
+          {
+            "rr": 20.0,
+            "portion": 1.0
+          }
+        ],
+        "sizing": {
+          "kind": "kapitalanteil",
+          "konviktion_bonus": 0.0,
+          "target_vol_pct": 25.0,
+          "vol_period": 30,
+          "fraction": 0.5
+        },
+        "cooldown_bars": 0,
+        "max_hold_bars": 0
+      }
+    },
+    {
+      "genome_id": "b54206d6509ba802",
+      "name": "Trend beide Richtungen",
+      "generation": 9,
+      "intervall": "D",
+      "kapital": 500.0,
+      "referenzdaten": true,
+      "herkunft": "Katalog",
+      "geprueft": 1,
+      "zuerst": "2026-09-28T01:15:33.003964+00:00",
+      "zuletzt": "2026-09-28T01:15:33.003964+00:00",
+      "zugelassen": false,
+      "gates_bestanden": 3,
+      "gates_gesamt": 9,
+      "gates_uebersprungen": 0,
+      "gescheitert_an": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Monte-Carlo",
+        "Deflated Sharpe"
+      ],
+      "trades": 84,
+      "erwartung_r": 0.2711,
+      "sharpe": 0.495,
+      "rendite_pct": 49.08,
+      "max_drawdown_pct": 27.76,
+      "fenster_profitabel": 0.556,
+      "hypothese": "Long ueber dem 200-Tage-Schnitt, short darunter. Hypothese: Die Kasse-Variante stand 2022 ein Jahr still; short haette denselben Trend in die Gegenrichtung genutzt. Verdoppelt zugleich die Zahl der Beobachtungen.",
+      "deflated_sharpe": 0.0396,
+      "versuche": 211,
+      "sharpe_je_trade": 0.181401,
+      "schiefe": 2.9054,
+      "woelbung": 11.6393,
+      "genom": {
+        "name": "Trend beide Richtungen",
+        "rationale": "Long ueber dem 200-Tage-Schnitt, short darunter. Hypothese: Die Kasse-Variante stand 2022 ein Jahr still; short haette denselben Trend in die Gegenrichtung genutzt. Verdoppelt zugleich die Zahl der Beobachtungen.",
+        "entry_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "cross_above",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 200
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "entry_short": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "cross_below",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 200
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "filters": [],
+        "konfluenz": [],
+        "exit_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "lt",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 200
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "exit_short": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "gt",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 200
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "stop": {
+          "kind": "percent",
+          "atr_period": 14,
+          "multiple": 1.5,
+          "percent": 15.0
+        },
+        "targets": [
+          {
+            "rr": 20.0,
+            "portion": 1.0
+          }
+        ],
+        "sizing": {
+          "kind": "kapitalanteil",
+          "konviktion_bonus": 0.0,
+          "target_vol_pct": 25.0,
+          "vol_period": 30,
+          "fraction": 0.5
+        },
+        "cooldown_bars": 0,
+        "max_hold_bars": 0
+      }
+    },
+    {
+      "genome_id": "d965d5b940619e6c",
+      "name": "Trend-Beteiligung 100 Tage",
+      "generation": 9,
+      "intervall": "D",
+      "kapital": 500.0,
+      "referenzdaten": true,
+      "herkunft": "Katalog",
+      "geprueft": 1,
+      "zuerst": "2026-09-28T01:15:33.003281+00:00",
+      "zuletzt": "2026-09-28T01:15:33.003281+00:00",
+      "zugelassen": false,
+      "gates_bestanden": 2,
+      "gates_gesamt": 9,
+      "gates_uebersprungen": 0,
+      "gescheitert_an": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Deflated Sharpe"
+      ],
+      "trades": 103,
+      "erwartung_r": 0.5586,
+      "sharpe": 0.728,
+      "rendite_pct": 83.14,
+      "max_drawdown_pct": 18.4,
+      "fenster_profitabel": 0.444,
+      "hypothese": "Long ueber dem 100-Tage-Schnitt. Mittelweg zwischen 50 und 200 - liegt das Ergebnis dazwischen, ist die Periode eine stetige Stellschraube und kein Zufallstreffer.",
+      "deflated_sharpe": 0.0222,
+      "versuche": 211,
+      "sharpe_je_trade": 0.203498,
+      "schiefe": 4.8934,
+      "woelbung": 30.2242,
+      "genom": {
+        "name": "Trend-Beteiligung 100 Tage",
+        "rationale": "Long ueber dem 100-Tage-Schnitt. Mittelweg zwischen 50 und 200 - liegt das Ergebnis dazwischen, ist die Periode eine stetige Stellschraube und kein Zufallstreffer.",
+        "entry_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "cross_above",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 100
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "entry_short": [],
+        "filters": [],
+        "konfluenz": [],
+        "exit_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "lt",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 100
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "exit_short": [],
+        "stop": {
+          "kind": "percent",
+          "atr_period": 14,
+          "multiple": 1.5,
+          "percent": 15.0
+        },
+        "targets": [
+          {
+            "rr": 20.0,
+            "portion": 1.0
+          }
+        ],
+        "sizing": {
+          "kind": "kapitalanteil",
+          "konviktion_bonus": 0.0,
+          "target_vol_pct": 25.0,
+          "vol_period": 30,
+          "fraction": 0.5
+        },
+        "cooldown_bars": 0,
+        "max_hold_bars": 0
+      }
+    },
+    {
+      "genome_id": "df26dc724727d17b",
+      "name": "Trend-Beteiligung voller Einsatz",
+      "generation": 9,
+      "intervall": "D",
+      "kapital": 500.0,
+      "referenzdaten": true,
+      "herkunft": "Katalog",
+      "geprueft": 1,
+      "zuerst": "2026-09-28T01:15:33.004655+00:00",
+      "zuletzt": "2026-09-28T01:15:33.004655+00:00",
+      "zugelassen": false,
+      "gates_bestanden": 3,
+      "gates_gesamt": 9,
+      "gates_uebersprungen": 0,
+      "gescheitert_an": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Monte-Carlo",
+        "Deflated Sharpe"
+      ],
+      "trades": 43,
+      "erwartung_r": 0.3745,
+      "sharpe": 0.568,
+      "rendite_pct": 76.97,
+      "max_drawdown_pct": 27.67,
+      "fenster_profitabel": 0.533,
+      "hypothese": "Wie die 200-Tage-Beteiligung, aber mit vollem Kapital statt der Haelfte. Messung, keine neue Idee: Rendite und Rueckgang skalieren gemeinsam - die Frage ist, wieviel bei der erlaubten Rueckgangsgrenze herausspringt.",
+      "deflated_sharpe": 0.0167,
+      "versuche": 211,
+      "sharpe_je_trade": 0.207785,
+      "schiefe": 3.1353,
+      "woelbung": 12.753,
+      "genom": {
+        "name": "Trend-Beteiligung voller Einsatz",
+        "rationale": "Wie die 200-Tage-Beteiligung, aber mit vollem Kapital statt der Haelfte. Messung, keine neue Idee: Rendite und Rueckgang skalieren gemeinsam - die Frage ist, wieviel bei der erlaubten Rueckgangsgrenze herausspringt.",
+        "entry_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "cross_above",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 200
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "entry_short": [],
+        "filters": [],
+        "konfluenz": [],
+        "exit_long": [
+          {
+            "left": {
+              "kind": "price",
+              "name": "close",
+              "params": {},
+              "value": 0.0
+            },
+            "op": "lt",
+            "right": {
+              "kind": "indicator",
+              "name": "sma",
+              "params": {
+                "period": 200
+              },
+              "value": 0.0
+            }
+          }
+        ],
+        "exit_short": [],
+        "stop": {
+          "kind": "percent",
+          "atr_period": 14,
+          "multiple": 1.5,
+          "percent": 15.0
+        },
+        "targets": [
+          {
+            "rr": 20.0,
+            "portion": 1.0
+          }
+        ],
+        "sizing": {
+          "kind": "kapitalanteil",
+          "konviktion_bonus": 0.0,
+          "target_vol_pct": 25.0,
+          "vol_period": 30,
+          "fraction": 1.0
+        },
+        "cooldown_bars": 0,
+        "max_hold_bars": 0
+      }
+    },
+    {
+      "genome_id": "4af1c86efa9a6fbe",
+      "name": "Momentum-Beteiligung 90 Tage",
+      "generation": 9,
+      "intervall": "D",
+      "kapital": 500.0,
+      "referenzdaten": true,
+      "herkunft": "Katalog",
+      "geprueft": 1,
+      "zuerst": "2026-09-28T01:15:33.004424+00:00",
+      "zuletzt": "2026-09-28T01:15:33.004424+00:00",
+      "zugelassen": false,
+      "gates_bestanden": 2,
+      "gates_gesamt": 9,
+      "gates_uebersprungen": 0,
+      "gescheitert_an": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Deflated Sharpe"
+      ],
+      "trades": 96,
+      "erwartung_r": 0.4679,
+      "sharpe": 0.473,
+      "rendite_pct": 44.96,
+      "max_drawdown_pct": 25.56,
+      "fenster_profitabel": 0.4,
+      "hypothese": "Long, wenn die Veraenderung ueber 90 Tage positiv wird; raus, wenn sie negativ wird. Dritte Messart desselben Trends - stimmen alle drei ueberein, liegt es an der Idee.",
+      "deflated_sharpe": 0.0036,
+      "versuche": 211,
+      "sharpe_je_trade": 0.169822,
+      "schiefe": 4.6545,
+      "woelbung": 27.0807,
+      "genom": {
+        "name": "Momentum-Beteiligung 90 Tage",
+        "rationale": "Long, wenn die Veraenderung ueber 90 Tage positiv wird; raus, wenn sie negativ wird. Dritte Messart desselben Trends - stimmen alle drei ueberein, liegt es an der Idee.",
+        "entry_long": [
+          {
+            "left": {
+              "kind": "indicator",
+              "name": "roc",
+              "params": {
+                "period": 90
+              },
+              "value": 0.0
+            },
+            "op": "cross_above",
+            "right": {
+              "kind": "constant",
+              "name": "",
+              "params": {},
+              "value": 0.0
+            }
+          }
+        ],
+        "entry_short": [],
+        "filters": [],
+        "konfluenz": [],
+        "exit_long": [
+          {
+            "left": {
+              "kind": "indicator",
+              "name": "roc",
+              "params": {
+                "period": 90
+              },
+              "value": 0.0
+            },
+            "op": "lt",
+            "right": {
+              "kind": "constant",
+              "name": "",
+              "params": {},
+              "value": 0.0
+            }
+          }
+        ],
+        "exit_short": [],
+        "stop": {
+          "kind": "percent",
+          "atr_period": 14,
+          "multiple": 1.5,
+          "percent": 15.0
+        },
+        "targets": [
+          {
+            "rr": 20.0,
+            "portion": 1.0
+          }
+        ],
+        "sizing": {
+          "kind": "kapitalanteil",
+          "konviktion_bonus": 0.0,
+          "target_vol_pct": 25.0,
+          "vol_period": 30,
+          "fraction": 0.5
+        },
+        "cooldown_bars": 0,
+        "max_hold_bars": 0
+      }
+    }
+  ]
+}
