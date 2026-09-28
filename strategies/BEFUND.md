@@ -32139,3 +32139,79 @@ Der Test arbeitet jetzt in einem Wegwerf-Verzeichnis. Dort gibt es kein `.git`,
 Beides ist gewacht: dass im Projekt **kein** Bericht dazukommt, und dass im
 Wegwerf-Verzeichnis **einer** entsteht. Ein Test, der das Schreiben ganz
 verhindert, prueft den Lauf nicht mehr.
+
+## Dreihundertneunundfuenfzig. Ein Bein ohne Funding-Raten handelt nicht
+
+Dieselbe Luecke wie in Befund 357, einen Befehl weiter: **`cli funding` laedt
+genau ein Symbol** - `settings.bybit.symbol` -, und kein Schalter aendert das.
+
+Die Folge ist leiser als bei fehlenden Kerzen, und das macht sie schlimmer.
+`attach_funding` schreibt einem Bein ohne Raten ueberall `NaN`; die
+Funding-Indikatoren geben dort `NaN` zurueck - so gebaut und so dokumentiert:
+*"Dann handelt die Strategie nicht, statt auf einer Annahme zu handeln."*
+
+Gemessen mit `Carry-Beteiligung` aus Generation 5 auf BTC + ETH, Raten nur fuer
+BTC:
+
+    BTCUSD_BITSTAMP   3301 Kerzen mit Rate   ->  54 Trades
+    ETHUSD_BITSTAMP   3301 Kerzen NaN        ->   0 Trades
+    gesamt                                       54
+
+**Der Lauf nennt trotzdem zwei Maerkte.** Ein Portfolio-Ergebnis, das nach dem
+Korb aussieht und in Wahrheit ein Bein ist - also genau das, was Befund 264/318
+als etwas anderes gemessen hat: 9 von 11 auf dem Korb, 8 von 11 auf ein Bein
+gekuerzt.
+
+Ohne Kerzen bricht ein Lauf ab oder nennt einen Markt weniger. Ohne Raten laeuft
+er durch und sieht vollstaendig aus.
+
+### Was die Luecke nicht trifft
+
+Der Bestand handelt auch ohne Raten weiter - 160 Trades auf beiden Beinen. Er
+liest das Funding nicht. Betroffen sind die Regeln, deren **Idee** daran haengt,
+und der Katalog hat sie: Generation 5 fuehrt `Carry-Beteiligung`, und `cli
+funding` schliesst selbst mit dem Satz *"Genau daran setzen die Carry-Kandidaten
+an."*
+
+### Der erste Anlauf zeigte nichts
+
+Meine erste synthetische Rate war 0,0001 - der Vorgabewert. In Prozent sind das
+0,01, und die Bedingung der Regel lautet `funding_avg(7) < 0.01`. Ergebnis: null
+Trades auf **beiden** Beinen, kein Unterschied, kein Fund.
+
+Eine Testgroesse genau auf der Schwelle des Geprueften macht beide Faelle
+gleich. Erst mit 0,00005 trennen sie sich. Der Wert steht jetzt als benannte
+Konstante im Test, mit dem Grund daneben.
+
+### Was gebaut ist
+
+`cli funding` nimmt `-m` und laedt jeden genannten Markt. Die Korbwarnung aus
+357 ist dabei zu einem gemeinsamen Helfer `_korbwarnung` geworden - zwei
+Meldungen mit demselben Inhalt waeren die naechste Stelle, an der zwei Fassungen
+auseinanderlaufen (Befund 168).
+
+Und der Wettbewerb warnt jetzt bei **ungleicher** Abdeckung. Die Zahlen standen
+schon da:
+
+    Funding-Raten aus dem Speicher: BTCUSDT 9500, ETHUSDT 0 - sie werden
+    berechnet, nicht nur angezeigt.
+
+Das ist seit Befund 265 richtig und vollstaendig - und es liest sich wie eine
+Inventur in grauer Schrift. Wer die Zeile ueberfliegt, sieht zwei Zahlen und
+nicht, dass ein Bein stumm ist. Dazu kommt jetzt eine gelbe Zeile, die sagt, was
+daran haengt, samt der gemessenen 54 gegen 0. Bei gleicher Abdeckung bleibt es
+bei der Inventur: Eine Warnung, die immer kommt, ist Grundrauschen.
+
+Die Zeile fuer den Nutzer heisst jetzt `python -m cli funding -m
+BTCUSDT,ETHUSDT --von 2020-03-30`, und die Wache in `test_nutzerbefehle.py`
+prueft den Korb bei **allen** ladenden und suchenden Befehlen statt bei zwei.
+
+### Nebenbei berichtigt: was ich unterwegs falsch angenommen hatte
+
+Auf dem Weg dorthin habe ich aus einem `grep` nach `FundingSchedule(`
+geschlossen, die geladenen Raten kaemen nie im Kostenmodell an - und damit
+waere die Aussage in `Zulassungsbedingungen.funding_raten` (*"Seit die
+geladenen Raten ins Kostenmodell gehen"*) falsch. Sie ist richtig: Der Weg
+heisst `schedule_from_frame(funding_je_markt[markt])` und steht direkt neben
+der Konfiguration je Bein. Ein `grep` nach einer Konstruktorform findet keine
+Fabrikfunktion.

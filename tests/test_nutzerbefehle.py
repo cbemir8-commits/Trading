@@ -116,12 +116,15 @@ class TestDieZeilenPassenZueinander:
         """
         from cli import ZULASSUNGSKORB
 
+        # **Und das Funding gehoert dazu** (Befund 359): Ein Bein ohne Raten
+        # bekommt ueberall NaN, und eine Regel, die das Funding liest, handelt
+        # dort nicht - gemessen 54 Trades gegen 0.
         betroffen = [
             b
             for b, _ in BEIM_NUTZER
-            if " backfill " in f" {b} " or " wettbewerb " in f" {b} "
+            if any(f" {x} " in f" {b} " for x in ("backfill", "funding", "wettbewerb"))
         ]
-        assert betroffen, "weder Backfill noch Wettbewerb unter den Befehlen"
+        assert betroffen, "keiner der ladenden oder suchenden Befehle ist dabei"
         for zeile in betroffen:
             _, argumente = _zerlegt(zeile)
             gewaehlt = self._wert(argumente, "-m") or self._wert(

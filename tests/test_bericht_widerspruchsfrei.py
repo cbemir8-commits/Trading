@@ -111,6 +111,14 @@ MEHRFACH: dict[str, str] = {
     # Warnung, die Zeile traegt sie dorthin, wo jemand sie kopiert. Eine
     # Messung, zwei Stellen - derselbe Fall wie bei 14,34 %.
     "17,54%": "Jahresrendite ab 2018 (Befund 345), Auftrag und Befehlszeile",
+    # Der Bybit-Basissatz je Achtstundenperiode (Befund 359). Er steht in der
+    # offenen Entscheidung zum Funding-Satz - dort als Vorgabewert, mit dem
+    # gerechnet wird - und im Eintrag zu 359, dort als **Schwelle der
+    # Carry-Regel**: Sie fragt, ob das Funding unter dem normalen Satz liegt,
+    # und "normal" ist genau diese Zahl. Zwei Rollen derselben Groesse, und die
+    # Verwandtschaft ist der Grund, warum meine erste Testrate darauf lag und
+    # nichts zeigte.
+    "0,01%": "Bybit-Basissatz (Befund 359), Vorgabewert und Carry-Schwelle",
 }
 
 

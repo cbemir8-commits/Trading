@@ -366,20 +366,12 @@ def backfill(
     # **Der Korb, oder die Warnung dazu** (Befund 357). Wer weniger laedt, als
     # die Zulassung braucht, merkt es sonst erst, wenn 'cli wettbewerb' auf
     # einem Bein sucht - und dann sind die Versuche gebucht.
-    fehlend = [x for x in ZULASSUNGSKORB if x not in symbole]
-    if fehlend:
-        console.print(
-            f"[yellow]Der Zulassungskorb ist "
-            f"{', '.join(ZULASSUNGSKORB)}; hier fehlt "
-            f"{', '.join(fehlend)}.[/]\n"
-            f"[dim]Jede Zulassungszahl dieses Projekts steht auf dem Korb - BTC "
-            f"allein kommt auf 5 von 11 gegen 9 von 11 (Befunde 264/318). Ein "
-            f"Wettbewerb auf einem Bein kostet dieselben Versuche und kann das "
-            f"nicht einholen. Vollstaendig laden:\n"
-            f"  python -m cli backfill -m {','.join(ZULASSUNGSKORB)} "
-            f"--intervall {' --intervall '.join(i.value for i in selected)} "
-            f"--von {start:%Y-%m-%d}[/]\n"
-        )
+    _korbwarnung(
+        symbole,
+        "backfill",
+        f"--intervall {' --intervall '.join(i.value for i in selected)} "
+        f"--von {start:%Y-%m-%d}",
+    )
 
     backfiller = Backfiller(market, store, rate_limiter=RateLimiter(8.0))
 
@@ -452,6 +444,11 @@ def backfill(
 def funding(
     von: str = typer.Option("2020-03-30", help="Startdatum (YYYY-MM-DD)."),
     bis: str | None = typer.Option(None, help="Enddatum. Standard: jetzt."),
+    maerkte: str = typer.Option(
+        "", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt. Leer = das konfigurierte allein. "
+             "Der Zulassungskorb ist BTCUSDT,ETHUSDT.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Funding-Historie nachladen - die zweite Datenquelle.
@@ -464,6 +461,15 @@ def funding(
 
     Klein und schnell: Drei Werte am Tag ergeben ueber sechs Jahre rund 6.500
     Zeilen, das sind gut 30 Anfragen.
+
+    **Mehrere Maerkte seit Befund 359.** Wie der Backfill in 357 lud dieser
+    Befehl genau ein Symbol - das konfigurierte -, und kein Schalter aenderte
+    das. Die Folge ist leiser als bei fehlenden Kerzen: Ein Bein ohne Raten
+    bekommt in 'attach_funding' ueberall NaN, die Funding-Indikatoren geben
+    dort NaN zurueck, und die Regel handelt auf diesem Bein **nicht**.
+    Gemessen mit 'Carry-Beteiligung' aus Generation 5 auf BTC + ETH, Raten nur
+    fuer BTC: 54 Trades auf dem Bein mit Raten, **0** auf dem ohne - und der
+    Lauf nennt trotzdem zwei Maerkte.
     """
     from data.funding import FundingStore, backfill_funding
 
@@ -474,20 +480,36 @@ def funding(
 
     start = _parse_date(von)
     end = _parse_date(bis) if bis else datetime.now(UTC)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()] or [
+        settings.bybit.symbol
+    ]
 
     console.print(
-        f"[bold]Funding-Historie[/] {settings.bybit.symbol} "
+        f"[bold]Funding-Historie[/] {' + '.join(symbole)} "
         f"{start:%Y-%m-%d} bis {end:%Y-%m-%d}\n"
     )
+    _korbwarnung(symbole, "funding", f"--von {start:%Y-%m-%d}")
 
     def show(written: int, cursor: datetime) -> None:
         console.print(f"  [dim]{written:,} Eintraege, bis {cursor:%Y-%m-%d}[/]".replace(",", "."))
 
-    written = backfill_funding(
-        market, store, settings.bybit.symbol, start=start, end=end, on_progress=show
-    )
+    written = 0
+    for symbol in symbole:
+        if len(symbole) > 1:
+            console.print(f"[bold]{symbol}[/]")
+        written += backfill_funding(
+            market, store, symbol, start=start, end=end, on_progress=show
+        )
 
-    frame = store.read(settings.bybit.symbol)
+    geladen = {s: len(store.read(s)) for s in symbole}
+    if len(symbole) > 1:
+        console.print(
+            "[dim]Im Speicher: "
+            + ", ".join(f"{s} {n}" for s, n in geladen.items())
+            + "[/]"
+        )
+
+    frame = store.read(symbole[0])
     if frame.empty:
         console.print(
             "[red]Nichts geladen.[/] Ohne Funding-Daten handeln die Strategien "
@@ -754,6 +776,25 @@ def wettbewerb(
             + ", ".join(f"{m} {n}" for m, n in geladen.items())
             + " - sie werden berechnet, nicht nur angezeigt.[/]"
         )
+        # **Und die ungleiche Abdeckung ist eine Warnung, keine Inventur**
+        # (Befund 359). Die Zeile darueber nennt die Zahlen schon; sie liest
+        # sich wie eine Bestandsliste. Was daran haengt, ist mehr: Ein Bein
+        # ohne Raten bekommt ueberall NaN, die Funding-Indikatoren geben dort
+        # NaN zurueck, und eine Regel, die das Funding liest, handelt auf
+        # diesem Bein **nicht**. Gemessen mit 'Carry-Beteiligung' auf BTC + ETH
+        # und Raten nur fuer BTC: 54 Trades gegen 0 - und der Lauf nennt
+        # trotzdem zwei Maerkte.
+        ohne = [m for m, n in geladen.items() if not n]
+        if ohne and len(geladen) > 1:
+            console.print(
+                f"[yellow]Ungleiche Funding-Abdeckung:[/] "
+                f"{', '.join(ohne)} ohne Raten, andere Beine mit.\n"
+                f"[dim]Eine Regel, die das Funding liest, handelt auf einem "
+                f"Bein ohne Raten nicht - gemessen 54 Trades gegen 0 bei "
+                f"'Carry-Beteiligung' (Befund 359). Der Lauf nennt trotzdem "
+                f"alle Beine. Nachladen:\n"
+                f"  python -m cli funding -m {','.join(ZULASSUNGSKORB)}[/]\n"
+            )
     else:
         console.print(
             "[yellow]Keine Funding-Raten im Speicher.[/] Gerechnet wird mit "
@@ -1944,6 +1985,31 @@ _KONTRAKTE = {
     "LTCUSDT": ("0.01", "0.1", "0.1", "200000", "LTC"),
     "XRPUSDT": ("0.0001", "1", "1", "8000000", "XRP"),
 }
+
+
+def _korbwarnung(symbole, befehl: str, zusatz: str = "") -> None:
+    """Melden, wenn eine Ladung den Zulassungskorb nicht abdeckt.
+
+    **Befund 357 fuer die Kerzen, 359 fuer das Funding**, und derselbe Text -
+    zwei Meldungen mit demselben Inhalt waeren die naechste Stelle, an der zwei
+    Fassungen auseinanderlaufen.
+
+    Verboten wird nichts: Ein einzelnes Symbol nachzuladen ist ein gueltiger
+    Wunsch. Gesagt wird, was es kostet.
+    """
+    fehlend = [x for x in ZULASSUNGSKORB if x not in symbole]
+    if not fehlend:
+        return
+    console.print(
+        f"[yellow]Der Zulassungskorb ist {', '.join(ZULASSUNGSKORB)}; hier "
+        f"fehlt {', '.join(fehlend)}.[/]\n"
+        f"[dim]Jede Zulassungszahl dieses Projekts steht auf dem Korb - BTC "
+        f"allein kommt auf 5 von 11 gegen 9 von 11 (Befunde 264/318). "
+        f"Vollstaendig laden:\n"
+        f"  python -m cli {befehl} -m {','.join(ZULASSUNGSKORB)}"
+        + (f" {zusatz}" if zusatz else "")
+        + "[/]\n"
+    )
 
 
 def _startkapital(configs) -> float:

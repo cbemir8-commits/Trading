@@ -2909,6 +2909,29 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Berichte im Projekt vorher und nachher",
         358,
     ),
+    # Befund 359: dieselbe Luecke wie 357, einen Befehl weiter - und leiser.
+    Richtung(
+        "Ein Bein ohne Funding-Raten handelt nicht",
+        "'cli funding' lud genau ein Symbol, das konfigurierte, und kein "
+        "Schalter aenderte das. Anders als bei fehlenden Kerzen bricht dabei "
+        "nichts ab: 'attach_funding' schreibt dem Bein ohne Raten ueberall "
+        "**NaN**, die Funding-Indikatoren geben dort NaN zurueck, und die Regel "
+        "handelt auf diesem Bein nicht. Gemessen mit 'Carry-Beteiligung' aus "
+        "Generation 5 auf BTC + ETH und Raten nur fuer BTC: 3301 Kerzen mit "
+        "Rate gegen 3301 mit NaN, **54 Trades gegen 0** - und der Lauf nennt "
+        "trotzdem zwei Maerkte. Ein Ergebnis, das nach dem Korb aussieht und "
+        "eines ist, das 264/318 als etwas anderes gemessen hat. Der Bestand "
+        "merkt davon nichts (160 Trades auf beiden Beinen): Er liest das "
+        "Funding nicht, die Luecke trifft die Regeln, deren Idee daran haengt. "
+        "Jetzt nimmt 'funding' ein '-m', die Korbwarnung steht als gemeinsamer "
+        "Helfer hinter beiden Ladebefehlen, und der Wettbewerb warnt bei "
+        "**ungleicher** Abdeckung - die Zahlen standen schon da, aber als "
+        "Inventur in grauer Schrift. **Und der erste Anlauf zeigte nichts**, "
+        "weil die synthetische Rate genau auf der Schwelle der Regel lag "
+        "(0,0001 = 0,01 % gegen 'kleiner 0,01'): null Trades auf beiden "
+        "Beinen. Erst eine Rate darunter trennt die Faelle",
+        359,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -4216,7 +4239,7 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "'-m' sucht, sucht auf einem Bein, und das steht bei 5 von 11.",
     ),
     (
-        "python -m cli funding --von 2020-03-30",
+        "python -m cli funding -m BTCUSDT,ETHUSDT --von 2020-03-30",
         "Laedt die echten Funding-Raten. Bisher rechnet jede Zahl mit dem "
         "Vorgabewert, und der ist der groesste Kostenblock des Systems - das "
         "Neunfache der Handelsgebuehren (Befund 100). **Wonach zu schauen "
