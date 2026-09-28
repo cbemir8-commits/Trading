@@ -124,7 +124,26 @@ class Vergleich:
     def einig(self) -> bool:
         return not self.abweichungen
 
+    @property
+    def nichts_zu_vergleichen(self) -> bool:
+        """Einig, weil **keine** Seite gehandelt hat - Befund 360.
+
+        Das ist kein Beleg, sondern eine Leerstelle: Zwei Laeufe, die nie etwas
+        wollten, stimmen notwendig ueberein. Genau so ist der Abgleich fuer die
+        Carry-Regel gruen geworden - "Einig ueber 5355 Balken - 0 Signale".
+        """
+        return self.einig and not (self.signale_backtest or self.signale_livebetrieb)
+
     def bericht(self) -> str:
+        if self.nichts_zu_vergleichen:
+            return (
+                f"**Nichts zu vergleichen**: Ueber {self.balken} Balken hat "
+                f"keine der beiden Seiten ein Signal erzeugt. Das ist kein "
+                f"Beleg fuer Uebereinstimmung - zwei Laeufe, die nie etwas "
+                f"wollten, stimmen notwendig ueberein (Befund 360). Haeufigste "
+                f"Ursache: eine Eingabe fehlt, etwa die Funding-Spalte bei "
+                f"Carry-Regeln."
+            )
         if self.einig:
             return (
                 f"Einig ueber {self.balken} Balken - "
@@ -199,6 +218,31 @@ def entscheidungen_backtest(frame: pd.DataFrame, build_strategy) -> list[Entsche
     return ergebnis
 
 
+def _wie_der_puffer(frame: pd.DataFrame) -> pd.DataFrame:
+    """Den Rahmen auf die Spalten kuerzen, die der Livepuffer wirklich hat.
+
+    **Befund 360.** Der Livepuffer entsteht aus ``candles_to_frame``, und das
+    sind genau die sieben Spalten aus ``store.SCHEMA``. Eine Funding-Spalte ist
+    nicht darunter - ``execution/`` erwaehnt Funding an keiner Stelle.
+
+    Ohne diese Kuerzung bekam die Live-Seite dieses Vergleichs jede Spalte, die
+    der Aufrufer mitbrachte, und damit **mehr als der Betrieb hat**. Gemessen an
+    der Carry-Regel aus Generation 5: Der Wettbewerb haengt die Funding-Raten
+    an, der Livebetrieb hat sie nicht, und die Funding-Indikatoren geben dort
+    NaN zurueck - die Regel handelt live **nie**. Der Abgleich sah das nicht,
+    weil beide Seiten denselben funding-freien Rahmen bekamen und einig waren,
+    nichts zu tun.
+
+    Die Liste wird aus ``SCHEMA`` gelesen und nicht hier aufgeschrieben: Bekommt
+    der Livepuffer eines Tages eine Spalte dazu, folgt dieser Vergleich von
+    selbst.
+    """
+    from data.store import SCHEMA
+
+    behalten = [s for s in frame.columns if s in SCHEMA]
+    return frame[behalten] if len(behalten) != len(frame.columns) else frame
+
+
 def entscheidungen_livebetrieb(
     frame: pd.DataFrame, build_strategy, *, buffer_bars: int = BUFFER_BARS
 ) -> list[Entscheidung]:
@@ -208,16 +252,22 @@ def entscheidungen_livebetrieb(
     ``prepare`` darueber, und der Index am Ende des Ausschnitts - genau das,
     was ``LiveTrader._context`` tut.
 
+    **Und mit den Spalten, die der Puffer wirklich hat** (Befund 360, siehe
+    ``_wie_der_puffer``). Den Ausschnitt richtig zu schneiden und ihm dabei
+    Eingaben mitzugeben, die es im Betrieb nicht gibt, stellt den Betrieb nicht
+    nach - es nimmt ihm genau die Abweichung, die zu finden war.
+
     Deutlich langsamer als der Backtest, weil die Indikatoren je Balken neu
     gerechnet werden. Das ist der Preis dafuer, den Betrieb nachzustellen
     statt ihn nachzuahmen.
     """
     strategy = build_strategy()
+    lebensnah = _wie_der_puffer(frame)
 
     ergebnis = []
     for i in range(len(frame)):
         beginn = max(0, i - buffer_bars + 1)
-        puffer = frame.iloc[beginn : i + 1].reset_index(drop=True)
+        puffer = lebensnah.iloc[beginn : i + 1].reset_index(drop=True)
         # Die Bedingung aus ``LiveTrader._context`` - unveraendert
         # uebernommen. Der erste Balken bleibt aussen vor, weil die Engine
         # mit ``max(warmup_bars, 1)`` ebenfalls bei 1 beginnt; ohne das

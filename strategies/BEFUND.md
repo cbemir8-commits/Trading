@@ -32215,3 +32215,77 @@ geladenen Raten ins Kostenmodell gehen"*) falsch. Sie ist richtig: Der Weg
 heisst `schedule_from_frame(funding_je_markt[markt])` und steht direkt neben
 der Konfiguration je Bein. Ein `grep` nach einer Konstruktorform findet keine
 Fabrikfunktion.
+
+## Dreihundertsechzig. Der Abgleich war fuer Carry-Regeln blind
+
+`cli abgleich` legt Backtest und Livebetrieb nebeneinander. Im Register steht er
+als *"Vor jedem Livegang auszufuehren"* - der letzte Schritt vor dem echten
+Geld. Gefahren mit der Carry-Regel aus Generation 5:
+
+    Einig ueber 5355 Balken - 0 Signale, identisch.
+
+**Gruen, und ohne jede Aussage.**
+
+### Die Kette, jedes Glied gemessen
+
+1. Der Wettbewerb haengt die Funding-Raten an die Kerzen (`attach_funding`) und
+   ins Kostenmodell (`schedule_from_frame`). Jede Zulassungszahl entsteht mit
+   ihnen.
+2. **`execution/` erwaehnt Funding an keiner Stelle.** Der Livepuffer kommt aus
+   `candles_to_frame`, und das sind genau die sieben Spalten aus
+   `store.SCHEMA`. `strategy.indicators._funding_column` gibt ohne Spalte NaN
+   zurueck - so gebaut, so dokumentiert: *"Dann handelt die Strategie nicht,
+   statt auf einer Annahme zu handeln."*
+3. `cli abgleich` hing die Raten ebenfalls nicht an. Also fehlten sie **beiden**
+   Seiten, beide taten nichts, und genau das las sich als Einigkeit.
+
+Ein Carry-Champion haette die Zulassung bestanden, den Abgleich bestanden und
+live **nie** gehandelt. Nicht falsch gehandelt - gar nicht.
+
+### Zwei Aenderungen, und beide sind noetig
+
+Die **Backtest-Seite** bekommt die Raten, wie im Wettbewerb. Allein reicht das
+nicht: Der Vergleich gibt beiden Seiten denselben Rahmen, also saehe auch die
+Live-Seite ploetzlich Funding und beide waeren wieder einig - die Blindheit
+waere geblieben, nur eine Etage hoeher.
+
+Die **Live-Seite** bekommt deshalb nur die Spalten, die der Puffer wirklich hat
+(`replay._wie_der_puffer`). Den Ausschnitt richtig zu schneiden und ihm dabei
+Eingaben mitzugeben, die es im Betrieb nicht gibt, stellt den Betrieb nicht nach
+- es nimmt ihm genau die Abweichung, die zu finden war.
+
+Die Spaltenliste wird aus `SCHEMA` **gelesen** und nicht hier aufgeschrieben:
+Bekommt der Livepuffer eines Tages Funding, folgt der Vergleich von selbst.
+
+Gemessen, vorher und nachher, dieselbe Regel und dieselben Kerzen:
+
+    vorher    Einig ueber 5355 Balken - 0 Signale, identisch.
+    nachher   200 Abweichungen ueber 5355 Balken.
+              Backtest 5325 Signale, Betrieb 0.
+              2012-01-31  Backtest [Signal long ...]  Betrieb [Signal - ...]
+
+Der Bestand bleibt einig - 129 Signale, unveraendert. Er liest das Funding
+nicht, und die Aenderung trifft nur, wen sie treffen soll.
+
+### Einig bei null Signalen ist kein Urteil
+
+Unabhaengig vom Funding: Zwei Laeufe, die nie etwas wollten, stimmen notwendig
+ueberein. Der Bericht nennt das jetzt `Nichts zu vergleichen` und sagt die
+haeufigste Ursache dazu.
+
+Der Gedanke war im Haus. In `test_replay.py` steht seit jeher:
+
+> `assert ergebnis.signale_backtest > 5` - *"Ohne Signale prueft der Vergleich
+> nichts - die Testreihe muss den Schnitt oft genug kreuzen"*
+
+Eine Zusicherung in **einem** Test von zwanzig, und der Bericht, den ein Mensch
+vor dem Livegang liest, sagte es nicht. Das ist dasselbe Muster wie in 355 und
+356: Die Einsicht war da, die Bindung fehlte.
+
+### Was offen bleibt
+
+**Der Livebetrieb hat weiter keine Funding-Spalte.** Der Abgleich sagt es jetzt,
+behoben ist es damit nicht: Eine Carry-Regel kann live nicht handeln. Die
+Abhilfe waere, dass `LiveTrader` die Raten mitfuehrt - zu bauen ist das nur
+gegen die Boerse, und die ist aus diesem Container nicht erreichbar. Es steht
+als Folge im Register, nicht als Fussnote.

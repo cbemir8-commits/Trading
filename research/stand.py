@@ -2932,6 +2932,34 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Beinen. Erst eine Rate darunter trennt die Faelle",
         359,
     ),
+    # Befund 360: der letzte Schritt vor dem Geld, gefahren. Dieselbe
+    # NaN-Stille wie 359, eine Schicht weiter - und diesmal am Livepfad.
+    Richtung(
+        "Der Abgleich war fuer Carry-Regeln blind",
+        "'cli abgleich' legt Backtest und Livebetrieb nebeneinander und ist "
+        "laut Register vor jedem Livegang auszufuehren. Gefahren mit der "
+        "Carry-Regel: *'Einig ueber 5355 Balken - **0 Signale**, identisch.'* "
+        "Gruen, und ohne Aussage. Die Kette, jedes Glied gemessen: Der "
+        "Wettbewerb haengt die Funding-Raten an, 'execution/' erwaehnt Funding "
+        "an **keiner** Stelle (der Livepuffer kommt aus 'candles_to_frame', "
+        "sieben Spalten aus 'store.SCHEMA'), und der Abgleich hing sie auch "
+        "nicht an - also fehlten sie **beiden** Seiten, beide taten nichts, und "
+        "das las sich als Einigkeit. Ein Carry-Champion haette Zulassung und "
+        "Abgleich bestanden und live nie gehandelt. Jetzt bekommt die "
+        "Backtest-Seite die Raten wie im Wettbewerb und die Live-Seite nur die "
+        "Spalten, die der Puffer wirklich hat ('replay._wie_der_puffer', aus "
+        "SCHEMA gelesen statt aufgeschrieben). Gemessen danach: **200 "
+        "Abweichungen, Backtest 5325 Signale, Betrieb 0** - der Unterschied "
+        "faellt auf. Der Bestand bleibt einig (129 Signale), er liest das "
+        "Funding nicht. Und 'einig bei null Signalen' ist kein Urteil mehr, "
+        "sondern eine benannte Leerstelle; der Gedanke stand als Zusicherung in "
+        "**einem** Test ('Ohne Signale prueft der Vergleich nichts') und steht "
+        "jetzt im Bericht. **Offen bleibt die Folge**: Der Livebetrieb hat "
+        "weiter keine Funding-Spalte, also kann eine Carry-Regel dort nicht "
+        "handeln - der Abgleich sagt es jetzt, behoben ist es nicht, und "
+        "nachzupruefen ist es nur an der Boerse",
+        360,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

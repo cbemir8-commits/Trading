@@ -5364,6 +5364,21 @@ def abgleich(
         console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
         raise typer.Exit(2)
 
+    # **Die Funding-Spalte gehoert an die Backtest-Seite** (Befund 360). Der
+    # Wettbewerb haengt sie an - jede Zulassungszahl entsteht mit ihr. Dieser
+    # Vergleich lief ohne sie, und damit fehlte sie **beiden** Seiten: Eine
+    # Carry-Regel erzeugte auf keiner Seite ein Signal, und "einig ueber 5355
+    # Balken - 0 Signale" las sich wie ein Freibrief.
+    #
+    # Die Live-Seite bekommt sie weiter nicht, und das ist nicht Nachlaessigkeit,
+    # sondern die Lage: 'execution/' erwaehnt Funding an keiner Stelle
+    # ('replay._wie_der_puffer' kuerzt entsprechend). Genau der Unterschied soll
+    # hier auffallen.
+    from data.funding import FundingStore, attach_funding
+
+    raten = FundingStore(settings.paths.data_store).read(_bybit_kontrakt(symbol))
+    frame = attach_funding(frame, raten)
+
     champion_pfad = Path(settings.paths.strategies) / "champion.json"
     genome = lade_champion(champion_pfad)
     # **Welches Genom geprueft wurde, gehoert in die Ausgabe.** Ein gruenes
@@ -5379,6 +5394,9 @@ def abgleich(
         f"  Kerzen   {len(frame)}\n"
         f"  Strategie {genome.name} ({genome.genome_id})\n"
         f"  Herkunft  {quelle}\n"
+        f"  Funding  {len(raten)} Raten fuer {_bybit_kontrakt(symbol)}"
+        + ("" if len(raten) else " - die Backtest-Seite rechnet mit NaN")
+        + "\n"
         f"  Puffer   {puffer} Kerzen\n"
     )
     if not champion_pfad.exists():
