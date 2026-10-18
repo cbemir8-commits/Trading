@@ -52,6 +52,14 @@ from data.bybit.adapter import MarketDataSource
 
 log = structlog.get_logger(__name__)
 
+#: Der Spaltenname, den ``attach_funding`` schreibt und die Indikatoren lesen.
+#:
+#: Als Name an einer Stelle, weil ihn inzwischen drei Seiten kennen muessen:
+#: der Wettbewerb, der Livepuffer (Befund 361) und der Abgleich, der den
+#: Livepuffer nachstellt. Drei Zeichenketten an drei Orten waren genau der
+#: Riss, durch den Befund 360 gefallen ist.
+SPALTE = "funding_rate"
+
 #: Bybit liefert maximal 200 Funding-Eintraege je Anfrage.
 PAGE_SIZE = 200
 
@@ -266,7 +274,7 @@ def attach_funding(frame: pd.DataFrame, funding: pd.DataFrame) -> pd.DataFrame:
     """
     result = frame.copy()
     if funding.empty:
-        result["funding_rate"] = float("nan")
+        result[SPALTE] = float("nan")
         return result
 
     # Beide Seiten auf dieselbe Zeitaufloesung bringen.
@@ -286,5 +294,5 @@ def attach_funding(frame: pd.DataFrame, funding: pd.DataFrame) -> pd.DataFrame:
         on="time",
         direction="backward",  # nur was schon feststand
     )
-    result["funding_rate"] = merged["funding_rate"].to_numpy()
+    result[SPALTE] = merged[SPALTE].to_numpy()
     return result

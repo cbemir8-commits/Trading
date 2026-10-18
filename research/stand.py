@@ -2954,11 +2954,82 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Funding nicht. Und 'einig bei null Signalen' ist kein Urteil mehr, "
         "sondern eine benannte Leerstelle; der Gedanke stand als Zusicherung in "
         "**einem** Test ('Ohne Signale prueft der Vergleich nichts') und steht "
-        "jetzt im Bericht. **Offen bleibt die Folge**: Der Livebetrieb hat "
-        "weiter keine Funding-Spalte, also kann eine Carry-Regel dort nicht "
-        "handeln - der Abgleich sagt es jetzt, behoben ist es nicht, und "
-        "nachzupruefen ist es nur an der Boerse",
+        "jetzt im Bericht. **Offen blieb die Folge**: Der Livebetrieb hatte "
+        "weiter keine Funding-Spalte, also konnte eine Carry-Regel dort nicht "
+        "handeln - der Abgleich sagte es, behoben war es nicht. "
+        "**Abgeraeumt in Befund 361**: Der Livepuffer haengt die Raten jetzt "
+        "selbst an, und die Kuerzung hier ist entsprechend weg - sie waere "
+        "dieselbe Luege mit umgekehrtem Vorzeichen",
         360,
+        zuletzt=361,
+    ),
+    # Befund 361: die offene Folge aus 360, abgeraeumt. Nicht am Abgleich,
+    # sondern am Betrieb selbst - gemessen auf derselben Reihe.
+    Richtung(
+        "Der Livepuffer hatte keine Funding-Spalte",
+        "Die offene Folge aus Befund 360. Gemessen auf **derselben** Reihe von "
+        "500 Balken mit der Carry-Regel aus Generation 5: Backtest **470** "
+        "Signale, Betrieb vorher **0**, Betrieb nachher **470** - identisch "
+        "mit dem Backtest. Eine zugelassene Carry-Regel haette live keinen "
+        "einzigen Einstieg genommen. Behoben an **zwei** Stellen, und die "
+        "zweite war die, auf die es ankam: Der Vorlauf allein genuegt nicht, "
+        "denn '_append' haengt jede neue Kerze als eigene Zeile an, und "
+        "'concat' gibt einer Zeile ohne die Spalte stillschweigend NaN - der "
+        "letzte Balken ist aber genau der, den die Regel auswertet. Dazu eine "
+        "**Frist**: 'attach_funding' schreibt die letzte bekannte Rate "
+        "vorwaerts fort, im Backtest ueber hoechstens acht Stunden, im Betrieb "
+        "notfalls ueber Wochen; jenseits von drei Zahlungsperioden steht jetzt "
+        "NaN, und auf NaN handelt die Strategie nicht. Die Frist gilt je "
+        "Kerze, die Warnung beim Start gegen den Kalender - zwei verschiedene "
+        "Fragen. Ohne Speicher bleibt die Spalte **weg** statt voller NaN: "
+        "eine fehlende Eingabe ist etwas anderes als eine geliefert-leere, und "
+        "der Abgleich muss beides unterscheiden koennen. "
+        "'indicators.FUNDINGLESER' (drei Indikatoren) wird gegen die "
+        "Wirklichkeit gemessen - jeder REGISTRY-Eintrag mit und ohne Spalte "
+        "gerechnet -, damit ein vierter auffaellt, sobald er dazukommt. "
+        "**Offen bleibt** die laufende Rate von der Boerse, also der Fall, "
+        "dass zwischen zwei 'cli funding'-Laeufen eine neue Periode beginnt. "
+        "Sie beim Ticker abzuholen waere **nicht** dasselbe: Dort steht sie "
+        "neben 'next_funding_time', gilt also fuer die naechste Abrechnung und "
+        "ist noch nicht gezahlt, waehrend der Speicher aus "
+        "'/v5/market/funding/history' kommt - festgestellte Raten, und auf "
+        "genau denen ist jede Zulassungszahl gerechnet. Die eine fuer die "
+        "andere einzusetzen waere ein stiller Wechsel der Eingabe. Aus der "
+        "Form der Schnittstelle erschlossen, nicht gemessen - nachzupruefen "
+        "ist es nur an der Boerse",
+        361,
+    ),
+    # Befund 362: der frische Container als Messgeraet. Zwei Fehler von mir,
+    # einer im Code und einer in der Messung.
+    Richtung(
+        "Die Auswahl fuer den frischen Klon war nicht gruen",
+        "Der Container wurde neu aufgesetzt: Repository frisch geklont, "
+        "'.venv' weg, 'data_store/' weg (steht in '.gitignore', zu gross). "
+        "Volle Suite danach **26 failed, 4954 passed, 19 errors** - so "
+        "gewollt, denn seit Befund 151 sollen Tests am Kerzenspeicher in einem "
+        "Klon ohne Daten fehlschlagen statt still zu uebersprungen werden; die "
+        "Auswahl dafuer ist \"-m 'not daten'\". **Die war nicht gruen**: 6 "
+        "failed, 7 errors. Neun Tests brauchen den echten Speicher und trugen "
+        "die Markierung nicht - 'test_kiaufrufe.py' (sieben, mein Versaeumnis "
+        "aus Befund 358: beide Aufstellungen fahren 'cli wettbewerb' auf dem "
+        "echten Speicher, und das muss so sein) und 'test_referenz.py' (zwei, "
+        "Spot- und Perpetualpunkt gegen die gepflegten Zahlen, gescheitert mit "
+        "'max() arg is an empty sequence' aus 'common_range'). Markierung "
+        "nachgetragen, Auswahl danach gruen. **Kein statischer Waechter** "
+        "dafuer, gemessen statt vermutet: Das Muster 'paths.data_store' trifft "
+        "22 Dateien (9 markiert) und haette 13 angemahnt, von denen nur zwei "
+        "es verdienten - elf Fehlalarme, weil die uebrigen die Einstellung auf "
+        "ein Wegwerf-Verzeichnis zeigen oder eine leere Reihe vertragen; das "
+        "enge Muster waere zu still, 'test_referenz.py' steht nicht darin. "
+        "'Liest den Speicher' heisst nicht 'braucht den Speicher', und das "
+        "einzige verlaessliche Messgeraet ist ein Lauf ohne Daten. **Zweiter "
+        "Fehler, in der Messung**: Vier weitere Fehlschlaege desselben Laufs "
+        "waren keine - 'inspect.getsource' merkt sich die **Zeilennummer** und "
+        "liest die Datei neu, und ich hatte 'cli.py' waehrend des laufenden "
+        "Hintergrundlaufs um sechs Zeilen oberhalb erweitert; die Tests "
+        "prueften danach stillschweigend die Nachbarfunktion. Waehrend ein "
+        "Lauf laeuft, wird keine Quelle bearbeitet",
+        362,
     ),
 )
 
@@ -4283,7 +4354,12 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "**Und seit Befund 265 kommt das auch an:** Bis dahin gingen die "
         "geladenen Raten allein an die Kerzen - die Strategie sah sie, "
         "gezahlt wurde weiter der Vorgabewert, und dieser Satz hier "
-        "versprach etwas, das kein Lauf eingeloest haette.",
+        "versprach etwas, das kein Lauf eingeloest haette. "
+        "**Seit Befund 361 haengt auch der Livebetrieb daran:** Der Puffer "
+        "nimmt die Raten aus diesem Speicher, und nach drei Zahlungsperioden "
+        "ohne neue Raten steht dort NaN - eine Carry-Regel handelt dann "
+        "nicht. Vor einem Livegang also erst diesen Befehl, sonst schweigt "
+        "sie aus gutem Grund.",
     ),
     (
         "python -m cli wettbewerb -m BTCUSDT,ETHUSDT --generation 9",

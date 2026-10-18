@@ -32289,3 +32289,189 @@ behoben ist es damit nicht: Eine Carry-Regel kann live nicht handeln. Die
 Abhilfe waere, dass `LiveTrader` die Raten mitfuehrt - zu bauen ist das nur
 gegen die Boerse, und die ist aus diesem Container nicht erreichbar. Es steht
 als Folge im Register, nicht als Fussnote.
+
+## Dreihunderteinundsechzig. Der Livepuffer bekommt seine Funding-Spalte
+
+Die offene Folge aus Befund 360, und sie war kleiner als dort behauptet.
+
+Dort steht: *"Die Abhilfe waere, dass `LiveTrader` die Raten mitfuehrt - zu
+bauen ist das nur gegen die Boerse, und die ist aus diesem Container nicht
+erreichbar."* **Das war zu pauschal.** Die Raten liegen auf der Platte, in
+`data_store/funding/` - derselbe Speicher, aus dem der Wettbewerb sie nimmt. Sie
+in den Livepuffer zu haengen braucht keine Boerse und ist hier vollstaendig
+pruefbar. Nur die *laufende* Rate, die zwischen zwei `cli funding`-Laeufen neu
+festgestellt wird, kommt von der Boerse. Ich habe den ganzen Schritt fuer
+unerreichbar erklaert, weil ein Teil davon es ist.
+
+### Gemessen, auf derselben Reihe
+
+Dieselbe Carry-Regel, dieselben 500 Balken, einmal mit und einmal ohne die
+Spalte auf der Live-Seite:
+
+    Backtest-Signale:        470
+    Betrieb VOR Befund 361:    0
+    Betrieb NACH Befund 361: 470
+
+Null gegen 470. Eine Regel, die die Zulassung bestanden hat, haette live keinen
+einzigen Einstieg genommen.
+
+### Zwei Stellen, und die zweite ist die, auf die es ankam
+
+Der **Vorlauf** (`_load_history`) haengt die Raten an die geladenen Kerzen. Das
+ist der naheliegende Teil.
+
+Der **Anhang** (`_append`) ist der, an dem es sonst gescheitert waere. Jede neue
+Kerze kommt als eigene Zeile, und `pd.concat` gibt einer Zeile ohne die Spalte
+stillschweigend NaN. Der letzte Balken ist aber genau der, den die Regel
+auswertet. Die Spalte nur beim Laden zu fuellen haette also **nichts** geaendert
+- es haette eine Spalte voller Zahlen ueber einem NaN gegeben, und die Regel
+haette weiter nie gehandelt. Dieser Test haelt beide Stellen fest.
+
+### Eine Frist, weil Fortschreiben im Betrieb etwas anderes heisst
+
+`attach_funding` schreibt die zuletzt festgestellte Rate vorwaerts fort - so
+gebaut, und richtig so: Rueckwaerts waere Lookahead. Im Backtest deckt die Reihe
+den ganzen Zeitraum, und bis zur naechsten Rate sind es nie mehr als acht
+Stunden.
+
+Im Betrieb ist der Speicher nur so frisch wie der letzte `cli funding`. Ohne
+Grenze schreibt dieselbe Funktion eine Rate bereitwillig auch noch drei Wochen
+spaeter fort, und die Strategie haelt sie fuer die aktuelle. Jenseits von drei
+Zahlungsperioden steht jetzt NaN - **lieber keine Zahl als eine veraltete**, und
+auf NaN handelt die Strategie nicht.
+
+Zwei verschiedene Fragen, bewusst getrennt: Die Frist gilt je **Kerze** (ein
+Lauf ueber 2017 darf die Raten von 2017 benutzen, auch wenn sie heute Jahre alt
+sind), die Warnung beim Start gilt gegen den **Kalender**.
+
+### Ohne Speicher fehlt die Spalte, sie steht nicht leer da
+
+Eine fehlende Spalte ist eine fehlende Eingabe. Eine Spalte voller NaN waere
+eine gelieferte Eingabe ohne Inhalt. Fuer die Strategie ist beides NaN, fuer den
+Abgleich nicht - er muss sagen koennen, *welcher* der beiden Faelle vorliegt.
+Deshalb haengt `_mit_funding` ohne Speicher gar nichts an.
+
+### Was dadurch im Abgleich umgedreht werden musste
+
+Die Kuerzung aus Befund 360 (`_wie_der_puffer` zog die Funding-Spalte ab, weil
+der Betrieb sie nicht hatte) ist weg. Sie waere jetzt dieselbe Luege mit
+umgekehrtem Vorzeichen: Der Abgleich wuerde eine Abweichung melden, die es nicht
+mehr gibt, und ausgerechnet vor Carry-Regeln warnen, die dort nun handeln.
+
+Gekuerzt wird weiter alles **andere**, was ein Aufrufer mitbringt. Die Liste
+kommt aus `SCHEMA` und `funding.SPALTE`, nicht aus einer Aufschreibung - und
+eine Probe vergleicht die Spalten des **echten** Puffers mit denen des
+nachgestellten, damit die beiden Seiten nicht getrennt auseinanderlaufen.
+
+### Wer liest die Spalte ueberhaupt?
+
+Damit beim Start gewarnt werden kann, muss der Betrieb vor dem ersten Balken
+wissen, ob die Strategie Funding liest. `Genome.liest_funding` fragt die drei
+Indikatoren in `indicators.FUNDINGLESER` ab - ueber `operand.name`, nicht ueber
+den Schluessel, denn der fuehrt die Parameter mit
+(`indicator:funding_avg(period=21)`), und eine Zeichenkettensuche darin waere
+eine Vermutung ueber ein Format, das sich aendern darf.
+
+Die Liste ist von Hand aufgeschrieben, also wird sie gemessen: Jeder Eintrag der
+REGISTRY wird mit und ohne Spalte gerechnet, und wer sich unterscheidet, muss
+auf der Liste stehen. Ein vierter Funding-Indikator faellt damit auf, sobald er
+dazukommt - und nicht erst, wenn eine Regel mit ihm live schweigt. Die Reihe
+dafuer muss sich **bewegen**: `funding_zscore` teilt durch die
+Standardabweichung, und auf einer flachen Reihe ist die null - der Indikator
+gaebe dort mit und ohne Spalte NaN und saehe aus wie einer, der die Spalte nicht
+liest.
+
+### Was offen bleibt
+
+Die **laufende** Rate von der Boerse. Zwischen zwei `cli funding`-Laeufen
+beginnt alle acht Stunden eine neue Periode, und die kennt der Speicher nicht.
+
+Naheliegend waere, sie beim Ticker abzuholen - `self.market` ist schon da, und
+`get_ticker` liefert ein Feld `funding_rate`. **Das ist aber nicht dieselbe
+Groesse.** Im Ticker steht sie neben `next_funding_time`, sie gilt also fuer die
+**naechste** Abrechnung und ist noch nicht gezahlt; der Speicher fuellt sich aus
+`/v5/market/funding/history`, also aus **festgestellten** Raten, und auf genau
+denen ist jede Zulassungszahl gerechnet. Die eine fuer die andere einzusetzen
+waere kein Nachtragen, sondern ein stiller Wechsel der Eingabe - und der
+Abgleich wuerde es zu Recht als Abweichung melden.
+
+Richtig waere, die Ticker-Rate erst zu verwenden, wenn ihre Abrechnung vorbei
+ist (`next_funding_time` sagt, wann). Das ist mehr als ein Aufruf, und die
+Bedeutung der Felder ist aus diesem Container nicht nachpruefbar - sie steht
+hier aus der Form der Schnittstelle erschlossen, nicht gemessen.
+
+Bis dahin gilt die Frist: Nach drei Perioden ohne neue Raten steht NaN, und die
+Regel handelt nicht, statt auf einer veralteten Zahl zu handeln.
+
+## Dreihundertzweiundsechzig. Ein frischer Container als Messgeraet - und ein Fehler bei mir
+
+Der Container wurde zwischen zwei Laeufen neu aufgesetzt. Das Repository kam
+frisch geklont, `.venv` war weg, und `data_store/` ebenfalls - es steht in
+`.gitignore`, weil es zu gross ist. Die volle Suite danach:
+
+    26 failed, 4954 passed, 14 skipped, 19 errors
+
+**Das ist so gewollt.** In `pyproject.toml` steht es seit Befund 151: Tests, die
+den Kerzenspeicher brauchen, tragen die Markierung `daten` und sollen in einem
+Klon ohne Daten **fehlschlagen**, nicht still uebersprungen werden - *"wer 'Suite
+gruen' sagt, muss dazusagen, welche Auswahl er gelaufen ist"*. Die Auswahl fuer
+diesen Fall ist `-m "not daten"`.
+
+### Die Auswahl war nicht gruen
+
+Gefahren, und darum geht es hier:
+
+    -m "not daten":  6 failed, 4947 passed, 39 deselected, 7 errors
+
+Neun Tests brauchen den echten Speicher und trugen die Markierung nicht:
+
+* `tests/test_kiaufrufe.py` (sieben) - **mein Versaeumnis aus Befund 358.** Beide
+  Aufstellungen fahren `cli wettbewerb` auf dem echten Kerzenspeicher, und das
+  muss so sein: Ein Wettbewerb auf erfundenen Kerzen misst nichts.
+* `tests/test_referenz.py` (zwei) - die beiden Laeufe, die Spot- und
+  Perpetualpunkt gegen die gepflegten Zahlen rechnen. Sie scheiterten mit
+  `ValueError: max() arg is an empty sequence` aus `common_range` - keine
+  Kerzen, keine gemeinsame Spanne.
+
+Markierung nachgetragen, Auswahl danach gruen.
+
+### Kein statischer Waechter, und warum nicht
+
+Der naheliegende Schutz waere ein Test, der jeden Test mit Speicherzugriff zur
+Markierung zwingt. Gemessen, bevor ich ihn gebaut haette - Dateien in `tests/`,
+Stand vor dieser Aenderung:
+
+    Muster 'paths.data_store' / 'PATHS__DATA_STORE':  22 Dateien,  9 markiert
+    Muster nur auf die *echte* Wurzel:                 8 Dateien,  1 markiert
+
+Die unmarkierten laufen auf einem leeren Speicher durch - sie zeigen die
+Einstellung auf ein Wegwerf-Verzeichnis oder vertragen eine leere Reihe.
+**"Liest den Speicher" heisst also nicht "braucht den Speicher".** Das breite
+Muster haette dreizehn Dateien angemahnt, von denen nur zwei es verdienten:
+**elf Fehlalarme**. Das enge Muster waere umgekehrt zu still - `test_referenz.py`
+steht nicht darin, es holt `get_settings` und `CandleStore` getrennt, und genau
+dieser Test hat gefehlt.
+
+Das einzige verlaessliche Messgeraet ist ein Lauf ohne Daten - genau der, der
+diesen Befund gefunden hat. Darum steht hier eine Markierung und kein Waechter.
+
+### Vier Fehlschlaege, die keine waren - und das war wieder ich
+
+Derselbe Lauf meldete vier weitere Fehlschlaege, die ich fast als Fund
+aufgeschrieben haette: `test_nachpruefung_kerzen`, `test_kerzenlaenge_passt`,
+`test_suchbudget_greift`, `test_versuchskosten`. Einzeln liefen sie durch. Der
+Grund stand in der Meldung:
+
+    quelle = inspect.getsource(cli._pruefe_generation)
+    E  assert 'passt_zum_intervall' in 'def _standardintervall(...)'
+
+`inspect.getsource` merkt sich Datei und **Zeilennummer** und liest die Datei
+beim Aufruf neu. Ich hatte `cli.py` waehrend des laufenden Hintergrundlaufs
+bearbeitet - sechs Zeilen eingefuegt, alle oberhalb dieser Funktionen. Die
+Nummer zeigte danach einundzwanzig Zeilen zu hoch, auf die Nachbarfunktion, und
+der Test pruefte stillschweigend den falschen Quelltext.
+
+Zwei Dinge daraus, beide fuer mich: **Waehrend ein Lauf laeuft, wird keine Quelle
+bearbeitet** - das Ergebnis ist sonst unbrauchbar. Und ein Fehlschlag, der
+einzeln nicht auftritt, ist zuerst ein Verdacht gegen die Messung, nicht gegen
+den Code.

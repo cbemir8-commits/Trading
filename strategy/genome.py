@@ -24,7 +24,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from strategy.indicators import PRICE_FIELDS, REGISTRY
+from strategy.indicators import FUNDINGLESER, PRICE_FIELDS, REGISTRY
 
 
 class Operator(StrEnum):
@@ -451,3 +451,20 @@ class Genome(BaseModel):
                 if operand.kind != "constant":
                     keys.add(operand.key)
         return keys
+
+    def liest_funding(self) -> bool:
+        """Braucht dieses Genom die Funding-Spalte?
+
+        Gefragt wird beim Start des Livebetriebs (Befund 361): Eine Carry-Regel
+        ohne aktuelle Raten handelt nie, und das soll beim Start stehen und
+        nicht nach einer stillen Woche auffallen.
+
+        Ueber ``name`` und nicht ueber ``key``, weil der Schluessel die
+        Parameter mitfuehrt (``indicator:funding_avg(period=21)``) - eine
+        Zeichenkettensuche darin waere eine Vermutung ueber das Format.
+        """
+        return any(
+            operand.kind == "indicator" and operand.name in FUNDINGLESER
+            for condition in self.all_conditions
+            for operand in (condition.left, condition.right)
+        )

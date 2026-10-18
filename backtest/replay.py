@@ -222,24 +222,33 @@ def _wie_der_puffer(frame: pd.DataFrame) -> pd.DataFrame:
     """Den Rahmen auf die Spalten kuerzen, die der Livepuffer wirklich hat.
 
     **Befund 360.** Der Livepuffer entsteht aus ``candles_to_frame``, und das
-    sind genau die sieben Spalten aus ``store.SCHEMA``. Eine Funding-Spalte ist
-    nicht darunter - ``execution/`` erwaehnt Funding an keiner Stelle.
+    sind genau die sieben Spalten aus ``store.SCHEMA``. Eine Funding-Spalte war
+    nicht darunter - ``execution/`` erwaehnte Funding an keiner Stelle.
 
     Ohne diese Kuerzung bekam die Live-Seite dieses Vergleichs jede Spalte, die
     der Aufrufer mitbrachte, und damit **mehr als der Betrieb hat**. Gemessen an
     der Carry-Regel aus Generation 5: Der Wettbewerb haengt die Funding-Raten
-    an, der Livebetrieb hat sie nicht, und die Funding-Indikatoren geben dort
-    NaN zurueck - die Regel handelt live **nie**. Der Abgleich sah das nicht,
+    an, der Livebetrieb hatte sie nicht, und die Funding-Indikatoren geben dort
+    NaN zurueck - die Regel handelte live **nie**. Der Abgleich sah das nicht,
     weil beide Seiten denselben funding-freien Rahmen bekamen und einig waren,
     nichts zu tun.
 
-    Die Liste wird aus ``SCHEMA`` gelesen und nicht hier aufgeschrieben: Bekommt
-    der Livepuffer eines Tages eine Spalte dazu, folgt dieser Vergleich von
-    selbst.
+    **Befund 361: Die Funding-Spalte bleibt jetzt stehen.** Der Livebetrieb
+    haengt sie selbst an (``LiveTrader._mit_funding``), also waere ihr Abzug
+    hier inzwischen dieselbe Luege mit umgekehrtem Vorzeichen - der Vergleich
+    wuerde eine Abweichung melden, die es nicht mehr gibt, und ausgerechnet bei
+    Carry-Regeln vor dem Livegang warnen, obwohl sie dort nun handeln.
+
+    Die Liste wird aus ``SCHEMA`` und ``funding.SPALTE`` gelesen und nicht hier
+    aufgeschrieben: Bekommt der Livepuffer eine Spalte dazu, folgt dieser
+    Vergleich von selbst. Was hier bleibt, ist der Schnitt gegen alles
+    **andere**, was ein Aufrufer mitbringt - der Betrieb hat es nicht.
     """
+    from data.funding import SPALTE
     from data.store import SCHEMA
 
-    behalten = [s for s in frame.columns if s in SCHEMA]
+    echte = (*SCHEMA, SPALTE)
+    behalten = [s for s in frame.columns if s in echte]
     return frame[behalten] if len(behalten) != len(frame.columns) else frame
 
 

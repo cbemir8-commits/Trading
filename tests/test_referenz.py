@@ -115,6 +115,7 @@ def test_wer_eine_ueberholte_zahl_nennt_sagt_es_dazu(pfad: Path) -> None:
 
 
 @pytest.mark.langsam
+@pytest.mark.daten
 def test_der_referenzpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
     """Der eigentliche Schutz: gepflegte Zahlen, die gegen die Messung laufen.
 
@@ -536,6 +537,7 @@ class TestJederStandKenntSeineKerzenlaenge:
 
 
 @pytest.mark.langsam
+@pytest.mark.daten
 def test_der_perpetualpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
     """Dasselbe fuer den zweiten Betriebspunkt (Befund 235).
 

@@ -34,6 +34,20 @@ Und "einig bei null Signalen" ist kein Urteil mehr, sondern eine benannte
 Leerstelle. Der Gedanke stand schon in ``test_replay.py`` - *"Ohne Signale
 prueft der Vergleich nichts"* -, aber nur als Zusicherung in einem einzigen
 Test. Jetzt sagt der Bericht es selbst.
+
+Vermerk vom 17.10.2026 (Befund 361)
+-----------------------------------
+**Die Kuerzung ist weg, und zwar mit Absicht.** Befund 360 hat die Luecke
+benannt und ausdruecklich offen gelassen: *"behoben ist der Livebetrieb damit
+nicht"*. Inzwischen haengt der Livebetrieb die Raten selbst an
+(``LiveTrader._mit_funding``), also waere ihr Abzug hier dieselbe Luege mit
+umgekehrtem Vorzeichen - der Abgleich wuerde vor Carry-Regeln warnen, die dort
+jetzt handeln.
+
+Was sich dadurch in diesem Test umdreht, steht an den betroffenen Stellen
+einzeln dabei. Der Fund selbst bleibt messbar und ist nicht verschwunden: Er
+steht jetzt in ``test_livefunding.py`` als Zahlenpaar auf **derselben** Reihe -
+ohne Spalte 0 Signale, mit Spalte 470, wie der Backtest.
 """
 
 from __future__ import annotations
@@ -85,20 +99,37 @@ def _carry_regel():
 
 class TestDieLiveSeiteBekommtNurDenEchtenPuffer:
     def test_fremde_spalten_fallen_weg(self) -> None:
+        """Gekuerzt wird, was der Betrieb **nicht** hat.
+
+        Bis Befund 361 war die Funding-Spalte darunter. Seither haengt der
+        Betrieb sie selbst an, und die Probe braucht eine Spalte, die wirklich
+        nirgends herkommt.
+        """
         frame = _mit_funding(60)
+        frame["etwas_erfundenes"] = 1.0
 
         gekuerzt = _wie_der_puffer(frame)
 
-        assert "funding_rate" in frame.columns
-        assert "funding_rate" not in gekuerzt.columns
+        assert "etwas_erfundenes" not in gekuerzt.columns
 
-    def test_die_sieben_echten_bleiben(self) -> None:
+    def test_die_funding_spalte_bleibt_jetzt_stehen(self) -> None:
+        """**Umgedreht durch Befund 361** - vorher stand hier das Gegenteil.
+
+        Der Betrieb hat die Spalte inzwischen (``LiveTrader._mit_funding``);
+        sie hier abzuziehen wuerde eine Abweichung melden, die es nicht mehr
+        gibt.
+        """
+        gekuerzt = _wie_der_puffer(_mit_funding(60))
+
+        assert "funding_rate" in gekuerzt.columns
+
+    def test_die_sieben_kerzenspalten_bleiben(self) -> None:
         from data.store import SCHEMA
 
         gekuerzt = _wie_der_puffer(_mit_funding(60))
 
-        assert list(gekuerzt.columns) == [s for s in SCHEMA if s in gekuerzt.columns]
-        assert len(gekuerzt.columns) == 7
+        assert set(SCHEMA) <= set(gekuerzt.columns)
+        assert len(gekuerzt.columns) == len(SCHEMA) + 1
 
     def test_ohne_fremde_spalte_bleibt_der_rahmen_derselbe(self) -> None:
         """Kein Kopieren, wo nichts zu kuerzen ist - der Vergleich rechnet je
@@ -118,27 +149,39 @@ class TestDieLiveSeiteBekommtNurDenEchtenPuffer:
 
 
 class TestDerUnterschiedFaelltJetztAuf:
-    """**Der Fund**, und die Gegenprobe dazu."""
+    """**Der Fund**, und die Gegenprobe dazu.
 
-    def test_die_carry_regel_handelt_nur_im_backtest(self) -> None:
+    **Umgedreht durch Befund 361.** Hier stand, dass die Carry-Regel nur im
+    Backtest handelt - das war der Fund, und er ist behoben: Der Betrieb haengt
+    die Raten jetzt selbst an. Die Abweichung, die aufzufallen hatte, ist
+    gemessen verschwunden, und das ist ihr Zweck.
+
+    Das Zahlenpaar dazu steht in ``test_livefunding.py`` (0 gegen 470 auf
+    derselben Reihe); hier bleibt stehen, dass der Abgleich beide Seiten mit
+    denselben Eingaben vergleicht.
+    """
+
+    def test_die_carry_regel_handelt_jetzt_auf_beiden_seiten(self) -> None:
         ergebnis = vergleiche(
             _mit_funding(500), lambda: compile_genome(_carry_regel()),
             buffer_bars=200,
         )
 
-        assert not ergebnis.einig, "der Unterschied muss auffallen"
+        assert ergebnis.einig, ergebnis.bericht()
         assert ergebnis.signale_backtest > 0
-        assert ergebnis.signale_livebetrieb == 0
+        assert ergebnis.signale_livebetrieb == ergebnis.signale_backtest
 
-    def test_der_bericht_nennt_beide_zahlen(self) -> None:
+    def test_der_bericht_nennt_die_zahl(self) -> None:
         ergebnis = vergleiche(
             _mit_funding(500), lambda: compile_genome(_carry_regel()),
             buffer_bars=200,
         )
         text = ergebnis.bericht()
 
-        assert "Abweichungen" in text
-        assert "Betrieb 0" in text
+        assert "Einig ueber" in text
+        assert not ergebnis.nichts_zu_vergleichen, (
+            "mit Raten hat der Vergleich jetzt etwas zu vergleichen"
+        )
 
     def test_eine_regel_ohne_funding_bleibt_einig(self) -> None:
         """Die Gegenprobe: Gekuerzt wird eine Spalte, die der Betrieb nicht

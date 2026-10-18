@@ -29,6 +29,16 @@ Generation-5-Regel nur **umbenannt** hat: dieselbe ``genome_id``, also ein
 Doppelgaenger, und die Abwehr aus Befund 258 hat ihn zu Recht verworfen. Die
 Kennung ist der Hash ueber die Regeln, nicht ueber den Namen - erst eine
 verschobene Periode macht einen neuen Kandidaten.
+
+Vermerk vom 17.10.2026 (Befund 362): ``daten``-Markierung nachgetragen
+----------------------------------------------------------------------
+**Das war mein Fehler, und er ist erst in einem frischen Container
+aufgefallen.** Beide Aufstellungen fahren ``cli wettbewerb`` auf dem **echten**
+Kerzenspeicher (``PATHS__DATA_STORE`` zeigt auf ``wurzel / "data_store"``, und
+das muss so sein - ein Wettbewerb auf erfundenen Kerzen messt nichts). Der
+Speicher steht nicht im Repository. Ohne die Markierung schlugen die sieben
+Tests in einem Klon ohne Daten also fehl, **auch** in der Auswahl
+``-m "not daten"``, die genau fuer diesen Fall gedacht ist.
 """
 
 from __future__ import annotations
@@ -185,6 +195,7 @@ def zwei_runden(tmp_path_factory) -> Lauf:
 
 
 @pytest.mark.langsam
+@pytest.mark.daten
 class TestDieKiWirdNurGefragtWennEsNochWeitergeht:
     def test_eine_runde_ist_ein_aufruf(self, eine_runde: Lauf) -> None:
         """**Der Fund.** Vorher waren es zwei, und der zweite war umsonst."""
@@ -223,6 +234,7 @@ class TestDieKiWirdNurGefragtWennEsNochWeitergeht:
 
 
 @pytest.mark.langsam
+@pytest.mark.daten
 class TestDerLaufSchreibtNichtInsProjekt:
     """**Der zweite Teil von Befund 358, und er war mein Fehler.**
 

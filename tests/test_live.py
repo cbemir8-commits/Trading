@@ -125,9 +125,25 @@ def build_rig(
     with_history: bool = True,
     entry_expiry_bars: int = 3,
     equity: Decimal = Decimal("500"),
+    funding_raten: list | None = None,
 ) -> Rig:
+    """``funding_raten`` legt einen Funding-Speicher daneben (Befund 361).
+
+    Ohne die Angabe bleibt es beim Verhalten davor: kein Speicher, keine
+    Spalte im Puffer. Eine leere Liste ist etwas anderes als ``None`` - sie
+    heisst "Speicher vorhanden, aber ohne Raten", und genau daran haengt die
+    Warnung beim Start.
+    """
     store = CandleStore(tmp_path / "store")
     start = datetime(2026, 1, 1, tzinfo=UTC)
+
+    fundingspeicher = None
+    if funding_raten is not None:
+        from data.funding import FundingStore
+
+        fundingspeicher = FundingStore(tmp_path / "store")
+        if funding_raten:
+            fundingspeicher.write("BTCUSDT", funding_raten)
 
     if with_history:
         history = make_candles(count=HISTORY_BARS, start=start, step=Decimal(0))
@@ -154,6 +170,7 @@ def build_rig(
         gateway=exchange,
         officer=officer,
         store=store,
+        funding=fundingspeicher,
         interval=Interval.M15,
         notifier=notifier,
         entry_expiry_bars=entry_expiry_bars,

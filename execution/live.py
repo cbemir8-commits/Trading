@@ -43,6 +43,13 @@ from core.models import Candle, Instrument, Interval, Position, Side, Signal, Tr
 from data.bybit.adapter import AccountSource, MarketDataSource
 from data.bybit.trading import TradingGateway
 from data.bybit.ws import KlineStream
+from data.funding import (
+    FUNDING_INTERVAL,
+    FundingStore,
+    attach_funding,
+    funding_to_frame,
+)
+from data.funding import SPALTE as FUNDINGSPALTE
 from data.store import CandleStore, candles_to_frame
 from execution.invarianten import pruefe
 from execution.risk import Approved, RiskOfficer, TradingState, Vetoed
@@ -56,6 +63,18 @@ log = structlog.get_logger(__name__)
 #: Wie viele Kerzen im Speicher gehalten werden. Muss die laengste
 #: Indikatorperiode deutlich uebersteigen; 2000 deckt auch EMA(400) ab.
 BUFFER_BARS = 2000
+
+#: Wie alt die juengste bekannte Funding-Rate hoechstens sein darf, damit sie
+#: noch an eine Kerze geschrieben wird. Danach steht dort NaN, und eine
+#: Carry-Regel handelt nicht (Befund 361).
+#:
+#: Im Backtest stellt sich die Frage nicht: Dort deckt die Reihe den ganzen
+#: Zeitraum, und bis zur naechsten Rate sind es nie mehr als acht Stunden.
+#: Im Betrieb ist der Speicher nur so frisch wie der letzte ``cli funding``,
+#: und ``attach_funding`` schreibt eine Rate bereitwillig auch noch Wochen
+#: spaeter fort. Drei Zahlungsperioden sind die Grenze, ab der "die letzte
+#: bekannte Rate" kein Ersatz mehr fuer "die aktuelle Rate" ist.
+FUNDINGFRIST = FUNDING_INTERVAL * 3
 
 #: Rueckgabe von ``_equity_fraction``, wenn auf diesem Balken nicht gehandelt
 #: werden soll. Ein eigener Wert, weil ``None`` an dieser Stelle bereits
@@ -130,6 +149,7 @@ class LiveTrader:
         notifier: Notifier | None = None,
         entry_expiry_bars: int = 3,
         journal: LiveJournal | None = None,
+        funding: FundingStore | None = None,
     ) -> None:
         self.settings = settings
         self.strategy = strategy
@@ -138,6 +158,7 @@ class LiveTrader:
         self.account = account
         self.officer = officer
         self.store = store
+        self.funding = funding
         self.interval = interval
         self.entry_expiry_bars = entry_expiry_bars
         self.notifier = notifier
@@ -154,6 +175,10 @@ class LiveTrader:
         self._mae: Decimal = Decimal(0)
         self._mfe: Decimal = Decimal(0)
         self._frame: pd.DataFrame = pd.DataFrame()
+        #: Die bekannten Funding-Raten, einmal von der Platte gelesen. Bleibt
+        #: leer, wenn kein Speicher uebergeben wurde - dann hat der Puffer die
+        #: Spalte gar nicht, wie vor Befund 361.
+        self._raten: pd.DataFrame = funding_to_frame([])
         self._bars_since_entry_placed = 0
         self._stream: KlineStream | None = None
         #: Grund eines fehlgeschlagenen Stornos. Solange gesetzt, koennen noch
@@ -417,6 +442,9 @@ class LiveTrader:
         Ohne Vorlauf braeuchte die Strategie je nach Periode Stunden bis Tage,
         bis sie das erste Signal geben kann.
         """
+        if self.funding is not None:
+            self._raten = self.funding.read(self.instrument.symbol)
+
         frame = self.store.read(self.instrument.symbol, self.interval)
         if frame.empty:
             log.warning(
@@ -427,12 +455,107 @@ class LiveTrader:
             self._frame = frame
             return
 
-        self._frame = frame.tail(BUFFER_BARS).reset_index(drop=True)
+        self._frame = self._mit_funding(frame.tail(BUFFER_BARS).reset_index(drop=True))
         log.info(
             "live.verlauf_geladen",
             kerzen=len(self._frame),
             bis=str(self._frame["open_time"].iloc[-1]),
+            funding_raten=len(self._raten),
         )
+        self._funding_pruefen()
+
+    # -- Funding -------------------------------------------------------------
+    def _mit_funding(self, frame: pd.DataFrame) -> pd.DataFrame:
+        """Die Funding-Spalte anhaengen - oder den Rahmen unveraendert lassen.
+
+        **Befund 361.** Vorher hatte der Livepuffer genau die sieben Spalten aus
+        ``store.SCHEMA``, und ``execution/`` erwaehnte Funding an keiner Stelle.
+        Eine Carry-Regel konnte damit die Zulassung bestehen und live **nie**
+        handeln: ``strategy.indicators`` gibt ohne die Spalte NaN zurueck, und
+        auf NaN handelt die Strategie nicht.
+
+        Ohne uebergebenen Speicher bleibt es dabei - die Spalte fehlt, statt
+        voller NaN dazustehen. Das ist nicht dasselbe: Eine fehlende Spalte ist
+        eine fehlende Eingabe, eine Spalte voller NaN waere eine gelieferte
+        Eingabe ohne Inhalt, und der Abgleich muss beide unterscheiden koennen.
+        """
+        if self.funding is None:
+            return frame
+        return self._frist_anwenden(attach_funding(frame, self._raten))
+
+    def _frist_anwenden(self, frame: pd.DataFrame) -> pd.DataFrame:
+        """Zu alte Raten wieder auf NaN setzen.
+
+        ``attach_funding`` schreibt die zuletzt festgestellte Rate vorwaerts
+        fort - im Backtest ueber hoechstens acht Stunden, im Betrieb notfalls
+        ueber Wochen, wenn niemand ``cli funding`` laufen laesst. Eine Rate von
+        vor drei Wochen ist aber keine Antwort auf "was wird gerade gezahlt".
+
+        Lieber keine Zahl als eine veraltete: NaN heisst "unbekannt", und
+        darauf handelt die Strategie nicht.
+        """
+        if self._raten.empty or frame.empty:
+            return frame
+        letzte = pd.to_datetime(self._raten["time"], utc=True).max()
+        zeiten = pd.to_datetime(frame["open_time"], utc=True)
+        veraltet = zeiten > letzte + FUNDINGFRIST
+        if not bool(veraltet.any()):
+            return frame
+        ergebnis = frame.copy()
+        ergebnis.loc[veraltet, FUNDINGSPALTE] = float("nan")
+        return ergebnis
+
+    def _liest_funding(self) -> bool:
+        """Liest die Strategie die Funding-Spalte?
+
+        Beantwortet wird die Frage am Genom, weil nur dort die Indikatoren
+        aufgezaehlt stehen. Eine handgeschriebene Strategie hat keines; dann
+        wird **nichts behauptet** und auch nicht gewarnt - eine Warnung ohne
+        Beleg waere so wenig wert wie ihr Ausbleiben.
+        """
+        genome = getattr(self.strategy, "genome", None)
+        return bool(genome is not None and genome.liest_funding())
+
+    def _funding_pruefen(self) -> None:
+        """Beim Start sagen, wenn eine Carry-Regel ohne Raten antritt.
+
+        Sonst laeuft der Roboter still und handelt nie, und das sieht auf dem
+        Bildschirm aus wie "kein Signal" statt wie "keine Eingabe" - genau die
+        Verwechslung aus Befund 360, nur eine Ebene spaeter.
+        """
+        if not self._liest_funding():
+            return
+
+        hinweis = (
+            "Diese Strategie liest die Funding-Rate. Ohne aktuelle Raten gibt "
+            "der Indikator NaN, und sie handelt nicht. Abhilfe: "
+            "'python -m cli funding -m "
+            f"{self.instrument.symbol}' laufen lassen."
+        )
+        if self.funding is None or self._raten.empty:
+            grund = "kein Funding-Speicher" if self.funding is None else "keine Raten"
+            log.warning("live.funding_fehlt", grund=grund, hinweis=hinweis)
+            self._report(EventKind.WARNING, f"{hinweis} ({grund})")
+            return
+
+        letzte = pd.to_datetime(self._raten["time"], utc=True).max()
+        alter = datetime.now(UTC) - letzte.to_pydatetime()
+        if alter > FUNDINGFRIST:
+            log.warning(
+                "live.funding_veraltet",
+                letzte=str(letzte),
+                stunden=round(alter.total_seconds() / 3600, 1),
+                hinweis=hinweis,
+            )
+            # Stunden und nicht Tage: Bei einem Alter von 30 Stunden stuende
+            # dort "1 Tage alt" - falsch gebeugt und zu grob fuer eine
+            # Groesse, die alle acht Stunden neu festgestellt wird.
+            self._report(
+                EventKind.WARNING,
+                f"Die juengste Funding-Rate ist "
+                f"{round(alter.total_seconds() / 3600)} Stunden alt "
+                f"({letzte}). {hinweis}",
+            )
 
     # -- Hauptschleife -------------------------------------------------------
     async def _on_candle(self, candle: Candle, interval: Interval) -> None:
@@ -766,7 +889,14 @@ class LiveTrader:
         return storniert
 
     def _append(self, candle: Candle) -> None:
-        row = candles_to_frame([candle])
+        # Die neue Kerze braucht die Funding-Spalte selbst (Befund 361).
+        #
+        # Das ist der Punkt, auf den es ankommt: ``concat`` wuerde der Zeile
+        # ohne Spalte stillschweigend NaN geben, und der letzte Balken ist
+        # genau der, den die Regel auswertet. Die Spalte nur im Vorlauf zu
+        # fuellen haette also nichts geaendert - die Carry-Regel haette weiter
+        # nie gehandelt, bloss mit einer Spalte voller Zahlen darueber.
+        row = self._mit_funding(candles_to_frame([candle]))
         if self._frame.empty:
             self._frame = row
             return

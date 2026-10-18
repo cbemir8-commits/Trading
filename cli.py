@@ -2413,6 +2413,7 @@ def trade(
     from data.bybit.adapter import BybitAccount
     from data.bybit.errors import BybitAuthError, BybitError, BybitGeoBlockedError
     from data.bybit.trading import BybitTrading
+    from data.funding import FundingStore
     from execution.live import LiveTrader, telegram_notifier
     from execution.risk import RiskOfficer, TradingState, load_risk_state
     from execution.router import MarketKind
@@ -2596,6 +2597,10 @@ def trade(
 
     # -- 4. Boersenanbindung -------------------------------------------------
     store = CandleStore(settings.paths.data_store)
+    # Die Funding-Raten gehoeren in den Puffer, nicht nur in den Backtest
+    # (Befund 361). Ohne sie gaeben die Funding-Indikatoren live NaN, und eine
+    # Carry-Regel haette die Zulassung bestanden und nie gehandelt.
+    fundingspeicher = FundingStore(settings.paths.data_store)
     market = BybitMarketData(settings.bybit)
     account = BybitAccount(settings.bybit)
     gateway = BybitTrading(settings.bybit)
@@ -2694,6 +2699,7 @@ def trade(
             gateway=gateway,
             officer=officer,
             store=store,
+            funding=fundingspeicher,
             interval=interval_obj,
             market_kind=market_kind,
             notifier=notifier,

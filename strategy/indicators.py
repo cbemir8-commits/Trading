@@ -23,6 +23,8 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from data import funding
+
 
 @dataclass(frozen=True, slots=True)
 class IndicatorSpec:
@@ -587,10 +589,27 @@ def body_atr_ratio(frame: pd.DataFrame, period: int = 14) -> np.ndarray:
 # Strategie nicht, statt auf einer Annahme zu handeln.
 
 
+#: Die Indikatoren, die ohne Funding-Spalte NaN liefern.
+#:
+#: Gebraucht wird die Liste, um **vor** dem ersten Balken sagen zu koennen, ob
+#: eine Strategie die Spalte ueberhaupt liest (``Genome.liest_funding``) - eine
+#: Carry-Regel ohne Raten handelt nie, und das soll beim Start stehen und nicht
+#: nach einer stillen Woche auffallen.
+#:
+#: Hier aufgeschrieben und nicht erschlossen, weil sie zur Laufzeit in jedem
+#: Start gelesen wird. ``test_fundingleser.py`` misst sie gegen die
+#: Wirklichkeit: Jeder Eintrag der REGISTRY wird mit und ohne Spalte gerechnet,
+#: und wer sich unterscheidet, muss hier stehen. Ein vierter Funding-Indikator
+#: faellt damit auf, sobald er dazukommt.
+FUNDINGLESER: frozenset[str] = frozenset({
+    "funding_rate", "funding_avg", "funding_zscore",
+})
+
+
 def _funding_column(frame: pd.DataFrame) -> pd.Series:
-    if "funding_rate" not in frame.columns:
+    if funding.SPALTE not in frame.columns:
         return pd.Series(np.nan, index=frame.index, dtype="float64")
-    return frame["funding_rate"].astype("float64")
+    return frame[funding.SPALTE].astype("float64")
 
 
 def funding_rate(frame: pd.DataFrame) -> np.ndarray:
