@@ -261,6 +261,7 @@ def test_die_leiter_stimmt() -> None:
     from core.models import Interval
     from data.store import CandleStore
     from research.admission import load_trials
+    from research.datenstand import alle_geschnitten
     from research.erreichbarkeit import kennzahlen_aus_pnl
     from research.gates import (
         GateThresholds,
@@ -275,7 +276,10 @@ def test_die_leiter_stimmt() -> None:
     e = get_settings()
     versuche = load_trials(Path(e.paths.state) / "trials.json")
     store = CandleStore(e.paths.data_store)
-    ganz = {s: store.read(s, Interval("D")) for s in symbole}
+    # Auf die Zulassungsreihe geschnitten (Befund 364). Ungeschnitten
+    # reproduzieren die gepflegten Zahlen nur, solange der Speicher
+    # zufaellig am Messtag endet - und er laeuft weiter.
+    ganz = alle_geschnitten({s: store.read(s, Interval("D")) for s in symbole})
     configs = cli._spotconfigs(symbole, e)
     genom = cli._ohne_hebel(spitzenkandidat())
 

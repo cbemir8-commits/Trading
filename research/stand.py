@@ -3089,8 +3089,32 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Speicher, 3 sind die Randtests). Erledigt und als Muster gezeigt ist "
         "einer: 'test_referenzdaten.py' schneidet mit 'datenstand.geschnitten' "
         "und misst die Spanne danach **genau** 3300 statt '3300 plus/minus 40'. "
-        "Die uebrigen acht sind ein Aufruf je Test und keine Forschung",
+        "Die uebrigen sind ein Aufruf je Test und keine Forschung - "
+        "nachgetragen in Befund 364, und dort steht auch, dass es **neun** "
+        "waren und nicht die hier zuerst genannten acht",
         363,
+        zuletzt=364,
+    ),
+    # Befund 364: die offene Folge aus 363, abgeraeumt.
+    Richtung(
+        "Die Nachrechen-Tests nahmen den Speicher, wie er war",
+        "Die offene Folge aus Befund 363. Neun Tests pruefen gepflegte Zahlen "
+        "gegen einen Lauf und holten ihre Kerzen ungeschnitten aus dem "
+        "Speicher - sie reproduzierten also nur, solange der Speicher "
+        "zufaellig am Messtag endete. Ein Aufruf je Stelle, "
+        "'datenstand.alle_geschnitten' um das vorhandene Laden gelegt; der "
+        "Schnitt steht **im Test** und nicht in '_korb_daten', denn gehandelt "
+        "und gesucht wird auf allem, was da ist. Gemessen, bei einem Speicher "
+        "bis heute: **6 von 52 rot statt 12**, und die sechs sind genau die "
+        "zwei benannten Gruppen - drei nicht reproduzierbare Zahlen "
+        "(Kapitalendstand, Streuungswert, Schiefe ueber alle Trades) und drei "
+        "Randtests, deren Voraussetzung auf einem in einem Zug geladenen "
+        "Speicher nicht entsteht. Es reproduzieren jetzt Datenbedarf, "
+        "Kontoleiter, Perpetualpunkt, Reichweite, Spotleiter und "
+        "Ziehungsaussetzer. **Zaehlfehler in 363 berichtigt**: Dort stand 'die "
+        "uebrigen acht'; zehn Tests drifteten, einer war als Muster erledigt, "
+        "also waren neun offen. Die Zahl war gezaehlt und nicht gemessen",
+        364,
     ),
 )
 

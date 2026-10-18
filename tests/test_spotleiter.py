@@ -229,6 +229,7 @@ def test_der_spot_punkt_reproduziert() -> None:
     from core.config import get_settings
     from core.models import Interval
     from research.admission import load_trials
+    from research.datenstand import alle_geschnitten
     from research.gates import GateThresholds, evaluate_gates
     from research.seeds import spitzenkandidat
     from strategy.compiler import compile_genome
@@ -236,7 +237,11 @@ def test_der_spot_punkt_reproduziert() -> None:
     symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
     e = get_settings()
     versuche = load_trials(Path(e.paths.state) / "trials.json")
+    # Auf die Zulassungsreihe geschnitten (Befund 364). Ungeschnitten
+    # reproduzieren die gepflegten Zahlen nur, solange der Speicher
+    # zufaellig am Messtag endet - und er laeuft weiter.
     frames, _, _ = cli._korb_daten(symbole, Interval("D"), e)
+    frames = alle_geschnitten(frames)
     configs = cli._spotconfigs(symbole, e)
     genom = cli._ohne_hebel(spitzenkandidat())
     bericht = run_portfolio_walkforward(

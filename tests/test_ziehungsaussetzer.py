@@ -246,6 +246,7 @@ def test_die_leiter_setzt_oben_wirklich_aus() -> None:
     from core.config import get_settings
     from core.models import Interval
     from research.admission import load_trials
+    from research.datenstand import alle_geschnitten
     from research.gates import GateStatus, GateThresholds, evaluate_gates
     from research.seeds import spitzenkandidat
     from research.teststaerke import pflanze_trend, regimefolge
@@ -254,7 +255,11 @@ def test_die_leiter_setzt_oben_wirklich_aus() -> None:
     symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
     e = get_settings()
     versuche = load_trials(Path(e.paths.state) / "trials.json")
+    # Auf die Zulassungsreihe geschnitten (Befund 364). Ungeschnitten
+    # reproduzieren die gepflegten Zahlen nur, solange der Speicher
+    # zufaellig am Messtag endet - und er laeuft weiter.
     frames, configs, _ = cli._korb_daten(symbole, Interval("D"), e)
+    frames = alle_geschnitten(frames)
     genom = spitzenkandidat()
     laenge = max(len(f) for f in frames.values())
     gemessen: dict[float, list[Ziehung]] = {a: [] for a, *_ in GEMESSEN}

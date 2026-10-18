@@ -139,6 +139,7 @@ def test_der_referenzpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
     from core.models import Interval
     from data.store import CandleStore
     from research.admission import load_trials
+    from research.datenstand import alle_geschnitten
     from research.gates import evaluate_gates
     from research.seeds import spitzenkandidat
     from strategy.compiler import compile_genome
@@ -147,7 +148,12 @@ def test_der_referenzpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
     intervall = Interval("D")
     symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
     speicher = CandleStore(einstellungen.paths.data_store)
-    frames = common_range({x: speicher.read(x, intervall) for x in symbole})
+    # Auf die Zulassungsreihe geschnitten (Befund 364). Ungeschnitten
+    # reproduzieren die gepflegten Zahlen nur, solange der Speicher
+    # zufaellig am Messtag endet - und er laeuft weiter.
+    frames = alle_geschnitten(
+        common_range({x: speicher.read(x, intervall) for x in symbole})
+    )
     if any(f.empty for f in frames.values()):
         pytest.skip("keine Kerzen im Speicher")
 
@@ -560,6 +566,7 @@ def test_der_perpetualpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
     from core.models import Interval
     from data.store import CandleStore
     from research.admission import load_trials
+    from research.datenstand import alle_geschnitten
     from research.gates import evaluate_gates, stichprobe_wie_im_gate
     from research.randschnitt import ohne_zensierte
     from research.referenz import PERPETUALPUNKT, SCHUB, SPOTPUNKT
@@ -570,7 +577,12 @@ def test_der_perpetualpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
     einstellungen = get_settings()
     symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
     speicher = CandleStore(einstellungen.paths.data_store)
-    frames = common_range({x: speicher.read(x, Interval("D")) for x in symbole})
+    # Auf die Zulassungsreihe geschnitten (Befund 364). Ungeschnitten
+    # reproduzieren die gepflegten Zahlen nur, solange der Speicher
+    # zufaellig am Messtag endet - und er laeuft weiter.
+    frames = alle_geschnitten(
+        common_range({x: speicher.read(x, Interval("D")) for x in symbole})
+    )
     if any(f.empty for f in frames.values()):
         pytest.skip("keine Kerzen im Speicher")
 

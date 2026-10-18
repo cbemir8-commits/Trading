@@ -201,6 +201,16 @@ def geschnitten(frame: PandasRahmen) -> PandasRahmen:
     return frame[zeiten <= grenze].reset_index(drop=True)
 
 
+def alle_geschnitten(frames: Mapping[str, PandasRahmen]) -> dict[str, PandasRahmen]:
+    """Mehrere Beine auf die Zulassungsreihe kuerzen - ein Aufruf je Pruefung.
+
+    Beide Beine am **gleichen** Datum, deshalb bleibt die Reihenfolge mit
+    ``common_range`` gleichgueltig: Erst schneiden und dann schneiden lassen
+    ergibt dieselbe Reihe wie umgekehrt.
+    """
+    return {name: geschnitten(rahmen) for name, rahmen in frames.items()}
+
+
 def fehlt(vorhanden: Mapping[str, tuple[date, date, int]]) -> tuple[str, ...]:
     """Was dem vorliegenden Speicher fehlt, um die Zulassungsreihe zu enthalten.
 

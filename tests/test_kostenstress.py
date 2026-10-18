@@ -320,6 +320,7 @@ def test_die_fuenf_laeufe_stimmen() -> None:
     from core.config import get_settings
     from core.models import Interval
     from data.store import CandleStore
+    from research.datenstand import alle_geschnitten
     from research.freigabe import stillgelegt
     from research.gates import GateThresholds, gate_cost_stress
     from research.seeds import spitzenkandidat
@@ -327,8 +328,16 @@ def test_die_fuenf_laeufe_stimmen() -> None:
 
     symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
     e = get_settings()
-    frames = common_range(
-        {x: CandleStore(e.paths.data_store).read(x, Interval("D")) for x in symbole}
+    # Auf die Zulassungsreihe geschnitten (Befund 364). Ungeschnitten
+    # reproduzieren die gepflegten Zahlen nur, solange der Speicher
+    # zufaellig am Messtag endet - und er laeuft weiter.
+    frames = alle_geschnitten(
+        common_range(
+            {
+                x: CandleStore(e.paths.data_store).read(x, Interval("D"))
+                for x in symbole
+            }
+        )
     )
     genom = spitzenkandidat()
     faktor = Decimal(str(GateThresholds().cost_stress_factor))

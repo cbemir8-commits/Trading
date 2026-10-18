@@ -162,14 +162,23 @@ def test_die_leiter_stimmt_und_setzt_nirgends_aus() -> None:
     from core.models import Interval
     from data.store import CandleStore
     from research.admission import load_trials
+    from research.datenstand import alle_geschnitten
     from research.gates import GateStatus, GateThresholds, evaluate_gates
     from research.seeds import spitzenkandidat
     from strategy.compiler import compile_genome
 
     symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
     e = get_settings()
-    frames = common_range(
-        {x: CandleStore(e.paths.data_store).read(x, Interval("D")) for x in symbole}
+    # Auf die Zulassungsreihe geschnitten (Befund 364). Ungeschnitten
+    # reproduzieren die gepflegten Zahlen nur, solange der Speicher
+    # zufaellig am Messtag endet - und er laeuft weiter.
+    frames = alle_geschnitten(
+        common_range(
+            {
+                x: CandleStore(e.paths.data_store).read(x, Interval("D"))
+                for x in symbole
+            }
+        )
     )
     versuche = load_trials(Path(e.paths.state) / "trials.json")
     genom = spitzenkandidat()

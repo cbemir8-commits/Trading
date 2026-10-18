@@ -32645,5 +32645,55 @@ einer gepflegten Zahl gruen zu bekommen, und keiner wurde so gruen gemacht.
 
 Von den neun ist einer erledigt und zeigt, wie die anderen gehen:
 `test_referenzdaten.py` schneidet jetzt mit `datenstand.geschnitten` und misst
-die Spanne danach **genau** 3300 statt "3300 plus/minus 40". Die uebrigen acht
+die Spanne danach **genau** 3300 statt "3300 plus/minus 40". Die uebrigen
 stehen offen - ein Aufruf je Test, und keiner davon ist Forschung.
+(Hier stand "die uebrigen acht". Es waren neun: zehn Tests drifteten, einer war
+als Muster erledigt. Nachgetragen in Befund 364.)
+
+## Dreihundertvierundsechzig. Die Nachrechen-Tests nehmen jetzt die Reihe, nicht den Speicher
+
+Die offene Folge aus Befund 363, und sie war genau so klein, wie sie dort
+beschrieben ist: ein Aufruf je Stelle.
+
+Neun Tests pruefen eine gepflegte Zahl gegen einen Lauf, und alle neun holten
+ihre Kerzen ungeschnitten aus dem Speicher. Sie reproduzierten damit nur,
+solange der Speicher zufaellig am Messtag endete - und er laeuft weiter.
+
+### Der Handgriff
+
+    frames, _, _ = cli._korb_daten(symbole, Interval("D"), e)
+    frames = alle_geschnitten(frames)
+
+Acht Dateien, neun Stellen. Vier gingen ueber `cli._korb_daten`, fuenf ueber
+`common_range` auf `store.read` - beide Male wird um das vorhandene Laden
+herumgelegt und nichts daran geaendert.
+
+**Der Schnitt steht im Test und nicht in `_korb_daten`.** Das ist die
+Entscheidung, auf die es hier ankommt: Gesucht und gehandelt wird auf allem, was
+da ist. Wer eine gepflegte Zahl *nachrechnet*, nimmt die Reihe, auf der sie
+gemessen ist. Den Schnitt in die Produktion zu legen hiesse, das Projekt auf
+einen Datenstand von vorgestern einzufrieren, damit seine Tests gruen bleiben.
+
+### Gemessen
+
+Bei einem Speicher, der bis heute laeuft:
+
+    vorher:   12 von 52 rot
+    nachher:   6 von 52 rot
+
+Und die sechs sind genau die zwei Gruppen, die Befund 363 benannt hat:
+
+    3 nicht reproduzierbare Zahlen  Kapitalendstand, Streuungswert,
+                                    Schiefe ueber alle Trades
+    3 Randtests                     Voraussetzung entsteht auf einem in
+                                    einem Zug geladenen Speicher nicht
+
+Es reproduzieren jetzt Datenbedarf, Kontoleiter, Perpetualpunkt, Reichweite,
+Spotleiter und Ziehungsaussetzer - sechs Tests, die vorher mit dem Speicher
+gewandert sind.
+
+### Zaehlfehler aus 363, berichtigt
+
+Dort steht "die uebrigen acht". Es waren **neun**: Zehn Tests drifteten, einer
+war als Muster schon erledigt. Die Zahl hatte ich gezaehlt und nicht gemessen -
+derselbe Fehler wie beim "6 von 49 rot" im selben Befund, nur kleiner.

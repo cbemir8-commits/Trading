@@ -291,6 +291,7 @@ def test_die_zahlen_des_befehls_stimmen() -> None:
     from core.config import get_settings
     from core.models import Interval
     from research.admission import load_trials
+    from research.datenstand import alle_geschnitten
     from research.gates import stichprobe_wie_im_gate
     from research.seeds import spitzenkandidat
     from research.stand import BUDGET
@@ -302,7 +303,11 @@ def test_die_zahlen_des_befehls_stimmen() -> None:
     zustand = Path(e.paths.state)
     versuche = load_trials(zustand / "trials.json")
     symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
+    # Auf die Zulassungsreihe geschnitten (Befund 364). Ungeschnitten
+    # reproduzieren die gepflegten Zahlen nur, solange der Speicher
+    # zufaellig am Messtag endet - und er laeuft weiter.
     frames, configs, _ = cli._korb_daten(symbole, Interval("D"), e)
+    frames = alle_geschnitten(frames)
     genom = spitzenkandidat()
     bericht = run_portfolio_walkforward(
         frames, lambda g=genom: compile_genome(g), configs
