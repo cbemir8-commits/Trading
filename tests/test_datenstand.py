@@ -341,3 +341,122 @@ def test_der_speicher_enthaelt_die_zulassungsreihe() -> None:
         "die Zahlen dieses Projekts gemessen sind:\n  " + "\n  ".join(saetze)
         + "\n\nNachladen mit:\n  " + "\n  ".join(befehle())
     )
+
+
+class TestDerKopfSagtAufWelcherReiheDieZahlenStehen:
+    """**Befund 370.** Der Kopf von ``cli stand`` nannte Kandidat, Maerkte,
+    Kerzenlaenge, Betriebspunkt, Trades, Rendite, Rueckgang, Gates und
+    Versuche - und nicht die Reihe. Gemeldet wurden **157 Trades**, wo
+    ``referenz.py`` 156 nennt, ohne ein Wort dazu.
+
+    Dieselbe Lehre wie Befund 311, eine Dimension weiter: Dort fehlte der
+    Betriebspunkt, der mitentscheidet, **welche** Gates halten. Hier fehlte
+    die Reihe, die mitentscheidet, **wie viele Trades** es sind.
+    """
+
+    @staticmethod
+    def _rahmen(von: str, bis: str):
+        import pandas as pd
+
+        return pd.DataFrame(
+            {"open_time": pd.date_range(von, bis, freq="1D", tz="UTC")}
+        )
+
+    def test_eine_laengere_reihe_wird_benannt(self) -> None:
+        from research.datenstand import reihenzeile
+
+        zeile = reihenzeile({"a": self._rahmen("2017-08-16", "2026-10-18")})
+
+        assert "laenger als die Zulassungsreihe" in zeile
+        assert "2026-08-29" in zeile
+        assert "weichen deshalb von referenz.py ab" in zeile
+
+    def test_genau_die_reihe_auch(self) -> None:
+        from research.datenstand import reihenzeile
+
+        zeile = reihenzeile({"a": self._rahmen("2017-08-16", "2026-08-29")})
+
+        assert zeile.endswith("- die Zulassungsreihe")
+        assert "3300 Balken" not in zeile, "Balken sind nicht Tage"
+
+    def test_eine_kuerzere_reihe_auch(self) -> None:
+        from research.datenstand import reihenzeile
+
+        zeile = reihenzeile({"a": self._rahmen("2017-08-16", "2026-06-30")})
+
+        assert "kuerzer als die Zulassungsreihe" in zeile
+
+    def test_die_gemeinsame_spanne_zaehlt_nicht_die_vereinigung(self) -> None:
+        """BTC reicht weiter zurueck; gerechnet wird auf dem Schnitt."""
+        from research.datenstand import reihenzeile
+
+        zeile = reihenzeile(
+            {
+                "btc": self._rahmen("2012-01-01", "2026-08-29"),
+                "eth": self._rahmen("2017-08-16", "2026-08-29"),
+            }
+        )
+
+        assert zeile.startswith("2017-08-16 bis 2026-08-29")
+
+    def test_ohne_kerzen_sagt_sie_das(self) -> None:
+        from research.datenstand import reihenzeile
+
+        assert reihenzeile({}) == "keine Kerzen"
+
+    def test_gemessen_wird_die_spanne_und_nicht_der_speicher(self) -> None:
+        """**Der Fehler aus dem ersten Anlauf.** Hier lief ``fehlt`` auf
+        Rahmen, die ``common_range`` schon geschnitten hatte - gemeldet wurde
+        *"ohne die Zulassungsreihe: BTCUSD_BITSTAMP beginnt erst
+        2017-08-16"*, obwohl der Speicher BTC ab 2012 haelt. Ob der Speicher
+        die Reihe enthaelt, ist eine andere Frage und steht in der
+        Bestandszeile.
+        """
+        from research.datenstand import reihenzeile
+
+        zeile = reihenzeile(
+            {
+                "BTCUSD_BITSTAMP": self._rahmen("2017-08-16", "2026-08-29"),
+                "ETHUSD_BITSTAMP": self._rahmen("2017-08-16", "2026-08-29"),
+            }
+        )
+
+        assert "ohne die Zulassungsreihe" not in zeile
+        assert "beginnt erst" not in zeile
+
+    def test_der_bericht_druckt_sie(self) -> None:
+        from research.stand import Lage
+
+        lage = Lage(
+            kandidat="x", maerkte="BTC, 1d", trades=157, sharpe_je_trade=0.26,
+            noetiger_sharpe=0.33, bestanden=7, gesamt=11, offen=("Messlatte",),
+            versuche=203, reihe="2017 bis heute - laenger als die Zulassungsreihe",
+        )
+
+        assert "Reihe      2017 bis heute" in lage.bericht(kurz=True)
+
+    def test_und_laesst_sie_weg_wenn_sie_fehlt(self) -> None:
+        """Leer heisst "nicht angegeben" - keine erfundene Zeile."""
+        from research.stand import Lage
+
+        lage = Lage(
+            kandidat="x", maerkte="BTC, 1d", trades=157, sharpe_je_trade=0.26,
+            noetiger_sharpe=0.33, bestanden=7, gesamt=11, offen=(),
+            versuche=203,
+        )
+
+        assert "  Reihe " not in lage.bericht(kurz=True)
+
+    def test_der_befehl_fuellt_sie(self) -> None:
+        import ast
+        from pathlib import Path
+
+        baum = ast.parse(Path("cli.py").read_text(encoding="utf-8"))
+        for knoten in ast.walk(baum):
+            if isinstance(knoten, ast.FunctionDef) and knoten.name == "stand":
+                quelle = ast.unparse(knoten)
+                break
+        else:
+            raise AssertionError("'stand' steht nicht mehr in cli.py")
+
+        assert "reihe=_reihenzeile(frames)" in quelle

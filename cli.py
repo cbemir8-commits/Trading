@@ -11733,6 +11733,17 @@ def _kerzenbestand(store) -> str:
     return "; ".join(gefunden) + _reihenvermerk(store)
 
 
+def _reihenzeile(frames) -> str:
+    """Die Reihe, auf der die Zahlen des Berichts stehen (Befund 370).
+
+    Durchreicher auf ``datenstand.reihenzeile``, damit der Satz dort steht,
+    wo die Reihe definiert ist, und nicht hier.
+    """
+    from research.datenstand import reihenzeile
+
+    return reihenzeile(frames)
+
+
 def _reihenvermerk(store) -> str:
     """Ist das die Reihe, auf der die Zahlen gemessen sind? (Befund 363)
 
@@ -11894,6 +11905,11 @@ def stand(
         # das ist der Perpetual-Punkt. 'zweitpunkt' misst denselben Kandidaten
         # am Spot-Punkt, und dort halten andere Gates.
         betriebspunkt="Perpetual (mit Hebel und Funding)",
+        # **Und auf welcher Reihe sie stehen** (Befund 370). Der Speicher
+        # laeuft bis heute, die gepflegten Zahlen stehen auf der Reihe bis
+        # 'datenstand.SERIENENDE' - ohne diese Angabe stehen hier 157 Trades
+        # neben den 156 aus 'referenz.py' und niemand weiss, warum.
+        reihe=_reihenzeile(frames),
         zweitpunkt=zweitpunkt,
         trades=len(gehandelt.all_trades),
         effektiv=stichprobe.effektiv,

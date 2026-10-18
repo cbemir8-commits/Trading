@@ -211,6 +211,61 @@ def alle_geschnitten(frames: Mapping[str, PandasRahmen]) -> dict[str, PandasRahm
     return {name: geschnitten(rahmen) for name, rahmen in frames.items()}
 
 
+def grenzen(frames: Mapping[str, PandasRahmen]) -> dict[str, tuple[date, date, int]]:
+    """Aus Kerzenrahmen die Grenzen machen, die ``fehlt`` erwartet."""
+    import pandas as pd
+
+    stand: dict[str, tuple[date, date, int]] = {}
+    for name, rahmen in frames.items():
+        if rahmen is None or rahmen.empty or "open_time" not in rahmen.columns:
+            continue
+        zeiten = pd.to_datetime(rahmen["open_time"], utc=True)
+        stand[name] = (zeiten.min().date(), zeiten.max().date(), len(rahmen))
+    return stand
+
+
+def reihenzeile(frames: Mapping[str, PandasRahmen]) -> str:
+    """Eine Zeile: Auf welcher Reihe stehen diese Zahlen?
+
+    **Befund 370.** Der Kopf von ``cli stand`` nannte Kandidat, Maerkte,
+    Kerzenlaenge, Betriebspunkt, Trades, Rendite, Rueckgang, Gates und
+    Versuche - und **nicht die Reihe**. Gemeldet wurden 157 Trades, wo
+    ``referenz.py`` 156 nennt, ohne ein Wort dazu: Der Speicher laeuft bis
+    heute, die gepflegten Zahlen stehen auf der Reihe bis ``SERIENENDE``
+    (Befund 363). Wer beides nebeneinander legte, fand einen unerklaerten
+    Unterschied.
+
+    Dieselbe Lehre wie Befund 311, eine Dimension weiter: Dort fehlte der
+    Betriebspunkt, der mitentscheidet, welche Gates halten. Hier fehlt die
+    Reihe, die mitentscheidet, wie viele Trades es sind.
+
+    Kein Rat und keine Warnung - eine Angabe. Auf allem zu rechnen, was da
+    ist, ist richtig; es muss nur dastehen.
+
+    **Gemessen wird die uebergebene Spanne und nur sie.** Der erste Anlauf
+    liess hier ``fehlt`` laufen und meldete *"ohne die Zulassungsreihe:
+    BTCUSD_BITSTAMP beginnt erst 2017-08-16"* - auf Rahmen, die
+    ``common_range`` schon auf das juengere Bein geschnitten hatte. Die Frage,
+    ob der **Speicher** die Reihe enthaelt, ist eine andere, und sie steht in
+    der Bestandszeile (``cli._reihenvermerk``).
+    """
+    stand = grenzen(frames)
+    if not stand:
+        return "keine Kerzen"
+    von = max(v for v, _, _ in stand.values())
+    bis = min(b for _, b, _ in stand.values())
+    balken = min(n for _, _, n in stand.values())
+    kopf = f"{von} bis {bis}, {balken} Balken gemeinsam"
+    if bis > SERIENENDE:
+        return (
+            f"{kopf} - laenger als die Zulassungsreihe (bis {SERIENENDE}); "
+            f"die Zahlen hier weichen deshalb von referenz.py ab"
+        )
+    if bis < SERIENENDE:
+        return f"{kopf} - kuerzer als die Zulassungsreihe (bis {SERIENENDE})"
+    return f"{kopf} - die Zulassungsreihe"
+
+
 def fehlt(vorhanden: Mapping[str, tuple[date, date, int]]) -> tuple[str, ...]:
     """Was dem vorliegenden Speicher fehlt, um die Zulassungsreihe zu enthalten.
 

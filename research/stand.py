@@ -3282,6 +3282,34 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Dauer des Tests setzt und danach zurueckstellt",
         369,
     ),
+    # Befund 370: der Kopf des Berichts nannte alles ausser der Reihe, auf
+    # der seine Zahlen stehen.
+    Richtung(
+        "Der Kopf nannte die Reihe nicht, auf der seine Zahlen stehen",
+        "Gefunden, indem 'cli stand' einmal so gelesen wurde wie der Nutzer es "
+        "liest - moeglich erst, seit Befund 369 das Rauschen weggeraeumt hat. "
+        "Der Kopf meldet **157 Trades**, 'referenz.py' nennt **156**, und "
+        "nichts dazwischen sagt warum: Der Speicher laeuft bis heute, die "
+        "gepflegten Zahlen stehen auf der Reihe bis 'SERIENENDE' (Befund 363). "
+        "Wer beides nebeneinander legte, fand einen unerklaerten Unterschied - "
+        "und genau das war der Anlass fuer Befund 130. Der Kopf nannte "
+        "Kandidat, Maerkte, Kerzenlaenge, Betriebspunkt, Trades, Rendite, "
+        "Rueckgang, Gates und Versuche; jetzt auch die **Reihe**: "
+        "'2017-08-16 bis 2026-10-18, 3351 Balken gemeinsam - laenger als die "
+        "Zulassungsreihe (bis 2026-08-29); die Zahlen hier weichen deshalb von "
+        "referenz.py ab'. Dieselbe Lehre wie Befund 311, eine Dimension "
+        "weiter: Dort fehlte der Betriebspunkt, der mitentscheidet, **welche** "
+        "Gates halten, hier die Reihe, die mitentscheidet, **wie viele "
+        "Trades** es sind. **Kein Rat und keine Warnung** - auf allem zu "
+        "rechnen, was da ist, bleibt richtig (Befund 364), es muss nur "
+        "dastehen. **Berichtigt beim Bauen**: Der erste Anlauf liess 'fehlt' "
+        "auf den Rahmen laufen, die 'common_range' schon geschnitten hatte, "
+        "und meldete 'ohne die Zulassungsreihe: BTCUSD_BITSTAMP beginnt erst "
+        "2017-08-16' - obwohl der Speicher BTC ab 2012 haelt. Ob der "
+        "**Speicher** die Reihe enthaelt, ist eine andere Frage und steht in "
+        "der Bestandszeile",
+        370,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -4674,6 +4702,23 @@ class Lage(Gatebilanz):
     (Befund 148).
     """
 
+    reihe: str = ""
+    """Auf welcher **Reihe** diese Zahlen stehen.
+
+    **Befund 370.** Der Kopf nannte Kandidat, Maerkte, Kerzenlaenge,
+    Betriebspunkt, Trades, Rendite, Rueckgang, Gates und Versuche - und nicht
+    die Reihe. Gemeldet wurden 157 Trades, wo ``referenz.py`` 156 nennt, ohne
+    ein Wort dazu: Der Speicher laeuft bis heute, die gepflegten Zahlen stehen
+    auf der Reihe bis ``datenstand.SERIENENDE`` (Befund 363). Wer beides
+    nebeneinander legte, fand einen unerklaerten Unterschied.
+
+    Dieselbe Lehre wie unten beim Betriebspunkt (311), eine Dimension weiter:
+    Dort fehlte, was mitentscheidet, **welche** Gates halten; hier fehlte,
+    was mitentscheidet, **wie viele Trades** es sind.
+
+    Leer heisst "nicht angegeben" und wird dann nicht gedruckt.
+    """
+
     betriebspunkt: str = ""
     """Unter welchen Handelsbedingungen **diese** Zahlen gemessen sind.
 
@@ -5098,6 +5143,9 @@ class Lage(Gatebilanz):
             # an **einem** von zwei gemessenen Punkten.
             f"  Gemessen   {self.maerkte}, "
             f"{self.betriebspunkt or 'Betriebspunkt nicht angegeben'}",
+            # **Und auf welcher Reihe** (Befund 370). Ohne sie stehen 157
+            # Trades neben den 156 aus 'referenz.py' und niemand weiss, warum.
+            *([f"  Reihe      {self.reihe}"] if self.reihe else []),
             *self._zweitzeile(),
             f"  Ergebnis   {self.trades} Trades{self._zensurhinweis()}, "
             f"{self.cagr_pct:.2f} % p.a., {self.rueckgang_pct:.2f} % Rueckgang",

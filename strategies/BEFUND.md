@@ -33037,3 +33037,54 @@ Dasselbe Muster wie in 362, nur an anderer Stelle: ein Ergebnis, das von der
 Reihenfolge abhaengt, ist keins. Behoben mit einer Fixture, die die Stufe fuer
 die Dauer des Tests setzt und danach zurueckstellt - und die Begruendung steht
 in ihrem Docstring, damit der naechste Leser nicht sucht.
+
+## Dreihundertsiebzig. Der Kopf nannte die Reihe nicht
+
+Gefunden, indem `cli stand` einmal so gelesen wurde, wie der Nutzer es liest -
+und das war erst moeglich, seit Befund 369 das Rauschen weggeraeumt hat. Vorher
+lagen vor dem Bericht Dutzende Protokollzeilen.
+
+Im Kopf steht:
+
+      Ergebnis   157 Trades (+1 am Datenende glattgestellt, ...)
+
+In `referenz.py` steht **156**. Dazwischen sagt nichts, warum: Der Speicher
+laeuft bis heute, die gepflegten Zahlen stehen auf der Reihe bis `SERIENENDE`
+(Befund 363). Wer beides nebeneinander legt, findet einen unerklaerten
+Unterschied - und genau das war der Anlass fuer Befund 130: *"Wer eine
+Fundstelle nennt, muss die letzte nennen."*
+
+### Was gefehlt hat
+
+Der Kopf nannte Kandidat, Maerkte, Kerzenlaenge, Betriebspunkt, Trades,
+Rendite, Rueckgang, Gates und Versuche. Jetzt auch die Reihe:
+
+      Reihe      2017-08-16 bis 2026-10-18, 3351 Balken gemeinsam - laenger
+                 als die Zulassungsreihe (bis 2026-08-29); die Zahlen hier
+                 weichen deshalb von referenz.py ab
+
+Dieselbe Lehre wie Befund 311, eine Dimension weiter. Dort fehlte der
+**Betriebspunkt**, der mitentscheidet, *welche* Gates halten - *"Wer die
+Uebersicht liest, bekam eine von zwei Zahlen ohne den Hinweis, dass es zwei
+gibt."* Hier fehlte die **Reihe**, die mitentscheidet, *wie viele Trades* es
+sind.
+
+**Kein Rat und keine Warnung.** Auf allem zu rechnen, was da ist, bleibt
+richtig - das ist die Entscheidung aus Befund 364, und sie gilt weiter. Es muss
+nur dastehen.
+
+### Berichtigt beim Bauen
+
+Der erste Anlauf liess `fehlt` auf die Rahmen laufen und meldete:
+
+    ohne die Zulassungsreihe (BTCUSD_BITSTAMP: beginnt erst 2017-08-16,
+    gebraucht ab 2012-01-01)
+
+Falsch, und auf eine lehrreiche Weise: Die Rahmen kommen aus `common_range` und
+sind da schon auf das juengere Bein geschnitten. Der Speicher haelt BTC
+sehr wohl ab 2012. Die Frage, ob der **Speicher** die Reihe enthaelt, ist eine
+andere - sie steht in der Bestandszeile (`_reihenvermerk`, Befund 363). Hier
+geht es nur um die **gemessene Spanne**.
+
+Aufgefallen ist es, weil der Befehl nach dem Bauen gelaufen ist. Aus der
+Signatur von `fehlt` waere es nicht hervorgegangen.
