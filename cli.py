@@ -7309,6 +7309,180 @@ def sperrprobe(
 
 
 @app.command()
+def anatomie(
+    bauteil: str = typer.Option(
+        "konfluenz", "--bauteil",
+        help="Welches Bauteil weggelassen wird: konfluenz, filter.",
+    ),
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Was traegt ein Bauteil des Kandidaten? (Befund 366)
+
+    Eine **Ablation**: Dasselbe Genom ohne ein Bauteil, denselben
+    Zulassungspfad noch einmal. Die Gegenprobe ist eingebaut - der Lauf *mit*
+    Bauteil muss den dokumentierten Punkt wiederholen, sonst misst der Befehl
+    etwas anderes als die Zulassung.
+
+    **Warum das die Sperrprobe nicht kann.** Sie zieht ihre Null aus den
+    Einstiegssignalen des Kandidaten. Die Konfluenz streicht aber Signale, die
+    gar nicht darin liegen - gemessen 9 Stueck und **kein einziger Trade**, weil
+    an jenen Balken schon eine Position offen war. Eine Sperre auf sie bleibt
+    folgenlos, und die Probe haette eine selbstbewusste Null gemeldet.
+
+    **Kostet keinen Versuch**: Gemessen wird ein Bauteil, das der Kandidat
+    schon hat, kein neuer Kandidat. Und zugelassen wird dadurch nichts - fiele
+    eine Ablation zugunsten der abgespeckten Fassung aus, waere das ein
+    Vorschlag, dessen Pruefung einen Versuch kostet und beim Nutzer liegt.
+    """
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.anatomie import BAUTEILE, Lage, traegt_das_bauteil, vergleiche
+    from research.datenstand import alle_geschnitten
+    from research.gates import GateStatus, evaluate_gates
+    from research.randschnitt import fertige
+    from research.referenz import SPOTPUNKT
+    from research.seeds import spitzenkandidat
+    from research.suchbudget import Kandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    interval_obj = Interval(intervall)
+    symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
+
+    if bauteil not in BAUTEILE:
+        console.print(
+            f"[red]Unbekanntes Bauteil '{bauteil}'.[/] "
+            f"[dim]Bekannt: {', '.join(sorted(BAUTEILE))}[/]"
+        )
+        raise typer.Exit(2)
+
+    # **Der Zulassungspfad, nicht ein aehnlicher.** Der erste Anlauf nahm die
+    # Rohdaten und die Standardbedingungen und kam auf 159 Trades, Guete
+    # 0,2580 und 7 von 11 - eine Ablation auf einem anderen Punkt als dem
+    # dokumentierten. Also dieselben drei Dinge wie am Spot-Punkt: Reihe
+    # geschnitten (Befund 363), Spot-Bedingungen ('_spotconfigs'), Hebel
+    # gedeckelt ('_ohne_hebel').
+    frames, _configs, _spanne = _korb_daten(symbole, interval_obj, settings)
+    frames = alle_geschnitten(frames)
+    configs = _spotconfigs(symbole, settings)
+    versuche = load_trials(Path(settings.paths.state) / "trials.json")
+    genom = _ohne_hebel(spitzenkandidat())
+
+    if not traegt_das_bauteil(genom, bauteil):
+        console.print(
+            f"[red]Der Kandidat hat kein Bauteil '{bauteil}'.[/] "
+            f"[dim]Eine Ablation waere ein Vergleich mit sich selbst.[/]"
+        )
+        raise typer.Exit(2)
+
+    def messe(g) -> Lage:
+        bericht = run_portfolio_walkforward(
+            frames, lambda x=g: compile_genome(x), configs
+        )
+        gates = evaluate_gates(
+            g, bericht, next(iter(frames.values())), configs[symbole[0]],
+            trials_so_far=versuche, frames=frames, configs=configs,
+        )
+        gehandelt = fertige(bericht.all_trades)
+        form = Kandidat.aus_trades("", gehandelt)
+        def hole(name: str) -> float:
+            return float(
+                next((r.value for r in gates.results if r.name == name), 0.0)
+            )
+        return Lage(
+            trades=len(gehandelt),
+            guete=form.sharpe_je_trade if form else 0.0,
+            dsr=hole("Deflated Sharpe"),
+            rueckgang_pct=(
+                bericht.combined.max_drawdown_pct if bericht.combined else 0.0
+            ),
+            bestanden=sum(1 for r in gates.results if r.passed),
+            gesamt=len(gates.results),
+            gefallen=tuple(r.name for r in gates.results if not r.passed),
+            uebersprungen=sum(
+                1 for r in gates.results if r.status is GateStatus.SKIP
+            ),
+        )
+
+    # Die gestrichenen Signale je Bein - die Zahl, die zeigt, warum die
+    # Sperrprobe hier nichts ausrichtet.
+    from research.anatomie import ohne_bauteil
+
+    schlank = ohne_bauteil(genom, bauteil)
+    signale = {
+        name: int((_signalkerzen(f, schlank) & ~_signalkerzen(f, genom)).sum())
+        for name, f in frames.items()
+    }
+
+    console.print(
+        f"\n[bold]Anatomie[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"  Bauteil    {bauteil}\n"
+        f"  Kandidat   {genom.name}\n"
+        f"  Huerde     {versuche} Versuche (gelesen, nicht erhoeht)\n"
+    )
+
+    with console.status("[dim]messe mit und ohne Bauteil ...[/]"):
+        lage = vergleiche(genom, bauteil, messe, signale=signale)
+
+    tabelle = Table()
+    tabelle.add_column("")
+    tabelle.add_column("Trades", justify="right")
+    tabelle.add_column("Guete", justify="right")
+    tabelle.add_column("DSR", justify="right")
+    tabelle.add_column("Rueckgang", justify="right")
+    tabelle.add_column("Gates", justify="right")
+    for titel, stand in (("mit", lage.mit), ("ohne", lage.ohne)):
+        tabelle.add_row(
+            titel, str(stand.trades), f"{stand.guete:.4f}", f"{stand.dsr:.4f}",
+            f"{stand.rueckgang_pct:.2f} %",
+            f"{stand.bestanden}/{stand.gesamt}",
+        )
+    console.print(tabelle)
+
+    # **Die Gegenprobe, und sie steht vor dem Urteil.** Ohne sie ist eine
+    # Ablation eine Aussage ueber irgendeinen Lauf: Trifft die Zeile "mit"
+    # nicht den dokumentierten Punkt, misst dieser Befehl etwas anderes als
+    # die Zulassung, und dann ist auch die Zeile "ohne" nichts wert.
+    abweichung = [
+        f"Trades {lage.mit.trades} statt {SPOTPUNKT.trades}"
+        if lage.mit.trades != SPOTPUNKT.trades else "",
+        f"Guete {lage.mit.guete:.4f} statt {SPOTPUNKT.guete}"
+        if abs(lage.mit.guete - SPOTPUNKT.guete) > 5e-4 else "",
+        f"Gates {lage.mit.bestanden} statt {SPOTPUNKT.bestanden}"
+        if lage.mit.bestanden != SPOTPUNKT.bestanden else "",
+    ]
+    abweichung = [a for a in abweichung if a]
+    if abweichung:
+        console.print(
+            f"\n[yellow]Die Zeile 'mit' trifft den Spot-Punkt nicht[/] "
+            f"({'; '.join(abweichung)}).\n"
+            f"[dim]Dann ist dieser Lauf keine Ablation des zugelassenen "
+            f"Punktes. Haeufigste Ursache: der Kerzenspeicher ist nicht die "
+            f"Zulassungsreihe - 'python -m cli stand' sagt es in der "
+            f"Bestandszeile.[/]\n"
+        )
+    else:
+        console.print(
+            f"\n[dim]Gegenprobe: 'mit' trifft den Spot-Punkt "
+            f"({SPOTPUNKT.trades} Trades, Guete {SPOTPUNKT.guete}, "
+            f"{SPOTPUNKT.bestanden}/{SPOTPUNKT.gesamt}).[/]"
+        )
+
+    console.print(f"\n{lage.urteil()}\n")
+    console.print(
+        "[dim]Gefallen mit: " + (", ".join(lage.mit.gefallen) or "keines")
+        + "\nGefallen ohne: " + (", ".join(lage.ohne.gefallen) or "keines")
+        + "[/]\n"
+    )
+
+
+@app.command()
 def haelften(
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",

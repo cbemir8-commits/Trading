@@ -3147,6 +3147,42 @@ BEHOBEN: tuple[Richtung, ...] = (
         "aus 363 - ohne eine Entscheidung des Nutzers nicht gruen zu bekommen",
         365,
     ),
+    # Befund 366: das Bauteil, das die Sperrprobe nicht beurteilen kann -
+    # und es traegt.
+    Richtung(
+        "Die Konfluenz des Kandidaten war nie geprueft",
+        "Die Sperrprobe prueft **Trade-Entfernungen** (Schock 58, Abkuehlung "
+        "44, Kalender 271). Dem Spitzenkandidaten steht aber ein Bauteil im "
+        "Namen, das sie nicht beurteilen kann: 'Trend 50 Tage **mit "
+        "Konfluenz**'. Gemessen streichen seine drei Konfluenz-Bedingungen "
+        "**9 Signale** (1 in BTC, 8 in ETH) und **keinen einzigen Trade** - "
+        "156 hier, 156 dort; die Balken, die sie treffen, trugen ohnehin "
+        "keinen Einstieg, weil dort schon eine Position offen war. Die Null "
+        "der Sperrprobe zieht aus den Signalen des Kandidaten, und die "
+        "gestrichenen liegen nicht darin: 'ohne Konfluenz' und 'ohne "
+        "Konfluenz + ihre 9 Signale gesperrt' sind **bitgleich** (156 Trades, "
+        "Guete 0,269308). Eine Sperrprobe haette hier eine selbstbewusste Null "
+        "gemeldet. Stattdessen eine **Ablation** ('cli anatomie --bauteil "
+        "konfluenz', 'research/anatomie.py'): dasselbe Genom ohne das Bauteil, "
+        "derselbe Zulassungspfad. Gemessen am Spot-Punkt: **mit 156 Trades, "
+        "Guete 0,2708, DSR 0,5826, 9 von 11** gegen **ohne 156 Trades, Guete "
+        "0,2720, DSR 0,5470, 7 von 11**. **Das Bauteil traegt** - und anders "
+        "als erwartet: Die Guete je Trade wird ohne es sogar winzig **besser** "
+        "(+0,0012). Was es haelt, ist das Risiko (Rueckgang 9,87 % statt "
+        "12,54 %) und damit Drawdown, Schlechtestes Jahr und "
+        "Parameter-Plateau. Wer nach der Guete geurteilt haette, haette es "
+        "gestrichen. Damit ist es der **Gegenfall zum Terminkalender** (271): "
+        "Dort war es 'nicht die Auswahl, sondern das Streichen', hier ist es "
+        "die Auswahl. Der Befehl kostet keinen Versuch (Zaehler gelesen, nicht "
+        "erhoeht) und laesst nichts zu - fiele eine Ablation zugunsten der "
+        "abgespeckten Fassung aus, waere das ein Vorschlag, dessen Pruefung "
+        "einen Versuch kostet und beim Nutzer liegt. **Berichtigt beim Bauen**: "
+        "Der erste Anlauf nahm die Rohdaten und die Standardbedingungen und "
+        "kam auf 159 Trades, Guete 0,2580 und 7 von 11 - eine Ablation auf "
+        "einem anderen Punkt als dem dokumentierten. Die Gegenprobe gegen den "
+        "Spot-Punkt steht jetzt **im Befehl** und vor dem Urteil",
+        366,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

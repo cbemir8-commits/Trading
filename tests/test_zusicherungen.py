@@ -85,6 +85,17 @@ BEGRUENDET: dict[str, str] = {
         "elf Gates halten. 'freigabe' sortiert nichts und waehlt nichts "
         "aus; aus ihm kann kein Kandidat hervorgehen."
     ),
+    "test_kein_versuch_wird_gebucht": (
+        "Dieselbe Begruendung wie bei 'freigabe', und sie ist hier noch "
+        "einfacher (Befund 366): 'cli anatomie' laesst ein Bauteil weg, das "
+        "der Kandidat **schon hat**, und misst denselben Punkt noch einmal. "
+        "Es waehlt nichts aus und sortiert nichts; aus ihm kann kein "
+        "Kandidat hervorgehen. Wuerde es zaehlen, kostete das Nachsehen, "
+        "woran ein zugelassener Punkt haengt, einen Versuch - und die Huerde "
+        "des Deflated Sharpe stiege fuer alle folgenden Kandidaten. Die "
+        "abgespeckte Fassung als Kandidaten zu fuehren ist etwas anderes: "
+        "Das kostet einen Versuch und ist eine Entscheidung des Nutzers."
+    ),
 }
 
 

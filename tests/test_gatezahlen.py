@@ -68,6 +68,12 @@ MIT_SKIPINFO: frozenset[str] = frozenset({
     # Sprossen ein Gate aus. Das Feld heisst hier 'geurteilt', weil ein
     # 'Gatewert' ein einzelnes Gate ist und keine Sprosse.
     "research.koernung.Gatewert",
+    # Befund 366: gleich mit 'uebersprungen' gebaut. Eine Ablation stellt
+    # "9 von 11" gegen "7 von 11"; steckte in einer der Zahlen ein geschenktes
+    # Urteil, verglichen sie zwei verschieden zusammengesetzte Neunen.
+    # Gemessen ist die Zahl am Spot-Punkt null - 156 Trades liegen weit ueber
+    # jeder Aussetzschwelle.
+    "research.anatomie.Lage",
     "research.machbarkeit.Stand",
     "research.nachpruefung.Ergebnis",
     "research.teststaerke.Stufe",
@@ -419,11 +425,11 @@ def test_die_zahl_der_offenen_faelle_steht_fest() -> None:
     """Damit ein spaeterer Lauf sich daran messen kann - und damit das
     Verzeichnis nicht unbemerkt waechst."""
     assert not OFFEN, "seit Befund 352 leer - und das bleibt zu pruefen"
-    assert len(MIT_SKIPINFO) == 12
+    assert len(MIT_SKIPINFO) == 13
     assert len(MIT_ERSCHLOSSENEM) == 8
     assert len(VORGELAGERT) == 2
     assert len(OHNE_BILANZFELD) == 4
-    assert len(_traeger()) == 24
+    assert len(_traeger()) == 25
 
 
 # **Die Messung, die Befund 332 offen gelassen hat** (Befund 333).

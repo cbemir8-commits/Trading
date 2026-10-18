@@ -67,6 +67,10 @@ WIRKT_NACH_AUSSEN: dict[str, str] = {
 #: stillschweigend auf der harmlosen Seite wieder. Genau die Richtung, in der
 #: ein Irrtum teuer wird.
 HARMLOS: frozenset[str] = frozenset({
+    # 'anatomie' (Befund 366) liest Kerzen und den Versuchszaehler, schreibt
+    # nichts und fragt kein Netz. Es dauert - zwei Walk-Forwards mit teuren
+    # Gates -, aber dauern ist keine Wirkung nach aussen.
+    "anatomie",
     "abstand", "anwaerter", "aufloesung", "betriebspunkt",
     "decke", "duerre", "evidenz", "finanzierung",
     "form", "freigabe", "front", "gatemuster", "haelften",
@@ -121,7 +125,14 @@ HARMLOS: frozenset[str] = frozenset({
 #:
 #: ``GELAUFEN`` zaehlt weiter nur die harmlosen Befehle; die sieben gehoeren
 #: nicht dazu.
-GELAUFEN = 54
+#:
+#: 55 seit Befund 366: 'anatomie' ist auf echten Tageskerzen gefahren worden -
+#: mit '--bauteil konfluenz' (die Messung des Befundes), mit '--bauteil filter'
+#: (der Kandidat hat keine - saubere Ablehnung) und mit einem erfundenen
+#: Bauteilnamen (ebenso). Der erste Lauf hat dabei gezeigt, dass der Befehl
+#: den Zulassungspunkt verfehlte; das stand dann im Befehl zu berichtigen und
+#: nicht in dieser Zahl.
+GELAUFEN = 55
 TRACEBACKS = 0
 SAUBER_ABGELEHNT = ("quelle", "review", "vorschlag")
 

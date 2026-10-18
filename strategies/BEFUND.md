@@ -32764,3 +32764,82 @@ Die letzten drei sind die nicht reproduzierbaren Zahlen aus Befund 363:
 Kapitalendstand, Streuungswert, Schiefe ueber alle Trades. Sie sind ohne eine
 Entscheidung des Nutzers nicht gruen zu bekommen - eine gepflegte Zahl
 anzupassen, bis sie zur Messung passt, waere die Umkehrung des Verfahrens.
+
+## Dreihundertsechsundsechzig. Die Konfluenz des Kandidaten war nie geprueft
+
+Dieses Projekt hat ein strenges Werkzeug fuer Sperren: `cli sperrprobe` fragt,
+ob eine Trade-Entfernung mehr leistet als dieselbe Zahl beliebiger
+Entfernungen. Es hat drei Sperren so geprueft - Schock (58), Abkuehlung (44)
+und das Termin-Overlay (271). Beim Overlay war die Antwort hart: 100 % der
+zufaelligen Sperren derselben Groesse hielten genauso viele Gates, *"es war
+nicht die Auswahl, sondern das Streichen"*.
+
+Dem Spitzenkandidaten steht aber ein viertes Bauteil im **Namen**: *"Trend 50
+Tage mit Konfluenz"*. Drei Bedingungen, die Einstiege wegnehmen. Geprueft wurde
+es nie.
+
+### Warum die Sperrprobe es nicht beurteilen kann
+
+Gemessen streichen die drei Bedingungen **9 Signale** - 1 in BTC, 8 in ETH -
+und **keinen einzigen Trade**:
+
+    mit Konfluenz    156 Trades
+    ohne Konfluenz   156 Trades
+
+Die Balken, die sie treffen, trugen ohnehin keinen Einstieg: Dort war schon
+eine Position offen. Und die Null der Sperrprobe zieht aus den Signalen des
+Kandidaten, in denen die gestrichenen gar nicht liegen. Eine Sperre auf sie
+bleibt folgenlos:
+
+    ohne Konfluenz                            156 Trades, Guete 0,269308
+    ohne Konfluenz + ihre 9 Signale gesperrt  156 Trades, Guete 0,269308
+
+Bitgleich. Eine Sperrprobe haette hier eine selbstbewusste Null gemeldet - und
+das Bauteil haette als "zu klein, um zu zaehlen" gegolten.
+
+### Die Ablation, und was sie findet
+
+`cli anatomie --bauteil konfluenz` laesst das Bauteil weg und laeuft denselben
+Zulassungspfad noch einmal:
+
+               Trades   Guete     DSR    Rueckgang   Gates
+    mit           156   0,2708  0,5826      9,87 %    9/11
+    ohne          156   0,2720  0,5470     12,54 %    7/11
+
+**Das Bauteil traegt** - und anders, als man es erwartet. Die Guete je Trade
+wird ohne es sogar **besser** (+0,0012). Was es haelt, ist das Risiko: Der
+Rueckgang steigt ohne es von 9,87 auf 12,54 Prozent, und damit fallen
+Drawdown, Schlechtestes Jahr und Parameter-Plateau.
+
+Die Konfluenz ist also kein Filter auf Qualitaet, sondern einer auf Ruhe. Wer
+nach der Guete je Trade geurteilt haette - der Zahl, an der dieses Projekt
+seinen Kandidaten sonst misst -, haette sie gestrichen und zwei Gates
+verloren.
+
+Damit ist sie der **Gegenfall zum Terminkalender**: Dort war es das Streichen,
+hier ist es die Auswahl.
+
+### Was der Befehl kostet und was nicht
+
+**Keinen Versuch.** Gemessen wird ein Bauteil, das der Kandidat schon hat, kein
+neuer Kandidat; der Zaehler wird gelesen und nicht erhoeht - dieselbe
+Begruendung wie bei der Sperrprobe.
+
+**Und zugelassen wird dadurch nichts.** Fiele eine Ablation einmal zugunsten
+der abgespeckten Fassung aus, waere das ein *Vorschlag*: Sie als Kandidaten zu
+fuehren kostet einen Versuch und ist eine Entscheidung des Nutzers, nicht die
+Folge einer Kontrollrechnung.
+
+### Berichtigt beim Bauen
+
+Der erste Anlauf des Befehls nahm die Rohdaten aus dem Speicher und die
+Standardbedingungen - und kam auf 159 Trades, Guete 0,2580 und 7 von 11. Das
+ist eine Ablation auf **irgendeinem** Lauf, nicht auf dem dokumentierten Punkt,
+und dann ist auch die Zeile "ohne" nichts wert. Der Zulassungspfad braucht drei
+Dinge, nicht eines: die Reihe geschnitten (Befund 363), die Spot-Bedingungen
+(`_spotconfigs`) und den Hebel gedeckelt (`_ohne_hebel`).
+
+Die Gegenprobe dagegen steht jetzt **im Befehl** und vor dem Urteil: Trifft die
+Zeile "mit" den Spot-Punkt nicht, sagt er das und nennt die haeufigste Ursache
+(der Speicher ist nicht die Zulassungsreihe). Mein Docstring hatte die
+Gegenprobe behauptet, bevor sie da war.
