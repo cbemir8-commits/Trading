@@ -3525,6 +3525,7 @@ def _spotpunkt(frames, symbole, genome, trials: int, settings):
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.betriebspunkt import Betriebspunkt
     from research.gates import evaluate_gates
+    from research.randschnitt import ohne_zensierte, randtrades
     from research.suchbudget import Kandidat
     from strategy.compiler import compile_genome
 
@@ -3542,11 +3543,21 @@ def _spotpunkt(frames, symbole, genome, trials: int, settings):
         ohne_hebel, bericht, erster, configs[symbole[0]], trials_so_far=trials,
         frames=frames, configs=configs,
     )
-    eintrag = Kandidat.aus_trades(ohne_hebel.name, bericht.all_trades)
+    # **Nur fertig gehandelte Trades** (Befund 152, hier nachgezogen in 371).
+    #
+    # Hier stand 'bericht.all_trades' - also mit dem Trade, den der Kalender
+    # am Datenende glattgestellt hat. Gemessen macht das **+0,0087** Guete
+    # (0,2868 gegen 0,2781), und die Kopfzeile desselben Berichts rechnet seit
+    # 152 ohne ihn: Zwei Zahlen aus einem Lauf, auf zwei Stichproben, in einem
+    # Bericht. Rendite und Rueckgang behalten ihn - dort gehoert er hin.
+    gehandelt = ohne_zensierte(bericht)
+    zensiert = len(randtrades(bericht.all_trades))
+    eintrag = Kandidat.aus_trades(ohne_hebel.name, gehandelt.all_trades)
     kombiniert = bericht.combined
     return Betriebspunkt(
         name="Spot",
-        trades=len(bericht.all_trades),
+        trades=len(gehandelt.all_trades),
+        zensiert=zensiert,
         cagr_pct=float(kombiniert.cagr_pct) if kombiniert else 0.0,
         rueckgang_pct=float(kombiniert.max_drawdown_pct) if kombiniert else 0.0,
         guete=eintrag.sharpe_je_trade if eintrag else 0.0,
@@ -11976,7 +11987,10 @@ def stand(
     # Preis.
     if zweitpunkt is not None:
         erstpunkt = Betriebspunkt(
-            name="Perpetual", trades=len(bericht.all_trades),
+            # Dieselbe Stichprobe wie der Kopf und wie die Spot-Zeile
+            # (Befund 371): fertig gehandelte Trades, der zensierte daneben.
+            name="Perpetual", trades=len(gehandelt.all_trades),
+            zensiert=len(zensiert),
             cagr_pct=float(kombiniert.cagr_pct) if kombiniert else 0.0,
             rueckgang_pct=(
                 float(kombiniert.max_drawdown_pct) if kombiniert else 0.0

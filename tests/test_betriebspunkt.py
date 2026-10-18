@@ -132,3 +132,105 @@ class TestBetriebslage:
         lage = Betriebslage(punkte=(perpetual(), spot(bestaetigt=True)))
         assert not lage.massgeblich.zugelassen
         assert lage.massgeblich.offen == ("Messlatte", "Deflated Sharpe")
+
+
+class TestBeideZeilenZaehlenDieselbeStichprobe:
+    """**Befund 371.** Die Tabelle 'DIE BEIDEN BETRIEBSPUNKTE' vergleicht zwei
+    Punkte - und zaehlte dabei anders als die Kopfzeile desselben Berichts.
+
+    ``trades`` nahm die **ganze** Liste, der Kopf seit Befund 152 nur die
+    fertigen: 158 gegen 157, ohne ein Wort dazu. Schwerer wog die Guete: Die
+    Spot-Zeile rechnete sie auf allen Trades, die Perpetual-Zeile auf den
+    fertigen. Gemessen am Spot-Punkt macht der eine zensierte Trade
+    **+0,0087** aus (0,2868 gegen 0,2781) - ein Drittel dessen, was der ganze
+    Terminkalender beitraegt, und in einer Tabelle, deren einziger Zweck der
+    Vergleich dieser beiden Punkte ist.
+    """
+
+    @staticmethod
+    def _punkt(**kwargs):
+        from research.betriebspunkt import Betriebspunkt
+
+        grund = {
+            "name": "Spot", "trades": 157, "cagr_pct": 14.34,
+            "rueckgang_pct": 9.87, "guete": 0.2781, "dsr": 0.5826,
+            "bestanden": 9, "gesamt": 11,
+        }
+        return Betriebspunkt(**{**grund, **kwargs})
+
+    def test_der_zensierte_trade_steht_daneben(self) -> None:
+        zeile = self._punkt(zensiert=1).als_zeile()
+
+        assert "157 Trades (+1 am Datenende)" in zeile
+
+    def test_ohne_zensierte_keine_klammer(self) -> None:
+        """Null heisst "keiner" - keine erfundene Angabe."""
+        zeile = self._punkt(zensiert=0).als_zeile()
+
+        assert "am Datenende" not in zeile
+        assert "157 Trades," in zeile
+
+    def test_die_zahl_ist_die_der_fertigen(self) -> None:
+        """Nicht die Summe: 157 fertige und 1 zensierter sind nicht 158
+        Beobachtungen, sondern 157 und ein Hinweis."""
+        punkt = self._punkt(trades=157, zensiert=1)
+
+        assert punkt.trades == 157
+
+    def test_der_spotpunkt_rechnet_ohne_den_zensierten(self) -> None:
+        """Die Stelle, an der die Guete entstand - geprueft am Quelltext, weil
+        der Lauf dafuer echte Kerzen braucht."""
+        import ast
+        from pathlib import Path
+
+        baum = ast.parse(Path("cli.py").read_text(encoding="utf-8"))
+        for knoten in ast.walk(baum):
+            if isinstance(knoten, ast.FunctionDef) and knoten.name == "_spotpunkt":
+                quelle = ast.unparse(knoten)
+                break
+        else:
+            raise AssertionError("'_spotpunkt' steht nicht mehr in cli.py")
+
+        assert "ohne_zensierte(bericht)" in quelle
+        assert "aus_trades(ohne_hebel.name, gehandelt.all_trades)" in quelle
+        assert "aus_trades(ohne_hebel.name, bericht.all_trades)" not in quelle
+
+    def test_und_zaehlt_die_fertigen(self) -> None:
+        import ast
+        from pathlib import Path
+
+        baum = ast.parse(Path("cli.py").read_text(encoding="utf-8"))
+        knoten = next(
+            k for k in ast.walk(baum)
+            if isinstance(k, ast.FunctionDef) and k.name == "_spotpunkt"
+        )
+        quelle = ast.unparse(knoten)
+
+        assert "trades=len(gehandelt.all_trades)" in quelle
+
+    def test_rendite_und_rueckgang_behalten_ihn(self) -> None:
+        """Der zensierte Trade ist keine abgeschlossene **Beobachtung** - sein
+        Geld ist aber geflossen, und in Rendite und Rueckgang gehoert er hin
+        (Befund 152)."""
+        import ast
+        from pathlib import Path
+
+        baum = ast.parse(Path("cli.py").read_text(encoding="utf-8"))
+        knoten = next(
+            k for k in ast.walk(baum)
+            if isinstance(k, ast.FunctionDef) and k.name == "_spotpunkt"
+        )
+        quelle = ast.unparse(knoten)
+
+        assert "kombiniert = bericht.combined" in quelle
+        assert "cagr_pct=float(kombiniert.cagr_pct)" in quelle
+
+
+class TestDasRegisterHaeltDenFund371:
+    def test_er_steht_unter_behoben(self) -> None:
+        from research.stand import BEHOBEN
+
+        eintrag = next(r for r in BEHOBEN if r.befund == 371)
+
+        assert "0,0087" in eintrag.ergebnis
+        assert "152" in eintrag.ergebnis

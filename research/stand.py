@@ -3310,6 +3310,31 @@ BEHOBEN: tuple[Richtung, ...] = (
         "der Bestandszeile",
         370,
     ),
+    # Befund 371: zwei Zaehlungen in einem Bericht - und zwei Stichproben in
+    # einer Tabelle, die genau diese beiden Punkte vergleicht.
+    Richtung(
+        "Die Betriebspunkt-Tabelle zaehlte anders als ihr eigener Kopf",
+        "Weiter in derselben Ausgabe gelesen (nach 369/370). Der Kopf meldet "
+        "**157 Trades (+1 am Datenende glattgestellt, in der Statistik nicht "
+        "gezaehlt)**, die Tabelle 'DIE BEIDEN BETRIEBSPUNKTE' zwei Abschnitte "
+        "weiter **158 Trades** - ein Lauf, zwei Zaehlungen, kein Wort dazu. "
+        "Schwerer wog die Guete: ''_spotpunkt'' rechnete sie mit "
+        "'Kandidat.aus_trades(..., bericht.all_trades)' auf **allen** Trades, "
+        "die Perpetual-Zeile auf den **fertigen**. Gemessen macht der eine "
+        "zensierte Trade **+0,0087** aus (0,2868 gegen 0,2781) - das Dreifache "
+        "dessen, was der ganze Terminkalender beitraegt (+0,0028, Befund 271), "
+        "und das in einer Tabelle, deren einziger Zweck der Vergleich dieser "
+        "beiden Punkte ist. Genau dagegen ist Befund 152 angetreten: *'Ein am "
+        "Datenende glattgestellter Trade ist keine abgeschlossene Beobachtung; "
+        "sein Ergebnis haengt daran, wann zuletzt Kerzen geholt wurden.'* Die "
+        "Kopfzeile hielt sich daran, die Tabelle nicht. Jetzt zaehlen beide "
+        "Zeilen die fertigen und tragen den zensierten daneben "
+        "('157 Trades (+1 am Datenende)'); Rendite und Rueckgang behalten ihn, "
+        "dort gehoert er hin. **Nicht geaendert** sind die Gates: "
+        "'evaluate_gates' hat seine eigene Zensur und urteilte ohnehin auf den "
+        "fertigen - 9 von 11 am Spot-Punkt bleibt 9 von 11",
+        371,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

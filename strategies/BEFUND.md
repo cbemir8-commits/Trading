@@ -33088,3 +33088,55 @@ geht es nur um die **gemessene Spanne**.
 
 Aufgefallen ist es, weil der Befehl nach dem Bauen gelaufen ist. Aus der
 Signatur von `fehlt` waere es nicht hervorgegangen.
+
+## Dreihunderteinundsiebzig. Die Tabelle zaehlte anders als ihr eigener Kopf
+
+Weiter in derselben Ausgabe gelesen, nach 369 und 370.
+
+Im Kopf steht:
+
+      Ergebnis   157 Trades (+1 am Datenende glattgestellt, in der Statistik
+                 nicht gezaehlt)
+
+Zwei Abschnitte weiter:
+
+    DIE BEIDEN BETRIEBSPUNKTE
+      Perpetual     158 Trades, 12.95 % p.a., 10.64 % Rueckgang  7/11 Gates
+      Spot          158 Trades, 14.34 % p.a.,  9.87 % Rueckgang  9/11 Gates
+
+Ein Lauf, zwei Zaehlungen, kein Wort dazu.
+
+### Das Schwerere lag darunter
+
+Nicht die Trade-Zahl, sondern die **Guete**. `_spotpunkt` rechnete sie mit
+`Kandidat.aus_trades(..., bericht.all_trades)` - auf **allen** Trades. Die
+Perpetual-Zeile bekam `qualitaet` aus der Kopfrechnung, und die laeuft seit
+Befund 152 auf den **fertigen**.
+
+Gemessen, am Spot-Punkt:
+
+    alle Trades     158   Guete 0.2868
+    fertige Trades  157   Guete 0.2781
+    Unterschied           +0.0087
+
+Das Dreifache dessen, was der ganze Terminkalender beitraegt (+0,0028, Befund
+271) - und das in einer Tabelle, deren einziger Zweck der Vergleich dieser
+beiden Punkte ist. Zwei Zahlen aus einem Lauf, auf zwei Stichproben,
+nebeneinandergestellt.
+
+Genau dagegen ist Befund 152 angetreten, und sein Satz stand die ganze Zeit im
+Quelltext der Kopfrechnung: *"Ein am Datenende glattgestellter Trade ist keine
+abgeschlossene Beobachtung; sein Ergebnis haengt daran, wann zuletzt Kerzen
+geholt wurden."* Die Kopfzeile hielt sich daran. Die Tabelle nicht.
+
+### Was geaendert ist
+
+Beide Zeilen zaehlen jetzt die fertigen und tragen den zensierten daneben:
+
+      Perpetual     157 Trades (+1 am Datenende),  12.95 % p.a., ...
+      Spot          157 Trades (+1 am Datenende),  14.34 % p.a., ...
+
+Rendite und Rueckgang behalten ihn - sein Geld ist geflossen, dort gehoert er
+hin. Und die **Gates sind nicht beruehrt**: `evaluate_gates` hat seine eigene
+Zensur und urteilte ohnehin auf den fertigen Trades; 9 von 11 am Spot-Punkt
+bleibt 9 von 11. Was falsch war, war die Anzeige - nicht das Urteil.

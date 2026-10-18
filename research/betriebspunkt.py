@@ -92,6 +92,21 @@ class Betriebspunkt(Gatebilanz):
     bestanden: int
     gesamt: int
     offen: tuple[str, ...] = ()
+    zensiert: int = 0
+    """Trades, die am Datenende glattgestellt wurden - nicht in ``trades``.
+
+    **Befund 371.** ``trades`` zaehlte hier die **ganze** Liste, die Kopfzeile
+    desselben Berichts seit Befund 152 nur die fertigen: 158 gegen 157, ohne
+    ein Wort dazu. Und die Guete der Spot-Zeile entstand auf der ganzen Liste,
+    die der Perpetual-Zeile auf den fertigen - gemessen **+0,0087**
+    Unterschied (0,2868 gegen 0,2781), also zwei Zahlen aus einem Lauf, auf
+    zwei Stichproben, in einer Tabelle, die genau diese beiden Punkte
+    vergleicht.
+
+    Jetzt zaehlt ``trades`` die fertigen, und diese Zahl steht daneben. Null
+    heisst "keiner" und wird nicht gedruckt.
+    """
+
     #: Ist die Voraussetzung dieses Punktes bestaetigt, oder nur moeglich?
     bestaetigt: bool = False
     voraussetzung: str = ""
@@ -113,8 +128,12 @@ class Betriebspunkt(Gatebilanz):
 
     def als_zeile(self) -> str:
         marke = "" if self.bestaetigt else "  (Voraussetzung offen)"
+        # Der zensierte Trade gehoert dazu, aber nicht in die Zahl davor
+        # (Befund 371) - sonst stehen hier 158 und im Kopf 157.
+        rand = f" (+{self.zensiert} am Datenende)" if self.zensiert else ""
         return (
-            f"{self.name:<12} {self.trades:>4} Trades, {self.cagr_pct:>6.2f} % p.a., "
+            f"{self.name:<12} {self.trades:>4} Trades{rand}, "
+            f"{self.cagr_pct:>6.2f} % p.a., "
             f"{self.rueckgang_pct:>5.2f} % Rueckgang   "
             f"{self.bestanden_ehrlich}/{self.geurteilt_ehrlich} Gates"
             + self.marke
