@@ -239,6 +239,181 @@ class Anatomie:
         return "\n".join(zeilen)
 
 
+#: Hoechste Zahl Bedingungen, deren Gitter noch von selbst gefahren wird.
+#:
+#: Zwei hoch vier sind sechzehn Laeufe zu je einem Walk-Forward mit teuren
+#: Gates - rund sieben Minuten. Bei sechs Bedingungen waeren es
+#: vierundsechzig und damit eine halbe Stunde; das soll niemand aus Versehen
+#: starten.
+GITTERGRENZE = 4
+
+
+@dataclass(frozen=True, slots=True)
+class Sprosse:
+    """Eine Fassung des Kandidaten: welche Bedingungen bleiben, und was folgt."""
+
+    behalten: tuple[int, ...]
+    lage: Lage
+
+    @property
+    def name(self) -> str:
+        return "+".join(str(i + 1) for i in self.behalten) or "keine"
+
+
+@dataclass(slots=True)
+class Gitter:
+    """Alle Teilmengen der Bedingungen eines Bauteils, gemessen.
+
+    **Wozu das ueber die Ablation hinaus gebraucht wird** (Befund 368): Die
+    Ablation kennt zwei Punkte - mit Bauteil und ohne. Dazwischen liegen bei
+    drei Bedingungen sechs weitere Fassungen, und erst sie sagen, ob der
+    Tausch aus Befund 367 unvermeidlich ist oder nur die eine Kante trifft,
+    die zufaellig gemessen wurde.
+
+    Gemessen am Spot-Punkt ist er unvermeidlich: Keine der acht Fassungen
+    kommt ueber neun von elf, und die beiden offenen Gates wechseln nur die
+    Identitaet. Jede Fassung unter 15 % Jahresrendite verliert die Messlatte,
+    jede darueber das Schlechteste Jahr.
+
+    **Und was daraus nicht folgt.** Das steht so in ``konfluenzwirkung.py``
+    seit Befund 30, und dort stand es zuerst: Die beste Fassung eines Gitters zu nehmen ist
+    *"die Auswahl des besten Eimers nach Ansicht der Daten"* - genau die
+    Ueberanpassung, gegen die die Zulassungsstrecke gebaut ist. Dieses Gitter
+    ist eine **Diagnose** und keine Suche; faellt es einmal nicht leer aus,
+    ist das ein Vorschlag, dessen Pruefung einen Versuch kostet und beim
+    Nutzer liegt. Hier faellt es leer aus, und dann ist die Frage beantwortet,
+    ohne dass etwas zu waehlen waere.
+    """
+
+    bauteil: str
+    sprossen: list[Sprosse] = field(default_factory=list)
+
+    @property
+    def bestand(self) -> Sprosse | None:
+        """Die Fassung mit **allen** Bedingungen - der zugelassene Punkt."""
+        if not self.sprossen:
+            return None
+        return max(self.sprossen, key=lambda s: len(s.behalten))
+
+    @property
+    def beste(self) -> list[Sprosse]:
+        """Alle Fassungen mit der hoechsten Gate-Zahl - es koennen mehrere sein."""
+        if not self.sprossen:
+            return []
+        hoechste = max(s.lage.bestanden for s in self.sprossen)
+        return [s for s in self.sprossen if s.lage.bestanden == hoechste]
+
+    @property
+    def besser_als_der_bestand(self) -> list[Sprosse]:
+        """Fassungen mit **mehr** Gates als der zugelassene Punkt.
+
+        Leer heisst: An diesem Bauteil ist nichts zu holen. Nicht leer heisst
+        **Vorschlag und nicht Ergebnis** - eine Fassung zu fuehren kostet
+        einen Versuch und ist eine Entscheidung des Nutzers.
+        """
+        grund = self.bestand
+        if grund is None:
+            return []
+        return [
+            s for s in self.sprossen
+            if s.lage.bestanden > grund.lage.bestanden
+        ]
+
+    def urteil(self) -> str:
+        grund = self.bestand
+        if grund is None:
+            return "Nichts gemessen."
+        kopf = (
+            f"{len(self.sprossen)} Fassungen von '{self.bauteil}' gemessen, "
+            f"beste {max(s.lage.bestanden for s in self.sprossen)} von "
+            f"{grund.lage.gesamt}, der Bestand {grund.lage.bestanden}."
+        )
+        if not self.besser_als_der_bestand:
+            return (
+                f"{kopf}\nKeine Fassung kommt ueber den Bestand. An diesem "
+                f"Bauteil ist nichts zu holen - die offenen Gates wechseln "
+                f"nur die Identitaet."
+            )
+        namen = ", ".join(s.name for s in self.besser_als_der_bestand)
+        return (
+            f"{kopf}\nMehr Gates haelt: {namen}. **Das ist kein Ergebnis, "
+            f"sondern die Auswahl des besten Eimers nach Ansicht der Daten** - "
+            f"genau die Ueberanpassung, gegen die die Zulassungsstrecke gebaut "
+            f"ist (so steht es in 'konfluenzwirkung.py', und dort stand es "
+            f"zuerst). Eine Fassung als Kandidaten zu fuehren kostet einen "
+            f"Versuch und ist eine Entscheidung des Nutzers."
+        )
+
+
+def bedingungstext(bedingung) -> str:
+    """Eine Bedingung in einer Zeile, zum Mitlesen im Gitter.
+
+    Eigene Formatierung und nicht ``Operand.key``: Der Schluessel ist fuer die
+    Zwischenspeicherung gebaut ('indicator:sma(period=50)') und liest sich
+    entsprechend. Hier soll dastehen, was die Bedingung sagt.
+    """
+
+    def seite(operand) -> str:
+        if operand.kind == "constant":
+            return f"{operand.value:g}"
+        parameter = ",".join(f"{k}={v}" for k, v in sorted(operand.params.items()))
+        return f"{operand.name}({parameter})" if parameter else operand.name
+
+    return f"{seite(bedingung.left)} {bedingung.op} {seite(bedingung.right)}"
+
+
+def bedingungen(genome: Genome, bauteil: str) -> list:
+    """Die Bedingungen, aus denen ein Bauteil besteht."""
+    if bauteil not in BAUTEILE:
+        raise ValueError(f"Unbekanntes Bauteil '{bauteil}'.")
+    feld = next(iter(BAUTEILE[bauteil]))
+    return list(getattr(genome, feld, []) or [])
+
+
+def teilmengen(genome: Genome, bauteil: str) -> list[tuple[tuple[int, ...], Genome]]:
+    """Jede Teilmenge der Bedingungen, von allen bis keiner.
+
+    Absteigend nach Groesse, damit der Bestand die erste Zeile ist - und die
+    Gegenprobe gegen den dokumentierten Punkt damit ganz oben steht.
+    """
+    from itertools import combinations
+
+    if bauteil not in BAUTEILE:
+        raise ValueError(f"Unbekanntes Bauteil '{bauteil}'.")
+    feld = next(iter(BAUTEILE[bauteil]))
+    teile = bedingungen(genome, bauteil)
+    if len(teile) > GITTERGRENZE:
+        raise ValueError(
+            f"'{bauteil}' hat {len(teile)} Bedingungen - das Gitter waere "
+            f"{2 ** len(teile)} Laeufe. Grenze ist {GITTERGRENZE}."
+        )
+    ergebnis = []
+    for k in range(len(teile), -1, -1):
+        for behalten in combinations(range(len(teile)), k):
+            ergebnis.append(
+                (
+                    behalten,
+                    genome.model_copy(
+                        update={feld: [teile[i] for i in behalten]}
+                    ),
+                )
+            )
+    return ergebnis
+
+
+def gitter(
+    genome: Genome, bauteil: str, messe: Callable[[Genome], Lage]
+) -> Gitter:
+    """Alle Teilmengen messen."""
+    return Gitter(
+        bauteil=bauteil,
+        sprossen=[
+            Sprosse(behalten=behalten, lage=messe(fassung))
+            for behalten, fassung in teilmengen(genome, bauteil)
+        ],
+    )
+
+
 def vergleiche(
     genome: Genome, bauteil: str, messe: Callable[[Genome], Lage],
     *, signale: dict[str, int] | None = None,

@@ -32902,3 +32902,71 @@ Ein Test stellte 7 gegen 9 Gates bei **zweimal derselben Liste** gefallener
 Gates - eine Aufstellung, die zu sich selbst nicht passt. Das beidseitige
 Urteil hat es aufgedeckt: Es nannte zu Recht "kein Gate kippt in eine der
 beiden Richtungen", wo der Test "kostet" erwartete.
+
+## Dreihundertachtundsechzig. Der Tausch ist unvermeidlich - das ganze Gitter
+
+Befund 367 hat gemessen, dass die Konfluenz drei Gates haelt und die Messlatte
+kostet. Offen blieb die Frage dahinter: **Ist der Tausch unvermeidlich, oder
+trifft er nur die eine Kante, die zufaellig gemessen wurde?** Die Ablation
+kennt zwei Punkte - alle drei Bedingungen oder keine. Dazwischen liegen sechs
+weitere Fassungen.
+
+Alle acht gefahren, am Spot-Punkt, mit dem Bestand als Gegenprobe in der ersten
+Zeile. Die Bedingungen:
+
+    1. sma(period=50) gt sma(period=200)
+    2. roc(period=90) gt 0
+    3. rsi(period=14) gt 50
+
+    behalten  Trades   Guete   MaxDD    CAGR  Gates  es fallen
+    1+2+3        156  0,2708    9,87   14,34   9/11  Messlatte, DSR
+    1+2          155  0,2679    8,72   13,27   9/11  Messlatte, DSR
+    1+3          156  0,2710   10,60   14,85   8/11  Messlatte, SchlJahr, DSR
+    2+3          156  0,2715   10,76   15,16   9/11  SchlJahr, DSR
+    1            155  0,2656    8,41   12,92   9/11  Messlatte, DSR
+    2            155  0,2676    8,89   13,57   9/11  Messlatte, DSR
+    3            155  0,2712   12,34   17,07   7/11  Drawdown, SchlJahr,
+                                                     Plateau, DSR
+    keine        156  0,2720   12,54   17,31   7/11  dieselben
+
+**Keine Fassung kommt ueber neun von elf.** Die beiden offenen Gates wechseln
+nur die Identitaet.
+
+### Die Wand hat eine Form
+
+Das ist mehr als ein negatives Ergebnis. Die Tabelle sortiert sich von selbst:
+
+* Jede Fassung **unter** 15 % Jahresrendite verliert die **Messlatte** - nicht
+  am Vergleich mit dem Halten, sondern an der Betriebsschwelle.
+* Jede Fassung **darueber** verliert ein **Risiko-Gate** - Schlechtestes Jahr,
+  bei den beiden hoechsten auch Drawdown und Plateau.
+
+Rendite und Rueckgang bewegen sich in diesem Kandidaten **gemeinsam**. Jede
+Bedingung, die das Risiko daempft, drueckt die Jahresrendite unter die
+Schwelle, ab der sich der Betrieb lohnt. Die Konfluenz ist dabei kein Regler
+mit einem Optimum, sondern ein Schalter zwischen zwei Seiten derselben Wand.
+
+Der Deflated Sharpe faellt in allen acht Fassungen - 0,52 bis 0,58 gegen 0,95.
+Er ist von diesem Bauteil unabhaengig.
+
+### Was daraus nicht folgt
+
+Dass `2+3` die Messlatte haelt, ist **kein** Vorschlag. Diese Projektakte sagt
+es seit Befund 30, in `konfluenzwirkung.py`, und sie sagt es besser als ich es
+koennte: Die beste Fassung zu nehmen waere *"die Auswahl des besten Eimers nach
+Ansicht der Daten - genau die Ueberanpassung, gegen die die ganze Strecke
+gebaut ist"*.
+
+Das Gitter ist eine **Diagnose**, keine Suche. Hier faellt sie leer aus, und
+damit ist die Frage beantwortet, ohne dass etwas zu waehlen waere. Faellt sie
+einmal nicht leer aus, sagt das Urteil denselben Satz - und dass eine Fassung
+als Kandidat zu fuehren einen Versuch kostet und beim Nutzer liegt.
+
+Die Grenze liegt bei vier Bedingungen: Zwei hoch sechs Laeufe mit teuren Gates
+sind eine halbe Stunde, und das soll niemand aus Versehen starten.
+
+### Berichtigt
+
+Im Register stand zuerst "`konfluenzwirkung.py` seit Befund 290". Die Zahl war
+geraten; das Laborbuch nennt die Stelle in **Befund 30**. Eine Fundstelle, die
+nicht stimmt, ist genau der Fehler, den Befund 130 abgestellt hat.

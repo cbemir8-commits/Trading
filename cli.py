@@ -7314,6 +7314,10 @@ def anatomie(
         "konfluenz", "--bauteil",
         help="Welches Bauteil weggelassen wird: konfluenz, filter.",
     ),
+    einzeln: bool = typer.Option(
+        False, "--einzeln",
+        help="Jede Teilmenge der Bedingungen messen, nicht nur alle/keine.",
+    ),
     maerkte: str = typer.Option(
         "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
         help="Symbole, durch Komma getrennt.",
@@ -7322,6 +7326,12 @@ def anatomie(
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Was traegt ein Bauteil des Kandidaten? (Befund 366)
+
+    **``--einzeln`` faehrt das ganze Gitter** (Befund 368): Die Ablation kennt
+    zwei Punkte - mit Bauteil und ohne -, und dazwischen liegen bei drei
+    Bedingungen sechs weitere Fassungen. Erst sie sagen, ob der Tausch aus
+    Befund 367 unvermeidlich ist oder nur die eine Kante trifft, die
+    zufaellig gemessen wurde.
 
     Eine **Ablation**: Dasselbe Genom ohne ein Bauteil, denselben
     Zulassungspfad noch einmal. Die Gegenprobe ist eingebaut - der Lauf *mit*
@@ -7434,6 +7444,38 @@ def anatomie(
         f"  Kandidat   {genom.name}\n"
         f"  Huerde     {versuche} Versuche (gelesen, nicht erhoeht)\n"
     )
+
+    if einzeln:
+        from research.anatomie import bedingungen, bedingungstext, gitter
+
+        teile = bedingungen(genom, bauteil)
+        console.print(
+            f"[dim]{len(teile)} Bedingungen, {2 ** len(teile)} Fassungen:[/]"
+        )
+        for i, bed in enumerate(teile, 1):
+            console.print(f"[dim]  {i}. {bedingungstext(bed)}[/]")
+        with console.status("[dim]faehrt das Gitter ...[/]"):
+            lattice = gitter(genom, bauteil, messe)
+
+        tab = Table()
+        tab.add_column("behalten")
+        tab.add_column("Trades", justify="right")
+        tab.add_column("Guete", justify="right")
+        tab.add_column("Rueckgang", justify="right")
+        tab.add_column("Gates", justify="right")
+        tab.add_column("gefallen")
+        for sprosse in lattice.sprossen:
+            tab.add_row(
+                sprosse.name,
+                str(sprosse.lage.trades),
+                f"{sprosse.lage.guete:.4f}",
+                f"{sprosse.lage.rueckgang_pct:.2f} %",
+                f"{sprosse.lage.bestanden}/{sprosse.lage.gesamt}",
+                ", ".join(sprosse.lage.gefallen) or "keines",
+            )
+        console.print(tab)
+        console.print(f"\n{lattice.urteil()}\n")
+        return
 
     with console.status("[dim]messe mit und ohne Bauteil ...[/]"):
         lage = vergleiche(genom, bauteil, messe, signale=signale)

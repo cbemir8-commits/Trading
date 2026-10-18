@@ -3216,6 +3216,38 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Test stellte 7 gegen 9 Gates bei zweimal derselben Liste gefallener "
         "Gates - das beidseitige Urteil hat es aufgedeckt",
         367,
+        zuletzt=368,
+    ),
+    # Befund 368: das ganze Gitter statt der einen zufaellig gemessenen
+    # Kante - und die Wand hat eine Form.
+    Richtung(
+        "Der Tausch der Konfluenz ist unvermeidlich",
+        "Befund 367 hat gemessen, dass die Konfluenz drei Gates haelt und die "
+        "**Messlatte** kostet. Offen blieb, ob der Tausch unvermeidlich ist "
+        "oder nur die eine Kante trifft, die zufaellig gemessen wurde: Die "
+        "Ablation kennt zwei Punkte, zwischen 'alle drei' und 'keine' liegen "
+        "aber sechs weitere Fassungen. Alle **acht** gefahren "
+        "('cli anatomie --bauteil konfluenz --einzeln'), am Spot-Punkt, mit "
+        "dem Bestand als Gegenprobe in der ersten Zeile - die Bedingungen "
+        "sind 1. 'sma(50) gt sma(200)', 2. 'roc(90) gt 0', 3. 'rsi(14) gt 50': "
+        "**1+2+3 9/11** (CAGR 14,34, MaxDD 9,87; Messlatte, DSR), **1+2 9/11** "
+        "(13,27 / 8,72), **1+3 8/11** (14,85 / 10,60), **2+3 9/11** (15,16 / "
+        "10,76; Schlechtestes Jahr, DSR), **1 9/11** (12,92 / 8,41), **2 "
+        "9/11** (13,57 / 8,89), **3 7/11** (17,07 / 12,34), **keine 7/11** "
+        "(17,31 / 12,54). **Keine Fassung kommt ueber neun von elf.** Die "
+        "beiden offenen Gates wechseln nur die Identitaet, und die Wand hat "
+        "eine Form: Jede Fassung **unter** 15 % Jahresrendite verliert die "
+        "Messlatte (Betriebsschwelle), jede **darueber** ein Risiko-Gate - "
+        "Rendite und Rueckgang bewegen sich in diesem Kandidaten gemeinsam. "
+        "Der Deflated Sharpe faellt in allen acht (0,52 bis 0,58 gegen 0,95). "
+        "**Was daraus nicht folgt**, und das steht in "
+        "'konfluenzwirkung.py' seit Befund 30: Die beste Fassung zu nehmen "
+        "waere *'die Auswahl des besten Eimers nach Ansicht der Daten'*, also "
+        "genau die Ueberanpassung, gegen die die Zulassungsstrecke gebaut ist. "
+        "Das Gitter ist eine Diagnose; hier faellt sie leer aus, und damit ist "
+        "die Frage beantwortet, ohne dass etwas zu waehlen waere. Grenze bei "
+        "vier Bedingungen, weil zwei hoch sechs Laeufe eine halbe Stunde sind",
+        368,
     ),
 )
 

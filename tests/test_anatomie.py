@@ -428,3 +428,227 @@ def test_die_ablation_am_spotpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
     # Und keine der beiden Neunen enthaelt ein geschenktes Urteil: 156 Trades
     # liegen weit ueber jeder Aussetzschwelle (Befunde 321/322).
     assert not lage.uebersprungen_irgendwo
+
+
+class TestDasGitterFaehrtAlleTeilmengen:
+    """**Befund 368.** Die Ablation kennt zwei Punkte - mit Bauteil und ohne.
+    Bei drei Bedingungen liegen dazwischen sechs weitere Fassungen, und erst
+    sie sagen, ob der Tausch aus Befund 367 unvermeidlich ist oder nur die
+    eine Kante trifft, die zufaellig gemessen wurde.
+    """
+
+    def test_acht_fassungen_bei_drei_bedingungen(self) -> None:
+        from research.anatomie import teilmengen
+
+        fassungen = teilmengen(_genom(), "konfluenz")
+
+        assert len(fassungen) == 8
+
+    def test_der_bestand_steht_oben(self) -> None:
+        """Damit die Gegenprobe gegen den dokumentierten Punkt die erste
+        Zeile ist."""
+        from research.anatomie import teilmengen
+
+        erste, _ = teilmengen(_genom(), "konfluenz")[0]
+
+        assert erste == (0, 1, 2)
+
+    def test_jede_fassung_kommt_genau_einmal(self) -> None:
+        from research.anatomie import teilmengen
+
+        behalten = [b for b, _ in teilmengen(_genom(), "konfluenz")]
+
+        assert len(set(behalten)) == len(behalten)
+
+    def test_die_bedingungen_werden_wirklich_gesetzt(self) -> None:
+        from research.anatomie import teilmengen
+
+        genom = _genom()
+        for behalten, fassung in teilmengen(genom, "konfluenz"):
+            assert len(fassung.konfluenz) == len(behalten)
+            for platz, bedingung in zip(behalten, fassung.konfluenz, strict=True):
+                assert bedingung == genom.konfluenz[platz]
+
+    def test_ein_zu_grosses_gitter_wird_abgelehnt(self) -> None:
+        """Zwei hoch sechs sind vierundsechzig Laeufe - eine halbe Stunde, die
+        niemand aus Versehen starten soll."""
+        from research.anatomie import GITTERGRENZE, teilmengen
+
+        genom = _genom()
+        viele = genom.model_copy(
+            update={"konfluenz": list(genom.konfluenz) * 3}
+        )
+
+        assert len(viele.konfluenz) > GITTERGRENZE
+        with pytest.raises(ValueError, match="Grenze"):
+            teilmengen(viele, "konfluenz")
+
+
+class TestDasGitterUrteiltVorsichtig:
+    @staticmethod
+    def _gitter(*paare):
+        from research.anatomie import Gitter, Sprosse
+
+        return Gitter(
+            bauteil="konfluenz",
+            sprossen=[
+                Sprosse(behalten=b, lage=_lage(bestanden=n)) for b, n in paare
+            ],
+        )
+
+    def test_der_bestand_ist_die_fassung_mit_allen_bedingungen(self) -> None:
+        gitter = self._gitter(((0, 1, 2), 9), ((0,), 8), ((), 7))
+
+        assert gitter.bestand.behalten == (0, 1, 2)
+
+    def test_nichts_zu_holen_wird_gesagt(self) -> None:
+        """Der gemessene Fall: keine der acht Fassungen kommt ueber neun."""
+        gitter = self._gitter(((0, 1, 2), 9), ((1, 2), 9), ((2,), 7), ((), 7))
+
+        urteil = gitter.urteil()
+
+        assert gitter.besser_als_der_bestand == []
+        assert "nichts zu holen" in urteil
+        assert "wechseln nur die Identitaet" in urteil
+
+    def test_eine_bessere_fassung_ist_ein_vorschlag_und_kein_ergebnis(self) -> None:
+        """**Die Warnung steht in 'konfluenzwirkung.py', und dort zuerst**:
+        Die beste Fassung zu nehmen ist die Auswahl des besten Eimers nach
+        Ansicht der Daten.
+        """
+        gitter = self._gitter(((0, 1, 2), 9), ((1, 2), 10), ((), 7))
+
+        urteil = gitter.urteil()
+
+        assert [s.name for s in gitter.besser_als_der_bestand] == ["2+3"]
+        assert "kein Ergebnis" in urteil
+        assert "besten Eimers" in urteil
+        assert "kostet einen Versuch" in urteil
+
+    def test_mehrere_beste_werden_alle_genannt(self) -> None:
+        gitter = self._gitter(((0, 1, 2), 9), ((1, 2), 9), ((0,), 9), ((), 7))
+
+        assert len(gitter.beste) == 3
+
+    def test_die_namen_zaehlen_ab_eins(self) -> None:
+        """Im Bericht stehen die Bedingungen als 1, 2, 3 - nicht als 0, 1, 2."""
+        gitter = self._gitter(((0, 2), 9))
+
+        assert gitter.sprossen[0].name == "1+3"
+
+    def test_die_leere_fassung_heisst_keine(self) -> None:
+        gitter = self._gitter(((), 7))
+
+        assert gitter.sprossen[0].name == "keine"
+
+
+class TestDieBedingungenStehenLesbarDa:
+    def test_ein_indikatorvergleich(self) -> None:
+        from research.anatomie import bedingungstext
+
+        genom = _genom()
+
+        assert bedingungstext(genom.konfluenz[0]) == (
+            "sma(period=50) gt sma(period=200)"
+        )
+
+    def test_eine_konstante_ohne_nachkommanullen(self) -> None:
+        """``0.0`` liest sich als Rauschen, ``0`` als Schwelle."""
+        from research.anatomie import bedingungstext
+
+        texte = [bedingungstext(b) for b in _genom().konfluenz]
+
+        assert "roc(period=90) gt 0" in texte
+        assert not any(".0 " in t or t.endswith(".0") for t in texte)
+
+    def test_der_befehl_zeigt_sie_an(self) -> None:
+        quelle = TestDerBefehlMisstDenZulassungspunkt._quelle()
+
+        assert "bedingungstext(bed)" in quelle
+        assert "--einzeln" in quelle
+
+
+@pytest.mark.langsam
+@pytest.mark.daten
+def test_die_fassung_die_die_messlatte_haelt_kommt_trotzdem_nicht_weiter() -> None:
+    """Der Kern von Befund 368, auf zwei Laeufe eingekocht.
+
+    Das ganze Gitter faehrt ``cli anatomie --bauteil konfluenz --einzeln``
+    (acht Laeufe, rund vier Minuten). Hier stehen die zwei, auf die es
+    ankommt: der Bestand als Gegenprobe und ``2+3`` - die einzige Fassung, die
+    die **Messlatte** haelt. Sie kommt trotzdem nicht ueber neun von elf, weil
+    dort das **Schlechteste Jahr** faellt.
+
+    Das ist die Form der Wand: Jede Fassung unter 15 % Jahresrendite verliert
+    die Messlatte, jede darueber ein Risiko-Gate.
+    """
+    from pathlib import Path
+
+    import cli
+    from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from core.config import get_settings
+    from core.models import Interval
+    from research.admission import load_trials
+    from research.datenstand import alle_geschnitten
+    from research.gates import GateStatus, evaluate_gates
+    from research.randschnitt import fertige
+    from research.referenz import SPOTPUNKT
+    from research.seeds import spitzenkandidat
+    from research.suchbudget import Kandidat
+    from strategy.compiler import compile_genome
+
+    e = get_settings()
+    symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
+    frames, _, _ = cli._korb_daten(symbole, Interval("D"), e)
+    frames = alle_geschnitten(frames)
+    if any(f.empty for f in frames.values()):
+        pytest.skip("keine Kerzen im Speicher")
+    configs = cli._spotconfigs(symbole, e)
+    versuche = load_trials(Path(e.paths.state) / "trials.json")
+    basis = cli._ohne_hebel(spitzenkandidat())
+
+    def messe(genom):
+        bericht = run_portfolio_walkforward(
+            frames, lambda g=genom: compile_genome(g), configs
+        )
+        gates = evaluate_gates(
+            genom, bericht, next(iter(frames.values())), configs[symbole[0]],
+            trials_so_far=versuche, frames=frames, configs=configs,
+        )
+        gehandelt = fertige(bericht.all_trades)
+        form = Kandidat.aus_trades("", gehandelt)
+        lage = Lage(
+            trades=len(gehandelt),
+            guete=form.sharpe_je_trade if form else 0.0,
+            dsr=0.0,
+            rueckgang_pct=(
+                bericht.combined.max_drawdown_pct if bericht.combined else 0.0
+            ),
+            bestanden=sum(1 for r in gates.results if r.passed),
+            gesamt=len(gates.results),
+            gefallen=tuple(r.name for r in gates.results if not r.passed),
+            uebersprungen=sum(
+                1 for r in gates.results if r.status is GateStatus.SKIP
+            ),
+        )
+        return lage, bericht.combined.cagr_pct
+
+    bestand, cagr_bestand = messe(basis)
+    zwei_drei, cagr_zwei_drei = messe(
+        basis.model_copy(update={"konfluenz": list(basis.konfluenz)[1:]})
+    )
+
+    # Die Gegenprobe zuerst.
+    assert bestand.trades == SPOTPUNKT.trades
+    assert bestand.bestanden == SPOTPUNKT.bestanden
+    assert "Messlatte" in bestand.gefallen
+    assert cagr_bestand == pytest.approx(14.34, abs=0.05)
+
+    # Und der Fund: Die Messlatte haelt, das Schlechteste Jahr faellt, die
+    # Gate-Zahl bleibt.
+    assert cagr_zwei_drei > 15.0, "ueber der Betriebsschwelle"
+    assert "Messlatte" not in zwei_drei.gefallen
+    assert "Schlechtestes Jahr" in zwei_drei.gefallen
+    assert zwei_drei.bestanden == bestand.bestanden == 9
+    assert zwei_drei.rueckgang_pct > bestand.rueckgang_pct
+    assert not zwei_drei.uebersprungen
