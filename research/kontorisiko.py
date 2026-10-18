@@ -166,6 +166,10 @@ def pruefe(
         state_path=None,
         clock=lambda: jetzt["t"],
         kerzenspanne=kerzenspanne,
+        # Diese Leiter *sucht* ausgeloeste Grenzen - sie als Vorfall zu melden
+        # waere doppelt falsch (Befund 369). Das Ergebnis steht in
+        # 'ereignisse', nicht im Protokoll.
+        simulation=True,
     )
 
     ereignisse: list[Ereignis] = []

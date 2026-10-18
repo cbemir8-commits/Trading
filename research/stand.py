@@ -3249,6 +3249,39 @@ BEHOBEN: tuple[Richtung, ...] = (
         "vier Bedingungen, weil zwei hoch sechs Laeufe eine halbe Stunde sind",
         368,
     ),
+    # Befund 369: beim Lesen der eigenen Ausgabe gefunden - ein simulierter
+    # Not-Aus sah aus wie ein echter.
+    Richtung(
+        "Simulierte Grenzereignisse waren vom echten Fall nicht zu unterscheiden",
+        "Aufgefallen beim Lesen von 'cli stand': Der Statusbefehl flutete das "
+        "Terminal mit Grenzzeilen aus internen Walk-Forward-Laeufen. Gemessen "
+        "an **einem** Befehl ('cli anatomie --bauteil konfluenz'): **51 "
+        "Zeilen, davon 14 CRITICAL** - mit demselben Ereignisnamen "
+        "('risk.kill_switch'), derselben Stufe und demselben Text wie der "
+        "echte Fall: *'Alles glattstellen. Nur manuell zurueckholbar.'* Wer "
+        "Protokolle nach 'risk.kill_switch' durchsucht - und genau das wuerde "
+        "man tun -, konnte den Vorfall nicht vom Backtest unterscheiden. Dazu "
+        "ist der Text eine **Anweisung an einen Menschen**, die in einer "
+        "Simulation niemand ausfuehren kann. Im Backtest ist ein erreichtes "
+        "Limit kein Vorfall, sondern ein **Ergebnis**: Es steht in den "
+        "Kennzahlen, und das Gate 'Drawdown' misst es. Der Officer traegt "
+        "jetzt ein 'simulation'-Kennzeichen, gesetzt von 'backtest.engine' und "
+        "'research.kontorisiko'; es meldet dann 'debug' unter "
+        "'risk.kill_switch_simuliert' und **ohne** den Hinweis. Gemessen "
+        "danach: **0 statt 51** Zeilen im Normallauf, mit '-v' weiter alle 51 "
+        "- umbenannt, nicht versteckt. **Am Verhalten aendert sich nichts**, "
+        "und das ist die tragende Zusicherung: Zustand, Pause, Kill-Grund und "
+        "Veto sind in beiden Fassungen gleich, denn derselbe Code entscheidet "
+        "im Backtest und im Betrieb. Der Vorgabewert ist 'Betrieb' - die "
+        "sichere Richtung. **Und ein Fehler von mir dazu, derselben Klasse wie "
+        "362**: Die neuen Tests bestanden einzeln und fielen in der vollen "
+        "Suite. 'structlog' filtert nach Stufe, **bevor** 'capture_logs' etwas "
+        "sieht, und 'cli._configure_logging' stellt die Stufe global auf INFO - "
+        "also hing das Ergebnis daran, ob vorher ein Test einen Befehl "
+        "gefahren hatte. Behoben mit einer Fixture, die die Stufe fuer die "
+        "Dauer des Tests setzt und danach zurueckstellt",
+        369,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

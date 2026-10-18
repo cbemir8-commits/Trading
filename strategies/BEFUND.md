@@ -32970,3 +32970,70 @@ sind eine halbe Stunde, und das soll niemand aus Versehen starten.
 Im Register stand zuerst "`konfluenzwirkung.py` seit Befund 290". Die Zahl war
 geraten; das Laborbuch nennt die Stelle in **Befund 30**. Eine Fundstelle, die
 nicht stimmt, ist genau der Fehler, den Befund 130 abgestellt hat.
+
+## Dreihundertneunundsechzig. Ein simulierter Not-Aus sah aus wie ein echter
+
+Aufgefallen beim Lesen der eigenen Ausgabe. `cli stand` - der Befehl, mit dem
+man nachsieht, wo das Projekt steht - flutete das Terminal, und darunter stand
+Dutzende Male das:
+
+    [critical] risk.kill_switch  drawdown_pct=15.1
+               hinweis='Alles glattstellen. Nur manuell zurueckholbar.'
+
+Das sind Walk-Forward-Laeufe. Kein echter Not-Aus. Gemessen an **einem**
+Befehl:
+
+    cli anatomie --bauteil konfluenz    51 Grenzzeilen, davon 14 CRITICAL
+
+Zwei Dinge daran sind falsch, und beide sind mehr als Kosmetik.
+
+**Der Name.** Gleiches Ereignis, gleiche Stufe, gleicher Text wie im Betrieb.
+Wer Protokolle nach `risk.kill_switch` durchsucht - und genau das wuerde man
+tun, wenn ein Konto stillsteht -, konnte den Vorfall nicht vom Backtest
+unterscheiden. Das ist dieselbe Sorte Verwechslung wie in Befund 360: Zwei
+Dinge, die gleich aussehen und nicht dasselbe sind.
+
+**Der Hinweis.** *"Alles glattstellen. Nur manuell zurueckholbar."* ist eine
+**Anweisung an einen Menschen**. In einem Backtest gibt es niemanden, der sie
+ausfuehren koennte oder sollte.
+
+### Was geaendert ist
+
+Im Backtest ist ein erreichtes Limit kein Vorfall, sondern ein **Ergebnis**: Es
+steht in den Kennzahlen, und das Gate "Drawdown" misst es. Der Risk-Officer
+traegt deshalb ein `simulation`-Kennzeichen, das `backtest.engine` und
+`research.kontorisiko` setzen. Es meldet dann `debug`, unter
+`risk.kill_switch_simuliert`, und ohne den Hinweis.
+
+    vorher:  51 Zeilen, 14 CRITICAL
+    nachher:  0 Zeilen im Normallauf
+              51 Zeilen mit '-v', als '..._simuliert'
+
+Umbenannt und heruntergestuft, **nicht versteckt**. Die Zahlen stehen
+unveraendert in der Meldung.
+
+### Die tragende Zusicherung
+
+Am **Verhalten** aendert sich nichts. Zustand, Pausenende, Kill-Grund und Veto
+sind in beiden Fassungen gleich - geprueft, nicht behauptet. Derselbe Code
+entscheidet im Backtest und im Betrieb, und das ist in diesem Projekt mehrfach
+teuer erkauft worden; ein Kennzeichen, das die Entscheidung beruehrt, waere die
+Rueckkehr genau dieses Fehlers.
+
+Der Vorgabewert ist `simulation=False`. Wer den Officer ohne Angabe baut,
+bekommt die laute Meldung - die sichere Richtung.
+
+### Und ein Fehler von mir dazu, derselben Klasse wie Befund 362
+
+Die neuen Tests bestanden einzeln und fielen in der vollen Suite - fuenf von
+fuenfzehn. Die Ursache ist eine, die man zweimal liest, bevor man sie glaubt:
+
+`structlog` filtert nach Stufe, **bevor** `capture_logs` etwas sieht. Und
+`cli._configure_logging` stellt die Stufe **global** auf INFO. Lief vorher ein
+Test, der einen Befehl gefahren hat, war die Stufe INFO, und die
+`debug`-Meldung erreichte die Erfassung nie.
+
+Dasselbe Muster wie in 362, nur an anderer Stelle: ein Ergebnis, das von der
+Reihenfolge abhaengt, ist keins. Behoben mit einer Fixture, die die Stufe fuer
+die Dauer des Tests setzt und danach zurueckstellt - und die Begruendung steht
+in ihrem Docstring, damit der naechste Leser nicht sucht.

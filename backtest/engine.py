@@ -267,6 +267,11 @@ class Backtester:
             kalender=self.config.kalender,
             schocksperre=self.config.schocksperre,
             kerzenspanne=self._kerzenspanne(arrays),
+            # Ein erreichtes Limit ist hier ein **Ergebnis** und kein Vorfall
+            # (Befund 369). Es steht in den Kennzahlen, und das Gate
+            # 'Drawdown' misst es; ein CRITICAL mit "alles glattstellen" waere
+            # vom echten Fall nicht zu unterscheiden.
+            simulation=True,
         )
 
     @staticmethod

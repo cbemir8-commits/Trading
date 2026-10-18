@@ -192,9 +192,17 @@ class RiskOfficer:
         kalender: Terminkalender | None = None,
         schocksperre=None,
         kerzenspanne: timedelta = timedelta(0),
+        simulation: bool = False,
     ) -> None:
         self.settings = settings
         self.instrument = instrument
+        #: Laeuft dieser Officer in einem Backtest? (Befund 369)
+        #:
+        #: Aendert **nichts** am Verhalten - derselbe Code entscheidet im
+        #: Backtest und im Betrieb, und das soll so bleiben. Es aendert nur,
+        #: **wie** Grenzereignisse gemeldet werden: Ein simulierter Not-Aus
+        #: ist kein Vorfall, sondern ein erwartetes Ergebnis.
+        self.simulation = simulation
         self.state_path = Path(state_path) if state_path else None
         self.clock = clock or (lambda: datetime.now(UTC))
         self.state = self._load_state()
@@ -274,6 +282,33 @@ class RiskOfficer:
             open_positions=0,
         )
 
+    def _melden(self, stufe: str, ereignis: str, *, hinweis: str = "", **daten) -> None:
+        """Ein Grenzereignis melden - im Betrieb laut, im Backtest leise.
+
+        **Befund 369.** Ein einziger Forschungsbefehl ('cli anatomie') hat 51
+        Grenzzeilen ausgegeben, **14 davon CRITICAL** mit dem Text *"Alles
+        glattstellen. Nur manuell zurueckholbar."* - aus simulierten Laeufen,
+        mit demselben Ereignisnamen und derselben Stufe wie der echte Fall.
+        Wer Protokolle nach 'risk.kill_switch' durchsucht, konnte den Vorfall
+        nicht vom Walk-Forward unterscheiden.
+
+        Im Backtest ist ein erreichtes Limit **kein Vorfall, sondern ein
+        Ergebnis**: Es steht in den Kennzahlen, und das Gate 'Drawdown' misst
+        es. Deshalb dort 'debug' und ein eigener Name mit '_simuliert'. Mit
+        '-v' sind die Zeilen weiter zu sehen.
+
+        Der **Hinweis faellt in der Simulation weg**, und zwar absichtlich: Er
+        ist eine Anweisung an einen Menschen ("alles glattstellen"), und in
+        einem Backtest gibt es niemanden, der sie ausfuehren koennte oder
+        sollte.
+        """
+        if self.simulation:
+            log.debug(f"{ereignis}_simuliert", **daten)
+            return
+        if hinweis:
+            daten["hinweis"] = hinweis
+        getattr(log, stufe)(ereignis, **daten)
+
     def _enforce_limits(
         self,
         equity: Decimal,
@@ -292,7 +327,8 @@ class RiskOfficer:
                 f"Drawdown {drawdown:.2f} % hat die Grenze von "
                 f"{self.settings.max_drawdown_pct} % erreicht"
             )
-            log.critical(
+            self._melden(
+                "critical",
                 "risk.kill_switch",
                 drawdown_pct=float(drawdown),
                 kapital=str(equity),
@@ -305,7 +341,9 @@ class RiskOfficer:
             if self.state.trading_state is not TradingState.PAUSED:
                 self.state.trading_state = TradingState.PAUSED
                 self.state.paused_until = None  # bis zur manuellen Freigabe
-                log.error("risk.wochenlimit", verlust_pct=float(week_pnl))
+                self._melden(
+                    "error", "risk.wochenlimit", verlust_pct=float(week_pnl)
+                )
             return
 
         # Nur eine neue Pause setzen, wenn keine laufende besteht - sonst
@@ -316,7 +354,8 @@ class RiskOfficer:
         )
         if day_pnl <= -self.settings.daily_loss_limit_pct and not already_paused:
             self.state.paused_until = now + timedelta(hours=24)
-            log.warning(
+            self._melden(
+                "warning",
                 "risk.tageslimit",
                 verlust_pct=float(day_pnl),
                 pause_bis=self.state.paused_until.isoformat(),
