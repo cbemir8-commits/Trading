@@ -100,9 +100,18 @@ class TestWoDieSchichtenGreifen:
         assert min((rand - t.exit_time).days for t in zensiert) == 0
 
     @pytest.mark.langsam
+    @pytest.mark.daten
     def test_der_randschnitt_ist_die_tragende_schicht(self) -> None:
         """Mit den zensierten Trades bewegt die halbe Randkerze die Guete,
-        ohne sie nicht. Das ist die ganze Aussage von Befund 241."""
+        ohne sie nicht. Das ist die ganze Aussage von Befund 241.
+
+        Vermerk vom 18.10.2026 (Befund 363): Der Test braucht eine **halbe**
+        Randkerze, und er sucht sie im Speicher. Auf einem in einem Zug
+        geladenen Speicher gibt es sie nicht - "halb" und "ganz" sind dort
+        dieselbe Kerze, und dann hat die Zusicherung nichts zu vergleichen.
+        Also ``daten``-markiert; zu bauen waere die halbe Kerze statt sie zu
+        finden.
+        """
         import pandas as pd
 
         from core.config import get_settings

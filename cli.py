@@ -11475,7 +11475,41 @@ def _kerzenbestand(store) -> str:
                 vorhanden.append(f"{Interval(iv).label} {len(frame)}")
         if vorhanden:
             gefunden.append(f"{symbol} ({', '.join(vorhanden)})")
-    return "; ".join(gefunden) if gefunden else "keine Kerzen"
+    if not gefunden:
+        return "keine Kerzen"
+    return "; ".join(gefunden) + _reihenvermerk(store)
+
+
+def _reihenvermerk(store) -> str:
+    """Ist das die Reihe, auf der die Zahlen gemessen sind? (Befund 363)
+
+    Die Zeile darueber sagt, **wie viel** da ist. Das genuegt nicht: Fuenfzehn
+    Tests sind daran gefallen, dass eine gleich lange, aber anders begrenzte
+    Reihe im Speicher lag, und keine Zahl im Kopf des Berichts sagte es. Ein
+    Bestand ohne Grenzen ist eine Menge, keine Reihe.
+    """
+    from research.datenstand import INTERVALL, REIHEN, fehlt
+
+    vorhanden = {}
+    for reihe in REIHEN:
+        try:
+            frame = store.read(reihe.symbol, Interval(INTERVALL))
+        except Exception:
+            continue
+        if frame is None or frame.empty:
+            continue
+        zeiten = frame["open_time"]
+        vorhanden[reihe.symbol] = (
+            zeiten.min().date(), zeiten.max().date(), len(frame),
+        )
+
+    saetze = fehlt(vorhanden)
+    if not saetze:
+        return " - enthaelt die Zulassungsreihe"
+    return (
+        f" - [yellow]ohne die Zulassungsreihe[/] "
+        f"({len(saetze)}x: {saetze[0]})"
+    )
 
 
 @app.command()

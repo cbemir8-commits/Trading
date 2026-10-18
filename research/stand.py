@@ -3031,6 +3031,67 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Lauf laeuft, wird keine Quelle bearbeitet",
         362,
     ),
+    # Befund 363: Welche Reihe die Zahlen dieses Projekts beschreiben, stand
+    # nirgends - und die Reihe waechst.
+    Richtung(
+        "Die Zahlen hatten keine Reihe, auf die sie sich beziehen",
+        "Der Kerzenspeicher steht nicht im Repository, die Zahlen aus ihm "
+        "ueberall. **Welche Reihe gemeint war, stand nirgends**, und die Reihe "
+        "waechst. Frisch nachgeladen - dieselbe Quelle, dieselben Symbole, nur "
+        "bis heute statt bis zum Messtag - fielen **15 Tests**, und keiner "
+        "sagte 'andere Reihe': Sie sagten 157 statt 156, 3350 statt 3300, "
+        "0,6759 statt 0,5826. Die Reihe ist jetzt aufgeschrieben "
+        "('research/datenstand.py') und war nicht zu raten, sondern aus vier "
+        "gepflegten Zahlen zu erschliessen: 'historie_tage = 3300' plus "
+        "ETH-Anfang 2017-08-16 ergibt das Ende **2026-08-29**; "
+        "'rueckwaerts_tage = 2054' ergibt den BTC-Anfang **2012-01-01**; beide "
+        "gehen exakt auf, nicht auf eine Toleranz; und die Gegenprobe von "
+        "ausserhalb stimmt - Befund 360 meldete **5355 Balken**, genau die "
+        "Zahl dieser Grenzen. Wiederhergestellt ueber 'cli referenz' (Bitstamp "
+        "ist offen, Bybit gesperrt; die Sperre wird nicht umgangen). Danach "
+        "bestehen **46 von 49** Datentests statt 34: Es reproduzieren 156 rohe "
+        "und 115 effektive Trades, 191 noetige, 3300 Tage Spanne, 2054 Tage "
+        "Vorlauf, 6,0 noetige Jahre, **neun von elf Gates**, Deflated Sharpe "
+        "**0,5827**, Guete 0,2708, Schiefe 3,4646, Woelbung 15,9173 - die "
+        "ganze Zulassung. **Drei Reste bleiben offen**: ein Kapitalendstand "
+        "(2331,38 gegen 2318,32), ein Streuungswert (0,5994 gegen 0,5958) und "
+        "die Schiefe ueber *alle* Trades (3,3683 gegen 3,376), zwischen 0,2 "
+        "und 0,6 %. An der Spanne liegt es nicht (auf den Tag geprueft), und "
+        "an der Zusammenfassung auch nicht: Native Tageskerzen und aus "
+        "15-Minuten-Kerzen zusammengefasste stimmen an **2393 von 2394** Tagen "
+        "bitgleich. Bleibt, dass Bitstamp einzelne alte Kerzen berichtigt hat - "
+        "nachzupruefen nicht, den damaligen Speicher gibt es nicht mehr. Diese "
+        "drei Zahlen sind damit **nicht** reproduzierbar, und das steht da, "
+        "statt dass sie jemand nachzieht. **Nebenbei gemessen, ausdruecklich "
+        "keine Katalogaenderung**: Auf der um 50 Tage laengeren Reihe bis heute "
+        "steht der Deflated Sharpe bei **0,6759** statt 0,5826 - die Luecke zur "
+        "Schwelle 0,95 waere dort 0,2741 statt 0,3673, und 'Messlatte' faellt "
+        "weiter. Eine Reihe, ein Satz Zahlen; welche gelten, entscheidet der "
+        "Nutzer und nicht ein Lauf, der zufaellig laenger war. "
+        "**Berichtigt beim Bauen**: Zuerst forderte das Modul, der Speicher "
+        "**sei** die Zulassungsreihe. Darauf festgenagelt fielen drei Tests, "
+        "die vorher uebersprangen - 'gegenprobe' und 'randschnitt' pruefen am "
+        "Datenrand und brauchen eine **angefangene** letzte Tageskerze, also "
+        "einen Speicher bis heute. Beides zugleich geht nicht, also gilt "
+        "'enthaelt' statt 'ist': Der Speicher laeuft bis heute, und wer die "
+        "Zahlen nachrechnet, schneidet auf das Serienende. **Offen bleiben "
+        "zwei Folgen**: Die zehn Tests, die den Katalog nachrechnen, holen "
+        "ihre Kerzen noch ungeschnitten - sie reproduzieren nur, solange der "
+        "Speicher am Messtag endet. Und die drei Randtests verlangen einen "
+        "Zustand des Speichers statt eine Eigenschaft des Codes: "
+        "'volumenanteil' faellt nur unter 1, wenn die Tagesreihe **aelter** "
+        "ist als die 15-Minuten-Reihe daneben; in einem Zug geladen ist er 1,0. "
+        "Zu bauen waere die halbe Randkerze, statt sie zu finden - solange sind "
+        "sie 'daten'-markiert, und der Satz 'eine Eigenschaft des Nachlaufs "
+        "und keine der Daten' in 'test_gegenprobe.py' ist gemessen falsch. "
+        "**Beide Staende, weil die Zahl vom Speicher abhaengt**: geschnitten "
+        "46 von 49 gruen (3 rot), bis heute 40 von 52 (9 driften mit dem "
+        "Speicher, 3 sind die Randtests). Erledigt und als Muster gezeigt ist "
+        "einer: 'test_referenzdaten.py' schneidet mit 'datenstand.geschnitten' "
+        "und misst die Spanne danach **genau** 3300 statt '3300 plus/minus 40'. "
+        "Die uebrigen acht sind ein Aufruf je Test und keine Forschung",
+        363,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

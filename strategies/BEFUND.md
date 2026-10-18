@@ -32475,3 +32475,175 @@ Zwei Dinge daraus, beide fuer mich: **Waehrend ein Lauf laeuft, wird keine Quell
 bearbeitet** - das Ergebnis ist sonst unbrauchbar. Und ein Fehlschlag, der
 einzeln nicht auftritt, ist zuerst ein Verdacht gegen die Messung, nicht gegen
 den Code.
+
+## Dreihundertdreiundsechzig. Die Zahlen hatten keine Reihe
+
+Der Kerzenspeicher steht nicht im Repository - er ist zu gross und liegt in
+`.gitignore`. Die **Zahlen** aus ihm stehen ueberall: `referenz.py` haelt Spot-
+und Perpetualpunkt, `stand.py` nennt Spannen und Trade-Zahlen, ein Dutzend
+Tests prueft sie nach.
+
+Welche Reihe gemeint war, stand nirgends. Und die Reihe waechst.
+
+Aufgefallen ist es, weil der Container neu aufgesetzt wurde und der Speicher
+mitging. Frisch nachgeladen - dieselbe Quelle, dieselben Symbole, nur bis heute
+statt bis zum Messtag - **fielen fuenfzehn Tests**, und keiner davon sagte
+"andere Reihe":
+
+    157 statt 156 Trades
+    3350 statt 3300 Tage Spanne
+    0,6759 statt 0,5826 Deflated Sharpe
+    2190 statt 2054 Tage Vorlauf
+    52,67 statt 86,0
+
+Fuenfzehn Zahlen, die aussahen wie fuenfzehn Befunde und **eine** Ursache
+hatten.
+
+### Die Reihe war nicht zu raten, sondern zu erschliessen
+
+Vier gepflegte Zahlen, die niemand zu diesem Zweck aufgeschrieben hat:
+
+1. `referenz.AUSSICHT.historie_tage = 3300` ist die gemeinsame Spanne. Mit dem
+   ETH-Anfang 2017-08-16 ergibt das als Ende **2026-08-29**.
+2. `test_datenbedarf.py` nennt `rueckwaerts_tage = 2054` - so viel weiter
+   reicht BTC zurueck. 2054 Tage vor dem ETH-Anfang ist **2012-01-01**.
+3. Beide gehen mit diesen Grenzen **exakt** auf, nicht auf eine Toleranz:
+   (2026-08-29 − 2017-08-16) = 3300, (2017-08-16 − 2012-01-01) = 2054.
+4. Und die Gegenprobe von aussen, aus einem Lauf, der nichts damit zu tun hat:
+   Befund 360 meldete fuer `cli abgleich` **5355 Balken**. Genau die Zahl, die
+   2012-01-01 bis 2026-08-29 ergibt.
+
+Wiederhergestellt ueber `cli referenz` - Bitstamp ist von hier offen, Bybit
+gesperrt, und die Sperre wird nicht umgangen, sondern die offene Quelle
+benannt.
+
+### Was reproduziert
+
+Auf der wiederhergestellten Reihe bestehen **46 von 49** Datentests statt 34.
+Es reproduzieren, auf die gepflegte Stelle genau:
+
+    156 rohe Trades, 115 effektive, 191 noetige
+    3300 Tage Spanne, 2054 Tage Vorlauf, 6,0 noetige Jahre
+    neun von elf Gates
+    Deflated Sharpe 0,5827   Guete 0,2708
+    Schiefe 3,4646           Woelbung 15,9173
+
+Die ganze Zulassung also. Der Fehlschlag im Referenztest liegt **hinter** allen
+tragenden Zusicherungen.
+
+### Was nicht reproduziert - und das bleibt so stehen
+
+Drei Zahlen, zwischen 0,2 und 0,6 Prozent daneben:
+
+    Kapitalendstand     2331,38  gegen  2318,32 ± 0,02
+    Streuungswert        0,5994  gegen   0,5958 ± 0,002
+    Schiefe alle Trades  3,3683  gegen   3,376  ± 0,005
+
+An der Spanne liegt es nicht, die ist auf den Tag geprueft. Und an der
+Zusammenfassung der Kerzen auch nicht - das war die naheliegende Vermutung, und
+sie ist **widerlegt**: Native Tageskerzen und aus 15-Minuten-Kerzen
+zusammengefasste stimmen an 2393 von 2394 Tagen bitgleich ueberein, und die
+eine Abweichung ist der Randtag, an dem die 15-Minuten-Reihe beginnt.
+
+Bleibt als Erklaerung, dass Bitstamp einzelne alte Kerzen nachtraeglich
+berichtigt hat. Nachzupruefen ist das nicht, denn den damaligen Speicher gibt es
+nicht mehr. Also stehen die drei Zahlen jetzt in `datenstand.py` als **nicht
+reproduzierbar** - mit Soll, Ist und Toleranz. Eine gepflegte Zahl anzupassen,
+bis sie zur Messung passt, waere die Umkehrung des Verfahrens.
+
+### Nebenbei gemessen, und ausdruecklich keine Katalogaenderung
+
+Auf der um fuenfzig Tage laengeren Reihe bis heute steht der Deflated Sharpe bei
+**0,6759** statt 0,5826. Die Luecke zur Schwelle 0,95 waere dort 0,2741 statt
+0,3673.
+
+Das ist kein Fortschritt, den jemand gebaut hat, sondern eine andere Stichprobe
+- und "Messlatte" faellt dort weiter, es bleiben neun von elf. Die Zahl steht
+hier, weil sie gemessen ist, und sie steht **nicht** im Katalog: Welche Reihe
+gilt, entscheidet der Nutzer und nicht ein Lauf, der zufaellig laenger war.
+
+### Was dadurch im frischen Klon anders ist
+
+`test_datenstand.py` sagt es jetzt in einem Satz, statt es auf fuenfzehn Tests
+zu verteilen:
+
+    Der Speicher ist nicht die Reihe, auf der die Zahlen dieses Projekts
+    gemessen sind:
+      BTCUSD_BITSTAMP: beginnt 2011-08-18, erwartet 2012-01-01
+      BTCUSD_BITSTAMP: endet 2026-10-18, erwartet 2026-08-29
+      ETHUSD_BITSTAMP: endet 2026-10-18, erwartet 2026-08-29
+
+    Wiederherstellen mit:
+      rm -rf data_store/candles/BTCUSD_BITSTAMP/D ...
+      python -m cli referenz -i D --symbol BTCUSD_BITSTAMP --von 2012-01-01 --bis 2026-08-30
+      python -m cli referenz -i D --symbol ETHUSD_BITSTAMP --von 2017-08-16 --bis 2026-08-30
+
+Zwei Dinge daran sind gemessen und nicht gelesen. **`--bis` ist
+ausschliessend**: Mit `--bis 2026-08-29` endet die Reihe am 28. und ist einen
+Balken zu kurz; aus der Signatur geht das nicht hervor, es hat einen Anlauf
+gekostet. Und **geraeumt wird zuerst**: Ein Speicher, der schon eine laengere
+Reihe haelt, wird durch Nachladen nicht kuerzer. Beides steht als Zusicherung im
+Test, weil eine Anleitung, die eine um einen Balken verschobene Reihe baut,
+schlechter ist als keine.
+
+### Berichtigt beim Bauen: der Speicher *ist* die Reihe nicht, er enthaelt sie
+
+Zuerst forderte `datenstand.py`, der Speicher **sei** die Zulassungsreihe. Der
+Speicher dieses Containers wurde darauf festgenagelt, und dann fielen drei
+Tests, die vorher uebersprangen:
+
+    test_gegenprobe.py::test_die_letzte_gespeicherte_tageskerze_ist_angefangen
+    test_datenrand.py::test_der_randschnitt_ist_die_tragende_schicht
+
+`gegenprobe` und `randschnitt` pruefen am **Datenrand** und brauchen eine
+angefangene letzte Tageskerze - also einen Speicher, der bis heute laeuft.
+Beides zugleich geht nicht. Also gilt die Teilung: Der Speicher laeuft bis
+heute, und wer die Zahlen des Katalogs nachrechnet, **schneidet** auf das
+Serienende. `fehlt()` prueft nur noch, ob sich das ueberhaupt schneiden laesst.
+
+Dabei ist noch etwas aufgefallen, und es widerlegt einen Satz, der seit Befund
+239 im Test steht: *"weil das eine Eigenschaft des Nachlaufs ist und keine der
+Daten."* Gemessen ist es umgekehrt. `volumenanteil` faellt nur unter 1, wenn die
+**Tagesreihe aelter** ist als die 15-Minuten-Reihe daneben - die Tageskerze
+wurde mitten im Tag geschrieben und nie nachgezogen, die feinen Kerzen danach.
+In einem Zug geladen deckt die Tageskerze genau ihre feinen Kerzen:
+
+    volumenanteil = 1.0      angefangene_randkerze = False
+
+Der Test verlangt damit einen **Zustand des Speichers**, nicht eine Eigenschaft
+des Codes. Dasselbe gilt fuer `test_der_randschnitt_ist_die_tragende_schicht`:
+Es sucht eine halbe Randkerze im Speicher, und wo keine liegt, sind "halb" und
+"ganz" dieselbe Kerze - dann hat die Zusicherung nichts zu vergleichen.
+
+Beide sind jetzt `daten`-markiert und tragen den Vermerk. **Zu bauen waere die
+halbe Randkerze, statt sie zu finden** - dann messen sie den Mechanismus und
+nicht die Ladereihenfolge. Das steht offen.
+
+### Stand der Suite nach diesem Befund
+
+Hier stand erst "6 von 49 rot". **Das war geschaetzt und falsch** - gemessen
+sind es zwoelf, und die Zahl haengt daran, welchen Speicher man vor sich hat.
+Genau das ist der Befund, also gehoeren beide Staende hin:
+
+    -m "not daten"                     gruen (5061)
+
+    -m "daten", Speicher auf die
+    Zulassungsreihe geschnitten:       46 von 49 gruen
+                                       3 rot: die oben benannten, nicht
+                                       reproduzierbaren Zahlen
+
+    -m "daten", Speicher bis heute
+    (so brauchen es die Randtests):    40 von 52 gruen
+                                       9 rot: nehmen den Speicher, wie er
+                                       ist, und driften mit ihm
+                                       3 rot: Randtests, deren Voraussetzung
+                                       auf einem in einem Zug geladenen
+                                       Speicher nicht entsteht
+
+Vorher waren es fuenfzehn ohne Erklaerung. Keiner der roten ist durch Anpassen
+einer gepflegten Zahl gruen zu bekommen, und keiner wurde so gruen gemacht.
+
+Von den neun ist einer erledigt und zeigt, wie die anderen gehen:
+`test_referenzdaten.py` schneidet jetzt mit `datenstand.geschnitten` und misst
+die Spanne danach **genau** 3300 statt "3300 plus/minus 40". Die uebrigen acht
+stehen offen - ein Aufruf je Test, und keiner davon ist Forschung.

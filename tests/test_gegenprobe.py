@@ -181,6 +181,7 @@ class TestAmEchtenVorrat:
         assert len(g.betroffene_kerzen) <= 2, [str(a) for a in g.abweichungen]
 
     @pytest.mark.langsam
+    @pytest.mark.daten
     @pytest.mark.parametrize("symbol", ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"])
     def test_die_letzte_gespeicherte_tageskerze_ist_angefangen(self, symbol) -> None:
         """**Der Fund.** Er kostet heute nichts - Nachlauf (151) und
@@ -188,6 +189,20 @@ class TestAmEchtenVorrat:
         und ohne diese Kerze sind alle Zahlen des Bestands gleich. Er steht
         hier trotzdem, weil das eine Eigenschaft des Nachlaufs ist und keine
         der Daten.
+
+        Vermerk vom 18.10.2026 (Befund 363): **Doch eine der Daten.** Der
+        Satz darueber stimmt so nicht, gemessen an einem neu aufgebauten
+        Speicher. ``volumenanteil`` unter 1 entsteht, wenn die **Tagesreihe
+        aelter** ist als die 15-Minuten-Reihe daneben - die Tageskerze wurde
+        mitten im Tag geschrieben und nie nachgezogen, die feinen Kerzen
+        danach. Werden beide in einem Zug geladen, deckt die Tageskerze genau
+        ihre feinen Kerzen, der Anteil ist **1,0**, und es gibt keine
+        angefangene Randkerze.
+
+        Der Test verlangt damit einen Zustand des Speichers und nicht eine
+        Eigenschaft des Codes. Deshalb ``daten``-markiert - und deshalb bleibt
+        offen, ihn auf einer **gebauten** halben Randkerze zu fuehren statt auf
+        einer gefundenen.
         """
         grob, fein = self._reihen(symbol)
         if grob.empty or fein.empty:

@@ -275,17 +275,31 @@ def test_die_historie_der_aussicht_stimmt_mit_dem_speicher_ueberein() -> None:
 
     Waechst die Reihe, waechst die Spanne, und die Sammelrate aendert sich.
     Ohne diese Pruefung faende das niemand, bis jemand nachrechnet.
+
+    Vermerk vom 18.10.2026 (Befund 363): **Geschnitten auf die
+    Zulassungsreihe.** Vorher nahm dieser Test, was im Speicher lag - und damit
+    stimmte er nur, solange der Speicher zufaellig am Messtag endete. Frisch
+    nachgeladen waren es 3350 Tage gegen die gepflegten 3300, und die Toleranz
+    von 40 Tagen fing es knapp nicht mehr.
+
+    Das ist der **Musterfall** fuer die neun uebrigen Tests, die den Katalog
+    nachrechnen: Wer eine gepflegte Zahl prueft, nimmt die Reihe, auf der sie
+    gemessen ist, und nicht den Speicherstand von heute.
     """
     from backtest.portfolio_walkforward import common_range
     from core.config import get_settings
     from core.models import Interval
     from data.store import CandleStore
+    from research.datenstand import geschnitten
     from research.referenz import AUSSICHT
 
     store = CandleStore(get_settings().paths.data_store)
     roh = {
-        s: f for s in PAIRS
-        if (f := store.read(s, Interval("D"))) is not None and not f.empty
+        s: g
+        for s in PAIRS
+        if (f := store.read(s, Interval("D"))) is not None
+        and not f.empty
+        and not (g := geschnitten(f)).empty
     }
     assert roh, "ohne Kerzen sagt der Test nichts"
 
