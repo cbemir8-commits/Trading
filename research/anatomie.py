@@ -168,6 +168,28 @@ class Anatomie:
         return tuple(g for g in self.ohne.gefallen if g not in self.mit.gefallen)
 
     @property
+    def gates_nur_mit(self) -> tuple[str, ...]:
+        """Gates, die nur **mit** dem Bauteil fallen - das, was es kostet.
+
+        **Befund 367, und es war eine Luecke in diesem Modul.** Gestern stand
+        hier nur die Gegenrichtung, und das Urteil lautete *"Das Bauteil
+        traegt: Ohne es fallen Drawdown, Schlechtestes Jahr,
+        Parameter-Plateau"*. Richtig, und einseitig: Dieselbe Messung zeigt,
+        dass die **Messlatte** umgekehrt kippt - sie faellt nur *mit* der
+        Konfluenz. Wer das Urteil las, hielt das Bauteil fuer umsonst zu
+        haben.
+
+        Ein Bauteil kann Gates halten **und** Gates kosten. Die Netto-Zahl
+        (9 gegen 7) sagt nicht, woraus sie besteht.
+        """
+        return tuple(g for g in self.mit.gefallen if g not in self.ohne.gefallen)
+
+    @property
+    def tauscht(self) -> bool:
+        """Haelt das Bauteil Gates und kostet gleichzeitig welche?"""
+        return bool(self.gates_nur_ohne and self.gates_nur_mit)
+
+    @property
     def uebersprungen_irgendwo(self) -> bool:
         """Steckt in einer der beiden Zahlen ein ausgesetztes Gate?"""
         return bool(self.mit.uebersprungen or self.ohne.uebersprungen)
@@ -187,17 +209,34 @@ class Anatomie:
                 f"(mit {self.mit.uebersprungen}, ohne {self.ohne.uebersprungen}) "
                 f"- ein ausgesetztes Gate zaehlt als bestanden."
             )
-        if self.traegt:
-            return (
-                f"{kopf}\nDas Bauteil **traegt**: Ohne es fallen "
-                f"{', '.join(self.gates_nur_ohne)}."
+        # **Beide Richtungen, immer** (Befund 367). Ein Urteil, das nur die
+        # gehaltenen Gates nennt, laesst das Bauteil umsonst erscheinen.
+        zeilen = [kopf]
+        if self.gates_nur_ohne:
+            zeilen.append(
+                f"Es **haelt**: ohne es fallen {', '.join(self.gates_nur_ohne)}."
             )
-        if self.gates_differenz < 0:
-            return f"{kopf}\nDas Bauteil **kostet** Gates - ohne es sind es mehr."
-        return (
-            f"{kopf}\nKein Unterschied in den Gates. Das Bauteil ist zu klein, "
-            f"um zu zaehlen - wie das Termin-Overlay in Befund 271."
-        )
+        if self.gates_nur_mit:
+            zeilen.append(
+                f"Es **kostet**: nur mit ihm faellt "
+                f"{', '.join(self.gates_nur_mit)}."
+            )
+        if self.tauscht:
+            zeilen.append(
+                f"Das Bauteil **tauscht** also - "
+                f"{len(self.gates_nur_ohne)} gehalten gegen "
+                f"{len(self.gates_nur_mit)} gekostet, netto "
+                f"{self.gates_differenz:+d}."
+            )
+        elif not self.gates_nur_ohne and not self.gates_nur_mit:
+            zeilen.append(
+                "Kein Gate kippt in eine der beiden Richtungen. Das Bauteil "
+                "ist zu klein, um zu zaehlen - wie das Termin-Overlay in "
+                "Befund 271."
+            )
+        elif self.gates_differenz < 0:
+            zeilen.append("Unterm Strich **kostet** es Gates.")
+        return "\n".join(zeilen)
 
 
 def vergleiche(

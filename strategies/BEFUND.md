@@ -32843,3 +32843,62 @@ Die Gegenprobe dagegen steht jetzt **im Befehl** und vor dem Urteil: Trifft die
 Zeile "mit" den Spot-Punkt nicht, sagt er das und nennt die haeufigste Ursache
 (der Speicher ist nicht die Zulassungsreihe). Mein Docstring hatte die
 Gegenprobe behauptet, bevor sie da war.
+
+## Dreihundertsiebenundsechzig. Die Ablation rechnete nur in eine Richtung
+
+Mein Fehler aus Befund 366, einen Tag alt, gefunden beim Lesen meiner eigenen
+Ausgabe.
+
+`Anatomie` hatte `gates_nur_ohne` und sonst nichts. Das Urteil lautete:
+
+    Das Bauteil **traegt**: Ohne es fallen Drawdown, Schlechtestes Jahr,
+    Parameter-Plateau.
+
+Richtig - und einseitig. Zwei Zeilen weiter in derselben Ausgabe stand:
+
+    Gefallen mit:  Messlatte, Deflated Sharpe
+    Gefallen ohne: Drawdown, Schlechtestes Jahr, Deflated Sharpe,
+                   Parameter-Plateau
+
+Die **Messlatte** kippt umgekehrt: Sie faellt nur *mit* der Konfluenz. Das
+Bauteil haelt drei Gates und kostet eines. Die Netto-Zahl - 9 gegen 7 - sagt
+nicht, woraus sie besteht, und wer das Urteil las, hielt das Bauteil fuer
+umsonst zu haben.
+
+### Was wirklich kippt
+
+    Gate                          mit            ohne       Richtung
+    Drawdown              9,869/12,000   12,539/12,000       haelt es
+    Schlechtestes Jahr   -9,610/-10,000  -12,050/-10,000      haelt es
+    Parameter-Plateau      1,000/0,600     0,000/0,600       haelt es
+    Messlatte             14,339/15,000  258,429/50,652      kostet es
+
+Vier Gates, nicht drei. Das Modul kennt jetzt `gates_nur_mit` und `tauscht`,
+das Urteil nennt **immer beide** Richtungen, und der Befehl zeigt die
+kippenden Gates mit Wert und Schwelle - ein Gate, das kippt, ist ohne seine
+Zahlen nur ein Name.
+
+### Eine Warnung, die zu dieser Tabelle gehoert
+
+Die Messlatte-Zeile sieht aus wie ein Sprung um das Achtzehnfache. Sie ist
+keiner: Das Gate hat **zwei** Bedingungen und meldet die, an der es haengt
+(Befund 267).
+
+* **mit** Konfluenz: 14,339 gegen 15,000 - das ist die **Jahresrendite gegen
+  die Betriebsschwelle**. Risikobereinigt schlaegt der Kandidat das Halten
+  bereits; es fehlen 0,66 Prozentpunkte Jahresrendite.
+* **ohne** Konfluenz: 258,429 gegen 50,652 - das ist die Rendite gegen die auf
+  den Rueckgang heruntergefahrene Messlatte.
+
+Zwei verschiedene Bedingungen in zwei Spalten, also nicht gegeneinander zu
+lesen. Der Befehl sagt das jetzt unter der Tabelle. Genau davor hat Befund 267
+gewarnt - *"Wer die Zahlen liest, sieht das Fuenffache der Huerde und ein rotes
+Gate"* -, und ich habe die Falle beim Bauen der Tabelle selbst wieder
+aufgestellt.
+
+### Nebenbei eine Aufstellung berichtigt
+
+Ein Test stellte 7 gegen 9 Gates bei **zweimal derselben Liste** gefallener
+Gates - eine Aufstellung, die zu sich selbst nicht passt. Das beidseitige
+Urteil hat es aufgedeckt: Es nannte zu Recht "kein Gate kippt in eine der
+beiden Richtungen", wo der Test "kostet" erwartete.

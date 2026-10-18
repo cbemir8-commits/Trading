@@ -126,11 +126,11 @@ class TestDasUrteilHaengtAnDenGatesUndNichtAnDerGuete:
 
         urteil = lage.urteil()
 
-        assert "traegt" in urteil
+        assert "haelt" in urteil
         assert "Drawdown" in urteil
         assert "Schlechtestes Jahr" in urteil
-        assert "Messlatte" not in urteil.split("Ohne es fallen")[1], (
-            "ein Gate, das auch mit Bauteil faellt, haelt es nicht"
+        assert "Messlatte" not in urteil, (
+            "ein Gate, das in beiden Faellen faellt, kippt nicht"
         )
 
     def test_ohne_unterschied_wird_auf_271_verwiesen(self) -> None:
@@ -142,11 +142,25 @@ class TestDasUrteilHaengtAnDenGatesUndNichtAnDerGuete:
         assert not lage.traegt
         assert "271" in urteil
 
+
     def test_ein_bauteil_kann_auch_kosten(self) -> None:
-        lage = self._anatomie(_lage(bestanden=7), _lage(bestanden=9))
+        """Die Aufstellung muss zu sich passen (berichtigt in Befund 367).
+
+        Hier stand zweimal dieselbe Liste gefallener Gates bei
+        verschiedenen Zahlen - 7 gegen 9, aber kein Gate, das kippt. Das
+        beidseitige Urteil hat das aufgedeckt: Es nannte zu Recht "kein Gate
+        kippt in eine der beiden Richtungen".
+        """
+        lage = self._anatomie(
+            _lage(bestanden=7, gefallen=("Deflated Sharpe", "Messlatte", "Drawdown")),
+            _lage(bestanden=9, gefallen=("Deflated Sharpe",)),
+        )
 
         assert lage.gates_differenz == -2
+        assert lage.gates_nur_mit == ("Messlatte", "Drawdown")
+        assert lage.gates_nur_ohne == ()
         assert "kostet" in lage.urteil()
+        assert not lage.tauscht
 
     def test_die_gestrichenen_signale_stehen_im_urteil(self) -> None:
         """Die Zahl, die zeigt, warum die Sperrprobe hier nichts ausrichtet."""
@@ -156,6 +170,95 @@ class TestDasUrteilHaengtAnDenGatesUndNichtAnDerGuete:
         )
 
         assert "9 Signale" in lage.urteil()
+
+
+class TestDieAblationRechnetInBeideRichtungen:
+    """**Befund 367, und es war meine Luecke von gestern.** Das Urteil nannte
+    nur die gehaltenen Gates. Dieselbe Messung zeigt aber, dass die Messlatte
+    umgekehrt kippt: Sie faellt **nur mit** der Konfluenz. Wer das Urteil las,
+    hielt das Bauteil fuer umsonst zu haben.
+    """
+
+    @staticmethod
+    def _tausch() -> Anatomie:
+        return Anatomie(
+            bauteil="konfluenz",
+            mit=_lage(bestanden=9, gefallen=("Messlatte", "Deflated Sharpe")),
+            ohne=_lage(
+                bestanden=7,
+                gefallen=(
+                    "Drawdown", "Schlechtestes Jahr", "Deflated Sharpe",
+                    "Parameter-Plateau",
+                ),
+            ),
+            signale={"BTCUSD_BITSTAMP": 1, "ETHUSD_BITSTAMP": 8},
+        )
+
+    def test_was_das_bauteil_kostet_wird_genannt(self) -> None:
+        lage = self._tausch()
+
+        assert lage.gates_nur_mit == ("Messlatte",)
+
+    def test_und_was_es_haelt(self) -> None:
+        lage = self._tausch()
+
+        assert set(lage.gates_nur_ohne) == {
+            "Drawdown", "Schlechtestes Jahr", "Parameter-Plateau"
+        }
+
+    def test_ein_gate_das_immer_faellt_kippt_nicht(self) -> None:
+        """Der Deflated Sharpe faellt in beiden Faellen - er gehoert in keine
+        der beiden Listen."""
+        lage = self._tausch()
+
+        assert "Deflated Sharpe" not in lage.gates_nur_mit
+        assert "Deflated Sharpe" not in lage.gates_nur_ohne
+
+    def test_das_urteil_nennt_beide_richtungen(self) -> None:
+        urteil = self._tausch().urteil()
+
+        assert "haelt" in urteil
+        assert "kostet" in urteil
+        assert "Messlatte" in urteil
+        assert "Drawdown" in urteil
+
+    def test_und_sagt_dass_getauscht_wird(self) -> None:
+        """Die Netto-Zahl sagt nicht, woraus sie besteht."""
+        lage = self._tausch()
+
+        assert lage.tauscht
+        assert "tauscht" in lage.urteil()
+        assert "3 gehalten gegen 1 gekostet" in lage.urteil()
+        assert lage.gates_differenz == 2
+
+    def test_ein_bauteil_das_nur_haelt_tauscht_nicht(self) -> None:
+        lage = Anatomie(
+            bauteil="konfluenz",
+            mit=_lage(bestanden=9, gefallen=()),
+            ohne=_lage(bestanden=8, gefallen=("Drawdown",)),
+        )
+
+        assert not lage.tauscht
+        assert "kostet" not in lage.urteil()
+
+    def test_der_befehl_zeigt_die_kippenden_mit_zahlen(self) -> None:
+        """Ein Gate, das kippt, ist ohne Wert und Schwelle nur ein Name."""
+        quelle = TestDerBefehlMisstDenZulassungspunkt._quelle()
+
+        assert "gates_nur_mit" in quelle
+        assert "kostet es" in quelle
+
+    def test_und_warnt_vor_dem_vergleich_der_spalten(self) -> None:
+        """Bei der Messlatte meldet 'value' entweder die Rendite gegen die
+        heruntergefahrene Messlatte oder die Jahresrendite gegen die
+        Betriebsschwelle (Befund 267) - die beiden Spalten koennen also
+        verschiedene Bedingungen zeigen."""
+        quelle = TestDerBefehlMisstDenZulassungspunkt._quelle()
+
+        assert "Befund 267" in quelle
+        assert "nicht\ngegeneinander zu lesen" in quelle or (
+            "nicht " in quelle and "gegeneinander zu lesen" in quelle
+        )
 
 
 class TestBeideLaeufeKommenAusDemselbenMessaufbau:

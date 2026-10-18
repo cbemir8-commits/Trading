@@ -7381,6 +7381,11 @@ def anatomie(
         )
         raise typer.Exit(2)
 
+    # Die Gate-Ergebnisse je Lauf - fuer die Zahlen hinter dem Urteil
+    # (Befund 367). Ein Gate, das kippt, ist ohne seinen Wert und seine
+    # Schwelle nur ein Name.
+    gemessen: dict[str, dict] = {}
+
     def messe(g) -> Lage:
         bericht = run_portfolio_walkforward(
             frames, lambda x=g: compile_genome(x), configs
@@ -7389,6 +7394,9 @@ def anatomie(
             g, bericht, next(iter(frames.values())), configs[symbole[0]],
             trials_so_far=versuche, frames=frames, configs=configs,
         )
+        gemessen["ohne" if gemessen else "mit"] = {
+            r.name: (float(r.value), float(r.threshold)) for r in gates.results
+        }
         gehandelt = fertige(bericht.all_trades)
         form = Kandidat.aus_trades("", gehandelt)
         def hole(name: str) -> float:
@@ -7475,8 +7483,37 @@ def anatomie(
         )
 
     console.print(f"\n{lage.urteil()}\n")
+
+    kippende = list(lage.gates_nur_ohne) + list(lage.gates_nur_mit)
+    if kippende and len(gemessen) == 2:
+        kipp = Table(title="Was kippt", title_justify="left")
+        kipp.add_column("Gate")
+        kipp.add_column("mit", justify="right")
+        kipp.add_column("ohne", justify="right")
+        kipp.add_column("Richtung")
+        for name in kippende:
+            a = gemessen["mit"].get(name)
+            b = gemessen["ohne"].get(name)
+            if a is None or b is None:
+                continue
+            kipp.add_row(
+                name,
+                f"{a[0]:.3f} / {a[1]:.3f}",
+                f"{b[0]:.3f} / {b[1]:.3f}",
+                "haelt es" if name in lage.gates_nur_ohne else "kostet es",
+            )
+        console.print(kipp)
+        console.print(
+            "[dim]Wert und Schwelle sind die der Bedingung, an der ein Gate "
+            "haengt (Befund 267) - bei der Messlatte also entweder Rendite "
+            "gegen heruntergefahrene Messlatte oder Jahresrendite gegen die "
+            "Betriebsschwelle von 15 %. Die beiden Spalten koennen damit "
+            "verschiedene Bedingungen zeigen und sind dann nicht "
+            "gegeneinander zu lesen; die Meldung des Gates nennt beide.[/]"
+        )
+
     console.print(
-        "[dim]Gefallen mit: " + (", ".join(lage.mit.gefallen) or "keines")
+        "\n[dim]Gefallen mit: " + (", ".join(lage.mit.gefallen) or "keines")
         + "\nGefallen ohne: " + (", ".join(lage.ohne.gefallen) or "keines")
         + "[/]\n"
     )

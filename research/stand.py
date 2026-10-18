@@ -3180,8 +3180,42 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Der erste Anlauf nahm die Rohdaten und die Standardbedingungen und "
         "kam auf 159 Trades, Guete 0,2580 und 7 von 11 - eine Ablation auf "
         "einem anderen Punkt als dem dokumentierten. Die Gegenprobe gegen den "
-        "Spot-Punkt steht jetzt **im Befehl** und vor dem Urteil",
+        "Spot-Punkt steht jetzt **im Befehl** und vor dem Urteil. "
+        "**Einseitig gerechnet, berichtigt in 367**: Das Urteil nannte nur "
+        "die drei gehaltenen Gates. Dieselbe Messung zeigt, dass die "
+        "**Messlatte** umgekehrt kippt - sie faellt nur *mit* der Konfluenz. "
+        "Das Bauteil **tauscht** also: drei gehalten gegen eines gekostet, "
+        "netto +2",
         366,
+        zuletzt=367,
+    ),
+    # Befund 367: die Luecke im Werkzeug von gestern - es rechnete nur in
+    # eine Richtung.
+    Richtung(
+        "Die Ablation rechnete nur in eine Richtung",
+        "Mein Fehler aus Befund 366, einen Tag alt. 'Anatomie' hatte "
+        "'gates_nur_ohne' und sonst nichts, und das Urteil lautete *'Das "
+        "Bauteil traegt: Ohne es fallen Drawdown, Schlechtestes Jahr, "
+        "Parameter-Plateau'*. Richtig und **einseitig**: Dieselbe Messung "
+        "zeigt, dass die **Messlatte** nur *mit* der Konfluenz faellt. Wer das "
+        "Urteil las, hielt das Bauteil fuer umsonst zu haben; die Netto-Zahl "
+        "9 gegen 7 sagt nicht, woraus sie besteht. Gemessen kippen **vier** "
+        "Gates, nicht drei: Drawdown (9,869 gegen 12,539 bei Schwelle 12), "
+        "Schlechtestes Jahr (-9,610 gegen -12,050 bei -10), "
+        "Parameter-Plateau (1,000 gegen 0,000 bei 0,6) - und Messlatte in die "
+        "andere Richtung. Das Modul kennt jetzt 'gates_nur_mit' und "
+        "'tauscht', das Urteil nennt **immer beide** Richtungen, und der "
+        "Befehl zeigt die kippenden Gates mit Wert und Schwelle. **Dazu eine "
+        "Warnung, die hingehoert** (Befund 267): Bei der Messlatte meldet "
+        "'value' die Bedingung, an der das Gate haengt - mit Konfluenz die "
+        "**Jahresrendite gegen die Betriebsschwelle** (14,339 gegen 15), ohne "
+        "sie die Rendite gegen die heruntergefahrene Messlatte (258,429 gegen "
+        "50,652). Die beiden Spalten zeigen dort also verschiedene "
+        "Bedingungen und sind nicht gegeneinander zu lesen; der Befehl sagt "
+        "das unter der Tabelle. **Nebenbei eine Aufstellung berichtigt**: Ein "
+        "Test stellte 7 gegen 9 Gates bei zweimal derselben Liste gefallener "
+        "Gates - das beidseitige Urteil hat es aufgedeckt",
+        367,
     ),
 )
 
