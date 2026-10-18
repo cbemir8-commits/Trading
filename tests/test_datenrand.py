@@ -54,6 +54,28 @@ def _spotlauf(frames_roh):
     )
 
 
+def _letzter_voller_tag(fein):
+    """Der letzte Tag, fuer den die feine Reihe **alle** 96 Kerzen hat.
+
+    Gibt den Tagesstempel und die ersten 48 Kerzen dieses Tages zurueck - also
+    die erste Haelfte, aus der sich eine halbe Tageskerze bauen laesst.
+
+    Der letzte Tag der feinen Reihe ist der laufende und damit unvollstaendig;
+    gebraucht wird der davor. Ohne diese Suche haette "halb" an manchen Tagen
+    mehr und an anderen weniger als zwoelf Stunden - der Test waere wieder von
+    der Uhrzeit des Laufs abhaengig, und genau das soll er nicht sein.
+    """
+    import pandas as pd
+
+    zeiten = pd.to_datetime(fein["open_time"], utc=True)
+    tage = zeiten.dt.floor("1D")
+    for tag in sorted(tage.unique(), reverse=True):
+        kerzen = fein[tage == tag]
+        if len(kerzen) == 96:
+            return tag, kerzen.iloc[:48].reset_index(drop=True)
+    return None, None
+
+
 def _tagesreihen():
     from core.config import get_settings
     from data.store import CandleStore
@@ -105,12 +127,17 @@ class TestWoDieSchichtenGreifen:
         """Mit den zensierten Trades bewegt die halbe Randkerze die Guete,
         ohne sie nicht. Das ist die ganze Aussage von Befund 241.
 
-        Vermerk vom 18.10.2026 (Befund 363): Der Test braucht eine **halbe**
-        Randkerze, und er sucht sie im Speicher. Auf einem in einem Zug
-        geladenen Speicher gibt es sie nicht - "halb" und "ganz" sind dort
-        dieselbe Kerze, und dann hat die Zusicherung nichts zu vergleichen.
-        Also ``daten``-markiert; zu bauen waere die halbe Kerze statt sie zu
-        finden.
+        **Die halbe Kerze wird gebaut und nicht gesucht** (Befund 365). Vorher
+        nahm dieser Test die Randkerze des Speichers und *nahm an*, sie sei
+        halb - sie ist es nur, wenn die Tagesreihe aelter ist als die
+        15-Minuten-Reihe daneben, also wenn ein Backfill mittags lief und
+        niemand nachgezogen hat. Auf einem in einem Zug geladenen Speicher
+        waren "halb" und "ganz" dieselbe Kerze, und die Zusicherung verglich
+        nichts (Befund 363).
+
+        Jetzt endet beide Reihen auf demselben **vollstaendigen** Tag, und
+        "halb" bekommt an dessen Stelle die Zusammenfassung der ersten zwoelf
+        Stunden - genau das, was ein mittags gelaufener Backfill schreibt.
         """
         import pandas as pd
 
@@ -125,20 +152,31 @@ class TestWoDieSchichtenGreifen:
         if any(f.empty for f in roh.values()):
             pytest.skip("keine Kerzen im Speicher")
 
-        ganz = {}
+        ganz, halb = {}, {}
         for x, grob in roh.items():
             fein = speicher.read(x, Interval("15"))
             if fein.empty:
                 pytest.skip("keine feinen Kerzen im Speicher")
-            abgeleitet = resample(fein, Interval("15"), Interval.D1)
-            rand = grob["open_time"].iloc[-1]
-            ersatz = abgeleitet[abgeleitet["open_time"] == rand][grob.columns]
-            ganz[x] = pd.concat(
-                [grob[grob["open_time"] < rand], ersatz], ignore_index=True
+            tag, erste_haelfte = _letzter_voller_tag(fein)
+            if tag is None:
+                pytest.skip("kein vollstaendiger Tag in der feinen Reihe")
+
+            ganz[x] = grob[grob["open_time"] <= tag].reset_index(drop=True)
+            assert ganz[x]["open_time"].iloc[-1] == tag, (
+                "die Tagesreihe kennt den letzten vollen Tag der feinen nicht"
+            )
+            # Die halbe Kerze: dieselbe Reihe, aber der letzte Tag nur bis
+            # Mittag zusammengefasst. ``vollstaendig=False``, weil genau das
+            # hier gewollt ist - eine Kerze aus halben Bausteinen.
+            ersatz = resample(
+                erste_haelfte, Interval("15"), Interval.D1, vollstaendig=False
+            )[grob.columns]
+            halb[x] = pd.concat(
+                [ganz[x].iloc[:-1], ersatz], ignore_index=True
             )
 
         werte = {}
-        for name, quelle in (("halb", roh), ("ganz", ganz)):
+        for name, quelle in (("halb", halb), ("ganz", ganz)):
             _, b = _spotlauf(quelle)
             werte[name] = (
                 Kandidat.aus_trades("x", b.all_trades).sharpe_je_trade,
@@ -154,7 +192,20 @@ class TestWoDieSchichtenGreifen:
         assert mit_halb != pytest.approx(mit_ganz, abs=1e-6), (
             "Mit ihnen muss sie etwas aendern - sonst ist der Befund falsch."
         )
-        assert mit_ganz > mit_halb, "Die halbe Kerze schmeichelt nach unten?"
+        # **Keine Richtung mehr** (Befund 365). Hier stand
+        # ``assert mit_ganz > mit_halb`` - "die halbe Kerze schmeichelt nach
+        # unten". Am gebauten Fall gemessen: 0,2867645 (halb) gegen 0,2867375
+        # (ganz), also andersherum und um 2,7e-5.
+        #
+        # Die Richtung ist keine Eigenschaft des Mechanismus, sondern des
+        # Kursverlaufs an jenem Tag: Die halbe Kerze schliesst zur Mittagszeit.
+        # Stieg der Kurs danach, liegt ihr Schluss zu tief und der letzte
+        # Trade steigt zu billig aus; fiel er, ist es umgekehrt. Mit dem echten
+        # Randtag von damals traf die eine Seite zu, mit einem gebauten Tag
+        # trifft sie zu oder nicht.
+        #
+        # Was bleibt, sind die beiden Zusicherungen darueber, und die sind die
+        # Aussage von Befund 241: Der Randschnitt ist die Schicht, die traegt.
 
 
 def test_der_randgrund_ist_das_einzige_kriterium() -> None:

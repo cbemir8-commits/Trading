@@ -3081,9 +3081,10 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Zustand des Speichers statt eine Eigenschaft des Codes: "
         "'volumenanteil' faellt nur unter 1, wenn die Tagesreihe **aelter** "
         "ist als die 15-Minuten-Reihe daneben; in einem Zug geladen ist er 1,0. "
-        "Zu bauen waere die halbe Randkerze, statt sie zu finden - solange sind "
-        "sie 'daten'-markiert, und der Satz 'eine Eigenschaft des Nachlaufs "
-        "und keine der Daten' in 'test_gegenprobe.py' ist gemessen falsch. "
+        "Zu bauen waere die halbe Randkerze, statt sie zu finden - "
+        "nachgetragen in Befund 365 -, und der Satz 'eine Eigenschaft des "
+        "Nachlaufs und keine der Daten' in 'test_gegenprobe.py' ist gemessen "
+        "falsch. "
         "**Beide Staende, weil die Zahl vom Speicher abhaengt**: geschnitten "
         "46 von 49 gruen (3 rot), bis heute 40 von 52 (9 driften mit dem "
         "Speicher, 3 sind die Randtests). Erledigt und als Muster gezeigt ist "
@@ -3115,6 +3116,36 @@ BEHOBEN: tuple[Richtung, ...] = (
         "uebrigen acht'; zehn Tests drifteten, einer war als Muster erledigt, "
         "also waren neun offen. Die Zahl war gezaehlt und nicht gemessen",
         364,
+    ),
+    # Befund 365: die zweite offene Folge aus 363. Drei Randtests, die ihre
+    # Voraussetzung gesucht haben, bauen sie jetzt.
+    Richtung(
+        "Drei Randtests suchten ihre Voraussetzung, statt sie zu bauen",
+        "Die zweite offene Folge aus Befund 363. 'gegenprobe' und "
+        "'randschnitt' brauchen eine **halbe** Randkerze, und sie nahmen die "
+        "des Speichers - die aber nur halb ist, wenn die Tagesreihe aelter ist "
+        "als die 15-Minuten-Reihe daneben. In einem Zug geladen ist der "
+        "Volumenanteil **1,0**, und dann verglichen die Zusicherungen nichts. "
+        "'test_der_randschnitt_ist_die_tragende_schicht' baut sie jetzt: beide "
+        "Reihen enden auf demselben **vollstaendigen** Tag, und 'halb' bekommt "
+        "an dessen Stelle die Zusammenfassung der ersten zwoelf Stunden "
+        "('vollstaendig=False') - genau das, was ein mittags gelaufener "
+        "Backfill schreibt. Befund 241 besteht damit gemessen statt zufaellig: "
+        "Ohne die zensierten Trades aendert die Randkerze **nichts** (gleich "
+        "bis 1e-9), mit ihnen etwas. **Eine Zusicherung ist gefallen**: 'die "
+        "halbe Kerze schmeichelt nach unten' ('mit_ganz > mit_halb'). Am "
+        "gebauten Fall gemessen 0,2867645 (halb) gegen 0,2867375 (ganz) - "
+        "andersherum, und um 2,7e-5. Die Richtung ist keine Eigenschaft des "
+        "Mechanismus, sondern des Kursverlaufs am Randtag: Die halbe Kerze "
+        "schliesst mittags, und ob ihr Schluss zu hoch oder zu tief liegt, "
+        "entscheidet die zweite Tageshaelfte. Der Echtdaten-Test heisst jetzt "
+        "'test_die_tageskerzen_erfinden_kein_volumen' und sichert, was dort "
+        "wirklich gilt - ein Anteil **ueber** 1 hiesse, die Tageskerze buchte "
+        "Volumen, das in keiner Viertelstunde steht. Den Erkenner pruefen "
+        "weiter die gebauten Faelle. Stand des 'daten'-Satzes damit **3 von 52 "
+        "rot statt 15**, und die drei sind die nicht reproduzierbaren Zahlen "
+        "aus 363 - ohne eine Entscheidung des Nutzers nicht gruen zu bekommen",
+        365,
     ),
 )
 

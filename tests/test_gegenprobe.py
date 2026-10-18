@@ -183,26 +183,29 @@ class TestAmEchtenVorrat:
     @pytest.mark.langsam
     @pytest.mark.daten
     @pytest.mark.parametrize("symbol", ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"])
-    def test_die_letzte_gespeicherte_tageskerze_ist_angefangen(self, symbol) -> None:
-        """**Der Fund.** Er kostet heute nichts - Nachlauf (151) und
-        Randschnitt (152) halten den Datenrand aus der Statistik heraus, mit
-        und ohne diese Kerze sind alle Zahlen des Bestands gleich. Er steht
-        hier trotzdem, weil das eine Eigenschaft des Nachlaufs ist und keine
-        der Daten.
+    def test_die_tageskerzen_erfinden_kein_volumen(self, symbol) -> None:
+        """Keine gespeicherte Tageskerze traegt mehr Volumen als ihre
+        Viertelstunden - die Probe, die am echten Vorrat etwas aussagt.
 
-        Vermerk vom 18.10.2026 (Befund 363): **Doch eine der Daten.** Der
-        Satz darueber stimmt so nicht, gemessen an einem neu aufgebauten
-        Speicher. ``volumenanteil`` unter 1 entsteht, wenn die **Tagesreihe
-        aelter** ist als die 15-Minuten-Reihe daneben - die Tageskerze wurde
-        mitten im Tag geschrieben und nie nachgezogen, die feinen Kerzen
-        danach. Werden beide in einem Zug geladen, deckt die Tageskerze genau
-        ihre feinen Kerzen, der Anteil ist **1,0**, und es gibt keine
-        angefangene Randkerze.
+        **Hier stand etwas anderes** (Befund 365, gemessen in 363). Der Test
+        hiess ``..._ist_angefangen`` und forderte ``g.angefangene_randkerze``
+        mit einem Volumenanteil unter 0,6 - die letzte Tageskerze *sei*
+        unvollstaendig. Dazu stand: *"weil das eine Eigenschaft des Nachlaufs
+        ist und keine der Daten"*.
 
-        Der Test verlangt damit einen Zustand des Speichers und nicht eine
-        Eigenschaft des Codes. Deshalb ``daten``-markiert - und deshalb bleibt
-        offen, ihn auf einer **gebauten** halben Randkerze zu fuehren statt auf
-        einer gefundenen.
+        Umgekehrt. Der Anteil faellt nur unter 1, wenn die **Tagesreihe aelter**
+        ist als die 15-Minuten-Reihe daneben - die Tageskerze wurde mittags
+        geschrieben und nie nachgezogen, die feinen Kerzen danach. In einem Zug
+        geladen deckt die Tageskerze genau ihre feinen, der Anteil ist **1,0**,
+        und es gibt keine angefangene Randkerze. Der Test forderte also einen
+        Zustand des Speichers.
+
+        Den Erkenner pruefen ``TestDieAngefangeneRandkerze`` an einem
+        **gebauten** halben Tag - Erkennung, betroffene Spalten, Urteilstext
+        und Schwelle. Hier bleibt die Zusicherung, die am echten Vorrat gilt
+        und Zaehne hat: Ein Anteil **ueber** 1 hiesse, die Tageskerze buchte
+        Volumen, das in keiner Viertelstunde steht - ein doppelt geschriebener
+        Speicher, und das waere ein Datenfehler.
         """
         grob, fein = self._reihen(symbol)
         if grob.empty or fein.empty:
@@ -210,8 +213,13 @@ class TestAmEchtenVorrat:
 
         g = gegenprobe(grob, fein, quelle=Interval("15"), ziel=Interval.D1)
 
-        assert g.angefangene_randkerze
-        assert g.volumenanteil < 0.6
+        assert g.volumenanteil is not None, (
+            "keine gemeinsame letzte Kerze - dann vergleicht die Probe nichts"
+        )
+        assert g.volumenanteil <= 1.01, (
+            f"die Tageskerze traegt {g.volumenanteil:.3f} ihres Fensters - "
+            f"mehr als ihre Viertelstunden hergeben"
+        )
 
 
 class TestDiePruefungWirdGerufen:

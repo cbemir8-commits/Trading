@@ -32697,3 +32697,70 @@ gewandert sind.
 Dort steht "die uebrigen acht". Es waren **neun**: Zehn Tests drifteten, einer
 war als Muster schon erledigt. Die Zahl hatte ich gezaehlt und nicht gemessen -
 derselbe Fehler wie beim "6 von 49 rot" im selben Befund, nur kleiner.
+
+## Dreihundertfuenfundsechzig. Die Randtests bauen ihre halbe Kerze
+
+Die zweite offene Folge aus Befund 363. `gegenprobe` und `randschnitt` brauchen
+eine **halbe** Randkerze, und sie nahmen die des Speichers - die aber nur halb
+ist, wenn die Tagesreihe aelter ist als die 15-Minuten-Reihe daneben. In einem
+Zug geladen ist der Volumenanteil 1,0, und dann verglichen die Zusicherungen
+nichts.
+
+### Gebaut statt gefunden
+
+`test_der_randschnitt_ist_die_tragende_schicht` laesst beide Reihen jetzt auf
+demselben **vollstaendigen** Tag enden und setzt fuer "halb" an dessen Stelle
+die Zusammenfassung der ersten zwoelf Stunden (`vollstaendig=False`) - genau
+das, was ein mittags gelaufener Backfill schreibt. Den letzten vollstaendigen
+Tag sucht ein Helfer: der letzte mit allen 96 Viertelstunden, denn der
+allerletzte ist der laufende. Ohne diese Suche haette "halb" je nach Uhrzeit
+des Laufs mehr oder weniger als zwoelf Stunden - der Test waere wieder von
+seinem Startzeitpunkt abhaengig gewesen.
+
+Befund 241 besteht damit gemessen statt zufaellig:
+
+    ohne die zensierten Trades   gleich bis 1e-9
+    mit ihnen                    verschieden
+
+Das ist seine ganze Aussage, und sie haelt.
+
+### Eine Zusicherung ist dabei gefallen
+
+Dort stand `assert mit_ganz > mit_halb` - *"Die halbe Kerze schmeichelt nach
+unten?"*. Am gebauten Fall gemessen:
+
+    halb   0,2867645
+    ganz   0,2867375
+
+Andersherum, und um 2,7e-5. **Die Richtung ist keine Eigenschaft des
+Mechanismus**, sondern des Kursverlaufs am Randtag: Die halbe Kerze schliesst
+mittags, und ob ihr Schluss zu hoch oder zu tief liegt, entscheidet die zweite
+Tageshaelfte. Mit dem echten Randtag von damals traf die eine Seite zu; als
+allgemeiner Satz ist sie falsch. Die beiden Zusicherungen darueber bleiben, und
+sie sind der Befund.
+
+### Und der Echtdaten-Test sichert jetzt, was dort gilt
+
+Aus `test_die_letzte_gespeicherte_tageskerze_ist_angefangen` ist
+`test_die_tageskerzen_erfinden_kein_volumen` geworden. Statt zu fordern, die
+letzte Tageskerze *sei* unvollstaendig, prueft er, dass keine Tageskerze **mehr**
+Volumen traegt als ihre Viertelstunden hergeben - ein Anteil ueber 1 waere ein
+doppelt geschriebener Speicher. Den Erkenner selbst pruefen weiter
+`TestDieAngefangeneRandkerze` an gebauten Faellen: Erkennung, betroffene
+Spalten, Urteilstext, Schwelle.
+
+Damit ist auch der Satz erledigt, der seit Befund 239 dort stand - *"weil das
+eine Eigenschaft des Nachlaufs ist und keine der Daten"*. Er war umgekehrt
+richtig.
+
+### Stand des Datensatzes
+
+    15 rot ohne Erklaerung        (Befund 363, frischer Speicher)
+    12 rot                        (363: Reihe benannt, Musterfall geschnitten)
+     6 rot                        (364: alle Nachrechen-Tests geschnitten)
+     3 rot                        (365: Randtests bauen ihre Voraussetzung)
+
+Die letzten drei sind die nicht reproduzierbaren Zahlen aus Befund 363:
+Kapitalendstand, Streuungswert, Schiefe ueber alle Trades. Sie sind ohne eine
+Entscheidung des Nutzers nicht gruen zu bekommen - eine gepflegte Zahl
+anzupassen, bis sie zur Messung passt, waere die Umkehrung des Verfahrens.
