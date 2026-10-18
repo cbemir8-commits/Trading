@@ -106,7 +106,18 @@ def _punkte_aus_bericht(datei: Path) -> list[Versuchspunkt]:
     gefunden = []
     for punkt in punkte:
         sharpe = (punkt.get("kennzahlen") or {}).get("sharpe_je_trade")
-        if sharpe is None:
+        # **Auch die Null faellt weg** (Befund 372), mit derselben Begruendung
+        # wie in ``aus_bestenliste`` zwei Funktionen weiter unten: Das Feld ist
+        # jung, und ``0.0`` heisst dort "nicht erhoben" und nicht "kein
+        # Vorteil". Hier stand ``is None`` - eine Null waere als Messung
+        # eingegangen, und zwar in die eine Eingabe des haertesten Gates, die
+        # nicht gemessen sondern angenommen wird.
+        #
+        # Gemessen im vorhandenen Bestand: **keine** Null (50 echte Werte, 33
+        # Punkte ohne das Feld). Die Wache gilt also dem naechsten Bericht und
+        # nicht diesem - in denselben Dateien steht die Null an anderer Stelle
+        # sehr wohl, in den Bestenlisten-Eintraegen.
+        if not sharpe:
             continue
         gefunden.append(
             Versuchspunkt(

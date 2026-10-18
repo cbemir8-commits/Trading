@@ -417,3 +417,97 @@ class TestDasGateBleibtStreng:
         assert ergebnis.status is not GateStatus.SKIP, "Sonst prueft der Test nichts"
         assert gesehen, "Das Gate hat die Formel gar nicht aufgerufen"
         assert gesehen.get("sharpe_variance") is None
+
+
+class TestDieNullIstKeineMessung:
+    """**Befund 372.** Zwei Leser derselben jungen Zahl, zwei Regeln.
+
+    ``aus_bestenliste`` ueberspringt die Null seit ihrer Anlage und sagt auch
+    warum: *"Das Feld ist jung - aeltere Eintraege haben es nicht, und 0.0
+    heisst dort 'nicht erhoben' und nicht 'kein Vorteil'."*
+    ``_punkte_aus_bericht`` ueberspruefte nur ``None``.
+
+    Gemessen im vorhandenen Bestand: **keine** Null im Berichtspfad (50 echte
+    Werte, 33 Punkte ohne das Feld). Die Wache gilt dem naechsten Bericht -
+    und in denselben Dateien steht die Null an anderer Stelle sehr wohl, in
+    den Bestenlisten-Eintraegen.
+
+    Warum das mehr ist als Stil: Diese Streuung ist die **einzige** Eingabe
+    des Deflated Sharpe, die nicht gemessen, sondern angenommen wird. Eine
+    Null, die als Messung eingeht, faelscht genau die Zahl, an der die Huerde
+    haengt.
+    """
+
+    @staticmethod
+    def _bericht(tmp_path, *werte):
+        import json
+
+        datei = tmp_path / "lauf.json"
+        datei.write_text(
+            json.dumps(
+                {
+                    "regler": "Vola-Fenster",
+                    "punkte": [
+                        {"stellung": i, "kennzahlen": {"sharpe_je_trade": w}}
+                        for i, w in enumerate(werte)
+                    ],
+                }
+            )
+        )
+        return datei
+
+    def test_eine_null_im_bericht_wird_uebersprungen(self, tmp_path) -> None:
+        from research.streuung import aus_berichten
+
+        self._bericht(tmp_path, 0.26, 0.0, 0.31)
+
+        punkte = aus_berichten(tmp_path)
+
+        assert [p.sharpe_je_trade for p in punkte] == [0.26, 0.31]
+
+    def test_ein_fehlendes_feld_auch(self, tmp_path) -> None:
+        import json
+
+        from research.streuung import aus_berichten
+
+        (tmp_path / "lauf.json").write_text(
+            json.dumps(
+                {
+                    "regler": "x",
+                    "punkte": [
+                        {"stellung": 1, "kennzahlen": {}},
+                        {"stellung": 2, "kennzahlen": {"sharpe_je_trade": 0.2}},
+                    ],
+                }
+            )
+        )
+
+        assert [p.sharpe_je_trade for p in aus_berichten(tmp_path)] == [0.2]
+
+    def test_echte_werte_bleiben_vollstaendig(self, tmp_path) -> None:
+        """Die Gegenprobe - gehaertet heisst nicht aermer."""
+        from research.streuung import aus_berichten
+
+        self._bericht(tmp_path, 0.26, 0.31, -0.14)
+
+        punkte = aus_berichten(tmp_path)
+
+        assert len(punkte) == 3
+        assert -0.14 in [p.sharpe_je_trade for p in punkte]
+
+    def test_ein_negativer_wert_ist_eine_messung(self, tmp_path) -> None:
+        """Wichtig fuer die Streuung: Die Verlierer tragen sie, und ein
+        negativer Sharpe ist erhoben und nicht "nicht erhoben"."""
+        from research.streuung import aus_berichten
+
+        self._bericht(tmp_path, -0.4)
+
+        assert [p.sharpe_je_trade for p in aus_berichten(tmp_path)] == [-0.4]
+
+    def test_beide_leser_halten_es_jetzt_gleich(self) -> None:
+        import inspect
+
+        from research.streuung import _punkte_aus_bericht, aus_bestenliste
+
+        for funktion in (_punkte_aus_bericht, aus_bestenliste):
+            assert "if not sharpe:" in inspect.getsource(funktion), funktion.__name__

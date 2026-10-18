@@ -3335,6 +3335,38 @@ BEHOBEN: tuple[Richtung, ...] = (
         "fertigen - 9 von 11 am Spot-Punkt bleibt 9 von 11",
         371,
     ),
+    # Befund 372: sechs Angriffe auf die veroeffentlichten Berichte, kein
+    # lebendes Leck - und eine Ungleichheit, die dem naechsten Bericht gilt.
+    Richtung(
+        "Die veroeffentlichten Berichte sind Vor-Fix-Artefakte",
+        "Weitergelesen, diesmal in 'reports/' - das, was ein Lauf hinterlaesst "
+        "und was der Nutzer oeffnet. Der juengste Zulassungsbericht "
+        "(2026-08-23, BTC allein, 54 Kandidaten, 0 zugelassen) traegt in "
+        "seinen Bestenlisten-Eintraegen **sharpe_je_trade 0.0** bei 152 "
+        "Trades, **versuche 0**, **referenzdaten false** auf einem "
+        "Bitstamp-Lauf und **kein** 'gates_uebersprungen'. Vier Zahlen, die "
+        "wie Messungen aussehen und Vorgabewerte sind. **Sechs Angriffe "
+        "gefahren, kein lebendes Leck**: 'ist_referenz' erkennt die "
+        "Bitstamp-Symbole heute, 'evaluate_gates' leitet 'referenzdaten' aus "
+        "den Beinen ab und hat seit Befund 283 keinen erlaubenden Vorgabewert "
+        "mehr, 'passed' verlangt 'not referenzdaten', 'Entry.vergleichbar' "
+        "schliesst 'versuche == 0' und 'sharpe_je_trade == 0' aus, 'dsr_bei' "
+        "gibt den gespeicherten Wert zurueck statt eine Umrechnung zu "
+        "erfinden, 'aussetzer' erschliesst Uebersprungenes aus der "
+        "Trade-Zahl, und das 'getattr(..., False)' in der Bestenliste kann "
+        "nicht greifen, weil zwei Zeilen darunter 'candidate.gates.results' "
+        "ohne Absicherung steht. Jeder dieser Waechter traegt seine "
+        "Begruendung im Quelltext. **Eine Ungleichheit blieb und ist "
+        "behoben**: 'streuung.aus_bestenliste' ueberspringt die Null "
+        "ausdruecklich ('0.0 heisst nicht erhoben und nicht kein Vorteil'), "
+        "'_punkte_aus_bericht' uebersprang nur 'None'. Gemessen im Bestand: "
+        "**keine** Null im Berichtspfad (50 echte Werte, 33 Punkte ohne das "
+        "Feld) - die Wache gilt dem naechsten Bericht, und in denselben "
+        "Dateien steht die Null an anderer Stelle sehr wohl. Warum es mehr "
+        "ist als Stil: Diese Streuung ist die einzige Eingabe des Deflated "
+        "Sharpe, die nicht gemessen, sondern angenommen wird",
+        372,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

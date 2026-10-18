@@ -33140,3 +33140,67 @@ Rendite und Rueckgang behalten ihn - sein Geld ist geflossen, dort gehoert er
 hin. Und die **Gates sind nicht beruehrt**: `evaluate_gates` hat seine eigene
 Zensur und urteilte ohnehin auf den fertigen Trades; 9 von 11 am Spot-Punkt
 bleibt 9 von 11. Was falsch war, war die Anzeige - nicht das Urteil.
+
+## Dreihundertzweiundsiebzig. Die Berichte sind Vor-Fix-Artefakte
+
+Weitergelesen, diesmal in `reports/` - das, was ein Lauf hinterlaesst und was
+der Nutzer oeffnet. Der juengste Zulassungsbericht (2026-08-23, BTC allein, 54
+Kandidaten, 0 zugelassen) traegt in seinen Bestenlisten-Eintraegen:
+
+    sharpe_je_trade     0.0     bei 152 Trades
+    versuche            0
+    referenzdaten       false   auf einem BTCUSD_BITSTAMP-Lauf
+    gates_uebersprungen fehlt
+
+Vier Zahlen, die wie Messungen aussehen und Vorgabewerte sind. `0.0` ist die
+zentrale Zahl dieses Projekts, `versuche 0` hiesse "keine Mehrfachkorrektur",
+und `referenzdaten false` hiesse "Boersendaten" - auf Forschungskerzen, gegen
+Befund 102.
+
+### Sechs Angriffe, kein lebendes Leck
+
+Jeder Weg, auf dem eine dieser Zahlen schaden koennte, ist abgesichert - und
+jede Wache traegt ihre Begruendung im Quelltext:
+
+* `ist_referenz` erkennt die Bitstamp-Symbole (True), und `evaluate_gates`
+  leitet `referenzdaten` aus den Beinen ab. Seit Befund 283 ist der Aufruf
+  ohne Beine ein **Fehler** und keine stille Annahme.
+* `passed` verlangt `not referenzdaten` **und** `not vorauswahl`. Ein Bericht
+  auf Forschungskerzen kann nicht zugelassen sein.
+* `Entry.vergleichbar` verlangt `versuche` **und** `sharpe_je_trade > 0` -
+  eine Null faellt aus jedem Vergleich.
+* `Entry.dsr_bei` gibt den gespeicherten Wert zurueck, statt eine Umrechnung
+  zu erfinden: *"eine Umrechnung zu erfinden waere schlimmer als eine
+  ehrliche Luecke."*
+* `aussetzer` erschliesst Uebersprungenes aus der Trade-Zahl, wenn der
+  Bericht es nicht meldet.
+* Das `getattr(candidate.gates, "referenzdaten", False)` in der Bestenliste
+  kann nicht greifen: Zwei Zeilen darunter steht `candidate.gates.results`
+  ohne Absicherung, ein fehlendes Objekt kraeche also vorher.
+
+Das ist das Ergebnis dieses Befundes, und es ist ein **negatives**. Es steht
+hier, damit der naechste Durchgang nicht dieselben sechs Wege abgeht.
+
+### Eine Ungleichheit blieb
+
+`streuung` liest den Sharpe je Trade an zwei Stellen. `aus_bestenliste`
+ueberspringt die Null ausdruecklich und sagt warum:
+
+> Das Feld ist jung - aeltere Eintraege haben es nicht, und `0.0` heisst dort
+> "nicht erhoben" und nicht "kein Vorteil". Es zu uebernehmen wuerde die
+> Streuung nach unten faelschen, und zwar dort, wo sie am meisten weh tut.
+
+`_punkte_aus_bericht` uebersprang nur `None`. Gemessen im vorhandenen Bestand:
+**keine** Null im Berichtspfad - 50 echte Werte, 33 Punkte ohne das Feld. Die
+Wache gilt also dem naechsten Bericht und nicht diesem; in denselben Dateien
+steht die Null an anderer Stelle sehr wohl, naemlich in den
+Bestenlisten-Eintraegen, die dieselbe junge Zahl tragen.
+
+Warum das mehr ist als Stil: Diese Streuung ist die **einzige** Eingabe des
+Deflated Sharpe, die nicht gemessen, sondern angenommen wird. Eine Null, die
+als Messung eingeht, faelscht genau die Zahl, an der die Huerde des haertesten
+Gates haengt.
+
+Ein negativer Sharpe bleibt dagegen drin - er ist erhoben. Die Verlierer tragen
+diese Streuung, und sie herauszunehmen waere derselbe Fehler wie die Null
+hineinzunehmen.
