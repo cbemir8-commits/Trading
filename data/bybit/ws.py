@@ -22,7 +22,7 @@ import asyncio
 import contextlib
 import json
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -233,6 +233,18 @@ class GapFillResult:
         return self.written > 0
 
 
+#: Das kleinste Nachladefenster, wenn keines gesetzt ist. Der Wert, der hier
+#: immer stand - er gilt jetzt als Untergrenze fuer die kurzen Intervalle.
+MINDESTFENSTER = timedelta(hours=6)
+
+#: Wie viele Kerzen das Nachladefenster mindestens umfasst.
+#:
+#: Vierundzwanzig, weil genau so viele 15-Minuten-Kerzen in die sechs Stunden
+#: passen, die ``max_lookback`` immer vorgab (Befund 384). Die Zahl ist also
+#: aus dem bisherigen Verhalten abgelesen und nicht gesetzt.
+LOOKBACK_KERZEN = 24
+
+
 @dataclass(slots=True)
 class GapFiller:
     """Schliesst Luecken nach einer Websocket-Unterbrechung ueber REST.
@@ -244,18 +256,58 @@ class GapFiller:
     nicht der Live-Prozess die halbe Historie nachladen, dafuer ist der Backfill
     da. Wird die Grenze erreicht, meldet das Ergebnis ``truncated=True`` - dieses
     Signal darf der Aufrufer nicht ignorieren.
+
+    **Das Fenster haengt an der Kerzenlaenge** (Befund 384). Sechs Stunden sind
+    fuer ein 15-Minuten-Intervall bemessen - vierundzwanzig Kerzen -, und sie
+    galten fuer jedes Intervall. Auf Tageskerzen ist das weniger als **eine**
+    Kerze, und gemessen hiess das zweierlei:
+
+        1d, eine fehlende Kerze     0 geladen, truncated
+        1d, zwei fehlende Kerzen    0 geladen, truncated
+        1d, nichts fehlt, 7 h nach Schluss   truncated - ohne Luecke
+
+    Also nie etwas geladen und obendrein ein Fehlalarm, sobald ein Lauf mehr
+    als sechs Stunden nach dem Tagesschluss startet. Dieselbe Ursache wie in
+    Befund 383.
     """
 
     market: object  # MarketDataSource
     store: object  # CandleStore
     symbol: str
-    max_lookback: timedelta = field(default_factory=lambda: timedelta(hours=6))
+    max_lookback: timedelta | None = None
+    """Das Fenster, ausdruecklich gesetzt. ``None`` heisst: aus der Kerzenlaenge.
+
+    **Und ``None`` ist die Vorgabe, nicht sechs Stunden** (Befund 384). Erst
+    stand hier ``max(sechs Stunden, Kerzenlaenge * 24)``, und das hat die
+    Angabe eines Aufrufers nach oben **ueberschrieben**: Wer ``max_lookback=2h``
+    sagte, bekam sechs. Gefunden hat das ``test_lookback_is_bounded``, nicht
+    ich. Ein gesetzter Wert gilt jetzt genau so, wie er gesetzt ist.
+    """
+
+    def fenster(self, interval: Interval) -> timedelta:
+        """Wie weit zurueck dieser Lauf nachladen darf.
+
+        Ohne Angabe ``Kerzenlaenge * LOOKBACK_KERZEN``, mindestens aber
+        ``MINDESTFENSTER``. Die vierundzwanzig sind nicht gewaehlt, sondern
+        **uebernommen**: Genau so viele 15-Minuten-Kerzen passen in die sechs
+        Stunden, die hier immer standen. Damit bleibt M15 unveraendert.
+
+        Das Monatsintervall hat keine feste Dauer; dort bleibt es beim
+        Mindestfenster - dasselbe Urteil wie vor Befund 384.
+        """
+        if self.max_lookback is not None:
+            return self.max_lookback
+        try:
+            spanne = interval.duration * LOOKBACK_KERZEN
+        except ValueError:
+            return MINDESTFENSTER
+        return max(MINDESTFENSTER, spanne)
 
     def fill(
         self, interval: Interval, *, since: datetime, now: datetime | None = None
     ) -> GapFillResult:
         reference = now or datetime.now(UTC)
-        earliest = reference - self.max_lookback
+        earliest = reference - self.fenster(interval)
         start = max(since, earliest)
         truncated = start > since
 

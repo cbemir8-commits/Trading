@@ -2345,8 +2345,15 @@ def ingest(
     """Live-Kerzen mitschreiben (Websocket).
 
     Speichert ausschliesslich **bestaetigte** Kerzen. Nach einem Verbindungs-
-    abbruch werden fehlende Kerzen ueber REST nachgeladen; ist die Luecke aelter
-    als sechs Stunden, wird gewarnt und ein Backfill empfohlen.
+    abbruch werden fehlende Kerzen ueber REST nachgeladen; reicht die Luecke
+    weiter zurueck als das Nachladefenster, wird gewarnt und ein Backfill
+    empfohlen.
+
+    Das Fenster sind **vierundzwanzig Kerzen**, mindestens aber sechs Stunden
+    (Befund 384). Hier stand "sechs Stunden" ohne Zusatz, und so war es auch
+    gebaut - auf Tageskerzen also weniger als eine Kerze: Gemessen wurde dort
+    **nie** etwas nachgeladen, und ein Lauf mehr als sechs Stunden nach dem
+    Tagesschluss meldete eine Luecke, die es nicht gab.
 
     Beenden mit Strg-C.
     """
@@ -2375,7 +2382,8 @@ def ingest(
                 result = filler.fill(interval, since=last + interval.duration)
                 if result.truncated:
                     console.print(
-                        f"[yellow]Luecke in {interval.label} ist aelter als 6 Stunden "
+                        f"[yellow]Luecke in {interval.label} reicht weiter zurueck "
+                        f"als das Nachladefenster ({filler.fenster(interval)}) "
                         f"und wurde nicht vollstaendig geschlossen.[/]\n"
                         f"[yellow]Vor dem Handeln ausfuehren: "
                         f"python -m cli backfill --intervall {interval.value} "

@@ -34176,3 +34176,84 @@ Aufgefallen ist das `test_die_frist_faellt_nie_unter_die_alte`, weil er ueber
 Jetzt gibt `_kerzenabstand_s` dort `None`, und die Leseseite bleibt bei ihren
 zwanzig Minuten - fuer einen Monatslauf zu streng, aber dasselbe Urteil wie
 vorher und kein schwarzer Bildschirm.
+
+## Dreihundertvierundachtzig. Das Nachladefenster war fuer M15 bemessen
+
+Befund 383 war ein **Muster** und kein Einzelfall: eine Konstante, die fuer
+fuenfzehn Minuten bemessen war und fuer jedes Intervall galt. Also diesmal
+nicht geraten, sondern gesucht - alle Zeitkonstanten im Livepfad gegen die
+Frage *"was, wenn das Intervall ein Tag ist?"*. Von acht Treffern blieb einer
+uebrig:
+
+```python
+max_lookback: timedelta = field(default_factory=lambda: timedelta(hours=6))
+```
+
+Sechs Stunden sind auf M15 genau **vierundzwanzig Kerzen** - und auf
+Tageskerzen weniger als **eine**.
+
+### Was `GapFiller` tut, und was er auf Tageskerzen tat
+
+Er schliesst nach einem Verbindungsabbruch die Luecke ueber REST. Sein eigener
+Kopf sagt, warum:
+
+> Ohne diesen Schritt hat die Zeitreihe genau dort Loecher, wo die Verbindung
+> weg war - und Indikatoren rechnen ueber eine Luecke hinweg, ohne es zu
+> merken.
+
+Gemessen:
+
+| Intervall | fehlende Kerzen | geladen | abgeschnitten |
+|---|---|---|---|
+| 15m | 10 | 10 | nein |
+| 1h | 5 | 5 | nein |
+| **1d** | **1** | **0** | ja |
+| **1d** | **2** | **0** | ja |
+| **1d** | **0** (nichts fehlt, 7 h nach Schluss) | 0 | **ja — Fehlalarm** |
+
+Auf Tageskerzen lud er also **nie** etwas nach und meldete obendrein Luecken,
+die es nicht gab - mit der Aufforderung, vor dem Handeln einen Backfill zu
+fahren.
+
+Das ist **kein** stiller Datenverlust: Er sagt es, `truncated=True`, und der
+Befehl schreibt es hin. Es ist ein Bauteil, das auf dem gemeinten Intervall
+nicht arbeitet, und ein zweiter Alarm, der dort dauerhaft leuchtet. Nach
+Befund 383 ist das der zweite von der Sorte in derselben Oberflaeche.
+
+### Behoben, mit einer abgelesenen Zahl
+
+Das Fenster sind jetzt **vierundzwanzig Kerzen, mindestens sechs Stunden**.
+Die 24 sind nicht gewaehlt, sondern abgelesen: `6 h / 15 min`, und das steht
+unter Test (`Interval.M15.duration * LOOKBACK_KERZEN == MINDESTFENSTER`).
+Dieselbe Disziplin wie bei den fuenf Minuten in 383 - eine Zahl, die aus dem
+bisherigen Verhalten kommt, ist keine neue Entscheidung.
+
+| Intervall | Fenster | 1/2/5 fehlende | nichts fehlt | 40 fehlende |
+|---|---|---|---|---|
+| 15m | 6 h (unveraendert) | — | — | gemeldet |
+| 1h | 24 h | — | — | — |
+| 1d | 24 Tage | vollstaendig | still | gemeldet, 24 geladen |
+
+Die Gegenprobe gehoert dazu: Eine wirklich zu alte Luecke wird weiter
+gemeldet. Das Fenster ist da, damit nicht der Live-Prozess die halbe Historie
+nachlaedt - dafuer ist der Backfill.
+
+`cli ingest` versprach die sechs Stunden in Hilfe **und** Meldung; beides
+nennt jetzt das Fenster, und ein Test haelt es fest.
+
+### Mein Fehler dabei, gefunden von einem Test, den es schon gab
+
+Erst stand dort `max(self.max_lookback, Kerzenlaenge * 24)`. Das sieht
+harmlos aus und ueberschreibt die Angabe des Aufrufers **nach oben**: Wer
+ausdruecklich `max_lookback=timedelta(hours=2)` sagte, bekam sechs Stunden.
+
+`test_lookback_is_bounded` ist darueber gefallen - ein Test von vor meiner
+Zeit, der genau diese Zusicherung hielt. Jetzt ist `None` die Vorgabe und
+leitet aus der Kerzenlaenge ab; ein gesetzter Wert gilt genau so, wie er
+gesetzt ist, und ein eigener Test haelt das fest.
+
+Zweimal in zwei Runden hat die Suite einen Fehler gefunden, den ich beim
+Beheben eingebaut habe (383: das Monatsintervall, 384: der ueberschriebene
+Aufrufer). Beide Male war es ein Test, der breiter prueft, als ich gedacht
+hatte - einmal ueber **alle** Intervalle, einmal ueber eine **fremde**
+Zusicherung.

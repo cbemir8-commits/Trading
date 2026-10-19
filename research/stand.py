@@ -3764,6 +3764,41 @@ BEHOBEN: tuple[Richtung, ...] = (
         "gekostet - '_publish' schluckt Ausnahmen, das Dashboard waere "
         "**eingefroren** statt zu frueh alarmiert. Jetzt gibt es dort 'None'",
         383,
+        zuletzt=384,
+    ),
+    # Befund 384: dasselbe Muster eine Schicht tiefer - und diesmal
+    # systematisch gesucht statt geraten.
+    Richtung(
+        "Das Nachladefenster war fuer M15 bemessen und galt fuer alle",
+        "Befund 383 war ein Muster und kein Einzelfall: eine Konstante fuer "
+        "M15, angewandt auf jedes Intervall. Deshalb diesmal systematisch - "
+        "alle Zeitkonstanten im Livepfad gegen die Frage 'was, wenn das "
+        "Intervall ein Tag ist?'. Ein Treffer: 'GapFiller.max_lookback' mit "
+        "sechs Stunden, also genau **24 Kerzen auf M15** und weniger als "
+        "**eine** auf Tageskerzen. 'GapFiller' schliesst nach einem "
+        "Verbindungsabbruch die Luecke ueber REST, damit Indikatoren nicht "
+        "ueber ein Loch hinwegrechnen. Gemessen auf Tageskerzen: **eine** "
+        "fehlende Kerze - 0 geladen, truncated; **zwei** - 0 geladen, "
+        "truncated; und **nichts fehlt, Lauf 7 Stunden nach dem Tagesschluss** "
+        "- ebenfalls truncated, also ein Fehlalarm mit der Aufforderung, einen "
+        "Backfill zu fahren. Auf Tageskerzen lud der Filler also **nie** etwas "
+        "nach und meldete obendrein Luecken, die es nicht gab. Kein stiller "
+        "Datenverlust - er sagt es -, aber ein Bauteil, das dort nicht "
+        "arbeitet, und ein zweiter Alarm, der im gemeinten Betrieb immer "
+        "leuchtet. Behoben: Das Fenster sind jetzt **24 Kerzen, mindestens "
+        "sechs Stunden**, und die 24 sind nicht gewaehlt, sondern abgelesen "
+        "(6 h / 15 min, unter Test). M15 bleibt unveraendert, H1 wird 24 h, D1 "
+        "24 Tage; gemessen laedt D1 jetzt 1, 2 und 5 fehlende Kerzen "
+        "vollstaendig, ist ohne Luecke still und meldet eine 40-Tage-Luecke "
+        "weiter als abgeschnitten. 'cli ingest' nannte die sechs Stunden in "
+        "Hilfe und Meldung und nennt jetzt das Fenster. **Mein Fehler dabei, "
+        "und ein bestehender Test hat ihn gefunden**: Erst stand dort "
+        "'max(max_lookback, Kerzenlaenge * 24)' - damit bekam ein Aufrufer, "
+        "der ausdruecklich zwei Stunden setzte, sechs, also seine Anweisung "
+        "still nach oben ueberschrieben. 'test_lookback_is_bounded' ist "
+        "darueber gefallen. Jetzt ist 'None' die Vorgabe und leitet ab, ein "
+        "gesetzter Wert gilt genau so",
+        384,
     ),
 )
 

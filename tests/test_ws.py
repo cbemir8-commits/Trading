@@ -12,9 +12,18 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
+import pytest
+
 from core.config import BybitEnvironment, BybitSettings
 from core.models import Interval
-from data.bybit.ws import GapFiller, KlineStream, StreamStats, parse_kline_message
+from data.bybit.ws import (
+    LOOKBACK_KERZEN,
+    MINDESTFENSTER,
+    GapFiller,
+    KlineStream,
+    StreamStats,
+    parse_kline_message,
+)
 from data.store import CandleStore
 from tests.factories import make_candles
 from tests.fakes import FakeMarketData
@@ -210,3 +219,115 @@ class TestGapFiller:
 
 async def _noop(candle: object, interval: object) -> None:
     return None
+
+
+class TestDasFensterHaengtAnDerKerzenlaenge:
+    """**Befund 384.** Sechs Stunden galten fuer jedes Intervall.
+
+    Sie sind fuer M15 bemessen - vierundzwanzig Kerzen -, und auf Tageskerzen
+    ist das weniger als **eine**. Gemessen hiess das zweierlei: nie etwas
+    nachgeladen, und ein Fehlalarm, sobald ein Lauf mehr als sechs Stunden
+    nach dem Tagesschluss startet. Dieselbe Ursache wie in Befund 383, nur
+    eine Schicht tiefer: dort die Herzschlagfrist, hier das Nachladefenster.
+    """
+
+    @staticmethod
+    def _lauf(tmp_path: Path, intervall: Interval, *, fehlend: int, stunden: float = 0):
+        gesamt = 60
+        candles = make_candles(count=gesamt, interval=intervall)
+        now = candles[-1].open_time + intervall.duration + timedelta(hours=stunden)
+        store = CandleStore(tmp_path / "store")
+        store.write(
+            "BTCUSDT", intervall, candles[: gesamt - fehlend] if fehlend else candles
+        )
+        filler = GapFiller(
+            market=FakeMarketData(candles, now=now), store=store, symbol="BTCUSDT"
+        )
+        since = (
+            candles[gesamt - fehlend].open_time
+            if fehlend
+            else candles[-1].open_time + intervall.duration
+        )
+        return filler, filler.fill(intervall, since=since, now=now)
+
+    def test_fuer_m15_bleibt_es_bei_sechs_stunden(self, tmp_path: Path) -> None:
+        """Die Zahl ist uebernommen, nicht gewaehlt - also darf sich dort
+        nichts aendern."""
+        filler, _ = self._lauf(tmp_path, Interval.M15, fehlend=1)
+
+        assert filler.fenster(Interval.M15) == MINDESTFENSTER
+        assert Interval.M15.duration * LOOKBACK_KERZEN == MINDESTFENSTER
+
+    @pytest.mark.parametrize("fehlend", [1, 2, 5])
+    def test_fehlende_tageskerzen_werden_jetzt_geladen(
+        self, tmp_path: Path, fehlend: int
+    ) -> None:
+        """Vorher: null, bei jeder Zahl fehlender Kerzen."""
+        _, ergebnis = self._lauf(tmp_path, Interval.D1, fehlend=fehlend)
+
+        assert ergebnis.written == fehlend
+        assert not ergebnis.truncated
+
+    def test_ohne_luecke_gibt_es_keinen_alarm_mehr(self, tmp_path: Path) -> None:
+        """Der Fehlalarm: Alles da, der Lauf startet sieben Stunden nach dem
+        Tagesschluss - vorher 'Luecke aelter als sechs Stunden'."""
+        _, ergebnis = self._lauf(tmp_path, Interval.D1, fehlend=0, stunden=7)
+
+        assert not ergebnis.truncated
+        assert ergebnis.written == 0
+
+    def test_eine_wirklich_zu_alte_luecke_wird_weiter_gemeldet(
+        self, tmp_path: Path
+    ) -> None:
+        """Die Gegenprobe. Ohne sie waere der Fehler nur verschoben: Das
+        Fenster ist da, damit der Live-Prozess nicht die halbe Historie
+        nachlaedt.
+        """
+        _, ergebnis = self._lauf(tmp_path, Interval.D1, fehlend=40)
+
+        assert ergebnis.truncated
+        assert ergebnis.written == LOOKBACK_KERZEN
+
+    def test_kein_fenster_wird_kleiner(self) -> None:
+        filler = GapFiller(market=None, store=None, symbol="BTCUSDT")
+        for intervall in Interval:
+            if intervall is Interval.MN1:
+                continue  # keine feste Dauer, siehe unten
+            assert filler.fenster(intervall) >= MINDESTFENSTER
+
+    def test_ein_gesetzter_wert_wird_nicht_ueberschrieben(self) -> None:
+        """**Mein Fehler, und der bestehende Test hat ihn gefunden.**
+
+        Erst stand dort ``max(max_lookback, Kerzenlaenge * 24)``. Damit bekam
+        ein Aufrufer, der ausdruecklich zwei Stunden sagte, sechs - die
+        Anweisung still nach oben ueberschrieben.
+        ``test_lookback_is_bounded`` ist darueber gefallen.
+        """
+        eng = GapFiller(
+            market=None, store=None, symbol="BTCUSDT",
+            max_lookback=timedelta(hours=2),
+        )
+
+        assert eng.fenster(Interval.M15) == timedelta(hours=2)
+        assert eng.fenster(Interval.D1) == timedelta(hours=2)
+
+    def test_das_monatsintervall_wirft_nicht(self) -> None:
+        """``Interval.MN1.duration`` wirft - dieselbe Falle wie in Befund 383,
+        und diesmal von Anfang an bedacht."""
+        filler = GapFiller(market=None, store=None, symbol="BTCUSDT")
+
+        with pytest.raises(ValueError, match="keine feste Dauer"):
+            _ = Interval.MN1.duration
+        assert filler.fenster(Interval.MN1) == MINDESTFENSTER
+
+    def test_der_befehl_nennt_das_fenster_statt_einer_festen_zahl(self) -> None:
+        """'cli ingest' versprach "sechs Stunden" in Hilfe und Meldung."""
+        import inspect
+
+        import cli
+
+        quelle = inspect.getsource(cli.ingest)
+
+        assert "vierundzwanzig Kerzen" in quelle
+        assert "filler.fenster(interval)" in quelle
+        assert "aelter als 6 Stunden" not in quelle
