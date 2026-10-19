@@ -3619,6 +3619,39 @@ BEHOBEN: tuple[Richtung, ...] = (
         "erreicht niemanden",
         379,
     ),
+    # Befund 380: das Entscheidungsmaterial selbst gepruefte - zwei Zahlen
+    # waren ueberholt, und eine davon durch meine eigene Arbeit.
+    Richtung(
+        "Zwei Entscheidungen standen auf ueberholten Zahlen",
+        "Der Stand des Projekts ist: Alles Messbare ist gemessen, was bleibt, "
+        "sind Entscheidungen. Damit ist das **Entscheidungsmaterial** das "
+        "teuerste Stueck Text im Register, und die Waechter daneben pruefen "
+        "nur die Form - Fundstelle im Laborbuch, Suchbegriffe, drei Texte. Die "
+        "Zahlen waren bis auf eine ungeprueft. Zwei von zehn Entscheidungen "
+        "standen auf ueberholten. **Erstens** schloss 69/340 mit 'zu "
+        "entscheiden ist also nicht Messung statt Annahme, sondern nur, ob das "
+        "Verzeichnis kuenftig jeden Versuch mitschreibt' - und seit Befund 377 "
+        "schreibt **jeder** zaehlende Befehl mit, gepruefter am Quelltext. Die "
+        "Frage stand als offen da und war von meiner eigenen Arbeit drei Tage "
+        "zuvor beantwortet. Offen bleibt eine andere, und sie ist gerechnet: "
+        "mindestens 1.217 weitere Versuche (2.814 mit dem gemessenen Anteil) "
+        "gegen 27, die das Budget zulaesst. **Zweitens** stuetzt 96/339 ihr "
+        "Gegenargument auf 'alle 45 Eintraege der Bestenliste' - Befund 349 "
+        "hat gezaehlt und kommt auf **141**, also das Dreifache. Das "
+        "Gegenargument ist damit schwerer, nicht leichter. Nachgemessen ist "
+        "das nicht: 'state/leaderboard.json' ist maschinenspezifisch und "
+        "fehlt in diesem Klon, nur 'state/trials.json' ist eingecheckt (Befund "
+        "73) - der Vermerk sagt das, und 'zuletzt' bleibt bei 339, weil eine "
+        "uebernommene Zahl keine Messung ist. Gebaut ist ein Waechter, der "
+        "beides **an eine Messung bindet** statt an einen Wortlaut: Die "
+        "Verzeichnis-Frage wird gegen den Syntaxbaum der Befehle geprueft und "
+        "faellt in beide Richtungen - wer 377 zurueckdreht, bekommt gesagt, "
+        "dass das Register dann auch wieder falsch ist. Dazu die Kopfzahl von "
+        "69 gegen die Akte (203 Versuche, 61 Punkte, 30 %) und die Regel, dass "
+        "eine alte Bestenlisten-Zahl nie ohne die gemessene daneben stehen "
+        "darf",
+        380,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -4402,9 +4435,19 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "Die gemessene Streuung wuerde die Huerde nicht senken, sondern "
               "heben. Wer sie einsetzte, verlore Gates - zu entscheiden ist "
               "also nicht 'Messung statt Annahme', sondern nur, ob das "
-              "Verzeichnis kuenftig jeden Versuch mitschreibt.",
+              "Verzeichnis kuenftig jeden Versuch mitschreibt."
+              "\n    **Und genau das ist seit 377 erledigt** (380): Kein "
+              "Befehl bucht mehr eine reine Summe - 'adaptiv', 'research' und "
+              "'wettbewerb' schreiben Einzelnachweise mit Guete, Form und "
+              "Herkunft, wie 'landschaft' und 'machbarkeit' seit 282. Die "
+              "Frage, die hier noch als offen stand, ist damit beantwortet; "
+              "offen bleibt eine andere, und sie ist gerechnet (378/379): Fuer "
+              "die verlangten 90 % Abdeckung braeuchte es **mindestens 1.217 "
+              "weitere Versuche** (mit dem gemessenen Anteil 2.814), und das "
+              "Suchbudget laesst **27** zu. Zu entscheiden ist also, ob das "
+              "Budget dafuer steigt - nicht mehr, ob mitgeschrieben wird.",
         befund=69,
-        zuletzt=340,
+        zuletzt=380,
     ),
     Entscheidung(
         frage="Was die Latte des Deflated Sharpe bedeutet",
@@ -4584,7 +4627,12 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "Eintraege der Bestenliste sind unter dem schwaecheren Stress "
               "gemessen, und eine Verschaerfung macht kuenftige Laeufe mit "
               "ihnen unvergleichbar - dieselbe Kollision wie beim Kontostand "
-              "in Befund 96. Dafuer spricht, dass ein Gate messen sollte, was "
+              "in Befund 96. **Die 45 sind der Stand von damals** (380): "
+              "Befund 349 hat die Liste gezaehlt und kommt auf **141 "
+              "Eintraege**, also das Dreifache - das Gegenargument ist "
+              "schwerer, nicht leichter. Nachgemessen ist das hier nicht, "
+              "sondern aus 349 uebernommen: 'state/' ist nicht eingecheckt, "
+              "und in diesem Klon gibt es die Datei nicht. Dafuer spricht, dass ein Gate messen sollte, was "
               "es zu messen behauptet. Der Standard wurde nicht angefasst; "
               "die Entscheidung liegt beim Nutzer. **Die Zahl, auf der sie "
               "steht, ist seit 339 29,6 % und nicht 34 %** - kleiner, aber "

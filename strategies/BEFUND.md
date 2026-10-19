@@ -33856,3 +33856,92 @@ Befund 351 nennt sie: **gebaut und angeschlossen.** Ich habe in Befund 378
 Ausgabe gehaengt. Eine Messung, die nur im Modul steht, erreicht niemanden -
 und die Stelle, an der sie gebraucht wird, ist genau die, an der ein Nutzer
 fragt, ob sich das Warten lohnt.
+
+## Dreihundertachtzig. Zwei Entscheidungen standen auf ueberholten Zahlen
+
+Der Stand dieses Projekts ist: Alles Messbare ist gemessen, was bleibt, sind
+Entscheidungen. Damit ist das **Entscheidungsmaterial** das teuerste Stueck
+Text im Register - eine veraltete Zahl dort kostet keine Messung, sondern eine
+Wahl.
+
+Die Waechter daneben pruefen die **Form**: dass jede Entscheidung eine
+Fundstelle im Laborbuch hat, dass sie Suchbegriffe traegt, dass alle drei
+Texte da sind. Die **Zahlen** waren bis auf eine ungeprueft. Zwei von zehn
+standen auf ueberholten.
+
+### Erstens: eine Frage, die ich selbst beantwortet hatte
+
+Entscheidung 69/340 schliesst so:
+
+> Zu entscheiden ist also nicht "Messung statt Annahme", sondern nur, ob das
+> Verzeichnis kuenftig jeden Versuch mitschreibt.
+
+Seit Befund 377 schreibt **jeder** zaehlende Befehl mit - `adaptiv`,
+`research` und `wettbewerb` ebenso wie `landschaft` und `machbarkeit` seit
+282. Die Frage stand als offen da und war von meiner eigenen Arbeit drei Tage
+zuvor beantwortet.
+
+Offen bleibt eine andere, und die ist gerechnet (378/379):
+
+| | |
+|---|---|
+| Fuer 90 % Abdeckung noetig, mindestens | 1.217 weitere Versuche |
+| Mit dem gemessenen Anteil | 2.814 |
+| Was das Budget zulaesst | 27 |
+
+Zu entscheiden ist also, **ob das Budget steigt** - nicht mehr, ob
+mitgeschrieben wird. Das ist eine andere Frage, mit einem anderen Preis, und
+sie stand nirgends.
+
+### Zweitens: ein Gegenargument auf einem Drittel
+
+Entscheidung 96/339 waegt ab, ob der Kosten-Stress-Test das Funding
+mitverdoppeln soll, und ihr Gegenargument ist die Vergleichbarkeit:
+
+> Alle **45** Eintraege der Bestenliste sind unter dem schwaecheren Stress
+> gemessen, und eine Verschaerfung macht kuenftige Laeufe mit ihnen
+> unvergleichbar.
+
+Befund 349 hat die Liste gezaehlt: **141 Eintraege**. Das Dreifache. Das
+Gegenargument ist damit schwerer, nicht leichter - die Richtung der
+Entscheidung aendert sich nicht, ihr Gewicht schon.
+
+**Nachgemessen habe ich das nicht**, und das gehoert dazu:
+`state/leaderboard.json` ist maschinenspezifisch und nicht eingecheckt - nur
+`state/trials.json` ist ausgenommen, weil der Versuchszaehler versioniert
+gehoert (Befund 73). Die 141 sind aus Befund 349 **uebernommen**. Deshalb
+bleibt `zuletzt` bei 339: Eine uebernommene Zahl ist keine Messung, und
+`zuletzt` heisst "wo zuletzt gemessen" (Befund 130). Ein Test prueft auch
+das - dass die Datei hier wirklich fehlt, damit der Vermerk auffaellt, falls
+sie eines Tages im Klon steht.
+
+### Der Waechter bindet an eine Messung, nicht an einen Wortlaut
+
+Ein Test, der nur Zeichenketten vergleicht, haelt den Text fest und nicht die
+Wahrheit. Die Verzeichnis-Frage wird deshalb **gegen den Syntaxbaum der
+Befehle** geprueft, und sie faellt in beide Richtungen:
+
+* Schreiben alle zaehlenden Befehle mit, muss das Register es sagen.
+* Tun sie es nicht, darf es nicht dastehen.
+
+Wer Befund 377 zurueckdreht, bekommt hier gesagt, dass das Register dann auch
+wieder falsch ist. Dazu zwei weitere Bindungen: die Kopfzahl von 69 gegen die
+Akte (203 Versuche, 61 Punkte, 30 % Abdeckung - alle drei aus
+`state/trials.json` und `reports/` gerechnet), und die Regel, dass eine alte
+Bestenlisten-Zahl nie ohne die gemessene daneben stehen darf.
+
+Die 45 durfte bleiben. Sie war einmal richtig, und eine Zahl zu loeschen, die
+einmal gestimmt hat, ist auch eine Faelschung - nur eine bequemere.
+
+### Ein Waechter hat zurueckgemeldet
+
+`test_streuungsdeckel.py::test_die_fundstelle_ist_nachgezogen` hielt die
+massgebliche Fundstelle von Entscheidung 69 auf **340** fest. Mit dieser
+Berichtigung ist sie **380** - und das ist richtig, weil hier gemessen wurde
+(der Quelltext der Befehle, und die 1.217 gegen 27). Der Test sagt jetzt, was
+380 gemessen hat, und prueft weiter, dass die Messung aus 340 im Text
+stehenbleibt: `Streuung.deckel` und "nicht senken, sondern heben" muessen
+beide da sein.
+
+Das ist die Regel aus Befund 130 in Betrieb: Wer eine Fundstelle nennt, muss
+die letzte nennen - und wer sie bewegt, muss sagen, womit.

@@ -233,10 +233,22 @@ class TestDerEintragIstNachgemessen:
         assert "nicht senken, sondern" in warum
 
     def test_die_fundstelle_ist_nachgezogen(self) -> None:
+        """**Weitergewandert zu 380.** Hier stand 340, und das war richtig,
+        bis die Entscheidung erneut gemessen wurde.
+
+        Befund 380 hat ihre Schlussfrage gegen den Quelltext geprueft - 'ob
+        das Verzeichnis kuenftig jeden Versuch mitschreibt' ist seit 377
+        beantwortet - und die offen gebliebene Haelfte gerechnet: mindestens
+        1.217 weitere Versuche gegen 27 im Budget. Das ist eine Messung, also
+        wandert ``zuletzt`` mit (Befund 130). Was 340 gemessen hat, steht
+        unveraendert im Text.
+        """
         eintrag = self._eintrag()
 
         assert eintrag.befund == 69
-        assert eintrag.massgeblich == 340
+        assert eintrag.massgeblich == 380
+        assert "Streuung.deckel" in eintrag.warum, "die Messung aus 340 fehlt"
+        assert "seit 377 erledigt" in eintrag.warum
 
 
 class TestDieWacheHatZurueckgemeldet:
