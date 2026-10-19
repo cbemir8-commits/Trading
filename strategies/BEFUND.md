@@ -33394,3 +33394,117 @@ Tabelle abgelesen. Gemessen sind es **4,7027**. Drei gepflegte Zahlen stehen im
 Register als nicht mehr reproduzierbar; das waere die vierte gewesen. Die
 Konstante ist weg, die Grenze wird gerechnet, und ein Test haelt fest, dass sie
 sich mit dem Punkt aendert.
+
+## Dreihundertfuenfundsiebzig. Die Klemme ist tragend, nicht faul
+
+Dieser Abschnitt haelt einen **Irrweg von mir** fest. Er steht im Buch, weil
+die Suite ihn abgelehnt hat und weil der naechste Durchgang dieselbe Stelle
+finden wird.
+
+### Was wie ein Loch aussah
+
+Beim Rechnen fuer Befund 374 variierte eine Tabelle die Schiefe des Gewinners,
+um den Kreisbezug zu zeigen. Die Spalte mit dem **heutigen** Gate stand nur
+als Vergleich daneben:
+
+| Schiefe | DSR heute | |
+|---|---|---|
+| 4,5000 | 0,6972 | durchgefallen |
+| 4,7000 | **1,0000** | **bestanden** |
+| 8,0000 | 1,0000 | bestanden |
+| 20,0000 | 1,0000 | bestanden |
+
+Kein Uebergang, ein Sprung - und danach besteht alles. Dahinter steht
+
+```python
+denominator = math.sqrt(
+    max(1 - skew * observed_sharpe + (kurtosis - 1) / 4 * observed_sharpe**2, 1e-9)
+)
+```
+
+Die Klammer ist die Streuung des Sharpe-Schaetzers nach Mertens und Lo, also
+eine **Varianz**. Wird sie negativ, klemmt `max` sie auf `1e-9`, der Nenner
+wird 3e-5, die Teststatistik explodiert, und das Gate, das Mehrfachtesten und
+Glueck bestrafen soll, gibt die Bestnote. Ich habe daraus ein nicht-bestanden
+gemacht, mit der Begruendung aus Befund 321/322: Was nicht beurteilt werden
+kann, besteht nicht.
+
+### Die Suite hat es abgelehnt, mit drei Tests, und sie hatte recht
+
+`suchbudget.Budget.hebel` zerlegt das Gate in vier Groessen und fragt fuer
+jede: *Wo muesste sie stehen, damit es haelt - alles andere unveraendert?* Bei
+der Schiefe fuehrt diese Frage **absichtlich** in den unmoeglichen Bereich,
+denn Schiefe und Woelbung sind gekoppelt. Der Punkt wird dort gefunden, und die
+Unmoeglichkeit wird danach **getrennt** benannt:
+
+| | Meldung an den Nutzer |
+|---|---|
+| mit Klemme (heute) | `Schiefe 3.466 -> 4.486   braucht Woelbung >= 21.1, hier 16.0` |
+| ohne Klemme (meine Aenderung) | `Schiefe 3.466   unerreichbar` |
+
+Der Test, der fiel, heisst
+`test_die_schiefe_meldet_ihren_grund_statt_einer_zahl`. Genau diesen Grund
+hatte meine Aenderung entfernt. Wer "unerreichbar" liest, weiss nicht, ob es
+eng oder absurd ist; wer "braucht Woelbung >= 21.1, hier 16.0" liest, weiss es.
+
+Eine Wache, die nur auf Unmoegliches anspringt, ist hier keine Landmine,
+sondern das Mittel, mit dem eine Zerlegung einen fiktiven Punkt findet und als
+fiktiv ausweist.
+
+Dazu kommt: Die Mathematik stand seit Befund 70 in `formgrenze` -
+`Woelbung >= Schiefe^2 + 1`, aus Cauchy-Schwarz auf `Cov(X, X^2)`, Gleichheit
+nur bei Zweipunktverteilungen. Ich habe sie nachgerechnet statt nachgelesen,
+und Befund 225 hatte die Zahlen dort sogar schon einmal berichtigt. **Erst
+lesen, was das Projekt zur eigenen Formel schon weiss.**
+
+### Der eine neue Fund: die Normierung ist uneinheitlich
+
+Beim Suchen kam etwas heraus, das das Projekt noch nicht hatte.
+`evaluate_gates` rechnet
+
+```python
+spread = float(np.std(pnls, ddof=1))
+centred = (pnls - np.mean(pnls)) / spread
+skew = float(np.mean(centred**3))
+```
+
+- den Spread mit `ddof=1`, die Momente mit `np.mean`. Damit ist das zweite
+Moment `(n-1)/n` und nicht 1, und die **berechneten** Momente koennen genau die
+Schranke verfehlen, auf die `formgrenze.moeglich` sie prueft.
+`Formlinie.ueber_der_schranke` sagt in seinem eigenen Docstring, was das
+bedeutet:
+
+> Muessen sie - sonst ist eine der beiden Zahlen falsch gerechnet, und das
+> waere ein Fund ueber den Messcode und nicht ueber den Markt.
+
+Gemessen ueber die erschoepfende Zweipunkt-Familie (n von 30 bis 500, jede
+Gewinnquote, Zielvielfache bis 200):
+
+| Normierung | Verletzungen von `Woelbung >= Schiefe^2 + 1` |
+|---|---|
+| `ddof=0` | **keine einzige** |
+| die des Gates | **bis 0,0656** |
+
+### Die ehrliche Groesse davon
+
+Der Fehlalarm ist so unerreichbar wie die Klemme:
+
+* Abstand des verzeichneten Punktes zur Schranke: **+2,9138**
+* kleinste Klammer ueber 36.000 Stichproben (Zweipunkt, t mit 2,1 bis 6
+  Freiheitsgraden, lognormal): **0,0427**; ueber die Zweipunkt-Familie allein
+  **0,3276**
+* hoechste Schiefe in `reports/` und der Bestenliste: **3,4815**, bei einem
+  Kipppunkt, der nie unter `sqrt(Woelbung-1) = 3,862` liegt
+
+Einheitlich normiert stiege der DSR des Spot-Punkts von **0,5827 auf 0,5836**
+(+0,0009). Das ist eine verzeichnete Zahl, verschoben in die **milde**
+Richtung, fuer einen Gewinn in einer Ecke, die kein Kandidat erreicht. Sie
+bleibt stehen; die Zahl steht hier und in `tests/test_momentwache.py`, damit
+die Entscheidung nicht als Nebenwirkung einer Aufraeumarbeit fiele.
+
+### Was von der Runde bleibt
+
+Kein Fix, zwei Lehren und eine Messung. Die Lehren: Ein Sprung in einer
+Vergleichsspalte ist noch kein Befund, und eine Wache, die nur auf
+Unmoegliches anspringt, kann trotzdem gebraucht werden - von demjenigen, der
+das Unmoegliche benennen will. Die Messung steht oben.

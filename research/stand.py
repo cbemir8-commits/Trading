@@ -3441,6 +3441,48 @@ BEHOBEN: tuple[Richtung, ...] = (
         "als 'sharpe_variance' weitergibt",
         374,
     ),
+    # Befund 375: ein Irrweg von mir. Die Klemme sah aus wie ein Loch und
+    # ist tragendes Geruest - die Suite hat es abgelehnt, mit drei Tests.
+    Richtung(
+        "Die Klemme im haertesten Gate ist tragend, nicht faul",
+        "Beim Rechnen fuer Befund 374 fiel auf: Das Gate springt bei Schiefe "
+        "4,5 von DSR 0,6972 auf **1,0000** bei 4,7 und bleibt dort bis "
+        "Schiefe 20. Dahinter steht 'math.sqrt(max(1 - skew*SR + "
+        "(kurtosis-1)/4*SR**2, 1e-9))': Wird die Klammer - die Streuung des "
+        "Sharpe-Schaetzers, also eine Varianz - negativ, klemmt 'max' sie auf "
+        "1e-9, der Nenner wird 3e-5 und die Teststatistik explodiert. Ich "
+        "habe daraus ein nicht-bestanden gemacht, mit der Begruendung aus "
+        "Befund 321/322 ('was nicht beurteilt werden kann, besteht nicht'). "
+        "**Die Suite hat es abgelehnt, mit drei Tests, und sie hatte recht.** "
+        "'suchbudget.Budget.hebel' fuehrt die Frage 'wo muesste die Schiefe "
+        "stehen' absichtlich in den unmoeglichen Bereich, findet den Punkt "
+        "dort und benennt die Unmoeglichkeit danach getrennt: mit Klemme "
+        "steht da 'Schiefe 3.466 -> 4.486, braucht Woelbung >= 21.1, hier "
+        "16.0', ohne sie nur noch 'unerreichbar'. Der Test, der fiel, heisst "
+        "'test_die_schiefe_meldet_ihren_grund_statt_einer_zahl' - genau "
+        "diesen Grund hatte ich entfernt. Die Mathematik dazu steht seit "
+        "Befund 70 in 'formgrenze' (Woelbung >= Schiefe^2 + 1, Cauchy-Schwarz), "
+        "ich habe sie nachgerechnet statt nachgelesen. Was die Runde "
+        "**neu** gebracht hat, ist ein Fund ueber den Messcode: "
+        "'evaluate_gates' normiert uneinheitlich - 'spread' mit 'ddof=1', die "
+        "Momente mit 'np.mean', also zweites Moment '(n-1)/n' statt 1. Damit "
+        "koennen die **berechneten** Momente genau die Schranke verfehlen, "
+        "auf die 'formgrenze.moeglich' sie prueft, und "
+        "'Formlinie.ueber_der_schranke' nennt so etwas selbst 'einen Fund "
+        "ueber den Messcode und nicht ueber den Markt'. Gemessen ueber die "
+        "erschoepfende Zweipunkt-Familie: mit 'ddof=0' **keine einzige** "
+        "Verletzung, mit der Normierung des Gates **bis 0,0656**. Die Groesse "
+        "ehrlich: Am verzeichneten Punkt ist der Abstand zur Schranke "
+        "+2,9138, der Fehlalarm also so unerreichbar wie die Klemme (kleinste "
+        "Klammer 0,0427 ueber 36.000 Stichproben, 0,3276 ueber die "
+        "Zweipunkt-Familie; hoechste Schiefe im Bestand 3,4815 bei einem "
+        "Kipppunkt nie unter 3,862). Einheitlich normiert stiege der DSR des "
+        "Spot-Punkts von 0,5827 auf 0,5836 - eine verzeichnete Zahl in die "
+        "**milde** Richtung verschoben fuer einen Gewinn in einer Ecke, die "
+        "kein Kandidat erreicht. Bleibt stehen, gemessen verzeichnet, und die "
+        "Entscheidung gehoert nicht in eine Nebenwirkung",
+        375,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
