@@ -229,6 +229,12 @@ class RiskOfficer:
                 zustand=state.trading_state.value,
                 hoechststand=str(state.equity_peak),
             )
+        #: Ohne frueheren Zustand werden Hoechststand, Tages- und Wochenstart
+        #: auf den **ersten gesehenen** Kapitalstand gesetzt. Bei einem neuen
+        #: Konto ist das richtig; bei einem Konto mit Vorgeschichte beginnt
+        #: damit jede Verlustgrenze von dort neu - und darueber wird beim
+        #: ersten Kapitalstand einmal berichtet (Befund 376).
+        self._ohne_vorgeschichte = state.equity_peak <= 0
         return state
 
     def save(self) -> None:
@@ -261,6 +267,32 @@ class RiskOfficer:
         if self.state.week_start != monday:
             self.state.week_start = monday
             self.state.week_start_equity = equity
+
+        if self._ohne_vorgeschichte and equity > 0:
+            # **Befund 376.** Einmal je Lauf, beim ersten Kapitalstand - und
+            # nicht im Konstruktor, weil dort der Stand noch nicht bekannt ist
+            # und die Meldung ohne ihn nichts aussagt.
+            #
+            # Gemessen, was daran haengt: Zwei Beine, die **gleichzeitig**
+            # starten, greifen identisch (-3 / -7 / -15 %), denn beide lesen
+            # die Konto-Equity. Startet das zweite nach einem Verlust von 2 /
+            # 5 / 10 %, greift sein Kill-Switch erst bei -16,70 / -19,25 /
+            # -23,50 % vom echten Stand. Dasselbe gilt fuer **einen** Lauf mit
+            # neuer Ablage: Nicht die Zahl der Beine oeffnet die Grenze,
+            # sondern der fehlende Hoechststand.
+            self._ohne_vorgeschichte = False
+            self._melden(
+                "warning",
+                "risk.ohne_vorgeschichte",
+                kapital=str(equity),
+                hinweis=(
+                    "Kein frueherer Risikozustand - Hoechststand, Tages- und "
+                    "Wochenstart werden auf diesen Stand gesetzt. Bei einem "
+                    "neuen Konto stimmt das. Hat das Konto vorher mehr "
+                    "gehalten, beginnen die Verlustgrenzen hier neu und "
+                    "greifen spaeter, als sie sollen."
+                ),
+            )
 
         if equity > self.state.equity_peak:
             self.state.equity_peak = equity

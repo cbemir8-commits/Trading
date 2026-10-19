@@ -33508,3 +33508,91 @@ Kein Fix, zwei Lehren und eine Messung. Die Lehren: Ein Sprung in einer
 Vergleichsspalte ist noch kein Befund, und eine Wache, die nur auf
 Unmoegliches anspringt, kann trotzdem gebraucht werden - von demjenigen, der
 das Unmoegliche benennen will. Die Messung steht oben.
+
+## Dreihundertsechsundsiebzig. Ein Offizier ohne Vorgeschichte
+
+Die offene Frage aus Befund 263/318/353 - *zugelassen ist der Korb, handelbar
+ist ein Bein* - endete mit diesem Satz:
+
+> wer trotzdem zwei Beine will, braucht zwei Ablagen (`PATHS__STATE`) - und
+> dann gelten die Verlustgrenzen je Bein statt je Konto, also **zweimal die
+> Tagesgrenze auf einem Konto**
+
+Nachgemessen stimmt die Richtung. Der Mechanismus nicht.
+
+### Zwei Beine gleichzeitig sind nicht das Problem
+
+`observe_equity` rechnet Rueckgang, Tages- und Wochenverlust aus dem
+**uebergebenen** Kapitalstand, und beide Beine lesen die Konto-Equity. Also
+greifen sie identisch:
+
+| Versatz | Bein | Tagespause | Wochenpause | Kill |
+|---|---|---|---|---|
+| 0 % | A | −3,00 % | −7,00 % | −15,00 % |
+| 0 % | B | −3,00 % | −7,00 % | −15,00 % |
+
+Auch `drawdown_pct`, `day_pnl_pct` und `equity_peak` sind in beiden gleich. Es
+gibt keine Buchfuehrung je Bein, die sich addieren koennte.
+
+### Was die Grenze oeffnet, ist der Versatz
+
+Ein Offizier ohne frueheren Zustand setzt Hoechststand, Tages- und
+Wochenstart auf den **ersten Stand, den er sieht**. Startet das zweite Bein,
+nachdem das Konto schon verloren hat, beginnt dort jede Grenze neu:
+
+| Versatz | Tagespause | Wochenpause | Kill |
+|---|---|---|---|
+| 2 % | −4,95 % | −8,90 % | **−16,70 %** |
+| 5 % | −7,85 % | −11,65 % | **−19,25 %** |
+| 10 % | −12,70 % | −16,30 % | **−23,50 %** |
+
+Alle Prozente vom echten Ausgangsstand. Bei zehn Prozent Versatz darf das
+Konto 23,50 % verlieren, bevor der Kill-Switch des zweiten Beins greift -
+gegen eine Grenze von 15 %.
+
+### Und es sind nicht die zwei Beine
+
+Derselbe Mechanismus trifft **einen** Lauf mit frischer Ablage: neues
+`PATHS__STATE`, geloeschte oder unlesbare `risk.json`, oder ein erster Start
+auf einem Konto, das schon verloren hat. Gemessen: ein einzelner zweiter Lauf
+nach 10 % Verlust greift bei −23,50 %, genau wie das zweite Bein.
+
+**Nicht die Zahl der Beine oeffnet die Grenze, sondern der fehlende
+Hoechststand.** Das ist die eigentliche Berichtigung: Die offene Frage hatte
+den Fall an das Korbhandeln gebunden, und er haengt dort nicht.
+
+Gegenprobe, damit der Befund nicht alles verdaechtigt: Auf **demselben** Pfad
+bleibt der Hoechststand erhalten, und der Kill steht wieder bei −15,00 %.
+
+### Was gebaut wurde: keine Sperre, ein Satz
+
+Der Offizier kann den frueheren Hoechststand nicht wissen. Die Boerse liefert
+ihn nicht, und ihn zu erfinden waere schlimmer als die Luecke - eine
+Verlustgrenze auf einem geschaetzten Hoechststand waere eine Zahl, die
+Sicherheit behauptet und keine hat.
+
+Also sagt er es. Beim **ersten** Kapitalstand, einmal, mit dem Stand und der
+Folge:
+
+> Kein frueherer Risikozustand - Hoechststand, Tages- und Wochenstart werden auf
+> diesen Stand gesetzt. Bei einem neuen Konto stimmt das. Hat das Konto vorher
+> mehr gehalten, beginnen die Verlustgrenzen hier neu und greifen spaeter, als
+> sie sollen.
+
+Nicht im Konstruktor, weil dort der Stand noch nicht bekannt ist und die
+Meldung ohne ihn nichts aussagt. Nicht je Kerze, weil eine Zeile alle fuenfzehn
+Minuten so gut ist wie keine. Und ueber `_melden`, damit Forschungslaeufe still
+bleiben - Befund 369 hat gezeigt, was ein Forschungsbefehl sonst ausgibt (51
+Grenzzeilen, 14 davon CRITICAL).
+
+Die drei Schwellen selbst sind unberuehrt; ein Test haelt sie bei −3, −7 und
+−15 % fest.
+
+### Nebenbei gelernt
+
+Die Tagesgrenze setzt **nur** `paused_until` und **nicht** `trading_state`.
+Wer beim Messen auf den Zustand prueft, findet sie nie - und haelt die
+Wochengrenze (7 %) fuer die Tagesgrenze (3 %). Genau das ist mir im ersten
+Durchgang passiert: Die Tabelle zeigte "Tagespause bei −7,00 %", und die Zahl
+war eine andere Grenze. Es steht im Docstring von `_schwellen`, damit die
+naechste Messung an derselben Stelle nicht denselben Umweg nimmt.

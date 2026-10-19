@@ -3483,6 +3483,41 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Entscheidung gehoert nicht in eine Nebenwirkung",
         375,
     ),
+    # Befund 376: der Satz am Ende der offenen Korbfrage war im Mechanismus
+    # falsch - und der echte Mechanismus trifft mehr als zwei Beine.
+    Richtung(
+        "Ein Offizier ohne Vorgeschichte vergibt eine neue Erlaubnis",
+        "Die offene Frage aus 263/318/353 endete mit: 'dann gelten die "
+        "Verlustgrenzen je Bein statt je Konto, also zweimal die Tagesgrenze "
+        "auf einem Konto'. Nachgemessen stimmt die Richtung, der Mechanismus "
+        "nicht. 'observe_equity' rechnet Rueckgang, Tages- und Wochenverlust "
+        "aus dem **uebergebenen** Kapitalstand, und beide Beine lesen die "
+        "Konto-Equity: Gleichzeitig gestartet greifen sie **identisch** - "
+        "Tagespause -3,00 %, Wochenpause -7,00 %, Kill -15,00 %, und auch "
+        "'drawdown_pct', 'day_pnl_pct' und 'equity_peak' sind in beiden gleich. "
+        "**Was die Grenze oeffnet, ist der Versatz.** Ein Offizier ohne "
+        "frueheren Zustand setzt Hoechststand, Tages- und Wochenstart auf den "
+        "ersten Stand, den er sieht. Gemessen, je Versatz des zweiten Starts "
+        "(Prozente vom echten Ausgangsstand): bei 2 % Tagespause -4,95 %, "
+        "Wochenpause -8,90 %, **Kill -16,70 %**; bei 5 % -7,85 / -11,65 / "
+        "**-19,25 %**; bei 10 % -12,70 / -16,30 / **-23,50 %** gegen eine "
+        "Grenze von 15. **Und es sind nicht die zwei Beine**: Derselbe "
+        "Mechanismus trifft einen einzelnen Lauf mit frischer Ablage - neues "
+        "'PATHS__STATE', geloeschte oder unlesbare 'risk.json', oder ein "
+        "erster Start auf einem Konto, das schon verloren hat. Gegenprobe "
+        "gemessen: auf demselben Pfad bleibt der Hoechststand und der Kill "
+        "steht wieder bei -15,00 %. **Gebaut wurde keine Sperre, sondern ein "
+        "Satz**: Der Offizier kann den frueheren Hoechststand nicht wissen - "
+        "die Boerse liefert ihn nicht, und ihn zu erfinden waere schlimmer als "
+        "die Luecke. Also meldet er beim ersten Kapitalstand einmal "
+        "'risk.ohne_vorgeschichte' mit dem Stand und der Folge, ueber "
+        "'_melden', damit Forschungslaeufe still bleiben (Befund 369). Die "
+        "drei Schwellen selbst sind unberuehrt. **Nebenbei gelernt**: Die "
+        "Tagesgrenze setzt nur 'paused_until' und nicht 'trading_state' - wer "
+        "beim Messen auf den Zustand prueft, findet sie nie und haelt die "
+        "Wochengrenze fuer sie. Genau das ist mir im ersten Durchgang passiert",
+        376,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -3811,9 +3846,22 @@ OFFEN: tuple[Richtung, ...] = (
         "zurueckschreibt. Gesperrt wird das jetzt "
         "('execution/einzelbetrieb.py'); wer trotzdem zwei Beine will, braucht "
         "zwei Ablagen ('PATHS__STATE') - und dann gelten die Verlustgrenzen je "
-        "Bein statt je Konto, also zweimal die Tagesgrenze auf einem Konto",
+        "Bein statt je Konto, also zweimal die Tagesgrenze auf einem Konto. "
+        "**Dieser letzte Satz war falsch, und zwar im Mechanismus** (376): "
+        "'observe_equity' rechnet jede Grenze aus dem uebergebenen "
+        "Kapitalstand, und beide Beine lesen die Konto-Equity - gleichzeitig "
+        "gestartet greifen sie **identisch** (-3 / -7 / -15 %), nicht "
+        "zweimal. Was die Grenze oeffnet, ist der **Versatz**: Ein Offizier "
+        "ohne frueheren Zustand setzt Hoechststand, Tages- und Wochenstart auf "
+        "den ersten Stand, den er sieht. Startet das zweite Bein nach einem "
+        "Verlust von 2 / 5 / 10 %, greift sein Kill-Switch erst bei -16,70 / "
+        "-19,25 / -23,50 % vom echten Ausgangsstand. Und es sind nicht die "
+        "zwei Beine: Derselbe Mechanismus trifft **einen** Lauf mit frischer "
+        "Ablage - neues 'PATHS__STATE', geloeschte oder unlesbare "
+        "'risk.json'. Nicht die Zahl der Beine oeffnet die Grenze, sondern "
+        "der fehlende Hoechststand",
         263,
-        353,
+        376,
     ),
     Richtung(
         "Zahlt der Bestand dann, wenn Longs am meisten zahlen?",
