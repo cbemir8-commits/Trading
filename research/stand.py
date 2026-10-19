@@ -3724,6 +3724,46 @@ BEHOBEN: tuple[Richtung, ...] = (
         "vor 'pausiert', weil eine Pause der Nutzer selbst gesetzt hat und "
         "kennt - eine verletzte Invariante nicht",
         382,
+        zuletzt=383,
+    ),
+    # Befund 383: der Umkehrfall - gesund, als Problem gezeigt. Und zwar
+    # genau auf dem Intervall, auf dem das Projekt zertifiziert ist.
+    Richtung(
+        "Der gesunde Roboter galt als tot",
+        "Dritte Runde derselben Methode wie 381/382, diesmal der Umkehrfall: "
+        "nicht ein Problem, das als gesund dasteht, sondern gesund, das als "
+        "Problem dasteht. Der Herzschlag entsteht in 'LiveTrader._publish', "
+        "und das laeuft **je Kerze** - eine eigene Herzschlagschleife gibt es "
+        "nicht, gepruefter am Syntaxbaum ('_publish' wird nur aus "
+        "'_verarbeite_kerze' gerufen). Die Leseseite verglich ihn gegen eine "
+        "feste Frist von zwanzig Minuten, deren Kopf das selbst sagte: 'Auf "
+        "einem 15-Minuten-Intervall schreibt er nur alle 15 Minuten.' "
+        "Gemessen, jeweils eine Minute vor der naechsten Kerze: 1m und 15m "
+        "'laeuft', **1h 'TOT - seit 59 min', 4h 'seit 239 min', 1d 'seit 1439 "
+        "min'**. Jedes Intervall oberhalb von 15 Minuten zeigte einen gesunden "
+        "Lauf als tot - darunter die **Tageskerzen**, auf denen jede Gate-Zahl "
+        "dieses Projekts steht (Befund 213) und auf die der Spitzenkandidat "
+        "gehoert. Warum das nicht kosmetisch ist: 'web/journal.py' nennt im "
+        "Kopf genau eine Sache, die das Dashboard koennen muss - 'erkennen, "
+        "dass der Handel tot ist. Genau dafuer sind Handel und Website "
+        "getrennte Prozesse.' Ein Alarm, der im gemeinten Betrieb dauerhaft "
+        "leuchtet, verbraucht die eine Meldung, fuer die es die Trennung gibt. "
+        "Behoben: Der Schnappschuss nennt den Abstand seiner Schreibvorgaenge "
+        "('heartbeat_erwartet_s'), die Frist ist 'max(20 min, Kerzenlaenge + 5 "
+        "min)', und die fuenf Minuten sind nicht gewaehlt, sondern uebernommen "
+        "- genau die Luft, die die alten zwanzig dem 15-Minuten-Intervall "
+        "liessen (20 - 15 = 5, unter Test). Damit bleibt das Urteil fuer M15 "
+        "und darunter unveraendert, ohne Angabe gilt weiter die alte Frist, "
+        "und **kein Fall wird strenger als vorher**. Ein wirklich "
+        "ueberfaelliger Lauf wird auf jedem Intervall weiter erkannt - das ist "
+        "die Gegenprobe, ohne die die Behebung schlimmer waere als der Fehler. "
+        "Dazu meldet 'status_text' die Spanne jetzt in ihrer Groessenordnung "
+        "('1.5 d' statt '2160 min'). **Ein Fehler von mir, den der eigene Test "
+        "gefunden hat**: 'Interval.MN1.duration' wirft ('hat keine feste "
+        "Dauer'), und ungeschuetzt haette das den ganzen Schnappschuss "
+        "gekostet - '_publish' schluckt Ausnahmen, das Dashboard waere "
+        "**eingefroren** statt zu frueh alarmiert. Jetzt gibt es dort 'None'",
+        383,
     ),
 )
 

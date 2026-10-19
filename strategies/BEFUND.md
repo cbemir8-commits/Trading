@@ -34087,3 +34087,92 @@ Die **strukturellen** Fehler stehen jetzt **vor** "pausiert". Der Grund: Eine
 Pause hat der Nutzer selbst gesetzt und kennt sie; eine verletzte Invariante
 kennt er nicht. Es zeigt immer nur ein Banner, und dann muss der obere der
 sein, von dem der Nutzer noch nichts weiss.
+
+## Dreihundertdreiundachtzig. Der gesunde Roboter galt als tot
+
+Dritte Runde derselben Methode wie 381 und 382 - einen gemessenen Zustand
+nehmen und fragen, ob die Oberflaeche ihn zeigt. Diesmal der **Umkehrfall**:
+nicht ein Problem, das als gesund dasteht, sondern gesund, das als Problem
+dasteht.
+
+### Der Herzschlag hat die Kerzenlaenge
+
+Er entsteht in `LiveTrader._publish`, und das laeuft **je Kerze**. Eine eigene
+Herzschlagschleife gibt es nicht - das steht nicht als Behauptung hier, sondern
+unter Test: `_publish` wird ausschliesslich aus `_verarbeite_kerze` gerufen,
+geprueft am Syntaxbaum.
+
+Die Leseseite verglich ihn gegen eine feste Frist, deren Kopf den Fehler selbst
+benannte:
+
+> Aelter als das, gilt der Handelsprozess als nicht mehr am Leben. Grosszuegig
+> bemessen: Auf einem **15-Minuten-Intervall** schreibt er nur alle 15 Minuten.
+
+Gemessen, jeweils eine Minute vor der naechsten Kerze:
+
+| Intervall | Kerzenlaenge | Dashboard |
+|---|---|---|
+| 1m | 1 min | laeuft |
+| 15m | 15 min | laeuft |
+| 1h | 1 h | **TOT — kein Lebenszeichen seit 59 min** |
+| 4h | 4 h | **TOT — seit 239 min** |
+| 1d | 24 h | **TOT — seit 1439 min** |
+
+Jedes Intervall oberhalb von 15 Minuten zeigte einen gesunden Lauf als tot.
+Darunter die **Tageskerzen** - und auf denen steht jede Gate-Zahl dieses
+Projekts (Befund 213), dort gehoert der Spitzenkandidat hin, und die
+Zulassungsreihe ist taeglich. Fuer den Betrieb, der gemeint ist, war die
+Anzeige also dauerhaft falsch.
+
+### Warum das nicht kosmetisch ist
+
+`web/journal.py` nennt im Kopf genau eine Sache, die das Dashboard koennen
+muss:
+
+> Und eines muss es koennen: **erkennen, dass der Handel tot ist.** Genau
+> dafuer sind Handel und Website getrennte Prozesse. Ein Dashboard, das mit
+> dem Handel zusammen abstuerzt, ist in dem Moment nutzlos, in dem man es
+> braucht.
+
+Ein Alarm, der im gemeinten Betrieb dauerhaft leuchtet, ist keiner. Er
+verbraucht die eine Meldung, fuer die es die Trennung ueberhaupt gibt.
+
+### Behoben, und nichts wird strenger
+
+Der Schnappschuss nennt jetzt den Abstand seiner Schreibvorgaenge
+(`heartbeat_erwartet_s`), und die Frist ist
+
+    max(20 min, Kerzenlaenge + 5 min)
+
+Die fuenf Minuten sind nicht gewaehlt, sondern **uebernommen**: Genau die Luft
+lassen die alten zwanzig dem 15-Minuten-Intervall (20 - 15 = 5, und das steht
+unter Test). Daraus folgt:
+
+* M15 und darunter: **unveraendert** 20 Minuten.
+* 1h: 1:05, 4h: 4:05, 1d: 24:05.
+* Ohne die Angabe - alte Datei, fremder Schreiber: weiter 20 Minuten.
+* `heartbeat_frist` faellt **nie** unter die alte Frist. Eine Behebung, die im
+  Vorbeigehen irgendwo strenger wird, waere eine zweite Aenderung.
+
+Und die Gegenprobe, ohne die das Ganze nur verschoben waere: Ein wirklich
+ueberfaelliger Lauf wird auf **jedem** Intervall weiter erkannt (geprueft bei
+1,5-facher Frist).
+
+Dazu eine Kleinigkeit: `status_text` meldet die Spanne jetzt in ihrer
+Groessenordnung - `1.5 d` statt `2160 min`. Eine Zahl, die der Leser erst
+teilen muss, ist eine halbe Auskunft.
+
+### Ein Fehler von mir, den der eigene Test gefunden hat
+
+`Interval.MN1.duration` **wirft** - "Monatsintervall hat keine feste Dauer".
+Erst stand der Aufruf ungeschuetzt in `_snapshot`, und `_publish` schluckt
+Ausnahmen (`contextlib.suppress`, damit ein Berichtsfehler nie den Handel
+stoppt). Ein Monatslauf haette damit **gar keinen Schnappschuss** mehr
+geschrieben: Das Dashboard waere eingefroren statt bloss zu frueh alarmiert -
+aus einem Fehlalarm ein Blindflug.
+
+Aufgefallen ist das `test_die_frist_faellt_nie_unter_die_alte`, weil er ueber
+**alle** Intervalle laeuft und nicht ueber die drei, an die ich gedacht hatte.
+Jetzt gibt `_kerzenabstand_s` dort `None`, und die Leseseite bleibt bei ihren
+zwanzig Minuten - fuer einen Monatslauf zu streng, aber dasselbe Urteil wie
+vorher und kein schwarzer Bildschirm.

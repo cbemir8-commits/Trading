@@ -37,10 +37,61 @@ import structlog
 
 log = structlog.get_logger(__name__)
 
-#: Aelter als das, gilt der Handelsprozess als nicht mehr am Leben. Grosszuegig
-#: bemessen: Auf einem 15-Minuten-Intervall schreibt er nur alle 15 Minuten -
-#: haeufiger nur, wenn tatsaechlich etwas passiert.
+#: Die **Untergrenze** der Frist, nach der der Handelsprozess als tot gilt.
+#:
+#: Auf einem 15-Minuten-Intervall schreibt er nur alle 15 Minuten - haeufiger
+#: nur, wenn tatsaechlich etwas passiert. Zwanzig Minuten lassen also fuenf
+#: Minuten Luft.
+#:
+#: **Und sie galt fuer jedes Intervall** (Befund 383). Der Herzschlag entsteht
+#: in '_publish', und das laeuft **je Kerze** - es gibt keine eigene
+#: Herzschlagschleife. Auf Tageskerzen kommt er also einmal am Tag, und
+#: gemessen sagte das Dashboard dann 1439 Minuten lang "kein Lebenszeichen".
+#: Auf 1h und 4h dasselbe. Da jede Gate-Zahl dieses Projekts auf Tageskerzen
+#: steht, war die Anzeige fuer den gemeinten Betrieb dauerhaft falsch - und
+#: ein Alarm, der immer leuchtet, ist keiner.
 HEARTBEAT_TIMEOUT = timedelta(minutes=20)
+
+#: Was zur erwarteten Kerzenlaenge dazukommt, bevor ein Prozess als tot gilt.
+#:
+#: Fuenf Minuten, also genau die Luft, die die 20 oben dem
+#: 15-Minuten-Intervall lassen. Damit bleibt das Urteil fuer M15 und alles
+#: darunter **unveraendert**, und nur die laengeren Intervalle bekommen ihre
+#: eigene Frist.
+HEARTBEAT_MARGE = timedelta(minutes=5)
+
+
+def _dauer(spanne: timedelta) -> str:
+    """Eine Zeitspanne in der Groessenordnung, in der sie liegt.
+
+    Vorher stand hier nur ``f"{minutes} min"``, und auf Tageskerzen las sich
+    das als "kein Lebenszeichen seit 1439 min" (Befund 383). Eine Zahl, die
+    der Leser erst teilen muss, ist eine halbe Auskunft.
+    """
+    sekunden = max(0.0, spanne.total_seconds())
+    if sekunden < 3600:
+        return f"{int(sekunden // 60)} min"
+    if sekunden < 86400:
+        return f"{sekunden / 3600:.1f} h"
+    return f"{sekunden / 86400:.1f} d"
+
+
+def heartbeat_frist(snapshot: dict[str, Any]) -> timedelta:
+    """Wie lange ohne Herzschlag normal ist - fuer diesen Lauf.
+
+    Der Schnappschuss sagt, wie weit seine Schreibvorgaenge auseinander liegen
+    ('heartbeat_erwartet_s'). Fehlt die Angabe - alte Datei, fremder
+    Schreiber -, bleibt es bei ``HEARTBEAT_TIMEOUT``: dieselbe Antwort wie vor
+    Befund 383, also nie strenger als vorher.
+    """
+    erwartet = snapshot.get("heartbeat_erwartet_s")
+    try:
+        spanne = timedelta(seconds=float(erwartet))
+    except (TypeError, ValueError):
+        return HEARTBEAT_TIMEOUT
+    if spanne <= timedelta(0):
+        return HEARTBEAT_TIMEOUT
+    return max(HEARTBEAT_TIMEOUT, spanne + HEARTBEAT_MARGE)
 
 #: So viele Ereignisse haelt die Datei. Danach wird vorn abgeschnitten -
 #: sonst waechst sie unbegrenzt und das Dashboard wird mit der Zeit langsam.
@@ -254,8 +305,7 @@ class LiveView:
             return "laeuft"
         if self.last_heartbeat is None:
             return "nie gestartet"
-        minutes = int((self.stale_for or timedelta()).total_seconds() / 60)
-        return f"kein Lebenszeichen seit {minutes} min"
+        return f"kein Lebenszeichen seit {_dauer(self.stale_for or timedelta())}"
 
 
 def read_view(directory: Path | str, *, event_limit: int = 100) -> LiveView:
@@ -299,7 +349,7 @@ def read_view(directory: Path | str, *, event_limit: int = 100) -> LiveView:
     alive = False
     if heartbeat is not None:
         stale_for = datetime.now(UTC) - heartbeat
-        alive = stale_for < HEARTBEAT_TIMEOUT
+        alive = stale_for < heartbeat_frist(snapshot)
 
     return LiveView(
         snapshot=snapshot,

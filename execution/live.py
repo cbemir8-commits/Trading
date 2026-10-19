@@ -867,6 +867,19 @@ class LiveTrader:
         return {
             "symbol": self.instrument.symbol,
             "interval": self.interval.label,
+            # Wie weit die Schreibvorgaenge auseinander liegen (Befund 383).
+            #
+            # Der Herzschlag entsteht hier, also je Kerze - die Leseseite kann
+            # das nicht wissen und hielt jeden Lauf oberhalb von 15 Minuten
+            # fuer tot. Als Zahl und nicht als Intervall-Marke, damit
+            # 'web.journal' nichts ueber Kerzenlaengen wissen muss.
+            #
+            # ``None`` beim Monatsintervall: ``Interval.MN1.duration`` **wirft**
+            # ("hat keine feste Dauer"). Ungeschuetzt haette das den ganzen
+            # Schnappschuss gekostet - ``_publish`` schluckt Ausnahmen, und das
+            # Dashboard waere eingefroren statt bloss zu frueh alarmiert.
+            # Aufgefallen ist es dem eigenen Test, nicht mir.
+            "heartbeat_erwartet_s": self._kerzenabstand_s(),
             "environment": self.settings.environment.value,
             "real_money": self.settings.environment.is_real_money,
             "strategy_id": self.strategy.strategy_id,
@@ -919,6 +932,19 @@ class LiveTrader:
                 "summary": self.stats.describe(),
             },
         }
+
+    def _kerzenabstand_s(self) -> int | None:
+        """Die Kerzenlaenge in Sekunden - oder ``None``, wenn es keine gibt.
+
+        Nur das Monatsintervall hat keine feste Dauer. ``None`` heisst fuer die
+        Leseseite "keine Angabe", und die bleibt dann bei ihren zwanzig
+        Minuten - fuer einen Monatslauf zu streng, aber dasselbe Urteil wie vor
+        Befund 383 und kein eingefrorener Bildschirm.
+        """
+        try:
+            return int(self.interval.duration.total_seconds())
+        except ValueError:
+            return None
 
     def _take_profit_levels(self) -> list[dict]:
         """Die Ziele der offenen Position - Preis, Anteil, erreicht ja/nein.
