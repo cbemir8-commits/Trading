@@ -3548,8 +3548,47 @@ BEHOBEN: tuple[Richtung, ...] = (
         "jetzt keinen Aufrufer mehr und einen Vermerk im Kopf. **Was sich "
         "nicht aendert**: Rueckwirkend wird nichts messbar - die 192 bleiben "
         "ohne Herkunft, und 'streuung.MINDESTABDECKUNG' verlangt 90 %. Dieser "
-        "Befund macht den Weg offen, er geht ihn nicht",
+        "Befund macht den Weg offen, er geht ihn nicht. **Und 'offen' war zu "
+        "viel** (378): Gerechnet laesst das Budget 27 weitere Versuche zu, "
+        "90 % Abdeckung braeuchte **2.814**. Der Weg ist richtig und innerhalb "
+        "der Abmachung nicht zu gehen",
         377,
+        zuletzt=378,
+    ),
+    # Befund 378: die letzte ungemessene Annahme in 'streuung' - und ein
+    # Messfehler von mir, der fast das Gegenteil behauptet haette.
+    Richtung(
+        "Der Deckel der Abdeckung nahm an, jeder Versuch traegt bei",
+        "Nachgefasst, weil Befund 377 mit 'dieser Befund macht den Weg offen' "
+        "schloss und das nachzurechnen war. 'Streuung.deckel' rechnet die "
+        "hoechste noch erreichbare Abdeckung und sagt in seinem eigenen "
+        "Docstring, dass es dabei **annimmt**, jeder verbleibende Versuch "
+        "bringe seinen Sharpe je Trade mit - die letzte ungemessene Stelle in "
+        "einem Modul, dessen ganzer Zweck das Gegenteil ist. Gemessen: Von "
+        "**141 Zulassungseintraegen liegen 8 unter der Guete-Schwelle** von "
+        "fuenf Trades, also 94,3 %. Der optimistische Deckel liegt bei 38,26 "
+        "%, der gemessene bei 37,59 % - die Annahme ist am heutigen Budgetrest "
+        "**0,67 Punkte** wert und waechst mit dem Rest. 'erreichbar' rechnet "
+        "weiter mit der Obergrenze, und zwar absichtlich: Ein 'nein' aus ihr "
+        "ist sicher, weil der realistische Deckel darunter liegt. **Die Zahl, "
+        "die etwas aendert**, ist eine andere: Fuer 90 % Abdeckung braeuchte es "
+        "**1.217** weitere Versuche bei vollem Anteil und **2.814** bei den "
+        "gemessenen 133 von 141 - das Budget laesst **27** zu, also ein "
+        "Hundertstel. Damit ist der Satz aus 377 berichtigt: Der Weg ist "
+        "richtig und innerhalb der Abmachung nicht zu gehen; ob das Budget "
+        "dafuer steigt, ist eine Entscheidung und keine Messung. **Mein "
+        "Messfehler dabei, und er war der groessere Teil der Arbeit**: Zuerst "
+        "habe ich alle fuenf Berichtsformen zusammengeworfen - 121 von 554 "
+        "unter der Schwelle, also 78,2 %, und damit haette die Abdeckung als "
+        "**grundsaetzlich** unerreichbar dagestanden (jeder weitere Versuch "
+        "stellt sich in den Nenner, ohne den Punkt mitzubringen). Die 113 "
+        "Nullen stecken in 'nachpruefung', also in Wiederholungen auf anderen "
+        "Maerkten, und das sind keine gebuchten Versuche. Derselbe Fehler wie "
+        "in Befund 346/348, nur umgekehrt: dort wurde eine Form gelesen und "
+        "fuer alle genommen, hier alle fuer die eine. 'VERSUCHSFORM' benennt "
+        "die Population jetzt im Quelltext, und ein Test haelt beide Zahlen "
+        "fest - 133 von 141 und die 121 von 554 daneben",
+        378,
     ),
 )
 

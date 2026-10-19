@@ -358,3 +358,133 @@ def test_die_zahlen_des_befehls_stimmen() -> None:
     assert not lage.erreichbar
     assert lage.deckel == pytest.approx(0.38, abs=0.01)
     assert lage.abdeckung == pytest.approx(0.30, abs=0.01)
+
+
+class TestDieLetzteAnnahmeImModulIstGemessen:
+    """**Befund 378.** ``deckel`` nahm an, jeder kuenftige Versuch traegt bei.
+
+    Das war die letzte ungemessene Stelle in einem Modul, dessen ganzer Zweck
+    das Gegenteil ist. Ihr eigener Docstring sagte es: *"Sie nimmt an, dass
+    jeder der verbleibenden Versuche seinen Sharpe je Trade mitbringt."*
+    """
+
+    @staticmethod
+    def _lage(**kwargs):
+        from research.streuung import Streuung, Versuchspunkt
+
+        vorgaben = dict(
+            punkte=[
+                Versuchspunkt(quelle="q", kennung=str(i), sharpe_je_trade=0.1 * i)
+                for i in range(61)
+            ],
+            versuche=203,
+            stichprobe=115,
+            grenze=230,
+        )
+        return Streuung(**{**vorgaben, **kwargs})
+
+    def test_der_anteil_wird_gezaehlt_und_nicht_geschaetzt(self) -> None:
+        from pathlib import Path
+
+        from research.streuung import anteil_mit_guete
+
+        mit, gesamt = anteil_mit_guete(Path("reports"))
+
+        assert (mit, gesamt) == (133, 141)
+        assert mit / gesamt == pytest.approx(0.9433, abs=5e-4)
+
+    def test_nur_die_zulassungslaeufe_sind_die_population(self) -> None:
+        """**Mein Fehler beim Messen**, und er stand fast im Register.
+
+        Erst habe ich alle fuenf Berichtsformen zusammengeworfen: 121 von 554
+        unter der Schwelle, also 78,2 % - und damit haette die Abdeckung von
+        90 % als **grundsaetzlich** unerreichbar dagestanden. Die 113 Nullen
+        stecken aber in 'nachpruefung', und das sind Wiederholungen auf
+        anderen Maerkten, keine gebuchten Versuche.
+
+        Derselbe Fehler wie in Befund 346/348, nur umgekehrt: dort wurde eine
+        Form gelesen und fuer alle genommen, hier alle fuer die eine.
+        """
+        import json
+        from pathlib import Path
+
+        from research.streuung import GUETESCHWELLE, _tradezahlen
+
+        alle = []
+        for datei in sorted(Path("reports").rglob("*.json")):
+            alle.extend(_tradezahlen(json.loads(datei.read_text())))
+        unter = sum(1 for t in alle if t < GUETESCHWELLE)
+
+        assert len(alle) == 554
+        assert unter == 121
+        assert 1 - unter / len(alle) == pytest.approx(0.782, abs=5e-4)
+        # Und genau deshalb ist die Form benannt:
+        from research.streuung import VERSUCHSFORM
+
+        assert VERSUCHSFORM == "zulassung"
+
+    def test_der_optimistische_deckel_bleibt_wie_er_war(self) -> None:
+        """Keine stille Verschaerfung: ``deckel`` ist ``deckel_bei(1.0)``."""
+        lage = self._lage()
+
+        assert lage.deckel == lage.deckel_bei(1.0)
+        assert lage.deckel == pytest.approx(0.3826, abs=5e-4)
+
+    def test_mit_dem_gemessenen_anteil_liegt_er_tiefer(self) -> None:
+        lage = self._lage()
+
+        gemessen = lage.deckel_bei(133 / 141)
+
+        assert gemessen < lage.deckel
+        assert lage.deckel - gemessen == pytest.approx(0.0067, abs=5e-4)
+
+    def test_und_das_urteil_dreht_sich_dadurch_nicht(self) -> None:
+        """Warum ``erreichbar`` weiter optimistisch rechnet - mit Absicht.
+
+        Wer mit der Obergrenze **False** bekommt, hat sicher geantwortet: Der
+        realistische Deckel liegt darunter und kann ein 'nein' nicht in ein
+        'ja' drehen. Die Messung praezisiert den Abstand, nicht das Urteil.
+        """
+        for anteil in (1.0, 133 / 141, 0.5, 0.0):
+            lage = self._lage()
+            assert lage.deckel_bei(anteil) <= lage.deckel
+            if not lage.erreichbar:
+                assert lage.deckel_bei(anteil) < 0.9
+
+
+class TestWieWeitEsNochWaere:
+    """Die Zahl, die meinen eigenen Satz aus Befund 377 berichtigt."""
+
+    @staticmethod
+    def _lage():
+        return TestDieLetzteAnnahmeImModulIstGemessen._lage()
+
+    def test_bei_vollem_anteil_braeuchte_es_tausendzweihundert(self) -> None:
+        assert self._lage().versuche_fuer(0.9) == 1217
+
+    def test_mit_dem_gemessenen_anteil_fast_dreitausend(self) -> None:
+        assert self._lage().versuche_fuer(0.9, anteil=133 / 141) == 2814
+
+    def test_das_budget_laesst_siebenundzwanzig(self) -> None:
+        """**Der Satz, der zu viel war.** Befund 377 schliesst mit "dieser
+        Befund macht den Weg offen, er geht ihn nicht". Offen ist er - nur
+        nicht innerhalb der Abmachung: 2.814 gegen 27.
+        """
+        from research.stand import BUDGET
+
+        lage = self._lage()
+
+        assert BUDGET.grenze - lage.versuche == 27
+        assert lage.versuche_fuer(0.9, anteil=133 / 141) > 100 * (
+            BUDGET.grenze - lage.versuche
+        )
+
+    def test_unter_dem_ziel_gibt_es_keine_zahl(self) -> None:
+        """Faellt der Anteil unter das Ziel, bringt kein Versuch mehr etwas:
+        Er stellt sich in den Nenner, ohne den Punkt mitzubringen. Dann sagt
+        die Methode ``None`` statt einer grossen Zahl."""
+        lage = self._lage()
+
+        assert lage.versuche_fuer(0.9, anteil=0.85) is None
+        assert lage.versuche_fuer(0.9, anteil=0.9) is None
+        assert lage.versuche_fuer(0.9, anteil=0.901) is not None

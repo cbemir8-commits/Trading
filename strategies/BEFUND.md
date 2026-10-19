@@ -33699,3 +33699,89 @@ Dazu ein eigener Fund am Rand: Der zweite Test, der die Abwesenheit von
 `save_trials` zusicherte, entging der Wache aus Befund 242 nur, weil seine
 Zeichenkette eine Klammer trug (`'save_trials('` statt `'save_trials'`). Die
 doppelte Zusicherung ist weg, die eine steht angemeldet in `BEGRUENDET`.
+
+## Dreihundertachtundsiebzig. "Der Weg ist offen" war zu viel
+
+Befund 377 schloss mit diesem Satz:
+
+> Dieser Befund macht den Weg offen, er geht ihn nicht.
+
+Er steht da, weil er stimmt - und er sagt nicht, wie weit der Weg ist. Das
+war nachzurechnen, und die Zahl haette in denselben Befund gehoert.
+
+### Erst die Annahme, die noch stand
+
+``Streuung.deckel`` rechnet die hoechste noch erreichbare Abdeckung, und sein
+eigener Docstring nennt die Annahme:
+
+> Sie ist eine Obergrenze und keine Erwartung: Sie nimmt an, dass **jeder** der
+> verbleibenden Versuche seinen Sharpe je Trade mitbringt.
+
+Das war die letzte ungemessene Stelle in einem Modul, dessen ganzer Zweck das
+Gegenteil ist. ``Kandidat.aus_trades`` gibt unter fuenf Trades ``None``, und
+``None`` heisst "nicht erhoben": Ein solcher Versuch zaehlt in ``N`` - er ist
+eine gepruefte Hypothese - kann aber nie einen Punkt zur Streuung beitragen.
+
+Gemessen an den Zulassungslaeufen: **8 von 141 unter der Schwelle**, also
+94,3 %.
+
+| | |
+|---|---|
+| Deckel, optimistisch gerechnet | 38,26 % |
+| Deckel mit dem gemessenen Anteil | 37,59 % |
+| Die Annahme ist wert | **0,67 Punkte** |
+
+Klein, und das ist kein Zufall: Der Unterschied waechst mit dem Budgetrest, und
+der ist heute 27. ``erreichbar`` rechnet weiter mit der Obergrenze, absichtlich
+- wer von ihr ein "nein" bekommt, hat sicher geantwortet, denn der realistische
+Deckel liegt darunter und kann ein "nein" nicht in ein "ja" drehen.
+
+### Dann die Zahl, die etwas aendert
+
+| | |
+|---|---|
+| Fuer 90 % Abdeckung noetig, bei vollem Anteil | 1.217 weitere Versuche |
+| Dasselbe mit den gemessenen 133 von 141 | **2.814** |
+| Was das Budget noch zulaesst | **27** |
+
+Ein Hundertstel. Damit ist mein Satz aus Befund 377 berichtigt: Der Weg ist
+richtig - die Suche *muss* ihre Versuche verzeichnen, sonst ist die Frage nie
+zu beantworten - und **innerhalb der Abmachung nicht zu gehen**. Ob das Budget
+dafuer steigt, ist eine Entscheidung und keine Messung; sie gehoert dem Nutzer,
+und der Preis steht jetzt als Zahl da statt als "macht den Weg offen".
+
+### Mein Messfehler, und er war der groessere Teil der Arbeit
+
+Zuerst habe ich alle fuenf Berichtsformen zusammengeworfen. Dann sah es so
+aus:
+
+    554 Eintraege, 121 unter der Schwelle  ->  Anteil 78,2 %
+
+Und 78,2 % liegt **unter** den verlangten 90 %. Daraus folgt etwas Hartes: Wenn
+der Anteil unter dem Ziel liegt, bringt kein weiterer Versuch die Abdeckung
+naeher - er stellt sich in den Nenner, ohne den Punkt mitzubringen. Die
+Abdeckung waere dann nicht "weit weg", sondern **grundsaetzlich unerreichbar**,
+und mein letzter Befund waere ins Leere gelaufen.
+
+Das war falsch gemessen. Je Form:
+
+| Form | Eintraege | unter 5 Trades | Anteil |
+|---|---|---|---|
+| `nachpruefung` | 179 | 113 | 36,9 % |
+| `zulassung` | 141 | 8 | **94,3 %** |
+| `machbarkeit` | 83 | 0 | 100 % |
+| `teststaerke` | 91 | 0 | 100 % |
+| `marktkombinationen` | 60 | 0 | 100 % |
+
+Die 113 Nullen stecken in ``nachpruefung`` - Wiederholungen derselben Regel auf
+anderen Maerkten und Zeitraeumen, und das sind **keine gebuchten Versuche**.
+Die Population, die ``wettbewerb`` seit Befund 377 verzeichnet, ist
+``zulassung``, und dort sind es 94,3 %.
+
+Derselbe Fehler wie in Befund 346 und 348, nur in die andere Richtung: Dort
+wurde **eine** Form gelesen und fuer alle genommen; hier wurden **alle**
+gelesen und fuer die eine genommen. Beides ist dieselbe Verwechslung - eine
+Population mit einer anderen zu beantworten. ``VERSUCHSFORM`` benennt sie
+jetzt im Quelltext, und ein Test haelt beide Zahlen fest: die 133 von 141 und
+die 121 von 554 daneben, damit die falsche nicht noch einmal als die richtige
+durchgeht.

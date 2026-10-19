@@ -146,6 +146,71 @@ def aus_berichten(ordner: Path | str) -> list[Versuchspunkt]:
     return gefunden
 
 
+#: Die kleinste Trade-Zahl, aus der ``Kandidat.aus_trades`` eine Guete macht.
+#:
+#: Darunter gibt es ``None``, und ``None`` heisst "nicht erhoben". Ein solcher
+#: Versuch zaehlt also in ``N`` (er ist eine Hypothese, die geprueft wurde),
+#: kann aber nie einen Punkt zur Streuung beitragen. Genau das ist der Grund,
+#: warum ``deckel`` eine Obergrenze und keine Erwartung ist.
+GUETESCHWELLE = 5
+
+#: Welche Berichtsform die Population der **gebuchten** Versuche abbildet.
+#:
+#: Nicht alle fuenf (Befund 378). ``nachpruefung`` wiederholt eine Regel auf
+#: anderen Maerkten und Zeitraeumen - das sind keine gebuchten Versuche, und
+#: dort liegen 113 von 179 Eintraegen unter der Schwelle. Wer alle Formen
+#: zusammenwirft, misst 78,2 % statt 94,3 % und haelt die Abdeckung fuer
+#: grundsaetzlich unerreichbar, obwohl nur das Budget im Weg steht. Derselbe
+#: Fehler wie in Befund 346/348, nur in die andere Richtung: dort wurde eine
+#: Form gelesen und fuer alle genommen, hier wurden alle gelesen und fuer die
+#: eine genommen.
+VERSUCHSFORM = "zulassung"
+
+
+def anteil_mit_guete(ordner: Path | str, *, form: str = VERSUCHSFORM) -> tuple[int, int]:
+    """Wie viele geprüfte Kandidaten tragen ueberhaupt eine Guete?
+
+    Gibt ``(mit, gesamt)`` zurueck, gezaehlt an den Trade-Zahlen der
+    Berichtseintraege - nicht geschaetzt. ``deckel`` nimmt an, dass **jeder**
+    kuenftige Versuch seinen Sharpe je Trade mitbringt; das ist die eine
+    Annahme, die in diesem Modul noch stand, und hier wird sie gemessen.
+
+    Gemessen am vorhandenen Bestand: **8 von 141 unter der Schwelle**, also
+    94,3 %. Der Unterschied zum optimistischen Deckel ist am heutigen
+    Budgetrest klein (0,7 Punkte) - er waechst mit dem Rest.
+    """
+    wurzel = Path(ordner)
+    if not wurzel.exists():
+        return (0, 0)
+    mit = gesamt = 0
+    for datei in sorted(wurzel.rglob("*.json")):
+        if datei.parent.name != form:
+            continue
+        try:
+            daten = json.loads(datei.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        for zahl in _tradezahlen(daten):
+            gesamt += 1
+            if zahl >= GUETESCHWELLE:
+                mit += 1
+    return (mit, gesamt)
+
+
+def _tradezahlen(knoten) -> list[int]:
+    """Jede ``trades``-Zahl im Bericht, beliebig tief."""
+    gefunden: list[int] = []
+    if isinstance(knoten, dict):
+        for schluessel, wert in knoten.items():
+            if schluessel == "trades" and isinstance(wert, (int, float)):
+                gefunden.append(int(wert))
+            gefunden.extend(_tradezahlen(wert))
+    elif isinstance(knoten, list):
+        for wert in knoten:
+            gefunden.extend(_tradezahlen(wert))
+    return gefunden
+
+
 def aus_bestenliste(pfad: Path | str) -> list[Versuchspunkt]:
     """Die Eintraege der Bestenliste, soweit sie den Sharpe je Trade tragen.
 
@@ -290,10 +355,45 @@ class Streuung:
         ``None``, solange keine Grenze angegeben ist - eine Obergrenze ohne
         Budget waere eine erfundene Zahl.
         """
+        return self.deckel_bei(1.0)
+
+    def deckel_bei(self, anteil: float) -> float | None:
+        """Dieselbe Obergrenze, wenn nur ``anteil`` der Versuche eine Guete hat.
+
+        **Befund 378.** ``deckel`` nimmt an, dass **jeder** verbleibende
+        Versuch seinen Sharpe je Trade mitbringt - die letzte Annahme in
+        diesem Modul. ``anteil_mit_guete`` misst sie: Von 141
+        Zulassungseintraegen liegen 8 unter ``GUETESCHWELLE``, also 94,3 %.
+
+        ``deckel`` bleibt die optimistische Rechnung, und zwar absichtlich:
+        Wer ``erreichbar`` mit ihr beantwortet und **False** bekommt, hat die
+        Frage sicher beantwortet - der realistische Deckel liegt darunter und
+        kann sie nicht umdrehen. Diese Methode sagt, wie viel die Annahme
+        wert ist: am heutigen Budgetrest 0,7 Punkte, bei einem groesseren Rest
+        mehr.
+        """
         if self.grenze <= 0:
             return None
         rest = max(0, self.grenze - self.versuche)
-        return min(1.0, (len(self.punkte) + rest) / self.grenze)
+        return min(1.0, (len(self.punkte) + anteil * rest) / self.grenze)
+
+    def versuche_fuer(self, ziel: float, *, anteil: float = 1.0) -> int | None:
+        """Wie viele **weitere** Versuche die Zielabdeckung braeuchte.
+
+        Ohne Budgetgrenze gerechnet, denn das ist die Frage: Nicht "reicht das
+        Budget", sondern "wie weit waere es ueberhaupt". ``None``, wenn das
+        Ziel auch mit unendlich vielen Versuchen nicht kommt - dann liegt
+        ``anteil`` unter dem Ziel, und jeder weitere Versuch bringt den Punkt
+        nicht mit, den er in den Nenner stellt.
+
+        Gemessen am heutigen Stand (203 Versuche, 61 Punkte, Ziel 90 %):
+        1.217 weitere bei vollem Anteil, **2.814** bei den gemessenen 133 von
+        141. Das Budget laesst 27 zu.
+        """
+        if anteil <= ziel:
+            return None
+        noetig = (ziel * self.versuche - len(self.punkte)) / (anteil - ziel)
+        return max(0, int(noetig + 0.999))
 
     @property
     def erreichbar(self) -> bool:
