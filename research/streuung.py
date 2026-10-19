@@ -57,11 +57,19 @@ warum dieses Modul rechnet und nicht handelt.
 Was daraus folgt
 ----------------
 Nicht: "Das Gate ist zu streng." Sondern: **Die Versuche gehoeren
-aufgeschrieben.** ``state/trials.json`` enthaelt eine einzige Zahl. Waere dort
-zu jedem Versuch sein Sharpe je Trade vermerkt, waere ``V`` messbar statt
-geraten - und erst dann waere die Frage, ob das Gate sie benutzen soll,
-ueberhaupt eine Frage. Bis dahin bleibt die Annahme stehen, und zwar in der
-strengeren Richtung.
+aufgeschrieben.** Hier stand, ``state/trials.json`` enthalte eine einzige
+Zahl - und das ist erledigt: Das Verzeichnis haelt zu jedem gebuchten Versuch
+seinen Sharpe je Trade, seit Befund 377 aus **jedem** Befehl, der zaehlt
+(davor nur aus den Reglerscans um den Bestand, also genau aus der Quelle, die
+dieses Modul als zu eng verwirft).
+
+**Und das genuegt nicht.** Gerechnet (Befund 378/379): Der Grundstock aus der
+Zeit davor - 192 von 203 Versuchen - kann keinen Punkt nachliefern, und fuer
+die verlangten 90 % Abdeckung braeuchte es mindestens 1.217 weitere Versuche,
+mit dem gemessenen Anteil 2.814. Das Suchbudget laesst 27 zu. Ob es dafuer
+steigt, ist eine Entscheidung und keine Messung.
+
+Bis dahin bleibt die Annahme stehen, und zwar in der strengeren Richtung.
 
 Kostet keinen Versuch: Ausgewertet wird, was ohnehin auf der Platte liegt.
 """
@@ -524,10 +532,12 @@ class Streuung:
             f"einzusetzen wuerde die Huerde mit einem Wert senken, von dem "
             f"bekannt ist, dass er zu niedrig ist. Deshalb bleibt die Annahme "
             f"stehen - sie ist die strengere Richtung.\n\n"
-            f"Was fehlt, ist keine Messung, sondern ein Verzeichnis: "
-            f"'state/trials.json' haelt eine einzige Zahl fest. Stuende dort "
-            f"zu jedem Versuch sein Sharpe je Trade, waere diese Groesse "
-            f"messbar statt geraten.{self._deckelsatz()}"
+            f"Was fehlte, war ein Verzeichnis - **und das gibt es**: "
+            f"'state/trials.json' haelt zu jedem gebuchten Versuch seinen "
+            f"Sharpe je Trade fest, seit Befund 377 aus jedem Befehl, der "
+            f"zaehlt. Was fehlt, ist die Abdeckung: Der Grundstock aus der "
+            f"Zeit davor kann keinen Punkt nachliefern."
+            f"{self._deckelsatz()}"
         )
 
     def _deckelsatz(self) -> str:
@@ -545,6 +555,35 @@ class Streuung:
             f"Punkt nachliefern: Der Grundstock hat keine Einzelnachweise, "
             f"und nachtraegliche Berichte waeren erfunden. Diese Frage "
             f"entscheidet sich also nicht durch Weitersuchen."
+            f"{self._abstandssatz(rest)}"
+        )
+
+    def _abstandssatz(self, rest: int) -> str:
+        """Und wie weit es waere, wenn das Budget nicht im Weg staende.
+
+        **Befund 379.** Der Satz darueber sagt "im Budget nicht zu holen" -
+        richtig, und es fehlt die Groessenordnung. Ohne sie liest sich das wie
+        "knapp verpasst"; gerechnet ist es ein Hundertstel.
+
+        'Mindestens', weil die Rechnung jedem kuenftigen Versuch seinen Sharpe
+        je Trade zutraut. ``anteil_mit_guete`` misst, wie viele ihn wirklich
+        mitbringen - mit dem gemessenen Anteil wird die Zahl groesser, nie
+        kleiner.
+        """
+        noetig = self.versuche_fuer(MINDESTABDECKUNG)
+        if noetig is None:
+            return ""
+        # Die Zahl **einzeln** eindeutschen und nicht den ganzen Satz: Ein
+        # 'replace(",", ".")' ueber die Zeichenkette hat hier erst aus
+        # "Groessenordnung, damit" ein "Groessenordnung. damit" gemacht.
+        zahl = f"{noetig:,}".replace(",", ".")
+        return (
+            f"\n\nUnd die Groessenordnung, damit das nicht wie 'knapp "
+            f"verpasst' aussieht: Fuer die verlangten {MINDESTABDECKUNG:.0%} "
+            f"braeuchte es **mindestens {zahl} weitere Versuche** - das "
+            f"Budget laesst {rest} zu. 'Mindestens', weil diese Rechnung "
+            f"jedem von ihnen seinen Sharpe je Trade zutraut; "
+            f"'anteil_mit_guete' misst, wie viele ihn wirklich mitbringen."
         )
 
 

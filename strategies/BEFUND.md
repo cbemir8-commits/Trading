@@ -33785,3 +33785,74 @@ Population mit einer anderen zu beantworten. ``VERSUCHSFORM`` benennt sie
 jetzt im Quelltext, und ein Test haelt beide Zahlen fest: die 133 von 141 und
 die 121 von 554 daneben, damit die falsche nicht noch einmal als die richtige
 durchgeht.
+
+## Dreihundertneunundsiebzig. Das Urteil verlangte, was es schon gibt
+
+Nachgesehen, was ein Nutzer liest, der `cli streuung` fahrt. Nach Befund 377
+(die Suche verzeichnet ihre Versuche) und 378 (die Groessenordnung des Weges)
+war das nachzuhalten - und zwei Stellen waren ueberholt. Beide durch meine
+eigene Arbeit von vorgestern.
+
+### Erstens: ein Ruf nach etwas, das es gibt
+
+Das Urteil schloss so:
+
+> Was fehlt, ist keine Messung, sondern ein Verzeichnis: `state/trials.json`
+> haelt eine einzige Zahl fest. Stuende dort zu jedem Versuch sein Sharpe je
+> Trade, waere diese Groesse messbar statt geraten.
+
+Derselbe Satz stand im Modulkopf. Gemessen haelt die Datei:
+
+    Grundstock          192
+    Einzelnachweise      11   - alle elf mit ihrer Guete
+    Herkuenfte            verbund, gen11 partnersuche, gen12 kalibriert
+
+Und seit Befund 377 schreibt **jeder** zaehlende Befehl weitere. Der Text
+schickte den Leser also auf einen Weg, den jemand schon gegangen war - genau
+die Sorte gepflegter Prosa, gegen die Befund 130 und 157 angetreten sind, nur
+diesmal von mir hinterlassen.
+
+Was dort jetzt steht, ist die Lage: Das Verzeichnis gibt es, **und es
+genuegt nicht** - der Grundstock aus der Zeit davor kann keinen Punkt
+nachliefern.
+
+### Zweitens: "nicht zu holen" ohne Groessenordnung
+
+Der Deckelsatz sagte, die Abdeckung sei "im Suchbudget nicht mehr zu holen".
+Das ist richtig und liest sich wie *knapp verpasst*. Gerechnet ist es ein
+Hundertstel:
+
+| | |
+|---|---|
+| Fuer 90 % noetig, mindestens | **1.217 weitere Versuche** |
+| Mit dem gemessenen Anteil (378) | 2.814 |
+| Was das Budget zulaesst | **27** |
+
+"Mindestens" ist die ehrliche Richtung: Die Rechnung traut jedem kuenftigen
+Versuch seine Guete zu, und `anteil_mit_guete` misst, wie viele sie
+mitbringen - mit dem gemessenen Anteil wird die Zahl groesser, nie kleiner.
+
+### Mein Fehler beim Bauen
+
+Die Zahl sollte deutsch getrennt sein, also `1.217` statt `1,217`. Das
+`replace(",", ".")` lief ueber die **ganze** Zeichenkette und machte aus
+
+    "Groessenordnung, damit das nicht wie ..."
+
+ein
+
+    "Groessenordnung. damit das nicht wie ..."
+
+Die Tausendertrennung hat das Satzkomma mitgenommen. Die Zahl wird jetzt
+einzeln eingedeutscht, und ein Test prueft beides - dass `1.217` dasteht und
+dass das Komma im Satz steht. Aufgefallen ist es beim Lesen der Ausgabe, nicht
+beim Schreiben des Codes; das ist der Grund, warum diese Runde ueberhaupt
+stattfand.
+
+### Die Bauart dahinter
+
+Befund 351 nennt sie: **gebaut und angeschlossen.** Ich habe in Befund 378
+`deckel_bei` und `versuche_fuer` gebaut, mit Tests, und sie nicht an die
+Ausgabe gehaengt. Eine Messung, die nur im Modul steht, erreicht niemanden -
+und die Stelle, an der sie gebraucht wird, ist genau die, an der ein Nutzer
+fragt, ob sich das Warten lohnt.

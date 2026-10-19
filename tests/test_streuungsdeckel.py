@@ -488,3 +488,77 @@ class TestWieWeitEsNochWaere:
         assert lage.versuche_fuer(0.9, anteil=0.85) is None
         assert lage.versuche_fuer(0.9, anteil=0.9) is None
         assert lage.versuche_fuer(0.9, anteil=0.901) is not None
+
+
+class TestDerTextIstNichtHinterSeinemCode:
+    """**Befund 379.** Zwei Saetze im Urteil waren ueberholt - von mir.
+
+    Das Urteil ist, was der Nutzer liest. Es verlangte ein Verzeichnis, das es
+    seit Befund 377 gibt, und es sagte "im Budget nicht zu holen", ohne die
+    Groessenordnung zu nennen - was sich wie "knapp verpasst" liest, wo es ein
+    Hundertstel ist.
+    """
+
+    @staticmethod
+    def _lage(**kwargs):
+        from research.streuung import Streuung, Versuchspunkt
+
+        vorgaben = dict(
+            punkte=[
+                Versuchspunkt(quelle="q", kennung=str(i), sharpe_je_trade=0.1 * i)
+                for i in range(61)
+            ],
+            versuche=203,
+            stichprobe=115,
+            grenze=230,
+        )
+        return Streuung(**{**vorgaben, **kwargs})
+
+    def test_es_verlangt_kein_verzeichnis_mehr(self) -> None:
+        """Seit Befund 377 schreibt jeder zaehlende Befehl Einzelnachweise.
+        Ein Text, der danach noch ruft, schickt den Leser auf einen Weg, den
+        jemand schon gegangen ist."""
+        urteil = self._lage().urteil()
+
+        assert "haelt eine einzige Zahl fest" not in urteil
+        assert "und das gibt es" in urteil
+        assert "Was fehlt, ist die Abdeckung" in urteil
+
+    def test_es_nennt_die_groessenordnung(self) -> None:
+        urteil = self._lage().urteil()
+
+        assert "mindestens 1.217 weitere Versuche" in urteil
+        assert "das Budget laesst 27 zu" in urteil
+
+    def test_und_sagt_warum_mindestens(self) -> None:
+        """Die Zahl traut jedem kuenftigen Versuch seine Guete zu - gemessen
+        bringen sie 133 von 141 mit (Befund 378). 'Mindestens' ist die
+        ehrliche Richtung."""
+        urteil = self._lage().urteil()
+
+        assert "Mindestens" in urteil
+        assert "anteil_mit_guete" in urteil
+
+    def test_die_zahl_ist_eingedeutscht_und_der_satz_unberuehrt(self) -> None:
+        """**Mein Fehler beim Bauen.** Ein 'replace' ueber die ganze
+        Zeichenkette hat aus "Groessenordnung, damit" ein "Groessenordnung.
+        damit" gemacht - die Tausendertrennung traf das Satzkomma mit.
+        """
+        urteil = self._lage().urteil()
+
+        assert "Groessenordnung, damit" in urteil
+        assert "Groessenordnung. damit" not in urteil
+        assert "1.217" in urteil and "1,217" not in urteil
+
+    def test_ohne_budget_bleiben_beide_saetze_weg(self) -> None:
+        """Eine Groessenordnung ohne Budget waere eine erfundene Zahl."""
+        urteil = self._lage(grenze=0).urteil()
+
+        assert "Groessenordnung" not in urteil
+        assert "Suchbudget" not in urteil
+
+    def test_bei_erreichbarer_schwelle_auch(self) -> None:
+        """Ist die Abdeckung im Budget zu holen, ist nichts zu erklaeren."""
+        urteil = self._lage(versuche=65, grenze=600).urteil()
+
+        assert "Groessenordnung" not in urteil

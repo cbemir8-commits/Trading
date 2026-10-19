@@ -3589,6 +3589,35 @@ BEHOBEN: tuple[Richtung, ...] = (
         "die Population jetzt im Quelltext, und ein Test haelt beide Zahlen "
         "fest - 133 von 141 und die 121 von 554 daneben",
         378,
+        zuletzt=379,
+    ),
+    # Befund 379: zwei Saetze im Urteil waren hinter ihrem eigenen Code - und
+    # zwar hinter meinem von vorgestern.
+    Richtung(
+        "Das Urteil der Streuung verlangte, was es schon gibt",
+        "Nachgesehen, was ein Nutzer liest, der 'cli streuung' fahrt - nach "
+        "377 und 378 war das nachzuhalten. Zwei Stellen waren ueberholt, "
+        "beide durch meine eigene Arbeit. **Erstens** schloss das Urteil mit "
+        "*'Was fehlt, ist keine Messung, sondern ein Verzeichnis: "
+        "state/trials.json haelt eine einzige Zahl fest'* - und dasselbe stand "
+        "im Modulkopf. Gemessen haelt die Datei 192 Grundstock und **11 "
+        "Einzelnachweise, alle elf mit ihrer Guete**, und seit Befund 377 "
+        "schreibt jeder zaehlende Befehl weitere. Der Text schickte den Leser "
+        "also auf einen Weg, den jemand schon gegangen war. **Zweitens** sagte "
+        "der Deckelsatz 'im Suchbudget nicht mehr zu holen' ohne die "
+        "Groessenordnung - und ohne sie liest sich das wie 'knapp verpasst', "
+        "wo es ein Hundertstel ist: **mindestens 1.217 weitere Versuche gegen "
+        "27, die das Budget zulaesst**. 'Mindestens', weil die Rechnung jedem "
+        "kuenftigen Versuch seine Guete zutraut; mit dem gemessenen Anteil "
+        "sind es 2.814. Beides steht jetzt im Urteil, und sechs Tests halten "
+        "den Wortlaut. **Mein Fehler beim Bauen**, auch festgehalten: Ein "
+        "'replace' fuer die Tausendertrennung lief ueber die ganze "
+        "Zeichenkette und machte aus 'Groessenordnung, damit' ein "
+        "'Groessenordnung. damit' - die Zahl wird jetzt einzeln eingedeutscht, "
+        "und ein Test prueft das Satzkomma. Das ist die Bauart aus Befund 351: "
+        "gebaut **und** angeschlossen - eine Messung, die nur im Modul steht, "
+        "erreicht niemanden",
+        379,
     ),
 )
 
