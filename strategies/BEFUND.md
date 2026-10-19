@@ -33295,3 +33295,102 @@ Dritter Fall derselben Art nach Befund 362 (Quelle waehrend des Laufs
 bearbeitet) und 366 (auf dem falschen Pfad gemessen): Das Messgeraet war
 schuld, nicht der Befund. Ein Teilerfolg, der zu genau einer Frist passt, ist
 ein Verdacht gegen die Messung.
+
+## Dreihundertvierundsiebzig. Eine Zeile haette das haerteste Gate gekippt
+
+Dies ist der erste Befund in diesem Buch, dessen Ergebnis eine **Unterlassung**
+ist. Er steht hier, weil das Argument dafuer gut ist und man genau deshalb
+darauf hereinfallen kann.
+
+### Der Fund
+
+`deflated_sharpe_ratio` rechnet an zwei Stellen mit der Streuung des
+Sharpe-Schaetzers - in zwei verschiedenen Formen:
+
+```python
+variance = sharpe_variance if sharpe_variance is not None else 1.0 / (sample_size - 1)
+...
+denominator = math.sqrt(
+    max(1 - skew * observed_sharpe + (kurtosis - 1) / 4 * observed_sharpe**2, 1e-9)
+)
+```
+
+Unten steht die verteilungsbewusste Form nach Mertens und Lo, mit Schiefe und
+Woelbung. Oben steht `1/(n-1)` - dieselbe Groesse unter **Normalverteilung**.
+Zwei Formen derselben Varianz in einer Funktion, zwanzig Zeilen auseinander,
+und die eine ignoriert die Momente, die die andere benutzt. Dabei liegen sie
+gemessen vor: Schiefe 3,4646, Woelbung 15,9173.
+
+Das sieht nach einem Versehen aus. Die Klammer auch oben einzusetzen waere eine
+Zeile.
+
+### Was die Zeile bewirkt
+
+Am Spot-Punkt gerechnet (n = 115, SR = 0,2708, 203 Versuche):
+
+| | sqrt(V) | DSR | |
+|---|---|---|---|
+| angenommen `1/(n-1)` | 0,0937 | 0,5827 | durchgefallen |
+| vereinheitlicht | 0,0542 | **0,9869** | **bestanden** |
+
+Das blockierende Gate dieses Projekts, gekippt von einer Zeile, die wie eine
+Fehlerbehebung aussieht und sich mit Literatur belegen laesst. Seit Befund 61
+haengt alles an diesem Gate.
+
+### Warum sie nicht gemacht wird
+
+`V` ist **keine Stichprobenvarianz**. Bei Bailey und Lopez de Prado ist es die
+Streuung der Sharpe-Schaetzer *ueber die Versuche* - eine Eigenschaft des
+**Suchvorgangs**, nicht des Gewinners. Im Nenner gehoeren die Momente des
+Gewinners hin: Das ist sein Standardfehler. In der Huerde gehoeren sie nicht
+hin.
+
+Und das ist nicht Geschmack, sondern in der Formel nachlesbar. Die Klammer
+faellt monoton mit der Schiefe des Gewinners. Nur sie variiert, alles andere
+bleibt (und zwar an beiden Stellen, wie bei einem anderen Gewinner auch):
+
+| Schiefe | sqrt(V) | DSR heute | DSR vereinheitlicht |
+|---|---|---|---|
+| 0,0000 | 0,1057 | 0,5427 | 0,4175 — **strenger** |
+| 2,0000 | 0,0801 | 0,5562 | 0,7288 |
+| 3,4646 | 0,0542 | 0,5827 | 0,9869 — bestanden |
+| 4,7027 | 0 | — | **keine Huerde** |
+
+Dieselbe "Vereinheitlichung" macht das Gate fuer eine symmetrische Strategie
+strenger und loest es ab Schiefe 4,70 ganz auf: Dort wird die Klammer negativ,
+`V <= 0`, und **jeder** Kandidat besteht. Eine Mehrfachtest-Strafe, die sich
+aufloest, wenn der Gewinner schief genug ist, ist keine Strafe. Die gepruefte
+Groesse wuerde ihre eigene Huerde setzen, und je schiefer sie ist, desto
+niedriger - ein Lotterielos bestuende, **weil** es ein Lotterielos ist.
+
+Dazu passt, wo der Wert landet. Befund 68 hat die Streuung ueber die Versuche
+gemessen und **verworfen**, weil die Verlierer fehlen: 0,0428 aus den
+Berichten, 0,0608 mit der Bestenliste. Die 0,0542 liegt mitten darin. Das ist
+kein unabhaengiger Beleg, sondern dieselbe Untertreibung auf einem anderen Weg.
+
+Und `streuung.py` hat die Richtung laengst festgelegt:
+
+> Bis dahin bleibt die Annahme stehen, und zwar in der strengeren Richtung.
+
+### Was gebaut wurde
+
+`streuung.Vereinheitlichung` rechnet die Verlockung aus - die Klammer, beide
+sqrt(V), beide DSR, die Tabelle ueber die Schiefen, die Stelle, an der die
+Huerde verschwindet, und ein `urteil()`, das die Zahl **und** die Ablehnung
+nennt. Eine Zahl ohne Urteil waere eine Einladung.
+
+`tests/test_vereinheitlichung.py` nagelt drei Dinge fest: dass das Gate ohne
+Angabe mit `1/(n-1)` rechnet, dass die Klammer im Nenner wortgleich stehen
+bleibt (sonst widerlegt diese Datei eine Aenderung, die es nicht mehr gibt),
+und dass kein Pfad ausserhalb von `research/streuung.py` den Wert als
+`sharpe_variance` weitergibt. Der letzte Waechter wurde gegengeprueft: Eine
+untergeschobene Datei mit `sharpe_variance=lage.vereinheitlicht()` laesst ihn
+fallen.
+
+### Beinahe die vierte gepflegte Zahl
+
+Zuerst stand in diesem Modul `SCHIEFEGRENZE = 5.0` - geschaetzt, aus der
+Tabelle abgelesen. Gemessen sind es **4,7027**. Drei gepflegte Zahlen stehen im
+Register als nicht mehr reproduzierbar; das waere die vierte gewesen. Die
+Konstante ist weg, die Grenze wird gerechnet, und ein Test haelt fest, dass sie
+sich mit dem Punkt aendert.

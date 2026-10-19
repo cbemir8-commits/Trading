@@ -3404,6 +3404,43 @@ BEHOBEN: tuple[Richtung, ...] = (
         "uebrigen 'datetime.now' sind Zeitstempel und bleiben Wanduhr",
         373,
     ),
+    # Befund 374: eine Zeile, die das blockierende Gate kippt - und abgelehnt
+    # wird. Der erste Befund, dessen Ergebnis eine **Unterlassung** ist.
+    Richtung(
+        "Eine Zeile haette das haerteste Gate gekippt",
+        "'deflated_sharpe_ratio' rechnet zweimal mit der Streuung des "
+        "Sharpe-Schaetzers, in zwei verschiedenen Formen: Im **Nenner** der "
+        "Teststatistik steht die verteilungsbewusste Form nach Mertens und Lo "
+        "('1 - Schiefe*SR + (Woelbung-1)/4 * SR^2'), in **V** - der Streuung "
+        "ueber die Versuche - steht '1/(n-1)', dieselbe Groesse unter "
+        "Normalverteilung. Das sieht aus wie ein Versehen: zwei Formen "
+        "derselben Varianz in einer Funktion, eine normalverteilt, obwohl die "
+        "Schiefe zwei Zeilen weiter gemessen dasteht. Gemessen am Spot-Punkt, "
+        "was die Klammer auch in 'V' bewirkt: **sqrt(V) 0,0937 -> 0,0542 "
+        "(-42 %), DSR 0,5827 -> 0,9869, durchgefallen -> bestanden.** Eine "
+        "Zeile, die wie eine Fehlerbehebung aussieht, haette das Gate "
+        "umgedreht, an dem dieses Projekt seit Befund 61 haengt. **Sie wird "
+        "nicht gemacht**, und der Grund ist kein Geschmack: 'V' ist die "
+        "Streuung der Ergebnisse, die die **Suche** hervorgebracht hat - eine "
+        "Eigenschaft des Suchvorgangs, nicht des Gewinners. Im Nenner "
+        "gehoeren seine Momente hin, das ist sein Standardfehler; in der "
+        "Huerde nicht. Der Beleg steht in der Formel selbst: Die Klammer "
+        "faellt monoton mit der Schiefe des Gewinners - bei Schiefe 0 waere "
+        "das Gate **strenger** (0,4175 gegen 0,5427), und **ab Schiefe "
+        "4,7027 wird sie negativ**, dann ist 'V <= 0' und es gibt gar keine "
+        "Huerde mehr. Eine Mehrfachtest-Strafe, die sich aufloest, wenn der "
+        "Gewinner schief genug ist, ist keine; die gepruefte Groesse wuerde "
+        "ihre eigene Huerde setzen, und je schiefer sie ist, desto niedriger. "
+        "Dazu passt, wo der Wert landet: 0,0542 liegt mitten im Bereich der "
+        "wegen fehlender Verlierer verworfenen Messung (0,0428 bis 0,0608, "
+        "Befund 68) - kein unabhaengiger Beleg, sondern dieselbe "
+        "Untertreibung auf einem anderen Weg. Festgenagelt in "
+        "'tests/test_vereinheitlichung.py': dass das Gate ohne Angabe mit "
+        "'1/(n-1)' rechnet, dass die Klammer im Nenner unveraendert steht, "
+        "und dass kein Pfad ausserhalb von 'research/streuung.py' den Wert "
+        "als 'sharpe_variance' weitergibt",
+        374,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

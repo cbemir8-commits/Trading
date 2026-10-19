@@ -69,6 +69,7 @@ Kostet keinen Versuch: Ausgewertet wird, was ohnehin auf der Platte liegt.
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 from statistics import stdev
@@ -528,3 +529,180 @@ class Empfindlichkeit:
             f"dreht das Ergebnis - und genau deshalb darf sie nicht aus einer "
             f"Auswahl der eigenen Versuche stammen."
         )
+
+
+@dataclass(frozen=True, slots=True)
+class Vereinheitlichung:
+    """Die naheliegende Einzeiländerung, die das haerteste Gate kippen wuerde.
+
+    **Worum es geht.** ``deflated_sharpe_ratio`` rechnet an zwei Stellen mit
+    der Streuung des Sharpe-Schaetzers:
+
+    * im **Nenner** der Teststatistik, und dort steht bereits die
+      verteilungsbewusste Form nach Mertens und Lo,
+      ``1 - Schiefe*SR + (Woelbung-1)/4 * SR^2``;
+    * in ``V``, der Streuung der Sharpe-Schaetzer **ueber die Versuche**, und
+      dort steht ``1/(n-1)`` - dieselbe Groesse unter Normalverteilung.
+
+    Das sieht aus wie ein Versehen: zwei Formen derselben Varianz in einer
+    Funktion, eine davon normalverteilt, obwohl die Schiefe daneben gemessen
+    dasteht. Die Klammer aus dem Nenner auch in ``V`` einzusetzen waere eine
+    Zeile, waere mit Literatur belegbar - und wuerde am Spot-Punkt
+    ``sqrt(V)`` um 42 % senken und das Gate von 0,58 auf 0,99 drehen.
+
+    **Warum es trotzdem falsch ist.** ``V`` ist keine Stichprobenvarianz,
+    sondern die Streuung der Ergebnisse, die die **Suche** hervorgebracht hat.
+    Sie ist eine Eigenschaft des Suchvorgangs, nicht des Gewinners. Im Nenner
+    gehoeren die Momente des Gewinners hin - das ist sein Standardfehler. In
+    ``V`` gehoeren sie nicht hin, und zwar nicht aus Geschmack:
+
+    Die Klammer faellt monoton mit der Schiefe des Gewinners. Gerechnet am
+    Spot-Punkt, nur die Schiefe des Gewinners variiert (und zwar an beiden
+    Stellen, wie bei einem anderen Gewinner auch):
+
+        Schiefe    sqrt(V)   DSR heute   DSR vereinheitlicht
+        0,0000      0,1057      0,5427      0,4175   strenger
+        2,0000      0,0801      0,5562      0,7288
+        3,4646      0,0542      0,5827      0,9869   bestanden
+        4,7027      0           -           keine Huerde
+
+    Dieselbe "Vereinheitlichung" macht das Gate fuer eine symmetrische
+    Strategie **strenger** und loest es ab Schiefe 4,70 **auf** - ab dort ist
+    die Klammer negativ, ``V <= 0``, und jeder Kandidat besteht. Die gepruefte
+    Groesse wuerde ihre eigene Huerde setzen, und je schiefer sie ist, desto
+    niedriger. Ein Lotterielos bestuende dann, **weil** es ein Lotterielos
+    ist.
+
+    **Und die Richtung.** ``streuung`` haelt fest, dass die gemessene Streuung
+    zu niedrig liegt, weil die Verlierer fehlen, und dass die Annahme deshalb
+    in der strengeren Richtung stehen bleibt. 0,0542 liegt mitten im Bereich
+    der verworfenen Messung (0,0428 bis 0,0608) - das ist kein unabhaengiger
+    Beleg, sondern dieselbe Untertreibung auf einem anderen Weg.
+
+    Dieses Objekt rechnet die Verlockung aus und benennt sie. Es wird dem Gate
+    **nicht** uebergeben; ``tests/test_vereinheitlichung.py`` haelt das fest.
+    """
+
+    sharpe: float
+    stichprobe: int
+    versuche: int
+    schiefe: float
+    woelbung: float
+    ziel: float = ZIEL
+
+    def _lage(self, schiefe: float | None = None) -> Empfindlichkeit:
+        """Die Empfindlichkeit an diesem Punkt - mit wahlweise anderer Schiefe.
+
+        Die Schiefe geht **an beiden Stellen** ein, wenn sie gesetzt wird: in
+        die Klammer fuer ``V`` und in den Nenner der Teststatistik. Sonst
+        verglichen man nicht zwei Kandidaten, sondern zwei Buchungen fuer
+        denselben - und die Tabelle soll zeigen, was die Aenderung fuer
+        verschieden geformte Gewinner tut.
+        """
+        return Empfindlichkeit(
+            sharpe=self.sharpe,
+            stichprobe=self.stichprobe,
+            versuche=self.versuche,
+            schiefe=self.schiefe if schiefe is None else schiefe,
+            woelbung=self.woelbung,
+            ziel=self.ziel,
+        )
+
+    def klammer(self, schiefe: float | None = None) -> float:
+        """Die Mertens-Klammer - dieselbe, die im Nenner des Gates steht.
+
+        Ungeklemmt: Wird sie negativ, soll das sichtbar sein und nicht als
+        winzige positive Zahl erscheinen. Das Gate klemmt sie bei ``1e-9``,
+        weil es dort eine Wurzel zieht; hier ist ihr Vorzeichen das Argument.
+        """
+        sk = self.schiefe if schiefe is None else schiefe
+        return 1 - sk * self.sharpe + (self.woelbung - 1) / 4 * self.sharpe**2
+
+    def angenommen(self) -> float:
+        """``sqrt(V)`` wie das Gate es heute einsetzt."""
+        return math.sqrt(1.0 / (self.stichprobe - 1))
+
+    def vereinheitlicht(self, schiefe: float | None = None) -> float:
+        """``sqrt(V)``, wenn die Klammer aus dem Nenner auch hier stuende."""
+        return math.sqrt(max(self.klammer(schiefe), 0.0) / (self.stichprobe - 1))
+
+    def dsr_angenommen(self) -> float:
+        return self._lage().bei(self.angenommen())
+
+    def dsr_vereinheitlicht(self, schiefe: float | None = None) -> float:
+        return self._lage(schiefe).bei(self.vereinheitlicht(schiefe))
+
+    def kippt(self) -> bool:
+        """Wuerde die Aenderung das Urteil des Gates umdrehen?"""
+        return (
+            self.dsr_angenommen() < self.ziel
+            and self.dsr_vereinheitlicht() >= self.ziel
+        )
+
+    def huerde_verschwindet_ab(self, *, obergrenze: float = 20.0) -> float | None:
+        """Ab welcher Schiefe die Klammer negativ wird - also die Huerde weg.
+
+        Gesucht wird am Gewinner entlang: Alles andere bleibt, nur seine
+        Schiefe waechst. Liegt die Stelle nicht im durchsuchten Bereich, ist
+        die Antwort ``None`` und nicht die Obergrenze.
+        """
+        if self.klammer(0.0) <= 0:
+            return 0.0
+        if self.klammer(obergrenze) > 0:
+            return None
+        unten, oben = 0.0, obergrenze
+        for _ in range(200):
+            mitte = (unten + oben) / 2
+            if self.klammer(mitte) > 0:
+                unten = mitte
+            else:
+                oben = mitte
+        return oben
+
+    def tabelle(self, schiefen: tuple[float, ...] = (0.0, 2.0, 3.4646, 5.0)) -> str:
+        zeilen = [
+            f"{'Schiefe':>9} {'Klammer':>9} {'sqrt(V)':>9} {'DSR':>8}  Urteil",
+            "-" * 55,
+        ]
+        for sk in schiefen:
+            kl = self.klammer(sk)
+            if kl <= 0:
+                zeilen.append(
+                    f"{sk:>9.4f} {kl:>9.4f} {'-':>9} {'-':>8}  keine Huerde"
+                )
+                continue
+            dsr = self.dsr_vereinheitlicht(sk)
+            zeilen.append(
+                f"{sk:>9.4f} {kl:>9.4f} {self.vereinheitlicht(sk):>9.4f} "
+                f"{dsr:>8.4f}  "
+                f"{'bestanden' if dsr >= self.ziel else 'durchgefallen'}"
+            )
+        return "\n".join(zeilen)
+
+    def urteil(self) -> str:
+        grenze = self.huerde_verschwindet_ab()
+        kopf = (
+            f"Angenommen sqrt(V) = {self.angenommen():.4f} -> DSR "
+            f"{self.dsr_angenommen():.4f}; vereinheitlicht "
+            f"{self.vereinheitlicht():.4f} -> DSR "
+            f"{self.dsr_vereinheitlicht():.4f}."
+        )
+        if not self.kippt():
+            return (
+                f"{kopf} Das Urteil des Gates aendert sich dadurch nicht - "
+                f"was die Frage nicht erledigt, sondern nur ihre Dringlichkeit."
+            )
+        schluss = (
+            f"{kopf} **Das Urteil kippt** - und genau deshalb wird die "
+            f"Aenderung nicht gemacht. 'V' ist die Streuung der Versuche, "
+            f"also eine Eigenschaft der Suche; die Momente des Gewinners "
+            f"gehoeren in den Nenner und nicht in die Huerde."
+        )
+        if grenze is not None:
+            schluss += (
+                f" Der Beleg steht in der Formel selbst: Ab Schiefe "
+                f"{grenze:.2f} wird die Klammer negativ, dann gibt es gar "
+                f"keine Huerde mehr. Eine Mehrfachtest-Strafe, die sich "
+                f"aufloest, wenn der Gewinner schief genug ist, ist keine."
+            )
+        return schluss
