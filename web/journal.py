@@ -58,6 +58,14 @@ class EventKind(StrEnum):
     TARGET = "target"
     EXIT = "exit"
     STOP_MOVED = "stop_moved"
+    INFO = "info"
+    """Eine Lage hat sich entspannt - Gegenstueck zu WARNING (Befund 382).
+
+    Ohne diese Art bliebe eine Warnung in der Liste stehen, ohne dass etwas
+    ihr Ende meldet: Der Banner verschwindet, die Ereigniszeile bleibt. Wer
+    die Liste spaeter liest, sieht dann nur das Problem.
+    """
+
     WARNING = "warning"
     KILL = "kill"
     COMMAND = "command"

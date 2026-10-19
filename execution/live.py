@@ -221,6 +221,9 @@ class LiveTrader:
         #: Grund eines fehlgeschlagenen Stornos. Solange gesetzt, koennen noch
         #: Restorders im Buch stehen - dann wird nicht neu eroeffnet.
         self._aufraeumen_offen: str | None = None
+        #: Ob das offene Aufraeumen schon ans Dashboard gemeldet wurde.
+        #: Einmal je Uebergang - 'nacharbeit_erledigt' laeuft je Kerze.
+        self._aufraeumen_gemeldet = False
 
     # -- Start ---------------------------------------------------------------
     async def start(self) -> None:
@@ -889,6 +892,14 @@ class LiveTrader:
             # eine Ebene weiter aussen.
             "paused_until": self.officer.state.paused_until,
             "news_blackout_until": self.officer.state.news_blackout_until,
+            # **Die dritte stille Sperre** (Befund 382). Anders als die beiden
+            # darueber ist sie ein **Fehlerzustand**: Ein fehlgeschlagenes
+            # Storno laesst Restziele im Buch, und solange das so ist, wird
+            # nicht neu eroeffnet ('_nacharbeit_erledigt'). Gemessen blockt
+            # das jeden Einstieg, 'trading_state' bleibt 'active', und die
+            # Meldung ging nur ins Protokoll - weder in diese Momentaufnahme
+            # noch in die Ereignisliste.
+            "aufraeumen_offen": self._aufraeumen_offen,
             "last_price": candle.close if candle else None,
             "last_candle": candle.open_time if candle else None,
             "position": position,
@@ -1247,13 +1258,33 @@ class LiveTrader:
             return True
         if self.router.close_all(f"Nachholen: {self._aufraeumen_offen}"):
             log.info("live.aufraeumen_nachgeholt", grund=self._aufraeumen_offen)
+            if self._aufraeumen_gemeldet:
+                self._report(
+                    EventKind.INFO,
+                    f"Aufraeumen nachgeholt ({self._aufraeumen_offen}) - "
+                    f"Einstiege sind wieder frei.",
+                )
             self._aufraeumen_offen = None
+            self._aufraeumen_gemeldet = False
             return True
         log.warning(
             "live.aufraeumen_offen",
             grund=self._aufraeumen_offen,
             hinweis="Keine neuen Einstiege, solange Restorders im Buch stehen koennen",
         )
+        # **Einmal je Uebergang ans Dashboard** (Befund 382), nicht je Kerze:
+        # Das hier laeuft bei jedem Balken, und eine Zeile alle fuenfzehn
+        # Minuten ist so gut wie keine. Dieselbe Sperre wie bei der
+        # Funding-Warnung (373) und der fehlenden Vorgeschichte (376).
+        if not self._aufraeumen_gemeldet:
+            self._aufraeumen_gemeldet = True
+            self._report(
+                EventKind.WARNING,
+                f"Aufraeumen offen ({self._aufraeumen_offen}): Es koennen noch "
+                f"Reduce-Only-Orders im Buch stehen. **Keine neuen Einstiege**, "
+                f"bis das Storno durchgeht - es wird bei jeder Kerze erneut "
+                f"versucht.",
+            )
         return False
 
     def _bracket_abschliessen(self, grund: str, *, storniert: bool | None = None) -> None:

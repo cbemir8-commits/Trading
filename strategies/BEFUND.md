@@ -34012,3 +34012,78 @@ gemessen, mit dem Rig und einem Lauf bis zur Momentaufnahme auf der Platte.
 Der Banner-Zweig ist **im Quelltext** geprueft: Der Test faellt, wenn er
 verschwindet, und das ist, was er leisten soll. Wie es aussieht, kann er nicht
 pruefen, und das steht in seinem Docstring.
+
+## Dreihundertzweiundachtzig. Die dritte stille Sperre, und eine Meldung ohne Empfaenger
+
+Dieselbe Methode wie in Befund 381: einen gemessenen Zustand nehmen und
+fragen, ob die Oberflaeche ihn zeigt. Diesmal zwei Funde, und der zweite war
+der ueberraschende.
+
+### Die dritte stille Sperre ist ein Fehlerzustand
+
+`_aufraeumen_offen` ist nicht wie Tagespause und Terminsperre eine Pause,
+sondern ein **Fehler**: Schlaegt das Storno beim Abschluss eines Trades fehl -
+ein Netzwackler genuegt -, bleiben Reduce-Only-Orders im Buch, und
+`_nacharbeit_erledigt` laesst dann keinen neuen Einstieg zu. Das ist die
+richtige Richtung, und der Quelltext sagt auch warum:
+
+> Ein verpasster Einstieg kostet eine Gelegenheit, ein Einstieg in ein
+> unaufgeraeumtes Buch kostet Geld.
+
+Gemessen mit dauerhaft scheiterndem Storno:
+
+| | |
+|---|---|
+| `_aufraeumen_offen` | `'Position an der Boerse geschlossen'` |
+| drei Signale danach | **null** zusaetzliche Einstiege |
+| `trading_state` | weiter `active` |
+| Momentaufnahme | kein Feld dazu |
+| Ereignisliste | keine Zeile |
+
+Nur `log.warning` bei jeder Kerze. Dass gebremst wird, ist seit langem
+getestet (`test_ausfuehrung_robustheit.py`); dass man es **sieht**, war es
+nicht.
+
+### Der zweite Fund: veroeffentlicht und fallen gelassen
+
+`invariant_breaches` und `last_breach` standen die ganze Zeit **in** der
+Momentaufnahme. Gemessen im selben Lauf: **4 Verletzungen**, Text
+`ziele_groesser_als_position: 0.006 an Reduce-Only-Orders, aber nur 0
+Position`. Und das Dashboard zeigte keines von beiden - null Treffer fuer
+`invariant` im HTML.
+
+Die lauteste Meldung des Systems, CRITICAL bei jeder Kerze, wurde
+veroeffentlicht und fallen gelassen. Die Betriebstabelle fuehrte stattdessen:
+
+    Symbol | Strategie | Letzter Kurs | Kerzen gesehen | Signale |
+    Einstiege | Abgelehnt | Letztes Lebenszeichen
+
+Also genau die Zahlen, die auch ein gesunder Lauf hochtreibt. `candle_errors`
+fehlte ebenso.
+
+Das ist die Bauart aus Befund 351 - **gebaut und angeschlossen** - diesmal in
+fremdem Code und in der zweiten Haelfte: Jemand hat die Zahl in den
+Schnappschuss geschrieben und niemand sie abgeholt. Genau derselbe Fehler, den
+ich in Befund 379 bei mir selbst gefunden habe.
+
+### Behoben
+
+* `aufraeumen_offen` steht in der Momentaufnahme.
+* Es meldet sich **einmal je Uebergang** ans Journal - nicht je Kerze, wie in
+  373 und 376 -, mit einer Gegenmeldung beim Ende ueber die neue Ereignisart
+  `INFO`. Ohne die bliebe eine Warnung in der Liste stehen, ohne dass etwas
+  ihr Ende meldet.
+* Der Banner zeigt Invariantenverletzung und offenes Aufraeumen.
+* Die Betriebstabelle fuehrt Kerzenfehler und Invariantenverletzungen.
+
+### Die Rangfolge hat sich bewegt
+
+Sie steht unter Test, und diesmal ist sie nicht nur ergaenzt worden:
+
+    Not-Aus > toter Prozess > Invariante > Aufraeumen > pausiert >
+    nur-schliessen > Tagespause > Terminsperre
+
+Die **strukturellen** Fehler stehen jetzt **vor** "pausiert". Der Grund: Eine
+Pause hat der Nutzer selbst gesetzt und kennt sie; eine verletzte Invariante
+kennt er nicht. Es zeigt immer nur ein Banner, und dann muss der obere der
+sein, von dem der Nutzer noch nichts weiss.

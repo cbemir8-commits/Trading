@@ -191,3 +191,184 @@ class TestWarumNichtDieGanzeBlockade:
         assert zeitlich <= set(s)
         assert "blockade" not in s
         assert not any("position_already_open" in str(v) for v in s.values())
+
+
+# ---------------------------------------------------------------------------
+#  Befund 382: die dritte Sperre - und eine Meldung, die niemand zeigte
+# ---------------------------------------------------------------------------
+def _immer_fehler(symbol: str) -> int:
+    from data.bybit.errors import BybitTransportError
+
+    raise BybitTransportError("dauerhaft weg")
+
+
+async def _storno_scheitert(rig):
+    """Eine Position eroeffnen, schliessen lassen, und das Storno brechen.
+
+    Dieselbe Technik wie in ``test_ausfuehrung_robustheit.py`` - dort ist
+    gezeigt, **dass** gebremst wird; hier geht es darum, ob man es sieht.
+
+    Gibt das echte ``cancel_all`` zurueck, damit der Aufrufer die Boerse
+    wieder heil machen kann. Erst stand hier ein
+    ``__class__.cancel_all.__get__(...)`` auf der Rueckseite - das ist
+    dasselbe, nur unlesbar, und die Nachbardatei macht es seit langem so.
+    """
+    from tests.test_live import long_below_market
+
+    rig.strategy.emit(long_below_market())
+    await rig.feed()
+    rig.fill_entry()
+    await rig.feed()
+    rig.exchange.position = None
+    original = rig.exchange.cancel_all
+    rig.exchange.cancel_all = _immer_fehler  # type: ignore[method-assign]
+    await rig.feed()
+    return original
+
+
+def _ereignisse(tmp_path: Path) -> list[dict]:
+    datei = tmp_path / "state" / "events.jsonl"
+    if not datei.exists():
+        return []
+    return [json.loads(z) for z in datei.read_text().splitlines() if z.strip()]
+
+
+class TestDasOffeneAufraeumenStandNirgends:
+    """**Der Befund.** Ein Fehlerzustand, der jeden Einstieg sperrt."""
+
+    @pytest.mark.asyncio
+    async def test_es_sperrt_wirklich(self, rig) -> None:
+        from tests.test_live import long_below_market
+
+        await _storno_scheitert(rig)
+        assert rig.trader._aufraeumen_offen is not None
+
+        vorher = len(rig.entry_orders)
+        for _ in range(3):
+            rig.strategy.emit(long_below_market())
+            await rig.feed()
+
+        assert len(rig.entry_orders) == vorher
+
+    @pytest.mark.asyncio
+    async def test_und_steht_jetzt_in_der_momentaufnahme(
+        self, rig, tmp_path
+    ) -> None:
+        await _storno_scheitert(rig)
+
+        s = _momentaufnahme(tmp_path)
+
+        assert s["aufraeumen_offen"] == rig.trader._aufraeumen_offen
+        assert s["trading_state"] == "active", (
+            "der Zustand bleibt aktiv - genau deshalb braucht es das Feld"
+        )
+
+    @pytest.mark.asyncio
+    async def test_ohne_fehler_steht_dort_nichts(self, rig, tmp_path) -> None:
+        await rig.feed()
+
+        assert _momentaufnahme(tmp_path)["aufraeumen_offen"] is None
+
+
+class TestGemeldetWirdEinmalJeUebergang:
+    @pytest.mark.asyncio
+    async def test_nicht_bei_jeder_kerze(self, rig, tmp_path) -> None:
+        """'_nacharbeit_erledigt' laeuft je Balken. Eine Zeile alle fuenfzehn
+        Minuten ist so gut wie keine - dieselbe Sperre wie bei der
+        Funding-Warnung (373) und der fehlenden Vorgeschichte (376)."""
+        from tests.test_live import long_below_market
+
+        await _storno_scheitert(rig)
+        for _ in range(4):
+            rig.strategy.emit(long_below_market())
+            await rig.feed()
+
+        offen = [e for e in _ereignisse(tmp_path) if "Aufraeumen offen" in e["message"]]
+
+        assert len(offen) == 1
+        assert offen[0]["kind"] == "warning"
+        assert "Keine neuen Einstiege" in offen[0]["message"]
+
+    @pytest.mark.asyncio
+    async def test_und_das_ende_wird_auch_gemeldet(self, rig, tmp_path) -> None:
+        """Sonst bleibt die Warnung in der Liste stehen, und wer sie spaeter
+        liest, sieht nur das Problem."""
+        from tests.test_live import long_below_market
+
+        original = await _storno_scheitert(rig)
+        rig.exchange.cancel_all = original  # type: ignore[method-assign]
+        rig.strategy.emit(long_below_market())
+        await rig.feed()
+
+        assert rig.trader._aufraeumen_offen is None
+        entspannt = [e for e in _ereignisse(tmp_path) if "nachgeholt" in e["message"]]
+        assert len(entspannt) == 1
+        assert entspannt[0]["kind"] == "info"
+
+    @pytest.mark.asyncio
+    async def test_eine_zweite_stoerung_meldet_sich_wieder(
+        self, rig, tmp_path
+    ) -> None:
+        """Die Sperre gilt dem Uebergang, nicht dem Lauf."""
+        from tests.test_live import long_below_market
+
+        original = await _storno_scheitert(rig)
+        rig.exchange.cancel_all = original  # type: ignore[method-assign]
+        rig.strategy.emit(long_below_market())
+        await rig.feed()
+
+        await _storno_scheitert(rig)
+
+        offen = [e for e in _ereignisse(tmp_path) if "Aufraeumen offen" in e["message"]]
+        assert len(offen) == 2
+
+
+class TestDieVerletzungWurdeVeroeffentlichtUndFallenGelassen:
+    """``invariant_breaches`` stand im Schnappschuss und nirgends auf dem
+    Bildschirm - obwohl es die lauteste Meldung des Systems ist."""
+
+    @pytest.mark.asyncio
+    async def test_sie_steht_in_der_momentaufnahme(self, rig, tmp_path) -> None:
+        await _storno_scheitert(rig)
+
+        stats = _momentaufnahme(tmp_path)["stats"]
+
+        assert stats["invariant_breaches"] > 0
+        assert "Reduce-Only" in stats["last_breach"]
+
+    def test_und_jetzt_auch_im_banner(self) -> None:
+        quelle = HTML.read_text(encoding="utf-8")
+
+        assert "s.stats.invariant_breaches" in quelle
+        assert "Invariante verletzt" in quelle
+
+    def test_und_in_der_betriebstabelle(self) -> None:
+        """Der Banner zeigt die laufende Lage, die Tabelle den Stand. Beides:
+        Ein Banner verschwindet, wenn sich der Zustand entspannt - die Zahl
+        bleibt."""
+        quelle = HTML.read_text(encoding="utf-8")
+
+        assert "st.invariant_breaches" in quelle
+        assert "st.candle_errors" in quelle
+
+    def test_das_aufraeumen_hat_auch_einen_banner(self) -> None:
+        quelle = HTML.read_text(encoding="utf-8")
+
+        assert "s.aufraeumen_offen" in quelle
+        assert "Aufräumen offen" in quelle
+
+    def test_die_reihenfolge_bleibt_eine_rangfolge(self) -> None:
+        """Not-Aus, dann toter Prozess, dann die strukturellen Fehler, dann
+        die gewollten Zustaende, dann die zeitlichen Pausen.
+
+        Die strukturellen stehen **vor** 'pausiert': Eine Pause hat der Nutzer
+        selbst gesetzt und kennt sie, eine verletzte Invariante nicht.
+        """
+        quelle = HTML.read_text(encoding="utf-8")
+        stelle = quelle.index
+
+        assert stelle("KILL-SWITCH AKTIV") < stelle("antwortet nicht")
+        assert stelle("antwortet nicht") < stelle("Invariante verletzt")
+        assert stelle("Invariante verletzt") < stelle("Aufräumen offen")
+        assert stelle("Aufräumen offen") < stelle("Pausiert —")
+        assert stelle("Pausiert —") < stelle("Tagesverlustgrenze erreicht")

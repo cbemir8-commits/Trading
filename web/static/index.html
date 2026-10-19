@@ -90,6 +90,7 @@
   .k-veto .dot { background: var(--dim); }
   .k-warning .dot, .k-kill .dot { background: var(--down); }
   .k-command .dot { background: var(--warn); }
+  .k-info .dot { background: var(--up); }
   .k-kill .msg, .k-warning .msg { color: var(--down); }
 
   button {
@@ -418,6 +419,14 @@ async function refresh() {
     banner.innerHTML = `<div class="banner killed">KILL-SWITCH AKTIV — ${s.kill_reason || "abgeschaltet"}</div>`;
   } else if (!data.alive && data.last_heartbeat) {
     banner.innerHTML = `<div class="banner dead">Handelsprozess antwortet nicht — letztes Lebenszeichen ${ago(data.last_heartbeat)}. Offene Stops liegen bei Bybit und wirken weiter.</div>`;
+  } else if (Number(s.stats && s.stats.invariant_breaches) > 0) {
+    // Befund 382: Stand im Schnappschuss, wurde aber nirgends gezeigt -
+    // obwohl es die lauteste Meldung des Systems ist (CRITICAL je Kerze).
+    banner.innerHTML = `<div class="banner killed">Invariante verletzt (${s.stats.invariant_breaches}×) — ${(s.stats.last_breach || "").slice(0, 120)}</div>`;
+  } else if (s.aufraeumen_offen) {
+    // Befund 382: Ein fehlgeschlagenes Storno sperrt jeden Einstieg, und
+    // 'trading_state' bleibt "active".
+    banner.innerHTML = `<div class="banner paused">Aufräumen offen (${s.aufraeumen_offen}) — keine neuen Einstiege, solange Reduce-Only-Orders im Buch stehen können. Wird bei jeder Kerze erneut versucht.</div>`;
   } else if (s.trading_state === "paused") {
     banner.innerHTML = `<div class="banner paused">Pausiert — keine neuen Positionen.</div>`;
   } else if (s.trading_state === "close_only") {
@@ -472,6 +481,12 @@ async function refresh() {
     ["Signale", st.signals_generated ?? "—"],
     ["Einstiege", st.entries_filled ?? "—"],
     ["Abgelehnt", st.signals_vetoed ?? "—"],
+    // Befund 382: Beide standen im Schnappschuss und wurden nirgends
+    // gezeigt. Ein Fehler, den niemand sieht, ist für den Nutzer keiner -
+    // und bis hierher stand hier nur "Signale" und "Abgelehnt", also
+    // genau die Zahlen, die auch bei einem gesunden Lauf wachsen.
+    ["Kerzenfehler", st.candle_errors ?? "—"],
+    ["Invarianten verletzt", st.invariant_breaches ?? "—"],
     ["Letztes Lebenszeichen", ago(data.last_heartbeat)],
   ];
   $("ops").querySelector("tbody").innerHTML = rows

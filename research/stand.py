@@ -3686,6 +3686,44 @@ BEHOBEN: tuple[Richtung, ...] = (
         "gibt null), und die Reihenfolge der Banner ist gepruefter Teil der "
         "Botschaft: Not-Aus vor totem Prozess vor Tagespause vor Terminsperre",
         381,
+        zuletzt=382,
+    ),
+    # Befund 382: dieselbe Methode noch einmal - und diesmal ein
+    # Fehlerzustand, plus eine Meldung, die veroeffentlicht und fallen
+    # gelassen wurde.
+    Richtung(
+        "Die dritte stille Sperre, und eine Meldung ohne Empfaenger",
+        "Weiter in derselben Richtung wie 381: einen gemessenen Zustand "
+        "nehmen und fragen, ob die Oberflaeche ihn zeigt. **Die dritte stille "
+        "Sperre** ist '_aufraeumen_offen' - anders als Tagespause und "
+        "Terminsperre ein **Fehlerzustand**: Schlaegt das Storno beim "
+        "Abschluss eines Trades fehl, bleiben Reduce-Only-Orders im Buch, und "
+        "'_nacharbeit_erledigt' laesst dann keinen neuen Einstieg zu (die "
+        "richtige Richtung - ein Einstieg in ein unaufgeraeumtes Buch laeuft "
+        "in alte Verkaufslimits). Gemessen mit dauerhaft scheiterndem Storno: "
+        "drei Signale, **null zusaetzliche Einstiege**, 'trading_state' "
+        "weiter 'active' - und in der Momentaufnahme kein Feld dazu, in der "
+        "Ereignisliste keine Zeile. Nur 'log.warning' bei jeder Kerze. "
+        "**Und ein zweiter Fund daneben**: 'invariant_breaches' und "
+        "'last_breach' standen die ganze Zeit **in** der Momentaufnahme - "
+        "gemessen 4 Verletzungen mit dem Text 'ziele_groesser_als_position: "
+        "0.006 an Reduce-Only-Orders, aber nur 0 Position' -, und das "
+        "Dashboard zeigte **keines von beiden**: null Treffer fuer "
+        "'invariant' im HTML. Die lauteste Meldung des Systems, CRITICAL je "
+        "Kerze, wurde veroeffentlicht und fallen gelassen; die Betriebstabelle "
+        "fuehrte 'Signale' und 'Abgelehnt', also genau die Zahlen, die auch "
+        "ein gesunder Lauf hochtreibt. Das ist die Bauart aus Befund 351 in "
+        "fremdem Code: gebaut, nicht angeschlossen. Behoben ist beides - "
+        "'aufraeumen_offen' steht in der Momentaufnahme und meldet sich "
+        "**einmal je Uebergang** ans Journal (je Kerze waere so gut wie nie, "
+        "wie in 373 und 376), mit einer Gegenmeldung beim Ende ueber die neue "
+        "Ereignisart 'INFO'; der Banner zeigt Verletzung und offenes "
+        "Aufraeumen, die Betriebstabelle fuehrt Kerzenfehler und "
+        "Invariantenverletzungen. Die Rangfolge der Banner steht unter Test "
+        "und hat sich dabei bewegt: Die **strukturellen** Fehler stehen jetzt "
+        "vor 'pausiert', weil eine Pause der Nutzer selbst gesetzt hat und "
+        "kennt - eine verletzte Invariante nicht",
+        382,
     ),
 )
 
