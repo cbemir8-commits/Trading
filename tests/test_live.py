@@ -126,6 +126,9 @@ def build_rig(
     entry_expiry_bars: int = 3,
     equity: Decimal = Decimal("500"),
     funding_raten: list | None = None,
+    markt_raten: list | None = None,
+    verlauf_ab: datetime | None = None,
+    clock=None,
 ) -> Rig:
     """``funding_raten`` legt einen Funding-Speicher daneben (Befund 361).
 
@@ -133,9 +136,21 @@ def build_rig(
     Spalte im Puffer. Eine leere Liste ist etwas anderes als ``None`` - sie
     heisst "Speicher vorhanden, aber ohne Raten", und genau daran haengt die
     Warnung beim Start.
+
+    ``markt_raten`` legt dieselben Raten in die **Boerse** statt in den
+    Speicher (Befund 373). Das ist die zweite Haelfte: Was der Roboter im Lauf
+    nachladen kann, steht dort und nicht auf der Platte.
+
+    ``verlauf_ab`` verschiebt den Kerzenverlauf. Normalerweise liegt er fest im
+    Januar 2026, was fuer alles reicht, was nur Kerzen gegen Kerzen rechnet.
+    Das Nachladen rechnet aber gegen die **Wanduhr** (``datetime.now``), und
+    eine Messung, in der die Kerzen im Januar und die Uhr im Oktober steht,
+    wuerde luegen. Wer beides braucht, laesst den Verlauf an der Gegenwart
+    enden - oder stellt mit ``clock`` die Uhr selbst, dann laufen Kerzenzeit
+    und Uhr zusammen wie im Betrieb.
     """
     store = CandleStore(tmp_path / "store")
-    start = datetime(2026, 1, 1, tzinfo=UTC)
+    start = verlauf_ab or datetime(2026, 1, 1, tzinfo=UTC)
 
     fundingspeicher = None
     if funding_raten is not None:
@@ -165,7 +180,7 @@ def build_rig(
         strategy=strategy or QueuedStrategy(),
         instrument=btcusdt,
         risk_settings=risk,
-        market=FakeMarketData(),
+        market=FakeMarketData(funding=markt_raten),
         account=account,
         gateway=exchange,
         officer=officer,
@@ -175,6 +190,7 @@ def build_rig(
         notifier=notifier,
         entry_expiry_bars=entry_expiry_bars,
         journal=LiveJournal(tmp_path / "state"),
+        clock=clock,
     )
     trader._load_history()
 

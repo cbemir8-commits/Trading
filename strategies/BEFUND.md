@@ -33204,3 +33204,94 @@ Gates haengt.
 Ein negativer Sharpe bleibt dagegen drin - er ist erhoben. Die Verlierer tragen
 diese Streuung, und sie herauszunehmen waere derselbe Fehler wie die Null
 hineinzunehmen.
+
+## Dreihundertdreiundsiebzig. Nach einem Tag war der Roboter blind
+
+Befund 361 gab dem Livepuffer seine Funding-Spalte und hinterliess einen Satz,
+der hier zum Befund wird:
+
+> **Offen bleibt** die laufende Rate von der Boerse, also der Fall, dass
+> zwischen zwei `cli funding`-Laeufen eine neue Periode beginnt.
+
+Das klang nach einer Feinheit. Es ist keine. Gelesen wurde der Speicher genau
+**einmal** - in `_load_history`, beim Start. Danach stand im Konstruktor sogar,
+dass es dabei bleibt ("einmal von der Platte gelesen. Bleibt"). `_frist_anwenden`
+setzt die Spalte nach drei Zahlungsperioden auf NaN, und `_funding_pruefen` lief
+nur beim Start. Also: Ein Roboter, der gesund startet, handelt nach 24 Stunden
+nicht mehr - und sagt dazu nichts.
+
+Genau die Verwechslung aus Befund 360, auf die der Docstring von
+`_funding_pruefen` selbst hinweist ("das sieht auf dem Bildschirm aus wie 'kein
+Signal' statt wie 'keine Eingabe'"), nur eine Ebene spaeter: Diesmal nicht beim
+Start, sondern am zweiten Tag.
+
+### Gemessen
+
+72 Stunden M15-Kerzen, Carry-Regel aus Generation 5, Speicher bis zum Start
+gefuellt (so, wie `cli funding` ihn hinterlaesst), Boerse zahlt weiter:
+
+| | Kerzen mit Rate | Raten im Speicher | Boersenanfragen | Einstiege |
+|---|---|---|---|---|
+| ohne Nachladen | 97 / 288 | 31 | 0 | 97 |
+| mit Nachladen | **288 / 288** | 39 | 8 | **288** |
+
+97 Kerzen sind 24,25 Stunden. Der erste Tag sieht gesund aus, danach sind zwei
+von drei Handelstagen weg - ohne eine Fehlzeile im Protokoll.
+
+### Woher die Raten kommen
+
+Aus `/v5/market/funding/history`, ueber dieselbe `backfill_funding`, die
+`cli funding` benutzt. Eine Quelle, ein Schreibpfad, ein Entprellen - und die
+Raten landen auf der **Platte**, nicht nur in `_raten`. Sonst haetten der
+laufende Roboter und die naechste Zulassung zwei verschiedene Wahrheiten, und
+die Zulassung rechnete auf der aelteren.
+
+**Nicht** der Ticker, aus dem Grund, der schon in 361 stand: Dort steht die Rate
+neben `next_funding_time`, gilt also der naechsten Abrechnung und ist noch nicht
+gezahlt. Jede Zulassungszahl ist auf festgestellten Raten gerechnet. Die eine
+fuer die andere einzusetzen waere ein stiller Wechsel der Eingabe.
+
+Angesetzt wird am **juengsten bekannten Eintrag** und nicht an einem Fenster von
+jetzt aus. Das ist kein Stil: `attach_funding` schreibt die letzte bekannte Rate
+vorwaerts fort, also wuerde eine Luecke im Speicher spaeter stillschweigend
+ueberschrieben. Wer am Speicherstand ansetzt, laesst keine.
+
+### Was es kostet
+
+Acht Anfragen auf 72 Stunden, eine je neun Stunden - nicht 288. Zwei Bremsen in
+dieser Reihenfolge:
+
+1. **Faelligkeit.** Ist die juengste bekannte Rate keine Zahlungsperiode alt,
+   gibt es nichts zu holen.
+2. **Abstand.** Danach hoechstens stuendlich (`NACHLADEABSTAND`), gleich ob die
+   Anfrage etwas brachte. Bis zur `FUNDINGFRIST` bleiben so 24 Versuche.
+
+Die Reihenfolge ist messbar: In zwoelf Stunden mit einer kaputten Boerse sind es
+**vier** Versuche und nicht zwoelf, weil in den ersten acht Stunden gar nichts
+faellig ist. Ein Netzfehler kostet keine Kerze - die Entscheidung auf diesem
+Balken ist mehr wert als die frische Rate, und die alten Raten bleiben stehen.
+
+Die Warnung kommt **einmal je Uebergang** statt alle 15 Minuten. Eine Warnung
+alle 15 Minuten ist so gut wie keine; frische Raten heben die Sperre wieder auf,
+damit die naechste Durststrecke sich wieder meldet.
+
+### Was die Messung zuerst falsch machte
+
+Der erste Lauf meldete **97 von 192** als Ergebnis *mit* Auffrischung und sah
+damit nach einem Teilerfolg aus. Er war Unsinn: Die Frist rechnet in
+**Kerzenzeit**, das Nachladen in **Wanduhrzeit**, und im Test treffen 48 Stunden
+Kerzen in einer Sekunde ein. Es lief also nur eine der beiden Uhren, und
+`NACHLADEABSTAND` schluckte jeden Versuch nach dem ersten.
+
+Im Betrieb laufen beide zusammen - also muessen sie das im Test auch. Seitdem
+hat `LiveTrader` eine stellbare Uhr, und zwar fuer genau die zwei Stellen, an
+denen eine **Entscheidung** an der Zeit haengt ("ist die Rate noch gueltig").
+Die acht uebrigen `datetime.now`-Aufrufe in `execution/live.py` sind
+Zeitstempel: Sie halten fest, wann etwas geschehen ist, und das ist auch in
+einem nachgestellten Lauf die Wanduhr. Dieselbe Einrichtung hat
+`backfill_funding` seit langem, aus demselben Grund.
+
+Dritter Fall derselben Art nach Befund 362 (Quelle waehrend des Laufs
+bearbeitet) und 366 (auf dem falschen Pfad gemessen): Das Messgeraet war
+schuld, nicht der Befund. Ein Teilerfolg, der zu genau einer Frist passt, ist
+ein Verdacht gegen die Messung.

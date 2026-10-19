@@ -32,7 +32,7 @@ from __future__ import annotations
 import contextlib
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pandas as pd
@@ -47,6 +47,7 @@ from data.funding import (
     FUNDING_INTERVAL,
     FundingStore,
     attach_funding,
+    backfill_funding,
     funding_to_frame,
 )
 from data.funding import SPALTE as FUNDINGSPALTE
@@ -75,6 +76,24 @@ BUFFER_BARS = 2000
 #: spaeter fort. Drei Zahlungsperioden sind die Grenze, ab der "die letzte
 #: bekannte Rate" kein Ersatz mehr fuer "die aktuelle Rate" ist.
 FUNDINGFRIST = FUNDING_INTERVAL * 3
+
+#: Wie lange nach einem Nachladeversuch fruehestens wieder gefragt wird.
+#:
+#: Faellig ist eine neue Rate alle acht Stunden. Kommt sie nicht - Boerse
+#: langsam, Netz weg, Symbol zahlt in einem anderen Rhythmus -, wird stuendlich
+#: nachgefragt und nicht bei jeder Kerze: Auf 15-Minuten-Kerzen waeren das 96
+#: Anfragen am Tag fuer eine Groesse, die dreimal taeglich neu entsteht.
+#: Stuendlich bleiben bis zur ``FUNDINGFRIST`` vierundzwanzig Versuche.
+NACHLADEABSTAND = timedelta(hours=1)
+
+#: Wie viele Seiten ein Nachladen im Betrieb hoechstens anfragt.
+#:
+#: ``backfill_funding`` ist fuer die Historie gebaut und darf dafuer 200 Seiten
+#: abgehen. Hier laeuft es im Kerzen-Handler, und dort zaehlt Aktualitaet, nicht
+#: Vollstaendigkeit: Eine Seite deckt bereits ``8h * 200`` ab, also ueber zwei
+#: Monate. Vier Seiten lassen Luft fuer die Fensterhalbierung und sind trotzdem
+#: eine harte Grenze. Die Historie holt ``cli funding``.
+NACHLADESEITEN = 4
 
 #: Rueckgabe von ``_equity_fraction``, wenn auf diesem Balken nicht gehandelt
 #: werden soll. Ein eigener Wert, weil ``None`` an dieser Stelle bereits
@@ -150,6 +169,7 @@ class LiveTrader:
         entry_expiry_bars: int = 3,
         journal: LiveJournal | None = None,
         funding: FundingStore | None = None,
+        clock: Callable[[], datetime] | None = None,
     ) -> None:
         self.settings = settings
         self.strategy = strategy
@@ -159,6 +179,14 @@ class LiveTrader:
         self.officer = officer
         self.store = store
         self.funding = funding
+        #: Die Uhr, an der die **Aktualitaet des Fundings** gemessen wird - und
+        #: nur sie. Die uebrigen ``datetime.now``-Aufrufe in dieser Datei sind
+        #: Zeitstempel: Sie halten fest, wann etwas geschehen ist, und das ist
+        #: auch in einem Durchlauf die Wanduhr. Hier haengt eine *Entscheidung*
+        #: daran ("ist die Rate noch gueltig"), und eine Entscheidung muss sich
+        #: nachstellen lassen. Dieselbe Einrichtung wie in
+        #: ``backfill_funding``, aus demselben Grund.
+        self._uhr: Callable[[], datetime] = clock or (lambda: datetime.now(UTC))
         self.interval = interval
         self.entry_expiry_bars = entry_expiry_bars
         self.notifier = notifier
@@ -175,10 +203,19 @@ class LiveTrader:
         self._mae: Decimal = Decimal(0)
         self._mfe: Decimal = Decimal(0)
         self._frame: pd.DataFrame = pd.DataFrame()
-        #: Die bekannten Funding-Raten, einmal von der Platte gelesen. Bleibt
-        #: leer, wenn kein Speicher uebergeben wurde - dann hat der Puffer die
-        #: Spalte gar nicht, wie vor Befund 361.
+        #: Die bekannten Funding-Raten. Beim Start von der Platte gelesen und
+        #: im Lauf nachgeladen (``_funding_auffrischen``). Bleibt leer, wenn
+        #: kein Speicher uebergeben wurde - dann hat der Puffer die Spalte gar
+        #: nicht, wie vor Befund 361.
         self._raten: pd.DataFrame = funding_to_frame([])
+        #: Wann zuletzt bei der Boerse nach Raten **gefragt** wurde, gleich ob
+        #: welche kamen. Haelt den ``NACHLADEABSTAND`` auch dann ein, wenn jede
+        #: Anfrage leer zurueckkommt.
+        self._funding_gefragt: datetime | None = None
+        #: Ob zum Funding schon gewarnt wurde. Einmal je Uebergang: Die Warnung
+        #: beim Start soll nicht alle 15 Minuten wiederkommen, eine neue
+        #: Durststrecke nach frischen Raten aber sehr wohl wieder melden.
+        self._funding_gemeldet = False
         self._bars_since_entry_placed = 0
         self._stream: KlineStream | None = None
         #: Grund eines fehlgeschlagenen Stornos. Solange gesetzt, koennen noch
@@ -444,6 +481,10 @@ class LiveTrader:
         """
         if self.funding is not None:
             self._raten = self.funding.read(self.instrument.symbol)
+            # Vor dem Puffer, nicht danach: Sonst traegt der ganze Vorlauf die
+            # Raten vom letzten 'cli funding' und erst die naechste Kerze die
+            # frischen.
+            self._funding_auffrischen()
 
         frame = self.store.read(self.instrument.symbol, self.interval)
         if frame.empty:
@@ -505,6 +546,86 @@ class LiveTrader:
         ergebnis.loc[veraltet, FUNDINGSPALTE] = float("nan")
         return ergebnis
 
+    def _funding_auffrischen(self) -> None:
+        """Neue Funding-Raten holen, solange der Roboter laeuft.
+
+        **Die offene Folge aus Befund 361.** Dort bekam der Livepuffer seine
+        Funding-Spalte - gelesen wurde der Speicher aber genau einmal, beim
+        Start. ``_frist_anwenden`` setzt die Spalte nach drei Zahlungsperioden
+        auf NaN, und ``_funding_pruefen`` lief nur beim Start. Ein Roboter, der
+        gesund startete, handelte also nach 24 Stunden Laufzeit nicht mehr und
+        sagte dazu nichts: derselbe stille Stillstand wie vor 361, bloss einen
+        Tag spaeter.
+
+        Geholt wird aus derselben Quelle, auf der die Zulassung rechnet -
+        ``get_funding_history``, die **festgestellten** Raten, ueber dieselbe
+        Funktion, die ``cli funding`` benutzt. Ausdruecklich nicht die Rate aus
+        dem Ticker: die gilt der naechsten Zahlung und ist damit eine andere
+        Groesse als die, mit der der Backtest gerechnet hat.
+
+        Gefragt wird am Speicher und nicht am Genom - anders als bei der
+        Warnung. Wer den Speicher uebergibt, bekommt die Spalte im Puffer, und
+        dann muss NaN bedeuten "die Boerse hat keine neuere Rate" und nicht
+        "seit dem Start hat niemand gefragt". Eine Anfrage je acht Stunden ist
+        der Preis dafuer.
+        """
+        if self.funding is None:
+            return
+
+        jetzt = self._uhr()
+        if (
+            self._funding_gefragt is not None
+            and jetzt - self._funding_gefragt < NACHLADEABSTAND
+        ):
+            return
+
+        if self._raten.empty:
+            # Leerer Speicher: ein kurzes Fenster, keine Historie. Drei Raten
+            # genuegen, damit die Spalte etwas aussagt; fuer den Vorlauf
+            # verweist ``_funding_pruefen`` auf 'cli funding'.
+            start = jetzt - FUNDINGFRIST
+        else:
+            letzte = pd.to_datetime(self._raten["time"], utc=True).max()
+            if jetzt - letzte.to_pydatetime() < FUNDING_INTERVAL:
+                return  # die naechste Rate ist noch nicht faellig
+            # Am juengsten bekannten Eintrag ansetzen und nicht an einem
+            # Fenster von jetzt aus: ``backfill_funding`` setzt den Cursor dann
+            # selbst auf die naechste faellige Zahlung, und zwischen Speicher
+            # und Fensteranfang bleibt kein Loch, ueber das ``attach_funding``
+            # spaeter stillschweigend hinwegschreiben wuerde.
+            start = letzte.to_pydatetime()
+
+        self._funding_gefragt = jetzt
+        try:
+            neu = backfill_funding(
+                self.market,
+                self.funding,
+                self.instrument.symbol,
+                start=start,
+                end=jetzt,
+                clock=self._uhr,
+                max_pages=NACHLADESEITEN,
+            )
+        except Exception as exc:
+            # Ein Netzfehler darf die Kerze nicht kosten: Die Entscheidung auf
+            # diesem Balken ist mehr wert als die frische Rate, und die alten
+            # Raten stehen weiter im Speicher. Beim naechsten Versuch in einer
+            # Stunde kann es gut gehen; bleibt es dabei, meldet sich die Frist.
+            log.warning(
+                "live.funding_nachladen_fehlgeschlagen",
+                fehler=f"{type(exc).__name__}: {exc}",
+            )
+            return
+
+        if neu:
+            self._raten = self.funding.read(self.instrument.symbol)
+            log.info("live.funding_nachgeladen", neu=neu, raten=len(self._raten))
+            # Frische Raten heben die Warnsperre auf: Eine neue Durststrecke
+            # soll wieder gemeldet werden.
+            self._funding_gemeldet = False
+
+        self._funding_pruefen()
+
     def _liest_funding(self) -> bool:
         """Liest die Strategie die Funding-Spalte?
 
@@ -517,13 +638,18 @@ class LiveTrader:
         return bool(genome is not None and genome.liest_funding())
 
     def _funding_pruefen(self) -> None:
-        """Beim Start sagen, wenn eine Carry-Regel ohne Raten antritt.
+        """Sagen, wenn eine Carry-Regel ohne Raten antritt oder dasteht.
 
         Sonst laeuft der Roboter still und handelt nie, und das sieht auf dem
         Bildschirm aus wie "kein Signal" statt wie "keine Eingabe" - genau die
         Verwechslung aus Befund 360, nur eine Ebene spaeter.
+
+        Seit Befund 373 nicht mehr nur beim Start, sondern nach jedem
+        Nachladeversuch: Die Raten koennen auch **im Lauf** veralten, und dann
+        gilt derselbe Satz. Gewarnt wird einmal je Uebergang - alle 15 Minuten
+        dieselbe Zeile waere so gut wie keine.
         """
-        if not self._liest_funding():
+        if not self._liest_funding() or self._funding_gemeldet:
             return
 
         hinweis = (
@@ -536,10 +662,11 @@ class LiveTrader:
             grund = "kein Funding-Speicher" if self.funding is None else "keine Raten"
             log.warning("live.funding_fehlt", grund=grund, hinweis=hinweis)
             self._report(EventKind.WARNING, f"{hinweis} ({grund})")
+            self._funding_gemeldet = True
             return
 
         letzte = pd.to_datetime(self._raten["time"], utc=True).max()
-        alter = datetime.now(UTC) - letzte.to_pydatetime()
+        alter = self._uhr() - letzte.to_pydatetime()
         if alter > FUNDINGFRIST:
             log.warning(
                 "live.funding_veraltet",
@@ -556,6 +683,7 @@ class LiveTrader:
                 f"{round(alter.total_seconds() / 3600)} Stunden alt "
                 f"({letzte}). {hinweis}",
             )
+            self._funding_gemeldet = True
 
     # -- Hauptschleife -------------------------------------------------------
     async def _on_candle(self, candle: Candle, interval: Interval) -> None:
@@ -602,6 +730,9 @@ class LiveTrader:
         # Kerzen lassen sich jederzeit nachladen, eine offene Position nicht.
         with contextlib.suppress(Exception):
             self.store.write(self.instrument.symbol, interval, [candle])
+        # Vor dem Anhaengen: Die neue Zeile holt sich ihre Rate in ``_append``
+        # aus ``self._raten``, also muessen die Raten vorher aktuell sein.
+        self._funding_auffrischen()
         self._append(candle)
 
         equity = self._current_equity()

@@ -2998,6 +2998,7 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Form der Schnittstelle erschlossen, nicht gemessen - nachzupruefen "
         "ist es nur an der Boerse",
         361,
+        zuletzt=373,
     ),
     # Befund 362: der frische Container als Messgeraet. Zwei Fehler von mir,
     # einer im Code und einer in der Messung.
@@ -3366,6 +3367,42 @@ BEHOBEN: tuple[Richtung, ...] = (
         "ist als Stil: Diese Streuung ist die einzige Eingabe des Deflated "
         "Sharpe, die nicht gemessen, sondern angenommen wird",
         372,
+    ),
+    # Befund 373: die offene Folge aus 361. Der Roboter startete gesund und
+    # war nach einem Tag blind - gemessen, nicht erschlossen.
+    Richtung(
+        "Der Livebetrieb laedt seine Funding-Raten jetzt selbst nach",
+        "Die offene Folge aus Befund 361, dort selbst so hinterlassen. Der "
+        "Livepuffer bekam seine Funding-Spalte, gelesen wurde der Speicher "
+        "aber genau **einmal**, beim Start. '_frist_anwenden' setzt die Spalte "
+        "nach drei Zahlungsperioden auf NaN, und '_funding_pruefen' lief nur "
+        "beim Start: Ein Roboter, der gesund startet, handelt nach 24 Stunden "
+        "nicht mehr und sagt dazu nichts - derselbe stille Stillstand wie vor "
+        "361, bloss einen Tag spaeter. Gemessen auf 72 Stunden M15-Kerzen mit "
+        "der Carry-Regel aus Generation 5, Speicher bis zum Start gefuellt, "
+        "Boerse zahlt weiter: **97 von 288** Kerzen tragen eine Rate und 97 "
+        "Einstiege werden genommen, mit Nachladen **288 von 288**. 97 Kerzen "
+        "sind 24,25 Stunden - der erste Tag sieht gesund aus, danach sind "
+        "zwei von drei Handelstagen weg. Geholt wird aus "
+        "'/v5/market/funding/history' ueber dieselbe 'backfill_funding', die "
+        "'cli funding' benutzt: eine Quelle, ein Schreibpfad, ein Entprellen, "
+        "und die Raten landen auf der Platte statt nur im Arbeitsspeicher - "
+        "sonst haetten Livelauf und naechste Zulassung zwei Wahrheiten. "
+        "**Nicht** der Ticker, aus dem Grund, der schon in 361 stand. Der "
+        "Preis ist gemessen: **8 Anfragen auf 72 Stunden** (eine je neun "
+        "Stunden) statt 288, weil erst die Faelligkeit zaehlt (eine Periode) "
+        "und dann der Abstand (eine Stunde) - in dieser Reihenfolge, was vier "
+        "statt zwoelf Versuchen in zwoelf Stunden macht. Ein Netzfehler "
+        "kostet keine Kerze und bestuermt die Boerse nicht, die Warnung kommt "
+        "einmal je Uebergang statt alle 15 Minuten. **Was die Messung zuerst "
+        "falsch machte**, steht im Kopf von 'test_fundingauffrischung.py': "
+        "Die Frist rechnet in Kerzenzeit, das Nachladen in Wanduhrzeit, und "
+        "wenn 48 Stunden Kerzen in einer Sekunde eintreffen, laeuft nur eine "
+        "davon - der erste Lauf meldete 97 von 192 als Erfolg. Seitdem hat "
+        "'LiveTrader' eine stellbare Uhr, und zwar genau fuer die beiden "
+        "Stellen, an denen eine **Entscheidung** an der Zeit haengt; die acht "
+        "uebrigen 'datetime.now' sind Zeitstempel und bleiben Wanduhr",
+        373,
     ),
 )
 
@@ -4695,7 +4732,12 @@ BEIM_NUTZER: tuple[tuple[str, str], ...] = (
         "nimmt die Raten aus diesem Speicher, und nach drei Zahlungsperioden "
         "ohne neue Raten steht dort NaN - eine Carry-Regel handelt dann "
         "nicht. Vor einem Livegang also erst diesen Befehl, sonst schweigt "
-        "sie aus gutem Grund.",
+        "sie aus gutem Grund. **Seit Befund 373 nur noch fuer den Anfang:** "
+        "Der laufende Roboter holt faellige Raten selbst nach, aus derselben "
+        "Quelle und ueber dieselbe Funktion. Was er nicht holt, ist die "
+        "Historie - er fragt ein kurzes Fenster, nicht sechs Jahre. Dieser "
+        "Befehl bleibt also der erste Schritt, nur nicht mehr der, von dem "
+        "der zweite Tag abhaengt.",
     ),
     (
         "python -m cli wettbewerb -m BTCUSDT,ETHUSDT --generation 9",
