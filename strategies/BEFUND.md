@@ -33945,3 +33945,70 @@ beide da sein.
 
 Das ist die Regel aus Befund 130 in Betrieb: Wer eine Fundstelle nennt, muss
 die letzte nennen - und wer sie bewegt, muss sagen, womit.
+
+## Dreihunderteinundachtzig. Zwei Sperren hielten den Handel an, ohne es zu sagen
+
+Gefunden beim Lesen des Dashboards - der einen Oberflaeche, die in dieser
+Reihe noch niemand kritisch gelesen hatte. Die Vermutung kam aus Befund 376:
+Dort fiel beim Messen auf, dass die **Tagesgrenze nur `paused_until` setzt**
+und `trading_state` auf `active` laesst. Die Wochengrenze setzt PAUSED, der
+Rueckgang KILLED - nur die Tagesgrenze schweigt.
+
+### Gemessen
+
+Konto von 500 auf 484, also -3,2 % am Tag:
+
+| | |
+|---|---|
+| Offizier | `trading_state = active`, `paused_until` gesetzt |
+| `blockade()` | `daily_loss_limit` - "Tageslimit erreicht, Pause noch 24.0 h" |
+| Momentaufnahme | `trading_state: "active"`, `kill_reason: ""`, **kein Feld nennt eine Pause** |
+| Dashboard | kein Banner, Kopfzeile "laeuft" |
+
+Der Banner der Seite - im Quelltext als *"der wichtigste Zustand ganz oben"*
+bezeichnet - prueft `killed`, den toten Prozess, `paused` und `close_only`.
+Bei `active` zeigt er nichts.
+
+**Ein Roboter, der bis zu 24 Stunden keinen Einstieg nimmt, und ein
+Bildschirm, auf dem alles laeuft.** Das ist dieselbe Verwechslung wie in
+Befund 360 - "kein Signal" gegen "keine Eingabe" -, nur eine Ebene weiter
+aussen: diesmal nicht im Protokoll, sondern auf der Seite, die der Nutzer
+waehrend des Betriebs offen hat.
+
+### Dasselbe traf die Terminsperre
+
+`news_blackout_until` lehnt ebenfalls jeden Einstieg ab und stand ebenfalls
+nicht in der Momentaufnahme. Sie greift selten - der Kalender sperrt in acht
+Jahren sechs Einstiege (Befund 271) - und ist genau deshalb auf dem Bildschirm
+am schwersten zu erraten: Wer eine Sperre dreimal im Jahr sieht, kennt sie;
+wer sie alle sechzehn Monate sieht, haelt sie fuer einen Fehler.
+
+### Was nicht aufgenommen wurde
+
+**`blockade()` selbst.** Sie meldet auch `position_already_open`, und das ist
+kein Alarm, sondern der Normalfall. Ein Banner, der bei jeder offenen Position
+aufleuchtet, ist nach drei Tagen unsichtbar - und dann faellt der eine auf,
+der zaehlt, auch nicht mehr auf.
+
+Aufgenommen sind die **zeitlichen** Sperren, die `trading_state` nicht
+anfassen. Die lauten Zustaende hat die Kopfzeile schon, und zweimal dasselbe
+zu melden ist auch eine Art, nichts zu melden.
+
+### Zwei Kleinigkeiten, die dazugehoeren
+
+Eine **abgelaufene** Sperre zeigt nichts: `bis()` gibt `null` zurueck, wenn der
+Zeitpunkt vorbei ist, und der Banner haengt daran. Ein Banner ueber eine Sperre
+von gestern waere schlimmer als keiner.
+
+Und die **Reihenfolge** ist Teil der Botschaft, deshalb steht sie unter Test:
+Not-Aus vor totem Prozess vor Tagespause vor Terminsperre. Wer einen Not-Aus
+hat, braucht nicht zu wissen, dass auch die Tagesgrenze erreicht ist.
+
+### Was der Test kann und was nicht
+
+Die Oberflaeche ist JavaScript, und dieses Projekt faehrt keinen Browser. Die
+Behebung selbst - die beiden Felder in der Momentaufnahme - ist am echten Pfad
+gemessen, mit dem Rig und einem Lauf bis zur Momentaufnahme auf der Platte.
+Der Banner-Zweig ist **im Quelltext** geprueft: Der Test faellt, wenn er
+verschwindet, und das ist, was er leisten soll. Wie es aussieht, kann er nicht
+pruefen, und das steht in seinem Docstring.

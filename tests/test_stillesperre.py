@@ -1,0 +1,193 @@
+"""Zwei Sperren hielten den Handel an, ohne es zu sagen - Befund 381.
+
+Gefunden beim Lesen des Dashboards - der einen Oberflaeche, die in dieser
+Sitzung noch niemand kritisch gelesen hatte. Die Vermutung kam aus Befund 376:
+Dort fiel beim Messen auf, dass die **Tagesgrenze nur ``paused_until`` setzt**
+und ``trading_state`` auf "active" laesst (die Wochengrenze setzt dagegen
+PAUSED, der Rueckgang KILLED).
+
+Gemessen am echten Pfad - Konto von 500 auf 484, also -3,2 % am Tag:
+
+    Offizier      trading_state = active, paused_until gesetzt
+    blockade()    daily_loss_limit - "Tageslimit erreicht, Pause noch 24.0 h"
+    Momentaufnahme  trading_state "active", kill_reason "", paused_until FEHLT
+    Dashboard     kein Banner, Kopfzeile "laeuft"
+
+Der Roboter nimmt bis zu **24 Stunden** keinen Einstieg, und auf dem
+Bildschirm steht, dass alles laeuft. Das ist dieselbe Verwechslung wie in
+Befund 360 - "kein Signal" gegen "keine Eingabe" -, nur eine Ebene weiter
+aussen: diesmal nicht im Protokoll, sondern auf der Seite, die der Nutzer
+waehrend des Betriebs offen hat.
+
+Dasselbe gilt fuer die **Terminsperre** (``news_blackout_until``): Sie lehnt
+jeden Einstieg ab und stand ebenfalls nicht in der Momentaufnahme. Sie greift
+selten - der Kalender sperrt in acht Jahren sechs Einstiege (Befund 271) -,
+aber genau deshalb waere sie auf dem Bildschirm am schwersten zu erraten.
+
+Warum nicht ``blockade()`` in die Momentaufnahme
+-----------------------------------------------
+Weil sie auch 'position_already_open' meldet, und das ist kein Alarm, sondern
+der Normalfall. Ein Banner, der bei jeder offenen Position aufleuchtet, ist
+nach drei Tagen unsichtbar. Aufgenommen sind die **zeitlichen** Sperren, die
+``trading_state`` nicht anfassen - die lauten Zustaende hat die Kopfzeile
+schon.
+"""
+
+from __future__ import annotations
+
+import json
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
+from pathlib import Path
+
+import pytest
+
+from execution.risk import TradingState, VetoReason
+
+HTML = Path("web/static/index.html")
+
+
+@pytest.fixture
+def rig(tmp_path, btcusdt, risk, bybit_settings):
+    from tests.test_live import build_rig
+
+    return build_rig(tmp_path, btcusdt, risk, bybit_settings)
+
+
+def _momentaufnahme(tmp_path: Path) -> dict:
+    daten = json.loads((tmp_path / "state" / "live.json").read_text())
+    return daten.get("snapshot", daten)
+
+
+class TestDieTagesgrenzeStandNichtAufDemBildschirm:
+    """**Der Befund.** Erst der Nachweis, dass der Handel wirklich steht."""
+
+    def test_sie_laesst_den_zustand_auf_active(self, rig) -> None:
+        rig.trader.officer.observe_equity(Decimal("500"))
+        rig.trader.officer.observe_equity(Decimal("484"))
+
+        zustand = rig.trader.officer.state
+
+        assert zustand.trading_state is TradingState.ACTIVE
+        assert zustand.paused_until is not None
+
+    def test_und_der_handel_steht_trotzdem(self, rig) -> None:
+        rig.trader.officer.observe_equity(Decimal("500"))
+        rig.trader.officer.observe_equity(Decimal("484"))
+
+        sperre = rig.trader.officer.blockade()
+
+        assert sperre is not None
+        assert sperre.reason is VetoReason.DAILY_LOSS_LIMIT
+        assert "Tageslimit erreicht" in sperre.detail
+
+    @pytest.mark.asyncio
+    async def test_jetzt_steht_sie_in_der_momentaufnahme(
+        self, rig, tmp_path
+    ) -> None:
+        rig.trader.officer.observe_equity(Decimal("500"))
+        rig.trader.officer.observe_equity(Decimal("484"))
+
+        await rig.feed()
+
+        s = _momentaufnahme(tmp_path)
+        assert s["trading_state"] == "active"
+        assert s["paused_until"] is not None
+        assert datetime.fromisoformat(s["paused_until"]) > datetime.now(UTC)
+
+    @pytest.mark.asyncio
+    async def test_ohne_sperre_steht_dort_nichts(self, rig, tmp_path) -> None:
+        """Die Gegenprobe: Ein Feld, das immer gefuellt ist, meldet nichts."""
+        rig.trader.officer.observe_equity(Decimal("500"))
+
+        await rig.feed()
+
+        s = _momentaufnahme(tmp_path)
+        assert s["paused_until"] is None
+        assert s["news_blackout_until"] is None
+
+
+class TestDieTerminsperreAuch:
+    @pytest.mark.asyncio
+    async def test_sie_steht_jetzt_drin(self, rig, tmp_path) -> None:
+        """Selten und deshalb am schwersten zu erraten: sechs gesperrte
+        Einstiege in acht Jahren (Befund 271)."""
+        rig.trader.officer.state.news_blackout_until = datetime.now(UTC) + timedelta(
+            hours=2
+        )
+
+        await rig.feed()
+
+        s = _momentaufnahme(tmp_path)
+        assert s["news_blackout_until"] is not None
+        assert s["trading_state"] == "active"
+
+
+class TestDerBannerZeigtBeide:
+    """Die Oberflaeche ist JavaScript - geprueft wird der Quelltext.
+
+    Keine Attrappe eines Browsers: Dieser Test faellt, wenn der Zweig
+    verschwindet, und das ist genau, was er soll. Was er **nicht** kann, ist
+    pruefen, wie es aussieht.
+    """
+
+    @staticmethod
+    def _quelle() -> str:
+        return HTML.read_text(encoding="utf-8")
+
+    def test_die_tagespause_hat_einen_zweig(self) -> None:
+        quelle = self._quelle()
+
+        assert "s.paused_until" in quelle
+        assert "Tagesverlustgrenze erreicht" in quelle
+
+    def test_die_terminsperre_auch(self) -> None:
+        quelle = self._quelle()
+
+        assert "s.news_blackout_until" in quelle
+        assert "Terminsperre" in quelle
+
+    def test_eine_abgelaufene_sperre_ist_keine(self) -> None:
+        """``bis`` gibt ``null`` zurueck, wenn die Sperre vorbei ist - und der
+        Banner haengt daran. Ein Banner ueber eine Sperre von gestern waere
+        schlimmer als keiner."""
+        quelle = self._quelle()
+
+        assert "function bis(iso)" in quelle
+        assert "|| seconds <= 0) return null;" in quelle
+        assert "bis(s.paused_until) !== null" in quelle
+
+    def test_der_kill_switch_steht_weiter_oben(self) -> None:
+        """Die Reihenfolge ist die Botschaft: Ein Not-Aus ist wichtiger als
+        eine Tagespause, und ein toter Prozess wichtiger als beide."""
+        quelle = self._quelle()
+        stelle = lambda text: quelle.index(text)  # noqa: E731
+
+        assert stelle("KILL-SWITCH AKTIV") < stelle("antwortet nicht")
+        assert stelle("antwortet nicht") < stelle("Tagesverlustgrenze erreicht")
+        assert stelle("Tagesverlustgrenze erreicht") < stelle("Terminsperre")
+
+
+class TestWarumNichtDieGanzeBlockade:
+    def test_eine_offene_position_ist_kein_alarm(self, rig) -> None:
+        """``blockade`` meldet auch 'position_already_open'. Das in die
+        Momentaufnahme zu heben hiesse, bei jeder offenen Position einen
+        Banner zu zeigen - nach drei Tagen sieht den niemand mehr.
+        """
+        sperre = rig.trader.officer.blockade(open_positions=1)
+
+        assert sperre is not None
+        assert sperre.reason is VetoReason.POSITION_ALREADY_OPEN
+
+    @pytest.mark.asyncio
+    async def test_darum_stehen_nur_die_zeitlichen_sperren_drin(
+        self, rig, tmp_path
+    ) -> None:
+        await rig.feed()
+
+        s = _momentaufnahme(tmp_path)
+        zeitlich = {"paused_until", "news_blackout_until"}
+
+        assert zeitlich <= set(s)
+        assert "blockade" not in s
+        assert not any("position_already_open" in str(v) for v in s.values())

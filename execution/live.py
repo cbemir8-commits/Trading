@@ -876,6 +876,19 @@ class LiveTrader:
             # und wuesste von einer soeben ausgeloesten Pause nichts.
             "trading_state": self.officer.state.trading_state.value,
             "kill_reason": self.officer.state.kill_reason,
+            # **Die beiden stillen Sperren** (Befund 381).
+            #
+            # Sie halten den Handel an, **ohne** 'trading_state' zu aendern:
+            # Die Tagesgrenze setzt nur 'paused_until' (die Wochengrenze
+            # dagegen PAUSED), und der Terminkalender nur
+            # 'news_blackout_until'. 'blockade' lehnt in beiden Faellen jeden
+            # Einstieg ab - gemessen 'daily_loss_limit, Pause noch 24.0 h' -
+            # waehrend hier 'active' stand und der Bildschirm keinen Banner
+            # zeigte. Ein gesunder Roboter, der 24 Stunden nicht handelt, und
+            # nichts sagt warum: dieselbe Verwechslung wie in Befund 360,
+            # eine Ebene weiter aussen.
+            "paused_until": self.officer.state.paused_until,
+            "news_blackout_until": self.officer.state.news_blackout_until,
             "last_price": candle.close if candle else None,
             "last_candle": candle.open_time if candle else None,
             "position": position,

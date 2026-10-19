@@ -310,6 +310,18 @@ function signed(value, digits = 2, suffix = "") {
   if (!Number.isFinite(n)) return "—";
   return (n > 0 ? "+" : "") + n.toFixed(digits) + suffix;
 }
+function bis(iso) {
+  // Wie lange eine Sperre noch läuft - oder null, wenn keine läuft.
+  //
+  // null und nicht "—": Der Aufrufer entscheidet daran, **ob** er etwas
+  // anzeigt. Eine abgelaufene Sperre ist keine, und ein Banner über eine
+  // Sperre von gestern wäre schlimmer als keiner (Befund 381).
+  if (!iso) return null;
+  const seconds = (new Date(iso).getTime() - Date.now()) / 1000;
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+  if (seconds < 3600) return `${Math.ceil(seconds / 60)} min`;
+  return `${(seconds / 3600).toFixed(1)} h`;
+}
 function ago(iso) {
   if (!iso) return "—";
   const seconds = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -410,6 +422,13 @@ async function refresh() {
     banner.innerHTML = `<div class="banner paused">Pausiert — keine neuen Positionen.</div>`;
   } else if (s.trading_state === "close_only") {
     banner.innerHTML = `<div class="banner paused">Nur-Schließen-Modus.</div>`;
+  } else if (bis(s.paused_until) !== null) {
+    // Befund 381: Die Tagesgrenze setzt nur 'paused_until' und lässt
+    // 'trading_state' auf "active". Ohne diesen Zweig stand hier "läuft",
+    // und der Roboter nahm bis zu 24 Stunden keinen Einstieg.
+    banner.innerHTML = `<div class="banner paused">Tagesverlustgrenze erreicht — keine neuen Positionen, noch ${bis(s.paused_until)}. Offene Stops wirken weiter.</div>`;
+  } else if (bis(s.news_blackout_until) !== null) {
+    banner.innerHTML = `<div class="banner paused">Terminsperre — keine neuen Positionen, noch ${bis(s.news_blackout_until)}.</div>`;
   }
 
   // -- Kapital

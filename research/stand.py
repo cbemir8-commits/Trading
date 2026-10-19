@@ -3652,6 +3652,41 @@ BEHOBEN: tuple[Richtung, ...] = (
         "darf",
         380,
     ),
+    # Befund 381: das Dashboard gelesen - die eine Oberflaeche, die in dieser
+    # Sitzung noch niemand kritisch gelesen hatte.
+    Richtung(
+        "Zwei Sperren hielten den Handel an, ohne es zu sagen",
+        "Die Vermutung kam aus Befund 376, wo beim Messen auffiel, dass die "
+        "**Tagesgrenze nur 'paused_until' setzt** und 'trading_state' auf "
+        "'active' laesst (die Wochengrenze setzt PAUSED, der Rueckgang "
+        "KILLED). Nachgemessen am echten Pfad, Konto von 500 auf 484 und "
+        "damit -3,2 % am Tag: Der Offizier steht auf **active** mit gesetztem "
+        "'paused_until', 'blockade' lehnt jeden Einstieg ab "
+        "('daily_loss_limit - Tageslimit erreicht, Pause noch 24.0 h') - und "
+        "in der Momentaufnahme fuer das Dashboard stand 'trading_state: "
+        "active', ein leeres 'kill_reason' und **kein Feld, das eine Pause "
+        "nennt**. Der Banner der Seite prueft 'killed', 'paused' und "
+        "'close_only'; bei 'active' zeigt er nichts, und die Kopfzeile sagt "
+        "'laeuft'. **Ein Roboter, der bis zu 24 Stunden keinen Einstieg "
+        "nimmt, und ein Bildschirm, auf dem alles laeuft** - dieselbe "
+        "Verwechslung wie in Befund 360 ('kein Signal' gegen 'keine "
+        "Eingabe'), nur eine Ebene weiter aussen: diesmal nicht im Protokoll, "
+        "sondern auf der Seite, die der Nutzer im Betrieb offen hat. Dasselbe "
+        "traf die **Terminsperre** ('news_blackout_until'), die ebenfalls "
+        "jeden Einstieg ablehnt und nicht in der Momentaufnahme stand; sie "
+        "greift selten - sechs gesperrte Einstiege in acht Jahren (Befund "
+        "271) - und ist genau deshalb auf dem Bildschirm am schwersten zu "
+        "erraten. Beide stehen jetzt drin, und der Banner nennt sie mit der "
+        "Restzeit. **Nicht aufgenommen ist 'blockade' selbst**: Sie meldet "
+        "auch 'position_already_open', und das ist kein Alarm, sondern der "
+        "Normalfall - ein Banner, der bei jeder offenen Position aufleuchtet, "
+        "ist nach drei Tagen unsichtbar. Aufgenommen sind die **zeitlichen** "
+        "Sperren, die 'trading_state' nicht anfassen; die lauten Zustaende "
+        "hat die Kopfzeile schon. Eine abgelaufene Sperre zeigt nichts ('bis' "
+        "gibt null), und die Reihenfolge der Banner ist gepruefter Teil der "
+        "Botschaft: Not-Aus vor totem Prozess vor Tagespause vor Terminsperre",
+        381,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
