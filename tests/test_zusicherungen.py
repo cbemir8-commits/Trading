@@ -85,6 +85,19 @@ BEGRUENDET: dict[str, str] = {
         "elf Gates halten. 'freigabe' sortiert nichts und waehlt nichts "
         "aus; aus ihm kann kein Kandidat hervorgehen."
     ),
+    "test_seit_befund_377_fuehrt_der_weg_ueber_das_verzeichnis": (
+        "Hier wird kein Mangel festgeschrieben, sondern eine Entscheidung "
+        "gehalten (Befund 377): 'adaptiv', 'research' und 'wettbewerb' buchen "
+        "ihre Versuche ueber 'cli._verzeichne', also mit Einzelnachweis. "
+        "'save_trials' schreibt nur die Summe - wer es dort zurueckholt, laesst "
+        "die Versuche wieder ohne 'sharpe_je_trade' im Grundstock "
+        "verschwinden, und damit bleibt die Streuung ueber die Versuche "
+        "ungemessen (Befund 68). Die Abwesenheit ist das Gehaltene: nicht "
+        "'save_trials' ist kaputt, sondern die Summe ist die falsche Buchung "
+        "fuer einen Suchlauf. Die Funktion selbst bleibt samt ihren "
+        "Unit-Tests - sie ist die Stelle, an der 'der Zaehler faellt nicht' "
+        "steht."
+    ),
     "test_kein_versuch_wird_gebucht": (
         "Dieselbe Begruendung wie bei 'freigabe', und sie ist hier noch "
         "einfacher (Befund 366): 'cli anatomie' laesst ein Bauteil weg, das "

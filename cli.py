@@ -630,7 +630,6 @@ def wettbewerb(
     from research.admission import (
         load_trials,
         run_admission,
-        save_trials,
         write_champion,
         write_journal,
     )
@@ -932,14 +931,38 @@ def wettbewerb(
                 frames=frames,
                 configs=configs,
             )
-            # 'neue' mitgeben (Befund 354): Hat ein anderer Lauf den
-            # Zaehler unterdessen bewegt, werden die eigenen Versuche auf den
-            # vorgefundenen Stand gebucht statt verworfen.
-            save_trials(
-                trials_path,
-                report.trials_after,
-                neue=report.trials_after - trials_before,
-            )
+            # **Mit Einzelnachweis** (Befund 377). Hier stand ein
+            # ``save_trials``, also eine Summe ohne Herkunft: Jeder gepruefte
+            # Kandidat landete im Grundstock - dem Feld, dessen Kopf "von vor
+            # der Einfuehrung des Verzeichnisses" sagt.
+            #
+            # Befund 282 hat das fuer 'landschaft' und 'machbarkeit' behoben
+            # und diese drei bewusst ausgelassen ("Suchlaeufe und keine Sweeps
+            # am Bestand, bei ihnen war nie strittig, ob sie zaehlen"). Das
+            # beantwortet die Frage "zaehlt es?" - und nicht die, an der das
+            # Gate haengt: **Ohne 'sharpe_je_trade' je Versuch bleibt die
+            # Streuung ueber die Versuche ungemessen** (Befund 68), und
+            # verzeichnet waren damit genau die Reglerscans um den Bestand,
+            # die 'research/streuung.py' als zu eng verwirft. Die Suche, die
+            # die Verlierer sieht, war nicht verzeichnet.
+            #
+            # Die Zuordnung ist eins zu eins: In 'run_admission' erhoeht
+            # **jeder** Kandidat den Zaehler, auch ein durchgefallener.
+            # ``_verzeichne`` meldet, wenn Verzeichnis und Lauf auseinander
+            # liegen; der Griff selbst ist seit Befund 354 gesperrt, also
+            # staerker als das ``neue=`` von ``save_trials``.
+            neue = [
+                _versuch(
+                    k.genome.name,
+                    k.walkforward,
+                    herkunft=(
+                        f"cli wettbewerb Runde {runde}"
+                        + (" (KI)" if k.genome.genome_id in ki_ids else "")
+                    ),
+                )
+                for k in report.candidates
+            ]
+            _verzeichne(trials_path, neue, report.trials_after)
             # **Das Journal, auf das sich die Runde unten beruft** (Befund
             # 260). Am Ende der Schleife steht: *"Die KI wird nach der Runde
             # gefragt [...] damit sie im Journal sieht, woran die letzten
@@ -1549,7 +1572,6 @@ def research(
         load_trials,
         report_payload,
         run_admission,
-        save_trials,
         write_champion,
         write_journal,
     )
@@ -1717,12 +1739,12 @@ def research(
         run_expensive=not schnell,
         on_progress=show,
     )
-    save_trials(
-        trials_path,
-        report.trials_after,
-        # Befund 354: nicht verwerfen, wenn der Zaehler unterdessen stieg.
-        neue=report.trials_after - trials_before,
-    )
+    # Mit Einzelnachweis, aus demselben Grund wie im Wettbewerb (Befund 377).
+    neue = [
+        _versuch(k.genome.name, k.walkforward, herkunft="cli research")
+        for k in report.candidates
+    ]
+    _verzeichne(trials_path, neue, report.trials_after)
     console.print(_laufbilanz(trials_before, report.trials_after))
     write_journal(report, Path(settings.paths.state) / "journal.json")
 
@@ -6609,7 +6631,7 @@ def adaptiv(
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.adaptiv import FensterWahl
-    from research.admission import load_trials, save_trials
+    from research.admission import load_trials
     from research.gates import evaluate_gates
     from research.seeds import spitzenkandidat
     from research.suchbudget import Budget, Kandidat
@@ -6669,7 +6691,13 @@ def adaptiv(
         genome, bericht, erster, configs[symbole[0]], trials_so_far=trials,
         frames=frames, configs=configs,
     )
-    save_trials(trials_path, trials, neue=1)  # Befund 354
+    # Mit Einzelnachweis (Befund 377). Ein Versuch, ein Nachweis - und seine
+    # Guete je Trade steht im Bericht, der zwei Zeilen darueber geurteilt hat.
+    _verzeichne(
+        trials_path,
+        [_versuch(genome.name, bericht, herkunft="cli adaptiv")],
+        trials,
+    )
 
     k = bericht.combined
     console.print(

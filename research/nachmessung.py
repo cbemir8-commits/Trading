@@ -245,7 +245,16 @@ GELESEN: dict[str, int] = {
     # weil das ein Reglerscan waere. Nichts zu entscheiden, nichts
     # nachzumessen; die Erwaehnung ist die Anwendung der offenen Frage und
     # nicht ein neuer Fund zu ihr.
-    "Zaehlt ein Sweep am Bestand als Versuch?": 341,
+    #
+    # **Befund 377 nennt beide Woerter** - "Sweeps am Bestand" und
+    # "Reglerscans" -, und zwar als Begruendung dafuer, dass die drei
+    # Suchlaeufe ihre Versuche jetzt ebenfalls verzeichnen. Gelesen und
+    # abgegrenzt: Das aendert, **was aufgeschrieben wird**, und nicht, **ob
+    # ein Sweep zaehlt**. Die Frage des Eintrags bleibt unberuehrt und beim
+    # Nutzer. Was sich bewegt, ist ihre Beantwortbarkeit: Von jetzt an stehen
+    # Suchlaeufe und Sweeps gleichermassen mit Herkunft in der Akte, und erst
+    # damit liesse sich die Frage an Zahlen entscheiden statt an Erinnerung.
+    "Zaehlt ein Sweep am Bestand als Versuch?": 377,
     "Timing gegen Zufallseinstiege": 295,
     "Der Preis in Reststreuungen": 295,
     # **Befund 305 hat beide erneut angesehen** - und es war zweimal etwas

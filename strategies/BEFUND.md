@@ -33596,3 +33596,106 @@ Wochengrenze (7 %) fuer die Tagesgrenze (3 %). Genau das ist mir im ersten
 Durchgang passiert: Die Tabelle zeigte "Tagespause bei −7,00 %", und die Zahl
 war eine andere Grenze. Es steht im Docstring von `_schwellen`, damit die
 naechste Messung an derselben Stelle nicht denselben Umweg nimmt.
+
+## Dreihundertsiebenundsiebzig. Verzeichnet war der Bestand, nicht die Suche
+
+Befund 282 hat ``landschaft`` und ``machbarkeit`` auf Einzelnachweise umgebaut
+und drei Befehle ausgelassen - ``adaptiv``, ``research``, ``wettbewerb`` - mit
+dieser Begruendung:
+
+> Suchlaeufe und keine Sweeps am Bestand, bei ihnen war nie strittig, ob sie
+> zaehlen
+
+Der Satz ist richtig und beantwortet die falsche Frage. Er beantwortet *"zaehlt
+es?"*. Die Frage, an der das haerteste Gate des Projekts haengt, steht in
+`research/versuche.py` selbst:
+
+> Befund 68 hat gezeigt, dass die Streuung der Sharpe-Schaetzer ueber die
+> Versuche - die einzige geratene Eingabe des Gates - nur deshalb nicht messbar
+> ist, weil niemand aufgeschrieben hat, was er probiert hat.
+
+### Und damit war es genau verkehrt herum
+
+Verzeichnet waren die **Reglerscans um den Bestand**. Genau die verwirft
+`research/streuung.py` ausdruecklich:
+
+> Berichte schreibt man ueber Reglerscans, und ein Reglerscan variiert einen
+> Knopf um den Bestand herum. Solche Punkte liegen naturgemaess eng
+> beieinander - die 23 aus den Berichten spannen 0,133 bis 0,264. **Die
+> Verlierer fehlen.**
+
+Nicht verzeichnet war die **Suche** - der eine Vorgang, der die Verlierer
+ueberhaupt sieht. Von 192 Versuchen im Grundstock stand keiner mit seiner
+Guete da.
+
+Das ist derselbe Fehler wie in Befund 333, 349 und 352, nur an anderer Stelle:
+Eingeteilt wurde nach einer plausiblen Eigenschaft ("ist es ein Sweep am
+Bestand?") statt nach der, auf die es ankommt ("traegt der Nachweis die Guete,
+die das Gate braucht?").
+
+### Was jetzt geschrieben wird
+
+Jeder der drei Befehle schreibt einen Nachweis **je gepruefter Kandidat** -
+Gewinner und Verlierer - mit `sharpe_je_trade`, Schiefe und Woelbung (Befund
+342) und mit Herkunft. Der Wettbewerb vermerkt die Runde und markiert, was von
+der KI kam; das wird spaeter zu unterscheiden sein.
+
+Die Zuordnung ist eins zu eins, und das steht nicht hier, sondern in
+`run_admission`:
+
+> Jeder Kandidat erhoeht den Zaehler - auch ein durchgefallener.
+
+### Der Weg ist der staerkere
+
+``cli._verzeichne`` fuehrt ueber ``versuche.anhaengen``, und das ist **mehr**
+als das ``neue=`` aus Befund 354, nicht weniger: ``save_trials`` nimmt eine
+**Summe** und kann die eines Nebenlaufs ueberschreiben - deshalb brauchte es
+``neue``. ``anhaengen`` nimmt keine Summe. Es liest unter Sperre und haengt an
+den vorgefundenen Stand an; da gibt es nichts zu verlieren.
+
+``save_trials`` hat damit keinen Aufrufer mehr. Die Funktion bleibt - sie ist
+die Stelle, an der "der Zaehler faellt nicht" steht, und ihre Unit-Tests gelten
+weiter - aber ihr Kopf sagt jetzt, dass ein neuer Aufrufer die Versuche wieder
+im Grundstock verschwinden liesse. `tests/test_grundstock_waechst.py` meldet
+es: Die Liste `SCHREIBER` ist leer, und der Test heisst
+`test_kein_befehl_bucht_mehr_in_den_grundstock`.
+
+### Was sich nicht aendert
+
+Rueckwirkend wird nichts messbar. Die 192 im Grundstock bleiben ohne Herkunft -
+sie nachtraeglich zu benennen waere eine Umbuchung. Und
+`streuung.MINDESTABDECKUNG` verlangt 90 % Abdeckung, was viele Laeufe braucht;
+ein Wettbewerb ueber 54 Kandidaten traegt 54 Nachweise bei.
+
+**Dieser Befund macht den Weg offen, er geht ihn nicht.** Das ist der
+Unterschied, den Befund 68 im Kopf von `streuung.py` festgehalten hat: Eine
+Streuung aus einer Auswahl in das Gate zu setzen hiesse, die Huerde mit einem
+Wert zu senken, von dem man weiss, dass er zu niedrig ist. Mit jedem Lauf von
+jetzt an wird die Auswahl weniger schief - und erst dann ist die Frage, ob das
+Gate sie benutzen soll, ueberhaupt eine Frage.
+
+### Drei Wachen haben die losen Enden gefunden
+
+Nicht ich. Die volle Suite hat drei Stellen gemeldet, an denen die Aenderung
+noch nicht zu Ende war:
+
+* `test_grundstock_waechst.py` fuehrt die Liste, wer in den Grundstock bucht
+  und wer Herkunft hinterlaesst. Sie stand auf `("adaptiv", "research",
+  "wettbewerb")` gegen `("korb", "landschaft", "machbarkeit", "verbund")` - und
+  trug in ihrem Kopf noch den Satz *"sie laufen in diesem Behaelter nicht"*,
+  den Befund 282 bereits widerlegt hatte (`cli machbarkeit --spot` lief dort
+  und buchte fuenf Stellungen stumm).
+* `test_zaehlerwettlauf.py` verlangte das `neue=` aus Befund 354 an den
+  Aufrufstellen im Wettbewerb. Die Zeilen gibt es nicht mehr; die Eigenschaft
+  ist staerker geworden, und der Test sagt das jetzt.
+* `test_nachmessung.py` fand, dass dieser Abschnitt hier die Woerter "Sweeps
+  am Bestand" und "Reglerscans" nennt, und fragte, ob damit die offene Frage
+  *"Zaehlt ein Sweep am Bestand als Versuch?"* nachgemessen sei. Ist sie
+  nicht: Dieser Befund aendert, **was aufgeschrieben wird**, und nicht, **ob
+  ein Sweep zaehlt**. Steht als Lesung unter `GELESEN`, mit genau dieser
+  Abgrenzung.
+
+Dazu ein eigener Fund am Rand: Der zweite Test, der die Abwesenheit von
+`save_trials` zusicherte, entging der Wache aus Befund 242 nur, weil seine
+Zeichenkette eine Klammer trug (`'save_trials('` statt `'save_trials'`). Die
+doppelte Zusicherung ist weg, die eine steht angemeldet in `BEGRUENDET`.

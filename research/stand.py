@@ -3518,6 +3518,39 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Wochengrenze fuer sie. Genau das ist mir im ersten Durchgang passiert",
         376,
     ),
+    # Befund 377: die drei Auslassungen aus 234/282 - und sie waren die
+    # falschen drei. Verzeichnet war der Bestand, nicht die Suche.
+    Richtung(
+        "Die Suche verzeichnet ihre Versuche jetzt auch",
+        "Befund 282 hat 'landschaft' und 'machbarkeit' auf Einzelnachweise "
+        "umgebaut und drei Befehle ausgelassen: 'adaptiv', 'research', "
+        "'wettbewerb', mit der Begruendung 'Suchlaeufe und keine Sweeps am "
+        "Bestand, bei ihnen war nie strittig, ob sie zaehlen'. Das beantwortet "
+        "'zaehlt es?' - und das Gate haengt an einer anderen Frage. "
+        "'research/versuche.py' sagt sie selbst: Die Streuung der "
+        "Sharpe-Schaetzer ueber die Versuche, die **einzige geratene Eingabe** "
+        "des Deflated Sharpe, ist 'nur deshalb nicht messbar, weil niemand "
+        "aufgeschrieben hat, was er probiert hat'. **Damit war es genau "
+        "verkehrt herum**: Verzeichnet waren die Reglerscans um den Bestand, "
+        "die 'research/streuung.py' ausdruecklich verwirft ('Solche Punkte "
+        "liegen naturgemaess eng beieinander [...] Die Verlierer fehlen'), "
+        "und nicht verzeichnet war die Suche, die die Verlierer sieht. Von "
+        "192 Versuchen im Grundstock stand keiner mit seiner Guete da. Jetzt "
+        "schreibt jeder der drei einen Nachweis je geprueftem Kandidaten - "
+        "Gewinner und Verlierer -, mit 'sharpe_je_trade', Schiefe und "
+        "Woelbung (Befund 342) und mit Herkunft; der Wettbewerb vermerkt die "
+        "Runde und markiert, was von der KI kam. Die Zuordnung ist eins zu "
+        "eins, weil in 'run_admission' **jeder** Kandidat den Zaehler erhoeht, "
+        "auch ein durchgefallener. Der Weg fuehrt ueber 'cli._verzeichne' und "
+        "damit 'versuche.anhaengen': Das ist **staerker** als das 'neue=' aus "
+        "Befund 354, denn 'anhaengen' nimmt keine Summe, sondern liest unter "
+        "Sperre und haengt an den vorgefundenen Stand an. 'save_trials' hat "
+        "jetzt keinen Aufrufer mehr und einen Vermerk im Kopf. **Was sich "
+        "nicht aendert**: Rueckwirkend wird nichts messbar - die 192 bleiben "
+        "ohne Herkunft, und 'streuung.MINDESTABDECKUNG' verlangt 90 %. Dieser "
+        "Befund macht den Weg offen, er geht ihn nicht",
+        377,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -3809,9 +3842,20 @@ OFFEN: tuple[Richtung, ...] = (
         "selbst**, ob ein Sweep zaehlen soll; beantwortbar wird sie erst mit "
         "den Laeufen, die von jetzt an sichtbar sind. Die 192 im Grundstock "
         "bleiben ohne Herkunft - sie nachtraeglich zu benennen waere eine "
-        "Umbuchung",
+        "Umbuchung. **Und die drei Auslassungen sind zu** (377): 'adaptiv', "
+        "'research' und 'wettbewerb' buchen jetzt ebenfalls mit "
+        "Einzelnachweis, kein Befehl schreibt mehr eine reine Summe. Die "
+        "Begruendung, sie auszulassen, war die schwaechere Haelfte der Frage: "
+        "'bei ihnen war nie strittig, ob sie zaehlen' beantwortet 'zaehlt "
+        "es?', und das Gate haengt an einer anderen Frage - **ohne "
+        "'sharpe_je_trade' je Versuch bleibt die Streuung ueber die Versuche "
+        "ungemessen** (Befund 68). Verzeichnet waren damit genau die "
+        "Reglerscans um den Bestand, die 'research/streuung.py' ausdruecklich "
+        "als zu eng verwirft, waehrend die **Suche** mit ihren Verlierern im "
+        "Grundstock verschwand - also die einzige Quelle, aus der eine "
+        "ehrliche Streuung kommen koennte",
         234,
-        zuletzt=282,
+        zuletzt=377,
     ),
     # Halb gemessen in 251. Die andere Haelfte braucht Bybit - deshalb steht
     # der Eintrag hier und nicht bei den geschlossenen.

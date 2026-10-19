@@ -53,12 +53,21 @@ from research.admission import save_trials
 #: Befehle, die den Zaehler fortschreiben - ueber ``save_trials``, also in den
 #: Grundstock, **ohne Einzelnachweis**.
 #:
-#: Waren fuenf, sind drei (Befund 282): ``landschaft`` und ``machbarkeit``
-#: schreiben jetzt Einzelnachweise. Die drei hier sind Suchlaeufe und keine
-#: Sweeps am Bestand - bei ihnen war nie strittig, ob sie zaehlen, und sie
-#: laufen in diesem Behaelter nicht (``wettbewerb`` braucht Boersenkerzen).
-#: Die Luecke bleibt also, sie ist nur kleiner und genau benannt.
-SCHREIBER = ("adaptiv", "research", "wettbewerb")
+#: Waren fuenf, dann drei (Befund 282), jetzt **keiner** (Befund 377).
+#:
+#: Die Begruendung fuer die letzten drei stand hier und war die schwaechere
+#: Haelfte der Frage: *"Suchlaeufe und keine Sweeps am Bestand - bei ihnen war
+#: nie strittig, ob sie zaehlen."* Das beantwortet "zaehlt es?". Die Frage, an
+#: der das Gate haengt, ist eine andere: Ohne ``sharpe_je_trade`` je Versuch
+#: bleibt die Streuung ueber die Versuche ungemessen (Befund 68) - und
+#: verzeichnet waren damit genau die Reglerscans um den Bestand, die
+#: ``research/streuung.py`` als zu eng verwirft, waehrend die Suche mit ihren
+#: Verlierern im Grundstock verschwand.
+#:
+#: Der zweite Satz hier war ausserdem seit Befund 282 ueberholt: *"sie laufen
+#: in diesem Behaelter nicht"* ist genau die Begruendung, die 282 widerlegt
+#: hat (``cli machbarkeit --spot`` lief dort und buchte fuenf Stellungen stumm).
+SCHREIBER: tuple[str, ...] = ()
 
 #: Befehle, die einen Eintrag **mit Herkunft** hinterlassen.
 #:
@@ -66,7 +75,18 @@ SCHREIBER = ("adaptiv", "research", "wettbewerb")
 #: beiden, die Befund 234 namentlich nennt: *"vermessen die Umgebung des
 #: vorhandenen Kandidaten und schreiben dabei den Zaehler fort."* Ob das
 #: zaehlen **soll**, ist weiter offen; dass man es sieht, ist entschieden.
-BUCHFUEHRER = ("korb", "landschaft", "machbarkeit", "verbund")
+#:
+#: ``adaptiv``, ``research`` und ``wettbewerb`` mit Befund 377. Damit gilt:
+#: **Jeder Versuch, den ein Befehl bucht, traegt seine Herkunft.**
+BUCHFUEHRER = (
+    "adaptiv",
+    "korb",
+    "landschaft",
+    "machbarkeit",
+    "research",
+    "verbund",
+    "wettbewerb",
+)
 
 
 def _befehle_mit(text: str) -> set[str]:
@@ -81,14 +101,24 @@ def _befehle_mit(text: str) -> set[str]:
 
 
 class TestWerWohinBucht:
-    def test_wer_den_zaehler_fortschreibt(self) -> None:
-        assert _befehle_mit("save_trials") == set(SCHREIBER)
+    def test_kein_befehl_bucht_mehr_in_den_grundstock(self) -> None:
+        """Seit Befund 377 leer - und der Test bleibt, nicht die Zahl.
+
+        Wer ``save_trials`` in einen Befehl zurueckholt, laesst dessen
+        Versuche wieder ohne ``sharpe_je_trade`` im Grundstock verschwinden.
+        Das soll auffallen, und zwar hier.
+        """
+        assert _befehle_mit("save_trials") == set(SCHREIBER) == set()
 
     def test_wer_herkunft_hinterlaesst(self) -> None:
         assert _befehle_mit("_verzeichne(") == set(BUCHFUEHRER)
 
     def test_die_beiden_mengen_ueberschneiden_sich_nicht(self) -> None:
-        """Kein Befehl tut beides."""
+        """Kein Befehl tut beides.
+
+        Trivial, solange ``SCHREIBER`` leer ist - und genau dann wieder
+        aussagekraeftig, wenn jemand etwas hinzufuegt.
+        """
         assert set(SCHREIBER) & set(BUCHFUEHRER) == set()
 
 

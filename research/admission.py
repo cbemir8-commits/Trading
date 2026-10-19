@@ -132,6 +132,13 @@ def save_trials(path: Path | str, trials: int, *, neue: int | None = None) -> No
     Einzelnachweise gehen ueber ``versuche.anhaengen``; diese Funktion
     schreibt nur die Summe und laesst vorhandene Eintraege unberuehrt.
 
+    **Kein Befehl ruft sie mehr** (Befund 377). Die letzten drei - ``adaptiv``,
+    ``research``, ``wettbewerb`` - buchen seither ueber ``cli._verzeichne``,
+    weil ein Versuch ohne ``sharpe_je_trade`` die Streuung ueber die Versuche
+    ungemessen laesst (Befund 68). Wer sie hier zurueckholt, laesst dessen
+    Versuche wieder im Grundstock verschwinden;
+    ``tests/test_grundstock_waechst.py`` meldet das.
+
     Gleichzeitige Laeufe
     --------------------
     **Befund 354.** Diese Funktion nimmt eine **Summe**, und zwei Laeufe, die

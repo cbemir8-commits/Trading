@@ -284,11 +284,35 @@ class TestDerWettbewerbGibtSeineZahlMit:
 
         assert ohne == [], f"save_trials ohne 'neue': {ohne}"
 
-    def test_und_die_zahl_ist_der_zuwachs_des_laufs(self) -> None:
-        quelle = self._quelle()
+    def test_seit_befund_377_fuehrt_der_weg_ueber_das_verzeichnis(self) -> None:
+        """Hier standen zwei Zeilen aus ``cli.py``, die es nicht mehr gibt -
+        und die Eigenschaft ist dabei **staerker** geworden.
 
-        assert "neue=report.trials_after - trials_before" in quelle
-        assert "neue=1" in quelle
+        ``neue=`` war der Schutz einer **Summe**: Zwei Laeufe, die beide bei
+        203 anfangen, melden 208 und 210, und ohne ``neue`` landet der Zaehler
+        auf 210 statt 215. ``anhaengen`` nimmt keine Summe - es liest unter
+        Sperre und haengt an den vorgefundenen Stand an, da ist nichts zu
+        verlieren. Dass der Griff haelt, steht in
+        ``TestDerGriffLaesstSichNichtTeilen``; hier steht nur, dass die
+        Befehle an ihm haengen.
+
+        Die Unit-Tests oben pruefen ``save_trials`` weiter. Die Funktion ist
+        nicht weg, sie hat nur keinen Aufrufer mehr (Befund 377).
+        """
+        import ast
+        import inspect
+
+        import cli
+
+        for name in ("adaptiv", "research", "wettbewerb"):
+            quelle = inspect.getsource(getattr(cli, name))
+            aufrufe = {
+                getattr(k.func, "id", None) or getattr(k.func, "attr", None)
+                for k in ast.walk(ast.parse(quelle.lstrip()))
+                if isinstance(k, ast.Call)
+            }
+            assert "_verzeichne" in aufrufe, f"{name} bucht ohne Verzeichnis"
+            assert "save_trials" not in aufrufe, f"{name} bucht wieder eine Summe"
 
 
 class TestDasRegisterHaeltDenFund:
