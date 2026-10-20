@@ -3472,7 +3472,7 @@ def _spotconfigs(symbole, settings):
     return configs
 
 
-def _spotguete(frames, symbole, genome, settings) -> float | None:
+def _spotguete(frames, symbole, genome, settings, *, fertige: bool) -> float | None:
     """Die Guete desselben Kandidaten unter Kassa-Bedingungen.
 
     Nur die eine Zahl, ohne Gate-Auswertung - fuer Berichte, die am
@@ -3481,9 +3481,24 @@ def _spotguete(frames, symbole, genome, settings) -> float | None:
 
     **Kostet keinen Versuch.** Derselbe Kandidat, dieselben Daten, andere
     Handelsbedingungen. ``None``, wenn der Lauf nicht zustandekommt.
+
+    ``fertige`` muss angegeben werden (Befund 390)
+    ----------------------------------------------
+    Diese Zahl steht immer **neben** einer Perpetual-Zahl, und beide muessen
+    auf derselben Stichprobe stehen. Genau das war Befund 371: Die Spot-Zeile
+    entstand auf der ganzen Trade-Liste, die Perpetual-Zeile auf den fertig
+    gehandelten - 0,2868 gegen 0,2781 in einer Tabelle, die die beiden Punkte
+    vergleicht.
+
+    Ein Vorgabewert waere hier eine Falle: Der naechste Aufrufer uebernimmt
+    ihn, ohne zu wissen, auf welcher Stichprobe seine eigene Zahl steht. Also
+    sagt jeder Aufrufer es. ``True`` ist die Grundlage des Gates (Befund
+    152/371); ``False`` ist richtig fuer Berichte, deren Gegenzahl ebenfalls
+    auf der ganzen Liste steht.
     """
 
     from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.randschnitt import fertige as nur_fertige
     from research.suchbudget import Kandidat
     from strategy.compiler import compile_genome
 
@@ -3495,7 +3510,8 @@ def _spotguete(frames, symbole, genome, settings) -> float | None:
     )
     if not bericht.windows:
         return None
-    eintrag = Kandidat.aus_trades(genome.name, bericht.all_trades)
+    trades = nur_fertige(bericht.all_trades) if fertige else bericht.all_trades
+    eintrag = Kandidat.aus_trades(genome.name, trades)
     return eintrag.sharpe_je_trade if eintrag else None
 
 
@@ -10874,7 +10890,9 @@ def rennen(
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.admission import load_trials
+    from research.datenstand import alle_geschnitten, reihenzeile
     from research.gates import stichprobe_wie_im_gate
+    from research.randschnitt import ohne_zensierte
     from research.seeds import spitzenkandidat
     from research.stand import BUDGET
     from research.suchbudget import Kandidat
@@ -10887,16 +10905,37 @@ def rennen(
 
     interval_obj = Interval(intervall)
     symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
-    frames, configs, spanne_tage = _korb_daten(symbole, interval_obj, settings)
+    frames, configs, _spanne = _korb_daten(symbole, interval_obj, settings)
+    # **Die Grundlage des Gates, nicht eine aehnliche** (Befund 390).
+    #
+    # Zwei Abweichungen standen hier, und beide hat dieses Projekt an anderen
+    # Stellen laengst behoben: die Reihe (363/364) und der Randschnitt
+    # (152/371). Gerechnet wurde auf dem Speicher und mit **allen** Trades,
+    # also auf einer Guete, die das Gate nicht beurteilt. Gemessen am
+    # Perpetual-Punkt kippt daran das Vorzeichen der ganzen Rechnung:
+    #
+    #     Speicher, alle Trades    Guete 0,2665   Streuung 0,0962 > Null 0,0917
+    #     Reihe, fertige Trades    Guete 0,2509   Streuung 0,0906 < Null 0,0913
+    #
+    # Oben holt die Suche irgendwann auf, unten nie. Welche der beiden Zahlen
+    # gilt, ist keine Geschmacksfrage: Zugelassen wird auf der Reihe, und
+    # beurteilt werden die fertig gehandelten Trades.
+    frames = alle_geschnitten(frames)
+    erster = next(iter(frames.values()))
+    spanne_tage = (
+        erster["open_time"].iloc[-1] - erster["open_time"].iloc[0]
+    ).days
     genome = spitzenkandidat()
-    bericht = run_portfolio_walkforward(
+    roher_bericht = run_portfolio_walkforward(
         frames, lambda g=genome: compile_genome(g), configs
     )
+    bericht = ohne_zensierte(roher_bericht)
     trades = list(bericht.all_trades)
     kandidat = Kandidat.aus_trades(genome.name, trades)
     if kandidat is None or kandidat.sharpe_je_trade <= 0:
         console.print("[red]Keine auswertbaren Trades.[/]")
         raise typer.Exit(2)
+    console.print(f"[dim]Reihe: {reihenzeile(frames)}[/]")
 
     # Hier stand die Einteilung des Gates **von vor Befund 135** - ohne
     # Quartalsbloecke, also 152 statt 112 Beobachtungen. Die Rechnung lief
@@ -10943,7 +10982,9 @@ def rennen(
     # 198 Versuche haetten diesen Wert hervorgebracht; er kommt aber aus dem
     # Wegfall einer Kostenannahme. Naiv gerechnet kaeme 1.923 heraus statt
     # 8.255 - viermal zu guenstig.
-    spot_guete = _spotguete(frames, symbole, genome, settings)
+    # Dieselbe Stichprobe wie 'kandidat' oben - sonst waere der Schub die
+    # Differenz zweier Grundlagen und nicht die des Funding (Befund 371/390).
+    spot_guete = _spotguete(frames, symbole, genome, settings, fertige=True)
     if spot_guete and spot_guete > kandidat.sharpe_je_trade:
         schub = spot_guete - kandidat.sharpe_je_trade
         spotlauf = Rennen(
@@ -10962,11 +11003,26 @@ def rennen(
             f"  Schnittpunkt: [bold]{spotlauf.wo_holt_sie_auf()}[/] "
             f"statt {lauf.wo_holt_sie_auf()}\n"
         )
+        # **Der Schlusssatz muss zu den Zahlen passen** (Befund 390). Hier
+        # stand fest "Beide Zahlen liegen weit jenseits des Budgetendes" - auf
+        # der Grundlage des Gates holt die Suche aber **nie** auf, und dann
+        # ist "jenseits des Budgetendes" eine Verharmlosung: Es gibt keine
+        # Versuchszahl, bei der sie ankommt.
+        beide_nie = (
+            lauf.schnittpunkt() is None and spotlauf.schnittpunkt() is None
+        )
+        schluss = (
+            "Keiner der beiden Punkte holt die Huerde ueberhaupt ein - "
+            f"das Budgetende bei {abbruch} Versuchen ist dabei nicht die "
+            "bindende Grenze."
+            if beide_nie
+            else f"Beide Zahlen liegen weit jenseits des Budgetendes bei "
+            f"{abbruch} Versuchen."
+        )
         console.print(
             "[dim]  Der Schub kommt oben drauf und geht nicht in die Streuung "
             "ein: Er hebt jeden\n  Fund gleichermassen, macht die Suche aber "
-            "nicht treffsicherer (Befund 110).\n  Beide Zahlen liegen weit "
-            f"jenseits des Budgetendes bei {abbruch} Versuchen.[/]\n"
+            f"nicht treffsicherer (Befund 110).\n  {schluss}[/]\n"
         )
 
     console.print("Wie stark das an der Annahme haengt:\n")
@@ -11101,7 +11157,8 @@ def form(
     # erheblich: Auf der gemessenen Linie kommt der Perpetual-Punkt auf 0,8601,
     # der Spot-Punkt auf 0,9357. Dieselbe Aussage - "nie erreicht" - aber mit
     # 0,0143 statt 0,0899 Abstand zur Schwelle.
-    spot = _spotguete(frames, symbole, genome, settings)
+    # Die Gegenzahl dieses Berichts steht auf der ganzen Liste (Befund 390).
+    spot = _spotguete(frames, symbole, genome, settings, fertige=False)
     if linie.genug and spot:
         from research.formgrenze import Formweg
 
@@ -11771,7 +11828,10 @@ def suchbudget(
     budget = Budget(
         versuche=trials,
         kandidaten=kandidaten,
-        spotguete=_spotguete(frames, symbole, spitzenkandidat(), settings),
+        # Die Kandidaten hier tragen Zahlen der ganzen Liste (Befund 390).
+        spotguete=_spotguete(
+            frames, symbole, spitzenkandidat(), settings, fertige=False
+        ),
     )
 
     console.print("[bold]Die Grenzlinie[/]")

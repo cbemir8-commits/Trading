@@ -34915,3 +34915,120 @@ Gefunden habe ich es beim Durchlesen der vier Faelle, nicht im Lauf - der Fall
 tritt heute nicht ein, ein Test haette ihn also nicht gezeigt, und bei n_eff
 113 waere er still eingetreten. Verglichen wird jetzt nur, wenn ein Fenster
 existiert; die rote Zeile darueber sagt den anderen Fall deutlicher.
+
+## Dreihundertneunzig. Das Wettrennen rechnete auf einer anderen Grundlage als das Gate
+
+`cli rennen` beantwortet die Frage, von der das ganze Vorgehen abhaengt: Holt
+Weitersuchen die Huerde je ein? Beide Groessen wachsen mit derselben
+Extremwertkonstante, also entscheidet allein, ob die Streuung echter Regelideen
+ueber der des reinen Zufalls liegt.
+
+Gerechnet hat der Befehl auf dem **Speicher** und mit **allen** Trades. Das ist
+zweifach neben der Grundlage des Gates, und beide Abweichungen hat dieses
+Projekt anderswo laengst behoben: die Reihe in 363/364, den Randschnitt in
+152/371.
+
+### Daran kippt das Vorzeichen
+
+```
+Grundlage                  Guete   Ideenstreuung   Nullstreuung   Schluss
+Speicher, alle Trades     0,2665          0,0962         0,0917   holt auf
+Reihe, fertige Trades     0,2509          0,0906         0,0913   nie
+```
+
+Oben holt die Suche irgendwann auf - der Befehl schrieb "jenseits von 1e+09".
+Unten holt sie **nie** auf: Der beste Fund waechst langsamer als das, was der
+Zufall ohnehin hergibt.
+
+Sieben Zehntausendstel trennen die beiden Streuungen, und sie tragen die
+Aussage. Genau deshalb darf die Grundlage nicht die ungefaehr richtige sein.
+
+Der Befehl sagt es jetzt selbst:
+
+```
+Reihe: 2017-08-16 bis 2026-08-29, 3301 Balken gemeinsam - die Zulassungsreihe
+  Historie   3300 Tage, 158 Trades (121 davon unabhaengig)
+  Bestwert   0.2509 je Trade nach 203 Versuchen
+
+**Weitersuchen holt den Abstand nie ein.** ... Ideenstreuung 0.0906. Die Huerde
+steigt mit 0.0913 - der Streuung des reinen Zufalls.
+```
+
+### Die gepflegte Zahl war um Groessenordnungen daneben
+
+Im Docstring von `Suchbudget` stand:
+
+> Aus dem eigenen Verlauf kalibriert sind es 0,0950 gegen 0,0808 - genug, um
+> aufzuholen, aber erst bei rund **56.000** Versuchen.
+
+Gemessen auf der Grundlage des Gates: 0,0906 gegen 0,0913, Schnittpunkt **nie**.
+Die Zahl stand im Register an der Stelle, an der das Projekt seine Aussage ueber
+das Weitersuchen aufschreibt - und sie machte die Aussicht um Groessenordnungen
+besser, als sie ist.
+
+**Die Richtung von Befund 71 ist unveraendert und schaerfer.** Weitersuchen war
+dort immer der schwache Hebel; es ist nur nicht mehr "spaet", sondern "gar
+nicht". Ein Eintrag, der jetzt "alles anders" sagte, waere die
+Gegenuebertreibung - die 56.000 bleibt als Vermerk stehen.
+
+### Und es bleibt ein Punktschaetzer
+
+Das gehoert neben jede der beiden Zahlen, sonst waere "nie" eine Behauptung:
+
+> Diese Kalibrierung kommt aus einem einzigen Wert - dem beobachteten Bestwert -
+> und der streut selbst. Bei 203 Versuchen liegt die relative Streuung der
+> Rueckrechnung bei 14.2%; der 90%-Bereich der Ideenstreuung reicht von 0.0738
+> bis 0.1146. **Die Nullstreuung von 0.0913 liegt darin.**
+
+Also ist "die Suche holt nie auf" mit dem Verlauf vereinbar - und "sie ist schon
+fast angekommen" ebenso. Belastbar ist der Schluss (mehr Versuche sind der
+schwache Hebel), nicht die Stelle. Diesen Fehlerbalken gibt es seit Befund 124,
+und er ist der Grund, warum die Korrektur hier keine Kehrtwende ist.
+
+### Mein Fehler in diesem Durchgang - beinahe
+
+Mein erster Einbau haette **Befund 371 an dieser Stelle neu erzeugt**.
+
+`kandidat` rechnete nach der Aenderung auf den fertig gehandelten Trades, die
+Hilfsfunktion `_spotguete` weiter auf der ganzen Liste. Der gemeldete
+Niveauschub waere damit 0,0344 gewesen statt 0,0199 - also die Differenz zweier
+**Grundlagen** und nicht die des Fundings, und genau das ist der Fehler, den 371
+an derselben Zahl schon einmal gefunden hat.
+
+Aufgefallen ist es beim Nachsehen, wen die Hilfsfunktion sonst ruft; gelaufen
+war die falsche Fassung nie. `_spotguete` verlangt die Stichprobe jetzt als
+**Pflichtangabe**:
+
+```python
+def _spotguete(frames, symbole, genome, settings, *, fertige: bool)
+```
+
+Ein Vorgabewert waere die Falle gewesen. Der naechste Aufrufer uebernimmt ihn,
+ohne zu wissen, auf welcher Stichprobe seine **eigene** Zahl steht - und dann
+steht wieder eine Differenz zweier Grundlagen in einer Tabelle, die zwei
+Betriebspunkte vergleichen soll. Die beiden anderen Aufrufer (`form`,
+`suchbudget`) rechnen ihre Gegenzahl auf der ganzen Liste und sagen das jetzt
+auch. Die Forderung ist nicht eine bestimmte Stichprobe, sondern **dieselbe auf
+beiden Seiten**.
+
+### Nebenbefund
+
+Der Schlusssatz des Spot-Blocks lautete fest:
+
+> Beide Zahlen liegen weit jenseits des Budgetendes bei 230 Versuchen.
+
+Bei "nie" ist das eine Verharmlosung: Es gibt keine Versuchszahl, bei der die
+Suche ankommt, und das Budgetende ist dann nicht die bindende Grenze. Der Satz
+unterscheidet die beiden Faelle jetzt.
+
+### Ein Zaehlwaechter hat zurueckgemeldet
+
+`test_abstandsreihe.py::TestDieInventurStimmtNoch` zaehlt, wie viele Befehle
+sich fuer eine Reihe entscheiden. Befund 387 hat 2 / 3 / 35 gemessen; mit
+`cli rennen` sind es **3 / 4 / 34**, und der Test ist gefallen.
+
+Das ist die Wache bei der Arbeit, nicht ein Hindernis: Wer einen Befehl auf den
+Spitzenkandidaten setzt, soll **sehen**, dass er sich fuer eine Reihe
+entscheiden muss. Die offene Regel bleibt offen - umgestellt wird nicht, weil
+drei es tun, sondern weil eine Zahl daran haengt. Hier hing das Vorzeichen
+daran.

@@ -4018,6 +4018,48 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Gefunden habe ich es beim Durchlesen der vier Faelle, nicht im Lauf; "
         "verglichen wird jetzt nur, wenn ein Fenster existiert",
         389,
+        zuletzt=390,
+    ),
+    # Befund 390: dieselbe Grundlagenfrage im Wettrennen - und hier kippt sie
+    # das Vorzeichen der zentralen Aussage ueber das Weitersuchen.
+    Richtung(
+        "Das Wettrennen rechnete auf einer anderen Grundlage als das Gate",
+        "'cli rennen' beantwortet die Frage, ob Weitersuchen die Huerde je "
+        "einholt - die Entscheidung ueber das ganze Vorgehen. Gerechnet hat es "
+        "auf dem **Speicher** und mit **allen** Trades, also zweifach neben "
+        "der Grundlage des Gates; beide Abweichungen hat dieses Projekt "
+        "anderswo laengst behoben (363/364 die Reihe, 152/371 den "
+        "Randschnitt). Am Perpetual-Punkt gemessen kippt daran das "
+        "**Vorzeichen**: Speicher mit allen Trades gibt Guete 0,2665 und eine "
+        "Ideenstreuung von 0,0962 gegen eine Nullstreuung von 0,0917 - die "
+        "Suche holt auf, 'jenseits von 1e+09'. Reihe mit den fertigen Trades "
+        "gibt 0,2509 und **0,0906 gegen 0,0913** - der beste Fund waechst "
+        "langsamer als das, was Zufall ohnehin hergibt, und die Suche holt "
+        "**nie** auf. Die gepflegte Zahl im Docstring von 'Suchbudget' lautete "
+        "'0,0950 gegen 0,0808 - genug, um aufzuholen, aber erst bei rund "
+        "56.000 Versuchen' und steht jetzt mit den gemessenen Werten da. **Die "
+        "Richtung des Befundes 71 ist unveraendert und schaerfer**: "
+        "Weitersuchen ist der schwache Hebel - nur nicht mehr 'spaet', sondern "
+        "'gar nicht'. **Und es bleibt ein Punktschaetzer**: Die Rueckrechnung "
+        "steht auf einem einzigen Bestwert, ihre relative Streuung liegt bei "
+        "14,2 %, und der 90-%-Bereich von 0,0738 bis 0,1146 **enthaelt die "
+        "Nullstreuung** - 'nie' ist mit dem Verlauf vereinbar, 'fast "
+        "angekommen' auch. Das sagt der Befehl selbst, und es gehoert neben "
+        "jede der beiden Zahlen. **Mein Fehler dabei, beinahe**: Mein erster "
+        "Einbau haette Befund 371 an dieser Stelle **neu erzeugt** - "
+        "'kandidat' auf den fertigen Trades, '_spotguete' weiter auf der "
+        "ganzen Liste, und der gemeldete Niveauschub waere 0,0344 statt 0,0199 "
+        "gewesen, also die Differenz zweier Grundlagen und nicht die des "
+        "Funding. Aufgefallen beim Nachsehen, wen die Hilfsfunktion sonst "
+        "ruft. '_spotguete' verlangt die Stichprobe jetzt als Pflichtangabe - "
+        "ein Vorgabewert waere genau die Falle: Der naechste Aufrufer "
+        "uebernimmt ihn, ohne zu wissen, worauf seine eigene Zahl steht. Die "
+        "beiden anderen Aufrufer ('form', 'suchbudget') rechnen ihre Gegenzahl "
+        "auf der ganzen Liste und sagen das jetzt auch. **Nebenbefund**: Der "
+        "Schlusssatz des Spot-Blocks lautete fest 'Beide Zahlen liegen weit "
+        "jenseits des Budgetendes' - bei 'nie' ist das eine Verharmlosung, und "
+        "er unterscheidet die beiden Faelle jetzt",
+        390,
     ),
 )
 
@@ -4034,9 +4076,12 @@ OFFEN: tuple[Richtung, ...] = (
         "dort ein Suchbudget daran hing. Die Anschlussfrage ist, wo es sonst "
         "fehlt - und darauf gibt es jetzt eine Zahl statt einer Meinung. Von "
         "den **39** Befehlen, die den Spitzenkandidaten durch einen "
-        "Walk-Forward schicken, schneiden **2** auf die Zulassungsreihe "
-        "('abstand', 'anatomie'), **3** nennen die Reihe wenigstens "
-        "('abstand', 'suchbudget', 'stand'), und **35** tun keines von beidem. "
+        "Walk-Forward schicken, schnitten **2** auf die Zulassungsreihe "
+        "('abstand', 'anatomie'), **3** nannten die Reihe wenigstens "
+        "('abstand', 'suchbudget', 'stand'), und **35** taten keines von "
+        "beidem. **Heute sind es 3 / 4 / 34** (390): 'cli rennen' ist "
+        "dazugekommen, weil dort das Vorzeichen der Aussage ueber das "
+        "Weitersuchen an der Grundlage hing. "
         "Das ist keine Liste von 35 Fehlern: Befund 370 hat ausdruecklich "
         "entschieden, dass 'cli stand' auf allem rechnet, was da ist, und die "
         "Reihe nur **nennen** muss - 'auf allem zu rechnen, was da ist, ist "
@@ -4052,8 +4097,9 @@ OFFEN: tuple[Richtung, ...] = (
         "Versuche. **Und ein zweiter Widerspruch ist schon sichtbar**: "
         "'cli stand' meldet aus dem Plan '27 bleiben (Abbruch bei 230)', "
         "'cli abstand' rechnet 21 - zwei Zahlen fuer dieselbe Frage, und nur "
-        "die zweite steht auf der Reihe",
+        "die zweite steht auf der Reihe (behoben in 389)",
         387,
+        zuletzt=390,
     ),
     Richtung(
         # **Der Name traegt keine Zahl mehr** (Befund 352). Er hat sie von 332
@@ -4561,12 +4607,31 @@ class Suchbudget:
 
     **Und seit Befund 71 ist der Umfang auch beziffert.** Huerde und bester Fund
     wachsen beide mit derselben Extremwertkonstante; es entscheidet allein, ob
-    die Streuung echter Regelideen ueber der des reinen Zufalls liegt. Aus dem
-    eigenen Verlauf kalibriert sind es 0,0950 gegen 0,0808 - genug, um
-    aufzuholen, aber erst bei rund 56.000 Versuchen. Bis zum Abbruch bei 230
-    schliesst sich der Abstand von 0,0351 auf 0,0324. **Das Budget ist damit
-    nicht zu knapp bemessen, sondern die Groessenordnung, in der Suchen ueber-
-    haupt noch etwas aendert.** ``cli rennen`` rechnet es nach.
+    die Streuung echter Regelideen ueber der des reinen Zufalls liegt.
+
+    Hier stand "0,0950 gegen 0,0808 - genug, um aufzuholen, aber erst bei rund
+    56.000 Versuchen". **Auf der Grundlage des Gates stimmt das nicht mehr**
+    (Befund 390): Gerechnet hatte ``cli rennen`` auf dem Speicher und mit
+    **allen** Trades, also auf einer Guete, die das Gate nicht beurteilt. Auf
+    der Zulassungsreihe und mit den fertig gehandelten Trades, Perpetual:
+
+        Ideenstreuung   0,0906      aus 203 Versuchen zurueckgerechnet
+        Nullstreuung    0,0913      was Zufall ohnehin hergibt
+        Schnittpunkt    **nie**     statt "rund 56.000"
+
+    Die Richtung des Befundes ist unveraendert und schaerfer: Weitersuchen ist
+    der schwache Hebel. Nur ist es nicht mehr "spaet", sondern "gar nicht" -
+    der beste Fund waechst langsamer als das, was die Huerde ohnehin mitnimmt.
+
+    **Und das ist ein Punktschaetzer.** Die Rueckrechnung steht auf einem
+    einzigen beobachteten Bestwert; bei 203 Versuchen liegt ihre relative
+    Streuung bei 14,2 %, der 90-%-Bereich reicht von 0,0738 bis 0,1146 und
+    **enthaelt die Nullstreuung**. "Nie" ist damit mit dem Verlauf vereinbar,
+    "fast angekommen" ebenfalls. Belastbar ist der Schluss, nicht die Stelle.
+
+    **Das Budget ist damit nicht zu knapp bemessen, sondern die
+    Groessenordnung, in der Suchen ueberhaupt noch etwas aendert.**
+    ``cli rennen`` rechnet es nach.
 
     Der Zaehler selbst steht in ``state/trials.json`` und wird hier nur
     eingeordnet. Beides auseinanderzuhalten ist Absicht: Das Budget ist eine

@@ -238,15 +238,26 @@ class TestDieInventurStimmtNoch:
                 keins.append(name)
         return schneidet, nennt, keins
 
-    def test_zwei_schneiden_drei_nennen_fuenfunddreissig_keins(self) -> None:
+    def test_drei_schneiden_vier_nennen_vierunddreissig_keins(self) -> None:
+        """Die Zahlen wandern, wenn ein Befehl sich entscheidet - und genau
+        dafuer ist der Test da.
+
+        387 zaehlte 2 / 3 / 35. Befund 390 hat 'cli rennen' dazugenommen,
+        weil dort das **Vorzeichen** der Aussage ueber das Weitersuchen an der
+        Grundlage hing (Ideenstreuung 0,0906 gegen Nullstreuung 0,0913 auf der
+        Reihe, 0,0962 gegen 0,0917 auf dem Speicher). Jetzt sind es 3 / 4 / 34.
+
+        Die offene Regel bleibt offen: Es wird nicht umgestellt, weil zwei es
+        tun, sondern weil eine Zahl daran haengt.
+        """
         schneidet, nennt, keins = self._inventur()
 
-        assert sorted(schneidet) == ["abstand", "anatomie"]
-        assert sorted(nennt) == ["abstand", "stand", "suchbudget"]
-        assert len(keins) == 35, (
-            f"{len(keins)} statt 35 Befehle ohne Reihe - wer einen Befehl auf "
+        assert sorted(schneidet) == ["abstand", "anatomie", "rennen"]
+        assert sorted(nennt) == ["abstand", "rennen", "stand", "suchbudget"]
+        assert len(keins) == 34, (
+            f"{len(keins)} statt 34 Befehle ohne Reihe - wer einen Befehl auf "
             f"den Spitzenkandidaten setzt, entscheidet sich fuer eine Reihe "
-            f"(Befund 387): {sorted(keins)}"
+            f"(Befund 387/390): {sorted(keins)}"
         )
 
 
