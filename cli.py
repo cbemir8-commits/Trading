@@ -5195,6 +5195,34 @@ def abstand(
                 f"hinaus, mehr Suche nicht.[/]\n"
             )
 
+        # **Und um wie viel** (Befund 388). Der Satz darueber stand ohne Zahl
+        # da, und die Zahl ist der ganze Punkt: Bei 114 wirksamen Trades
+        # traegt noch ein Weg, bei 113 keiner mehr - die verbleibenden
+        # Versuche sind also keine Budgetgrenze, sondern eine
+        # Stichprobengrenze im Budgetmantel.
+        rand = ergebnis.stichprobenrand(schiefe=schiefe, woelbung=woelbung)
+        if rand is None:
+            console.print(
+                "[red]Schon bei der heutigen Stichprobe traegt kein Weg.[/]\n"
+            )
+        elif rand.traegt_bis_unten:
+            console.print(
+                f"[dim]Und er traegt bis {rand.mindestens} wirksame Trades "
+                f"hinunter - die Stichprobe ist hier nicht der Engpass.[/]\n"
+            )
+        else:
+            luft = rand.rand(buch.effektiv)
+            console.print(
+                f"[bold]Der Rand liegt bei {rand.mindestens} wirksamen "
+                f"Trades.[/] Heute sind es {buch.effektiv}, also "
+                f"{luft} {'Trade' if luft == 1 else 'Trades'} Luft - "
+                f"darunter traegt kein Weg mehr, auch mit unbegrenzter Suche "
+                f"nicht.\n"
+                f"[dim]Das ist die strengste Stufe der Zeitskala (Befund "
+                f"154); jede lockerere Einteilung gibt mehr wirksame Trades. "
+                f"Knapp heisst hier konservativ, nicht unzuverlaessig.[/]\n"
+            )
+
     if ausstiege:
         from research.exits import analyse_exits, ertragsquelle
 

@@ -34702,3 +34702,113 @@ ich sie brauchte, sondern weil der naechste sie brauchen wird.
 
 Die Reihenfolge war auch falsch: Ich habe gerechnet und dann die Reihe geprueft.
 Richtig ist umgekehrt, und `reihenzeile` kostet eine Zeile.
+
+## Dreihundertachtundachtzig. Das Zielfenster stand ohne seine Empfindlichkeit da
+
+Befund 387 hat gemessen, was `cli abstand --zielfenster` meldet:
+
+```
+Das Fenster schliesst sich bei 224 Versuchen. Heute stehen 203 zu Buche, es
+bleiben also 21.
+Die Latte haengt an der effektiven Stichprobe - mehr Trades bei gleichem Ertrag
+je Trade schieben die Grenze hinaus, mehr Suche nicht.
+```
+
+Der zweite Satz ist richtig. Er hat nur keine Zahl, und die Zahl ist der ganze
+Punkt.
+
+### Gemessen am echten Handelsbuch, nur `effektiv` wandert
+
+```
+n_eff   DSR des verbessernden Wegs   Fenster
+  113                       0,9498   kein Weg traegt
+  114                       0,9531   verschwindend
+  115                       0,9561   224      <- heute
+  120                       0,9688   286
+  130                       0,9849   469
+  150                       0,9969   ueber 1000
+```
+
+**Die Zulassung steht auf einem wirksamen Trade Rand.** Bei 114 traegt noch ein
+Weg, bei 113 keiner mehr - und zwar auch mit unbegrenzter Suche nicht, denn
+dann reicht selbst der Kandidat nicht, der die Betriebsschwelle gerade erreicht.
+
+Und in der anderen Richtung: Fuenf wirksame Trades mehr heben das Fenster von
+224 auf 286, fuenfzehn auf 469. **Ab n_eff 130 bindet das Budget gar nicht
+mehr.**
+
+Daraus folgt der Satz, der die 387er-Zahl richtig liest: Die 21 verbleibenden
+Versuche sind **keine Budgetgrenze, sondern eine Stichprobengrenze im
+Budgetmantel**. Wer sie als Suchbudget liest, steuert nach der falschen
+Groesse - zu holen ist hier nichts durch Sparsamkeit beim Suchen, sondern nur
+durch wirksame Trades.
+
+### Der Rand zeigt in die sichere Richtung
+
+Das gehoert dazu, sonst liest sich "ein Trade Rand" als Unzuverlaessigkeit.
+
+Die 115 sind die **strengste** Stufe der ganzen Zeitskala (Befund 154):
+`effektive_stichprobe` laeuft die Leiter von Gleichzeitigkeit bis Kalenderjahr
+durch und nimmt das kleinste Ergebnis. Jede lockerere Einteilung gibt mehr
+wirksame Trades und damit ein weiteres Fenster. Knapp heisst hier also
+konservativ gerechnet, nicht wackelig.
+
+### Gebaut und angeschlossen
+
+`Zielfenster.stichprobenrand` ist das Gegenstueck zu `budgetgrenze`: Dort
+wandert die Versuchszahl bei fester Stichprobe, hier die Stichprobe bei fester
+Versuchszahl. Dieselbe Bauart bis in die Randfaelle - `None` heisst "es traegt
+schon heute kein Weg", `traegt_bis_unten` heisst "die Stichprobe ist nicht der
+Engpass", und beide auf `None` abzubilden waere genau die Mehrdeutigkeit, die
+dieses Projekt sonst aufspuert.
+
+Und `cli abstand --zielfenster` sagt es jetzt:
+
+```
+Der Rand liegt bei 114 wirksamen Trades. Heute sind es 115, also 1 Trade Luft -
+darunter traegt kein Weg mehr, auch mit unbegrenzter Suche nicht.
+Das ist die strengste Stufe der Zeitskala (Befund 154); jede lockerere
+Einteilung gibt mehr wirksame Trades. Knapp heisst hier konservativ, nicht
+unzuverlaessig.
+```
+
+Das ist die Lehre aus Befund 351, und sie war in vier Durchgaengen
+hintereinander der Fund: 379 bei mir selbst, 382 im Dashboard, 386 am ganzen
+Befehl, hier am Satz ohne Zahl. Eine Messung, die nur im Modul existiert,
+erreicht niemanden - und ein richtiger Satz ohne Groessenordnung ist dieselbe
+Sache in kleiner Form.
+
+### Nebenbefund an derselben Datei
+
+Der Modulkopf von `research/zielfenster.py` fragt ausdruecklich:
+
+> **Wie belastbar ist die 231?**
+> Maessig, und das gehoert dazu. Sie haengt empfindlich an Schiefe und
+> Woelbung: Mit 3,376/15,415 statt der gemessenen 3,4646/15,9173 faellt sie auf
+> 214 - siebzehn Versuche Unterschied bei 0,09 in der Schiefe.
+
+Die Frage ist gestellt und sauber beantwortet - **entlang einer Achse**. Die
+schaerfere fehlte: 17 Versuche fuer 0,09 Schiefe, aber 62 Versuche fuer 5
+wirksame Trades. Wer die Belastbarkeit einer Zahl prueft, muss sagen, welche
+Achsen er geprueft hat; sonst liest sich eine Teilantwort wie eine ganze.
+
+Und die 231 trug keine Reihe (Befund 387). Auf dem Speicher sind es 349 und
+damit **lockerer** als der Plan, auf der Zulassungsreihe 224. Die Aussage "kein
+Puffer" stimmte, die Stelle nicht - jetzt steht 224 mit ihrer Reihe da, und die
+231 bleibt als Vermerk.
+
+### Mein Fehler in diesem Durchgang
+
+Ich habe das Handelsbuch zuerst **nachgebaut** statt gemessen: aus
+`referenz.SPOTPUNKT` Guete, Schiefe und Woelbung genommen und Summe, Streuung
+und Rueckgang geschaetzt. Die Summe lag in der falschen Einheit, und der noetige
+Hebefaktor kam mit **10,7** statt 1,2553 heraus. Das Fenster stand daraufhin bei
+jedem n_eff auf "ueber 1000", und die ganze Tabelle war wertlos.
+
+Aufgefallen ist es nur, weil der Unsinn gross genug war. Eine Abweichung von
+10 % haette ich uebernommen und eine falsche Empfindlichkeit aufgeschrieben.
+
+Die Lehre ist nicht neu, sie ist nur teuer: **Ein nachgebautes Buch ist keine
+Messung.** Der echte Lauf kostet 15 Sekunden, und das Buch steht jetzt mit
+seinen gemessenen Zahlen in `tests/test_stichprobenrand.py` - samt dem Vermerk,
+woran der erste Anlauf gescheitert ist.

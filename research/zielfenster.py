@@ -38,22 +38,46 @@ Positionsgroesse.
 Und das Budget ist knapper als der Plan
 ---------------------------------------
 Die 0,01 Luft sind der ganze Spielraum, und jeder Versuch hebt die Latte.
-**Das Fenster schliesst sich bei 231 Versuchen** - der Plan sieht 230 vor.
-Der Puffer ist also null: Was noch bleibt, sind rund dreissig Versuche, und
+**Das Fenster schliesst sich bei 224 Versuchen** - der Plan sieht 230 vor.
+Der Puffer ist also negativ: Bei 203 im Buch bleiben **21** Versuche, und
 danach verfehlt auch der richtige Fund das Ziel.
+
+Hier stand 231 ohne Angabe der Reihe (Befund 387/388). Auf dem Speicher, der
+bis heute laeuft, sind es 349 und damit lockerer als der Plan; auf der
+Zulassungsreihe 224. Die Aussage "kein Puffer" stimmte, die Stelle nicht.
 
 Der Ausweg ist dann nicht mehr Suche, sondern **mehr effektive Stichprobe**:
 Die Latte haengt an ihr und sinkt mit ihr. Befund 268 hat gezeigt, dass
 Verbreiterung die Trade-Zahl hebt und den Ertrag je Trade senkt - gesucht ist
 das eine ohne das andere.
 
-Wie belastbar ist die 231?
---------------------------
+Wie belastbar ist die Zahl?
+---------------------------
 **Maessig, und das gehoert dazu.** Sie haengt empfindlich an Schiefe und
 Woelbung: Mit 3,376/15,415 statt der gemessenen 3,4646/15,9173 faellt sie auf
 214 - siebzehn Versuche Unterschied bei 0,09 in der Schiefe. Belastbar ist
 die Groessenordnung, nicht die Stelle: Grenze und Planbudget liegen
 beieinander, und das heisst kein Puffer.
+
+**Die schaerfere Richtung war hier nicht gemessen** (Befund 388): die
+wirksame Stichprobe. Fuenf Trades mehr heben das Fenster von 224 auf 286,
+fuenfzehn auf 469 - und zwei Trades **weniger** schliessen es ganz:
+
+    n_eff   Fenster
+      113   kein Weg traegt
+      114   verschwindend
+      115   224      <- heute
+      120   286
+      130   469
+
+Die Zulassung steht damit auf **einem** wirksamen Trade Rand, und die
+verbleibenden Versuche sind keine Budgetgrenze, sondern eine
+Stichprobengrenze im Budgetmantel. ``Zielfenster.stichprobenrand`` rechnet
+es, ``cli abstand --zielfenster`` sagt es.
+
+Der Rand zeigt dabei in die sichere Richtung: Die 115 sind die strengste
+Stufe der ganzen Zeitskala (Befund 154), jede lockerere Einteilung gibt mehr
+wirksame Trades. Knapp heisst konservativ, nicht unzuverlaessig.
 
 Zwei Rechenfehler auf dem Weg hierher, beide meine:
 Der erste Anlauf verglich den ueber 158 Trades noetigen Mittelwert mit dem
@@ -75,7 +99,7 @@ Kostet keinen Versuch: gerechnet wird auf einem vorhandenen Handelsbuch.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from research.erreichbarkeit import bewerte, noetiger_sharpe
 
@@ -235,6 +259,61 @@ class Budgetgrenze:
 
 
 @dataclass(frozen=True, slots=True)
+class Stichprobenrand:
+    """Die kleinste wirksame Stichprobe, bei der ueberhaupt noch ein Weg traegt.
+
+    **Warum das neben der Budgetgrenze stehen muss** (Befund 388). Der Befehl
+    meldete *"Das Fenster schliesst sich bei 224 Versuchen, es bleiben also
+    21"* und darunter den richtigen, aber unbezifferten Satz: *"Die Latte
+    haengt an der effektiven Stichprobe - mehr Trades bei gleichem Ertrag je
+    Trade schieben die Grenze hinaus, mehr Suche nicht."*
+
+    Die Groessenordnung fehlte, und sie ist der ganze Punkt. Gemessen am
+    Bestand, nur ``effektiv`` wandert:
+
+        n_eff   DSR des verbessernden Wegs   Fenster
+          113                       0,9498   kein Weg traegt
+          114                       0,9531   verschwindend
+          115                       0,9561   224      <- heute
+          120                       0,9688   286
+          130                       0,9849   469
+          150                       0,9969   ueber 1000
+
+    Die Zulassung steht damit auf **einem** wirksamen Trade Rand: Bei 114
+    traegt es noch, bei 113 nicht mehr. Und bei 130 bindet das Budget gar
+    nicht mehr - die 21 verbleibenden Versuche sind also keine Budgetgrenze,
+    sondern eine Stichprobengrenze im Budgetmantel.
+
+    **Der Rand zeigt in die sichere Richtung.** Die 115 sind die strengste
+    Stufe der ganzen Zeitskala (Befund 154); jede lockerere Einteilung gibt
+    mehr wirksame Trades und damit ein weiteres Fenster. Knapp heisst hier
+    also nicht unzuverlaessig, sondern konservativ gerechnet.
+    """
+
+    mindestens: int
+    """Die kleinste Stichprobe, bei der noch ein Weg traegt."""
+
+    traegt_bis_unten: bool
+    """Die Suche hat die Untergrenze erreicht, ohne dass ein Weg aufgab.
+
+    Dann ist ``mindestens`` **keine** Grenze, sondern die Obergrenze einer:
+    Darunter wurde nicht mehr gerechnet. Dasselbe Feld wie ``gedeckelt`` bei
+    ``Budgetgrenze``, aus demselben Grund.
+    """
+
+    def rand(self, effektiv: int) -> int:
+        """Wie viele wirksame Trades heute ueber dem Rand liegen."""
+        return effektiv - self.mindestens
+
+    def __str__(self) -> str:
+        return (
+            f"traegt bis {self.mindestens} hinunter"
+            if self.traegt_bis_unten
+            else f"{self.mindestens}"
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class Zielfenster:
     """Beide Wege nebeneinander, mit dem Schluss daraus."""
 
@@ -324,6 +403,52 @@ class Zielfenster:
                 hoch = mitte
         return Budgetgrenze(versuche=hoch, gedeckelt=False)
 
+    def stichprobenrand(
+        self, *, tiefstens: int = 10, schiefe: float = 0.0, woelbung: float = 3.0
+    ) -> Stichprobenrand | None:
+        """Bis zu welcher wirksamen Stichprobe hinunter noch ein Weg traegt.
+
+        Die Gegenrichtung zu ``budgetgrenze``: Dort wandert die Versuchszahl
+        bei fester Stichprobe, hier die Stichprobe bei fester Versuchszahl.
+        Beide fragen dasselbe - wie viel Luft ist zwischen heute und dem
+        Punkt, an dem die Rechnung aufgibt.
+
+        ``None`` heisst **eins**: Es traegt schon bei der heutigen Stichprobe
+        kein Weg. Dass es bis ``tiefstens`` hinunter traegt, ist der
+        gegenteilige Fall und sagt ``traegt_bis_unten``.
+
+        Gesucht wird mit Bisektion: Der verbessernde Weg braucht einen festen
+        Faktor auf den Ertrag (er haengt an Summe und Jahren, nicht an der
+        Stichprobe), und sein Deflated Sharpe steigt monoton mit der wirksamen
+        Stichprobe.
+        """
+        args = {
+            "schwelle_pct": self.schwelle_pct,
+            "dsr_ziel": self.dsr_ziel,
+            "drawdown_grenze": self.drawdown_grenze,
+            "versuche": self.versuche,
+            "schiefe": schiefe,
+            "woelbung": woelbung,
+        }
+
+        def traegt(effektiv: int) -> bool:
+            buch = replace(self.buch, effektiv=effektiv)
+            return verbessern(buch, **args).traegt
+
+        if not traegt(self.buch.effektiv):
+            return None
+        if traegt(tiefstens):
+            return Stichprobenrand(mindestens=tiefstens, traegt_bis_unten=True)
+
+        tief, hoch = tiefstens, self.buch.effektiv
+        while hoch - tief > 1:
+            mitte = (tief + hoch) // 2
+            if traegt(mitte):
+                hoch = mitte
+            else:
+                tief = mitte
+        return Stichprobenrand(mindestens=hoch, traegt_bis_unten=False)
+
     def urteil(self) -> str:
         if self.leer:
             return (
@@ -376,6 +501,7 @@ __all__ = [
     "KAPITAL",
     "Budgetgrenze",
     "Handelsbuch",
+    "Stichprobenrand",
     "Weg",
     "Zielfenster",
     "noetige_summe",

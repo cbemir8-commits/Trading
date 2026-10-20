@@ -3939,6 +3939,44 @@ BEHOBEN: tuple[Richtung, ...] = (
         "genau diesen Irrtum eine einzeilige Auskunft gibt ('reihenzeile', "
         "Befund 370). Die steht jetzt in der Kopfzeile des Befehls",
         387,
+        zuletzt=388,
+    ),
+    # Befund 388: die Anschlussfrage an 387 - wie belastbar ist die Zahl, die
+    # dort herauskam? Der Befehl sagte den richtigen Satz ohne die Zahl.
+    Richtung(
+        "Das Zielfenster stand ohne seine Empfindlichkeit da",
+        "Befund 387 hat '21 Versuche bleiben' gemessen. Darunter stand im "
+        "Befehl der richtige Satz 'Die Latte haengt an der effektiven "
+        "Stichprobe - mehr Trades bei gleichem Ertrag je Trade schieben die "
+        "Grenze hinaus, mehr Suche nicht' - **ohne die Groessenordnung**, und "
+        "die ist der ganze Punkt. Gemessen am echten Handelsbuch der Reihe, "
+        "nur 'effektiv' wandert: bei **113** wirksamen Trades traegt kein Weg "
+        "mehr, bei 114 wieder, bei 115 (heute) steht das Fenster bei 224, bei "
+        "120 bei 286, bei 130 bei 469, bei 150 ueber 1000. **Die Zulassung "
+        "steht auf einem wirksamen Trade Rand**, und die 21 verbleibenden "
+        "Versuche sind keine Budgetgrenze, sondern eine Stichprobengrenze im "
+        "Budgetmantel: Ab n_eff 130 bindet das Budget gar nicht mehr. Der "
+        "Rand zeigt dabei in die **sichere** Richtung - die 115 sind die "
+        "strengste Stufe der ganzen Zeitskala (154), jede lockerere "
+        "Einteilung gibt mehr wirksame Trades; knapp heisst hier konservativ "
+        "und nicht unzuverlaessig. Gebaut ist 'Zielfenster.stichprobenrand' "
+        "als Gegenstueck zu 'budgetgrenze' (dort wandert die Versuchszahl bei "
+        "fester Stichprobe, hier die Stichprobe bei fester Versuchszahl), und "
+        "'cli abstand --zielfenster' nennt Rand und Luft jetzt in einer "
+        "Zeile - angeschlossen und nicht nur gebaut (die Lehre aus 351). "
+        "**Nebenbefund an derselben Datei**: Der Modulkopf fragt ausdruecklich "
+        "'Wie belastbar ist die 231?' und beantwortet es an Schiefe und "
+        "Woelbung (17 Versuche fuer 0,09 Schiefe) - die schaerfere Richtung, "
+        "die Stichprobe, fehlte, und dort sind es 62 Versuche fuer 5 Trades. "
+        "Die gepflegte 231 trug ausserdem keine Reihe und steht jetzt mit "
+        "224 und ihrer Reihe da; die Aussage 'kein Puffer' stimmte, die "
+        "Stelle nicht. **Mein Fehler dabei**: Ich habe das Handelsbuch zuerst "
+        "aus den Groessen des Referenzpunkts **nachgebaut** statt es zu "
+        "messen - die Summe in der falschen Einheit, und der noetige "
+        "Hebefaktor kam mit 10,7 statt 1,2553 heraus. Aufgefallen ist es nur, "
+        "weil dieser Unsinn gross genug war; eine Abweichung von 10 % haette "
+        "ich uebernommen. Gerechnet wird jetzt auf dem echten Buch",
+        388,
     ),
 )
 
