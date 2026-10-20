@@ -284,8 +284,16 @@ class Zielfenster:
         Wer genau den Kandidaten faende, der die Betriebsschwelle gerade
         traegt, bekaeme ihn ab hier trotzdem nicht mehr durch.
 
-        Gemessen am Bestand liegt sie bei 214, waehrend der Plan 230 Versuche
-        vorsieht: Die letzten sechzehn sind rechnerisch schon vergeben.
+        Gemessen am Bestand liegt sie bei **224** und der Plan sieht 230
+        Versuche vor: Die letzten sechs sind rechnerisch schon vergeben.
+
+        **Auf welcher Reihe, war die eigentliche Frage** (Befund 387). Hier
+        stand 214 ohne Angabe der Reihe, und ``cli abstand`` rechnete auf dem
+        Speicher, der bis heute laeuft - dort liegt die Grenze bei **349** und
+        damit **lockerer** als der Plan, also im Widerspruch zu dem fetten
+        Satz zwei Absaetze hoeher. Auf der Zulassungsreihe (Spot-Punkt, n_eff
+        115, 203 Versuche) sind es 224, und der Satz stimmt wieder. Eine
+        Grenze ohne ihre Reihe ist keine Grenze.
 
         ``None`` heisst **eins**: Es traegt schon jetzt kein Weg. Dass die
         Grenze jenseits von ``hoechstens`` liegt, ist der gegenteilige Fall

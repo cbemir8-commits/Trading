@@ -254,7 +254,19 @@ GELESEN: dict[str, int] = {
     # Nutzer. Was sich bewegt, ist ihre Beantwortbarkeit: Von jetzt an stehen
     # Suchlaeufe und Sweeps gleichermassen mit Herkunft in der Akte, und erst
     # damit liesse sich die Frage an Zahlen entscheiden statt an Erinnerung.
-    "Zaehlt ein Sweep am Bestand als Versuch?": 377,
+    # **Befund 387 hat sie beziffert** - und das ist mehr als eine Erwaehnung,
+    # deshalb wandert die Zahl. Gemessen auf den Eingangsgroessen des
+    # Referenzpunkts kippt das Gate bei **21** Versuchen; die Frage koennte es
+    # im Grundsatz also entscheiden. Mit den vorhandenen Belegen entscheidet
+    # sie es nicht: Alle 11 Einzelnachweise sind Suchlaeufe, belegt sind die
+    # fuenf Stellungen aus 281/282, und sie zu streichen bringt 0,0055 DSR -
+    # 1,5 % der Luecke. Fuer 21 muessten 182 der 203 fallen, und fuer 192
+    # davon ist die Herkunft weg.
+    #
+    # Die Regelfrage bleibt beim Nutzer, **ihre Wirkung ist gemessen**: Sie
+    # ist kein Weg zur Zulassung. Wer sie entscheidet, entscheidet ueber
+    # Ordnung in der Akte und nicht ueber ein Gate.
+    "Zaehlt ein Sweep am Bestand als Versuch?": 387,
     "Timing gegen Zufallseinstiege": 295,
     "Der Preis in Reststreuungen": 295,
     # **Befund 305 hat beide erneut angesehen** - und es war zweimal etwas
@@ -454,6 +466,13 @@ BEGRIFFE: dict[str, tuple[str, ...]] = {
         "Tageskerzen ableiten", "ableiten statt laden",
     ),
     "Zaehlt ein Sweep am Bestand als Versuch?": ("Sweep", "Reglerscan"),
+    # Befund 387. Die Namen der Sache: der Handgriff, die Reihe und die
+    # einzeilige Auskunft - nicht "je Datei, nicht je Frage".
+    "Der Schnitt auf die Reihe steht je Datei, nicht je Frage": (
+        "alle_geschnitten",
+        "Zulassungsreihe",
+        "reihenzeile",
+    ),
     "Der Grundstock nimmt auch das Neue auf": ("Grundstock", "save_trials"),
     "Zugelassen ist der Korb, handelbar ist ein Bein": (
         "Korbhandel", "handelbar ist ein Bein",

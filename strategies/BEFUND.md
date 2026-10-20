@@ -34538,3 +34538,167 @@ Das ist die Vorrichtung aus Befund 130 bei der Arbeit: Die Erstmessung bleibt
 muss den Test sehen und sagen koennen, was er nachgemessen hat. Genau dieser
 Eintrag hat zwei Laeufe eine ueberholte Tabelle lesen lassen, bevor es die
 Vorrichtung gab.
+
+## Dreihundertsiebenundachtzig. Der Abstand zum haertesten Gate stand auf dem Speicher
+
+`cli abstand` beantwortet die Frage, die alles steuert: Was fehlt zum Deflated
+Sharpe, und was kostet Weitersuchen? Gerechnet hat er auf dem **Speicher**, der
+bis heute laeuft - nicht auf der Zulassungsreihe, auf der jede gepflegte Zahl
+dieses Projekts steht.
+
+Der Grund stand im Befehl selbst, zwanzig Zeilen weiter unten:
+
+> Ohne das meldet dieses Werkzeug einen kleineren Abstand als das Gate, und
+> zwar jedes Mal etwas anders, je nach Alter des Datenabzugs.
+
+Das war ueber den **Randschnitt** geschrieben, und es ist richtig. Derselbe Satz
+gilt Wort fuer Wort fuer das **obere Ende** der Reihe - dort war er nicht
+angewandt. `alle_geschnitten` hat in Befund 363/364 acht Dateien bekommen; diese
+nicht.
+
+### Was der Unterschied ist
+
+Spot-Punkt, BTC + ETH, Tageskerzen, 203 Versuche:
+
+```
+Reihe          DSR      Luecke   noetige Trades   fehlende Jahre   Kosten/Versuch
+Speicher    0,6759      0,2741              180              4,6          0,0010
+Zulassung   0,5826      0,3674              191              6,0          0,0011
+```
+
+Die Luecke ist 34 % groesser, als der Befehl gemeldet hat. Das ist keine
+Nachkommastelle, sondern der Unterschied zwischen "vier Jahre fehlen" und "sechs
+Jahre fehlen" - bei einer Strategie, die 17 Trades im Jahr macht.
+
+### Die teure Stelle ist das Suchbudget
+
+```
+Das Fenster schliesst sich bei 224 Versuchen. Heute stehen 203 zu Buche, es
+bleiben also 21.
+```
+
+Vorher stand dort **349**, also "es bleiben 146". Siebenmal so viel.
+
+An dieser Zahl haengt eine unwiderrufliche Entscheidung. Ein Versuch ist nicht
+zuruecknehmbar, und jeder hebt die Latte des Deflated Sharpe fuer alle
+folgenden - das ist der Grund, warum dieses Projekt ueberhaupt einen Zaehler
+fuehrt. Eine zu grosszuegige Budgetzahl ist deshalb nicht bloss ungenau: Sie
+laedt dazu ein, etwas auszugeben, was es nicht gibt.
+
+**Und die Zahl belegt sich selbst.** `budgetgrenze` nennt sich im eigenen
+Docstring
+
+> **Die Zahl, die das Suchbudget begrenzt - und zwar schaerfer als der Plan.**
+
+Der Plan sieht 230 Versuche vor. Mit 349 war die Grenze **lockerer** als der
+Plan, also im Widerspruch zu diesem fetten Satz zwei Absaetze hoeher. Mit der
+Reihe sind es 224, und der Satz stimmt wieder: Sechs der letzten 27
+Planversuche sind rechnerisch vergeben.
+
+Aufgefallen ist es keinem, weil die beiden Zahlen nie nebeneinander standen -
+der Plan in `research/stand.py`, die Grenze in `research/zielfenster.py`. Der
+gepflegte Wert im Docstring war 214 und trug **keine Reihe**; jetzt steht dort
+224 mit ihrer Reihe, und die 214 bleibt als Vermerk.
+
+### Gegengeprueft: Befund 363/364 tut, was er verspricht
+
+Das war die beunruhigende Moeglichkeit, und sie ist ausgeraeumt. Auf der
+geschnittenen Reihe reproduziert der Referenzpunkt **exakt**:
+
+```
+            Trades   effektiv    Guete   Schiefe      DSR
+gemessen       156        115   0,2708    3,4646   0,5826
+referenz.py    156        115   0,2708    3,4646   0,5827
+```
+
+Und das bei einem Speicher, der inzwischen **50 Balken** ueber `SERIENENDE`
+hinauslaeuft: Nach dem Schnitt sind es 5355 und 3301 Balken, genau die Laengen
+in `REIHEN`, und `fehlt` meldet keinen Mangel. Die Vorrichtung aus 363/364
+haelt einen wachsenden Speicher aus - genau das war ihr Zweck.
+
+### Der Versuchszaehler ist nicht nebensaechlich
+
+Auf den Eingangsgroessen des Referenzpunkts - nur die Versuchszahl wandert:
+
+```
+  Versuche     DSR   Urteil
+         1   1,0000  bestanden
+        11   0,9858  bestanden
+        21   0,9529  bestanden     <- der Umschlag
+        22   0,9494  durchgefallen
+        50   0,8559  durchgefallen
+       203   0,5827  durchgefallen <- heute
+      1000   0,2649  durchgefallen
+```
+
+Das Gate kippt bei **21** Versuchen. Die seit Befund 233 offene Frage *"Zaehlt
+ein Sweep am Bestand als Versuch?"* koennte es also im Grundsatz entscheiden -
+und das ist mehr, als ich erwartet hatte, als ich zu rechnen anfing.
+
+**Mit den vorhandenen Belegen entscheidet sie es aber nicht.** Die Akte sagt:
+
+- Alle **11** Einzelnachweise sind Suchlaeufe: 3 `verbund`, 4 `gen11
+  partnersuche`, 4 `gen12 kalibriert`. Kein einziger ist ein Sweep.
+- Belegt sind die **fuenf** Stellungen, die `cli machbarkeit --spot` in Befund
+  281/282 in den Grundstock gebucht hat (187 auf 192).
+- Sie zu streichen bringt 0,0055 DSR - **1,5 % der Luecke von 0,3673**. Auch
+  ohne sie reisst das Gate.
+- Fuer 21 muessten **182 der 203** fallen. Fuer 192 davon ist die Herkunft weg,
+  und sie nachtraeglich zu benennen waere eine Umbuchung (234/282).
+
+Damit ist die Frage in ihrer **Wirkung** beantwortet: Die strenge Lesart - alles
+zaehlt - kostet 0,0055, und keine vertretbare Lesart kommt in die Naehe von 21.
+Die Regelfrage bleibt dem Nutzer, aber sie ist kein Weg zur Zulassung.
+
+Und sie zeigt, warum Befund 377 wichtig war: Haette der Zaehler von Anfang an
+Herkunft mitgeschrieben, waere das hier eine Abfrage und keine Schaetzung. Was
+fehlt, ist nicht nachzutragen - nur nicht zu wiederholen.
+
+### Die Inventur, und warum nichts umgestellt wurde
+
+Wo fehlt der Schnitt noch? Nachgezaehlt in `cli.py`, von den Befehlen, die den
+Spitzenkandidaten durch einen Walk-Forward schicken:
+
+```
+schneiden auf die Reihe     2   abstand, anatomie
+nennen die Reihe            3   abstand, stand, suchbudget
+keins von beidem           35
+```
+
+Das sind **nicht** 35 Fehler, und darum wurde nichts umgestellt:
+
+- Befund 370 hat ausdruecklich entschieden, dass `cli stand` auf allem rechnet,
+  was da ist, und die Reihe nur **nennen** muss: *"Auf allem zu rechnen, was da
+  ist, ist richtig; es muss nur dastehen."*
+- Befund 386 hat fuer `jahresbild` gemessen, dass Schnitt und kein Schnitt
+  dieselben Zahlen geben.
+
+Offen ist die **Regel**: Welche Frage braucht die Reihe, welche den Speicher,
+und woran erkennt man das vor dem Lauf? Bis die Regel steht, waere es dieselbe
+Blindheit in die andere Richtung - 35 Befehle zu schneiden, weil zwei es tun.
+Ein Anhaltspunkt ist gemessen: Teuer wird es, wo eine gepflegte Zahl aus
+`referenz.py` danebensteht oder eine unwiderrufliche Entscheidung daran haengt.
+
+Ein zweiter Widerspruch ist dabei schon sichtbar: `cli stand` meldet aus dem
+Plan *"27 bleiben (Abbruch bei 230)"*, `cli abstand` rechnet 21. Zwei Zahlen fuer
+dieselbe Frage, und nur die zweite steht auf der Reihe. Das steht als offene
+Richtung im Register.
+
+### Mein Fehler in diesem Durchgang
+
+Ich habe zuerst ohne Schnitt **und** ohne Randschnitt gemessen, 158 Trades und
+DSR 0,7018 bekommen - und einen Moment lang geglaubt, der Referenzpunkt sei
+gerissen. Das waere eine ernste Meldung gewesen, und sie waere falsch gewesen.
+
+Fuer genau diesen Irrtum gibt es in diesem Projekt eine einzeilige Auskunft:
+
+```
+Reihe: 2017-08-16 bis 2026-08-29, 3301 Balken gemeinsam - die Zulassungsreihe
+```
+
+`reihenzeile` aus Befund 370. Ich habe sie nicht benutzt, obwohl ich sie
+gesucht haette, waere sie im Befehl gestanden. Jetzt steht sie dort - nicht weil
+ich sie brauchte, sondern weil der naechste sie brauchen wird.
+
+Die Reihenfolge war auch falsch: Ich habe gerechnet und dann die Reihe geprueft.
+Richtig ist umgekehrt, und `reihenzeile` kostet eine Zeile.

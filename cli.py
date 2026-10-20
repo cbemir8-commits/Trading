@@ -4781,7 +4781,16 @@ def abstand(
     vergroessert, loest keines und reisst das Drawdown-Gate.
 
     Und die Zahl, die daraus folgt: **Bis zu welcher Versuchszahl traegt das
-    ueberhaupt noch?** Sie liegt unter dem Suchbudget des Plans.
+    ueberhaupt noch?** Sie liegt unter dem Suchbudget des Plans - und zwar
+    weiter darunter, als hier stand (Befund 387). Gerechnet wurde auf dem
+    **Speicher**, der bis heute laeuft, und nicht auf der Zulassungsreihe, auf
+    der jede gepflegte Zahl steht. Der Unterschied ist keine Nachkommastelle:
+
+        Reihe          DSR      Luecke   Budget bis   bleiben
+        Speicher    0,6759      0,2741          349       146
+        Zulassung   0,5826      0,3674          224        21
+
+    Gerechnet wird jetzt auf der Reihe, und die Kopfzeile nennt sie.
 
     Mit ``--ausstiege`` die Anschlussfrage (Befund 270): Wenn Ertrag je Trade
     gesucht ist - liegt er an Stop und Zielen? ``research.exits`` beantwortet
@@ -4799,6 +4808,7 @@ def abstand(
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
+    from research.datenstand import alle_geschnitten, reihenzeile
     from research.erreichbarkeit import bewerte, kennzahlen_aus_pnl
     from research.gates import stichprobe_wie_im_gate
     from research.randschnitt import ohne_zensierte, randtrades
@@ -4820,6 +4830,19 @@ def abstand(
         roh[symbol] = frame
 
     frames = common_range(roh)
+    # **Die Zulassungsreihe, nicht der Speicher** (Befund 387).
+    #
+    # Der Absatz zum Randschnitt weiter unten sagt genau, warum: "Ohne das
+    # meldet dieses Werkzeug einen kleineren Abstand als das Gate, und zwar
+    # jedes Mal etwas anders, je nach Alter des Datenabzugs." Derselbe Satz
+    # gilt fuer das obere Ende der Reihe, und dort war er nicht angewandt -
+    # 'alle_geschnitten' hat in Befund 363/364 acht Dateien bekommen, diese
+    # nicht. Gemessen am Spot-Punkt: auf dem Speicher DSR 0,6759 und ein
+    # Suchbudget bis 349 Versuchen, auf der Reihe 0,5826 und bis **224** -
+    # also 21 statt 146 verbleibende Versuche. Die zu grosszuegige Zahl stand
+    # an der Stelle, an der eine unwiderrufliche Entscheidung haengt.
+    frames = alle_geschnitten(frames)
+    console.print(f"[dim]Reihe: {reihenzeile(frames)}[/dim]")
     genome = spitzenkandidat()
     if spot:
         # Spot kennt keinen Hebel - und die beiden offenen Gates stehen an

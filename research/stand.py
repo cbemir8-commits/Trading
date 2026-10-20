@@ -3889,6 +3889,57 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Eindeutigkeit erzwingt - genau dafuer ist es da",
         386,
     ),
+    # Befund 387: dieselbe Frage eine Stelle weiter - auf welcher Reihe stehen
+    # die Zahlen? Und diesmal haengt eine unwiderrufliche Entscheidung daran.
+    Richtung(
+        "Der Abstand zum haertesten Gate stand auf dem Speicher",
+        "'cli abstand' beantwortet die Frage, die alles steuert: Was fehlt zum "
+        "Deflated Sharpe, und was kostet Weitersuchen? Gerechnet hat er auf "
+        "dem **Speicher**, der bis heute laeuft, und nicht auf der "
+        "Zulassungsreihe, auf der jede gepflegte Zahl steht - "
+        "'alle_geschnitten' hat in 363/364 acht Dateien bekommen, diese nicht. "
+        "Dabei stand der Grund im Befehl selbst: Der Absatz zum Randschnitt "
+        "sagt woertlich 'Ohne das meldet dieses Werkzeug einen kleineren "
+        "Abstand als das Gate, und zwar jedes Mal etwas anders, je nach Alter "
+        "des Datenabzugs' - derselbe Satz gilt fuer das obere Ende, und dort "
+        "war er nicht angewandt. Gemessen am Spot-Punkt: DSR 0,6759 auf dem "
+        "Speicher gegen 0,5826 auf der Reihe, Luecke 0,2741 gegen **0,3674** "
+        "(34 % groesser), noetige Trades 180 gegen 191, fehlende Historie 4,6 "
+        "gegen **6,0 Jahre**. **Die teure Stelle ist das Suchbudget**: Das "
+        "Fenster schloss sich dem Befehl nach bei 349 Versuchen ('es bleiben "
+        "146'), auf der Reihe bei **224** - es bleiben **21**. Das ist die "
+        "Zahl, an der eine unwiderrufliche Entscheidung haengt, denn ein "
+        "Versuch ist nicht zuruecknehmbar. Und sie belegt sich selbst: "
+        "'budgetgrenze' nennt sich im eigenen Docstring 'die Zahl, die das "
+        "Suchbudget begrenzt - und zwar schaerfer als der Plan', waehrend 349 "
+        "**lockerer** war als die 230 des Plans; mit der Reihe sind es 224, "
+        "also 6 der letzten 27 Planversuche rechnerisch vergeben. Der "
+        "gepflegte Wert im Docstring war 214 und trug keine Reihe. "
+        "**Gegengeprueft und in Ordnung**: Der Referenzpunkt reproduziert auf "
+        "der geschnittenen Reihe **exakt** - 156 Trades, effektiv 115, Guete "
+        "0,2708, Schiefe 3,4646, DSR 0,5826 gegen 0,5827 in 'referenz.py' -, "
+        "und das bei einem Speicher, der inzwischen 50 Balken ueber "
+        "SERIENENDE hinauslaeuft (5355/3301 Balken nach dem Schnitt, "
+        "'fehlt' meldet keinen Mangel). Befund 363/364 tut genau das, was er "
+        "verspricht. **Und der Versuchszaehler ist nicht nebensaechlich**: Auf "
+        "den Eingangsgroessen des Referenzpunkts kippt das Gate bei **21** "
+        "Versuchen (0,9529 bestanden, bei 22 dann 0,9494). Die seit 233 offene "
+        "Frage 'Zaehlt ein Sweep am Bestand als Versuch?' koennte das Gate "
+        "also im Grundsatz entscheiden - **mit den vorhandenen Belegen aber "
+        "nicht**: Alle 11 Einzelnachweise sind Suchlaeufe (3 'verbund', 4 "
+        "'gen11', 4 'gen12'), kein einziger ein Sweep; belegt sind die fuenf "
+        "Stellungen, die 'cli machbarkeit --spot' in 281/282 in den Grundstock "
+        "gebucht hat, und sie zu streichen bringt 0,0055 DSR - **1,5 % der "
+        "Luecke**. Fuer 21 muessten 182 der 203 fallen, und fuer 192 davon ist "
+        "die Herkunft weg (sie nachtraeglich zu benennen waere eine Umbuchung, "
+        "234/282). Die Frage ist damit in ihrer Wirkung beantwortet, und die "
+        "strenge Lesart kostet 0,0055. **Mein Fehler dabei**: Ich habe zuerst "
+        "ohne Schnitt und ohne Randschnitt gemessen, 158 Trades und DSR 0,7018 "
+        "bekommen und den Referenzpunkt fuer gerissen gehalten - obwohl es fuer "
+        "genau diesen Irrtum eine einzeilige Auskunft gibt ('reihenzeile', "
+        "Befund 370). Die steht jetzt in der Kopfzeile des Befehls",
+        387,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -3896,6 +3947,35 @@ BEHOBEN: tuple[Richtung, ...] = (
 #: Getrennt von ``GESCHLOSSEN``, weil "gemessen und offen" etwas anderes ist
 #: als "gemessen und zu". Ein Eintrag hier ist eine Zusage, keine Ablage.
 OFFEN: tuple[Richtung, ...] = (
+    # Aufgeworfen von 387, als der Schnitt an einer Stelle fehlte: Wo fehlt er
+    # noch? Die Inventur ist gemessen, der Schluss daraus nicht gezogen.
+    Richtung(
+        "Der Schnitt auf die Reihe steht je Datei, nicht je Frage",
+        "Befund 387 hat 'alle_geschnitten' in 'cli abstand' nachgetragen, weil "
+        "dort ein Suchbudget daran hing. Die Anschlussfrage ist, wo es sonst "
+        "fehlt - und darauf gibt es jetzt eine Zahl statt einer Meinung. Von "
+        "den **39** Befehlen, die den Spitzenkandidaten durch einen "
+        "Walk-Forward schicken, schneiden **2** auf die Zulassungsreihe "
+        "('abstand', 'anatomie'), **3** nennen die Reihe wenigstens "
+        "('abstand', 'suchbudget', 'stand'), und **35** tun keines von beidem. "
+        "Das ist keine Liste von 35 Fehlern: Befund 370 hat ausdruecklich "
+        "entschieden, dass 'cli stand' auf allem rechnet, was da ist, und die "
+        "Reihe nur **nennen** muss - 'auf allem zu rechnen, was da ist, ist "
+        "richtig; es muss nur dastehen'. Und Befund 386 hat fuer 'jahresbild' "
+        "gemessen, dass Schnitt und kein Schnitt dieselben Zahlen geben. "
+        "Offen ist die Regel: Welche Frage braucht die Reihe, welche den "
+        "Speicher, und woran erkennt man das vor dem Lauf? Bis die Regel "
+        "steht, wird nichts umgestellt - 35 Befehle blind zu schneiden waere "
+        "dieselbe Blindheit, nur in die andere Richtung. **Ein Anhaltspunkt "
+        "ist gemessen**: Teuer wird es da, wo eine gepflegte Zahl aus "
+        "'referenz.py' danebensteht oder eine unwiderrufliche Entscheidung "
+        "daran haengt; bei 'abstand' waren es 146 gegen 21 verbleibende "
+        "Versuche. **Und ein zweiter Widerspruch ist schon sichtbar**: "
+        "'cli stand' meldet aus dem Plan '27 bleiben (Abbruch bei 230)', "
+        "'cli abstand' rechnet 21 - zwei Zahlen fuer dieselbe Frage, und nur "
+        "die zweite steht auf der Reihe",
+        387,
+    ),
     Richtung(
         # **Der Name traegt keine Zahl mehr** (Befund 352). Er hat sie von 332
         # bis 351 getragen - sechzehn, zwoelf, elf, drei - und jede Zahl war
@@ -4412,6 +4492,19 @@ class Suchbudget:
     Der Zaehler selbst steht in ``state/trials.json`` und wird hier nur
     eingeordnet. Beides auseinanderzuhalten ist Absicht: Das Budget ist eine
     Abmachung, der Zaehler eine Messung.
+
+    **Die Rechnung ist strenger als die Abmachung** (Befund 387). Auf der
+    Zulassungsreihe schliesst sich das Zielfenster bei **224** Versuchen -
+    ab dort traegt auch der Kandidat nicht mehr durch, der die
+    Betriebsschwelle gerade erreicht (``zielfenster.budgetgrenze``). Der Plan
+    laeuft bis 230 und gibt bei 203 noch 27 frei; sechs davon sind
+    rechnerisch vergeben, es sind also 21.
+
+    Geaendert wird die Abmachung dadurch nicht: Sie ist vorab genannt, und
+    genau das ist ihr Wert. Wer sie herabsetzt, weil die Rechnung es erlaubt,
+    hat ein Kriterium, das sich nachtraeglich zurechtlegen laesst - wovor der
+    Absatz oben warnt. Die Rechnung sagt nur: Die letzten sechs zu fahren,
+    aendert nichts mehr.
     """
 
     beginn: int = 130
