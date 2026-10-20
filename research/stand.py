@@ -3800,6 +3800,41 @@ BEHOBEN: tuple[Richtung, ...] = (
         "gesetzter Wert gilt genau so",
         384,
     ),
+    # Befund 385: dasselbe Muster in einem Gate - und das Ergebnis ist eine
+    # Entscheidung, keine Behebung.
+    Richtung(
+        "Das Gate nannte sein Regimefenster nicht",
+        "Die Suche aus 384 weitergefuehrt, diesmal in **Kerzenzahlen** statt "
+        "Zeitspannen - und der Treffer liegt in einem Gate. "
+        "'classify_regimes' nimmt 'window=480' mit dem Zusatz 'bei "
+        "15-Minuten-Kerzen sind 480 rund fuenf Tage', 'gate_regime_split' "
+        "ruft sie **ohne** Angabe, und die Funktion erfaehrt das Intervall "
+        "nicht. Auf Tageskerzen - und darauf steht jede Gate-Zahl - sind 480 "
+        "Kerzen rund **sechzehn Monate**. Gemessen am Spitzenkandidaten (160 "
+        "Trades, Schwelle 0,9): bei 480 schlechtester Faktor 4,505 und "
+        "bestanden, bei 120 noch 3,170, bei 30 noch 1,234 - **bei 25 dann "
+        "0,000 und durchgefallen**. Das Urteil haengt also am Fenster, und "
+        "**geaendert wurde es nicht**: Es wird nicht verkuerzt, damit etwas "
+        "durchfaellt, so wenig wie verlaengert, damit etwas besteht. Welcher "
+        "Horizont 'Marktumfeld' heisst, steht jetzt als Entscheidung im "
+        "Register, mit dem Einwand, der nicht vom Ergebnis kommt: Der Kandidat "
+        "ist eine 50-Tage-Regel, und ein Fenster darunter ordnet das Umfeld "
+        "auf einem Horizont ein, den die Strategie selbst handelt - dann ist "
+        "die Aufteilung keine unabhaengige Probe mehr. **Behoben ist die "
+        "Sichtbarkeit**: Bei der heutigen Vorgabe urteilt das Gate ueber "
+        "**zwei von drei** Umfeldern (Seitwaerts hat 7 Trades und faellt unter "
+        "die Zehnerschwelle), waehrend seine Frage woertlich 'Funktioniert die "
+        "Strategie in jedem Marktumfeld?' lautet. Die Botschaft nennt jetzt "
+        "Fenster und Abdeckung, die 480 hat einen Namen ('REGIMEFENSTER'), und "
+        "Wert und Status sind unveraendert. **Nebenfund im Aussetzer-Zweig**: "
+        "Hat jedes geurteilte Umfeld keinen einzigen Verlust, bleibt der "
+        "Profitfaktor unendlich - und die Botschaft behauptete dann 'Kein "
+        "Marktumfeld mit genug Trades', wo dreissig standen. An echten Daten "
+        "praktisch unmoeglich, mit einer Attrappe aus lauter Gewinnen sofort "
+        "da; daran ist mein erster Test gefallen. Status bleibt SKIP, nur die "
+        "Auskunft unterscheidet die beiden Lagen",
+        385,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -4825,6 +4860,52 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "trotzdem.",
         befund=95,
         zuletzt=338,
+    ),
+    Entscheidung(
+        frage="Welcher Horizont heisst Marktumfeld",
+        zahl="Das Gate 'Regime-Aufteilung' teilt den Zeitraum ueber "
+             "'classify_regimes(window=480)' auf - eine **Kerzenzahl**, deren "
+             "Docstring sagt: 'bei 15-Minuten-Kerzen sind 480 rund fuenf "
+             "Tage'. Jede Gate-Zahl dieses Projekts steht aber auf "
+             "Tageskerzen, und dort sind 480 Kerzen rund **sechzehn Monate**. "
+             "Die Funktion erfaehrt das Intervall nicht, das Gate ruft sie "
+             "ohne Angabe.\n    Gemessen am Spitzenkandidaten (Trend 50 Tage "
+             "mit Konfluenz, BTC + ETH, Tageskerzen, 160 Trades, Schwelle "
+             "0,9):\n"
+             "      Fenster   Trades auf/ab/seit   geurteilt   schlechtester   Urteil\n"
+             "          480        106 / 47 /  7     2 von 3       4,505      bestanden\n"
+             "          120         71 / 65 / 24     3 von 3       3,170      bestanden\n"
+             "           45         53 / 48 / 59     3 von 3       1,740      bestanden\n"
+             "           30         52 / 32 / 76     3 von 3       1,234      bestanden\n"
+             "           25         56 / 24 / 80     3 von 3       0,000      durchgefallen\n"
+             "           10         66 / 19 / 75     3 von 3       0,000      durchgefallen\n"
+             "    **Das Urteil kippt zwischen 30 und 25 Tagen.** Und bei der "
+             "heutigen Vorgabe urteilt das Gate ueber **zwei von drei** "
+             "Umfeldern: Seitwaerts hat 7 Trades und faellt unter die "
+             "Zehnerschwelle, waehrend die Frage des Gates woertlich "
+             "'Funktioniert die Strategie in jedem Marktumfeld?' lautet "
+             "(Befund 385)",
+        warum="Zu entscheiden ist, welcher Horizont auf Tageskerzen "
+              "'Marktumfeld' heisst. Beide Lesarten sind vertretbar, und "
+              "**gegen** die kurzen Fenster spricht ein Einwand, der nicht "
+              "vom Ergebnis kommt: Der Kandidat ist eine 50-Tage-Trendregel. "
+              "Ein Fenster unter fuenfzig Tagen ordnet das Umfeld auf einem "
+              "Horizont ein, den die Strategie selbst handelt - dann misst "
+              "die Aufteilung dasselbe wie das Signal und ist keine "
+              "unabhaengige Probe mehr. Fuer die langen Fenster spricht "
+              "dasselbe Argument umgekehrt: Ein Mehrjahrestrend ist "
+              "unabhaengig von einer 50-Tage-Regel, aber er laesst Seitwaerts "
+              "fast leer, und dann prueft das Gate seine eigene Frage nur zu "
+              "zwei Dritteln.\n    **Geaendert wurde nichts.** Das Fenster "
+              "steht unveraendert bei 480, und es wird nicht verkuerzt, damit "
+              "etwas durchfaellt - so wenig wie etwas verlaengert wird, damit "
+              "etwas besteht. Geaendert ist, dass die Botschaft des Gates "
+              "Fenster und Abdeckung nennt ('2 von 3 Umfeldern geurteilt, "
+              "Fenster 480 Kerzen'), damit die Lage ohne diesen Eintrag zu "
+              "sehen ist. Die Richtung der Entscheidung ist die strengere: "
+              "Ein kuerzeres Fenster nimmt dem Kandidaten ein Gate, es gibt "
+              "ihm keines",
+        befund=385,
     ),
     Entscheidung(
         frage="Wochenverlustgrenze",

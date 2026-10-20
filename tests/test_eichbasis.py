@@ -217,8 +217,16 @@ class TestDieWacheAusBefund335IstDurch:
 
         assert alt == [], f"Entscheidung auf alter Messung: {alt}"
 
-    def test_es_sind_neun(self) -> None:
-        assert len(self._mit_fundstelle()) == 9
+    def test_es_sind_zehn(self) -> None:
+        """Hiess ``test_es_sind_neun``, bis Befund 385 eine dazugelegt hat.
+
+        Die Zahl ist kein Selbstzweck: Sie zwingt jeden, der dem Nutzer eine
+        Entscheidung mehr aufschreibt, das hier zu sehen und zu begruenden.
+        Die neue ist 'Welcher Horizont heisst Marktumfeld' - das Regimefenster
+        des Gates ist eine Kerzenzahl, die fuer 15-Minuten-Kerzen bemessen war,
+        und auf Tageskerzen haengt ein Urteil daran.
+        """
+        assert len(self._mit_fundstelle()) == 10
 
     def test_die_ohne_fundstelle_bleibt_draussen(self) -> None:
         from research.stand import ENTSCHEIDUNGEN

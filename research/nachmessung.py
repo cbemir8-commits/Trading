@@ -334,6 +334,11 @@ GELESEN: dict[str, int] = {
 #: spaetere Abschnitt als spaeter. Eine Wache, die dort alles meldet, meldet
 #: nichts.
 ENTSCHEIDUNGSBEGRIFFE: dict[str, tuple[str, ...]] = {
+    "Welcher Horizont heisst Marktumfeld": (
+        "Marktumfeld",
+        "Regime-Aufteilung",
+        "Regimefenster",
+    ),
     "Feste Schwellen auf laufenden Extrema": (
         "laufendes Extrem",
         "Schlechtestes Jahr",

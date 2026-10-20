@@ -34257,3 +34257,102 @@ Beheben eingebaut habe (383: das Monatsintervall, 384: der ueberschriebene
 Aufrufer). Beide Male war es ein Test, der breiter prueft, als ich gedacht
 hatte - einmal ueber **alle** Intervalle, einmal ueber eine **fremde**
 Zusicherung.
+
+## Dreihundertfuenfundachtzig. Das Marktumfeld ueber sechzehn Monate
+
+Fortsetzung der Suche aus Befund 384 - dieselbe M15-Annahme, diesmal nicht in
+einer Zeitspanne, sondern in einer **Kerzenzahl**. Und diesmal nicht in der
+Anzeige, sondern in einem **Gate**.
+
+`classify_regimes` nimmt `window=480` und sagt dazu:
+
+> ``window`` ist die Zahl Kerzen, ueber die der Trend gemessen wird - bei
+> **15-Minuten-Kerzen** sind 480 rund fuenf Tage.
+
+`gate_regime_split` ruft sie **ohne** Angabe. Die Funktion erfaehrt das
+Intervall nicht, und jede Gate-Zahl dieses Projekts steht auf Tageskerzen -
+dort sind 480 Kerzen rund **sechzehn Monate**. Was das Gate "Marktumfeld"
+nennt, ist auf dem gemeinten Intervall ein Mehrjahrestrend.
+
+### Gemessen auf dem Zulassungspfad
+
+Spitzenkandidat `Trend 50 Tage mit Konfluenz`, BTC + ETH, Tageskerzen, auf die
+Zulassungsreihe geschnitten, 160 Trades, Schwelle 0,9:
+
+| Fenster | Trades auf/ab/seit | geurteilt | schlechtester | Urteil |
+|---|---|---|---|---|
+| **480 (heute)** | 106 / 47 / **7** | **2 von 3** | 4,505 | bestanden |
+| 240 | 106 / 46 / 8 | 2 von 3 | 3,438 | bestanden |
+| 120 | 71 / 65 / 24 | 3 von 3 | 3,170 | bestanden |
+| 60 | 61 / 62 / 37 | 3 von 3 | 2,748 | bestanden |
+| 45 | 53 / 48 / 59 | 3 von 3 | 1,740 | bestanden |
+| 30 | 52 / 32 / 76 | 3 von 3 | 1,234 | bestanden |
+| **25** | 56 / 24 / 80 | 3 von 3 | **0,000** | **durchgefallen** |
+| 20 | 57 / 24 / 79 | 3 von 3 | 0,134 | durchgefallen |
+| 10 | 66 / 19 / 75 | 3 von 3 | 0,000 | durchgefallen |
+| 5 | 58 / 9 / 93 | 2 von 3 | 2,630 | bestanden |
+
+Zwei Dinge stehen da, und sie sind verschieden schwer.
+
+### Erstens: Das Urteil haengt am Fenster
+
+Zwischen 30 und 25 Tagen kippt es. **Das ist kein Fehler, den man wegmacht.**
+Es ist die Frage, welcher Horizont "Marktumfeld" heisst, und sie steht jetzt
+als Entscheidung im Register.
+
+Dazu gehoert ein Einwand, der **nicht** vom Ergebnis kommt: Der Kandidat ist
+eine **50-Tage**-Trendregel. Ein Fenster unter fuenfzig Tagen ordnet das Umfeld
+auf einem Horizont ein, den die Strategie selbst handelt - dann misst die
+Aufteilung dasselbe wie das Signal und ist keine unabhaengige Probe mehr. Das
+spricht fuer die langen Fenster.
+
+Umgekehrt spricht dasselbe Argument gegen sie: Ein Mehrjahrestrend ist von
+einer 50-Tage-Regel unabhaengig, laesst aber Seitwaerts fast leer.
+
+**Geaendert wurde nichts.** Das Fenster steht bei 480. Es wird nicht
+verkuerzt, damit etwas durchfaellt - so wenig wie etwas verlaengert wird, damit
+etwas besteht. Die Richtung ist hier ohnehin die strengere: Ein kuerzeres
+Fenster **nimmt** dem Kandidaten ein Gate.
+
+### Zweitens: Das Gate urteilt ueber zwei von drei Umfeldern
+
+Bei der heutigen Vorgabe hat Seitwaerts **7 Trades** und faellt unter die
+Zehnerschwelle. Die Frage des Gates lautet woertlich *"Funktioniert die
+Strategie in jedem Marktumfeld?"* - und das stand nur zwischen den Zeilen der
+Einzelheiten (`seitwaerts: nur 7 Trades`).
+
+Das ist behoben, ohne ein Urteil zu bewegen. Die Botschaft nennt jetzt Fenster
+und Abdeckung:
+
+    2 von 3 Umfeldern geurteilt, Fenster 480 Kerzen. aufwaerts: 106 Trades,
+    Faktor 4,56; abwaerts: 47 Trades, Faktor 4,50; seitwaerts: nur 7 Trades
+
+Wert und Status sind unveraendert (`pass`, 4,5046). Die 480 hat ausserdem einen
+Namen (`REGIMEFENSTER`), damit Gate und Funktion dieselbe Zahl nennen statt
+einer Vorgabe in einer Signatur.
+
+### Ein Nebenfund im Aussetzer-Zweig
+
+Zwei verschiedene Lagen landeten in derselben Botschaft. Wird jedes geurteilte
+Umfeld **ohne einen einzigen Verlust** gemessen, bleibt der Profitfaktor
+unendlich - und das Gate meldete dann *"Kein Marktumfeld mit genug Trades"*,
+wo dreissig standen. An echten Daten ist das praktisch unmoeglich; mit einer
+Attrappe aus lauter Gewinnen ist es sofort da, und genau daran ist mein erster
+Test gefallen.
+
+Der Status bleibt SKIP - ein uebersprungenes Gate zaehlt als bestanden (Befunde
+321/322), hier ist also kein Urteil zu holen, nur eine richtige Auskunft. Die
+Botschaft unterscheidet die beiden Lagen jetzt.
+
+Und die Attrappe war selbst der Fehler: Eine Handelsreihe ohne Verlust ist
+keine. Sie traegt jetzt Gewinner **und** Verlierer.
+
+### Ein Zaehlwaechter hat zurueckgemeldet
+
+`test_eichbasis.py::test_es_sind_neun` zaehlte die Entscheidungen mit
+Fundstelle. Mit dieser hier sind es **zehn**, und der Test heisst jetzt so.
+
+Die Zahl ist kein Selbstzweck: Sie zwingt jeden, der dem Nutzer eine
+Entscheidung **mehr** aufschreibt, das zu sehen und zu begruenden. Eine
+Entscheidungsliste, die still waechst, ist eine Aufgabenliste - und zwar eine,
+die niemand bestellt hat.

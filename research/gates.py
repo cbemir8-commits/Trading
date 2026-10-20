@@ -62,6 +62,20 @@ log = structlog.get_logger(__name__)
 #: Euler-Mascheroni-Konstante, gebraucht fuer den Deflated Sharpe Ratio.
 EULER_MASCHERONI = 0.5772156649015329
 
+#: Ueber wie viele **Kerzen** das Marktumfeld bestimmt wird.
+#:
+#: Die Zahl stand als Vorgabe in ``classify_regimes`` und war dort fuer
+#: 15-Minuten-Kerzen bemessen: 480 Kerzen sind dann rund fuenf Tage. Auf
+#: Tageskerzen - und darauf steht jede Gate-Zahl dieses Projekts - sind es
+#: rund sechzehn Monate (Befund 385).
+#:
+#: Sie steht hier und nicht nur als Vorgabe, damit Gate und Funktion
+#: **dieselbe** Zahl nennen: Die Botschaft des Gates fuehrt sie mit, und ein
+#: Leser sieht, auf welchem Horizont "Marktumfeld" gemeint ist. Geaendert wird
+#: sie nicht - das verschiebt ein Urteil und steht als Entscheidung im
+#: Register.
+REGIMEFENSTER = 480
+
 
 class GateStatus(StrEnum):
     PASS = "pass"
@@ -822,6 +836,12 @@ def gate_regime_split(
             message="Zu wenige Trades fuer eine Aufteilung nach Marktumfeld",
         )
 
+    # **Ohne Fensterangabe, also 480 Kerzen** (Befund 385). Auf Tageskerzen
+    # sind das rund sechzehn Monate statt der fuenf Tage, fuer die die Vorgabe
+    # einmal bemessen wurde. Geaendert wird das hier **nicht** - es verschiebt
+    # ein Urteil und steht als Entscheidung im Register. Was sich geaendert
+    # hat: Die Botschaft sagt jetzt, mit welchem Fenster sie urteilt und ueber
+    # wie viele Umfelder.
     regimes = classify_regimes(frame)
     buckets: dict[str, list[float]] = {"aufwaerts": [], "abwaerts": [], "seitwaerts": []}
 
@@ -833,6 +853,7 @@ def gate_regime_split(
     worst_name = ""
     worst_factor = math.inf
     details: list[str] = []
+    geurteilte = 0
 
     for name, values in buckets.items():
         if len(values) < 10:
@@ -841,30 +862,58 @@ def gate_regime_split(
         wins = sum(v for v in values if v > 0)
         losses = abs(sum(v for v in values if v <= 0))
         factor = wins / losses if losses > 0 else math.inf
+        geurteilte += 1
         details.append(f"{name}: {len(values)} Trades, Faktor {factor:.2f}")
         if factor < worst_factor:
             worst_factor, worst_name = factor, name
 
     if worst_factor is math.inf:
+        # Zwei verschiedene Lagen landen hier, und die Botschaft nannte nur
+        # eine (Befund 385): Entweder hatte **kein** Umfeld zehn Trades - oder
+        # jedes geurteilte war ohne einen einzigen Verlust, dann bleibt der
+        # Faktor unendlich. Der zweite Fall ist an echten Daten praktisch
+        # unmoeglich und mit einer Attrappe aus lauter Gewinnen sofort da; die
+        # Botschaft behauptete dann "zu wenige Trades", wo 30 standen.
+        #
+        # Der Status bleibt SKIP. Ein uebersprungenes Gate zaehlt als bestanden
+        # (Befunde 321/322), deshalb ist hier **kein** Urteil zu holen - nur
+        # eine richtige Auskunft.
+        ohne_verlust = geurteilte and all(
+            not any(v <= 0 for v in werte)
+            for werte in buckets.values()
+            if len(werte) >= 10
+        )
+        grund = (
+            "Kein Umfeld mit Verlusten - der Profitfaktor ist dort unendlich"
+            if ohne_verlust
+            else "Kein Marktumfeld mit genug Trades"
+        )
         return GateResult(
             name="Regime-Aufteilung",
             status=GateStatus.SKIP,
             value=0.0,
             threshold=t.min_regime_profit_factor,
-            message="Kein Marktumfeld mit genug Trades - " + "; ".join(details),
+            message=f"{grund} - " + "; ".join(details),
         )
 
     passed = worst_factor >= t.min_regime_profit_factor
+    # Wie viele der drei Umfelder wirklich geurteilt wurden. Heute sind es am
+    # Spitzenkandidaten **zwei** - Seitwaerts hat 7 Trades und faellt heraus -,
+    # und die Frage des Gates lautet "in jedem Marktumfeld?". Das stand nur
+    # zwischen den Zeilen der Einzelheiten (Befund 385).
+    abdeckung = (
+        f"{geurteilte} von 3 Umfeldern geurteilt, Fenster {REGIMEFENSTER} Kerzen"
+    )
     return GateResult(
         name="Regime-Aufteilung",
         status=GateStatus.PASS if passed else GateStatus.FAIL,
         value=worst_factor,
         threshold=t.min_regime_profit_factor,
         message=(
-            "; ".join(details)
+            f"{abdeckung}. " + "; ".join(details)
             if passed
-            else f"Schwaechstes Umfeld '{worst_name}' mit Faktor {worst_factor:.2f}. "
-            + "; ".join(details)
+            else f"Schwaechstes Umfeld '{worst_name}' mit Faktor "
+            f"{worst_factor:.2f}. {abdeckung}. " + "; ".join(details)
         ),
     )
 
@@ -1419,13 +1468,22 @@ def deflated_sharpe_ratio(
 #  Hilfsfunktionen
 # ---------------------------------------------------------------------------
 def classify_regimes(
-    frame: pd.DataFrame, *, window: int = 480, threshold_pct: float = 5.0
+    frame: pd.DataFrame, *, window: int = REGIMEFENSTER, threshold_pct: float = 5.0
 ) -> pd.DataFrame:
     """Teilt den Zeitraum in Aufwaerts-, Abwaerts- und Seitwaertsphasen.
 
-    ``window`` ist die Zahl Kerzen, ueber die der Trend gemessen wird - bei
-    15-Minuten-Kerzen sind 480 rund fuenf Tage. ``threshold_pct`` ist die
+    ``window`` ist die Zahl **Kerzen**, ueber die der Trend gemessen wird -
+    bei 15-Minuten-Kerzen sind 480 rund fuenf Tage. ``threshold_pct`` ist die
     Bewegung, ab der von einem Trend gesprochen wird.
+
+    **Und auf Tageskerzen sind 480 rund sechzehn Monate** (Befund 385). Die
+    Vorgabe ist eine Kerzenzahl, diese Funktion erfaehrt das Intervall nicht,
+    und ``gate_regime_split`` ruft sie ohne Angabe - jede Gate-Zahl dieses
+    Projekts steht aber auf Tageskerzen. Was dort "Marktumfeld" heisst, ist
+    damit ein Mehrjahrestrend und nicht eine Phase. Gemessen in 385, und das
+    Urteil haengt daran: ab 45 Tagen bestanden, bei 25 durchgefallen. Welcher
+    Horizont gemeint ist, steht als Entscheidung im Register und wird hier
+    **nicht** gewaehlt.
 
     Bewusst rueckwaertsgerichtet (``rolling``): Die Einordnung darf nur Daten
     verwenden, die zu diesem Zeitpunkt vorlagen - sonst waere die Aufteilung
