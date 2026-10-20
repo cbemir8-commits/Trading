@@ -200,6 +200,14 @@ class TestDerEintragNenntJetztBeidePunkte:
         assert "wachsen mit der Historie" in eintrag
 
     def test_die_fundstelle_ist_nachgezogen(self) -> None:
+        """Die Erstmessung bleibt 162, die massgebliche wandert mit jeder
+        Nachmessung - darauf kommt es an, wenn jemand die Zahlen nachschlaegt
+        (Befund 130).
+
+        Die 336 stand hier, bis Befund 386 den Riss zerlegt hat: 2 von 2557
+        Fenstern am Perpetual-Punkt, keines am Spot. Wer diese Zahl aendert,
+        soll den Test sehen und begruenden koennen, was er nachgemessen hat.
+        """
         from research.stand import ENTSCHEIDUNGEN
 
         e = next(
@@ -208,4 +216,4 @@ class TestDerEintragNenntJetztBeidePunkte:
         )
 
         assert e.befund == 162
-        assert e.massgeblich == 336
+        assert e.massgeblich == 386

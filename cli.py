@@ -11291,14 +11291,23 @@ def jahresbild(
         help="Symbole, durch Komma getrennt.",
     ),
     intervall: str = typer.Option("D", "--intervall", "-i"),
+    spot: bool = typer.Option(
+        False, "--spot", help="Am Spot-Punkt rechnen: kein Funding, kein Hebel."
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Woraus besteht das schlechteste Jahr?
 
-    Von den vier Gates, an denen der Spitzenkandidat scheitert, ist dieses der
-    schmalste Fehlschlag im System: -10,32 % gegen -10,00 %. Bei so einem
-    Abstand ist die Frage, **woraus** die Zahl besteht, mehr wert als jeder
-    weitere Suchlauf.
+    **Am Perpetual-Punkt** ist dieses Gate der schmalste Fehlschlag im System:
+    -10,32 % gegen -10,00 %. Bei so einem Abstand ist die Frage, **woraus** die
+    Zahl besteht, mehr wert als jeder weitere Suchlauf.
+
+    Hier stand "von den vier Gates, an denen der Spitzenkandidat scheitert",
+    und welcher Betriebspunkt gemeint ist, stand nirgends (Befund 386). Beides
+    war ueberholt: Seit Befund 311 gibt es zwei Punkte, am massgeblichen
+    **Spot**-Punkt besteht dieses Gate mit -9,61 %, und dort scheitern zwei
+    Gates, nicht vier. Der gerechnete Punkt steht jetzt in der Kopfzeile,
+    ``--spot`` waehlt den anderen.
 
     Zwei sehr verschiedene Lagen sehen im Gate gleich aus:
 
@@ -11340,19 +11349,27 @@ def jahresbild(
 
     frames = common_range(roh)
     genome = spitzenkandidat()
-    configs = {
-        x: BacktestConfig(
-            instrument=_fallback_instrument(_bybit_kontrakt(x)),
-            risk=settings.risk, initial_equity=Decimal("500"),
-            enforce_risk_limits=True,
-            kalender=_terminkalender(settings) or None,
-        )
-        for x in symbole
-    }
+    # Derselbe Weg wie in 'cli stand' und 'cli anatomie': Der Spot-Punkt ist
+    # kein anderer Kandidat, sondern derselbe ohne Funding und ohne Hebel.
+    if spot:
+        genome = _ohne_hebel(genome)
+        configs = _spotconfigs(symbole, settings)
+    else:
+        configs = {
+            x: BacktestConfig(
+                instrument=_fallback_instrument(_bybit_kontrakt(x)),
+                risk=settings.risk, initial_equity=Decimal("500"),
+                enforce_risk_limits=True,
+                kalender=_terminkalender(settings) or None,
+            )
+            for x in symbole
+        }
 
     console.print(
         f"\n[bold]Jahresbild[/] {' + '.join(symbole)} {interval_obj.label}\n"
-        f"  Strategie   {genome.name}\n"
+        f"  Strategie      {genome.name}\n"
+        f"  Betriebspunkt  "
+        f"{'Spot (kein Funding, kein Hebel)' if spot else 'Perpetual'}\n"
     )
 
     bericht = run_portfolio_walkforward(

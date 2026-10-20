@@ -3835,6 +3835,60 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Auskunft unterscheidet die beiden Lagen",
         385,
     ),
+    # Befund 386: ein Befehl, der gebaut und nie gelaufen ist - und was er
+    # beim ersten Lauf ueber den schmalsten Fehlschlag des Systems sagt.
+    Richtung(
+        "Der Befehl zum schlechtesten Jahr war nie gelaufen",
+        "'cli jahresbild' beantwortet die Frage, die sein eigener Docstring "
+        "fuer mehr wert haelt als jeden weiteren Suchlauf: Besteht der "
+        "Fehlschlag von 'Schlechtestes Jahr' aus **einer Spitze** oder einer "
+        "**Hochebene**? Zwei sehr verschiedene Lagen sehen im Gate gleich "
+        "aus, weil es nur das Minimum zurueckgibt. Im Register stand dazu "
+        "nichts - keine Fensterzahl, kein Anteil, kein Vergleich der "
+        "Rechenwege. Die dritte Stelle dieser Reihe, an der etwas gebaut und "
+        "nicht abgeholt wurde (nach 379 bei mir selbst und 382 im "
+        "Dashboard). Gelaufen an beiden Betriebspunkten, BTC + ETH "
+        "Tageskerzen: 2557 Fenster, davon unter -10 % **zwei am Perpetual- "
+        "und keines am Spot-Punkt**; schlechtestes -10,32 gegen -9,61, "
+        "zweites getrenntes -6,38 gegen -5,04, Median +11,51 gegen +12,92 "
+        "(die Tabelle steht bei der Entscheidung 'Feste Schwellen auf "
+        "laufenden Extrema' - hier nicht, weil der Kurzbericht Archiveintraege "
+        "zeilengenau wegwirft und 257 der 258 Richtungen einzeilig sind). "
+        "**Es ist eine Spitze.** Zwei von 2557 Fenstern liegen unter der "
+        "Schwelle, und es sind dieselbe Episode einen Tag versetzt "
+        "(2021-11-08 bis 2022-11-08). Das naechste Fenster, das sich damit "
+        "**nicht** ueberlappt, steht bei -6,38 % - 3,62 Punkte innerhalb der "
+        "Schwelle. Am massgeblichen Spot-Punkt liegt **kein einziges** "
+        "darunter. Das steht jetzt bei der Entscheidung 'Feste Schwellen auf "
+        "laufenden Extrema', denn genau die informiert es: Gerissen ist nicht "
+        "eine Eigenschaft der Strategie, sondern eine Ausrichtung gegen ein "
+        "laufendes Extrem. **Und die Rechnung des Gates stimmt** - ein "
+        "negatives Ergebnis, das aufgeschrieben gehoert, damit niemand "
+        "dieselbe Sorge noch einmal hat. Das Gate schaetzt die Fensterbreite "
+        "ueber **Indizes** ('len(curve) * 12 / total_months'), dieser Befehl "
+        "rechnet sie am **Kalender**; der Unterschied liegt bei 0,002 Punkten "
+        "(Perpetual) und 0,001 (Spot). Der Verdacht, der den Befehl "
+        "veranlasst hat, ist damit ausgeraeumt. Behoben ist, was der "
+        "Befehl verschwieg: Er nannte **keinen Betriebspunkt** und rechnete "
+        "nur den Perpetual - jetzt steht der gerechnete Punkt in der "
+        "Kopfzeile und '--spot' waehlt den anderen (derselbe Weg wie in 'cli "
+        "stand': derselbe Kandidat ohne Funding und ohne Hebel). Sein "
+        "Docstring sprach von 'den vier Gates, an denen der Spitzenkandidat "
+        "scheitert' - ueberholt seit 311/336, am Spot-Punkt sind es zwei, und "
+        "dieses ist keines davon. **Geprueft und verworfen**: "
+        "'alle_geschnitten' aus der Zulassungsreihe (363/364) fehlt in diesem "
+        "Befehl. Eingebaut wurde es **nicht**, weil cut und uncut identische "
+        "Zahlen geben - gleicher Gatewert, gleiche 2557 Fenster -, denn das "
+        "schlechteste Jahr liegt weit vom Datenende. Eine Aenderung ohne "
+        "Wirkung ist eine Aenderung zu viel. **Mein Fehler in diesem "
+        "Durchgang**: Die Config-Zuweisung mit 'str.replace' ersetzt, obwohl "
+        "der Block in 'cli.py' viermal vorkommt (die Zeile 'frames = "
+        "common_range(roh)' 24-mal). Drei unbeteiligte Befehle bekamen ein "
+        "'if spot:', ruff meldete drei 'F821 Undefined name'. Zurueckgenommen "
+        "mit 'git checkout' und mit dem Edit-Werkzeug wiederholt, das "
+        "Eindeutigkeit erzwingt - genau dafuer ist es da",
+        386,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -4494,7 +4548,24 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
              "und der Rueckgang hat 2,13 statt 1,36 - also 57 % mehr "
              "Spielraum, als der Satz oben annimmt. Die Richtung des Befundes "
              "steht unveraendert (alle drei wachsen mit der Historie), nur "
-             "die Dringlichkeit haengt am Betriebspunkt",
+             "die Dringlichkeit haengt am Betriebspunkt"
+             "\n    **Und der Riss ist eine Spitze, keine Hochebene** (386). "
+             "Das Gate gibt nur das Minimum zurueck, also sah man nicht, "
+             "woraus die -10,32 % bestehen. Alle rollierenden "
+             "Zwoelfmonatsfenster, am Kalender gerechnet:"
+             "\n                           Perpetual        Spot"
+             "\n      Fenster gesamt            2557        2557"
+             "\n      davon unter -10 %            2           0"
+             "\n      schlechtestes           -10,32       -9,61"
+             "\n      zweites, getrennt        -6,38       -5,04"
+             "\n      Median                  +11,51      +12,92"
+             "\n    Die zwei Fenster sind dieselbe Episode, einen Tag "
+             "versetzt (2021-11-08 bis 2022-11-08); das naechste, das sich "
+             "damit nicht ueberlappt, liegt 3,62 Punkte **innerhalb** der "
+             "Schwelle. Fuer die Entscheidung heisst das: Hier ist nicht eine "
+             "Eigenschaft der Strategie gerissen, sondern eine einzelne "
+             "unguenstige Ausrichtung gegen ein laufendes Extrem - genau der "
+             "Fall, den die Frage oben meint",
         warum="Ein Maximum kann nicht fallen und ein Minimum nicht steigen. "
               "Wer laenger misst, misst zwangslaeufig ein groesseres Extrem - "
               "unabhaengig davon, ob die Strategie besser oder schlechter "
@@ -4510,7 +4581,7 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
               "faellt nicht hier. **Gelockert wird nichts**, solange sie "
               "nicht gefallen ist.",
         befund=162,
-        zuletzt=336,
+        zuletzt=386,
     ),
     Entscheidung(
         frage="Mindestrendite von 15 % im Jahr",

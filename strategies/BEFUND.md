@@ -34356,3 +34356,185 @@ Die Zahl ist kein Selbstzweck: Sie zwingt jeden, der dem Nutzer eine
 Entscheidung **mehr** aufschreibt, das zu sehen und zu begruenden. Eine
 Entscheidungsliste, die still waechst, ist eine Aufgabenliste - und zwar eine,
 die niemand bestellt hat.
+
+## Dreihundertsechsundachtzig. Der Befehl zum schlechtesten Jahr war nie gelaufen
+
+`cli jahresbild` beantwortet eine Frage, die sein eigener Docstring fuer mehr
+wert haelt als jeden weiteren Suchlauf:
+
+> Zwei sehr verschiedene Lagen sehen im Gate gleich aus: **eine Spitze** - ein
+> einzelnes ungluecklich ausgerichtetes Fenster - oder eine **Hochebene**, bei
+> der viele Fenster unter der Schwelle liegen.
+
+Das Gate `gate_worst_year` gibt nur das Minimum zurueck. Ob dieses Minimum
+allein steht oder in Gesellschaft, ist daran nicht zu sehen - und es ist der
+Unterschied zwischen "eine Ausrichtung ist schiefgegangen" und "die Strategie
+kann das".
+
+Im Register stand dazu **nichts**. Kein Eintrag nennt eine Fensterzahl, einen
+Anteil darunter oder einen Vergleich der beiden Rechenwege; die Suche nach
+`jahresbild`, `Fensterbreite`, `2557` und `6,38` bleibt leer. Der Befehl war
+gebaut, mit Docstring, mit Tabelle, mit Urteilsfunktion - und nie gelaufen.
+
+Das ist die dritte Stelle dieser Reihe mit demselben Muster (Befund 351: *eine
+Messung, die nur in einem Modul existiert, erreicht niemanden*). In 379 war es
+meine eigene `Vereinheitlichung`, in 382 eine Meldung im Dashboard ohne
+Empfaenger. Hier ist es ein ganzer Befehl.
+
+### Gelaufen, an beiden Punkten
+
+```
+                       Perpetual        Spot
+  Fenster gesamt            2557        2557
+  davon unter -10 %            2           0
+  schlechtestes           -10,32       -9,61
+  zweites, getrennt        -6,38       -5,04
+  Median                  +11,51      +12,92
+  bestes                  +69,10      +71,50
+```
+
+**Es ist eine Spitze.** Zwei von 2557 Fenstern liegen unter der Schwelle - 0,1
+%. Und es sind nicht zwei Episoden, sondern dieselbe, einen Tag versetzt:
+2021-11-08 bis 2022-11-08. Das naechste Fenster, das sich damit **nicht**
+ueberlappt, steht bei -6,38 %, also 3,62 Punkte **innerhalb** der Schwelle.
+
+`_zweites()` rechnet diese Trennung ausdruecklich, und das ist der Grund, warum
+die Zahl etwas wert ist: Ein "zweitschlechtestes Fenster" ohne Trennung waere
+derselbe Einbruch mit einem Tag Versatz und wuerde jede Spitze als Hochebene
+aussehen lassen.
+
+**Am massgeblichen Spot-Punkt gibt es den Riss nicht.** Kein einziges Fenster
+liegt dort unter -10 %; das schlechteste haelt mit 0,39 Punkten Reserve.
+
+### Wofuer das zaehlt
+
+Nicht fuer ein Gate - der Wert aendert sich durch eine Zerlegung nicht. Es
+zaehlt fuer die Entscheidung **"Feste Schwellen auf laufenden Extrema"**, und
+dort steht es jetzt.
+
+Die Entscheidung fragt, ob eine feste Schwelle auf einem laufenden Extrem
+gemeint ist ("so viel Verlust nie, egal wie lange wir zusehen") oder eine, die
+sich auf einen festen Zeitraum bezieht. Ein Riss, der an **einer** Episode
+haengt, ist dafuer ein anderes Argument als einer, der an der Strategie haengt:
+Im ersten Fall misst das Gate genau das, was eine laufende Schwelle messen
+soll - die ungluecklichste Ausrichtung, die die Historie hergibt. Im zweiten
+waere es eine Eigenschaft, und eine Variante wuerde sie nicht los.
+
+Die Entscheidung faellt damit nicht. Sie ist besser gestellt.
+
+### Die Rechnung des Gates stimmt - ein negatives Ergebnis
+
+Der Verdacht, der diesen Befehl ueberhaupt veranlasst hat, steht in seinem
+eigenen Docstring: Das Gate schaetzt die Fensterbreite **ueber Indizes**,
+
+```python
+fenster = int(len(curve) * 12 / total_months)
+```
+
+also ueber eine durchschnittliche Kerzen-pro-Monat-Annahme. Dieser Befehl
+rechnet dieselben Fenster am **Kalender**, mit echten Zeitstempeln.
+
+```
+Gate rechnet ueber Indizes: -10.32 %. Am Kalender: -10.32 %.
+Unterschied -0.00 Punkte
+```
+
+0,002 Punkte am Perpetual-Punkt, 0,001 am Spot. Der Verdacht ist ausgeraeumt.
+
+Das gehoert aufgeschrieben, auch - gerade - weil nichts zu reparieren war. Die
+Bauart ist die von Befund 372: Ein gemessenes Nichts verhindert, dass jemand
+dieselbe Sorge noch einmal hat und dieselbe Stunde noch einmal ausgibt.
+
+### Behoben ist, was der Befehl verschwieg
+
+Er nannte **keinen Betriebspunkt**. Gerechnet hat er den Perpetual; in der
+Kopfzeile stand nur der Strategiename. Das ist die Lehre aus Befund 336 - eine
+Gate-Zahl ohne Betriebspunkt ist keine Zahl -, und sie war hier nicht
+angewandt. Jetzt steht der gerechnete Punkt in der Kopfzeile, und `--spot`
+waehlt den anderen:
+
+```
+Jahresbild BTCUSD_BITSTAMP + ETHUSD_BITSTAMP 1d
+  Strategie      Trend 50 Tage mit Konfluenz
+  Betriebspunkt  Spot (kein Funding, kein Hebel)
+```
+
+Der Spot-Punkt ist dabei kein anderer Kandidat, sondern derselbe ohne Funding
+und ohne Hebel - `_ohne_hebel` und `_spotconfigs`, derselbe Weg wie in `cli
+stand` und `cli anatomie`.
+
+Und sein Docstring sprach von *"den vier Gates, an denen der Spitzenkandidat
+scheitert"*. Das war ueberholt: Befund 311 hat die zwei Betriebspunkte
+eingefuehrt, 336 die Zahlen beider gemessen, und am Spot-Punkt scheitern
+**zwei** Gates - dieses ist keines davon. Der alte Satz ist nicht geloescht,
+sondern als ueberholt vermerkt, mit Fundstelle; wer die alte Zahl sucht, soll
+finden, was aus ihr wurde.
+
+### Geprueft und verworfen
+
+`alle_geschnitten` aus der Zulassungsreihe (Befunde 363/364) fehlt in diesem
+Befehl, waehrend acht andere Dateien es bekommen haben. Das sah nach einer
+Luecke aus.
+
+Gemessen gibt cut und uncut **identische** Zahlen: gleicher Gatewert, gleiche
+2557 Fenster, dieselbe Episode. Der Grund ist einfach - das schlechteste Jahr
+liegt mit 2021-11 bis 2022-11 weit vom Datenende, und der Walk-Forward
+schneidet die Beine ohnehin.
+
+Eingebaut wurde es deshalb **nicht**. Eine Aenderung ohne Wirkung ist eine
+Aenderung zu viel, und sie kostet spaeter jemanden die Frage, warum sie da
+steht. Der Test haelt das Ergebnis fest, damit der naechste Durchgang nicht
+dasselbe prueft.
+
+### Mein Fehler in diesem Durchgang
+
+Die Config-Zuweisung habe ich mit einem blinden `str.replace` ersetzt. Der
+Block kommt in `cli.py` **viermal** vor, die Zeile `frames = common_range(roh)`
+24-mal. Drei unbeteiligte Befehle bekamen ein `if spot:`, auf das sie keinen
+Parameter haben; ruff meldete drei `F821 Undefined name 'spot'`.
+
+Zurueckgenommen mit `git checkout cli.py`, und alle drei Aenderungen mit dem
+`Edit`-Werkzeug wiederholt, das Eindeutigkeit erzwingt und bei vier Treffern
+abbricht. Genau dafuer ist es da, und ich hatte es umgangen, weil eine
+Ersetzung schneller aussah.
+
+Dass ruff es gefunden hat, ist Glueck: `F821` greift, weil der Name wirklich
+fehlt. Haette der Nachbarbefehl zufaellig einen Parameter `spot` gehabt, waere
+eine stille Verhaltensaenderung in einem Befehl entstanden, den ich nicht
+angesehen habe.
+
+### Mein zweiter Fehler, und was ein Waechter darueber beigebracht hat
+
+Die Tabelle oben stand zuerst **im Archiveintrag** des Registers, mit
+Zeilenumbruechen. Darauf ist `test_kurzbericht` gefallen.
+
+`Lage.bericht(kurz=True)` wirft die Archiveintraege **zeilengenau** weg:
+
+```python
+archiv = {f"  {r}" for r in (*GESCHLOSSEN, *BEHOBEN)}
+```
+
+Ein mehrzeiliger Eintrag passt auf keine einzelne Zeile. Er waere im
+Kurzbericht **stehen geblieben** - und zwar genau das, was dort wegfallen soll.
+
+Nachgezaehlt: **257 der 258** Richtungen sind einzeilig, meine war die
+Ausnahme. Umgekehrt tragen **9 von 11** Entscheidungen eine Tabelle, und die
+bleiben im Kurzbericht stehen. Das ist keine Formsache, sondern die Arbeitsweise
+der beiden Register: Das Archiv ist Prosa zum Nachschlagen, die Entscheidungen
+sind das, was der Nutzer lesen **muss**.
+
+Die Tabelle gehoert also dorthin, wo sie jetzt steht - bei der Entscheidung -,
+und die Zahlen stehen im Archiveintrag als Satz. Ein Test haelt beides fest,
+damit der naechste Eintrag mit einer Tabelle es nicht an der Suite lernt.
+
+### Ein zweiter Zaehlwaechter hat zurueckgemeldet
+
+`test_extremaschwellen.py::test_die_fundstelle_ist_nachgezogen` nagelt die
+massgebliche Fundstelle der Entscheidung fest, bisher auf 336. Mit dieser
+Zerlegung ist es 386.
+
+Das ist die Vorrichtung aus Befund 130 bei der Arbeit: Die Erstmessung bleibt
+162, die massgebliche wandert mit jeder Nachmessung, und wer sie verschiebt,
+muss den Test sehen und sagen koennen, was er nachgemessen hat. Genau dieser
+Eintrag hat zwei Laeufe eine ueberholte Tabelle lesen lassen, bevor es die
+Vorrichtung gab.
