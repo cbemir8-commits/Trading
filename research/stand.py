@@ -3977,6 +3977,47 @@ BEHOBEN: tuple[Richtung, ...] = (
         "weil dieser Unsinn gross genug war; eine Abweichung von 10 % haette "
         "ich uebernommen. Gerechnet wird jetzt auf dem echten Buch",
         388,
+        zuletzt=389,
+    ),
+    # Befund 389: zwei Zahlen fuer dieselbe Frage, je eine pro Befehl - und
+    # die groessere stand auf dem Statusschirm.
+    Richtung(
+        "Abmachung und Rechnung standen nie nebeneinander",
+        "Befund 387 hat das Zielfenster auf der Zulassungsreihe bei 224 "
+        "Versuchen gemessen, 388 gezeigt, woran die Zahl haengt. Gedruckt "
+        "wurde beides **getrennt**: 'cli stand' die Abmachung des Plans "
+        "('73 von 100 verbraucht, 27 bleiben, Abbruch bei 230'), 'cli abstand' "
+        "die Rechnung ('es bleiben 21') - und kein Befehl nannte die "
+        "Gegenzahl. Wer nur den Statusschirm ansah, und das ist der Befehl "
+        "fuer genau diese Frage, hatte die **groessere** der beiden Zahlen. "
+        "Gebaut ist 'Suchbudget.gegen(versuche, fenster)': Es rechnet, welche "
+        "der beiden Grenzen bindet, und sagt es in einem Satz - mit allen vier "
+        "Faellen (Rechnung strenger, Abmachung strenger, beide gleich, keine "
+        "Rechnung vorhanden). 'cli abstand --zielfenster' druckt es jetzt "
+        "direkt unter dem Fenster. **Auf dem Statusschirm steht keine Zahl**, "
+        "sondern wo sie gerechnet wird: Der Docstring von 'cli stand' "
+        "verspricht 'Die Zahlen werden gemessen, nicht gepflegt - nichts davon "
+        "kann veralten, ohne dass es auffaellt', und die 224 haengt an der "
+        "wirksamen Stichprobe, also an einem Lauf. Eine gepflegte 224 dort "
+        "waere genau der Mangel, den 387 und 388 behoben haben. **Die "
+        "Abmachung bleibt unangetastet**: Faellt die Rechnung lockerer aus, "
+        "sagt der Satz ausdruecklich, dass das Budget nicht erhoeht wird, weil "
+        "die Rechnung es zulaesst - eine vorab genannte Zahl, die sich "
+        "nachtraeglich nachgeben laesst, ist keine. **Gegengeprueft und in "
+        "Ordnung**: Der knappe Fehlschlag der Messlatte (14,339 gegen 15) ist "
+        "**echt** und kein Rechenartefakt. 'cagr_pct' nimmt die Spanne der "
+        "Kapitalkurve; beide anderen vertretbaren Spannen - Testfenster "
+        "(2018-08-19 bis 2026-08-19) und Trades (2018-08-29 bis 2026-08-29) - "
+        "sind auf den Tag gleich lang, 2922 Tage und damit 8,0000 Jahre, und "
+        "ergeben aus derselben Gesamtrendite 14,3339 % gegen die gemeldeten "
+        "14,3391 %. Das sind 0,005 Punkte gegen eine Luecke von 0,66; der "
+        "Zeitraum ist nicht die Ursache. **Mein Fehler dabei**: Mein erster "
+        "Einbau rief 'gegen' auch dann, wenn schon heute kein Weg traegt, und "
+        "haette dort 'die Rechnung liegt nicht vor - es gilt die Abmachung' "
+        "gedruckt. Das ist der **lockerste** Satz im schlimmsten Fall. "
+        "Gefunden habe ich es beim Durchlesen der vier Faelle, nicht im Lauf; "
+        "verglichen wird jetzt nur, wenn ein Fenster existiert",
+        389,
     ),
 )
 
@@ -4562,6 +4603,62 @@ class Suchbudget:
 
     def erschoepft(self, versuche: int) -> bool:
         return versuche >= self.grenze
+
+    def gegen(self, versuche: int, fenster: int | None) -> str:
+        """Welche der beiden Grenzen bindet - die Abmachung oder die Rechnung.
+
+        **Der Vergleich stand nirgends** (Befund 389). Befund 387 hat
+        gemessen, dass das Zielfenster auf der Zulassungsreihe bei 224
+        Versuchen schliesst, waehrend der Plan bis 230 laeuft; 388 hat
+        gezeigt, woran diese Zahl haengt. Gedruckt wurde beides getrennt -
+        ``cli stand`` die Abmachung ("27 bleiben"), ``cli abstand`` die
+        Rechnung ("es bleiben 21") -, und wer nur einen der beiden Befehle
+        laufen liess, hatte eine Zahl ohne ihre Gegenzahl.
+
+        ``fenster`` ist ``None``, wenn es nicht gerechnet werden konnte; dann
+        gilt die Abmachung, und das steht auch so da. Eine fehlende Rechnung
+        ist kein Grund, die groessere Zahl stillschweigend zu nehmen.
+        """
+        rest = self.rest(versuche)
+        if fenster is None:
+            return (
+                f"Die Rechnung liegt hier nicht vor - es gilt die Abmachung: "
+                f"{rest} von {self.umfang}. Was das Zielfenster sagt, rechnet "
+                f"'cli abstand --zielfenster'."
+            )
+        offen = max(0, fenster - versuche)
+        if fenster < self.grenze:
+            return (
+                f"**Die Rechnung ist strenger als die Abmachung**: Das "
+                f"Zielfenster schliesst bei {fenster}, der Plan bei "
+                f"{self.grenze} - es bleiben {offen} statt {rest}. Die "
+                f"letzten {self.grenze - fenster} des Plans sind rechnerisch "
+                f"vergeben."
+            )
+        if fenster > self.grenze:
+            return (
+                f"Die Abmachung ist strenger als die Rechnung: Der Plan bricht "
+                f"bei {self.grenze} ab, das Zielfenster traegt bis {fenster}. "
+                f"Es bleiben {rest}, und das ist eine Abmachung - sie wird "
+                f"nicht erhoeht, weil die Rechnung es zulaesst."
+            )
+        return (
+            f"Abmachung und Rechnung sagen dasselbe: Abbruch bei "
+            f"{self.grenze}, es bleiben {rest}."
+        )
+
+    #: Die Gegenzahl, ohne eine Zahl zu pflegen (Befund 389).
+    #:
+    #: ``cli stand`` verspricht in seinem eigenen Docstring: *"Die Zahlen
+    #: werden gemessen, nicht gepflegt ... Nichts davon kann veralten, ohne
+    #: dass es auffaellt."* Die 224 hier hinzuschreiben waere genau so eine
+    #: gepflegte Zahl - und sie haengt an der wirksamen Stichprobe (388), also
+    #: an einem Lauf. Stattdessen steht hier, **wo** sie gerechnet wird.
+    HINWEIS = (
+        "Das ist die Abmachung aus dem Plan. Die Rechnung kann strenger sein "
+        "- was das Zielfenster zulaesst, sagt 'cli abstand --spot "
+        "--zielfenster'."
+    )
 
     def zeile(self, versuche: int) -> str:
         if self.erschoepft(versuche):
@@ -5970,6 +6067,7 @@ class Lage(Gatebilanz):
             f"{self.geurteilt_ehrlich}{self.marke}",
             f"  Versuche   {self.versuche}",
             f"  Suchbudget {BUDGET.zeile(self.versuche)}",
+            f"             [dim]{BUDGET.HINWEIS}[/]",
             "",
             self.urteil(),
             *self._aussichtszeilen(),

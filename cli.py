@@ -5195,6 +5195,19 @@ def abstand(
                 f"hinaus, mehr Suche nicht.[/]\n"
             )
 
+        # **Und wie sie zur Abmachung steht** (Befund 389). Die Rechnung stand
+        # hier, der Plan in 'cli stand' - zwei Zahlen fuer dieselbe Frage, je
+        # eine pro Befehl. Wer nur einen laufen liess, hatte eine Zahl ohne
+        # ihre Gegenzahl, und die groessere stand auf dem Statusschirm.
+        #
+        # Ausgelassen wird der Vergleich nur, wenn schon heute kein Weg
+        # traegt: Dann ist das Fenster zu und nicht weiter als der Plan, und
+        # die rote Zeile darueber sagt es deutlicher.
+        if grenze is not None:
+            from research.stand import BUDGET
+
+            console.print("[dim]" + BUDGET.gegen(trials, grenze.versuche) + "[/]\n")
+
         # **Und um wie viel** (Befund 388). Der Satz darueber stand ohne Zahl
         # da, und die Zahl ist der ganze Punkt: Bei 114 wirksamen Trades
         # traegt noch ein Weg, bei 113 keiner mehr - die verbleibenden

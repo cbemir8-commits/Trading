@@ -34812,3 +34812,106 @@ Die Lehre ist nicht neu, sie ist nur teuer: **Ein nachgebautes Buch ist keine
 Messung.** Der echte Lauf kostet 15 Sekunden, und das Buch steht jetzt mit
 seinen gemessenen Zahlen in `tests/test_stichprobenrand.py` - samt dem Vermerk,
 woran der erste Anlauf gescheitert ist.
+
+## Dreihundertneunundachtzig. Abmachung und Rechnung standen nie nebeneinander
+
+Befund 387 hat das Zielfenster auf der Zulassungsreihe bei 224 Versuchen
+gemessen, 388 gezeigt, woran diese Zahl haengt. Gedruckt wurde beides
+**getrennt**:
+
+```
+cli stand     Suchbudget 73 von 100 verbraucht, 27 bleiben (Abbruch bei 230).
+cli abstand   Das Fenster schliesst sich bei 224 Versuchen ... es bleiben 21.
+```
+
+Kein Befehl nannte die Gegenzahl. Und wer nur den Statusschirm ansah - also den
+Befehl, der die Frage *"wo stehen wir"* beantworten soll -, hatte die
+**groessere** der beiden Zahlen.
+
+Das ist nicht derselbe Mangel wie 387. Dort war eine Zahl auf der falschen
+Reihe gerechnet; hier sind beide Zahlen richtig, stehen nur nie zusammen. Der
+Effekt ist derselbe: Wer steuert, steuert nach der lockeren.
+
+### Die vier Faelle
+
+`Suchbudget.gegen(versuche, fenster)` rechnet, welche der beiden Grenzen bindet:
+
+```
+Rechnung strenger   "Das Zielfenster schliesst bei 224, der Plan bei 230 -
+                     es bleiben 21 statt 27. Die letzten 6 des Plans sind
+                     rechnerisch vergeben."
+Abmachung strenger  "Der Plan bricht bei 230 ab, das Zielfenster traegt bis
+                     349. Es bleiben 27, und das ist eine Abmachung - sie wird
+                     nicht erhoeht, weil die Rechnung es zulaesst."
+beide gleich        "Abmachung und Rechnung sagen dasselbe."
+keine Rechnung      "Die Rechnung liegt hier nicht vor - es gilt die
+                     Abmachung."
+```
+
+Der zweite Fall ist nicht hypothetisch: Auf dem ungeschnittenen Speicher sind es
+349 (Befund 387). Und er ist der Grund, warum der Satz ausdruecklich sagt, dass
+das Budget **nicht erhoeht** wird, weil die Rechnung es zulaesst. Eine vorab
+genannte Zahl, die sich nachtraeglich nachgeben laesst, ist keine - so steht es
+seit jeher im Docstring von `Suchbudget`, und es gilt in beide Richtungen.
+
+### Auf dem Statusschirm steht keine Zahl
+
+Das war die Versuchung, und sie waere ein Rueckfall gewesen. `cli stand` sagt in
+seinem eigenen Docstring:
+
+> Die Zahlen werden **gemessen**, nicht gepflegt - der Kandidat laeuft durch die
+> Gates, der Abstand kommt aus der Grenzlinie. Nichts davon kann veralten, ohne
+> dass es auffaellt.
+
+Die 224 haengt an der wirksamen Stichprobe (Befund 388), also an einem Lauf. Sie
+dort hinzuschreiben waere genau die gepflegte Zahl, die 387 und 388 behoben
+haben. Also steht dort, **wo** sie gerechnet wird:
+
+```
+  Suchbudget 73 von 100 verbraucht, 27 bleiben (Abbruch bei 230).
+             Das ist die Abmachung aus dem Plan. Die Rechnung kann strenger
+             sein - was das Zielfenster zulaesst, sagt 'cli abstand --spot
+             --zielfenster'.
+```
+
+Ein Test prueft, dass dort **keine** Fensterzahl steht. Das ist die Art Wache,
+die in diesem Projekt etwas wert ist: Sie laesst die bequeme Loesung nicht
+zurueckkommen.
+
+### Gegengeprueft: Der knappe Fehlschlag der Messlatte ist echt
+
+Bei 0,66 Punkten Abstand (14,339 gegen 15) entscheidet der Zeitraum mit, und
+`compute_metrics` nimmt die Spanne der **Kapitalkurve**. Die beiden anderen
+vertretbaren Spannen:
+
+```
+Testfenster   2018-08-19 .. 2026-08-19   2922 Tage   8,0000 Jahre
+Trades        2018-08-29 .. 2026-08-29   2922 Tage   8,0000 Jahre
+```
+
+Auf den Tag gleich lang. Aus derselben Gesamtrendite von 192,0115 % ergibt das
+**14,3339 %** gegen die gemeldeten 14,3391 % - 0,005 Punkte Unterschied gegen
+eine Luecke von 0,66.
+
+Der Zeitraum ist also nicht die Ursache, und der Fehlschlag ist kein
+Rechenartefakt. Das gehoert aufgeschrieben, auch wenn nichts zu reparieren war:
+Es ist die Zahl, die das Projekt blockiert, und jetzt ist nachgewiesen, dass sie
+stimmt.
+
+### Mein Fehler in diesem Durchgang
+
+Mein erster Einbau rief `gegen` auch dann, wenn schon heute kein Weg traegt:
+
+```python
+BUDGET.gegen(trials, None if grenze is None else grenze.versuche)
+```
+
+`grenze is None` heisst aber nicht "nicht gerechnet", sondern "das Fenster ist
+**zu**" - und `gegen` haette dort *"die Rechnung liegt nicht vor, es gilt die
+Abmachung: 27 von 100"* gedruckt. Also den lockersten Satz im schlimmsten Fall,
+in genau dem Werkzeug, das vor zu lockeren Zahlen warnen soll.
+
+Gefunden habe ich es beim Durchlesen der vier Faelle, nicht im Lauf - der Fall
+tritt heute nicht ein, ein Test haette ihn also nicht gezeigt, und bei n_eff
+113 waere er still eingetreten. Verglichen wird jetzt nur, wenn ein Fenster
+existiert; die rote Zeile darueber sagt den anderen Fall deutlicher.
