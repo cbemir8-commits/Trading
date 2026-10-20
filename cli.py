@@ -10893,11 +10893,18 @@ def rennen(
     from research.datenstand import alle_geschnitten, reihenzeile
     from research.gates import stichprobe_wie_im_gate
     from research.randschnitt import ohne_zensierte
+    from research.referenz import SPOTPUNKT
     from research.seeds import spitzenkandidat
     from research.stand import BUDGET
     from research.suchbudget import Kandidat
-    from research.wettrennen import Rennen, spanne
+    from research.versuche import laden as versuche_laden
+    from research.wettrennen import Rennen, aus_der_akte, extremwert, spanne
     from strategy.compiler import compile_genome
+
+    # Wie viele der rohen Trades wirksam sind: **gerechnet** aus dem
+    # Referenzpunkt (115 von 156), nicht als Zahl hingeschrieben. Je Regel ist
+    # der Anteil anders, deshalb steht er nur als zweite Lesart daneben.
+    wirksamer_anteil = SPOTPUNKT.effektiv / SPOTPUNKT.trades
 
     _configure_logging(verbose)
     settings = get_settings()
@@ -10970,6 +10977,91 @@ def rennen(
     )
     console.print(lauf.tabelle((0, 10, 64, 334, 834, 9834)))
     console.print(f"\n{lauf.urteil(budget=abbruch)}\n")
+
+    # **Der zweite Schaetzer derselben Groesse** (Befund 391).
+    #
+    # Alles oben rechnet die Ideenstreuung aus **einem** Wert zurueck. Die
+    # Akte verzeichnet seit Befund 377 jeden gemeldeten Versuch mit Guete und
+    # Trade-Zahl, und der Docstring von 'Versuch' sagt seit jeher, wofuer:
+    # "Aus ihr liesse sich die Streuung ueber die Versuche messen, statt sie
+    # zu raten." Gelesen hat sie niemand.
+    #
+    # Die beiden Schaetzer widersprechen sich, und der Widerspruch ist die
+    # Auskunft: Er loest sich bei rund sieben unabhaengigen Ideenziehungen
+    # auf, nicht bei 203. Der Zaehler zaehlt geprufte Hypothesen - 192 davon
+    # ohne Herkunft im Grundstock (234/282) - und nicht Ideenziehungen.
+    verzeichnis = versuche_laden(Path(settings.paths.state) / "trials.json")
+    punkte = [
+        (v.sharpe_je_trade, v.trades)
+        for v in verzeichnis.eintraege
+        if v.sharpe_je_trade is not None and v.trades > 0
+    ]
+    # **Verbunde sind keine Ideenziehungen.** Drei der elf Eintraege sind
+    # Kombinationen **mit dem Bestand** ('herkunft' = "verbund"); ihre Guete
+    # ist zum grossen Teil die seine. Gemessen: Ueber alle elf kommt eine
+    # Ideenstreuung von 0,1746 bei Mittel +0,0988 heraus, ueber die acht
+    # neuen Regelideen 0,1669 bei Mittel +0,0324. Beides steht da, weil die
+    # Abgrenzung selbst ein Argument ist - und die Versoehnung rechnet mit
+    # den acht, denn nach ihnen ist gefragt.
+    ideen = [
+        (v.sharpe_je_trade, v.trades)
+        for v in verzeichnis.eintraege
+        if v.sharpe_je_trade is not None
+        and v.trades > 0
+        and v.herkunft != "verbund"
+    ]
+    akte = aus_der_akte(ideen) or aus_der_akte(punkte)
+    alle_elf = aus_der_akte(punkte)
+    if akte is None:
+        console.print(
+            "[dim]Die Akte verzeichnet weniger als zwei Versuche mit Guete - "
+            "ein zweiter Schaetzer ist daraus nicht zu machen.[/]\n"
+        )
+    else:
+        sparsam = aus_der_akte(ideen, wirksamer_anteil=wirksamer_anteil)
+        n_versoehnt = akte.versoehnt_bei(kandidat.sharpe_je_trade)
+        console.print("[bold]Dieselbe Groesse aus der Akte geschaetzt[/]")
+        console.print(
+            f"  {akte.anzahl} neue Regelideen, Mittel "
+            f"{akte.mittel:+.4f}, beobachtete Streuung {akte.beobachtet:.4f}\n"
+            f"  abzueglich Schaetzrauschen E[1/n]: Ideenstreuung "
+            f"[bold]{akte.streuung:.4f}[/]"
+            + (
+                f" (auf wirksame Trades gerechnet {sparsam.streuung:.4f})"
+                if sparsam is not None and sparsam.streuung is not None
+                else ""
+            )
+            + (
+                f"\n  ueber alle {alle_elf.anzahl} Eintraege, also mit den "
+                f"Verbunden am Bestand: {alle_elf.streuung:.4f} bei Mittel "
+                f"{alle_elf.mittel:+.4f}"
+                if alle_elf is not None
+                and alle_elf.streuung is not None
+                and alle_elf.anzahl != akte.anzahl
+                else ""
+            )
+            + f"\n  zurueckgerechnet aus dem Bestwert: "
+            f"{lauf.streuung:.4f}   Nullstreuung: {lauf.nullstreuung:.4f}\n"
+        )
+        if akte.streuung is not None and n_versoehnt is not None:
+            console.print(
+                f"[bold]Die beiden Schaetzer widersprechen sich.[/] Mit "
+                f"{akte.streuung:.4f} und Mittel {akte.mittel:+.4f} haetten "
+                f"{versuche} unabhaengige Ideenziehungen einen Bestwert von "
+                f"{akte.mittel + akte.streuung * extremwert(versuche):.4f} "
+                f"ergeben; beobachtet sind {kandidat.sharpe_je_trade:.4f}. "
+                f"Versoehnt sind sie bei [bold]{n_versoehnt}[/] "
+                f"unabhaengigen Ziehungen.\n"
+                f"[dim]Zwei Lesarten, und beide stehen im Register: Entweder "
+                f"sind die {versuche} Versuche keine {versuche} unabhaengigen "
+                f"Ideenziehungen - 192 stehen ohne Herkunft im Grundstock "
+                f"(Befund 234/282) -, dann ist die Rueckrechnung zu klein und "
+                f"die Suche schlaegt die Null. Oder die verzeichneten "
+                f"Versuche sind absichtlich vielfaeltig gewaehlt, dann ist "
+                f"die Aktenschaetzung zu gross. **Das 'nie' aus Befund 390 "
+                f"haengt an der ersten Annahme und ist damit kein "
+                f"Schlusswort.**[/]\n"
+            )
 
     # **Derselbe Lauf am zweiten Betriebspunkt** (Befund 126).
     #

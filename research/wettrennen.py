@@ -123,8 +123,9 @@ Kostet keinen Versuch: Gerechnet wird ueber Versuche, nicht mit ihnen.
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
-from statistics import NormalDist
+from statistics import NormalDist, fmean, stdev
 
 from research.gates import GateThresholds
 
@@ -174,6 +175,110 @@ def kalibriere(*, bester: float, versuche: int, mittel: float) -> float | None:
     if konstante <= 0 or bester <= mittel:
         return None
     return (bester - mittel) / konstante
+
+
+@dataclass(frozen=True, slots=True)
+class Aktenschaetzung:
+    """Die Ideenstreuung **aus den verzeichneten Versuchen** - Befund 391.
+
+    ``kalibriere`` rechnet sie aus **einem** Wert zurueck: dem besten Fund.
+    Daneben steht seit Befund 377 in ``state/trials.json`` jeder gemeldete
+    Versuch mit Guete und Trade-Zahl, und der Docstring von ``Versuch`` sagt,
+    wofuer: *"Aus ihr liesse sich die Streuung ueber die Versuche messen,
+    statt sie zu raten."* Gelesen hat sie niemand - ``Verzeichnis.sharpes()``
+    hatte genau einen Nutzer, und der zaehlt sie nur.
+
+    **Die beobachtete Streuung ist nicht die Ideenstreuung.** Jede Einzelguete
+    ist selbst geschaetzt, und die Varianz eines Sharpe-Schaetzers je
+    Beobachtung liegt bei ungefaehr ``1/n``. Also
+
+        Var(beobachtet) = Var(Ideen) + E[1/n]
+
+    Wer die rohe Standardabweichung nimmt, ueberschaetzt die Ideenstreuung -
+    und zwar um so mehr, je kleiner die Stichproben sind. Hier stehen Werte
+    aus 18 bis 406 Trades nebeneinander.
+
+    ``streuung`` ist ``None``, wenn nach Abzug nichts uebrig bleibt. Das ist
+    kein Rechenfehler, sondern eine Auskunft: Die beobachtete Streuung ist
+    dann vollstaendig durch das Schaetzrauschen erklaert, und eine
+    Ideenstreuung ist **nicht nachweisbar**. Genau so steht es bei den drei
+    Verbunden mit dem Bestand.
+    """
+
+    anzahl: int
+    mittel: float
+    beobachtet: float
+    """Die rohe Standardabweichung der Guetewerte - mit Rauschen."""
+
+    rauschen: float
+    """``E[1/n]`` als **Varianz**, nicht als Streuung."""
+
+    streuung: float | None
+    """Nach Abzug des Rauschens. ``None`` heisst nicht nachweisbar."""
+
+    def versoehnt_bei(
+        self, bester: float, *, hoechstens: int = 10**6
+    ) -> int | None:
+        """Wie viele **unabhaengige** Ideenziehungen diesen Bestwert erklaeren.
+
+        Die Bruecke zwischen den beiden Schaetzern. Stimmen sie nicht
+        ueberein, sagt diese Zahl, bei welchem Zaehlerstand sie es taeten -
+        und das ist die eigentliche Auskunft: Der Versuchszaehler des
+        Projekts zaehlt **gepruefte Hypothesen**, nicht unabhaengige
+        Ideenziehungen, und 192 der 203 stehen ohne Herkunft im Grundstock
+        (Befund 234/282).
+
+        ``None``, wenn die Schaetzung keine Streuung hergibt oder der
+        Bestwert unter dem Mittel liegt.
+        """
+        if self.streuung is None or bester <= self.mittel:
+            return None
+        noetig = (bester - self.mittel) / self.streuung
+        tief, hoch = 2, hoechstens
+        if extremwert(hoch) < noetig:
+            return None
+        while hoch - tief > 1:
+            mitte = (tief + hoch) // 2
+            if extremwert(mitte) < noetig:
+                tief = mitte
+            else:
+                hoch = mitte
+        return hoch
+
+
+def aus_der_akte(
+    punkte: Sequence[tuple[float, int]], *, wirksamer_anteil: float = 1.0
+) -> Aktenschaetzung | None:
+    """Die Ideenstreuung aus Guete und Trade-Zahl der verzeichneten Versuche.
+
+    ``punkte`` sind Paare aus Guete je Trade und **roher** Trade-Zahl - so
+    stehen sie in der Akte. ``wirksamer_anteil`` rechnet sie auf wirksame
+    Beobachtungen herunter; am Bestand gemessen sind es 74 % (115 von 156).
+
+    Der Anteil steht als Schalter und nicht als Vorgabe im Code, weil er je
+    Regel anders ist und nur fuer den Bestand gemessen wurde. ``1.0`` ist die
+    Lesart der rohen Zahlen; sie unterschaetzt das Rauschen und damit
+    **ueberschaetzt** die Ideenstreuung. Wer die Frage entscheidet, sollte
+    beide Lesarten sehen.
+
+    ``None``, wenn weniger als zwei Punkte vorliegen - eine Streuung aus
+    einem Wert ist keine.
+    """
+    brauchbar = [(g, n) for g, n in punkte if n > 0]
+    if len(brauchbar) < 2:
+        return None
+    guete = [g for g, _ in brauchbar]
+    mittel = fmean(guete)
+    beobachtet = stdev(guete)
+    rauschen = fmean(1.0 / (n * wirksamer_anteil) for _, n in brauchbar)
+    rest = beobachtet**2 - rauschen
+    return Aktenschaetzung(
+        anzahl=len(brauchbar),
+        mittel=mittel,
+        beobachtet=beobachtet,
+        rauschen=rauschen,
+        streuung=math.sqrt(rest) if rest > 0 else None,
+    )
 
 
 @dataclass(frozen=True, slots=True)

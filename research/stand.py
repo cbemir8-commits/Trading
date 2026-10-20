@@ -4060,6 +4060,50 @@ BEHOBEN: tuple[Richtung, ...] = (
         "jenseits des Budgetendes' - bei 'nie' ist das eine Verharmlosung, und "
         "er unterscheidet die beiden Faelle jetzt",
         390,
+        zuletzt=391,
+    ),
+    # Befund 391: dieselbe Groesse ein zweites Mal gemessen - und sie
+    # widerspricht meinem eigenen Schluss aus 390.
+    Richtung(
+        "Die Ideenstreuung war zu raten, obwohl sie in der Akte steht",
+        "Befund 390 hat die Grundlage des Wettrennens berichtigt und daraus "
+        "geschlossen, die Suche hole **nie** auf. Diese Zahl ist aus **einem** "
+        "Wert zurueckgerechnet - dem besten Fund nach 203 Versuchen. Dabei "
+        "verzeichnet 'state/trials.json' seit Befund 377 jeden gemeldeten "
+        "Versuch mit Guete und Trade-Zahl, und der Docstring von 'Versuch' "
+        "sagt seit jeher, wofuer: *'Aus ihr liesse sich die Streuung ueber die "
+        "Versuche messen, statt sie zu raten.'* Gelesen hat sie **niemand** - "
+        "'Verzeichnis.sharpes()' hatte genau einen Nutzer, und der zaehlt sie "
+        "nur (die Bauart aus Befund 351, hier an der folgenreichsten Stelle). "
+        "Gemessen, mit Abzug des Schaetzrauschens - jede Einzelguete ist "
+        "selbst geschaetzt, Var(beobachtet) = Var(Ideen) + E[1/n], und die "
+        "Stichproben reichen von 18 bis 406 Trades: Acht neue Regelideen "
+        "ergeben eine Ideenstreuung von **0,1669** bei Mittel +0,0324 (auf "
+        "wirksame Trades gerechnet 0,1506); ueber alle elf Eintraege, also mit "
+        "den drei Verbunden am Bestand, 0,1746 bei Mittel +0,0988. Die "
+        "Rueckrechnung sagt 0,0906, die Nullstreuung ist 0,0913. **Das ist "
+        "das Doppelte und kehrt das Vorzeichen um.** Mit 0,1669 und +0,0324 "
+        "haetten 203 unabhaengige Ideenziehungen einen Bestwert von 0,4949 "
+        "ergeben; beobachtet sind 0,2509. Versoehnt sind die beiden Schaetzer "
+        "bei **rund sieben** unabhaengigen Ziehungen - und die Akte "
+        "verzeichnet elf. Zwei Lesarten, beide schon im Register: Entweder "
+        "sind die 203 keine 203 Ideenziehungen (192 ohne Herkunft im "
+        "Grundstock, 234/282), dann ist die Rueckrechnung zu klein und die "
+        "Suche schlaegt die Null; oder die verzeichneten Versuche sind "
+        "absichtlich vielfaeltig gewaehlt, dann ist die Aktenschaetzung zu "
+        "gross. **Keines von beidem ist gemessen**, und deshalb ist das 'nie' "
+        "aus 390 kein Schlusswort. Gebaut sind "
+        "'wettrennen.aus_der_akte'/'Aktenschaetzung' samt der Bruecke "
+        "'versoehnt_bei'; 'cli rennen' stellt die beiden Schaetzer "
+        "nebeneinander, und der Statusschirm nennt den Widerspruch statt "
+        "einer der beiden Zahlen. **Mein Fehler**: Der Satz 'er zieht nicht "
+        "langsam nach, sondern nicht' stand nach 390 zwei Stunden lang auf "
+        "dem Statusschirm, als Ergebnis. Er war ein Punktschaetzer mit einem "
+        "Fehlerbalken, der die Null einschliesst, und ich habe ihn als "
+        "Schlusswort geschrieben. Dass die zweite Messung ihn umwirft, ist "
+        "kein Unglueck, sondern der Grund, warum die erste nicht als "
+        "Schlusswort dastehen durfte",
+        391,
     ),
 )
 
@@ -4620,14 +4664,24 @@ class Suchbudget:
         Schnittpunkt    **nie**     statt "rund 56.000"
 
     Die Richtung des Befundes ist unveraendert und schaerfer: Weitersuchen ist
-    der schwache Hebel. Nur ist es nicht mehr "spaet", sondern "gar nicht" -
-    der beste Fund waechst langsamer als das, was die Huerde ohnehin mitnimmt.
+    der schwache Hebel.
 
-    **Und das ist ein Punktschaetzer.** Die Rueckrechnung steht auf einem
+    **Dass daraus "gar nicht" wird, haelt nicht** (Befund 391). Dieselbe
+    Groesse ist ein zweites Mal gemessen, diesmal aus den verzeichneten
+    Versuchen statt aus dem Bestwert: acht neue Regelideen ergeben nach Abzug
+    des Schaetzrauschens eine Ideenstreuung von **0,1669** bei Mittel +0,0324
+    - das Doppelte, und klar ueber der Null. Die beiden Schaetzer sind erst
+    bei **rund sieben** unabhaengigen Ideenziehungen vereinbar, nicht bei 203.
+    Entweder sind die 203 keine 203 Ideenziehungen (192 stehen ohne Herkunft
+    im Grundstock, 234/282), oder die verzeichneten Versuche sind absichtlich
+    vielfaeltig gewaehlt. Beides ist moeglich, und keines ist gemessen.
+
+    **Und beides sind Punktschaetzer.** Die Rueckrechnung steht auf einem
     einzigen beobachteten Bestwert; bei 203 Versuchen liegt ihre relative
     Streuung bei 14,2 %, der 90-%-Bereich reicht von 0,0738 bis 0,1146 und
     **enthaelt die Nullstreuung**. "Nie" ist damit mit dem Verlauf vereinbar,
-    "fast angekommen" ebenfalls. Belastbar ist der Schluss, nicht die Stelle.
+    "fast angekommen" ebenfalls. Belastbar ist der Schluss - mehr Versuche
+    sind der schwache Hebel -, nicht die Stelle und nicht das Vorzeichen.
 
     **Das Budget ist damit nicht zu knapp bemessen, sondern die
     Groessenordnung, in der Suchen ueberhaupt noch etwas aendert.**
@@ -6032,9 +6086,31 @@ class Lage(Gatebilanz):
                 "  gemessenen Stichproben von 80 bis 584 zwischen 1,11 % und",
                 "  1,26 % - er haengt kaum am Betriebspunkt, die Luecke sehr",
                 "  wohl. **Nicht der Aufschlag macht die Suche aussichtsarm,",
-                "  sondern die Trefferquote** (Befund 31/221) - und wie",
-                "  langsam der beste Fund nachzieht, rechnet 'cli rennen'",
-                "  (Befund 71).",
+                "  sondern die Trefferquote** (Befund 31/221).",
+                "",
+                # **Zweimal umgeschrieben, und das gehoert dazu.**
+                #
+                # Hier stand "wie langsam der beste Fund nachzieht". Befund
+                # 390 hat auf der Grundlage des Gates gemessen, dass er gar
+                # nicht nachzieht, und ich habe das hier als Ergebnis
+                # hingeschrieben. Befund 391 hat dieselbe Groesse **zum
+                # zweiten Mal** gemessen - aus den verzeichneten Versuchen
+                # statt aus dem Bestwert - und kommt auf das Doppelte. Beide
+                # Saetze waren zu bestimmt; dieser nennt den Widerspruch.
+                "  **Wie schnell der beste Fund nachzieht, ist strittig**",
+                "  (Befund 390/391): Aus dem Bestwert zurueckgerechnet liegt",
+                "  die Streuung echter Regelideen unter der des reinen",
+                "  Zufalls - dann holt kein Suchlauf die Huerde ein. Aus den",
+                "  verzeichneten Versuchen geschaetzt liegt sie beim",
+                "  Doppelten, und dann schon. Versoehnt sind die beiden",
+                "  Schaetzer bei rund sieben unabhaengigen Ideenziehungen,",
+                "  nicht bei 203 - der Zaehler zaehlt geprufte Hypothesen.",
+                "  Nachrechnen: 'cli rennen'.",
+                "",
+                "  Was bindet, ist die wirksame Stichprobe (Befund 388): Das",
+                "  Zielfenster schliesst sich, sobald sie faellt, und wird",
+                "  weit, wenn sie steigt - 'cli abstand --spot --zielfenster'",
+                "  nennt Rand und Luft.",
             ]
         # Befund 160 hat das hier als **Ueberlegung** hingeschrieben. Befund
         # 161 hat es gemessen, und es ist schlimmer als die Ueberlegung.

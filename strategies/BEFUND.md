@@ -35032,3 +35032,117 @@ Spitzenkandidaten setzt, soll **sehen**, dass er sich fuer eine Reihe
 entscheiden muss. Die offene Regel bleibt offen - umgestellt wird nicht, weil
 drei es tun, sondern weil eine Zahl daran haengt. Hier hing das Vorzeichen
 daran.
+
+## Dreihunderteinundneunzig. Die Ideenstreuung war zu raten, obwohl sie in der Akte steht
+
+Befund 390 hat die Grundlage des Wettrennens berichtigt und daraus geschlossen:
+**die Suche holt nie auf.** Diese Zahl ist aus **einem** Wert zurueckgerechnet -
+dem besten Fund nach 203 Versuchen.
+
+Dabei steht in `state/trials.json` seit Befund 377 jeder gemeldete Versuch mit
+Guete und Trade-Zahl. Und der Docstring von `Versuch` sagt seit jeher, wofuer:
+
+> `sharpe_je_trade` ist die Groesse, um die es geht: **Aus ihr liesse sich die
+> Streuung ueber die Versuche messen, statt sie zu raten.**
+
+Gelesen hat sie niemand. `Verzeichnis.sharpes()` hat genau einen Nutzer -
+`belegt`, und der zaehlt sie nur. Das ist Befund 351 zum vierten Mal in dieser
+Reihe, und diesmal an der folgenreichsten Stelle des Projekts.
+
+### Gemessen
+
+Die beobachtete Streuung ist **nicht** die Ideenstreuung. Jede Einzelguete ist
+selbst geschaetzt, und die Varianz eines Sharpe-Schaetzers je Beobachtung liegt
+bei ungefaehr `1/n`:
+
+```
+Var(beobachtet) = Var(Ideen) + E[1/n]
+```
+
+Wer die rohe Standardabweichung nimmt, ueberschaetzt die Ideenstreuung - hier
+stehen Werte aus 18 bis 406 Trades nebeneinander. Nach Abzug:
+
+```
+acht neue Regelideen      Ideenstreuung 0,1669   Mittel +0,0324
+  (auf wirksame Trades)                 0,1506
+alle elf Eintraege        Ideenstreuung 0,1746   Mittel +0,0988
+aus dem Bestwert (390)    Ideenstreuung 0,0906
+Nullstreuung                            0,0913
+```
+
+Die drei Verbunde sind ausgenommen, wo nach Ideen gefragt ist: Sie sind
+Kombinationen **mit dem Bestand**, ihre Guete ist zum grossen Teil die seine,
+und sie heben das Mittel von +0,0324 auf +0,0988. Beide Zahlen stehen im
+Bericht, weil die Abgrenzung selbst ein Argument ist.
+
+### Das kehrt das Vorzeichen um
+
+Die Aktenschaetzung liegt **ueber** der Nullstreuung, die Rueckrechnung
+darunter. Und der Widerspruch ist gross:
+
+Mit 0,1669 und Mittel +0,0324 haetten **203 unabhaengige Ideenziehungen** einen
+Bestwert von **0,4949** ergeben. Beobachtet sind 0,2509 - die Haelfte.
+
+Versoehnt sind die beiden Schaetzer bei **rund sieben** unabhaengigen Ziehungen.
+Die Akte verzeichnet elf. Der Zaehler steht bei 203.
+
+### Zwei Lesarten, und keine ist gemessen
+
+**Entweder** sind die 203 keine 203 Ideenziehungen. Der Zaehler zaehlt
+*gepruefte Hypothesen*, und 192 davon stehen ohne Herkunft im Grundstock (Befund
+234/282) - Sweeps, Varianten, Wiederholungen. Dann ist die Rueckrechnung zu
+klein, und die Suche schlaegt die Null.
+
+**Oder** die verzeichneten Versuche sind absichtlich vielfaeltig gewaehlt -
+`gen11 partnersuche` und `gen12 kalibriert` sind Volumenschock, Rueckkehr zum
+Mittel, Ueberverkauft, Enge vor Bewegung, also bewusst verschiedene Familien.
+Dann ist die Aktenschaetzung zu gross.
+
+Beides ist moeglich. **Keines ist gemessen.** Und damit ist das "nie" aus
+Befund 390 kein Schlusswort.
+
+Was unveraendert steht - und das ist der belastbare Teil - ist die Richtung aus
+Befund 71: Mehr Versuche sind der schwache Hebel, weil der Gewinn logarithmisch
+und der Preis linear ist. Strittig ist das Vorzeichen, nicht die Groessenordnung
+des Hebels.
+
+### Mein Fehler in diesem Durchgang
+
+Der Satz
+
+> **Und er zieht nicht langsam nach, sondern nicht** (Befund 390)
+
+stand nach dem letzten Durchgang auf dem Statusschirm. Als Ergebnis. Er war ein
+Punktschaetzer aus einem einzigen Wert, mit einem Fehlerbalken, der die
+Nullstreuung einschliesst - und das stand zwei Absaetze weiter sogar daneben.
+Geschrieben habe ich ihn trotzdem als Schlusswort.
+
+Dass die zweite Messung ihn umwirft, ist kein Unglueck. Es ist der Grund, warum
+die erste nicht als Schlusswort dastehen durfte. Jetzt nennt der Statusschirm
+den **Widerspruch** statt einer der beiden Zahlen:
+
+```
+  **Wie schnell der beste Fund nachzieht, ist strittig** (Befund 390/391): Aus
+  dem Bestwert zurueckgerechnet liegt die Streuung echter Regelideen unter der
+  des reinen Zufalls - dann holt kein Suchlauf die Huerde ein. Aus den
+  verzeichneten Versuchen geschaetzt liegt sie beim Doppelten, und dann schon.
+```
+
+Und `cli rennen` stellt beide Schaetzer nebeneinander, mit der Bruecke:
+`Aktenschaetzung.versoehnt_bei` sagt, bei welchem Zaehlerstand sie
+uebereinstimmen wuerden. Das ist die Zahl, die die Frage entscheidbar macht -
+und sie zu beschaffen heisst, Herkunft mitzuschreiben, was seit 377 geschieht.
+
+### Woran der naechste Durchgang anknuepfen kann
+
+Die Frage "wie viele der 203 sind unabhaengige Ideenziehungen" ist jetzt
+beziffert beantwortbar, aber nicht beantwortet. Zwei Wege waeren messbar:
+
+- Die kuenftigen Buchungen tragen Herkunft (seit 377). Nach genuegend neuen
+  Eintraegen laesst sich die Aktenschaetzung auf einer **nicht** ausgewaehlten
+  Menge wiederholen.
+- Die Streuung der Vorratskataloge (36 Regeln auf 15 Minuten, 18 auf
+  Tageskerzen) ist eine dritte, unabhaengige Schaetzung derselben Groesse -
+  gemessen auf einer Menge, die niemand nach Vielfalt ausgesucht hat.
+
+Der zweite Weg kostet keinen Versuch und liegt im Container.

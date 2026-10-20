@@ -266,7 +266,21 @@ GELESEN: dict[str, int] = {
     # Die Regelfrage bleibt beim Nutzer, **ihre Wirkung ist gemessen**: Sie
     # ist kein Weg zur Zulassung. Wer sie entscheidet, entscheidet ueber
     # Ordnung in der Akte und nicht ueber ein Gate.
-    "Zaehlt ein Sweep am Bestand als Versuch?": 387,
+    #
+    # **Befund 391 misst sie aus einer zweiten Richtung**, und deshalb wandert
+    # die Zahl noch einmal. Fuer das **Gate** bleibt es dabei: Mitzaehlen ist
+    # die strenge Lesart und kostet 0,0055 DSR. Fuer das **Wettrennen** ist es
+    # umgekehrt - dort wird aus dem Bestwert und der Versuchszahl auf die
+    # Ideenstreuung zurueckgerechnet, und wer Sweeps als Ideenziehungen
+    # mitzaehlt, erhaelt eine **zu kleine** Streuung und damit ein zu
+    # pessimistisches Urteil ueber die Suche. Gemessen: Die Aktenschaetzung
+    # (0,1669) und die Rueckrechnung (0,0906) sind erst bei rund sieben
+    # unabhaengigen Ziehungen vereinbar, nicht bei 203.
+    #
+    # Dieselbe Frage, zwei Richtungen, zwei Vorzeichen. Das ist kein
+    # Widerspruch im Register, sondern der Grund, warum die Frage beim Nutzer
+    # liegt: "Zaehlt" heisst an zwei Stellen etwas anderes.
+    "Zaehlt ein Sweep am Bestand als Versuch?": 391,
     "Timing gegen Zufallseinstiege": 295,
     "Der Preis in Reststreuungen": 295,
     # **Befund 305 hat beide erneut angesehen** - und es war zweimal etwas
