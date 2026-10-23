@@ -35497,3 +35497,96 @@ weiter keine 34 Befehle blind geschnitten.
 Die lebende Zahl steht jetzt nur noch an **einer** Stelle: Der neue Test bildet
 `4 / 4 / 34` aus der Messung und sucht genau diesen Satz im Register, statt ihn
 ein zweites Mal hinzuschreiben (Befund 351).
+
+## Dreihundertfuenfundneunzig. Eine Spalte, zwei Groessen - die Messlatte in der Leiter
+
+Befund 394 hat zwei Zahlen nebeneinandergestellt: `-10,320` beim schlechtesten
+Jahr (Perpetual auf dem Speicher) und `+0,390` Reserve (Spot auf der
+Zulassungsreihe). Daraus liest sich, dass der massgebliche Punkt dieses Gate
+haelt - richtig. Woran es haelt, stand nicht da: Es waren **zwei** Aenderungen
+auf einmal, Betriebspunkt und Reihe.
+
+### Das Kreuz
+
+Dieselbe Regel, vier Zellen, nichts Neues gerechnet:
+
+| Punkt | Reihe | fertig | CAGR | schl. Jahr | DSR | Gates |
+|---|---|---|---|---|---|---|
+| Perpetual | Speicher (3351) | 157 | 12,9510 | -10,3200 | 0,5488 | 7/11 |
+| Perpetual | Reihe (3301) | 156 | 12,9510 | -10,3200 | 0,4579 | 7/11 |
+| Spot | Speicher (3351) | 157 | 14,3390 | **-9,6100** | 0,6759 | 9/11 |
+| Spot | Reihe (3301) | 156 | 14,3390 | **-9,6100** | 0,5826 | 9/11 |
+
+**Das schlechteste Jahr haengt nur am Betriebspunkt.** Auf vier Stellen
+dasselbe, ueber 50 Tage Reihenunterschied hinweg - und dasselbe gilt fuer die
+Jahresrendite. Die 0,71 Punkte sind das Funding; die Reihe traegt **null**
+dazu bei. Nur der Deflated Sharpe bewegt sich mit ihr, und zwar in die
+freundliche Richtung: mehr Reihe, hoeherer Wert.
+
+### Die Leiter, diesmal an beiden Punkten
+
+Der Bericht druckt eine Jahresleiter (Befund 161) und nennt ihren
+Betriebspunkt nicht. Also beide gemessen, sechs Reihenanfaenge:
+
+| ab | Tage | Perpetual | Spot |
+|---|---|---|---|
+| 2022-08-16 | 1475 | -6,38 | -5,04 |
+| 2021-08-16 | 1840 | -6,38 | -5,04 |
+| 2020-03-30 | 2344 | -6,08 | -5,60 |
+| 2019-08-16 | 2571 | **-10,32 gefallen** | -9,61 |
+| 2018-08-16 | 2936 | **-10,32 gefallen** | -9,61 |
+| 2017-08-16 | 3301 | **-10,32 gefallen** | -9,61 |
+
+Am berichteten Punkt faellt das Gate ab 2571 Tagen. **Am massgeblichen faellt
+es auf keiner Sprosse.** Der Satz, den der Bericht daraus zieht - "Warten kann
+dieses Gate nicht zurueckgewinnen" -, gilt fuer einen Punkt, an dem es schon
+verloren ist.
+
+Dass der Abstand am Spot-Punkt auf den drei laengsten Sprossen **auf vier
+Stellen gleich** ist, hat einen Grund: Das bindende Zwoelfmonatsfenster ist
+dasselbe, naemlich das mit dem Absturz im Maerz 2020. Ab `2020-03-30` faellt es
+aus der Reihe, und der Abstand springt auf 4,40. Das Gate nimmt das Minimum
+ueber alle Fenster - der Abstand kann deshalb nie wachsen. Er steht als offene
+Richtung im Register: ein Guthaben von 0,39 Punkten, unter dem die Jahre
+laufen, die der Deflated Sharpe noch braucht.
+
+### Und dabei ein Fehler in meiner eigenen Aenderung von 394
+
+Auf der Sprosse `2018-08-16` **besteht** die Messlatte am Spot-Punkt:
+
+```
+2017-08-16  gefallen    14,339 /  15,000   Jahresrendite gegen Betriebsschwelle
+2018-08-16  bestanden  183,318 /  29,751   Rendite gegen heruntergefahrene Messlatte
+```
+
+Eine Spalte, zwei Groessen, Faktor elf. Das ist kein Fehler im Gate - Befund
+267 hat ausdruecklich entschieden, dass ein Gate mit zwei Bedingungen die
+Zahlen der Bedingung meldet, an der es haengt. Es macht das Paar nur **nicht
+selbstauskunftsfaehig**.
+
+Und mein Spot-Abstand aus Befund 394 rechnet `abs(wert - schwelle)`. Er haette
+dort `Spot 153,567 Reserve` gedruckt, neben `14,339 gegen 15,000` - eine
+Gesamtrendite minus ihrer Huerde, als Reserve einer Jahresrendite verkauft.
+Ausgeloest wird der Fall genau dann, wenn der Spot-Punkt dieses Gate
+**besteht**, also im Erfolgsfall. `cli anatomie` hat vor ihm gewarnt, und zwar
+seit 267 - im Konjunktiv ("die beiden Spalten koennen verschiedene Bedingungen
+zeigen"). Mein Abschnitt hat die Warnung nicht gelesen.
+
+### Was daraus wird
+
+`GateResult.bedingung` nennt die Bedingung, an der Wert und Schwelle haengen.
+Gefuellt ist sie bei den zwei Gates, die zwei haben: `Messlatte`
+(Jahresrendite gegen Betriebsschwelle / Rendite gegen heruntergefahrene
+Messlatte) und `Stichprobengroesse` (Trades / Tage im Markt - die Zahl, die
+Befund 394 eigens nachgeprueft hat). Leer heisst "eine Formel, der Name sagt
+welche".
+
+`gates.vergleichbar` ist die **eine** Regel, die jede Oberflaeche fragt, bevor
+sie zwei Zahlen nebeneinander stellt. Sie fragt nicht nach dem Status - ein
+gefallenes gegen ein bestandenes Ergebnis ist der interessante Fall -, aber
+ein uebersprungenes Gate ist mit nichts vergleichbar, auch nicht mit einem
+zweiten uebersprungenen.
+
+`cli stand` druckt den Abstand nur bei gleicher Groesse und nennt sonst die
+Bedingung. `cli anatomie` sagt statt "koennen verschiedene zeigen", welcher
+Fall vorliegt, und markiert die Zeile.

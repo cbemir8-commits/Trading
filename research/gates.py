@@ -91,6 +91,30 @@ class GateResult:
     threshold: float
     message: str
 
+    bedingung: str = ""
+    """An **welcher** Bedingung ``value`` und ``threshold`` haengen.
+
+    Befund 267 hat entschieden, dass ein Gate mit zwei Bedingungen die Zahlen
+    der Bedingung meldet, an der es haengt. Damit ist das Paar richtig - und
+    es ist nicht mehr selbstauskunftsfaehig: **Welche** Groesse darin steht,
+    haengt am Ausgang des Laufs.
+
+    Gemessen am Spitzenkandidaten, Spot-Punkt, dieselbe Regel auf sechs
+    Reihenanfaengen (Befund 395):
+
+        ab            Wert   Schwelle  Status
+        2017-08-16  14,339     15,000  gefallen   <- Jahresrendite
+        2018-08-16 183,318     29,751  bestanden  <- Gesamtrendite
+        2019-08-16  12,914     15,000  gefallen   <- Jahresrendite
+
+    Eine Spalte, zwei Groessen, Faktor elf dazwischen. Wer die Leiter liest,
+    sieht einen Wert, der aus dem Rahmen springt und wieder zurueckfaellt.
+
+    Leer heisst: Dieses Gate rechnet ``value`` aus **einer** Formel, der Name
+    sagt also, was darin steht. Gefuellt ist es bei den beiden Gates, die
+    zwei haben - 'Messlatte' und 'Stichprobengroesse'.
+    """
+
     @property
     def passed(self) -> bool:
         return self.status is not GateStatus.FAIL
@@ -100,6 +124,28 @@ class GateResult:
             self.status.value
         ]
         return f"[{marker}] {self.name}: {self.message}"
+
+
+def vergleichbar(a: GateResult, b: GateResult) -> bool:
+    """Darf man die Zahlen dieser beiden Ergebnisse nebeneinander lesen?
+
+    Zwei Laeufe, dasselbe Gate - und trotzdem nicht immer dieselbe Groesse
+    (siehe ``GateResult.bedingung``). Jede Oberflaeche, die zwei Spalten
+    nebeneinander stellt oder einen Abstand bildet, fragt hier.
+
+    **Nicht** gefragt wird nach dem Status: Ein gefallenes und ein bestandenes
+    Ergebnis sind sehr wohl vergleichbar, solange beide dieselbe Groesse
+    tragen - das ist der Normalfall und genau der interessante.
+
+    Ein uebersprungenes Gate hat nicht gerechnet; sein ``value`` ist eine
+    Null, die nichts bedeutet. Es ist mit nichts vergleichbar, auch nicht mit
+    einem zweiten uebersprungenen.
+    """
+    if a.name != b.name:
+        return False
+    if GateStatus.SKIP in (a.status, b.status):
+        return False
+    return a.bedingung == b.bedingung
 
 
 @dataclass(slots=True)
@@ -332,6 +378,7 @@ def gate_sample_size(
             status=GateStatus.PASS if passed else GateStatus.FAIL,
             value=float(count),
             threshold=float(t.min_oos_trades),
+            bedingung="Trades",
             message=(
                 f"{count} Trades ausserhalb der Trainingsdaten"
                 if passed
@@ -348,6 +395,7 @@ def gate_sample_size(
         status=GateStatus.PASS if passed else GateStatus.FAIL,
         value=round(tage, 1),
         threshold=float(t.min_oos_days_in_market),
+        bedingung="Tage im Markt",
         message=(
             f"{tage:.0f} Tage im Markt aus {count} Ein- und Ausstiegen"
             if passed
@@ -461,6 +509,11 @@ def gate_benchmark(
         status=GateStatus.PASS if besser and lohnend else GateStatus.FAIL,
         value=round(wert, 3),
         threshold=round(huerde, 3),
+        bedingung=(
+            "Jahresrendite gegen Betriebsschwelle"
+            if nur_die_schwelle
+            else "Rendite gegen heruntergefahrene Messlatte"
+        ),
         message=(
             f"Strategie {report.combined.total_return_pct:+.1f} % bei "
             f"{report.combined.max_drawdown_pct:.1f} % Rueckgang "

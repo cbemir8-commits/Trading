@@ -497,6 +497,11 @@ BEGRIFFE: dict[str, tuple[str, ...]] = {
         "Zulassungsreihe",
         "reihenzeile",
     ),
+    "Das schlechteste Jahr ist am Spot-Punkt ein Guthaben, kein Ergebnis": (
+        "Schlechtestes Jahr",
+        "Guthaben",
+        "Minimum ueber alle Fenster",
+    ),
     "Der Grundstock nimmt auch das Neue auf": ("Grundstock", "save_trials"),
     "Zugelassen ist der Korb, handelbar ist ein Bein": (
         "Korbhandel", "handelbar ist ein Bein",

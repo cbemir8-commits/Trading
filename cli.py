@@ -7497,7 +7497,7 @@ def anatomie(
     from research.admission import load_trials
     from research.anatomie import BAUTEILE, Lage, traegt_das_bauteil, vergleiche
     from research.datenstand import alle_geschnitten
-    from research.gates import GateStatus, evaluate_gates
+    from research.gates import GateStatus, evaluate_gates, vergleichbar
     from research.randschnitt import fertige
     from research.referenz import SPOTPUNKT
     from research.seeds import spitzenkandidat
@@ -7548,8 +7548,10 @@ def anatomie(
             g, bericht, next(iter(frames.values())), configs[symbole[0]],
             trials_so_far=versuche, frames=frames, configs=configs,
         )
+        # Das Ergebnis selbst kommt mit, nicht nur die beiden Zahlen: Ob die
+        # Spalten dieselbe Groesse tragen, steht in 'bedingung' (Befund 395).
         gemessen["ohne" if gemessen else "mit"] = {
-            r.name: (float(r.value), float(r.threshold)) for r in gates.results
+            r.name: (float(r.value), float(r.threshold), r) for r in gates.results
         }
         gehandelt = fertige(bericht.all_trades)
         form = Kandidat.aus_trades("", gehandelt)
@@ -7677,26 +7679,56 @@ def anatomie(
         kipp.add_column("mit", justify="right")
         kipp.add_column("ohne", justify="right")
         kipp.add_column("Richtung")
+        # **Gesagt wird, ob die Spalten dieselbe Groesse tragen** (Befund 395).
+        # Der Hinweis darunter stand im Konjunktiv - "koennen verschiedene
+        # Bedingungen zeigen" -, und welcher Fall vorlag, musste der Leser
+        # aus den Gate-Meldungen zusammensuchen. Gemessen ist der Fall nicht
+        # selten: Dieselbe Regel auf zwei Reihenanfaengen meldet bei der
+        # Messlatte 14,339 gegen 15,000 und 183,318 gegen 29,751.
+        ungleich: list[str] = []
         for name in kippende:
             a = gemessen["mit"].get(name)
             b = gemessen["ohne"].get(name)
             if a is None or b is None:
                 continue
+            gleich = vergleichbar(a[2], b[2])
+            if not gleich:
+                ungleich.append(name)
             kipp.add_row(
                 name,
                 f"{a[0]:.3f} / {a[1]:.3f}",
                 f"{b[0]:.3f} / {b[1]:.3f}",
-                "haelt es" if name in lage.gates_nur_ohne else "kostet es",
+                ("haelt es" if name in lage.gates_nur_ohne else "kostet es")
+                + ("" if gleich else "  (andere Groesse)"),
             )
         console.print(kipp)
         console.print(
             "[dim]Wert und Schwelle sind die der Bedingung, an der ein Gate "
             "haengt (Befund 267) - bei der Messlatte also entweder Rendite "
             "gegen heruntergefahrene Messlatte oder Jahresrendite gegen die "
-            "Betriebsschwelle von 15 %. Die beiden Spalten koennen damit "
-            "verschiedene Bedingungen zeigen und sind dann nicht "
-            "gegeneinander zu lesen; die Meldung des Gates nennt beide.[/]"
+            "Betriebsschwelle von 15 %.[/]"
         )
+        if ungleich:
+            console.print(
+                "[yellow]Bei "
+                + ", ".join(ungleich)
+                + " tragen die beiden Spalten verschiedene Groessen und sind "
+                "nicht gegeneinander zu lesen - 'mit' haengt an '"
+                + "', '".join(
+                    gemessen["mit"][n][2].bedingung or "einer Formel"
+                    for n in ungleich
+                )
+                + "', 'ohne' an '"
+                + "', '".join(
+                    gemessen["ohne"][n][2].bedingung or "einer Formel"
+                    for n in ungleich
+                )
+                + "'.[/]"
+            )
+        else:
+            console.print(
+                "[dim]Hier tragen beide Spalten je Gate dieselbe Groesse.[/]"
+            )
 
     console.print(
         "\n[dim]Gefallen mit: " + (", ".join(lage.mit.gefallen) or "keines")
@@ -12184,7 +12216,7 @@ def stand(
     from research.betriebspunkt import Betriebslage, Betriebspunkt
     from research.datenstand import alle_geschnitten, reihenzeile
     from research.gatelage import ordne
-    from research.gates import GateStatus, evaluate_gates
+    from research.gates import GateStatus, evaluate_gates, vergleichbar
     from research.reihenfolge import STAND as REIHENFOLGE
     from research.reihenfolge import Art as Reihenfolgeart
     from research.reihenfolge import Lage as Reihenfolgelage
@@ -12433,6 +12465,20 @@ def stand(
         s = spoturteil.get(r.name)
         if s is None:
             dazu = ""
+        elif not vergleichbar(r, s):
+            # **Zwei Groessen in einer Zeile** (Befund 395). Bei der Messlatte
+            # ist 'value' die Jahresrendite, wenn das Gate an der
+            # Betriebsschwelle haengt, und die Gesamtrendite, wenn es an der
+            # heruntergefahrenen Messlatte haengt - gemessen 14,339 gegen
+            # 183,318 fuer dieselbe Regel auf zwei Reihenanfaengen. Einen
+            # Abstand daraus neben die Spalte zu setzen heisst, eine
+            # Jahresrendite von einer Gesamtrendite abzuziehen, und das faellt
+            # genau dann an, wenn der Spot-Punkt dieses Gate **besteht**.
+            dazu = (
+                f"   [yellow]Spot {s.status.value}: {s.bedingung or 'andere Bedingung'}[/]"
+                if s.status is not GateStatus.SKIP
+                else f"   [yellow]Spot {s.status.value}[/]"
+            )
         else:
             weite = abs(s.value - s.threshold)
             dazu = {

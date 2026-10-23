@@ -4228,6 +4228,46 @@ BEHOBEN: tuple[Richtung, ...] = (
         "'0,6610 fehlt'), und ein uebersprungenes Gate bekommt keinen Abstand, "
         "weil es nicht geurteilt ist",
         394,
+        zuletzt=395,
+    ),
+    # Befund 395: die Leiter aus 394 noch einmal, ueber sechs Reihenanfaenge
+    # und beide Betriebspunkte - und eine Spalte darin war zwei Groessen.
+    Richtung(
+        "Eine Spalte, zwei Groessen - die Messlatte in der Leiter",
+        "**Zuerst die Zuordnung, die 394 offen liess.** Dort standen -10,320 "
+        "(Perpetual auf dem Speicher) gegen 0,390 Reserve (Spot auf der "
+        "Reihe) - zwei Aenderungen auf einmal. Gemessen im Kreuz: Das "
+        "schlechteste Jahr haengt **nur** am Betriebspunkt, nicht an der "
+        "Reihe: -10,3200 auf Speicher wie Reihe, -9,6100 am Spot auf Speicher "
+        "wie Reihe, auf vier Stellen gleich; dasselbe gilt fuer die "
+        "Jahresrendite (12,9510 gegen 14,3390). Nur der Deflated Sharpe "
+        "bewegt sich mit der Reihe (0,6759 Speicher gegen 0,5826 Reihe am "
+        "Spot). Die 0,71 Punkte des schlechtesten Jahres sind also das "
+        "Funding, und die 50 Tage mehr Speicher tragen **null** dazu bei. "
+        "**Dann die Leiter, an beiden Punkten, sechs Reihenanfaenge** - "
+        "Perpetual faellt ab 2571 Tagen (-10,3200 gegen -10,00) und haelt "
+        "darunter (-6,38 / -6,38 / -6,08); am Spot haelt das Gate auf **allen "
+        "sechs** Sprossen (-5,04 / -5,04 / -5,60 / -9,6100 / -9,6100 / "
+        "-9,6100). Die gedruckte Leiter aus Befund 161 ist die des "
+        "berichteten Punkts; am massgeblichen gibt es diesen Fehlschlag "
+        "nicht. **Und daran ist ein Fehler aufgefallen, in meiner eigenen "
+        "Aenderung von 394.** Auf der Sprosse 2018-08-16 **besteht** die "
+        "Messlatte am Spot und meldet 183,318 gegen 29,751 - Gesamtrendite "
+        "gegen heruntergefahrene Messlatte -, waehrend jede andere Sprosse "
+        "14,339 gegen 15,000 meldet, also die **Jahres**rendite gegen die "
+        "Betriebsschwelle. Eine Spalte, zwei Groessen, Faktor elf. Der "
+        "Spot-Abstand aus 394 rechnet 'abs(wert - schwelle)' und haette dort "
+        "**153,567 Reserve** neben '14,339 gegen 15,000' gedruckt - "
+        "ausgeloest genau dann, wenn der Spot-Punkt dieses Gate **besteht**, "
+        "also im Erfolgsfall. 'cli anatomie' hat vor dem Fall gewarnt, im "
+        "Konjunktiv; 'cli stand' nicht. **Behoben**: 'GateResult.bedingung' "
+        "nennt die Bedingung, an der Wert und Schwelle haengen, 'Messlatte' "
+        "und 'Stichprobengroesse' fuellen sie (die beiden Gates mit zwei "
+        "Bedingungen), und 'gates.vergleichbar' ist die eine Regel, die jede "
+        "Oberflaeche fragt. 'cli stand' druckt den Abstand nur noch bei "
+        "gleicher Groesse und nennt sonst die Bedingung; 'cli anatomie' sagt "
+        "statt 'koennen verschiedene zeigen', welcher Fall vorliegt",
+        395,
     ),
 )
 
@@ -4236,6 +4276,32 @@ BEHOBEN: tuple[Richtung, ...] = (
 #: Getrennt von ``GESCHLOSSEN``, weil "gemessen und offen" etwas anderes ist
 #: als "gemessen und zu". Ein Eintrag hier ist eine Zusage, keine Ablage.
 OFFEN: tuple[Richtung, ...] = (
+    # Aufgeworfen von 395: Die Leiter am Spot-Punkt zeigt ein bestandenes
+    # Gate, dessen Abstand nur in eine Richtung laufen kann.
+    Richtung(
+        "Das schlechteste Jahr ist am Spot-Punkt ein Guthaben, kein Ergebnis",
+        "Am massgeblichen Punkt haelt 'Schlechtestes Jahr' mit **0,3900** "
+        "Punkten Abstand (-9,6100 gegen -10,00), und dieser Abstand ist auf "
+        "den drei laengsten Sprossen der Leiter **auf vier Stellen gleich** - "
+        "weil das bindende Zwoelfmonatsfenster dasselbe ist: das mit dem "
+        "Absturz im Maerz 2020. Ab 2020-03-30 faellt es aus der Reihe und der "
+        "Abstand springt auf 4,4000. Das Gate nimmt das **Minimum** ueber "
+        "alle Fenster, also kann dieser Abstand nie wachsen; ein schlechteres "
+        "Jahr ersetzt ihn, ein besseres nicht. **Das ist die unbequeme Seite "
+        "des einzigen offenen Weges**: Der Deflated Sharpe braucht rund 75 "
+        "weitere wirksame Beobachtungen, das sind Jahre, und diese Jahre "
+        "laufen unter einem Guthaben von 0,39 Punkten, das ein einziges "
+        "schlechtes Jahr aufbraucht. Der Bericht sagt diesen Zusammenhang "
+        "heute nur fuer den **berichteten** Punkt, wo das Gate schon gefallen "
+        "ist ('Warten kann dieses Gate nicht zurueckgewinnen', Befund 161) - "
+        "am Spot-Punkt steht nichts, weil der ganze Abschnitt daran haengt, "
+        "dass das Gate offen ist. Offen ist die Frage, was daraus folgt: "
+        "Gemessen ist der Abstand, nicht seine Verteilung. Ob 0,39 Punkte "
+        "viel oder wenig sind, haengt daran, wie oft ein Zwoelfmonatsfenster "
+        "schlechter als -10 % ausfaellt, und das ist eine Frage an die "
+        "Historie, die noch keine Antwort hat - geraten wird sie hier nicht",
+        395,
+    ),
     # Aufgeworfen von 387, als der Schnitt an einer Stelle fehlte: Wo fehlt er
     # noch? Die Inventur ist gemessen, der Schluss daraus nicht gezogen.
     Richtung(
