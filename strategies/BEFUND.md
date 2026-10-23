@@ -35146,3 +35146,118 @@ beziffert beantwortbar, aber nicht beantwortet. Zwei Wege waeren messbar:
   gemessen auf einer Menge, die niemand nach Vielfalt ausgesucht hat.
 
 Der zweite Weg kostet keinen Versuch und liegt im Container.
+
+## Dreihundertzweiundneunzig. Die dritte Schaetzung entscheidet, und sie geht gegen meine zweite
+
+Befund 391 liess zwei Lesarten offen, und das war ehrlich - aber unbefriedigend:
+
+- **Entweder** sind die 203 Versuche keine 203 unabhaengigen Ideenziehungen
+  (192 stehen ohne Herkunft im Grundstock, 234/282), dann ist die Rueckrechnung
+  zu klein und die Suche schlaegt die Null.
+- **Oder** die acht gebuchten Versuche sind nach Vielfalt ausgesucht, dann ist
+  meine Aktenschaetzung zu gross.
+
+Entschieden wird das von einer Menge, die niemand nach Vielfalt zusammengestellt
+hat: dem **Vorratskatalog**. Und seine Protokolle tragen `n_eff` je Regel, also
+die wirksame Stichprobe aus dem Gate selbst - kein geschaetzter Anteil.
+
+### Gemessen
+
+Tageskatalog, Spot, Versuchsstand 203, nach Abzug des Schaetzrauschens:
+
+```
+Quelle                        Mittel   Ideenstreuung
+Rueckrechnung (390)                0*         0,0906
+acht gebuchte Versuche (391)  +0,0324         0,1669
+18 Katalogregeln              +0,1823         0,0670
+19 Regeln, sechs Stuecke      +0,1900         0,0589
+Nullstreuung                                  0,0913
+```
+
+(* eine Annahme, kein gemessenes Mittel.)
+
+**Zwei von drei liegen unter der Null**, und die dritte ist die ausgesuchte. Man
+sieht es an der Form: hohes Mittel bei **enger** Streuung im Katalog (+0,19 /
+0,059), niedriges Mittel bei **weiter** Streuung unter den gebuchten (+0,03 /
+0,167). Die gebuchten sind bewusst verschiedene Familien - Volumenschock,
+Rueckkehr zum Mittel, Ueberverkauft, Enge vor Bewegung -, also eine Auswahl und
+keine Stichprobe des Erzeugers.
+
+Damit war **meine Einschraenkung aus 391 zu grosszuegig gegenueber der Suche**,
+und die Richtung aus Befund 390 ist die besser gestuetzte.
+
+### Wie sauber die Zahl ist
+
+Die sechs Stuecke sind mit `zwischenstand.zusammen` zusammengelegt, das die
+Koepfe Feld fuer Feld vergleicht (Befund 300): gleicher Katalog- und
+Codeabdruck, gleicher Betriebspunkt, dieselben Regelnamen wie die Einzeldatei.
+Zusammengelegt wird also nur, was zusammengehoert - und 19 statt 18 Regeln sind
+eine Zeile mehr, nicht eine andere Messung.
+
+Vier Ergebnisse stehen in einem Protokoll, und nur eines ist eine Ideenziehung:
+
+```
+gemessen        18
+identisch        6   Doppelgaenger (Befund 300) - keine zweite Ziehung
+kein Kandidat    5   keine Trades, also keine Guete
+keine Latte      1   die Huerde war nicht zu rechnen
+```
+
+**Gegenprobe**: Nimmt man die fuenf Fehlschlaege als Guete 0 dazu, ist die
+Streuung **nicht mehr nachweisbar** - die Richtung bleibt, nur die Zahl
+verschwindet. Und "nicht nachweisbar" ist etwas anderes als "null": Die
+beobachtete Streuung ist dann vollstaendig durch das Schaetzrauschen erklaert.
+
+### Was dennoch offen bleibt
+
+Alle drei Schaetzer sind erst bei **4 bis 8** unabhaengigen Ideenziehungen mit
+dem beobachteten Bestwert von 0,2509 vereinbar. Nicht bei 203.
+
+Fuer die Rueckrechnung ist der Zaehler also die falsche Zahl - er zaehlt
+**gepruefte Hypothesen**, und das ist genau, was er zaehlen soll. Fuer das Gate
+ist er die richtige: Dort geht es um Mehrfachtestung, und 203 Hypothesen sind
+geprueft worden. Dieselbe Zahl, zwei Fragen, zwei Antworten.
+
+Das ist kein Widerspruch, den man wegraeumt, sondern einer, den man benennt.
+
+### Fuenf Durchgaenge, dieselbe Lehre
+
+`aus_dem_katalog` ist angeschlossen: `cli rennen` stellt alle drei Schaetzer
+nebeneinander, nennt die Quelldateien und laesst Protokolle ohne Betriebspunkt
+aus (Befund 242/309). Statusschirm und `Suchbudget` sagen jetzt die Dreierzahl
+statt einer davon.
+
+Damit ist Befund 351 - *eine Messung, die nur in einem Modul existiert, erreicht
+niemanden* - in fuenf Durchgaengen hintereinander der Fund gewesen: 379 bei mir
+selbst, 382 im Dashboard, 386 am ganzen Befehl, 388 am Satz ohne Zahl, 391 an
+Werten, die seit 377 gesammelt und nie gelesen wurden. Hier waren es Protokolle,
+die seit September auf der Platte liegen.
+
+### Und ein Waechter hat mich wieder abgefangen
+
+Der erste Entwurf des Registereintrags hatte die Tabelle **im Eintrag**, mit
+Zeilenumbruechen. Genau das hat Befund 386 abgestellt, und der Test aus
+jenem Durchgang (`test_keine_richtung_hat_einen_umbruch`) haette es gefunden -
+ich habe es diesmal vorher gesehen, weil der Test existiert. Die Zahlen stehen
+jetzt als Satz im Eintrag und als Tabelle hier.
+
+### Ein zweiter Waechter, und eine Lehre ueber Namen
+
+Mein Konstantenname war `GEMESSEN = "gemessen"` - der Feldwert, der eine
+Protokollzeile als Ideenziehung ausweist. Darauf ist
+`test_koepfe_stimmen.test_jedes_modul_mit_daten_wird_geprueft` gefallen:
+
+> Allgemein ist deshalb nicht die Auswahl, sondern die **Abdeckung**:
+> `test_jedes_modul_mit_daten_wird_geprueft` findet Module mit einem
+> `GEMESSEN` selbst und verlangt, dass sie hier stehen.
+
+In `research/` heisst `GEMESSEN` naemlich etwas Bestimmtes: **die gemessene
+Datentabelle, die zum Modulkopf passen muss** (Befund 223/224). Ein Modul, das
+eine hat, braucht die Wache, die Kopf und Daten aneinanderhaelt.
+
+Meine Zeilenart ist das nicht. Sie heisst jetzt `IDEENZEILE`, und der Grund
+steht daneben - der naechste, der hier einen passenden Namen sucht, soll nicht
+erst die Suite fragen muessen.
+
+Das ist die Sorte Fund, die ein gewachsenes Register ermoeglicht: Der Name war
+besetzt, und zwar mit Bedeutung.

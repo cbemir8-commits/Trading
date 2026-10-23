@@ -10898,7 +10898,10 @@ def rennen(
     from research.stand import BUDGET
     from research.suchbudget import Kandidat
     from research.versuche import laden as versuche_laden
-    from research.wettrennen import Rennen, aus_der_akte, extremwert, spanne
+    from research.wettrennen import Rennen, aus_dem_katalog, aus_der_akte, extremwert, spanne
+    from research.zwischenstand import Uneinig as ProtokollUneinig
+    from research.zwischenstand import lies as protokoll_lesen
+    from research.zwischenstand import zusammen as protokoll_zusammen
     from strategy.compiler import compile_genome
 
     # Wie viele der rohen Trades wirksam sind: **gerechnet** aus dem
@@ -11058,10 +11061,70 @@ def rennen(
                 f"(Befund 234/282) -, dann ist die Rueckrechnung zu klein und "
                 f"die Suche schlaegt die Null. Oder die verzeichneten "
                 f"Versuche sind absichtlich vielfaeltig gewaehlt, dann ist "
-                f"die Aktenschaetzung zu gross. **Das 'nie' aus Befund 390 "
-                f"haengt an der ersten Annahme und ist damit kein "
-                f"Schlusswort.**[/]\n"
+                f"die Aktenschaetzung zu gross. **Welche von beiden gilt, "
+                f"entscheidet eine dritte Schaetzung** - der Vorratskatalog "
+                f"hat niemand nach Vielfalt ausgesucht (Befund 392).[/]\n"
             )
+
+        # **Die dritte Schaetzung** (Befund 392). Der Vorratskatalog ist die
+        # Menge, die niemand nach Vielfalt ausgesucht hat - und seine
+        # Protokolle tragen n_eff je Regel, also die wirksame Stichprobe aus
+        # dem Gate selbst. Zusammengelegt wird nur, was zusammengehoert:
+        # 'zusammen' vergleicht die Koepfe Feld fuer Feld (Befund 300).
+        katalog_quelle: list[Path] = []
+        katalog = None
+        gruppen: dict[tuple, list[Path]] = {}
+        for pfad in sorted(Path("reports/vorratsdecke").glob("*.jsonl")):
+            kopf_p, _ = protokoll_lesen(pfad)
+            if not kopf_p or kopf_p.get("intervall") != interval_obj.label:
+                continue
+            if not kopf_p.get("betriebspunkt"):
+                # Ein Bericht ohne Betriebspunkt gilt nicht (Befund 242/309).
+                continue
+            schluessel = (
+                kopf_p.get("betriebspunkt"),
+                kopf_p.get("katalog"),
+                kopf_p.get("code"),
+            )
+            gruppen.setdefault(schluessel, []).append(pfad)
+        for pfade in gruppen.values():
+            try:
+                _kopf_g, zeilen = (
+                    protokoll_zusammen(pfade) if len(pfade) > 1
+                    else protokoll_lesen(pfade[0])
+                )
+            except ProtokollUneinig:
+                continue
+            schaetzung = aus_dem_katalog(zeilen)
+            if schaetzung is None:
+                continue
+            if katalog is None or schaetzung.anzahl > katalog.anzahl:
+                katalog, katalog_quelle = schaetzung, pfade
+        if katalog is not None and katalog.streuung is not None:
+            console.print(
+                f"[bold]Und aus dem Vorratskatalog[/] - der Menge, die "
+                f"niemand nach Vielfalt ausgesucht hat\n"
+                f"  {katalog.anzahl} gemessene Regeln, Mittel "
+                f"{katalog.mittel:+.4f}, beobachtete Streuung "
+                f"{katalog.beobachtet:.4f}\n"
+                f"  abzueglich Schaetzrauschen: Ideenstreuung "
+                f"[bold]{katalog.streuung:.4f}[/] - "
+                f"{'ueber' if katalog.streuung > lauf.nullstreuung else 'unter'}"
+                f" der Nullstreuung\n"
+                f"  [dim]Quelle: "
+                f"{', '.join(p.name for p in katalog_quelle)}[/]\n"
+            )
+            if katalog.streuung < lauf.nullstreuung:
+                console.print(
+                    "[dim]Damit stehen zwei der drei Schaetzungen unter der "
+                    "Null, und die dritte ist die ausgesuchte: hohes Mittel "
+                    "bei enger Streuung im Katalog, niedriges Mittel bei "
+                    "weiter Streuung unter den gebuchten Versuchen. Die "
+                    "Richtung aus Befund 390 ist damit die besser gestuetzte - "
+                    "und meine Einschraenkung aus 391 war zu grosszuegig "
+                    "gegenueber der Suche (Befund 392).[/]\n"
+                )
+
 
     # **Derselbe Lauf am zweiten Betriebspunkt** (Befund 126).
     #

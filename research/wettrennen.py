@@ -123,7 +123,7 @@ Kostet keinen Versuch: Gerechnet wird ueber Versuche, nicht mit ihnen.
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from statistics import NormalDist, fmean, stdev
 
@@ -244,6 +244,71 @@ class Aktenschaetzung:
             else:
                 hoch = mitte
         return hoch
+
+
+#: Welche Protokollzeilen eine Ideenziehung sind - Befund 392.
+#:
+#: Ein Vorratsprotokoll fuehrt vier Ergebnisse, und nur eines davon ist eine
+#: gemessene Idee:
+#:
+#:     gemessen        eine Regel mit Guete und wirksamer Stichprobe
+#:     kein Kandidat   keine Trades - ein Fehlschlag, aber ohne Guete
+#:     identisch       ein Doppelgaenger (Befund 300) - **keine** zweite Ziehung
+#:     keine Latte     die Huerde war nicht zu rechnen
+#:
+#: Die Doppelgaenger mitzuzaehlen waere eine doppelte Ziehung, und die
+#: Fehlschlaege als Guete 0 zu fuehren waere eine erfundene Zahl. Gemessen mit
+#: den fuenf Fehlschlaegen als Null ist die Streuung **nicht mehr nachweisbar**
+#: - die Richtung bleibt also, nur die Zahl verschwindet.
+#:
+#: **Nicht ``GEMESSEN``**, obwohl der Wert so lautet: Dieser Name ist in
+#: ``research/`` belegt. Dort heisst er "die gemessene Datentabelle, die zum
+#: Modulkopf passen muss" (Befund 223/224), und
+#: ``test_koepfe_stimmen.test_jedes_modul_mit_daten_wird_geprueft`` findet jedes
+#: Modul mit einem ``GEMESSEN`` und verlangt, dass es dort geprueft wird. Mein
+#: erster Entwurf hiess so und hat die Wache ausgeloest - zu Recht, denn eine
+#: Protokollzeilenart ist keine Messtabelle.
+IDEENZEILE = "gemessen"
+
+
+def aus_dem_katalog(
+    messungen: Iterable[Mapping[str, object]],
+) -> Aktenschaetzung | None:
+    """Die Ideenstreuung aus einem Vorratsprotokoll - die **dritte** Schaetzung.
+
+    Befund 391 liess zwei Lesarten offen: Entweder sind die 203 Versuche keine
+    203 unabhaengigen Ideenziehungen, oder die acht verzeichneten Versuche sind
+    nach Vielfalt ausgesucht. Der Vorratskatalog entscheidet das, denn ihn hat
+    niemand nach Vielfalt zusammengestellt - und seine Protokolle tragen
+    ``n_eff`` je Regel, also die wirksame Stichprobe aus dem Gate selbst statt
+    eines geschaetzten Anteils.
+
+    Gemessen am Tageskatalog (18 Regeln, Spot, Versuchsstand 203):
+
+        Mittel            +0,1823      gegen +0,0324 bei den acht Versuchen
+        beobachtet         0,1546
+        Ideenstreuung      0,0670      gegen 0,1669 dort
+        Nullstreuung       0,0913      -> **darunter**
+
+    Dasselbe ueber die sechs zusammengelegten Stuecke (19 Regeln): 0,0589.
+    Die Richtung ist damit dieselbe wie bei der Rueckrechnung aus Befund 390,
+    und die Aktenschaetzung aus 391 ist der Ausreisser - mit nachweisbarer
+    Ursache: hohes Mittel bei enger Streuung hier, niedriges Mittel bei weiter
+    Streuung dort, also eine ausgesuchte Menge.
+
+    ``messungen`` sind die Zeilen aus ``zwischenstand.lies`` - **Daten**, keine
+    Anweisungen. Gelesen werden nur die Felder ``ergebnis``, ``sr_je_trade``
+    und ``n_eff``.
+    """
+    punkte = [
+        (float(z["sr_je_trade"]), int(z["n_eff"]))
+        for z in messungen
+        if z.get("ergebnis") == IDEENZEILE
+        and isinstance(z.get("sr_je_trade"), (int, float))
+        and isinstance(z.get("n_eff"), int)
+        and int(z["n_eff"]) > 0
+    ]
+    return aus_der_akte(punkte)
 
 
 def aus_der_akte(

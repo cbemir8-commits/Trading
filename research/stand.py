@@ -4104,6 +4104,45 @@ BEHOBEN: tuple[Richtung, ...] = (
         "kein Unglueck, sondern der Grund, warum die erste nicht als "
         "Schlusswort dastehen durfte",
         391,
+        zuletzt=392,
+    ),
+    # Befund 392: die dritte Schaetzung derselben Groesse - und sie entscheidet
+    # die Frage, die 391 offengelassen hat. Gegen meine eigene Zahl.
+    Richtung(
+        "Die dritte Schaetzung entscheidet, und sie geht gegen meine zweite",
+        "Befund 391 liess zwei Lesarten offen: Entweder sind die 203 Versuche "
+        "keine 203 unabhaengigen Ideenziehungen, oder die acht gebuchten "
+        "Versuche sind nach Vielfalt ausgesucht. Entschieden wird das vom "
+        "**Vorratskatalog** - der Menge, die niemand nach Vielfalt "
+        "zusammengestellt hat -, und seine Protokolle tragen 'n_eff' je "
+        "Regel, also die wirksame Stichprobe aus dem Gate selbst statt eines "
+        "geschaetzten Anteils. Gemessen am Tageskatalog, Spot, Versuchsstand "
+        "203, nach Abzug des Schaetzrauschens: 18 Katalogregeln ergeben eine "
+        "Ideenstreuung von **0,0670** bei Mittel +0,1823, die sechs "
+        "zusammengelegten Stuecke (19 Regeln) **0,0589** bei +0,1900 - gegen "
+        "0,1669 bei +0,0324 aus den acht gebuchten Versuchen, 0,0906 aus der "
+        "Rueckrechnung und eine Nullstreuung von 0,0913. **Zwei von drei "
+        "liegen unter der Null**, und die dritte ist die ausgesuchte: hohes "
+        "Mittel bei enger Streuung im Katalog, niedriges Mittel bei weiter "
+        "Streuung unter den gebuchten. Damit ist **meine Einschraenkung aus "
+        "391 zu grosszuegig gegenueber der Suche gewesen**, und die Richtung "
+        "aus 390 ist die besser gestuetzte. Die sechs Stuecke sind mit "
+        "'zwischenstand.zusammen' zusammengelegt, das die Koepfe Feld fuer "
+        "Feld vergleicht (Befund 300) - gleicher Katalog- und Codeabdruck, "
+        "gleiche Regelnamen wie die Einzeldatei. **Gegenprobe**: Nimmt man die "
+        "fuenf Zeilen ohne Kandidat als Guete 0 dazu, ist die Streuung "
+        "**nicht mehr nachweisbar** - die Richtung bleibt, nur die Zahl "
+        "verschwindet. Die sechs Doppelgaenger ('identisch') sind "
+        "ausgenommen, denn eine zweite Ziehung derselben Regel ist keine. "
+        "**Was dennoch offen bleibt**: Alle drei Schaetzer sind erst bei 4 bis "
+        "8 unabhaengigen Ideenziehungen mit dem beobachteten Bestwert von "
+        "0,2509 vereinbar, nicht bei 203. Fuer die Rueckrechnung ist der "
+        "Zaehler also die falsche Zahl, fuer das Gate die richtige - er zaehlt "
+        "gepruefte Hypothesen. Gebaut ist 'wettrennen.aus_dem_katalog', "
+        "'cli rennen' stellt alle drei Schaetzer nebeneinander und nennt die "
+        "Quelldateien, und Statusschirm wie 'Suchbudget' sagen jetzt die "
+        "Dreierzahl statt einer davon",
+        392,
     ),
 )
 
@@ -4666,15 +4705,25 @@ class Suchbudget:
     Die Richtung des Befundes ist unveraendert und schaerfer: Weitersuchen ist
     der schwache Hebel.
 
-    **Dass daraus "gar nicht" wird, haelt nicht** (Befund 391). Dieselbe
-    Groesse ist ein zweites Mal gemessen, diesmal aus den verzeichneten
-    Versuchen statt aus dem Bestwert: acht neue Regelideen ergeben nach Abzug
-    des Schaetzrauschens eine Ideenstreuung von **0,1669** bei Mittel +0,0324
-    - das Doppelte, und klar ueber der Null. Die beiden Schaetzer sind erst
-    bei **rund sieben** unabhaengigen Ideenziehungen vereinbar, nicht bei 203.
-    Entweder sind die 203 keine 203 Ideenziehungen (192 stehen ohne Herkunft
-    im Grundstock, 234/282), oder die verzeichneten Versuche sind absichtlich
-    vielfaeltig gewaehlt. Beides ist moeglich, und keines ist gemessen.
+    **Dreimal geschaetzt, und zweimal unter der Null** (Befunde 391/392).
+    Dieselbe Groesse, auf drei Wegen:
+
+        aus dem Bestwert zurueckgerechnet     0,0906   Mittel 0 (Annahme)
+        aus den acht gebuchten Versuchen      0,1669   Mittel +0,0324
+        aus 19 Katalogregeln                  0,0589   Mittel +0,1900
+        Nullstreuung                          0,0913
+
+    Befund 391 hatte nur die zweite Zahl und daraus geschlossen, das "gar
+    nicht" aus 390 sei kein Schlusswort. Der Katalog entscheidet das: Ihn hat
+    niemand nach Vielfalt ausgesucht, und er liegt **unter** der Null. Die
+    gebuchten Versuche sind die ausgesuchte Menge - hohes Mittel bei enger
+    Streuung dort, niedriges Mittel bei weiter Streuung hier.
+
+    **Alle drei** sind aber erst bei 4 bis 8 unabhaengigen Ideenziehungen mit
+    dem beobachteten Bestwert vereinbar, nicht bei 203. Der Zaehler zaehlt
+    gepruefte Hypothesen, und 192 stehen ohne Herkunft im Grundstock
+    (234/282); fuer die Rueckrechnung ist das die falsche Zahl, fuer das Gate
+    die richtige.
 
     **Und beides sind Punktschaetzer.** Die Rueckrechnung steht auf einem
     einzigen beobachteten Bestwert; bei 203 Versuchen liegt ihre relative
@@ -6097,15 +6146,18 @@ class Lage(Gatebilanz):
                 # zweiten Mal** gemessen - aus den verzeichneten Versuchen
                 # statt aus dem Bestwert - und kommt auf das Doppelte. Beide
                 # Saetze waren zu bestimmt; dieser nennt den Widerspruch.
-                "  **Wie schnell der beste Fund nachzieht, ist strittig**",
-                "  (Befund 390/391): Aus dem Bestwert zurueckgerechnet liegt",
-                "  die Streuung echter Regelideen unter der des reinen",
-                "  Zufalls - dann holt kein Suchlauf die Huerde ein. Aus den",
-                "  verzeichneten Versuchen geschaetzt liegt sie beim",
-                "  Doppelten, und dann schon. Versoehnt sind die beiden",
-                "  Schaetzer bei rund sieben unabhaengigen Ideenziehungen,",
-                "  nicht bei 203 - der Zaehler zaehlt geprufte Hypothesen.",
-                "  Nachrechnen: 'cli rennen'.",
+                "  **Der beste Fund zieht nicht nach** (Befund 390/391/392).",
+                "  Dieselbe Groesse ist dreimal geschaetzt: aus dem Bestwert",
+                "  zurueckgerechnet 0,0906, aus den acht gebuchten Versuchen",
+                "  0,1669, aus den Katalogregeln 0,0589 - gegen eine",
+                "  Nullstreuung von 0,0913. Zwei von drei liegen darunter,",
+                "  und die dritte ist die ausgesuchte: hohes Mittel bei enger",
+                "  Streuung im Katalog (+0,19 / 0,059), niedriges Mittel bei",
+                "  weiter Streuung unter den gebuchten (+0,03 / 0,167).",
+                "  Alle drei sind aber erst bei 4 bis 8 unabhaengigen",
+                "  Ideenziehungen mit dem Bestwert vereinbar, nicht bei 203 -",
+                "  der Zaehler zaehlt geprufte Hypothesen. Nachrechnen:",
+                "  'cli rennen'.",
                 "",
                 "  Was bindet, ist die wirksame Stichprobe (Befund 388): Das",
                 "  Zielfenster schliesst sich, sobald sie faellt, und wird",

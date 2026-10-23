@@ -199,13 +199,20 @@ class TestDerBefehlStelltBeideNebeneinander:
         assert "0.74" not in quelle
 
     def test_und_das_nie_aus_390_wird_eingeordnet(self) -> None:
+        """Nicht geloescht, sondern eingeordnet.
+
+        Hier stand *"Das 'nie' aus Befund 390 haengt an der ersten Annahme und
+        ist damit kein Schlusswort"* - und der Test hat das mit einem ``or``
+        geprueft, also fast nichts. Befund 392 hat die dritte Schaetzung
+        gemessen und damit entschieden, welche Lesart gilt; der Satz verweist
+        jetzt dorthin, und der Test prueft ihn.
+        """
         import cli
 
         quelle = inspect.getsource(cli.rennen)
 
-        assert "kein\\n                f\"Schlusswort" in quelle or (
-            "Schlusswort" in quelle
-        )
+        assert "entscheidet eine dritte Schaetzung" in quelle
+        assert "192 stehen ohne Herkunft im Grundstock" in quelle
 
 
 class TestWasImRegisterSteht:
@@ -240,19 +247,29 @@ class TestWasImRegisterSteht:
         text = Suchbudget.__doc__ or ""
 
         assert "0,1669" in text
-        assert "sieben" in text
-        assert "haelt nicht" in text, "das 'gar nicht' aus 390 wird berichtigt"
+        assert "0,0589" in text
+        assert "Dreimal geschaetzt" in text, (
+            "hier stand 'haelt nicht' - die Fassung aus 391, die das 'gar "
+            "nicht' aus 390 zurueckgenommen hat. Seit 392 steht die "
+            "Dreierzahl da statt einer davon."
+        )
+        assert "ausgesuchte Menge" in text
 
     def test_der_statusschirm_nennt_ihn_auch(self) -> None:
-        """Dort stand nach 390 zwei Stunden lang 'er zieht nicht langsam
-        nach, sondern nicht' - als Ergebnis."""
+        """Dreimal umgeschrieben, und jedes Mal aus einem Grund.
+
+        Nach 390 stand dort 'er zieht nicht langsam nach, sondern nicht' - als
+        Ergebnis. Nach 391 'ist strittig', weil die zweite Schaetzung das
+        Gegenteil sagte. Nach 392 steht die Dreierzahl da, denn die dritte
+        Schaetzung entscheidet es.
+        """
         from research.stand import Lage
 
         quelle = inspect.getsource(Lage)
 
-        assert "ist strittig" in quelle
+        assert "0,0589" in quelle
         assert "nicht bei 203" in quelle
-        assert "sondern nicht**" not in quelle
+        assert "ist strittig" not in quelle
 
 
 class TestDieAkteBleibtLesbar:
