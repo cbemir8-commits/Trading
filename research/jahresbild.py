@@ -2,8 +2,8 @@
 
 Warum ausgerechnet dieses Gate
 ------------------------------
-Von den vier Gates, an denen der Spitzenkandidat scheitert, ist "Schlechtestes
-Jahr" der schmalste Fehlschlag im ganzen System:
+Von den vier Gates, an denen der Spitzenkandidat am **berichteten** Punkt
+scheitert, ist "Schlechtestes Jahr" der schmalste Fehlschlag im ganzen System:
 
     -10,32 % gegen eine Schwelle von -10,00 %
 
@@ -11,6 +11,15 @@ Zweiunddreissig Hundertstel. Das ist die Sorte Abstand, bei der die Frage
 "woraus besteht diese Zahl eigentlich" mehr wert ist als jeder weitere
 Suchlauf - und sie kostet keinen einzigen Versuch, weil nichts Neues gerechnet
 wird. Es wird eine Kurve zerlegt, die ohnehin schon da ist.
+
+**Am massgeblichen Punkt haelt es** - und zwar genauso schmal (Befund 395/396):
+
+    -9,61 % gegen -10,00 %, also 0,39 Punkte Reserve
+
+Die 0,71 Punkte Unterschied sind das Funding, nicht die Reihe: Auf dem
+Speicher und auf der Zulassungsreihe steht dieselbe Zahl, auf vier Stellen.
+Und "haelt" ist hier keine Entlastung, sondern dieselbe Frage von der anderen
+Seite - deshalb zerlegt dieses Modul seit Befund 396 auch das bestandene Gate.
 
 Zwei Fragen, zwei sehr verschiedene Lagen
 -----------------------------------------
@@ -151,6 +160,34 @@ class Jahresbild:
         return zeile["start"], zeile["ende"]
 
     @property
+    def reserve(self) -> float:
+        """Wie weit das schlechteste Fenster **ueber** der Schwelle liegt.
+
+        Negativ heisst durchgefallen. Gemessen am Spot-Punkt: -9,61 gegen
+        -10,00, also 0,39 Punkte - und diese Zahl kann nie wachsen, weil das
+        Gate das Minimum ueber alle Fenster nimmt (Befund 396).
+        """
+        if self.fenster.empty:
+            return float("nan")
+        return self.schlechtestes - self.schwelle_pct
+
+    @property
+    def luft(self) -> float:
+        """Abstand vom schlechtesten zum naechsten **nicht ueberlappenden**.
+
+        Die Zahl, die "Spitze oder Hochebene" auch dann beantwortet, wenn
+        kein Fenster durchfaellt: Am Spot-Punkt sind es 4,57 Punkte
+        (-9,61 gegen -5,04), das schlechteste Fenster steht also allein.
+
+        ``nan``, wenn es kein getrenntes Fenster gibt - bei einer Reihe, die
+        kaum laenger als zwei Jahre ist, liegt alles im Ueberlappungsbereich.
+        """
+        zweites = self._zweites()
+        if not np.isfinite(zweites) or not np.isfinite(self.schlechtestes):
+            return float("nan")
+        return zweites - self.schlechtestes
+
+    @property
     def abweichung(self) -> float:
         """Wie weit Kalender- und Indexrechnung auseinanderliegen."""
         if not np.isfinite(self.index_wert) or not np.isfinite(self.schlechtestes):
@@ -210,9 +247,32 @@ class Jahresbild:
         if self.fenster.empty:
             return "Nicht beurteilbar."
         if self.darunter == 0:
-            return (
+            # **Auch das bestandene Gate wird zerlegt** (Befund 396). Hier
+            # stand ein Satz, der mit "besteht die Strategie hier" endete -
+            # und die Frage, um die es diesem Modul geht, blieb unbeantwortet:
+            # Haelt es mit Luft oder an einem einzelnen Fenster? Gemessen am
+            # Spot-Punkt haelt es mit 0,39 Punkten, und das naechste getrennte
+            # Fenster liegt 4,57 Punkte entfernt - eine Spitze, nur von der
+            # anderen Seite.
+            satz = (
                 f"Kein Zwoelfmonatsfenster unter {self.schwelle_pct:.1f} % - "
-                f"am Kalender gerechnet besteht die Strategie hier."
+                f"am Kalender gerechnet besteht die Strategie hier, mit "
+                f"{self.reserve:.2f} Punkten Reserve."
+            )
+            wann = self.zeitraum
+            ort = f" ({wann[0]:%Y-%m} bis {wann[1]:%Y-%m})" if wann else ""
+            if np.isfinite(self.luft):
+                satz += (
+                    f" Das schlechteste Fenster{ort} steht allein: Zum "
+                    f"naechsten, das sich mit ihm nicht ueberlappt, sind es "
+                    f"{self.luft:.2f} Punkte."
+                )
+            # Die unbequeme Haelfte, und sie gilt unabhaengig vom Urteil: Das
+            # Gate nimmt das Minimum. Ein schlechteres Jahr ersetzt die
+            # Reserve, ein besseres holt sie nicht zurueck.
+            return satz + (
+                " Die Reserve ist ein Guthaben: Das Gate nimmt das Minimum "
+                "ueber alle Fenster, sie kann also nur kleiner werden."
             )
         anteil = self.anteil_darunter
         wann = self.zeitraum

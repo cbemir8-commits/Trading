@@ -4268,6 +4268,38 @@ BEHOBEN: tuple[Richtung, ...] = (
         "gleicher Groesse und nennt sonst die Bedingung; 'cli anatomie' sagt "
         "statt 'koennen verschiedene zeigen', welcher Fall vorliegt",
         395,
+        zuletzt=396,
+    ),
+    # Befund 396: die offene Richtung aus 395, eine Stunde spaeter nachgemessen
+    # - und die erste Behauptung darin war meine eigene Vermutung.
+    Richtung(
+        "Das bindende Fenster war geraten, und der Schnitt verschiebt es",
+        "**Mein Fehler, und er stand schon im Register**: Die offene Richtung "
+        "aus 395 nannte das bindende Zwoelfmonatsfenster 'das mit dem Absturz "
+        "im Maerz 2020'. Geschlossen hatte ich das aus der Leiter - der Wert "
+        "springt, sobald die Reihe nach dem 2020-03-30 beginnt. Gemessen ist "
+        "es **2021-11-08 bis 2022-11-08**, der Baerenmarkt 2022, und es liegt "
+        "in **beiden** Reihen drin. Der Sprung hat einen anderen Grund: Der "
+        "Schnitt am Anfang verschiebt die Walk-Forward-Aufteilung, also macht "
+        "die Strategie **im selben Fenster** andere Trades - auf der Sprosse "
+        "2020-03-30 bindet sogar ein anderes Fenster (2021-09-06 bis "
+        "2022-09-06, -5,60). **Daraus folgt eine Abgrenzung**: Die Leiter ist "
+        "kein Beleg fuer die Einwegaussage aus Befund 161. Was sie traegt, "
+        "ist die Bauart des Walk-Forward - angehaengte Daten lassen die "
+        "frueheren Fenster unberuehrt, und genau das hat das Kreuz aus 395 "
+        "gemessen: 50 Tage mehr Speicher, dieselbe Zahl auf vier Stellen. "
+        "Beim Schneiden am Anfang gilt es nicht. **Und die Verteilung, die "
+        "395 offen liess**: Null von 2557 Fenstern liegen unter der Schwelle, "
+        "das schlechteste steht allein - 4,57 Punkte bis zum naechsten, das "
+        "sich mit ihm nicht ueberlappt (-9,61 gegen -5,04). Eine Spitze, "
+        "keine Hochebene; nur hat 'jahresbild' diese Lesart bisher **nur dem "
+        "gefallenen Gate** gegeben. Der bestandene Fall endete mit 'besteht "
+        "die Strategie hier' - und damit blieb die Frage offen, um die es dem "
+        "Modul geht. **Behoben**: 'Jahresbild.reserve' und "
+        "'Jahresbild.luft' stehen als Zahlen da, und das Urteil nennt beim "
+        "bestandenen Gate die Reserve, die Einsamkeit des schlechtesten "
+        "Fensters und dass die Reserve ein Guthaben ist",
+        396,
     ),
 )
 
@@ -4283,24 +4315,37 @@ OFFEN: tuple[Richtung, ...] = (
         "Am massgeblichen Punkt haelt 'Schlechtestes Jahr' mit **0,3900** "
         "Punkten Abstand (-9,6100 gegen -10,00), und dieser Abstand ist auf "
         "den drei laengsten Sprossen der Leiter **auf vier Stellen gleich** - "
-        "weil das bindende Zwoelfmonatsfenster dasselbe ist: das mit dem "
-        "Absturz im Maerz 2020. Ab 2020-03-30 faellt es aus der Reihe und der "
-        "Abstand springt auf 4,4000. Das Gate nimmt das **Minimum** ueber "
+        "weil das bindende Zwoelfmonatsfenster dasselbe ist. **Welches, war "
+        "zuerst geraten** (396): Ich habe aus dem Sprung bei 2020-03-30 "
+        "geschlossen, es sei das mit dem Maerz 2020. Gemessen ist es "
+        "2021-11-08 bis 2022-11-08, der Baerenmarkt 2022 - und es liegt in "
+        "beiden Reihen drin. Der Sprung kommt daher, dass der Schnitt am "
+        "Anfang die Walk-Forward-Aufteilung verschiebt und die Strategie "
+        "**im selben Fenster** andere Trades macht. Das Gate nimmt das "
+        "**Minimum** ueber "
         "alle Fenster, also kann dieser Abstand nie wachsen; ein schlechteres "
         "Jahr ersetzt ihn, ein besseres nicht. **Das ist die unbequeme Seite "
         "des einzigen offenen Weges**: Der Deflated Sharpe braucht rund 75 "
         "weitere wirksame Beobachtungen, das sind Jahre, und diese Jahre "
         "laufen unter einem Guthaben von 0,39 Punkten, das ein einziges "
-        "schlechtes Jahr aufbraucht. Der Bericht sagt diesen Zusammenhang "
-        "heute nur fuer den **berichteten** Punkt, wo das Gate schon gefallen "
-        "ist ('Warten kann dieses Gate nicht zurueckgewinnen', Befund 161) - "
-        "am Spot-Punkt steht nichts, weil der ganze Abschnitt daran haengt, "
-        "dass das Gate offen ist. Offen ist die Frage, was daraus folgt: "
-        "Gemessen ist der Abstand, nicht seine Verteilung. Ob 0,39 Punkte "
-        "viel oder wenig sind, haengt daran, wie oft ein Zwoelfmonatsfenster "
-        "schlechter als -10 % ausfaellt, und das ist eine Frage an die "
-        "Historie, die noch keine Antwort hat - geraten wird sie hier nicht",
+        "schlechtes Jahr aufbraucht. **Die Verteilung ist inzwischen "
+        "gemessen** (396): **Null** von 2557 Zwoelfmonatsfenstern liegen "
+        "unter der Schwelle, und das schlechteste steht allein - zum "
+        "naechsten, das sich mit ihm nicht ueberlappt, sind es 4,57 Punkte "
+        "(-9,61 gegen -5,04). Es ist also eine **Spitze**, keine Hochebene: "
+        "nicht ein Kandidat, der ueberall knapp haelt, sondern einer, bei dem "
+        "ein einzelnes Jahr aus der Reihe faellt. Der Bericht sagt diesen "
+        "Zusammenhang "
+        "im **Lagebericht** weiter nur fuer den berichteten Punkt, wo das Gate "
+        "schon gefallen ist ('Warten kann dieses Gate nicht "
+        "zurueckgewinnen', Befund 161); 'cli jahresbild --spot' sagt ihn seit "
+        "396 auch dort, wo es haelt. **Offen bleibt die Rate**: Null von 2557 "
+        "Fenstern ist eine Schranke und keine Schaetzung, denn 2557 "
+        "ueberlappende Fenster sind rund **neun** unabhaengige Jahre. In neun "
+        "Jahren ist es nicht passiert - mehr sagt die Reihe nicht, und mehr "
+        "wird hier nicht hineingelesen",
         395,
+        zuletzt=396,
     ),
     # Aufgeworfen von 387, als der Schnitt an einer Stelle fehlte: Wo fehlt er
     # noch? Die Inventur ist gemessen, der Schluss daraus nicht gezogen.

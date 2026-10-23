@@ -299,13 +299,19 @@ class TestWasImRegisterSteht:
         assert "Konjunktiv" in eintrag.ergebnis
 
     def test_das_guthaben_steht_als_offene_richtung(self) -> None:
+        """Hier stand zusaetzlich 'geraten wird sie hier nicht' - der Satz, mit
+        dem der Eintrag die Verteilung offen liess. Befund 396 hat sie
+        gemessen, und dieser Test ist dabei gefallen, wie er soll. Was offen
+        bleibt, ist die **Rate**, und dafuer steht der Satz jetzt anderswo im
+        Eintrag; ``test_bindendes_fenster.py`` prueft ihn dort.
+        """
         from research.stand import OFFEN
 
         eintrag = next(r for r in OFFEN if r.befund == 395)
 
         assert "0,3900" in eintrag.ergebnis
         assert "Minimum" in eintrag.ergebnis
-        assert "geraten wird sie hier nicht" in eintrag.ergebnis
+        assert "hineingelesen" in eintrag.ergebnis
 
     def test_und_394_zeigt_nach_vorn(self) -> None:
         from research.stand import BEHOBEN

@@ -35590,3 +35590,90 @@ zweiten uebersprungenen.
 `cli stand` druckt den Abstand nur bei gleicher Groesse und nennt sonst die
 Bedingung. `cli anatomie` sagt statt "koennen verschiedene zeigen", welcher
 Fall vorliegt, und markiert die Zeile.
+
+## Dreihundertsechsundneunzig. Das bindende Fenster war geraten, und der Schnitt verschiebt es
+
+Die offene Richtung aus Befund 395 war eine Stunde alt und enthielt schon eine
+Behauptung, die ich nicht gemessen hatte:
+
+> weil das bindende Zwoelfmonatsfenster dasselbe ist: das mit dem Absturz im
+> Maerz 2020. Ab 2020-03-30 faellt es aus der Reihe und der Abstand springt auf
+> 4,4000.
+
+Geschlossen hatte ich das aus der Leiter - der Wert springt genau dort, wo die
+Reihe nach dem 2020-03-30 beginnt. Die Erklaerung lag nahe und war falsch.
+`cli jahresbild --spot` nennt das Fenster beim Namen:
+
+```
+schlechtestes Jahr     2021-11-08 bis 2022-11-08
+```
+
+Der **Baerenmarkt 2022**. Er liegt in beiden Reihen drin.
+
+### Woran der Sprung dann haengt
+
+| ab | Fenster | unter -10 | schlecht. | zweit* | bindendes Fenster |
+|---|---|---|---|---|---|
+| 2017-08-16 | 2557 | 0 | -9,61 | -5,04 | 2021-11-08..2022-11-08 |
+| 2018-08-16 | 2192 | 0 | -9,61 | -5,04 | 2021-11-08..2022-11-08 |
+| 2019-08-16 | 1826 | 0 | -9,61 | -5,04 | 2021-11-08..2022-11-08 |
+| 2020-03-30 | 1548 | 0 | **-5,60** | +0,23 | **2021-09-06..2022-09-06** |
+| 2021-08-16 | 1096 | 0 | -5,04 | +3,13 | 2025-08-13..2026-08-13 |
+
+\* das schlechteste Fenster, das sich mit dem schlechtesten nicht ueberlappt
+
+Der Schnitt am Anfang verschiebt die **Walk-Forward-Aufteilung**. Die Strategie
+macht im selben Fenster andere Trades - auf der Sprosse `2020-03-30` bindet
+sogar ein anderes Fenster, drei Monate frueher, bei -5,60.
+
+### Die Abgrenzung, die daraus folgt
+
+Der Bericht stellt die Leiter neben den Satz "ein schlechtes Jahr, das einmal
+in der Reihe steht, geht nicht wieder heraus" (Befund 161). **Die Leiter belegt
+diesen Satz nicht.** Sie schneidet am Anfang, und dort aendert sich der Wert
+eines Fensters, das in beiden Reihen liegt.
+
+Was den Satz traegt, ist die Bauart des Walk-Forward: Angehaengte Daten lassen
+die frueheren Aufteilungen unberuehrt, also bleiben die frueheren Fenster, wie
+sie waren, und es kommen nur neue hinzu. Genau das hat das Kreuz aus Befund 395
+gemessen - 50 Tage mehr Speicher, dieselbe Zahl auf vier Stellen. Beim
+Schneiden am Anfang gilt es nicht.
+
+### Und die Verteilung, die 395 offen liess
+
+**Null** von 2557 Zwoelfmonatsfenstern liegen unter der Schwelle, und das
+schlechteste steht allein: 4,57 Punkte bis zum naechsten, das sich mit ihm
+nicht ueberlappt (-9,61 gegen -5,04). Eine **Spitze**, keine Hochebene - nicht
+ein Kandidat, der ueberall knapp haelt, sondern einer, bei dem ein einzelnes
+Jahr aus der Reihe faellt.
+
+Diese Lesart ist der Zweck des Moduls, und sie stand bisher **nur dem
+gefallenen Gate** zur Verfuegung. Der bestandene Fall endete so:
+
+> Kein Zwoelfmonatsfenster unter -10.0 % - am Kalender gerechnet besteht die
+> Strategie hier.
+
+Damit blieb die Frage offen, um die es `jahresbild` ueberhaupt geht. Jetzt
+stehen `Jahresbild.reserve` und `Jahresbild.luft` als Zahlen da, und das Urteil
+nennt beim bestandenen Gate die Reserve, die Einsamkeit des schlechtesten
+Fensters und dass die Reserve ein Guthaben ist.
+
+Offen bleibt die **Rate**: Null von 2557 ist eine Schranke, keine Schaetzung -
+2557 ueberlappende Fenster sind rund neun unabhaengige Jahre. In neun Jahren
+ist es nicht passiert, und mehr sagt die Reihe nicht.
+
+### Ein eigener Test hat denselben Fehler noch einmal gemacht
+
+Die Hilfsfunktion dieses Befundes baut Fenster im Jahresabstand, damit sich
+keine zwei ueberlappen. Ende und Anfang stossen dann genau aneinander, und
+`_zweites` zaehlt ein beruehrendes Fenster als ueberlappend - die Luft kam mit
+22,53 statt 4,57 heraus. Zwei Jahre Versatz, und der Test misst, was er sagt.
+
+### Noch ein Waechter hat zurueckgemeldet
+
+`test_zweigroessen.py` - der Test aus Befund 395, eine Stunde alt - hielt den
+Satz fest, mit dem die offene Richtung die Verteilung offen liess: *"geraten
+wird sie hier nicht"*. Dieser Befund hat sie gemessen, der Satz ist aus dem
+Eintrag heraus, und der Test ist gefallen. Genau dafuer steht er da. Offen
+bleibt die **Rate**, und der entsprechende Satz steht jetzt an anderer Stelle
+im Eintrag - geprueft wird er dort, wo er hingehoert.
