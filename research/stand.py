@@ -4180,6 +4180,54 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Zwei von drei Schaetzungen liegen unter der Nullstreuung, und die "
         "dritte ist die ausgesuchte",
         393,
+        zuletzt=394,
+    ),
+    # Befund 394: die meistzitierte Zahl des Projekts, nachgeprueft - und die
+    # Tafel dahinter, die es nirgends gab.
+    Richtung(
+        "Die elf Zeilen des massgeblichen Punkts standen in keiner Ausgabe",
+        "**Gegengeprueft und in Ordnung**: Die Zahl '9 von 11' am Spot-Punkt "
+        "ist ehrlich. Kein Gate ist uebersprungen, alle neun tragen Status "
+        "PASS - das war nicht selbstverstaendlich, denn 'GateResult.passed' "
+        "zaehlt einen SKIP als bestanden (Befunde 321/322), und genau dafuer "
+        "gibt es die 'bestanden_echt'-Vorrichtung. Offen sind Messlatte "
+        "(14,3390 gegen 15, es fehlen 0,6610) und Deflated Sharpe (0,5826 "
+        "gegen 0,95, es fehlen 0,3674). **Zwei auffaellige Wert/Schwelle-Paare "
+        "ebenfalls geprueft**: 'Stichprobengroesse' meldet 2250 gegen 250 - "
+        "das sind **Tage im Markt**, nicht Trades, denn der Kandidat "
+        "dimensioniert nach Kapitalanteil und faellt damit in den zweiten "
+        "Zweig des Gates; 'Kosten-Stress' meldet 1863,7259 gegen 0 - das ist "
+        "der **Gewinn bei dreifachen Kosten** gegen die Bedingung, dass "
+        "ueberhaupt einer bleibt. Beide Botschaften beschriften es richtig, "
+        "nur die nackten Paare sagen es nicht. **Die Luecke, und sie ist "
+        "schmaler, als ich zuerst geschrieben habe**: 'cli stand' hat einen "
+        "Abschnitt 'DIE GATES IM EINZELNEN' mit allen elf Zeilen - aber fuer "
+        "den **berichteten** Punkt, also Perpetual auf dem Speicher. Die "
+        "Zeilen des **Spot**-Punkts auf der Zulassungsreihe, auf den sich jede "
+        "zitierte Zahl bezieht, standen in keiner Ausgabe; 'cli anatomie' "
+        "zeigt nur die Gates, die zwischen zwei Fassungen kippen - die neun, "
+        "die auf beiden Seiten halten, kommen dort nie mit ihren Werten vor. "
+        "Mein erster Entwurf behauptete, es gebe die Tafel nirgends, und baute "
+        "eine **zweite** daneben; ein eigener Test hat die Stelle gefunden, "
+        "und zwei Tafeln fuer eine Sache waeren genau das, was dieses Projekt "
+        "sonst abstellt. Jetzt tragen die vorhandenen Zeilen den Spot-Abstand "
+        "daneben, und ueber jeder Spalte steht ihre Reihe - zwei Reihen in "
+        "einer Tafel sind sonst das, wovor 387 warnt. Sichtbar wird damit, was "
+        "vorher nicht zu sehen war: 'Schlechtestes Jahr' faellt am "
+        "Perpetual-Punkt mit -10,320 und haelt am Spot-Punkt mit 0,390 "
+        "Reserve. **Und der Spot-Punkt stand auf dem Speicher**: Er ist der "
+        "Punkt, den 'referenz.SPOTPUNKT' fuehrt, gerechnet wurde er auf allem, "
+        "was da ist - 157 Trades, Guete 0,2781, DSR 0,7237 gegen 156, 0,2708 "
+        "und 0,5826 auf der Reihe. Die Gate-Zahl war in beiden Faellen 9 von "
+        "11, deshalb ist es nie aufgefallen (dasselbe Muster wie 387). Jetzt "
+        "schneidet er, und die Reihe steht ueber der Tafel. **Kein "
+        "vorzeichenbehafteter Abstand**: Die Richtung der Schwelle steht nicht "
+        "im 'GateResult' - beim Rueckgang ist weniger besser, beim Sharpe mehr, "
+        "und ein '-2,13' hiesse dort Reserve und hier Fehlbetrag. Die Spalte "
+        "wird deshalb aus dem **Status** beschriftet ('2,1313 Reserve' gegen "
+        "'0,6610 fehlt'), und ein uebersprungenes Gate bekommt keinen Abstand, "
+        "weil es nicht geurteilt ist",
+        394,
     ),
 )
 
@@ -4199,9 +4247,12 @@ OFFEN: tuple[Richtung, ...] = (
         "Walk-Forward schicken, schnitten **2** auf die Zulassungsreihe "
         "('abstand', 'anatomie'), **3** nannten die Reihe wenigstens "
         "('abstand', 'suchbudget', 'stand'), und **35** taten keines von "
-        "beidem. **Heute sind es 3 / 4 / 34** (390): 'cli rennen' ist "
-        "dazugekommen, weil dort das Vorzeichen der Aussage ueber das "
-        "Weitersuchen an der Grundlage hing. "
+        "beidem. **Heute sind es 4 / 4 / 34** (394): 390 hat 'cli rennen' "
+        "dazugenommen, weil dort das Vorzeichen der Aussage ueber das "
+        "Weitersuchen an der Grundlage hing, und 394 'cli stand', weil der "
+        "Spot-Punkt daneben der gepflegte aus 'referenz.py' ist (156 Trades "
+        "statt 157). Die 34 bleiben gleich, weil 'stand' die Reihe schon "
+        "nannte und nur in die erste Liste wandert. "
         "Das ist keine Liste von 35 Fehlern: Befund 370 hat ausdruecklich "
         "entschieden, dass 'cli stand' auf allem rechnet, was da ist, und die "
         "Reihe nur **nennen** muss - 'auf allem zu rechnen, was da ist, ist "
@@ -4219,7 +4270,7 @@ OFFEN: tuple[Richtung, ...] = (
         "'cli abstand' rechnet 21 - zwei Zahlen fuer dieselbe Frage, und nur "
         "die zweite steht auf der Reihe (behoben in 389)",
         387,
-        zuletzt=390,
+        zuletzt=394,
     ),
     Richtung(
         # **Der Name traegt keine Zahl mehr** (Befund 352). Er hat sie von 332

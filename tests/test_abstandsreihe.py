@@ -238,27 +238,45 @@ class TestDieInventurStimmtNoch:
                 keins.append(name)
         return schneidet, nennt, keins
 
-    def test_drei_schneiden_vier_nennen_vierunddreissig_keins(self) -> None:
+    def test_vier_schneiden_vier_nennen_vierunddreissig_keins(self) -> None:
         """Die Zahlen wandern, wenn ein Befehl sich entscheidet - und genau
         dafuer ist der Test da.
 
         387 zaehlte 2 / 3 / 35. Befund 390 hat 'cli rennen' dazugenommen,
         weil dort das **Vorzeichen** der Aussage ueber das Weitersuchen an der
         Grundlage hing (Ideenstreuung 0,0906 gegen Nullstreuung 0,0913 auf der
-        Reihe, 0,0962 gegen 0,0917 auf dem Speicher). Jetzt sind es 3 / 4 / 34.
+        Reihe, 0,0962 gegen 0,0917 auf dem Speicher). Befund 394 hat 'cli
+        stand' dazugenommen, weil der Spot-Punkt daneben der gepflegte aus
+        'referenz.py' ist und auf dem Speicher 157 statt 156 Trades zaehlte.
+        Jetzt sind es 4 / 4 / 34 - die 34 bleiben gleich, weil 'stand' die
+        Reihe schon nannte und nur in die erste Liste wandert.
 
         Die offene Regel bleibt offen: Es wird nicht umgestellt, weil zwei es
-        tun, sondern weil eine Zahl daran haengt.
+        tun, sondern weil eine Zahl daran haengt. Beide Umstellungen folgen
+        damit dem Anhaltspunkt, den die offene Richtung selbst nennt.
         """
         schneidet, nennt, keins = self._inventur()
 
-        assert sorted(schneidet) == ["abstand", "anatomie", "rennen"]
+        assert sorted(schneidet) == ["abstand", "anatomie", "rennen", "stand"]
         assert sorted(nennt) == ["abstand", "rennen", "stand", "suchbudget"]
         assert len(keins) == 34, (
             f"{len(keins)} statt 34 Befehle ohne Reihe - wer einen Befehl auf "
             f"den Spitzenkandidaten setzt, entscheidet sich fuer eine Reihe "
-            f"(Befund 387/390): {sorted(keins)}"
+            f"(Befund 387/390/394): {sorted(keins)}"
         )
+
+    def test_und_das_register_nennt_genau_diese_zahlen(self) -> None:
+        """Befund 351: Eine Zahl, die nur im Test steht, zieht niemand nach.
+        Die lebende Zahl steht in der offenen Richtung - und sie wird hier aus
+        der Messung gebildet, nicht ein zweites Mal hingeschrieben."""
+        from research.stand import OFFEN
+
+        schneidet, nennt, keins = self._inventur()
+        eintrag = next(r for r in OFFEN if r.befund == 387)
+        zeile = f"{len(schneidet)} / {len(nennt)} / {len(keins)}"
+
+        assert f"**Heute sind es {zeile}**" in eintrag.ergebnis, zeile
+        assert eintrag.zuletzt == 394
 
 
 @pytest.mark.daten

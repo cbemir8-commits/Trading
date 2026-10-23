@@ -3557,6 +3557,23 @@ def _familie_grob(genome) -> str:
 def _spotpunkt(frames, symbole, genome, trials: int, settings):
     """Derselbe Kandidat unter Kassa-Bedingungen - kein Hebel, kein Funding.
 
+    **Auf der Zulassungsreihe, und mit den Gates im Rueckgabewert** (Befund
+    394). Zwei Dinge auf einmal, weil sie zusammengehoeren:
+
+    Erstens stand dieser Punkt auf dem **Speicher**. Er ist aber der Punkt, den
+    'referenz.SPOTPUNKT' fuehrt, und wer die beiden nebeneinander legt,
+    vergleicht zwei Reihen (Befund 387). Gemessen: auf dem Speicher Guete
+    0,2781 und DSR 0,7237, auf der Reihe 0,2708 und 0,5826 - die Gate-Zahl
+    war mit 9 von 11 in beiden Faellen dieselbe, also faellt es nicht auf.
+
+    Zweitens gab es die **elf Zeilen dieses Punktes** in keiner Ausgabe. Die
+    Zahl "9 von 11" steht ueberall; welche neun und mit welchem Abstand, musste
+    man sich selbst rechnen. 'cli stand' hat zwar einen Abschnitt mit allen elf
+    Zeilen - aber fuer den **berichteten** Punkt, also Perpetual auf dem
+    Speicher -, und 'cli anatomie' zeigt nur die Gates, die zwischen zwei
+    Fassungen kippen. Jetzt gibt diese Funktion die Ergebnisse mit heraus, und
+    die vorhandenen Zeilen tragen den Spot-Abstand daneben.
+
     Gemessen und nicht nachgeschlagen: Die Zahlen aus Befund 108 hier
     hinzuschreiben waere eine zweite Kopie neben dem Lauf, und genau daran ist
     dieses Projekt schon dreimal haengengeblieben (Befunde 101, 103, 109).
@@ -3582,7 +3599,7 @@ def _spotpunkt(frames, symbole, genome, trials: int, settings):
         frames, lambda: compile_genome(ohne_hebel), configs
     )
     if not bericht.windows:
-        return None
+        return None, None
 
     erster = next(iter(frames.values()))
     gates = evaluate_gates(
@@ -3600,7 +3617,7 @@ def _spotpunkt(frames, symbole, genome, trials: int, settings):
     zensiert = len(randtrades(bericht.all_trades))
     eintrag = Kandidat.aus_trades(ohne_hebel.name, gehandelt.all_trades)
     kombiniert = bericht.combined
-    return Betriebspunkt(
+    return gates.results, Betriebspunkt(
         name="Spot",
         trades=len(gehandelt.all_trades),
         zensiert=zensiert,
@@ -12165,8 +12182,9 @@ def stand(
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
     from research.betriebspunkt import Betriebslage, Betriebspunkt
+    from research.datenstand import alle_geschnitten, reihenzeile
     from research.gatelage import ordne
-    from research.gates import evaluate_gates
+    from research.gates import GateStatus, evaluate_gates
     from research.reihenfolge import STAND as REIHENFOLGE
     from research.reihenfolge import Art as Reihenfolgeart
     from research.reihenfolge import Lage as Reihenfolgelage
@@ -12252,7 +12270,15 @@ def stand(
     # trug die Zahlen beider Punkte bis Befund 165 als gepflegte Prosa, weil
     # die Messung erst spaeter im Kommando lief. Sie ist stehengeblieben,
     # waehrend die Messung weiterlief.
-    zweitpunkt = _spotpunkt(frames, symbole, genome, trials, settings)
+    # **Der Spot-Punkt steht auf der Zulassungsreihe** (Befund 394). Der Kopf
+    # dieses Berichts rechnet bewusst auf allem, was da ist, und nennt seine
+    # Reihe (Befund 370). Der Spot-Punkt aber ist der Punkt aus
+    # 'referenz.SPOTPUNKT', und wer die beiden nebeneinander legt, soll nicht
+    # zwei Reihen vergleichen.
+    spotrahmen = alle_geschnitten(frames)
+    spotgates, zweitpunkt = _spotpunkt(
+        spotrahmen, symbole, genome, trials, settings
+    )
 
     lage = Lage(
         kandidat=genome.name,
@@ -12358,6 +12384,7 @@ def stand(
             console.print(f"  [{farbe}]{p.als_zeile()}[/]")
         console.print(f"\n  [yellow]{betrieb.urteil()}[/]")
 
+
     if eintrag is not None:
         console.print()
         console.print("WORAN DAS HAERTESTE GATE HAENGT")
@@ -12380,12 +12407,41 @@ def stand(
     console.print()
     console.print("DIE GATES IM EINZELNEN")
     console.print("-" * 72)
+    # **Beide Punkte, und jede Spalte mit ihrer Reihe** (Befund 394).
+    #
+    # Hier stand nur der berichtete Punkt - also der mit 7 von 11, gerechnet
+    # auf allem, was da ist. Die Zahl, die das ganze Projekt zitiert, ist die
+    # des **Spot**-Punkts auf der Zulassungsreihe, und ihre elf Zeilen standen
+    # damit in keiner Ausgabe: 'cli anatomie' zeigt nur die Gates, die zwischen
+    # zwei Fassungen kippen.
+    #
+    # Zwei Reihen in einer Tafel sind sonst genau das, wovor Befund 387 warnt.
+    # Deshalb steht ueber jeder Spalte, worauf sie steht.
+    spoturteil = {r.name: r for r in spotgates or ()}
+    console.print(f"  [dim]Perpetual auf dem Speicher: {reihenzeile(frames)}[/]")
+    if spoturteil:
+        console.print(
+            f"  [dim]Spot auf der Zulassungsreihe: "
+            f"{reihenzeile(spotrahmen)}[/]\n"
+        )
     for r in gates.results:
         zeichen = "+" if r.passed else "-"
         farbe = "green" if r.passed else "yellow"
+        # Der Spot-Punkt daneben, mit **Status** statt 'passed': Ein
+        # uebersprungenes Gate zaehlt in 'passed' als bestanden (321/322), und
+        # sein Abstand waere eine Zahl ohne Urteil.
+        s = spoturteil.get(r.name)
+        if s is None:
+            dazu = ""
+        else:
+            weite = abs(s.value - s.threshold)
+            dazu = {
+                GateStatus.PASS: f"   [green]Spot {weite:.3f} Reserve[/]",
+                GateStatus.FAIL: f"   [red]Spot {weite:.3f} fehlt[/]",
+            }.get(s.status, f"   [yellow]Spot {s.status.value}[/]")
         console.print(
             f"  [{farbe}]{zeichen}[/] {r.name:24} {r.value:>10.3f} "
-            f"gegen {r.threshold:>10.3f}"
+            f"gegen {r.threshold:>10.3f}{dazu}"
         )
         # **Ohne die Botschaft zeigt die Zeile teilweise in die falsche
         # Richtung.** Bei der Messlatte liegt der Wert um das 3,8-fache ueber

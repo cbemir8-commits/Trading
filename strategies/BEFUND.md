@@ -35356,3 +35356,144 @@ Das ist die Vorrichtung aus Befund 294 bei der Arbeit: Eine offene Richtung soll
 nicht still als neuer Fund wiederkehren. Dreimal in zwei Durchgaengen haben
 Waechter mich auf etwas gestossen, das ich sonst uebersehen haette - zweimal
 eigene Fehler, einmal eine faellige Abgrenzung.
+
+## Dreihundertvierundneunzig. Die elf Zeilen des massgeblichen Punkts
+
+Die Zahl **"9 von 11"** steht im ganzen Projekt: im Register, im Statusschirm,
+in jedem Bericht, in jedem meiner Berichte an den Nutzer. Dieser Durchgang hat
+sie nachgeprueft und die Zeilen dahinter sichtbar gemacht.
+
+### Gegengeprueft: die Zahl ist ehrlich
+
+Das war nicht selbstverstaendlich. `GateResult.passed` zaehlt einen **SKIP** als
+bestanden (Befunde 321/322), und genau dafuer gibt es die
+`bestanden_echt`-Vorrichtung. Eine "9 von 11", in der ein uebersprungenes Gate
+steckt, waere eine 8.
+
+Gemessen am Spot-Punkt auf der Zulassungsreihe: **kein Gate uebersprungen**,
+alle neun tragen Status PASS. Offen sind Messlatte (es fehlen 0,6610) und
+Deflated Sharpe (es fehlen 0,3674).
+
+### Zwei auffaellige Wert/Schwelle-Paare, ebenfalls geprueft
+
+```
+Stichprobengroesse   2250,0000 gegen  250,0000
+Kosten-Stress        1863,7259 gegen    0,0000
+```
+
+Beide sind in Ordnung, und beide lesen sich nackt falsch:
+
+- **2250 gegen 250 sind Tage im Markt**, nicht Trades. Der Kandidat
+  dimensioniert nach Kapitalanteil und faellt damit in den zweiten Zweig des
+  Gates - fuer eine investierte Strategie zaehlt die Zeit im Markt, dazu eine
+  Untergrenze an Ein- und Ausstiegen. 2250 von 2922 Tagen sind 77 % der Zeit.
+- **1863,73 gegen 0** ist der Gewinn bei dreifachen Kosten gegen die Bedingung,
+  dass ueberhaupt einer bleibt.
+
+Die Botschaften beschriften das richtig. Nur die Paare allein sagen es nicht -
+und sie sind es, die in Bestenliste, Journal und jede Gate-Tafel wandern
+(Befund 267).
+
+### Die Luecke, und sie ist schmaler als mein erster Entwurf
+
+`cli stand` hat einen Abschnitt `DIE GATES IM EINZELNEN` mit allen elf Zeilen.
+Ich habe ihn uebersehen, geschrieben "die Tafel gibt es nirgends" und eine
+**zweite** daneben gebaut. Ein Test dieser Datei hat die Stelle gefunden:
+
+```python
+assert "if r.passed" not in quelle.split("Die elf Gates")[1]
+```
+
+Er sollte pruefen, dass mein neuer Teil am Status urteilt - und hat gemeldet,
+dass es im selben Befehl schon eine Tafel gibt, die `passed` benutzt.
+
+Was wirklich fehlte, ist schmaler und immer noch wichtig: Diese Zeilen gelten
+dem **berichteten** Punkt, also Perpetual auf dem Speicher. Die Zahl, die jede
+Quelle zitiert, ist die des **Spot**-Punkts auf der Zulassungsreihe - und ihre
+Zeilen standen in keiner Ausgabe. `cli anatomie` zeigt nur die Gates, die
+zwischen zwei Fassungen **kippen**; die neun, die auf beiden Seiten halten,
+kommen dort nie mit ihren Werten vor.
+
+Jetzt tragen die vorhandenen Zeilen den Spot-Abstand daneben:
+
+```
+Perpetual auf dem Speicher: ... laenger als die Zulassungsreihe ...
+Spot auf der Zulassungsreihe: 2017-08-16 bis 2026-08-29, 3301 Balken
+
+  + Stichprobengroesse    2340.000 gegen  250.000   Spot 2000.000 Reserve
+  - Messlatte               12.951 gegen   15.000   Spot 0.661 fehlt
+  + Drawdown                10.640 gegen   12.000   Spot 2.131 Reserve
+  - Schlechtestes Jahr     -10.320 gegen  -10.000   Spot 0.390 Reserve
+```
+
+Die letzte Zeile ist der Gewinn: Am Perpetual-Punkt **faellt** das Gate, am
+Spot-Punkt haelt es mit 0,390 Reserve. Dass dieselbe Zeile zwei Urteile tragen
+kann, war vorher nicht zu sehen.
+
+Zwei Reihen in einer Tafel sind sonst genau das, wovor Befund 387 warnt -
+deshalb steht ueber jeder Spalte, worauf sie steht.
+
+### Und der Spot-Punkt stand auf dem Speicher
+
+Er ist der Punkt, den `referenz.SPOTPUNKT` fuehrt. Gerechnet wurde er auf allem,
+was da ist:
+
+```
+             Trades   Guete      DSR
+Speicher        157  0,2781   0,7237
+Reihe           156  0,2708   0,5826
+```
+
+Die Gate-Zahl war in beiden Faellen 9 von 11 - deshalb ist es nie aufgefallen.
+Dasselbe Muster wie Befund 387, und derselbe Grund: Der Kopf dieses Berichts
+rechnet bewusst auf allem, was da ist (370), aber der Spot-Punkt steht neben
+`referenz.py` und muss dessen Reihe haben.
+
+### Kein vorzeichenbehafteter Abstand
+
+Die Richtung der Schwelle steht **nicht** im `GateResult`. Beim Rueckgang ist
+weniger besser, beim Sharpe mehr - ein "-2,13" hiesse dort Reserve und hier
+Fehlbetrag, und eine Spalte, die beides gleich schreibt, liest sich falsch. Der
+alte Abschnitt umgeht das, indem er bei gefallenen Gates die Botschaft
+anhaengt, mit einem Kommentar, der es zugibt:
+
+> Bei der Messlatte liegt der Wert um das 3,8-fache ueber der Schwelle und das
+> Gate faellt trotzdem durch, weil es eine zweite Bedingung hat. In Befund 91
+> habe ich das beim Lesen der eigenen Tabelle falsch herum verstanden.
+
+Die neue Spalte wird deshalb aus dem **Status** beschriftet, der die Richtung
+schon kennt: "2,131 Reserve" gegen "0,661 fehlt". Und ein uebersprungenes Gate
+bekommt keinen Abstand, weil es nicht geurteilt ist.
+
+### Ein Zaehlwaechter hat zurueckgemeldet
+
+Die volle Suite fiel an einer Stelle, die nichts mit den Gates zu tun hat:
+`test_abstandsreihe.py::TestDieInventurStimmtNoch`. Der Test zaehlt an `cli.py`
+nach, wie viele Befehle, die den Spitzenkandidaten durch einen Walk-Forward
+schicken, sich fuer eine Reihe entscheiden - und `cli stand` schneidet jetzt.
+
+| | 387 | 390 | heute (394) |
+|---|---|---|---|
+| schneidet | 2 | 3 | **4** |
+| nennt | 3 | 4 | 4 |
+| keines von beidem | 35 | 34 | 34 |
+
+Die 34 bleiben gleich: `stand` hat die Reihe seit Befund 370 **genannt** und
+wandert nur in die erste Liste. Gezaehlt, nicht geschaetzt - die Zahlen stehen
+oben, weil das Skript sie ausgegeben hat, und die Namen sind
+`abstand`, `anatomie`, `rennen`, `stand` gegen `abstand`, `rennen`, `stand`,
+`suchbudget`.
+
+Bemerkenswert ist nicht die Zahl, sondern **warum** sich der dritte Befehl
+umgestellt hat. Die offene Richtung aus 387 nennt einen Anhaltspunkt als
+Vermutung: teuer wird es da, wo eine gepflegte Zahl aus `referenz.py`
+danebensteht oder eine unwiderrufliche Entscheidung daran haengt. 390 kam
+dazu, weil am Vorzeichen einer Aussage ueber das Weitersuchen etwas hing; 394,
+weil der Spot-Punkt neben `referenz.py` steht. Beide Umstellungen folgen damit
+dem Anhaltspunkt, den die offene Richtung selbst formuliert hat. Das ist ein
+zweiter Datenpunkt, keine Regel - **die Richtung bleibt offen**, und es werden
+weiter keine 34 Befehle blind geschnitten.
+
+Die lebende Zahl steht jetzt nur noch an **einer** Stelle: Der neue Test bildet
+`4 / 4 / 34` aus der Messung und sucht genau diesen Satz im Register, statt ihn
+ein zweites Mal hinzuschreiben (Befund 351).
