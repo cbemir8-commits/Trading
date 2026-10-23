@@ -35261,3 +35261,98 @@ erst die Suite fragen muessen.
 
 Das ist die Sorte Fund, die ein gewachsenes Register ermoeglicht: Der Name war
 besetzt, und zwar mit Bedeutung.
+
+## Dreihundertdreiundneunzig. Zwei Grundgesamtheiten in einer Rechnung
+
+Befund 392 schloss:
+
+> Alle drei Schaetzer sind erst bei **4 bis 8** unabhaengigen Ideenziehungen mit
+> dem beobachteten Bestwert von 0,2509 vereinbar, nicht bei 203. Fuer die
+> Rueckrechnung ist der Zaehler die falsche Zahl, fuer das Gate die richtige.
+
+Der zweite Satz stimmt. Der erste ist **kein Beleg dafuer**, und das ist ein
+Kategorienfehler von mir.
+
+### Nachgemessen
+
+```
+beobachteter Bestwert des Katalogs    +0,3274
+erwartet bei 19 Ziehungen             +0,3006     Unterschied 0,027
+Bestand (Spot, Reihe, je Trade)       +0,2708     -> darunter
+```
+
+**Die Menge erklaert sich selbst.** Ihr eigener Bestwert passt zu Mittel und
+Streuung; sie ist in sich stimmig, und ihre Schaetzung von 0,0589 steht.
+
+Aber der Bestand ist **keine Ziehung aus ihr**. Er liegt unter ihrem Bestwert,
+und sechs der 19 Regeln sind besser. Wer fragt, wie viele Ziehungen einen Wert
+**eine** Streuung ueber dem Mittel hergeben, bekommt "wenige" - richtig
+gerechnet, und keine Neuigkeit ueber den Versuchszaehler.
+
+Dass der Zaehler **gepruefte Hypothesen** zaehlt und nicht Ideenziehungen,
+bleibt richtig (234/282). Es war nur nicht hiermit gezeigt.
+
+### Die Wache dagegen
+
+`Aktenschaetzung` fuehrt jetzt ihren eigenen Bestwert mit (`hoechster`):
+
+- `erwarteter_bestwert(n)` - was so viele Ziehungen hergeben,
+- `erklaert_sich_selbst()` - passt der eigene Bestwert dazu,
+- `fremd(wert)` - betrifft diese Frage ueberhaupt diese Menge.
+
+`versoehnt_bei` ist **nicht** entfernt: Die Zahl ist richtig gerechnet, sie
+beantwortet nur eine andere Frage. Entfernen hiesse, den Fehler zu verstecken;
+einordnen heisst, ihn zu benennen. `cli rennen` sagt es jetzt im Klartext:
+
+```
+Versoehnt sind sie bei 7 unabhaengigen Ziehungen - was hier aber **keine
+Auskunft ueber den Zaehler** ist: Der Bestand liegt mit 0.2509 unter dem eigenen
+Bestwert dieser Menge (+0.3405), ist also keine ihrer Ziehungen (Befund 393).
+```
+
+### Nebenbei: warum der Bestand der Kandidat ist
+
+Das hat niemand aufgeschrieben, und es ist die naheliegende Frage, sobald die
+Tabelle da liegt - sechs Regeln haben mehr Guete **je Trade**:
+
+```
+Regel                      je Trade   n_eff    Guete    Latte   raeumt
+Donchian-Ausbruch 55/20     +0,3262      58    2,484    3,564    0,697
+Grosser Trendausbruch       +0,3215      57    2,428    3,980    0,610
+Trend-Beteiligung 50 Tage   +0,2021     127    2,278    3,361    0,678
+Bestand (Spot, Reihe)       +0,2708     115    2,904    3,618    0,803
+```
+
+Weil die Latte an der **Guete** haengt, und die ist Sharpe mal Wurzel aus n_eff.
+Keine Katalogregel hat mehr Guete als der Bestand, und keine raeumt so viel von
+ihrer eigenen Latte: 0,803 gegen 0,697 beim besten. Mehr Vorsprung je Trade bei
+29 oder 58 wirksamen Trades ist weniger Beleg als weniger Vorsprung bei 115.
+
+Das ist auch die Antwort auf "nimm doch Donchian": Er hat den besseren Einfall
+und die schlechtere Beweislage.
+
+### Mein zweiter Fehler, vom eigenen Test gefunden
+
+Ich schrieb "fuenf Regeln sind besser" - abgezaehlt aus einer Top-5-Ausgabe der
+**Einzeldatei**. Es sind **sechs von 19** in den zusammengelegten Stuecken, und
+fuenf von 18 in der Einzeldatei: Die neunzehnte Regel (*Nur mit der Drift*,
++0,2716) ist genau eine von ihnen.
+
+Beide Zahlen sind richtig - fuer ihre Menge. Dieselbe Lehre wie der ganze
+Befund, und sie hat mich im selben Durchgang zweimal erwischt.
+
+### Und ein drittes Mal der Waechter
+
+`test_nachmessung` hat gemeldet, dass die offene Richtung **"Bestand + 'Grosser
+Trendausbruch'"** in diesem Durchgang wieder vorkommt - in der Guetetafel oben.
+
+Gelesen und **abgegrenzt**: Das sind die Zahlen der Regel **allein** (+0,3215 je
+Trade, Guete 2,428, raeumt 0,610), und genau die stehen in dem Eintrag schon
+seit Befund 193. Ueber den **Verbund** mit dem Bestand sagen sie nichts - der
+braucht die gemeinsamen Trades beider Beine. Die Richtung bleibt offen, sie hat
+nur eine Umgebung bekommen.
+
+Das ist die Vorrichtung aus Befund 294 bei der Arbeit: Eine offene Richtung soll
+nicht still als neuer Fund wiederkehren. Dreimal in zwei Durchgaengen haben
+Waechter mich auf etwas gestossen, das ich sonst uebersehen haette - zweimal
+eigene Fehler, einmal eine faellige Abgrenzung.

@@ -214,7 +214,17 @@ GELESEN: dict[str, int] = {
     # der Eintrag schon fuehrt (null Trades auf Tageskerzen), nur als
     # Vorfuehrung eines Mechanismus. Gelesen und abgegrenzt: kein neuer Fund
     # zu dieser Richtung.
-    "Bestand + 'Grosser Trendausbruch'": 350,
+    # **Befund 393 nennt die Regel wieder** - in der Guetetafel, die erklaert,
+    # warum der Bestand der Kandidat ist: 'Grosser Trendausbruch' hat +0,3215
+    # je Trade bei n_eff 57, also Guete 2,428 gegen eine Latte von 3,980, und
+    # raeumt damit 0,610 - gegen 0,803 beim Bestand.
+    #
+    # Gelesen und **abgegrenzt**: Das sind die Zahlen der Regel **allein**, und
+    # genau sie stehen in diesem Eintrag schon (193: fehlt 0,212). Ueber den
+    # **Verbund** mit dem Bestand sagen sie nichts - der braucht die gemeinsamen
+    # Trades beider Beine, und der ist seit 193 unveraendert gemessen. Die
+    # Richtung bleibt offen, sie hat nur eine Umgebung bekommen.
+    "Bestand + 'Grosser Trendausbruch'": 393,
     "Holdout auf fremden Maerkten": 295,
     # **Befund 330, und diesmal benutzt statt zitiert.** Der Lauf hat den
     # Versuchszaehler ueber ``PATHS__STATE`` auf eine Wegwerf-Ablage umgelenkt,

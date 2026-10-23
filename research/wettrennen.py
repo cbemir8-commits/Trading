@@ -216,17 +216,71 @@ class Aktenschaetzung:
     streuung: float | None
     """Nach Abzug des Rauschens. ``None`` heisst nicht nachweisbar."""
 
+    hoechster: float
+    """Der **eigene** Bestwert dieser Menge - Befund 393.
+
+    Ohne ihn laesst sich nicht sagen, ob eine Frage an ``versoehnt_bei``
+    ueberhaupt diese Menge betrifft. Genau daran ist mein Schluss aus Befund
+    392 gescheitert.
+    """
+
+    def erwarteter_bestwert(self, ziehungen: int | None = None) -> float | None:
+        """Der Bestwert, den so viele Ziehungen aus dieser Menge hergeben.
+
+        Ohne Angabe die eigene Zahl - dann ist der Vergleich mit
+        ``hoechster`` die Probe, ob die Menge sich selbst erklaert.
+        """
+        if self.streuung is None:
+            return None
+        return self.mittel + self.streuung * extremwert(ziehungen or self.anzahl)
+
+    def erklaert_sich_selbst(self, *, spanne: float = 0.05) -> bool | None:
+        """Passt der eigene Bestwert zu Mittel und Streuung dieser Menge?
+
+        Die Probe, die Befund 393 ausgeloest hat. Am Tageskatalog: beobachtet
+        +0,3274, erwartet bei 19 Ziehungen +0,3006 - 0,027 Unterschied, also
+        ja. Eine Menge, die sich selbst nicht erklaert, taugt auch nicht fuer
+        Fragen nach fremden Bestwerten.
+
+        ``None``, wenn keine Streuung nachweisbar ist.
+        """
+        erwartet = self.erwarteter_bestwert()
+        if erwartet is None:
+            return None
+        return abs(self.hoechster - erwartet) < spanne
+
+    def fremd(self, bester: float) -> bool:
+        """Liegt dieser Wert **ausserhalb** dessen, was die Menge hergab?
+
+        **Die Wache gegen meinen eigenen Fehler** (Befund 393). Ein Wert
+        unter dem eigenen Bestwert ist keine Ziehung, die diese Menge erklaeren
+        muesste - und ``versoehnt_bei`` darauf angesetzt beantwortet eine
+        andere Frage, als sie zu stellen aussieht.
+
+        Befund 392 hat genau das getan: Der Bestand steht bei 0,2708 je Trade,
+        der Katalog hat 0,3274 hergegeben, und fuenf Regeln liegen darueber.
+        'Versoehnt bei 4 Ziehungen' war daher **keine** Auskunft ueber den
+        Versuchszaehler, sondern die Rechnung zu der Frage, wie viele Ziehungen
+        einen Wert **eine** Streuung ueber dem Mittel hergeben. Wenig, und das
+        ist keine Neuigkeit.
+        """
+        return bester < self.hoechster
+
     def versoehnt_bei(
         self, bester: float, *, hoechstens: int = 10**6
     ) -> int | None:
         """Wie viele **unabhaengige** Ideenziehungen diesen Bestwert erklaeren.
 
-        Die Bruecke zwischen den beiden Schaetzern. Stimmen sie nicht
-        ueberein, sagt diese Zahl, bei welchem Zaehlerstand sie es taeten -
-        und das ist die eigentliche Auskunft: Der Versuchszaehler des
-        Projekts zaehlt **gepruefte Hypothesen**, nicht unabhaengige
-        Ideenziehungen, und 192 der 203 stehen ohne Herkunft im Grundstock
-        (Befund 234/282).
+        Die Bruecke zwischen zwei Schaetzern derselben Groesse. Stimmen sie
+        nicht ueberein, sagt diese Zahl, bei welchem Zaehlerstand sie es
+        taeten.
+
+        **Nur fuer Werte aus derselben Menge** (Befund 393). ``fremd`` sagt,
+        ob das zutrifft; wer es uebergeht, bekommt eine richtig gerechnete
+        Antwort auf eine andere Frage. Der Versuchszaehler des Projekts zaehlt
+        ausserdem **gepruefte Hypothesen** und nicht Ideenziehungen (192 der
+        203 stehen ohne Herkunft im Grundstock, Befund 234/282) - auch das
+        macht ihn und diese Zahl nicht vergleichbar.
 
         ``None``, wenn die Schaetzung keine Streuung hergibt oder der
         Bestwert unter dem Mittel liegt.
@@ -343,6 +397,7 @@ def aus_der_akte(
         beobachtet=beobachtet,
         rauschen=rauschen,
         streuung=math.sqrt(rest) if rest > 0 else None,
+        hoechster=max(guete),
     )
 
 

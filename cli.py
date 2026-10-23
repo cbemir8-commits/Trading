@@ -11047,6 +11047,11 @@ def rennen(
             f"{lauf.streuung:.4f}   Nullstreuung: {lauf.nullstreuung:.4f}\n"
         )
         if akte.streuung is not None and n_versoehnt is not None:
+            # **Und wessen Bestwert das ist** (Befund 393). Der Bestand ist
+            # keine Ziehung aus dieser Menge: Er steht unter deren eigenem
+            # Bestwert, und 'versoehnt_bei' beantwortet dann eine andere
+            # Frage, als sie zu stellen aussieht.
+            fremder = akte.fremd(kandidat.sharpe_je_trade)
             console.print(
                 f"[bold]Die beiden Schaetzer widersprechen sich.[/] Mit "
                 f"{akte.streuung:.4f} und Mittel {akte.mittel:+.4f} haetten "
@@ -11054,8 +11059,17 @@ def rennen(
                 f"{akte.mittel + akte.streuung * extremwert(versuche):.4f} "
                 f"ergeben; beobachtet sind {kandidat.sharpe_je_trade:.4f}. "
                 f"Versoehnt sind sie bei [bold]{n_versoehnt}[/] "
-                f"unabhaengigen Ziehungen.\n"
-                f"[dim]Zwei Lesarten, und beide stehen im Register: Entweder "
+                f"unabhaengigen Ziehungen"
+                + (
+                    f" - was hier aber **keine Auskunft ueber den Zaehler** "
+                    f"ist: Der Bestand liegt mit "
+                    f"{kandidat.sharpe_je_trade:.4f} unter dem eigenen "
+                    f"Bestwert dieser Menge ({akte.hoechster:+.4f}), ist also "
+                    f"keine ihrer Ziehungen (Befund 393).\n"
+                    if fremder
+                    else ".\n"
+                )
+                + f"[dim]Zwei Lesarten, und beide stehen im Register: Entweder "
                 f"sind die {versuche} Versuche keine {versuche} unabhaengigen "
                 f"Ideenziehungen - 192 stehen ohne Herkunft im Grundstock "
                 f"(Befund 234/282) -, dann ist die Rueckrechnung zu klein und "

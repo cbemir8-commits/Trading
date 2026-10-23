@@ -158,7 +158,8 @@ class TestDieRandfaelle:
 
     def test_ohne_streuung_gibt_es_keine_versoehnung(self) -> None:
         s = Aktenschaetzung(
-            anzahl=3, mittel=0.1, beobachtet=0.02, rauschen=0.01, streuung=None
+            anzahl=3, mittel=0.1, beobachtet=0.02, rauschen=0.01,
+            streuung=None, hoechster=0.12,
         )
 
         assert s.versoehnt_bei(0.25) is None
@@ -268,8 +269,11 @@ class TestWasImRegisterSteht:
         quelle = inspect.getsource(Lage)
 
         assert "0,0589" in quelle
-        assert "nicht bei 203" in quelle
         assert "ist strittig" not in quelle
+        # Nach 393 steht dort nicht mehr "nicht bei 203": Diese Zahl war ein
+        # Kategorienfehler, und an ihrer Stelle steht jetzt, **warum** der
+        # Bestand der Kandidat ist.
+        assert "warum er der Kandidat ist" in quelle
 
 
 class TestDieAkteBleibtLesbar:

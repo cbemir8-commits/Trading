@@ -4143,6 +4143,43 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Quelldateien, und Statusschirm wie 'Suchbudget' sagen jetzt die "
         "Dreierzahl statt einer davon",
         392,
+        zuletzt=393,
+    ),
+    # Befund 393: der Schluss aus 392 war ein Kategorienfehler - zwei
+    # Grundgesamtheiten in einer Rechnung. Und die Berichtigung erklaert
+    # nebenbei, warum der Bestand der Kandidat ist.
+    Richtung(
+        "Zwei Grundgesamtheiten in einer Rechnung",
+        "Befund 392 schloss, alle drei Schaetzer seien erst bei **4 bis 8** "
+        "unabhaengigen Ideenziehungen mit dem Bestwert vereinbar und nicht bei "
+        "203 - gelesen als Auskunft darueber, dass der Versuchszaehler fuer "
+        "die Rueckrechnung die falsche Zahl ist. **Das war ein "
+        "Kategorienfehler.** Nachgemessen: Der Katalog erklaert seinen "
+        "**eigenen** Bestwert, +0,3274 beobachtet gegen +0,3006 erwartet bei "
+        "19 Ziehungen (0,027 Unterschied) - die Menge ist in sich stimmig. Der "
+        "Bestand aber liegt mit 0,2708 je Trade **unter** ihrem Bestwert, und "
+        "**sechs der 19** Katalogregeln sind besser (fuenf der 18 in der "
+        "Einzeldatei - die neunzehnte, 'Nur mit der Drift' mit +0,2716, "
+        "ist genau eine von ihnen); er ist also keine Ziehung aus "
+        "ihr. Einen Wert eine Streuung ueber dem Mittel erklaeren naturgemaess "
+        "wenige Ziehungen, und das ist keine Neuigkeit ueber den Zaehler. Dass "
+        "der Zaehler gepruefte Hypothesen zaehlt und nicht Ideenziehungen, "
+        "bleibt richtig (234/282) - es war nur nicht hiermit gezeigt. "
+        "**Nebenbei beantwortet das eine Frage, die niemand aufgeschrieben "
+        "hatte**: Warum ist der Bestand der Kandidat, wenn sechs Regeln mehr "
+        "Guete je Trade haben? Weil die Latte an der **Guete** haengt, und die "
+        "ist Sharpe mal Wurzel aus n_eff - Donchian-Ausbruch 55/20 hat "
+        "+0,3262 bei n_eff 58, also Guete 2,484 gegen eine Latte von 3,564 "
+        "(raeumt 0,697); der Bestand +0,2708 bei n_eff 115, also 2,904 gegen "
+        "3,618 (raeumt **0,803**). Keine Katalogregel kommt dem naeher. "
+        "Gebaut ist die Wache gegen genau diesen Fehler: 'Aktenschaetzung' "
+        "fuehrt jetzt ihren eigenen Bestwert mit ('hoechster'), "
+        "'erklaert_sich_selbst' prueft die Menge gegen sich, und 'fremd' sagt, "
+        "ob eine Frage ueberhaupt diese Menge betrifft - 'cli rennen' sagt es "
+        "im Klartext dazu, wenn nicht. Der Rest von 392 steht unveraendert: "
+        "Zwei von drei Schaetzungen liegen unter der Nullstreuung, und die "
+        "dritte ist die ausgesuchte",
+        393,
     ),
 )
 
@@ -4719,11 +4756,17 @@ class Suchbudget:
     gebuchten Versuche sind die ausgesuchte Menge - hohes Mittel bei enger
     Streuung dort, niedriges Mittel bei weiter Streuung hier.
 
-    **Alle drei** sind aber erst bei 4 bis 8 unabhaengigen Ideenziehungen mit
-    dem beobachteten Bestwert vereinbar, nicht bei 203. Der Zaehler zaehlt
-    gepruefte Hypothesen, und 192 stehen ohne Herkunft im Grundstock
-    (234/282); fuer die Rueckrechnung ist das die falsche Zahl, fuer das Gate
-    die richtige.
+    **Die "4 bis 8 Ziehungen" aus 392 waren keine Auskunft ueber den Zaehler**
+    (Befund 393). Der Katalog erklaert seinen **eigenen** Bestwert - +0,3274
+    beobachtet gegen +0,3006 erwartet bei 19 Ziehungen -, und der Bestand liegt
+    mit 0,2708 je Trade **darunter**; sechs der 19 Katalogregeln sind besser.
+    Einen
+    Wert eine Streuung ueber dem Mittel erklaeren wenige Ziehungen, und das ist
+    keine Neuigkeit. Gefragt war also eine andere Menge als die, die antwortet.
+
+    Dass der Zaehler **gepruefte Hypothesen** zaehlt und nicht Ideenziehungen,
+    bleibt richtig (192 ohne Herkunft im Grundstock, 234/282) - es ist nur
+    nicht hiermit gezeigt.
 
     **Und beides sind Punktschaetzer.** Die Rueckrechnung steht auf einem
     einzigen beobachteten Bestwert; bei 203 Versuchen liegt ihre relative
@@ -6154,10 +6197,13 @@ class Lage(Gatebilanz):
                 "  und die dritte ist die ausgesuchte: hohes Mittel bei enger",
                 "  Streuung im Katalog (+0,19 / 0,059), niedriges Mittel bei",
                 "  weiter Streuung unter den gebuchten (+0,03 / 0,167).",
-                "  Alle drei sind aber erst bei 4 bis 8 unabhaengigen",
-                "  Ideenziehungen mit dem Bestwert vereinbar, nicht bei 203 -",
-                "  der Zaehler zaehlt geprufte Hypothesen. Nachrechnen:",
-                "  'cli rennen'.",
+                "  Der Katalog erklaert dabei seinen eigenen Bestwert",
+                "  (+0,3274 gegen +0,3006 erwartet bei 19 Ziehungen), und der",
+                "  Bestand liegt mit 0,2708 darunter - sechs Katalogregeln",
+                "  haben mehr Guete je Trade, aber keine mehr Guete (2,484",
+                "  gegen 2,904) und keine raeumt so viel ihrer Latte (0,697",
+                "  gegen 0,803). Daran haengt, warum er der Kandidat ist",
+                "  (Befund 393). Nachrechnen: 'cli rennen'.",
                 "",
                 "  Was bindet, ist die wirksame Stichprobe (Befund 388): Das",
                 "  Zielfenster schliesst sich, sobald sie faellt, und wird",
