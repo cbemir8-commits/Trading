@@ -35774,3 +35774,74 @@ Zwei Waechter haben zurueckgemeldet. `test_bindendes_fenster.py` hielt die
 "neun" fest, `test_zweigroessen.py` zum zweiten Mal den Satz, mit dem der
 Eintrag seine Luecke beschrieb. Der zweite prueft jetzt, was die Zahl **ist** -
 eine Schranke, kein Schaetzer -, statt wie der Eintrag seine Luecke nennt.
+
+## Dreihundertachtundneunzig. Die Aussicht nannte eine Bedingung, und es sind zwei
+
+Befund 328 hat den Aussichtszeilen ihre Bedingung gegeben, mit einem Satz, der
+genauso auf die zweite zutrifft:
+
+> Wer sie liest, liest eine Zeitangabe; die Bedingung daneben steht nirgends.
+
+Die Zeitangabe ist "mindestens 2152 Tage (5,9 Jahre) fuer 75 fehlende
+Beobachtungen". Die Bedingung, die 328 nachgetragen hat: **bei unveraenderter
+Guete je Trade** - denn `erreichbarkeit.noetige_trades` verspricht genau das.
+
+Die zweite Bedingung ist seit Befund 397 gemessen und stand nicht daneben: **In
+denselben 5,9 Jahren muss die Reserve des Jahres-Gates halten.** Sie ist ein
+Guthaben, weil das Gate das Minimum ueber alle Fenster nimmt, und null Treffer
+aus sieben unabhaengigen Jahren schranken die Rate nur auf unter 34,8 % im Jahr.
+
+Jetzt stehen beide untereinander:
+
+```
+  Gilt bei unveraenderter Guete je Trade. Sammeln die neuen Beobachtungen
+  schlechter, waechst die noetige Zahl mit dem Quadrat des Rueckgangs ...
+
+  **Und eine zweite Bedingung** (397): In diesen 5.9 Jahren muss
+  die Reserve des Jahres-Gates halten - sie ist ein Guthaben,
+  weil das Gate das Minimum ueber alle Fenster nimmt.
+  Getroffen hat es in 7 unabhaengigen Jahren nie; das schrankt
+  die Rate auf unter 34.8% im Jahr (Irrtum 5 %), ueber den Horizont
+  also auf bis zu 92.0% fuer mindestens einen Treffer.
+  Schranke, kein Schaetzer: Der Punktschaetzer ist null. Mehr
+  Jahre machen sie enger - es sind dieselben Jahre.
+```
+
+### Eine Zahl geht hinein, drei kommen heraus
+
+Gepflegt wird keine von ihnen. Aus dem Spot-Lauf kommt **die Jahreszahl** -
+`unabhaengige_jahre(verkettete_kurve(bericht)).anzahl` -, und Schranke wie
+Horizontwahrscheinlichkeit rechnet der Bericht daraus. Drei Zahlen als Prosa
+hinzuschreiben waere eine zweite Kopie neben dem Lauf, und daran ist dieses
+Projekt dreimal haengengeblieben (Befunde 101/103/109).
+
+Der Test dazu prueft das, indem er die Jahreszahl auf 28 stellt: Dann steht
+10,1 % im Bericht und 34,8 % nicht mehr. Und bei null Jahren - "nicht gemessen"
+- steht der ganze Abschnitt nicht da, denn eine Schranke aus null Beobachtungen
+waere eine Zahl ohne Beobachtung.
+
+**Kostet keinen zusaetzlichen Lauf.** `_spotpunkt` rechnet ohnehin und gibt die
+Jahreszahl als dritten Rueckgabewert mit; ein eigener Walk-Forward dafuer waere
+Verschwendung.
+
+### Was hier nicht behauptet wird
+
+Dass die eine Bedingung die andere aufhebt. Beide koennen halten, und der
+Punktschaetzer der Rate ist null. Die Schranke sagt nur, dass das Projekt den
+guenstigen Fall nicht **zeigen** kann - und das ist etwas anderes, als dass er
+nicht eintritt.
+
+### Zwei Zusicherungen aus 394 waren schwaecher als gedacht
+
+`test_elf_zeilen.py` hielt den Rueckgabewert von `_spotpunkt` fest:
+
+```python
+assert "return gates.results, Betriebspunkt(" in quelle
+assert "return None, None" in quelle
+```
+
+Beide haben die Erweiterung auf drei Werte **nicht gemerkt**: Das `, jahre`
+steht auf der schliessenden Zeile, und `return None, None` ist ein Teilstueck
+von `return None, None, 0`. Eine Textstelle prueft, dass etwas vorkommt, nicht
+dass es dort aufhoert. Gezaehlt wird jetzt am Syntaxbaum - jede `return`-Anweisung
+dieser Funktion muss ein Tupel mit genau drei Gliedern sein.

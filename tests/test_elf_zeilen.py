@@ -120,11 +120,31 @@ class TestDieTafel:
 
 
 class TestDieHilfsfunktionGibtDieGatesHeraus:
-    def test_sie_liefert_ein_paar(self) -> None:
+    def test_sie_liefert_drei_werte(self) -> None:
+        """Zwei waren es in Befund 394, drei seit 398 - die Jahreszahl kommt
+        aus demselben Lauf mit heraus.
+
+        Geprueft wird am **Baum**, nicht an Textstellen: Der Zusatz steht auf
+        der schliessenden Zeile, und 'return None, None' ist ein Teilstueck
+        von 'return None, None, 0'. Beide alten Zusicherungen haben die
+        Erweiterung deshalb nicht gemerkt.
+        """
+        import ast
+
+        baum = ast.parse(inspect.getsource(cli._spotpunkt).lstrip())
+        rueckgaben = [
+            k for k in ast.walk(baum) if isinstance(k, ast.Return) and k.value
+        ]
+
+        assert rueckgaben, "'_spotpunkt' gibt nichts zurueck"
+        for knoten in rueckgaben:
+            assert isinstance(knoten.value, ast.Tuple)
+            assert len(knoten.value.elts) == 3
+
+    def test_der_leerlauf_gibt_drei_leere(self) -> None:
         quelle = inspect.getsource(cli._spotpunkt)
 
-        assert "return gates.results, Betriebspunkt(" in quelle
-        assert "return None, None" in quelle
+        assert "return None, None, 0" in quelle
 
     def test_und_sagt_warum(self) -> None:
         text = cli._spotpunkt.__doc__ or ""

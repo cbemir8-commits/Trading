@@ -3581,6 +3581,17 @@ def _spotpunkt(frames, symbole, genome, trials: int, settings):
     **Kostet keinen Versuch.** Dieselbe Regel, dieselben Daten, andere
     Handelsbedingungen - kein neuer Einfall, ueber den zu buchfuehren waere.
 
+    **Drittens die Zahl unabhaengiger Jahre** (Befund 398). Die
+    Aussichtszeilen nennen eine Zeitangabe und seit Befund 328 die Bedingung
+    *bei unveraenderter Guete je Trade*. Die zweite Bedingung - in diesen
+    Jahren muss die Reserve des Jahres-Gates halten - ist seit 397 gemessen
+    und braucht genau eine Zahl aus dem Lauf: wie viele disjunkte
+    Zwoelfmonatsfenster die Kurve hergibt. Sie kommt von hier, weil hier schon
+    gerechnet wird; ein zweiter Walk-Forward dafuer waere Verschwendung.
+
+    Zurueck kommen drei Dinge in dieser Reihenfolge: die Gate-Ergebnisse, der
+    Betriebspunkt, die Jahreszahl.
+
     Gibt ``None`` zurueck, wenn der Lauf nicht zustandekommt; der Bericht
     laesst den Abschnitt dann weg, statt mit einer Luecke dazustehen.
     """
@@ -3588,6 +3599,8 @@ def _spotpunkt(frames, symbole, genome, trials: int, settings):
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.betriebspunkt import Betriebspunkt
     from research.gates import evaluate_gates
+    from research.jahresbild import verkettete_kurve
+    from research.jahresrate import unabhaengige_jahre
     from research.randschnitt import ohne_zensierte, randtrades
     from research.suchbudget import Kandidat
     from strategy.compiler import compile_genome
@@ -3599,7 +3612,7 @@ def _spotpunkt(frames, symbole, genome, trials: int, settings):
         frames, lambda: compile_genome(ohne_hebel), configs
     )
     if not bericht.windows:
-        return None, None
+        return None, None, 0
 
     erster = next(iter(frames.values()))
     gates = evaluate_gates(
@@ -3617,6 +3630,9 @@ def _spotpunkt(frames, symbole, genome, trials: int, settings):
     zensiert = len(randtrades(bericht.all_trades))
     eintrag = Kandidat.aus_trades(ohne_hebel.name, gehandelt.all_trades)
     kombiniert = bericht.combined
+    # **Gezaehlt, nicht geteilt** (Befund 397): Die Kurve beginnt ein Jahr
+    # nach der Reihe, weil das erste Jahr das erste Trainingsfenster bezahlt.
+    jahre = unabhaengige_jahre(verkettete_kurve(bericht)).anzahl
     return gates.results, Betriebspunkt(
         name="Spot",
         trades=len(gehandelt.all_trades),
@@ -3630,7 +3646,7 @@ def _spotpunkt(frames, symbole, genome, trials: int, settings):
         bestanden=sum(1 for r in gates.results if r.passed),
         gesamt=len(gates.results),
         offen=tuple(r.name for r in gates.results if not r.passed),
-    )
+    ), jahre
 
 
 def _dauer(sekunden: float) -> str:
@@ -12308,7 +12324,7 @@ def stand(
     # 'referenz.SPOTPUNKT', und wer die beiden nebeneinander legt, soll nicht
     # zwei Reihen vergleichen.
     spotrahmen = alle_geschnitten(frames)
-    spotgates, zweitpunkt = _spotpunkt(
+    spotgates, zweitpunkt, spotjahre = _spotpunkt(
         spotrahmen, symbole, genome, trials, settings
     )
 
@@ -12326,6 +12342,9 @@ def stand(
         # neben den 156 aus 'referenz.py' und niemand weiss, warum.
         reihe=_reihenzeile(frames),
         zweitpunkt=zweitpunkt,
+        # **Die zweite Bedingung der Aussicht** (Befund 398). Gemessen im
+        # Spot-Lauf oben, nicht gepflegt - die Schranke rechnet der Bericht.
+        unabhaengige_jahre=spotjahre,
         trades=len(gehandelt.all_trades),
         effektiv=stichprobe.effektiv,
         kerzenbestand=_kerzenbestand(store),

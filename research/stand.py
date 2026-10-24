@@ -4332,6 +4332,34 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Reserve nennt - ohne sie liest sich '2557 Fenster, keines darunter' "
         "wie Sicherheit, und es sind sieben Jahre",
         397,
+        zuletzt=398,
+    ),
+    # Befund 398: dieselbe Luecke wie 328, eine Bedingung weiter - die
+    # Aussicht nennt Tage, und was in diesen Tagen halten muss, stand nicht
+    # daneben.
+    Richtung(
+        "Die Aussicht nannte eine Bedingung, und es sind zwei",
+        "Befund 328 hat den Aussichtszeilen ihre Bedingung gegeben: Die "
+        "Zeitangabe - '2152 Tage (5,9 Jahre) fuer 75 fehlende Beobachtungen' "
+        "- gilt nur **bei unveraenderter Guete je Trade**, denn 'noetige_"
+        "trades' verspricht genau das. Der Satz dort trifft auch auf die "
+        "zweite zu: *'Wer sie liest, liest eine Zeitangabe; die Bedingung "
+        "daneben steht nirgends.'* Die zweite ist seit 397 gemessen: In "
+        "denselben 5,9 Jahren muss die **Reserve des Jahres-Gates** halten, "
+        "und null Treffer aus sieben unabhaengigen Jahren schranken die Rate "
+        "nur auf unter 34,8 % im Jahr - ueber den Horizont bis zu 92,0 % "
+        "Wahrscheinlichkeit mindestens eines Treffers. Beide Bedingungen "
+        "stehen jetzt untereinander, und die zweite ist **gerechnet**: Aus "
+        "dem Spot-Lauf kommt eine Zahl, die Jahreszahl; Schranke und "
+        "Horizontwahrscheinlichkeit rechnet der Bericht daraus. Gepflegt "
+        "wird keine von ihnen - sonst stuende hier eine zweite Kopie neben "
+        "dem Lauf (Befunde 101/103/109). **Kostet keinen zusaetzlichen "
+        "Lauf**: '_spotpunkt' rechnet ohnehin, und gibt die Jahreszahl als "
+        "dritten Rueckgabewert mit. **Was dabei nicht gesagt wird**: dass "
+        "die eine Bedingung die andere aufhebt. Beide koennen halten, und "
+        "der Punktschaetzer der Rate ist null; die Schranke sagt nur, dass "
+        "das Projekt den guenstigen Fall nicht **zeigen** kann",
+        398,
     ),
 )
 
@@ -4368,10 +4396,12 @@ OFFEN: tuple[Richtung, ...] = (
         "nicht ein Kandidat, der ueberall knapp haelt, sondern einer, bei dem "
         "ein einzelnes Jahr aus der Reihe faellt. Der Bericht sagt diesen "
         "Zusammenhang "
-        "im **Lagebericht** weiter nur fuer den berichteten Punkt, wo das Gate "
-        "schon gefallen ist ('Warten kann dieses Gate nicht "
-        "zurueckgewinnen', Befund 161); 'cli jahresbild --spot' sagt ihn seit "
-        "396 auch dort, wo es haelt. **Die Rate ist gemessen** (397), und "
+        "jetzt an drei Stellen: 'cli jahresbild --spot' seit 396 auch dort, wo "
+        "das Gate haelt, der **Lagebericht** seit 398 als zweite Bedingung "
+        "der Aussicht - bis dahin stand er dort nur fuer den berichteten "
+        "Punkt, wo das Gate schon gefallen ist ('Warten kann dieses Gate "
+        "nicht zurueckgewinnen', Befund 161). **Die Rate ist gemessen** "
+        "(397), und "
         "zwar als Schranke: Null Treffer in **sieben** unabhaengigen Jahren - "
         "nicht neun, wie ich in 396 aus der Reihenlaenge geschlossen habe; "
         "die Kurve beginnt erst 2018-08-19, weil das erste Jahr das erste "
@@ -6093,6 +6123,24 @@ class Lage(Gatebilanz):
     ``backtest.walkforward.nachlauf_fuer`` und ``research.randschnitt``.
     """
 
+    unabhaengige_jahre: int = 0
+    """Wie viele disjunkte Zwoelfmonatsfenster die Kurve hergibt.
+
+    **Befund 398.** Die Aussichtszeilen nennen eine Zeitangabe - "mindestens
+    2152 Tage (5,9 Jahre) fuer 75 fehlende Beobachtungen" - und seit Befund
+    328 die Bedingung dazu: *bei unveraenderter Guete je Trade*. Eine zweite
+    Bedingung ist seit Befund 397 gemessen und stand nicht daneben: In diesen
+    Jahren muss die Reserve des Jahres-Gates halten, und null Treffer aus
+    **sieben** unabhaengigen Jahren schranken die Rate nur auf unter 34,8 %.
+
+    Dieses Feld traegt die gemessene Jahreszahl; die Schranke und die
+    Wahrscheinlichkeit ueber den Horizont rechnet ``_aussichtszeilen``
+    daraus. Gepflegt wird keine der drei Zahlen - sonst steht hier eine
+    zweite Kopie neben dem Lauf (Befunde 101/103/109).
+
+    Null heisst "nicht gemessen" und wird dann nicht gedruckt.
+    """
+
     @property
     def zugelassen(self) -> bool:
         return self.gesamt > 0 and self.bestanden == self.gesamt
@@ -6314,6 +6362,30 @@ class Lage(Gatebilanz):
             # 'noetige_trades' - "bei unveraenderter Qualitaet je Trade".
             f"  {AUSSICHT.BEDINGUNG}",
         ]
+        # **Die zweite Bedingung** (Befund 398). Dieselbe Luecke wie 328, eine
+        # Bedingung weiter: Waehrend dieser Jahre muss die Reserve des
+        # Jahres-Gates halten, und was das heisst, ist seit 397 gemessen.
+        # Gerechnet, nicht gepflegt - die Jahreszahl kommt aus dem Lauf.
+        if self.unabhaengige_jahre > 0:
+            from research.jahresrate import schranke, ueber_horizont
+
+            grenze = schranke(0, self.unabhaengige_jahre)
+            zeilen += [
+                "",
+                f"  **Und eine zweite Bedingung** (397): In diesen "
+                f"{AUSSICHT.jahre:.1f} Jahren muss",
+                "  die Reserve des Jahres-Gates halten - sie ist ein Guthaben,",
+                "  weil das Gate das Minimum ueber alle Fenster nimmt.",
+                f"  Getroffen hat es in {self.unabhaengige_jahre} unabhaengigen "
+                f"Jahren nie; das schrankt",
+                f"  die Rate auf unter {grenze:.1%} im Jahr (Irrtum 5 %), ueber "
+                f"den Horizont",
+                f"  also auf bis zu "
+                f"{ueber_horizont(grenze, AUSSICHT.jahre):.1%} fuer mindestens "
+                f"einen Treffer.",
+                "  Schranke, kein Schaetzer: Der Punktschaetzer ist null. Mehr",
+                "  Jahre machen sie enger - es sind dieselben Jahre.",
+            ]
         # **Auf welchem Betriebspunkt lohnt die Suche?** (Befund 220.) Die
         # Frage stand nirgends beziffert, obwohl beide Punkte gemessen sind.
         # Verglichen werden Verhaeltnisse, jedes auf seiner eigenen
