@@ -36435,3 +36435,72 @@ anhaengt und meine Zeile es nicht tat. Jetzt steht es da, mit Begruendung.
 
 **Kostet keinen Versuch**: dieselbe Regel, dieselben Daten, ein dritter Lauf im
 Befehl.
+
+## Vierhundertsechs. Die 63 unterdrueckten Trades sind eine Beingrenze, kein Kontorisiko
+
+Beim Rauchtest von Befund 405 stand in jedem Lauf eine Warnung, die ich nicht
+verfolgt hatte:
+
+> Die Verlustgrenzen greifen je Bein auf eigener Kapitalbasis, nicht je Konto.
+> Mit 'cli kontorisiko' pruefen, ob das Konto ueberhaupt ausgeloest haette.
+
+Nachgesehen: `research/kontorisiko.py` hat das laengst gemessen, und `cli
+kontorisiko` nennt im Docstring sogar den Preis - *"Die Sperre des BTC-Beins
+kostet 58 von 76 Trades"*. **Die Haelfte von Befund 403 war damit bekannt.**
+Neu war allein, dass die Grenzen je **Fenster** inert sind.
+
+### Der Vorbehalt, den das Modul selbst nennt
+
+> Es rechnet den Backtest nicht neu. Die Kontokurve entsteht aus Beinen, die
+> ihre eigenen Limits gesehen haben; wo das Konto frueher gebremst haette,
+> haetten die Beine danach anders gehandelt.
+
+Mit `enforce_risk_limits=False` je Bein entfaellt dieser Vorbehalt: Dann bremst
+kein Bein, und die Kontokurve ist die, die ein Aufbau mit **Kontogrenze statt
+Beingrenze** tatsaechlich erzeugt.
+
+### Gemessen, Spot-Punkt, durchgehend, 500 EUR auf zwei Beine
+
+| Beine | BTC | ETH | Summe | Kontokurve | Officer |
+|---|---|---|---|---|---|
+| gebremst | 18 Tr. | 81 Tr. | 99 | 10,00 % | loest nichts aus |
+| **frei** | 81 Tr. | 81 Tr. | **162** | **10,77 %** | **loest nichts aus** |
+
+Der Kill-Switch liegt bei 15 %, das Drawdown-Gate bei 12 %. **Auf keiner der
+beiden Kurven haette das Konto etwas ausgeloest** - und auf der freien Kurve
+ist das eine Aussage ohne Vorbehalt.
+
+### Damit korrigiert sich die Lesart von 403 bis 405
+
+Die **63** Trades, die Befund 403 im durchgehenden Modus als unterdrueckt
+gemessen hat, sind von einer Sperre unterdrueckt, die ein Konto nie gesehen
+haette - dasselbe Artefakt, das `kontorisiko` am Perpetual-Punkt mit 58 von 76
+Trades beschreibt.
+
+**Die Zelle "durchgehend, mit Limits" - 99 Trades, 8 von 11, DSR 0,3185 -
+beschreibt zwei getrennte Konten**, nicht das eine, das es gibt. Ich habe sie
+in 403 bis 405 als den betriebsnahen Punkt gelesen; das war sie nicht.
+
+Der betriebsnahe Punkt **mit Kontogrenze** ist die Zelle "durchgehend, ohne
+Beingrenzen": 162 Trades, Jahresrendite 19,0053, Rueckgang 11,216, **8 von
+11**, DSR 0,685. Gefallen sind `Schlechtestes Jahr` (−10,940), `Monte-Carlo`
+(22,816) und der Deflated Sharpe.
+
+### Was das nicht heisst
+
+**Nicht, dass der Kandidat besser dasteht als gemeldet.** Es sind weiter 8 von
+11, dem Deflated Sharpe fehlen weiter 0,265, und `Schlechtestes Jahr` faellt
+hier zusaetzlich. Die Korrektur verschiebt, **welche** Gates offen sind, nicht
+ob genug offen ist.
+
+**Nicht, dass die Beingrenzen abzuschalten waeren.** Gemessen ist, dass sie an
+dieser Stelle das Risiko zweier Konten beschreiben. Was im Betrieb gilt, ist
+eine Entscheidung des Nutzers - so wie die Modusfrage aus Befund 400.
+
+### Die Statuszeile aus 405 heisst jetzt anders
+
+Sie hiess "mit Grenzen" und beschreibt den je **Bein** gebremsten Lauf. Sie
+heisst jetzt "Beingrenzen" und nennt die Kontoprobe daneben: 10,77 % gegen
+15 % Kill-Switch, zwei getrennte Konten, und mit Kontogrenze 162 Trades und 8
+von 11. Drei Zusicherungen aus 405 sind dabei gefallen - sie hielten den alten
+Namen fest, wie sie sollen.

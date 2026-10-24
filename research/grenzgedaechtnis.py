@@ -252,3 +252,87 @@ def haengt_am_aufbau(gate: str) -> bool:
     Aufteilung noch am Messaufbau.
     """
     return gate in WACKELIG
+
+
+@dataclass(frozen=True, slots=True)
+class Kontoprobe:
+    """Haette das **Konto** ausgeloest - auf einer Kurve ohne gebremste Beine?
+
+    **Befund 406, und er korrigiert die Lesart von 403 bis 405.**
+
+    ``research/kontorisiko.py`` hat laengst gemessen, dass die Verlustgrenzen
+    je **Bein** auf eigener Kapitalbasis greifen und ein Konto mit beiden
+    Maerkten nichts ausgeloest haette. Es nennt dazu selbst einen Vorbehalt:
+    Die Kontokurve entsteht aus Beinen, die ihre eigenen Limits gesehen haben -
+    wo das Konto frueher gebremst haette, haetten die Beine danach anders
+    gehandelt.
+
+    Mit ``enforce_risk_limits=False`` je Bein entfaellt der Vorbehalt: Dann
+    bremst kein Bein, und die Kontokurve ist die, die ein Aufbau mit
+    **Kontogrenze statt Beingrenze** tatsaechlich erzeugt. Gemessen am
+    Spot-Punkt, durchgehend, 500 EUR auf zwei Beine:
+
+        Beine        BTC         ETH    Summe   Kontokurve   Officer
+        gebremst   18 Tr.      81 Tr.      99      10,00 %   loest nichts aus
+        frei       81 Tr.      81 Tr.     162      10,77 %   loest nichts aus
+
+    Der Kill-Switch liegt bei 15 %, das Drawdown-Gate bei 12 %. **Auf keiner
+    der beiden Kurven haette das Konto etwas ausgeloest**, und auf der freien
+    Kurve ist das eine Aussage ohne Vorbehalt.
+
+    Was daraus folgt
+    ----------------
+    Die **63** Trades, die Befund 403 im durchgehenden Modus als unterdrueckt
+    gemessen hat, sind von einer Sperre unterdrueckt, die ein Konto nie
+    gesehen haette - genau das Artefakt, das ``kontorisiko`` beschreibt (dort
+    am Perpetual-Punkt mit 58 von 76 Trades, hier am Spot-Punkt mit 63 von
+    162). Die Zelle "durchgehend, mit Limits" aus Befund 404 - 99 Trades, 8
+    von 11, DSR 0,3185 - beschreibt deshalb **zwei getrennte Konten**, nicht
+    das eine, das es gibt.
+
+    Der betriebsnahe Punkt **mit Kontogrenze** ist damit die Zelle
+    "durchgehend, ohne Beingrenzen": 162 Trades, Jahresrendite 19,0053,
+    Rueckgang 11,216, **8 von 11** Gates, DSR 0,685 - gefallen sind
+    'Schlechtestes Jahr' (-10,940), 'Monte-Carlo' (22,816) und der Deflated
+    Sharpe.
+
+    Was das **nicht** heisst
+    ------------------------
+    Nicht, dass der Kandidat besser dasteht als gemeldet. Es sind weiter 8
+    von 11, der Deflated Sharpe fehlt weiter um 0,265, und 'Schlechtestes
+    Jahr' faellt hier zusaetzlich. Die Korrektur verschiebt **welche** Gates
+    offen sind, nicht ob genug offen ist.
+
+    Und nicht, dass die Beingrenzen abzuschalten waeren. Gemessen ist, dass
+    sie an dieser Stelle das Risiko zweier Konten beschreiben; was im Betrieb
+    gelten soll, ist eine Entscheidung des Nutzers - so wie die Modusfrage aus
+    Befund 400.
+    """
+
+    beine_gebremst: bool
+    trades: int
+    kontorueckgang_pct: float
+    haette_ausgeloest: bool
+
+    @property
+    def unter_dem_killswitch(self) -> bool:
+        """Liegt der Kontorueckgang unter der Kill-Switch-Grenze von 15 %?"""
+        return self.kontorueckgang_pct < 15.0
+
+    @property
+    def unter_dem_gate(self) -> bool:
+        """Und unter der Drawdown-Schwelle des Gates von 12 %?"""
+        return self.kontorueckgang_pct < 12.0
+
+
+#: Die beiden Kontoproben aus Befund 406.
+KONTOPROBEN: tuple[Kontoprobe, ...] = (
+    Kontoprobe(
+        beine_gebremst=True, trades=99, kontorueckgang_pct=10.00,
+        haette_ausgeloest=False,
+    ),
+    Kontoprobe(
+        beine_gebremst=False, trades=162, kontorueckgang_pct=10.77,
+        haette_ausgeloest=False,
+    ),
+)

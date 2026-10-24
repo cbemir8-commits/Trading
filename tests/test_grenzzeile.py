@@ -60,7 +60,7 @@ class TestDieZeileStehtImKopf:
     def test_sie_nennt_den_punkt_und_seine_gates(self) -> None:
         bericht = _lage(grenzpunkt=_punkt()).bericht(kurz=True)
 
-        assert "mit Grenzen    Spot durchgehend: 8 von 11" in bericht
+        assert "Beingrenzen    Spot durchgehend: 8 von 11" in bericht
         assert "Monte-Carlo" in bericht
 
     def test_und_die_beiden_unterdrueckungszahlen(self) -> None:
@@ -86,13 +86,13 @@ class TestDieZeileStehtImKopf:
     def test_ein_bestaetigter_punkt_braucht_sie_nicht(self) -> None:
         bericht = _lage(grenzpunkt=_punkt(bestaetigt=True)).bericht(kurz=True)
 
-        assert "mit Grenzen" in bericht
+        assert "Beingrenzen" in bericht
         assert "Voraussetzung offen" not in bericht
 
     def test_ohne_messung_steht_nichts(self) -> None:
         bericht = _lage().bericht(kurz=True)
 
-        assert "mit Grenzen" not in bericht
+        assert "Beingrenzen" not in bericht
 
     def test_und_sie_steht_unter_dem_zweiten_punkt(self) -> None:
         """Die Reihenfolge ist die der Naehe zum Betrieb: berichtet, Spot,
@@ -107,7 +107,7 @@ class TestDieZeileStehtImKopf:
         ).splitlines()
 
         auch = next(i for i, z in enumerate(zeilen) if "Auch gemessen" in z)
-        grenze = next(i for i, z in enumerate(zeilen) if "mit Grenzen" in z)
+        grenze = next(i for i, z in enumerate(zeilen) if "Beingrenzen" in z)
 
         assert auch < grenze
 
@@ -115,7 +115,31 @@ class TestDieZeileStehtImKopf:
         """Eine Zeile '0 von 0' waere keine Auskunft."""
         bericht = _lage(grenzpunkt=object()).bericht(kurz=True)
 
-        assert "mit Grenzen" not in bericht
+        assert "Beingrenzen" not in bericht
+
+
+class TestDieKorrekturAusVierhundertsechs:
+    """Die Zeile hiess zuerst 'mit Grenzen' - sie beschreibt den je **Bein**
+    gebremsten Lauf, also zwei getrennte Konten (Befund 406)."""
+
+    def test_sie_heisst_jetzt_beingrenzen(self) -> None:
+        bericht = _lage(grenzpunkt=_punkt()).bericht(kurz=True)
+
+        assert "Beingrenzen" in bericht
+        assert "mit Grenzen " not in bericht
+
+    def test_und_nennt_die_kontoprobe(self) -> None:
+        bericht = _lage(grenzpunkt=_punkt()).bericht(kurz=True)
+
+        assert "je Bein, nicht je Konto" in bericht
+        assert "10,77 %" in bericht
+        assert "15 % Kill-Switch" in bericht
+
+    def test_und_den_punkt_mit_kontogrenze(self) -> None:
+        bericht = _lage(grenzpunkt=_punkt()).bericht(kurz=True)
+
+        assert "zwei getrennte Konten" in bericht
+        assert "162 Trades und 8 von 11" in bericht
 
 
 class TestWoherDieZahlKommt:

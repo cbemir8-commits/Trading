@@ -422,3 +422,120 @@ class TestDasKreuzAnDenEchtenDaten:
         ohne = self._gefallen(durchgehend=False, limits=False)
 
         assert mit == ohne == ("Messlatte", "Deflated Sharpe")
+
+
+class TestDieKontoprobe:
+    """Befund 406: die Kontokurve eines Laufs, in dem kein Bein gebremst hat."""
+
+    def test_beide_proben_loesen_nichts_aus(self) -> None:
+        from research.grenzgedaechtnis import KONTOPROBEN
+
+        assert len(KONTOPROBEN) == 2
+        assert not any(k.haette_ausgeloest for k in KONTOPROBEN)
+
+    def test_die_freie_kurve_ist_die_ohne_vorbehalt(self) -> None:
+        """``kontorisiko`` nennt selbst den Vorbehalt: Die Kurve entsteht aus
+        gebremsten Beinen. Mit freien Beinen entfaellt er."""
+        from research.grenzgedaechtnis import KONTOPROBEN
+
+        frei = next(k for k in KONTOPROBEN if not k.beine_gebremst)
+
+        assert frei.trades == 162
+        assert frei.kontorueckgang_pct == pytest.approx(10.77, abs=0.01)
+        assert frei.unter_dem_killswitch
+        assert frei.unter_dem_gate
+
+    def test_und_die_gebremste_auch_nicht(self) -> None:
+        from research.grenzgedaechtnis import KONTOPROBEN
+
+        gebremst = next(k for k in KONTOPROBEN if k.beine_gebremst)
+
+        assert gebremst.trades == 99
+        assert gebremst.kontorueckgang_pct == pytest.approx(10.00, abs=0.01)
+        assert not gebremst.haette_ausgeloest
+
+    def test_der_kopf_nennt_die_korrektur_und_ihre_grenze(self) -> None:
+        from research.grenzgedaechtnis import Kontoprobe
+
+        text = Kontoprobe.__doc__ or ""
+
+        assert "korrigiert die Lesart von 403 bis 405" in text
+        assert "zwei getrennte Konten" in text
+        assert "Nicht, dass der Kandidat besser dasteht" in text
+        assert "0,265" in text
+
+
+@pytest.mark.daten
+@pytest.mark.langsam
+class TestDieKontoprobeAnDenEchtenDaten:
+    @staticmethod
+    def _probe(*, gebremst: bool):
+        from dataclasses import replace
+        from decimal import Decimal
+
+        import pandas as pd
+
+        from backtest.portfolio_walkforward import common_range
+        from backtest.walkforward import WalkForwardSplitter, run_walkforward
+        from core.config import get_settings
+        from core.models import Interval
+        from data.store import CandleStore
+        from research.datenstand import alle_geschnitten
+        from research.kontorisiko import kontokurve, pruefe
+        from research.seeds import spitzenkandidat
+        from strategy.compiler import compile_genome
+
+        symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
+        e = get_settings()
+        store = CandleStore(e.paths.data_store)
+        frames = common_range(
+            alle_geschnitten({s: store.read(s, Interval.D1) for s in symbole})
+        )
+        genom = cli._ohne_hebel(spitzenkandidat())
+        spot = cli._spotconfigs(symbole, e)
+        je_bein = Decimal("500") / Decimal(len(frames))
+
+        kurven, trades = {}, 0
+        for markt, frame in frames.items():
+            cfg = replace(
+                spot[markt],
+                initial_equity=je_bein,
+                enforce_risk_limits=gebremst,
+            )
+            bericht = run_walkforward(
+                frame,
+                lambda: compile_genome(genom),
+                cfg,
+                WalkForwardSplitter(),
+                durchgehend=True,
+            )
+            teile = [
+                w.result.equity_curve
+                for w in bericht.windows
+                if not w.result.equity_curve.empty
+            ]
+            kurven[markt] = (
+                pd.concat(teile, ignore_index=True) if teile else pd.DataFrame()
+            )
+            trades += len(bericht.all_trades)
+        konto = pruefe(
+            kontokurve(kurven),
+            risk=e.risk,
+            instrument=spot[symbole[0]].instrument,
+        )
+        return trades, konto
+
+    def test_die_freie_kurve_loest_nichts_aus(self) -> None:
+        """Der Kern von Befund 406 - und die Aussage ohne Vorbehalt."""
+        trades, konto = self._probe(gebremst=False)
+
+        assert trades == 162
+        assert not konto.haette_ausgeloest
+        assert konto.hoechster_rueckgang_pct == pytest.approx(10.77, abs=0.05)
+
+    def test_und_die_gebremste_ebenso(self) -> None:
+        trades, konto = self._probe(gebremst=True)
+
+        assert trades == 99
+        assert not konto.haette_ausgeloest
+        assert konto.hoechster_rueckgang_pct == pytest.approx(10.00, abs=0.05)

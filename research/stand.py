@@ -4534,9 +4534,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "der **Grund** der Frage: Es geht nicht um zwei gleichberechtigte "
         "Messweisen, sondern darum, dass in der einen eine eingebaute "
         "Schutzvorrichtung fast nie anspricht. 'cli aufteilung --ohne-limits' "
-        "ist die Gegenprobe",
+        "ist die Gegenprobe. **Zwei Vermerke aus 406**: Erstens war die "
+        "Haelfte davon bekannt - 'cli kontorisiko' nennt im Docstring, dass "
+        "die Sperre des BTC-Beins 58 von 76 Trades kostet; neu ist allein, "
+        "dass die Grenzen je **Fenster** inert sind. Zweitens sind die 63 "
+        "unterdrueckten Trades von einer **Bein**grenze unterdrueckt, die ein "
+        "Konto nie gesehen haette",
         403,
-        zuletzt=404,
+        zuletzt=406,
     ),
     # Befund 404: dasselbe Kreuz wie 395, nur fuer Modus x Grenzen - und je
     # Gate statt nur in Summe.
@@ -4590,8 +4595,47 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Zeile. Mein erster Einbau hat sie am Punkt gefuehrt und in der Zeile "
         "verschwiegen - eine stille Auslassung, und die Sorte Zeile, an der "
         "Befund 389 haengengeblieben ist. **Kostet keinen Versuch**: "
-        "dieselbe Regel, dieselben Daten, ein dritter Lauf im Befehl",
+        "dieselbe Regel, dieselben Daten, ein dritter Lauf im Befehl. "
+        "**Vermerk aus 406**: Die Zeile hiess zuerst 'mit Grenzen' und "
+        "beschreibt den je **Bein** gebremsten Lauf - also zwei getrennte "
+        "Konten. Sie heisst jetzt 'Beingrenzen' und nennt die Kontoprobe "
+        "daneben",
         405,
+        zuletzt=406,
+    ),
+    # Befund 406: die Kontokurve eines Laufs, in dem kein Bein gebremst hat -
+    # damit entfaellt der Vorbehalt, den 'kontorisiko' selbst nennt.
+    Richtung(
+        "Die 63 unterdrueckten Trades sind eine Beingrenze, kein Kontorisiko",
+        "'research/kontorisiko.py' hat laengst gemessen, dass die "
+        "Verlustgrenzen je **Bein** auf eigener Kapitalbasis greifen und ein "
+        "Konto nichts ausgeloest haette - mit einem Vorbehalt, den das Modul "
+        "selbst nennt: Die Kontokurve entsteht aus Beinen, die ihre eigenen "
+        "Limits gesehen haben. **Mit freien Beinen entfaellt der Vorbehalt**, "
+        "und gemessen ist am Spot-Punkt, durchgehend, 500 EUR auf zwei Beine: "
+        "gebremst 18 + 81 = 99 Trades, Kontokurve 10,00 % Rueckgang; frei "
+        "81 + 81 = 162 Trades, Kontokurve **10,77 %**. Der Kill-Switch liegt "
+        "bei 15 %, das Drawdown-Gate bei 12 % - **auf keiner der beiden "
+        "Kurven haette das Konto etwas ausgeloest**, und auf der freien ist "
+        "das eine Aussage ohne Vorbehalt. **Damit korrigiert sich die Lesart "
+        "von 403 bis 405**: Die 63 im durchgehenden Modus unterdrueckten "
+        "Trades sind von einer Sperre unterdrueckt, die ein Konto nie gesehen "
+        "haette (dasselbe Artefakt, das 'kontorisiko' am Perpetual-Punkt mit "
+        "58 von 76 Trades beschreibt). Die Zelle 'durchgehend, mit Limits' - "
+        "99 Trades, 8 von 11, DSR 0,3185 - beschreibt **zwei getrennte "
+        "Konten**, nicht das eine, das es gibt. Der betriebsnahe Punkt **mit "
+        "Kontogrenze** ist die Zelle 'durchgehend, ohne Beingrenzen': 162 "
+        "Trades, 19,0053 Jahresrendite, 11,216 Rueckgang, **8 von 11**, DSR "
+        "0,685; gefallen sind 'Schlechtestes Jahr' (-10,940), 'Monte-Carlo' "
+        "(22,816) und der Deflated Sharpe. **Was das nicht heisst**: dass der "
+        "Kandidat besser dasteht. Es sind weiter 8 von 11, dem Deflated "
+        "Sharpe fehlen weiter 0,265, und 'Schlechtestes Jahr' faellt hier "
+        "zusaetzlich - die Korrektur verschiebt, **welche** Gates offen sind, "
+        "nicht ob genug offen ist. Und nicht, dass die Beingrenzen "
+        "abzuschalten waeren: Gemessen ist, dass sie hier das Risiko zweier "
+        "Konten beschreiben; was im Betrieb gilt, ist eine Entscheidung des "
+        "Nutzers wie die Modusfrage aus 400",
+        406,
     ),
 )
 
@@ -6820,12 +6864,20 @@ class Lage(Gatebilanz):
             else f"  (Voraussetzung offen: {getattr(punkt, 'voraussetzung', '')})"
         )
         return [
-            f"  mit Grenzen    {getattr(punkt, 'name', '?')}: "
+            f"  Beingrenzen    {getattr(punkt, 'name', '?')}: "
             f"{bestanden} von {gesamt}, offen: {offen}{bedingt}",
-            "                 [dim]Je Fenster unterdruecken die Risikogrenzen "
-            "4 von 162 Trades, durchgehend 63 -",
+            "                 [dim]Je Fenster unterdruecken die Grenzen 4 von "
+            "162 Trades, durchgehend 63 -",
             "                 jedes Fenster beginnt ohne Equity-Vorgeschichte "
-            "(Befund 403/404).[/]",
+            "(Befund 403/404).",
+            "                 **Sie greifen je Bein, nicht je Konto** "
+            "(Befund 406): Auf der Kontokurve",
+            "                 ohne gebremste Beine loest der echte Officer "
+            "nichts aus - 10,77 % gegen",
+            "                 15 % Kill-Switch. Diese Zeile beschreibt also "
+            "zwei getrennte Konten;",
+            "                 mit Kontogrenze sind es 162 Trades und 8 von 11 "
+            "(DSR 0,685).[/]",
         ]
 
     def bericht(self, *, kurz: bool = False) -> str:
