@@ -15679,7 +15679,7 @@ def aufteilung(
     """
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
-    from research.aufteilung import beurteile, streuung
+    from research.aufteilung import banden, beurteile, streuung
     from research.datenstand import alle_geschnitten, reihenzeile
     from research.gates import GateStatus, evaluate_gates
     from research.randschnitt import ohne_zensierte
@@ -15847,7 +15847,13 @@ def aufteilung(
     # **Je Gate, nicht nur insgesamt** (Befund 401). Neun der elf sind
     # entschieden; die Sorge aus 400 trifft zwei, und der Hauptblocker ist
     # nicht darunter.
-    urteilstafel = Table(title="Ist das Urteil eines?", title_justify="left")
+    urteilstafel = Table(
+        title=(
+            f"Ist das Urteil eines? ({len(gesammelt['Jahresrendite'])} "
+            f"Aufteilungen)"
+        ),
+        title_justify="left",
+    )
     urteilstafel.add_column("")
     urteilstafel.add_column("Gate")
     urteilstafel.add_column("Wert", justify="right")
@@ -15855,6 +15861,7 @@ def aufteilung(
     urteilstafel.add_column("Abstand", justify="right")
     urteilstafel.add_column("Spanne", justify="right")
     urteilstafel.add_column("Urteil")
+    urteilstafel.add_column("innen/Drift", justify="right")
     for name, (wert, schwelle, status) in gemeldet.items():
         spruch = beurteile(
             name=name,
@@ -15873,12 +15880,19 @@ def aufteilung(
         }[spruch]
         if spruch == "zwei Groessen":
             urteilstafel.add_row(marke, name, f"{wert:.4f}", f"{schwelle:.4f}",
-                                 "-", "-", farbe)
+                                 "-", "-", farbe, "-")
             continue
         s = streuung(name, jegate[name])
+        # **Aufteilung oder Reihenanfang?** (Befund 402) Erst ab zwei Banden
+        # laesst sich das trennen; darunter steht ein Strich.
+        try:
+            bild = banden(name, jegate[name])
+            zerlegt = f"{bild.innen:.4f}/{bild.drift:.4f}"
+        except ValueError:
+            zerlegt = "-"
         urteilstafel.add_row(
             marke, name, f"{wert:.4f}", f"{schwelle:.4f}",
-            f"{abs(wert - schwelle):.4f}", f"{s.spanne:.4f}", farbe,
+            f"{abs(wert - schwelle):.4f}", f"{s.spanne:.4f}", farbe, zerlegt,
         )
     console.print()
     console.print(urteilstafel)
@@ -15893,6 +15907,15 @@ def aufteilung(
             f"{'offen' if latte.deckt(fehlt) else 'entschieden'}.[/]"
         )
 
+    # **Die Asymmetrie** (Befund 402): Eine Spanne ueber n Aufteilungen ist
+    # eine Untergrenze. 'offen' bleibt offen, 'entschieden' gilt nur hier.
+    console.print(
+        f"\n[dim]'offen' bleibt offen, auch bei mehr Aufteilungen. "
+        f"'entschieden' heisst 'auf diesen "
+        f"{len(gesammelt['Jahresrendite'])}' - eine Spanne ist eine "
+        f"Untergrenze (Befund 402).\nGemessen: Bei 31 Versaetzen kippt "
+        f"'Bestaendigkeit' nach offen, der Deflated Sharpe nicht.[/]"
+    )
     console.print(
         "\n[dim]Kein Versatz ist der richtige. Wer sich einen aussucht, "
         "lockert das Gate.[/]"

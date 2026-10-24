@@ -4460,8 +4460,36 @@ BEHOBEN: tuple[Richtung, ...] = (
         "die Stelle, an der als naechstes nachzusehen ist. Zwei Gates "
         "bewegen sich gar nicht: 'Kosten-Stress' und 'Parameter-Plateau' "
         "haben Spanne null. 'aufteilung.beurteile' ist die Regel, "
-        "'cli aufteilung' zeigt die Tafel",
+        "'cli aufteilung' zeigt die Tafel. **Vermerk aus 402**: Die Neun "
+        "haengt an der Messtiefe - bei 31 Aufteilungen sind es acht, weil "
+        "'Bestaendigkeit' kippt",
         401,
+        zuletzt=402,
+    ),
+    # Befund 402: nachgesehen, wo 401 es verlangt hat - und das knappste
+    # Urteil haelt nicht.
+    Richtung(
+        "'Entschieden' ist vorlaeufig, 'offen' nicht",
+        "Befund 401 hat 'Bestaendigkeit' als knappstes Urteil benannt - 0,0806 "
+        "Abstand gegen 0,0645 Spanne, das 1,25-fache - und gesagt, wo "
+        "nachzusehen ist: bei mehr Aufteilungen. Nachgesehen, 31 Versaetze: "
+        "**Es kippt.** Die Spanne waechst auf 0,0968, und aus 'neun von elf "
+        "entschieden' werden **acht**. **Der Deflated Sharpe bleibt "
+        "entschieden** - 0,3674 gegen 0,0980, noch das Dreieinhalbfache. "
+        "**Und es ist die Aufteilung, nicht der Reihenanfang**: Die Werte in "
+        "Zehnerbanden geschnitten, ergibt die groesste Spanne **innerhalb** "
+        "einer Bande 0,0839 - schon mehr als der Abstand -, waehrend die "
+        "Drift zwischen den Bandenmitteln nur 0,0231 betraegt. Dass die "
+        "Zerlegung ueberhaupt trennt, zeigt die Gegenprobe an "
+        "'Stichprobengroesse': Dort ueberwiegt die Drift mit 101,9091 gegen "
+        "97,0000, und sie muss es, weil die Zahl Tage im Markt sind und die "
+        "Reihe kuerzer wird. **Die Lehre ist allgemein**: Eine Spanne ueber "
+        "n Aufteilungen ist eine **Untergrenze** der Spanne, also ist 'offen' "
+        "monoton - was auf elf offen ist, bleibt es auf hundert - und "
+        "'entschieden' heisst nur 'auf diesen n entschieden'. Wer die Zahl "
+        "nennt, nennt die Tiefe mit; 'cli aufteilung' schreibt sie in die "
+        "Ueberschrift und die Bandenzerlegung in die letzte Spalte",
+        402,
     ),
 )
 

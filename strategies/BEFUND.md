@@ -36137,3 +36137,73 @@ modulweiten Fixture sind es elf Laeufe und drei Minuten. Klassenweit ging es
 nicht - dort bricht eine Zusicherung in pytests Fixture-Verwaltung -, und das
 steht jetzt als Grund daneben, damit der naechste Durchgang es nicht wieder
 versucht.
+
+## Vierhundertzwei. 'Entschieden' ist vorlaeufig, 'offen' nicht
+
+Befund 401 hat `Bestaendigkeit` als knappstes Urteil benannt - 0,0806 Abstand
+gegen 0,0645 Spanne, das 1,25-fache - und gesagt, wo nachzusehen ist: bei mehr
+Aufteilungen. Nachgesehen, 31 Versaetze.
+
+### Es kippt
+
+| Groesse | Abstand | Spanne 11 | Spanne 31 | Urteil 11 | Urteil 31 |
+|---|---|---|---|---|---|
+| **Bestaendigkeit** | 0,0806 | 0,0645 | **0,0968** | entschieden | **offen** |
+| Deflated Sharpe | 0,3674 | 0,0763 | 0,0980 | entschieden | entschieden |
+| Schlechtestes Jahr | 0,3900 | 0,9500 | 1,4400 | offen | offen |
+| Drawdown | 2,1313 | 0,7022 | 1,1901 | entschieden | entschieden |
+| Jahresrendite | 0,6609 | 3,1130 | 4,8500 | offen | offen |
+
+Aus "neun von elf entschieden" werden **acht**. **Der Deflated Sharpe bleibt
+entschieden** - 0,3674 gegen 0,0980, noch das Dreieinhalbfache.
+
+### Und es ist die Aufteilung, nicht der Reihenanfang
+
+Wer den Versatz weit genug treibt, verschiebt nicht mehr nur die Aufteilung,
+sondern auch den Reihenanfang - und das ist der Effekt aus `reichweite`. Die
+Zerlegung in Banden trennt beides: Spanne **innerhalb** einer Bande ist
+Aufteilung, Drift der **Bandenmittel** ist der Anfang.
+
+| Groesse | innen | Drift |
+|---|---|---|
+| Bestaendigkeit | **0,0839** | 0,0231 |
+| Deflated Sharpe | 0,0871 | 0,0444 |
+| Stichprobengroesse | 97,0000 | **101,9091** |
+
+Bei `Bestaendigkeit` ist die Spanne innerhalb einer Bande schon groesser als
+der Abstand - der Kipp kommt von der Aufteilung. Bei `Stichprobengroesse`
+ueberwiegt die Drift, und sie **muss** es: Die Zahl sind Tage im Markt, und
+die Reihe wird kuerzer. Dass die Zerlegung das zeigt, ist die Gegenprobe
+darauf, dass sie ueberhaupt trennt.
+
+### Die Lehre ist allgemein
+
+Eine Spanne ueber `n` Aufteilungen ist eine **Untergrenze** der Spanne - mehr
+Aufteilungen koennen sie nur vergroessern. Daraus eine Asymmetrie:
+
+* **"offen" ist monoton.** Was einmal offen ist, bleibt es bei mehr Tiefe.
+* **"entschieden" ist es nicht.** Es heisst "auf diesen `n` entschieden".
+
+Und die Falle dazu: Bei **wenigen** Aufteilungen ist die Spanne winzig, also
+liest sich fast alles als entschieden. Wer wenig misst, bekommt viele Urteile
+und wenig Wissen. `cli aufteilung` schreibt die Tiefe darum in die Ueberschrift
+und die Zerlegung in die letzte Spalte.
+
+### Zwei eigene Fehler, beide von eigenen Tests gefunden
+
+**Der erste war im Test.** Ich habe geschrieben, "offen" gelte auf *jeder*
+Tiefe, und der Test fiel bei Tiefe zwei: Dort ist die Spanne 0,10 gegen 0,39
+Abstand, also liest es sich als entschieden. Monoton ist die Aussage erst von
+der Tiefe an, bei der sie einmal offen war - derselbe Fehler, vor dem der
+Befund warnt, im Befund selbst.
+
+**Der zweite war in der Funktion.** `banden` nahm eine feste **Breite** von elf
+und liess eine unvollstaendige letzte Bande weg. Bei 31 Werten blieben zwei
+Banden, und **neun Werte fielen heraus** - genau die mit der groessten Spanne,
+0,0839 gegen 0,0645. Die Zahl, auf die es ankam, war die weggelassene.
+Gefunden hat es der datengestuetzte Test, weil er die Zahl aus der Messung
+gegen die Funktion gehalten hat und sie nicht zusammenpassten.
+
+Jetzt wird nach **Anzahl** geschnitten statt nach Breite: 31 Werte auf drei
+Banden sind 11, 10, 10 - alles drin, nichts doppelt. Der Test dazu prueft
+genau das, und zwar an vier Laengen.

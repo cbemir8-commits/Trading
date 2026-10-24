@@ -118,6 +118,7 @@ from __future__ import annotations
 import statistics
 from collections.abc import Sequence
 from dataclasses import dataclass
+from itertools import pairwise
 
 __all__ = ["VERSATZ", "Aufteilungsstreuung", "beurteile", "streuung"]
 
@@ -211,6 +212,26 @@ def beurteile(
     Messlatte, deren Jahresrendite 0,661 unter der Schwelle liegt bei 3,1130
     Spanne. Am knappsten entschieden ist 'Bestaendigkeit' - 0,0806 gegen
     0,0645, das 1,25-fache.
+
+    **Und das "entschieden" ist vorlaeufig** (Befund 402). Eine Spanne ueber
+    ``n`` Aufteilungen ist eine **Untergrenze** der Spanne: Mehr Aufteilungen
+    koennen sie nur vergroessern. Daraus folgt eine Asymmetrie, die beim
+    Lesen zaehlt:
+
+    * **"offen" ist monoton.** Was auf elf Aufteilungen offen ist, bleibt es
+      auf hundert.
+    * **"entschieden" ist es nicht.** Es heisst "auf diesen ``n``
+      Aufteilungen entschieden", nicht mehr.
+
+    Und die Falle dabei: Bei **wenigen** Aufteilungen ist die Spanne winzig,
+    also liest sich fast alles als entschieden. Zwei Aufteilungen sagen
+    beinahe nichts; sie sind nur die Untergrenze, unter der die Frage keinen
+    Sinn hat. Wer wenig misst, bekommt viele Urteile und wenig Wissen.
+
+    Gemessen: Bei 31 Versaetzen kippt 'Bestaendigkeit' nach **offen** - 0,0806
+    gegen 0,0968 -, und aus "neun von elf" werden acht. Der Deflated Sharpe
+    bleibt entschieden (0,3674 gegen 0,0980). Wer die Zahl nennt, nennt die
+    Tiefe mit.
     """
     if len(set(bedingungen)) > 1:
         return ZWEI_GROESSEN
@@ -220,3 +241,72 @@ def beurteile(
             f"gibt es kein Urteil darueber, ob das Urteil eines ist."
         )
     return OFFEN if streuung(name, werte).deckt(wert - schwelle) else ENTSCHIEDEN
+
+
+@dataclass(frozen=True, slots=True)
+class Bandenbild:
+    """Streuung **innerhalb** einer Bande gegen Drift **zwischen** den Banden.
+
+    Wer den Versatz weit genug treibt, verschiebt nicht mehr nur die
+    Aufteilung, sondern auch den Reihenanfang - und das ist der Effekt aus
+    ``reichweite``, nicht der aus Befund 400. Die Zerlegung trennt beides:
+    Die Spanne innerhalb einer Zehnerbande ist Aufteilung, die Drift der
+    Bandenmittel ist der Anfang.
+
+    Gemessen ueber 31 Versaetze (Befund 402):
+
+        Groesse               Banden max     Drift
+        Bestaendigkeit            0,0839    0,0231
+        Deflated Sharpe           0,0871    0,0444
+        Stichprobengroesse       97,0000  101,9091   <- hier wandert der Anfang
+
+    Bei 'Stichprobengroesse' ueberwiegt die Drift, und das muss sie: Die Zahl
+    sind Tage im Markt, und die Reihe wird kuerzer. Dass die Zerlegung das
+    zeigt, ist die Gegenprobe darauf, dass sie ueberhaupt trennt.
+    """
+
+    name: str
+    bandenspannen: tuple[float, ...]
+    drift: float
+
+    @property
+    def innen(self) -> float:
+        """Die groesste Spanne innerhalb einer Bande."""
+        return max(self.bandenspannen)
+
+    @property
+    def ueberwiegt_die_aufteilung(self) -> bool:
+        return self.innen >= self.drift
+
+
+def banden(name: str, werte: Sequence[float], *, anzahl: int = 3) -> Bandenbild:
+    """Die Werte in ``anzahl`` Banden schneiden und beides messen.
+
+    **Die Anzahl, nicht die Breite** (Befund 402). Mein erster Einbau nahm
+    eine feste Breite von elf und liess eine unvollstaendige letzte Bande
+    weg. Bei 31 Werten blieben damit zwei Banden und **neun Werte fielen
+    heraus** - und zwar genau die mit der groessten Spanne, 0,0839 gegen
+    0,0645. Die Zahl, auf die es ankam, war die weggelassene.
+
+    Gefunden hat es der eigene datengestuetzte Test, weil er die Zahl aus
+    der Messung gegen die Funktion gehalten hat.
+
+    Jetzt wird alles aufgeteilt, in moeglichst gleich grosse Banden ohne
+    Ueberlappung: 31 Werte auf drei Banden sind 11, 10, 10. Jede Bande
+    braucht mindestens zwei Werte, sonst ist ihre Spanne keine.
+    """
+    if anzahl < 2:
+        raise ValueError("Weniger als zwei Banden trennen nichts.")
+    if len(werte) < 2 * anzahl:
+        raise ValueError(
+            f"{name}: {len(werte)} Werte reichen nicht fuer {anzahl} Banden - "
+            f"jede braucht mindestens zwei."
+        )
+    grenzen = [len(werte) * i // anzahl for i in range(anzahl + 1)]
+    stuecke = [list(werte[a:b]) for a, b in pairwise(grenzen)]
+    mittel = [statistics.fmean(s) for s in stuecke]
+    return Bandenbild(
+        name=name,
+        bandenspannen=tuple(max(s) - min(s) for s in stuecke),
+        drift=max(mittel) - min(mittel),
+    )
