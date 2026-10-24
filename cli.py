@@ -15634,5 +15634,209 @@ def zufallseinstieg(
         )
 
 
+@app.command()
+def aufteilung(
+    maerkte: str = typer.Option(
+        "BTCUSD_BITSTAMP,ETHUSD_BITSTAMP", "--maerkte", "-m",
+        help="Symbole, durch Komma getrennt.",
+    ),
+    intervall: str = typer.Option("D", "--intervall", "-i"),
+    tage: int = typer.Option(
+        10, "--tage", "-t",
+        help="Wie viele Balken hoechstens weggelassen werden (mindestens 1).",
+    ),
+    hinten: bool = typer.Option(
+        False, "--hinten",
+        help="Am Ende abschneiden statt am Anfang - die Gegenprobe.",
+    ),
+    durchgehend: bool = typer.Option(
+        False, "--durchgehend",
+        help="Positionen ueberleben die Fenstergrenze (wie im Betrieb).",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Wie viel von der Gate-Zahl haengt an der Aufteilung? (Befund 400)
+
+    ``run_walkforward`` verankert die Fenster am Reihenanfang. Ein Balken
+    weniger dort verschiebt deshalb **jede** Fenstergrenze um einen Tag -
+    und weil ohne ``--durchgehend`` keine Position eine Grenze ueberlebt,
+    macht die Strategie im selben Zeitraum andere Trades.
+
+    Weggelassen werden Balken aus dem ersten **Trainings**fenster. Sie
+    werden nie gehandelt; was sich bewegt, ist allein die Aufteilung.
+
+    Gemessen (Spot-Punkt, Zulassungsreihe, 0 bis 10 Balken): 3,1130 Punkte
+    Jahresrendite zwischen bestem und schlechtestem Lauf, bei einem Abstand
+    von 0,661 Punkten zur Betriebsschwelle. Mit ``--hinten`` bewegt sich
+    nichts - das ist die Gegenprobe zur Bauart.
+
+    **Das ist keine Erlaubnis, sich einen Versatz auszusuchen.** Bei Versatz
+    null hat der Kandidat die niedrigste Jahresrendite aller Laeufe; sich
+    einen anderen zu nehmen waere das Lockern, gegen das die
+    Zulassungsstrecke gebaut ist. Die Zahl sagt, wann ein Urteil keines ist.
+
+    Kostet keinen Versuch: dieselbe Regel, dieselben Daten.
+    """
+    from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
+    from research.admission import load_trials
+    from research.aufteilung import streuung
+    from research.datenstand import alle_geschnitten, reihenzeile
+    from research.gates import GateStatus, evaluate_gates
+    from research.randschnitt import ohne_zensierte
+    from research.seeds import spitzenkandidat
+    from research.suchbudget import Kandidat
+    from strategy.compiler import compile_genome
+
+    _configure_logging(verbose)
+    settings = get_settings()
+    store = CandleStore(settings.paths.data_store)
+    interval_obj = Interval(intervall)
+    symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
+
+    roh = {}
+    for symbol in symbole:
+        rahmen = store.read(symbol, interval_obj)
+        if rahmen.empty:
+            console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
+            raise typer.Exit(2)
+        roh[symbol] = rahmen
+
+    # **Auf der Zulassungsreihe** (Befund 387/390/394): Dieser Befehl setzt
+    # eine Zahl neben den Abstand aus 'referenz.py', also gehoert er auf
+    # dieselbe Reihe.
+    geschnitten = alle_geschnitten(roh)
+    console.print(f"[dim]Reihe: {reihenzeile(geschnitten)}[/]")
+    genome = _ohne_hebel(spitzenkandidat())
+    configs = _spotconfigs(symbole, settings)
+    trials = load_trials(Path(settings.paths.state) / "trials.json")
+    console.print(
+        f"[dim]Betriebspunkt: Spot, Modus: "
+        f"{'durchgehend' if durchgehend else 'je Fenster'}, "
+        f"abgeschnitten: {'hinten' if hinten else 'vorne'}[/]\n"
+    )
+
+    namen = (
+        "Deflated Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Out-of-Sample-Sharpe",
+        "Bestaendigkeit",
+    )
+    gesammelt: dict[str, list[float]] = {n: [] for n in namen}
+    gesammelt["Jahresrendite"] = []
+    gesammelt["Guete je Trade"] = []
+    gesammelt["bestandene Gates"] = []
+    lattenzweige: set[str] = set()
+
+    tafel = Table(title="Je Aufteilung", title_justify="left")
+    tafel.add_column("weg", justify="right")
+    tafel.add_column("Fenster", justify="right")
+    tafel.add_column("fertig", justify="right")
+    tafel.add_column("CAGR", justify="right")
+    tafel.add_column("DSR", justify="right")
+    tafel.add_column("schl. Jahr", justify="right")
+    tafel.add_column("Gates", justify="right")
+
+    # **Eine Streuung braucht zwei Laeufe.** Unter eins wird aufgerundet und
+    # das gesagt - ein stiller Rueckfall waere die Sorte Zeile, an der Befund
+    # 389 haengengeblieben ist.
+    if tage < 1:
+        console.print(
+            f"[yellow]--tage {tage} ergibt keine Streuung; gerechnet wird mit 1.[/]"
+        )
+    for weg in range(max(tage, 1) + 1):
+        if hinten:
+            teile = {
+                s: (f.iloc[: len(f) - weg] if weg else f).reset_index(drop=True)
+                for s, f in geschnitten.items()
+            }
+        else:
+            teile = {
+                s: f.iloc[weg:].reset_index(drop=True) for s, f in geschnitten.items()
+            }
+        frames = common_range(teile)
+        bericht = run_portfolio_walkforward(
+            frames, lambda: compile_genome(genome), configs, durchgehend=durchgehend
+        )
+        if not bericht.windows:
+            console.print(f"[yellow]{weg}: keine Fenster[/]")
+            continue
+        gates = evaluate_gates(
+            genome, bericht, next(iter(frames.values())), configs[symbole[0]],
+            trials_so_far=trials, frames=frames, configs=configs,
+        )
+        urteil = {r.name: r for r in gates.results}
+        fertig = ohne_zensierte(bericht).all_trades
+        form = Kandidat.aus_trades("", fertig)
+        bestanden = sum(1 for r in gates.results if r.status is GateStatus.PASS)
+        for n in namen:
+            gesammelt[n].append(float(urteil[n].value))
+        gesammelt["Jahresrendite"].append(
+            float(bericht.combined.cagr_pct) if bericht.combined else 0.0
+        )
+        gesammelt["Guete je Trade"].append(
+            form.sharpe_je_trade if form else 0.0
+        )
+        gesammelt["bestandene Gates"].append(float(bestanden))
+        # **Die Messlatte traegt zwei Groessen** (Befund 395) - deshalb steht
+        # sie nicht in der Streuungstafel, sondern ihre Zweige darunter.
+        lattenzweige.add(urteil["Messlatte"].bedingung)
+        tafel.add_row(
+            str(weg),
+            str(len(bericht.windows)),
+            str(len(fertig)),
+            f"{gesammelt['Jahresrendite'][-1]:.4f}",
+            f"{urteil['Deflated Sharpe'].value:.4f}",
+            f"{urteil['Schlechtestes Jahr'].value:.4f}",
+            f"{bestanden}/{len(gates.results)}",
+        )
+    console.print(tafel)
+
+    if len(gesammelt["Jahresrendite"]) < 2:
+        console.print("[yellow]Zu wenige Laeufe fuer eine Streuung.[/]")
+        return
+
+    console.print(
+        f"\n[bold]{'Groesse':22} {'min':>10} {'max':>10} "
+        f"{'Spanne':>10} {'Streuung':>10}[/]"
+    )
+    console.print("-" * 66)
+    streuungen = {}
+    for name, werte in gesammelt.items():
+        s = streuung(name, werte)
+        streuungen[name] = s
+        console.print(s.zeile())
+
+    # **Der Satz, um den es geht**: Liegt der Abstand zum Gate innerhalb der
+    # Streuung des Verfahrens, entscheidet dieser Lauf ihn nicht.
+    latte = streuungen["Jahresrendite"]
+    fehlt = 15.0 - min(gesammelt["Jahresrendite"])
+    console.print()
+    if latte.deckt(fehlt):
+        console.print(
+            f"[yellow]Der Abstand zur Betriebsschwelle ({fehlt:.3f} Punkte) "
+            f"liegt **innerhalb** der Streuung\nder Aufteilung "
+            f"({latte.spanne:.3f}). Dieser Lauf entscheidet ihn nicht - und "
+            f"das macht\ndas Gate nicht harmloser, sondern das Urteil "
+            f"unbrauchbar.[/]"
+        )
+    else:
+        console.print(
+            f"[green]Der Abstand zur Betriebsschwelle ({fehlt:.3f} Punkte) "
+            f"liegt ausserhalb der Streuung ({latte.spanne:.3f}).[/]"
+        )
+    if len(lattenzweige) > 1:
+        console.print(
+            "\n[dim]Die Messlatte fehlt in der Tafel mit Absicht: Sie haengt "
+            "hier an verschiedenen\nBedingungen ("
+            + ", ".join(sorted(lattenzweige))
+            + ") und traegt damit zwei\nverschiedene Groessen (Befund 395).[/]"
+        )
+    console.print(
+        "\n[dim]Kein Versatz ist der richtige. Wer sich einen aussucht, "
+        "lockert das Gate.[/]"
+    )
+
+
 if __name__ == "__main__":
     app()

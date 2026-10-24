@@ -4391,6 +4391,49 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Beide Zahlen stehen als eigene Zusicherung daneben, denn ein Audit, "
         "das nichts mehr aufloest, waere sonst gruen und leer",
         399,
+        zuletzt=400,
+    ),
+    # Befund 400: der Faden aus 396 zu Ende gezogen - die ganze
+    # Zulassungsstrecke steht auf einer Aufteilung, und daran haengt mehr,
+    # als jedes offene Gate an Abstand hat.
+    Richtung(
+        "Ein Balken weniger am Anfang bewegt die Jahresrendite um drei Punkte",
+        "'run_walkforward' verankert die Fenster am Reihenanfang - "
+        "'start = frame[\"open_time\"].iloc[0]' -, also verschiebt ein Balken "
+        "weniger dort **jede** Fenstergrenze um einen Tag. Und ohne "
+        "'durchgehend=True' ueberlebt keine Position eine Fenstergrenze; der "
+        "Kopf dort sagt selbst, dass erst der durchgehende Modus sie "
+        "'so wie im Betrieb' tragen laesst. Die Zulassung laeuft im anderen. "
+        "**Gemessen** (Spot-Punkt, Zulassungsreihe, 0 bis 10 Balken weg, alle "
+        "elf Laeufe mit 32 Fenstern, die weggelassenen Balken liegen im "
+        "ersten **Trainings**fenster und werden nie gehandelt): Die "
+        "Jahresrendite laeuft von **14,3391 auf 17,4522** - 3,1130 Punkte "
+        "Spanne, Streuung 0,9379 -, der Deflated Sharpe um 0,098, das "
+        "schlechteste Jahr um 1,38 Punkte, und **die Gate-Zahl schwankt "
+        "zwischen 9 und 10**. Dem Kandidaten fehlen 0,661 Punkte zur "
+        "Betriebsschwelle; der Abstand ist ein Fuenftel der Streuung des "
+        "Verfahrens. **Die Gegenprobe zur Bauart**: Dieselben zehn Balken "
+        "**hinten** abgeschnitten aendern gar nichts - 14,3391 auf vier "
+        "Stellen, 156 Trades, 9,869 Rueckgang, zehnmal dasselbe. **Der "
+        "Mechanismus, gegengeprueft**: Im durchgehenden Modus sind es **98 "
+        "fertige Trades bei jedem Versatz** statt 152 bis 156, und die "
+        "Streuung faellt von 3,1130 auf 1,5189 - rund 58 der gemeldeten 156 "
+        "Trades sind Grenzartefakte. **Und die unbequeme Haelfte**: Der "
+        "durchgehende Modus ist auf jedem blockierenden Gate schlechter "
+        "(14,3390 gegen 11,6270 Rendite, DSR 0,5826 gegen 0,3185, "
+        "Monte-Carlo faellt zusaetzlich, 8 von 11 statt 9). **Was nicht "
+        "folgt**: dass der Kandidat besteht - bei Versatz null hat er die "
+        "niedrigste Rendite aller elf Laeufe und ist der einzige unter der "
+        "Schwelle, und sich einen anderen auszusuchen waere genau das "
+        "Lockern, gegen das die Strecke gebaut ist; und auch nicht, dass der "
+        "Modus zu wechseln ist - das aendert jede Zahl des Projekts und ist "
+        "eine Entscheidung des Nutzers. **Was folgt**: Ein Urteil, dessen "
+        "Abstand zur Schwelle kleiner ist als die Streuung des Verfahrens, "
+        "ist kein Urteil - in beide Richtungen. 'aufteilung.deckt' ist die "
+        "Frage dazu, 'cli aufteilung' misst sie nach. Und rueckwirkend "
+        "trifft es die eigene Arbeit: Die 0,39 Punkte Reserve aus den "
+        "Befunden 395 bis 397 liegen **innerhalb** dieser Streuung",
+        400,
     ),
 )
 
@@ -4438,14 +4481,19 @@ OFFEN: tuple[Richtung, ...] = (
         "die Kurve beginnt erst 2018-08-19, weil das erste Jahr das erste "
         "Trainingsfenster bezahlt. Daraus folgt Rate < 34,8 % im Jahr (Irrtum "
         "5 %), ueber die 5,89 Jahre des Deflated Sharpe also bis zu 92,0 % "
-        "Wahrscheinlichkeit mindestens eines Treffers. **Offen bleibt damit "
+        "Wahrscheinlichkeit mindestens eines Treffers. **Und ein Vermerk, der "
+        "die Reserve selbst relativiert** (400): Die 0,39 Punkte liegen "
+        "innerhalb der Streuung der Walk-Forward-Aufteilung - ein Balken "
+        "weniger am Reihenanfang bewegt diese Groesse um bis zu 1,38 Punkte. "
+        "Sie ist damit keine Eigenschaft der Strategie, sondern kleiner als "
+        "das Rauschen des Verfahrens, das sie erzeugt. **Offen bleibt damit "
         "die Entscheidung, nicht die Zahl**: Der Punktschaetzer ist null, die "
         "Schranke ist gut ein Drittel, und zwischen beidem liegt der "
         "Unterschied zwischen 'der Weg traegt' und 'der Weg traegt "
         "wahrscheinlich nicht'. Enger wird das nur mit mehr Jahren - also mit "
         "genau dem, dessen Risiko hier geschrankt wird",
         395,
-        zuletzt=397,
+        zuletzt=400,
     ),
     # Aufgeworfen von 387, als der Schnitt an einer Stelle fehlte: Wo fehlt er
     # noch? Die Inventur ist gemessen, der Schluss daraus nicht gezogen.
@@ -4458,12 +4506,13 @@ OFFEN: tuple[Richtung, ...] = (
         "Walk-Forward schicken, schnitten **2** auf die Zulassungsreihe "
         "('abstand', 'anatomie'), **3** nannten die Reihe wenigstens "
         "('abstand', 'suchbudget', 'stand'), und **35** taten keines von "
-        "beidem. **Heute sind es 4 / 4 / 34** (394): 390 hat 'cli rennen' "
+        "beidem. **Heute sind es 5 / 5 / 34** (400): 390 hat 'cli rennen' "
         "dazugenommen, weil dort das Vorzeichen der Aussage ueber das "
         "Weitersuchen an der Grundlage hing, und 394 'cli stand', weil der "
         "Spot-Punkt daneben der gepflegte aus 'referenz.py' ist (156 Trades "
-        "statt 157). Die 34 bleiben gleich, weil 'stand' die Reihe schon "
-        "nannte und nur in die erste Liste wandert. "
+        "statt 157), und 400 'cli aufteilung', der von Anfang an beides tut. "
+        "Die 34 bleiben zweimal gleich: 'stand' nannte die Reihe schon und "
+        "wanderte nur in die erste Liste, 'aufteilung' kam in beide zugleich. "
         "Das ist keine Liste von 35 Fehlern: Befund 370 hat ausdruecklich "
         "entschieden, dass 'cli stand' auf allem rechnet, was da ist, und die "
         "Reihe nur **nennen** muss - 'auf allem zu rechnen, was da ist, ist "

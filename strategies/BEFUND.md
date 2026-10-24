@@ -35930,3 +35930,149 @@ Zeichenketten-Ausdruck ist: Docstrings und die Feldkommentare dieses Projekts.
 1051. Mehr aufzuloesen heisst, Ausdruecke nachzuvollziehen, und jeder davon
 kann irren, waehrend `inspect.getsource(modul.name)` eindeutig ist. Die Zahl
 steht deshalb als eigene Zusicherung daneben.
+
+## Vierhundert. Ein Balken weniger am Anfang bewegt die Jahresrendite um drei Punkte
+
+Befund 396 hat einen Faden liegen gelassen: Der Schnitt am Reihenanfang
+verschiebt die Walk-Forward-Aufteilung, und die Strategie macht **im selben
+Fenster** andere Trades. Die ganze Zulassungsstrecke steht auf **einer**
+Aufteilung. Was daran haengt, stand nirgends.
+
+### Die Bauart
+
+`run_walkforward` verankert die Fenster am Anfang:
+
+```python
+start = frame["open_time"].iloc[0].to_pydatetime()
+windows = splitter.split(start, end)
+```
+
+Ein Balken weniger dort verschiebt also **jede** Fenstergrenze um einen Tag.
+Und ohne `durchgehend=True` ueberlebt keine Position eine Fenstergrenze - der
+Kopf dort sagt es selbst: *"Positionen ueberleben die Fenstergrenze, so wie im
+Betrieb"* gilt nur im durchgehenden Modus. Die Zulassung laeuft im anderen.
+
+### Gemessen
+
+Spot-Punkt, Zulassungsreihe, je ein Balken weniger am Anfang. Alle elf Laeufe
+haben **32 Fenster**, und die weggelassenen Balken liegen im ersten
+**Trainings**fenster - sie werden nie gehandelt.
+
+| weg | fertig | CAGR | Rueckgang |
+|---|---|---|---|
+| 0 | 156 | **14,3391** | 9,869 |
+| 1 | 154 | 15,1845 | 9,969 |
+| 2 | 154 | 16,6152 | 9,768 |
+| 3 | 156 | 16,8168 | 10,031 |
+| 4 | 155 | 16,9336 | 10,281 |
+| 5 | 153 | 17,3779 | 9,952 |
+| 6 | 156 | 16,8754 | 10,426 |
+| 7 | 156 | 16,5358 | 10,426 |
+| 8 | 155 | 15,9289 | 10,426 |
+| 9 | 156 | 16,6103 | 10,426 |
+| 10 | 152 | **17,4522** | 9,724 |
+
+**3,1130 Punkte** Spanne, Streuung 0,9379. Dem Kandidaten fehlen **0,661**
+Punkte zur Betriebsschwelle: Der Abstand zum Gate ist ein Fuenftel der
+Streuung des Verfahrens.
+
+Ueber 0 bis 30 Tage bewegt sich alles mit - der Deflated Sharpe um 0,098, das
+schlechteste Jahr um 1,38 Punkte, die Bestaendigkeit um 0,097 -, und **die
+Gate-Zahl schwankt zwischen 9 und 10**.
+
+### Die Gegenprobe zur Bauart
+
+Dieselben zehn Balken **hinten** abgeschnitten:
+
+| weg | fertig | CAGR | Rueckgang |
+|---|---|---|---|
+| 0 … 10 | 156 | 14,3391 | 9,869 |
+
+Zehnmal dieselbe Zahl, auf vier Stellen. Die Fenster haengen am Anfang, nicht
+am Ende - die Bauart ist damit nicht erschlossen, sondern gemessen.
+
+### Der Mechanismus, gegengeprueft
+
+Im durchgehenden Modus, in dem Positionen die Grenze ueberleben, sind es **98
+fertige Trades bei jedem Versatz** statt 152 bis 156, und die Streuung der
+Jahresrendite faellt von 3,1130 auf 1,5189. Rund **58 der gemeldeten 156
+Trades sind Grenzartefakte**: Positionen, die am Fensterende geschlossen und
+danach neu eroeffnet werden.
+
+Und die unbequeme Haelfte derselben Messung - der durchgehende Modus ist auf
+jedem blockierenden Gate **schlechter**:
+
+| | je Fenster | durchgehend |
+|---|---|---|
+| fertige Trades | 156 | 98 |
+| Guete je Trade | 0,2708 | 0,2600 |
+| Jahresrendite | 14,3390 | 11,6270 |
+| Deflated Sharpe | 0,5826 | 0,3185 |
+| Monte-Carlo | 8,3265 | 15,5363 (faellt) |
+| Schlechtestes Jahr | -9,6100 | -5,5800 |
+| Rueckgang | 9,8687 | 7,5044 |
+| bestandene Gates | 9/11 | 8/11 |
+
+Kein Schlupfloch in irgendeine Richtung.
+
+### Was nicht folgt
+
+**Nicht, dass der Kandidat besteht.** Bei Versatz null hat er die niedrigste
+Jahresrendite aller elf Laeufe und ist der einzige unter der Schwelle. Sich
+einen anderen Versatz auszusuchen waere genau das Lockern, gegen das die
+Zulassungsstrecke gebaut ist. Die Zahl wird nicht besser, weil man sie anders
+ausschneidet.
+
+**Nicht, dass der Modus zu wechseln ist.** Welcher Modus die Zulassung tragen
+soll, aendert jede Zahl dieses Projekts und ist eine Entscheidung des Nutzers,
+keine Messung.
+
+### Was folgt
+
+Ein Urteil, dessen Abstand zur Schwelle kleiner ist als die Streuung des
+Verfahrens, **ist kein Urteil** - in beide Richtungen. Es macht ein gefallenes
+Gate nicht harmloser und ein bestandenes nicht sicherer.
+`aufteilung.deckt` ist die Frage dazu, `cli aufteilung` misst sie nach, und der
+Befehl sagt den Satz selbst:
+
+```
+Der Abstand zur Betriebsschwelle (0.661 Punkte) liegt **innerhalb** der Streuung
+der Aufteilung (3.039). Dieser Lauf entscheidet ihn nicht - und das macht
+das Gate nicht harmloser, sondern das Urteil unbrauchbar.
+```
+
+### Und rueckwirkend auf die eigene Arbeit
+
+Die **0,39 Punkte Reserve** des Jahres-Gates, um die die Befunde 395 bis 397
+gingen, liegen **innerhalb** dieser Streuung: Die Groesse selbst bewegt sich um
+1,38 Punkte, wenn ein Balken am Anfang fehlt. Drei Durchgaenge - ein Kreuz,
+zwei Leitern, eine Binomialschranke - an einer Groesse, die kleiner ist als
+das Rauschen des Verfahrens, das sie erzeugt. Die Messungen sind richtig; was
+fehlte, war die Frage, ob die Groesse ueberhaupt etwas traegt.
+
+Der Vermerk steht in der offenen Richtung, nicht statt ihr: Das Guthaben ist
+weiter ein Guthaben, es ist nur keines der Strategie.
+
+### Ein Nachtrag, der die Lage schaerft
+
+Im durchgehenden Modus ist der Abstand zur Betriebsschwelle **3,373** Punkte
+und die Streuung der Aufteilung **0,727** - der Abstand liegt also
+**ausserhalb**. Dort ist das Gate entschieden, und zwar dagegen. Im Modus der
+Zulassung ist es unentschieden. Das ist der genaue Preis der Modusfrage: Der
+eine Modus urteilt, der andere nicht.
+
+### Drei Waechter haben zurueckgemeldet
+
+`test_rauchtest.py` verlangt, dass jeder Befehl eingeteilt ist - *"gehoert der
+Befehl nach WIRKT_NACH_AUSSEN, oder ist er harmlos?"*. `aufteilung` liest
+Kerzen und den Versuchszaehler, schreibt nichts und fragt kein Netz; es steht
+jetzt in `HARMLOS`, und `GELAUFEN` steigt auf 56, weil der Befehl wirklich
+gefahren ist: vorne, hinten, durchgehend und mit `--tage 0`.
+
+Dabei ist noch eine Zeile aufgefallen: `--tage 0` fiel still auf einen Lauf
+zurueck. Eine Streuung braucht zwei, also wird aufgerundet - aber es wird
+jetzt gesagt. Ein stiller Rueckfall ist die Sorte Zeile, an der Befund 389
+haengengeblieben ist.
+
+Und zwei Zeiger auf die offene Richtung aus 395 standen auf 396 und 397. Sie
+stehen jetzt auf 400 - dieselbe Richtung, vier Befunde lang.

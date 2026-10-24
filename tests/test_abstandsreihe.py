@@ -238,7 +238,7 @@ class TestDieInventurStimmtNoch:
                 keins.append(name)
         return schneidet, nennt, keins
 
-    def test_vier_schneiden_vier_nennen_vierunddreissig_keins(self) -> None:
+    def test_fuenf_schneiden_fuenf_nennen_vierunddreissig_keins(self) -> None:
         """Die Zahlen wandern, wenn ein Befehl sich entscheidet - und genau
         dafuer ist der Test da.
 
@@ -248,8 +248,13 @@ class TestDieInventurStimmtNoch:
         Reihe, 0,0962 gegen 0,0917 auf dem Speicher). Befund 394 hat 'cli
         stand' dazugenommen, weil der Spot-Punkt daneben der gepflegte aus
         'referenz.py' ist und auf dem Speicher 157 statt 156 Trades zaehlte.
-        Jetzt sind es 4 / 4 / 34 - die 34 bleiben gleich, weil 'stand' die
-        Reihe schon nannte und nur in die erste Liste wandert.
+        Befund 400 hat 'cli aufteilung' mitgebracht, einen Befehl, der eine
+        Zahl neben den Abstand aus 'referenz.py' setzt und deshalb von
+        Anfang an schneidet und nennt.
+
+        Jetzt sind es 5 / 5 / 34 - die 34 bleiben zweimal gleich: 'stand'
+        nannte die Reihe schon und wanderte nur in die erste Liste, und
+        'aufteilung' kam in beide Listen zugleich.
 
         Die offene Regel bleibt offen: Es wird nicht umgestellt, weil zwei es
         tun, sondern weil eine Zahl daran haengt. Beide Umstellungen folgen
@@ -257,12 +262,24 @@ class TestDieInventurStimmtNoch:
         """
         schneidet, nennt, keins = self._inventur()
 
-        assert sorted(schneidet) == ["abstand", "anatomie", "rennen", "stand"]
-        assert sorted(nennt) == ["abstand", "rennen", "stand", "suchbudget"]
+        assert sorted(schneidet) == [
+            "abstand",
+            "anatomie",
+            "aufteilung",
+            "rennen",
+            "stand",
+        ]
+        assert sorted(nennt) == [
+            "abstand",
+            "aufteilung",
+            "rennen",
+            "stand",
+            "suchbudget",
+        ]
         assert len(keins) == 34, (
             f"{len(keins)} statt 34 Befehle ohne Reihe - wer einen Befehl auf "
             f"den Spitzenkandidaten setzt, entscheidet sich fuer eine Reihe "
-            f"(Befund 387/390/394): {sorted(keins)}"
+            f"(Befund 387/390/394/400): {sorted(keins)}"
         )
 
     def test_und_das_register_nennt_genau_diese_zahlen(self) -> None:

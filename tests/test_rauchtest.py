@@ -71,6 +71,10 @@ HARMLOS: frozenset[str] = frozenset({
     # nichts und fragt kein Netz. Es dauert - zwei Walk-Forwards mit teuren
     # Gates -, aber dauern ist keine Wirkung nach aussen.
     "anatomie",
+    # 'aufteilung' (Befund 400) ist aus derselben Familie: Es liest Kerzen
+    # und den Versuchszaehler, schreibt nichts und fragt kein Netz - nur
+    # laeuft es elf Walk-Forwards statt zwei.
+    "aufteilung",
     "abstand", "anwaerter", "aufloesung", "betriebspunkt",
     "decke", "duerre", "evidenz", "finanzierung",
     "form", "freigabe", "front", "gatemuster", "haelften",
@@ -132,7 +136,11 @@ HARMLOS: frozenset[str] = frozenset({
 #: Bauteilnamen (ebenso). Der erste Lauf hat dabei gezeigt, dass der Befehl
 #: den Zulassungspunkt verfehlte; das stand dann im Befehl zu berichtigen und
 #: nicht in dieser Zahl.
-GELAUFEN = 55
+#: 56 seit Befund 400: 'cli aufteilung' ist auf echten Tageskerzen gefahren
+#: worden - vorne abgeschnitten (die Messung des Befundes), hinten
+#: abgeschnitten (die Gegenprobe, Streuung 0,0000), durchgehend (98 Trades je
+#: Versatz) und mit '--tage 0', was aufrundet und es sagt.
+GELAUFEN = 56
 TRACEBACKS = 0
 SAUBER_ABGELEHNT = ("quelle", "review", "vorschlag")
 
