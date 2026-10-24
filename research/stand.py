@@ -4434,6 +4434,34 @@ BEHOBEN: tuple[Richtung, ...] = (
         "trifft es die eigene Arbeit: Die 0,39 Punkte Reserve aus den "
         "Befunden 395 bis 397 liegen **innerhalb** dieser Streuung",
         400,
+        zuletzt=401,
+    ),
+    # Befund 401: die Folgerung aus 400, je Gate gerechnet - und sie begrenzt
+    # die Sorge, statt sie zu bestaetigen.
+    Richtung(
+        "Neun der elf Urteile sind entschieden, und der Hauptblocker auch",
+        "Befund 400 hat gezeigt, dass die Gate-Zahl zwischen 9 und 10 "
+        "schwankt, wenn ein Balken am Reihenanfang fehlt. Die Folgerung "
+        "daraus - ein Abstand kleiner als die Streuung ist kein Urteil - war "
+        "als Satz da und als Zahl nur fuer die Jahresrendite. Je Gate "
+        "gerechnet, elf Aufteilungen, Spot-Punkt: **Neun der elf sind "
+        "entschieden**, zwei nicht. **Und der Deflated Sharpe ist "
+        "entschieden** - 0,3674 Abstand gegen 0,0763 Spanne, das "
+        "Viereinhalbfache. Der Hauptblocker des Projekts ist also keine "
+        "Aufteilungsfrage, und die Sorge aus 400 ist damit begrenzt statt "
+        "bestaetigt. **Offen sind zwei**: 'Schlechtestes Jahr' mit 0,3900 "
+        "gegen 0,9500 - genau das Gate, um das die Befunde 395 bis 397 "
+        "gingen, und kein anderes der bestandenen -, und die 'Messlatte', die "
+        "sich an ihrem eigenen Wert nicht beurteilen laesst, weil er zwei "
+        "Groessen traegt (395); ueber die Jahresrendite gerechnet, die auf "
+        "allen Aufteilungen dieselbe Groesse ist, liegt sie mit 0,661 gegen "
+        "3,1130 ebenfalls offen. **Am knappsten entschieden** ist "
+        "'Bestaendigkeit' mit 0,0806 gegen 0,0645 - das 1,25-fache, und damit "
+        "die Stelle, an der als naechstes nachzusehen ist. Zwei Gates "
+        "bewegen sich gar nicht: 'Kosten-Stress' und 'Parameter-Plateau' "
+        "haben Spanne null. 'aufteilung.beurteile' ist die Regel, "
+        "'cli aufteilung' zeigt die Tafel",
+        401,
     ),
 )
 

@@ -36076,3 +36076,64 @@ haengengeblieben ist.
 
 Und zwei Zeiger auf die offene Richtung aus 395 standen auf 396 und 397. Sie
 stehen jetzt auf 400 - dieselbe Richtung, vier Befunde lang.
+
+## Vierhunderteins. Neun der elf Urteile sind entschieden, und der Hauptblocker auch
+
+Befund 400 hat gemessen, dass die Gate-Zahl zwischen 9 und 10 schwankt, wenn
+ein Balken am Reihenanfang fehlt, und daraus einen Satz gezogen: Ein Abstand
+kleiner als die Streuung des Verfahrens ist kein Urteil. Als **Zahl** stand der
+Satz nur fuer die Jahresrendite. Je Gate gerechnet - elf Aufteilungen,
+Spot-Punkt:
+
+| | Gate | Abstand | Spanne | Urteil |
+|---|---|---|---|---|
+| + | Stichprobengroesse | 2000,0000 | 21,0000 | entschieden |
+| - | **Messlatte** | - | - | **zwei Groessen (395)** |
+| + | Out-of-Sample-Sharpe | 0,5762 | 0,1947 | entschieden |
+| + | Drawdown | 2,1313 | 0,7022 | entschieden |
+| + | **Schlechtestes Jahr** | 0,3900 | 0,9500 | **offen** |
+| + | Bestaendigkeit | 0,0806 | 0,0645 | entschieden |
+| + | Monte-Carlo | 6,6735 | 0,4963 | entschieden |
+| + | Regime-Aufteilung | 4,3751 | 0,1746 | entschieden |
+| - | **Deflated Sharpe** | 0,3674 | 0,0763 | **entschieden** |
+| + | Kosten-Stress | 1863,7259 | 0,0000 | entschieden |
+| + | Parameter-Plateau | 0,4000 | 0,0000 | entschieden |
+
+### Die Sorge aus 400 ist begrenzt, nicht bestaetigt
+
+**Der Deflated Sharpe ist entschieden** - 0,3674 Abstand gegen 0,0763 Spanne,
+das Viereinhalbfache. Der Hauptblocker des Projekts ist also keine
+Aufteilungsfrage. Das ist die wichtigste Zeile dieses Befundes, und sie geht
+gegen die Richtung, in die 400 gezeigt hat.
+
+Offen sind **zwei**:
+
+* **Schlechtestes Jahr**, 0,3900 gegen 0,9500 - genau das Gate, um das die
+  Befunde 395 bis 397 gingen, und kein anderes der bestandenen. Der Rueckblick
+  aus 400 trifft also exakt diese drei Durchgaenge und nicht die uebrige
+  Arbeit.
+* **Messlatte**, die sich an ihrem eigenen Wert nicht beurteilen laesst, weil er
+  zwei Groessen traegt (Befund 395). Ueber die Jahresrendite gerechnet - die
+  auf allen Aufteilungen dieselbe Groesse ist - liegt sie mit 0,661 gegen
+  3,1130 ebenfalls offen. Der Befehl sagt das jetzt in einer eigenen Zeile.
+
+### Wo als naechstes nachzusehen ist
+
+**Bestaendigkeit** ist am knappsten entschieden: 0,0806 gegen 0,0645, das
+1,25-fache. Wer die Streuung ueber mehr als elf Aufteilungen messen wuerde,
+sollte dort zuerst nachsehen - eine Spanne, die um ein Viertel waechst, nimmt
+dieses Urteil mit.
+
+Zwei Gates bewegen sich gar nicht: `Kosten-Stress` und `Parameter-Plateau`
+haben Spanne null. Beide rechnen nicht auf der Fensterfolge, sondern auf dem
+Genom und den Kostenannahmen - genau das, was sich beim Verschieben nicht
+aendert.
+
+### Und eine Verschwendung im eigenen Test
+
+Vier datengestuetzte Tests riefen dieselbe Messung einzeln auf: elf
+Walk-Forwards je Test, vierundvierzig insgesamt, zehn Minuten. Mit einer
+modulweiten Fixture sind es elf Laeufe und drei Minuten. Klassenweit ging es
+nicht - dort bricht eine Zusicherung in pytests Fixture-Verwaltung -, und das
+steht jetzt als Grund daneben, damit der naechste Durchgang es nicht wieder
+versucht.

@@ -15679,7 +15679,7 @@ def aufteilung(
     """
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
-    from research.aufteilung import streuung
+    from research.aufteilung import beurteile, streuung
     from research.datenstand import alle_geschnitten, reihenzeile
     from research.gates import GateStatus, evaluate_gates
     from research.randschnitt import ohne_zensierte
@@ -15727,6 +15727,11 @@ def aufteilung(
     gesammelt["Guete je Trade"] = []
     gesammelt["bestandene Gates"] = []
     lattenzweige: set[str] = set()
+    # **Alle elf Gates, nicht nur die fuenf aus der Streuungstafel** (Befund
+    # 401): Die Frage "ist dieses Urteil eines" gilt fuer jedes.
+    jegate: dict[str, list[float]] = {}
+    jezweig: dict[str, list[str]] = {}
+    gemeldet: dict[str, tuple[float, float, str]] = {}
 
     tafel = Table(title="Je Aufteilung", title_justify="left")
     tafel.add_column("weg", justify="right")
@@ -15781,6 +15786,13 @@ def aufteilung(
         # **Die Messlatte traegt zwei Groessen** (Befund 395) - deshalb steht
         # sie nicht in der Streuungstafel, sondern ihre Zweige darunter.
         lattenzweige.add(urteil["Messlatte"].bedingung)
+        for r in gates.results:
+            jegate.setdefault(r.name, []).append(float(r.value))
+            jezweig.setdefault(r.name, []).append(r.bedingung)
+            if weg == 0:
+                gemeldet[r.name] = (
+                    float(r.value), float(r.threshold), r.status.value
+                )
         tafel.add_row(
             str(weg),
             str(len(bericht.windows)),
@@ -15832,6 +15844,55 @@ def aufteilung(
             + ", ".join(sorted(lattenzweige))
             + ") und traegt damit zwei\nverschiedene Groessen (Befund 395).[/]"
         )
+    # **Je Gate, nicht nur insgesamt** (Befund 401). Neun der elf sind
+    # entschieden; die Sorge aus 400 trifft zwei, und der Hauptblocker ist
+    # nicht darunter.
+    urteilstafel = Table(title="Ist das Urteil eines?", title_justify="left")
+    urteilstafel.add_column("")
+    urteilstafel.add_column("Gate")
+    urteilstafel.add_column("Wert", justify="right")
+    urteilstafel.add_column("Schwelle", justify="right")
+    urteilstafel.add_column("Abstand", justify="right")
+    urteilstafel.add_column("Spanne", justify="right")
+    urteilstafel.add_column("Urteil")
+    for name, (wert, schwelle, status) in gemeldet.items():
+        spruch = beurteile(
+            name=name,
+            wert=wert,
+            schwelle=schwelle,
+            werte=jegate[name],
+            bedingungen=jezweig[name],
+        )
+        marke = {"pass": "[green]+[/]", "fail": "[red]-[/]", "skip": "[yellow]~[/]"}[
+            status
+        ]
+        farbe = {
+            "entschieden": "[green]entschieden[/]",
+            "offen": "[yellow]offen[/]",
+            "zwei Groessen": "[dim]zwei Groessen (395)[/]",
+        }[spruch]
+        if spruch == "zwei Groessen":
+            urteilstafel.add_row(marke, name, f"{wert:.4f}", f"{schwelle:.4f}",
+                                 "-", "-", farbe)
+            continue
+        s = streuung(name, jegate[name])
+        urteilstafel.add_row(
+            marke, name, f"{wert:.4f}", f"{schwelle:.4f}",
+            f"{abs(wert - schwelle):.4f}", f"{s.spanne:.4f}", farbe,
+        )
+    console.print()
+    console.print(urteilstafel)
+    if len(lattenzweige) > 1:
+        # Die Messlatte hat hier kein Urteil - aber die Jahresrendite ist
+        # ueber alle Aufteilungen dieselbe Groesse, und darueber laesst sie
+        # sich beurteilen. Das Ergebnis steht oben.
+        console.print(
+            f"[dim]Die Messlatte laesst sich ueber ihre Jahresrendite "
+            f"beurteilen: {15.0 - min(gesammelt['Jahresrendite']):.3f} "
+            f"Abstand gegen {latte.spanne:.3f} Spanne - "
+            f"{'offen' if latte.deckt(fehlt) else 'entschieden'}.[/]"
+        )
+
     console.print(
         "\n[dim]Kein Versatz ist der richtige. Wer sich einen aussucht, "
         "lockert das Gate.[/]"

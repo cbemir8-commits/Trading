@@ -119,7 +119,12 @@ import statistics
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-__all__ = ["VERSATZ", "Aufteilungsstreuung", "streuung"]
+__all__ = ["VERSATZ", "Aufteilungsstreuung", "beurteile", "streuung"]
+
+#: Was ``beurteile`` zurueckgibt.
+ENTSCHIEDEN = "entschieden"
+OFFEN = "offen"
+ZWEI_GROESSEN = "zwei Groessen"
 
 #: Die Versaetze, auf denen Befund 400 gemessen hat - ein Balken je Schritt.
 #: Mehr als zehn Tage waeren nicht mehr dieselbe Frage: Dann bewegt sich auch
@@ -177,3 +182,41 @@ class Aufteilungsstreuung:
 def streuung(name: str, werte: Sequence[float]) -> Aufteilungsstreuung:
     """Kurzform fuer ``Aufteilungsstreuung(name, tuple(werte))``."""
     return Aufteilungsstreuung(name=name, werte=tuple(float(w) for w in werte))
+
+
+def beurteile(
+    *,
+    name: str,
+    wert: float,
+    schwelle: float,
+    werte: Sequence[float],
+    bedingungen: Sequence[str] = (),
+) -> str:
+    """Ist das Urteil dieses Gates entschieden - oder nur eine Ziehung?
+
+    ``werte`` sind dieselbe Groesse auf mehreren Aufteilungen, ``wert`` und
+    ``schwelle`` die des gemeldeten Laufs.
+
+    ``bedingungen`` sind die ``GateResult.bedingung`` derselben Laeufe. Sind
+    es mehrere, traegt die Spalte zwei verschiedene Groessen (Befund 395) und
+    es gibt hier **kein** Urteil - eine Spanne aus Jahres- und Gesamtrendite
+    waere eine Zahl ohne Bedeutung. Wer die Messlatte trotzdem beurteilen
+    will, nimmt die Jahresrendite selbst: Sie ist ueber alle Aufteilungen
+    dieselbe Groesse.
+
+    Gemessen am Spot-Punkt, elf Aufteilungen (Befund 401): **Neun der elf
+    Gates sind entschieden**, darunter der Deflated Sharpe mit 0,3674 Abstand
+    gegen 0,0763 Spanne - der Hauptblocker ist also keine Aufteilungsfrage.
+    Offen sind zwei: 'Schlechtestes Jahr' (0,3900 gegen 0,9500) und die
+    Messlatte, deren Jahresrendite 0,661 unter der Schwelle liegt bei 3,1130
+    Spanne. Am knappsten entschieden ist 'Bestaendigkeit' - 0,0806 gegen
+    0,0645, das 1,25-fache.
+    """
+    if len(set(bedingungen)) > 1:
+        return ZWEI_GROESSEN
+    if len(werte) < 2:
+        raise ValueError(
+            f"{name}: ein Lauf ist keine Streuung - ohne zweite Aufteilung "
+            f"gibt es kein Urteil darueber, ob das Urteil eines ist."
+        )
+    return OFFEN if streuung(name, werte).deckt(wert - schwelle) else ENTSCHIEDEN
