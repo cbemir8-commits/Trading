@@ -183,11 +183,14 @@ class TestDieDreiSchaetzerStehenNebeneinander:
 
     def test_und_laesst_berichte_ohne_betriebspunkt_aus(self) -> None:
         import cli
+        from tests.quelltext import nur_code, nur_prosa
 
         quelle = inspect.getsource(cli.rennen)
 
-        assert 'kopf_p.get("betriebspunkt")' in quelle
-        assert "242/309" in quelle
+        # Das Verhalten steht im Code, die Fundstelle im Kommentar - zwei
+        # Sorten Zusicherung, und seit Befund 399 sagt der Test welche.
+        assert 'kopf_p.get("betriebspunkt")' in nur_code(quelle)
+        assert "242/309" in nur_prosa(quelle)
 
     def test_der_schluss_nennt_meinen_eigenen_fehler(self) -> None:
         import cli

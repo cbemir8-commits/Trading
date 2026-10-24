@@ -4360,6 +4360,37 @@ BEHOBEN: tuple[Richtung, ...] = (
         "der Punktschaetzer der Rate ist null; die Schranke sagt nur, dass "
         "das Projekt den guenstigen Fall nicht **zeigen** kann",
         398,
+        zuletzt=399,
+    ),
+    # Befund 399: nicht die Messung, sondern das Messwerkzeug - der
+    # haeufigste Wachentyp der Suite, nachgezaehlt.
+    Richtung(
+        "Eine Textstelle im Quelltext trifft auch den Kommentar",
+        "Die Suite prueft an **1051** Stellen, ob eine Zeichenkette im "
+        "Quelltext einer Funktion vorkommt - der haeufigste Wachentyp dieses "
+        "Projekts. Er ist erfuellt, sobald sie **irgendwo** vorkommt, auch in "
+        "einem Kommentar oder Docstring, und dieses Projekt schreibt lange "
+        "Kommentare, die den Code zitieren. Nachgezaehlt: Von **81** Stellen, "
+        "die sich aufloesen liessen, treffen **4** nur Prosa - und alle vier "
+        "sind **Absicht**, sie pruefen eine Begruendung, die dastehen soll "
+        "('242/309', '230', 'vierundzwanzig Kerzen', 'Dann ist das Fenster "
+        "zu'). **Also war keine Wache kaputt**; was fehlte, ist die "
+        "Unterscheidung. Sie steht jetzt im Test selbst: 'nur_prosa(...)' "
+        "sagt 'hier ist Prosa gemeint' und macht die Zusicherung dabei "
+        "**strenger**, weil sie auch faellt, wenn der Satz in den Code "
+        "wandert; 'nur_code' und 'rumpf' ersetzen das handgebaute "
+        "'quelle.replace(__doc__, \"\")' aus Befund 210/332, das nur den "
+        "Docstring strich und bei '__doc__ is None' gar nichts. **Mein eigenes "
+        "Werkzeug war zuerst falsch**: Es hat die Token wieder zusammengefuegt "
+        "und dabei Leerzeichen dazwischengesetzt - aus 'a = f(b)' wurde "
+        "'a  =  f ( b )', und es kamen **142** Fehlalarme bei 81 pruefbaren "
+        "Stellen heraus. Ausgeblendet wird jetzt positionsgetreu, und eine "
+        "Zeichenkette **im Code** bleibt stehen: Was ein Befehl druckt, ist "
+        "eine Zusicherung wert. **Was das Audit nicht kann**: 970 der 1051 "
+        "Stellen loest es nicht auf; die 4 sind 4 von 81, nicht 4 von 1051. "
+        "Beide Zahlen stehen als eigene Zusicherung daneben, denn ein Audit, "
+        "das nichts mehr aufloest, waere sonst gruen und leer",
+        399,
     ),
 )
 

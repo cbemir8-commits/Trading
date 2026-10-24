@@ -76,9 +76,17 @@ class TestDerBefehlVergleichtNurMitFenster:
         assert "BUDGET.gegen(trials, grenze.versuche)" in quelle
 
     def test_und_der_grund_steht_daneben(self) -> None:
-        quelle = inspect.getsource(cli.abstand)
+        """Eine **Begruendungs**-Wache, und sie sagt es jetzt (Befund 399):
+        Der Satz steht im Kommentar, nicht im Code. Mit ``nur_prosa`` faellt
+        sie auch, wenn er in den Code wandert."""
+        from tests.quelltext import nur_prosa
 
-        assert "Dann ist das Fenster zu und nicht weiter als der Plan" in quelle
+        begruendung = nur_prosa(inspect.getsource(cli.abstand))
+
+        assert (
+            "Dann ist das Fenster zu und nicht weiter als der Plan"
+            in begruendung
+        )
 
 
 class TestDerStatusschirmTraegtKeineZahl:

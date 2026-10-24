@@ -328,6 +328,8 @@ class TestDasFensterHaengtAnDerKerzenlaenge:
 
         quelle = inspect.getsource(cli.ingest)
 
-        assert "vierundzwanzig Kerzen" in quelle
+        from tests.quelltext import nur_prosa
+
+        assert "vierundzwanzig Kerzen" in nur_prosa(quelle)
         assert "filler.fenster(interval)" in quelle
         assert "aelter als 6 Stunden" not in quelle

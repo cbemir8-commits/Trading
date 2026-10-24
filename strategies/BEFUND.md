@@ -35845,3 +35845,88 @@ steht auf der schliessenden Zeile, und `return None, None` ist ein Teilstueck
 von `return None, None, 0`. Eine Textstelle prueft, dass etwas vorkommt, nicht
 dass es dort aufhoert. Gezaehlt wird jetzt am Syntaxbaum - jede `return`-Anweisung
 dieser Funktion muss ein Tupel mit genau drei Gliedern sein.
+
+## Dreihundertneunundneunzig. Eine Textstelle im Quelltext trifft auch den Kommentar
+
+Befund 398 endete damit, dass zwei meiner eigenen Zusicherungen eine
+Erweiterung nicht gemerkt hatten, weil sie Textstellen pruefen. Das ist der
+haeufigste Wachentyp dieses Projekts - also nachgezaehlt, wie weit die
+Schwaeche reicht.
+
+### Die Zahlen
+
+```
+asserts gesamt:              9566
+davon Textstelle in Quelle:  1051 in 160 Dateien
+davon aufgeloest:              81
+davon nur Prosa getroffen:      4
+```
+
+`assert "..." in inspect.getsource(x)` ist erfuellt, sobald die Zeichenkette
+**irgendwo** vorkommt - auch in einem Kommentar oder Docstring. Dieses Projekt
+schreibt lange Kommentare, die den Code zitieren; eine Wache, die nur das Zitat
+trifft, haelt nichts fest.
+
+### Keine Wache war kaputt
+
+Die vier sind alle **Absicht** - sie pruefen, dass eine Begruendung dasteht:
+
+| Datei | Quelle | Literal |
+|---|---|---|
+| test_budgetvergleich | `cli.abstand` | 'Dann ist das Fenster zu ...' |
+| test_katalogschaetzung | `cli.rennen` | '242/309' |
+| test_suchbudget_greift | `cli._budget_erschoepft` | '230' |
+| test_ws | `cli.ingest` | 'vierundzwanzig Kerzen' |
+
+Eine davon sagt es sogar selbst: *"die Zahl steht im Docstring - sonst zeigt
+der Test nichts"*. Die Unterscheidung ist auch nicht neu - Befund 210 hat sie
+eingefuehrt, und `test_suchbudget_greift` baute sie von Hand:
+
+```python
+rumpf = quelle.replace(cli._budget_erschoepft.__doc__ or "", "")
+```
+
+Das streicht den Docstring der Funktion, und nur den: Kommentare im Rumpf
+bleiben stehen, und bei `__doc__ is None` streicht es gar nichts.
+
+**Was fehlte, ist also nicht eine Wache, sondern die Unterscheidung.** Beide
+Sorten sahen gleich aus, und bei der naechsten waere nicht aufgefallen, welche
+gemeint war.
+
+### Was daraus wird
+
+`tests/quelltext.py` mit `nur_code`, `nur_prosa` und `rumpf`. Eine
+Begruendungs-Wache schreibt jetzt `nur_prosa(...)` davor - die Absicht steht im
+Test, und die Zusicherung wird dabei **strenger**: Sie faellt auch, wenn der
+Satz aus dem Kommentar in den Code wandert.
+
+`tests/test_wachenaudit.py` fuehrt das Audit als stehenden Waechter. Er verlangt
+drei Dinge: keine Zusicherung trifft nur Prosa; das Audit loest ueberhaupt
+etwas auf (sonst waere es gruen und leer - dieselbe Gegenprobe wie bei der
+Rumpfpruefung); und die Abdeckung bleibt die Minderheit, damit der Kopf nicht
+veraltet.
+
+### Mein Werkzeug war zuerst falsch, und zwar laut
+
+Der erste Entwurf hat die Token wieder zusammengefuegt und dabei Leerzeichen
+dazwischengesetzt. Aus `a = f(b)` wurde `a  =  f ( b )`, und damit traf fast
+jedes mehrteilige Literal nicht mehr: **142 Fehlalarme bei 81 pruefbaren
+Stellen** - mehr Treffer als Stellen, weil jeder Assert doppelt gezaehlt wurde
+(ich bin durch die Klasse *und* die Funktion darin gelaufen).
+
+Aufgefallen ist es daran, dass `'spotrahmen = alle_geschnitten(frames)'` in der
+Liste stand - eine Zeile, die ich selbst zwei Durchgaenge vorher als Code
+geschrieben hatte. Ausgeblendet wird jetzt positionsgetreu, Zeichen fuer
+Zeichen.
+
+Und eine zweite Korrektur am Werkzeug: Eine Zeichenkette **im Code** ist keine
+Prosa. Was ein Befehl druckt - `"DIE GATES IM EINZELNEN"` - ist eine
+Zusicherung wert. Ausgeblendet wird nur, was **blosser**
+Zeichenketten-Ausdruck ist: Docstrings und die Feldkommentare dieses Projekts.
+
+### Was das Audit nicht kann
+
+**970 der 1051 Stellen loest es nicht auf.** Die 4 sind 4 von 81, nicht 4 von
+1051. Mehr aufzuloesen heisst, Ausdruecke nachzuvollziehen, und jeder davon
+kann irren, waehrend `inspect.getsource(modul.name)` eindeutig ist. Die Zahl
+steht deshalb als eigene Zusicherung daneben.

@@ -44,19 +44,24 @@ class TestDieGrenzeBrichtAb:
         Logik zu schreiben waere die zweite Grenze. Derselbe Unterschied wie
         bei der Gatezahl-Wache aus Befund 210.
         """
-        quelle = inspect.getsource(cli._budget_erschoepft)
-        rumpf = quelle.replace(cli._budget_erschoepft.__doc__ or "", "")
+        from tests.quelltext import rumpf
 
-        assert "BUDGET.erschoepft" in rumpf
-        assert "230" not in rumpf
+        koerper = rumpf(cli._budget_erschoepft)
+
+        assert "BUDGET.erschoepft" in koerper
+        assert "230" not in koerper
 
     def test_die_gegenprobe_zur_rumpfpruefung(self) -> None:
         """Ohne sie prueft der Test darueber vielleicht einen leeren Rumpf."""
-        quelle = inspect.getsource(cli._budget_erschoepft)
-        rumpf = quelle.replace(cli._budget_erschoepft.__doc__ or "", "")
+        from tests.quelltext import nur_prosa, rumpf
 
-        assert "230" in quelle, "die Zahl steht im Docstring - sonst zeigt der Test nichts"
-        assert len(rumpf.splitlines()) > 10
+        prosa = nur_prosa(inspect.getsource(cli._budget_erschoepft))
+
+        assert "230" in prosa, "die Zahl steht im Docstring - sonst zeigt der Test nichts"
+        # Und der Rumpf ist nicht leer: ``nur_code`` blendet positionsgetreu
+        # aus, die Zeilenzahl bleibt also gleich - gezaehlt wird, was steht.
+        koerper = rumpf(cli._budget_erschoepft)
+        assert len([z for z in koerper.splitlines() if z.strip()]) > 5
 
 
 class TestWeitersuchenBleibtMoeglich:
