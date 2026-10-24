@@ -36380,3 +36380,58 @@ gefallenes Gate, nicht ueber ein bestandenes.
 diese Tafel die **fertigen** nach Randschnitt (156 / 160 / 98 / 160). Beide
 sind richtig; sie zu verwechseln ist der Fehler aus Befund 371, und deshalb
 steht die Warnung neben der Tafel.
+
+## Vierhundertfuenf. Der Punkt mit greifenden Grenzen stand in keiner Kopfzeile
+
+Die Befunde 403 und 404 haben gemessen, dass die Risikogrenzen im Modus der
+Zulassung **vier** von 162 Trades unterdruecken und durchgehend **63**, und
+dass sie je Fenster am Gate-Bild nichts aendern. Damit steht die wichtigste
+Zahl des Projekts auf einer Stichprobe, die die eigene Schutzvorrichtung in
+einem Betrieb verhindert haette.
+
+Und das stand in **keiner** Kopfzeile. Wer es sehen wollte, musste
+`cli aufteilung --durchgehend` kennen und aufrufen.
+
+### Dieselbe Lehre, zum vierten Mal
+
+* **Befund 311**: Ohne Betriebspunkt ist die Gate-Zahl unvollstaendig - 7 von
+  11 und 9 von 11 sind derselbe Kandidat.
+* **Befund 370**: Ohne Reihe stehen 157 Trades neben den 156 aus `referenz.py`,
+  und niemand weiss, warum.
+* **Befund 394**: Die elf Zeilen hinter "9 von 11" gab es in keiner Ausgabe.
+* **Jetzt**: Der Punkt, an dem die Risikogrenzen greifen, stand nirgends.
+
+Eine Messung, die nur in einem Modul liegt, erreicht niemanden.
+
+### Was der Kopf jetzt zeigt
+
+```
+  Auch gemessen  Spot: 9 von 11, offen: Messlatte, Deflated Sharpe
+  mit Grenzen    Spot durchgehend: 8 von 11, offen: Messlatte, Monte-Carlo,
+                 Deflated Sharpe  (Voraussetzung offen: Welcher Modus die
+                 Zulassung traegt, liegt beim Nutzer (400))
+                 Je Fenster unterdruecken die Risikogrenzen 4 von 162 Trades,
+                 durchgehend 63 - jedes Fenster beginnt ohne
+                 Equity-Vorgeschichte (Befund 403/404).
+```
+
+Drei Punkte untereinander, in der Reihenfolge ihrer Naehe zum Betrieb: der
+berichtete, der Spot-Punkt, derselbe mit greifenden Grenzen.
+
+**Keine Empfehlung.** Welcher Modus die Zulassung tragen soll, ist eine
+Entscheidung des Nutzers (Befund 400). Hier steht eine Zahl und kein Rat.
+
+### Ein eigener Fehler beim Einbau
+
+Mein erster Einbau hat die Voraussetzung am `Betriebspunkt` **gefuehrt** und in
+der Zeile **verschwiegen**. Der Punkt trug "Welcher Modus die Zulassung traegt,
+liegt beim Nutzer", und gedruckt wurde nur "8 von 11". Das ist eine stille
+Auslassung - die Sorte Zeile, an der Befund 389 haengengeblieben ist, wo ein
+stiller Rueckfall den lockersten Satz im schlimmsten Fall gedruckt haette.
+
+Gefunden habe ich es beim Lesen der eigenen Ausgabe, weil
+`Betriebspunkt.als_zeile` das Kuerzel "(Voraussetzung offen)" von selbst
+anhaengt und meine Zeile es nicht tat. Jetzt steht es da, mit Begruendung.
+
+**Kostet keinen Versuch**: dieselbe Regel, dieselben Daten, ein dritter Lauf im
+Befehl.

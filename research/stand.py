@@ -4564,6 +4564,34 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Hauptblocker haengt weder an der Aufteilung noch am Messaufbau, und "
         "das ist die belastbarste Aussage, die das Projekt ueber sich hat",
         404,
+        zuletzt=405,
+    ),
+    # Befund 405: die Folgerung aus 403/404 an die Oberflaeche, die der
+    # Nutzer liest - dieselbe Lehre wie 311, 370 und 394.
+    Richtung(
+        "Der Punkt mit greifenden Grenzen stand in keiner Kopfzeile",
+        "Die Befunde 403 und 404 haben gemessen, dass die Risikogrenzen im "
+        "Modus der Zulassung vier von 162 Trades unterdruecken und "
+        "durchgehend 63, und dass sie je Fenster am Gate-Bild **nichts** "
+        "aendern. Damit steht die wichtigste Zahl des Projekts auf einer "
+        "Stichprobe, die die eigene Schutzvorrichtung in einem Betrieb "
+        "verhindert haette - und das stand in **keiner** Kopfzeile. Wer es "
+        "sehen wollte, musste 'cli aufteilung --durchgehend' kennen und "
+        "aufrufen. **Dieselbe Lehre wie 311** (ohne Betriebspunkt ist die "
+        "Gate-Zahl unvollstaendig), **370** (ohne Reihe stehen 157 Trades "
+        "neben 156) und **394** (die elf Zeilen gab es in keiner Ausgabe): "
+        "Eine Messung, die nur in einem Modul liegt, erreicht niemanden. "
+        "'cli stand' nennt jetzt drei Punkte untereinander - den berichteten, "
+        "den Spot-Punkt und denselben mit greifenden Grenzen (8 von 11, offen "
+        "Messlatte, Monte-Carlo, Deflated Sharpe) -, dazu die beiden "
+        "Unterdrueckungszahlen und den Grund. **Und die Voraussetzung wird "
+        "gedruckt, nicht nur gesetzt**: Welcher Modus die Zulassung traegt, "
+        "liegt beim Nutzer (400), also steht '(Voraussetzung offen)' in der "
+        "Zeile. Mein erster Einbau hat sie am Punkt gefuehrt und in der Zeile "
+        "verschwiegen - eine stille Auslassung, und die Sorte Zeile, an der "
+        "Befund 389 haengengeblieben ist. **Kostet keinen Versuch**: "
+        "dieselbe Regel, dieselben Daten, ein dritter Lauf im Befehl",
+        405,
     ),
 )
 
@@ -6333,6 +6361,27 @@ class Lage(Gatebilanz):
     ``backtest.walkforward.nachlauf_fuer`` und ``research.randschnitt``.
     """
 
+    grenzpunkt: object | None = None
+    """Derselbe Kandidat, aber mit **greifenden** Risikogrenzen.
+
+    **Befund 405.** Befund 403 hat gemessen, dass die Grenzen im Modus der
+    Zulassung vier von 162 Trades unterdruecken und im durchgehenden Modus
+    63 - weil jedes Fenster ein eigener Backtest ohne Equity-Vorgeschichte
+    ist und Kill-Switch wie Wochenverlustgrenze eine brauchen. Befund 404 hat
+    je Gate nachgezaehlt: Je Fenster aendern die Grenzen am Gate-Bild nichts.
+
+    Damit steht die wichtigste Zahl des Projekts - der Deflated Sharpe - auf
+    einer Stichprobe, die die eigene Schutzvorrichtung in einem Betrieb
+    verhindert haette. Das gehoert neben die Zahl, nicht in einen Befehl, den
+    man eigens aufrufen muss (dieselbe Lehre wie 311 beim Betriebspunkt, 370
+    bei der Reihe und 394 bei den elf Zeilen).
+
+    **Keine Empfehlung.** Welcher Modus die Zulassung tragen soll, ist eine
+    Entscheidung des Nutzers (Befund 400); hier steht eine Zahl und kein Rat.
+
+    ``None`` heisst "nicht gemessen" und wird dann nicht gedruckt.
+    """
+
     unabhaengige_jahre: int = 0
     """Wie viele disjunkte Zwoelfmonatsfenster die Kurve hergibt.
 
@@ -6747,6 +6796,38 @@ class Lage(Gatebilanz):
             f"{bestanden} von {gesamt}, offen: {offen}"
         ]
 
+    def _grenzzeile(self) -> list[str]:
+        """Derselbe Punkt mit greifenden Risikogrenzen (Befund 405).
+
+        Gedruckt wird die **Voraussetzung** mit - sie ist offen, weil die
+        Modusfrage beim Nutzer liegt, und ``Betriebspunkt.als_zeile`` sagt es
+        von selbst.
+        """
+        punkt = self.grenzpunkt
+        if punkt is None:
+            return []
+        bestanden = getattr(punkt, "bestanden", None)
+        gesamt = getattr(punkt, "gesamt", 0)
+        if bestanden is None or not gesamt:
+            return []
+        offen = ", ".join(getattr(punkt, "offen", ()) or ()) or "keines"
+        # **Die Voraussetzung wird gedruckt, nicht nur gesetzt.** Sie steht am
+        # Punkt, weil die Modusfrage beim Nutzer liegt; sie dort zu fuehren
+        # und hier zu verschweigen waere eine stille Auslassung.
+        bedingt = (
+            ""
+            if getattr(punkt, "bestaetigt", False)
+            else f"  (Voraussetzung offen: {getattr(punkt, 'voraussetzung', '')})"
+        )
+        return [
+            f"  mit Grenzen    {getattr(punkt, 'name', '?')}: "
+            f"{bestanden} von {gesamt}, offen: {offen}{bedingt}",
+            "                 [dim]Je Fenster unterdruecken die Risikogrenzen "
+            "4 von 162 Trades, durchgehend 63 -",
+            "                 jedes Fenster beginnt ohne Equity-Vorgeschichte "
+            "(Befund 403/404).[/]",
+        ]
+
     def bericht(self, *, kurz: bool = False) -> str:
         """Der Stand als Text - vollstaendig oder auf das Handelnde gekuerzt.
 
@@ -6783,6 +6864,7 @@ class Lage(Gatebilanz):
             # Trades neben den 156 aus 'referenz.py' und niemand weiss, warum.
             *([f"  Reihe      {self.reihe}"] if self.reihe else []),
             *self._zweitzeile(),
+            *self._grenzzeile(),
             f"  Ergebnis   {self.trades} Trades{self._zensurhinweis()}, "
             f"{self.cagr_pct:.2f} % p.a., {self.rueckgang_pct:.2f} % Rueckgang",
             f"  Gates      {self.bestanden_ehrlich} von "

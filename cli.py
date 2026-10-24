@@ -3554,7 +3554,9 @@ def _familie_grob(genome) -> str:
     return "+".join(sorted(namen)) or "ohne Indikator"
 
 
-def _spotpunkt(frames, symbole, genome, trials: int, settings):
+def _spotpunkt(
+    frames, symbole, genome, trials: int, settings, *, durchgehend: bool = False
+):
     """Derselbe Kandidat unter Kassa-Bedingungen - kein Hebel, kein Funding.
 
     **Auf der Zulassungsreihe, und mit den Gates im Rueckgabewert** (Befund
@@ -3609,7 +3611,8 @@ def _spotpunkt(frames, symbole, genome, trials: int, settings):
     configs = _spotconfigs(symbole, settings)
 
     bericht = run_portfolio_walkforward(
-        frames, lambda: compile_genome(ohne_hebel), configs
+        frames, lambda: compile_genome(ohne_hebel), configs,
+        durchgehend=durchgehend,
     )
     if not bericht.windows:
         return None, None, 0
@@ -3634,7 +3637,12 @@ def _spotpunkt(frames, symbole, genome, trials: int, settings):
     # nach der Reihe, weil das erste Jahr das erste Trainingsfenster bezahlt.
     jahre = unabhaengige_jahre(verkettete_kurve(bericht)).anzahl
     return gates.results, Betriebspunkt(
-        name="Spot",
+        name="Spot durchgehend" if durchgehend else "Spot",
+        voraussetzung=(
+            "Welcher Modus die Zulassung traegt, liegt beim Nutzer (400)"
+            if durchgehend
+            else ""
+        ),
         trades=len(gehandelt.all_trades),
         zensiert=zensiert,
         cagr_pct=float(kombiniert.cagr_pct) if kombiniert else 0.0,
@@ -12327,6 +12335,15 @@ def stand(
     spotgates, zweitpunkt, spotjahre = _spotpunkt(
         spotrahmen, symbole, genome, trials, settings
     )
+    # **Derselbe Punkt mit greifenden Risikogrenzen** (Befund 405). Je
+    # Fenster unterdruecken sie 4 von 162 Trades, durchgehend 63 - weil
+    # jedes Fenster ohne Equity-Vorgeschichte beginnt (403/404). Die
+    # wichtigste Zahl des Projekts steht damit auf einer Stichprobe, die
+    # die eigene Schutzvorrichtung im Betrieb verhindert haette, und das
+    # gehoert neben die Zahl.
+    _, grenzpunkt, _ = _spotpunkt(
+        spotrahmen, symbole, genome, trials, settings, durchgehend=True
+    )
 
     lage = Lage(
         kandidat=genome.name,
@@ -12345,6 +12362,7 @@ def stand(
         # **Die zweite Bedingung der Aussicht** (Befund 398). Gemessen im
         # Spot-Lauf oben, nicht gepflegt - die Schranke rechnet der Bericht.
         unabhaengige_jahre=spotjahre,
+        grenzpunkt=grenzpunkt,
         trades=len(gehandelt.all_trades),
         effektiv=stichprobe.effektiv,
         kerzenbestand=_kerzenbestand(store),
