@@ -295,17 +295,21 @@ class TestWasImRegisterSteht:
 
         assert "zuerst geraten" in eintrag.ergebnis
         assert "2021-11-08 bis 2022-11-08" in eintrag.ergebnis
-        assert eintrag.zuletzt == 396
+        assert eintrag.zuletzt == 397, "397 hat denselben Eintrag weitergezogen"
 
-    def test_und_die_rate_bleibt_offen(self) -> None:
-        """Null von 2557 ist eine Schranke, keine Schaetzung: 2557
-        ueberlappende Fenster sind rund neun unabhaengige Jahre."""
+    def test_und_die_rate_ist_inzwischen_geschrankt(self) -> None:
+        """Hier stand 'rund **neun** unabhaengige Jahre' - aus der
+        Reihenlaenge geschlossen. Befund 397 hat an der Kurve gezaehlt: Es
+        sind sieben, weil das erste Jahr das erste Trainingsfenster bezahlt.
+        Dieser Test ist dabei gefallen, wie er soll.
+        """
         from research.stand import OFFEN
 
         eintrag = next(r for r in OFFEN if r.befund == 395)
 
-        assert "Schranke und keine Schaetzung" in eintrag.ergebnis
-        assert "neun** unabhaengige Jahre" in eintrag.ergebnis
+        assert "nicht neun" in eintrag.ergebnis
+        assert "**sieben**" in eintrag.ergebnis
+        assert "34,8 %" in eintrag.ergebnis
 
     def test_und_395_zeigt_nach_vorn(self) -> None:
         from research.stand import BEHOBEN

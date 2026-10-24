@@ -4300,6 +4300,38 @@ BEHOBEN: tuple[Richtung, ...] = (
         "bestandenen Gate die Reserve, die Einsamkeit des schlechtesten "
         "Fensters und dass die Reserve ein Guthaben ist",
         396,
+        zuletzt=397,
+    ),
+    # Befund 397: die Rate, die 395 offen liess und 396 mit einer falschen
+    # Zahl beschrieben hat - und was die Phase der Jahresgrenzen kostet.
+    Richtung(
+        "Null Treffer in sieben Jahren schranken die Rate auf ein Drittel",
+        "**Wieder eine Zahl von mir, die aus der Reihenlaenge geschlossen "
+        "war**: Befund 396 nannte 'rund neun unabhaengige Jahre'. Gezaehlt "
+        "wird an der **Kurve**, und die beginnt am 19.08.2018 statt am "
+        "16.08.2017 - das erste Jahr der Reihe bezahlt das erste "
+        "Trainingsfenster. 2921 Tage sind 7,9973 Jahre, und das achte "
+        "disjunkte Fenster verfehlt das Kurvenende um **einen Tag**: Es sind "
+        "**sieben**. **Und die Phase ist wichtiger als die Rate.** Ueber alle "
+        "365 Verschiebungen der Jahresgrenzen reicht das schlechteste "
+        "disjunkte Jahr von -9,61 % bis **+7,55 %** - dieselbe Kurve, nur "
+        "andere Schnittpunkte, **17,16 Punkte** Unterschied. Bei Phase 0 "
+        "steht ein einziges negatives Jahr mit -1,87 %, und wer nur das sieht, "
+        "haelt den Kandidaten fuer unauffaellig. Das Gate nimmt das Minimum "
+        "ueber alle 2557 gleitenden Fenster, also die unguenstigste Phase; "
+        "das ist die Entscheidung 'Feste Schwellen auf laufenden Extrema', "
+        "und 17,16 Punkte sind, was sie kostet. **Die Schranke**: Null "
+        "Treffer aus sieben Jahren ergeben exakt Rate < 34,8 % im Jahr "
+        "(Irrtum 5 %) bzw. < 28,0 % (10 %); ueber die 5,89 Jahre, die der "
+        "Deflated Sharpe braucht, sind das bis zu 92,0 % bzw. 85,6 % "
+        "Wahrscheinlichkeit mindestens eines Treffers. **Was das ist und was "
+        "nicht**: eine Schranke, kein Schaetzer - der Punktschaetzer aus null "
+        "Treffern ist null. Der unbequeme Satz daraus: Das Projekt kann nicht "
+        "zeigen, dass sein einziger offener Weg das eigene Jahres-Gate "
+        "uebersteht. 'jahresbild' nennt die Schranke jetzt dort, wo es die "
+        "Reserve nennt - ohne sie liest sich '2557 Fenster, keines darunter' "
+        "wie Sicherheit, und es sind sieben Jahre",
+        397,
     ),
 )
 
@@ -4339,13 +4371,20 @@ OFFEN: tuple[Richtung, ...] = (
         "im **Lagebericht** weiter nur fuer den berichteten Punkt, wo das Gate "
         "schon gefallen ist ('Warten kann dieses Gate nicht "
         "zurueckgewinnen', Befund 161); 'cli jahresbild --spot' sagt ihn seit "
-        "396 auch dort, wo es haelt. **Offen bleibt die Rate**: Null von 2557 "
-        "Fenstern ist eine Schranke und keine Schaetzung, denn 2557 "
-        "ueberlappende Fenster sind rund **neun** unabhaengige Jahre. In neun "
-        "Jahren ist es nicht passiert - mehr sagt die Reihe nicht, und mehr "
-        "wird hier nicht hineingelesen",
+        "396 auch dort, wo es haelt. **Die Rate ist gemessen** (397), und "
+        "zwar als Schranke: Null Treffer in **sieben** unabhaengigen Jahren - "
+        "nicht neun, wie ich in 396 aus der Reihenlaenge geschlossen habe; "
+        "die Kurve beginnt erst 2018-08-19, weil das erste Jahr das erste "
+        "Trainingsfenster bezahlt. Daraus folgt Rate < 34,8 % im Jahr (Irrtum "
+        "5 %), ueber die 5,89 Jahre des Deflated Sharpe also bis zu 92,0 % "
+        "Wahrscheinlichkeit mindestens eines Treffers. **Offen bleibt damit "
+        "die Entscheidung, nicht die Zahl**: Der Punktschaetzer ist null, die "
+        "Schranke ist gut ein Drittel, und zwischen beidem liegt der "
+        "Unterschied zwischen 'der Weg traegt' und 'der Weg traegt "
+        "wahrscheinlich nicht'. Enger wird das nur mit mehr Jahren - also mit "
+        "genau dem, dessen Risiko hier geschrankt wird",
         395,
-        zuletzt=396,
+        zuletzt=397,
     ),
     # Aufgeworfen von 387, als der Schnitt an einer Stelle fehlte: Wo fehlt er
     # noch? Die Inventur ist gemessen, der Schluss daraus nicht gezogen.

@@ -299,11 +299,12 @@ class TestWasImRegisterSteht:
         assert "Konjunktiv" in eintrag.ergebnis
 
     def test_das_guthaben_steht_als_offene_richtung(self) -> None:
-        """Hier stand zusaetzlich 'geraten wird sie hier nicht' - der Satz, mit
-        dem der Eintrag die Verteilung offen liess. Befund 396 hat sie
-        gemessen, und dieser Test ist dabei gefallen, wie er soll. Was offen
-        bleibt, ist die **Rate**, und dafuer steht der Satz jetzt anderswo im
-        Eintrag; ``test_bindendes_fenster.py`` prueft ihn dort.
+        """Zweimal ist dieser Test an seinem dritten ``assert`` gefallen, und
+        zweimal zu Recht: Erst stand dort 'geraten wird sie hier nicht' (die
+        Verteilung, gemessen in 396), dann 'hineingelesen' (die Rate,
+        geschrankt in 397). Geprueft wird jetzt der Satz, der die Art der
+        Zahl festhaelt - eine Schranke ist kein Schaetzer -, denn der bleibt,
+        solange die Zahl eine Schranke ist.
         """
         from research.stand import OFFEN
 
@@ -311,7 +312,7 @@ class TestWasImRegisterSteht:
 
         assert "0,3900" in eintrag.ergebnis
         assert "Minimum" in eintrag.ergebnis
-        assert "hineingelesen" in eintrag.ergebnis
+        assert "Punktschaetzer ist null" in eintrag.ergebnis
 
     def test_und_394_zeigt_nach_vorn(self) -> None:
         from research.stand import BEHOBEN

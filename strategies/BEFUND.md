@@ -35677,3 +35677,100 @@ wird sie hier nicht"*. Dieser Befund hat sie gemessen, der Satz ist aus dem
 Eintrag heraus, und der Test ist gefallen. Genau dafuer steht er da. Offen
 bleibt die **Rate**, und der entsprechende Satz steht jetzt an anderer Stelle
 im Eintrag - geprueft wird er dort, wo er hingehoert.
+
+## Dreihundertsiebenundneunzig. Null Treffer in sieben Jahren schranken die Rate auf ein Drittel
+
+Die offene Richtung aus Befund 395 fragte nach der **Rate**: Wie oft faellt ein
+Zwoelfmonatsfenster unter -10 %? Befund 396 hat sie mit "rund neun unabhaengige
+Jahre" beschrieben.
+
+### Es sind sieben
+
+Die Zahl war wieder aus der Reihenlaenge geschlossen. Gezaehlt wird an der
+**Kurve**:
+
+```
+Kurve: 2018-08-19 bis 2026-08-18 (2922 Punkte)
+```
+
+Die Zulassungsreihe hat 3301 Balken ab dem 16.08.2017 - die Kurve beginnt ein
+Jahr spaeter, weil das erste Jahr das erste Trainingsfenster bezahlt. 2921 Tage
+sind 7,9973 Jahre, und das achte disjunkte Fenster wuerde am 19.08.2026 enden
+und verfehlt das Kurvenende um **einen Tag**.
+
+### Und die Phase ist wichtiger als die Rate
+
+Bei Phase 0, also ab Kurvenbeginn, sieht der Kandidat unauffaellig aus:
+
+| von | bis | Rendite |
+|---|---|---|
+| 2018-08-19 | 2019-08-19 | 3,07 % |
+| 2019-08-19 | 2020-08-19 | 36,78 % |
+| 2020-08-19 | 2021-08-19 | 36,20 % |
+| 2021-08-19 | 2022-08-19 | **-1,87 %** |
+| 2022-08-19 | 2023-08-19 | 12,51 % |
+| 2023-08-19 | 2024-08-19 | 14,31 % |
+| 2024-08-19 | 2025-08-19 | 25,04 % |
+
+Ein einziges negatives Jahr, und das mit -1,87 %. Ueber alle 365
+Verschiebungen der Jahresgrenzen reicht das schlechteste disjunkte Jahr
+dagegen von **-9,61 %** bis **+7,55 %** - dieselbe Kurve, dieselbe Strategie,
+nur andere Schnittpunkte. **17,16 Punkte.**
+
+Das Gate rechnet nicht in Kalenderjahren: Es nimmt das Minimum ueber alle 2557
+gleitenden Fenster, also die unguenstigste Phase. Das ist die Entscheidung
+"Feste Schwellen auf laufenden Extrema", und 17,16 Punkte sind, was sie kostet.
+Robust ist dabei die Trefferzahl: Keine der 365 Phasen reisst die Schwelle, es
+bleibt bei null.
+
+### Was sich schranken laesst
+
+Null Treffer aus sieben Jahren, exakte Binomialinversion:
+
+| Irrtum | Rate im Jahr | ueber 5,89 Jahre |
+|---|---|---|
+| 5 % | < 34,8 % | 92,0 % |
+| 10 % | < 28,0 % | 85,6 % |
+
+Die 5,89 Jahre sind der Horizont des Deflated Sharpe am Spot-Punkt
+(`referenz.AUSSICHT`: 2152 Tage fuer 75 fehlende Beobachtungen).
+
+**Das ist eine Schranke, kein Schaetzer.** Der Punktschaetzer aus null Treffern
+ist null, und beide Zahlen gehoeren nebeneinander: Die Daten sagen "noch nie
+passiert" und schliessen "jedes dritte Jahr" nicht aus. Zwischen beidem liegt
+der Unterschied zwischen "der Weg traegt" und "der Weg traegt wahrscheinlich
+nicht".
+
+Der unbequeme Satz daraus: **Das Projekt kann nicht zeigen, dass sein einziger
+offener Weg das eigene Jahres-Gate uebersteht.** Enger wird die Schranke nur
+mit mehr Jahren - also mit genau dem, dessen Risiko sie schrankt.
+
+### Wo sie steht
+
+`jahresbild` nennt sie dort, wo es die Reserve nennt. Ohne sie liest sich
+"2557 Fenster, keines darunter" wie Sicherheit, und die grosse Zahl verstaerkt
+das: Es sind sieben unabhaengige Jahre. Bei einem Fenster unter der Schwelle
+gibt `ratenschranke` bewusst `nan` - aus der Zahl **ueberlappender** Fenster
+laesst sich nicht ablesen, wie viele unabhaengige Jahre betroffen sind, und
+eine Zahl, die wie eine Antwort aussieht, waere dort schlimmer als keine.
+
+### Derselbe Fehlertyp zum dritten Mal, und der Rauchtest hat ihn gefunden
+
+`Jahresbild.unabhaengige_jahre` hat die Zahl **geteilt** statt gezaehlt:
+`spanne.days // 365`. Die Tafel spannt 2921 Tage, acht Zwoelfmonatsfenster
+brauchen rund 2922 - es kamen acht heraus, und die Schranke fiel auf 31,2 %
+statt 34,8 %. Zu guenstig, also in die unangenehme Richtung.
+
+Gefunden hat es der Rauchtest: `cli jahresbild --spot` druckte eine andere Zahl
+als die Messung, aus der dieser Befund besteht. Die Eigenschaft zaehlt jetzt
+durch Verketten - erstes Fenster, dann das erste, das nach seinem Ende beginnt.
+
+Das ist in diesem Befund das dritte Mal, dass eine Zahl aus einer Laenge
+**geschlossen** statt gezaehlt wurde: 395 beim bindenden Fenster, 396 bei den
+"rund neun Jahren", 397 bei der Division. Jedes Mal lag die geschlossene Zahl
+in der freundlichen Richtung.
+
+Zwei Waechter haben zurueckgemeldet. `test_bindendes_fenster.py` hielt die
+"neun" fest, `test_zweigroessen.py` zum zweiten Mal den Satz, mit dem der
+Eintrag seine Luecke beschrieb. Der zweite prueft jetzt, was die Zahl **ist** -
+eine Schranke, kein Schaetzer -, statt wie der Eintrag seine Luecke nennt.

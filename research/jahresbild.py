@@ -188,6 +188,54 @@ class Jahresbild:
         return zweites - self.schlechtestes
 
     @property
+    def unabhaengige_jahre(self) -> int:
+        """Wie viele disjunkte Zwoelfmonatsfenster in der Tafel Platz haben.
+
+        **Gezaehlt, nicht geteilt** (Befund 397). Hier stand
+        ``spanne.days // 365``, und das ergab acht statt sieben: Die Tafel
+        spannt 2921 Tage, acht Zwoelfmonatsfenster brauchen aber rund 2922.
+        Die Schranke fiel damit auf 31,2 % statt 34,8 % - zu guenstig, also in
+        die unangenehme Richtung. Gefunden hat es der Rauchtest, weil die Zahl
+        im Befehl nicht die aus der Messung war.
+
+        Gezaehlt wird durch Verketten: das erste Fenster, dann das erste, das
+        nach seinem Ende beginnt, und so weiter. Das braucht nur die Tafel -
+        die Kurve hat dieses Objekt nicht.
+
+        Am Spot-Punkt sind es **sieben**: 2557 gleitende Fenster, sieben
+        unabhaengige Beobachtungen.
+        """
+        if self.fenster.empty:
+            return 0
+        geordnet = self.fenster.sort_values("start")
+        starts = geordnet["start"].to_numpy()
+        enden = geordnet["ende"].to_numpy()
+        anzahl, grenze = 0, starts[0]
+        while True:
+            passend = np.flatnonzero(starts >= grenze)
+            if not passend.size:
+                break
+            anzahl += 1
+            grenze = enden[passend[0]]
+        return anzahl
+
+    def ratenschranke(self, *, irrtum: float = 0.05) -> float:
+        """Die obere Schranke der Rate, mit der ein Jahr die Schwelle reisst.
+
+        **Nur sinnvoll, solange kein Fenster darunter liegt.** Dann sind es
+        null Treffer aus ``unabhaengige_jahre`` Beobachtungen. Liegt eines
+        darunter, laesst sich aus der Zahl der **ueberlappenden** Fenster
+        nicht ablesen, wie viele unabhaengige Jahre betroffen sind - dann
+        gibt es hier ``nan`` statt einer Zahl, die so aussieht wie eine
+        Antwort.
+        """
+        if self.darunter or self.unabhaengige_jahre <= 0:
+            return float("nan")
+        from research.jahresrate import schranke
+
+        return schranke(0, self.unabhaengige_jahre, irrtum=irrtum)
+
+    @property
     def abweichung(self) -> float:
         """Wie weit Kalender- und Indexrechnung auseinanderliegen."""
         if not np.isfinite(self.index_wert) or not np.isfinite(self.schlechtestes):
@@ -270,10 +318,23 @@ class Jahresbild:
             # Die unbequeme Haelfte, und sie gilt unabhaengig vom Urteil: Das
             # Gate nimmt das Minimum. Ein schlechteres Jahr ersetzt die
             # Reserve, ein besseres holt sie nicht zurueck.
-            return satz + (
+            satz += (
                 " Die Reserve ist ein Guthaben: Das Gate nimmt das Minimum "
                 "ueber alle Fenster, sie kann also nur kleiner werden."
             )
+            # **Und wie oft so ein Jahr vorkommt** (Befund 397). Ohne diese
+            # Zahl liest sich "noch nie passiert" wie Sicherheit, und die
+            # Fensterzahl verstaerkt das: 2557 klingt nach viel, es sind
+            # sieben unabhaengige Jahre.
+            grenze = self.ratenschranke(irrtum=0.05)
+            if np.isfinite(grenze):
+                return satz + (
+                    f" Passiert ist es in {self.unabhaengige_jahre} "
+                    f"unabhaengigen Jahren nie - das schrankt die Rate auf "
+                    f"unter {grenze:.1%} im Jahr (Irrtum 5 %) und ist keine "
+                    f"Prognose, sondern die Grenze des Wissens."
+                )
+            return satz
         anteil = self.anteil_darunter
         wann = self.zeitraum
         ort = f" ({wann[0]:%Y-%m} bis {wann[1]:%Y-%m})" if wann else ""
