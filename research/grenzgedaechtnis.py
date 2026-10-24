@@ -336,3 +336,85 @@ KONTOPROBEN: tuple[Kontoprobe, ...] = (
         haette_ausgeloest=False,
     ),
 )
+
+
+@dataclass(frozen=True, slots=True)
+class Reichweite:
+    """Wie weit es an **diesem** Punkt noch ist - Befund 407.
+
+    Die Planungszahl des Projekts ("190 Beobachtungen, 5,89 Jahre") steht auf
+    dem gemeldeten Punkt. Befund 406 hat einen zweiten benannt: den mit
+    Kontogrenze statt Beingrenze. Gerechnet mit den Werkzeugen des Projekts -
+    ``gates.stichprobe_wie_im_gate``, ``erreichbarkeit`` und ``erfuellung``:
+
+        Groesse                     gemeldet   kontogeschuetzt
+        fertige Trades                   156               160
+        n_eff                            115               159
+        Designfaktor                  0,7372            0,9938
+        Guete je Trade                0,2708            0,2444
+        Deflated Sharpe               0,5826            0,6846
+        Luecke zum Gate               0,3674            0,2654
+        noetige wirksame Trades          191               244
+        davon fehlen                      76                85
+        noetige Guete                 0,3374            0,2945
+        Erfuellungsgrad               0,8026            0,8299
+
+    **Der Designeffekt verschwindet fast.** 159 von 160 statt 115 von 156: Im
+    gemeldeten Modus werden 27 % der Trades als abhaengig abgeschrieben, im
+    durchgehenden unter 1 %. Positionen ueberleben dort die Fenstergrenze, also
+    finden die Einteilungen nach Fenstern und nach Gleichzeitigkeit viel
+    weniger Abhaengigkeit. Umgekehrt gelesen: Die hoehere Guete des gemeldeten
+    Punkts (0,2708 gegen 0,2444) ist mit einem viel groesseren
+    Abhaengigkeitsabschlag bezahlt.
+
+    **Verglichen wird der Erfuellungsgrad**, nicht die Guete. Eine Guete von
+    hier gegen eine Latte von dort zu halten ist der Fehler aus Befund 190;
+    das Verhaeltnis je Punkt ist dimensionslos und darf nebeneinanderstehen
+    (``research/erfuellung.py``). Es sind 0,8026 gegen 0,8299 - der
+    kontogeschuetzte Punkt ist seiner eigenen Latte um 2,7 Punkte naeher.
+
+    **Was nicht folgt**: dass der Kandidat nah ist. 83 % der Latte sind nicht
+    die Latte; an diesem Punkt sind **drei** Gates offen statt zwei
+    (Schlechtestes Jahr, Monte-Carlo, Deflated Sharpe), und es fehlen dort
+    **85** wirksame Beobachtungen statt 76. Welcher Punkt die Zulassung
+    traegt, ist die Entscheidung aus Befund 400.
+    """
+
+    name: str
+    fertig: int
+    effektiv: int
+    guete: float
+    dsr: float
+    noetige_trades: int
+    noetige_guete: float
+
+    @property
+    def designfaktor(self) -> float:
+        return self.effektiv / self.fertig
+
+    @property
+    def luecke(self) -> float:
+        return 0.95 - self.dsr
+
+    @property
+    def fehlende_trades(self) -> int:
+        return self.noetige_trades - self.effektiv
+
+    @property
+    def erfuellungsgrad(self) -> float:
+        """Erreichte durch noetige Guete - die einzige Zahl, die zwischen
+        zwei Punkten verglichen werden darf (Befund 190)."""
+        return self.guete / self.noetige_guete
+
+
+#: Die beiden Punkte aus Befund 407.
+REICHWEITEN: tuple[Reichweite, ...] = (
+    Reichweite(
+        name="gemeldet", fertig=156, effektiv=115, guete=0.2708, dsr=0.5826,
+        noetige_trades=191, noetige_guete=0.3374,
+    ),
+    Reichweite(
+        name="kontogeschuetzt", fertig=160, effektiv=159, guete=0.2444,
+        dsr=0.6846, noetige_trades=244, noetige_guete=0.2945,
+    ),
+)

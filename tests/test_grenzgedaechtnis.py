@@ -539,3 +539,166 @@ class TestDieKontoprobeAnDenEchtenDaten:
         assert trades == 99
         assert not konto.haette_ausgeloest
         assert konto.hoechster_rueckgang_pct == pytest.approx(10.00, abs=0.05)
+
+
+class TestDieReichweiteBeiderPunkte:
+    """Befund 407: die Planungszahl, an beiden Punkten gerechnet."""
+
+    @staticmethod
+    def _hole(name: str):
+        from research.grenzgedaechtnis import REICHWEITEN
+
+        return next(r for r in REICHWEITEN if r.name == name)
+
+    def test_der_gemeldete_punkt_reproduziert_referenz(self) -> None:
+        """Die Gegenprobe, die den Fehler gefunden hat: Stimmen die Zahlen
+        des gemeldeten Punkts mit 'referenz.SPOTPUNKT'?"""
+        from research.referenz import SPOTPUNKT
+
+        r = self._hole("gemeldet")
+
+        assert r.fertig == SPOTPUNKT.trades - 0
+        assert r.effektiv == SPOTPUNKT.effektiv
+        assert r.guete == pytest.approx(SPOTPUNKT.guete, abs=0.0001)
+        assert r.dsr == pytest.approx(SPOTPUNKT.dsr, abs=0.001)
+
+    def test_der_designeffekt_verschwindet_fast(self) -> None:
+        gemeldet = self._hole("gemeldet")
+        konto = self._hole("kontogeschuetzt")
+
+        assert gemeldet.designfaktor == pytest.approx(0.7372, abs=0.0001)
+        assert konto.designfaktor == pytest.approx(0.9938, abs=0.0001)
+        assert konto.designfaktor - gemeldet.designfaktor > 0.25
+
+    def test_die_luecke_ist_kleiner_die_fehlenden_mehr(self) -> None:
+        """Beides zugleich, und beides gehoert dazu."""
+        gemeldet = self._hole("gemeldet")
+        konto = self._hole("kontogeschuetzt")
+
+        assert konto.luecke < gemeldet.luecke
+        assert konto.fehlende_trades > gemeldet.fehlende_trades
+        assert (gemeldet.luecke, gemeldet.fehlende_trades) == (
+            pytest.approx(0.3674, abs=0.0001),
+            76,
+        )
+        assert (konto.luecke, konto.fehlende_trades) == (
+            pytest.approx(0.2654, abs=0.0001),
+            85,
+        )
+
+    def test_verglichen_wird_der_erfuellungsgrad(self) -> None:
+        """Eine Guete von hier gegen eine Latte von dort waere Befund 190."""
+        from research.erfuellung import erfuellungsgrad
+
+        for r in (self._hole("gemeldet"), self._hole("kontogeschuetzt")):
+            assert r.erfuellungsgrad == pytest.approx(
+                erfuellungsgrad(r.guete, r.noetige_guete), abs=1e-9
+            )
+
+        assert self._hole("gemeldet").erfuellungsgrad == pytest.approx(
+            0.8026, abs=0.0001
+        )
+        assert self._hole("kontogeschuetzt").erfuellungsgrad == pytest.approx(
+            0.8299, abs=0.0001
+        )
+
+    def test_der_kopf_nennt_den_eigenen_fehler_nicht_hier(self) -> None:
+        """Er steht im Register - der Kopf traegt die Tafel und die beiden
+        Nicht-Schluesse."""
+        from research.grenzgedaechtnis import Reichweite
+
+        text = Reichweite.__doc__ or ""
+
+        assert "Designeffekt verschwindet fast" in text
+        assert "Befund 190" in text
+        assert "Was nicht folgt" in text
+        assert "drei** Gates offen statt zwei" in text
+
+
+@pytest.mark.daten
+@pytest.mark.langsam
+class TestDieReichweiteAnDenEchtenDaten:
+    def test_beide_punkte_stimmen_mit_der_tafel(self) -> None:
+        """Gerechnet mit den Werkzeugen des Projekts, nicht nachgebaut -
+        genau daran ist mein erster Lauf gescheitert (Befund 407)."""
+        from dataclasses import replace
+        from pathlib import Path
+
+        from backtest.portfolio_walkforward import (
+            common_range,
+            run_portfolio_walkforward,
+        )
+        from core.config import get_settings
+        from core.models import Interval
+        from data.store import CandleStore
+        from research.admission import load_trials
+        from research.datenstand import alle_geschnitten
+        from research.erreichbarkeit import (
+            kennzahlen_aus_pnl,
+            noetige_trades,
+            noetiger_sharpe,
+        )
+        from research.gates import evaluate_gates, stichprobe_wie_im_gate
+        from research.grenzgedaechtnis import REICHWEITEN
+        from research.randschnitt import ohne_zensierte
+        from research.seeds import spitzenkandidat
+        from strategy.compiler import compile_genome
+
+        symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
+        e = get_settings()
+        store = CandleStore(e.paths.data_store)
+        versuche = load_trials(Path(e.paths.state) / "trials.json")
+        frames = common_range(
+            alle_geschnitten({s: store.read(s, Interval.D1) for s in symbole})
+        )
+        genom = cli._ohne_hebel(spitzenkandidat())
+        mit = cli._spotconfigs(symbole, e)
+        ohne = {
+            k: replace(v, enforce_risk_limits=False) for k, v in mit.items()
+        }
+
+        for name, cfg, modus in (
+            ("gemeldet", mit, False),
+            ("kontogeschuetzt", ohne, True),
+        ):
+            erwartet = next(r for r in REICHWEITEN if r.name == name)
+            bericht = run_portfolio_walkforward(
+                frames,
+                lambda: compile_genome(genom),
+                cfg,
+                durchgehend=modus,
+            )
+            gates = evaluate_gates(
+                genom,
+                bericht,
+                next(iter(frames.values())),
+                cfg[symbole[0]],
+                trials_so_far=versuche,
+                frames=frames,
+                configs=cfg,
+            )
+            dsr = next(
+                r.value for r in gates.results if r.name == "Deflated Sharpe"
+            )
+            fertig = ohne_zensierte(bericht).all_trades
+            stichprobe = stichprobe_wie_im_gate(fertig, beine=bericht.beine)
+            roh, guete, schiefe, woelbung = kennzahlen_aus_pnl(
+                [float(t.net_pnl) for t in fertig]
+            )
+
+            assert roh == erwartet.fertig, name
+            assert stichprobe.effektiv == erwartet.effektiv, name
+            assert guete == pytest.approx(erwartet.guete, abs=0.0005), name
+            assert dsr == pytest.approx(erwartet.dsr, abs=0.001), name
+            assert noetige_trades(
+                sharpe=guete,
+                trials=versuche,
+                skew=schiefe,
+                kurtosis=woelbung,
+            ) == erwartet.noetige_trades, name
+            assert noetiger_sharpe(
+                effektiv=stichprobe.effektiv,
+                trials=versuche,
+                skew=schiefe,
+                kurtosis=woelbung,
+            ) == pytest.approx(erwartet.noetige_guete, abs=0.0005), name

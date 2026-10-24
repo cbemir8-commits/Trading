@@ -36504,3 +36504,72 @@ heisst jetzt "Beingrenzen" und nennt die Kontoprobe daneben: 10,77 % gegen
 15 % Kill-Switch, zwei getrennte Konten, und mit Kontogrenze 162 Trades und 8
 von 11. Drei Zusicherungen aus 405 sind dabei gefallen - sie hielten den alten
 Namen fest, wie sie sollen.
+
+## Vierhundertsieben. Am kontogeschuetzten Punkt verschwindet der Designeffekt fast
+
+Die Planungszahl des Projekts - *"190 Beobachtungen, 5,89 Jahre"* - steht auf
+dem gemeldeten Punkt. Befund 406 hat einen zweiten benannt: den mit
+Kontogrenze statt Beingrenze. Was sagt die Rechnung dort?
+
+Gerechnet mit den Werkzeugen des Projekts - `gates.stichprobe_wie_im_gate`,
+`research/erreichbarkeit.py`, `research/erfuellung.py`:
+
+| Groesse | gemeldet | kontogeschuetzt |
+|---|---|---|
+| fertige Trades | 156 | 160 |
+| **n_eff** | **115** | **159** |
+| Designfaktor | 0,7372 | **0,9938** |
+| Guete je Trade | 0,2708 | 0,2444 |
+| Deflated Sharpe | 0,5826 | 0,6846 |
+| Luecke zum Gate | 0,3674 | **0,2654** |
+| noetige wirksame Trades | 191 | 244 |
+| davon fehlen | 76 | **85** |
+| noetige Guete | 0,3374 (+24,6 %) | 0,2945 (+20,5 %) |
+| **Erfuellungsgrad** | **0,8026** | **0,8299** |
+
+### Der Designeffekt verschwindet fast
+
+159 von 160 statt 115 von 156. Im gemeldeten Modus werden **27 %** der Trades
+als abhaengig abgeschrieben, im durchgehenden **unter 1 %**: Positionen
+ueberleben dort die Fenstergrenze, also finden die Einteilungen nach Fenstern
+und nach Gleichzeitigkeit viel weniger Abhaengigkeit.
+
+Umgekehrt gelesen - und das ist die interessantere Richtung: **Die hoehere
+Guete des gemeldeten Punkts (0,2708 gegen 0,2444) ist mit einem viel groesseren
+Abhaengigkeitsabschlag bezahlt.** Die beiden Effekte heben sich im Deflated
+Sharpe teilweise auf, und netto steht der kontogeschuetzte Punkt naeher am Gate.
+
+### Verglichen wird der Erfuellungsgrad
+
+Eine Guete von hier gegen eine Latte von dort zu halten ist der Fehler aus
+Befund 190. Das Verhaeltnis je Punkt ist dimensionslos und darf
+nebeneinanderstehen: **0,8026 gegen 0,8299** - der kontogeschuetzte Punkt ist
+seiner eigenen Latte um 2,7 Punkte naeher.
+
+### Was nicht folgt
+
+**Dass der Kandidat nah ist.** 83 % der Latte sind nicht die Latte. An diesem
+Punkt sind **drei** Gates offen statt zwei (Schlechtestes Jahr, Monte-Carlo,
+Deflated Sharpe), und es fehlen dort **85** wirksame Beobachtungen statt 76.
+Welcher Punkt die Zulassung traegt, ist die Entscheidung aus Befund 400.
+
+### Und mein Fehler dabei, zum fuenften Mal in dieser Kette
+
+Mein erster Lauf hat die effektive Stichprobe **selbst zusammengebaut** - und
+bekam n_eff = roh, Designfaktor 1,0, also gar keine Korrektur. Der gemeldete
+Punkt zeigte dann "fehlen 35" statt 76 und "+9,0 %" statt +24,6 %: in der
+freundlichen Richtung, und um das Doppelte.
+
+`gates.stichprobe_wie_im_gate` gibt es genau dafuer. Sein Kopf sagt es selbst:
+
+> Die Rechnung stand nur im Gate. Die uebrigen Werkzeuge - Suchbudget,
+> Erreichbarkeit, Erfuellung - haben sie nachgebaut.
+
+Ich habe sie noch einmal nachgebaut. Gefunden hat es der Abgleich des
+gemeldeten Punkts gegen `referenz.SPOTPUNKT` - die Gegenprobe, die Befund 394
+eingefuehrt hat -, weil dort 115 steht und bei mir 156.
+
+Das ist in dieser Kette das fuenfte Mal, dass ich geschlossen oder nachgebaut
+habe statt die gemessene Stelle zu benutzen: 395 (bindendes Fenster), 396
+(neun Jahre), 397 (Division), 400 (Mechanismus), 407 (effektive Stichprobe).
+Viermal lag das Ergebnis in der freundlichen Richtung.

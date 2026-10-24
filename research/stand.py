@@ -4636,6 +4636,43 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Konten beschreiben; was im Betrieb gilt, ist eine Entscheidung des "
         "Nutzers wie die Modusfrage aus 400",
         406,
+        zuletzt=407,
+    ),
+    # Befund 407: die Planungszahl steht auf dem gemeldeten Punkt - was sagt
+    # sie am kontogeschuetzten, den 406 benannt hat?
+    Richtung(
+        "Am kontogeschuetzten Punkt verschwindet der Designeffekt fast",
+        "Die Planungszahl des Projekts - '190 Beobachtungen, 5,89 Jahre' - "
+        "steht auf dem gemeldeten Punkt. Befund 406 hat einen zweiten "
+        "benannt, den mit Kontogrenze statt Beingrenze; gerechnet mit den "
+        "Werkzeugen des Projekts ('gates.stichprobe_wie_im_gate', "
+        "'erreichbarkeit', 'erfuellung') stehen sie so: gemeldet 156 fertige "
+        "Trades, n_eff **115** (Faktor 0,7372), Guete 0,2708, DSR 0,5826, "
+        "noetig 191 wirksame (fehlen 76) oder Guete 0,3374; kontogeschuetzt "
+        "160 fertige, n_eff **159** (Faktor 0,9938), Guete 0,2444, DSR "
+        "0,6846, noetig 244 (fehlen 85) oder Guete 0,2945. **Der "
+        "Designeffekt verschwindet fast**: 159 von 160 statt 115 von 156 - im "
+        "gemeldeten Modus werden 27 % der Trades als abhaengig abgeschrieben, "
+        "im durchgehenden unter 1 %, weil Positionen dort die Fenstergrenze "
+        "ueberleben und die Einteilungen nach Fenstern und Gleichzeitigkeit "
+        "viel weniger finden. Umgekehrt gelesen: Die hoehere Guete des "
+        "gemeldeten Punkts ist mit einem viel groesseren "
+        "Abhaengigkeitsabschlag bezahlt. **Verglichen wird der "
+        "Erfuellungsgrad**, nicht die Guete - eine Guete von hier gegen eine "
+        "Latte von dort ist der Fehler aus 190 -, und er steht bei 0,8026 "
+        "gegen **0,8299**: Der kontogeschuetzte Punkt ist seiner eigenen "
+        "Latte um 2,7 Punkte naeher. **Was nicht folgt**: dass der Kandidat "
+        "nah ist. 83 % der Latte sind nicht die Latte, dort sind **drei** "
+        "Gates offen statt zwei, und es fehlen **85** wirksame Beobachtungen "
+        "statt 76. **Und mein Fehler dabei**: Mein erster Lauf hat die "
+        "effektive Stichprobe selbst zusammengebaut und bekam n_eff = roh "
+        "(Faktor 1,0) - also gar keine Korrektur. Der gemeldete Punkt zeigte "
+        "dann 'fehlen 35' statt 76 und '+9,0 %' statt +24,6 %, in der "
+        "freundlichen Richtung und um das Doppelte. 'stichprobe_wie_im_gate' "
+        "gibt es genau dafuer, und ich habe es trotzdem nachgebaut; gefunden "
+        "hat es der Abgleich des gemeldeten Punkts gegen "
+        "'referenz.SPOTPUNKT'",
+        407,
     ),
 )
 
