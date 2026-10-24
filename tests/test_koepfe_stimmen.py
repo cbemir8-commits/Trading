@@ -38,6 +38,7 @@ MODULE = (
     "research.erfuellung",
     "research.koernung",
     "research.formgrenze",
+    "research.grenzgedaechtnis",
 )
 
 
@@ -59,6 +60,29 @@ def _zahlen(modul: str) -> list[tuple[str, str]]:
                 (s.von, komma(s.guete, 4)),
                 (s.von, komma(s.dsr, 4)),
             ]
+    elif modul == "research.grenzgedaechtnis":
+        # **Eine Zeile der Tabelle, nicht irgendein Vorkommen** (Befund 403).
+        # '162' steht zweimal in der Tafel und '9,869' auch; wer nur das
+        # Vorkommen prueft, laesst eine vertauschte Zeile durch.
+        zeilen = [
+            z.strip()
+            for z in (m.__doc__ or "").splitlines()
+            if "Limits" in z and "," in z
+        ]
+        for lauf in m.GEMESSEN.laeufe:
+            marke = "durchgehend" if lauf.durchgehend else "je Fenster"
+            marke += ", mit Limits" if lauf.limits else ", ohne Limits"
+            passende = [z for z in zeilen if z.startswith(marke)]
+            assert passende, f"{marke} steht nicht als Zeile im Kopf"
+            zeile = passende[0]
+            aus.append((marke, marke))
+            for wert in (
+                str(lauf.trades),
+                komma(lauf.cagr_pct, 4),
+                komma(lauf.rueckgang_pct, 3),
+            ):
+                aus.append((marke + " (in seiner Zeile)", wert))
+                assert wert in zeile, f"{marke}: {wert} steht nicht in seiner Zeile"
     elif modul == "research.zeitskala":
         for name, leiter in m.GEMESSEN.items():
             for s in leiter.stufen:

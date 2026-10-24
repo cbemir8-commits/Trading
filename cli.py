@@ -15653,6 +15653,10 @@ def aufteilung(
         False, "--durchgehend",
         help="Positionen ueberleben die Fenstergrenze (wie im Betrieb).",
     ),
+    ohne_limits: bool = typer.Option(
+        False, "--ohne-limits",
+        help="Ohne Risikogrenzen - die Gegenprobe aus Befund 403.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Wie viel von der Gate-Zahl haengt an der Aufteilung? (Befund 400)
@@ -15708,11 +15712,21 @@ def aufteilung(
     console.print(f"[dim]Reihe: {reihenzeile(geschnitten)}[/]")
     genome = _ohne_hebel(spitzenkandidat())
     configs = _spotconfigs(symbole, settings)
+    if ohne_limits:
+        # **Die Gegenprobe aus Befund 403**: Ohne Risikogrenzen geben beide
+        # Modi 162 Trades - die ganze Differenz sind die Grenzen, die je
+        # Fenster ihre Vorgeschichte verlieren.
+        from dataclasses import replace
+
+        configs = {
+            k: replace(v, enforce_risk_limits=False) for k, v in configs.items()
+        }
     trials = load_trials(Path(settings.paths.state) / "trials.json")
     console.print(
         f"[dim]Betriebspunkt: Spot, Modus: "
         f"{'durchgehend' if durchgehend else 'je Fenster'}, "
-        f"abgeschnitten: {'hinten' if hinten else 'vorne'}[/]\n"
+        f"abgeschnitten: {'hinten' if hinten else 'vorne'}, "
+        f"Risikogrenzen: {'aus' if ohne_limits else 'an'}[/]\n"
     )
 
     namen = (

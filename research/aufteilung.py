@@ -72,9 +72,15 @@ Der Mechanismus, gegengeprueft
 ------------------------------
 Im durchgehenden Modus, in dem Positionen die Grenze ueberleben, sind es
 **98 fertige Trades bei jedem Versatz** - nicht 152 bis 156 -, und die
-Streuung der Jahresrendite faellt von 3,1130 auf 1,5189 Punkte. Rund **58 der
-gemeldeten 156 Trades sind Grenzartefakte**: Positionen, die am Fensterende
-geschlossen und danach neu eroeffnet werden.
+Streuung der Jahresrendite faellt von 3,1130 auf 1,5189 Punkte.
+
+**Hier stand eine falsche Erklaerung** (Befund 403): *"Rund 58 der gemeldeten
+156 Trades sind Grenzartefakte: Positionen, die am Fensterende geschlossen und
+danach neu eroeffnet werden."* Das war aus der Zahlendifferenz geschlossen, und
+es ist widerlegt - **kein einziger** Trade steigt an einem Fensterende aus, es
+gibt null zerschnittene Paare, und die Einstiege haeufen sich an keinem
+Fensteranfang. Die Differenz kommt von den **Risikogrenzen**, die je Fenster
+ihre Vorgeschichte verlieren; die Zahlen stehen in Befund 403.
 
 Und die unbequeme Haelfte derselben Messung: Der durchgehende Modus ist auf
 jedem blockierenden Gate **schlechter**. Am Spot-Punkt, Versatz 0:

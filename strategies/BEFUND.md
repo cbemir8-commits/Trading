@@ -36207,3 +36207,111 @@ gegen die Funktion gehalten hat und sie nicht zusammenpassten.
 Jetzt wird nach **Anzahl** geschnitten statt nach Breite: 31 Werte auf drei
 Banden sind 11, 10, 10 - alles drin, nichts doppelt. Der Test dazu prueft
 genau das, und zwar an vier Laengen.
+
+## Vierhundertdrei. Die Risikogrenzen greifen im Modus der Zulassung fast nicht
+
+Befund 400 hat aus einer Zahlendifferenz eine Erklaerung **geschlossen**:
+
+> Rund **58 der gemeldeten 156 Trades sind Grenzartefakte**: Positionen, die am
+> Fensterende geschlossen und danach neu eroeffnet werden.
+
+Das war nicht gemessen. Nachgemessen ist es widerlegt - und was stattdessen
+dasteht, ist schwerwiegender.
+
+### Die Widerlegung
+
+**Kein einziger Trade steigt an einem Fensterende aus.** Die Austrittsgruende
+der 158 rohen Trades:
+
+```
+  signal_exit                    78
+  stop_loss                      68
+  take_profit                    10
+  end_of_data                     2
+```
+
+Einen Grund "Fensterende" gibt es nicht. **Null** zerschnittene Paare - kein
+Austritt an einer Grenze mit Wiedereinstieg binnen zwei Tagen. Und die
+Einstiege haeufen sich an **keinem** Fensteranfang: am ersten Tag eines
+Fensters beginnt in beiden Modi kein Trade, 150 der 158 beginnen am sechsten
+Tag oder spaeter.
+
+Dann die Gestalt der Differenz, je Fenster gezaehlt:
+
+| Fenster | je Fenster | durchgehend |
+|---|---|---|
+| 0–7 | 4, 8, 1, 2, 12, 3, 3, 8 | **dieselben** |
+| 8 | 4 | 3 |
+| 10 | 8 | 4 |
+| 24 | 9 | 5 |
+| 31 | 6 | 1 |
+
+**Nicht grenzlokal, sondern kumulativ.** Waere es die Fenstergrenze, waeren
+schon die ersten Fenster verschieden.
+
+### Was es wirklich ist
+
+| Lauf | Trades | CAGR | Rueckgang |
+|---|---|---|---|
+| je Fenster, mit Limits | 158 | 14,3391 | 9,869 |
+| durchgehend, mit Limits | 99 | 11,6275 | 7,504 |
+| durchgehend, **ohne** Limits | **162** | 19,0053 | 11,216 |
+| je Fenster, **ohne** Limits | **162** | 14,1915 | 9,869 |
+
+**Ohne Risikogrenzen geben beide Modi dieselbe Zahl.** Die ganze Differenz sind
+die Grenzen: Sie unterdruecken durchgehend **63** der 162 Trades und je Fenster
+**vier**.
+
+Der Grund steht in den Logzeilen des Laufs:
+`risk.ohne_vorgeschichte_simuliert kapital=500`. Jedes Fenster ist ein eigener
+Backtest, der bei der Anfangseinlage und **ohne Equity-Vorgeschichte** beginnt -
+und Kill-Switch wie Wochenverlustgrenze brauchen eine Vorgeschichte, um zu
+greifen. In einem Dreimonatsfenster kommt sie kaum zustande.
+
+### Was das heisst
+
+**Die Zulassungsstrecke misst einen Kandidaten, dessen Risikogrenzen praktisch
+nicht greifen.** `enforce_risk_limits=True` steht in der Konfiguration, und es
+ist nicht falsch - es wirkt nur fast nicht.
+
+Die Richtung ist unangenehm: Es **schmeichelt** dem Kandidaten. Mit greifenden
+Grenzen steht die Jahresrendite bei 11,6275 statt 14,3391 und der Deflated
+Sharpe bei 0,3185 statt 0,5826.
+
+### Zwei Wirkungen, getrennt
+
+* **Die Trade-Zahl** haengt allein an den Grenzen: ohne sie 162 in beiden Modi.
+* **Die Rendite bei gleicher Trade-Zahl** haengt an der Aufteilung: 14,1915 je
+  Fenster gegen 19,0053 durchgehend, also 4,81 Punkte. Jedes Fenster startet
+  bei der Anfangseinlage, es verzinst sich nichts ueber die Grenze hinweg.
+
+### Was nicht folgt
+
+**Nicht, dass der Modus zu wechseln ist.** Das bleibt die Entscheidung des
+Nutzers aus Befund 400. Geaendert hat sich der **Grund** der Frage: Es geht
+nicht um zwei gleichberechtigte Messweisen, sondern darum, dass in der einen
+eine eingebaute Schutzvorrichtung fast nie anspricht.
+
+**Nicht, dass die Grenzen falsch gebaut sind.** Sie brauchen eine
+Vorgeschichte, und das ist richtig - ein Kill-Switch ohne Historie waere
+willkuerlich. Fehlt die Historie, ist das eine Aussage ueber den Aufbau, der
+sie nicht liefert.
+
+### Der vierte Schluss statt einer Zaehlung
+
+Das ist in dieser Kette das **vierte** Mal, dass ich eine Zahl oder einen
+Mechanismus aus etwas anderem geschlossen habe statt ihn zu messen: 395 beim
+bindenden Fenster, 396 bei den "rund neun Jahren", 397 bei der Division, und
+jetzt 400 beim Mechanismus hinter einer Zahlendifferenz. Dreimal lag der
+Schluss in der freundlichen Richtung; diesmal in der harmlosen - er hat eine
+Unstimmigkeit kleiner aussehen lassen, als sie ist.
+
+Der Vermerk steht im Eintrag zu 400 und im Kopf von `research/aufteilung.py`,
+beide an der Stelle der falschen Erklaerung. `cli aufteilung --ohne-limits` ist
+die Gegenprobe.
+
+### Ein Waechter hat zurueckgemeldet
+
+`test_gateurteil.py` hielt fest, dass der Eintrag zu Befund 400 auf 401 zeigt.
+Er zeigt jetzt auf 403 - derselbe Eintrag, zweimal weitergezogen, und der Test
+hat die zweite Weiterziehung gemeldet, wie er soll.

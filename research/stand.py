@@ -4418,7 +4418,10 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Mechanismus, gegengeprueft**: Im durchgehenden Modus sind es **98 "
         "fertige Trades bei jedem Versatz** statt 152 bis 156, und die "
         "Streuung faellt von 3,1130 auf 1,5189 - rund 58 der gemeldeten 156 "
-        "Trades sind Grenzartefakte. **Und die unbequeme Haelfte**: Der "
+        "Trades sind Grenzartefakte (**falsch, siehe 403**: Kein Trade "
+        "steigt an einem Fensterende aus, null zerschnittene Paare, und die "
+        "Differenz sind die Risikogrenzen). **Und die unbequeme Haelfte**: "
+        "Der "
         "durchgehende Modus ist auf jedem blockierenden Gate schlechter "
         "(14,3390 gegen 11,6270 Rendite, DSR 0,5826 gegen 0,3185, "
         "Monte-Carlo faellt zusaetzlich, 8 von 11 statt 9). **Was nicht "
@@ -4434,7 +4437,7 @@ BEHOBEN: tuple[Richtung, ...] = (
         "trifft es die eigene Arbeit: Die 0,39 Punkte Reserve aus den "
         "Befunden 395 bis 397 liegen **innerhalb** dieser Streuung",
         400,
-        zuletzt=401,
+        zuletzt=403,
     ),
     # Befund 401: die Folgerung aus 400, je Gate gerechnet - und sie begrenzt
     # die Sorge, statt sie zu bestaetigen.
@@ -4490,6 +4493,49 @@ BEHOBEN: tuple[Richtung, ...] = (
         "nennt, nennt die Tiefe mit; 'cli aufteilung' schreibt sie in die "
         "Ueberschrift und die Bandenzerlegung in die letzte Spalte",
         402,
+        zuletzt=403,
+    ),
+    # Befund 403: die Erklaerung aus 400 nachgemessen - sie war falsch, und
+    # was stattdessen dasteht, ist schwerwiegender.
+    Richtung(
+        "Die Risikogrenzen greifen im Modus der Zulassung fast nicht",
+        "**Meine Erklaerung aus Befund 400 war geschlossen, nicht gemessen**, "
+        "und sie ist widerlegt. Dort stand, rund 58 der 156 Trades seien "
+        "Grenzartefakte - 'Positionen, die am Fensterende geschlossen und "
+        "danach neu eroeffnet werden'. Nachgemessen: **Kein einziger** Trade "
+        "steigt an einem Fensterende aus (Gruende der 158 rohen Trades: "
+        "signal_exit 78, stop_loss 68, take_profit 10, end_of_data 2 - einen "
+        "Grund 'Fensterende' gibt es nicht), es gibt **null** zerschnittene "
+        "Paare, und die Einstiege haeufen sich an **keinem** Fensteranfang "
+        "(am ersten Tag beginnt in beiden Modi kein Trade, 150 von 158 am "
+        "sechsten Tag oder spaeter). Die Differenz ist auch **nicht "
+        "grenzlokal, sondern kumulativ**: Die Fenster 0 bis 7 liefern in "
+        "beiden Modi genau dieselben Trade-Zahlen, ab Fenster 8 laeuft es "
+        "auseinander, im letzten stehen 6 gegen 1. **Was es wirklich ist**: "
+        "Ohne Risikogrenzen geben **beide Modi 162 Trades**. Die Grenzen "
+        "unterdruecken durchgehend **63** der 162 und je Fenster **vier** - "
+        "weil jedes Fenster ein eigener Backtest ist, der bei der "
+        "Anfangseinlage und ohne Equity-Vorgeschichte beginnt "
+        "('risk.ohne_vorgeschichte_simuliert kapital=500'), und Kill-Switch "
+        "wie Wochenverlustgrenze brauchen eine Vorgeschichte. In einem "
+        "Dreimonatsfenster kommt sie kaum zustande. **Damit misst die "
+        "Zulassungsstrecke einen Kandidaten, dessen Risikogrenzen praktisch "
+        "nicht greifen** - 'enforce_risk_limits=True' steht in der "
+        "Konfiguration und wirkt fast nicht. Die Richtung ist unangenehm: Es "
+        "**schmeichelt** dem Kandidaten (Jahresrendite 14,3391 gegen 11,6275, "
+        "DSR 0,5826 gegen 0,3185). **Zwei Wirkungen, getrennt**: Die "
+        "Trade-Zahl haengt allein an den Grenzen (ohne sie 162 in beiden "
+        "Modi), die Rendite bei gleicher Trade-Zahl an der Aufteilung (ohne "
+        "Grenzen 14,1915 je Fenster gegen 19,0053 durchgehend, weil jedes "
+        "Fenster bei der Anfangseinlage startet). **Was nicht folgt**: dass "
+        "der Modus zu wechseln ist - das bleibt die Entscheidung des Nutzers "
+        "aus 400 -, und auch nicht, dass die Grenzen falsch gebaut sind; sie "
+        "brauchen eine Vorgeschichte, und das ist richtig. Geaendert hat sich "
+        "der **Grund** der Frage: Es geht nicht um zwei gleichberechtigte "
+        "Messweisen, sondern darum, dass in der einen eine eingebaute "
+        "Schutzvorrichtung fast nie anspricht. 'cli aufteilung --ohne-limits' "
+        "ist die Gegenprobe",
+        403,
     ),
 )
 

@@ -325,6 +325,8 @@ class TestWasImRegisterSteht:
         assert "als naechstes nachzusehen" in eintrag.ergebnis
 
     def test_und_400_zeigt_nach_vorn(self) -> None:
+        """Auf 401 zunaechst, seit Befund 403 auf diesen - derselbe Eintrag,
+        zweimal weitergezogen."""
         from research.stand import BEHOBEN
 
-        assert next(r for r in BEHOBEN if r.befund == 400).zuletzt == 401
+        assert next(r for r in BEHOBEN if r.befund == 400).zuletzt == 403
