@@ -289,3 +289,136 @@ class TestWasImRegisterSteht:
 
         assert "Hier stand eine falsche Erklaerung" in kopf
         assert "Befund 403" in kopf
+
+
+class TestDasKreuzJeGate:
+    """Befund 404: dasselbe Kreuz wie 395, nur fuer Modus x Grenzen."""
+
+    def test_elf_gates_auf_zwei_listen(self) -> None:
+        from research.grenzgedaechtnis import STANDHAFT, WACKELIG
+
+        assert len(STANDHAFT) == 8
+        assert len(WACKELIG) == 3
+        assert not set(STANDHAFT) & set(WACKELIG)
+
+    def test_je_fenster_aendern_die_grenzen_am_gate_bild_nichts(self) -> None:
+        """Die Inertheit aus 403, von der Gate-Seite."""
+        from research.grenzgedaechtnis import GATEKREUZ
+
+        assert GATEKREUZ[(False, True)] == GATEKREUZ[(False, False)]
+
+    def test_durchgehend_aendern_sie_viel(self) -> None:
+        from research.grenzgedaechtnis import GATEKREUZ
+
+        assert GATEKREUZ[(True, True)] != GATEKREUZ[(True, False)]
+        assert "Schlechtestes Jahr" in GATEKREUZ[(True, False)]
+        assert "Schlechtestes Jahr" not in GATEKREUZ[(True, True)]
+
+    def test_der_deflated_sharpe_faellt_in_allen_vier(self) -> None:
+        """Die belastbarste Aussage, die das Projekt ueber sich hat."""
+        from research.grenzgedaechtnis import GATEKREUZ, haengt_am_aufbau
+
+        assert all("Deflated Sharpe" in gef for gef in GATEKREUZ.values())
+        assert not haengt_am_aufbau("Deflated Sharpe")
+
+    def test_monte_carlo_haengt_an_der_aufteilung(self) -> None:
+        """Nicht an den Grenzen: Es besteht in beiden Fenster-Zellen und
+        faellt in beiden durchgehenden."""
+        from research.grenzgedaechtnis import GATEKREUZ, haengt_am_aufbau
+
+        assert "Monte-Carlo" not in GATEKREUZ[(False, True)]
+        assert "Monte-Carlo" not in GATEKREUZ[(False, False)]
+        assert "Monte-Carlo" in GATEKREUZ[(True, True)]
+        assert "Monte-Carlo" in GATEKREUZ[(True, False)]
+        assert haengt_am_aufbau("Monte-Carlo")
+
+    def test_der_kopf_warnt_vor_den_zwei_tradezahlen(self) -> None:
+        """158/162/99/162 roh gegen 156/160/98/160 fertig - sie zu
+        verwechseln ist der Fehler aus Befund 371."""
+        from research import grenzgedaechtnis
+
+        quelle = inspect.getsource(grenzgedaechtnis)
+
+        assert "zwei Trade-Zahlen" in quelle
+        assert "Befund 371" in quelle
+
+    def test_und_die_tafel_steht_im_kopf(self) -> None:
+        from research import grenzgedaechtnis
+
+        kopf = grenzgedaechtnis.__doc__ or ""
+
+        assert "f+L" in kopf and "d-L" in kopf
+        assert "-  -10,940" in kopf
+        assert "+  302,090" in kopf
+        assert "Acht der elf Urteile" in kopf
+
+
+@pytest.mark.daten
+@pytest.mark.langsam
+class TestDasKreuzAnDenEchtenDaten:
+    """Die vier Fehllisten aus dem Kopf, am Lauf."""
+
+    @staticmethod
+    def _gefallen(*, durchgehend: bool, limits: bool) -> tuple[str, ...]:
+        from dataclasses import replace
+        from pathlib import Path
+
+        from backtest.portfolio_walkforward import (
+            common_range,
+            run_portfolio_walkforward,
+        )
+        from core.config import get_settings
+        from core.models import Interval
+        from data.store import CandleStore
+        from research.admission import load_trials
+        from research.datenstand import alle_geschnitten
+        from research.gates import GateStatus, evaluate_gates
+        from research.seeds import spitzenkandidat
+        from strategy.compiler import compile_genome
+
+        symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
+        e = get_settings()
+        store = CandleStore(e.paths.data_store)
+        frames = common_range(
+            alle_geschnitten({s: store.read(s, Interval.D1) for s in symbole})
+        )
+        genom = cli._ohne_hebel(spitzenkandidat())
+        configs = cli._spotconfigs(symbole, e)
+        if not limits:
+            configs = {
+                k: replace(v, enforce_risk_limits=False)
+                for k, v in configs.items()
+            }
+        bericht = run_portfolio_walkforward(
+            frames,
+            lambda: compile_genome(genom),
+            configs,
+            durchgehend=durchgehend,
+        )
+        gates = evaluate_gates(
+            genom,
+            bericht,
+            next(iter(frames.values())),
+            configs[symbole[0]],
+            trials_so_far=load_trials(Path(e.paths.state) / "trials.json"),
+            frames=frames,
+            configs=configs,
+        )
+        return tuple(
+            r.name for r in gates.results if r.status is GateStatus.FAIL
+        )
+
+    def test_die_vier_fehllisten_stimmen(self) -> None:
+        from research.grenzgedaechtnis import GATEKREUZ
+
+        for (durchgehend, limits), erwartet in GATEKREUZ.items():
+            gefallen = self._gefallen(durchgehend=durchgehend, limits=limits)
+
+            assert gefallen == erwartet, (durchgehend, limits)
+
+    def test_je_fenster_sind_die_listen_gleich(self) -> None:
+        """Der Kern von Befund 404, unabhaengig von der gepflegten Tafel."""
+        mit = self._gefallen(durchgehend=False, limits=True)
+        ohne = self._gefallen(durchgehend=False, limits=False)
+
+        assert mit == ohne == ("Messlatte", "Deflated Sharpe")

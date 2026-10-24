@@ -4536,6 +4536,34 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Schutzvorrichtung fast nie anspricht. 'cli aufteilung --ohne-limits' "
         "ist die Gegenprobe",
         403,
+        zuletzt=404,
+    ),
+    # Befund 404: dasselbe Kreuz wie 395, nur fuer Modus x Grenzen - und je
+    # Gate statt nur in Summe.
+    Richtung(
+        "Acht der elf Urteile stehen in jedem Messaufbau, drei nicht",
+        "Befund 403 hat gemessen, dass die Risikogrenzen je Fenster vier und "
+        "durchgehend 63 Trades unterdruecken. Offen blieb, **welche Gates das "
+        "bewegt**. Dasselbe Kreuz wie in 395, nur fuer Modus x Grenzen, Gate "
+        "fuer Gate: **Je Fenster aendern die Grenzen am Gate-Bild nichts** - "
+        "neun bestandene in beiden Zellen, dieselbe Fehlliste (Messlatte, "
+        "Deflated Sharpe), derselbe Rueckgang 9,869 auf drei Stellen. Die "
+        "Inertheit aus 403, von der Gate-Seite bestaetigt. **Durchgehend "
+        "aendern sie viel**: Ohne Grenzen faellt 'Schlechtestes Jahr' auf "
+        "-10,940 statt -5,580 und der Rueckgang steigt von 7,504 auf 11,216 - "
+        "die Schutzwirkung der Grenzen, sichtbar gemacht. **Acht der elf "
+        "Urteile sind in allen vier Zellen dieselben**; drei wechseln: Die "
+        "Messlatte besteht nur durchgehend ohne Grenzen (und meldet dort "
+        "302,090 gegen 61,470, also wieder den anderen Zweig aus 395), "
+        "'Schlechtestes Jahr' faellt nur dort, und 'Monte-Carlo' haengt an "
+        "der **Aufteilung** statt an den Grenzen - es besteht in beiden "
+        "Fenster-Zellen (8,326 / 8,621) und faellt in beiden durchgehenden "
+        "(15,536 / 22,816 gegen Schwelle 15). **Und der Deflated Sharpe "
+        "faellt in allen vier Zellen** - 0,583 / 0,592 / 0,318 / 0,685; in "
+        "der guenstigsten fehlen noch 0,265. Mit 401 und 402 zusammen: Der "
+        "Hauptblocker haengt weder an der Aufteilung noch am Messaufbau, und "
+        "das ist die belastbarste Aussage, die das Projekt ueber sich hat",
+        404,
     ),
 )
 

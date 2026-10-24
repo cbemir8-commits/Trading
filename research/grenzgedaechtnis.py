@@ -58,6 +58,40 @@ Zwei Wirkungen, getrennt
   Grenzen 14,1915 je Fenster gegen 19,0053 durchgehend. Jedes Fenster startet
   bei der Anfangseinlage, also verzinst sich nichts ueber die Grenze hinweg.
 
+Das Kreuz je Gate (Befund 404)
+------------------------------
+Dieselben vier Laeufe, aber Gate fuer Gate. ``f`` ist je Fenster, ``d``
+durchgehend, ``+L`` mit Risikogrenzen, ``-L`` ohne:
+
+    Gate                         f+L       f-L       d+L       d-L
+    Stichprobengroesse     + 2250,000 + 2256,000 + 1297,000 + 2256,000
+    Messlatte              -   14,339 -   14,192 -   11,627 +  302,090
+    Out-of-Sample-Sharpe   +    1,576 +    1,561 +    1,408 +    1,529
+    Drawdown               +    9,869 +    9,869 +    7,504 +   11,216
+    Schlechtestes Jahr     +   -9,610 +   -9,610 +   -5,580 -  -10,940
+    Bestaendigkeit         +    0,581 +    0,581 +    0,645 +    0,581
+    Monte-Carlo            +    8,326 +    8,621 -   15,536 -   22,816
+    Regime-Aufteilung      +    5,275 +    5,130 +    3,026 +    3,946
+    Deflated Sharpe        -    0,583 -    0,592 -    0,318 -    0,685
+    Kosten-Stress          + 1863,726 + 1863,726 + 1863,726 + 1863,726
+    Parameter-Plateau      +    1,000 +    1,000 +    1,000 +    1,000
+    bestanden                      9         9         8         8
+    fertige Trades               156       160        98       160
+
+**Je Fenster aendern die Grenzen am Gate-Bild nichts.** Dieselben neun
+bestandenen, dieselbe Fehlliste, dieselbe Rueckgangszahl auf drei Stellen -
+die Inertheit aus diesem Befund, von der Gate-Seite bestaetigt.
+
+**Durchgehend aendern sie viel.** Ohne Grenzen faellt 'Schlechtestes Jahr' auf
+-10,940 statt -5,580 und der Rueckgang steigt von 7,504 auf 11,216: Die
+Grenzen schuetzen messbar - wenn sie greifen koennen.
+
+**Acht der elf Urteile sind in allen vier Zellen dieselben**, drei wechseln
+(Messlatte, Schlechtestes Jahr, Monte-Carlo). Und der **Deflated Sharpe faellt
+in allen vier** - 0,583 / 0,592 / 0,318 / 0,685, in der guenstigsten Zelle
+fehlen noch 0,265. Mit den Befunden 401 und 402 zusammen: Der Hauptblocker
+haengt weder an der Aufteilung noch am Messaufbau.
+
 Was nicht folgt
 ---------------
 **Nicht**, dass der Modus zu wechseln ist. Welcher Modus die Zulassung tragen
@@ -160,3 +194,61 @@ GEMESSEN: Grenzvergleich = Grenzvergleich(
         ),
     )
 )
+
+
+#: Die Gate-Zahlen derselben vier Laeufe - Befund 404.
+#:
+#: **Achtung, zwei Trade-Zahlen.** ``GEMESSEN`` zaehlt die **rohen** Trades
+#: (158 / 162 / 99 / 162), diese Tafel die **fertigen** nach Randschnitt
+#: (156 / 160 / 98 / 160). Beide sind richtig, und sie zu verwechseln ist der
+#: Fehler aus Befund 371.
+GATEKREUZ: dict[tuple[bool, bool], tuple[str, ...]] = {
+    # (durchgehend, limits) -> gefallene Gates
+    (False, True): ("Messlatte", "Deflated Sharpe"),
+    (False, False): ("Messlatte", "Deflated Sharpe"),
+    (True, True): ("Messlatte", "Monte-Carlo", "Deflated Sharpe"),
+    (True, False): ("Schlechtestes Jahr", "Monte-Carlo", "Deflated Sharpe"),
+}
+
+#: Die Gates, deren Urteil in **allen vier** Zellen dasselbe ist.
+STANDHAFT: tuple[str, ...] = (
+    "Stichprobengroesse",
+    "Out-of-Sample-Sharpe",
+    "Drawdown",
+    "Bestaendigkeit",
+    "Regime-Aufteilung",
+    "Deflated Sharpe",
+    "Kosten-Stress",
+    "Parameter-Plateau",
+)
+
+#: Die Gates, deren Urteil am Messaufbau haengt.
+WACKELIG: tuple[str, ...] = (
+    "Messlatte",
+    "Schlechtestes Jahr",
+    "Monte-Carlo",
+)
+
+
+def haengt_am_aufbau(gate: str) -> bool:
+    """Haengt das Urteil dieses Gates am Messaufbau (Modus x Grenzen)?
+
+    Gemessen ueber das Kreuz aus Befund 404: **Acht** der elf Urteile sind in
+    allen vier Zellen dieselben, **drei** wechseln.
+
+    * ``Messlatte`` faellt in drei Zellen und besteht in der vierten
+      (durchgehend ohne Grenzen) - dort meldet sie 302,090 gegen 61,470, also
+      die Gesamtrendite gegen die heruntergefahrene Messlatte (Befund 395).
+    * ``Schlechtestes Jahr`` besteht in drei Zellen und faellt durchgehend
+      ohne Grenzen mit -10,940. **Das ist die Schutzwirkung der Grenzen,
+      sichtbar gemacht**: Mit ihnen -5,580, ohne sie -10,940.
+    * ``Monte-Carlo`` besteht in beiden Fenster-Zellen (8,326 / 8,621) und
+      faellt in beiden durchgehenden (15,536 / 22,816, Schwelle 15). Dieses
+      Urteil haengt also an der **Aufteilung**, nicht an den Grenzen.
+
+    Und der **Deflated Sharpe faellt in allen vier Zellen** - 0,583, 0,592,
+    0,318, 0,685. Selbst in der guenstigsten fehlen 0,265. Zusammen mit den
+    Befunden 401 und 402 heisst das: Der Hauptblocker haengt weder an der
+    Aufteilung noch am Messaufbau.
+    """
+    return gate in WACKELIG

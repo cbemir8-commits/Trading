@@ -36315,3 +36315,68 @@ die Gegenprobe.
 `test_gateurteil.py` hielt fest, dass der Eintrag zu Befund 400 auf 401 zeigt.
 Er zeigt jetzt auf 403 - derselbe Eintrag, zweimal weitergezogen, und der Test
 hat die zweite Weiterziehung gemeldet, wie er soll.
+
+## Vierhundertvier. Acht der elf Urteile stehen in jedem Messaufbau, drei nicht
+
+Befund 403 hat gemessen, dass die Risikogrenzen je Fenster vier und
+durchgehend 63 Trades unterdruecken. Offen blieb, **welche Gates das bewegt**.
+Dasselbe Kreuz wie in Befund 395, nur fuer Modus x Grenzen - und Gate fuer
+Gate statt in Summe.
+
+| Gate | f+L | f−L | d+L | d−L |
+|---|---|---|---|---|
+| Stichprobengroesse | + 2250,000 | + 2256,000 | + 1297,000 | + 2256,000 |
+| **Messlatte** | − 14,339 | − 14,192 | − 11,627 | **+ 302,090** |
+| Out-of-Sample-Sharpe | + 1,576 | + 1,561 | + 1,408 | + 1,529 |
+| Drawdown | + 9,869 | + 9,869 | + 7,504 | + 11,216 |
+| **Schlechtestes Jahr** | + −9,610 | + −9,610 | + −5,580 | **− −10,940** |
+| Bestaendigkeit | + 0,581 | + 0,581 | + 0,645 | + 0,581 |
+| **Monte-Carlo** | + 8,326 | + 8,621 | **− 15,536** | **− 22,816** |
+| Regime-Aufteilung | + 5,275 | + 5,130 | + 3,026 | + 3,946 |
+| Deflated Sharpe | − 0,583 | − 0,592 | − 0,318 | − 0,685 |
+| Kosten-Stress | + 1863,726 | + 1863,726 | + 1863,726 | + 1863,726 |
+| Parameter-Plateau | + 1,000 | + 1,000 | + 1,000 | + 1,000 |
+| **bestanden** | **9** | **9** | **8** | **8** |
+| fertige Trades | 156 | 160 | 98 | 160 |
+
+`f` je Fenster, `d` durchgehend, `+L` mit Risikogrenzen, `−L` ohne.
+
+### Je Fenster aendern die Grenzen am Gate-Bild nichts
+
+Neun bestandene in beiden Zellen, dieselbe Fehlliste, derselbe Rueckgang 9,869
+auf drei Stellen. Die Inertheit aus Befund 403, von der Gate-Seite bestaetigt -
+und das ist eine haertere Bestaetigung als die Trade-Zahl, weil sie das
+Ergebnis betrifft und nicht nur den Weg dahin.
+
+### Durchgehend aendern sie viel
+
+Ohne Grenzen faellt `Schlechtestes Jahr` auf **−10,940** statt −5,580, und der
+Rueckgang steigt von 7,504 auf 11,216. **Die Schutzwirkung der Grenzen,
+sichtbar gemacht**: Genau das sollen sie tun, und genau das tun sie - wenn sie
+greifen koennen.
+
+### Drei Urteile haengen am Aufbau, acht nicht
+
+* **Messlatte** besteht nur durchgehend ohne Grenzen und meldet dort 302,090
+  gegen 61,470 - wieder der andere Zweig aus Befund 395.
+* **Schlechtestes Jahr** faellt nur dort.
+* **Monte-Carlo** haengt an der **Aufteilung**, nicht an den Grenzen: Es
+  besteht in beiden Fenster-Zellen (8,326 / 8,621) und faellt in beiden
+  durchgehenden (15,536 / 22,816 gegen Schwelle 15).
+
+### Und der Deflated Sharpe faellt in allen vier Zellen
+
+0,583 / 0,592 / 0,318 / 0,685. In der guenstigsten fehlen noch **0,265**.
+
+Mit Befund 401 (0,3674 Abstand gegen 0,0763 Spanne) und Befund 402 (bei 31
+Aufteilungen noch das Dreieinhalbfache) zusammen: **Der Hauptblocker haengt
+weder an der Aufteilung noch am Messaufbau.** Das ist die belastbarste Aussage,
+die das Projekt derzeit ueber sich hat - und sie ist eine ueber ein
+gefallenes Gate, nicht ueber ein bestandenes.
+
+### Zwei Trade-Zahlen, und sie werden nicht verwechselt
+
+`GEMESSEN` aus Befund 403 zaehlt die **rohen** Trades (158 / 162 / 99 / 162),
+diese Tafel die **fertigen** nach Randschnitt (156 / 160 / 98 / 160). Beide
+sind richtig; sie zu verwechseln ist der Fehler aus Befund 371, und deshalb
+steht die Warnung neben der Tafel.
