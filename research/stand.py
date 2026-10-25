@@ -4789,6 +4789,44 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Gegenprobe gegen 'referenz.KONTOPUNKT', bevor etwas davon im "
         "Projekt stand",
         410,
+        zuletzt=411,
+    ),
+    # Befund 411: 410 liess offen, warum die Quartalskorrelation faellt -
+    # und verglich dabei zwei Zellen, die sich in zwei Dingen unterscheiden.
+    Richtung(
+        "Der verwechselte Vergleich, und das Mass verdeckt die Abhaengigkeit",
+        "Befund 410 hat die Quartalskorrelation zwischen gemeldetem und "
+        "kontogeschuetztem Punkt verglichen - zwei Zellen, die sich in "
+        "**zwei** Dingen zugleich unterscheiden (Fensterschnitt und "
+        "Beingrenzen). Der Vergleich war damit verwechselt, und die vierte "
+        "Zelle fehlte. Alle vier gemessen: **Es ist der Fensterschnitt.** "
+        "Beide geschnittenen Zellen zeigen ICC um 0,25 bei p von hoechstens "
+        "0,005 und "
+        "kuerzen (115 von 156 mit Beingrenzen, 121 von 160 ohne); beide "
+        "durchgehenden liegen bei p ueber 0,08 und kuerzen nicht. Die "
+        "Beingrenzen aendern die Trade-Zahl, nicht die Abhaengigkeit. "
+        "**Meine Erklaerung dafuer war falsch**: Vermutet hatte ich den "
+        "Kapital-Neustart je Fenster (403) - Positionsgroesse haengt am "
+        "Kapital, ein Fenster ist mit 106 Tagen fast ein Quartal. Auf "
+        "R-Vielfache normiert, also ohne Groessenwirkung, bleibt die "
+        "Abhaengigkeit **unveraendert** (ICC 0,2561, p 0,0005). Kein "
+        "Groessenartefakt. **Und ungesucht gefunden**: Im durchgehenden "
+        "Modus verdeckt das Waehrungsmass eine Abhaengigkeit, die das R-Mass "
+        "zeigt - kontogeschuetzt steigt der ICC von 0,0904 (p 0,0895) auf "
+        "0,2550 (p 0,0020), so hoch wie am gemeldeten Punkt. Auf einem "
+        "durchverzinsten Konto streuen die Waehrungsbetraege zu weit. "
+        "**Folge fuer 407/409**: Der fast verschwundene Designeffekt des "
+        "kontogeschuetzten Punkts (159 von 160) ist **kein Nachweis von "
+        "Unabhaengigkeit**, und der Erfuellungsvorsprung 0,8299 gegen 0,8026 "
+        "steht auf diesem n_eff. Das macht den Ausfall des Deflated Sharpe "
+        "robuster, nicht schwaecher. **Was nicht folgt**: dass das Gate das "
+        "Mass wechseln soll. Es rechnet in Waehrung, und dabei bleibt es - "
+        "ein Mass wird nicht danach gewaehlt, wie das Ergebnis aussieht, "
+        "auch nicht wenn das andere strenger ausfaellt. **Offen bleibt**, "
+        "warum der Fensterschnitt die Quartalsabhaengigkeit erzeugt; "
+        "gemessen ist nur, dass er es tut und dass es nicht an der "
+        "Positionsgroesse liegt",
+        411,
     ),
 )
 

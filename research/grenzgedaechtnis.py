@@ -111,7 +111,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-__all__ = ["GEMESSEN", "LEITER", "Grenzlauf", "Grenzvergleich", "bindend"]
+__all__ = [
+    "GEMESSEN",
+    "LEITER",
+    "QUARTALSPROBE",
+    "Grenzlauf",
+    "Grenzvergleich",
+    "Quartalsprobe",
+    "bindend",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -373,6 +381,14 @@ class Reichweite:
     (``research/erfuellung.py``). Es sind 0,8026 gegen 0,8299 - der
     kontogeschuetzte Punkt ist seiner eigenen Latte um 2,7 Punkte naeher.
 
+    **Dieser Vorsprung ist weniger wert, als er aussieht** (Befund 411). Er
+    steht auf dem n_eff von 159 aus 160, und das haengt am **Mass**: Auf
+    R-Vielfache normiert zeigt dieselbe Zelle auf der Quartalsstufe ICC
+    0,2550 bei p 0,0020 - so viel wie der gemeldete Punkt. Der fast
+    verschwundene Designeffekt ist also kein Nachweis von Unabhaengigkeit,
+    sondern eine Eigenschaft des Waehrungsmasses auf einem durchverzinsten
+    Konto. Siehe ``QUARTALSPROBE``.
+
     **Was nicht folgt**: dass der Kandidat nah ist. 83 % der Latte sind nicht
     die Latte; an diesem Punkt sind **drei** Gates offen statt zwei
     (Schlechtestes Jahr, Monte-Carlo, Deflated Sharpe), und es fehlen dort
@@ -492,3 +508,114 @@ def bindend(name: str) -> tuple[str, int, float, float, float, int]:
     die gepflegte Zahl, die wegdriftet (Befund 408).
     """
     return min(LEITER[name], key=lambda zeile: zeile[4])
+
+
+@dataclass(frozen=True, slots=True)
+class Quartalsprobe:
+    """Die Quartalssprosse einer Zelle, in Waehrung und auf R-Vielfache.
+
+    Befund 410 hat die bindende Einteilung je Zelle gemessen und eine Frage
+    offen gelassen: Warum faellt die Quartalskorrelation zwischen den Modi?
+    Dort liegen 40 Beobachtungen. Befund 411 hat nachgemessen, und zwar
+    **alle vier** Zellen - der Vergleich in 410 lief ueber zwei Zellen, die
+    sich in zwei Dingen zugleich unterscheiden, und war damit verwechselt.
+    """
+
+    zelle: str
+    durchgehend: bool
+    limits: bool
+    roh: int
+    n_eff: int
+    bindend: str
+    icc_waehrung: float
+    p_waehrung: float
+    icc_r: float
+    p_r: float
+
+    @property
+    def kuerzt_in_waehrung(self) -> bool:
+        """Schlaegt die Quartalssprosse im Waehrungsmass an?"""
+        return self.p_waehrung < 0.05
+
+    @property
+    def kuerzt_im_r_mass(self) -> bool:
+        return self.p_r < 0.05
+
+
+#: Alle vier Zellen, Quartalssprosse, zwei Masse (Befund 411). Gemessen mit
+#: 'unabhaengigkeit.designeffekt' auf denselben Quartalseimern wie das Gate
+#: ('zeitskala.nach_kalender', gebuendelt nach dem Ausstieg); das R-Mass
+#: teilt jedes Ergebnis durch das gewagte Geld (Stopabstand mal Menge). Kein
+#: Trade war ohne Stop, es ist also keiner ausgelassen. Gegengeprueft gegen
+#: ``research.referenz``: Zelle 1 gibt dessen SPOTPUNKT (156/115), Zelle 4
+#: dessen KONTOPUNKT (160/159).
+#:
+#: **Erstens: Es ist der Fensterschnitt, nicht die Beingrenze.** Beide
+#: geschnittenen Zellen zeigen ICC um 0,25 bei p von hoechstens 0,005 und kuerzen
+#: (115 von 156, 121 von 160); beide durchgehenden liegen bei p ueber 0,08
+#: und kuerzen nicht. Die Beingrenzen aendern die Trade-Zahl, nicht die
+#: Quartalsabhaengigkeit. Damit ist der verwechselte Vergleich aus 410
+#: aufgeloest.
+#:
+#: **Zweitens: Meine Erklaerung dafuer war falsch.** Die Vermutung war der
+#: Kapital-Neustart je Fenster (Befund 403, "ohne Equity-Vorgeschichte"):
+#: Positionsgroesse haengt am Kapital, ein Fenster ist mit 106 Tagen fast
+#: ein Quartal, also muesste die Abhaengigkeit verschwinden, sobald man die
+#: Groessenwirkung herausnimmt. Sie verschwindet **nicht** - im R-Mass steht
+#: dieselbe Zelle bei ICC 0,2561 und p 0,0005. Die Quartalsabhaengigkeit im
+#: geschnittenen Modus ist kein Groessenartefakt.
+#:
+#: **Drittens, ungesucht: Im durchgehenden Modus verdeckt das Waehrungsmass
+#: eine Abhaengigkeit, die das R-Mass zeigt.** Kontogeschuetzt steigt der
+#: ICC von 0,0904 (p 0,0895, kuerzt nicht) auf 0,2550 (p 0,0020) - so hoch
+#: wie am gemeldeten Punkt. Auf einem durchverzinsten Konto streuen die
+#: Waehrungsbetraege so weit, dass die Korrelation innerhalb eines Quartals
+#: untergeht.
+#:
+#: **Was daraus folgt, und was nicht.** Der fast verschwundene Designeffekt
+#: des kontogeschuetzten Punkts (159 von 160) ist damit **kein Nachweis von
+#: Unabhaengigkeit**; er haengt am Mass. Der Erfuellungsvorsprung aus Befund
+#: 407 (0,8299 gegen 0,8026) steht auf diesem n_eff und ist entsprechend
+#: weniger wert. Das macht den Ausfall des Deflated Sharpe **robuster**,
+#: nicht schwaecher - die einzige Richtung, in die ein solcher Fund fallen
+#: darf.
+#:
+#: **Nicht** folgt, dass das Gate das Mass wechseln soll. Es rechnet in
+#: Waehrung, und so bleibt es: Wer das Mass sucht, in dem eine Abhaengigkeit
+#: guenstig ausfaellt, lockert das Gate. Hier faellt das R-Mass ohnehin
+#: strenger aus, und auch das ist kein Grund - ein Mass wird nicht danach
+#: gewaehlt, wie das Ergebnis aussieht.
+#:
+#: **Offen bleibt**, warum der Fensterschnitt die Quartalsabhaengigkeit
+#: ueberhaupt erzeugt. Gemessen ist, dass er es tut und dass es nicht an der
+#: Positionsgroesse liegt.
+QUARTALSPROBE: tuple[Quartalsprobe, ...] = (
+    Quartalsprobe(
+        zelle="Fenster + Beingrenzen (gemeldet)",
+        durchgehend=False, limits=True, roh=156, n_eff=115,
+        bindend="Kalenderquartal",
+        icc_waehrung=0.2580, p_waehrung=0.0050,
+        icc_r=0.2561, p_r=0.0005,
+    ),
+    Quartalsprobe(
+        zelle="Fenster, ohne Beingrenzen",
+        durchgehend=False, limits=False, roh=160, n_eff=121,
+        bindend="Kalenderquartal",
+        icc_waehrung=0.2516, p_waehrung=0.0040,
+        icc_r=0.2550, p_r=0.0020,
+    ),
+    Quartalsprobe(
+        zelle="Durchgehend + Beingrenzen",
+        durchgehend=True, limits=True, roh=98, n_eff=92,
+        bindend="Kalendermonat",
+        icc_waehrung=0.1542, p_waehrung=0.1495,
+        icc_r=0.3104, p_r=0.0170,
+    ),
+    Quartalsprobe(
+        zelle="Durchgehend, ohne Beingrenzen (kontogeschuetzt)",
+        durchgehend=True, limits=False, roh=160, n_eff=159,
+        bindend="Kalendertag",
+        icc_waehrung=0.0904, p_waehrung=0.0895,
+        icc_r=0.2550, p_r=0.0020,
+    ),
+)

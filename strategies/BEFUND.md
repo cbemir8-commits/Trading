@@ -36836,3 +36836,88 @@ hatte: Die Probe druckte "STIMMT NICHT", und nichts davon war je im Projekt.
 
 Das ist in dieser Kette das zweite Mal, dass die Regel vorher greift statt
 hinterher (nach 409). Davor war es sechsmal umgekehrt.
+
+## Vierhundertelf. Der verwechselte Vergleich, und das Mass verdeckt die Abhaengigkeit
+
+Befund 410 hat gemessen, welche Einteilung die wirksame Stichprobe bindet, und
+eine Frage offen gelassen: Warum faellt die Quartalskorrelation zwischen dem
+gemeldeten und dem kontogeschuetzten Punkt? Dort liegen 40 Beobachtungen.
+
+Die Frage war schlecht gestellt. Die beiden verglichenen Zellen unterscheiden
+sich in **zwei** Dingen zugleich - Fensterschnitt *und* Beingrenzen -, und die
+vierte Zelle des Kreuzes hat 410 nie gemessen. Ein Vergleich ueber zwei
+Unterschiede sagt nicht, welcher wirkt.
+
+### Alle vier Zellen
+
+    Zelle                              roh  n_eff  bindend          ICC      p
+    Fenster + Beingrenzen (gemeldet)   156    115  Kalenderquartal  0,2580 0,0050
+    Fenster, ohne Beingrenzen          160    121  Kalenderquartal  0,2516 0,0040
+    Durchgehend + Beingrenzen           98     92  Kalendermonat    0,1542 0,1495
+    Durchgehend, ohne (kontogeschuetzt) 160   159  Kalendertag      0,0904 0,0895
+
+**Es ist der Fensterschnitt.** Beide geschnittenen Zellen kuerzen, beide
+durchgehenden nicht, und zwar unabhaengig von den Beingrenzen. Die Beingrenzen
+aendern die Trade-Zahl - 156 gegen 160, 98 gegen 160 - und die
+Quartalsabhaengigkeit um weniger als 0,01 im ICC.
+
+### Meine Erklaerung dafuer war falsch
+
+Vermutet hatte ich den Kapital-Neustart je Fenster. Befund 403 hat gemessen,
+dass jedes Fenster ohne Equity-Vorgeschichte bei 500 beginnt; die
+Positionsgroesse haengt am Kapital, und ein Fenster ist mit 3300/31 = 106 Tagen
+fast ein Quartal. Dann muesste die Quartalsabhaengigkeit verschwinden, sobald
+man die Groessenwirkung herausrechnet - also die Ergebnisse auf das gewagte
+Geld normiert statt in Waehrung zu rechnen.
+
+    Gemeldeter Punkt, Quartalssprosse     ICC       p
+    in Waehrung                        0,2580  0,0050
+    auf R-Vielfache normiert           0,2561  0,0005
+
+Sie verschwindet nicht. Sie bleibt auf die zweite Stelle gleich und wird im
+p-Wert sogar deutlicher. **Kein Groessenartefakt** - die Vermutung ist
+widerlegt, und was den Fensterschnitt so wirken laesst, ist weiter offen.
+
+### Und ungesucht gefunden: das Mass verdeckt
+
+Dieselbe Normierung an den durchgehenden Zellen:
+
+    Kontogeschuetzter Punkt               ICC       p
+    in Waehrung                        0,0904  0,0895   kuerzt nicht
+    auf R-Vielfache normiert           0,2550  0,0020   kuerzt
+
+Der ICC verdreifacht sich und wird signifikant - und liegt damit so hoch wie am
+gemeldeten Punkt (0,2561). Auf einem durchverzinsten Konto streuen die
+Waehrungsbetraege so weit, dass eine Korrelation innerhalb eines Quartals
+untergeht. Dasselbe in der beingebremsten durchgehenden Zelle: 0,1542 auf
+0,3104.
+
+### Was daraus folgt
+
+Der fast verschwundene Designeffekt des kontogeschuetzten Punkts - 159 von 160,
+Faktor 0,9938 - ist **kein Nachweis von Unabhaengigkeit**. Er haengt am Mass.
+Und damit ist der Erfuellungsvorsprung aus Befund 407, 0,8299 gegen 0,8026,
+weniger wert als er aussieht: Er steht auf genau diesem n_eff. Der Vorbehalt
+steht jetzt am Kopf von `Reichweite`, wo der Vorsprung behauptet wird.
+
+Das macht den Ausfall des Deflated Sharpe **robuster**, nicht schwaecher. Das
+ist die einzige Richtung, in die ein solcher Fund fallen darf - und hier faellt
+er von selbst dorthin.
+
+### Was nicht folgt
+
+Dass das Gate das Mass wechseln soll. Es rechnet in Waehrung, und dabei bleibt
+es. Wer das Mass sucht, in dem eine Abhaengigkeit guenstig ausfaellt, lockert
+das Gate; dass das R-Mass hier *strenger* ausfaellt, ist kein Gegenargument,
+sondern dieselbe Regel von der anderen Seite. Ein Mass wird nicht danach
+gewaehlt, wie das Ergebnis aussieht.
+
+### Zwei kleine eigene Fehler dabei
+
+Mein Messgeruest hat den Quartalsschluessel zuerst auf den Trade angewandt
+statt auf dessen Ausstiegszeit - ein Absturz, kein falsches Ergebnis, und
+`nach_kalender` sagt in seinem Kopf genau, wonach gebuendelt wird.
+
+Und ich habe "p unter 0,005" geschrieben, wo 0,0050 steht. Der Test, der das
+nachprueft, ist daran gefallen; beides ist auf "hoechstens 0,005" berichtigt.
+Eine Zahl, die genau auf der Schranke liegt, ist nicht darunter.
