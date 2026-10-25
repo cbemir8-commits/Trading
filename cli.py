@@ -15705,7 +15705,13 @@ def aufteilung(
     """
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
-    from research.aufteilung import banden, beurteile, streuung
+    from research.aufteilung import (
+        banden,
+        beurteile,
+        hoeher_ist_besser,
+        rangzeile,
+        streuung,
+    )
     from research.datenstand import alle_geschnitten, reihenzeile
     from research.gates import (
         GateStatus,
@@ -15923,6 +15929,11 @@ def aufteilung(
     urteilstafel.add_column("Schwelle", justify="right")
     urteilstafel.add_column("Abstand", justify="right")
     urteilstafel.add_column("Spanne", justify="right")
+    # **Wo der gemeldete Wert in seiner eigenen Spanne steht** (Befund 419).
+    # Eine Spanne allein sagt nicht, ob gerade die strenge oder die
+    # guenstige Aufteilung berichtet wird. Rang 1 heisst: keine der elf ist
+    # strenger.
+    urteilstafel.add_column("Rang", justify="right")
     urteilstafel.add_column("Urteil")
     urteilstafel.add_column("innen/Drift", justify="right")
     for name, (wert, schwelle, status) in gemeldet.items():
@@ -15943,8 +15954,10 @@ def aufteilung(
         }[spruch]
         if spruch == "zwei Groessen":
             urteilstafel.add_row(marke, name, f"{wert:.4f}", f"{schwelle:.4f}",
-                                 "-", "-", farbe, "-")
+                                 "-", "-", "-", farbe, "-")
             continue
+        gross_gut = hoeher_ist_besser(wert, schwelle, status == "pass")
+        rang = rangzeile(jegate[name], gross_ist_gut=gross_gut)
         s = streuung(name, jegate[name])
         # **Aufteilung oder Reihenanfang?** (Befund 402) Erst ab zwei Banden
         # laesst sich das trennen; darunter steht ein Strich.
@@ -15955,7 +15968,8 @@ def aufteilung(
             zerlegt = "-"
         urteilstafel.add_row(
             marke, name, f"{wert:.4f}", f"{schwelle:.4f}",
-            f"{abs(wert - schwelle):.4f}", f"{s.spanne:.4f}", farbe, zerlegt,
+            f"{abs(wert - schwelle):.4f}", f"{s.spanne:.4f}",
+            rang, farbe, zerlegt,
         )
     console.print()
     console.print(urteilstafel)

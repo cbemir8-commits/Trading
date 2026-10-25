@@ -128,10 +128,14 @@ from itertools import pairwise
 
 __all__ = [
     "BINDENDE_EINTEILUNG_JE_AUFTEILUNG",
+    "RANG_JE_GATE",
     "STICHPROBE_JE_AUFTEILUNG",
     "VERSATZ",
     "Aufteilungsstreuung",
     "beurteile",
+    "hoeher_ist_besser",
+    "rang_des_gemeldeten",
+    "rangzeile",
     "streuung",
 ]
 
@@ -358,3 +362,107 @@ STICHPROBE_JE_AUFTEILUNG: dict[str, float] = {
 #: Und die bindende Einteilung haelt ueber alle elf (Befund 410/418). Auch
 #: **woran** die Kuerzung haengt, ist damit keine Frage der Aufteilung.
 BINDENDE_EINTEILUNG_JE_AUFTEILUNG = "Kalenderquartal"
+
+
+def hoeher_ist_besser(wert: float, schwelle: float, bestanden: bool) -> bool:
+    """In welche Richtung ein Gate besser wird - aus seinem eigenen Urteil.
+
+    ``GateResult`` sagt es nicht, und eine gepflegte Liste der Richtungen
+    waere die naechste Zahl, die wegdriftet (Befund 408). Abgeleitet geht es
+    ohne:
+
+    * Ein **bestandenes** Gate liegt auf der guten Seite seiner Schwelle. Ist
+      sein Wert groesser, ist gross gut.
+    * Ein **gefallenes** liegt auf der schlechten Seite. Ist sein Wert
+      kleiner, ist gross gut.
+
+    Nachgeprueft an den elf Gates des massgeblichen Punkts: Drawdown besteht
+    mit 9,87 unter 12 - klein ist gut. 'Schlechtestes Jahr' besteht mit -9,61
+    ueber -10 - gross ist gut. Der Deflated Sharpe faellt mit 0,5826 unter
+    0,95 - gross ist gut. Die Messlatte faellt mit 14,34 unter 15 - gross ist
+    gut.
+    """
+    return wert >= schwelle if bestanden else wert <= schwelle
+
+
+def rang_des_gemeldeten(
+    werte: Sequence[float], *, gross_ist_gut: bool
+) -> tuple[int, int, int]:
+    """Wo der gemeldete Wert unter allen Aufteilungen steht, vom strengsten.
+
+    Zurueck kommt ``(von, bis, gesamt)``. ``werte[0]`` ist der gemeldete
+    (Versatz null). ``von == 1`` heisst: Keine Aufteilung ist strenger - der
+    gemeldete Wert ist der unguenstigste. ``bis == gesamt`` heisst: keine ist
+    guenstiger.
+
+    Das ist die Frage, die eine Spanne allein nicht beantwortet. Zwei Gates
+    mit derselben Spanne stehen verschieden da, wenn das eine am strengen und
+    das andere am guenstigen Rand gemeldet wird (Befund 419).
+
+    **Gleichstaende werden als Bereich gemeldet, und das war ein Fehler der
+    ersten Fassung.** Sie gab fuer ein Gate mit Spanne null ``1 von 11``
+    zurueck - es stand dann da, als werde der strengste von elf Werten
+    berichtet, obwohl alle elf gleich sind. Genau die falsche Richtung: Der
+    Eindruck war konservativer als die Lage.
+    """
+    if not werte:
+        raise ValueError("ohne Werte gibt es keinen Rang")
+    gemeldet = werte[0]
+    # Strenger heisst: weiter auf der schlechten Seite. Bei 'gross ist gut'
+    # sind das die kleineren Werte, sonst die groesseren.
+    if gross_ist_gut:
+        strenger = sum(1 for w in werte if w < gemeldet)
+    else:
+        strenger = sum(1 for w in werte if w > gemeldet)
+    gleich = sum(1 for w in werte if w == gemeldet)
+    return strenger + 1, strenger + gleich, len(werte)
+
+
+def rangzeile(werte: Sequence[float], *, gross_ist_gut: bool) -> str:
+    """Der Rang als Text - ein Bereich, wo es Gleichstaende gibt."""
+    von, bis, gesamt = rang_des_gemeldeten(werte, gross_ist_gut=gross_ist_gut)
+    if von == bis:
+        return f"{von}/{gesamt}"
+    if von == 1 and bis == gesamt:
+        return f"alle {gesamt} gleich"
+    return f"{von}-{bis}/{gesamt}"
+
+
+#: Wo der gemeldete Wert jedes Gates in seiner eigenen Spanne steht
+#: (Befund 419). Gemessen mit ``cli aufteilung`` ueber die elf Versaetze;
+#: Rang 1 heisst "keine Aufteilung ist strenger", Rang 11 "keine ist
+#: guenstiger". Ein Bereich steht fuer Gleichstaende.
+#:
+#: **Warum das neben der Spanne noetig ist.** Die Befunde 400 bis 402 haben
+#: aus der Spanne die Urteile 'entschieden' und 'offen' gebaut. Was die
+#: Spanne nicht sagt: ob gerade die strenge oder die guenstige Aufteilung
+#: berichtet wird. Zwei Gates mit derselben Spanne stehen verschieden da.
+#:
+#: **Was gemessen ist:**
+#:
+#: * **Kein systematischer Vorteil.** Die Raenge streuen von 2 bis 9. Der
+#:   massgebliche Lauf ist also nicht die guenstige Aufteilung unter elf -
+#:   waere er es, stuende hier ueberall eine hohe Zahl.
+#: * **Der Deflated Sharpe wird in der Mitte gemeldet** (5 von 11). Der
+#:   Ausfall, der das Projekt traegt, ist damit nicht schoengerechnet - und
+#:   auch nicht schlechtgerechnet.
+#: * **'Schlechtestes Jahr' und 'Drawdown' stehen guenstig** (9 von 11): In
+#:   acht der elf Aufteilungen sehen sie schlechter aus als gemeldet. Fuer
+#:   das schlechteste Jahr schaerft das die offene Richtung aus Befund 395 -
+#:   sein Guthaben von 0,39 Punkten ist nicht nur klein, es ist am
+#:   guenstigen Rand gemessen.
+#: * **'Out-of-Sample-Sharpe' steht streng** (2 von 11) - nur eine
+#:   Aufteilung ist unguenstiger.
+RANG_JE_GATE: dict[str, str] = {
+    "Stichprobengroesse": "5-11/11",
+    "Messlatte": "-",
+    "Out-of-Sample-Sharpe": "2/11",
+    "Drawdown": "9/11",
+    "Schlechtestes Jahr": "9/11",
+    "Bestaendigkeit": "4-9/11",
+    "Monte-Carlo": "8/11",
+    "Regime-Aufteilung": "6/11",
+    "Deflated Sharpe": "5/11",
+    "Kosten-Stress": "alle 11 gleich",
+    "Parameter-Plateau": "alle 11 gleich",
+}

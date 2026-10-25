@@ -5071,6 +5071,42 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Aufteilungen - auch woran die Kuerzung haengt, ist keine Frage der "
         "Aufteilung",
         418,
+        zuletzt=419,
+    ),
+    # Befund 419: 418 hat nebenbei gesehen, dass der gemeldete Punkt bei der
+    # Stichprobe am strengen Rand liegt. Gilt das auch fuer die Gate-Werte?
+    Richtung(
+        "Wo der gemeldete Wert in seiner eigenen Spanne steht",
+        "Die Befunde 400 bis 402 haben aus der Streuung ueber elf "
+        "Aufteilungen die Urteile 'entschieden' und 'offen' gebaut. Was eine "
+        "Spanne **nicht** sagt: ob gerade die strenge oder die guenstige "
+        "Aufteilung berichtet wird - zwei Gates mit derselben Spanne stehen "
+        "verschieden da. Befund 418 hat das fuer die wirksame Stichprobe "
+        "nebenbei gesehen (115 am unteren Rand von 115 bis 119); jetzt steht "
+        "es je Gate in der Urteilstafel. **Die Richtung kommt aus dem Urteil "
+        "des Gates selbst**, nicht aus einer gepflegten Liste: Ein "
+        "bestandenes Gate liegt auf der guten Seite seiner Schwelle, ein "
+        "gefallenes auf der schlechten - daraus folgt, ob gross gut ist. "
+        "Nachgeprueft an allen elf. **Gemessen, Rang 1 heisst 'keine "
+        "Aufteilung ist strenger'**: Out-of-Sample-Sharpe 2, Bestaendigkeit "
+        "4-9, Deflated Sharpe **5**, Regime-Aufteilung 6, Monte-Carlo 8, "
+        "Drawdown 9, Schlechtestes Jahr **9**, Stichprobengroesse 5-11; "
+        "Kosten-Stress und Parameter-Plateau haben Spanne null. **Kein "
+        "systematischer Vorteil** - die Raenge streuen von 2 bis 9, der "
+        "massgebliche Lauf ist also nicht die guenstige Aufteilung unter elf. "
+        "**Der Deflated Sharpe steht in der Mitte**: Der Ausfall, der das "
+        "Projekt traegt, ist nicht schoengerechnet. **'Schlechtestes Jahr' "
+        "steht guenstig** - in acht von elf Aufteilungen sieht es schlechter "
+        "aus als gemeldet, und das schaerft die offene Richtung 395: Sein "
+        "Guthaben von 0,39 Punkten ist nicht nur klein, es ist am guenstigen "
+        "Rand gemessen. **Und ein Fehler meiner ersten Fassung**: Sie gab "
+        "fuer ein Gate mit Spanne null 'Rang 1 von 11' zurueck - es stand "
+        "da, als werde der strengste von elf Werten berichtet, obwohl alle "
+        "elf gleich sind. Die falsche Richtung, weil der Eindruck "
+        "konservativer war als die Lage; Gleichstaende stehen jetzt als "
+        "Bereich ('alle 11 gleich', '4-9/11'), und dabei hat sich auch "
+        "'Bestaendigkeit' von scheinbar 4 auf 4-9 geweitet",
+        419,
     ),
 )
 

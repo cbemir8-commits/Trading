@@ -37518,3 +37518,77 @@ Das ist der Fall, fuer den diese Textwachen gebaut sind: Eine Aussage, die
 irgendwo als Zusicherung steht, laesst sich nicht stillschweigend aendern. Die
 Klasse heisst jetzt `TestDieStichprobeWandertZwischenDenDeckeln` und prueft die
 berichtigte Aussage; der Name "Rauschen" ist mit dem Satz gegangen.
+
+## Vierhundertneunzehn. Wo der gemeldete Wert in seiner eigenen Spanne steht
+
+Die Befunde 400 bis 402 haben die Streuung ueber elf Aufteilungen gemessen und
+daraus die Urteile 'entschieden' und 'offen' gebaut. Eine Spanne sagt aber
+nicht alles: Zwei Gates mit derselben Spanne stehen verschieden da, wenn das
+eine am **strengen** und das andere am **guenstigen** Rand berichtet wird.
+
+Befund 418 hat das nebenbei gesehen - die wirksame Stichprobe steht mit 115 am
+unteren Rand von 115 bis 119, also am strengsten. Fuer die Gate-Werte war es
+nie gemessen.
+
+### Die Richtung kommt aus dem Urteil, nicht aus einer Liste
+
+`GateResult` sagt nicht, in welche Richtung ein Gate besser wird. Eine
+gepflegte Liste der Richtungen waere die naechste Zahl, die wegdriftet
+(Befund 408). Abgeleitet geht es ohne:
+
+* Ein **bestandenes** Gate liegt auf der guten Seite seiner Schwelle. Ist sein
+  Wert groesser, ist gross gut.
+* Ein **gefallenes** liegt auf der schlechten Seite. Ist sein Wert kleiner, ist
+  gross gut.
+
+Nachgeprueft an allen elf: Drawdown besteht mit 9,87 unter 12 - klein ist gut.
+'Schlechtestes Jahr' besteht mit -9,61 ueber -10 - gross ist gut. Der Deflated
+Sharpe faellt mit 0,5826 unter 0,95 - gross ist gut.
+
+### Gemessen
+
+Rang 1 heisst "keine der elf Aufteilungen ist strenger", Rang 11 "keine ist
+guenstiger".
+
+    Gate                     Wert   Spanne     Rang
+    Stichprobengroesse    2250,00  21,0000  5-11/11
+    Messlatte              14,339        -        -   zwei Groessen (395)
+    Out-of-Sample-Sharpe   1,5762   0,1947     2/11   streng
+    Drawdown               9,8687   0,7022     9/11   guenstig
+    Schlechtestes Jahr    -9,6100   0,9500     9/11   guenstig
+    Bestaendigkeit         0,5806   0,0645   4-9/11
+    Monte-Carlo            8,3265   0,4963     8/11
+    Regime-Aufteilung      5,2751   0,1746     6/11
+    Deflated Sharpe        0,5826   0,0763     5/11   Mitte
+    Kosten-Stress        1863,72    0,0000     alle 11 gleich
+    Parameter-Plateau      1,0000   0,0000     alle 11 gleich
+
+**Kein systematischer Vorteil.** Die Raenge streuen von 2 bis 9. Waere der
+massgebliche Lauf die guenstige Aufteilung unter elf, stuenden hier ueberall
+hohe Zahlen. Das ist eine Auskunft, die dieses Projekt bisher nicht hatte: Der
+berichtete Stand ist nicht ausgewaehlt.
+
+**Der Deflated Sharpe steht in der Mitte** (5 von 11). Der Ausfall, der das
+ganze Projekt traegt, ist damit weder schoen- noch schlechtgerechnet.
+
+**'Schlechtestes Jahr' steht guenstig** (9 von 11): In acht der elf
+Aufteilungen sieht dieses Gate schlechter aus als gemeldet. Das schaerft die
+offene Richtung aus Befund 395 - sein Guthaben von 0,39 Punkten ist nicht nur
+klein, es ist am guenstigen Rand gemessen. Dieselbe Lesart gilt fuer den
+Drawdown, dort aber auf 2,13 Punkten Abstand und damit ohne Folgen.
+
+**'Out-of-Sample-Sharpe' steht streng** (2 von 11) - nur eine Aufteilung ist
+unguenstiger.
+
+### Ein Fehler meiner ersten Fassung
+
+Sie gab fuer ein Gate mit Spanne null `1/11` zurueck. Damit stand da, es werde
+der **strengste** von elf Werten berichtet - obwohl alle elf gleich sind und
+es gar keinen strengsten gibt.
+
+Die falsche Richtung, wieder: Der Eindruck war konservativer als die Lage.
+Gleichstaende stehen jetzt als Bereich - `alle 11 gleich` fuer Spanne null,
+`4-9/11` fuer teilweise Gleichheit. Dabei hat sich auch 'Bestaendigkeit' von
+scheinbar `4/11` auf `4-9/11` geweitet: Sechs der elf Aufteilungen tragen
+denselben Wert, und die erste Fassung hatte eine Genauigkeit behauptet, die
+nicht da war.
