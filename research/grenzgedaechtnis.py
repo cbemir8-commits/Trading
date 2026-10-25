@@ -116,6 +116,8 @@ __all__ = [
     "GEMESSEN",
     "LEITER",
     "QUARTALSPROBE",
+    "R_PROBE",
+    "SKALENPROBE",
     "Fensterprobe",
     "Grenzlauf",
     "Grenzvergleich",
@@ -709,3 +711,71 @@ FENSTERPROBEN: tuple[Fensterprobe, ...] = (
 def traegt_eine_erklaerung() -> bool:
     """Traegt eine der gemessenen Erklaerungen? Gerechnet, nicht gepflegt."""
     return any(p.traegt for p in FENSTERPROBEN)
+
+
+#: **Die kontrollierte Gegenprobe** (Befund 413). Ohne Beingrenzen sind die
+#: geschnittene und die durchgehende Zelle **dieselben 160 Trades**: alle 160
+#: (Symbol, Einstieg, Ausstieg) stimmen ueberein, und die R-Werte auf
+#: 3,55e-15. Nur der Waehrungsgewinn unterscheidet sich, je Trade um den
+#: Faktor 0,947 bis 6,000 (Median 2,774) - der Kapitalpfad, nichts weiter.
+#:
+#: Damit ist die Frage beantwortet, die Befund 412 offen liess. Mit festem
+#: Trade-Satz, festem Kalender und festen Quartalen faellt der
+#: Waehrungs-ICC der Quartalsstufe von 0,2516 auf 0,0904 und die Kuerzung
+#: von 121 auf keine. Es ist ein **reiner Groesseneffekt**.
+#:
+#: Warum ein Groesseneffekt den ICC ueberhaupt bewegen kann - ein
+#: gleichmaessiger kuerzt sich heraus, MSB und MSW skalieren beide mit c^2 -
+#: zeigt die Zerlegung: Der Faktor **waechst ueber den Lauf**, also bekommen
+#: spaete Quartale groessere Mittelwertsabstaende *und* groessere Streuung
+#: innen, und das Innere waechst schneller.
+#:
+#:     Zelle                       MSB      MSW   MSB/MSW     ICC
+#:     Fenster, ohne Beingrenzen  636,1    242,6     2,622  0,2516
+#:     Durchgehend, ohne         1857,8   1255,6     1,480  0,0904
+#:
+#: MSW mal 5,2, MSB mal 2,9. **Meine Formulierung in 412 war unpraezise**:
+#: Nicht "die Betraege streuen zu weit", sondern die Streuung *innerhalb*
+#: eines Quartals waechst schneller als die *zwischen* den Quartalen.
+#:
+#: **Und eine schaerfere Vermutung ist widerlegt**: Ungleiche Blockvarianzen
+#: erklaeren es nicht - ihre log-Streuung ordnet nicht mit dem ICC (3,775 bei
+#: ICC 0,1542 gegen 3,289 bei 0,0904).
+SKALENPROBE: dict[str, float] = {
+    "gemeinsame_trades": 160,
+    "faktor_min": 0.947,
+    "faktor_max": 6.000,
+    "faktor_median": 2.774,
+    "r_abweichung": 3.55e-15,
+    "msb_geschnitten": 636.0925,
+    "msw_geschnitten": 242.6061,
+    "msb_durchgehend": 1857.7981,
+    "msw_durchgehend": 1255.5850,
+}
+
+#: Wie belastbar das R-Mass ist, auf das 411 und 412 sich stuetzen
+#: (Befund 413). Die Verteilung ist die eines Trendfolgers: Ein Viertel der
+#: Trades verliert glatt den Stop (-1,030 R), der Median liegt bei -0,555,
+#: und das 95. Hundertstel bei 19,986.
+#:
+#: **Die Abhaengigkeit ueberlebt das Trimmen.** 13 der 160 Trades haben
+#: |R| > 10; ohne sie steht die Quartalsstufe bei ICC 0,2266 und p 0,0085
+#: statt 0,2550 und 0,0020. Kleiner, und weiter nachgewiesen - der R-Befund
+#: aus 411 haengt nicht an Ausreissern.
+#:
+#: Die absurd anmutende Spanne der R-Blockvarianzen (Verhaeltnis um 1e31)
+#: kommt **nicht** von Ausreissern, sondern von Bloecken aus lauter
+#: ausgestoppten Trades: Die liegen alle bei -1,030, und ihre Varianz ist
+#: fast null. Harmlos, aber beim Lesen leicht zu verwechseln.
+R_PROBE: dict[str, float] = {
+    "trades": 160,
+    "min": -1.030,
+    "median": -0.555,
+    "p95": 19.986,
+    "max": 19.986,
+    "ueber_zehn": 13,
+    "icc_voll": 0.2550,
+    "p_voll": 0.0020,
+    "icc_getrimmt": 0.2266,
+    "p_getrimmt": 0.0085,
+}

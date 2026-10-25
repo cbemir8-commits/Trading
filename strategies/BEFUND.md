@@ -37005,3 +37005,88 @@ im durchgehenden nicht.
 Was von der Frage bleibt: Warum das Waehrungsmass im durchgehenden Modus blind
 wird. "Die Betraege streuen auf einem durchverzinsten Konto zu weit" ist
 benannt und nicht gemessen.
+
+## Vierhundertdreizehn. Dieselben 160 Trades, nur anders gross - und der ICC halbiert sich
+
+Befund 412 liess offen, warum das Waehrungsmass im durchgehenden Modus die
+Quartalsabhaengigkeit nicht sieht, und benannte es mit einem **ungemessenen**
+Satz: "die Betraege streuen auf einem durchverzinsten Konto zu weit".
+
+Die kontrollierte Gegenprobe lag schon in den Messungen von 411, nur hatte ich
+sie nicht gesehen.
+
+### Ohne Beingrenzen ist es derselbe Trade-Satz
+
+    geschnitten            160 Trades
+    durchgehend            160 Trades
+    gemeinsame Tripel      160
+    nur in einem            0 / 0
+    groesste Abweichung im R-Wert   3,55e-15
+
+Alle hundertsechzig (Symbol, Einstieg, Ausstieg) stimmen ueberein. Was sich
+unterscheidet, ist der Waehrungsgewinn je Trade - um den Faktor 0,947 bis
+6,000, Median 2,774. Der Kapitalpfad, nichts weiter: Ohne Beingrenzen aendert
+der Fensterschnitt **nicht, welche** Trades zustande kommen, sondern nur, wie
+gross sie ausfallen. Und R kuerzt die Groesse exakt heraus - darum stimmen die
+R-Werte bis auf Gleitkommarauschen, und darum war das R-Mass in Befund 411 in
+beiden Zellen auf vier Stellen gleich.
+
+Damit ist die Frage aus 412 gemessen und nicht mehr benannt. Gleicher
+Trade-Satz, gleicher Kalender, gleiche Quartale - und der Waehrungs-ICC der
+Quartalsstufe faellt von 0,2516 auf 0,0904, die Kuerzung von 121 Beobachtungen
+auf keine. Es ist ein **reiner Groesseneffekt**.
+
+### Warum ein Groesseneffekt den ICC ueberhaupt bewegt
+
+Ein *gleichmaessiger* kuerzt sich heraus: Der ICC ist eine einfaktorielle
+ANOVA,
+
+    ICC = (MSB - MSW) / (MSB + (m0-1) * MSW)
+
+und wer alle Werte mit `c` multipliziert, skaliert MSB wie MSW mit `c^2`.
+Geprueft ist das an der eigenen Funktion, mit zehn Bloecken mal sieben: Der ICC
+bleibt gleich.
+
+Der gemessene Faktor ist aber nicht gleichmaessig - er **waechst ueber den
+Lauf**. Die Zerlegung:
+
+    Zelle                       MSB      MSW   MSB/MSW     ICC
+    Fenster, ohne Beingrenzen  636,1    242,6     2,622  0,2516
+    Durchgehend, ohne         1857,8   1255,6     1,480  0,0904
+
+MSW mal **5,18**, MSB nur mal **2,92**. Spaete Quartale bekommen groessere
+Mittelwertsabstaende *und* groessere Streuung innen, und das Innere waechst
+schneller. **Meine Formulierung in 412 war also unpraezise**: Nicht "die
+Betraege streuen zu weit", sondern die Streuung *innerhalb* eines Quartals
+waechst schneller als die *zwischen* den Quartalen.
+
+Eine schaerfere Vermutung von mir ist dabei widerlegt: Ungleichheit der
+Blockvarianzen erklaert es nicht. Ihre log-Streuung ordnet nicht mit dem ICC -
+3,775 bei ICC 0,1542 gegen 3,289 bei 0,0904.
+
+### Und traegt das R-Mass, auf das 411 und 412 sich stuetzen?
+
+Es ist die Verteilung eines Trendfolgers:
+
+    Hundertstel      1      5     25     50     75     95     99
+    R            -1,030 -1,030 -1,030 -0,555 -0,032 19,986 19,986
+
+Ein Viertel der Trades verliert glatt den Stop. Dreizehn von hundertsechzig
+haben |R| > 10, und der ICC koennte an ihnen haengen. Getrimmt:
+
+    voll        ICC 0,2550   p 0,0020   Faktor 0,7500
+    |R| <= 10   ICC 0,2266   p 0,0085   Faktor 0,8095
+
+Kleiner, und weiter nachgewiesen. Der R-Befund aus 411 haengt nicht an
+Ausreissern.
+
+Die absurd anmutende Spanne der R-Blockvarianzen - Verhaeltnis um 1e31 - kommt
+ebenfalls nicht von Ausreissern, sondern von Quartalen, in denen jeder Trade
+ausgestoppt wurde: Die liegen alle bei -1,030, und ihre Varianz ist fast null.
+Harmlos, beim Lesen aber leicht fuer ein Alarmzeichen zu nehmen.
+
+### Nebenher sichtbar geworden
+
+Woher die gepflegten Momente kommen. Schiefe 3,46 und Woelbung 15,92 in
+`referenz` sind keine Eigenheit der Waehrungsrechnung, sondern genau dieses
+Profil: ein Viertel bei -1,03 R, ein paar bei +20 R.

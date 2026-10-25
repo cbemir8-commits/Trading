@@ -4865,6 +4865,42 @@ BEHOBEN: tuple[Richtung, ...] = (
         "verschluesselt heute darauf, und wer es tut, macht aus 156 "
         "Beobachtungen 73",
         412,
+        zuletzt=413,
+    ),
+    # Befund 413: 412 liess offen, warum das Waehrungsmass im durchgehenden
+    # Modus blind wird - und benannte es mit einem ungemessenen Satz.
+    Richtung(
+        "Dieselben 160 Trades, nur anders gross - und der ICC halbiert sich",
+        "Die Frage aus 412 hat eine **kontrollierte** Gegenprobe, und sie lag "
+        "schon in der Messung: Ohne Beingrenzen sind die geschnittene und die "
+        "durchgehende Zelle **dieselben 160 Trades**. Alle 160 (Symbol, "
+        "Einstieg, Ausstieg) stimmen ueberein, die R-Werte auf 3,55e-15; nur "
+        "der Waehrungsgewinn unterscheidet sich, je Trade um den Faktor 0,947 "
+        "bis 6,000 (Median 2,774). Gleicher Trade-Satz, gleicher Kalender, "
+        "gleiche Quartale - und der Waehrungs-ICC der Quartalsstufe faellt von "
+        "0,2516 auf 0,0904, die Kuerzung von 121 auf keine. Es ist ein "
+        "**reiner Groesseneffekt**. Warum ein solcher den ICC bewegen kann, "
+        "obwohl ein gleichmaessiger sich herauskuerzt (MSB und MSW skalieren "
+        "beide mit c^2), zeigt die Zerlegung: Der Faktor waechst ueber den "
+        "Lauf, MSW steigt um **5,18**, MSB nur um **2,92**, MSB/MSW faellt "
+        "von 2,622 auf 1,480. **Meine Formulierung in 412 war unpraezise** - "
+        "nicht 'die Betraege streuen zu weit', sondern die Streuung innerhalb "
+        "eines Quartals waechst schneller als die zwischen den Quartalen. "
+        "**Und meine schaerfere Vermutung ist widerlegt**: Ungleiche "
+        "Blockvarianzen erklaeren es nicht, ihre log-Streuung ordnet nicht "
+        "mit dem ICC (3,775 bei ICC 0,1542 gegen 3,289 bei 0,0904). "
+        "**Dazu geprueft, worauf 411 und 412 sich stuetzen**: Das R-Mass "
+        "haengt nicht an Ausreissern. 13 der 160 Trades haben |R| > 10; ohne "
+        "sie steht die Quartalsstufe bei ICC 0,2266 und p 0,0085 statt 0,2550 "
+        "und 0,0020 - kleiner und weiter nachgewiesen. Die absurde Spanne der "
+        "R-Blockvarianzen (um 1e31) kommt von Bloecken aus lauter "
+        "ausgestoppten Trades, die alle bei -1,030 liegen, nicht von "
+        "Ausreissern. **Nebenher sichtbar geworden**, woher die gepflegten "
+        "Momente kommen: Ein Viertel der Trades verliert glatt den Stop "
+        "(-1,030 R), der Median liegt bei -0,555, das 95. Hundertstel bei "
+        "19,986 - das Profil eines Trendfolgers, und damit die Schiefe 3,46 "
+        "und die Woelbung 15,92 aus 'referenz'",
+        413,
     ),
 )
 
