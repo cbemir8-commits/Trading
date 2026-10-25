@@ -15784,6 +15784,8 @@ def aufteilung(
     #: Wechselt sie mit dem Versatz, ist auch die bindende Abhaengigkeit eine
     #: Frage der Aufteilung und nicht nur ihr Wert.
     einteilungen: set[str] = set()
+    #: Welche Gates je Aufteilung fallen (Befund 420).
+    gefallen_je_versatz: dict[int, tuple[str, ...]] = {}
     # **Alle elf Gates, nicht nur die fuenf aus der Streuungstafel** (Befund
     # 401): Die Frage "ist dieses Urteil eines" gilt fuer jedes.
     jegate: dict[str, list[float]] = {}
@@ -15841,6 +15843,13 @@ def aufteilung(
             form.sharpe_je_trade if form else 0.0
         )
         gesammelt["bestandene Gates"].append(float(bestanden))
+        # **Welche Gates fallen, nicht nur wie viele** (Befund 420). Die
+        # Zahl 9/11 sagt nicht, dass es je Aufteilung andere sind - und
+        # genau das ist der Fall: Die Messlatte faellt nur bei Versatz
+        # null, 'Schlechtestes Jahr' in fuenf anderen.
+        gefallen_je_versatz[weg] = tuple(
+            r.name for r in gates.results if r.status is not GateStatus.PASS
+        )
         stichprobe = stichprobe_wie_im_gate(
             fertig,
             beine=getattr(bericht, "beine", None),
@@ -15998,6 +16007,28 @@ def aufteilung(
         f"(Spanne {stichprobe_streuung.spanne:.0f}, Streuung "
         f"{stichprobe_streuung.streuung:.2f}) - gebunden am "
         f"{', '.join(sorted(einteilungen))}.[/]"
+    )
+
+    # **Welches Gate faellt, haengt an der Aufteilung** (Befund 420). Die
+    # Spalte 'Gates' oben zaehlt nur; welche es sind, ist je Versatz
+    # verschieden, und das ist die Auskunft, die ueber den Blocker
+    # entscheidet.
+    je_gate_gefallen: dict[str, list[int]] = {}
+    for weg_nr, namen_gefallen in sorted(gefallen_je_versatz.items()):
+        for gate in namen_gefallen:
+            je_gate_gefallen.setdefault(gate, []).append(weg_nr)
+    console.print("\n[bold]Welches Gate faellt wo?[/]")
+    for gate, wo in sorted(
+        je_gate_gefallen.items(), key=lambda p: (-len(p[1]), p[0])
+    ):
+        console.print(
+            f"  {gate:22} {len(wo):2} von {len(gefallen_je_versatz)}"
+            f"   Versatz {', '.join(str(x) for x in wo)}"
+        )
+    console.print(
+        "[dim]Ein Gate, das nur bei einem Versatz faellt, traegt weniger "
+        "als eines, das bei allen faellt. **Kein Versatz ist deshalb der "
+        "richtige** - wer sich einen aussucht, lockert das Gate.[/]"
     )
 
     # **Die Asymmetrie** (Befund 402): Eine Spanne ueber n Aufteilungen ist

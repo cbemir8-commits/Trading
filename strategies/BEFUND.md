@@ -37592,3 +37592,84 @@ Gleichstaende stehen jetzt als Bereich - `alle 11 gleich` fuer Spanne null,
 scheinbar `4/11` auf `4-9/11` geweitet: Sechs der elf Aufteilungen tragen
 denselben Wert, und die erste Fassung hatte eine Genauigkeit behauptet, die
 nicht da war.
+
+## Vierhundertzwanzig. Welches Gate faellt, haengt an der Aufteilung
+
+`cli aufteilung` zaehlt seit Befund 400 die bestandenen Gates je Aufteilung.
+Beim gemeldeten Stand stehen 9 von 11, und die Tafel zeigt, dass es bei fuenf
+der elf Versaetze 10 von 11 sind.
+
+Nie ausgesprochen war, **welche** Gates jeweils fallen. Es sind nicht je
+Aufteilung dieselben zwei.
+
+### Gemessen
+
+    Gate                  faellt in     Versatz
+    Deflated Sharpe       11 von 11     alle
+    Schlechtestes Jahr     5 von 11     4, 6, 7, 8, 9
+    Messlatte              1 von 11     0
+
+Der Befehl sagt das jetzt von selbst - die Zahlen lagen in den Daten, die er
+schon rechnete.
+
+### Der Deflated Sharpe faellt ueberall
+
+    Versatz    0      1      2      3      4      5      6      7      8      9     10
+    DSR     ,5826  ,6040  ,6125  ,5810  ,6091  ,6305  ,5784  ,5784  ,5867  ,5784  ,6546
+
+Keiner besteht. Dem besten - 0,6546 bei Versatz 10 - fehlen 0,295 auf die Latte.
+Das ist die bisher staerkste Form der Aussage, die diese Kette seit Befund 401
+immer wieder bestaetigt hat.
+
+### Die Messlatte faellt nur im gemeldeten Stand
+
+    Versatz     0        1        2        3        4        5
+    CAGR   14,3391  15,1845  16,6152  16,8168  16,9336  17,3779
+    Versatz     6        7        8        9       10
+    CAGR   16,8754  16,5358  15,9289  16,6103  17,4522
+
+Versatz 0 ist das Minimum aller elf, und das einzige unter 15. Der gemeldete
+Stand ist fuer dieses Gate also der **strengste von elf**.
+
+Die Rangspalte aus Befund 419 konnte das nicht zeigen: Die Messlatte traegt
+zwei Groessen (395), deshalb steht dort ein Strich. Ihre Jahresrendite ist die
+Groesse, die sich vergleichen laesst - und die stand in der Tafel, nur nicht im
+Rang.
+
+### Ein bestandenes Gate faellt oefter als ein offenes
+
+'Schlechtestes Jahr' gilt im gemeldeten Stand als bestanden und faellt in fuenf
+der elf Aufteilungen - oefter als die Messlatte, die als offen berichtet wird.
+
+Damit sind die Blocker nach Belastbarkeit geordnet:
+
+    Deflated Sharpe      11 von 11
+    Schlechtestes Jahr    5 von 11
+    Messlatte             1 von 11
+
+Und die beiden, die der Bericht als offen fuehrt, sind der **erste und der
+letzte** dieser Ordnung.
+
+### Was nicht folgt
+
+Dass die Messlatte "eigentlich" besteht. Sich einen Versatz auszusuchen, in dem
+ein Gate haelt, schliesst Befund 400 ausdruecklich aus - kein Versatz ist der
+richtige. Der gemeldete ist fuer dieses Gate der konservative, und dabei bleibt
+es. Was sich aendert, ist nur die **Lesart**: Von den zwei offenen Gates traegt
+eines ueberall, das andere an einer Stelle.
+
+Fuer die offene Richtung 395 ist es der dritte Hinweis in dieselbe Richtung.
+Das Guthaben von 'Schlechtestes Jahr' betraegt 0,39 Punkte (395), es wird am
+guenstigen Rand gemeldet (419), und es faellt in fuenf von elf Aufteilungen
+(420). Dreimal gemessen, dreimal duenner als es aussieht.
+
+### Zwei eigene Zusicherungen waren unsauber
+
+Beim Schreiben der Tests: Eine prueft eine Zeichenkette mit grossem V gegen
+einen kleingeschriebenen Text - `in text.lower()`, und damit nie wahr. Die
+andere fragte `SPOTPUNKT` nach einem Feld `offen`, das es dort nicht gibt; sie
+war damit **immer** wahr. Geprueft wird jetzt an `GATEKREUZ`, der Quelle, die
+die gefallenen Gates je Messaufbau fuehrt.
+
+Die zweite ist die gefaehrlichere Sorte: ein Test, der nichts prueft und gruen
+ist. Genau die, die Befund 398 und 399 gesucht haben.

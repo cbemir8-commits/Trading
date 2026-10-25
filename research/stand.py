@@ -5107,6 +5107,37 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Bereich ('alle 11 gleich', '4-9/11'), und dabei hat sich auch "
         "'Bestaendigkeit' von scheinbar 4 auf 4-9 geweitet",
         419,
+        zuletzt=420,
+    ),
+    # Befund 420: Die Spalte 'Gates' zaehlt nur. Welche fallen - und sind es
+    # je Aufteilung dieselben?
+    Richtung(
+        "Welches Gate faellt, haengt an der Aufteilung",
+        "'cli aufteilung' zaehlt seit Befund 400 die bestandenen Gates je "
+        "Aufteilung, und beim gemeldeten Stand stehen 9 von 11. Was nie "
+        "ausgesprochen war: **Es sind nicht je Aufteilung dieselben zwei.** "
+        "Gemessen ueber die elf Versaetze - der Befehl sagt es jetzt von "
+        "selbst: Der **Deflated Sharpe faellt bei allen elf** (Werte 0,5784 "
+        "bis 0,6546, die Latte bei 0,95 - der beste verfehlt sie um 0,295). "
+        "**'Schlechtestes Jahr' faellt bei fuenf** (Versatz 4, 6, 7, 8, 9) - "
+        "und es ist im gemeldeten Stand ein **bestandenes** Gate, faellt also "
+        "oefter als eines der beiden, die als offen berichtet werden. Die "
+        "**Messlatte faellt bei genau einem**: dem gemeldeten. Dort liegt die "
+        "Jahresrendite bei 14,3391, in den zehn anderen zwischen 15,1845 und "
+        "17,4522 - der gemeldete Stand ist fuer dieses Gate der **strengste "
+        "von elf**. Die Rangspalte aus 419 konnte das nicht zeigen, weil die "
+        "Messlatte zwei Groessen traegt (395). **Was folgt**: Die Blocker "
+        "sind nach Belastbarkeit geordnet DSR (11 von 11) > Schlechtestes "
+        "Jahr (5) > Messlatte (1), und die beiden, die der Bericht als offen "
+        "fuehrt, sind der erste und der **letzte** dieser Ordnung. **Was "
+        "nicht folgt**: dass die Messlatte eigentlich besteht. Sich einen "
+        "Versatz auszusuchen, in dem ein Gate haelt, schliesst Befund 400 "
+        "aus; der gemeldete ist fuer dieses Gate der konservative, und dabei "
+        "bleibt es. Fuer die offene Richtung 395 ist es der dritte Hinweis "
+        "in dieselbe Richtung: Das Guthaben von 'Schlechtestes Jahr' betraegt "
+        "0,39 Punkte (395), es wird am guenstigen Rand gemeldet (419), und es "
+        "faellt in fuenf von elf Aufteilungen (420)",
+        420,
     ),
 )
 

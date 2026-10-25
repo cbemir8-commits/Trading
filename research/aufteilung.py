@@ -127,7 +127,10 @@ from dataclasses import dataclass
 from itertools import pairwise
 
 __all__ = [
+    "AUSFALL_JE_AUFTEILUNG",
     "BINDENDE_EINTEILUNG_JE_AUFTEILUNG",
+    "DSR_JE_AUFTEILUNG",
+    "JAHRESRENDITE_JE_AUFTEILUNG",
     "RANG_JE_GATE",
     "STICHPROBE_JE_AUFTEILUNG",
     "VERSATZ",
@@ -466,3 +469,56 @@ RANG_JE_GATE: dict[str, str] = {
     "Kosten-Stress": "alle 11 gleich",
     "Parameter-Plateau": "alle 11 gleich",
 }
+
+
+#: Welches Gate in wie vielen der elf Aufteilungen **faellt** (Befund 420).
+#: Gemessen mit ``cli aufteilung``; die Werte sind die Versaetze, bei denen
+#: das Gate nicht besteht. Versatz 0 ist der gemeldete Stand.
+#:
+#: **Die Zahl '9 von 11' sagt nicht, dass es je Aufteilung dieselben zwei
+#: sind.** Sie sind es nicht:
+#:
+#: * Der **Deflated Sharpe** faellt bei **allen elf**. Seine Werte liegen
+#:   zwischen 0,5784 und 0,6546, die Latte bei 0,95 - der beste Versatz
+#:   verfehlt sie um 0,295.
+#: * **'Schlechtestes Jahr'** faellt bei **fuenf** - und es ist im gemeldeten
+#:   Stand ein bestandenes Gate. Es faellt also oefter als eines der beiden,
+#:   die als offen berichtet werden.
+#: * Die **Messlatte** faellt bei **einem**: dem gemeldeten. Dort liegt die
+#:   Jahresrendite bei 14,3391, in den zehn anderen zwischen 15,1845 und
+#:   17,4522. Der gemeldete Stand ist fuer dieses Gate der **strengste von
+#:   elf** - was die Rangspalte aus Befund 419 nicht zeigen konnte, weil die
+#:   Messlatte zwei Groessen traegt (395).
+#:
+#: **Was daraus folgt**: Die Blocker sind nach Belastbarkeit geordnet
+#: DSR (11) > Schlechtestes Jahr (5) > Messlatte (1). Die beiden, die der
+#: Bericht als offen fuehrt, sind der erste und der **letzte** dieser
+#: Ordnung.
+#:
+#: **Was nicht folgt**: dass die Messlatte "eigentlich" besteht. Sich einen
+#: Versatz auszusuchen, in dem ein Gate haelt, ist genau das, was Befund 400
+#: ausschliesst - kein Versatz ist der richtige. Der gemeldete ist fuer
+#: dieses Gate der konservative, und dabei bleibt es.
+#:
+#: Und fuer die offene Richtung 395 ist es der dritte Hinweis in dieselbe
+#: Richtung: Das Guthaben von 'Schlechtestes Jahr' betraegt 0,39 Punkte
+#: (395), es wird am guenstigen Rand gemeldet (419), und es faellt in fuenf
+#: von elf Aufteilungen (420).
+AUSFALL_JE_AUFTEILUNG: dict[str, tuple[int, ...]] = {
+    "Deflated Sharpe": (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+    "Schlechtestes Jahr": (4, 6, 7, 8, 9),
+    "Messlatte": (0,),
+}
+
+#: Die Jahresrendite je Aufteilung (Befund 420) - der Grund dafuer, dass die
+#: Messlatte nur im gemeldeten Stand faellt.
+JAHRESRENDITE_JE_AUFTEILUNG: tuple[float, ...] = (
+    14.3391, 15.1845, 16.6152, 16.8168, 16.9336,
+    17.3779, 16.8754, 16.5358, 15.9289, 16.6103, 17.4522,
+)
+
+#: Und der Deflated Sharpe je Aufteilung - keiner besteht.
+DSR_JE_AUFTEILUNG: tuple[float, ...] = (
+    0.5826, 0.6040, 0.6125, 0.5810, 0.6091,
+    0.6305, 0.5784, 0.5784, 0.5867, 0.5784, 0.6546,
+)
