@@ -1057,11 +1057,13 @@ class TestQuartalsbloecke:
         bloecke = [[float(t.net_pnl) for t in trades[i::2]] for i in range(2)]
 
         gesehen: list[list[list[float]]] = []
+        benannt: list[str] = []
         echt = gates.effektive_stichprobe
 
-        def merker(roh, beine=None, bl=None, *, weitere=()):
+        def merker(roh, beine=None, bl=None, *, weitere=(), namen=()):
             gesehen.extend(weitere)
-            return echt(roh, beine, bl, weitere=weitere)
+            benannt.extend(namen)
+            return echt(roh, beine, bl, weitere=weitere, namen=namen)
 
         gates.effektive_stichprobe = merker
         try:
@@ -1072,3 +1074,19 @@ class TestQuartalsbloecke:
         assert gates.quartalsbloecke(trades) in gesehen, (
             "Die Quartalseinteilung erreicht die Stichprobenrechnung nicht."
         )
+        # **Und ihr Name mit ihr** (Befund 410). Eine Einteilung, die bindet,
+        # ohne sich zu nennen, ist genau die Zahl ohne Ursache.
+        assert "Kalenderquartal" in benannt, (
+            "Die Einteilung kommt an, ihr Name nicht - dann kann der Bericht "
+            "nicht sagen, woran die Kuerzung haengt."
+        )
+        # Nachgesehen wird **ueber den Namen**, nicht ueber den Wert: Auf
+        # diesem Spielzeugsatz hat jedes Quartal nur einen Monat mit Trades,
+        # also sind Monats- und Quartalseinteilung als Liste gleich, und
+        # 'gesehen.index(...)' faende die erste gleiche statt der richtigen.
+        assert len(benannt) == len(gesehen), (
+            "Zu jeder Einteilung gehoert genau ein Name"
+        )
+        assert gesehen[benannt.index("Kalenderquartal")] == gates.quartalsbloecke(
+            trades
+        ), "Unter dem Namen 'Kalenderquartal' steht eine andere Einteilung"

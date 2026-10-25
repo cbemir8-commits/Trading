@@ -128,6 +128,17 @@ class Effektivwert:
     p_wert: float = 1.0
     nachgewiesen: bool = False
     bloecke: int = 0
+    #: **Welche Einteilung die Zahl bindet** (Befund 410). Acht Einteilungen
+    #: laufen mit, es zaehlt die strengste - und bis hierher stand nirgends,
+    #: welche das war. Die Zahl ist der bindende Engpass des Projekts: Dem
+    #: Deflated Sharpe fehlen 75 wirksame Beobachtungen, und 41 davon kostet
+    #: diese Kuerzung. Welche Einteilung sie kostet, sagt, wo die fehlenden
+    #: herkommen koennten - mehr Quartale, mehr Beine oder weniger
+    #: gleichzeitige Positionen sind ganz verschiedene Wege.
+    #:
+    #: Dieselbe Lehre wie ``GateResult.bedingung`` (Befund 395): Der Wert
+    #: allein sagt nicht, woran er haengt.
+    einteilung: str = ""
 
     @property
     def faktor(self) -> float:
@@ -165,10 +176,14 @@ class Effektivwert:
         # p-Wert.** Seit die Kuerzung stetig ist, gibt es kein "nachgewiesen
         # ja/nein" mehr, an dem sich der Text aufhaengen koennte.
         if self.effektiv < self.roh:
+            # **Die bindende Einteilung gehoert dazu** (Befund 410). Ohne sie
+            # ist die Kuerzung eine Zahl ohne Ursache, und am bindenden
+            # Engpass des Projekts ist die Ursache die Auskunft, die zaehlt.
+            woran = f" Gebunden am {self.einteilung}." if self.einteilung else ""
             return (
                 f"{self.roh} rohe Trades entsprechen {self.effektiv} "
                 f"unabhaengigen ({self.faktor:.0%}). ICC {self.icc:.3f}, "
-                f"p = {self.p_wert:.3f}." + hinweis
+                f"p = {self.p_wert:.3f}." + woran + hinweis
             )
         return (
             f"{self.roh} Trades, keine messbare Abhaengigkeit "
@@ -340,11 +355,17 @@ def effektive_stichprobe(
     bloecke: list[list[float]] | None = None,
     *,
     weitere: Sequence[list[list[float]]] = (),
+    namen: Sequence[str] = (),
 ) -> Effektivwert:
     """Wie viele unabhaengige Beobachtungen stecken in ``roh_trades``?
 
     ``bloecke`` sind die Trade-Ergebnisse je Fenster - die eigentliche
     Grundlage. ``beine`` dient nur der Beschreibung.
+
+    ``namen`` benennt ``weitere`` der Reihe nach; ``bloecke`` heisst immer
+    "Walk-Forward-Fenster". Wer nichts uebergibt, bekommt gezaehlte Namen -
+    die Rechnung aendert sich dadurch nicht, nur die Auskunft darueber,
+    **welche** Einteilung gebunden hat (Befund 410).
 
     Ohne Blockdaten bleibt alles, wie es war. Eine Korrektur ohne Messung waere
     genau der Fehler, den dieses Modul verhindern soll.
@@ -365,13 +386,22 @@ def effektive_stichprobe(
     uebriglaesst. Das kann die Zulassung nur erschweren, nie erleichtern - die
     einzige Richtung, in die eine solche Entscheidung fallen darf.
     """
-    einteilungen = [b for b in (bloecke, *weitere) if b]
+    alle = [("Walk-Forward-Fenster", bloecke)]
+    for stelle, teilung in enumerate(weitere):
+        name = namen[stelle] if stelle < len(namen) else f"Einteilung {stelle + 1}"
+        alle.append((name, teilung))
+    einteilungen = [(n, b) for n, b in alle if b]
     if einteilungen:
-        gemessen = [d for d in map(designeffekt, einteilungen) if d is not None]
+        gemessen = [
+            (n, d)
+            for n, d in ((n, designeffekt(b)) for n, b in einteilungen)
+            if d is not None
+        ]
         # Verglichen wird der **Faktor**, nicht die absolute Zahl: Zwei
         # Einteilungen koennen verschieden viele Trades abdecken, und dann
         # waere die kleinere Summe kein Zeichen groesserer Strenge.
-        ergebnis = min(gemessen, key=lambda d: d.faktor) if gemessen else None
+        bindend = min(gemessen, key=lambda p: p[1].faktor) if gemessen else None
+        ergebnis = None if bindend is None else bindend[1]
         if ergebnis is not None:
             # **Den Faktor uebernehmen, nicht die Blocksumme.**
             #
@@ -387,5 +417,6 @@ def effektive_stichprobe(
                 p_wert=ergebnis.p_wert,
                 nachgewiesen=ergebnis.nachgewiesen,
                 bloecke=ergebnis.bloecke,
+                einteilung=bindend[0],
             )
     return Effektivwert(roh=roh_trades, effektiv=roh_trades, bloecke=0)

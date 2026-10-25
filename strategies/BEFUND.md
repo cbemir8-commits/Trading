@@ -36746,3 +36746,93 @@ Und es ist der Grund, aus dem ich in diesem Zyklus fast eine richtige Zahl
 auf 76 setzen. Nachgemessen gibt `noetiges_n()` 190, also fehlen 75. Zum
 ersten Mal in dieser Kette hat die Regel - erst messen, dann schreiben - mich
 **vor** dem Fehler erwischt und nicht danach.
+
+## Vierhundertzehn. Die Kuerzung nannte nicht, welche Einteilung sie bindet
+
+Dem Deflated Sharpe fehlen 75 wirksame Beobachtungen. **41 davon kostet die
+Designkorrektur** - sie macht aus 156 fertigen Trades 115 unabhaengige. Woran
+diese Kuerzung haengt, stand nirgends.
+
+`effektive_stichprobe` laesst acht Einteilungen derselben Trades laufen und
+nimmt die strengste:
+
+> Gewaehlt wird deshalb die Einteilung, die die kleinste Stichprobe
+> uebriglaesst. Das kann die Zulassung nur erschweren, nie erleichtern.
+
+Der Satz ist richtig. Nur warf die Rechnung danach weg, **welche** es war -
+`min(gemessen, key=...)` behielt den Faktor und verlor den Namen. Dieselbe
+Lehre wie `GateResult.bedingung` (Befund 395), nur am bindenden Engpass des
+Projekts.
+
+### Warum der Name die Auskunft ist
+
+Ob die fehlenden Beobachtungen aus mehr Quartalen, mehr Beinen oder weniger
+gleichzeitigen Positionen kommen koennten, sind drei verschiedene Antworten.
+Ohne die bindende Einteilung ist keine davon zu begruenden - und `cli stand`
+sagt in genau der Zeile, die ueber die Menge spricht, bis hierher eine Menge
+ohne Art.
+
+### Gemessen, am massgeblichen Punkt
+
+    Einteilung           Bloecke     ICC       p   Faktor   n_eff
+    Walk-Forward-Fenster      31  0,1097  0,0645   1,0000     156
+    Gleichzeitigkeit         107  0,0000  1,0000   1,0000     156
+    Kalendertag              143  0,9548  0,0325   1,0000     156
+    Kalenderwoche            114  0,7118  0,0095   0,9615     150
+    Kalendermonat             65  0,5134  0,0015   0,8077     126
+    Kalenderquartal           33  0,2580  0,0050   0,7372     115
+    Halbjahr                  17  0,0857  0,0320   0,9359     146
+    Kalenderjahr               9  0,0567  0,0460   0,9744     152
+
+Das **Kalenderquartal** bindet. Nicht die Gleichzeitigkeit, die gar nichts
+findet (ICC 0,0000 bei 107 Gruppen). Nicht das Fenstergitter - mein erster
+Verdacht, und er war falsch: 0,1097 bei p 0,0645, also unter der Schranke.
+Nicht die Beine; die sind keine Einteilung, sondern laut Kopf des Moduls "nur
+Beschreibung", und mein Messgeruest hatte sie zuerst als neunte Sprosse
+geführt, wo sie nicht hingehoert.
+
+Die Tabelle im Kommentar des Gates stand noch auf 152 Trades und 198
+Versuchen und nannte vier der acht Sprossen - sie ist ersetzt.
+
+### Je Zelle eine andere
+
+    Zelle                            roh   n_eff   Faktor   bindend
+    gemeldet (Fenster, Beingrenzen)  156     115   0,7372   Kalenderquartal
+    durchgehend mit Beingrenzen       98      92   0,9388   Kalendermonat
+    kontogeschuetzt (ohne Beingr.)   160     159   0,9938   Kalendertag
+
+Welche Abhaengigkeit das Gate findet, haengt also am Messaufbau. Das ist die
+halbe Antwort auf die Frage, die Befund 407 offen liess - warum der
+Designeffekt am kontogeschuetzten Punkt fast verschwindet:
+
+    Kalenderquartal        ICC       p
+    gemeldet            0,2580  0,0050   kuerzt
+    kontogeschuetzt     0,0904  0,0895   kuerzt nicht
+
+Die Quartalskorrelation halbiert sich und verliert die Signifikanz. **Warum
+sie faellt, ist nicht gemessen** - und genau dort liegen die 40 Beobachtungen
+Unterschied: 156 x 0,7372 = 115 gegen 156 x 0,9938 = 155. Eine Vermutung waere
+hier das Falsche; sie steht als offene Frage da.
+
+Zuerst stand in diesem Eintrag 44. Die Zahl war aus der Erinnerung an Befund
+407 und nicht nachgerechnet - gefunden beim Durchsehen des eigenen Textes,
+bevor er gepusht war.
+
+### Eine Falle in dieser Tabelle
+
+Der Kalendertag fuehrt die ICC-Spalte zweimal, mit 0,9548 und 0,9767, und
+kuerzt fast nichts. 143 Bloecke auf 156 Trades sind nahezu Einzelstuecke, und
+der Designeffekt einer Einteilung aus Einzelstuecken ist eins. Wer diese
+Tabelle nach dem ICC liest, liest sie falsch - es zaehlt der Faktor. Das steht
+jetzt an beiden Stellen, an denen die Tabelle liegt.
+
+### Mein Fehlgriff, und wo er haengengeblieben ist
+
+Mein erster durchgehender Lauf gab **98 Trades statt 160**. Das ist die Zelle
+*mit* Beingrenzen - die, von der Befund 406 sagt, sie beschreibe zwei getrennte
+Konten -, nicht der kontogeschuetzte Punkt. Gefunden hat es die Gegenprobe
+gegen `referenz.KONTOPUNKT`, die ich diesmal **vor** dem Schreiben eingebaut
+hatte: Die Probe druckte "STIMMT NICHT", und nichts davon war je im Projekt.
+
+Das ist in dieser Kette das zweite Mal, dass die Regel vorher greift statt
+hinterher (nach 409). Davor war es sechsmal umgekehrt.

@@ -12365,6 +12365,10 @@ def stand(
         grenzpunkt=grenzpunkt,
         trades=len(gehandelt.all_trades),
         effektiv=stichprobe.effektiv,
+        # **Und woran die Kuerzung haengt** (Befund 410). Acht Einteilungen
+        # laufen mit, es zaehlt die strengste; welche, stand bis hierher
+        # nirgends - und die Kuerzung ist der bindende Engpass.
+        einteilung=stichprobe.einteilung,
         kerzenbestand=_kerzenbestand(store),
         zensiert=len(zensiert),
         sharpe_je_trade=qualitaet,

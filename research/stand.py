@@ -4752,6 +4752,43 @@ BEHOBEN: tuple[Richtung, ...] = (
         "steht jetzt am Kopf der Methode, statt als Widerspruch zweier "
         "Zahlen dazustehen",
         409,
+        zuletzt=410,
+    ),
+    # Befund 410: Dem Deflated Sharpe fehlen 75 wirksame Beobachtungen, 41
+    # kostet die Designkorrektur - woran haengt sie?
+    Richtung(
+        "Die Kuerzung nannte nicht, welche Einteilung sie bindet",
+        "'effektive_stichprobe' laesst **acht** Einteilungen laufen - "
+        "Fenster, Gleichzeitigkeit und sechs Kalenderstufen - und nimmt die "
+        "strengste. Welche das war, hat sie weggeworfen. Dabei haengt daran "
+        "der bindende Engpass: Dem Deflated Sharpe fehlen 75 wirksame "
+        "Beobachtungen, und **41 von 156** kostet diese Kuerzung. Ob mehr "
+        "Quartale, mehr Beine oder weniger gleichzeitige Positionen helfen, "
+        "sind drei verschiedene Antworten; ohne die bindende Einteilung ist "
+        "keine zu begruenden. Gemessen am massgeblichen Punkt bindet das "
+        "**Kalenderquartal** (33 Bloecke, ICC 0,2580, p 0,0050, Faktor "
+        "0,7372) - nicht die Gleichzeitigkeit (ICC 0,0000), nicht das "
+        "Fenstergitter (0,1097 bei p 0,0645) und nicht die Beine, die gar "
+        "keine Einteilung sind, sondern nur Beschreibung. **Je Zelle eine "
+        "andere**: gemeldet das Quartal (115 von 156), durchgehend mit "
+        "Beingrenzen der Monat (92 von 98), kontogeschuetzt der Kalendertag "
+        "(159 von 160). Damit ist die halbe Antwort auf die offene Frage aus "
+        "407 gemessen, warum der Designeffekt kontogeschuetzt fast "
+        "verschwindet: Auf der Quartalsstufe faellt der ICC von 0,2580 (p "
+        "0,0050) auf 0,0904 (p 0,0895) und verliert die Signifikanz - "
+        "**warum er faellt, ist nicht gemessen**, und genau dort liegen die "
+        "40 Beobachtungen Unterschied. **Und eine Falle in der Tabelle**: "
+        "Der Kalendertag fuehrt die ICC-Spalte zweimal (0,9548 und 0,9767) "
+        "und kuerzt fast nichts - 143 Bloecke auf 156 Trades sind nahezu "
+        "Einzelstuecke. Wer nach dem ICC liest, liest falsch; es zaehlt der "
+        "Faktor. Die Tabelle im Kommentar des Gates stand noch auf 152 "
+        "Trades und 198 Versuchen und nannte vier der acht Sprossen; sie ist "
+        "ersetzt. **Mein Fehlgriff dabei**: Mein erster durchgehender Lauf "
+        "gab **98 Trades statt 160** - das ist die Zelle mit Beingrenzen, "
+        "nicht der kontogeschuetzte Punkt (406). Gefunden hat es die "
+        "Gegenprobe gegen 'referenz.KONTOPUNKT', bevor etwas davon im "
+        "Projekt stand",
+        410,
     ),
 )
 
@@ -6456,6 +6493,18 @@ class Lage(Gatebilanz):
     (Befund 148).
     """
 
+    einteilung: str = ""
+    """**Welche Einteilung die Kuerzung bindet** (Befund 410).
+
+    Acht Einteilungen laufen mit - Fenster, Gleichzeitigkeit und sechs
+    Kalenderstufen -, und es zaehlt die strengste. Welche das war, hat die
+    Rechnung bis Befund 410 weggeworfen. Sie gehoert hierher, weil an dieser
+    Kuerzung der bindende Engpass haengt: Dem Deflated Sharpe fehlen 75
+    wirksame Beobachtungen, 41 davon kostet sie. Ob mehr Quartale, mehr Beine
+    oder weniger gleichzeitige Positionen helfen, sind drei verschiedene
+    Antworten - und ohne diese Angabe ist keine davon zu begruenden.
+    """
+
     reihe: str = ""
     """Auf welcher **Reihe** diese Zahlen stehen.
 
@@ -6663,13 +6712,26 @@ class Lage(Gatebilanz):
             )
         if ziel <= self.effektiv:
             return ""
+        # **Woran die Kuerzung haengt, gehoert hierher** (Befund 410). Dies
+        # ist die Zeile, die sagt, wie die fehlenden Beobachtungen zu holen
+        # waeren - und ohne die bindende Einteilung steht dort eine Menge
+        # ohne Art. Acht Einteilungen laufen mit, es zaehlt die strengste;
+        # am gemeldeten Punkt ist es das Kalenderquartal und es kostet 41
+        # von 156.
+        woran = (
+            f" Gekuerzt wird am **{self.einteilung}**: Dort liegt die "
+            f"gemessene Abhaengigkeit, und nur Beobachtungen, die sie nicht "
+            f"teilen, zaehlen voll."
+            if self.einteilung
+            else ""
+        )
         return (
             f" **Oder ueber die Menge:** {ziel} wirksame Beobachtungen, "
             f"Faktor {ziel / self.effektiv:.2f} - aber nur **bei "
             f"unveraenderter Qualitaet**, und die haelt in diesem Vorrat "
             f"nicht: Qualitaet und Menge sind gekoppelt, der Weg dorthin "
             f"kostet mehr Vorsprung als er spart (Befund 179). Beide Tore "
-            f"verlangen dasselbe."
+            f"verlangen dasselbe." + woran
         )
 
     def _zensurhinweis(self) -> str:

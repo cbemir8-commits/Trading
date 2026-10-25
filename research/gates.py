@@ -739,7 +739,13 @@ def stichprobe_wie_im_gate(
     ]
     kalender = [nach_kalender(trades, schluessel) for _, schluessel in STUFEN]
     return effektive_stichprobe(
-        len(trades), beine, bloecke, weitere=[gleichzeitig, *kalender],
+        len(trades),
+        beine,
+        bloecke,
+        weitere=[gleichzeitig, *kalender],
+        # **Benannt, damit die Auskunft mitkommt** (Befund 410). Welche
+        # Einteilung gebunden hat, war bis hierher weggeworfen.
+        namen=["Gleichzeitigkeit", *(name for name, _ in STUFEN)],
     )
 
 
@@ -1398,21 +1404,36 @@ def gate_deflated_sharpe(
     # lange zusammen), und Trades desselben **Kalenderquartals**.
     #
     # **Das Quartal kam mit Befund 135 dazu, und es aendert das Ergebnis.**
-    # Gemessen am Spitzenkandidaten, Spot, 198 Versuche:
+    # Gemessen am Spitzenkandidaten, Spot, **203 Versuche**, auf der
+    # Zulassungsreihe - die ganze Leiter, nicht die vier von damals
+    # (Befund 410; die Tabelle hier stand auf 152 Trades und 198 Versuchen):
     #
-    #     Einteilung           Bloecke    ICC       p      n      DSR
-    #     Walk-Forward-Fenster      31  0,109  0,0750    152   0,8640
-    #     Kalenderquartal           32  0,257  0,0050    112   0,6026
-    #     Kalendermonat             63  0,515  0,0020    124   0,7004
-    #     Kalenderjahr               9  0,052  0,0650    152   0,8640
-    #     Gleichzeitigkeit         103  0,000  1,0000    152   0,8640
+    #     Einteilung           Bloecke     ICC       p   Faktor   n_eff
+    #     Walk-Forward-Fenster      31  0,1097  0,0645   1,0000     156
+    #     Gleichzeitigkeit         107  0,0000  1,0000   1,0000     156
+    #     Kalendertag              143  0,9548  0,0325   1,0000     156
+    #     Kalenderwoche            114  0,7118  0,0095   0,9615     150
+    #     Kalendermonat             65  0,5134  0,0015   0,8077     126
+    #     Kalenderquartal           33  0,2580  0,0050   0,7372     115
+    #     Halbjahr                  17  0,0857  0,0320   0,9359     146
+    #     Kalenderjahr               9  0,0567  0,0460   0,9744     152
     #
-    # Beide Zeitraeume - Fenster und Quartal - teilen dieselben 3277 Tage in gut
-    # dreissig Stuecke, und beide decken alle 152 Trades ab. Der Unterschied
+    # Das Quartal bindet, und es kostet **41 von 156** Beobachtungen. Nicht
+    # die Gleichzeitigkeit, nicht das Fenstergitter, nicht die Beine - die
+    # sind gar keine Einteilung, sondern nur Beschreibung.
+    #
+    # Beide Zeitraeume - Fenster und Quartal - teilen dieselben 3300 Tage in
+    # gut dreissig Stuecke, und beide decken alle Trades ab. Der Unterschied
     # liegt in der **Gleichmaessigkeit**: Die Fenster tragen 0 bis 12 Trades,
     # die Quartale 2 bis 8. Ungleiche Bloecke machen die Permutationsnull
     # breiter, und eine breitere Null sieht weniger. Das Quartal ist also nicht
     # zufaellig strenger, sondern bei gleicher Groesse **trennschaerfer**.
+    #
+    # **Ein hoher ICC allein sagt nichts** (Befund 410). Der Kalendertag
+    # fuehrt die Spalte mit 0,9548 und kuerzt trotzdem nicht: 143 Bloecke auf
+    # 156 Trades sind fast Einzelstuecke, und der Designeffekt einer
+    # Einteilung aus Einzelstuecken ist eins. Wer diese Tabelle nach dem ICC
+    # liest, liest sie falsch; es zaehlt der Faktor.
     #
     # Die Mehrfachtestung ist mitgerechnet: Bei vier Einteilungen liegt die
     # Bonferroni-Schranke bei 0,05/4 = 0,0125, und Quartal (0,0050) wie Monat

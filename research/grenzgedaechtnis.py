@@ -111,7 +111,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-__all__ = ["GEMESSEN", "Grenzlauf", "Grenzvergleich"]
+__all__ = ["GEMESSEN", "LEITER", "Grenzlauf", "Grenzvergleich", "bindend"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -387,6 +387,14 @@ class Reichweite:
     dsr: float
     noetige_trades: int
     noetige_guete: float
+    #: **Woran der Designeffekt haengt** (Befund 410). Acht Einteilungen
+    #: laufen mit, es zaehlt die strengste - und welche das ist, war bis
+    #: Befund 410 nirgends verzeichnet. Sie ist je Punkt eine andere, und
+    #: das ist die halbe Antwort auf die Frage, die Befund 407 offen liess:
+    #: warum der Designeffekt am kontogeschuetzten Punkt fast verschwindet.
+    einteilung: str = ""
+    icc: float = 0.0
+    p_wert: float = 1.0
 
     @property
     def designfaktor(self) -> float:
@@ -407,14 +415,80 @@ class Reichweite:
         return self.guete / self.noetige_guete
 
 
-#: Die beiden Punkte aus Befund 407.
+#: Die beiden Punkte aus Befund 407, mit der bindenden Einteilung aus 410.
 REICHWEITEN: tuple[Reichweite, ...] = (
     Reichweite(
         name="gemeldet", fertig=156, effektiv=115, guete=0.2708, dsr=0.5826,
         noetige_trades=191, noetige_guete=0.3374,
+        einteilung="Kalenderquartal", icc=0.2580, p_wert=0.0050,
     ),
     Reichweite(
         name="kontogeschuetzt", fertig=160, effektiv=159, guete=0.2444,
         dsr=0.6846, noetige_trades=244, noetige_guete=0.2945,
+        einteilung="Kalendertag", icc=0.9767, p_wert=0.0065,
     ),
 )
+
+#: Die ganze Leiter je Zelle - acht Einteilungen, drei Messaufbauten
+#: (Befund 410). Gemessen mit den Werkzeugen des Projekts
+#: ('gates.stichprobe_wie_im_gate', 'unabhaengigkeit.designeffekt'), und
+#: gegengeprueft gegen ``research.referenz``: Die erste Zelle gibt dessen
+#: ``SPOTPUNKT`` (156/115), die dritte dessen ``KONTOPUNKT`` (160/159). Wer
+#: einen Kennwert braucht, nimmt ihn von dort und nicht aus dieser Tabelle -
+#: hier stehen Messgroessen der Unabhaengigkeitsrechnung, und eine davon
+#: (0,0860, der p-Wert der Kalenderwoche kontogeschuetzt) trifft zufaellig
+#: eine Zahl, die als Kennwert laengst ueberholt ist.
+#:
+#: Zu lesen ist sie **nach dem Faktor, nicht nach dem ICC**. Der Kalendertag
+#: fuehrt die ICC-Spalte zweimal (0,9548 und 0,9767) und kuerzt fast nichts:
+#: 143 bzw. 147 Bloecke auf 156 bzw. 160 Trades sind nahezu Einzelstuecke,
+#: und der Designeffekt einer Einteilung aus Einzelstuecken ist eins.
+#:
+#: Was die Zellen unterscheidet, ist die **Signifikanz auf der Quartalsstufe**:
+#: gemeldet ICC 0,2580 bei p 0,0050, kontogeschuetzt ICC 0,0904 bei p 0,0895.
+#: Dort faellt die Quartalskorrelation unter die Schranke und kuerzt nicht
+#: mehr. **Warum sie faellt, ist nicht gemessen** - und genau dort liegen die
+#: 40 Beobachtungen Unterschied.
+LEITER: dict[str, tuple[tuple[str, int, float, float, float, int], ...]] = {
+    # Name -> (Einteilung, Bloecke, ICC, p, Faktor, n_eff)
+    "gemeldet": (
+        ("Walk-Forward-Fenster", 31, 0.1097, 0.0645, 1.0000, 156),
+        ("Gleichzeitigkeit", 107, 0.0000, 1.0000, 1.0000, 156),
+        ("Kalendertag", 143, 0.9548, 0.0325, 1.0000, 156),
+        ("Kalenderwoche", 114, 0.7118, 0.0095, 0.9615, 150),
+        ("Kalendermonat", 65, 0.5134, 0.0015, 0.8077, 126),
+        ("Kalenderquartal", 33, 0.2580, 0.0050, 0.7372, 115),
+        ("Halbjahr", 17, 0.0857, 0.0320, 0.9359, 146),
+        ("Kalenderjahr", 9, 0.0567, 0.0460, 0.9744, 152),
+    ),
+    "durchgehend mit Beingrenzen": (
+        ("Walk-Forward-Fenster", 30, 0.0573, 0.2775, 1.0000, 98),
+        ("Gleichzeitigkeit", 85, 0.5169, 0.3135, 1.0000, 98),
+        ("Kalendertag", 97, 1.0000, 0.0020, 1.0000, 98),
+        ("Kalenderwoche", 83, 0.9779, 0.0025, 0.9796, 96),
+        ("Kalendermonat", 53, 0.6051, 0.0130, 0.9388, 92),
+        ("Kalenderquartal", 32, 0.1542, 0.1495, 1.0000, 98),
+        ("Halbjahr", 16, 0.0401, 0.2325, 1.0000, 98),
+        ("Kalenderjahr", 9, 0.0090, 0.3415, 1.0000, 98),
+    ),
+    "kontogeschuetzt": (
+        ("Walk-Forward-Fenster", 31, 0.0946, 0.0855, 1.0000, 160),
+        ("Gleichzeitigkeit", 111, 0.0000, 1.0000, 1.0000, 160),
+        ("Kalendertag", 147, 0.9767, 0.0065, 0.9938, 159),
+        ("Kalenderwoche", 117, 0.4519, 0.0860, 1.0000, 160),
+        ("Kalendermonat", 67, 0.2030, 0.1030, 1.0000, 160),
+        ("Kalenderquartal", 33, 0.0904, 0.0895, 1.0000, 160),
+        ("Halbjahr", 17, 0.0267, 0.2185, 1.0000, 160),
+        ("Kalenderjahr", 9, 0.0323, 0.1195, 1.0000, 160),
+    ),
+}
+
+
+def bindend(name: str) -> tuple[str, int, float, float, float, int]:
+    """Die Sprosse, die in dieser Zelle bindet - die mit dem kleinsten Faktor.
+
+    Gerechnet, nicht gepflegt: Wer die Tabelle oben aendert, aendert damit
+    auch diese Auskunft. Eine zweite, von Hand gefuehrte Liste waere genau
+    die gepflegte Zahl, die wegdriftet (Befund 408).
+    """
+    return min(LEITER[name], key=lambda zeile: zeile[4])
