@@ -37673,3 +37673,70 @@ die gefallenen Gates je Messaufbau fuehrt.
 
 Die zweite ist die gefaehrlichere Sorte: ein Test, der nichts prueft und gruen
 ist. Genau die, die Befund 398 und 399 gesucht haben.
+
+## Vierhunderteinundzwanzig. Die Statuszeile nannte zwei offene Gates, nicht ihr Gewicht
+
+Der Lagebericht sagt:
+
+    Auch gemessen  Spot: 9 von 11, offen: Messlatte, Deflated Sharpe
+
+Wer das liest, haelt zwei Gates fuer den Engpass und beide fuer gleich schwer.
+Gemessen (Befund 420) sind sie das nicht:
+
+    Deflated Sharpe      faellt in 11 von 11   (offen)
+    Schlechtestes Jahr   faellt in  5 von 11   (besteht hier)
+    Messlatte            faellt in  1 von 11   (offen)
+
+Von dieser Ordnung stand in der Ausgabe nichts.
+
+### Und der Bericht schweigt zu diesem Gate nicht aus Versehen
+
+Zu 'Schlechtestes Jahr' hat der Bericht einen ausfuehrlichen Abschnitt - sechs
+Historienlaengen aus Befund 161, die Erklaerung, dass das Gate das **Minimum**
+ueber alle Zwoelfmonatsfenster nimmt, und den Satz "Warten kann dieses Gate
+nicht zurueckgewinnen".
+
+Dieser Abschnitt haengt an einer Bedingung: `if any("Schlechtestes Jahr" in g
+for g in andere)` - also daran, dass das Gate **offen** ist. Am massgeblichen
+Punkt besteht es. Der Leser bekam deshalb nichts, obwohl drei Befunde es
+nacheinander als duenner gemessen haben, als es aussieht:
+
+    395   Guthaben von 0,39 Punkten, kleiner als die Streuung des Verfahrens
+    419   am guenstigen Rand gemeldet (Rang 9 von 11)
+    420   faellt in fuenf von elf Aufteilungen
+
+Das ist die Lehre aus 394, 405 und 415 in neuer Gestalt: nicht eine Zahl, die
+in keiner Ausgabe steht, sondern eine Auskunft, die an der falschen Bedingung
+haengt.
+
+### Gebaut
+
+Ein Block neben der Spot-Zeile, nach Belastbarkeit geordnet, mit der Marke
+`besteht hier` fuer das Gate, das am gemeldeten Punkt haelt - und mit dem Satz,
+der daraus folgt:
+
+    Ein bestandenes Gate faellt oefter als ein offenes.
+    Kein Versatz ist der richtige - 'cli aufteilung' misst es nach.
+
+**Kein Freibrief.** Dass die Messlatte nur in der gemeldeten Aufteilung faellt,
+heisst nicht, dass sie besteht; sich einen Versatz auszusuchen schliesst Befund
+400 aus, und der Block sagt das mit. Was sich aendert, ist die Lesart: Von den
+zwei offenen Gates traegt eines ueberall, das andere an einer Stelle.
+
+**Und die Zahlen gehoeren zu diesem Punkt.** Der Block erscheint nur, wenn die
+offenen Gates des Punktes genau die gemessenen sind - fuer einen anderen Punkt
+waere es eine gepflegte Zahl am falschen Ort, und das ist die Lehre aus Befund
+408. Geprueft wird die Bedingung aus `AUSFALL_JE_AUFTEILUNG` selbst, nicht aus
+einer zweiten Liste.
+
+### Ein eigener Testfilter war zu weit
+
+Mein erster Test zaehlte die Zeilen des Blocks ueber `"faellt in" in z`. Der
+Entscheidungstext aus Befund 415 enthaelt denselben Wortlaut - "Der Deflated
+Sharpe faellt in allen vier" -, und der Test zaehlte ihn mit. Gefiltert wird
+jetzt auf die Einrueckung des Blocks.
+
+Dieselbe Sorte wie in 415 und 420: Eine Teilzeichenkette ueber einen langen
+Bericht trifft irgendwann etwas anderes. Das ist jetzt das dritte Mal in sieben
+Befunden, und es ist immer derselbe Griff - erst den Ort festlegen, dann den
+Text.

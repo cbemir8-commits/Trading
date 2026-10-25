@@ -5138,6 +5138,35 @@ BEHOBEN: tuple[Richtung, ...] = (
         "0,39 Punkte (395), es wird am guenstigen Rand gemeldet (419), und es "
         "faellt in fuenf von elf Aufteilungen (420)",
         420,
+        zuletzt=421,
+    ),
+    # Befund 421: Der Bericht nennt zwei offene Gates. Sagt er auch, wie
+    # belastbar ihr Urteil ist?
+    Richtung(
+        "Die Statuszeile nannte zwei offene Gates, nicht ihr Gewicht",
+        "Der Bericht sagt '9 von 11, offen: Messlatte, Deflated Sharpe'. Wer "
+        "das liest, haelt zwei Gates fuer den Engpass. Gemessen (420) faellt "
+        "der Deflated Sharpe in **11 von 11** Aufteilungen, die Messlatte in "
+        "**1 von 11** - der gemeldeten -, und 'Schlechtestes Jahr', das dort "
+        "**besteht**, in fuenf. Von dieser Ordnung stand in der Ausgabe "
+        "nichts. Und es ist nicht so, dass der Bericht zu diesem Gate "
+        "schweigt: Die ausfuehrliche Behandlung aus Befund 160/161 - sechs "
+        "Historienlaengen, das Minimum ueber alle Zwoelfmonatsfenster, "
+        "'Warten kann dieses Gate nicht zurueckgewinnen' - **haengt daran, "
+        "dass das Gate offen ist**. Am massgeblichen Punkt besteht es, also "
+        "bekam der Leser nichts, obwohl 395, 419 und 420 es dreimal als "
+        "duenner gemessen haben, als es aussieht. Gebaut ist jetzt ein Block "
+        "neben der Spot-Zeile, der je Gate nennt, in wie vielen Aufteilungen "
+        "es faellt, nach Belastbarkeit geordnet und mit der Marke 'besteht "
+        "hier' - samt dem Satz, der daraus folgt: Ein bestandenes Gate faellt "
+        "oefter als ein offenes. **Kein Freibrief**: Dass die Messlatte nur "
+        "in der gemeldeten Aufteilung faellt, heisst nicht, dass sie "
+        "besteht - sich einen Versatz auszusuchen schliesst Befund 400 aus, "
+        "und der Block sagt es mit. **Und die Zahlen gehoeren zu diesem "
+        "Punkt**: Der Block erscheint nur, wenn die offenen Gates des "
+        "Punktes die gemessenen sind - fuer einen anderen waere es eine "
+        "gepflegte Zahl am falschen Ort (408)",
+        421,
     ),
 )
 
@@ -7430,10 +7459,62 @@ class Lage(Gatebilanz):
         if bestanden is None or not gesamt:
             return []
         offen = ", ".join(getattr(punkt, "offen", ()) or ()) or "keines"
-        return [
+        zeilen = [
             f"  Auch gemessen  {getattr(punkt, 'name', '?')}: "
             f"{bestanden} von {gesamt}, offen: {offen}"
         ]
+        return zeilen + self._belastbarkeit(punkt)
+
+    def _belastbarkeit(self, punkt: object) -> list[str]:
+        """Wie belastbar das Urteil je Gate ist (Befund 421).
+
+        **Zwei offene Gates zu nennen heisst nicht, dass sie gleich viel
+        tragen.** Gemessen ueber elf Aufteilungen (Befund 420) faellt der
+        Deflated Sharpe bei allen elf, die Messlatte bei genau einer - der
+        gemeldeten -, und 'Schlechtestes Jahr', das hier **besteht**, bei
+        fuenf. Ein bestandenes Gate faellt also oefter als eines der beiden,
+        die als offen berichtet werden.
+
+        Bis hierher stand davon nichts in dieser Ausgabe. Die ausfuehrliche
+        Behandlung von 'Schlechtestes Jahr' aus Befund 160/161 haengt daran,
+        dass das Gate **offen** ist; am massgeblichen Punkt besteht es, und
+        der Leser bekam nichts.
+
+        **Keine Empfehlung, und kein Freibrief.** Dass die Messlatte nur in
+        der gemeldeten Aufteilung faellt, heisst nicht, dass sie besteht -
+        sich einen Versatz auszusuchen schliesst Befund 400 aus. Es heisst
+        nur, dass von den zwei offenen Gates eines ueberall traegt und das
+        andere an einer Stelle.
+        """
+        from research.aufteilung import AUSFALL_JE_AUFTEILUNG, VERSATZ
+
+        offen = tuple(getattr(punkt, "offen", ()) or ())
+        gemessen = {g for g, wo in AUSFALL_JE_AUFTEILUNG.items() if 0 in wo}
+        if set(offen) != gemessen:
+            # Die Zahlen gehoeren zu diesem Punkt. Fuer einen anderen waere
+            # sie eine gepflegte Zahl am falschen Ort (Befund 408).
+            return []
+
+        nach_zahl = sorted(
+            AUSFALL_JE_AUFTEILUNG.items(), key=lambda p: (-len(p[1]), p[0])
+        )
+        zeilen = [
+            f"                 Wie belastbar (ueber {len(VERSATZ)} "
+            f"Aufteilungen, Befund 420):"
+        ]
+        for gate, wo in nach_zahl:
+            marke = "offen" if gate in offen else "besteht hier"
+            zeilen.append(
+                f"                   {gate:20} faellt in "
+                f"{len(wo):2} von {len(VERSATZ)}   ({marke})"
+            )
+        zeilen += [
+            "                 Ein bestandenes Gate faellt oefter als ein "
+            "offenes.",
+            "                 Kein Versatz ist der richtige - 'cli "
+            "aufteilung' misst es nach.",
+        ]
+        return zeilen
 
     def _grenzzeile(self) -> list[str]:
         """Derselbe Punkt mit greifenden Risikogrenzen (Befund 405).
