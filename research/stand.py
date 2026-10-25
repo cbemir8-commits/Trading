@@ -4673,6 +4673,54 @@ BEHOBEN: tuple[Richtung, ...] = (
         "hat es der Abgleich des gemeldeten Punkts gegen "
         "'referenz.SPOTPUNKT'",
         407,
+        zuletzt=408,
+    ),
+    # Befund 408: Vierzehn Zyklen lang lief nur '-m "not daten"'. Was sagt die
+    # andere Auswahl?
+    Richtung(
+        "Drei Zahlen standen in der Prosa und als Behauptung im Test",
+        "Die Auswahl '-m \"daten\"' war **vierzehn Zyklen** nicht gelaufen. "
+        "Gemessen: **3 von 116** fallen, in 35 Minuten - und es sind genau "
+        "die drei Zahlen, die Befund 364 als nicht reproduzierbar "
+        "verzeichnet hat. Dort steht beides richtig: dass sie offen bleiben, "
+        "und dass eine gepflegte Zahl anzupassen 'die Umkehrung des "
+        "Verfahrens' waere. Was dort **nicht** geschah: die Tests, die diese "
+        "Zahlen zusichern, wurden stehen gelassen. Von 364 an war die "
+        "Datenauswahl rot, und weil die Suite als '-m \"not daten\"' laeuft, "
+        "hat es niemand gesehen. **Mein eigener erster Reflex war, sie "
+        "nachzuziehen** - also genau das, was 364 verbietet; der Eintrag von "
+        "364 hat es abgefangen, nicht ich, und der Rueckbau steht in diesem "
+        "Befund. **Gemessen statt vermutet** sind zwei Erklaerungen, und "
+        "beide sind widerlegt: Der Schnitt auf die Reihe ist es nicht - "
+        "**ungeschnitten** faellt derselbe Lauf -, und der Code ist es nicht "
+        "- seit dem Pin hat kein Commit die Rechenstrecke "
+        "verhaltenswirksam angefasst (369 und 376 fuegen nur Meldungen "
+        "hinzu, 376 auf der Officer-Strecke, die diese Laeufe nicht nehmen). "
+        "Bleibt der Speicher: 'data_store/' steht in .gitignore, jeder "
+        "Container holt ihn neu, und **keine gepflegte Zahl hat verzeichnet, "
+        "auf welchem Stand sie gemessen wurde**. Dagegen gebaut ist "
+        "'datenstempel': ein Abdruck der Zulassungsreihe (3301 Balken, "
+        "5cda9435/3141cefd) und 'warum(frames)', das an jeder Zusicherung "
+        "sagt, **ob** die Daten sich bewegt haben. Rueckwirkend hilft das "
+        "nicht - 364 hat recht, den damaligen Speicher gibt es nicht mehr -, "
+        "fuer die naechste Drift schon. **Und es sind nicht drei, sondern "
+        "sechs**: Jede ausgeraeumte Zusicherung gab die naechste frei, denn "
+        "ein 'assert' beendet den Test, und was dahinter steht, wird nie "
+        "gemessen. Damit ist auch '364: zwoelf von fuenfzehn stimmen wieder "
+        "exakt' zu guenstig gezaehlt - gezaehlt werden konnte nur bis zum "
+        "ersten Ausfall je Test. Die Spanne der Drift ist **0,23 bis 1,20 "
+        "Prozent**, in beide Richtungen; 364 nennt 0,2 bis 0,6. Die drei "
+        "Laeufe **mit** Officer reproduzieren auf die Stelle (955,7552 / "
+        "942,8654 / 625,8040), die ohne Officer nicht - sie handeln bis zur "
+        "letzten Kerze und verzinsen auf 5,6-faches Kapital, waehrend die "
+        "anderen vorher an die Sperre laufen. **Was nicht geaendert ist**: "
+        "keine gepflegte Zahl. Sie stehen als 'gepflegt' neben dem "
+        "'heute'-Wert, und der Abstand selbst steht unter Test - inklusive "
+        "der Zusicherung, dass eine Altzahl, die wieder stimmt, aus der "
+        "Liste gehoert statt angepasst zu werden. Die tragenden Zahlen sind "
+        "nicht betroffen: 156 rohe und 115 effektive Trades, DSR 0,5826, "
+        "neun von elf Gates",
+        408,
     ),
 )
 

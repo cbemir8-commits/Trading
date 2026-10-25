@@ -55,7 +55,12 @@ Wie belastbar ist die Zahl?
 ---------------------------
 **Maessig, und das gehoert dazu.** Sie haengt empfindlich an Schiefe und
 Woelbung: Mit 3,376/15,415 statt der gemessenen 3,4646/15,9173 faellt sie auf
-214 - siebzehn Versuche Unterschied bei 0,09 in der Schiefe. Belastbar ist
+214 - siebzehn Versuche Unterschied bei 0,09 in der Schiefe. (Das Paar
+3,376/15,415 ist der **damalige** Wert ueber alle Trades, gemessen auf dem
+Speicher. Heute sind es dort 3,3398/15,1343 und auf der Zulassungsreihe
+3,3683/15,3571 - Befund 408. Fuer die Aussage hier aendert das nichts: Sie
+zeigt, was eine Verwechslung der beiden Sorten kostet, nicht wie gross die
+eine ist.) Belastbar ist
 die Groessenordnung, nicht die Stelle: Grenze und Planbudget liegen
 beieinander, und das heisst kein Puffer.
 

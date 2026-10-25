@@ -44,6 +44,13 @@ GEMESSEN: tuple[tuple[str, bool, bool, bool, int, int, float], ...] = (
     ("mit Funding, ohne Officer", True, True, False, 166, 0, 1632.86),
 )
 
+#: Welcher Lauf auf einer Altzahl steht (Befund 408). Die drei mit Officer
+#: stehen auf keiner - sie reproduzieren.
+ALTZAHL_JE_LAUF = {
+    "wie gebaut, ohne Officer": "Kapitalendstand, wie gebaut, ohne Officer",
+    "mit Funding, ohne Officer": "Kapitalendstand, mit Funding, ohne Officer",
+}
+
 
 def lage(**abweichung) -> Stresslage:
     daten = {
@@ -321,6 +328,7 @@ def test_die_fuenf_laeufe_stimmen() -> None:
     from core.models import Interval
     from data.store import CandleStore
     from research.datenstand import alle_geschnitten
+    from research.datenstempel import altzahl, warum
     from research.freigabe import stillgelegt
     from research.gates import GateThresholds, gate_cost_stress
     from research.seeds import spitzenkandidat
@@ -383,7 +391,32 @@ def test_die_fuenf_laeufe_stimmen() -> None:
 
         assert gezaehlt == trades, name
         assert gesperrt_gezaehlt == gesperrt, name
-        assert summe == pytest.approx(gewinn, abs=0.02), name
+
+        # **Die zwei Laeufe ohne Officer reproduzieren nicht mehr** (Befund
+        # 364, unter Test gestellt in 408). Trade-Satz und Sperren stimmen auf
+        # die Zahl, der Endstand nicht: Sie handeln bis zur letzten Kerze und
+        # verzinsen auf 5,6-faches Kapital, waehrend die drei mit Officer
+        # vorher an die Sperre laufen und darum unveraendert reproduzieren.
+        #
+        # Die Tabelle oben bleibt, wie Befund 339 sie gemessen hat. Geprueft
+        # wird gegen 'heute', und dass beide Angaben einander nicht
+        # weglaufen.
+        alt = ALTZAHL_JE_LAUF.get(name)
+        if alt is None:
+            assert summe == pytest.approx(gewinn, abs=0.02), name
+        else:
+            zahl = altzahl(alt)
+            assert zahl.gepflegt == gewinn, (
+                f"{name}: die Tabelle hier und ALTZAHLEN nennen "
+                f"verschiedene alte Werte ({gewinn} gegen {zahl.gepflegt})"
+            )
+            assert summe == pytest.approx(zahl.heute, abs=0.02), (
+                f"{name}: {warum(frames)}"
+            )
+            assert abs(zahl.abstand) < 0.01, (
+                f"{name}: {zahl.prozent:+.4f} % - Befund 364 hat die Drift "
+                "mit 0,2 bis 0,6 Prozent verzeichnet"
+            )
 
     # Ohne Officer keine Sperre, und damit derselbe Trade-Satz in beiden Stufen
     # - das ist die Voraussetzung dafuer, dass 29,6 % eine Kostenaussage ist.

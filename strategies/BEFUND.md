@@ -36573,3 +36573,121 @@ Das ist in dieser Kette das fuenfte Mal, dass ich geschlossen oder nachgebaut
 habe statt die gemessene Stelle zu benutzen: 395 (bindendes Fenster), 396
 (neun Jahre), 397 (Division), 400 (Mechanismus), 407 (effektive Stichprobe).
 Viermal lag das Ergebnis in der freundlichen Richtung.
+
+## Vierhundertacht. Drei Zahlen standen in der Prosa und als Behauptung im Test
+
+Die Suite laeuft als `-m "not daten"`, acht Minuten, rund 5690 Tests. Die
+andere Auswahl, `-m "daten"`, war **vierzehn Zyklen** nicht gelaufen. Gemessen:
+
+    3 failed, 113 passed, 5693 deselected in 2107.14s (0:35:07)
+    FAILED tests/test_kostenstress.py::test_die_fuenf_laeufe_stimmen
+    FAILED tests/test_referenz.py::test_der_referenzpunkt_stimmt_mit_dem_lauf_ueberein
+    FAILED tests/test_streuungsdeckel.py::test_die_zahlen_des_befehls_stimmen
+
+Es sind genau die drei Zahlen, die Befund 364 als nicht reproduzierbar
+verzeichnet hat. Der Eintrag dort sagt beides richtig:
+
+> **Drei nicht**, und sie bleiben offen: ein Kapitalendstand (2331,38 gegen
+> 2318,32), ein Streuungswert (0,5994 gegen 0,5958) und die Schiefe ueber
+> *alle* Trades (3,3683 gegen 3,376) [...] Diese drei Zahlen sind damit
+> **nicht** reproduzierbar, und das steht hier, statt dass jemand sie
+> stillschweigend nachzieht. Eine gepflegte Zahl anzupassen, bis sie zur
+> Messung passt, waere die Umkehrung des Verfahrens.
+
+Was dort nicht geschah: Die Tests, die diese Zahlen zusichern, blieben stehen.
+Von 364 an war die Datenauswahl rot. Niemand hat es gesehen, weil sie nicht
+lief.
+
+### Mein erster Reflex war, sie nachzuziehen
+
+Bevor ich den Kopf von `datenstand.py` gelesen hatte, hatte ich die Momente in
+`test_referenz.py` schon auf 3,3683/15,3571 umgeschrieben - mit einem langen
+Kommentar daneben, aber umgeschrieben. Das ist genau der Satz, den 364
+verbietet. Abgefangen hat es der Eintrag von 364, nicht ich. Der Rueckbau ist
+Teil dieses Befundes.
+
+### Zwei Erklaerungen, beide widerlegt
+
+**Der Schnitt auf die Reihe.** 364 hat diese Tests vom Speicher auf die
+Zulassungsreihe umgestellt. Naheliegend: Der Schnitt aendert den Rahmen, die
+Pins sind von vorher. Gemessen mit dem Test selbst als Instrument - derselbe
+Lauf mit `alle_geschnitten` als Identitaet - faellt **ungeschnitten derselbe
+Fall**. Der Schnitt ist es nicht.
+
+**Der Code.** Seit dem Pin-Commit (`9b18a58`, 2026-09-26) haben genau zwei
+Commits die Rechenstrecke angefasst: Befund 369 und Befund 376. Beide fuegen
+nur eine Meldung hinzu, und 376 auf der Officer-Strecke, die diese Laeufe
+nicht nehmen. Der Code ist es nicht.
+
+Bleibt der Speicher. `data_store/` steht in `.gitignore` (Zeile 24), jeder
+Container holt ihn neu, und **keine gepflegte Zahl hat verzeichnet, auf
+welchem Stand sie gemessen wurde**. 364 kannte die Erklaerung und konnte sie
+nicht pruefen: "nachzupruefen ist das **nicht**, denn den damaligen Speicher
+gibt es nicht mehr."
+
+### Was das Muster bestaetigt
+
+Die drei Laeufe **mit** Officer reproduzieren auf die Stelle: 955,7552 /
+942,8654 / 625,8040 gegen 955,76 / 942,87 / 625,80. Die ohne Officer nicht.
+Der Unterschied ist nicht die Kostenrechnung, sondern die Laufzeit: Ohne
+Officer wird bis zur letzten Kerze gehandelt und auf 5,6-faches Kapital
+verzinst, mit Officer laufen die Laeufe vorher an eine dauerhafte Sperre.
+Dieselbe Kerzenberichtigung wirkt dort hundertfach weniger.
+
+### Es sind nicht drei, sondern sechs
+
+Jede ausgeraeumte Zusicherung gab die naechste frei. Ein `assert` beendet den
+Test; was dahinter steht, wird nie gemessen.
+
+    Zahl                                        gepflegt      heute        ab
+    Schiefe ueber alle Trades                      3,376     3,3683   -0,23 %
+    Woelbung ueber alle Trades                    15,415    15,3571   -0,38 %
+    Kapitalendstand, wie gebaut, ohne Officer    2318,32    2331,38   +0,56 %
+    Streuungswert, DSR mit der Annahme            0,5958     0,5994   +0,60 %
+    Kapitalendstand, mit Funding, ohne Officer   1632,86    1643,22   +0,63 %
+    Streuungswert, DSR mit der Messung            0,2761     0,2794   +1,20 %
+
+Die beiden letzten standen in keiner Liste - sie kamen erst zum Vorschein, als
+die Zusicherung davor nicht mehr vorher abbrach. Damit ist auch der Satz von
+364, "auf der so wiederhergestellten Reihe stimmen **zwoelf von fuenfzehn**
+Zahlen wieder exakt", zu guenstig gezaehlt: Gezaehlt werden konnte nur bis zum
+ersten Ausfall je Test. Und die Spanne ist weiter als die Prosa sagt - 364
+nennt 0,2 bis 0,6 Prozent, gemessen sind es 0,23 bis 1,20, in beide
+Richtungen. Beide Richtungen sind der Punkt: Ein Rechenfehler zoege alle Zahlen
+in dieselbe.
+
+### Gebaut: ein Abdruck, der die naechste Drift benennt
+
+Rueckwirkend hilft nichts mehr. Fuer die naechste schon. `datenstempel` nimmt
+einen Abdruck der Zulassungsreihe - 3301 Balken, 2017-08-16 bis 2026-08-29,
+`5cda9435` fuer BTC und `3141cefd` fuer ETH - und `warum(frames)` haengt an
+jeder Zusicherung, die auf einer dieser Zahlen steht. Faellt eine, sagt die
+Meldung, **ob** die Daten sich bewegt haben:
+
+    Die Reihe ist unveraendert (Abdruck wie Befund 408) - eine abweichende
+    Zahl kommt dann nicht aus den Daten.
+
+Das ist die Auskunft, die 364 nicht mehr bekommen konnte. Der Abdruck geht
+ueber Preise und Volumen, nicht ueber die Zeitachse: Eine nachtraeglich
+berichtigte Kerze aendert Preise, nicht ihren Zeitstempel. Und bewusst ohne
+`pandas.util.hash_pandas_object` - ein Abdruck, der sich mit einer
+Abhaengigkeit aendert, meldet eine Datenaenderung, die keine ist.
+
+### Keine gepflegte Zahl ist angepasst
+
+`gepflegt` und `heute` stehen nebeneinander, und der Abstand selbst steht
+unter Test - samt der Zusicherung, dass eine Altzahl, die wieder stimmt, aus
+der Liste **gehoert** statt angepasst zu werden. Auch die gemessene Spanne ist
+die Behauptung, nicht eine Schwelle, die bequem darueber liegt.
+
+Nicht betroffen sind die tragenden Zahlen: 156 rohe und 115 effektive Trades,
+Deflated Sharpe 0,5826, neun von elf Gates. Keine dieser sechs entscheidet
+eine Zulassung.
+
+### Und die Lehre, die aelter ist als dieser Befund
+
+Dieselbe wie 394 (die elf Zeilen gab es in keiner Ausgabe) und 399 (eine
+Wache, die nur ihren eigenen Text prueft): Ein Satz in einem Prosatext ist
+keine Zusicherung, und eine Zusicherung, die niemand ausfuehrt, ist kein
+Schutz. Dass die Datenauswahl vierzehn Zyklen nicht lief, hat beides
+gleichzeitig verdeckt.

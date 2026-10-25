@@ -140,6 +140,7 @@ def test_der_referenzpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
     from data.store import CandleStore
     from research.admission import load_trials
     from research.datenstand import alle_geschnitten
+    from research.datenstempel import altzahl, warum
     from research.gates import evaluate_gates
     from research.seeds import spitzenkandidat
     from strategy.compiler import compile_genome
@@ -260,15 +261,50 @@ def test_der_referenzpunkt_stimmt_mit_dem_lauf_ueberein() -> None:
     # **Die Gegenprobe zur Verwechslung, die schon passiert ist.**
     # 'zielfenster' nennt sie als einen von zwei eigenen Rechenfehlern: Wer
     # die Momente ueber **alle** Trades nimmt statt ueber die gehandelten,
-    # bekommt 3,376/15,415 und daraus 214 statt 231 Versuchen. Beide Zahlen
-    # stehen hier fest, damit die Sorten nicht wieder durcheinandergehen.
+    # bekommt daraus 214 statt 231 Versuchen. Beide Sorten stehen hier fest,
+    # damit sie nicht wieder durcheinandergehen.
+    #
+    # **Die beiden Zahlen hier sind zwei der vier aus Befund 364** - die, die
+    # auf der wiederhergestellten Reihe nicht mehr reproduzieren. Befund 356
+    # hat sie auf dem **Speicher** gemessen und hier festgeschrieben; Befund
+    # 364 hat diesen Test auf die **Reihe** umgestellt und die Zusicherung
+    # stehen gelassen. Sie faellt seither, und weil die Suite als
+    # '-m "not daten"' laeuft, hat es vierzehn Zyklen niemand gesehen
+    # (Befund 408).
+    #
+    # Geprueft wird deshalb beides: die Zahl auf dieser Reihe **und** der
+    # Abstand zu der von damals. Der gepflegte Wert wird nicht nachgezogen -
+    # er ist der einzige Beleg dafuer, dass hier etwas gedriftet ist, und
+    # Befund 364 nennt das Nachziehen "die Umkehrung des Verfahrens".
     alle = np.array(
         [float(x.net_pnl) for x in bericht.all_trades], dtype=float
     )
     alle_zentriert = (alle - alle.mean()) / alle.std(ddof=1)
     assert len(alle) == len(gehandelt) + len(zensiert)
-    assert float(np.mean(alle_zentriert**3)) == pytest.approx(3.376, abs=5e-3)
-    assert float(np.mean(alle_zentriert**4)) == pytest.approx(15.415, abs=5e-2)
+
+    for alt, wert, toleranz in (
+        (
+            altzahl("Schiefe ueber alle Trades"),
+            float(np.mean(alle_zentriert**3)),
+            5e-3,
+        ),
+        (
+            altzahl("Woelbung ueber alle Trades"),
+            float(np.mean(alle_zentriert**4)),
+            5e-2,
+        ),
+    ):
+        assert wert == pytest.approx(alt.heute, abs=toleranz), warum(frames)
+        assert wert != pytest.approx(alt.gepflegt, abs=1e-4), (
+            f"{alt.name}: der Wert von vor Befund 364 stimmt wieder. Dann "
+            "ist die Drift weg, und weg gehoert der Eintrag in ALTZAHLEN - "
+            "nicht die Zahl von damals."
+        )
+        assert abs(alt.abstand) < 0.01, (
+            f"{alt.name}: {alt.prozent:+.4f} % - Befund 364 hat die Drift "
+            "mit 0,2 bis 0,6 Prozent verzeichnet"
+        )
+
     assert float(np.mean(alle_zentriert**3)) != pytest.approx(
         SPOTPUNKT.schiefe, abs=5e-3
     ), "die beiden Sorten sind nicht mehr auseinanderzuhalten"

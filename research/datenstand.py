@@ -54,6 +54,24 @@ Diese drei Zahlen sind damit **nicht** reproduzierbar, und das steht hier, statt
 dass jemand sie stillschweigend nachzieht. Eine gepflegte Zahl anzupassen, bis
 sie zur Messung passt, waere die Umkehrung des Verfahrens.
 
+**Zwei Vermerke dazu aus Befund 408.** Der Satz oben gilt, und er hat gehalten:
+Mein erster Reflex war, die Momente nachzuziehen, und abgefangen hat es dieser
+Eintrag. Zwei Zahlen in diesem Abschnitt sind trotzdem zu korrigieren.
+
+* Es sind **sechs**, nicht drei. Dazu kommen die Woelbung ueber alle Trades
+  (15,3571 gegen 15,415), der zweite Kapitalendstand ohne Officer (1643,22
+  gegen 1632,86) und der zweite Streuungswert (0,2794 gegen 0,2761). Die
+  letzten beiden waren nicht zu sehen, weil ein ``assert`` den Test beendet:
+  Was hinter der ersten fallenden Zusicherung steht, wird nie gemessen. Darum
+  ist auch "zwoelf von fuenfzehn" oben zu guenstig gezaehlt.
+* Die Spanne ist **0,23 bis 1,20 Prozent**, nicht 0,2 bis 0,6.
+
+Und was hier nicht stand: Die Tests, die diese Zahlen zusichern, sind
+stehengeblieben. Von diesem Befund an war die Auswahl ``-m "daten"`` rot, und
+weil die Suite als ``-m "not daten"`` laeuft, hat es vierzehn Zyklen niemand
+gesehen. Die Zahlen stehen jetzt in ``datenstempel.ALTZAHLEN`` - mit beiden
+Werten, und der Abstand selbst unter Test.
+
 Der Speicher *ist* diese Reihe nicht - er enthaelt sie
 ----------------------------------------------------
 Das ist eine Berichtigung aus dem Bauen dieses Moduls, und sie ist wichtig.

@@ -304,6 +304,7 @@ def test_die_zahlen_des_befehls_stimmen() -> None:
     from core.models import Interval
     from research.admission import load_trials
     from research.datenstand import alle_geschnitten
+    from research.datenstempel import altzahl, warum
     from research.gates import stichprobe_wie_im_gate
     from research.seeds import spitzenkandidat
     from research.stand import BUDGET
@@ -357,8 +358,30 @@ def test_die_zahlen_des_befehls_stimmen() -> None:
     assert lage.gemessen == pytest.approx(GEMESSEN, abs=0.0002)
     assert lage.gemessen > lage.angenommen
 
-    assert messung.bei(lage.angenommen) == pytest.approx(DSR_ANNAHME, abs=0.002)
-    assert messung.bei(lage.gemessen) == pytest.approx(DSR_GEMESSEN, abs=0.002)
+    # **Diese eine Zahl reproduziert nicht mehr** (Befund 364, unter Test
+    # gestellt in 408). 'DSR_ANNAHME' bleibt oben stehen: Die Zahl prueft
+    # weiter den Registertext von Befund 340, und der ist historisch richtig.
+    # Was der Lauf auf dieser Reihe gibt, steht in ALTZAHLEN - samt Abstand.
+    alt = altzahl("Streuungswert, DSR mit der Annahme")
+
+    assert alt.gepflegt == DSR_ANNAHME
+    assert messung.bei(lage.angenommen) == pytest.approx(
+        alt.heute, abs=0.002
+    ), warum(frames)
+    assert abs(alt.abstand) < 0.01, (
+        f"{alt.prozent:+.4f} % - Befund 364 hat die Drift mit 0,2 bis 0,6 "
+        "Prozent verzeichnet"
+    )
+    # Und die naechste, sichtbar erst, weil die Zusicherung davor nicht mehr
+    # vorher abbricht. Das ist das Muster des ganzen Befundes: Befund 364 hat
+    # drei Zahlen gezaehlt - es sind sechs, und drei davon waren nur deshalb
+    # unentdeckt, weil ein frueherer 'assert' den Test vorher beendete.
+    alt_messung = altzahl("Streuungswert, DSR mit der Messung")
+
+    assert alt_messung.gepflegt == DSR_GEMESSEN
+    assert messung.bei(lage.gemessen) == pytest.approx(
+        alt_messung.heute, abs=0.002
+    ), warum(frames)
     assert messung.bei(lage.gemessen) < messung.bei(lage.angenommen), (
         "die gemessene Streuung senkt den Deflated Sharpe - sie ist kein Weg "
         "durch das Gate, sondern tiefer hinein"
