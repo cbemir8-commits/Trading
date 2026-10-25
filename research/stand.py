@@ -4965,6 +4965,44 @@ BEHOBEN: tuple[Richtung, ...] = (
         "muessen die Frage woertlich gleich nennen, sonst ist nicht zu "
         "sehen, dass es dieselbe ist",
         415,
+        zuletzt=416,
+    ),
+    # Befund 416: Die einzige offene Richtung ohne Nachmessung ist 177, der
+    # gedeckelte Ausstieg - gemessen war er auf gepflanzten Trends. Was tut
+    # er auf der echten Reihe?
+    Richtung(
+        "Ein Haltedeckel hebt den Deflated Sharpe um 0,21 - und besteht nicht",
+        "Befund 177 hat vier Deckel auf **gepflanzten** Trends gemessen: "
+        "keiner entkoppelt Trade-Zahl von Trendstaerke (beste Steigung 0,36 "
+        "gegen 0,5). Auf der **echten** Zulassungsreihe war es nie gemessen, "
+        "und daran haengt die Mengen-Route zum Deflated Sharpe. Sechs Deckel, "
+        "derselbe Kandidat, dieselben elf Gates; Deckel 0 trifft "
+        "'referenz.SPOTPUNKT' auf die Stelle. **Es ist kein Mengeneffekt**: "
+        "Die fertigen Trades bleiben zwischen 156 und 158, bei jedem Deckel - "
+        "ein fruehererer Ausstieg bringt **andere** Beobachtungen, nicht "
+        "mehr. **Es ist ein Gueteeffekt**, und der groesste Sprung, den "
+        "dieses Gate in der Kette 403 bis 415 gesehen hat: Beim 40er-Deckel "
+        "steigt die Guete je Trade von 0,2708 auf 0,2951, die wirksame "
+        "Stichprobe von 115 auf 123, der Deflated Sharpe von 0,5826 auf "
+        "**0,7903**. Fast alles andere wird besser - 'Schlechtestes Jahr' von "
+        "-9,6100 auf -6,9400, Drawdown von 9,869 auf 7,9961, Monte-Carlo auf "
+        "8,3702. **Und bestanden ist nichts**: weiter neun von elf mit "
+        "denselben zwei offenen, dem Deflated Sharpe fehlen 0,164, und die "
+        "Messlatte - das Gate, das am naechsten dran war - wird **schlechter** "
+        "(14,1220 statt 14,3391). **Warum das ein Kandidat ist und kein "
+        "Ergebnis**: Der Gipfel liegt nicht-monoton in der Mitte von sechs "
+        "probierten Werten (10 gibt 0,3556, 20 gibt 0,4288, 40 gibt 0,7903, "
+        "60 gibt 0,6234, 90 gibt 0,6033). Wer daraus den besten nimmt und "
+        "einbaut, waehlt einen Parameter nach dem Ergebnis - genau das, wovor "
+        "der Deflated Sharpe schuetzt. Nach Befund 232 hebt jeder Versuch die "
+        "Latte, also mitgerechnet: mit 203 Versuchen 0,7903, mit 209 - den "
+        "sechs probierten dazu - **0,7858**. **Der Deckel wird daher nicht "
+        "eingebaut**; er gehoert in den Wettbewerb, wo Versuche gezaehlt "
+        "werden. Nebenher berichtigt das die offene Richtung 395: Das "
+        "Guthaben von 0,39 Punkten bei 'Schlechtestes Jahr' ist keine "
+        "Eigenschaft des Kandidaten, sondern eine seiner ungedeckelten "
+        "Haltedauer",
+        416,
     ),
 )
 
@@ -5022,9 +5060,19 @@ OFFEN: tuple[Richtung, ...] = (
         "Schranke ist gut ein Drittel, und zwischen beidem liegt der "
         "Unterschied zwischen 'der Weg traegt' und 'der Weg traegt "
         "wahrscheinlich nicht'. Enger wird das nur mit mehr Jahren - also mit "
-        "genau dem, dessen Risiko hier geschrankt wird",
+        "genau dem, dessen Risiko hier geschrankt wird. **Und ein Vermerk "
+        "aus 416**: Das Guthaben ist keine Eigenschaft des Kandidaten, "
+        "sondern eine seiner ungedeckelten Haltedauer. Mit einem Deckel von "
+        "40 Kerzen steht 'Schlechtestes Jahr' bei **-6,9400** statt -9,6100, "
+        "das Guthaben also bei 3,06 Punkten statt 0,39 - und der Deflated "
+        "Sharpe bei 0,7903 statt 0,5826. **Daraus folgt kein Ausweg**: Der "
+        "Deckel ist einer von sechs probierten Werten mit nicht-monotonem "
+        "Gipfel, er ist nicht eingebaut, und bestanden ist auch dort "
+        "nichts - die Messlatte wird dabei sogar schlechter (14,1220). Was "
+        "folgt, ist eine Einschraenkung der Aussage oben: Sie gilt fuer den "
+        "Kandidaten, wie er gefahren wird",
         395,
-        zuletzt=400,
+        zuletzt=416,
     ),
     # Aufgeworfen von 387, als der Schnitt an einer Stelle fehlte: Wo fehlt er
     # noch? Die Inventur ist gemessen, der Schluss daraus nicht gezogen.

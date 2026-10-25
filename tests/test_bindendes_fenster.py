@@ -295,7 +295,8 @@ class TestWasImRegisterSteht:
 
         assert "zuerst geraten" in eintrag.ergebnis
         assert "2021-11-08 bis 2022-11-08" in eintrag.ergebnis
-        assert eintrag.zuletzt == 400, "400 hat denselben Eintrag weitergezogen"
+        # 400 hat denselben Eintrag weitergezogen, 416 noch einmal.
+        assert eintrag.zuletzt == 416, "zuletzt nachgezogen in 416"
 
     def test_und_die_rate_ist_inzwischen_geschrankt(self) -> None:
         """Hier stand 'rund **neun** unabhaengige Jahre' - aus der

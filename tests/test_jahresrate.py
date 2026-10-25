@@ -322,7 +322,8 @@ class TestWasImRegisterSteht:
 
         assert "nicht neun" in eintrag.ergebnis
         assert "34,8 %" in eintrag.ergebnis
-        assert eintrag.zuletzt == 400, "400 hat den Eintrag weitergezogen"
+        # 400 hat den Eintrag weitergezogen, 416 noch einmal.
+        assert eintrag.zuletzt == 416, "zuletzt nachgezogen in 416"
 
     def test_und_396_zeigt_nach_vorn(self) -> None:
         from research.stand import BEHOBEN

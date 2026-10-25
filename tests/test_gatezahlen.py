@@ -110,6 +110,10 @@ MIT_SKIPINFO: frozenset[str] = frozenset({
 VERZEICHNET: dict[str, str] = {
     "research.referenz.Referenzpunkt": "feste Referenzstaende mit Befundnummer",
     "research.historie.Historienstufe": "gemessene Fenster aus Befund 133",
+    # Befund 416: sechs gemessene Haltedeckel, jeder mit seinem Stand. Die
+    # Bilanz ist in allen sechs 9 von 11, und kein Gate setzt dabei aus -
+    # ein verzeichneter Stand, kein Lauf, der gerade urteilt.
+    "research.haltedeckel.Deckelprobe": "gemessene Haltedeckel aus Befund 416",
 }
 
 #: Typen, deren **Modul** das Aussetzen behandelt, bevor die Zahl entsteht.
@@ -423,13 +427,19 @@ class TestDieFortschrittszeileDerNachpruefung:
 
 def test_die_zahl_der_offenen_faelle_steht_fest() -> None:
     """Damit ein spaeterer Lauf sich daran messen kann - und damit das
-    Verzeichnis nicht unbemerkt waechst."""
+    Verzeichnis nicht unbemerkt waechst.
+
+    Von 25 auf 26 mit Befund 416: 'haltedeckel.Deckelprobe' traegt die Bilanz
+    von sechs gemessenen Haltedeckeln. Sie steht unter ``VERZEICHNET``, weil
+    sie feste Staende haelt und nicht gerade urteilt - und weil in allen
+    sechs neun von elf geurteilt sind, ohne Aussetzer.
+    """
     assert not OFFEN, "seit Befund 352 leer - und das bleibt zu pruefen"
     assert len(MIT_SKIPINFO) == 13
     assert len(MIT_ERSCHLOSSENEM) == 8
     assert len(VORGELAGERT) == 2
     assert len(OHNE_BILANZFELD) == 4
-    assert len(_traeger()) == 25
+    assert len(_traeger()) == 26
 
 
 # **Die Messung, die Befund 332 offen gelassen hat** (Befund 333).

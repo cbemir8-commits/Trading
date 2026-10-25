@@ -342,7 +342,9 @@ class TestWasImRegisterSteht:
 
         assert "395 bis 397" in eintrag.ergebnis
         assert "kleiner als das Rauschen des Verfahrens" in offen.ergebnis
-        assert offen.zuletzt == 400
+        # Zeigte auf 400; seit Befund 416 auf 416 - der Vermerk dort
+        # schraenkt dieselbe Aussage ein, die 400 relativiert hat.
+        assert offen.zuletzt == 416
 
     def test_und_399_zeigt_nach_vorn(self) -> None:
         from research.stand import BEHOBEN

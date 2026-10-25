@@ -37250,3 +37250,122 @@ begruendet damit. Also eingetragen, nicht gestrichen.
 
 Drei Wachen, drei berechtigte Treffer, kein Umgehen. Das ist der Ertrag von
 394, 398, 399 und 408 an einem einzigen Einbau.
+
+## Vierhundertsechzehn. Ein Haltedeckel hebt den Deflated Sharpe um 0,21 - und besteht nicht
+
+Von den achtzehn offenen Richtungen im Register hat genau eine keine
+Nachmessung: **[177] Gedeckelter Ausstieg**. Mein erster Gedanke war, sie sei
+liegengeblieben. Nachgelesen ist sie es nicht - das Ergebnis von 177 war
+eindeutig, und der Eintrag ist knapp, weil ein klarer Nullbefund knapp ist:
+
+> vier Deckel von 10 bis 40 Kerzen, keiner entkoppelt (beste Steigung 0,36
+> gegen 0,5) - der Deckel bindet, aendert die Trade-Zahl aber nicht
+
+Gemessen war das auf **gepflanzten** Trends, mit `cli teststaerke --halten`.
+Die Frage dort: Bricht ein Deckel die Kopplung zwischen Trendstaerke und
+Trade-Zahl? Antwort: nein.
+
+Was nie gemessen war: was ein Deckel auf der **echten** Zulassungsreihe mit dem
+massgeblichen Kandidaten tut. Daran haengt die Mengen-Route zum Deflated
+Sharpe - dem Gate fehlen rund 75 wirksame Beobachtungen, und der Lagebericht
+sagt seit Befund 179, Qualitaet und Menge seien gekoppelt.
+
+### Gemessen, sechs Deckel
+
+    Deckel  fertig  n_eff  bindend          Guete     DSR  Gates  Deckel-Aus
+         0     156    115  Kalenderquartal 0,2708  0,5826   9/11           0
+        10     158    124  Kalendermonat   0,2288  0,3556   9/11          51
+        20     157    115  Kalendermonat   0,2481  0,4288   9/11          39
+        40     157    123  Kalendermonat   0,2951  0,7903   9/11          25
+        60     156    121  Kalendermonat   0,2698  0,6234   9/11           8
+        90     156    116  Kalendermonat   0,2727  0,6033   9/11           2
+
+Deckel 0 trifft `referenz.SPOTPUNKT` auf die Stelle - 156 fertige Trades, n_eff
+115, DSR 0,5826, neun von elf. Ohne diese Gegenprobe waere die Tabelle nichts
+wert.
+
+### Es ist kein Mengeneffekt
+
+Die Zahl der fertigen Trades bleibt zwischen 156 und 158, bei **jedem** Deckel.
+Die Vorstellung, ein fruehererer Ausstieg bringe mehr Beobachtungen, ist am
+massgeblichen Punkt widerlegt: Er bringt **andere** Beobachtungen, nicht mehr.
+
+Dass der Deckel trotzdem greift, ist nachgeprueft - dieselbe Gegenprobe wie in
+177, weil gleiche Trade-Zahlen aussehen, als taete der Regler nichts: Der
+laengste Halt ist genau der Deckel, und 51 / 39 / 25 / 8 / 2 Trades werden von
+ihm beendet.
+
+### Es ist ein Gueteeffekt, und ein grosser
+
+Beim 40er-Deckel steigt die Guete je Trade von 0,2708 auf 0,2951 und die
+wirksame Stichprobe von 115 auf 123. Der Deflated Sharpe springt von 0,5826 auf
+**0,7903** - der groesste Sprung, den dieses Gate in der Kette 403 bis 415
+gesehen hat. Fast alles andere wird ebenfalls besser:
+
+    Gate                     ohne Deckel   40 Kerzen
+    Schlechtestes Jahr           -9,6100     -6,9400
+    Drawdown                      9,8690      7,9961
+    Monte-Carlo                        -      8,3702
+    Deflated Sharpe               0,5826      0,7903
+    Messlatte                    14,3391     14,1220   schlechter
+
+### Und bestanden ist nichts
+
+Weiter **neun von elf**, mit denselben zwei offenen Gates. Dem Deflated Sharpe
+fehlen 0,164. Und die Messlatte - das Gate, das am naechsten dran war - wird
+schlechter.
+
+### Warum das ein Kandidat ist und kein Ergebnis
+
+Der Gipfel liegt **nicht-monoton in der Mitte** von sechs probierten Werten:
+0,3556 / 0,4288 / **0,7903** / 0,6234 / 0,6033. Wer aus einer solchen Reihe den
+besten Wert nimmt und einbaut, hat einen Parameter nach dem Ergebnis gewaehlt -
+genau das, wovor der Deflated Sharpe schuetzen soll.
+
+Die Regel dafuer steht in Befund 232: Jeder Versuch hebt die Latte fuer alle
+kuenftigen. Also mitgerechnet:
+
+    203 Versuche  ->  DSR 0,7903
+    209 Versuche  ->  DSR 0,7858
+
+Der Abzug ist klein, weil 203 Versuche schon viel sind. Dass er gerechnet wird,
+ist der Punkt.
+
+**Der Deckel wird nicht eingebaut.** `BacktestConfig.max_hold_bars` bleibt 0,
+und ein Test haelt das fest. Er gehoert in den Wettbewerb, wo Versuche gezaehlt
+werden und ein Vorschlag durch dieselben elf Gates laeuft wie jeder andere.
+Eine Konfiguration still zu aendern, weil eine Zahl dann besser aussieht, waere
+die Umgehung des eigenen Verfahrens - und zwar die bequemste, die dieses
+Projekt bisher hatte.
+
+### Was es an einer offenen Richtung berichtigt
+
+Befund 395 hat festgehalten, dass 'Schlechtestes Jahr' am massgeblichen Punkt
+mit nur 0,39 Punkten Guthaben haelt, und daraus die unbequeme Seite des
+einzigen offenen Weges abgeleitet: Die Jahre, die der Deflated Sharpe braucht,
+laufen unter einem Guthaben, das ein einzelnes schlechtes Jahr aufbraucht.
+
+Unter einem 40er-Deckel steht dieses Gate bei -6,9400, das Guthaben also bei
+3,06 statt 0,39 Punkten. **Das Guthaben ist keine Eigenschaft des Kandidaten,
+sondern eine seiner ungedeckelten Haltedauer.** Ein Ausweg folgt daraus nicht -
+der Deckel ist nicht eingebaut, und bestanden ist auch dort nichts. Was folgt,
+ist eine Einschraenkung: Die Aussage von 395 gilt fuer den Kandidaten, wie er
+gefahren wird.
+
+### Fuenf Wachen haben gegriffen
+
+Alle fuenf zu Recht, und keine wurde umgangen:
+
+* `test_gatezahlen` verlangt, dass **jeder** Typ mit einer Gate-Bilanz
+  eingeordnet ist (Befund 332/333). `Deckelprobe` traegt eine, also eingeordnet
+  unter `VERZEICHNET` - sie haelt feste Staende und urteilt nicht gerade.
+* Dieselbe Datei nagelt die **Zahl** der Traeger fest, damit das Verzeichnis
+  nicht unbemerkt waechst. Von 25 auf 26, mit Begruendung.
+* Drei Tests nagelten `OFFEN[395].zuletzt == 400` fest, mit dem Kommentar "400
+  hat den Eintrag weitergezogen". Jetzt zieht 416 ihn noch einmal weiter. Die
+  Textzusicherungen darueber - dass die Beitraege von 396, 397 und 400 im
+  Eintrag stehen - bleiben unberuehrt; das war ohnehin ihr Inhalt.
+
+Das ist die vierte Runde in Folge, in der die Wachen dieses Projekts die
+eigenen Aenderungen abfangen. Dass sie bei einem Befund greifen, der eine
+Konfiguration **nicht** aendert, ist der beste Teil davon.
