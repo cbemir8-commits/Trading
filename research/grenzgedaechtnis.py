@@ -112,9 +112,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 __all__ = [
+    "FENSTERPROBEN",
     "GEMESSEN",
     "LEITER",
     "QUARTALSPROBE",
+    "Fensterprobe",
     "Grenzlauf",
     "Grenzvergleich",
     "Quartalsprobe",
@@ -619,3 +621,91 @@ QUARTALSPROBE: tuple[Quartalsprobe, ...] = (
         icc_r=0.2550, p_r=0.0020,
     ),
 )
+
+
+@dataclass(frozen=True, slots=True)
+class Fensterprobe:
+    """Eine Erklaerung fuer die Quartalsabhaengigkeit, und was sie gemessen
+    wert ist."""
+
+    name: str
+    vermutung: str
+    gemessen: str
+    traegt: bool
+
+
+#: Der Testabschnitt des Walk-Forward, nachgemessen (Befund 412). Nicht aus
+#: den Trade-Zeiten, sondern aus ``window.test_start``/``test_end``.
+ABSCHNITTE = 32
+ABSCHNITT_TAGE = (89, 92)
+ABSCHNITT_MITTEL = 91.3
+ABSCHNITT_UEBERLAPPUNGEN = 0
+
+#: Drei Erklaerungen fuer die Frage, die Befund 411 offen liess - warum der
+#: Fensterschnitt die Quartalsabhaengigkeit erzeugt. **Alle drei widerlegt**
+#: (Befund 412).
+#:
+#: Und damit kehrt sich die Lesart um. Befund 411 hat gemessen, dass im
+#: **R-Mass** beide Modi dieselbe Quartalsabhaengigkeit zeigen (0,2561
+#: geschnitten gegen 0,2550 kontogeschuetzt). Zusammen mit diesen drei
+#: Widerlegungen heisst das: Der Fensterschnitt **erzeugt** die
+#: Abhaengigkeit nicht. Er aendert nur, ob das Waehrungsmass sie sehen kann.
+#: Die Schlagzeile von 411, "es ist der Fensterschnitt", gilt fuer die
+#: **Kuerzung**, nicht fuer die Abhaengigkeit - das ist eine Berichtigung an
+#: meinem eigenen Eintrag von einem Lauf vorher.
+#:
+#: Was von der Frage bleibt: Warum das Waehrungsmass im durchgehenden Modus
+#: blind wird, ist mit "die Betraege streuen auf einem durchverzinsten Konto
+#: zu weit" benannt und nicht gemessen.
+FENSTERPROBEN: tuple[Fensterprobe, ...] = (
+    Fensterprobe(
+        name="Ueberlappende Abschnitte",
+        vermutung=(
+            "Wenn die Testabschnitte sich ueberschneiden, steht derselbe "
+            "Marktzug in zwei Bloecken - das waere Abhaengigkeit aus dem "
+            "Messaufbau."
+        ),
+        gemessen=(
+            "32 Abschnitte, 89 bis 92 Tage, **null** ueberlappende Paare, "
+            "und kein Trade liegt ausserhalb seines Abschnitts."
+        ),
+        traegt=False,
+    ),
+    Fensterprobe(
+        name="Doppelt gezaehlte Trades",
+        vermutung=(
+            "45 der 156 Trade-Kennungen kommen mehrfach vor - dann waeren "
+            "einige Beobachtungen derselbe Trade."
+        ),
+        gemessen=(
+            "Ein Namensartefakt. 'trade_id' ist 'strategy_id-entry_index', "
+            "und 'entry_index' zaehlt je Fenster neu; die fuenf Trades unter "
+            "'...-211' haben fuenf verschiedene (Symbol, Ein, Aus). Die "
+            "Summe der Fenster ist 156 wie 'all_trades'. **Nichts im "
+            "Projekt verschluesselt auf 'trade_id'**, die Uneindeutigkeit "
+            "ist latent - aber sie ist da."
+        ),
+        traegt=False,
+    ),
+    Fensterprobe(
+        name="Einstiege sammeln sich im Abschnitt",
+        vermutung=(
+            "Wenn jedes Fenster mit Vorlauf beginnt, koennten die Einstiege "
+            "im hinteren oder vorderen Teil liegen; Trades eines Quartals "
+            "kaemen dann aus einem engeren Zeitraum."
+        ),
+        gemessen=(
+            "Gleichmaessig. Mittel 0,5262, Median 0,5326, Drittel 40/66/50 "
+            "von 156, keiner ausserhalb. **Meine erste Messung sagte 0,3205 "
+            "und 96/28/31** - sie normierte auf die Trade-Zeiten des "
+            "Fensters, womit der erste Einstieg je Fenster per Definition "
+            "auf 0 liegt. Gemessen wird gegen 'window.test_start/test_end'."
+        ),
+        traegt=False,
+    ),
+)
+
+
+def traegt_eine_erklaerung() -> bool:
+    """Traegt eine der gemessenen Erklaerungen? Gerechnet, nicht gepflegt."""
+    return any(p.traegt for p in FENSTERPROBEN)

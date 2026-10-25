@@ -36921,3 +36921,87 @@ statt auf dessen Ausstiegszeit - ein Absturz, kein falsches Ergebnis, und
 Und ich habe "p unter 0,005" geschrieben, wo 0,0050 steht. Der Test, der das
 nachprueft, ist daran gefallen; beides ist auf "hoechstens 0,005" berichtigt.
 Eine Zahl, die genau auf der Schranke liegt, ist nicht darunter.
+
+## Vierhundertzwoelf. Drei Erklaerungen fuer die Quartalsabhaengigkeit, alle drei widerlegt
+
+Befund 411 hat gemessen, dass die Quartalskuerzung am Fensterschnitt haengt,
+und offen gelassen, **wie**. Drei Erklaerungen lagen nahe. Gemessen traegt
+keine.
+
+### Erstens: ueberlappende Abschnitte
+
+Wenn die Testabschnitte sich ueberschneiden, steht derselbe Marktzug in zwei
+Bloecken - das waere Abhaengigkeit aus dem Messaufbau und nicht aus der
+Strategie.
+
+    Abschnitte                            32
+    Laenge                        89 bis 92 Tage, Mittel 91,3
+    ueberlappende Paare                    0
+    Trades ausserhalb ihres Abschnitts     0
+
+Gemessen an `window.test_start`/`test_end`, nicht an Trade-Zeiten. Nichts
+ueberlappt.
+
+Nebenher faellt dabei eine Zahl ab, die etwas erklaert: Mit 91,3 Tagen ist ein
+Testabschnitt fast genau ein Quartal. Fenster- und Quartalseinteilung sind also
+fast dieselbe Partition, und ihr ICC-Unterschied (0,1097 gegen 0,2580) ist
+keine zweite Abhaengigkeit, sondern die Trennschaerfe: Die Fenster tragen 0 bis
+12 Trades, die Quartale 2 bis 8, und ungleiche Bloecke machen die
+Permutationsnull breiter. Genau das sagt der Kommentar am Gate seit Befund 135.
+
+### Zweitens: doppelt gezaehlte Trades
+
+45 der 156 Trade-Kennungen kommen mehrfach vor, eine fuenfmal. Das sah nach
+Doppelzaehlung aus - und waere gravierend, denn dann waeren einige der 156
+Beobachtungen derselbe Trade.
+
+Es ist ein Namensartefakt. `trade_id` ist `strategy_id-entry_index`, und
+`entry_index` ist der Balkenindex **innerhalb eines Laufs**; jedes Fenster ist
+ein eigener Lauf. Die fuenf Trades unter `...-211`:
+
+    BTCUSDT  2018-08-29 -> 2018-08-30   -2,15
+    ETHUSDT  2021-11-29 -> 2021-12-03   -1,74
+    ETHUSDT  2022-03-01 -> 2022-03-03   -1,18
+    ...
+
+Fuenf verschiedene (Symbol, Ein, Aus), und die Summe der Fenster ist 156 wie
+`all_trades`. Keine Doppelzaehlung.
+
+Geblieben ist eine Warnung, und sie steht jetzt am Feld: **Nichts im Projekt
+verschluesselt heute auf `trade_id`** - kein `dict`, kein `set` ueber
+`all_trades`. Wer es tut, macht aus 156 Beobachtungen 73, und das trifft die
+wichtigste Zahl des Projekts.
+
+### Drittens: geballte Einstiege
+
+Wenn jedes Fenster mit Vorlauf beginnt, koennten die Einstiege sich im hinteren
+Teil sammeln; Trades eines Quartals kaemen dann aus einem engeren Zeitraum und
+teilten denselben Zug.
+
+    156 Einstiege, Mittel 0,5262, Median 0,5326
+    Drittel 40 / 66 / 50, keiner ausserhalb
+
+Gleichmaessig. **Meine erste Messung sagte Mittel 0,3205 und Drittel
+96/28/31** - sie normierte auf die Trade-Zeiten des jeweiligen Fensters, womit
+der erste Einstieg per Definition auf 0 liegt und die Obergrenze hinter dem
+letzten Ausstieg. Gefunden beim Nachsehen der eigenen Zahl, bevor sie irgendwo
+stand; die richtige Normierung ist der Abschnitt selbst.
+
+### Damit kehrt sich die Lesart von 411 um
+
+Befund 411 hat gemessen, dass im R-Mass **beide** Modi dieselbe
+Quartalsabhaengigkeit zeigen: 0,2561 geschnitten gegen 0,2550 kontogeschuetzt.
+Zusammen mit den drei Widerlegungen heisst das:
+
+> Der Fensterschnitt **erzeugt** die Abhaengigkeit nicht. Er aendert nur, ob
+> das Waehrungsmass sie sehen kann.
+
+Meine Schlagzeile von 411 - "es ist der Fensterschnitt" - gilt fuer die
+**Kuerzung**, nicht fuer die **Abhaengigkeit**. Das ist eine Berichtigung an
+einem eigenen Eintrag von einem Lauf vorher, und sie aendert nichts an den
+Zahlen: Das Gate rechnet in Waehrung, kuerzt im geschnittenen Modus auf 115 und
+im durchgehenden nicht.
+
+Was von der Frage bleibt: Warum das Waehrungsmass im durchgehenden Modus blind
+wird. "Die Betraege streuen auf einem durchverzinsten Konto zu weit" ist
+benannt und nicht gemessen.

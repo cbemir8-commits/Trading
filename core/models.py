@@ -419,6 +419,21 @@ class Trade(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     trade_id: str
+    """Kennung des Trades - **im Walk-Forward nicht eindeutig** (Befund 412).
+
+    Die Engine vergibt sie als ``strategy_id-entry_index``, und
+    ``entry_index`` ist der Balkenindex **innerhalb eines Laufs**. Jedes
+    Walk-Forward-Fenster ist ein eigener Lauf, also tragen Trades mit
+    gleichem Balkenabstand in verschiedenen Fenstern dieselbe Kennung: Am
+    massgeblichen Punkt kommen 45 der 156 Kennungen mehrfach vor, eine
+    fuenfmal, und die fuenf sind fuenf verschiedene Trades.
+
+    Gemessen ist auch, dass derzeit **nichts** im Projekt darauf
+    verschluesselt - kein ``dict`` und kein ``set`` ueber ``all_trades``.
+    Die Uneindeutigkeit ist latent. Wer sie zum Schluessel macht, verliert
+    stillschweigend Beobachtungen, und das trifft die wichtigste Zahl des
+    Projekts: Aus 156 wuerden 73.
+    """
     symbol: str
     side: Side
     strategy_id: str

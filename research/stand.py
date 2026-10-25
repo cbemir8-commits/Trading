@@ -4827,6 +4827,44 @@ BEHOBEN: tuple[Richtung, ...] = (
         "gemessen ist nur, dass er es tut und dass es nicht an der "
         "Positionsgroesse liegt",
         411,
+        zuletzt=412,
+    ),
+    # Befund 412: 411 liess offen, wie der Fensterschnitt die
+    # Quartalsabhaengigkeit erzeugt. Drei Erklaerungen, gemessen.
+    Richtung(
+        "Drei Erklaerungen fuer die Quartalsabhaengigkeit, alle drei widerlegt",
+        "Gemessen statt geschlossen, und alle drei fallen. **Erstens keine "
+        "ueberlappenden Abschnitte**: 32 Testabschnitte, 89 bis 92 Tage "
+        "(Mittel 91,3), **null** ueberlappende Paare, kein Trade ausserhalb "
+        "seines Abschnitts - gemessen an 'window.test_start/test_end', nicht "
+        "an Trade-Zeiten. **Zweitens keine Doppelzaehlung**: 45 der 156 "
+        "Trade-Kennungen kommen mehrfach vor, aber das ist ein "
+        "Namensartefakt - 'trade_id' ist 'strategy_id-entry_index', und der "
+        "Index zaehlt je Fenster neu; die fuenf Trades unter einer Kennung "
+        "haben fuenf verschiedene (Symbol, Ein, Aus), und die Summe der "
+        "Fenster ist 156 wie 'all_trades'. **Drittens keine "
+        "Einstiegsballung**: Mittel 0,5262, Median 0,5326, Drittel 40/66/50 "
+        "von 156. **Damit kehrt sich die Lesart von 411 um.** Dort ist "
+        "gemessen, dass im R-Mass beide Modi dieselbe Quartalsabhaengigkeit "
+        "zeigen (0,2561 gegen 0,2550); zusammen mit diesen drei "
+        "Widerlegungen heisst das: Der Fensterschnitt **erzeugt** die "
+        "Abhaengigkeit nicht, er aendert nur, ob das Waehrungsmass sie sieht. "
+        "Meine Schlagzeile 'es ist der Fensterschnitt' gilt fuer die "
+        "Kuerzung, nicht fuer die Abhaengigkeit - eine Berichtigung an "
+        "meinem eigenen Eintrag. Nebenher gemessen: Die Abschnitte sind mit "
+        "91,3 Tagen fast ein Quartal, Fenster- und Quartalseinteilung sind "
+        "also fast dieselbe Partition; der Unterschied ihrer ICC (0,1097 "
+        "gegen 0,2580) ist eine Frage der Trennschaerfe durch "
+        "Blockgleichmaessigkeit, wie der Kommentar am Gate seit Befund 135 "
+        "sagt - keine zweite Abhaengigkeit. **Und mein Fehler dabei**: Meine "
+        "erste Ballungsmessung gab Mittel 0,3205 und Drittel 96/28/31, weil "
+        "sie auf die Trade-Zeiten des Fensters normierte - damit liegt der "
+        "erste Einstieg je Fenster per Definition auf 0. Gefunden beim "
+        "Nachsehen, bevor die Zahl irgendwo stand. Die uneindeutige Kennung "
+        "steht jetzt als Warnung an 'Trade.trade_id': Nichts "
+        "verschluesselt heute darauf, und wer es tut, macht aus 156 "
+        "Beobachtungen 73",
+        412,
     ),
 )
 
