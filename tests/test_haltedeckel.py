@@ -292,8 +292,10 @@ class TestDieZaehlungIstBerichtigt:
         assert "in der strengen Richtung" in quelle
 
 
-class TestDasRauschenDerStichprobenkorrektur:
-    """Die Aussage, die nebenbei abfiel - und sie ist die unbequemste."""
+class TestDieStichprobeWandertZwischenDenDeckeln:
+    """Die Zahl, die nebenbei abfiel. Befund 417 hat sie "Rauschen" genannt;
+    Befund 418 hat gemessen, dass sie eine echte Wirkung ist - der Versatz
+    bewegt die Groesse um vier, die Deckel um dreizehn."""
 
     def test_der_trade_satz_bleibt_praktisch_gleich(self) -> None:
         from research.haltedeckel import PLATEAUBEREICH
@@ -319,13 +321,18 @@ class TestDasRauschenDerStichprobenkorrektur:
         assert fehlend == 75
         assert (oben - unten) / fehlend == pytest.approx(1 / 6, abs=0.02)
 
-    def test_und_der_kopf_sagt_es_als_verfahrensaussage(self) -> None:
+    def test_und_der_kopf_nennt_es_eine_echte_wirkung(self) -> None:
+        """Hier stand, der Kopf nenne es "ihr eigenes Rauschen" - das hat
+        Befund 418 gemessen und widerlegt: Der Versatz bewegt die Groesse um
+        vier, die Deckel um dreizehn. Dieser Test hat die Ruecknahme
+        angehalten, und das ist seine Aufgabe; jetzt prueft er die
+        berichtigte Aussage."""
         import research.haltedeckel as h
 
         kopf = h.__doc__ or ""
 
-        assert "ihr eigenes Rauschen" in kopf
-        assert "klein gegen die Luecke, die sie misst" in kopf
+        assert "eine **echte** Wirkung des" in kopf
+        assert "Das ist gemessen und falsch" in kopf
 
 
 class TestWasImRegisterStehtZu417:

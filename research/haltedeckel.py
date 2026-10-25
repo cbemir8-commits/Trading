@@ -82,12 +82,30 @@ Was ein Deckel in dieser Gegend ueblicherweise liefert, steht in
 Der Gueteeffekt bleibt echt - plus 0,018 bis 0,024 gegen den ungedeckelten
 Lauf, und das in jeder Sprosse des Bereichs. Was faellt, ist die Schlagzeile.
 
-**Nebenbei gemessen, und es ist eine Aussage ueber das Verfahren**: Zwischen
-Deckeln, die den Trade-Satz kaum veraendern (157 fertige in allen drei), wandert
-die wirksame Stichprobe um dreizehn Beobachtungen. Das ist ein Sechstel der 75,
-die dem Gate fehlen - erzeugt von einem Regler, der fast nichts am Handeln
-aendert. Die Stichprobenkorrektur hat ihr eigenes Rauschen, und es ist nicht
-klein gegen die Luecke, die sie misst.
+**Nebenbei gemessen**: Zwischen Deckeln, die den Trade-Satz kaum veraendern
+(157 fertige in allen drei), wandert die wirksame Stichprobe um dreizehn
+Beobachtungen - ein Sechstel der 75, die dem Gate fehlen, erzeugt von einem
+Regler, der am Handeln fast nichts aendert.
+
+**Und was daraus nicht folgt** (Befund 418). Hier stand, die
+Stichprobenkorrektur habe damit "ihr eigenes Rauschen", und es sei nicht klein
+gegen die Luecke, die sie misst. **Das ist gemessen und falsch.** Elf
+Aufteilungen mit einem Balken Versatz - gleiche Strategie, gleiche Daten -
+bewegen die Groesse um **vier** Beobachtungen bei einer Streuung von 1,33, und
+die bindende Einteilung bleibt in allen elf das Kalenderquartal. Die dreizehn
+sind also das Dreifache der Messstreuung und damit eine **echte** Wirkung des
+Deckels.
+
+Der Satz war in der bequemen Richtung falsch: Er haette kuenftig jeden
+Unterschied in der wirksamen Stichprobe als Rauschen abtun lassen. Richtig
+herum ist die Zahl brauchbar, und sie steht jetzt in
+``aufteilung.STICHPROBE_JE_AUFTEILUNG``.
+
+**Der Schluss oben bleibt**: Der Gipfel bei vierzig Kerzen ist ein
+ausgewaehlter Extremwert unter sieben probierten Werten, und die beiden
+Nachbarn bei 0,68 bleiben die bessere Schaetzung. Das tragende Argument ist
+die **Auswahl**, nicht das Rauschen - was 417 daneben auf das Rauschen
+gestuetzt hat, faellt weg.
 """
 
 from __future__ import annotations

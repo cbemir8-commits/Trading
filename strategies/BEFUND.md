@@ -37440,3 +37440,81 @@ Das ist keine Kritik an der Korrektur - sie ist in Befund 410 bis 414 von
 mehreren Seiten gemessen und haelt. Es ist eine Groessenangabe fuer jeden
 kuenftigen Vergleich zweier Varianten: Ein Unterschied von zehn wirksamen
 Beobachtungen ist in dieser Gegend kein Befund.
+
+## Vierhundertachtzehn. Die Stichprobe ist stabil, und mein Rauschen war geschlossen
+
+Befund 417 endete mit einem Satz, den ich als Groessenangabe fuer kuenftige
+Vergleiche gedacht hatte:
+
+> Die Stichprobenkorrektur hat ihr eigenes Rauschen, und es ist nicht klein
+> gegen die Luecke, die sie misst. [...] Ein Unterschied von zehn wirksamen
+> Beobachtungen ist in dieser Gegend kein Befund.
+
+Das war **geschlossen, nicht gemessen** - aus dreizehn Beobachtungen
+Unterschied zwischen drei Haltedeckeln, deren Trades sich durchaus
+unterscheiden. Ob dreizehn viel oder wenig ist, haengt daran, was sich bewegt,
+wenn sich **nichts** bewegt. Und das war nie gemessen.
+
+### Die Oberflaeche dafuer gab es schon
+
+`cli aufteilung` aus Befund 400 misst jede Gate-Groesse ueber elf Aufteilungen
+mit einem Balken Versatz - gleiche Strategie, gleiche Daten, nur ein anderer
+Reihenanfang. Sie fuehrte Jahresrendite, Guete, DSR, schlechtestes Jahr und die
+Gate-Bilanz mit.
+
+Die wirksame Stichprobe nicht. Also ausgerechnet die Groesse, deren Streuung
+ich behauptet hatte, fehlte auf der Oberflaeche, die fuer Streuungen gebaut ist.
+Das ist dieselbe Lehre wie 394, 405 und 415, nur diesmal an einer Zahl, die ich
+selbst kurz zuvor in die Welt gesetzt habe.
+
+### Gemessen
+
+    Wirksame Stichprobe: 115 bis 119 (Spanne 4, Streuung 1.33)
+    gebunden am Kalenderquartal
+
+Vier Beobachtungen, Streuung 1,33, ueber elf Aufteilungen. Und die bindende
+Einteilung ist in **allen elf** das Kalenderquartal - auch woran die Kuerzung
+haengt, ist keine Frage der Aufteilung. Das ist ein Nebenbefund zu 410, und er
+stuetzt ihn.
+
+Der gemeldete Punkt liegt dabei am **unteren** Rand: 115 ist der strengste der
+elf Werte, nicht der mittlere.
+
+### Damit ist mein Satz widerlegt
+
+    Deckel-Spanne (417)       13 Beobachtungen
+    Messstreuung (418)         4 Beobachtungen, Streuung 1,33
+    Verhaeltnis               3,25-fach, oder 9,8 Streuungen
+
+Die dreizehn sind das Dreifache der Messstreuung. Sie sind damit eine **echte**
+Wirkung des Deckels auf die Blockstruktur - der Deckel kuerzt die Haltedauer,
+und kuerzere Haltedauern aendern, wie Trades sich innerhalb eines Quartals
+aehneln. Kein Rauschen.
+
+Der Fehler lag in der **bequemen** Richtung: Mein Satz haette kuenftig jeden
+Unterschied in der wirksamen Stichprobe als Rauschen abtun lassen - und damit
+jede unbequeme Messung. Richtig herum gelesen ist die Zahl brauchbar, und so
+steht sie jetzt in `aufteilung.STICHPROBE_JE_AUFTEILUNG`: Ein Unterschied von
+vier liegt in der Messstreuung, einer von dreizehn nicht.
+
+### Was 417 nicht verliert
+
+Seinen Schluss. Der Gipfel bei vierzig Kerzen bleibt ein **ausgewaehlter**
+Extremwert unter sieben probierten Werten, die beiden Nachbarn bei 0,68 bleiben
+die bessere Schaetzung, und eingebaut wird nichts.
+
+Das tragende Argument dafuer war immer die Auswahl - sieben Werte probiert, den
+besten genannt. Was 417 daneben auf das Rauschen gestuetzt hat, faellt weg. Ein
+Schluss, der auf zwei Beinen stand und auf einem weiterlaeuft, ist kein neuer
+Schluss; aber es gehoert dazu, zu sagen, welches Bein gebrochen ist.
+
+### Und mein eigener Test hat die Ruecknahme angehalten
+
+`test_und_der_kopf_sagt_es_als_verfahrensaussage` aus 417 nagelte den Satz
+"ihr eigenes Rauschen" im Modulkopf fest. Als ich ihn zurueckgenommen habe, ist
+der Test gefallen - genau wie er soll.
+
+Das ist der Fall, fuer den diese Textwachen gebaut sind: Eine Aussage, die
+irgendwo als Zusicherung steht, laesst sich nicht stillschweigend aendern. Die
+Klasse heisst jetzt `TestDieStichprobeWandertZwischenDenDeckeln` und prueft die
+berichtigte Aussage; der Name "Rauschen" ist mit dem Satz gegangen.

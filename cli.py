@@ -15707,7 +15707,11 @@ def aufteilung(
     from research.admission import load_trials
     from research.aufteilung import banden, beurteile, streuung
     from research.datenstand import alle_geschnitten, reihenzeile
-    from research.gates import GateStatus, evaluate_gates
+    from research.gates import (
+        GateStatus,
+        evaluate_gates,
+        stichprobe_wie_im_gate,
+    )
     from research.randschnitt import ohne_zensierte
     from research.seeds import spitzenkandidat
     from research.suchbudget import Kandidat
@@ -15762,7 +15766,18 @@ def aufteilung(
     gesammelt["Jahresrendite"] = []
     gesammelt["Guete je Trade"] = []
     gesammelt["bestandene Gates"] = []
+    # **Die wirksame Stichprobe gehoert dazu** (Befund 418). Befund 417 hat
+    # behauptet, diese Groesse habe ein eigenes Rauschen von rund dreizehn
+    # Beobachtungen - gemessen an drei Haltedeckeln, deren Trades sich aber
+    # unterscheiden. Hier steht die Gegenprobe: dieselbe Strategie, dieselben
+    # Daten, nur ein Balken Versatz. Was sich dabei bewegt, bewegt sich ohne
+    # Grund in der Sache.
+    gesammelt["wirksame Stichprobe"] = []
     lattenzweige: set[str] = set()
+    #: Welche Einteilung die Stichprobe je Aufteilung bindet (Befund 410/418).
+    #: Wechselt sie mit dem Versatz, ist auch die bindende Abhaengigkeit eine
+    #: Frage der Aufteilung und nicht nur ihr Wert.
+    einteilungen: set[str] = set()
     # **Alle elf Gates, nicht nur die fuenf aus der Streuungstafel** (Befund
     # 401): Die Frage "ist dieses Urteil eines" gilt fuer jedes.
     jegate: dict[str, list[float]] = {}
@@ -15773,6 +15788,7 @@ def aufteilung(
     tafel.add_column("weg", justify="right")
     tafel.add_column("Fenster", justify="right")
     tafel.add_column("fertig", justify="right")
+    tafel.add_column("n_eff", justify="right")
     tafel.add_column("CAGR", justify="right")
     tafel.add_column("DSR", justify="right")
     tafel.add_column("schl. Jahr", justify="right")
@@ -15819,6 +15835,16 @@ def aufteilung(
             form.sharpe_je_trade if form else 0.0
         )
         gesammelt["bestandene Gates"].append(float(bestanden))
+        stichprobe = stichprobe_wie_im_gate(
+            fertig,
+            beine=getattr(bericht, "beine", None),
+            bloecke=[
+                [float(x.net_pnl) for x in w.trades]
+                for w in ohne_zensierte(bericht).windows
+            ],
+        )
+        gesammelt["wirksame Stichprobe"].append(float(stichprobe.effektiv))
+        einteilungen.add(stichprobe.einteilung)
         # **Die Messlatte traegt zwei Groessen** (Befund 395) - deshalb steht
         # sie nicht in der Streuungstafel, sondern ihre Zweige darunter.
         lattenzweige.add(urteil["Messlatte"].bedingung)
@@ -15833,6 +15859,7 @@ def aufteilung(
             str(weg),
             str(len(bericht.windows)),
             str(len(fertig)),
+            str(int(gesammelt["wirksame Stichprobe"][-1])),
             f"{gesammelt['Jahresrendite'][-1]:.4f}",
             f"{urteil['Deflated Sharpe'].value:.4f}",
             f"{urteil['Schlechtestes Jahr'].value:.4f}",
@@ -15942,6 +15969,22 @@ def aufteilung(
             f"Abstand gegen {latte.spanne:.3f} Spanne - "
             f"{'offen' if latte.deckt(fehlt) else 'entschieden'}.[/]"
         )
+
+    # **Woran die Stichprobe haengt, je Aufteilung** (Befund 418). Befund 410
+    # hat gemessen, dass acht Einteilungen mitlaufen und die strengste zaehlt.
+    # Wechselt die bindende mit dem Versatz, ist auch sie eine Frage der
+    # Aufteilung - und eine Spanne in 'wirksame Stichprobe' hat dann zwei
+    # Ursachen statt einer.
+    stichprobe_streuung = streuung(
+        "wirksame Stichprobe", gesammelt["wirksame Stichprobe"]
+    )
+    console.print(
+        f"\n[dim]Wirksame Stichprobe: {min(gesammelt['wirksame Stichprobe']):.0f} "
+        f"bis {max(gesammelt['wirksame Stichprobe']):.0f} "
+        f"(Spanne {stichprobe_streuung.spanne:.0f}, Streuung "
+        f"{stichprobe_streuung.streuung:.2f}) - gebunden am "
+        f"{', '.join(sorted(einteilungen))}.[/]"
+    )
 
     # **Die Asymmetrie** (Befund 402): Eine Spanne ueber n Aufteilungen ist
     # eine Untergrenze. 'offen' bleibt offen, 'entschieden' gilt nur hier.

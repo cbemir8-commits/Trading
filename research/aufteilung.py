@@ -126,7 +126,14 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import pairwise
 
-__all__ = ["VERSATZ", "Aufteilungsstreuung", "beurteile", "streuung"]
+__all__ = [
+    "BINDENDE_EINTEILUNG_JE_AUFTEILUNG",
+    "STICHPROBE_JE_AUFTEILUNG",
+    "VERSATZ",
+    "Aufteilungsstreuung",
+    "beurteile",
+    "streuung",
+]
 
 #: Was ``beurteile`` zurueckgibt.
 ENTSCHIEDEN = "entschieden"
@@ -316,3 +323,38 @@ def banden(name: str, werte: Sequence[float], *, anzahl: int = 3) -> Bandenbild:
         bandenspannen=tuple(max(s) - min(s) for s in stuecke),
         drift=max(mittel) - min(mittel),
     )
+
+
+#: Was sich an der **wirksamen Stichprobe** bewegt, wenn sich nichts bewegt
+#: (Befund 418). Elf Aufteilungen, ein Balken Versatz je Schritt, dieselbe
+#: Strategie, dieselben Daten - gemessen mit ``cli aufteilung``, das die
+#: Groesse seit diesem Befund mitfuehrt.
+#:
+#: **Das widerlegt eine Behauptung aus Befund 417.** Dort steht, die
+#: Stichprobenkorrektur habe "ihr eigenes Rauschen", und es sei "nicht klein
+#: gegen die Luecke, die sie misst" - geschlossen aus dreizehn Beobachtungen
+#: Unterschied zwischen drei Haltedeckeln. Gemessen bewegt der Versatz die
+#: Groesse um **vier** Beobachtungen bei einer Streuung von 1,33. Die
+#: dreizehn sind also dreimal die Messstreuung und damit eine **echte**
+#: Wirkung des Deckels, kein Rauschen.
+#:
+#: Der Satz aus 417 war in der bequemen Richtung falsch: Er haette kuenftig
+#: jeden Unterschied in der wirksamen Stichprobe als Rauschen abtun lassen.
+#: Richtig herum gelesen ist die Zahl brauchbar - ein Unterschied von vier
+#: liegt in der Messstreuung, einer von dreizehn nicht.
+#:
+#: Was 417 **nicht** verliert: den Schluss. Der Gipfel bei vierzig Kerzen
+#: bleibt ein ausgewaehlter Extremwert unter sieben probierten, und die
+#: beiden Nachbarn bei 0,68 bleiben die bessere Schaetzung. Das Argument ist
+#: die **Auswahl**, nicht das Rauschen.
+STICHPROBE_JE_AUFTEILUNG: dict[str, float] = {
+    "aufteilungen": 11,
+    "unten": 115,
+    "oben": 119,
+    "spanne": 4,
+    "streuung": 1.33,
+}
+
+#: Und die bindende Einteilung haelt ueber alle elf (Befund 410/418). Auch
+#: **woran** die Kuerzung haengt, ist damit keine Frage der Aufteilung.
+BINDENDE_EINTEILUNG_JE_AUFTEILUNG = "Kalenderquartal"

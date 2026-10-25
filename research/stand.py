@@ -5038,6 +5038,39 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Stichprobenkorrektur hat ihr eigenes Rauschen, und es ist nicht "
         "klein gegen die Luecke, die sie misst",
         417,
+        zuletzt=418,
+    ),
+    # Befund 418: 417 hat der Stichprobenkorrektur ein eigenes Rauschen
+    # zugeschrieben - geschlossen, nicht gemessen. Was bewegt sie, wenn sich
+    # nichts bewegt?
+    Richtung(
+        "Die Stichprobe ist stabil, und mein Rauschen war geschlossen",
+        "Befund 417 hat aus dreizehn Beobachtungen Unterschied zwischen drei "
+        "Haltedeckeln geschlossen, die Stichprobenkorrektur habe 'ihr "
+        "eigenes Rauschen', und es sei 'nicht klein gegen die Luecke, die "
+        "sie misst'. Gemessen ist das **falsch**. Die Oberflaeche dafuer gab "
+        "es schon - 'cli aufteilung' aus Befund 400 misst jede Gate-Groesse "
+        "ueber elf Aufteilungen mit einem Balken Versatz -, nur fuehrte sie "
+        "ausgerechnet die wirksame Stichprobe nicht mit. Jetzt tut sie es, "
+        "samt bindender Einteilung: Die Groesse bewegt sich von **115 bis "
+        "119**, Spanne **4**, Streuung **1,33**, und in allen elf "
+        "Aufteilungen bindet das Kalenderquartal. Die dreizehn aus 417 sind "
+        "damit das **Dreifache** der Messstreuung - also eine echte Wirkung "
+        "des Deckels auf die Blockstruktur und kein Rauschen. **Mein Satz "
+        "war in der bequemen Richtung falsch**: Er haette kuenftig jeden "
+        "Unterschied in der wirksamen Stichprobe als Rauschen abtun lassen. "
+        "Richtig herum gelesen ist die Zahl brauchbar und steht jetzt in "
+        "'aufteilung.STICHPROBE_JE_AUFTEILUNG' - ein Unterschied von vier "
+        "liegt in der Messstreuung, einer von dreizehn nicht. **Was 417 "
+        "nicht verliert**: seinen Schluss. Der Gipfel bei vierzig Kerzen "
+        "bleibt ein ausgewaehlter Extremwert unter sieben probierten, die "
+        "Nachbarn bei 0,68 bleiben die bessere Schaetzung, und eingebaut "
+        "wird nichts. Das tragende Argument ist die Auswahl; was daneben auf "
+        "das Rauschen gestuetzt war, faellt weg. **Und ein Nebenbefund zu "
+        "410**: Dass das Kalenderquartal bindet, haelt ueber alle elf "
+        "Aufteilungen - auch woran die Kuerzung haengt, ist keine Frage der "
+        "Aufteilung",
+        418,
     ),
 )
 
