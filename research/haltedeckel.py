@@ -55,6 +55,39 @@ Entscheidende.
 Versuche gezaehlt werden und ein Vorschlag durch dieselben elf Gates laeuft
 wie jeder andere. Eine Konfiguration still zu aendern, weil eine Zahl dann
 besser aussieht, waere die Umgehung des eigenen Verfahrens.
+
+Und was der Gipfel wirklich ist (Befund 417)
+--------------------------------------------
+Befund 416 hat den Bereich mit plus/minus 50 Prozent abgetastet - 20, 40, 60.
+Das Plateau-Gate dieses Projekts setzt fuer eine Stellgroesse **plus/minus 20
+Prozent** an, fuer vierzig Kerzen also 32 und 48. Nachgemessen:
+
+    Deckel    n_eff    Guete      DSR
+         0      115   0,2708   0,5826
+        32      114   0,2890   0,6838
+        40      123   0,2951   0,7903
+        48      110   0,2930   0,6804
+
+**Die Guete ist ein Plateau, der Gipfel ist eine Spitze - und zwar in der
+Stichprobe.** Ueber 32/40/48 liegt die Guete zwischen 0,2890 und 0,2951, eine
+Spanne von zwei Prozent; die wirksame Stichprobe zwischen 110 und 123, eine
+Spanne von zwoelf. Der Sprung des Deflated Sharpe auf 0,7903 ist also die
+**guenstigste Stichprobenkorrektur** unter sieben probierten Werten, nicht die
+bessere Strategie.
+
+Was ein Deckel in dieser Gegend ueblicherweise liefert, steht in
+``ehrlicher_dsr``: das Mittel der beiden Nachbarn, **0,6821**. Dorthin fehlen
+0,268 auf die Latte, nicht 0,160.
+
+Der Gueteeffekt bleibt echt - plus 0,018 bis 0,024 gegen den ungedeckelten
+Lauf, und das in jeder Sprosse des Bereichs. Was faellt, ist die Schlagzeile.
+
+**Nebenbei gemessen, und es ist eine Aussage ueber das Verfahren**: Zwischen
+Deckeln, die den Trade-Satz kaum veraendern (157 fertige in allen drei), wandert
+die wirksame Stichprobe um dreizehn Beobachtungen. Das ist ein Sechstel der 75,
+die dem Gate fehlen - erzeugt von einem Regler, der fast nichts am Handeln
+aendert. Die Stichprobenkorrektur hat ihr eigenes Rauschen, und es ist nicht
+klein gegen die Luecke, die sie misst.
 """
 
 from __future__ import annotations
@@ -63,11 +96,17 @@ from dataclasses import dataclass
 
 __all__ = [
     "DECKEL",
+    "PLATEAUBEREICH",
+    "VARIANTEN",
     "VERSUCHE_GEZAEHLT",
     "VERSUCHE_IM_LAUF",
     "Deckelprobe",
     "bester",
+    "ehrlicher_dsr",
+    "guetespanne",
     "ist_mengeneffekt",
+    "ist_spitze_in_der_stichprobe",
+    "stichprobenspanne",
 ]
 
 
@@ -117,6 +156,19 @@ DECKEL: tuple[Deckelprobe, ...] = (
         guete=0.2951, dsr=0.7903, bestanden=9, gesamt=11,
         laengster_halt=40, deckel_ausstiege=25,
     ),
+    # Die plus/minus-20-Prozent-Nachbarn des Gipfels, nachgemessen in
+    # Befund 417 - der Bereich, den das Plateau-Gate des Projekts fuer eine
+    # Stellgroesse ansetzt. Befund 416 hatte nur plus/minus 50 Prozent.
+    Deckelprobe(
+        kerzen=32, fertig=157, n_eff=114, bindend="Kalendermonat",
+        guete=0.2890, dsr=0.6838, bestanden=9, gesamt=11,
+        laengster_halt=32, deckel_ausstiege=31,
+    ),
+    Deckelprobe(
+        kerzen=48, fertig=157, n_eff=110, bindend="Kalendermonat",
+        guete=0.2930, dsr=0.6804, bestanden=9, gesamt=11,
+        laengster_halt=48, deckel_ausstiege=18,
+    ),
     Deckelprobe(
         kerzen=60, fertig=156, n_eff=121, bindend="Kalendermonat",
         guete=0.2698, dsr=0.6234, bestanden=9, gesamt=11,
@@ -133,9 +185,19 @@ DECKEL: tuple[Deckelprobe, ...] = (
 #: der zum Messzeitpunkt galt.
 VERSUCHE_IM_LAUF = 0.7903
 
-#: Und mit den sechs probierten Varianten als Versuche (Befund 232). Der
+#: Und mit allen probierten Varianten als Versuche (Befund 232). Der
 #: Unterschied ist klein; dass er gerechnet wird, ist der Punkt.
-VERSUCHE_GEZAEHLT = 0.7858
+#:
+#: **Die Zahl ist in Befund 417 berichtigt.** Befund 416 hat "sechs probierte
+#: Varianten" gezaehlt und 209 Versuche gerechnet - darunter war aber Deckel
+#: 0, und der ist der bestehende Punkt, nicht ein neuer Versuch. Es waren
+#: fuenf neue (208 Versuche, DSR 0,7865); mit den beiden Nachbarn aus 417
+#: sind es sieben (210, DSR 0,7850). Die Richtung stimmte, die Zahl war
+#: eine zu hoch - und in der strengen Richtung, was sie nicht besser macht.
+VERSUCHE_GEZAEHLT = 0.7850
+
+#: Wie viele **neue** Varianten probiert sind. Deckel 0 zaehlt nicht mit.
+VARIANTEN = 7
 
 
 def bester() -> Deckelprobe:
@@ -155,3 +217,52 @@ def ist_mengeneffekt(toleranz: int = 5) -> bool:
     """
     zahlen = [d.fertig for d in DECKEL]
     return max(zahlen) - min(zahlen) > toleranz
+
+
+#: Die Nachbarschaft, die das Plateau-Gate fuer eine Stellgroesse ansetzt:
+#: plus/minus 20 Prozent. Fuer vierzig Kerzen also zweiunddreissig und
+#: achtundvierzig (Befund 417).
+PLATEAUBEREICH = (32, 40, 48)
+
+
+def _je_kerzen(kerzen: int) -> Deckelprobe:
+    return next(d for d in DECKEL if d.kerzen == kerzen)
+
+
+def guetespanne() -> tuple[float, float]:
+    """Kleinste und groesste Guete im Plateaubereich - **gerechnet**."""
+    werte = [_je_kerzen(k).guete for k in PLATEAUBEREICH]
+    return min(werte), max(werte)
+
+
+def stichprobenspanne() -> tuple[int, int]:
+    """Dasselbe fuer die wirksame Stichprobe."""
+    werte = [_je_kerzen(k).n_eff for k in PLATEAUBEREICH]
+    return min(werte), max(werte)
+
+
+def ist_spitze_in_der_stichprobe() -> bool:
+    """Steht der DSR-Gipfel auf der Stichprobe und nicht auf der Guete?
+
+    Gerechnet aus der Tabelle: Die Guete ist im Plateaubereich praktisch
+    gleich (0,2890 bis 0,2951, eine Spanne von 0,006), die wirksame
+    Stichprobe nicht (110 bis 123, dreizehn Beobachtungen). Faellt die
+    Antwort einmal anders aus, ist der Satz im Kopf falsch und faellt mit.
+    """
+    guete_unten, guete_oben = guetespanne()
+    n_unten, n_oben = stichprobenspanne()
+    guete_relativ = (guete_oben - guete_unten) / guete_unten
+    n_relativ = (n_oben - n_unten) / n_unten
+    return n_relativ > 3 * guete_relativ
+
+
+def ehrlicher_dsr() -> float:
+    """Der DSR eines gedeckelten Laufs, ohne den Gipfel auszuwaehlen.
+
+    Das Mittel der beiden Nachbarn - nicht der Gipfel selbst. Wer den Gipfel
+    nennt, nennt die guenstigste Stichprobenkorrektur von sieben probierten
+    Werten; wer die Nachbarn nimmt, nennt, was ein Deckel in dieser Gegend
+    **ueblicherweise** liefert.
+    """
+    nachbarn = [_je_kerzen(k).dsr for k in (32, 48)]
+    return sum(nachbarn) / len(nachbarn)

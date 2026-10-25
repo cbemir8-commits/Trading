@@ -5003,6 +5003,41 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Eigenschaft des Kandidaten, sondern eine seiner ungedeckelten "
         "Haltedauer",
         416,
+        zuletzt=417,
+    ),
+    # Befund 417: 416 hat den Bereich mit plus/minus 50 Prozent abgetastet.
+    # Das Plateau-Gate setzt plus/minus 20 an - was sagt der Gipfel dort?
+    Richtung(
+        "Der Deckel-Gipfel ist eine Spitze, und zwar in der Stichprobe",
+        "Befund 416 hat 20, 40 und 60 Kerzen gemessen - plus/minus 50 "
+        "Prozent. Das Plateau-Gate dieses Projekts setzt fuer eine "
+        "Stellgroesse **plus/minus 20 Prozent** an, fuer vierzig Kerzen also "
+        "32 und 48; die waren nicht gemessen. Nachgemessen: 32 gibt DSR "
+        "**0,6838**, 48 gibt **0,6804** - beide gut einen Zehntel unter dem "
+        "Gipfel von 0,7903. **Und die Zerlegung sagt, woran das liegt**: Die "
+        "Guete ist ueber 32/40/48 praktisch gleich (0,2890 / 0,2951 / "
+        "0,2930, Spanne zwei Prozent), die wirksame Stichprobe nicht (114 / "
+        "123 / 110, Spanne zwoelf). Der Gueteeffekt des Deckels ist ein "
+        "**Plateau** und echt - plus 0,018 bis 0,024 gegen ungedeckelt, in "
+        "jeder Sprosse. Der DSR-Gipfel ist eine **Spitze in der "
+        "Stichprobe**: die guenstigste Korrektur unter sieben probierten "
+        "Werten, nicht die bessere Strategie. Was ein Deckel in dieser "
+        "Gegend ueblicherweise liefert, ist das Mittel der Nachbarn - "
+        "**0,6821**, und dorthin fehlen 0,268 auf die Latte statt 0,160. "
+        "Damit ist die Schlagzeile von 416 gefallen, nicht seine Messung. "
+        "**Eine Zahl dort ist zu berichtigen**: 416 hat 'sechs probierte "
+        "Varianten' gezaehlt und 209 Versuche gerechnet, aber Deckel 0 ist "
+        "der bestehende Punkt und kein neuer Versuch - es waren fuenf (208, "
+        "DSR 0,7865), mit den beiden Nachbarn sieben (210, DSR 0,7850). Der "
+        "Fehler lag in der strengen Richtung, was ihn nicht besser macht. "
+        "**Und eine Aussage ueber das Verfahren fiel nebenbei ab**: Zwischen "
+        "Deckeln, die den Trade-Satz kaum beruehren (157 fertige in allen "
+        "drei), wandert die wirksame Stichprobe um **dreizehn** "
+        "Beobachtungen - ein Sechstel der 75, die dem Gate fehlen, erzeugt "
+        "von einem Regler, der fast nichts am Handeln aendert. Die "
+        "Stichprobenkorrektur hat ihr eigenes Rauschen, und es ist nicht "
+        "klein gegen die Luecke, die sie misst",
+        417,
     ),
 )
 

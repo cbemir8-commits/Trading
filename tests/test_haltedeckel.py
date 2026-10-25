@@ -199,3 +199,161 @@ class TestWasImRegisterSteht:
         from research.stand import BEHOBEN
 
         assert next(r for r in BEHOBEN if r.befund == 415).zuletzt == 416
+
+
+class TestDerGipfelIstEineSpitzeInDerStichprobe:
+    """Befund 417. Befund 416 hat plus/minus 50 Prozent abgetastet; das
+    Plateau-Gate setzt plus/minus 20 an."""
+
+    def test_der_plateaubereich_ist_der_des_gates(self) -> None:
+        from research.haltedeckel import PLATEAUBEREICH
+
+        assert PLATEAUBEREICH == (32, 40, 48)
+        for kerzen in PLATEAUBEREICH:
+            assert _deckel(kerzen)
+
+    def test_beide_nachbarn_liegen_deutlich_unter_dem_gipfel(self) -> None:
+        from research.haltedeckel import bester
+
+        for kerzen in (32, 48):
+            abstand = bester().dsr - _deckel(kerzen).dsr
+
+            assert abstand > 0.10, kerzen
+
+    def test_die_guete_ist_ein_plateau(self) -> None:
+        from research.haltedeckel import guetespanne
+
+        unten, oben = guetespanne()
+
+        assert (oben - unten) / unten < 0.03
+        assert unten > _deckel(0).guete, "und liegt ueber dem ungedeckelten"
+
+    def test_die_stichprobe_ist_es_nicht(self) -> None:
+        from research.haltedeckel import stichprobenspanne
+
+        unten, oben = stichprobenspanne()
+
+        assert (unten, oben) == (110, 123)
+        assert (oben - unten) / unten > 0.10
+
+    def test_und_daraus_folgt_die_spitze(self) -> None:
+        from research.haltedeckel import ist_spitze_in_der_stichprobe
+
+        assert ist_spitze_in_der_stichprobe()
+
+    def test_der_ehrliche_wert_ist_das_mittel_der_nachbarn(self) -> None:
+        from research.haltedeckel import bester, ehrlicher_dsr
+
+        assert ehrlicher_dsr() == pytest.approx(0.6821, abs=5e-4)
+        assert ehrlicher_dsr() < bester().dsr
+
+    def test_und_die_luecke_ist_dort_deutlich_groesser(self) -> None:
+        from research.haltedeckel import bester, ehrlicher_dsr
+
+        luecke_ehrlich = 0.95 - ehrlicher_dsr()
+        luecke_gipfel = 0.95 - bester().dsr
+
+        assert luecke_ehrlich == pytest.approx(0.2679, abs=5e-4)
+        assert luecke_ehrlich > 1.6 * luecke_gipfel
+
+    def test_der_gueteeffekt_bleibt_echt(self) -> None:
+        """Was faellt, ist die Schlagzeile - nicht die Messung."""
+        from research.haltedeckel import PLATEAUBEREICH
+
+        for kerzen in PLATEAUBEREICH:
+            gewinn = _deckel(kerzen).guete - _deckel(0).guete
+
+            assert 0.017 < gewinn < 0.025, kerzen
+
+
+class TestDieZaehlungIstBerichtigt:
+    def test_deckel_null_zaehlt_nicht_als_versuch(self) -> None:
+        from research.haltedeckel import VARIANTEN
+
+        assert VARIANTEN == 7
+        assert len(DECKEL) - 1 == VARIANTEN
+
+    def test_der_abzug_steht_auf_sieben_varianten(self) -> None:
+        from research.haltedeckel import VERSUCHE_GEZAEHLT
+
+        assert abs(VERSUCHE_GEZAEHLT - 0.7850) < 1e-9
+
+    def test_und_die_quelle_sagt_was_in_416_falsch_war(self) -> None:
+        """Die Berichtigung steht als '#:'-Kommentar an der Konstanten -
+        Konstanten tragen keinen Docstring, also wird die Quelle geprueft."""
+        from pathlib import Path
+
+        import research.haltedeckel as h
+
+        quelle = Path(h.__file__).read_text(encoding="utf-8")
+
+        assert "Die Zahl ist in Befund 417 berichtigt" in quelle
+        assert "eine zu hoch" in quelle
+        assert "in der strengen Richtung" in quelle
+
+
+class TestDasRauschenDerStichprobenkorrektur:
+    """Die Aussage, die nebenbei abfiel - und sie ist die unbequemste."""
+
+    def test_der_trade_satz_bleibt_praktisch_gleich(self) -> None:
+        from research.haltedeckel import PLATEAUBEREICH
+
+        zahlen = {_deckel(k).fertig for k in PLATEAUBEREICH}
+
+        assert zahlen == {157}
+
+    def test_und_die_stichprobe_wandert_trotzdem_um_dreizehn(self) -> None:
+        from research.haltedeckel import stichprobenspanne
+
+        unten, oben = stichprobenspanne()
+
+        assert oben - unten == 13
+
+    def test_das_ist_ein_sechstel_der_fehlenden(self) -> None:
+        from research.haltedeckel import stichprobenspanne
+        from research.referenz import SPOTPUNKT
+
+        unten, oben = stichprobenspanne()
+        fehlend = SPOTPUNKT.noetiges_n() - SPOTPUNKT.effektiv
+
+        assert fehlend == 75
+        assert (oben - unten) / fehlend == pytest.approx(1 / 6, abs=0.02)
+
+    def test_und_der_kopf_sagt_es_als_verfahrensaussage(self) -> None:
+        import research.haltedeckel as h
+
+        kopf = h.__doc__ or ""
+
+        assert "ihr eigenes Rauschen" in kopf
+        assert "klein gegen die Luecke, die sie misst" in kopf
+
+
+class TestWasImRegisterStehtZu417:
+    def test_der_eintrag_nennt_die_nachbarn(self) -> None:
+        from research.stand import BEHOBEN
+
+        eintrag = next(r for r in BEHOBEN if r.befund == 417)
+
+        assert "**0,6838**" in eintrag.ergebnis
+        assert "**0,6804**" in eintrag.ergebnis
+
+    def test_und_die_zerlegung(self) -> None:
+        from research.stand import BEHOBEN
+
+        eintrag = next(r for r in BEHOBEN if r.befund == 417)
+
+        assert "Spitze in der Stichprobe" in eintrag.ergebnis
+        assert "0,6821" in eintrag.ergebnis
+
+    def test_und_die_berichtigte_zaehlung(self) -> None:
+        from research.stand import BEHOBEN
+
+        eintrag = next(r for r in BEHOBEN if r.befund == 417)
+
+        assert "kein neuer Versuch" in eintrag.ergebnis
+        assert "0,7850" in eintrag.ergebnis
+
+    def test_und_416_zeigt_nach_vorn(self) -> None:
+        from research.stand import BEHOBEN
+
+        assert next(r for r in BEHOBEN if r.befund == 416).zuletzt == 417

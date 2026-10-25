@@ -37369,3 +37369,74 @@ Alle fuenf zu Recht, und keine wurde umgangen:
 Das ist die vierte Runde in Folge, in der die Wachen dieses Projekts die
 eigenen Aenderungen abfangen. Dass sie bei einem Befund greifen, der eine
 Konfiguration **nicht** aendert, ist der beste Teil davon.
+
+## Vierhundertsiebzehn. Der Deckel-Gipfel ist eine Spitze, und zwar in der Stichprobe
+
+Befund 416 hat einen Haltedeckel von vierzig Kerzen gefunden, der den Deflated
+Sharpe von 0,5826 auf 0,7903 hebt, und ihn als Kandidaten verzeichnet statt
+eingebaut - weil der Gipfel nicht-monoton in der Mitte von sechs gemessenen
+Werten lag.
+
+Abgetastet war der Bereich mit **plus/minus 50 Prozent**: 20, 40, 60. Das
+Plateau-Gate dieses Projekts setzt fuer eine Stellgroesse **plus/minus 20
+Prozent** an und wertet das Minimum ueber die Dimensionen:
+
+> Ein Plateau ist man in **jeder** Richtung oder gar nicht.
+
+Fuer vierzig Kerzen sind das 32 und 48. Die waren nicht gemessen.
+
+### Nachgemessen
+
+    Deckel    n_eff    Guete      DSR
+         0      115   0,2708   0,5826
+        32      114   0,2890   0,6838
+        40      123   0,2951   0,7903
+        48      110   0,2930   0,6804
+
+Beide Nachbarn liegen gut einen Zehntel unter dem Gipfel. Kein Einbruch - aber
+auch kein Plateau.
+
+### Die Zerlegung sagt, woran es liegt
+
+    Groesse            32        40        48    Spanne
+    Guete          0,2890    0,2951    0,2930      2 %
+    n_eff             114       123       110     12 %
+
+**Der Gueteeffekt ist ein Plateau, der DSR-Gipfel eine Spitze - und die Spitze
+sitzt in der Stichprobe.** Ueber den ganzen Bereich liegt die Guete je Trade
+zwischen 0,2890 und 0,2951; was springt, ist die wirksame Stichprobe. Der Wert
+0,7903 ist damit die **guenstigste Stichprobenkorrektur unter sieben probierten
+Deckeln**, nicht die bessere Strategie.
+
+Was ein Deckel in dieser Gegend ueblicherweise liefert, ist das Mittel der
+beiden Nachbarn: **0,6821**. Dorthin fehlen 0,268 auf die Latte, nicht 0,160.
+
+Der Gueteeffekt bleibt echt - plus 0,018 bis 0,024 gegen den ungedeckelten Lauf,
+und zwar in **jeder** Sprosse des Bereichs. Gefallen ist die Schlagzeile von
+416, nicht seine Messung.
+
+### Eine Zahl in 416 ist zu berichtigen
+
+Dort stehen "sechs probierte Varianten" und 209 Versuche. Deckel 0 ist aber der
+bestehende Punkt und kein neuer Versuch - es waren fuenf (208 Versuche, DSR
+0,7865), und mit den beiden Nachbarn von heute sind es sieben (210, DSR 0,7850).
+
+Der Fehler lag in der strengen Richtung: Ich habe einen Versuch zu viel
+gezaehlt und die Latte damit zu hoch angesetzt. Das macht ihn nicht besser. Die
+Messung von 416 bleibt stehen, berichtigt ist die Zaehlung.
+
+### Und eine Aussage ueber das Verfahren fiel nebenbei ab
+
+Die drei Deckel des Plateaubereichs haben **denselben** Trade-Satz: 157 fertige
+Trades, jeder. Und trotzdem wandert die wirksame Stichprobe zwischen 110 und
+123.
+
+Dreizehn Beobachtungen - ein Sechstel der 75, die dem Deflated Sharpe fehlen,
+erzeugt von einem Regler, der am Handeln fast nichts aendert. **Die
+Stichprobenkorrektur hat ihr eigenes Rauschen, und es ist nicht klein gegen die
+Luecke, die sie misst.**
+
+Das ist keine Kritik an der Korrektur - sie ist in Befund 410 bis 414 von
+mehreren Seiten gemessen und haelt. Es ist eine Groessenangabe fuer jeden
+kuenftigen Vergleich zweier Varianten: Ein Unterschied von zehn wirksamen
+Beobachtungen ist in dieser Gegend kein Befund.
