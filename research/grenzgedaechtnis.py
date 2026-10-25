@@ -115,14 +115,18 @@ __all__ = [
     "FENSTERPROBEN",
     "GEMESSEN",
     "LEITER",
+    "MASSFAKTOREN",
     "QUARTALSPROBE",
     "R_PROBE",
     "SKALENPROBE",
     "Fensterprobe",
     "Grenzlauf",
     "Grenzvergleich",
+    "Massfaktor",
     "Quartalsprobe",
     "bindend",
+    "erfuellung_je_mass",
+    "vorsprung_je_mass",
 ]
 
 
@@ -392,6 +396,16 @@ class Reichweite:
     verschwundene Designeffekt ist also kein Nachweis von Unabhaengigkeit,
     sondern eine Eigenschaft des Waehrungsmasses auf einem durchverzinsten
     Konto. Siehe ``QUARTALSPROBE``.
+
+    **Nachgerechnet kippt der Vorsprung** (Befund 414). Im skalenfreien Mass
+    bindet dort nicht der Kalendertag (Faktor 0,9938), sondern wieder das
+    Quartal (0,7500): n_eff 120 statt 159, fehlend 124 statt 85, noetige
+    Guete 0,3331 statt 0,2945 - und der Erfuellungsgrad 0,7336 statt 0,8298.
+    Aus plus 2,7 Punkten werden **minus 6,9**. Der gemeldete Punkt ist
+    dagegen massinvariant: dasselbe bindende Quartal, derselbe Faktor
+    0,7372, dieselben 115. Dieser Vergleich kann die Modusfrage aus Befund
+    400 also nicht tragen - er wechselt das Vorzeichen mit dem Mass. Siehe
+    ``erfuellung_je_mass``.
 
     **Was nicht folgt**: dass der Kandidat nah ist. 83 % der Latte sind nicht
     die Latte; an diesem Punkt sind **drei** Gates offen statt zwei
@@ -779,3 +793,99 @@ R_PROBE: dict[str, float] = {
     "icc_getrimmt": 0.2266,
     "p_getrimmt": 0.0085,
 }
+
+
+@dataclass(frozen=True, slots=True)
+class Massfaktor:
+    """Der Designfaktor eines Punktes in beiden Massen (Befund 414).
+
+    ``faktor_waehrung`` ist das Minimum ueber die acht Einteilungen auf den
+    Waehrungsgewinnen - genau das, was das Gate rechnet. ``faktor_r`` ist
+    dasselbe Minimum auf R-Vielfachen, also auf dem gewagten Geld normiert.
+    """
+
+    punkt: str
+    roh: int
+    faktor_waehrung: float
+    bindend_waehrung: str
+    faktor_r: float
+    bindend_r: str
+
+    @property
+    def n_waehrung(self) -> int:
+        return max(1, min(self.roh, round(self.roh * self.faktor_waehrung)))
+
+    @property
+    def n_r(self) -> int:
+        return max(1, min(self.roh, round(self.roh * self.faktor_r)))
+
+    @property
+    def massinvariant(self) -> bool:
+        """Sagen beide Masse dasselbe? Beim gemeldeten Punkt ja."""
+        return self.n_waehrung == self.n_r
+
+
+#: Gemessen ueber die **ganze** Leiter, nicht nur die Quartalssprosse
+#: (Befund 414; mit dem Quartal allein kaeme eine obere Schranke heraus).
+#: Gegengeprueft: Die Waehrungsspalte gibt ``research.referenz``.SPOTPUNKT
+#: (115) und KONTOPUNKT (159).
+MASSFAKTOREN: tuple[Massfaktor, ...] = (
+    Massfaktor(
+        punkt="gemeldet", roh=156,
+        faktor_waehrung=0.7372, bindend_waehrung="Kalenderquartal",
+        faktor_r=0.7372, bindend_r="Kalenderquartal",
+    ),
+    Massfaktor(
+        punkt="kontogeschuetzt", roh=160,
+        faktor_waehrung=0.9938, bindend_waehrung="Kalendertag",
+        faktor_r=0.7500, bindend_r="Kalenderquartal",
+    ),
+)
+
+
+def erfuellung_je_mass() -> tuple[tuple[str, str, int, int, int, float, float], ...]:
+    """Was der Plan des Projekts aus beiden Massen macht - **gerechnet**.
+
+    (Punkt, Mass, n_eff, noetig, fehlend, noetige Guete, Erfuellungsgrad).
+    Gerechnet aus ``research.referenz`` mit den Werkzeugen des Projekts, nicht
+    von Hand gefuehrt: Eine zweite gepflegte Liste zur selben Sache laeuft
+    auseinander (Befund 408).
+
+    **Der Befund steht in der letzten Spalte.** Der Erfuellungsvorsprung, den
+    Befund 407 dem kontogeschuetzten Punkt zuschreibt - 0,8298 gegen 0,8027,
+    plus 2,7 Punkte -, **kippt** im skalenfreien Mass auf minus 6,9 (0,7336
+    gegen 0,8027). Der gemeldete Punkt ist massinvariant: dieselbe bindende
+    Einteilung, derselbe Faktor, dieselbe Zahl.
+
+    **Was das heisst**: Dieser Vergleich kann die Modusfrage aus Befund 400
+    nicht tragen. Er wechselt das Vorzeichen mit dem Mass.
+    **Was es nicht heisst**: dass das R-Mass das richtige ist. Das Gate
+    rechnet in Waehrung, und dabei bleibt es (Befund 411). Ein Mass wird
+    nicht danach gewaehlt, wie das Ergebnis aussieht - und hier faellt es
+    gegen den Punkt aus, der im anderen Mass vorn liegt.
+    """
+    from dataclasses import replace
+
+    from research.referenz import KONTOPUNKT, SPOTPUNKT
+
+    punkte = {"gemeldet": SPOTPUNKT, "kontogeschuetzt": KONTOPUNKT}
+    zeilen = []
+    for f in MASSFAKTOREN:
+        for mass, n in (("Waehrung", f.n_waehrung), ("R-Mass", f.n_r)):
+            q = replace(punkte[f.punkt], effektiv=n)
+            noetig = q.noetiges_n()
+            ng = q.noetige_guete()
+            zeilen.append(
+                (f.punkt, mass, n, noetig, noetig - n, ng, q.guete / ng)
+            )
+    return tuple(zeilen)
+
+
+def vorsprung_je_mass() -> dict[str, float]:
+    """Der Abstand der Erfuellungsgrade, je Mass - positiv heisst: der
+    kontogeschuetzte Punkt liegt vorn."""
+    je = {(p, m): e for p, m, *_rest, e in erfuellung_je_mass()}
+    return {
+        mass: je[("kontogeschuetzt", mass)] - je[("gemeldet", mass)]
+        for mass in ("Waehrung", "R-Mass")
+    }

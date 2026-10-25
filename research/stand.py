@@ -4901,6 +4901,35 @@ BEHOBEN: tuple[Richtung, ...] = (
         "19,986 - das Profil eines Trendfolgers, und damit die Schiefe 3,46 "
         "und die Woelbung 15,92 aus 'referenz'",
         413,
+        zuletzt=414,
+    ),
+    # Befund 414: Wenn die 159 am Mass haengen (413) - was macht der Plan
+    # des Projekts dann aus dem Vorsprung, den 407 gemeldet hat?
+    Richtung(
+        "Der Erfuellungsvorsprung kippt mit dem Mass",
+        "Befund 413 hat gemessen, dass der kleine Designeffekt des "
+        "kontogeschuetzten Punkts am Waehrungsmass haengt. Nachgerechnet mit "
+        "den Werkzeugen des Projekts, und zwar ueber die **ganze** Leiter "
+        "(mit der Quartalssprosse allein kaeme nur eine obere Schranke "
+        "heraus): Im skalenfreien Mass bindet dort nicht der Kalendertag "
+        "(Faktor 0,9938), sondern wieder das Kalenderquartal (0,7500). Das "
+        "ergibt n_eff **120 statt 159**, fehlend **124 statt 85**, noetige "
+        "Guete 0,3331 statt 0,2945 und einen Erfuellungsgrad von **0,7336 "
+        "statt 0,8298**. Der Vorsprung aus Befund 407 - plus 2,7 Punkte "
+        "gegen den gemeldeten Punkt - wird damit zu **minus 6,9**. Er "
+        "wechselt das Vorzeichen mit dem Mass. **Der gemeldete Punkt ist "
+        "dagegen massinvariant**: dieselbe bindende Einteilung, derselbe "
+        "Faktor 0,7372, dieselben 115 - es ist also nicht beides unsicher, "
+        "sondern genau dieser Vorsprung. **Was folgt**: Dieser Vergleich "
+        "kann die Modusfrage aus Befund 400 nicht tragen. Der Vorbehalt "
+        "steht jetzt an allen drei Stellen, an denen die Zahl behauptet "
+        "wird - 'referenz.KONTOPUNKT', 'Reichweite' und "
+        "'erfuellung_je_mass', das die Tabelle **rechnet** statt sie zu "
+        "pflegen. **Was nicht folgt**: dass das R-Mass das richtige ist "
+        "oder das Gate es nehmen soll. Es rechnet in Waehrung, und dabei "
+        "bleibt es (411); hier faellt das andere Mass ohnehin gegen den "
+        "Punkt aus, der in Waehrung vorn liegt",
+        414,
     ),
 )
 

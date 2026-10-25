@@ -277,6 +277,16 @@ PERPETUALPUNKT = Referenzpunkt(
 #: die Analyse bezieht sich weiter auf ``SPOTPUNKT``. Und er steht nicht
 #: besser da - 8 von 11 statt 9, drei offene Gates statt zwei, und 85
 #: fehlende wirksame Beobachtungen statt 75.
+#:
+#: **Und die 159 haengen am Mass** (Befund 413/414). Sie stehen auf den
+#: Waehrungsgewinnen; auf R-Vielfache normiert bindet hier wieder das
+#: Kalenderquartal und es sind **120** - fehlend 124 statt 85, noetige Guete
+#: 0,3331 statt 0,2945. Damit kippt der Erfuellungsvorsprung aus Befund 407
+#: von plus 2,7 auf minus 6,9 Punkte. Der gemeldete Punkt ist massinvariant
+#: (115 in beiden Massen), dieser nicht. Das Gate rechnet weiter in
+#: Waehrung - geaendert wird daran nichts -, aber wer diese Zahlen
+#: vergleicht, vergleicht etwas, das mit dem Mass das Vorzeichen wechselt
+#: (``grenzgedaechtnis.erfuellung_je_mass``).
 KONTOPUNKT = Referenzpunkt(
     name="Spot mit Kontogrenze",
     befund=407,

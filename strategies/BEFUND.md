@@ -37090,3 +37090,56 @@ Harmlos, beim Lesen aber leicht fuer ein Alarmzeichen zu nehmen.
 Woher die gepflegten Momente kommen. Schiefe 3,46 und Woelbung 15,92 in
 `referenz` sind keine Eigenheit der Waehrungsrechnung, sondern genau dieses
 Profil: ein Viertel bei -1,03 R, ein paar bei +20 R.
+
+## Vierhundertvierzehn. Der Erfuellungsvorsprung kippt mit dem Mass
+
+Befund 407 hat dem kontogeschuetzten Punkt einen Erfuellungsvorsprung
+zugeschrieben - 0,8298 gegen 0,8027, plus 2,7 Punkte - und daraus den Satz
+gebildet, er sei "seiner eigenen Latte um 2,7 Punkte naeher". Der Vorsprung
+ruht auf n_eff 159 von 160, und Befund 413 hat gemessen, dass diese 159 am
+Waehrungsmass haengen.
+
+Also nachgerechnet, mit den Werkzeugen des Projekts und ueber die **ganze**
+Leiter. Mit der Quartalssprosse allein kaeme nur eine obere Schranke heraus;
+n_eff ist das Minimum ueber acht Einteilungen.
+
+    Punkt              Mass      n_eff  noetig  fehlt  n.Guete  Erfuellung
+    gemeldet           Waehrung    115     190     75   0,3374      0,8027
+    gemeldet           R-Mass      115     190     75   0,3374      0,8027
+    kontogeschuetzt    Waehrung    159     244     85   0,2945      0,8298
+    kontogeschuetzt    R-Mass      120     244    124   0,3331      0,7336
+
+Im skalenfreien Mass bindet am kontogeschuetzten Punkt nicht mehr der
+Kalendertag (Faktor 0,9938), sondern wieder das Kalenderquartal (0,7500).
+Daraus werden n_eff 120 statt 159, fehlend 124 statt 85, noetige Guete 0,3331
+statt 0,2945 - und der Erfuellungsgrad 0,7336 statt 0,8298.
+
+    Vorsprung des kontogeschuetzten Punkts
+    in Waehrung      +0,0271
+    im R-Mass        -0,0691
+
+**Das Vorzeichen wechselt.** Und es ist nicht beides unsicher: Der gemeldete
+Punkt ist massinvariant - dieselbe bindende Einteilung, derselbe Faktor 0,7372,
+dieselben 115, derselbe Erfuellungsgrad. Unsicher ist genau dieser Vorsprung.
+
+### Was folgt
+
+Dieser Vergleich kann die Modusfrage aus Befund 400 nicht tragen. Er ist eines
+der Argumente, die sich fuer die durchgehende Aufstellung angesammelt haben, und
+er wechselt die Richtung mit einer Entscheidung, die niemand getroffen hat - der
+Wahl des Masses.
+
+Der Vorbehalt steht jetzt an allen drei Stellen, an denen die Zahl behauptet
+wird: an `referenz.KONTOPUNKT`, am Kopf von `Reichweite` und in
+`erfuellung_je_mass`, das die Tabelle oben **rechnet** statt sie zu pflegen.
+Eine zweite von Hand gefuehrte Liste zur selben Sache laeuft auseinander - das
+ist die Lehre aus Befund 408, und sie ist hier gleich angewandt.
+
+### Was nicht folgt
+
+Dass das R-Mass das richtige ist, oder dass das Gate es nehmen soll. Es rechnet
+in Waehrung, und dabei bleibt es (Befund 411). Ein Mass wird nicht danach
+gewaehlt, wie das Ergebnis aussieht - und das gilt hier in die unbequeme
+Richtung: Das andere Mass faellt gegen den Punkt aus, der in Waehrung vorn
+liegt. Auch die Messung von 407 ist nicht berichtigt. Berichtigt ist die
+**Lesart**: Aus einer Zahl, die mit dem Mass kippt, folgt kein Vorsprung.
