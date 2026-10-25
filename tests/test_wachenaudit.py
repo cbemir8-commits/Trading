@@ -21,6 +21,20 @@ weil die Quelle aus einem Ausdruck kommt, den er nicht nachvollzieht. Die
 Abdeckung steht deshalb als eigene Zusicherung daneben - ein Audit, das
 nichts mehr aufloest, waere sonst gruen und leer (dieselbe Gegenprobe wie in
 ``test_suchbudget_greift``).
+
+**Und sein Urteil haengt am Importstand** (Vermerk aus Befund 409).
+``_quelle_von`` importiert nur das oberste Paket und greift dann per
+``getattr``. Ein Untermodul, das noch niemand importiert hat, loest damit
+nicht auf und zaehlt als "offen". Dieselbe Datei ist deshalb **allein gruen
+und in der vollen Suite rot**: Genau das ist in Befund 409 passiert, mit einer
+Zusicherung, die einen Kommentar traf und es nicht hingeschrieben hatte.
+
+Nachgemessen, was daran haengt: Mit dem laengsten importierbaren Praefix
+statt des obersten Pakets loest das Audit **92 statt 91** Stellen auf, und es
+findet genau **eine** weitere - die aus 409, und die ist versorgt. Der Mangel
+ist also echt und seine Wirkung heute eine Stelle. Er steht hier, statt dass
+jemand ihn fuer eine Lappalie haelt: Eine Wache, deren Urteil davon abhaengt,
+was sonst gelaufen ist, kann jederzeit wieder etwas durchlassen.
 """
 
 from __future__ import annotations

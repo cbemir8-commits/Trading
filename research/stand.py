@@ -4721,6 +4721,37 @@ BEHOBEN: tuple[Richtung, ...] = (
         "nicht betroffen: 156 rohe und 115 effektive Trades, DSR 0,5826, "
         "neun von elf Gates",
         408,
+        zuletzt=409,
+    ),
+    # Befund 409: Befund 407 hat einen zweiten Punkt durchgerechnet - woraus
+    # rechnen die Planungszahlen des Projekts?
+    Richtung(
+        "Der zweite Betriebspunkt stand in einem Modulkopf, nicht im Register",
+        "Die Planungszahlen - 'noetiges_n', 'noetige_guete', 'AUSSICHT' - "
+        "rechnen alle aus einem 'Referenzpunkt'. Verzeichnet waren zwei "
+        "(SPOTPUNKT, PERPETUALPUNKT); der kontogeschuetzte Punkt aus Befund "
+        "406/407 stand nur im Kopf von 'grenzgedaechtnis'. Damit plante jedes "
+        "Werkzeug aus **einem** Punkt, obwohl 407 gemessen hat, dass der "
+        "andere einen merklich anderen Plan ergibt: **244** noetige wirksame "
+        "Trades statt 190, Guete 0,2945 statt 0,3374, Erfuellungsgrad 0,8299 "
+        "statt 0,8026. Dieselbe Lehre wie Befund 235, und dessen Satz trifft "
+        "es wortgleich: 'Solange nur ein Punkt verzeichnet war, blieb dieser "
+        "Wert eine gepflegte Zahl in einem Prosatext.' Eingetragen ist er "
+        "jetzt als 'KONTOPUNKT' - 160 Trades, n_eff 159, Guete 0,2444, DSR "
+        "0,6846, 8 von 11 -, und die Werkzeuge des Projekts reproduzieren "
+        "Befund 407 daraus auf die Stelle (244 / 0,2945 / +20,5 % / Luecke "
+        "0,2654). **Was er nicht ist**: ein dritter Anwaerter auf "
+        "'massgeblich'. Welcher Modus die Zulassung traegt, bleibt die "
+        "Entscheidung aus 400, die Analyse bezieht sich weiter auf "
+        "'SPOTPUNKT', und besser steht er nicht da - 8 von 11 statt 9, drei "
+        "offene Gates statt zwei, 85 fehlende wirksame Beobachtungen statt "
+        "75. **Nebenbei gemessen**: Die vierte Stelle der gepflegten Guete "
+        "ist eine Beobachtung wert - 0,2708 ergibt 190 noetige, 0,27075 "
+        "ergibt 191. Befund 407 nennt 191 (aus dem Lauf), dieses Modul 190 "
+        "(aus der gepflegten Zahl); beide sind richtig, und der Unterschied "
+        "steht jetzt am Kopf der Methode, statt als Widerspruch zweier "
+        "Zahlen dazustehen",
+        409,
     ),
 )
 

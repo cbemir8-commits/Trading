@@ -36691,3 +36691,58 @@ Wache, die nur ihren eigenen Text prueft): Ein Satz in einem Prosatext ist
 keine Zusicherung, und eine Zusicherung, die niemand ausfuehrt, ist kein
 Schutz. Dass die Datenauswahl vierzehn Zyklen nicht lief, hat beides
 gleichzeitig verdeckt.
+
+## Vierhundertneun. Der zweite Betriebspunkt stand in einem Modulkopf, nicht im Register
+
+Befund 406 hat ihn benannt, 407 hat ihn durchgerechnet - und verzeichnet war er
+nirgends. Die Planungszahlen des Projekts rechnen alle aus einem
+`Referenzpunkt`:
+
+* `noetiges_n()` - wie viele wirksame Beobachtungen der Deflated Sharpe
+  braucht,
+* `noetige_guete()` - welche Guete je Trade stattdessen reichen wuerde,
+* `AUSSICHT` - wie lange das dauert.
+
+Verzeichnet waren zwei Punkte, `SPOTPUNKT` und `PERPETUALPUNKT`. Der
+kontogeschuetzte stand im Kopf von `research/grenzgedaechtnis.py`, in Prosa.
+Also plante jedes Werkzeug aus **einem** Punkt, obwohl Befund 407 gemessen
+hat, dass der andere einen merklich anderen Plan ergibt:
+
+    Punkt                     n_eff   noetig   fehlend   noetige Guete
+    Spot wie gebaut             115      190        75          0,3374
+    Spot mit Kontogrenze        159      244        85          0,2945
+
+Das ist wortgleich die Lehre aus Befund 235, und dessen Satz passt hier ohne
+Aenderung:
+
+> Solange nur ein Punkt verzeichnet war, blieb dieser Wert eine gepflegte Zahl
+> in einem Prosatext.
+
+### Die Gegenprobe
+
+Eine eingetragene Zahl, aus der die Werkzeuge etwas anderes rechnen als der
+Befund, der sie gemessen hat, waere schlimmer als keine. Aus `KONTOPUNKT`
+gerechnet: 244 noetige wirksame Trades, noetige Guete 0,2945, Gueteanteil
++20,5 %, Luecke 0,2654 - auf die Stelle wie Befund 407.
+
+### Was er nicht ist
+
+Kein dritter Anwaerter auf "massgeblich". Welcher Modus die Zulassung traegt,
+ist weiter die offene Entscheidung aus Befund 400, und die Analyse bezieht
+sich auf `SPOTPUNKT`. Besser steht er auch nicht da: 8 von 11 statt 9, drei
+offene Gates statt zwei, 85 fehlende wirksame Beobachtungen statt 75. Der
+kleinere Designeffekt aus Befund 407 ist kein Fortschritt Richtung Zulassung,
+sondern eine andere Zerlegung derselben Luecke.
+
+### Nebenbei: die vierte Stelle der gepflegten Guete
+
+Befund 407 nennt **191** noetige wirksame Beobachtungen, dieses Modul **190**.
+Beide sind richtig. 0,2708 ergibt 190, 0,27075 ergibt 191 - eine Stelle in der
+gepflegten Guete ist eine Beobachtung wert. Das steht jetzt am Kopf von
+`noetiges_n`, statt als Widerspruch zweier Zahlen dazustehen.
+
+Und es ist der Grund, aus dem ich in diesem Zyklus fast eine richtige Zahl
+"berichtigt" haette: Aus der Erinnerung an 407 wollte ich die 75 im Modulkopf
+auf 76 setzen. Nachgemessen gibt `noetiges_n()` 190, also fehlen 75. Zum
+ersten Mal in dieser Kette hat die Regel - erst messen, dann schreiben - mich
+**vor** dem Fehler erwischt und nicht danach.

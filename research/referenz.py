@@ -35,6 +35,7 @@ __all__ = [
     "AUSSICHT_VERBUND",
     "BILD_15_MINUTEN",
     "BILD_TAGESKERZEN",
+    "KONTOPUNKT",
     "PERPETUALPUNKT",
     "SCHUB",
     "SPOTPUNKT",
@@ -114,6 +115,19 @@ class Referenzpunkt:
 
         Gerechnet, nicht gepflegt. ``None``, wenn die Verteilungsform fehlt -
         eine Entfernung ohne Verteilungsform waere geraten.
+
+        **Die vierte Stelle der Guete ist eine Beobachtung wert** (Befund
+        409). Hier steht fuer den Spot-Punkt **190**, und eine Messung am
+        Lauf ergibt **191**. Das ist kein Streit zweier Rechnungen:
+        ``erreichbarkeit.noetige_trades`` liefert auf demselben Eingang
+        dasselbe - 190 bei einer Guete von 0,2708, 191 bei 0,27075. Der
+        Unterschied ist allein die Rundung des **gepflegten** Werts auf vier
+        Stellen.
+
+        Wer die beiden Zahlen nebeneinander findet, hat also nicht zwei
+        Antworten, sondern eine Antwort und eine Rundung. Genannt wird es
+        hier, weil zwei unerklaerte Zahlen fuer eine Frage das sind, woran
+        dieses Projekt wiederholt haengengeblieben ist (Befund 370).
         """
         if self.schiefe is None or self.woelbung is None:
             return None
@@ -236,6 +250,45 @@ PERPETUALPUNKT = Referenzpunkt(
     versuche=203,
     schiefe=3.4934,
     woelbung=16.1849,
+)
+
+#: Der **dritte** Betriebspunkt: Spot, aber mit **Kontogrenze statt
+#: Beingrenze** - und ohne Fensterschnitt, also durchgehend.
+#:
+#: **Warum er hier steht** (Befund 409, dieselbe Lehre wie 235). Die
+#: Planungszahlen des Projekts - 'noetiges_n', 'noetige_guete', 'AUSSICHT' -
+#: rechnen aus einem 'Referenzpunkt'. Solange dieser Punkt nur im Kopf von
+#: 'research/grenzgedaechtnis.py' stand, plante jedes Werkzeug aus **einem**
+#: Punkt, obwohl Befund 407 gemessen hat, dass der andere einen merklich
+#: anderen Plan ergibt: 244 noetige wirksame Trades statt 190, Guete 0,2945
+#: statt 0,3374, Erfuellungsgrad 0,8299 statt 0,8026. Der Satz aus Befund 235
+#: trifft es: *"Solange nur ein Punkt verzeichnet war, blieb dieser Wert eine
+#: gepflegte Zahl in einem Prosatext."*
+#:
+#: **Was er ist**: der Punkt, an dem die Verlustgrenzen am **Konto** greifen
+#: statt an jedem Bein. Befund 406 hat gemessen, dass der echte Risk-Officer
+#: auf der Kontokurve eines Laufs ohne gebremste Beine **nichts** ausloest -
+#: 10,77 % Rueckgang gegen 15 % Kill-Switch. Die Beinsperren, die im
+#: durchgehenden Modus 63 von 162 Trades kosten, beschreiben also zwei
+#: getrennte Konten.
+#:
+#: **Was er nicht ist**: ein dritter Anwaerter auf "massgeblich". Welcher
+#: Modus die Zulassung traegt, ist eine Entscheidung des Nutzers (Befund 400);
+#: die Analyse bezieht sich weiter auf ``SPOTPUNKT``. Und er steht nicht
+#: besser da - 8 von 11 statt 9, drei offene Gates statt zwei, und 85
+#: fehlende wirksame Beobachtungen statt 75.
+KONTOPUNKT = Referenzpunkt(
+    name="Spot mit Kontogrenze",
+    befund=407,
+    trades=160,
+    effektiv=159,
+    guete=0.2444,
+    dsr=0.6846,
+    bestanden=8,
+    gesamt=11,
+    versuche=203,
+    schiefe=3.3119,
+    woelbung=14.6644,
 )
 
 #: Was der Wegfall des Funding an Guete je Trade bringt - **gerechnet, nicht
