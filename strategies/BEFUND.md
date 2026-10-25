@@ -37143,3 +37143,110 @@ gewaehlt, wie das Ergebnis aussieht - und das gilt hier in die unbequeme
 Richtung: Das andere Mass faellt gegen den Punkt aus, der in Waehrung vorn
 liegt. Auch die Messung von 407 ist nicht berichtigt. Berichtigt ist die
 **Lesart**: Aus einer Zahl, die mit dem Mass kippt, folgt kein Vorsprung.
+
+## Vierhundertfuenfzehn. Die folgenreichste Entscheidung stand nicht unter den Entscheidungen
+
+`ENTSCHEIDUNGEN` fuehrt die Fragen, die beim Nutzer liegen. `cli register`
+zaehlt sie auf und nennt ihre Zahl. Es waren elf - und die Frage, **welcher
+Messaufbau die Zulassung traegt**, war keine davon.
+
+Dabei hat Befund 400 sie dem Nutzer zugewiesen, und die Befunde 403 bis 414
+haengen an ihr. Zwoelf Stueck:
+
+    403  Die Risikogrenzen greifen im Modus der Zulassung fast nicht
+    404  Acht der elf Urteile stehen in jedem Messaufbau, drei nicht
+    405  Der Punkt mit greifenden Grenzen stand in keiner Kopfzeile
+    406  Die 63 unterdrueckten Trades sind eine Beingrenze, kein Kontorisiko
+    407  Am kontogeschuetzten Punkt verschwindet der Designeffekt fast
+    409  Der zweite Betriebspunkt stand in einem Modulkopf
+    410  Die Kuerzung nannte nicht, welche Einteilung sie bindet
+    411  Der verwechselte Vergleich, und das Mass verdeckt
+    412  Drei Erklaerungen, alle drei widerlegt
+    413  Dieselben 160 Trades, nur anders gross
+    414  Der Erfuellungsvorsprung kippt mit dem Mass
+
+Verzeichnet war sie als **Zeichenkette**: `Betriebspunkt.voraussetzung` traegt
+"Welcher Modus die Zulassung traegt, liegt beim Nutzer (400)", und `cli stand`
+druckt das auf der Beingrenzen-Zeile. Dazu Prosa in einem Dutzend
+Registereintraegen. In der Liste, die das Register zaehlt, stand nichts.
+
+Dieselbe Lehre wie Befund 394 (die elf Zeilen gab es in keiner Ausgabe), 405
+(der Punkt stand in keiner Kopfzeile) und 408 (in der Prosa und als Behauptung
+im Test).
+
+### Dass sie dazukommt, legt dem Nutzer keine Frage mehr auf
+
+Das ist wichtig, und es ist der Grund, warum der Eintrag kein Zuwachs an Last
+ist: Die Frage war schon da. Sie stand nur nicht dort, wo jemand nachsieht.
+
+### Der Kern der Entscheidung, zum ersten Mal in einem Satz
+
+    Aufbau                      Trades   Jahresrendite   gefallene Gates
+    Fenster + Beingrenzen          158        14,3391    Messlatte, DSR
+    Fenster, ohne                  162        14,1915    Messlatte, DSR
+    durchgehend + Beingrenzen       99        11,6275    Messlatte, MC, DSR
+    durchgehend, ohne              162        19,0053    Schlechtestes Jahr,
+                                                         MC, DSR
+
+Acht der elf Urteile stehen in **jedem** Aufbau; drei wackeln - Messlatte,
+Schlechtestes Jahr, Monte-Carlo.
+
+**Die Entscheidung tauscht die Messlatte gegen zwei andere Gates.** Bestanden
+wird sie nur im durchgehenden Lauf ohne Beingrenzen, mit 19,0053 gegen 15; und
+genau dort fallen "Schlechtestes Jahr" (-10,940) und "Monte-Carlo" (22,816).
+Eine Zulassung bringt kein Aufbau: Der Deflated Sharpe faellt in allen vier, im
+besten Fall mit 0,685 gegen 0,95.
+
+Das stand so noch nirgends. Es ist aus 404, 406 und 407 zusammengerechnet, und
+zusammengerechnet ist es eine andere Auskunft als verstreut.
+
+### Die Argumente mit ihrem Stand - auch das weggefallene
+
+* **Gegen die Beingrenzen** spricht eine Messung: Befund 406 hat nachgerechnet,
+  dass der je Bein gebremste Lauf zwei getrennte Konten beschreibt. Der echte
+  Officer loest auf dessen Kontokurve nichts aus - 10,77 % gegen 15 %.
+* **Fuer den gemeldeten Aufbau** spricht, dass die Analyse des Projekts auf ihm
+  steht und seine wirksame Stichprobe massinvariant ist (115 in beiden Massen).
+* **Weggefallen** ist der Erfuellungsvorsprung aus Befund 407. Seit 414
+  gemessen hat, dass er mit dem Mass das Vorzeichen wechselt, traegt er nicht
+  mehr. Er steht als weggefallenes Argument im Eintrag, nicht geloescht und
+  nicht stehengelassen.
+
+### Zwei Wachen hat der Einbau gekostet
+
+`test_es_sind_zehn` hat gegriffen. Sie ist genau dafuer gebaut: Wer dem Nutzer
+eine Entscheidung mehr aufschreibt, soll das sehen und begruenden. Sie heisst
+jetzt `test_es_sind_elf` und traegt die Begruendung.
+
+Und eine neue bindet die beiden Oberflaechen aneinander: Die Zeichenkette in
+`cli stand` und der Registereintrag muessen die Frage **woertlich** gleich
+nennen. Sonst steht dieselbe Entscheidung zweimal da und niemand sieht, dass es
+eine ist - das waere die Doppelpflege, an der Befund 408 haengengeblieben ist.
+
+### Zwei weitere sind gefallen, und sie hatten recht
+
+`cli stand` druckt die Entscheidungen mit. Der neue Eintrag nennt in seiner
+Tabelle das Wort "Beingrenzen" - und zwei Zusicherungen in `test_grenzzeile.py`
+prueften mit einer bloszen Teilzeichenkette ueber den **ganzen** Bericht, dass
+die Beingrenzen-*Zeile* fehlt. Sie meldeten damit eine Zeile, die nicht da war.
+
+Das ist dieselbe Sorte Brueche wie in Befund 398 (eine Zusicherung, die noch
+passte, nachdem der Rueckgabewert gewachsen war): Eine Teilzeichenkette ueber
+einen langen Text trifft irgendwann etwas anderes. Geprueft wird jetzt die
+Zeile - `z.startswith("  Beingrenzen    ")` -, und dass die Frage im Bericht
+ankommt, steht als eigene Zusicherung daneben.
+
+Dass die Entscheidung dort erscheint, ist nicht Nebenwirkung, sondern der
+Zweck: Sie steht jetzt in der Ausgabe, in die der Nutzer sieht, und nicht nur
+in einer Liste im Quelltext.
+
+Eine dritte Wache hat ebenfalls gegriffen, und auch sie zu Recht:
+`test_bericht_widerspruchsfrei` verlangt, dass jeder Prozentwert, der in **zwei**
+Abschnitten des Berichts steht, mit Grund verzeichnet ist. Der neue Eintrag
+zitiert die 10,77 % aus Befund 406 - den Kontorueckgang des je Bein gebremsten
+Laufs -, und die stehen schon auf der Beingrenzen-Zeile. Dieselbe Messung,
+beide Stellen brauchen sie: Die Zeile nennt den Stand, die Entscheidung
+begruendet damit. Also eingetragen, nicht gestrichen.
+
+Drei Wachen, drei berechtigte Treffer, kein Umgehen. Das ist der Ertrag von
+394, 398, 399 und 408 an einem einzigen Einbau.

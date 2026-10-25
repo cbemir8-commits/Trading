@@ -4930,6 +4930,41 @@ BEHOBEN: tuple[Richtung, ...] = (
         "bleibt es (411); hier faellt das andere Mass ohnehin gegen den "
         "Punkt aus, der in Waehrung vorn liegt",
         414,
+        zuletzt=415,
+    ),
+    # Befund 415: Zwoelf Befunde haengen an einer Entscheidung - steht sie
+    # unter den Entscheidungen?
+    Richtung(
+        "Die folgenreichste Entscheidung stand nicht unter den Entscheidungen",
+        "'ENTSCHEIDUNGEN' fuehrte elf Fragen, die beim Nutzer liegen, und "
+        "'cli register' zaehlt sie. Die Frage, **welcher Messaufbau die "
+        "Zulassung traegt**, war keine davon - obwohl Befund 400 sie dem "
+        "Nutzer zugewiesen hat und die Befunde **403 bis 414** an ihr "
+        "haengen, zwoelf Stueck. Verzeichnet war sie als **Zeichenkette** an "
+        "'Betriebspunkt.voraussetzung', gedruckt auf einer Statuszeile, und "
+        "als Prosa in Registereintraegen. Dieselbe Lehre wie 394 (die elf "
+        "Zeilen gab es in keiner Ausgabe), 405 (der Punkt stand in keiner "
+        "Kopfzeile) und 408 (in der Prosa und als Behauptung im Test). "
+        "**Dass sie dazukommt, legt dem Nutzer keine Frage mehr auf** - es "
+        "schreibt die auf, die er schon hat. Der Eintrag traegt die gemessene "
+        "Lage: vier Aufbauten mit Jahresrendite und gefallenen Gates "
+        "(14,3391 / 14,1915 / 11,6275 / 19,0053), die acht Urteile, die in "
+        "jedem Aufbau stehen, und die drei, die wackeln. **Der Kern der "
+        "Entscheidung, zum ersten Mal in einem Satz**: Sie tauscht die "
+        "Messlatte gegen 'Schlechtestes Jahr' und 'Monte-Carlo' - bestanden "
+        "wird die Messlatte nur im durchgehenden Lauf ohne Beingrenzen, und "
+        "dort fallen zwei andere. Eine Zulassung bringt kein Aufbau, der "
+        "Deflated Sharpe faellt in allen vier. Die Argumente stehen mit "
+        "ihrem Stand dabei, auch das **weggefallene**: Der "
+        "Erfuellungsvorsprung aus 407 traegt nicht mehr, seit 414 gemessen "
+        "hat, dass er mit dem Mass das Vorzeichen wechselt. **Und zwei "
+        "Wachen hat der Einbau gekostet**: 'test_es_sind_zehn' hat gegriffen "
+        "und verlangt eine Begruendung fuer jede zusaetzliche Entscheidung - "
+        "sie heisst jetzt 'test_es_sind_elf' und traegt sie. Neu ist eine "
+        "Wache, die Statuszeile und Registereintrag aneinander bindet: Beide "
+        "muessen die Frage woertlich gleich nennen, sonst ist nicht zu "
+        "sehen, dass es dieselbe ist",
+        415,
     ),
 )
 
@@ -5770,6 +5805,64 @@ class Entscheidung:
 
 #: Was der Nutzer entscheiden muss - benannt und beziffert, nicht beantwortet.
 ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
+    # **Die folgenreichste, und sie stand hier nicht** (Befund 415). Befund
+    # 400 hat sie dem Nutzer zugewiesen, 403 bis 414 haengen an ihr - und
+    # verzeichnet war sie nur als Zeichenkette an 'Betriebspunkt.
+    # voraussetzung' und in Registerprosa. Sie steht zuerst, weil die uebrigen
+    # zehn Fragen Zahlen betreffen, diese aber, **welche Zahlen gelten**.
+    Entscheidung(
+        frage="Welcher Modus die Zulassung traegt",
+        zahl=(
+            "Die elf Gates laufen auf einem von vier Messaufbauten: "
+            "Fensterschnitt ja/nein, Verlustgrenzen je Bein ja/nein. "
+            "Gemessen (Befund 403/404, Jahresrendite und gefallene Gates):\n"
+            "      Fenster + Beingrenzen   158 Trades  14,3391   Messlatte, "
+            "Deflated Sharpe\n"
+            "      Fenster, ohne           162 Trades  14,1915   Messlatte, "
+            "Deflated Sharpe\n"
+            "      durchgehend + Beingr.    99 Trades  11,6275   Messlatte, "
+            "Monte-Carlo, Deflated Sharpe\n"
+            "      durchgehend, ohne       162 Trades  19,0053   Schlechtestes "
+            "Jahr, Monte-Carlo, Deflated Sharpe\n"
+            "    Acht der elf Urteile stehen in **jedem** Aufbau; drei "
+            "wackeln: Messlatte, Schlechtestes Jahr, Monte-Carlo. Der "
+            "Deflated Sharpe faellt in allen vier, im besten Fall mit 0,685 "
+            "gegen 0,95. **Die Messlatte besteht nur im durchgehenden Lauf "
+            "ohne Beingrenzen** - und dort fallen zwei andere Gates. Die "
+            "Entscheidung tauscht also Messlatte gegen 'Schlechtestes Jahr' "
+            "und 'Monte-Carlo'; eine Zulassung bringt sie nicht.\n"
+            "    Die wirksame Stichprobe unterscheidet sich ebenfalls, auf "
+            "fertigen Trades gezaehlt: gemeldet 115 von 156 (es bindet das "
+            "Kalenderquartal), kontogeschuetzt 159 von 160 (der Kalendertag) "
+            "- Befund 410. Dieser Unterschied haengt am Mass: skalenfrei "
+            "gerechnet sind es dort 120 statt 159 (Befund 413/414)."
+        ),
+        warum=(
+            "Zu entscheiden ist, welcher der vier Aufbauten die Zulassung "
+            "tragen soll. Es ist keine Rechenfrage, sondern eine "
+            "Betriebsfrage: Der Fensterschnitt sagt, ob Positionen eine "
+            "Fenstergrenze ueberleben duerfen, die Beingrenzen sagen, ob die "
+            "Verlustgrenzen je Bein oder je Konto greifen.\n"
+            "    **Gegen die Beingrenzen** spricht eine Messung: Befund 406 "
+            "hat nachgerechnet, dass der je Bein gebremste Lauf zwei "
+            "getrennte Konten beschreibt, nicht das eine, das es gibt - der "
+            "echte Officer loest auf dessen Kontokurve nichts aus (10,77 % "
+            "Rueckgang gegen 15 % Kill-Switch).\n"
+            "    **Fuer den gemeldeten Aufbau** spricht, dass auf ihm die "
+            "Analyse des Projekts steht und dass seine wirksame Stichprobe "
+            "massinvariant ist (115 in beiden Massen, Befund 414).\n"
+            "    **Was als Argument weggefallen ist**: Befund 407 hat dem "
+            "kontogeschuetzten Punkt einen Erfuellungsvorsprung zugeschrieben "
+            "(0,8298 gegen 0,8027). Befund 414 hat gemessen, dass er mit dem "
+            "Mass das Vorzeichen wechselt - skalenfrei sind es 0,7336 gegen "
+            "0,8027. Dieses Argument traegt nicht mehr.\n"
+            "    Was die Entscheidung **nicht** ist: ein Weg durch die Gates. "
+            "Der Deflated Sharpe faellt in jedem Aufbau, und wer einen "
+            "Aufbau nach dem Ergebnis auswaehlt, lockert das Gate."
+        ),
+        befund=400,
+        zuletzt=414,
+    ),
     Entscheidung(
         frage="Feste Schwellen auf laufenden Extrema",
         zahl="Drei der elf Gates messen ein Extrem ueber die ganze Historie, "

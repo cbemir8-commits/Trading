@@ -56,6 +56,17 @@ def _lage(**kwargs) -> Lage:
     return Lage(**{**grund, **kwargs})
 
 
+def _hat_grenzzeile(bericht: str) -> bool:
+    """Traegt der Bericht die Beingrenzen-**Zeile**?
+
+    Geprueft wird die Zeile, nicht das Wort irgendwo im Text (Befund 415).
+    Seit die Modusfrage unter 'ENTSCHEIDUNGEN' steht, nennt der Bericht
+    "Beingrenzen" auch in deren Tabelle - eine Teilzeichenkette ueber den
+    ganzen Bericht traf das mit und meldete eine Zeile, die nicht da war.
+    """
+    return any(z.startswith("  Beingrenzen    ") for z in bericht.splitlines())
+
+
 class TestDieZeileStehtImKopf:
     def test_sie_nennt_den_punkt_und_seine_gates(self) -> None:
         bericht = _lage(grenzpunkt=_punkt()).bericht(kurz=True)
@@ -92,7 +103,7 @@ class TestDieZeileStehtImKopf:
     def test_ohne_messung_steht_nichts(self) -> None:
         bericht = _lage().bericht(kurz=True)
 
-        assert "Beingrenzen" not in bericht
+        assert not _hat_grenzzeile(bericht)
 
     def test_und_sie_steht_unter_dem_zweiten_punkt(self) -> None:
         """Die Reihenfolge ist die der Naehe zum Betrieb: berichtet, Spot,
@@ -115,7 +126,7 @@ class TestDieZeileStehtImKopf:
         """Eine Zeile '0 von 0' waere keine Auskunft."""
         bericht = _lage(grenzpunkt=object()).bericht(kurz=True)
 
-        assert "Beingrenzen" not in bericht
+        assert not _hat_grenzzeile(bericht)
 
 
 class TestDieKorrekturAusVierhundertsechs:
@@ -125,7 +136,7 @@ class TestDieKorrekturAusVierhundertsechs:
     def test_sie_heisst_jetzt_beingrenzen(self) -> None:
         bericht = _lage(grenzpunkt=_punkt()).bericht(kurz=True)
 
-        assert "Beingrenzen" in bericht
+        assert _hat_grenzzeile(bericht)
         assert "mit Grenzen " not in bericht
 
     def test_und_nennt_die_kontoprobe(self) -> None:

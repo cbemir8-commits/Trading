@@ -88,6 +88,13 @@ MEHRFACH: dict[str, str] = {
     # trug.
     "6,0%": "Erster Kipppunkt, Schlechtestes Jahr (Befund 250)",
     "9,8%": "Zweiter Kipppunkt, Parameter-Plateau (Befund 250)",
+    # Der Kontorueckgang des je Bein gebremsten Laufs (Befund 406): einmal
+    # auf der Beingrenzen-Zeile, wo er sagt, warum diese Zelle zwei Konten
+    # beschreibt, und seit Befund 415 noch einmal in der Entscheidung
+    # 'Welcher Modus die Zulassung traegt' - dort ist er das Argument gegen
+    # die Beingrenzen. Dieselbe Messung, und beide Stellen brauchen sie: Die
+    # Zeile nennt den Stand, die Entscheidung begruendet damit.
+    "10,77%": "Kontorueckgang je Bein gebremst (Befund 406), Zeile und Entscheidung",
     # Die Kennzahlen des Spot-Punkts selbst (Befund 281). Sie stehen in
     # mehreren Eintraegen, weil mehrere Befunde sie zitieren - 264 fuer den
     # Korb, 268 fuer die Aufstellung, 269 fuer das Skalieren - und seit 281

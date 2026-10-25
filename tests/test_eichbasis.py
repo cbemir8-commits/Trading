@@ -217,16 +217,28 @@ class TestDieWacheAusBefund335IstDurch:
 
         assert alt == [], f"Entscheidung auf alter Messung: {alt}"
 
-    def test_es_sind_zehn(self) -> None:
-        """Hiess ``test_es_sind_neun``, bis Befund 385 eine dazugelegt hat.
+    def test_es_sind_elf(self) -> None:
+        """Hiess ``test_es_sind_neun``, dann ``test_es_sind_zehn``.
 
         Die Zahl ist kein Selbstzweck: Sie zwingt jeden, der dem Nutzer eine
         Entscheidung mehr aufschreibt, das hier zu sehen und zu begruenden.
-        Die neue ist 'Welcher Horizont heisst Marktumfeld' - das Regimefenster
-        des Gates ist eine Kerzenzahl, die fuer 15-Minuten-Kerzen bemessen war,
-        und auf Tageskerzen haengt ein Urteil daran.
+
+        Zehn war 'Welcher Horizont heisst Marktumfeld' (Befund 385) - das
+        Regimefenster des Gates ist eine Kerzenzahl, die fuer
+        15-Minuten-Kerzen bemessen war, und auf Tageskerzen haengt ein Urteil
+        daran.
+
+        **Elf ist 'Welcher Modus die Zulassung traegt'** (Befund 415), und
+        hier ist die Begruendung, die dieser Test verlangt: Die Frage ist
+        nicht neu - Befund 400 hat sie dem Nutzer zugewiesen, und 403 bis 414
+        haengen an ihr. Verzeichnet war sie nur als Zeichenkette an
+        ``Betriebspunkt.voraussetzung`` und in Registerprosa, also nirgends,
+        wo das Register seine Entscheidungen zaehlt. Dass sie dazukommt, legt
+        dem Nutzer keine Frage mehr auf; es schreibt die auf, die er schon
+        hat. Und sie ist nicht eine unter elf: Die anderen zehn betreffen
+        Zahlen, diese betrifft, **welche Zahlen gelten**.
         """
-        assert len(self._mit_fundstelle()) == 10
+        assert len(self._mit_fundstelle()) == 11
 
     def test_die_ohne_fundstelle_bleibt_draussen(self) -> None:
         from research.stand import ENTSCHEIDUNGEN

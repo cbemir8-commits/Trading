@@ -404,6 +404,15 @@ ENTSCHEIDUNGSBEGRIFFE: dict[str, tuple[str, ...]] = {
     "Umfang des Kosten-Stress-Tests": ("Kosten-Stress", "Kostendecke"),
     "Kontogroesse": ("Kontoleiter", "Koernung", "Mengenschritt"),
     "Soll die Research-KI mitlaufen": ("Research-KI", "analyst", "Vorschlag"),
+    # Befund 415: Die Frage selbst hat zwoelf Befunde lang keinen Eintrag
+    # gehabt; die Begriffe sind die der Sache - Modus, Fensterschnitt,
+    # Beingrenze -, nicht die der Frage.
+    "Welcher Modus die Zulassung traegt": (
+        "durchgehend",
+        "Beingrenze",
+        "Fensterschnitt",
+        "Messaufbau",
+    ),
 }
 
 BEGRIFFE: dict[str, tuple[str, ...]] = {
