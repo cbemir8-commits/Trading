@@ -16046,5 +16046,37 @@ def aufteilung(
     )
 
 
+@app.command()
+def nachgesehen(
+    frage: str = typer.Argument(
+        ..., help="Die Groesse oder Frage, nach der gesucht wird."
+    ),
+    grenze: int = typer.Option(8, "--grenze", "-n", help="Wie viele Treffer."),
+) -> None:
+    """Wo ist diese Groesse im Projekt schon gemessen?
+
+    **Vor** dem Messen, nicht danach. Das Register verzeichnet acht Faelle, in
+    denen dieses Projekt etwas nachgebaut hat, das es besass (268, 359, 388,
+    396, 407, 418, 423, 424); die beiden letzten haben je einen ganzen
+    Arbeitsgang gekostet. Der Grund ist Groesse: 104 Forschungsmodule und 72
+    Befehle, rund 1500 Docstrings. Wer von Hand grept, sucht am Ort der
+    **Frage**, die er stellt - und nicht am Ort der **Groesse**, die er messen
+    will. Genau daran sind 423 und 424 gescheitert.
+
+    **Dieser Befehl entscheidet nichts** (Befund 118). Er liefert
+    Verdachtsfaelle; wer einen uebernimmt, hat ihn gelesen.
+
+    Kostet keinen Versuch: Es wird nichts gerechnet und nichts ausgewaehlt,
+    nur gelesen, was dasteht.
+    """
+    from research.nachgesehen import abnahme, bericht
+
+    console.print(bericht(frage, grenze=grenze))
+    if frage.strip().lower() in {"abnahme", "probe"}:
+        for fall, platz in abnahme(grenze=grenze):
+            marke = f"Rang {platz}" if platz else "nicht gefunden"
+            console.print(f"  {fall.befund or '-':>4}  {marke:16} {fall.erwartet}")
+
+
 if __name__ == "__main__":
     app()

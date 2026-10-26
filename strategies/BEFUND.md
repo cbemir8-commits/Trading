@@ -37958,3 +37958,112 @@ verlangt jetzt, dass beide Wege uebereinstimmen, und haelt zugleich 221s eigene
 Zahlen fest. Wer eine der beiden Rechnungen aendert, merkt es an der anderen.
 
 Geaendert hat sich keine Zahl und kein Gate.
+
+## Vierhundertfuenfundzwanzig. Nachgebaut statt nachgesehen - achtmal, und kein Werkzeug dagegen
+
+Das Register verzeichnet **acht** Faelle, in denen dieses Projekt etwas
+nachgebaut hat, das es besass:
+
+    268  Die Aufstellung wurde am ungehandelten Punkt gewaehlt
+    359  Ein Bein ohne Funding-Raten handelt nicht
+    388  Das Zielfenster stand ohne seine Empfindlichkeit da
+    396  Das bindende Fenster war geraten
+    407  Am kontogeschuetzten Punkt verschwindet der Designeffekt fast
+    418  Die Stichprobe ist stabil, und mein Rauschen war geschlossen
+    423  Die Versuchsrechnung stand nur fuer den vorhandenen Kandidaten
+    424  Befund 423 war eine Nachableitung von Befund 221
+
+Die beiden letzten liegen unmittelbar hintereinander und haben je einen ganzen
+Arbeitsgang gekostet.
+
+### Der Grund ist nicht Unachtsamkeit, sondern Groesse
+
+Der durchsuchbare Bestand sind **104 Forschungsmodule und 72 Befehle** mit rund
+**1500 Docstrings**. Wer von Hand grept, sucht am Ort der **Frage**, die er
+gerade stellt - und nicht am Ort der **Groesse**, die er messen will.
+
+Genau daran sind 423 und 424 gescheitert: gesucht in `erreichbarkeit`, wo die
+Tafel fuer den **fixen** Kandidaten liegt. Die fuer die **Suche** liegt in
+`verbund.versuchskosten`, der Schluss daraus im Kopf von `stand.Suchbudget`.
+
+### Abgenommen an den eigenen Fehlgriffen
+
+Nicht an erfundenen Fragen. `PROBEFAELLE` enthaelt die Faelle, in denen von Hand
+gesucht und nichts gefunden wurde, in der Formulierung, in der damals gesucht
+wurde - nachtraeglich zu schaerfen waere, die Pruefung auf das Ergebnis zu
+stellen. Gemessen, in den ersten acht Treffern:
+
+    424  Rang 3   stand.py:Suchbudget
+    423  Rang 2   erreichbarkeit.py:<Modulkopf>
+    418  Rang 5   cli.py:aufteilung
+      -  Rang 1   verbund.py:hoechster_versuchsstand
+    407  nicht gefunden   gates.py:stichprobe_wie_im_gate
+
+**Vier von fuenf**, darunter beide teuren. Der vierte Fall hat keinen eigenen
+Befund: Beim Prototyp fand die Suche `verbund.hoechster_versuchsstand` - die
+Funktion, die ausrechnet, bis zu welchem Versuchsstand eine Guete die Schwelle
+noch raeumt. Ich hatte im selben Lauf behauptet, niemand rechne das. Ihr
+Docstring unterscheidet sogar genau die beiden Lesarten, die 423 als neu
+berichtet hat.
+
+Der fuenfte wird **nicht** gefunden und bleibt als Fehlschlag stehen:
+`gates.stichprobe_wie_im_gate` besteht aus den haeufigsten Woertern des Projekts
+- "effektive Stichprobe", "Gate", "messen" -, und lange Modulkoepfe, die alle
+enthalten, stehen davor. Eine Abnahme, aus der man die Fehlschlaege entfernt,
+misst nichts.
+
+### Die Rangfolge ist nicht nachgestellt
+
+Ein Bonus auf die Kopfzeile - in diesem Projekt steht dort die Frage - erreicht
+5 von 5. Aber nur bei genau einem Gewicht:
+
+    Kopfgewicht   Raenge (424, 423, 407, 418, Fenster)   in Top 8
+           1,0    [3, 1, -, 5, 1]                        4/5
+           1,5    [2, 5, 5, 6, 1]                        5/5
+           2,0    [2, 7, 2, -, 1]                        4/5
+           3,0    [3, -, 1, -, 1]                        3/5
+
+Eine Spitze zwischen zwei schlechteren Nachbarn, auf fuenf selbst gewaehlten
+Faellen. Das ist das Muster, das Befund 417/418 als ausgewaehltes Rauschen
+entlarvt hat, und diesmal habe ich es erkannt, bevor ich es eingebaut habe.
+Eingebaut ist die ungestellte Regel und vier von fuenf. Die Quote steht mit im
+Bericht, damit niemand das Werkzeug fuer vollstaendig haelt.
+
+Ein Laengenausgleich (`punkte / log(20 + Laenge)`) war die andere Idee und macht
+es deutlich schlechter - 1 von 5. Der Grund ist aufschlussreich: In diesem
+Projekt liegt das Wissen in den **langen** Docstrings. Wer Laenge bestraft,
+bestraft genau sie.
+
+### Es entscheidet nichts
+
+Dieselbe Regel wie in `nachmessung`, und ausdruecklich die Lehre aus Befund 118,
+wo eine Textsuche elf Befehle als fehlend gemeldet hat, die es gab. Jeder
+Treffer nennt die Worte, auf denen er beruht, damit er pruefbar ist, und der
+Vorbehalt steht unter jedem Bericht.
+
+### Zwei eigene Fehlgriffe beim Bau
+
+* Der Befehl stand zuerst **hinter** `if __name__ == "__main__"` in `cli.py` -
+  also hinter dem Aufruf von `app()`. Er war nie registriert, und `cli
+  nachgesehen` gab "No such command". Dass eine Datei mit dem Einsprungpunkt
+  endet, heisst: Anhaengen geht nicht. Jetzt unter Test.
+* In den Tests stand wieder ein `or True` - die Bauart, gegen die Befund 424
+  eine Wache gebaut hat. **Diesmal hat die Wache gegriffen**, und das ist der
+  einzige Beleg dafuer, dass sie etwas taugt.
+
+### Und eine dritte Wache hat auf diesen Befund gegriffen
+
+`test_rauchtest` verlangt, dass jeder Befehl eingeteilt ist - *"Unbekannt ist ein
+Fehler, nicht stillschweigend harmlos"* -, und ist an dem neuen gefallen.
+`nachgesehen` steht jetzt mit Grund in `HARMLOS`: Es liest Quelltext und druckt,
+rechnet nichts, waehlt nichts aus, fragt kein Netz.
+
+Dazu gehoert der Rauchtest am echten Quelltext, vier Laeufe - echte Frage,
+Unsinn, ausschliesslich zu kurze Woerter, `abnahme`. Versuchszaehler 203 vor und
+nach den Laeufen, geschrieben wurde nichts, also `GELAUFEN = 57`.
+
+**Der Lauf hat beide Fehler gefunden, die die Modultests durchgelassen haben**:
+den Befehl hinter `if __name__` und den Griff auf `Treffer.zeile` statt
+`Treffer.stelle.zeile`. Beide liegen in der Schale um das Modul herum, und genau
+dort schauen Modultests nicht hin. Das ist der Grund, warum dieses Projekt auf
+echten Daten raucht und nicht vermutet.

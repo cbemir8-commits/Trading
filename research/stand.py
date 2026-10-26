@@ -5283,6 +5283,52 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Doppelung eine Wache wird. **Nicht geaendert** hat sich eine Zahl "
         "und kein Gate",
         424,
+        zuletzt=425,
+    ),
+    # Befund 425: Viermal in zwei Befunden nachgebaut, was dastand. Woran
+    # scheitert die Handsuche?
+    Richtung(
+        "Nachgebaut statt nachgesehen - achtmal, und kein Werkzeug dagegen",
+        "Das Register verzeichnet **acht** Faelle, in denen dieses Projekt "
+        "etwas nachgebaut hat, das es besass: 268, 359, 388, 396, 407, 418, "
+        "423 und 424. Die beiden letzten liegen unmittelbar hintereinander "
+        "und haben je einen ganzen Arbeitsgang gekostet. **Der Grund ist "
+        "nicht Unachtsamkeit, sondern Groesse**: Der durchsuchbare Bestand "
+        "sind 104 Forschungsmodule und 72 Befehle mit rund 1500 Docstrings. "
+        "Wer von Hand grept, sucht am Ort der **Frage**, die er stellt, und "
+        "nicht am Ort der **Groesse**, die er messen will - 423 und 424 haben "
+        "in 'erreichbarkeit' gesucht, wo die Tafel fuer den fixen Kandidaten "
+        "liegt, waehrend die fuer die Suche in 'verbund' und der Schluss in "
+        "'stand.Suchbudget' lag. Gebaut ist jetzt 'research/nachgesehen.py' "
+        "und 'cli nachgesehen': eine Suche ueber alle Docstrings von "
+        "'research/*.py' und 'cli.py', gewichtet mit 'log(N/df)', also "
+        "seltene Worte schwerer als haeufige. **Abgenommen an den eigenen "
+        "Fehlgriffen**, nicht an erfundenen Fragen - und gemessen sind es "
+        "**vier von fuenf** in den ersten acht Treffern, darunter beide "
+        "teuren. Der fuenfte wird nicht gefunden und bleibt als Fehlschlag "
+        "stehen: 'gates.stichprobe_wie_im_gate' (der Fehlgriff aus 407) "
+        "besteht aus den haeufigsten Woertern des Projekts, und lange "
+        "Modulkoepfe stehen davor. **Nicht nachgestellt**: Ein Bonus auf die "
+        "Kopfzeile erreicht 5 von 5, aber nur bei genau dem Gewicht 1,5, mit "
+        "4 von 5 bei 1,0 und 2,0 und 3 von 5 bei 3,0 - eine **ausgewaehlte "
+        "Spitze** zwischen schlechteren Nachbarn auf fuenf selbst gewaehlten "
+        "Faellen, also dasselbe Muster, das 418 als Rauschen entlarvt hat. "
+        "Eingebaut ist die ungestellte Regel, und die Quote steht mit im "
+        "Bericht, damit niemand das Werkzeug fuer vollstaendig haelt. **Es "
+        "entscheidet nichts** (Befund 118): Verdachtsfaelle, keine Antworten. "
+        "Beim Bau selbst zwei eigene Fehlgriffe: Der Befehl stand zuerst "
+        "hinter 'if __name__', wurde also nie registriert - jetzt unter Test "
+        "-, und in den Tests stand wieder ein 'or True', die Bauart, gegen "
+        "die 424 die Wache gebaut hat. Diesmal hat die Wache gegriffen. **Und "
+        "eine dritte Wache hat auf diesen Befund gegriffen**: "
+        "'test_rauchtest' verlangt, dass jeder Befehl eingeteilt ist, und ist "
+        "an dem neuen gefallen - 'nachgesehen' steht jetzt mit Grund in "
+        "'HARMLOS', und der Rauchtest am echten Quelltext ist gefahren (echte "
+        "Frage, Unsinn, zu kurze Worte, 'abnahme'; Zaehler 203 vor und nach "
+        "dem Lauf, nichts geschrieben). **Er hat beide Fehler gefunden, die "
+        "die Modultests durchgelassen haben** - genau der Grund, warum dieses "
+        "Projekt auf echten Daten raucht und nicht vermutet",
+        425,
     ),
 )
 

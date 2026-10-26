@@ -75,6 +75,11 @@ HARMLOS: frozenset[str] = frozenset({
     # und den Versuchszaehler, schreibt nichts und fragt kein Netz - nur
     # laeuft es elf Walk-Forwards statt zwei.
     "aufteilung",
+    # 'nachgesehen' (Befund 425) liest Quelltext und druckt. Es rechnet
+    # nichts, waehlt nichts aus und fragt kein Netz - der harmloseste Befehl
+    # des Projekts, und genau deshalb gehoert er hierher und nicht ins
+    # Stillschweigen: Unbekannt ist ein Fehler.
+    "nachgesehen",
     "abstand", "anwaerter", "aufloesung", "betriebspunkt",
     "decke", "duerre", "evidenz", "finanzierung",
     "form", "freigabe", "front", "gatemuster", "haelften",
@@ -140,7 +145,18 @@ HARMLOS: frozenset[str] = frozenset({
 #: worden - vorne abgeschnitten (die Messung des Befundes), hinten
 #: abgeschnitten (die Gegenprobe, Streuung 0,0000), durchgehend (98 Trades je
 #: Versatz) und mit '--tage 0', was aufrundet und es sagt.
-GELAUFEN = 56
+#:
+#: 57 seit Befund 425: 'cli nachgesehen' ist am echten Quelltext gefahren
+#: worden - mit einer echten Frage (Treffer samt Fundworten), mit Unsinn
+#: ("Keine Stelle gefunden", die Gegenprobe), mit ausschliesslich zu kurzen
+#: Woertern (ebenso) und mit 'abnahme', das die Trefferquote zeigt. Der
+#: Versuchszaehler stand vor und nach den Laeufen bei 203, geschrieben wurde
+#: nichts. **Zwei Fehler hat der Lauf gezeigt**, beide behoben: Der Befehl war
+#: hinter 'if __name__' angehaengt und damit nie registriert ("No such
+#: command"), und 'bericht' griff 'Treffer.zeile' statt 'Treffer.stelle.zeile'.
+#: Ohne den Lauf waere beides durch die Tests gekommen, die nur das Modul
+#: fragen.
+GELAUFEN = 57
 TRACEBACKS = 0
 SAUBER_ABGELEHNT = ("quelle", "review", "vorschlag")
 
