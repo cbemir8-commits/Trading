@@ -66,8 +66,7 @@ def fingerabdruck(frame) -> str:
     ausgeschriebene Dezimaldarstellung, die nur von den Zahlen abhaengt.
     """
     zeilen = (
-        "|".join(f"{float(frame[s].iloc[i]):.8f}" for s in SPALTEN)
-        for i in range(len(frame))
+        "|".join(f"{float(frame[s].iloc[i]):.8f}" for s in SPALTEN) for i in range(len(frame))
     )
     roh = "\n".join(zeilen).encode()
     return hashlib.sha256(roh).hexdigest()[:16]
@@ -264,3 +263,24 @@ def warum(frames, gegen: Reihenstempel | None = None) -> str:
         + " - der Speicher steht in .gitignore, also nachgeladen und "
         "nicht derselbe. Erst den Stempel nachziehen, dann die Zahl."
     )
+
+
+#: Die Feinreihe - Viertelstundenkerzen, Befund 426.
+#:
+#: Gepinnt, **bevor** eine Zahl des Projekts darauf steht. Die Abdruecke sind
+#: mit ``data.store.CandleStore.read`` gelesen und auf
+#: ``datenstand.FEINENDE`` geschnitten; wer sie nachrechnet, nimmt
+#: ``datenstand.fein_geschnitten``.
+#:
+#: **Beide Beine gleich lang** (229.728 = 2393 Tage * 96), anders als bei
+#: Tageskerzen. Ungeschnitten liegen 229.750 im Speicher - die 22 Balken
+#: Differenz sind der angebrochene letzte Tag.
+SERIE_15 = Reihenstempel(
+    balken=229_728,
+    von="2020-03-30",
+    bis="2026-10-17",
+    abdruecke={
+        "BTCUSD_BITSTAMP": "b499e86270dc6eb4",
+        "ETHUSD_BITSTAMP": "9b571b8bb687a736",
+    },
+)

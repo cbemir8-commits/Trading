@@ -38067,3 +38067,78 @@ den Befehl hinter `if __name__` und den Griff auf `Treffer.zeile` statt
 `Treffer.stelle.zeile`. Beide liegen in der Schale um das Modul herum, und genau
 dort schauen Modultests nicht hin. Das ist der Grund, warum dieses Projekt auf
 echten Daten raucht und nicht vermutet.
+
+## Vierhundertsechsundzwanzig. Die Feinreihe ist die naechste Messreihe - und war ungepinnt
+
+Der Plan sieht Generation 6 und 7 auf Viertelstundenkerzen vor, und der offene
+Punkt nennt den Befehl dazu: `cli backfill --intervall 15 --von 2020-03-30`.
+
+### Gemessen: die Kerzen liegen schon da
+
+    Markt              Intervall    Balken   von          bis          Tage
+    BTCUSD_BITSTAMP    D              5405   2012-01-01   2026-10-18   5404
+    BTCUSD_BITSTAMP    15           229750   2020-03-30   2026-10-18   2393
+    ETHUSD_BITSTAMP    D              3351   2017-08-16   2026-10-18   3350
+    ETHUSD_BITSTAMP    15           229750   2020-03-30   2026-10-18   2393
+
+Und `cli quality -i 15` urteilt:
+
+    BTCUSD_BITSTAMP 15m: 229.750 Kerzen. Vollstaendigkeit 100.0000%. 0 Luecken
+    ETHUSD_BITSTAMP 15m: 229.750 Kerzen. Vollstaendigkeit 100.0000%. 0 Luecken
+    Daten sind brauchbar.                                        (Exitcode 0)
+
+Auf einen ganzen Tag geschnitten sind es **229.728 = 2393 * 96**, ohne Rest. Die
+22 Balken Differenz sind der angebrochene letzte Tag (letzter Balken 2026-10-18
+05:15).
+
+**Was damit nicht gesagt ist**: dass der Nutzer den Backfill nicht braucht.
+Gemessen ist dieser Container, nicht sein Rechner.
+
+### Gepinnt war davon nichts
+
+`datenstand.INTERVALL` steht auf `"D"`, und `datenstempel.SERIE` stempelt allein
+die Tagesreihe (3301 Balken, zwei Abdruecke). Fuer Viertelstundenkerzen gab es
+weder Balkenzahl noch Ende noch Abdruck.
+
+Das ist genau die Lage **vor** Befund 363. Dort hatte ein neu aufgesetzter
+Container den Speicher mitgenommen; frisch nachgeladen - dieselben Symbole,
+dieselbe Quelle, nur bis heute statt bis zum Messtag - fielen fuenfzehn Tests,
+und keiner davon sagte "andere Reihe". Sie sagten 157 statt 156 und 0,6759 statt
+0,5826.
+
+**Der Unterschied ist die Reihenfolge.** 363 musste die Tagesreihe
+nachtraeglich aus vier gepflegten Zahlen erschliessen. Hier steht noch **keine**
+Zahl des Projekts auf Viertelstundenkerzen - der Stempel kostet also nichts und
+erspart genau jenen Lauf. Pinnen, bevor gemessen wird, ist der billige Fall;
+363 war der teure.
+
+### Gebaut
+
+* `datenstand`: `FEINANFANG`, `FEINENDE` (ausschliessend), `FEINTAGE`,
+  `FEINBALKEN`, `BALKEN_JE_TAG`, `feinlaenge_stimmt`, `fein_geschnitten`,
+  `alle_fein_geschnitten`, `feinzeile`.
+* `datenstempel.SERIE_15`: beide Fingerabdruecke, gegen die echten Kerzen
+  geprueft - `abweichungen()` leer, `passt()` wahr.
+
+Die Gegenprobe laeuft in beide Richtungen: Auf den ungeschnittenen Rahmen
+gegeben meldet `feinzeile` die Abweichung mit.
+
+    Feinreihe 15m: BTC 229728 Balken 2020-03-30..2026-10-17; ETH 229728 ...
+    Feinreihe 15m: BTC 229750 Balken 2020-03-30..2026-10-18 (gepinnt 229728); ...
+
+### Zwei Dinge, die der Stempel nicht behauptet
+
+**Es ist keine Zulassungsreihe.** Zugelassen wird auf Tageskerzen, dort stehen
+alle elf Gates (Befund 213). Diese Reihe ist eine Messreihe, kein Urteilsmass,
+und `FEINENDE` ist deshalb ausdruecklich ein anderes Datum als `SERIENENDE` -
+ein Test haelt die beiden auseinander.
+
+**Der Schnitt ist halboffen**, wie `store.read` es nimmt. Wer `<=` schreibt,
+nimmt den ersten Balken des Folgetags mit und bekommt 229.729 statt 229.728. Bei
+Tageskerzen ist der Schnitt einschliessend (`geschnitten` nutzt `<=`), weil ein
+Balken ein Tag ist; die zwei Funktionen sehen gleich aus und sind es nicht.
+
+Und eine Eigenschaft dieser Reihe, die bei Tageskerzen fehlt: **beide Beine sind
+gleich lang.** Bei Tageskerzen reicht BTC 2054 Tage weiter zurueck als ETH, und
+die gemeinsame Spanne ist die kuerzere. Hier beginnt der Speicher fuer beide am
+selben Tag.

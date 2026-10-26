@@ -5329,6 +5329,39 @@ BEHOBEN: tuple[Richtung, ...] = (
         "die Modultests durchgelassen haben** - genau der Grund, warum dieses "
         "Projekt auf echten Daten raucht und nicht vermutet",
         425,
+        zuletzt=426,
+    ),
+    # Befund 426: Der Plan will Generation 6/7 auf Viertelstundenkerzen. Auf
+    # welcher Reihe genau?
+    Richtung(
+        "Die Feinreihe ist die naechste Messreihe - und war ungepinnt",
+        "Gemessen in diesem Container: Die Viertelstundenkerzen, die der Plan "
+        "erst noch laden will ('cli backfill --intervall 15 --von "
+        "2020-03-30'), **liegen schon da** - 229.750 Balken je Bein, beide "
+        "Maerkte, 2020-03-30 bis 2026-10-18, und 'cli quality -i 15' meldet "
+        "Vollstaendigkeit **100,0000 %** mit null Luecken und Exitcode 0. "
+        "Auf einen ganzen Tag geschnitten sind es **229.728 = 2393 Tage mal "
+        "96**, ohne Rest; die 22 Balken Differenz sind der angebrochene "
+        "letzte Tag. **Gepinnt war davon nichts**: 'datenstand.INTERVALL' "
+        "steht auf 'D', und 'datenstempel.SERIE' stempelt allein die "
+        "Tagesreihe. Das ist genau die Lage vor Befund 363 - dort hatte ein "
+        "neu aufgesetzter Container den Speicher mitgenommen, frisch "
+        "nachgeladen fielen fuenfzehn Tests, und keiner sagte 'andere "
+        "Reihe'. Der Unterschied: Dort musste die Reihe **nachtraeglich** "
+        "aus vier gepflegten Zahlen erschlossen werden, hier steht noch "
+        "keine Zahl des Projekts auf Viertelstundenkerzen - der Stempel "
+        "kostet also nichts und erspart jenen Lauf. Gebaut sind die "
+        "Feinreihe in 'datenstand' (Anfang, ausschliessendes Ende, "
+        "Balkenzahl, 'fein_geschnitten', 'feinzeile') und 'SERIE_15' in "
+        "'datenstempel' mit beiden Fingerabdruecken, gegen die echten Kerzen "
+        "geprueft. **Es ist keine Zulassungsreihe**: Zugelassen wird auf "
+        "Tageskerzen, dort stehen alle elf Gates (213) - diese Reihe ist eine "
+        "Messreihe, kein Urteilsmass, und der Modulkopf sagt es. Der Schnitt "
+        "ist **halboffen**, wie 'store.read': Wer '<=' schreibt, nimmt den "
+        "ersten Balken des Folgetags mit und bekommt 229.729. **Was damit "
+        "nicht gesagt ist**: dass der Nutzer den Backfill nicht braucht - "
+        "gemessen ist dieser Container, nicht sein Rechner",
+        426,
     ),
 )
 

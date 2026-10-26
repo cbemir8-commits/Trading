@@ -185,10 +185,7 @@ def befehle() -> tuple[str, ...]:
     wird durch ein Nachladen nicht kuerzer. Dafuer die erste Zeile.
     """
     nach = SERIENENDE + timedelta(days=1)
-    zeilen = [
-        "rm -rf "
-        + " ".join(f"data_store/candles/{r.symbol}/{INTERVALL}" for r in REIHEN)
-    ]
+    zeilen = ["rm -rf " + " ".join(f"data_store/candles/{r.symbol}/{INTERVALL}" for r in REIHEN)]
     zeilen += [
         f"python -m cli referenz -i {INTERVALL} --symbol {r.symbol} "
         f"--von {r.von.isoformat()} --bis {nach.isoformat()}"
@@ -311,13 +308,9 @@ def fehlt(vorhanden: Mapping[str, tuple[date, date, int]]) -> tuple[str, ...]:
             continue
         von, bis, balken = stand
         if von > reihe.von:
-            saetze.append(
-                f"{reihe.symbol}: beginnt erst {von}, gebraucht ab {reihe.von}"
-            )
+            saetze.append(f"{reihe.symbol}: beginnt erst {von}, gebraucht ab {reihe.von}")
         if bis < SERIENENDE:
-            saetze.append(
-                f"{reihe.symbol}: endet schon {bis}, gebraucht bis {SERIENENDE}"
-            )
+            saetze.append(f"{reihe.symbol}: endet schon {bis}, gebraucht bis {SERIENENDE}")
         # Eine Luecke ist nur bei genau passenden Grenzen zu erkennen; laeuft
         # der Speicher weiter, sagt die Balkenzahl nichts ueber Luecken im
         # Inneren, und zwei Meldungen fuer eine Ursache schicken den Leser auf
@@ -328,3 +321,100 @@ def fehlt(vorhanden: Mapping[str, tuple[date, date, int]]) -> tuple[str, ...]:
                 f"erwartet {reihe.balken} - eine Luecke in der Reihe"
             )
     return tuple(saetze)
+
+
+# ---------------------------------------------------------------------------
+# Die Feinreihe - Viertelstundenkerzen, Befund 426
+# ---------------------------------------------------------------------------
+#
+# **Gepinnt, bevor die erste Zahl darauf gemessen ist.** Das ist der
+# Unterschied zu allem oben: Befund 363 musste die Tagesreihe **nachtraeglich**
+# rekonstruieren, aus vier gepflegten Zahlen erschlossen, nachdem ein neu
+# aufgesetzter Container fuenfzehn Tests hatte fallen lassen und keiner davon
+# "andere Reihe" sagte. Auf Viertelstundenkerzen steht noch keine Zahl des
+# Projekts - also kostet der Stempel hier nichts und erspart genau jenen Lauf.
+#
+# **Keine Zulassungsreihe.** Zugelassen wird auf Tageskerzen, dort stehen alle
+# elf Gates (``INTERVALL``, Befund 213). Diese Reihe ist die, auf der nach dem
+# Plan Generation 6 und 7 gemessen werden sollen - eine Messreihe, kein
+# Urteilsmass.
+
+#: Balken je Tag auf Viertelstundenkerzen.
+BALKEN_JE_TAG = 96
+
+#: Erster Tag der Feinreihe - derselbe Anfang, den der Backfill-Befehl im Plan
+#: nennt (``--von 2020-03-30``).
+FEINANFANG = date(2020, 3, 30)
+
+#: Ende der Feinreihe, **ausschliessend** - wie ``store.read`` es nimmt.
+#:
+#: Der Speicher endet mitten im Tag (letzter Balken 2026-10-18 05:15). Ein
+#: Stempel auf einen halben Tag waere beim naechsten Nachladen sofort falsch,
+#: ohne dass sich etwas Wesentliches geaendert haette; deshalb bis zur
+#: Tagesgrenze und nicht bis zum letzten Balken.
+FEINENDE = date(2026, 10, 18)
+
+#: Die Beine der Feinreihe. Beide gleich lang - anders als bei Tageskerzen,
+#: wo BTC 2054 Tage weiter zurueckreicht.
+FEINREIHEN: tuple[str, ...] = ("BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP")
+
+#: Ganze Tage von ``FEINANFANG`` bis ``FEINENDE`` (ausschliessend).
+FEINTAGE = 2393
+
+#: Gemessene Balkenzahl je Bein nach dem Schnitt.
+FEINBALKEN = 229_728
+
+
+def feinlaenge_stimmt() -> bool:
+    """Geht die Balkenzahl ohne Rest auf die Tage auf?
+
+    Das Gegenstueck zu ``Reihe.laenge_stimmt``. Bei Tageskerzen ist ein
+    fehlender Balken ein fehlender Tag und faellt auf; hier sind es 96 je Tag,
+    und eine Luecke von einer Stunde verschwindet in der Summe. Diese Probe
+    macht sie sichtbar: ``cli quality -i 15`` meldet 100,0000 % und null
+    Luecken, und genau das heisst diese Gleichung.
+    """
+    return FEINBALKEN == FEINTAGE * BALKEN_JE_TAG and (FEINENDE - FEINANFANG).days == FEINTAGE
+
+
+def fein_geschnitten(frame: PandasRahmen) -> PandasRahmen:
+    """Einen Viertelstundenrahmen auf die Feinreihe kuerzen.
+
+    Halboffen am oberen Ende - ``FEINENDE`` selbst ist nicht mehr dabei. Wer
+    hier ``<=`` schreibt, nimmt den ersten Balken des Folgetags mit und bekommt
+    229.729 statt 229.728.
+    """
+    import pandas as pd
+
+    if frame is None or frame.empty or "open_time" not in frame.columns:
+        return frame
+    zeiten = pd.to_datetime(frame["open_time"], utc=True)
+    grenze = pd.Timestamp(FEINENDE, tz="UTC")
+    return frame[zeiten < grenze].reset_index(drop=True)
+
+
+def alle_fein_geschnitten(
+    frames: Mapping[str, PandasRahmen],
+) -> dict[str, PandasRahmen]:
+    """Mehrere Beine auf die Feinreihe kuerzen - ein Aufruf je Pruefung."""
+    return {name: fein_geschnitten(rahmen) for name, rahmen in frames.items()}
+
+
+def feinzeile(frames: Mapping[str, PandasRahmen]) -> str:
+    """Eine Zeile: Auf welcher Feinreihe stehen diese Zahlen?
+
+    Dasselbe wie ``reihenzeile`` fuer die Tagesreihe (Befund 370). Wer eine
+    Zahl auf Viertelstundenkerzen meldet, soll die Reihe mitmelden - sonst
+    entsteht genau die Lage, in der 157 Trades neben gepflegten 156 stehen und
+    niemand die Ursache nennt.
+    """
+    stand = grenzen(frames)
+    teile = []
+    for name in FEINREIHEN:
+        if name not in stand:
+            teile.append(f"{name} fehlt")
+            continue
+        von, bis, balken = stand[name]
+        marke = "" if balken == FEINBALKEN else f" (gepinnt {FEINBALKEN})"
+        teile.append(f"{name} {balken} Balken {von}..{bis}{marke}")
+    return "Feinreihe 15m: " + "; ".join(teile)
