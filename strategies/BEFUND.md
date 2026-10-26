@@ -37740,3 +37740,62 @@ Dieselbe Sorte wie in 415 und 420: Eine Teilzeichenkette ueber einen langen
 Bericht trifft irgendwann etwas anderes. Das ist jetzt das dritte Mal in sieben
 Befunden, und es ist immer derselbe Griff - erst den Ort festlegen, dann den
 Text.
+
+## Vierhundertzweiundzwanzig. Zwei Entscheidungsvorlagen nannten Altzahlen ohne Vorbehalt
+
+Befund 408 hat sechs gepflegte Zahlen als nicht reproduzierbar verzeichnet und
+in `datenstempel.ALTZAHLEN` gefuehrt. Drei Tests und drei Modulkoepfe wurden
+damals nachgezogen.
+
+Nachgemessen stehen dieselben Zahlen an **vier Stellen** weiter als Prosa, ohne
+jeden Hinweis:
+
+    Stelle                                     Zahlen              massgeblich
+    ENTSCHEIDUNG 69  geratene Eingabe im DSR   0,5958 / 0,2761             380
+    ENTSCHEIDUNG 96  Umfang des Kostenstress   2318,32 / 1632,86           339
+    gates.gate_cost_stress (Docstring)         2318,32 / 1632,86             -
+    BEHOBEN 356      die Momente festgenagelt  3,376 / 15,415              356
+
+**Zwei davon sind Entscheidungen** - also genau die Texte, aus denen der Nutzer
+entscheidet. Und keine der drei massgeblichen Fundstellen erreicht 408: Der Weg,
+den dieses Register fuer veraltete Zahlen vorsieht - der Vorwaertszeiger -,
+fuehrte nirgendwohin.
+
+### Der Vermerk sagt, was sich aendert
+
+Ein Vorbehalt, der nur "veraltet" sagt, laesst den Leser ratlos. Deshalb steht
+jeweils dabei, was folgt:
+
+* **Nr. 96**: nichts. Der Anteil von 29,6 % bleibt unberuehrt, weil beide
+  Betraege um denselben Faktor wandern (2331,38 und 1643,22). Die Entscheidung
+  steht unveraendert.
+* **Nr. 69**: auch nichts. Die gemessene Streuung liegt weiter ueber der
+  Annahme, das Gate faellt mit ihr weiter tiefer durch - nur wer eine Zahl
+  nachrechnet, bekommt eine andere (0,5994 und 0,2794).
+* **356** bekommt den Vorwaertszeiger auf 408, den es brauchte.
+
+### Die Wache prueft ortsnah, nicht je Datei
+
+Gebaut nach dem Muster der Wache fuer ueberholte Referenzwerte (Befund
+130/140), mit einem Unterschied, der hier der ganze Punkt ist:
+
+**Eine Pruefung je Datei waere gruen geblieben.** `research/stand.py` nennt
+Befund 408 an anderer Stelle - im Eintrag von 408 selbst. Die
+Entscheidungsvorlage zwanzig Bildschirmseiten weiter log trotzdem. Geprueft wird
+deshalb je Registereintrag und je Entscheidungsfeld, wo der Text die Einheit
+ist, und mit einem Zeilenfenster nur fuer die Modulprosa.
+
+Als Hinweis gilt auch der Vorwaertszeiger: Ein Eintrag, dessen massgebliche
+Fundstelle bei 408 oder spaeter liegt, kennt die Altzahlen und braucht keinen
+Vermerk im Text.
+
+### Und mein erster Entwurf der Wache hat falsch gemeldet
+
+Das Zeilenfenster traf den Eintrag von Befund 364 - den, der die Drift
+verzeichnet und alte neben neuer Zahl nennt. Sein Hinweis steht mehr als
+fuenfundzwanzig Quellzeilen entfernt, weil der Eintrag lang ist.
+
+`stand.py` ist in der Zeilenpruefung jetzt ausgenommen, mit Grund und unter
+Test: Die praezisere Pruefung je Eintrag deckt es vollstaendig. Eine schwaechere
+Pruefung neben eine praezisere zu stellen bringt Rauschen, nicht Deckung - und
+eine Ausnahme ohne Grund waere eine Luecke.

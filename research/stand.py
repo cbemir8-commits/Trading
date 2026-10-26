@@ -2849,6 +2849,7 @@ BEHOBEN: tuple[Richtung, ...] = (
         "und der Abstand gemessen: 0,38 % der Luecke, und **zwei Versuche** an "
         "der Stelle, an der sich das Versuchsfenster schliesst (233 gegen 235)",
         356,
+        zuletzt=408,
     ),
     # Befund 357: gefunden beim **Durchfahren** der Zeilen, die dem Nutzer
     # gegeben werden - nicht beim Lesen. Jede war gueltig, zusammen konnten
@@ -5167,6 +5168,42 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Punktes die gemessenen sind - fuer einen anderen waere es eine "
         "gepflegte Zahl am falschen Ort (408)",
         421,
+        zuletzt=422,
+    ),
+    # Befund 422: 408 hat die Altzahlen verzeichnet und drei Tests in Ordnung
+    # gebracht. Wo stehen sie noch als Prosa?
+    Richtung(
+        "Zwei Entscheidungsvorlagen nannten Altzahlen ohne Vorbehalt",
+        "Befund 408 hat sechs gepflegte Zahlen als nicht reproduzierbar "
+        "verzeichnet und in 'datenstempel.ALTZAHLEN' gefuehrt; drei Tests und "
+        "drei Modulkoepfe wurden damals nachgezogen. Nachgemessen stehen "
+        "dieselben Zahlen an **vier Stellen** weiter als Prosa, ohne jeden "
+        "Hinweis - und **zwei davon sind Entscheidungen**, also genau die "
+        "Texte, aus denen der Nutzer entscheidet: Nr. 69 ('Die geratene "
+        "Eingabe im Deflated Sharpe') nennt 0,5958 und 0,2761, Nr. 96 ('Umfang "
+        "des Kosten-Stress-Tests') nennt 2318,32 und 1632,86. Dazu der "
+        "Docstring von 'gate_cost_stress' und der Registereintrag 356, der "
+        "die Momente einst festgeschrieben hat und keinen Vorwaertszeiger "
+        "trug. **Keine der drei massgeblichen Fundstellen erreicht 408** "
+        "(380, 339, 356) - der Weg, den dieses Register fuer veraltete Zahlen "
+        "vorsieht, fuehrte also nirgendwohin. Alle vier tragen jetzt den "
+        "Vermerk, und er sagt **was sich aendert**: Bei 96 nichts, weil der "
+        "Anteil von 29,6 % unberuehrt bleibt - beide Betraege wandern um "
+        "denselben Faktor; bei 69 auch nichts, weil die gemessene Streuung "
+        "weiter ueber der Annahme liegt. Ein Vorbehalt, der nur 'veraltet' "
+        "sagt, laesst den Leser ratlos. **Gebaut ist die Wache dazu**, nach "
+        "dem Muster der Wache fuer ueberholte Referenzwerte (130/140) - und "
+        "sie prueft **ortsnah, nicht je Datei**: Eine Pruefung je Datei waere "
+        "gruen geblieben, weil 'research/stand.py' den Befund 408 an anderer "
+        "Stelle nennt und die Entscheidungsvorlage daneben trotzdem log. "
+        "Geprueft wird je Registereintrag und je Entscheidungsfeld, dazu ein "
+        "Zeilenfenster fuer die Modulprosa. **Und mein erster Entwurf der "
+        "Wache hat falsch gemeldet**: Das Zeilenfenster traf den Eintrag von "
+        "364 selbst, der alte und neue Zahl nebeneinander nennt, nur mit dem "
+        "Hinweis mehr als fuenfundzwanzig Quellzeilen entfernt. 'stand.py' "
+        "ist dort jetzt ausgenommen - mit Grund und unter Test, weil die "
+        "praezisere Pruefung je Eintrag es vollstaendig deckt",
+        422,
     ),
 )
 
@@ -6220,7 +6257,14 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
              "nachmessbar ('state/*' ist nicht eingecheckt), ihre 0,1030 sind "
              "also weder bestaetigt noch widerlegt. **Was stimmt**, ist der "
              "Deckel: gerechnet sind es 38 %, der Eintrag sagte 'hoechstens "
-             "40 %'",
+             "40 %'.\n    **Zwei Zahlen hier sind Altzahlen** (Befund "
+             "408/422): 0,5958 und 0,2761 stehen auf einem Speicherstand, den "
+             "es nicht mehr gibt; heute liefert derselbe Lauf 0,5994 und "
+             "0,2794. **An der Entscheidung aendert das nichts** - die "
+             "gemessene Streuung liegt weiter ueber der Annahme, das Gate "
+             "faellt mit ihr weiter tiefer durch -, aber wer hier eine Zahl "
+             "nachrechnet, bekommt eine andere. 'datenstempel.ALTZAHLEN' "
+             "fuehrt beide",
         warum="Die 0,0608 werden nicht eingesetzt, und zwar nicht aus "
               "Vorsicht: Von 166 Versuchen liegen 28 vor, und was fehlt, "
               "fehlt am unteren Ende - Berichte entstehen ueber Reglerscans "
@@ -6425,7 +6469,13 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
              "2318,32 gegen 1632,86 Euro. Die Richtung des Eintrags bleibt - "
              "der ausgelassene Posten ist der groessere, und das Urteil kippt "
              "auch ohne Sperre nicht -, aber 34 % war nicht, was doppeltes "
-             "Funding kostet",
+             "Funding kostet.\n    **Die beiden Betraege sind Altzahlen** "
+             "(Befund 408/422): Auf der heutigen Reihe liefert derselbe Lauf "
+             "2331,38 und 1643,22 - nachtraeglich berichtigte Kerzen, der "
+             "Speicher steht nicht im Versionsstand. **Der Anteil von 29,6 % "
+             "ist davon nicht beruehrt**, weil beide Betraege um denselben "
+             "Faktor wandern; die Entscheidung steht also unveraendert. "
+             "'datenstempel.ALTZAHLEN' fuehrt beide Werte",
         warum="Betroffen ist die Aussagekraft des Gates, nicht sein Ergebnis "
               "hier - deshalb ist es keine dringende Korrektur, sondern eine "
               "Abwaegung. Dagegen spricht die Vergleichbarkeit: Alle 45 "

@@ -1045,6 +1045,13 @@ def gate_cost_stress(
     groessere, und das Urteil dreht auch ohne Sperre nicht -, aber 33,6 % ist
     nicht "was doppeltes Funding kostet".
 
+    **Die beiden Betraege sind Altzahlen** (Befund 408/422): Auf der heutigen
+    Zulassungsreihe liefert derselbe Lauf 2331,38 und 1643,22, und der
+    Unterschied geht auf nachtraeglich berichtigte Kerzen zurueck - der
+    Speicher steht nicht im Versionsstand. Der Anteil von 29,6 % ist davon
+    nicht beruehrt, weil beide Betraege um denselben Faktor wandern.
+    ``datenstempel.ALTZAHLEN`` fuehrt beide Werte.
+
     Bei mehreren Beinen zaehlt die **Summe**: Gehandelt wird das Portfolio, und
     ein Bein, das die doppelten Kosten allein nicht traegt, ist kein Grund zur
     Ablehnung, solange das Ganze sie traegt. Umgekehrt genauso - ein starkes
