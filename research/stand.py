@@ -469,8 +469,7 @@ BEHOBEN: tuple[Richtung, ...] = (
     ),
     Richtung(
         "Latte auf roher Trade-Zahl",
-        "6 Aufrufe uebergaben 152 statt 112 - Latte 14 % zu tief, "
-        "Auftrag an die KI 47 % zu leicht",
+        "6 Aufrufe uebergaben 152 statt 112 - Latte 14 % zu tief, Auftrag an die KI 47 % zu leicht",
         139,
     ),
     Richtung(
@@ -5204,6 +5203,51 @@ BEHOBEN: tuple[Richtung, ...] = (
         "ist dort jetzt ausgenommen - mit Grund und unter Test, weil die "
         "praezisere Pruefung je Eintrag es vollstaendig deckt",
         422,
+        zuletzt=423,
+    ),
+    # Befund 423: Die Versuchstafel sagt, was ein Versuch diesen Kandidaten
+    # kostet. Was kostet er die Suche?
+    Richtung(
+        "Die Versuchsrechnung stand nur fuer den vorhandenen Kandidaten",
+        "'erreichbarkeit' fuehrt seit Befund 327 die Tafel, was ein weiterer "
+        "Versuch den **gemeldeten** Kandidaten kostet: 0,0011 DSR-Punkte, zehn "
+        "kosten 0,0106, gegen eine Luecke von 0,3673 - daher der Satz "
+        "'Versuchsdisziplin haelt den Abstand, sie schliesst ihn nicht'. Die "
+        "Gegenfrage fehlte: Wie hoch steigt die Latte, die ein **kuenftiger** "
+        "Fund ueberspringen muesste? Gemessen mit "
+        "'Referenzpunkt.noetige_guete(versuche=...)' ist sie fast flach - "
+        "**0,3374 bei 203 Versuchen, 0,3407 bei 230**, der Grenze des "
+        "Suchbudgets. Das ganze restliche Budget hebt sie um **ein Prozent**; "
+        "selbst bei 500 Versuchen, dem Zweieinhalbfachen, sind es 1,33 statt "
+        "1,25 der heutigen Guete. Damit stehen zwei Lesarten derselben "
+        "Rechnung nebeneinander, und beide sind wahr: Fuer den vorhandenen "
+        "Kandidaten ist der Zaehler entscheidend (bei 21 Versuchen 0,9529, bei "
+        "203 nur 0,5827), fuer einen kuenftigen fast belanglos. **Die zweite "
+        "ist die planungsrelevante**, denn die Suche sucht Neues - also "
+        "**blockiert die Suche nicht der Versuchszaehler**, sondern dass die "
+        "noetige Guete ein Viertel ueber der des heutigen Kandidaten liegt, "
+        "und das bleibt so. **Kein Freibrief**: Fuer jeden schon gemessenen "
+        "Kandidaten zaehlt jeder weitere Versuch gegen ihn, das ist der Satz "
+        "von 327 und er gilt unveraendert; er darf nur nicht als Grund gelesen "
+        "werden, nicht zu suchen. Die Tafel ist **gerechnet**, nicht gepflegt "
+        "(408), und unter Test. **Zwei Fehlgriffe von mir gehoeren dazu**: Ich "
+        "habe die DSR-Versuchstafel erst gemessen und dann gesehen, dass sie "
+        "samt Grenzkosten und samt der Warnung von 327 gegen die "
+        "Rueckwaertslesung schon im Kopf des Moduls steht - **nachgebaut, "
+        "statt vorher nachzusehen**. Und ich habe fuer die noetige Guete eine "
+        "**Bisektion** von Hand gebaut, obwohl 'noetige_guete' den "
+        "Versuchsstand schon als Argument nimmt und ihr eigener Docstring "
+        "genau vor dieser Handrechnung warnt (355). Zum zehnten Mal in diesem "
+        "Register: erst gebaut, dann gefunden, dass es da war. **Und ein "
+        "dritter, der die Wache nach sich zieht**: In den Tests zu diesem "
+        "Befund habe ich beide unhaltbaren Zusicherungen aus 420 wieder "
+        "geschrieben - eine grosse Nadel gegen '.lower()' (nie wahr) und "
+        "'__dict__' auf einem slots-Dataclass. Ein Registereintrag hat das "
+        "drei Befunde lang nicht verhindert, also prueft es jetzt eine Wache "
+        "in 'test_zusicherungen' je Zusicherung, mit Gegenproben fuer beide "
+        "Richtungen; die kleine Nadel und das Modul-'__dict__' ohne Vorgabe "
+        "bleiben erlaubt, weil sie richtig sind",
+        423,
     ),
 )
 
@@ -5703,17 +5747,33 @@ OFFEN: tuple[Richtung, ...] = (
 )
 
 
-
 #: Die deutschen Zahlwoerter, mit denen die Abschnitte im Laborbuch
 #: ueberschrieben sind ("## Fuenfundachtzig. ..."). Ohne sie laesst sich eine
 #: Fundstelle nicht maschinell nachschlagen - und eine Liste geschlossener
 #: Wege, deren Verweise niemand prueft, driftet still von der Wirklichkeit ab.
 _EINER = (
-    "", "Ein", "Zwei", "Drei", "Vier", "Fuenf", "Sechs", "Sieben", "Acht", "Neun",
+    "",
+    "Ein",
+    "Zwei",
+    "Drei",
+    "Vier",
+    "Fuenf",
+    "Sechs",
+    "Sieben",
+    "Acht",
+    "Neun",
 )
 _ZEHNER = (
-    "", "Zehn", "Zwanzig", "Dreissig", "Vierzig", "Fuenfzig", "Sechzig",
-    "Siebzig", "Achtzig", "Neunzig",
+    "",
+    "Zehn",
+    "Zwanzig",
+    "Dreissig",
+    "Vierzig",
+    "Fuenfzig",
+    "Sechzig",
+    "Siebzig",
+    "Achtzig",
+    "Neunzig",
 )
 #: Die Hunderter als **Tabelle** statt als Kette von Sonderfaellen.
 #:
@@ -5727,15 +5787,30 @@ _ZEHNER = (
 #: "erst bauen, wenn es soweit ist" bleibt damit gewahrt - nur gilt sie jetzt
 #: fuer die Ebene und nicht fuer jeden einzelnen Hunderter.
 _HUNDERTER = (
-    "", "Hundert", "Zweihundert", "Dreihundert", "Vierhundert", "Fuenfhundert",
-    "Sechshundert", "Siebenhundert", "Achthundert", "Neunhundert",
+    "",
+    "Hundert",
+    "Zweihundert",
+    "Dreihundert",
+    "Vierhundert",
+    "Fuenfhundert",
+    "Sechshundert",
+    "Siebenhundert",
+    "Achthundert",
+    "Neunhundert",
 )
 #: Zahlen, die nicht nach dem Muster gebildet werden. Die Teens (13 bis 19)
 #: heissen "dreizehn" und nicht "dreiundzehn"; bei den Zwanzigern heisst die
 #: Eins "ein" und nicht "eins".
 _SONDER = {
-    1: "Eins", 11: "Elf", 12: "Zwoelf", 13: "Dreizehn", 14: "Vierzehn",
-    15: "Fuenfzehn", 16: "Sechzehn", 17: "Siebzehn", 18: "Achtzehn",
+    1: "Eins",
+    11: "Elf",
+    12: "Zwoelf",
+    13: "Dreizehn",
+    14: "Vierzehn",
+    15: "Fuenfzehn",
+    16: "Sechzehn",
+    17: "Siebzehn",
+    18: "Achtzehn",
     19: "Neunzehn",
 }
 
@@ -5945,8 +6020,7 @@ class Suchbudget:
                 f"nicht erhoeht, weil die Rechnung es zulaesst."
             )
         return (
-            f"Abmachung und Rechnung sagen dasselbe: Abbruch bei "
-            f"{self.grenze}, es bleiben {rest}."
+            f"Abmachung und Rechnung sagen dasselbe: Abbruch bei {self.grenze}, es bleiben {rest}."
         )
 
     #: Die Gegenzahl, ohne eine Zahl zu pflegen (Befund 389).
@@ -6115,551 +6189,551 @@ ENTSCHEIDUNGEN: tuple[Entscheidung, ...] = (
     Entscheidung(
         frage="Feste Schwellen auf laufenden Extrema",
         zahl="Drei der elf Gates messen ein Extrem ueber die ganze Historie, "
-             "und alle drei werden mit mehr Daten schlechter (Befund 162, "
-             "gemessen ueber sechs Historienlaengen von 1451 bis 3300 Tagen):"
-             "\n      Drawdown            8,29 -> 10,64   Schwelle 12,00"
-             "\n      Schlechtestes Jahr  5,97 -> -10,32   Schwelle -10,00"
-             "\n      Monte-Carlo         7,83 ->   9,69   Schwelle 15,00"
-             "\n    'Schlechtestes Jahr' ist bei 2547 Tagen gerissen. Der "
-             "Rueckgang ist bereits um 2,35 Punkte gewachsen und hat noch "
-             "1,36 Reserve - eine Wiederholung des bereits Gemessenen "
-             "genuegt, um auch ihn zu reissen."
-             "\n    **Das sind die Perpetual-Zahlen** (336). Befund 162 liegt "
-             "vor 311, der den Betriebspunkt eingefuehrt hat, und der Eintrag "
-             "nannte keinen. Beide Punkte heute gemessen:"
-             "\n                            Spot        Perpetual   Schwelle"
-             "\n      Drawdown             9,87  PASS   10,64  PASS   12,00"
-             "\n      Schlechtestes Jahr  -9,61  PASS  -10,32  FAIL  -10,00"
-             "\n      Monte-Carlo          8,33  PASS    9,69  PASS   15,00"
-             "\n    **Am massgeblichen Spot-Punkt ist keines der drei "
-             "gerissen.** 'Schlechtestes Jahr' haelt dort mit 0,39 Reserve, "
-             "und der Rueckgang hat 2,13 statt 1,36 - also 57 % mehr "
-             "Spielraum, als der Satz oben annimmt. Die Richtung des Befundes "
-             "steht unveraendert (alle drei wachsen mit der Historie), nur "
-             "die Dringlichkeit haengt am Betriebspunkt"
-             "\n    **Und der Riss ist eine Spitze, keine Hochebene** (386). "
-             "Das Gate gibt nur das Minimum zurueck, also sah man nicht, "
-             "woraus die -10,32 % bestehen. Alle rollierenden "
-             "Zwoelfmonatsfenster, am Kalender gerechnet:"
-             "\n                           Perpetual        Spot"
-             "\n      Fenster gesamt            2557        2557"
-             "\n      davon unter -10 %            2           0"
-             "\n      schlechtestes           -10,32       -9,61"
-             "\n      zweites, getrennt        -6,38       -5,04"
-             "\n      Median                  +11,51      +12,92"
-             "\n    Die zwei Fenster sind dieselbe Episode, einen Tag "
-             "versetzt (2021-11-08 bis 2022-11-08); das naechste, das sich "
-             "damit nicht ueberlappt, liegt 3,62 Punkte **innerhalb** der "
-             "Schwelle. Fuer die Entscheidung heisst das: Hier ist nicht eine "
-             "Eigenschaft der Strategie gerissen, sondern eine einzelne "
-             "unguenstige Ausrichtung gegen ein laufendes Extrem - genau der "
-             "Fall, den die Frage oben meint",
+        "und alle drei werden mit mehr Daten schlechter (Befund 162, "
+        "gemessen ueber sechs Historienlaengen von 1451 bis 3300 Tagen):"
+        "\n      Drawdown            8,29 -> 10,64   Schwelle 12,00"
+        "\n      Schlechtestes Jahr  5,97 -> -10,32   Schwelle -10,00"
+        "\n      Monte-Carlo         7,83 ->   9,69   Schwelle 15,00"
+        "\n    'Schlechtestes Jahr' ist bei 2547 Tagen gerissen. Der "
+        "Rueckgang ist bereits um 2,35 Punkte gewachsen und hat noch "
+        "1,36 Reserve - eine Wiederholung des bereits Gemessenen "
+        "genuegt, um auch ihn zu reissen."
+        "\n    **Das sind die Perpetual-Zahlen** (336). Befund 162 liegt "
+        "vor 311, der den Betriebspunkt eingefuehrt hat, und der Eintrag "
+        "nannte keinen. Beide Punkte heute gemessen:"
+        "\n                            Spot        Perpetual   Schwelle"
+        "\n      Drawdown             9,87  PASS   10,64  PASS   12,00"
+        "\n      Schlechtestes Jahr  -9,61  PASS  -10,32  FAIL  -10,00"
+        "\n      Monte-Carlo          8,33  PASS    9,69  PASS   15,00"
+        "\n    **Am massgeblichen Spot-Punkt ist keines der drei "
+        "gerissen.** 'Schlechtestes Jahr' haelt dort mit 0,39 Reserve, "
+        "und der Rueckgang hat 2,13 statt 1,36 - also 57 % mehr "
+        "Spielraum, als der Satz oben annimmt. Die Richtung des Befundes "
+        "steht unveraendert (alle drei wachsen mit der Historie), nur "
+        "die Dringlichkeit haengt am Betriebspunkt"
+        "\n    **Und der Riss ist eine Spitze, keine Hochebene** (386). "
+        "Das Gate gibt nur das Minimum zurueck, also sah man nicht, "
+        "woraus die -10,32 % bestehen. Alle rollierenden "
+        "Zwoelfmonatsfenster, am Kalender gerechnet:"
+        "\n                           Perpetual        Spot"
+        "\n      Fenster gesamt            2557        2557"
+        "\n      davon unter -10 %            2           0"
+        "\n      schlechtestes           -10,32       -9,61"
+        "\n      zweites, getrennt        -6,38       -5,04"
+        "\n      Median                  +11,51      +12,92"
+        "\n    Die zwei Fenster sind dieselbe Episode, einen Tag "
+        "versetzt (2021-11-08 bis 2022-11-08); das naechste, das sich "
+        "damit nicht ueberlappt, liegt 3,62 Punkte **innerhalb** der "
+        "Schwelle. Fuer die Entscheidung heisst das: Hier ist nicht eine "
+        "Eigenschaft der Strategie gerissen, sondern eine einzelne "
+        "unguenstige Ausrichtung gegen ein laufendes Extrem - genau der "
+        "Fall, den die Frage oben meint",
         warum="Ein Maximum kann nicht fallen und ein Minimum nicht steigen. "
-              "Wer laenger misst, misst zwangslaeufig ein groesseres Extrem - "
-              "unabhaengig davon, ob die Strategie besser oder schlechter "
-              "geworden ist. Gleichzeitig braucht der Deflated Sharpe mehr "
-              "Historie: Er steht bei 0,46 und verlangt 0,95. **Die Gates "
-              "ziehen also gegeneinander**, und Warten ist kein Weg, der sie "
-              "alle erreicht.\n    Zu entscheiden ist, ob eine feste Schwelle "
-              "auf einem laufenden Extrem gemeint ist - dann ist das kein "
-              "Fehler, sondern die Aussage 'so viel Verlust nie, egal wie "
-              "lange wir zusehen'. Die Alternative waere eine Schwelle, die "
-              "sich auf einen festen Zeitraum bezieht. Beides ist "
-              "vertretbar; das eine zu waehlen, ist eine Geschaeftsfrage und "
-              "faellt nicht hier. **Gelockert wird nichts**, solange sie "
-              "nicht gefallen ist.",
+        "Wer laenger misst, misst zwangslaeufig ein groesseres Extrem - "
+        "unabhaengig davon, ob die Strategie besser oder schlechter "
+        "geworden ist. Gleichzeitig braucht der Deflated Sharpe mehr "
+        "Historie: Er steht bei 0,46 und verlangt 0,95. **Die Gates "
+        "ziehen also gegeneinander**, und Warten ist kein Weg, der sie "
+        "alle erreicht.\n    Zu entscheiden ist, ob eine feste Schwelle "
+        "auf einem laufenden Extrem gemeint ist - dann ist das kein "
+        "Fehler, sondern die Aussage 'so viel Verlust nie, egal wie "
+        "lange wir zusehen'. Die Alternative waere eine Schwelle, die "
+        "sich auf einen festen Zeitraum bezieht. Beides ist "
+        "vertretbar; das eine zu waehlen, ist eine Geschaeftsfrage und "
+        "faellt nicht hier. **Gelockert wird nichts**, solange sie "
+        "nicht gefallen ist.",
         befund=162,
         zuletzt=386,
     ),
     Entscheidung(
         frage="Mindestrendite von 15 % im Jahr",
         zahl="**Es haengt am Betriebspunkt** (Befund 281). Am "
-             "Perpetual-Punkt haelt ueber zehn Stellungen des Groessenreglers "
-             "keine beide Schwellen: Bei 20,5 bleibt der Rueckgang mit "
-             "11,29 % unter der Grenze, die Rendite steht bei 14,11 % - es "
-             "fehlen 0,89 Punkte; eine Stufe weiter (21,0) reisst der "
-             "Rueckgang mit 12,50 %, und die Rendite fehlt immer noch."
-             "\n    Am **Spot**-Punkt, wo das Funding wegfaellt, halten "
-             "**drei von sechs** gemessenen Stellungen beide zugleich:"
-             "\n      Stellung   Rendite   Rueckgang   Gates"
-             "\n          19,3    14,34 %      9,87 %    9/11"
-             "\n          20,5    14,99 %     10,47 %    8/11"
-             "\n            21    15,30 %     11,66 %    9/11"
-             "\n          21,5    15,65 %     11,87 %    9/11"
-             "\n            22    16,17 %     11,85 %    9/11"
-             "\n            25    18,54 %     13,74 %    7/11"
-             "\n    Der behauptete Konflikt der beiden Schwellen ist damit "
-             "eine Eigenschaft des Fundings, nicht der Strategie. **Geloest "
-             "ist nichts**: Er verschiebt sich nur - 'Schlechtestes Jahr' "
-             "haelt bis 19,3, die Messlatte erst ab 21, dazwischen keines von "
-             "beiden. Keine Stellung kommt ueber 9 von 11, und der Deflated "
-             "Sharpe liegt ausser Reichweite des Reglers (er bewegt ihn um "
-             "0,028, es fehlen 0,353)."
-             "\n    **Nachgemessen (341).** Die Zeile des Bestands reproduziert "
-             "auf dem Code von heute exakt: Messlatte 14,3390 gegen 15, "
-             "Rueckgang 9,8687 gegen 12, Schlechtestes Jahr -9,61 gegen -10, "
-             "Deflated Sharpe 0,5826 - 9 von 11, zwei offen. Das ist keine "
-             "neue Hypothese und kostet keinen Versuch: derselbe Kandidat, "
-             "dieselben Daten, seine eigene Stellung."
-             "\n    **Die anderen fuenf Stellungen sind nicht nachgemessen, "
-             "und sie stehen alle in einer Datei** - dem einzigen "
-             "Machbarkeitsbericht mit vermerktem Betriebspunkt, vom 14.09. "
-             "'Drei von sechs' ist damit eine Messung und nicht sechs; "
-             "`Vorrat.einzelquelle` sagt das jetzt im Bericht. Sie einzeln "
-             "nachzumessen waere ein Reglerscan und damit die offene Frage "
-             "'Zaehlt ein Sweep am Bestand als Versuch?' - deshalb steht es "
-             "hier und wurde nicht einfach gefahren",
+        "Perpetual-Punkt haelt ueber zehn Stellungen des Groessenreglers "
+        "keine beide Schwellen: Bei 20,5 bleibt der Rueckgang mit "
+        "11,29 % unter der Grenze, die Rendite steht bei 14,11 % - es "
+        "fehlen 0,89 Punkte; eine Stufe weiter (21,0) reisst der "
+        "Rueckgang mit 12,50 %, und die Rendite fehlt immer noch."
+        "\n    Am **Spot**-Punkt, wo das Funding wegfaellt, halten "
+        "**drei von sechs** gemessenen Stellungen beide zugleich:"
+        "\n      Stellung   Rendite   Rueckgang   Gates"
+        "\n          19,3    14,34 %      9,87 %    9/11"
+        "\n          20,5    14,99 %     10,47 %    8/11"
+        "\n            21    15,30 %     11,66 %    9/11"
+        "\n          21,5    15,65 %     11,87 %    9/11"
+        "\n            22    16,17 %     11,85 %    9/11"
+        "\n            25    18,54 %     13,74 %    7/11"
+        "\n    Der behauptete Konflikt der beiden Schwellen ist damit "
+        "eine Eigenschaft des Fundings, nicht der Strategie. **Geloest "
+        "ist nichts**: Er verschiebt sich nur - 'Schlechtestes Jahr' "
+        "haelt bis 19,3, die Messlatte erst ab 21, dazwischen keines von "
+        "beiden. Keine Stellung kommt ueber 9 von 11, und der Deflated "
+        "Sharpe liegt ausser Reichweite des Reglers (er bewegt ihn um "
+        "0,028, es fehlen 0,353)."
+        "\n    **Nachgemessen (341).** Die Zeile des Bestands reproduziert "
+        "auf dem Code von heute exakt: Messlatte 14,3390 gegen 15, "
+        "Rueckgang 9,8687 gegen 12, Schlechtestes Jahr -9,61 gegen -10, "
+        "Deflated Sharpe 0,5826 - 9 von 11, zwei offen. Das ist keine "
+        "neue Hypothese und kostet keinen Versuch: derselbe Kandidat, "
+        "dieselben Daten, seine eigene Stellung."
+        "\n    **Die anderen fuenf Stellungen sind nicht nachgemessen, "
+        "und sie stehen alle in einer Datei** - dem einzigen "
+        "Machbarkeitsbericht mit vermerktem Betriebspunkt, vom 14.09. "
+        "'Drei von sechs' ist damit eine Messung und nicht sechs; "
+        "`Vorrat.einzelquelle` sagt das jetzt im Bericht. Sie einzeln "
+        "nachzumessen waere ein Reglerscan und damit die offene Frage "
+        "'Zaehlt ein Sweep am Bestand als Versuch?' - deshalb steht es "
+        "hier und wurde nicht einfach gefahren",
         warum="Eine wirtschaftliche Schwelle, kein statistisches Kriterium - "
-              "so steht es seit jeher in gates.py. Dass sie mit der "
-              "Rueckgangsgrenze im Konflikt steht, war lange eine Behauptung, "
-              "ist seit Befund 57 beziffert und seit 281 **auf den "
-              "Perpetual-Punkt eingegrenzt**. Nachrechnen laesst sich heute "
-              "nur die eine Seite: `cli vereinbar --spot` liest sechs "
-              "Stellungen, `--perpetual` meldet **null** - die aelteren "
-              "Berichte tragen keinen Betriebspunkt und werden seit 242/280 "
-              "ausgelassen, weil eine Vorgabe keine Messung ist (Befund 309). "
-              "**Mit der dritten Schwelle gemessen** (310): Rendite >= 15, "
-              "Rueckgang <= 12 und Schlechtestes Jahr >= -10 sind auf diesem "
-              "Regler nicht zugleich erfuellbar; der Uebergang liegt zwischen "
-              "20,5 und 21, und am wenigsten fehlt bei 20,5 - zusammen **0,20 "
-              "Punkte** (Rendite 14,99 %, also 0,01 zu wenig, und "
-              "Schlechtestes Jahr -10,19 %, also 0,19 zu weit). "
-              "Die Aufloesung ist eine Geschaeftsentscheidung "
-              "- den Kandidaten dorthin zu stellen, wo mehr Gates bestehen, "
-              "ist ausdruecklich keine."
-              "\n    **Seit 341 ist der Stand des Bestands nachgemessen und "
-              "die Herkunft der Leiter benannt**: Seine Zeile stimmt auf vier "
-              "Stellen, die uebrigen fuenf stammen aus einer einzigen Datei. "
-              "An der Entscheidung aendert das nichts - sie steht auf den "
-              "0,66 Punkten, die dem Bestand zur Messlatte fehlen, und die "
-              "sind gemessen.",
+        "so steht es seit jeher in gates.py. Dass sie mit der "
+        "Rueckgangsgrenze im Konflikt steht, war lange eine Behauptung, "
+        "ist seit Befund 57 beziffert und seit 281 **auf den "
+        "Perpetual-Punkt eingegrenzt**. Nachrechnen laesst sich heute "
+        "nur die eine Seite: `cli vereinbar --spot` liest sechs "
+        "Stellungen, `--perpetual` meldet **null** - die aelteren "
+        "Berichte tragen keinen Betriebspunkt und werden seit 242/280 "
+        "ausgelassen, weil eine Vorgabe keine Messung ist (Befund 309). "
+        "**Mit der dritten Schwelle gemessen** (310): Rendite >= 15, "
+        "Rueckgang <= 12 und Schlechtestes Jahr >= -10 sind auf diesem "
+        "Regler nicht zugleich erfuellbar; der Uebergang liegt zwischen "
+        "20,5 und 21, und am wenigsten fehlt bei 20,5 - zusammen **0,20 "
+        "Punkte** (Rendite 14,99 %, also 0,01 zu wenig, und "
+        "Schlechtestes Jahr -10,19 %, also 0,19 zu weit). "
+        "Die Aufloesung ist eine Geschaeftsentscheidung "
+        "- den Kandidaten dorthin zu stellen, wo mehr Gates bestehen, "
+        "ist ausdruecklich keine."
+        "\n    **Seit 341 ist der Stand des Bestands nachgemessen und "
+        "die Herkunft der Leiter benannt**: Seine Zeile stimmt auf vier "
+        "Stellen, die uebrigen fuenf stammen aus einer einzigen Datei. "
+        "An der Entscheidung aendert das nichts - sie steht auf den "
+        "0,66 Punkten, die dem Bestand zur Messlatte fehlen, und die "
+        "sind gemessen.",
         befund=57,
         zuletzt=341,
     ),
     Entscheidung(
         frage="Die geratene Eingabe im Deflated Sharpe",
         zahl="Das Gate braucht die Streuung der Sharpe-Schaetzer ueber die "
-             "Versuche. Gemessen wird sie nicht - es springt die "
-             "Ersatzannahme 1/(n-1) ein, hier sqrt(V) = 0,0808. Das Urteil "
-             "kippt bei 0,0657, also **23 % darunter**. Aus den 28 Versuchen, "
-             "die ihren Sharpe je Trade mittragen, kaemen 0,0608 - und damit "
-             "0,97 statt 0,79. `cli streuung` rechnet es nach."
-             "\n    **Nachgemessen (340), und die Richtung hat sich gedreht.** "
-             "Der Satz oben liest sich wie ein Weg durch die Wand: messen, und "
-             "das Gate besteht mit 0,97. Heute ist es umgekehrt. Die Annahme "
-             "liegt bei **0,0909**, die Streuung der bekannten Versuche bei "
-             "**0,1072** - also **breiter** als die Annahme, nicht enger. "
-             "Eingesetzt gaebe sie DSR **0,2761** statt 0,5958; das Gate faellt "
-             "damit tiefer durch, nicht hindurch. Gekippt wird bei 0,0636, und "
-             "die Annahme liegt **43 % darueber**. Von 203 Versuchen liegen 61 "
-             "vor (30 %), nicht 28 von 166. Die breiteste Quelle ist heute das "
-             "Verzeichnis mit 0,2067; die Bestenliste ist in diesem Klon nicht "
-             "nachmessbar ('state/*' ist nicht eingecheckt), ihre 0,1030 sind "
-             "also weder bestaetigt noch widerlegt. **Was stimmt**, ist der "
-             "Deckel: gerechnet sind es 38 %, der Eintrag sagte 'hoechstens "
-             "40 %'.\n    **Zwei Zahlen hier sind Altzahlen** (Befund "
-             "408/422): 0,5958 und 0,2761 stehen auf einem Speicherstand, den "
-             "es nicht mehr gibt; heute liefert derselbe Lauf 0,5994 und "
-             "0,2794. **An der Entscheidung aendert das nichts** - die "
-             "gemessene Streuung liegt weiter ueber der Annahme, das Gate "
-             "faellt mit ihr weiter tiefer durch -, aber wer hier eine Zahl "
-             "nachrechnet, bekommt eine andere. 'datenstempel.ALTZAHLEN' "
-             "fuehrt beide",
+        "Versuche. Gemessen wird sie nicht - es springt die "
+        "Ersatzannahme 1/(n-1) ein, hier sqrt(V) = 0,0808. Das Urteil "
+        "kippt bei 0,0657, also **23 % darunter**. Aus den 28 Versuchen, "
+        "die ihren Sharpe je Trade mittragen, kaemen 0,0608 - und damit "
+        "0,97 statt 0,79. `cli streuung` rechnet es nach."
+        "\n    **Nachgemessen (340), und die Richtung hat sich gedreht.** "
+        "Der Satz oben liest sich wie ein Weg durch die Wand: messen, und "
+        "das Gate besteht mit 0,97. Heute ist es umgekehrt. Die Annahme "
+        "liegt bei **0,0909**, die Streuung der bekannten Versuche bei "
+        "**0,1072** - also **breiter** als die Annahme, nicht enger. "
+        "Eingesetzt gaebe sie DSR **0,2761** statt 0,5958; das Gate faellt "
+        "damit tiefer durch, nicht hindurch. Gekippt wird bei 0,0636, und "
+        "die Annahme liegt **43 % darueber**. Von 203 Versuchen liegen 61 "
+        "vor (30 %), nicht 28 von 166. Die breiteste Quelle ist heute das "
+        "Verzeichnis mit 0,2067; die Bestenliste ist in diesem Klon nicht "
+        "nachmessbar ('state/*' ist nicht eingecheckt), ihre 0,1030 sind "
+        "also weder bestaetigt noch widerlegt. **Was stimmt**, ist der "
+        "Deckel: gerechnet sind es 38 %, der Eintrag sagte 'hoechstens "
+        "40 %'.\n    **Zwei Zahlen hier sind Altzahlen** (Befund "
+        "408/422): 0,5958 und 0,2761 stehen auf einem Speicherstand, den "
+        "es nicht mehr gibt; heute liefert derselbe Lauf 0,5994 und "
+        "0,2794. **An der Entscheidung aendert das nichts** - die "
+        "gemessene Streuung liegt weiter ueber der Annahme, das Gate "
+        "faellt mit ihr weiter tiefer durch -, aber wer hier eine Zahl "
+        "nachrechnet, bekommt eine andere. 'datenstempel.ALTZAHLEN' "
+        "fuehrt beide",
         warum="Die 0,0608 werden nicht eingesetzt, und zwar nicht aus "
-              "Vorsicht: Von 166 Versuchen liegen 28 vor, und was fehlt, "
-              "fehlt am unteren Ende - Berichte entstehen ueber Reglerscans "
-              "um den Bestand herum, die Verlierer bekommen keinen. Die "
-              "Bestenliste allein streut schon mit 0,1030, also breiter als "
-              "die Annahme. Aufgeschrieben wird seit Befund 69 jeder neue "
-              "Versuch mit seinem Sharpe je Trade; der Grundstock von 166 "
-              "bleibt ohne Einzelnachweis. Damit ist die Abdeckung bis zum "
-              "Abbruch des Suchbudgets bei 230 Versuchen auf hoechstens 40 % "
-              "gedeckelt - ``streuung.MINDESTABDECKUNG`` verlangt 90. Die "
-              "Annahme bleibt also stehen, und zwar auf absehbare Zeit. Zu "
-              "entscheiden bleibt nur, ob das je anders sein soll."
-              "\n    **Seit 340 ist der Deckel gerechnet und nicht geschaetzt** "
-              "(``Streuung.deckel``): Jeder kuenftige Versuch kann einen Punkt "
-              "beitragen, kein vergangener mehr, also 61 + 27 von 230 = 38 %. "
-              "Und die Entscheidung ist damit kleiner geworden, als sie aussah: "
-              "Die gemessene Streuung wuerde die Huerde nicht senken, sondern "
-              "heben. Wer sie einsetzte, verlore Gates - zu entscheiden ist "
-              "also nicht 'Messung statt Annahme', sondern nur, ob das "
-              "Verzeichnis kuenftig jeden Versuch mitschreibt."
-              "\n    **Und genau das ist seit 377 erledigt** (380): Kein "
-              "Befehl bucht mehr eine reine Summe - 'adaptiv', 'research' und "
-              "'wettbewerb' schreiben Einzelnachweise mit Guete, Form und "
-              "Herkunft, wie 'landschaft' und 'machbarkeit' seit 282. Die "
-              "Frage, die hier noch als offen stand, ist damit beantwortet; "
-              "offen bleibt eine andere, und sie ist gerechnet (378/379): Fuer "
-              "die verlangten 90 % Abdeckung braeuchte es **mindestens 1.217 "
-              "weitere Versuche** (mit dem gemessenen Anteil 2.814), und das "
-              "Suchbudget laesst **27** zu. Zu entscheiden ist also, ob das "
-              "Budget dafuer steigt - nicht mehr, ob mitgeschrieben wird.",
+        "Vorsicht: Von 166 Versuchen liegen 28 vor, und was fehlt, "
+        "fehlt am unteren Ende - Berichte entstehen ueber Reglerscans "
+        "um den Bestand herum, die Verlierer bekommen keinen. Die "
+        "Bestenliste allein streut schon mit 0,1030, also breiter als "
+        "die Annahme. Aufgeschrieben wird seit Befund 69 jeder neue "
+        "Versuch mit seinem Sharpe je Trade; der Grundstock von 166 "
+        "bleibt ohne Einzelnachweis. Damit ist die Abdeckung bis zum "
+        "Abbruch des Suchbudgets bei 230 Versuchen auf hoechstens 40 % "
+        "gedeckelt - ``streuung.MINDESTABDECKUNG`` verlangt 90. Die "
+        "Annahme bleibt also stehen, und zwar auf absehbare Zeit. Zu "
+        "entscheiden bleibt nur, ob das je anders sein soll."
+        "\n    **Seit 340 ist der Deckel gerechnet und nicht geschaetzt** "
+        "(``Streuung.deckel``): Jeder kuenftige Versuch kann einen Punkt "
+        "beitragen, kein vergangener mehr, also 61 + 27 von 230 = 38 %. "
+        "Und die Entscheidung ist damit kleiner geworden, als sie aussah: "
+        "Die gemessene Streuung wuerde die Huerde nicht senken, sondern "
+        "heben. Wer sie einsetzte, verlore Gates - zu entscheiden ist "
+        "also nicht 'Messung statt Annahme', sondern nur, ob das "
+        "Verzeichnis kuenftig jeden Versuch mitschreibt."
+        "\n    **Und genau das ist seit 377 erledigt** (380): Kein "
+        "Befehl bucht mehr eine reine Summe - 'adaptiv', 'research' und "
+        "'wettbewerb' schreiben Einzelnachweise mit Guete, Form und "
+        "Herkunft, wie 'landschaft' und 'machbarkeit' seit 282. Die "
+        "Frage, die hier noch als offen stand, ist damit beantwortet; "
+        "offen bleibt eine andere, und sie ist gerechnet (378/379): Fuer "
+        "die verlangten 90 % Abdeckung braeuchte es **mindestens 1.217 "
+        "weitere Versuche** (mit dem gemessenen Anteil 2.814), und das "
+        "Suchbudget laesst **27** zu. Zu entscheiden ist also, ob das "
+        "Budget dafuer steigt - nicht mehr, ob mitgeschrieben wird.",
         befund=69,
         zuletzt=380,
     ),
     Entscheidung(
         frage="Was die Latte des Deflated Sharpe bedeutet",
         zahl="Gemessen in Befund 278 - mit den Trades des Bestands als Form "
-             "und ohne jeden Vorteil darin, 5.000 ganze Suchlaeufe je Zeile:"
-             "\n      Versuche   95. Perzentil der Null   Fehlalarm bei 0,95"
-             "\n             1                   0,9305               3,36 %"
-             "\n            10                   0,6275               0,02 %"
-             "\n           203                   0,3059   kein Lauf von 5.000"
-             "\n    Bei **einem** Versuch ist 0,95 eine 5-%-Schranke, wie der "
-             "Name sagt. Beim heutigen Stand ist sie strenger als alles, was "
-             "diese Messung aufloesen kann. Am Spot-Punkt steht der Bestand "
-             "mit 0,5826 am **99,86. Perzentil** dieser Null, und der Rest "
-             "des Suchbudgets aendert daran nichts: 203 auf 230 Versuche "
-             "laesst sein Perzentil bei 99,86, waehrend der rohe Wert von "
-             "0,5826 auf 0,5551 faellt. `cli abstand --spot --eichung` "
-             "rechnet es nach."
-             "\n    **Nachgemessen (343): Der Schluss haelt, zwei Stellen "
-             "nicht.** Die tragenden Zeilen kommen auf die Stelle wieder: bei "
-             "203 Versuchen 0,3059 und kein Lauf von 5.000, der Bestand am "
-             "99,86. Perzentil, bei 230 derselbe Rang und 0,5551. Die "
-             "**Einzelversuchszeile** nicht: heute 0,9307 und 3,200 % statt "
-             "0,9305 und 3,36 %, bei zehn Versuchen 0,6262 statt 0,6275. Die "
-             "Saat ist fest, also ist das kein Zufall - gezogen wird aus den "
-             "Trades des Bestands, und die Liste hat sich bewegt. Gemessen "
-             "(je ein Trade weniger, zehn Proben): Das 95. Perzentil wandert "
-             "um 0,0058, der Fehlalarm um 0,78 Punkte, **ein Viertel seines "
-             "eigenen Werts**. Bei 203 und 230 Versuchen bleibt dagegen in "
-             "jeder Probe 'kein einziger Lauf' stehen. Vier Stellen sind hier "
-             "also Grundlage und nicht Praezision; `Nullverteilung."
-             "grundlagensatz` schreibt sie seit 343 dazu",
+        "und ohne jeden Vorteil darin, 5.000 ganze Suchlaeufe je Zeile:"
+        "\n      Versuche   95. Perzentil der Null   Fehlalarm bei 0,95"
+        "\n             1                   0,9305               3,36 %"
+        "\n            10                   0,6275               0,02 %"
+        "\n           203                   0,3059   kein Lauf von 5.000"
+        "\n    Bei **einem** Versuch ist 0,95 eine 5-%-Schranke, wie der "
+        "Name sagt. Beim heutigen Stand ist sie strenger als alles, was "
+        "diese Messung aufloesen kann. Am Spot-Punkt steht der Bestand "
+        "mit 0,5826 am **99,86. Perzentil** dieser Null, und der Rest "
+        "des Suchbudgets aendert daran nichts: 203 auf 230 Versuche "
+        "laesst sein Perzentil bei 99,86, waehrend der rohe Wert von "
+        "0,5826 auf 0,5551 faellt. `cli abstand --spot --eichung` "
+        "rechnet es nach."
+        "\n    **Nachgemessen (343): Der Schluss haelt, zwei Stellen "
+        "nicht.** Die tragenden Zeilen kommen auf die Stelle wieder: bei "
+        "203 Versuchen 0,3059 und kein Lauf von 5.000, der Bestand am "
+        "99,86. Perzentil, bei 230 derselbe Rang und 0,5551. Die "
+        "**Einzelversuchszeile** nicht: heute 0,9307 und 3,200 % statt "
+        "0,9305 und 3,36 %, bei zehn Versuchen 0,6262 statt 0,6275. Die "
+        "Saat ist fest, also ist das kein Zufall - gezogen wird aus den "
+        "Trades des Bestands, und die Liste hat sich bewegt. Gemessen "
+        "(je ein Trade weniger, zehn Proben): Das 95. Perzentil wandert "
+        "um 0,0058, der Fehlalarm um 0,78 Punkte, **ein Viertel seines "
+        "eigenen Werts**. Bei 203 und 230 Versuchen bleibt dagegen in "
+        "jeder Probe 'kein einziger Lauf' stehen. Vier Stellen sind hier "
+        "also Grundlage und nicht Praezision; `Nullverteilung."
+        "grundlagensatz` schreibt sie seit 343 dazu",
         warum="Das Gate ist am Spot-Punkt eines von nur zwei offenen - das "
-              "andere ist die Messlatte, eine Geschaeftsschwelle. Damit "
-              "haengt die Zulassung praktisch an dieser einen Zahl, und was "
-              "sie bedeutet, war bis Befund 278 nicht gemessen.\n    "
-              "**Geaendert wurde nichts.** Die Schwelle steht unveraendert "
-              "bei 0,95, und sie wird nicht gesenkt, damit etwas besteht - "
-              "am wenigsten, wenn die Messung entsteht, waehrend der eigene "
-              "Kandidat dicht an der Frage steht. Zu entscheiden ist, ob die "
-              "Latte weiter auf einer Zahl stehen soll, die bei diesem "
-              "Versuchsstand etwas anderes bedeutet als ihr Name - oder auf "
-              "einem gemessenen Fehlalarmniveau. Beides ist vertretbar; die "
-              "Wahl ist eine Geschaeftsentscheidung und faellt nicht hier."
-              "\n    Zwei Einschraenkungen gehoeren dazu: Die gezogenen "
-              "Versuche sind unabhaengig, die echten korreliert - "
-              "korrelierte liefern ein kleineres Maximum und damit noch "
-              "weniger Fehlalarme, das Gemessene ist also die guenstigste "
-              "Lesart fuer die Latte. Und 5.000 Laeufe koennen hoechstens "
-              "'kein einziger' sagen, also unter 0,02 %."
-              "\n    **Eine dritte seit 343**: Die Eichung haengt an der "
-              "Trade-Liste des Bestands, nicht nur an der Latte. Sie ist "
-              "damit keine Eigenschaft der Schwelle, sondern eine Messung "
-              "**an diesem Kandidaten** - und sie ist neu zu rechnen, wenn er "
-              "oder seine Daten sich bewegen. Fuer die Entscheidung aendert "
-              "das nichts: Das Ergebnis, auf dem sie steht, hat jede Probe "
-              "ueberlebt.",
+        "andere ist die Messlatte, eine Geschaeftsschwelle. Damit "
+        "haengt die Zulassung praktisch an dieser einen Zahl, und was "
+        "sie bedeutet, war bis Befund 278 nicht gemessen.\n    "
+        "**Geaendert wurde nichts.** Die Schwelle steht unveraendert "
+        "bei 0,95, und sie wird nicht gesenkt, damit etwas besteht - "
+        "am wenigsten, wenn die Messung entsteht, waehrend der eigene "
+        "Kandidat dicht an der Frage steht. Zu entscheiden ist, ob die "
+        "Latte weiter auf einer Zahl stehen soll, die bei diesem "
+        "Versuchsstand etwas anderes bedeutet als ihr Name - oder auf "
+        "einem gemessenen Fehlalarmniveau. Beides ist vertretbar; die "
+        "Wahl ist eine Geschaeftsentscheidung und faellt nicht hier."
+        "\n    Zwei Einschraenkungen gehoeren dazu: Die gezogenen "
+        "Versuche sind unabhaengig, die echten korreliert - "
+        "korrelierte liefern ein kleineres Maximum und damit noch "
+        "weniger Fehlalarme, das Gemessene ist also die guenstigste "
+        "Lesart fuer die Latte. Und 5.000 Laeufe koennen hoechstens "
+        "'kein einziger' sagen, also unter 0,02 %."
+        "\n    **Eine dritte seit 343**: Die Eichung haengt an der "
+        "Trade-Liste des Bestands, nicht nur an der Latte. Sie ist "
+        "damit keine Eigenschaft der Schwelle, sondern eine Messung "
+        "**an diesem Kandidaten** - und sie ist neu zu rechnen, wenn er "
+        "oder seine Daten sich bewegen. Fuer die Entscheidung aendert "
+        "das nichts: Das Ergebnis, auf dem sie steht, hat jede Probe "
+        "ueberlebt.",
         befund=278,
         zuletzt=343,
     ),
     Entscheidung(
         frage="Womit das Plateau-Gate seine Nachbarn misst",
         zahl="Das Gate faehrt seine zwoelf Nachbarn als **durchgehenden** "
-             "Backtest je Bein - acht Jahre, ein Risk-Officer, keine "
-             "Fenstergrenze. Die Engine rechnet im Walk-Forward "
-             "ausdruecklich damit, dass ein ausgeloester Not-Aus zwischen "
-             "den Fenstern freigegeben wird, und nennt einen Lauf ohne diese "
-             "Annahme *'in der anderen Richtung falsch'*. Gemessen (313, "
-             "Perpetual, BTC + ETH):"
-             "\n      Nachbar                durchgehend   Walk-Forward"
-             "\n      alle gemeinsam x1,2       -103,63        +233,04"
-             "\n      sma(period=50) x1,2       -103,90        +239,08"
-             "\n      Gate-Wert                   0,500          1,000"
-             "\n    12 von 12 Nachbarn wurden nicht zu Ende gemessen, "
-             "zusammen 1020 verhinderte Einstiege; die beiden oben haben ab "
-             "Mai bzw. September 2020 nicht mehr gehandelt. `cli freigabe` "
-             "rechnet es nach.",
+        "Backtest je Bein - acht Jahre, ein Risk-Officer, keine "
+        "Fenstergrenze. Die Engine rechnet im Walk-Forward "
+        "ausdruecklich damit, dass ein ausgeloester Not-Aus zwischen "
+        "den Fenstern freigegeben wird, und nennt einen Lauf ohne diese "
+        "Annahme *'in der anderen Richtung falsch'*. Gemessen (313, "
+        "Perpetual, BTC + ETH):"
+        "\n      Nachbar                durchgehend   Walk-Forward"
+        "\n      alle gemeinsam x1,2       -103,63        +233,04"
+        "\n      sma(period=50) x1,2       -103,90        +239,08"
+        "\n      Gate-Wert                   0,500          1,000"
+        "\n    12 von 12 Nachbarn wurden nicht zu Ende gemessen, "
+        "zusammen 1020 verhinderte Einstiege; die beiden oben haben ab "
+        "Mai bzw. September 2020 nicht mehr gehandelt. `cli freigabe` "
+        "rechnet es nach.",
         warum="**Geaendert wurde nichts.** Gerechnet wird weiter "
-              "durchgehend, Wert und Urteil des Gates stehen unveraendert - "
-              "geaendert ist nur, dass die Botschaft keine Form mehr "
-              "behauptet, die an einem abgeschalteten Lauf nicht gemessen "
-              "wurde.\n    Zu entscheiden ist, welche der beiden Messarten "
-              "das Gate meint. Fuer den durchgehenden Lauf spricht, dass er "
-              "die Verlustgrenzen ernst nimmt, wie sie im Betrieb gelten: "
-              "Wer nicht freigibt, handelt nicht mehr. Fuer den "
-              "Walk-Forward spricht, dass jede andere Zahl dieses Projekts "
-              "so entsteht - und dass ein Gate, das ueber die Form eines "
-              "Parametergebiets urteilt, den Zeitpunkt einer Sperre nicht "
-              "als Form lesen sollte.\n    Es ist eine "
-              "Geschaeftsentscheidung, weil sie ein Gate von "
-              "'durchgefallen' auf 'bestanden' verschoebe - am "
-              "Perpetual-Punkt von 7 auf 8 von 11 -, und weil sie entsteht, "
-              "waehrend der eigene Kandidat genau daran haengt. Dieselbe "
-              "Lage wie in Befund 278, und dieselbe Antwort: messen, "
-              "hinschreiben, nicht selbst entscheiden.\n    Die Gegenprobe "
-              "gehoert dazu, damit der Befund nicht nur dort geprueft ist, "
-              "wo er nuetzt: Am **Spot**-Punkt besteht das Gate unter beiden "
-              "Messarten (1,000 gegen 1,000), und das Kosten-Stress-Gate, "
-              "das denselben durchgehenden Lauf benutzt, bleibt mit +945,06 "
-              "gegen +2316,29 in beiden Faellen bestanden."
-              "\n    **Berichtigt (330)**: Der Satz oben - 'geaendert ist nur, "
-              "dass die Botschaft keine Form mehr behauptet' - war fuer den "
-              "**bestandenen** Fall falsch. 'sperrsatz' hing nur am "
-              "Fehlschlag-Zweig; besteht das Gate, schwieg die Botschaft "
-              "weiter. Am Spot-Punkt besteht es immer, also hat die Behebung "
-              "aus 313 an dem Betriebspunkt, den dieses Projekt berichtet, "
-              "nie gegriffen. Gemessen (330, Spot, BTC + ETH): Wert 1,0000 "
-              "gegen Schwelle 0,60, 12 von 12 Nachbarn profitabel - und **12 "
-              "von 12 stillgelegt, 737 verhinderte Einstiege**. Die Zahl fuer "
-              "Spot stand bis hier nicht da, nur die 1020 fuer Perpetual. "
-              "'bestandsatz' schreibt es jetzt auch beim Bestehen hin; Wert "
-              "und Urteil bleiben weiter unberuehrt, und die Entscheidung "
-              "bleibt offen.",
+        "durchgehend, Wert und Urteil des Gates stehen unveraendert - "
+        "geaendert ist nur, dass die Botschaft keine Form mehr "
+        "behauptet, die an einem abgeschalteten Lauf nicht gemessen "
+        "wurde.\n    Zu entscheiden ist, welche der beiden Messarten "
+        "das Gate meint. Fuer den durchgehenden Lauf spricht, dass er "
+        "die Verlustgrenzen ernst nimmt, wie sie im Betrieb gelten: "
+        "Wer nicht freigibt, handelt nicht mehr. Fuer den "
+        "Walk-Forward spricht, dass jede andere Zahl dieses Projekts "
+        "so entsteht - und dass ein Gate, das ueber die Form eines "
+        "Parametergebiets urteilt, den Zeitpunkt einer Sperre nicht "
+        "als Form lesen sollte.\n    Es ist eine "
+        "Geschaeftsentscheidung, weil sie ein Gate von "
+        "'durchgefallen' auf 'bestanden' verschoebe - am "
+        "Perpetual-Punkt von 7 auf 8 von 11 -, und weil sie entsteht, "
+        "waehrend der eigene Kandidat genau daran haengt. Dieselbe "
+        "Lage wie in Befund 278, und dieselbe Antwort: messen, "
+        "hinschreiben, nicht selbst entscheiden.\n    Die Gegenprobe "
+        "gehoert dazu, damit der Befund nicht nur dort geprueft ist, "
+        "wo er nuetzt: Am **Spot**-Punkt besteht das Gate unter beiden "
+        "Messarten (1,000 gegen 1,000), und das Kosten-Stress-Gate, "
+        "das denselben durchgehenden Lauf benutzt, bleibt mit +945,06 "
+        "gegen +2316,29 in beiden Faellen bestanden."
+        "\n    **Berichtigt (330)**: Der Satz oben - 'geaendert ist nur, "
+        "dass die Botschaft keine Form mehr behauptet' - war fuer den "
+        "**bestandenen** Fall falsch. 'sperrsatz' hing nur am "
+        "Fehlschlag-Zweig; besteht das Gate, schwieg die Botschaft "
+        "weiter. Am Spot-Punkt besteht es immer, also hat die Behebung "
+        "aus 313 an dem Betriebspunkt, den dieses Projekt berichtet, "
+        "nie gegriffen. Gemessen (330, Spot, BTC + ETH): Wert 1,0000 "
+        "gegen Schwelle 0,60, 12 von 12 Nachbarn profitabel - und **12 "
+        "von 12 stillgelegt, 737 verhinderte Einstiege**. Die Zahl fuer "
+        "Spot stand bis hier nicht da, nur die 1020 fuer Perpetual. "
+        "'bestandsatz' schreibt es jetzt auch beim Bestehen hin; Wert "
+        "und Urteil bleiben weiter unberuehrt, und die Entscheidung "
+        "bleibt offen.",
         befund=313,
         zuletzt=330,
     ),
     Entscheidung(
         frage="Funding-Satz",
         zahl="Nie gemessen. `data_store/funding/` ist leer, und der Backtest "
-             "setzt den Bybit-Basiswert von 0,01 % je Achtstundenperiode ein "
-             "- rund 11 % im Jahr. Am Betriebspunkt sind das 67,24 Euro gegen "
-             "7,60 Euro Handelsgebuehren, also rund das **Neunfache**, und 8,2 % "
-             "des Bruttogewinns. Die Bilanz reicht ueber die gemessene Leiter "
-             "von 9 von 11 (bei 0 %) bis **2** von 11 (bei 55 %); bei 11 % steht "
-             "sie auf 7. `cli finanzierung` rechnet es nach.",
+        "setzt den Bybit-Basiswert von 0,01 % je Achtstundenperiode ein "
+        "- rund 11 % im Jahr. Am Betriebspunkt sind das 67,24 Euro gegen "
+        "7,60 Euro Handelsgebuehren, also rund das **Neunfache**, und 8,2 % "
+        "des Bruttogewinns. Die Bilanz reicht ueber die gemessene Leiter "
+        "von 9 von 11 (bei 0 %) bis **2** von 11 (bei 55 %); bei 11 % steht "
+        "sie auf 7. `cli finanzierung` rechnet es nach.",
         warum="Der groesste Kostenblock des Systems steht auf einem "
-              "Vorgabewert - und **beide** Gates, die am Funding haengen "
-              "(Schlechtestes Jahr, Parameter-Plateau), kippen unterhalb von "
-              "ihm; wo genau, steht je Gate bei 'cli funding' (Befund 250). "
-              "Was gemeldet wird, ist also der Zustand nach dem Kippen. Und "
-              "der Vorgabewert "
-              "ist der **Basiswert**, nicht der Durchschnitt: Der Bestand ist "
-              "eine Long-Trendfolge und im Markt, wenn der Trend steigt, also "
-              "wenn Longs am meisten zahlen. Liegt die wahre Rate darueber, "
-              "steht der Kandidat schlechter da als gemeldet. Echte Raten "
-              "gibt es nur von Bybit, und die sind aus dem "
-              "Entwicklungscontainer nicht erreichbar - das ist eine Sperre "
-              "dieser Sandbox, keine des Systems. Auf dem eigenen Rechner: "
-              "`python -m cli funding --von 2020-03-30`, sofern das Konto "
-              "Perpetuals fuehrt.\n    **Berichtigt (337)**: Die unterste "
-              "Sprosse stand hier als '3 von 11' - eine Handzahl. 'cli "
-              "finanzierung' rechnet sie jeden Lauf neu und sagt **2**, also "
-              "ein Gate schlechter als verzeichnet. Nachgemessen ist dabei "
-              "auch, dass auf **keiner** der sechs Sprossen ein Gate aussetzt "
-              "(Befund 332): Funding ist eine Kosten- und keine "
-              "Einstiegsgroesse, die Trade-Zahl bleibt oben, und "
-              "'bestanden_echt/geurteilt' stimmt mit dem rohen Paar ueberein. "
-              "Die Leiter 9/9/7/7/6/2 ist damit an einen Test gebunden",
+        "Vorgabewert - und **beide** Gates, die am Funding haengen "
+        "(Schlechtestes Jahr, Parameter-Plateau), kippen unterhalb von "
+        "ihm; wo genau, steht je Gate bei 'cli funding' (Befund 250). "
+        "Was gemeldet wird, ist also der Zustand nach dem Kippen. Und "
+        "der Vorgabewert "
+        "ist der **Basiswert**, nicht der Durchschnitt: Der Bestand ist "
+        "eine Long-Trendfolge und im Markt, wenn der Trend steigt, also "
+        "wenn Longs am meisten zahlen. Liegt die wahre Rate darueber, "
+        "steht der Kandidat schlechter da als gemeldet. Echte Raten "
+        "gibt es nur von Bybit, und die sind aus dem "
+        "Entwicklungscontainer nicht erreichbar - das ist eine Sperre "
+        "dieser Sandbox, keine des Systems. Auf dem eigenen Rechner: "
+        "`python -m cli funding --von 2020-03-30`, sofern das Konto "
+        "Perpetuals fuehrt.\n    **Berichtigt (337)**: Die unterste "
+        "Sprosse stand hier als '3 von 11' - eine Handzahl. 'cli "
+        "finanzierung' rechnet sie jeden Lauf neu und sagt **2**, also "
+        "ein Gate schlechter als verzeichnet. Nachgemessen ist dabei "
+        "auch, dass auf **keiner** der sechs Sprossen ein Gate aussetzt "
+        "(Befund 332): Funding ist eine Kosten- und keine "
+        "Einstiegsgroesse, die Trade-Zahl bleibt oben, und "
+        "'bestanden_echt/geurteilt' stimmt mit dem rohen Paar ueberein. "
+        "Die Leiter 9/9/7/7/6/2 ist damit an einen Test gebunden",
         befund=250,
         zuletzt=337,
     ),
     Entscheidung(
         frage="Umfang des Kosten-Stress-Tests",
         zahl="Das Gate verdoppelt Gebuehren und Slippage und laesst das "
-             "Funding unveraendert - also den kleineren Posten. Mit "
-             "mitverdoppeltem Funding faellt die Marge von 942,87 auf 625,80 "
-             "Euro, das sind **34 %**. Das Urteil kippt dabei nicht: Der "
-             "Bestand bleibt auch dann im Plus. `cli finanzierung --stress` "
-             "rechnet es nach."
-             "\n    **Nachgemessen (339): 29,6 %, nicht 34 %.** Alle drei "
-             "Betraege stehen auf die Stelle - 955,76 ohne Stress, 942,87 wie "
-             "gebaut, 625,80 mit Funding - und 942,87 ist der Gatewert selbst "
-             "(+109,64 BTC, +833,23 ETH), Eintrag und Gate messen also "
-             "dasselbe. Der **Anteil** misst aber zweierlei. Diese Laeufe sind "
-             "durchgehend, und eine dauerhafte Sperre verhindert dabei 75 "
-             "Einstiege - mit verdoppeltem Funding **95**, weil sie zwanzig "
-             "Trades frueher abschaltet (91 Trades gegen 71). In den 317,06 "
-             "EUR steckt damit die Gebuehr **und** das fruehere Abschalten. Auf "
-             "demselben Trade-Satz gemessen, ohne Risikoaufsicht und damit "
-             "ohne Sperre, sind es 166 Trades in beiden Stufen und **29,6 %**: "
-             "2318,32 gegen 1632,86 Euro. Die Richtung des Eintrags bleibt - "
-             "der ausgelassene Posten ist der groessere, und das Urteil kippt "
-             "auch ohne Sperre nicht -, aber 34 % war nicht, was doppeltes "
-             "Funding kostet.\n    **Die beiden Betraege sind Altzahlen** "
-             "(Befund 408/422): Auf der heutigen Reihe liefert derselbe Lauf "
-             "2331,38 und 1643,22 - nachtraeglich berichtigte Kerzen, der "
-             "Speicher steht nicht im Versionsstand. **Der Anteil von 29,6 % "
-             "ist davon nicht beruehrt**, weil beide Betraege um denselben "
-             "Faktor wandern; die Entscheidung steht also unveraendert. "
-             "'datenstempel.ALTZAHLEN' fuehrt beide Werte",
+        "Funding unveraendert - also den kleineren Posten. Mit "
+        "mitverdoppeltem Funding faellt die Marge von 942,87 auf 625,80 "
+        "Euro, das sind **34 %**. Das Urteil kippt dabei nicht: Der "
+        "Bestand bleibt auch dann im Plus. `cli finanzierung --stress` "
+        "rechnet es nach."
+        "\n    **Nachgemessen (339): 29,6 %, nicht 34 %.** Alle drei "
+        "Betraege stehen auf die Stelle - 955,76 ohne Stress, 942,87 wie "
+        "gebaut, 625,80 mit Funding - und 942,87 ist der Gatewert selbst "
+        "(+109,64 BTC, +833,23 ETH), Eintrag und Gate messen also "
+        "dasselbe. Der **Anteil** misst aber zweierlei. Diese Laeufe sind "
+        "durchgehend, und eine dauerhafte Sperre verhindert dabei 75 "
+        "Einstiege - mit verdoppeltem Funding **95**, weil sie zwanzig "
+        "Trades frueher abschaltet (91 Trades gegen 71). In den 317,06 "
+        "EUR steckt damit die Gebuehr **und** das fruehere Abschalten. Auf "
+        "demselben Trade-Satz gemessen, ohne Risikoaufsicht und damit "
+        "ohne Sperre, sind es 166 Trades in beiden Stufen und **29,6 %**: "
+        "2318,32 gegen 1632,86 Euro. Die Richtung des Eintrags bleibt - "
+        "der ausgelassene Posten ist der groessere, und das Urteil kippt "
+        "auch ohne Sperre nicht -, aber 34 % war nicht, was doppeltes "
+        "Funding kostet.\n    **Die beiden Betraege sind Altzahlen** "
+        "(Befund 408/422): Auf der heutigen Reihe liefert derselbe Lauf "
+        "2331,38 und 1643,22 - nachtraeglich berichtigte Kerzen, der "
+        "Speicher steht nicht im Versionsstand. **Der Anteil von 29,6 % "
+        "ist davon nicht beruehrt**, weil beide Betraege um denselben "
+        "Faktor wandern; die Entscheidung steht also unveraendert. "
+        "'datenstempel.ALTZAHLEN' fuehrt beide Werte",
         warum="Betroffen ist die Aussagekraft des Gates, nicht sein Ergebnis "
-              "hier - deshalb ist es keine dringende Korrektur, sondern eine "
-              "Abwaegung. Dagegen spricht die Vergleichbarkeit: Alle 45 "
-              "Eintraege der Bestenliste sind unter dem schwaecheren Stress "
-              "gemessen, und eine Verschaerfung macht kuenftige Laeufe mit "
-              "ihnen unvergleichbar - dieselbe Kollision wie beim Kontostand "
-              "in Befund 96. **Die 45 sind der Stand von damals** (380): "
-              "Befund 349 hat die Liste gezaehlt und kommt auf **141 "
-              "Eintraege**, also das Dreifache - das Gegenargument ist "
-              "schwerer, nicht leichter. Nachgemessen ist das hier nicht, "
-              "sondern aus 349 uebernommen: 'state/' ist nicht eingecheckt, "
-              "und in diesem Klon gibt es die Datei nicht. Dafuer spricht, dass ein Gate messen sollte, was "
-              "es zu messen behauptet. Der Standard wurde nicht angefasst; "
-              "die Entscheidung liegt beim Nutzer. **Die Zahl, auf der sie "
-              "steht, ist seit 339 29,6 % und nicht 34 %** - kleiner, aber "
-              "immer noch der groessere Posten.",
+        "hier - deshalb ist es keine dringende Korrektur, sondern eine "
+        "Abwaegung. Dagegen spricht die Vergleichbarkeit: Alle 45 "
+        "Eintraege der Bestenliste sind unter dem schwaecheren Stress "
+        "gemessen, und eine Verschaerfung macht kuenftige Laeufe mit "
+        "ihnen unvergleichbar - dieselbe Kollision wie beim Kontostand "
+        "in Befund 96. **Die 45 sind der Stand von damals** (380): "
+        "Befund 349 hat die Liste gezaehlt und kommt auf **141 "
+        "Eintraege**, also das Dreifache - das Gegenargument ist "
+        "schwerer, nicht leichter. Nachgemessen ist das hier nicht, "
+        "sondern aus 349 uebernommen: 'state/' ist nicht eingecheckt, "
+        "und in diesem Klon gibt es die Datei nicht. Dafuer spricht, dass ein Gate messen sollte, was "
+        "es zu messen behauptet. Der Standard wurde nicht angefasst; "
+        "die Entscheidung liegt beim Nutzer. **Die Zahl, auf der sie "
+        "steht, ist seit 339 29,6 % und nicht 34 %** - kleiner, aber "
+        "immer noch der groessere Posten.",
         befund=96,
         zuletzt=339,
     ),
     Entscheidung(
         frage="Kontogroesse",
         zahl="Bei 500 Euro laufen 51 % aller Trades auf der Mindestmenge der "
-             "Boerse. Ab rund 2000 Euro verschwindet die Beschraenkung. Und "
-             "seit Befund 95 ist beziffert, was daran haengt: Der Rueckgang "
-             "des Bestands steigt mit dem Konto von 9,92 % (300 Euro) auf "
-             "12,95 % (100.000 Euro) - **dieselbe Strategie**. Das "
-             "Rueckgang-Gate haelt nur unterhalb von rund 1150 Euro. Ursache "
-             "ist die Mengenrundung, belegt durch zwei unabhaengige "
-             "Gegenproben; `cli koernung` rechnet es nach. Befund 96 hat alle "
-             "elf Gates ueber dieselbe Leiter gefahren: **Genau zwei wandern** "
-             "- Rueckgang und schlechtestes Jahr, beides Risikomasse auf der "
-             "Kapitalkurve. Neun stehen still, darunter der Deflated Sharpe "
-             "(0,772 bis 0,786 ueber den ganzen Bereich). Die Bilanz laeuft "
-             "von 8 von 11 bei 300 Euro auf **6 von 11** ab 1500 Euro; die "
-             "hier gemeldeten 7 von 11 gelten fuer 500 Euro."
-             "\n    **Nachgemessen (338).** Fuenf Zahlen dieses Eintrags "
-             "stimmen auf die Stelle: 9,92 % Rueckgang bei 300 Euro, 12,95 % "
-             "bei 100.000, die Kippgrenze bei rund 1150 Euro, 8 von 11 unten, "
-             "6 von 11 ab 1500. Die **Aussage** ueber den Deflated Sharpe "
-             "stimmt auch - er wandert ueber einen 333-fachen Kontobereich nur "
-             "um 0,0224 und ist damit einer der neun stillstehenden. Sein "
-             "**Wert** ist ueberholt: gemessen 0,4579 bis 0,4803 statt 0,772 "
-             "bis 0,786. Die alten Zahlen stammen von vor Befund 135 (die "
-             "Quartalseinteilung senkte die wirksame Stichprobe von 152 auf "
-             "112) und von einem niedrigeren Versuchsstand; heute sind es 203. "
-             "Und auf keiner der Sprossen setzt ein Gate aus - die 152 Trades "
-             "der untersten liegen weit ueber der Aussetzschwelle von 30",
+        "Boerse. Ab rund 2000 Euro verschwindet die Beschraenkung. Und "
+        "seit Befund 95 ist beziffert, was daran haengt: Der Rueckgang "
+        "des Bestands steigt mit dem Konto von 9,92 % (300 Euro) auf "
+        "12,95 % (100.000 Euro) - **dieselbe Strategie**. Das "
+        "Rueckgang-Gate haelt nur unterhalb von rund 1150 Euro. Ursache "
+        "ist die Mengenrundung, belegt durch zwei unabhaengige "
+        "Gegenproben; `cli koernung` rechnet es nach. Befund 96 hat alle "
+        "elf Gates ueber dieselbe Leiter gefahren: **Genau zwei wandern** "
+        "- Rueckgang und schlechtestes Jahr, beides Risikomasse auf der "
+        "Kapitalkurve. Neun stehen still, darunter der Deflated Sharpe "
+        "(0,772 bis 0,786 ueber den ganzen Bereich). Die Bilanz laeuft "
+        "von 8 von 11 bei 300 Euro auf **6 von 11** ab 1500 Euro; die "
+        "hier gemeldeten 7 von 11 gelten fuer 500 Euro."
+        "\n    **Nachgemessen (338).** Fuenf Zahlen dieses Eintrags "
+        "stimmen auf die Stelle: 9,92 % Rueckgang bei 300 Euro, 12,95 % "
+        "bei 100.000, die Kippgrenze bei rund 1150 Euro, 8 von 11 unten, "
+        "6 von 11 ab 1500. Die **Aussage** ueber den Deflated Sharpe "
+        "stimmt auch - er wandert ueber einen 333-fachen Kontobereich nur "
+        "um 0,0224 und ist damit einer der neun stillstehenden. Sein "
+        "**Wert** ist ueberholt: gemessen 0,4579 bis 0,4803 statt 0,772 "
+        "bis 0,786. Die alten Zahlen stammen von vor Befund 135 (die "
+        "Quartalseinteilung senkte die wirksame Stichprobe von 152 auf "
+        "112) und von einem niedrigeren Versuchsstand; heute sind es 203. "
+        "Und auf keiner der Sprossen setzt ein Gate aus - die 152 Trades "
+        "der untersten liegen weit ueber der Aussetzschwelle von 30",
         warum="Dort bestimmt nicht mehr die Strategie die Positionsgroesse, "
-              "sondern die Boerse - die Risikosteuerung greift bei der Haelfte "
-              "der Trades nicht. Es ist damit auch keine reine "
-              "Betriebsentscheidung mehr: Eines der acht bestandenen Gates "
-              "haelt nur, solange das Konto klein bleibt. Wer auf 2000 Euro "
-              "aufstockt, aendert an der Strategie nichts und reisst es "
-              "trotzdem.",
+        "sondern die Boerse - die Risikosteuerung greift bei der Haelfte "
+        "der Trades nicht. Es ist damit auch keine reine "
+        "Betriebsentscheidung mehr: Eines der acht bestandenen Gates "
+        "haelt nur, solange das Konto klein bleibt. Wer auf 2000 Euro "
+        "aufstockt, aendert an der Strategie nichts und reisst es "
+        "trotzdem.",
         befund=95,
         zuletzt=338,
     ),
     Entscheidung(
         frage="Welcher Horizont heisst Marktumfeld",
         zahl="Das Gate 'Regime-Aufteilung' teilt den Zeitraum ueber "
-             "'classify_regimes(window=480)' auf - eine **Kerzenzahl**, deren "
-             "Docstring sagt: 'bei 15-Minuten-Kerzen sind 480 rund fuenf "
-             "Tage'. Jede Gate-Zahl dieses Projekts steht aber auf "
-             "Tageskerzen, und dort sind 480 Kerzen rund **sechzehn Monate**. "
-             "Die Funktion erfaehrt das Intervall nicht, das Gate ruft sie "
-             "ohne Angabe.\n    Gemessen am Spitzenkandidaten (Trend 50 Tage "
-             "mit Konfluenz, BTC + ETH, Tageskerzen, 160 Trades, Schwelle "
-             "0,9):\n"
-             "      Fenster   Trades auf/ab/seit   geurteilt   schlechtester   Urteil\n"
-             "          480        106 / 47 /  7     2 von 3       4,505      bestanden\n"
-             "          120         71 / 65 / 24     3 von 3       3,170      bestanden\n"
-             "           45         53 / 48 / 59     3 von 3       1,740      bestanden\n"
-             "           30         52 / 32 / 76     3 von 3       1,234      bestanden\n"
-             "           25         56 / 24 / 80     3 von 3       0,000      durchgefallen\n"
-             "           10         66 / 19 / 75     3 von 3       0,000      durchgefallen\n"
-             "    **Das Urteil kippt zwischen 30 und 25 Tagen.** Und bei der "
-             "heutigen Vorgabe urteilt das Gate ueber **zwei von drei** "
-             "Umfeldern: Seitwaerts hat 7 Trades und faellt unter die "
-             "Zehnerschwelle, waehrend die Frage des Gates woertlich "
-             "'Funktioniert die Strategie in jedem Marktumfeld?' lautet "
-             "(Befund 385)",
+        "'classify_regimes(window=480)' auf - eine **Kerzenzahl**, deren "
+        "Docstring sagt: 'bei 15-Minuten-Kerzen sind 480 rund fuenf "
+        "Tage'. Jede Gate-Zahl dieses Projekts steht aber auf "
+        "Tageskerzen, und dort sind 480 Kerzen rund **sechzehn Monate**. "
+        "Die Funktion erfaehrt das Intervall nicht, das Gate ruft sie "
+        "ohne Angabe.\n    Gemessen am Spitzenkandidaten (Trend 50 Tage "
+        "mit Konfluenz, BTC + ETH, Tageskerzen, 160 Trades, Schwelle "
+        "0,9):\n"
+        "      Fenster   Trades auf/ab/seit   geurteilt   schlechtester   Urteil\n"
+        "          480        106 / 47 /  7     2 von 3       4,505      bestanden\n"
+        "          120         71 / 65 / 24     3 von 3       3,170      bestanden\n"
+        "           45         53 / 48 / 59     3 von 3       1,740      bestanden\n"
+        "           30         52 / 32 / 76     3 von 3       1,234      bestanden\n"
+        "           25         56 / 24 / 80     3 von 3       0,000      durchgefallen\n"
+        "           10         66 / 19 / 75     3 von 3       0,000      durchgefallen\n"
+        "    **Das Urteil kippt zwischen 30 und 25 Tagen.** Und bei der "
+        "heutigen Vorgabe urteilt das Gate ueber **zwei von drei** "
+        "Umfeldern: Seitwaerts hat 7 Trades und faellt unter die "
+        "Zehnerschwelle, waehrend die Frage des Gates woertlich "
+        "'Funktioniert die Strategie in jedem Marktumfeld?' lautet "
+        "(Befund 385)",
         warum="Zu entscheiden ist, welcher Horizont auf Tageskerzen "
-              "'Marktumfeld' heisst. Beide Lesarten sind vertretbar, und "
-              "**gegen** die kurzen Fenster spricht ein Einwand, der nicht "
-              "vom Ergebnis kommt: Der Kandidat ist eine 50-Tage-Trendregel. "
-              "Ein Fenster unter fuenfzig Tagen ordnet das Umfeld auf einem "
-              "Horizont ein, den die Strategie selbst handelt - dann misst "
-              "die Aufteilung dasselbe wie das Signal und ist keine "
-              "unabhaengige Probe mehr. Fuer die langen Fenster spricht "
-              "dasselbe Argument umgekehrt: Ein Mehrjahrestrend ist "
-              "unabhaengig von einer 50-Tage-Regel, aber er laesst Seitwaerts "
-              "fast leer, und dann prueft das Gate seine eigene Frage nur zu "
-              "zwei Dritteln.\n    **Geaendert wurde nichts.** Das Fenster "
-              "steht unveraendert bei 480, und es wird nicht verkuerzt, damit "
-              "etwas durchfaellt - so wenig wie etwas verlaengert wird, damit "
-              "etwas besteht. Geaendert ist, dass die Botschaft des Gates "
-              "Fenster und Abdeckung nennt ('2 von 3 Umfeldern geurteilt, "
-              "Fenster 480 Kerzen'), damit die Lage ohne diesen Eintrag zu "
-              "sehen ist. Die Richtung der Entscheidung ist die strengere: "
-              "Ein kuerzeres Fenster nimmt dem Kandidaten ein Gate, es gibt "
-              "ihm keines",
+        "'Marktumfeld' heisst. Beide Lesarten sind vertretbar, und "
+        "**gegen** die kurzen Fenster spricht ein Einwand, der nicht "
+        "vom Ergebnis kommt: Der Kandidat ist eine 50-Tage-Trendregel. "
+        "Ein Fenster unter fuenfzig Tagen ordnet das Umfeld auf einem "
+        "Horizont ein, den die Strategie selbst handelt - dann misst "
+        "die Aufteilung dasselbe wie das Signal und ist keine "
+        "unabhaengige Probe mehr. Fuer die langen Fenster spricht "
+        "dasselbe Argument umgekehrt: Ein Mehrjahrestrend ist "
+        "unabhaengig von einer 50-Tage-Regel, aber er laesst Seitwaerts "
+        "fast leer, und dann prueft das Gate seine eigene Frage nur zu "
+        "zwei Dritteln.\n    **Geaendert wurde nichts.** Das Fenster "
+        "steht unveraendert bei 480, und es wird nicht verkuerzt, damit "
+        "etwas durchfaellt - so wenig wie etwas verlaengert wird, damit "
+        "etwas besteht. Geaendert ist, dass die Botschaft des Gates "
+        "Fenster und Abdeckung nennt ('2 von 3 Umfeldern geurteilt, "
+        "Fenster 480 Kerzen'), damit die Lage ohne diesen Eintrag zu "
+        "sehen ist. Die Richtung der Entscheidung ist die strengere: "
+        "Ein kuerzeres Fenster nimmt dem Kandidaten ein Gate, es gibt "
+        "ihm keines",
         befund=385,
     ),
     Entscheidung(
         frage="Wochenverlustgrenze",
         zahl="Bei -7 % pausiert das System bis zur **manuellen** Freigabe.",
         warum="Richtig so gebaut, aber es wird im Betrieb Telegram-Meldungen "
-              "geben, nach denen das System steht, bis jemand es freigibt. "
-              "Ob das so bleiben soll, ist eine Betriebsentscheidung.",
+        "geben, nach denen das System steht, bis jemand es freigibt. "
+        "Ob das so bleiben soll, ist eine Betriebsentscheidung.",
     ),
     Entscheidung(
         frage="Soll die Research-KI mitlaufen",
         zahl="**Verlangt ist heute etwas anderes als damals** (291/292): "
-             "0,2641 je Trade bei n_eff 254 - und der Tageskatalog hat beide "
-             "Haelften gezeigt, nie zusammen. Fuenf von 18 Regeln haben diese "
-             "Qualitaet je Trade erreicht, keine davon ueber n_eff 58. Wer "
-             "die Zahlen unten liest, liest die Latte von damals.\n    "
-             "Neun gemessene Vorschlaege, keiner hat die Latte geraeumt "
-             "(gebraucht war damals: 120 Trades bei Guete ueber 0,23, "
-             "Befund 74/75)."
-             "\n    Fuenf aus Befund 76, noch unter dem alten Auftrag, der "
-             "den Deflated Sharpe nicht nannte und auf 100 Trades zielte: "
-             "vier mit 68 bis 123 Trades, keiner ueber 0,25."
-             "\n    Vier aus Befund 77, eigens gegen den **berichtigten** "
-             "Auftrag gebaut:"
-             "\n      Enge vor Bewegung              18 Trades  0,3405 "
-             "(noetig 0,9047)"
-             "\n      Volumenschock mit Fortsetzung 114 Trades  0,1584 "
-             "(noetig 0,2652)"
-             "\n      Rueckkehr zum Schwerpunkt      92 Trades -0,1201 "
-             "(noetig 0,2967)"
-             "\n      Abgriff des Vortagestiefs     406 Trades -0,1201 "
-             "(noetig 0,1514)"
-             "\n    Diese vier haben trotzdem etwas erbracht, nur keinen "
-             "Kandidaten: Ihre Fensterkorrelation lag bei +0,06 bis +0,42 "
-             "gegen eine Schwelle von 0,8 - Unabhaengigkeit ist **leicht**. "
-             "Das Nadeloehr ist die Kopplung von Haeufigkeit und Guete, und "
-             "sie haben Befund 75 von n = 14 (r = -0,533) auf n = 18 "
-             "(r = -0,602, t = -3,02) gehoben."
-             "\n    **Nachgemessen (342): Die vier 'noetig'-Zahlen sind nicht "
-             "nachrechenbar.** Sie haengen an Trade-Zahl **und** "
-             "Verteilungsform, und die Form steht je Regel nirgends - das "
-             "Verzeichnis fuehrt Trades und Guete. Keine Kombination aus "
-             "Zaehlerstand und Form holt die vier zurueck; mit der Form des "
-             "Bestands und heutigem Zaehler waeren es 1,4554 / 0,3387 / "
-             "0,3725 / 0,1936, also deutlich hoeher. Wer 'noetig 0,9047' "
-             "gegen 0,3405 liest, liest eine Latte von damals. Seit 342 "
-             "schreibt das Verzeichnis Schiefe und Woelbung mit; die elf "
-             "vorhandenen Eintraege bleiben ohne, und erfundene waeren "
-             "schlimmer als keine",
+        "0,2641 je Trade bei n_eff 254 - und der Tageskatalog hat beide "
+        "Haelften gezeigt, nie zusammen. Fuenf von 18 Regeln haben diese "
+        "Qualitaet je Trade erreicht, keine davon ueber n_eff 58. Wer "
+        "die Zahlen unten liest, liest die Latte von damals.\n    "
+        "Neun gemessene Vorschlaege, keiner hat die Latte geraeumt "
+        "(gebraucht war damals: 120 Trades bei Guete ueber 0,23, "
+        "Befund 74/75)."
+        "\n    Fuenf aus Befund 76, noch unter dem alten Auftrag, der "
+        "den Deflated Sharpe nicht nannte und auf 100 Trades zielte: "
+        "vier mit 68 bis 123 Trades, keiner ueber 0,25."
+        "\n    Vier aus Befund 77, eigens gegen den **berichtigten** "
+        "Auftrag gebaut:"
+        "\n      Enge vor Bewegung              18 Trades  0,3405 "
+        "(noetig 0,9047)"
+        "\n      Volumenschock mit Fortsetzung 114 Trades  0,1584 "
+        "(noetig 0,2652)"
+        "\n      Rueckkehr zum Schwerpunkt      92 Trades -0,1201 "
+        "(noetig 0,2967)"
+        "\n      Abgriff des Vortagestiefs     406 Trades -0,1201 "
+        "(noetig 0,1514)"
+        "\n    Diese vier haben trotzdem etwas erbracht, nur keinen "
+        "Kandidaten: Ihre Fensterkorrelation lag bei +0,06 bis +0,42 "
+        "gegen eine Schwelle von 0,8 - Unabhaengigkeit ist **leicht**. "
+        "Das Nadeloehr ist die Kopplung von Haeufigkeit und Guete, und "
+        "sie haben Befund 75 von n = 14 (r = -0,533) auf n = 18 "
+        "(r = -0,602, t = -3,02) gehoben."
+        "\n    **Nachgemessen (342): Die vier 'noetig'-Zahlen sind nicht "
+        "nachrechenbar.** Sie haengen an Trade-Zahl **und** "
+        "Verteilungsform, und die Form steht je Regel nirgends - das "
+        "Verzeichnis fuehrt Trades und Guete. Keine Kombination aus "
+        "Zaehlerstand und Form holt die vier zurueck; mit der Form des "
+        "Bestands und heutigem Zaehler waeren es 1,4554 / 0,3387 / "
+        "0,3725 / 0,1936, also deutlich hoeher. Wer 'noetig 0,9047' "
+        "gegen 0,3405 liest, liest eine Latte von damals. Seit 342 "
+        "schreibt das Verzeichnis Schiefe und Woelbung mit; die elf "
+        "vorhandenen Eintraege bleiben ohne, und erfundene waeren "
+        "schlimmer als keine",
         warum="Nach Befund 145 sind alle gemessenen Richtungen leer, und was "
-              "fehlt, ist eine Regel, die es noch nicht gibt. Der Katalog "
-              "kann sie nicht liefern (Befund 75), 'breed' bildet nur "
-              "Abwandlungen - die KI ist das einzige gebaute Bauteil, das "
-              "eine vorschlagen kann.\n    Dagegen steht der Preis, und er "
-              "ist keine Kleinigkeit: **Jeder Vorschlag zaehlt als Versuch "
-              "und hebt die Huerde des Deflated Sharpe fuer alle folgenden** "
-              "(Befund 71), dazu kommen Modellkosten gegen das Monatsbudget. "
-              "Eine Serie erfolgloser Vorschlaege macht den Bestand also "
-              "messbar schlechter."
-              "\n    **'Keine Kleinigkeit' war ungerechnet, und gerechnet ist "
-              "es eine** (342). Vom Spot-Punkt aus, gegen eine Luecke von "
-              "0,3673: ein Vorschlag 0,0011 DSR-Punkte (0,3 %), die neun "
-              "bereits ausgegebenen 0,0095 (2,6 %), zwanzig 0,0207 (5,6 %). "
-              "In der Waehrung, die zaehlt - noetige Trades - sind es 190 "
-              "heute, 192 nach neun weiteren, 194 nach zwanzig. Teuer wird es "
-              "erst in der Groessenordnung einer Serie: fuenfzig Vorschlaege "
-              "kosten 0,0484 (13,2 %, 198 Trades), hundert 0,0878 (23,9 %, "
-              "204 Trades). **Das ist dieselbe Ueberzeichnung wie in Befund "
-              "326, nur in der anderen Richtung**: Dort war eine Ersparnis "
-              "als Fortschritt gebucht, hier ein Preis als Abschreckung - "
-              "beide ohne Rechnung. Der Einwand gegen die KI steht damit auf "
-              "den Modellkosten und den neun Nieten, nicht auf dem Deflated "
-              "Sharpe; wer eine Handvoll Vorschlaege will, bezahlt sie mit "
-              "wenigen Prozent der Luecke."
-              "\n    Zu entscheiden ist damit, ob neun erfolglose Versuche "
-              "gegen diese Quelle sprechen oder ob sie zu wenige sind, um "
-              "etwas zu sagen. Beides ist vertretbar: Neun Nieten sind kein "
-              "Beweis, dass die zehnte auch eine ist - und sie sind auch "
-              "kein Grund, mit der zehnten zu rechnen. Was die vier aus "
-              "Befund 77 gebracht haben, war Methodenwissen und kein "
-              "Kandidat; ob das den Aufschlag wert ist, ist eine "
-              "Geschaeftsfrage und faellt nicht hier. Beide Wege stehen als "
-              "Befehlszeile unter 'Nur auf deinem Rechner'.",
+        "fehlt, ist eine Regel, die es noch nicht gibt. Der Katalog "
+        "kann sie nicht liefern (Befund 75), 'breed' bildet nur "
+        "Abwandlungen - die KI ist das einzige gebaute Bauteil, das "
+        "eine vorschlagen kann.\n    Dagegen steht der Preis, und er "
+        "ist keine Kleinigkeit: **Jeder Vorschlag zaehlt als Versuch "
+        "und hebt die Huerde des Deflated Sharpe fuer alle folgenden** "
+        "(Befund 71), dazu kommen Modellkosten gegen das Monatsbudget. "
+        "Eine Serie erfolgloser Vorschlaege macht den Bestand also "
+        "messbar schlechter."
+        "\n    **'Keine Kleinigkeit' war ungerechnet, und gerechnet ist "
+        "es eine** (342). Vom Spot-Punkt aus, gegen eine Luecke von "
+        "0,3673: ein Vorschlag 0,0011 DSR-Punkte (0,3 %), die neun "
+        "bereits ausgegebenen 0,0095 (2,6 %), zwanzig 0,0207 (5,6 %). "
+        "In der Waehrung, die zaehlt - noetige Trades - sind es 190 "
+        "heute, 192 nach neun weiteren, 194 nach zwanzig. Teuer wird es "
+        "erst in der Groessenordnung einer Serie: fuenfzig Vorschlaege "
+        "kosten 0,0484 (13,2 %, 198 Trades), hundert 0,0878 (23,9 %, "
+        "204 Trades). **Das ist dieselbe Ueberzeichnung wie in Befund "
+        "326, nur in der anderen Richtung**: Dort war eine Ersparnis "
+        "als Fortschritt gebucht, hier ein Preis als Abschreckung - "
+        "beide ohne Rechnung. Der Einwand gegen die KI steht damit auf "
+        "den Modellkosten und den neun Nieten, nicht auf dem Deflated "
+        "Sharpe; wer eine Handvoll Vorschlaege will, bezahlt sie mit "
+        "wenigen Prozent der Luecke."
+        "\n    Zu entscheiden ist damit, ob neun erfolglose Versuche "
+        "gegen diese Quelle sprechen oder ob sie zu wenige sind, um "
+        "etwas zu sagen. Beides ist vertretbar: Neun Nieten sind kein "
+        "Beweis, dass die zehnte auch eine ist - und sie sind auch "
+        "kein Grund, mit der zehnten zu rechnen. Was die vier aus "
+        "Befund 77 gebracht haben, war Methodenwissen und kein "
+        "Kandidat; ob das den Aufschlag wert ist, ist eine "
+        "Geschaeftsfrage und faellt nicht hier. Beide Wege stehen als "
+        "Befehlszeile unter 'Nur auf deinem Rechner'.",
         befund=74,
         # 292 hat dem Auftrag an die KI gesagt, worin der Unterschied
         # bestehen muss. Wer sie heute laufen laesst, stellt eine andere
@@ -6761,14 +6835,14 @@ AUFTRAG: tuple[Auftragspunkt, ...] = (
     Auftragspunkt(
         frage="P7: News- und Termin-Overlay",
         stand="gebaut, gemessen und geprueft (271): Der Kalender traegt 138 "
-              "Termine und sperrt in acht Jahren **sechs** Einstiege. Fuer "
-              "sich genommen bringt das +2,47 EUR auf 766 und hebt den Sharpe "
-              "je Trade von 0,2680 auf 0,2708. In der Sperrprobe haelt der "
-              "Effekt nicht stand: **100 % der zufaelligen Sperren derselben "
-              "Groesse halten genauso viele Gates.** Es war nicht die "
-              "Auswahl, sondern das Streichen. Das Overlay schadet nicht und "
-              "ist zu klein, um zu zaehlen - gegen den Zuwachs, den Befund 269 "
-              "verlangt, faellt es nicht ins Gewicht",
+        "Termine und sperrt in acht Jahren **sechs** Einstiege. Fuer "
+        "sich genommen bringt das +2,47 EUR auf 766 und hebt den Sharpe "
+        "je Trade von 0,2680 auf 0,2708. In der Sperrprobe haelt der "
+        "Effekt nicht stand: **100 % der zufaelligen Sperren derselben "
+        "Groesse halten genauso viele Gates.** Es war nicht die "
+        "Auswahl, sondern das Streichen. Das Overlay schadet nicht und "
+        "ist zu klein, um zu zaehlen - gegen den Zuwachs, den Befund 269 "
+        "verlangt, faellt es nicht ins Gewicht",
         befund=271,
         erledigt=True,
     ),
@@ -6780,11 +6854,11 @@ AUFTRAG: tuple[Auftragspunkt, ...] = (
     Auftragspunkt(
         frage="Research-KI im Wettbewerb nutzen",
         stand="genutzt, vier Vorschlaege gemessen - alle schlechter; der "
-              "Auftrag nennt seit 196 auch, dass sieben Partner die "
-              "Kriterien erfuellt haben und draussen durchgefallen sind. "
-              "Seit 292 nennt er ausserdem, **worin** der Unterschied "
-              "bestehen muss: viel Qualitaet je Trade **und** viele Trades - "
-              "beide Haelften gibt es im Katalog, nie zusammen",
+        "Auftrag nennt seit 196 auch, dass sieben Partner die "
+        "Kriterien erfuellt haben und draussen durchgefallen sind. "
+        "Seit 292 nennt er ausserdem, **worin** der Unterschied "
+        "bestehen muss: viel Qualitaet je Trade **und** viele Trades - "
+        "beide Haelften gibt es im Katalog, nie zusammen",
         befund=196,
         zuletzt=292,
     ),
@@ -6794,9 +6868,9 @@ AUFTRAG: tuple[Auftragspunkt, ...] = (
     Auftragspunkt(
         frage="Generation 6/7 auf 15-Minuten",
         stand="der ganze 15-Minuten-Vorrat nachgemessen (297): 1 von 36 "
-              "Regeln hat positive Guete, der Median der Luecken liegt bei "
-              "11,3 Guetepunkten gegen 2,1 auf Tageskerzen - dieser Vorrat "
-              "hat keine Decke, er hat keinen Boden",
+        "Regeln hat positive Guete, der Median der Luecken liegt bei "
+        "11,3 Guetepunkten gegen 2,1 auf Tageskerzen - dieser Vorrat "
+        "hat keine Decke, er hat keinen Boden",
         befund=29,
         zuletzt=297,
     ),
@@ -6817,24 +6891,24 @@ AUFTRAG: tuple[Auftragspunkt, ...] = (
     Auftragspunkt(
         frage="backfill Bybit-TAGESkerzen beim Nutzer",
         stand="**Nicht 15 Minuten** (Befund 307): Die 15-Minuten-Kerzen sind "
-              "da (225.000 je Markt, Bitstamp) und der Katalog darauf "
-              "gemessen - 34 von 36 Regeln negativ, beste Guete 0,744 gegen "
-              "3,964, und 297 hat das auf 36 Regeln bestaetigt. Offen ist "
-              "etwas anderes: Alle elf Gates stehen auf **Tageskerzen** "
-              "(213), und jede Zahl dieses Projekts steht auf "
-              "Bitstamp-Kassakursen. Gebraucht werden Bybit-Tageskerzen, und "
-              "die gibt es nur beim Nutzer - die Zeilen dafuer stehen unter "
-              "'Nur auf deinem Rechner'. **Worauf beim Vergleich zu achten "
-              "ist** (345): Bybit ist spaeter gestartet als Bitstamp, der "
-              "Bericht wird also eine kuerzere Reihe haben - und eine kuerzere "
-              "Reihe zeigt hier **mehr** Gates. Gemessen auf denselben Daten, "
-              "nur spaeter angefangen: ab 2018-01-01 steigt die Jahresrendite "
-              "von 14,34 auf 17,54 %, die Messlatte haelt, und aus 9 von 11 "
-              "werden 10. Das ist kein Fortschritt, sondern ein anderer "
-              "Zeitraum. Der Deflated Sharpe bleibt auf jeder Sprosse offen "
-              "(hoechstens 0,6841 gegen 0,95) - das Bindende laesst sich so "
-              "nicht wegschneiden. 'cli abstand --reichweite' rechnet die "
-              "Leiter nach",
+        "da (225.000 je Markt, Bitstamp) und der Katalog darauf "
+        "gemessen - 34 von 36 Regeln negativ, beste Guete 0,744 gegen "
+        "3,964, und 297 hat das auf 36 Regeln bestaetigt. Offen ist "
+        "etwas anderes: Alle elf Gates stehen auf **Tageskerzen** "
+        "(213), und jede Zahl dieses Projekts steht auf "
+        "Bitstamp-Kassakursen. Gebraucht werden Bybit-Tageskerzen, und "
+        "die gibt es nur beim Nutzer - die Zeilen dafuer stehen unter "
+        "'Nur auf deinem Rechner'. **Worauf beim Vergleich zu achten "
+        "ist** (345): Bybit ist spaeter gestartet als Bitstamp, der "
+        "Bericht wird also eine kuerzere Reihe haben - und eine kuerzere "
+        "Reihe zeigt hier **mehr** Gates. Gemessen auf denselben Daten, "
+        "nur spaeter angefangen: ab 2018-01-01 steigt die Jahresrendite "
+        "von 14,34 auf 17,54 %, die Messlatte haelt, und aus 9 von 11 "
+        "werden 10. Das ist kein Fortschritt, sondern ein anderer "
+        "Zeitraum. Der Deflated Sharpe bleibt auf jeder Sprosse offen "
+        "(hoechstens 0,6841 gegen 0,95) - das Bindende laesst sich so "
+        "nicht wegschneiden. 'cli abstand --reichweite' rechnet die "
+        "Leiter nach",
         befund=171,
         erledigt=False,
         zuletzt=345,
@@ -7236,10 +7310,7 @@ class Lage(Gatebilanz):
         Unterschied zwischen dieser Zeile und dem Log des Backtests."""
         if not self.zensiert:
             return ""
-        return (
-            f" (+{self.zensiert} am Datenende glattgestellt, in der Statistik "
-            f"nicht gezaehlt)"
-        )
+        return f" (+{self.zensiert} am Datenende glattgestellt, in der Statistik nicht gezaehlt)"
 
     def _zweiter_weg(self) -> list[str]:
         """Der zweite, unabhaengige Weg zum selben Urteil - und wo er steht.
@@ -7355,8 +7426,7 @@ class Lage(Gatebilanz):
                 "  weil das Gate das Minimum ueber alle Fenster nimmt.",
                 f"  Getroffen hat es in {self.unabhaengige_jahre} unabhaengigen "
                 f"Jahren nie; das schrankt",
-                f"  die Rate auf unter {grenze:.1%} im Jahr (Irrtum 5 %), ueber "
-                f"den Horizont",
+                f"  die Rate auf unter {grenze:.1%} im Jahr (Irrtum 5 %), ueber den Horizont",
                 f"  also auf bis zu "
                 f"{ueber_horizont(grenze, AUSSICHT.jahre):.1%} fuer mindestens "
                 f"einen Treffer.",
@@ -7400,12 +7470,16 @@ class Lage(Gatebilanz):
         # dieses Berichts den Erstpunkt zeigt: Das Urteil sagte +15 %, dieser
         # Abschnitt +24,3 %, und nichts sagte, dass es zwei Punkte sind.
         heute = noetige_guete(
-            SPOTPUNKT.effektiv, self.versuche,
-            schiefe=SPOTPUNKT.schiefe, woelbung=SPOTPUNKT.woelbung,
+            SPOTPUNKT.effektiv,
+            self.versuche,
+            schiefe=SPOTPUNKT.schiefe,
+            woelbung=SPOTPUNKT.woelbung,
         )
         spaeter = noetige_guete(
-            SPOTPUNKT.effektiv, BUDGET.grenze,
-            schiefe=SPOTPUNKT.schiefe, woelbung=SPOTPUNKT.woelbung,
+            SPOTPUNKT.effektiv,
+            BUDGET.grenze,
+            schiefe=SPOTPUNKT.schiefe,
+            woelbung=SPOTPUNKT.woelbung,
         )
         luecke = (
             self.noetiger_sharpe / self.sharpe_je_trade - 1.0
@@ -7417,13 +7491,10 @@ class Lage(Gatebilanz):
             zeilen += [
                 "",
                 "  Was das Suchen selbst kostet:",
-                f"     zu schliessende Luecke        {luecke:+7.1%}"
-                f"   (dieser Betriebspunkt)",
-                f"     Rest des Suchbudgets kostet   {preis:+7.2%}"
-                f"   (fast punktunabhaengig)",
+                f"     zu schliessende Luecke        {luecke:+7.1%}   (dieser Betriebspunkt)",
+                f"     Rest des Suchbudgets kostet   {preis:+7.2%}   (fast punktunabhaengig)",
                 "",
-                f"  Der ganze Rest des Budgets hebt die Latte um "
-                f"{preis / luecke:.0%} dessen, was",
+                f"  Der ganze Rest des Budgets hebt die Latte um {preis / luecke:.0%} dessen, was",
                 "  zu schliessen waere. Der Aufschlag liegt ueber die",
                 "  gemessenen Stichproben von 80 bis 584 zwischen 1,11 % und",
                 "  1,26 % - er haengt kaum am Betriebspunkt, die Luecke sehr",
@@ -7477,8 +7548,7 @@ class Lage(Gatebilanz):
                     zeilen += [
                         "",
                         "  Gemessen ueber sechs Historienlaengen (Befund 161):",
-                        "     1451 d  +5,97    2547 d  -10,30  <- ab hier "
-                        "durchgefallen",
+                        "     1451 d  +5,97    2547 d  -10,30  <- ab hier durchgefallen",
                         "     1816 d  +5,44    2912 d  -10,30",
                         "     2320 d  -8,82    3300 d  -10,32   (Schwelle -10,00)",
                         "",
@@ -7545,24 +7615,18 @@ class Lage(Gatebilanz):
             # sie eine gepflegte Zahl am falschen Ort (Befund 408).
             return []
 
-        nach_zahl = sorted(
-            AUSFALL_JE_AUFTEILUNG.items(), key=lambda p: (-len(p[1]), p[0])
-        )
+        nach_zahl = sorted(AUSFALL_JE_AUFTEILUNG.items(), key=lambda p: (-len(p[1]), p[0]))
         zeilen = [
-            f"                 Wie belastbar (ueber {len(VERSATZ)} "
-            f"Aufteilungen, Befund 420):"
+            f"                 Wie belastbar (ueber {len(VERSATZ)} Aufteilungen, Befund 420):"
         ]
         for gate, wo in nach_zahl:
             marke = "offen" if gate in offen else "besteht hier"
             zeilen.append(
-                f"                   {gate:20} faellt in "
-                f"{len(wo):2} von {len(VERSATZ)}   ({marke})"
+                f"                   {gate:20} faellt in {len(wo):2} von {len(VERSATZ)}   ({marke})"
             )
         zeilen += [
-            "                 Ein bestandenes Gate faellt oefter als ein "
-            "offenes.",
-            "                 Kein Versatz ist der richtige - 'cli "
-            "aufteilung' misst es nach.",
+            "                 Ein bestandenes Gate faellt oefter als ein offenes.",
+            "                 Kein Versatz ist der richtige - 'cli aufteilung' misst es nach.",
         ]
         return zeilen
 
@@ -7594,16 +7658,13 @@ class Lage(Gatebilanz):
             f"{bestanden} von {gesamt}, offen: {offen}{bedingt}",
             "                 [dim]Je Fenster unterdruecken die Grenzen 4 von "
             "162 Trades, durchgehend 63 -",
-            "                 jedes Fenster beginnt ohne Equity-Vorgeschichte "
-            "(Befund 403/404).",
+            "                 jedes Fenster beginnt ohne Equity-Vorgeschichte (Befund 403/404).",
             "                 **Sie greifen je Bein, nicht je Konto** "
             "(Befund 406): Auf der Kontokurve",
             "                 ohne gebremste Beine loest der echte Officer "
             "nichts aus - 10,77 % gegen",
-            "                 15 % Kill-Switch. Diese Zeile beschreibt also "
-            "zwei getrennte Konten;",
-            "                 mit Kontogrenze sind es 162 Trades und 8 von 11 "
-            "(DSR 0,685).[/]",
+            "                 15 % Kill-Switch. Diese Zeile beschreibt also zwei getrennte Konten;",
+            "                 mit Kontogrenze sind es 162 Trades und 8 von 11 (DSR 0,685).[/]",
         ]
 
     def bericht(self, *, kurz: bool = False) -> str:
@@ -7636,8 +7697,7 @@ class Lage(Gatebilanz):
             # **Der Punkt gehoert in den Kopf** (Befund 311). Ohne ihn liest
             # sich '7 von 11' wie der Stand des Kandidaten; er ist der Stand
             # an **einem** von zwei gemessenen Punkten.
-            f"  Gemessen   {self.maerkte}, "
-            f"{self.betriebspunkt or 'Betriebspunkt nicht angegeben'}",
+            f"  Gemessen   {self.maerkte}, {self.betriebspunkt or 'Betriebspunkt nicht angegeben'}",
             # **Und auf welcher Reihe** (Befund 370). Ohne sie stehen 157
             # Trades neben den 156 aus 'referenz.py' und niemand weiss, warum.
             *([f"  Reihe      {self.reihe}"] if self.reihe else []),
@@ -7645,8 +7705,7 @@ class Lage(Gatebilanz):
             *self._grenzzeile(),
             f"  Ergebnis   {self.trades} Trades{self._zensurhinweis()}, "
             f"{self.cagr_pct:.2f} % p.a., {self.rueckgang_pct:.2f} % Rueckgang",
-            f"  Gates      {self.bestanden_ehrlich} von "
-            f"{self.geurteilt_ehrlich}{self.marke}",
+            f"  Gates      {self.bestanden_ehrlich} von {self.geurteilt_ehrlich}{self.marke}",
             f"  Versuche   {self.versuche}",
             f"  Suchbudget {BUDGET.zeile(self.versuche)}",
             f"             [dim]{BUDGET.HINWEIS}[/]",

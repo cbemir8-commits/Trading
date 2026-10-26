@@ -149,8 +149,7 @@ class TestJedeAbwesenheitIstBegruendet:
         offen = sorted(set(_negative_zusicherungen()) - set(BEGRUENDET))
 
         assert offen == [], (
-            f"sichern die Abwesenheit einer Wache zu, ohne Eintrag in "
-            f"BEGRUENDET: {offen}"
+            f"sichern die Abwesenheit einer Wache zu, ohne Eintrag in BEGRUENDET: {offen}"
         )
 
     def test_der_eingetragene_fall_gibt_es_noch(self) -> None:
@@ -186,3 +185,107 @@ class TestWasDerFallVonBefund244War:
         )
 
         assert "write_report" in quelle
+
+
+def _nie_wahre_zusicherungen() -> dict[str, tuple[str, int, str]]:
+    """Zusicherungen, die **statisch** nicht fallen koennen - Befund 423.
+
+    Zwei Bauarten, beide in Befund 420 an meinem eigenen Code gefunden und
+    drei Befunde spaeter von mir wieder geschrieben:
+
+    * ``assert "Gross" in text.lower()`` - der Heuhaufen wird kleingeschrieben,
+      die Nadel nicht. Nie wahr, also nie gruen, also faellt es auf. Harmlos
+      **nur deshalb**.
+    * ``assert obj.__dict__.get("feld", vorgabe)`` - immer wahr, sobald die
+      Vorgabe wahr ist, und bei einem ``slots``-Dataclass hat ``__dict__``
+      das Feld ohnehin nie. Das ist die gefaehrliche Richtung: still gruen.
+    """
+    gefunden: dict[str, tuple[str, int, str]] = {}
+    for datei in sorted(Path("tests").glob("test_*.py")):
+        baum = ast.parse(datei.read_text())
+        for funktion in ast.walk(baum):
+            if not isinstance(funktion, ast.FunctionDef):
+                continue
+            if not funktion.name.startswith("test_"):
+                continue
+            for knoten in ast.walk(funktion):
+                if not isinstance(knoten, ast.Assert):
+                    continue
+                stelle = (datei.name, knoten.lineno)
+                for teil in ast.walk(knoten.test):
+                    if isinstance(teil, ast.Compare):
+                        nadel = teil.left
+                        passt = (
+                            any(isinstance(o, ast.In) for o in teil.ops)
+                            and isinstance(nadel, ast.Constant)
+                            and isinstance(nadel.value, str)
+                            and nadel.value != nadel.value.lower()
+                            and ast.unparse(teil.comparators[0]).endswith(".lower()")
+                        )
+                        if passt:
+                            gefunden[f"{funktion.name}:{knoten.lineno}"] = (
+                                *stelle,
+                                "grosse Nadel gegen .lower()",
+                            )
+                    if (
+                        isinstance(teil, ast.Call)
+                        and isinstance(teil.func, ast.Attribute)
+                        and teil.func.attr == "get"
+                        and isinstance(teil.func.value, ast.Attribute)
+                        and teil.func.value.attr == "__dict__"
+                        and len(teil.args) > 1
+                    ):
+                        gefunden[f"{funktion.name}:{knoten.lineno}"] = (
+                            *stelle,
+                            "__dict__.get mit Vorgabe",
+                        )
+    return gefunden
+
+
+class TestKeineZusicherungDieNichtFallenKann:
+    """Befund 423. Die Lehre ist nicht die Bauart, sondern dass ein
+    Registereintrag sie nicht verhindert hat: 420 hat beide Faelle
+    verzeichnet, 423 hat beide wieder geschrieben."""
+
+    def test_es_gibt_keine(self) -> None:
+        offen = _nie_wahre_zusicherungen()
+
+        assert offen == {}, f"kann nicht fallen: {offen}"
+
+    def test_die_wache_findet_die_grosse_nadel(self) -> None:
+        """Gegenprobe - eine Wache, die nichts mehr findet, ist gruen und
+        leer (dieselbe Pruefung wie in ``test_wachenaudit``)."""
+        baum = ast.parse('def test_x():\n    assert "Gross" in t.lower()\n')
+        treffer = [
+            k
+            for f in ast.walk(baum)
+            if isinstance(f, ast.FunctionDef)
+            for k in ast.walk(f)
+            if isinstance(k, ast.Compare)
+            and isinstance(k.left, ast.Constant)
+            and k.left.value != k.left.value.lower()
+            and ast.unparse(k.comparators[0]).endswith(".lower()")
+        ]
+
+        assert len(treffer) == 1
+
+    def test_und_laesst_die_kleine_nadel_stehen(self) -> None:
+        """``assert "klein" in t.lower()`` ist richtig und haeufig."""
+        baum = ast.parse('def test_x():\n    assert "klein" in t.lower()\n')
+        gross = [
+            k
+            for k in ast.walk(baum)
+            if isinstance(k, ast.Compare)
+            and isinstance(k.left, ast.Constant)
+            and k.left.value != k.left.value.lower()
+        ]
+
+        assert gross == []
+
+    def test_und_laesst_das_modul_dict_ohne_vorgabe_stehen(self) -> None:
+        """``core.models.__dict__.get("__file__")`` in
+        ``test_fensterprobe`` ist sauber: Ein Modul **hat** ein ``__dict__``,
+        und ohne Vorgabe faellt die Zusicherung, wenn das Feld fehlt."""
+        offen = _nie_wahre_zusicherungen()
+
+        assert not [s for s in offen.values() if s[0] == "test_fensterprobe.py"]

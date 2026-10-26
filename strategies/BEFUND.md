@@ -37799,3 +37799,95 @@ fuenfundzwanzig Quellzeilen entfernt, weil der Eintrag lang ist.
 Test: Die praezisere Pruefung je Eintrag deckt es vollstaendig. Eine schwaechere
 Pruefung neben eine praezisere zu stellen bringt Rauschen, nicht Deckung - und
 eine Ausnahme ohne Grund waere eine Luecke.
+
+## Vierhundertdreiundzwanzig. Die Versuchsrechnung stand nur fuer den vorhandenen Kandidaten
+
+`research/erreichbarkeit.py` fuehrt seit Befund 327 die Tafel, was ein weiterer
+Versuch den **gemeldeten** Kandidaten kostet: 0,0011 DSR-Punkte, zehn kosten
+0,0106 - gegen eine Luecke von 0,3673. Daraus der Satz, der dort steht und
+weiter gilt: *Versuchsdisziplin haelt den Abstand, sie schliesst ihn nicht.*
+
+Die Gegenfrage fehlte. Wenn die Suche weiterlaeuft und das Budget sich leert -
+wie hoch steigt dann die Latte, die ein **kuenftiger** Fund ueberspringen
+muesste? Gerechnet mit `Referenzpunkt.noetige_guete(versuche=...)`:
+
+    Versuche   noetige Guete   Faktor zu heute
+         203          0,3374              1,25   <- der Stand
+         230          0,3407              1,26   <- Budgetgrenze
+         300          0,3476              1,28
+         500          0,3607              1,33
+        1000          0,3777              1,39
+
+**Das ganze restliche Budget hebt die Latte um ein Prozent.** Selbst bei 500
+Versuchen, dem Zweieinhalbfachen des Stands, sind es 1,33 statt 1,25.
+
+### Zwei Lesarten, beide wahr
+
+* Fuer den **vorhandenen** Kandidaten ist der Zaehler entscheidend: bei 21
+  Versuchen stuende er mit 0,9529 drueber, bei 203 steht er bei 0,5827.
+* Fuer einen **kuenftigen** ist er fast belanglos: Die Latte bewegt sich kaum.
+
+Die zweite ist die planungsrelevante, denn die Suche sucht Neues. Was daraus
+folgt: **Der Versuchszaehler blockiert die Suche nicht.** Was sie blockiert, ist
+die noetige Guete selbst - ein Viertel ueber der des heutigen Kandidaten, und
+das bleibt so, ob 203 oder 300 Versuche auf dem Zaehler stehen.
+
+**Was daraus nicht folgt**, und der Absatz gehoert dazu, sonst liest sich der
+Befund als Freibrief: Fuer jeden Kandidaten, der schon gemessen ist, zaehlt jeder
+weitere Versuch gegen ihn. Das ist der Satz von 327, er gilt unveraendert. Er
+darf nur nicht als Grund gelesen werden, nicht zu suchen.
+
+Die Tafel ist **gerechnet**, nicht gepflegt - Befund 408 hat sechs gepflegte
+Zahlen als nicht reproduzierbar verzeichnet, und eine siebte wollte ich nicht
+dazustellen.
+
+### Ich habe es nachgebaut, statt vorher nachzusehen
+
+Ich habe die DSR-Tafel ueber Versuchsstaende gemessen, den Kreuzungspunkt bei 21
+Versuchen bestimmt, die Grenzkosten bei 203 gerechnet - und **danach** gegrept.
+Es stand alles schon im Kopf des Moduls: die Tafel, die 0,0011, und sogar die
+ausdrueckliche Warnung aus Befund 327 gegen die Rueckwaertslesung *"bei 21
+Versuchen stuende er drueber"*, die ich gerade frisch gerechnet hatte.
+
+Diesmal habe ich erst gemessen und dann geprueft. Richtig waere die andere
+Reihenfolge; dann waere der Befund von Anfang an auf die Gegenfrage gegangen.
+
+### Und dann eine Bisektion von Hand
+
+Fuer die noetige Guete je Versuchsstand habe ich eine Bisektion geschrieben.
+`Referenzpunkt.noetige_guete(versuche=...)` nimmt den Versuchsstand **schon** als
+Argument - und ihr eigener Docstring warnt genau davor, diese Zahl von Hand zu
+rechnen, weil an einer Handrechnung in Befund 354 eine Zahl gescheitert ist
+(355: Vorgabemomente statt der gemessenen, 0,4202 statt 0,3374).
+
+Meine Bisektion gab 0,3407 bei 230, das Werkzeug gibt 0,3407 - diesmal ohne
+Schaden. Das macht es nicht besser: Die Warnung stand im Docstring der Funktion,
+die ich umgangen habe. Zum zehnten Mal in diesem Register erst gebaut, dann
+gefunden, dass es da war.
+
+### Und ein dritter Fehlgriff, der die Wache nach sich zieht
+
+In den Tests zu diesem Befund habe ich **beide** unhaltbaren Zusicherungen aus
+Befund 420 wieder geschrieben:
+
+    assert "zum zehnten Mal" in eintrag.ergebnis.lower()   # nie wahr
+    Referenzpunkt(**{**SPOTPUNKT.__dict__, ...})           # kein __dict__
+
+Die erste ist harmlos, weil sie rot ist und auffaellt. Die zweite war in 420 die
+gefaehrliche Richtung: `SPOTPUNKT.__dict__.get("offen", ())` war **still gruen**,
+weil ein `slots`-Dataclass kein `__dict__` hat und die Vorgabe wahr war. Hier
+fiel sie nur, weil ich sie als Konstruktorargument benutzt habe.
+
+Dreimal derselbe Reflex, und 420 hat ihn verzeichnet. **Ein Registereintrag hat
+es nicht verhindert** - also prueft es jetzt eine Wache. `_nie_wahre_zusicherungen`
+in `tests/test_zusicherungen.py` geht ueber den Syntaxbaum jeder Zusicherung der
+Suite und findet beide Bauarten:
+
+* eine gross geschriebene Nadel gegen einen `.lower()`-Heuhaufen,
+* `__dict__.get` **mit** Vorgabe.
+
+Mit Gegenproben in beide Richtungen, denn eine Wache, die nichts mehr findet,
+ist gruen und leer. Erlaubt bleiben die kleine Nadel (`"klein" in t.lower()`,
+richtig und haeufig) und das Modul-`__dict__` ohne Vorgabe - ein Modul **hat**
+ein `__dict__`, und ohne Vorgabe faellt die Zusicherung, wenn das Feld fehlt.
+Gemessen an der Suite: null Treffer, nachdem ich meine zwei behoben hatte.

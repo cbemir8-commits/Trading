@@ -41,11 +41,49 @@ Geschlossen wird er ueber die Stichprobe (190 wirksame Trades noetig, 115 da)
 oder ueber die Guete je Trade (0,3374 noetig, 0,2708 da) - und von beidem ist
 das erste das, was mehr Historie kauft.
 
-Dieses Modul beantwortet drei Fragen:
+Was die Tabelle **auch nicht** sagt - Befund 423
+------------------------------------------------
+Alles oben rechnet mit **diesem** Kandidaten. Die Frage der Suche ist eine
+andere: Was kostet ein Versuch den **naechsten** Kandidaten - also wie hoch
+steigt die Latte, die ein kuenftiger Fund ueberspringen muesste? Gerechnet mit
+``referenz.Referenzpunkt.noetige_guete(versuche=...)``, das den Stand als
+Argument nimmt:
+
+    Versuche   noetige Guete   Faktor zu heute
+         203          0,3374              1,25   <- der Stand
+         230          0,3407              1,26   <- Budgetgrenze
+         300          0,3476              1,28
+         500          0,3607              1,33
+        1000          0,3777              1,39
+
+**Das ganze restliche Budget hebt die Latte um ein Prozent** - von 0,3374 auf
+0,3407. Selbst bei 500 Versuchen, dem Zweieinhalbfachen des Stands, sind es
+1,33 statt 1,25.
+
+Damit stehen zwei Lesarten derselben Rechnung nebeneinander, und beide sind
+wahr:
+
+* Fuer den **vorhandenen** Kandidaten ist der Zaehler entscheidend: bei 21
+  Versuchen stuende er mit 0,9529 drueber, bei 203 steht er bei 0,5827.
+* Fuer einen **kuenftigen** ist er fast belanglos: Die Latte, die er
+  ueberspringen muss, bewegt sich kaum.
+
+Die zweite ist die planungsrelevante, denn die Suche sucht Neues. **Was daraus
+folgt**: Der Versuchszaehler blockiert die Suche nicht. Was sie blockiert, ist,
+dass die noetige Guete ein Viertel ueber der des heutigen Kandidaten liegt - und
+das bleibt so, ob nun 203 oder 300 Versuche auf dem Zaehler stehen.
+
+**Was daraus nicht folgt**: dass Versuche gleichgueltig sind. Fuer jeden
+Kandidaten, der schon gemessen ist, zaehlt jeder weitere gegen ihn; das ist der
+Satz oben, und er gilt. Nur darf er nicht als Grund gelesen werden, nicht zu
+suchen.
+
+Dieses Modul beantwortet vier Fragen:
 
 * Wie viele Trades braeuchte es bei unveraenderter Qualitaet?
 * Welchen Sharpe je Trade braeuchte es bei unveraenderter Trade-Zahl?
 * Was kostet ein weiterer Versuch in DSR-Punkten?
+* Wie hoch steigt die Latte fuer einen **kuenftigen** Kandidaten?
 """
 
 from __future__ import annotations
@@ -279,8 +317,7 @@ class Erreichbarkeit:
             )
         if self.sharpe_noetig is None:
             zeilen.append(
-                "Bei dieser Trade-Zahl genuegt kein Sharpe je Trade - die "
-                "Stichprobe ist zu klein."
+                "Bei dieser Trade-Zahl genuegt kein Sharpe je Trade - die Stichprobe ist zu klein."
             )
         else:
             zeilen.append(
@@ -288,8 +325,7 @@ class Erreichbarkeit:
                 f"noetig (heute {self.sharpe:.3f}, Faktor "
                 f"{self.sharpe_noetig / self.sharpe:.2f})."
                 if self.sharpe > 0
-                else f"Bei gleicher Trade-Zahl: Sharpe je Trade "
-                f"{self.sharpe_noetig:.3f} noetig."
+                else f"Bei gleicher Trade-Zahl: Sharpe je Trade {self.sharpe_noetig:.3f} noetig."
             )
         zeilen.append(
             f"Ein weiterer Versuch kostet {self.kosten_naechster_versuch:.4f} "
@@ -300,9 +336,7 @@ class Erreichbarkeit:
         # das 0,0054 Punkte gegen eine Luecke von 0,3673 - und der Zaehler
         # faellt ohnehin nicht, die fuenf waeren nur nie dazugekommen.
         luecke = self.ziel - self.dsr
-        wieviel = (
-            self.kosten_zehn_versuche / luecke if luecke > 0 else 0.0
-        )
+        wieviel = self.kosten_zehn_versuche / luecke if luecke > 0 else 0.0
         zeilen.append(
             f"Der Zaehler faellt nie - gespart wird nur, was noch nicht "
             f"ausgegeben ist. Selbst zehn vermiedene Versuche decken "
@@ -340,8 +374,7 @@ def bewerte(
         sharpe_noetig=noetiger_sharpe(
             effektiv=trades, trials=trials, skew=skew, kurtosis=kurtosis, ziel=ziel
         ),
-        kosten_naechster_versuch=jetzt
-        - _dsr(sharpe, trades, trials + 1, skew, kurtosis),
+        kosten_naechster_versuch=jetzt - _dsr(sharpe, trades, trials + 1, skew, kurtosis),
         kosten_zehn_versuche=jetzt - _dsr(sharpe, trades, trials + 10, skew, kurtosis),
         schiefe=skew,
         woelbung=kurtosis,
@@ -371,3 +404,47 @@ def kennzahlen_aus_pnl(pnls) -> tuple[int, float, float, float]:
         float(np.mean(zentriert**3)),
         float(np.mean(zentriert**4)),
     )
+
+
+#: Versuchsstaende, fuer die die Latte eines kuenftigen Kandidaten gerechnet
+#: wird (Befund 423). 203 ist der Stand, 230 die Grenze des Suchbudgets.
+STAENDE: tuple[int, ...] = (203, 230, 300, 500, 1000)
+
+
+def latte_je_stand(punkt=None) -> tuple[tuple[int, float, float], ...]:
+    """Welche Guete ein kuenftiger Kandidat bei welchem Stand braeuchte.
+
+    (Versuche, noetige Guete, Faktor zur heutigen). **Gerechnet**, nicht
+    gepflegt: Die Zahlen kommen aus ``referenz.Referenzpunkt.noetige_guete``,
+    das den Versuchsstand als Argument nimmt - die Faehigkeit war da, nur die
+    Aussage fehlte (Befund 423).
+    """
+    if punkt is None:
+        from research.referenz import SPOTPUNKT
+
+        punkt = SPOTPUNKT
+    zeilen = []
+    for stand in STAENDE:
+        noetig = punkt.noetige_guete(versuche=stand)
+        if noetig is None:
+            continue
+        zeilen.append((stand, noetig, noetig / punkt.guete))
+    return tuple(zeilen)
+
+
+def lattenanstieg(von: int = 203, bis: int = 230, punkt=None) -> float:
+    """Um welchen Anteil die Latte zwischen zwei Staenden steigt.
+
+    Von 203 auf 230 - das ganze restliche Suchbudget - sind es rund ein
+    Prozent. Das ist die Zahl, die sagt, dass der Zaehler die **Suche** nicht
+    blockiert.
+    """
+    if punkt is None:
+        from research.referenz import SPOTPUNKT
+
+        punkt = SPOTPUNKT
+    a = punkt.noetige_guete(versuche=von)
+    b = punkt.noetige_guete(versuche=bis)
+    if a is None or b is None or a == 0:
+        raise ValueError("ohne Latte kein Anstieg")
+    return b / a - 1.0
