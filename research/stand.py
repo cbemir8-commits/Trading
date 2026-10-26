@@ -5248,6 +5248,41 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Richtungen; die kleine Nadel und das Modul-'__dict__' ohne Vorgabe "
         "bleiben erlaubt, weil sie richtig sind",
         423,
+        zuletzt=424,
+    ),
+    # Befund 424: War 423 ueberhaupt ein Befund? Nachgesehen - nein.
+    Richtung(
+        "Befund 423 war eine Nachableitung von Befund 221",
+        "Befund 423 hat gemessen, wie hoch die Latte fuer einen kuenftigen "
+        "Kandidaten mit dem Versuchsstand steigt, und daraus geschlossen: "
+        "**nicht der Versuchszaehler blockiert die Suche**, sondern die "
+        "noetige Guete. Beides stand schon da. 'verbund.versuchskosten' misst "
+        "seit **Befund 221** genau diese Groesse an genau dieser Stichprobe "
+        "(0,000212 bei 130 Versuchen, 0,000135 bei 198, 0,000115 bei 230, "
+        "0,000024 bei 1000), und der Kopf von 'stand.Suchbudget' zieht "
+        "woertlich denselben Schluss: *'der ganze Rest des Budgets kostet "
+        "1,18 % mehr geforderte Qualitaet gegen eine Luecke von 24,3 %'* und "
+        "*'der Preis des Suchens ist damit nicht das, was die Suche "
+        "aussichtsarm macht'*. Nachgemessen stimmen beide Wege **auf die "
+        "Stelle**: 'verbund.noetige_guete' gibt von 198 auf 230 die 1,18 % aus "
+        "221s Text, von 203 auf 230 die 0,98 % aus 423, und je Trade dieselbe "
+        "0,3374 wie 'referenz.noetige_guete'; die Luecke steht heute bei "
+        "24,6 % gegen 221s 24,3 %. **Der vierte Fehlgriff derselben Art in "
+        "einem Befund, und der schwerste**: 423 hat die drei anderen "
+        "verzeichnet - die nachgebaute DSR-Tafel, die Bisektion von Hand, die "
+        "zwei unhaltbaren Zusicherungen -, aber nicht gemerkt, dass **der "
+        "Schluss selbst** schon zweimal im Projekt stand. Nachgesehen hatte "
+        "ich in 'erreichbarkeit', wo die Tafel fuer den fixen Kandidaten "
+        "liegt, und nicht in 'verbund' und 'stand', wo die fuer die Suche "
+        "liegt. **Was von 423 bleibt**, steht jetzt als das da, was es ist: "
+        "eine Gegenprobe (zwei unabhaengige Funktionen, dieselben Zahlen) und "
+        "eine Gegenueberstellung (beide Lesarten in einem Kopf statt in zwei "
+        "Modulen). 'latte_je_stand' bleibt, weil es die Rechnung je Trade und "
+        "als Faktor gibt, wo 221 in Grenzkosten rechnet - und ein Test "
+        "verlangt jetzt, dass beide Wege uebereinstimmen, womit aus der "
+        "Doppelung eine Wache wird. **Nicht geaendert** hat sich eine Zahl "
+        "und kein Gate",
+        424,
     ),
 )
 

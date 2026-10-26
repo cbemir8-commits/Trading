@@ -41,13 +41,30 @@ Geschlossen wird er ueber die Stichprobe (190 wirksame Trades noetig, 115 da)
 oder ueber die Guete je Trade (0,3374 noetig, 0,2708 da) - und von beidem ist
 das erste das, was mehr Historie kauft.
 
-Was die Tabelle **auch nicht** sagt - Befund 423
-------------------------------------------------
+Was die Tabelle **auch nicht** sagt - Befund 221, nachgerechnet in 423/424
+-------------------------------------------------------------------------
 Alles oben rechnet mit **diesem** Kandidaten. Die Frage der Suche ist eine
 andere: Was kostet ein Versuch den **naechsten** Kandidaten - also wie hoch
-steigt die Latte, die ein kuenftiger Fund ueberspringen muesste? Gerechnet mit
-``referenz.Referenzpunkt.noetige_guete(versuche=...)``, das den Stand als
-Argument nimmt:
+steigt die Latte, die ein kuenftiger Fund ueberspringen muesste?
+
+**Beantwortet hat das Befund 221**, und zwar an zwei Stellen:
+``verbund.versuchskosten`` misst die Grenzkosten je Versuch an genau dieser
+Stichprobe (0,000212 bei 130 Versuchen, 0,000135 bei 198, 0,000115 bei 230),
+und der Kopf von ``stand.Suchbudget`` zieht den Schluss: *"der ganze Rest des
+Budgets kostet 1,18 % mehr geforderte Qualitaet gegen eine Luecke von 24,3 % -
+der Preis des Suchens ist damit nicht das, was die Suche aussichtsarm macht."*
+
+Befund 423 hat dieselbe Groesse ueber einen zweiten Weg gemessen, ohne das zu
+wissen, und sie als neu berichtet; Befund 424 hat es richtiggestellt. Was von
+423 bleibt, ist **eine Gegenprobe und eine Gegenueberstellung**: Zwei
+unabhaengige Funktionen geben denselben Wert (``verbund.noetige_guete`` 198 ->
+230 reproduziert 221s 1,18 % auf die Stelle, 203 -> 230 ergibt 0,98 %, und
+``referenz.noetige_guete`` ergibt dort dasselbe), und die beiden Lesarten
+stehen hier erstmals nebeneinander statt in zwei Modulen.
+
+Gerechnet mit ``referenz.Referenzpunkt.noetige_guete(versuche=...)``, das den
+Stand als Argument nimmt - je Trade und als Faktor zur heutigen Guete, waehrend
+221 in Grenzkosten und in der Sharpe-Einheit der Summe rechnet:
 
     Versuche   noetige Guete   Faktor zu heute
          203          0,3374              1,25   <- der Stand
@@ -416,8 +433,14 @@ def latte_je_stand(punkt=None) -> tuple[tuple[int, float, float], ...]:
 
     (Versuche, noetige Guete, Faktor zur heutigen). **Gerechnet**, nicht
     gepflegt: Die Zahlen kommen aus ``referenz.Referenzpunkt.noetige_guete``,
-    das den Versuchsstand als Argument nimmt - die Faehigkeit war da, nur die
-    Aussage fehlte (Befund 423).
+    das den Versuchsstand als Argument nimmt.
+
+    **Die Groesse ist nicht neu** (Befund 424): ``verbund.versuchskosten``
+    misst sie seit Befund 221 als Grenzkosten je Versuch, und der Kopf von
+    ``stand.Suchbudget`` nennt den Schluss. Diese Funktion gibt dieselbe
+    Rechnung je Trade und als Faktor zur heutigen Guete - und dient als
+    **Gegenprobe**: ``test_lattenanstieg`` verlangt, dass beide Wege
+    uebereinstimmen.
     """
     if punkt is None:
         from research.referenz import SPOTPUNKT

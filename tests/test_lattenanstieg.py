@@ -127,13 +127,22 @@ class TestWasDerKopfSagt:
         assert "beantwortet vier Fragen" in kopf
         assert "fuer einen **kuenftigen** Kandidaten" in kopf
 
-    def test_der_kopf_schreibt_die_tafel_nicht_sich_selbst_zu(self) -> None:
-        """Die DSR-Tafel und die Grenzkosten standen **vorher** da (327). Der
-        Befund fuegt die Gegenrichtung hinzu, er entdeckt nichts davon."""
-        kopf = self._kopf()
-        kopf_423 = kopf.split("Befund 423", 1)[1]
+    def test_der_kopf_schreibt_sich_nichts_davon_selbst_zu(self) -> None:
+        """Die DSR-Tafel und die Grenzkosten standen vorher da (327), und die
+        Gegenrichtung ebenfalls (221).
 
-        assert "Alles oben rechnet mit **diesem** Kandidaten" in kopf_423
+        Diese Zusicherung hat in der Fassung von 423 auf dem Abschnittstitel
+        gestanden und fiel, als 424 ihn richtigstellte. Sie prueft jetzt die
+        **Absicht** statt der Ueberschrift, und sie ist dadurch strenger: Der
+        Kopf muss beide Vorbefunde nennen, nicht nur den Zuschnitt des
+        eigenen.
+        """
+        kopf = self._kopf()
+
+        assert "Alles oben rechnet mit **diesem** Kandidaten" in kopf
+        assert "**Beantwortet hat das Befund 221**" in kopf
+        assert "Befund 423 hat dieselbe Groesse" in kopf
+        assert "als neu berichtet" in kopf
 
 
 class TestWasImRegisterSteht:
@@ -199,3 +208,94 @@ class TestDieWacheGegenDenDrittenFehlgriff:
 
         assert "beide unhaltbaren Zusicherungen aus 420 wieder" in eintrag.ergebnis
         assert "Ein Registereintrag hat das" in eintrag.ergebnis
+
+
+class TestDieGroesseIstNichtNeu:
+    """Befund 424. 423 hat sie als neu berichtet; gemessen hat sie Befund 221
+    an zwei Stellen. Was bleibt, ist die Gegenprobe - und die steht hier."""
+
+    def test_zweihunderteinundzwanzigs_funktion_gibt_dasselbe(self) -> None:
+        """Der Kern der Richtigstellung: zwei unabhaengige Wege, eine Zahl."""
+        from research.verbund import noetige_guete as verbund_guete
+
+        n = SPOTPUNKT.effektiv
+        ueber_verbund = (
+            verbund_guete(n, 203, schiefe=SPOTPUNKT.schiefe, woelbung=SPOTPUNKT.woelbung) / n**0.5
+        )
+
+        assert ueber_verbund == pytest.approx(SPOTPUNKT.noetige_guete(versuche=203), abs=5e-5)
+        assert ueber_verbund == pytest.approx(0.3374, abs=5e-5)
+
+    def test_und_derselbe_anstieg(self) -> None:
+        from research.verbund import noetige_guete as verbund_guete
+
+        n = SPOTPUNKT.effektiv
+        a, b = (
+            verbund_guete(n, v, schiefe=SPOTPUNKT.schiefe, woelbung=SPOTPUNKT.woelbung)
+            for v in (203, 230)
+        )
+
+        assert b / a - 1.0 == pytest.approx(lattenanstieg(203, 230), abs=1e-4)
+
+    def test_und_reproduziert_221s_eigene_zahl(self) -> None:
+        """221s Text nennt 1,18 % von 198 aus. Steht die Zahl noch?"""
+        from research.verbund import noetige_guete as verbund_guete
+
+        n = SPOTPUNKT.effektiv
+        a, b = (
+            verbund_guete(n, v, schiefe=SPOTPUNKT.schiefe, woelbung=SPOTPUNKT.woelbung)
+            for v in (198, 230)
+        )
+
+        assert (b / a - 1.0) * 100 == pytest.approx(1.18, abs=0.01)
+
+    def test_die_grenzkosten_aus_221_stehen_auch_noch(self) -> None:
+        from research.verbund import versuchskosten
+
+        n = SPOTPUNKT.effektiv
+        gemessen = {
+            v: versuchskosten(n, v, schiefe=SPOTPUNKT.schiefe, woelbung=SPOTPUNKT.woelbung)
+            for v in (130, 198, 230, 1000)
+        }
+
+        assert gemessen[130] == pytest.approx(0.000212, abs=1e-6)
+        assert gemessen[198] == pytest.approx(0.000135, abs=1e-6)
+        assert gemessen[230] == pytest.approx(0.000115, abs=1e-6)
+        assert gemessen[1000] == pytest.approx(0.000024, abs=1e-6)
+
+    def test_der_kopf_nennt_221_als_quelle(self) -> None:
+        import research.erreichbarkeit as e
+
+        kopf = e.__doc__ or ""
+
+        assert "**Beantwortet hat das Befund 221**" in kopf
+        assert "verbund.versuchskosten" in kopf
+        assert "Befund 424 hat es richtiggestellt" in kopf
+
+    def test_und_die_funktion_selbst_auch(self) -> None:
+        text = latte_je_stand.__doc__ or ""
+
+        assert "**Die Groesse ist nicht neu**" in text
+        assert "Befund 221" in text
+
+    def test_der_eintrag_nennt_den_vierten_fehlgriff(self) -> None:
+        from research.stand import BEHOBEN
+
+        eintrag = next(r for r in BEHOBEN if r.befund == 424)
+
+        assert "vierte Fehlgriff derselben Art" in eintrag.ergebnis
+        assert "der Schluss selbst" in eintrag.ergebnis
+
+    def test_und_wo_ich_nicht_nachgesehen_habe(self) -> None:
+        """Der verwertbare Teil des Eingestaendnisses: nicht 'ich war
+        unachtsam', sondern **welche Module** ich nicht gelesen habe."""
+        from research.stand import BEHOBEN
+
+        eintrag = next(r for r in BEHOBEN if r.befund == 424)
+
+        assert "nicht in 'verbund' und 'stand'" in eintrag.ergebnis
+
+    def test_und_423_zeigt_nach_vorn(self) -> None:
+        from research.stand import BEHOBEN
+
+        assert next(r for r in BEHOBEN if r.befund == 423).zuletzt == 424

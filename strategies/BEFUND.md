@@ -37891,3 +37891,70 @@ ist gruen und leer. Erlaubt bleiben die kleine Nadel (`"klein" in t.lower()`,
 richtig und haeufig) und das Modul-`__dict__` ohne Vorgabe - ein Modul **hat**
 ein `__dict__`, und ohne Vorgabe faellt die Zusicherung, wenn das Feld fehlt.
 Gemessen an der Suite: null Treffer, nachdem ich meine zwei behoben hatte.
+
+## Vierhundertvierundzwanzig. Befund 423 war eine Nachableitung von Befund 221
+
+Befund 423 hat gemessen, wie hoch die Latte fuer einen kuenftigen Kandidaten mit
+dem Versuchsstand steigt, und daraus geschlossen: nicht der Versuchszaehler
+blockiert die Suche, sondern die noetige Guete. Der Befund hat drei eigene
+Fehlgriffe verzeichnet und einen vierten nicht gesehen - **den Schluss selbst
+gab es schon.**
+
+### Was Befund 221 bereits gemessen hat
+
+`verbund.versuchskosten`, an genau dieser Stichprobe:
+
+    bei  130 Versuchen   0,000212   <- die bis dahin zitierte Zahl
+    bei  198 Versuchen   0,000135
+    bei  230 Versuchen   0,000115
+    bei 1000 Versuchen   0,000024
+
+Und der Kopf von `stand.Suchbudget` zieht woertlich denselben Schluss:
+
+> Bei 198 sind es 0,000135, und der ganze Rest des Budgets kostet 1,18 % mehr
+> geforderte Qualitaet gegen eine Luecke von 24,3 %. [...] Der Preis des Suchens
+> ist damit nicht das, was die Suche aussichtsarm macht.
+
+Das ist Satz fuer Satz die Aussage von 423, fuenf Versuche frueher gemessen.
+
+### Nachgemessen stimmen beide Wege auf die Stelle
+
+    verbund.noetige_guete   198 -> 230    3,6106 -> 3,6534   = 1,18 %
+                            203 -> 230    3,6178 -> 3,6534   = 0,98 %
+    referenz.noetige_guete  203 -> 230    0,3374 -> 0,3407   = 0,98 %
+    verbund je Trade bei 203                       0,3374
+    Luecke heute 24,6 %  (221 nannte 24,3 %)
+
+Die 1,18 % aus 221s Text stehen also noch, und meine 0,98 % sind dieselbe Zahl
+bei fuenf Versuchen weniger Abstand zur Budgetgrenze. Zwei unabhaengige
+Funktionen, eine Groesse.
+
+### Wo ich nicht nachgesehen habe
+
+Das ist der verwertbare Teil, nicht das Eingestaendnis. Ich habe in
+`erreichbarkeit` gegrept - dort liegt die Tafel fuer den **fixen** Kandidaten,
+und dort fand ich 327. Die Tafel fuer die **Suche** liegt in `verbund` und der
+Schluss daraus in `stand.Suchbudget`. Gesucht habe ich am Ort der Frage, die ich
+gerade gestellt hatte, statt am Ort der Groesse, die ich gemessen hatte.
+
+Vier Fehlgriffe derselben Art in einem Befund: die nachgebaute DSR-Tafel, die
+Bisektion von Hand, die zwei unhaltbaren Zusicherungen - und dieser. Die ersten
+drei hat 423 selbst verzeichnet. Dass der **Schluss** schon zweimal im Projekt
+stand, ist der schwerste, weil er den Befund als Befund entwertet.
+
+### Was von 423 bleibt - und was daraus eine Wache wird
+
+Nicht nichts, aber weniger, als dort stand:
+
+* eine **Gegenprobe**: zwei unabhaengige Funktionen geben dieselben Zahlen,
+* eine **Gegenueberstellung**: beide Lesarten - Zaehler fuer den vorhandenen
+  Kandidaten entscheidend, fuer einen kuenftigen fast belanglos - stehen jetzt
+  in einem Kopf statt in zwei Modulen.
+
+`latte_je_stand` bleibt, weil es die Rechnung je Trade und als Faktor zur
+heutigen Guete gibt, wo 221 in Grenzkosten und in der Sharpe-Einheit der Summe
+rechnet. Aus der Doppelung wird dadurch ein Nutzen: `test_lattenanstieg`
+verlangt jetzt, dass beide Wege uebereinstimmen, und haelt zugleich 221s eigene
+Zahlen fest. Wer eine der beiden Rechnungen aendert, merkt es an der anderen.
+
+Geaendert hat sich keine Zahl und kein Gate.
