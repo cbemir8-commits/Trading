@@ -85,8 +85,15 @@ class TestDieVollstaendigeAuskunft:
             assert datei in text
 
     def test_und_warnt_vor_dem_speicher_bis_heute(self) -> None:
-        """Weil genau das Befund 363 ausgeloest hat."""
-        text = "\n".join(wiederherstellung())
+        """Weil genau das Befund 363 ausgeloest hat.
+
+        **Ueber die Umbrueche hinweg geprueft** (Befund 430): Die Zeilen sind
+        Kommentarzeilen und werden umgebrochen, wenn der Text waechst - mein
+        erster Anlauf verglich eine zusammenhaengende Kette und fiel, sobald
+        'ist aber bei / # jedem Lauf' zwei Zeilen wurden. Geprueft wird die
+        Aussage, nicht die Umbruchstelle.
+        """
+        text = " ".join(z.removeprefix("#").strip() for z in wiederherstellung())
 
         assert "bei jedem Lauf ein anderer" in text
         assert "363" in text

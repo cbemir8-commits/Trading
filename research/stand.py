@@ -5505,6 +5505,42 @@ BEHOBEN: tuple[Richtung, ...] = (
         "verglich gegen 'scope=\"module\"' und fiel, weil 'ast.unparse' auf "
         "einfache Anfuehrungszeichen normalisiert",
         429,
+        zuletzt=430,
+    ),
+    # Befund 430: Die Datenauswahl meldet drei Ausfaelle, keiner wegen eines
+    # Mangels. Was heisst dann noch "gruen"?
+    Richtung(
+        "'Datenauswahl gruen' war keine pruefbare Aussage mehr",
+        "Nach dem Wiederaufbau (427) und der Wiederherstellung (428/429) "
+        "meldete die Datenauswahl **drei** Ausfaelle, und keiner wegen eines "
+        "Mangels am Code: 'test_abstandsreihe' und 'test_rennengrundlage' "
+        "fahren ihren Lauf 'schneiden=False' und messen die **Differenz** "
+        "zwischen Speicher und Reihe - auf einem exakt gepinnten Speicher "
+        "sind beide gleich lang. Und 'test_datenrand' (241/365) braucht "
+        "beide Reihen auf demselben vollstaendigen Tag, waehrend die zwei "
+        "Pins **49 Tage** auseinander enden: 'SERIENENDE' 2026-08-29, "
+        "'FEINENDE' ausschliessend 2026-10-18. Das ist Absicht - die "
+        "Tagesreihe ist auf den Stand eingefroren, auf dem die gepflegten "
+        "Zahlen gemessen sind, die Feinreihe auf den von 426. **Der dritte "
+        "ist mir in 429 durchgegangen**: Ich habe zwei Vorbehalte genannt und "
+        "die Wiederherstellung vollstaendig geheissen; aufgefallen ist er "
+        "erst, als die feinen Kerzen wirklich da waren, denn vorher hat der "
+        "Test uebersprungen. Damit war 'Datenauswahl gruen' keine pruefbare "
+        "Aussage mehr, und die unpruefbare Fassung ist die gefaehrliche: Sie "
+        "deckt jeden echten Ausfall mit. Verzeichnet sind die drei jetzt in "
+        "'erwartete_ausfaelle()', je mit Grund, und der Abstand wird aus den "
+        "Pins **gerechnet** statt hingeschrieben. **Bedingt auf den "
+        "Speicherstand**, und daran haengt alles: "
+        "'speicher_ist_gepinnt' entscheidet es, und auf einem Speicher, der "
+        "ueber die Pins hinausreicht, ist die Liste **leer** - dort bestehen "
+        "alle drei. Eine Liste von Entschuldigungen, die immer gilt, waere "
+        "ein **Freibrief**; diese gilt genau fuer einen Speicherstand, und "
+        "ein **vierter Ausfall ist ein Ausfall**. 'wiederherstellung()' "
+        "zaehlt die drei jetzt auf und verweist auf die Begruendung, und ein "
+        "Test prueft jeden Grund gegen den Quelltext des Tests, den er "
+        "betrifft - eine Begruendung, die niemand gegen den Test prueft, ist "
+        "eine Behauptung ueber fremden Code",
+        430,
     ),
 )
 

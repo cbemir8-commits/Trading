@@ -38462,3 +38462,66 @@ auf die **Entscheidung** - mein erster Anlauf verglich gegen `scope="module"`
 und fiel, weil `ast.unparse` auf einfache Anfuehrungszeichen normalisiert. Die
 Gegenprobe prueft jetzt beide Zitierweisen und laesst die Dutzende richtigen
 Fixtures ohne Scope stehen.
+
+## Vierhundertdreissig. "Datenauswahl gruen" war keine pruefbare Aussage mehr
+
+Nach dem Wiederaufbau (427) und der Wiederherstellung beider Reihen (428/429)
+meldete die Datenauswahl **drei** Ausfaelle - und keinen wegen eines Mangels am
+Code:
+
+    tests/test_abstandsreihe.py      faehrt 'schneiden=False' und misst die
+    tests/test_rennengrundlage.py    Differenz zwischen Speicher und Reihe
+    tests/test_datenrand.py          braucht beide Reihen auf demselben Tag
+
+Die ersten zwei waren in 429 verzeichnet. **Der dritte ist mir durchgegangen**:
+Ich habe zwei Vorbehalte genannt und die Wiederherstellung vollstaendig
+geheissen. Aufgefallen ist er erst, als die feinen Kerzen wirklich da waren -
+vorher hat der Test uebersprungen ("keine feinen Kerzen im Speicher").
+
+### Die zwei Pins enden 49 Tage auseinander
+
+    SERIENENDE (Tagesreihe)   2026-08-29
+    FEINENDE   (Feinreihe)    2026-10-18, ausschliessend -> 2026-10-17
+
+Und das ist Absicht: Die Tagesreihe ist auf den Stand eingefroren, auf dem die
+gepflegten Zahlen gemessen sind (363), die Feinreihe auf den, der bei Befund
+426 im Speicher lag. `test_datenrand` nimmt den letzten vollstaendigen Tag der
+**feinen** Reihe und verlangt ihn in der **Tages**reihe - auf zwei Pins mit
+verschiedenen Enden kann das nicht aufgehen.
+
+### Warum das aufgeschrieben gehoert
+
+Drei rote Tests ohne Erklaerung heissen: "Datenauswahl gruen" sagt nichts mehr.
+Und die unpruefbare Fassung ist die gefaehrliche, weil sie **jeden echten
+Ausfall mitdeckt**. Genau in diese Lage bin ich einen Befund vorher gelaufen -
+bei `77064c2` habe ich "Suite gruen" gesagt und etwas gepusht, das in der
+anderen Auswahl kaputt war.
+
+`erwartete_ausfaelle()` nennt die drei jetzt mit Grund, und der Abstand wird
+aus den Pins **gerechnet** statt hingeschrieben.
+
+### Bedingt auf den Speicherstand - daran haengt alles
+
+`speicher_ist_gepinnt` entscheidet, ob dieser Speicher genau auf den Pins endet
+oder weiterlaeuft. Laeuft er weiter, ist die Liste **leer**: Dort bestehen alle
+drei, und es gibt nichts zu entschuldigen.
+
+Eine Liste von Entschuldigungen, die immer gilt, waere ein **Freibrief**. Diese
+gilt fuer genau einen Speicherstand, und ein **vierter Ausfall ist ein
+Ausfall**. Die Gegenprobe steht als eigener Test: Speicher einen Tag
+weitergesetzt, Liste leer.
+
+### Und jeder Grund wird gegen seinen Test geprueft
+
+Eine Begruendung, die niemand gegen den Test prueft, ist eine Behauptung ueber
+fremden Code. Also liest der Test den Quelltext der drei: `schneiden=False` bei
+den ersten zwei, `Interval("15")` und `_letzter_voller_tag` beim dritten, und
+dessen stilles Ueberspringen - der Grund, warum es erst jetzt auffiel.
+
+### Mein Fehlgriff dabei
+
+Mein eigener Test aus 429 prüfte den Warnsatz als zusammenhaengende Kette. Durch
+den neuen Text wurde die Kommentarzeile umgebrochen - "ist aber bei / # jedem
+Lauf ein anderer" - und der Test fiel. Geprueft wird jetzt die Aussage ueber die
+Umbrueche hinweg, nicht die Umbruchstelle. Dieselbe Sorte Brüchigkeit, die
+Befund 420 bei Zeichenkettenfiltern schon verzeichnet hat.

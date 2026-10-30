@@ -488,7 +488,76 @@ def wiederherstellung() -> tuple[str, ...]:
         *feinbefehle(),
         "",
         "# Nicht hergestellt: ein Speicher, der ueber die Reihe hinausreicht.",
-        f"# {', '.join(LAENGER_ALS_DIE_REIHE)} messen die Differenz und",
-        "# brauchen ihn - dafuer '--bis' weglassen. Ein Speicher bis heute",
-        "# ist aber bei jedem Lauf ein anderer (Befund 363).",
+        "# Drei Datentests brauchen ihn und fallen hier - mit Grund, siehe",
+        "# 'erwartete_ausfaelle()' (Befund 430):",
+        *(
+            f"#   {datei}" for datei in sorted(erwartete_ausfaelle())
+        ),
+        "# Dafuer '--bis' weglassen. Ein Speicher bis heute ist aber bei",
+        "# jedem Lauf ein anderer (Befund 363) - deshalb Hinweis und nicht",
+        "# Befehl.",
     )
+
+
+#: Der Test, der **beide** Reihen auf demselben vollstaendigen Tag braucht.
+#:
+#: ``test_datenrand`` (Befund 241/365) prueft, ob der Randschnitt die tragende
+#: Schicht ist: Es nimmt den letzten vollstaendigen Tag der **feinen** Reihe
+#: und verlangt ihn in der **Tages**reihe. Gemessen enden die zwei Pins aber
+#: **49 Tage** auseinander - ``SERIENENDE`` ist 2026-08-29, ``FEINENDE``
+#: (ausschliessend) 2026-10-18 -, und das ist Absicht: Die Tagesreihe ist auf
+#: den Stand eingefroren, auf dem die gepflegten Zahlen gemessen sind, die
+#: Feinreihe auf den, der bei Befund 426 im Speicher lag.
+#:
+#: Aufgefallen ist es erst, als die Feinreihe wirklich da war: Vorher hat der
+#: Test uebersprungen ("keine feinen Kerzen im Speicher").
+GLEICHES_ENDE: tuple[str, ...] = ("tests/test_datenrand.py",)
+
+
+def speicher_ist_gepinnt(stand: Mapping[str, tuple[date, date, int]]) -> bool:
+    """Endet dieser Speicher **genau** auf den Pins - oder laeuft er weiter?
+
+    ``stand`` ist, was ``grenzen`` liefert, ueber **beide** Intervalle
+    zusammengefuegt. Gerechnet und nicht angenommen: Daran haengt, ob die
+    Ausfaelle unten erwartet sind, und eine Liste von Entschuldigungen, die
+    immer gilt, ist ein Freibrief.
+    """
+    enden = {bis for _, bis, _ in stand.values()}
+    return bool(enden) and enden <= {SERIENENDE, FEINENDE - timedelta(days=1)}
+
+
+def erwartete_ausfaelle(
+    stand: Mapping[str, tuple[date, date, int]] | None = None,
+) -> dict[str, str]:
+    """Welche Datentests auf einem **exakt gepinnten** Speicher fallen - 430.
+
+    Und warum das aufgeschrieben gehoert: Nach dem Wiederaufbau (427) und der
+    Wiederherstellung (428/429) meldete die Datenauswahl **drei** Ausfaelle,
+    keinen wegen eines Mangels am Code. Damit war "Datenauswahl gruen" keine
+    pruefbare Aussage mehr - und die unpruefbare Fassung ist die gefaehrliche,
+    weil sie jeden echten Ausfall mitdeckt.
+
+    **Bedingt auf den Speicherstand.** Ohne ``stand`` gilt die Liste; mit
+    einem Speicher, der ueber die Pins hinausreicht, ist sie **leer**, denn
+    dort bestehen alle drei. Wer sie als Entschuldigung nimmt, muss also
+    sagen, auf welchem Speicher.
+
+    **Kein Freibrief**: Genau diese drei, mit Grund. Ein vierter Ausfall ist
+    ein Ausfall.
+    """
+    if stand is not None and not speicher_ist_gepinnt(stand):
+        return {}
+    grund_differenz = (
+        "faehrt den Lauf 'schneiden=False' und misst die Differenz zwischen "
+        "Speicher und Reihe - auf einem exakt gepinnten Speicher sind beide "
+        "gleich lang, und es gibt keine Differenz zu messen"
+    )
+    grund_ende = (
+        "braucht beide Reihen auf demselben vollstaendigen Tag; die zwei Pins "
+        f"enden {(FEINENDE - timedelta(days=1) - SERIENENDE).days} Tage "
+        "auseinander, und das ist Absicht"
+    )
+    return {
+        **{datei: grund_differenz for datei in LAENGER_ALS_DIE_REIHE},
+        **{datei: grund_ende for datei in GLEICHES_ENDE},
+    }
