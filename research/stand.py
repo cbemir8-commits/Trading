@@ -5450,6 +5450,44 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Drift verschluckt, waere schlimmer als keine. Gemessen an den echt "
         "geholten Kerzen, beide Zweige",
         428,
+        zuletzt=429,
+    ),
+    # Befund 429: 428 hat die Tagesreihe zurueckgeholt. Reicht das, um zu
+    # messen? Gemessen: nein.
+    Richtung(
+        "Der dokumentierte Weg stellt die halbe Messfaehigkeit her",
+        "Nach dem Wiederaufbau (427) und der Wiederherstellung der "
+        "Zulassungsreihe (428) ist der Datenlauf gefahren: **111 bestanden, "
+        "sieben gefallen, sechs uebersprungen** in 41:39. Eingeordnet sind "
+        "die sieben **kein einziger wegen eines Mangels am Code**: Fuenfmal "
+        "'test_generationszuordnung', weil die **Viertelstundenkerzen "
+        "fehlen** - Befund 426 hat die Feinreihe gepinnt, aber keinen Weg "
+        "zurueck genannt, und ein Pin ohne Wiederherstellungsweg ist in "
+        "einem Container, der neu aufgesetzt werden kann, die halbe Zusage. "
+        "Zweimal 'test_abstandsreihe' und 'test_rennengrundlage', weil sie "
+        "ihren Lauf **ungeschnitten** fahren und die Differenz zwischen "
+        "Speicher und Reihe messen - 'auf dem Speicher steht alles zu "
+        "guenstig' ist ihre Aussage. Wer exakt bis 'SERIENENDE' herstellt, "
+        "bekommt beide gleich lang. **Das ist zugleich die staerkste "
+        "Gegenprobe zu 428**: Der ungeschnittene Lauf ergibt **156 Trades**, "
+        "also 'SPOTPUNKT.trades' auf die Stelle, und der Korblauf 160 wie "
+        "'KONTOPUNKT' - die Reihe reproduziert die Messgrundlage, die meine "
+        "falsche Driftmeldung in Zweifel gezogen hatte. **Die erste Wand war "
+        "die unfreundlichste**: Fehlt ein Intervall ganz, brach "
+        "'common_range' mit 'max() arg is an empty sequence' ab. Die "
+        "Pruefung dort lautet 'if not frames' - das faengt ein fehlendes "
+        "Dictionary, nicht ein Dictionary voller **leerer** Rahmen, und "
+        "genau das liegt vor, wenn der Speicher ein Intervall nicht hat. "
+        "Jetzt nennt die Meldung die Symbole ohne Kerzen und den Weg; ein "
+        "einzelnes leeres Bein neben vollen bricht **nicht** ab, wird aber "
+        "protokolliert, sonst rechnet ein Korb stillschweigend mit weniger "
+        "Beinen. Gebaut sind 'feinbefehle()' und 'wiederherstellung()', das "
+        "beide Reihen nennt **und sagt, was es nicht herstellt**: den "
+        "Speicher ueber die Reihe hinaus. Der steht als Hinweis und nicht "
+        "als Befehl, weil ein Speicher bis heute bei jedem Lauf ein anderer "
+        "ist - das ist die Lehre von 363. Der Weg zur Feinreihe ist "
+        "**gefahren** und gegen 'SERIE_15' geprueft, nicht behauptet",
+        429,
     ),
 )
 

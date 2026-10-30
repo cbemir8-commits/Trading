@@ -418,3 +418,77 @@ def feinzeile(frames: Mapping[str, PandasRahmen]) -> str:
         marke = "" if balken == FEINBALKEN else f" (gepinnt {FEINBALKEN})"
         teile.append(f"{name} {balken} Balken {von}..{bis}{marke}")
     return "Feinreihe 15m: " + "; ".join(teile)
+
+
+def feinbefehle() -> tuple[str, ...]:
+    """Die Befehle, die die **Feinreihe** wiederherstellen - Befund 429.
+
+    Befund 426 hat die Feinreihe gepinnt (``SERIE_15``), aber keinen Weg
+    zurueck genannt. In einem Container, der neu aufgesetzt werden kann, ist
+    ein Pin ohne Wiederherstellungsweg nur die halbe Zusage: Der Stempel sagt
+    dann, welche Reihe gemeint war, und niemand kann sie herstellen.
+
+    ``cli referenz`` hat die Vorgaben dieser Reihe ohnehin schon - ``-i 15``
+    und ``--von 2020-03-30`` sind seine Standardwerte. Trotzdem steht hier
+    beides ausgeschrieben: Ein Befehl, der sich auf Vorgabewerte verlaesst,
+    sagt nicht, welche Reihe er herstellt.
+
+    ``FEINENDE`` ist **schon ausschliessend** - anders als bei der Tagesreihe
+    kommt hier also kein Tag dazu.
+    """
+    zeilen = [
+        "rm -rf " + " ".join(f"data_store/candles/{s}/15" for s in FEINREIHEN)
+    ]
+    zeilen += [
+        f"python -m cli referenz -i 15 --symbol {s} "
+        f"--von {FEINANFANG.isoformat()} --bis {FEINENDE.isoformat()}"
+        for s in FEINREIHEN
+    ]
+    return tuple(zeilen)
+
+
+#: Was die Datentests brauchen, die die **Differenz** zwischen Speicher und
+#: Zulassungsreihe messen (Befund 429).
+#:
+#: ``test_abstandsreihe`` und ``test_rennengrundlage`` fahren ihren Lauf
+#: ``schneiden=False`` und verlangen **mehr** als die gepinnte Reihe -
+#: 'auf dem Speicher steht alles zu guenstig' ist ihre Aussage. Wer mit
+#: ``befehle()`` exakt bis ``SERIENENDE`` herstellt, bekommt Speicher und
+#: Reihe gleich lang, und beide Tests fallen, ohne dass etwas falsch ist.
+#: Gemessen: 156 Trades ungeschnitten gegen ``SPOTPUNKT.trades`` von 156.
+LAENGER_ALS_DIE_REIHE: tuple[str, ...] = (
+    "tests/test_abstandsreihe.py",
+    "tests/test_rennengrundlage.py",
+)
+
+
+def wiederherstellung() -> tuple[str, ...]:
+    """Alles, was ein frischer Container braucht, um messen zu koennen.
+
+    **Warum das eine eigene Auskunft ist** (Befund 429). ``befehle()``
+    stellt die Zulassungsreihe her, und das ist richtig - nur ist es die
+    halbe Messfaehigkeit. Gemessen in einem neu aufgesetzten Container, nach
+    dem dokumentierten Weg: **sieben** Datentests rot, kein einziger wegen
+    eines Mangels am Code.
+
+        5 x test_generationszuordnung   es fehlen die Viertelstundenkerzen
+        2 x Speicher gleich Reihe       siehe LAENGER_ALS_DIE_REIHE
+
+    Diese Liste nennt beides und sagt, was sie **nicht** herstellt. Die zwei
+    Tests brauchen einen Speicher, der ueber ``SERIENENDE`` hinausreicht -
+    dafuer laesst man ``--bis`` weg. Das steht hier als Hinweis und nicht als
+    Befehl: Ein Speicher bis heute ist bei jedem Lauf ein anderer, und was
+    daraus folgt, ist genau die Lehre von Befund 363.
+    """
+    return (
+        "# Zulassungsreihe (Tageskerzen) - darauf stehen die gepflegten Zahlen",
+        *befehle(),
+        "",
+        "# Feinreihe (Viertelstundenkerzen) - dort messen Generation 6 und 7",
+        *feinbefehle(),
+        "",
+        "# Nicht hergestellt: ein Speicher, der ueber die Reihe hinausreicht.",
+        f"# {', '.join(LAENGER_ALS_DIE_REIHE)} messen die Differenz und",
+        "# brauchen ihn - dafuer '--bis' weglassen. Ein Speicher bis heute",
+        "# ist aber bei jedem Lauf ein anderer (Befund 363).",
+    )

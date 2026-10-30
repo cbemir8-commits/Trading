@@ -89,6 +89,33 @@ def common_range(frames: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
     """
     if not frames:
         return {}
+    # **Leer ist nicht dasselbe wie nicht da** (Befund 429). Die Pruefung
+    # darueber faengt ein fehlendes Dictionary, nicht ein Dictionary voller
+    # leerer Rahmen - und genau das liegt vor, wenn der Kerzenspeicher ein
+    # Intervall nicht hat. Die beiden Zeilen darunter filtern ``not f.empty``
+    # heraus, und 'max()' einer leeren Folge wirft
+    # "max() arg is an empty sequence": die unfreundlichste moegliche Meldung
+    # fuer die Lage, in der ein frisch aufgesetzter Container immer zuerst
+    # steckt. Gemessen an 'test_generationszuordnung', das genau so abbrach.
+    leer = sorted(name for name, f in frames.items() if f is None or f.empty)
+    if len(leer) == len(frames):
+        raise ValueError(
+            "Keine Kerzen fuer " + ", ".join(leer) + " - der Kerzenspeicher "
+            "steht in .gitignore und fehlt im frischen Klon. "
+            "'research.datenstand.wiederherstellung()' nennt die Befehle."
+        )
+    if leer:
+        # Ein Bein ohne Kerzen bleibt leer im Ergebnis, und die Spanne kaeme
+        # allein aus den anderen. Das ist kein Abbruch - aber es gehoert
+        # gesagt, sonst rechnet ein Korb stillschweigend mit weniger Beinen.
+        log.warning(
+            "portfolio.bein_ohne_kerzen",
+            ohne=leer,
+            mit=sorted(set(frames) - set(leer)),
+            hinweis=(
+                "Die gemeinsame Spanne kommt nur aus den Beinen mit Kerzen."
+            ),
+        )
     von = max(f["open_time"].iloc[0] for f in frames.values() if not f.empty)
     bis = min(f["open_time"].iloc[-1] for f in frames.values() if not f.empty)
     return {

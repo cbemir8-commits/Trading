@@ -38345,3 +38345,86 @@ Die **Feinreihe** (426) hat einen Stempel, aber `befehle()` nennt nur den Weg
 zurueck zur Tagesreihe. Ein Pin ohne Wiederherstellungsweg ist in einem
 Container, der neu aufgesetzt werden kann, nur die halbe Zusage - das gehoert
 als naechstes gemessen, nicht behauptet.
+
+## Vierhundertneunundzwanzig. Der dokumentierte Weg stellt die halbe Messfaehigkeit her
+
+Nach dem Wiederaufbau (427) und der Wiederherstellung der Zulassungsreihe (428)
+ist der Datenlauf gefahren - der erste in diesem Container, der ueberhaupt
+laufen konnte:
+
+    111 bestanden, 7 gefallen, 6 uebersprungen      41:39
+
+### Die sieben, eingeordnet - keiner zeigt einen Mangel am Code
+
+    5 x test_generationszuordnung      es fehlen die Viertelstundenkerzen
+    2 x test_abstandsreihe,            sie messen die Differenz zwischen
+        test_rennengrundlage           Speicher und Reihe
+
+**Die fuenf**: Befund 426 hat die Feinreihe gepinnt - `SERIE_15`, 229.728
+Balken, beide Abdruecke - aber keinen Weg zurueck genannt. In einem Container,
+der neu aufgesetzt werden kann, ist ein Pin ohne Wiederherstellungsweg die
+halbe Zusage: Der Stempel sagt dann, welche Reihe gemeint war, und niemand kann
+sie herstellen.
+
+**Die zwei** fahren ihren Lauf `schneiden=False` und verlangen **mehr** als die
+gepinnte Reihe; *"auf dem Speicher steht alles zu guenstig"* heisst der eine
+wortwoertlich. Wer mit `befehle()` exakt bis `SERIENENDE` herstellt, bekommt
+Speicher und Reihe gleich lang, und beide fallen.
+
+### Und das ist zugleich die staerkste Gegenprobe zu Befund 428
+
+    assert trades > SPOTPUNKT.trades
+    AssertionError: assert 156 > 156
+
+Der **ungeschnittene** Lauf auf dem wiederhergestellten Speicher ergibt genau
+156 Trades - `SPOTPUNKT.trades` auf die Stelle. Der Korblauf im Protokoll sagt
+160 Trades, Sharpe 1,43, +163,58 % fuer BTC+ETH, also `KONTOPUNKT` mit seinen
+160.
+
+Die Reihe reproduziert damit die Messgrundlage, die meine falsche Driftmeldung
+aus 428 in Zweifel gezogen hatte - und der Beleg kommt aus einem Test, der
+**faellt**. Das ist die nuetzlichste Sorte roter Test.
+
+### Die erste Wand war die unfreundlichste
+
+    ValueError: max() arg is an empty sequence
+    backtest/portfolio_walkforward.py:92
+
+Die Pruefung dort lautete `if not frames: return {}`. Das faengt ein fehlendes
+Dictionary - nicht ein Dictionary voller **leerer** Rahmen, und genau das liegt
+vor, wenn der Speicher ein Intervall nicht hat. Die zwei Zeilen darunter
+filtern `not f.empty` heraus, und `max()` einer leeren Folge sagt dann das
+oben.
+
+Fuer die Lage, in der ein frisch aufgesetzter Container **immer zuerst** steckt,
+ist das die schlechteste moegliche Meldung. Jetzt:
+
+    Keine Kerzen fuer BTCUSD_BITSTAMP, ETHUSD_BITSTAMP - der Kerzenspeicher
+    steht in .gitignore und fehlt im frischen Klon.
+    'research.datenstand.wiederherstellung()' nennt die Befehle.
+
+**Ein einzelnes leeres Bein neben vollen bricht nicht ab** - das ist kein
+Fehler, die gemeinsame Spanne kommt dann aus den anderen. Aber es wird
+protokolliert, sonst rechnet ein Korb stillschweigend mit weniger Beinen. Beide
+Zweige unter Gegenprobe, auch der, der *nicht* meldet.
+
+### Gebaut
+
+`feinbefehle()` nennt den Weg zur Feinreihe, mit `-i 15` und `--von`
+ausgeschrieben, obwohl beides Vorgabewerte von `cli referenz` sind: Ein Befehl,
+der sich auf Vorgaben verlaesst, sagt nicht, welche Reihe er herstellt. Und
+`FEINENDE` bekommt **keinen Tag dazu** - anders als `SERIENENDE`, das den
+letzten Balken nennt, ist es schon ausschliessend. Ein Test haelt die beiden
+auseinander, denn verwechseln kostet einen Balken und einen Anlauf (363).
+
+`wiederherstellung()` nennt beide Reihen **und was sie nicht herstellt**: den
+Speicher ueber die Reihe hinaus. Der steht als Hinweis und nicht als Befehl -
+ein Speicher bis heute ist bei jedem Lauf ein anderer, und was daraus folgt,
+ist genau die Lehre von Befund 363. Eine Anleitung, die das Fehlende
+verschweigt, laesst den Leser die zwei roten Tests selbst erklaeren.
+
+### Gefahren, nicht behauptet
+
+Der Weg zur Feinreihe ist gefahren und gegen `SERIE_15` geprueft. Bei der
+Tagesreihe hat das ausschliessende `--bis` schon einen Anlauf gekostet, und das
+steht in `befehle()` als Vermerk - aus der Signatur geht es nicht hervor.
