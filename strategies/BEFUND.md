@@ -38244,3 +38244,104 @@ Die Lehre gehoert ins Register, weil sie an der Bauart dieses Projekts haengt:
 Wo Wachen den Quelltext lesen, ist Bearbeiten waehrend des Laufs keine
 Unaufmerksamkeit, sondern eine Fehlerquelle - und sie zeigt sich als Rot an
 einer Stelle, mit der sie nichts zu tun hat.
+
+## Vierhundertachtundzwanzig. Der Stempel meldete Drift, wo nur anders geschnitten war
+
+Nach dem Wiederaufbau (427) fehlte dem Container der Kerzenspeicher, und ohne
+Kerzen ist nichts messbar - 120 Tests abgewaehlt. Also die Zulassungsreihe neu
+geholt, mit den Befehlen, die `datenstand.befehle()` dafuer nennt:
+
+    python -m cli referenz -i D --symbol BTCUSD_BITSTAMP --von 2012-01-01 --bis 2026-08-30
+    python -m cli referenz -i D --symbol ETHUSD_BITSTAMP --von 2017-08-16 --bis 2026-08-30
+
+Die Form kam exakt zurueck:
+
+    BTCUSD_BITSTAMP    5355 Balken   2012-01-01 -> 2026-08-29   gepinnt 5355   stimmt
+    ETHUSD_BITSTAMP    3301 Balken   2017-08-16 -> 2026-08-29   gepinnt 3301   stimmt
+
+Dann hat `datenstempel.SERIE` fuer BTC **Drift gemeldet** - `5cda9435 ->
+608328de` - und **ich habe sie berichtet.**
+
+### Das war falsch. Es gibt keine Datendrift
+
+Zwei unabhaengige Abrufe in getrennte Speicher geben denselben Abdruck
+(`608328de`), der Abruf ist also deterministisch. Und auf die **gemeinsame
+Spanne** geschnitten stimmt der Stempel auf die Stelle:
+
+    nur oben geschnitten (mein Fehlgriff)
+      BTCUSD_BITSTAMP   5355   608328de6951d031
+      ETHUSD_BITSTAMP   3301   3141cefdf649ffc2
+
+    zusaetzlich common_range
+      BTCUSD_BITSTAMP   3301   5cda943508eecc9d     <- der gepinnte Wert
+      ETHUSD_BITSTAMP   3301   3141cefdf649ffc2     <- der gepinnte Wert
+
+`alle_geschnitten` kuerzt **nur am oberen Ende** - so steht es in seinem
+Docstring, mit Begruendung. BTC kam deshalb mit 5355 statt 3301 Balken, und
+3301 ist die Laenge des **juengeren** Beins. ETH stimmte nur, weil es dieses
+juengere Bein *ist*.
+
+### Der Befund darunter ist der Stempel selbst
+
+`Reihenstempel` heisst "Form und Inhalt der Reihe" und traegt `balken`, `von`,
+`bis`. `abweichungen` hat die drei **nie angesehen** und allein die Abdruecke
+verglichen. Ein Rahmen mit den richtigen Kerzen im falschen Fenster war damit
+von einer Datenaenderung nicht zu unterscheiden.
+
+Dass es gehen muss, wusste der Datentest aus Befund 408: Er schneidet
+`common_range` zuerst und prueft `balken`/`von`/`bis` **von Hand daneben**. Nur
+stand diese Pflicht nirgends - also musste jeder Aufrufer sie selbst kennen.
+
+### Scharf wird es durch `warum`
+
+Das ist die Meldung, die an jeder Zusicherung haengt, die auf einer `Altzahl`
+steht. Sie lautete:
+
+> Die Reihe hat sich geaendert: BTCUSD_BITSTAMP 5cda9435 -> 608328de - der
+> Speicher steht in .gitignore, also nachgeladen und nicht derselbe. **Erst den
+> Stempel nachziehen, dann die Zahl.**
+
+Dem Rat zu folgen hiesse: den korrekten Pin mit dem Abdruck des **falschen
+Fensters** ueberschreiben. Damit waere der einzige Beleg der Reihe geloescht,
+auf der die Zahlen des Projekts stehen - genau das, was Befund 364 verbietet
+und was 408 mit den `ALTZAHLEN` aufgefangen hat.
+
+### Gebaut
+
+`Reihenstempel.form` prueft Balkenzahl und Spanne, **bevor** der Abdruck
+verglichen wird, und bei falscher Form wird er gar nicht verglichen: Der
+Abdruck eines anderen Fensters ist kein Beleg ueber die Daten. Die Meldung ist
+jetzt
+
+    BTCUSD_BITSTAMP 5355 Balken 2012-01-01..2026-08-29, Stempel 3301
+    2017-08-16..2026-08-29 - nicht wie der Stempel geschnitten
+
+ohne Abdruckpfeil. `nur_anders_geschnitten` trennt die beiden Faelle, und
+`warum` sagt im Schnittfall "anders **geschnitten**, nicht anders", nennt den
+Weg (`common_range`, dann `alle_geschnitten`) und setzt dazu: *"Den Stempel
+hier nachzuziehen waere falsch."*
+
+**Echte Drift wird weiter gemeldet.** Gleiche Form, andere Zahlen ergibt den
+Pfeil wie bisher - unter Gegenprobe, denn eine Formpruefung, die Drift
+verschluckt, waere schlimmer als keine. Beide Zweige sind an den echt geholten
+Kerzen gemessen.
+
+### Zwei eigene Fehlgriffe
+
+**Ich habe die Drift berichtet, bevor ich sie gegengeprueft hatte.** Der
+Abdruck wich ab, die Form stimmte scheinbar (5355 ist ja die gepinnte
+BTC-Laenge aus `REIHEN`) - und dass der *Stempel* von der gemeinsamen Spanne
+spricht, habe ich erst beim zweiten Hinsehen bemerkt. Richtig war die
+Reihenfolge erst beim zweiten Schritt: zwei Abrufe vergleichen, dann die
+Schnittvariante, dann urteilen.
+
+**Und die Fixture**: klassengebunden als Instanzmethode, was in diesem Projekt
+ein Fehler und nicht nur eine Warnung ist. Dasselbe hat Befund 426 schon
+gekostet. Jetzt auf Modulebene, mit dem Grund im Docstring.
+
+### Was offen bleibt
+
+Die **Feinreihe** (426) hat einen Stempel, aber `befehle()` nennt nur den Weg
+zurueck zur Tagesreihe. Ein Pin ohne Wiederherstellungsweg ist in einem
+Container, der neu aufgesetzt werden kann, nur die halbe Zusage - das gehoert
+als naechstes gemessen, nicht behauptet.

@@ -72,6 +72,12 @@ def fingerabdruck(frame) -> str:
     return hashlib.sha256(roh).hexdigest()[:16]
 
 
+#: Die Marke, an der ``warum`` den Schnittfehler von der Drift unterscheidet
+#: (Befund 428). Sie steht im Text, weil die Meldung gelesen wird - und in
+#: einer Konstante, weil daran eine Empfehlung haengt.
+NICHT_GESCHNITTEN = "nicht wie der Stempel geschnitten"
+
+
 @dataclass(frozen=True)
 class Reihenstempel:
     """Form und Inhalt der Reihe, auf der die Zahlen von heute stehen."""
@@ -81,16 +87,51 @@ class Reihenstempel:
     bis: str
     abdruecke: Mapping[str, str] = field(default_factory=dict)
 
+    def form(self, frame) -> str:
+        """Was an der **Form** dieses Rahmens nicht zum Stempel passt.
+
+        Leer, wenn Balkenzahl und Spanne stimmen - und ``""`` ist hier die
+        Aussage "vergleichbar", nicht "unbekannt".
+
+        **Warum das vor dem Abdruck kommt** (Befund 428): Der Stempel heisst
+        "Form und Inhalt", trug ``balken``/``von``/``bis`` aber nur mit und
+        verglich allein die Abdruecke. Ein Rahmen mit den **richtigen Kerzen
+        im falschen Fenster** wurde deshalb als Datenaenderung gemeldet. Der
+        Abdruck eines anderen Fensters ist kein Beleg ueber die Daten.
+        """
+        if frame is None or len(frame) == 0 or "open_time" not in getattr(
+            frame, "columns", ()
+        ):
+            return "ohne Kerzen"
+        zeiten = frame["open_time"]
+        von, bis = str(zeiten.iloc[0])[:10], str(zeiten.iloc[-1])[:10]
+        if (len(frame), von, bis) == (self.balken, self.von, self.bis):
+            return ""
+        return (
+            f"{len(frame)} Balken {von}..{bis}, Stempel {self.balken} "
+            f"{self.von}..{self.bis} - {NICHT_GESCHNITTEN}"
+        )
+
     def abweichungen(self, frames) -> tuple[str, ...]:
         """Welche Symbole nicht mehr die Kerzen von damals haben.
 
         Ein Symbol, das der Stempel nicht kennt, gilt **nicht** als Abweichung
         - sonst meldete jeder zusaetzlich gemessene Markt eine Datendrift.
+
+        **Die Form zuerst** (Befund 428). Stimmt sie nicht, steht sie als
+        Grund da, und der Abdruck wird **nicht** verglichen: Er wuerde
+        zwangslaeufig abweichen und eine Datenaenderung behaupten, die keine
+        ist. Genau das ist passiert, als 'alle_geschnitten' - das nur am
+        oberen Ende kuerzt - ohne 'common_range' uebergeben wurde: BTC kam
+        mit 5355 statt 3301 Balken, und der Stempel meldete Drift.
         """
         anders = []
         for name, erwartet in sorted(self.abdruecke.items()):
             if name not in frames:
                 anders.append(f"{name} fehlt")
+                continue
+            if (falsche_form := self.form(frames[name])):
+                anders.append(f"{name} {falsche_form}")
                 continue
             ist = fingerabdruck(frames[name])
             if ist != erwartet:
@@ -99,6 +140,17 @@ class Reihenstempel:
 
     def passt(self, frames) -> bool:
         return not self.abweichungen(frames)
+
+    def nur_anders_geschnitten(self, frames) -> bool:
+        """Liegt es allein am Schnitt - und nicht an den Kerzen?
+
+        Die Unterscheidung, an der die **Empfehlung** haengt: Bei einer
+        echten Drift wird der Stempel nachgezogen, bei einem Schnittfehler
+        auf keinen Fall (364 - damit waere der einzige Beleg der alten Reihe
+        geloescht).
+        """
+        anders = self.abweichungen(frames)
+        return bool(anders) and all(NICHT_GESCHNITTEN in x for x in anders)
 
 
 def stempel(frames) -> Reihenstempel:
@@ -256,6 +308,19 @@ def warum(frames, gegen: Reihenstempel | None = None) -> str:
         return (
             "Die Reihe ist unveraendert (Abdruck wie Befund 408) - eine "
             "abweichende Zahl kommt dann nicht aus den Daten."
+        )
+    stempel_dazu = gegen or SERIE
+    if stempel_dazu.nur_anders_geschnitten(frames):
+        # **Nicht "nachziehen"** (Befund 428). Hier sind die Kerzen nicht zu
+        # beanstanden, nur das Fenster - und einen Stempel auf den Abdruck
+        # des falschen Fensters nachzuziehen loescht den einzigen Beleg der
+        # Reihe, auf der die Zahlen stehen (364).
+        return (
+            "Die Reihe ist anders **geschnitten**, nicht anders: "
+            + "; ".join(anders)
+            + " - erst wie der Stempel schneiden (common_range, dann "
+            "datenstand.alle_geschnitten), dann noch einmal fragen. Den "
+            "Stempel hier nachzuziehen waere falsch."
         )
     return (
         "Die Reihe hat sich geaendert: "

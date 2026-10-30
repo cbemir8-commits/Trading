@@ -5411,6 +5411,45 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Wachen den Quelltext lesen, ist Bearbeiten waehrend des Laufs keine "
         "Unaufmerksamkeit, sondern eine Fehlerquelle",
         427,
+        zuletzt=428,
+    ),
+    # Befund 428: Die Zulassungsreihe zurueckgeholt - und der Stempel aus 408
+    # meldete sofort Drift. Zu Recht?
+    Richtung(
+        "Der Stempel meldete Drift, wo nur anders geschnitten war",
+        "Nach dem Wiederaufbau (427) habe ich die Zulassungsreihe mit den "
+        "Befehlen aus 'datenstand.befehle()' neu von Bitstamp geholt. Form "
+        "exakt wieder da: BTC **5355** Balken 2012-01-01..2026-08-29, ETH "
+        "**3301** ab 2017-08-16, 'laenge_stimmt' beide wahr. Dann hat "
+        "'datenstempel.SERIE' fuer BTC **Drift gemeldet** (5cda9435 -> "
+        "608328de), und **ich habe sie berichtet**. Das war falsch: Es gibt "
+        "**keine Datendrift**. Zwei unabhaengige Abrufe geben denselben "
+        "Abdruck, und auf die gemeinsame Spanne geschnitten stimmt der "
+        "Stempel auf die Stelle - BTC 5cda9435, ETH 3141cefd. Mein Fehler "
+        "war der Schnitt: 'alle_geschnitten' kuerzt **nur am oberen Ende** "
+        "(so steht es in seinem Docstring), also kam BTC mit 5355 statt "
+        "3301 Balken - und 3301 ist die Laenge des **juengeren** Beins. "
+        "**Der Befund darunter ist der Stempel selbst**: Er heisst 'Form und "
+        "Inhalt der Reihe' und traegt 'balken'/'von'/'bis' - 'abweichungen' "
+        "hat die drei nie angesehen und allein die Abdruecke verglichen. Ein "
+        "Rahmen mit den richtigen Kerzen im falschen Fenster war damit nicht "
+        "von einer Datenaenderung zu unterscheiden; der Datentest aus 408 "
+        "prueft die Form von Hand daneben, also musste es jeder Aufrufer "
+        "selbst wissen. **Scharf wird es durch 'warum'**, die Meldung an "
+        "jeder Zusicherung, die auf einer Altzahl steht: Sie riet 'Erst den "
+        "Stempel nachziehen' - den korrekten Pin also mit dem Abdruck des "
+        "falschen Fensters zu ueberschreiben und damit den einzigen Beleg "
+        "der Reihe zu loeschen, auf der die Zahlen stehen (**364**). Gebaut "
+        "ist jetzt 'Reihenstempel.form', das vor dem Abdruck prueft und bei "
+        "falscher Form **keinen Abdruckpfeil** zeigt, dazu "
+        "'nur_anders_geschnitten'; 'warum' sagt dann 'anders geschnitten, "
+        "nicht anders' und nennt den Weg (common_range, dann "
+        "alle_geschnitten), statt zum Nachziehen zu raten. **Echte Drift "
+        "wird weiter gemeldet** - gleiche Form, andere Zahlen ergibt den "
+        "Pfeil wie bisher, unter Gegenprobe, denn eine Formpruefung, die "
+        "Drift verschluckt, waere schlimmer als keine. Gemessen an den echt "
+        "geholten Kerzen, beide Zweige",
+        428,
     ),
 )
 
