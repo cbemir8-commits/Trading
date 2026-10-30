@@ -38142,3 +38142,105 @@ Und eine Eigenschaft dieser Reihe, die bei Tageskerzen fehlt: **beide Beine sind
 gleich lang.** Bei Tageskerzen reicht BTC 2054 Tage weiter zurueck als ETH, und
 die gemeinsame Spanne ist die kuerzere. Hier beginnt der Speicher fuer beide am
 selben Tag.
+
+## Vierhundertsiebenundzwanzig. Ein neu aufgesetzter Container, und die Suite startet nicht mehr
+
+Dieser Container ist neu aufgesetzt worden. Mit ihm gingen `.venv` und der
+Kerzenspeicher - beide stehen in `.gitignore`, beides ist richtig so.
+
+Beim Wiederaufbau hat pip die **reinen Untergrenzen** der dev-Abhaengigkeiten
+aufgefuellt:
+
+    erklaert in pyproject.toml     installiert
+    pytest-asyncio>=0.23           1.4.1
+    pytest>=8.2                    9.2.0
+    ruff>=0.4                      0.17.3
+
+Die neue Fassung von `pytest-asyncio` warnt, wenn
+`asyncio_default_fixture_loop_scope` fehlt. Und `filterwarnings =
+["error::DeprecationWarning"]` macht daraus einen Fehler - geworfen in
+`pytest_configure`, also **vor** dem ersten Test:
+
+    INTERNALERROR> pytest.PytestDeprecationWarning: The configuration option
+    "asyncio_default_fixture_loop_scope" is unset.
+    [exited with code 0]
+
+**Kein Testergebnis war falsch - es gab keines.** Das ist die unangenehmste
+Sorte Bruch: Eine rote Suite zeigt, wo es klemmt; eine Suite, die nicht
+anlaeuft, zeigt nichts.
+
+### Dieselbe Lehre wie Befund 363, eine Schicht weiter aussen
+
+363 hat die **Datenreihe** gepinnt, weil ein neu aufgesetzter Container den
+Speicher mitnahm, frisch nachgeladen fuenfzehn Tests fielen und keiner "andere
+Reihe" sagte. Dort verschoben sich Zahlen still.
+
+Hier nahm der Container die **Werkzeuge** mit, und die Messung hoerte ganz auf.
+Gepinnt war die Reihe, gepinnt waren die Zahlen - die Werkzeuge nicht.
+
+### Gesetzt, mit Begruendung und Messung
+
+Die Option steht jetzt ausdruecklich auf `function`, dem Wert, auf den
+kuenftige Fassungen von sich aus gehen. **Dass er nichts aendert, ist gemessen
+und nicht geraten**: Diese Option steuert den Schleifenbereich von
+async-*Fixtures*. Die Suite hat ueber fuenfzig async-*Tests* und **keine**
+async-Fixtures - ein Test geht dafuer ueber den Syntaxbaum jeder Testdatei und
+sucht `AsyncFunctionDef` mit einem `fixture`-Schmuck. Kommt je eines dazu,
+faellt die Begruendung auf, statt stillschweigend ungueltig zu werden.
+
+**Nicht die Gegenrichtung.** Der bequeme Weg waere gewesen, `filterwarnings` zu
+lockern. Dann waere die Suite still gruen und jede kuenftige
+Verwerfungswarnung unsichtbar - ein Gate gelockert, damit etwas besteht. Ein
+Test haelt fest, dass `error::DeprecationWarning` stehen bleibt.
+
+### Was offen bleibt und beim Nutzer liegt
+
+Dass die Werkzeuge nur Untergrenzen haben, ist der Grund, warum das passieren
+konnte. Sie festzunageln hiesse, kuenftige Umgebungen einzufrieren - das ist
+keine Aufraeumarbeit, sondern eine Entscheidung mit Folgen fuer jede weitere
+Umgebung, und sie steht dem Nutzer zu. Verzeichnet ist sie unter Test, damit
+sie nicht unbemerkt getroffen wird: Der Test faellt, sobald eine Obergrenze
+auftaucht.
+
+### Mein eigener Fehler dazu
+
+Zwei fertige Befunde lagen **unkommittiert** im Baum, als der Container ging:
+
+* die Reihenzeile in `cli taktung` (die erste Messung auf der Feinreihe nannte
+  ihre Reihe nicht - `feinvermerk`, Tests, Registereintrag),
+* die Formatierer-Konvention (`ruff format` hatte 2779 Zeilen in `cli.py`
+  umgeschrieben und eine Wache aus Befund 189 gebrochen).
+
+Beide sind weg. Ein Befund je Commit ist die Regel dieses Projekts, und sie hat
+genau diesen Grund; ich hatte zwei gebuendelt, um **eine Suite zu sparen** -
+neun Minuten - und dafuer zwei Arbeitsgaenge bezahlt.
+
+Was von beiden erhalten ist, weil es committet war: der Schaden aus Befund 423
+steht weiter in der Historie (`d854d5a` schreibt `research/stand.py` mit 1183
+Zeilen um, wo der Eintrag fuenfunddreissig war - zum Vergleich `1112751` mit
+35). Und die Messung dazu haelt: `ruff format --check .` meldet heute **369 von
+432** Dateien, die umformatiert wuerden. Das Projekt benutzt den Formatierer
+nicht.
+
+### Und ein zweiter Fehlgriff derselben Stunde
+
+Der erste Lauf nach der Behebung meldete fuenf Fehlschlaege. Vier davon waren
+Zeitversatz - der Registereintrag zu diesem Befund entstand, waehrend der Lauf
+schon lief. Der fuenfte war echt und traf fremden Code:
+
+    FAILED tests/test_belastbarkeit.py::...::test_die_pruefung_kommt_aus_den_gemessenen_daten
+
+Allein gestartet war er gruen. Die Ursache ist mein eigener Eingriff: Ich habe
+`research/stand.py` **waehrend** des Laufs ergaenzt. Dieses Projekt prueft an
+ueber tausend Stellen mit `inspect.getsource` (Befund 399), und das liest die
+Quelle ueber **Zeilennummern** - mein Anhang in der Mitte der Datei hat alles
+darunter verschoben, also las der Test den falschen Block.
+
+Der Beleg ist die Gegenprobe: derselbe Lauf ohne Eingriff, **6110 gruen, 11
+uebersprungen** (die Datentests, denn der Kerzenspeicher fehlt in diesem
+Container - genau dafuer gibt es die Marke `daten` aus Befund 151).
+
+Die Lehre gehoert ins Register, weil sie an der Bauart dieses Projekts haengt:
+Wo Wachen den Quelltext lesen, ist Bearbeiten waehrend des Laufs keine
+Unaufmerksamkeit, sondern eine Fehlerquelle - und sie zeigt sich als Rot an
+einer Stelle, mit der sie nichts zu tun hat.

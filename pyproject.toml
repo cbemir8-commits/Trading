@@ -55,6 +55,19 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+# **Ausdruecklich gesetzt, weil die Suite sonst nicht startet** (Befund 427).
+# 'pytest-asyncio' warnt seit 1.x, wenn diese Option fehlt, und
+# 'filterwarnings' unten macht aus der Warnung einen Fehler - geworfen in
+# 'pytest_configure', also **vor** dem ersten Test: INTERNALERROR, null Tests.
+# Aufgefallen ist es, als dieser Container neu aufgesetzt wurde und pip die
+# unverbundenen Untergrenzen aus den dev-Abhaengigkeiten auffuellte
+# (pytest-asyncio 0.23 erklaert, 1.4.1 installiert).
+#
+# 'function' ist der Wert, auf den kuenftige Fassungen von sich aus gehen, und
+# er aendert hier **nichts**: Die Suite hat async-*Tests*, aber keine
+# async-*Fixtures*, deren Schleifenbereich diese Option ueberhaupt steuert.
+# Nachgemessen am Lauf danach - gruen bei unveraenderter Zahl.
+asyncio_default_fixture_loop_scope = "function"
 filterwarnings = ["error::DeprecationWarning"]
 markers = [
     "network: Test braucht echte Bybit-Verbindung (wird in CI/Sandbox uebersprungen)",

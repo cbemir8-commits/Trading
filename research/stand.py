@@ -5362,6 +5362,55 @@ BEHOBEN: tuple[Richtung, ...] = (
         "nicht gesagt ist**: dass der Nutzer den Backfill nicht braucht - "
         "gemessen ist dieser Container, nicht sein Rechner",
         426,
+        zuletzt=427,
+    ),
+    # Befund 427: 363 hat die Datenreihe gepinnt, weil ein neuer Container sie
+    # verschob. Die Werkzeuge waren nie gepinnt.
+    Richtung(
+        "Ein neu aufgesetzter Container, und die Suite startet nicht mehr",
+        "Dieser Container ist neu aufgesetzt worden, und mit ihm gingen "
+        "'.venv' und der Kerzenspeicher. Beim Wiederaufbau hat pip die "
+        "**reinen Untergrenzen** der dev-Abhaengigkeiten aufgefuellt - "
+        "'pytest-asyncio>=0.23' erklaert, **1.4.1** installiert, dazu pytest "
+        "9.2.0 und ruff 0.17.3. Die neue Fassung warnt, wenn "
+        "'asyncio_default_fixture_loop_scope' fehlt, und "
+        "'filterwarnings = [\"error::DeprecationWarning\"]' macht daraus "
+        "einen Fehler - geworfen in 'pytest_configure', also **vor** dem "
+        "ersten Test: **INTERNALERROR**, null Tests. Das ist die unangenehmste "
+        "Sorte Bruch, weil **kein Testergebnis war falsch - es gab keines**. "
+        "Dieselbe Lehre wie Befund 363, eine Schicht weiter aussen: Dort nahm "
+        "ein neuer Container die **Daten** mit und fuenfzehn Zahlen "
+        "verschoben sich still; hier nahm er die **Werkzeuge** mit und die "
+        "Messung hoerte ganz auf. Gesetzt ist die Option jetzt ausdruecklich "
+        "auf 'function' - der Wert, auf den kuenftige Fassungen von sich aus "
+        "gehen -, mit dem Grund daneben und unter Wache. **Gemessen, dass er "
+        "nichts aendert**: Die Suite hat ueber fuenfzig async-*Tests*, aber "
+        "**keine** async-*Fixtures*, und nur deren Schleifenbereich steuert "
+        "diese Option; ein Test prueft das per Syntaxbaum nach, damit die "
+        "Begruendung mit dem ersten async-Fixture faellt. **Nicht die "
+        "Gegenrichtung**: 'filterwarnings' zu lockern waere der bequeme Weg "
+        "gewesen und haette jede kuenftige Verwerfungswarnung unsichtbar "
+        "gemacht - ein Gate gelockert, damit etwas besteht. **Dass die "
+        "Werkzeuge nur Untergrenzen haben, bleibt offen und liegt beim "
+        "Nutzer**: Sie festzunageln hiesse, kuenftige Umgebungen "
+        "einzufrieren, und das ist keine Aufraeumarbeit, sondern eine "
+        "Entscheidung. Verzeichnet ist sie unter Test, damit sie nicht "
+        "unbemerkt getroffen wird. **Und mein eigener Fehler dazu**: Zwei "
+        "fertige Befunde - die Reihenzeile in 'cli taktung' und die "
+        "Formatierer-Konvention - lagen **unkommittiert** im Baum, als der "
+        "Container ging, und sind verloren. Ein Befund je Commit ist die "
+        "Regel dieses Projekts; ich hatte zwei gebuendelt, um eine Suite zu "
+        "sparen, und beide bezahlt. **Und ein zweiter Fehlgriff derselben "
+        "Stunde**: Ich habe 'research/stand.py' **waehrend** eines "
+        "Suitenlaufs ergaenzt. Dieses Projekt prueft an ueber tausend Stellen "
+        "mit 'inspect.getsource' (399), und das liest ueber Zeilennummern - "
+        "nach dem Anhaengen verschoben, also ein Scheinfehlschlag in "
+        "'test_belastbarkeit', der allein gruen war. Gefunden hat ihn die "
+        "Gegenprobe: derselbe Lauf ohne Eingriff, 6110 gruen. Die Lehre "
+        "gehoert hierher, weil sie an der Bauart dieses Projekts haengt - wo "
+        "Wachen den Quelltext lesen, ist Bearbeiten waehrend des Laufs keine "
+        "Unaufmerksamkeit, sondern eine Fehlerquelle",
+        427,
     ),
 )
 
