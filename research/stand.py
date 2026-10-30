@@ -5486,7 +5486,24 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Speicher ueber die Reihe hinaus. Der steht als Hinweis und nicht "
         "als Befehl, weil ein Speicher bis heute bei jedem Lauf ein anderer "
         "ist - das ist die Lehre von 363. Der Weg zur Feinreihe ist "
-        "**gefahren** und gegen 'SERIE_15' geprueft, nicht behauptet",
+        "**gefahren** und gegen 'SERIE_15' geprueft, nicht behauptet. **Und "
+        "dann mein Fehlgriff, zum dritten Mal derselbe**: Die Fixture fuer "
+        "genau diese Pruefung stand mit eigenem Scope als Instanzmethode in "
+        "der Klasse - damit bricht pytest mit einem Fixture-Fehler ab, und "
+        "die drei Tests, die den Weg festhalten, **liefen gar nicht**. Sie "
+        "erscheinen als ERROR, nicht als FAILED. Gemessen und richtig war "
+        "der Weg trotzdem, von Hand; festgehalten hat ihn nichts. **Es ist "
+        "in den gepushten Commit gelangt**, und der Grund ist strukturell: "
+        "Das Tor, an dem ich committe, ist '-m \"not daten\"' - die "
+        "betroffenen Tests tragen die Marke 'daten' und kommen darin gar "
+        "nicht vor. Genau dafuer hat Befund 151 die Marke erfunden statt "
+        "eines stillen skip: Wer 'Suite gruen' sagt, muss dazusagen, welche "
+        "Auswahl er gelaufen ist. Behoben, und weil ein Registereintrag es "
+        "dreimal (426, 428, hier) nicht verhindert hat, prueft es jetzt eine "
+        "Wache in 'test_werkzeugstand' ueber den Syntaxbaum jeder Testdatei - "
+        "mit Gegenprobe auf die Entscheidung selbst, denn mein erster Anlauf "
+        "verglich gegen 'scope=\"module\"' und fiel, weil 'ast.unparse' auf "
+        "einfache Anfuehrungszeichen normalisiert",
         429,
     ),
 )

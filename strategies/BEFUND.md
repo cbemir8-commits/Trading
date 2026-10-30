@@ -38428,3 +38428,37 @@ verschweigt, laesst den Leser die zwei roten Tests selbst erklaeren.
 Der Weg zur Feinreihe ist gefahren und gegen `SERIE_15` geprueft. Bei der
 Tagesreihe hat das ausschliessende `--bis` schon einen Anlauf gekostet, und das
 steht in `befehle()` als Vermerk - aus der Signatur geht es nicht hervor.
+
+### Nachtrag: dieselbe Fixture-Bauart, zum dritten Mal - und diesmal gepusht
+
+Die Fixture fuer genau die Pruefung oben stand mit eigenem Scope als
+Instanzmethode in der Klasse:
+
+    @pytest.fixture(scope="module")
+    def feinreihe(self):          # <- in der Klasse
+
+Damit bricht pytest mit einem Fixture-Fehler ab, und die drei Tests, die den
+Wiederherstellungsweg festhalten, **liefen gar nicht**. Sie erscheinen als
+`ERROR`, nicht als `FAILED` - ein Unterschied, der leicht untergeht.
+
+Der Weg selbst war gemessen und richtig; die Zahlen oben stehen. Nur
+festgehalten hat ihn nichts.
+
+**Und es ist in den gepushten Commit gelangt.** Der Grund ist strukturell und
+gehoert aufgeschrieben: Das Tor, an dem ich committe, ist `-m "not daten"`. Die
+betroffenen Tests tragen die Marke `daten` und kommen in dieser Auswahl gar
+nicht vor. Genau dafuer hat Befund 151 die Marke erfunden statt eines stillen
+skip:
+
+> Wer "Suite gruen" sagt, muss dazusagen, welche Auswahl er gelaufen ist.
+
+Ich habe "Suite gruen" gesagt und die Auswahl genannt - und trotzdem etwas
+gepusht, das in der anderen Auswahl kaputt war.
+
+Dreimal dieselbe Bauart (426, 428, hier), dreimal im Register. Also eine Wache:
+`test_werkzeugstand` geht ueber den Syntaxbaum jeder Testdatei und findet jede
+Fixture, die in einer Klasse steht und einen eigenen Scope hat. Mit Gegenprobe
+auf die **Entscheidung** - mein erster Anlauf verglich gegen `scope="module"`
+und fiel, weil `ast.unparse` auf einfache Anfuehrungszeichen normalisiert. Die
+Gegenprobe prueft jetzt beide Zitierweisen und laesst die Dutzende richtigen
+Fixtures ohne Scope stehen.

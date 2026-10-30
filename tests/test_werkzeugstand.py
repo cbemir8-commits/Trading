@@ -169,3 +169,86 @@ class TestWasImRegisterSteht:
         from research.stand import BEHOBEN
 
         assert next(r for r in BEHOBEN if r.befund == 426).zuletzt == 427
+
+
+def _eigener_scope(schmuck: str) -> bool:
+    """Ist dieser Dekorator eine Fixture mit eigenem Scope?
+
+    Eigene Funktion, damit die Gegenprobe die **Entscheidung** pruefen kann
+    und nicht die Zitierweise von ``ast.unparse`` - mein erster Anlauf
+    verglich gegen 'scope="module"' und fiel, weil ``unparse`` auf einfache
+    Anfuehrungszeichen normalisiert.
+    """
+    if "fixture" not in schmuck or "scope=" not in schmuck:
+        return False
+    return not any(f"scope={z}function{z}" in schmuck for z in ("'", '"'))
+
+
+class TestKeineFixtureMitEigenemScopeInEinerKlasse:
+    """Befund 429, und es ist das dritte Mal.
+
+    Eine Fixture mit eigenem Scope, die als Instanzmethode in einer Klasse
+    steht, laeuft hier nicht: pytest bricht mit einem Fixture-Fehler ab, und
+    die Tests, die sie benutzen, laufen **gar nicht** - sie erscheinen als
+    ERROR, nicht als FAILED. In 426 und 428 hat mich das je einen Anlauf
+    gekostet, in 429 ist es in einen gepushten Commit gelangt, weil die
+    betroffenen Tests die Marke ``daten`` tragen und in der Auswahl
+    ``-m "not daten"`` gar nicht vorkommen.
+
+    Ein Registereintrag hat es dreimal nicht verhindert. Also eine Wache.
+    """
+
+    def _gefunden(self) -> list[str]:
+        import ast
+
+        treffer: list[str] = []
+        for pfad in sorted((WURZEL / "tests").glob("test_*.py")):
+            baum = ast.parse(pfad.read_text(encoding="utf-8"))
+            for knoten in ast.walk(baum):
+                if not isinstance(knoten, ast.ClassDef):
+                    continue
+                for glied in knoten.body:
+                    if not isinstance(
+                        glied, ast.FunctionDef | ast.AsyncFunctionDef
+                    ):
+                        continue
+                    for schmuck in glied.decorator_list:
+                        text = ast.unparse(schmuck)
+                        if _eigener_scope(text):
+                            treffer.append(
+                                f"{pfad.name}:{knoten.name}.{glied.name} {text}"
+                            )
+        return treffer
+
+    def test_es_gibt_keine(self) -> None:
+        offen = self._gefunden()
+
+        assert offen == [], (
+            "Fixture mit eigenem Scope als Instanzmethode - gehoert auf "
+            f"Modulebene, sonst laufen die Tests daran nicht: {offen}"
+        )
+
+    def test_die_wache_erkennt_den_eigenen_scope(self) -> None:
+        """Gegenprobe. Eine Wache, die nichts mehr findet, ist gruen und
+        leer - dieselbe Pruefung wie in ``test_wachenaudit``. Geprueft wird
+        die Entscheidung, in **beiden** Zitierweisen."""
+        assert _eigener_scope('pytest.fixture(scope="module")')
+        assert _eigener_scope("pytest.fixture(scope='module')")
+        assert _eigener_scope("pytest.fixture(scope='class')")
+
+    def test_und_laesst_das_richtige_stehen(self) -> None:
+        """Ohne Scope ist es die Vorgabe 'function' und in einer Klasse
+        erlaubt - dieses Projekt hat Dutzende davon."""
+        assert not _eigener_scope("pytest.fixture")
+        assert not _eigener_scope("pytest.fixture()")
+        assert not _eigener_scope('pytest.fixture(scope="function")')
+        assert not _eigener_scope("pytest.fixture(scope='function')")
+        assert not _eigener_scope("staticmethod")
+
+    def test_und_laesst_eine_auf_modulebene_stehen(self) -> None:
+        """``rohreihen`` und ``feinreihe`` stehen genau so da und sind
+        richtig - die Wache darf sie nicht treffen."""
+        offen = " ".join(self._gefunden())
+
+        assert "rohreihen" not in offen
+        assert "feinreihe" not in offen

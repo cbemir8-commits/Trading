@@ -182,23 +182,32 @@ class TestLeerIstNichtDasselbeWieNichtDa:
         assert not [x for x in protokoll if x["event"] == "portfolio.bein_ohne_kerzen"]
 
 
+@pytest.fixture(scope="module")
+def feinreihe():
+    """Die echt geholten Viertelstundenkerzen, ungeschnitten.
+
+    **Auf Modulebene**, nicht in der Klasse: Eine Fixture mit eigenem Scope,
+    die als Instanzmethode in einer Klasse steht, laeuft in diesem Projekt
+    nicht - sie bricht mit einem Fixture-Fehler ab, und die Tests daran
+    laufen gar nicht. Das ist mir in 426 und 428 schon passiert und hier zum
+    dritten Mal; seit Befund 429 prueft es 'test_werkzeugstand' mechanisch.
+    """
+    from core.config import get_settings
+    from core.models import Interval
+    from data.store import CandleStore
+
+    speicher = CandleStore(get_settings().paths.data_store)
+    roh = {s: speicher.read(s, Interval("15")) for s in FEINREIHEN}
+    if any(x is None or x.empty for x in roh.values()):
+        pytest.skip("keine Viertelstundenkerzen im Speicher")
+    return roh
+
+
 @pytest.mark.daten
 class TestDerWegFuehrtWirklichDahin:
     """Ein Wiederherstellungsweg, den niemand gefahren ist, ist eine
     Vermutung - und bei der Tagesreihe hat das ``--bis`` schon einen Anlauf
     gekostet (Befund 363)."""
-
-    @pytest.fixture(scope="module")
-    def feinreihe(self):
-        from core.config import get_settings
-        from core.models import Interval
-        from data.store import CandleStore
-
-        speicher = CandleStore(get_settings().paths.data_store)
-        roh = {s: speicher.read(s, Interval("15")) for s in FEINREIHEN}
-        if any(x is None or x.empty for x in roh.values()):
-            pytest.skip("keine Viertelstundenkerzen im Speicher")
-        return roh
 
     def test_der_schnitt_ergibt_die_gepinnte_balkenzahl(self, feinreihe) -> None:
         from research.datenstand import alle_fein_geschnitten
