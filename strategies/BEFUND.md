@@ -38809,3 +38809,111 @@ schuetzt, ist nicht die Latte, sondern die Rotationsprobe - und sie hat es
 getan: BTC 1d, L48, Eichung 4,14, t = +3,69 ueber der Latte und von der
 Verschiebungsprobe verworfen. Die Huerden tragen zusammen, die erste allein
 nicht.
+
+## Vierhundertvierunddreissig. Die Latte war nur fuer Mehrfachtests korrigiert
+
+### Eine Diagnose, die 157 Befunde lang nicht behandelt wurde
+
+Befund 433 hat die Beobachtung notiert und stehen gelassen: Die Eichung der
+Latte reicht ueber die acht gemessenen Reihen von 2,52 bis **6,58**, waehrend
+die angewandte Latte durchweg bei 3,5 bis 3,7 steht.
+
+Nachgesehen ist daran nichts neu. Der Docstring von
+`Rotationsprobe.perzentil_99` sagt es seit Befund 276 **selbst**:
+
+> `schwelle_fuer` rechnet mit einer Normalverteilung, deren 99. Perzentil bei
+> 2,576 liegt. Steht diese Zahl weit darueber, **ist die Latte zu niedrig** -
+> und genau das war sie hier (Befund 276). Sie wird seit 277 in jedem Lauf
+> berichtet und nicht erst, wenn eine Zelle anschlaegt.
+
+Berichtet, ja. Angewandt nie.
+
+### Warum es so lange unbemerkt blieb: zwei Korrekturen sehen gleich aus
+
+`schwelle_fuer` korrigiert nach Bonferroni - fuer die **Zahl** der geprueften
+Zellen. Dabei setzt es voraus, dass der t-Wert einer einzelnen Zelle
+normalverteilt ist. Sein Docstring nennt sich selbst konservativ, *"weil
+benachbarte Zellen nicht unabhaengig sind"* - und das ist wahr ueber die
+Multiplizitaet und falsch ueber die Nullverteilung.
+
+    schwelle_fuer        Wie oft wurde gesucht?
+    perzentil_99         Stimmt das Lineal?
+
+Zwei verschiedene Fragen. In Kraft war nur die erste.
+
+### Was die Anwendung tut, gemessen
+
+| Reihe | Zellen | Latte | Eichung | Faktor | geeicht | abs t | vorher | danach |
+|-------|-------:|------:|--------:|-------:|--------:|------:|--------|--------|
+| BTC 1d | 131 | 3,55 | 4,14 | 1,61 | **5,71** | 3,69 | NIMMT | darunter |
+| ETH 1d | 122 | 3,53 | 2,82 | 1,09 | 3,87 | 2,88 | darunter | darunter |
+| BTC 4h | 180 | 3,64 | 6,16 | 2,39 | 8,69 | 2,57 | darunter | darunter |
+| ETH 4h | 181 | 3,64 | 6,58 | 2,55 | 9,29 | 3,08 | darunter | darunter |
+| BTC 1h | 214 | 3,68 | 6,30 | 2,45 | 9,00 | 2,76 | darunter | darunter |
+| ETH 1h | 215 | 3,68 | 2,87 | 1,11 | 4,10 | 2,61 | darunter | darunter |
+| BTC 15m | 243 | 3,71 | 2,52 | **1,00** | 3,71 | 3,94 | NIMMT | NIMMT |
+| ETH 15m | 243 | 3,71 | 2,79 | 1,08 | 4,02 | 3,08 | darunter | darunter |
+
+Auf **sieben der acht** Reihen hebt die Eichung die Latte, am staerksten auf
+4h und 1h - dort, wo die beste Zelle einen Rueckblick von 192 beziehungsweise
+960 hat. Ein langer Rueckblick macht den Teiler traege, und ein traeger Teiler
+erzeugt hohe t-Werte aus nichts.
+
+### Die Untergrenze ist gemessen noetig, nicht vorsichtshalber da
+
+Auf der achten Reihe wuerde die Eichung die Latte **senken**: BTC 15m, 3,71 auf
+3,63, weil dort verschobene Teiler nur 2,52 erreichen statt 2,576.
+
+Und das ist ausgerechnet die einzige Reihe, auf der ueberhaupt ein Treffer
+steht (abs t = 3,94). Ohne Untergrenze wuerde die Eichung also genau dort
+lockern, wo es zaehlt - und "Gates werden nicht gelockert, damit etwas
+besteht" gilt fuer das Lineal des Scans genauso.
+
+Dazu der sachliche Grund: Eine gemessen **duennere** Nullverteilung ist eine
+schwaechere Aussage als die analytische Latte und kann Streuung der
+Verschiebungsprobe selbst sein. Nach oben korrigiert sie, nach unten nicht.
+
+### Geaendert hat sich genau ein Urteil - gefahren, nicht gerechnet
+
+    vorher:  Ueber der Schwelle (t = +3.69), aber die Verschiebungsprobe
+             traegt ihn nicht: 23 von 1325 Verschiebungen erreichen ihn ...
+
+    danach:  Nicht auffaellig genug (t = +3.69). Bei 131 geprueften Zellen
+             liegt die Schwelle bei 3.55, nicht bei 2.00. Auf die gemessene
+             Nullverteilung geeicht sind es 5.71 statt 3.55, weil verschobene
+             Teiler hier 4.14 erreichen und nicht 2.58.
+
+Dieselbe Zelle, dasselbe Ergebnis, eine Huerde frueher. Verworfen wurde sie
+auch vorher - nur **traegt die erste Huerde sich jetzt selbst**, statt sich
+auf die zweite zu verlassen. Die anderen sieben Urteile bleiben, und ein Test
+haelt das fest: Eine Aenderung, die alle Urteile umwirft, waere verdaechtig.
+
+### Mein Fehlgriff dabei, zweimal
+
+**Erstens zwei angenommene Zahlen.** In meiner Tabelle stand fuer BTC 1d
+`122` Zellen und fuer BTC 15m `243` - beide von der ETH-Zeile desselben
+Intervalls uebernommen, weil das BTC-Urteil in jenen Faellen ("Ueber der
+Schwelle ...", "Fund: ...") die Zellenzahl nicht ausgibt.
+
+Nachgezaehlt: BTC 1d hat **131**, nicht 122. BTC 15m hat tatsaechlich **243** -
+die Annahme war zufaellig richtig, und das ist kein Trost, sondern der Grund,
+warum ich sie nachgezaehlt habe: Die Latte waechst mit der Zellenzahl, bei 243
+steht sie bei 3,71 und bei 500 schon bei 3,88. Der einzige Treffer des
+Projekts hat abs t = 3,94 - ob er seine Latte nimmt, haengt also an genau
+dieser Zahl. Der Zaehler ist dabei gegen den Scan geprueft: Er gibt fuer die
+zwei Tagesreihen 131 und 122 und damit genau das, was die Laufausgaben
+drucken.
+
+Dieselbe Sorte Fehler wie die Latte selbst - eine Zahl, die danebensteht, fuer
+die gemessene halten.
+
+**Zweitens, und das ist der Befund in Kleinformat:** In meinem eigenen Test
+stand
+
+    assert latte_geeicht(1, 6.0) == MIND_T
+
+also die Annahme, bei einer einzigen Zelle sei nichts zu korrigieren. Das
+verwechselt genau die zwei Korrekturen, die dieser Befund trennt. Ohne
+Mehrfachtest gibt es keine Bonferroni-Korrektur - aber wenn verschobene
+Teiler auf dieser Zelle 6,0 erreichen, ist eine Latte von 2,0 bedeutungslos.
+Der Test war falsch, nicht der Code.

@@ -4474,6 +4474,7 @@ def scan(
     from research.vorteilsscan import (
         KOSTEN_MAKER_MAKER,
         MIND_ANDERE,
+        latte_geeicht,
         paar,
         paar_nach_breite,
         paar_nach_kennzahl,
@@ -4730,11 +4731,18 @@ def scan(
             paar(log_close, beste.rueckblick, beste.halten), beste
         )
         if beste_probe is not None:
+            # **Und jetzt angewandt, nicht nur berichtet** (Befund 434). Seit
+            # 277 stand hier eine Diagnose - "ist die Latte zu niedrig" - und
+            # die Latte blieb, wie sie war. Gezeigt werden beide: die aus der
+            # Zellenzahl und die auf die gemessene Nullverteilung geeichte.
+            geeicht = latte_geeicht(gesamt, beste_probe.perzentil_99)
             console.print(
                 f"[dim]Eichung der Latte: 99. Perzentil der verschobenen "
                 f"Verteilung {beste_probe.perzentil_99:.2f} gegen "
                 f"{normal_99():.3f} der Normalverteilung, auf "
-                f"L{beste.rueckblick}/H{beste.halten} (Latte {latte:.2f}).[/]"
+                f"L{beste.rueckblick}/H{beste.halten} (Latte {latte:.2f}"
+                + (f", geeicht {geeicht:.2f}" if geeicht > latte + 0.005 else "")
+                + ").[/]"
             )
         # **Die Randprobe nur, wenn die Haelften halten** (Befund 431). Sie
         # prueft genau dieses Urteil nach, ist also vorher gegenstandslos -
@@ -4755,6 +4763,7 @@ def scan(
                 gepruefte_zellen=gesamt,
                 probe=beste_probe,
                 rand=rand,
+                eichung=beste_probe.perzentil_99 if beste_probe is not None else None,
             )
         )
 

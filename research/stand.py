@@ -5700,6 +5700,59 @@ BEHOBEN: tuple[Richtung, ...] = (
         "vorsichtig; was dort schuetzt, ist die Rotationsprobe, und sie hat "
         "es getan (BTC 1d, L48, Eichung 4,14, verworfen)",
         433,
+        zuletzt=434,
+    ),
+    # Befund 434: Die Diagnose aus 276 stand 157 Befunde lang im Bericht und
+    # wurde nie angewandt.
+    Richtung(
+        "Die Latte war nur fuer Mehrfachtests korrigiert",
+        "Befund 433 hat die Beobachtung notiert und nicht behandelt: Die "
+        "Eichung der Latte reicht ueber acht Reihen von 2,52 bis **6,58**, "
+        "waehrend die angewandte Latte durchweg bei 3,5 bis 3,7 steht. "
+        "Nachgesehen ist das keine neue Einsicht - **der Docstring von "
+        "'Rotationsprobe.perzentil_99' sagt es seit Befund 276 selbst**: "
+        "*'Steht diese Zahl weit darueber, ist die Latte zu niedrig.'* Seit "
+        "277 wird sie in **jedem** Lauf berichtet. Angewandt wurde sie nie - "
+        "157 Befunde lang eine Diagnose ohne Behandlung. Der Grund ist, dass "
+        "zwei verschiedene Korrekturen verwechselt aussehen: "
+        "'schwelle_fuer' korrigiert nach Bonferroni, also fuer die **Zahl** "
+        "der geprueften Zellen, und setzt dabei Normalitaet des einzelnen "
+        "t-Werts voraus. Die Verschiebungsprobe sagt, dass die nicht gilt. "
+        "Die eine fragt, wie oft gesucht wurde; die andere, ob das Lineal "
+        "stimmt. Nur die erste war in Kraft. Gebaut ist 'latte_geeicht', und "
+        "gemessen tut es Folgendes: Auf **sieben der acht** Reihen hebt die "
+        "Eichung die Latte, Faktor 1,08 bis 2,55 - am staerksten auf 4h und "
+        "1h, wo die beste Zelle einen Rueckblick von 192 beziehungsweise 960 "
+        "hat. **Die Untergrenze bei Faktor 1 ist nicht Vorsicht, sondern "
+        "gemessen noetig**: Auf der achten Reihe wuerde die Eichung die Latte "
+        "senken (BTC 15m, 3,71 auf 3,63) - und das ist ausgerechnet die "
+        "einzige Reihe, auf der ein Treffer steht. Ohne Untergrenze wuerde "
+        "also genau dort gelockert, wo es zaehlt; dazu kommt, dass eine "
+        "gemessen **duennere** Nullverteilung eine schwaechere Aussage ist "
+        "als die analytische Latte und Streuung der Probe selbst sein kann. "
+        "**Geaendert hat sich genau ein Urteil**, und zwar gefahren und nicht "
+        "gerechnet: BTC 1d sagte 'Ueber der Schwelle (t = +3,69), aber die "
+        "Verschiebungsprobe traegt ihn nicht' und sagt jetzt 'Nicht "
+        "auffaellig genug ... geeicht sind es 5,71 statt 3,55, weil "
+        "verschobene Teiler hier 4,14 erreichen und nicht 2,58'. Verworfen "
+        "wurde die Zelle vorher auch - nur traegt die **erste** Huerde sich "
+        "jetzt selbst, statt sich auf die zweite zu verlassen. Alle anderen "
+        "sieben Urteile bleiben; eine Aenderung, die alles umwirft, waere "
+        "verdaechtig, und ein Test haelt das fest. Dazu ist 'normal_99' von "
+        "'tageszeit' nach 'vorteilsscan' gewandert, weil 'latte_geeicht' sie "
+        "braucht und der umgekehrte Import ein Kreis waere - ihr eigener "
+        "Docstring hat den Umzug verlangt. **Zwei Fehlgriffe von mir**: "
+        "Erstens hatte ich in meiner Tabelle fuer BTC 1d 122 Zellen stehen "
+        "und fuer BTC 15m 243 - beide von der ETH-Zeile desselben Intervalls "
+        "uebernommen, weil das BTC-Urteil die Zahl in jenen Faellen nicht "
+        "ausgibt. BTC 1d hat **131**. Zweitens stand in meinem eigenen Test "
+        "'latte_geeicht(1, 6.0) == MIND_T', also die Annahme, bei einer "
+        "einzigen Zelle sei nichts zu korrigieren - **das ist genau die "
+        "Verwechslung, die dieser Befund trennt.** Ohne Mehrfachtest gibt es "
+        "keine Bonferroni-Korrektur; wenn verschobene Teiler dort aber 6,0 "
+        "erreichen, ist eine Latte von 2,0 bedeutungslos. Der Test war "
+        "falsch, nicht der Code",
+        434,
     ),
 )
 

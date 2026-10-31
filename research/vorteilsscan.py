@@ -84,6 +84,64 @@ def schwelle_fuer(zellen: int, irrtum: float = 0.05) -> float:
     return float(NormalDist().inv_cdf(1 - irrtum / (2 * zellen)))
 
 
+def normal_99() -> float:
+    """Das 99. Perzentil von |t| unter der Normalverteilung - 2,576.
+
+    Gerechnet statt hingeschrieben: Es ist genau die Verteilung, mit der
+    ``schwelle_fuer`` arbeitet, und der Vergleichswert fuer
+    ``Rotationsprobe.perzentil_99``. Zwei Stellen, an denen dieselbe Zahl
+    steht, laufen frueher oder spaeter auseinander.
+
+    Stand bis Befund 434 in ``research/tageszeit.py`` und ist hierher
+    gewandert, weil ``latte_geeicht`` sie braucht und ``tageszeit`` aus
+    diesem Modul importiert - andersherum waere es ein Kreis. Dort wird sie
+    weiter exportiert, damit ihre Aufrufer stehen bleiben.
+    """
+    from statistics import NormalDist
+
+    return float(NormalDist().inv_cdf(0.995))
+
+
+def latte_geeicht(
+    zellen: int, perzentil_99: float | None = None, *, irrtum: float = 0.05
+) -> float:
+    """Die Schwelle, auf die **gemessene** Nullverteilung geeicht - Befund 434.
+
+    ``schwelle_fuer`` korrigiert nach Bonferroni, also fuer die **Zahl** der
+    geprueften Zellen. Das ist eine Korrektur fuer Mehrfachtests und setzt
+    dabei voraus, dass der t-Wert einer einzelnen Zelle normalverteilt ist.
+
+    **Diese Voraussetzung ist gemessen falsch, und zwar seit Befund 276.**
+    ``Rotationsprobe.perzentil_99`` sagt, welchen |t| verschobene Teiler auf
+    **dieser** Zelle erreichen, und ihr eigener Docstring zieht den Schluss:
+    *"Steht diese Zahl weit darueber, ist die Latte zu niedrig."* Seit Befund
+    277 wird sie in jedem Lauf berichtet - angewandt wurde sie nie. Gemessen
+    ueber die acht Reihen aus Befund 433 reicht sie von 2,52 bis **6,58**,
+    waehrend die Latte durchweg bei 3,5 bis 3,7 steht; die vier Werte ueber 4
+    stehen samt und sonders auf Zellen mit Rueckblick 48 oder mehr.
+
+    Zwei verschiedene Korrekturen also, und nur die erste war in Kraft: Die
+    eine fragt, wie oft gesucht wurde, die andere, ob das Lineal stimmt.
+
+    **Die Untergrenze bei Faktor 1 ist keine Vorsicht, sondern gemessen
+    noetig.** Auf sieben der acht Reihen hebt die Eichung die Latte (Faktor
+    1,08 bis 2,55). Auf einer senkt sie sie - BTC 15m, 3,71 auf 3,63 - und
+    das ist ausgerechnet die einzige Reihe, auf der ein Treffer steht. Ohne
+    Untergrenze wuerde hier genau dort gelockert, wo es zaehlt. Dazu kommt
+    der Grund: Eine gemessene Nullverteilung, die **duenner** als normal
+    ausfaellt, ist eine schwaechere Aussage als die analytische Latte und
+    kann Streuung der Verschiebungsprobe selbst sein. Nach oben korrigiert
+    sie, nach unten nicht.
+
+    Ohne ``perzentil_99`` ist das Ergebnis ``schwelle_fuer`` - nicht geeicht
+    ist etwas anderes als geeicht und bestanden.
+    """
+    latte = schwelle_fuer(zellen, irrtum)
+    if perzentil_99 is None or perzentil_99 <= 0:
+        return latte
+    return latte * max(1.0, perzentil_99 / normal_99())
+
+
 @dataclass(frozen=True, slots=True)
 class Zelle:
     """Ein Rueckblick-Halten-Paar und was es vorhersagt."""
@@ -647,6 +705,7 @@ def urteil(
     gepruefte_zellen: int = 1,
     probe: Rotationsprobe | None = None,
     rand: Randprobe | None = None,
+    eichung: float | None = None,
 ) -> str:
     """Ein Satz, der sagt, ob sich Versuche lohnen.
 
@@ -659,6 +718,11 @@ def urteil(
     dieselbe Groesse in Frage stellt: Haelt sie nicht, war schon der
     Schwellenvergleich keiner.
 
+    ``eichung`` ist ``Rotationsprobe.perzentil_99`` und hebt die Schwelle auf
+    das, was verschobene Teiler auf dieser Zelle tatsaechlich erreichen
+    (Befund 434). Ohne sie bleibt es bei der Bonferroni-Latte - das ist die
+    Latte von vor 434 und nicht etwa eine bestandene Eichung.
+
     ``rand`` prueft die **Haelften**-Huerde nach (Befund 431) und steht
     deshalb direkt hinter ihr. Gemessen kippt deren Urteil auf der Zelle, die
     den Fund trug, sobald der Rand der Reihe sich um drei Tage bewegt - und
@@ -666,13 +730,25 @@ def urteil(
     ``rand`` bleibt das Urteil wie bisher: Die Huerde ist dann nicht
     geprueft, und das ist etwas anderes als bestanden.
     """
-    schwelle = schwelle_fuer(gepruefte_zellen)
+    # **Die Schwelle ist auf die gemessene Nullverteilung geeicht** (Befund
+    # 434). 'schwelle_fuer' korrigiert fuer die Zahl der Zellen und setzt
+    # dabei Normalitaet voraus; die Verschiebungsprobe sagt, dass die nicht
+    # gilt. Ohne 'eichung' bleibt es bei der Bonferroni-Latte.
+    roh = schwelle_fuer(gepruefte_zellen)
+    schwelle = latte_geeicht(gepruefte_zellen, eichung)
     if not zelle.ueber_schwelle(schwelle):
+        geeicht = (
+            f" Auf die gemessene Nullverteilung geeicht sind es "
+            f"{schwelle:.2f} statt {roh:.2f}, weil verschobene Teiler hier "
+            f"{eichung:.2f} erreichen und nicht {normal_99():.2f}."
+            if eichung is not None and schwelle > roh + 0.005
+            else ""
+        )
         zusatz = (
             f" Bei {gepruefte_zellen} geprueften Zellen liegt die Schwelle bei "
-            f"{schwelle:.2f}, nicht bei {MIND_T:.2f}."
+            f"{roh:.2f}, nicht bei {MIND_T:.2f}.{geeicht}"
             if gepruefte_zellen > 1
-            else ""
+            else geeicht
         )
         return (
             f"Nicht auffaellig genug (t = {zelle.t_wert:+.2f}).{zusatz} Hier "

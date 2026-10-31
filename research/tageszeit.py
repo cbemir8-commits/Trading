@@ -69,7 +69,13 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from research.vorteilsscan import KOSTEN_MAKER_MAKER, schwelle_fuer
+from research.vorteilsscan import (
+    KOSTEN_MAKER_MAKER,
+    schwelle_fuer,
+)
+from research.vorteilsscan import (
+    normal_99 as normal_99,  # hier nur weitergegeben, siehe unten
+)
 
 #: Wie viele Tage ein Fenster mindestens abdecken muss.
 MIND_TAGE = 200
@@ -308,17 +314,12 @@ ZUEGE = 20_000
 SAAT = 277
 
 
-def normal_99() -> float:
-    """Das 99. Perzentil von |t| unter der Normalverteilung - 2,576.
-
-    Gerechnet statt hingeschrieben: Es ist genau die Verteilung, mit der
-    ``schwelle_fuer`` arbeitet, und der Vergleichswert fuer
-    ``Vorzeichenprobe.perzentil_99``. Zwei Stellen, an denen dieselbe Zahl
-    steht, laufen frueher oder spaeter auseinander.
-    """
-    from statistics import NormalDist
-
-    return float(NormalDist().inv_cdf(0.995))
+# **normal_99 stand bis Befund 434 hier** und ist nach 'vorteilsscan'
+# gewandert, weil 'latte_geeicht' sie braucht und 'tageszeit' aus jenem Modul
+# importiert - andersherum waere es ein Kreis. Der Docstring der Funktion hat
+# den Umzug selbst verlangt: "Zwei Stellen, an denen dieselbe Zahl steht,
+# laufen frueher oder spaeter auseinander." Oben wird sie weitergegeben, damit
+# ihre Aufrufer und Tests stehen bleiben.
 
 
 @dataclass(frozen=True, slots=True)
