@@ -5960,6 +5960,42 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Gelockert ist nichts: Der Befund rechnet gemessene Abstaende um und "
         "aendert keine Schwelle",
         438,
+        zuletzt=439,
+    ),
+    # Befund 439: Was ich in 438 gebaut habe, verstiess gegen meinen eigenen
+    # Satz aus 435 - am Tag danach abgebaut.
+    Richtung(
+        "Zwei gepflegte Listen, einen Tag alt",
+        "**Erst das, was nicht gebaut werden musste.** Die Frage aus 438 - "
+        "in wie vielen Aufteilungen der Kandidat 9, 8 oder 7 Gates haelt - "
+        "ist gemessen: 'aufteilung' fuehrt sie ueber sechzehn Versaetze, "
+        "**bestandene Gates min 9,00 / max 10,00**, und zieht die "
+        "Schlussfolgerungen ausdruecklich, inklusive *'sich einen anderen "
+        "Versatz auszusuchen waere genau das Lockern'*. Dort steht auch die "
+        "Zahl, die den Stand am besten beschreibt: Ueber elf Aufteilungen "
+        "schwankt die Jahresrendite um **3,1130 Punkte** (Streuung 0,9379), "
+        "und dem Kandidaten fehlen **0,661** - der Abstand zum Gate ist ein "
+        "Fuenftel der Streuung des Verfahrens. **Beim Lesen aufgefallen ist "
+        "stattdessen ein Fehler von mir, einen Tag alt**: Mein 'engstelle' "
+        "aus 438 trug 'HERKUNFT' und 'BELASTBARKEIT' als handgeschriebene "
+        "Listen - und 'BELASTBARKEIT' war eine **Dublette** von "
+        "'aufteilung.AUSFALL_JE_AUFTEILUNG', das die Versaetze selbst fuehrt "
+        "und nicht nur ihre Zahl. Das ist wortwoertlich der Fehler, den ich "
+        "in Befund 435 selbst aufgeschrieben habe: *Wer hier eine Liste "
+        "pflegt, hat zwei Listen, und eine davon ist irgendwann falsch.* "
+        "Abgebaut: 'herkunft_je_gate' liest die **Feld-Docstrings** von "
+        "'GateThresholds' ueber den Syntaxbaum und ordnet am Satz ein, nicht "
+        "an der Befundnummer - wer eine Ableitung nachtraegt, aendert den "
+        "Satz, und die Einordnung wandert mit. 'ausfaelle_je_gate' liest "
+        "'aufteilung'. Die abgeleitete Einordnung deckt sich auf alle elf "
+        "Gates mit der handgeschriebenen, die Zahlen aus 438 stehen damit "
+        "unveraendert. **Von Hand bleibt genau eine Zuordnung**: Gate-Name zu "
+        "Schwellenfeld, und die muss es - sie entsteht erst im Rumpf der "
+        "Gate-Funktionen und ist statisch nicht ableitbar. Bewacht ist sie "
+        "dreifach: jedes Feld existiert wirklich, keines wird zweimal "
+        "benutzt (ein Tippfehler dort ordnete die Herkunft stillschweigend "
+        "falsch ein), und alle elf Gates kommen vor",
+        439,
     ),
 )
 

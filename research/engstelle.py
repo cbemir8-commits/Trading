@@ -87,38 +87,117 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-#: Woher die Schwelle kommt - aus Befund 437, als Daten statt als Prosa.
+#: Welches Feld von ``GateThresholds`` die Schwelle eines Gates traegt.
 #:
-#: ``abgeleitet`` heisst: Im Code steht, warum diese Zahl und nicht eine
-#: andere. ``ohne`` heisst: Das Verfahren ist begruendet, die Zahl nicht.
-#: ``beobachtung`` und ``widersprechend`` sind die zwei Sonderfaelle aus 437.
-HERKUNFT: dict[str, str] = {
-    "Stichprobengroesse": "abgeleitet",
-    "Messlatte": "abgeleitet",
-    "Out-of-Sample-Sharpe": "ohne",
-    "Drawdown": "abgeleitet",
-    "Schlechtestes Jahr": "abgeleitet",
-    "Bestaendigkeit": "ohne",
-    "Monte-Carlo": "beobachtung",
-    "Regime-Aufteilung": "widersprechend",
-    "Deflated Sharpe": "abgeleitet",
-    "Kosten-Stress": "ohne",
-    "Parameter-Plateau": "ohne",
+#: **Das ist der einzige Teil, der hier von Hand steht**, und er muss es:
+#: Die Zuordnung von Gate-Name zu Feld entsteht erst im Rumpf der
+#: Gate-Funktionen und ist statisch nicht ableitbar. Ein Test prueft, dass
+#: jeder Wert ein wirkliches Feld ist und dass kein Gate fehlt.
+#:
+#: Alles andere wird **gerechnet** - siehe ``herkunft_je_gate`` und
+#: ``ausfaelle_je_gate``. Der erste Entwurf dieses Moduls (Befund 438) hatte
+#: beides als gepflegte Liste, und das ist genau der Fehler, den ich in
+#: Befund 435 selbst aufgeschrieben habe: *Wer hier eine Liste pflegt, hat
+#: zwei Listen, und eine davon ist irgendwann falsch.*
+FELD_JE_GATE: dict[str, str] = {
+    "Stichprobengroesse": "min_oos_trades",
+    "Messlatte": "min_benchmark_edge",
+    "Out-of-Sample-Sharpe": "min_oos_sharpe",
+    "Drawdown": "max_oos_drawdown_pct",
+    "Schlechtestes Jahr": "worst_year_pct",
+    "Bestaendigkeit": "min_window_consistency",
+    "Monte-Carlo": "max_monte_carlo_drawdown_pct",
+    "Regime-Aufteilung": "min_regime_profit_factor",
+    "Deflated Sharpe": "min_deflated_sharpe",
+    "Kosten-Stress": "cost_stress_factor",
+    "Parameter-Plateau": "min_plateau_ratio",
 }
 
-#: In wie vielen von elf Fensteraufteilungen das Gate faellt - Befund 420.
+#: Die Marken, an denen sich die Herkunft einer Schwelle erkennen laesst -
+#: die Saetze, die Befund 437 in die Feld-Docstrings geschrieben hat.
 #:
-#: Nur die drei, die dort gemessen wurden. Die uebrigen fehlen hier, und das
-#: ist richtig: Eine Null einzutragen hiesse "faellt nie", und gemessen ist
-#: das nicht.
-BELASTBARKEIT: dict[str, int] = {
-    "Deflated Sharpe": 11,
-    "Schlechtestes Jahr": 5,
-    "Messlatte": 1,
-}
+#: Erkannt wird am **Satz** und nicht an der Befundnummer: Wer eine Ableitung
+#: nachtraegt, aendert den Satz, und dann soll die Einordnung mitwandern.
+MARKEN: tuple[tuple[str, str], ...] = (
+    ("widersprechen", "widersprechend"),
+    ("Beobachtung, keine", "beobachtung"),
+    ("ohne verzeichnete Ableitung", "ohne"),
+)
 
-#: Elf Aufteilungen - der Nenner zu ``BELASTBARKEIT``.
+#: Elf Aufteilungen - der Nenner zu ``ausfaelle_je_gate``.
 AUFTEILUNGEN = 11
+
+
+def _felddocs() -> dict[str, str]:
+    """Je Feld von ``GateThresholds`` sein Docstring, ueber den Syntaxbaum.
+
+    ``dataclasses`` fuehrt Feld-Docstrings nicht, also wird gelesen, was
+    dasteht - und zwar ueber den Baum und nicht ueber Zeilennummern, weil
+    eine Datei, die waehrend eines Laufs editiert wird, sonst Phantome
+    erzeugt (Befund 427).
+    """
+    import ast
+    import inspect
+    import pathlib
+
+    from research.gates import GateThresholds
+
+    quelle = pathlib.Path(inspect.getfile(GateThresholds)).read_text()
+    for knoten in ast.walk(ast.parse(quelle)):
+        if isinstance(knoten, ast.ClassDef) and knoten.name == "GateThresholds":
+            koerper = knoten.body
+            gefunden: dict[str, str] = {}
+            for i, satz in enumerate(koerper):
+                if not (
+                    isinstance(satz, ast.AnnAssign)
+                    and isinstance(satz.target, ast.Name)
+                ):
+                    continue
+                naechst = koerper[i + 1] if i + 1 < len(koerper) else None
+                gefunden[satz.target.id] = (
+                    naechst.value.value
+                    if isinstance(naechst, ast.Expr)
+                    and isinstance(naechst.value, ast.Constant)
+                    and isinstance(naechst.value.value, str)
+                    else ""
+                )
+            return gefunden
+    return {}
+
+
+def herkunft_je_gate() -> dict[str, str]:
+    """Woher die Schwelle kommt - **gerechnet** aus den Docstrings.
+
+    ``abgeleitet`` heisst: Im Feld steht, warum diese Zahl und nicht eine
+    andere. ``ohne`` heisst: Das Verfahren ist begruendet, die Zahl nicht.
+    ``beobachtung`` und ``widersprechend`` sind die zwei Sonderfaelle, die
+    Befund 437 benannt hat.
+
+    Gelesen wird der Satz im Docstring. Wer eine Ableitung nachtraegt, aendert
+    damit auch diese Einordnung - und muss sie nicht an zweiter Stelle
+    pflegen.
+    """
+    docs = _felddocs()
+    ergebnis: dict[str, str] = {}
+    for gate, feld in FELD_JE_GATE.items():
+        doc = docs.get(feld, "")
+        ergebnis[gate] = next(
+            (art for marke, art in MARKEN if marke in doc), "abgeleitet"
+        )
+    return ergebnis
+
+
+def ausfaelle_je_gate() -> dict[str, int]:
+    """In wie vielen von elf Aufteilungen das Gate faellt - aus Befund 420.
+
+    Gelesen aus ``aufteilung.AUSFALL_JE_AUFTEILUNG``, das die Versaetze
+    selbst fuehrt und nicht nur ihre Zahl. Nur die drei dort gemessenen
+    kommen vor; die uebrigen fehlen, und das ist richtig - eine Null
+    einzutragen hiesse "faellt nie", und gemessen ist das nicht.
+    """
+    from research.aufteilung import AUSFALL_JE_AUFTEILUNG
+
+    return {gate: len(wo) for gate, wo in AUSFALL_JE_AUFTEILUNG.items()}
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,12 +232,12 @@ class Stelle:
 
     @property
     def herkunft(self) -> str:
-        return HERKUNFT.get(self.name, "unbekannt")
+        return herkunft_je_gate().get(self.name, "unbekannt")
 
     @property
     def faellt_in(self) -> int | None:
         """In wie vielen Aufteilungen es faellt - ``None`` heisst ungemessen."""
-        return BELASTBARKEIT.get(self.name)
+        return ausfaelle_je_gate().get(self.name)
 
     @property
     def vergleichbar(self) -> bool:

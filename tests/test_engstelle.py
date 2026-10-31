@@ -20,12 +20,13 @@ from __future__ import annotations
 
 from research.engstelle import (
     AUFTEILUNGEN,
-    BELASTBARKEIT,
-    HERKUNFT,
+    FELD_JE_GATE,
     Stelle,
     aus_gates,
+    ausfaelle_je_gate,
     bericht,
     engste,
+    herkunft_je_gate,
 )
 
 #: Der Spot-Punkt, wie ``cli stand`` ihn meldet: Schwelle und Abstand sind
@@ -121,7 +122,7 @@ class TestDieKreuzeStimmen:
             assert s.herkunft != "unbekannt", s.name
 
     def test_die_sieben_ohne_ableitung_sind_die_aus_437(self) -> None:
-        ohne = sorted(n for n, h in HERKUNFT.items() if h != "abgeleitet")
+        ohne = sorted(n for n, h in herkunft_je_gate().items() if h != "abgeleitet")
 
         assert ohne == [
             "Bestaendigkeit",
@@ -144,12 +145,75 @@ class TestDieKreuzeStimmen:
         drawdown = next(s for s in _stellen() if s.name == "Drawdown")
 
         assert drawdown.faellt_in is None
-        assert set(BELASTBARKEIT) == {
+        assert set(ausfaelle_je_gate()) == {
             "Deflated Sharpe",
             "Schlechtestes Jahr",
             "Messlatte",
         }
         assert AUFTEILUNGEN == 11
+
+
+class TestNichtsIstGepflegt:
+    """**Mein Fehlgriff aus 438, am Tag danach behoben.** Dort standen
+    'HERKUNFT' und 'BELASTBARKEIT' als handgeschriebene Listen - gegen meinen
+    eigenen Satz aus Befund 435: *Wer hier eine Liste pflegt, hat zwei
+    Listen, und eine davon ist irgendwann falsch.*"""
+
+    def test_die_herkunft_kommt_aus_den_docstrings(self) -> None:
+        """Wer eine Ableitung nachtraegt, aendert den Satz - und die
+        Einordnung wandert mit, ohne zweite Pflege."""
+        import inspect
+
+        from research import engstelle
+
+        quelle = inspect.getsource(engstelle.herkunft_je_gate)
+
+        assert "_felddocs()" in quelle
+        assert "MARKEN" in quelle
+
+    def test_die_ausfaelle_kommen_aus_aufteilung(self) -> None:
+        """'AUSFALL_JE_AUFTEILUNG' fuehrt die Versaetze selbst, nicht nur
+        ihre Zahl - eine Dublette davon waere die schlechtere Quelle."""
+        from research.aufteilung import AUSFALL_JE_AUFTEILUNG
+
+        assert ausfaelle_je_gate() == {
+            gate: len(wo) for gate, wo in AUSFALL_JE_AUFTEILUNG.items()
+        }
+
+    def test_und_das_schlechteste_jahr_faellt_in_fuenf(self) -> None:
+        """Die Zahl, auf die Befund 438 sich beruft - jetzt aus der Quelle."""
+        assert ausfaelle_je_gate()["Schlechtestes Jahr"] == 5
+
+
+class TestDieEinzigeHandgepflegteZuordnung:
+    """Gate-Name zu Schwellenfeld laesst sich statisch nicht ableiten - die
+    Zuordnung entsteht erst im Rumpf der Gate-Funktionen. Also bewacht."""
+
+    def test_jedes_feld_gibt_es_wirklich(self) -> None:
+        import dataclasses
+
+        from research.gates import GateThresholds
+
+        felder = {f.name for f in dataclasses.fields(GateThresholds)}
+
+        for gate, feld in FELD_JE_GATE.items():
+            assert feld in felder, (gate, feld)
+
+    def test_kein_feld_wird_zweimal_benutzt(self) -> None:
+        """Zwei Gates auf demselben Feld waere ein Tippfehler, der die
+        Herkunft stillschweigend falsch einordnet."""
+        felder = list(FELD_JE_GATE.values())
+
+        assert len(felder) == len(set(felder)), felder
+
+    def test_alle_elf_gates_kommen_vor(self) -> None:
+        assert len(FELD_JE_GATE) == 11
+
+    def test_und_jedes_gate_der_tafel_ist_zugeordnet(self) -> None:
+        """Gegenprobe gegen eine Zuordnung, die am gemessenen Lauf
+        vorbeigeht."""
+        for name, *_ in SPOT:
+            assert name in FELD_JE_GATE, name
 
 
 class TestMeinVorbehaltAus437KostetNichts:

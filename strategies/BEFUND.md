@@ -39322,3 +39322,74 @@ Datenlaufs editiert - zum dritten Mal in dieser Sitzung das Phantom aus Befund
 beide Auswahlen neu aufgesetzt, statt ein Ergebnis zu verwenden, dem nicht zu
 trauen ist. Die Regel kenne ich, und ich verstosse weiter dagegen; was hilft,
 ist nicht der Vorsatz, sondern das Verwerfen des Laufs.
+
+## Vierhundertneununddreissig. Zwei gepflegte Listen, einen Tag alt
+
+### Erst das, was nicht gebaut werden musste
+
+Befund 438 hat gezeigt, dass das knappste bestandene Gate 3,9 % Reserve hat
+und in 5 von 11 Aufteilungen faellt. Die Frage daraus: **In wie vielen
+Aufteilungen haelt der Kandidat 9 Gates, in wie vielen 8 oder 7?** Die
+Randzahlen je Gate ergeben das nicht.
+
+Sie ist gemessen. `research/aufteilung.py` fuehrt sie ueber sechzehn Versaetze:
+
+    Groesse                   min       max    Spanne   Streuung
+    bestandene Gates         9,00     10,00      1,00       0,50
+
+Und dort steht auch die Zahl, die den Stand am ehrlichsten beschreibt: Ueber
+elf Aufteilungen schwankt die Jahresrendite um **3,1130 Punkte** (Streuung
+0,9379), waehrend dem Kandidaten **0,661** zur Betriebsschwelle fehlen.
+
+> Der Abstand zum Gate ist ein Fuenftel der Streuung des Verfahrens.
+
+Mit den Schlussfolgerungen ausdruecklich gezogen, und zwar in der strengen
+Richtung: *"Nicht, dass der Kandidat besteht. Bei Versatz 0 hat er die
+niedrigste Jahresrendite aller elf Laeufe ... sich einen anderen Versatz
+auszusuchen waere genau das Lockern, gegen das die Zulassungsstrecke gebaut
+ist."*
+
+### Beim Lesen aufgefallen: ein Fehler von mir, einen Tag alt
+
+Mein `research/engstelle.py` aus Befund 438 trug zwei Tabellen von Hand:
+
+    HERKUNFT      = {...}   # woher jede Schwelle kommt (aus 437)
+    BELASTBARKEIT = {...}   # in wie vielen Aufteilungen das Gate faellt (420)
+
+Die zweite ist eine **Dublette** von `aufteilung.AUSFALL_JE_AUFTEILUNG` - und
+die Quelle ist dort sogar reicher, sie fuehrt die Versaetze selbst und nicht
+nur ihre Zahl.
+
+Das ist wortwoertlich der Fehler, den ich in Befund 435 selbst aufgeschrieben
+habe:
+
+> `breitenreihen()` rechnet die Maerkte aus `PAIRS` minus den
+> Zulassungsreihen - **wer hier eine Liste pflegt, hat zwei Listen, und eine
+> davon ist irgendwann falsch.**
+
+Vier Befunde spaeter habe ich genau das getan. Dass es mir beim Lesen
+auffiel und nicht erst, als die Listen auseinanderliefen, ist Glueck und kein
+Verfahren.
+
+### Abgebaut
+
+`herkunft_je_gate()` liest die **Feld-Docstrings** von `GateThresholds` ueber
+den Syntaxbaum und ordnet am Satz ein - "ohne verzeichnete Ableitung",
+"Beobachtung, keine", "widersprechen" -, nicht an der Befundnummer. Wer eine
+Ableitung nachtraegt, aendert den Satz, und die Einordnung wandert mit.
+
+`ausfaelle_je_gate()` liest `aufteilung`.
+
+**Die abgeleitete Einordnung deckt sich auf alle elf Gates mit der
+handgeschriebenen**, die Zahlen aus 438 stehen also unveraendert - das ist die
+Gegenprobe, ohne die der Abbau nur eine Umstellung waere.
+
+### Was von Hand bleibt, und warum
+
+Genau eine Zuordnung: Gate-Name zu Schwellenfeld. Die muss von Hand stehen -
+sie entsteht erst im Rumpf der Gate-Funktionen (`GateResult(name=...)` neben
+`t.min_oos_sharpe`) und ist statisch nicht ableitbar.
+
+Bewacht ist sie dreifach: jedes Feld existiert wirklich, **keines wird zweimal
+benutzt** - ein Tippfehler dort ordnete die Herkunft stillschweigend falsch
+ein -, und alle elf Gates kommen vor.
