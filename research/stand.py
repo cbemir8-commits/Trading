@@ -5541,6 +5541,56 @@ BEHOBEN: tuple[Richtung, ...] = (
         "betrifft - eine Begruendung, die niemand gegen den Test prueft, ist "
         "eine Behauptung ueber fremden Code",
         430,
+        zuletzt=431,
+    ),
+    # Befund 431: Der Container ist messfaehig. Der Scan sagt auf
+    # Viertelstundenkerzen erstmals "Fund". Haelt das?
+    Richtung(
+        "Die Haelften-Huerde des Scans ist eine Muenze",
+        "Mit dem wiederhergestellten Speicher (429) ist 'cli scan' auf beiden "
+        "Reihen gefahren - der Befehl, der entscheidet, **ob sich Versuche "
+        "lohnen**, und das ist die teuerste Entscheidung des Projekts. **Die "
+        "Tagesreihe reproduziert auf die Stelle**: BTC t = +3,69 samt der "
+        "Verschiebungsprobe 23 von 1325, ETH +2,88 - beides wie in Befund "
+        "272/276 verzeichnet. Auf Viertelstundenkerzen sagte der Scan dagegen "
+        "erstmals **'Fund: t = -3,94, in beiden Haelften ... Hier lohnen sich "
+        "Versuche'**, wo 272 'zweite Haelfte +1,53, Vorzeichen dreht' notiert "
+        "hatte. Nachgemessen ist der Umschlag ein **Randeffekt**: 'haelften' "
+        "teilt bei 'laenge // 2', die Mitte haengt also an beiden Enden der "
+        "Reihe. Auf der Zelle, die den Fund trug (L16/H16), haelt das Urteil "
+        "nur in **5 von 11** verschobenen Raendern - gekippt bei 10k, 30k und "
+        "50k an beiden Enden. **Wie scharf das ist**: zwischen 220.000 und "
+        "219.728 Balken, also **272 Balken** oder knapp drei Tage, springt "
+        "die zweite Haelfte von -3,13 auf +0,75 und das Urteil kippt, "
+        "waehrend die erste sich nicht ruehrt (-2,83 beide). Das ist nicht "
+        "Teststaerke, die am Rand der Leiter faellt - es kippt auf der "
+        "ersten Stufe und danach im Wechsel. **Und es ist kein handelbarer "
+        "Fund**, selbst wenn es haelte: netto **+0,0012 %** je Trade nach "
+        "Kosten, und die Verschiebungsprobe steht an ihrer Auflösungsgrenze - "
+        "der Scan sagt es selbst, 'nicht belegbar ist auf dieser Stichprobe "
+        "nicht von nicht da zu trennen'. Gebaut ist 'Randprobe' als "
+        "**vierte Huerde**, die die dritte nachprueft, und sie verlangt "
+        "**Einstimmigkeit**: Die Haelften-Huerde ist binaer, sie behauptet, "
+        "der Effekt sei in beiden Haelften da - kippt das, hat sie nichts "
+        "festgestellt, und ein Anteil waere eine Zahl, aus der man sich das "
+        "passende Ende aussucht (400). Das Urteil raet jetzt in dem Fall "
+        "nicht mehr zu Versuchen, sondern nennt es einen Randeffekt; haelt "
+        "die Probe, bleibt der Fund stehen, denn sie verwirft nicht pauschal "
+        "- dieselbe Regel, die 'Rotationsprobe' fuer sich festhaelt. "
+        "Gerechnet wird sie nur, wenn die Haelften halten, weil sie vorher "
+        "gegenstandslos ist und elf Haelften-Rechnungen ueber die ganze "
+        "Reihe kostet. Die Methode ist die von Befund 345 "
+        "('research/reichweite.py': *Wie weit haengt das Urteil daran, wo die "
+        "Reihe anfaengt?*) - dort am Kandidaten, hier an der Huerde des "
+        "Scans. **Mein Fehlgriff dabei**: Meine erste Zusicherung prueffte "
+        "'Fund' als Wort, und der Verwerfungssatz enthaelt 'kein Fund' - "
+        "dieselbe Bruechigkeit, die 420 und 430 verzeichnet haben; geprueft "
+        "wird jetzt die Fundmarke. **Und der zweite, der mehr sagt**: Die "
+        "Datenfixture war wieder eine Instanzmethode mit eigenem Scope - zum "
+        "vierten Mal nach 426/428/429 - aber diesmal hat der mechanische "
+        "Waechter aus 429 sie gefangen, vor dem Push. Derselbe Fehler, und er "
+        "ist trotzdem nicht in die Reihe gekommen",
+        431,
     ),
 )
 

@@ -646,6 +646,7 @@ def urteil(
     *,
     gepruefte_zellen: int = 1,
     probe: Rotationsprobe | None = None,
+    rand: Randprobe | None = None,
 ) -> str:
     """Ein Satz, der sagt, ob sich Versuche lohnen.
 
@@ -657,6 +658,13 @@ def urteil(
     Teilers (Befund 276). Sie steht direkt hinter der Schwelle, weil sie
     dieselbe Groesse in Frage stellt: Haelt sie nicht, war schon der
     Schwellenvergleich keiner.
+
+    ``rand`` prueft die **Haelften**-Huerde nach (Befund 431) und steht
+    deshalb direkt hinter ihr. Gemessen kippt deren Urteil auf der Zelle, die
+    den Fund trug, sobald der Rand der Reihe sich um drei Tage bewegt - und
+    ein binaeres Urteil, das dabei kippt, hat nichts festgestellt. Ohne
+    ``rand`` bleibt das Urteil wie bisher: Die Huerde ist dann nicht
+    geprueft, und das ist etwas anderes als bestanden.
     """
     schwelle = schwelle_fuer(gepruefte_zellen)
     if not zelle.ueber_schwelle(schwelle):
@@ -683,6 +691,15 @@ def urteil(
             f"Auffaellig (t = {zelle.t_wert:+.2f}), aber "
             f"{stabilitaet.beschreibe()}."
         )
+    if rand is not None and not rand.traegt():
+        return (
+            f"Auffaellig und in diesen Haelften stabil (t = "
+            f"{zelle.t_wert:+.2f}), aber die Haelften-Huerde haelt nicht am "
+            f"Rand: {rand.beschreibe()}. Die erste Haelfte ruehrt sich dabei "
+            f"nicht, die zweite dreht das Vorzeichen - ein Randeffekt, kein "
+            f"Fund (Befund 431). Hier Versuche auszugeben, hiesse auf das "
+            f"Ende der Reihe zu wetten."
+        )
     netto = zelle.netto_pct(kosten)
     if netto <= 0:
         return (
@@ -693,7 +710,112 @@ def urteil(
     geprueft = (
         f", {probe.beschreibe(noetig)}" if probe is not None else ""
     )
+    if rand is not None:
+        geprueft += f", {rand.beschreibe()}"
     return (
         f"Fund: t = {zelle.t_wert:+.2f}, in beiden Haelften{geprueft}, netto "
         f"{netto:+.4f} % je Trade nach Kosten. Hier lohnen sich Versuche."
     )
+
+
+#: Um wie viele Balken der Rand der Reihe fuer die Randprobe verschoben wird.
+#:
+#: Zehntausend Balken sind auf Viertelstundenkerzen rund 104 Tage - gross
+#: genug, dass die Mitte der Reihe wandert, klein genug, dass fuenf Stufen in
+#: die Reihe passen. Verschoben wird an **beiden** Enden, denn die Mitte
+#: haengt an beiden (Befund 431).
+RANDSCHRITTE: tuple[int, ...] = (10_000, 20_000, 30_000, 40_000, 50_000)
+
+
+@dataclass(frozen=True)
+class Randprobe:
+    """Haelt die Haelften-Huerde, wenn man den Rand der Reihe verschiebt?
+
+    **Die vierte Huerde** (Befund 431), und sie prueft die dritte nach.
+    ``haelften`` teilt bei ``laenge // 2`` - die Mitte haengt also an beiden
+    Enden der Reihe. Wandert ein Ende, wandert die Mitte, und "in beiden
+    Haelften dasselbe Vorzeichen" ist eine andere Frage.
+
+    Gemessen an der Zelle, die auf Viertelstundenkerzen den Fund trug (BTC,
+    Rueckblick 16, Halten 16, 229.728 Balken): Die **erste** Haelfte steht
+    ueber alle Raender hinweg ruhig bei -2,8 bis -3,1. Die **zweite** springt
+    zwischen -3,1 und +1,3, und das Urteil wechselt dabei im Takt. Diese
+    Funktion gibt dazu **haelt nur in 5 von 11 Raendern** - gekippt bei
+    hinten/vorne 10k, 30k und 50k, gehalten bei voll, 20k und 40k.
+
+    **Wie scharf das ist**, an zwei Laengen, die 272 Balken auseinander
+    liegen - knapp drei Tage:
+
+        Balken     Mitte      t erste   t zweite   haelt
+        220.000    110.000      -2,83     -3,13    ja
+        219.728    109.864      -2,83     +0,75    nein
+
+    Die erste Haelfte ruehrt sich nicht. Die zweite springt um 3,9 Punkte und
+    dreht das Vorzeichen. Wer eine Reihe drei Tage anders endet, bekommt das
+    andere Urteil.
+
+    Das ist dieselbe Frage, die Befund 345 fuer die Gates des Kandidaten
+    gestellt hat (``research/reichweite.py``: *"Wie weit haengt das Urteil
+    daran, wo die Reihe anfaengt?"*) - hier an der Huerde des Scans statt am
+    Kandidaten.
+
+    **Einstimmigkeit, und zwar mit Grund.** Die Huerde ist binaer: Sie
+    behauptet, der Effekt sei in beiden Haelften da. Kippt dieses Urteil,
+    sobald der Rand sich bewegt, hat sie nichts festgestellt - dann ist nicht
+    die Staerke des Effekts strittig, sondern seine Existenz. Ein Anteil wie
+    "vier von neun" waere eine Zahl, aus der man sich das passende Ende
+    aussuchen kann, und genau das schliesst Befund 400 aus.
+
+    **Was dagegen spricht und hier nicht greift**: Bei starker Kuerzung faellt
+    die Teststaerke, ein echter Effekt koennte also am Rand der Leiter
+    scheitern. Gemessen kippt es aber schon auf der **ersten** Stufe und
+    danach im Wechsel - das ist kein Verlust an Staerke, sondern Unruhe.
+    """
+
+    haelt_bei: tuple[tuple[str, bool], ...]
+    """Je Rand: wie er heisst und ob die Haelften-Huerde dort haelt."""
+
+    @property
+    def gehalten(self) -> int:
+        return sum(1 for _, haelt in self.haelt_bei if haelt)
+
+    @property
+    def geprueft(self) -> int:
+        return len(self.haelt_bei)
+
+    def traegt(self) -> bool:
+        """Haelt die Huerde an **jedem** geprueften Rand?"""
+        return self.geprueft > 0 and self.gehalten == self.geprueft
+
+    def beschreibe(self) -> str:
+        gekippt = [name for name, haelt in self.haelt_bei if not haelt]
+        if not gekippt:
+            return (
+                f"haelt an allen {self.geprueft} geprueften Raendern"
+            )
+        return (
+            f"haelt nur in {self.gehalten} von {self.geprueft} Raendern - "
+            f"gekippt bei {', '.join(gekippt)}"
+        )
+
+
+def pruefe_rand(
+    close, rueckblick: int, halten: int, *, schritte: tuple[int, ...] = RANDSCHRITTE
+) -> Randprobe:
+    """Die Haelften-Huerde ueber verschobene Raender - Befund 431.
+
+    Gerechnet und nicht gepflegt: Die Leiter im Kopf von ``Randprobe`` kommt
+    aus dieser Funktion, und wer sie nachrechnet, bekommt sie neu.
+    """
+    werte = np.asarray(close, dtype=float)
+    stufen: list[tuple[str, bool]] = [("voll", pruefe_stabilitaet(werte, rueckblick, halten).haelt)]
+    for schritt in schritte:
+        if schritt * 2 >= len(werte):
+            continue
+        stufen.append(
+            (f"hinten {schritt // 1000}k", pruefe_stabilitaet(werte[:-schritt], rueckblick, halten).haelt)
+        )
+        stufen.append(
+            (f"vorne {schritt // 1000}k", pruefe_stabilitaet(werte[schritt:], rueckblick, halten).haelt)
+        )
+    return Randprobe(haelt_bei=tuple(stufen))

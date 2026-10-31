@@ -4427,6 +4427,7 @@ def scan(
         paar,
         paar_nach_breite,
         paar_nach_kennzahl,
+        pruefe_rand,
         pruefe_stabilitaet,
         scanne,
         schwelle_fuer,
@@ -4653,6 +4654,15 @@ def scan(
                 f"{normal_99():.3f} der Normalverteilung, auf "
                 f"L{beste.rueckblick}/H{beste.halten} (Latte {latte:.2f}).[/]"
             )
+        # **Die Randprobe nur, wenn die Haelften halten** (Befund 431). Sie
+        # prueft genau dieses Urteil nach, ist also vorher gegenstandslos -
+        # und sie kostet elf weitere Haelften-Rechnungen ueber die ganze
+        # Reihe. Haelt die Huerde nicht, endet das Urteil ohnehin dort.
+        rand = (
+            pruefe_rand(close, beste.rueckblick, beste.halten)
+            if stabil.haelt
+            else None
+        )
         # **Die Schwelle gilt ueber alle Familien** - sonst haette jede
         # Erweiterung des Scans dieselbe Latte bei mehr Gelegenheiten.
         console.print(
@@ -4662,6 +4672,7 @@ def scan(
                 KOSTEN_MAKER_MAKER,
                 gepruefte_zellen=gesamt,
                 probe=beste_probe,
+                rand=rand,
             )
         )
 

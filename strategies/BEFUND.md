@@ -38525,3 +38525,95 @@ den neuen Text wurde die Kommentarzeile umgebrochen - "ist aber bei / # jedem
 Lauf ein anderer" - und der Test fiel. Geprueft wird jetzt die Aussage ueber die
 Umbrueche hinweg, nicht die Umbruchstelle. Dieselbe Sorte Brüchigkeit, die
 Befund 420 bei Zeichenkettenfiltern schon verzeichnet hat.
+
+## Vierhunderteinunddreissig. Die Haelften-Huerde des Scans ist eine Muenze
+
+Mit dem wiederhergestellten Speicher (429) und einer Datenauswahl, deren
+"gruen" wieder etwas heisst (430), war der Container erstmals seit dem
+Wiederaufbau wirklich messfaehig. Also habe ich den Befehl gefahren, der die
+**teuerste Entscheidung des Projekts** trifft: `cli scan` sagt, ob sich
+Versuche lohnen, und jeder Versuch hebt die Huerde des Deflated-Sharpe-Gates
+dauerhaft fuer alle spaeteren Kandidaten.
+
+### Die Tagesreihe reproduziert auf die Stelle
+
+BTC `t = +3.69` auf L48/H4, Verschiebungsprobe **23 von 1325** - beides
+Zeichen fuer Zeichen wie in Befund 272/276 verzeichnet. ETH `+2.88`, unter
+der auf 122 Zellen geeichten Schwelle von 3.53. Die Wiederherstellung hat
+also nicht nur die Fingerabdruecke getroffen, sondern auch die Urteile, die
+auf ihnen stehen. Das ist die eigentliche Abnahme von 428/429.
+
+### Auf Viertelstundenkerzen sagte der Scan erstmals "Fund"
+
+    Fund: t = -3.94, in beiden Haelften, 0 von 1794 Verschiebungen
+    erreichen ihn (0.00%) ... Hier lohnen sich Versuche.
+
+In Befund 272 stand fuer dieselbe Zelle "zweite Haelfte +1.53, Vorzeichen
+dreht". Der Satz "in beiden Haelften" war neu - und mit ihm die Empfehlung,
+Versuche auszugeben.
+
+### Nachgemessen ist der Umschlag ein Randeffekt
+
+`haelften` teilt bei `laenge // 2`. Die Mitte haengt damit an **beiden** Enden
+der Reihe: Wandert ein Ende, wandert die Mitte, und die Huerde prueft etwas
+anderes. Auf der Zelle, die den Fund trug (L16/H16), haelt das Urteil in
+**5 von 11** verschobenen Raendern - gekippt bei 10k, 30k und 50k an *beiden*
+Enden. Vorne kippt es im perfekten Wechsel True/False/True/False.
+
+**Wie scharf das ist:**
+
+| Balken  | erste Haelfte | zweite Haelfte | Urteil |
+|---------|---------------|----------------|--------|
+| 229 728 | -2.83         | -3.13          | haelt  |
+| 220 000 | -2.83         | -3.13          | haelt  |
+| 219 728 | -2.83         | **+0.75**      | kippt  |
+
+**272 Balken**, knapp drei Tage, zwischen den letzten zwei Zeilen. Die erste
+Haelfte ruehrt sich dabei nicht. Das ist nicht Teststaerke, die am Ende einer
+Leiter nachgibt - es kippt auf der ersten Stufe und danach im Wechsel.
+
+### Und es ist kein handelbarer Fund, selbst wenn es hielte
+
+Netto **+0,0012 %** je Trade nach Kosten - die Spanne ist 2.06x die Kosten,
+und eine Regel erntet davon grob die Haelfte. Dazu steht die
+Verschiebungsprobe an ihrer **Auflösungsgrenze**; der Scan sagt es selbst:
+feiner als 0.056 % kann sie nicht werden, verlangt sind 0.021 %, also ist
+"nicht belegbar" hier nicht von "nicht da" zu trennen. Der Befund lockert
+kein Gate und hebt keine Zahl. Er macht die Beratung **vor** der Suche
+strenger.
+
+### Gebaut: eine vierte Huerde, die die dritte nachprueft
+
+`Randprobe` und `pruefe_rand` in `research/vorteilsscan.py`, aufgerufen vom
+Scan - aber **nur wenn die Haelften halten**, weil die Probe vorher
+gegenstandslos ist und elf Haelften-Rechnungen ueber 229 728 Balken kostet.
+
+Sie verlangt **Einstimmigkeit**. Das ist kein hoch gesetzter Schwellwert,
+sondern folgt daraus, was die Huerde behauptet: Der Effekt sei in *beiden*
+Haelften da. Kippt dieses Urteil, wenn man drei Tage wegnimmt, hat sie nichts
+festgestellt. Ein Anteil waere eine Zahl, aus der man sich das passende Ende
+aussucht - der Fehler, den Befund 400 verzeichnet.
+
+Haelt die Probe, bleibt der Fund **stehen**. Sie verwirft nicht pauschal -
+dieselbe Regel, die `Rotationsprobe` fuer sich festhaelt.
+
+Die Methode ist die von Befund 345: `research/reichweite.py` fragt *Wie weit
+haengt das Urteil daran, wo die Reihe anfaengt?* - dort am Kandidaten, hier an
+der Huerde des Scans.
+
+### Mein Fehlgriff dabei
+
+Meine erste Zusicherung prueffte `"Fund" in text`. Der Verwerfungssatz enthaelt
+"kein **Fund**" - die Zusicherung war also in beiden Faellen wahr und haette
+genau den Umschlag nicht gesehen, auf den es ankommt. Geprueft wird jetzt die
+Fundmarke am Satzanfang, `text.startswith("Fund: t =")`. Dieselbe Sorte
+Brüchigkeit, die 420 und 430 schon verzeichnet haben, zum dritten Mal in
+derselben Woche.
+
+Und der zweite, der mir mehr sagt: Ich habe die Datenfixture dieses Befundes
+wieder als **Instanzmethode mit eigenem Scope** geschrieben - zum vierten Mal
+nach 426, 428 und 429. Diesmal hat es aber der mechanische Waechter aus 429
+gefangen, mit Datei, Klasse, Name und Scope im Fehlertext, und zwar **vor**
+dem Push statt Wochen danach. Das ist der Unterschied zwischen einer Regel,
+die ich mir vornehme, und einer, die geprueft wird: Ich habe denselben Fehler
+wieder gemacht, und er ist trotzdem nicht in die Reihe gekommen.
