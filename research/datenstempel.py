@@ -195,6 +195,16 @@ class Altzahl:
     #: gestellt wurde.
     verzeichnet: int = 364
     gemessen: int = 408
+    #: Wie sich ``heute`` auf der **gepinnten** Reihe nachmessen laesst -
+    #: Befund 436. Ohne das ist ``heute`` genau der Mangel, den Befund 408 an
+    #: den gepflegten Zahlen diagnostiziert hat: *"keine gepflegte Zahl hat
+    #: verzeichnet, auf welchem Stand sie gemessen wurde."* Diese Spalte war
+    #: bis 436 selbst ohne Stand.
+    befehl: str = ""
+    #: Der Befund, in dem ``heute`` auf der gepinnten Reihe **wieder**
+    #: gemessen wurde, oder ``None``. Kein Wert heisst *nicht nachgeprueft* -
+    #: und das ist etwas anderes als *stimmt nicht* (Befund 430).
+    nachgeprueft: int | None = None
 
     @property
     def abstand(self) -> float:
@@ -230,36 +240,59 @@ ALTZAHLEN: tuple[Altzahl, ...] = (
         gepflegt=2318.32,
         heute=2331.38,
         befund=339,
+        befehl="python -m cli finanzierung --stress",
+        nachgeprueft=436,
     ),
     Altzahl(
         name="Kapitalendstand, mit Funding, ohne Officer",
         gepflegt=1632.86,
         heute=1643.22,
         befund=339,
+        befehl="python -m cli finanzierung --stress",
+        nachgeprueft=436,
     ),
     Altzahl(
         name="Streuungswert, DSR mit der Annahme",
         gepflegt=0.5958,
         heute=0.5994,
         befund=340,
+        befehl="python -m cli streuung",
+        nachgeprueft=436,
     ),
     Altzahl(
         name="Streuungswert, DSR mit der Messung",
         gepflegt=0.2761,
         heute=0.2794,
         befund=340,
+        befehl="python -m cli streuung",
+        nachgeprueft=436,
     ),
     Altzahl(
         name="Schiefe ueber alle Trades",
         gepflegt=3.376,
         heute=3.3683,
         befund=356,
+        # **Kein Befehl, eine Zusicherung** (Befund 436). Diese zwei misst
+        # 'tests/test_referenz.py' bei jedem Lauf der Datenauswahl gegen
+        # 'heute' - sie sind damit laufend nachgeprueft und brauchen keinen
+        # eigenen Lauf. Mein erster Eintrag nannte hier 'cli nachpruefung';
+        # der faehrt 26 Katalogkandidaten und rechnet diese Zahl nicht.
+        #
+        # **Nicht 'cli form'** (436). Der nennt 3,422/15,817 und misst am
+        # Konto-Punkt; 'SPOTPUNKT' nennt 3,4646/15,9173 ueber die 156
+        # **gehandelten** Trades. Diese Zahl ist die Gegenprobe ueber **alle
+        # 158** aus Befund 356 - drei verschiedene Fragen, und wer sie
+        # verwechselt, meldet eine Drift, die es nicht gibt.
+        befehl='pytest tests/test_referenz.py -m daten',
+        nachgeprueft=436,
     ),
     Altzahl(
         name="Woelbung ueber alle Trades",
         gepflegt=15.415,
         heute=15.3571,
         befund=356,
+        befehl='pytest tests/test_referenz.py -m daten',
+        nachgeprueft=436,
     ),
 )
 

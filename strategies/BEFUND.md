@@ -39006,3 +39006,84 @@ Dazu ein Waechter, der verlangt, dass der dokumentierte Weg **jeden**
 Forschungsmarkt auf **beiden** Kerzenlaengen nennt. Ohne ihn waere diese
 Luecke genau so wieder entstanden: Es gab kein Versehen im Code, nur eine
 Liste, die zwei Eintraege kuerzer war als die, auf die der Scan sich stuetzt.
+
+## Vierhundertsechsunddreissig. Die Ersatzspalte der Altzahlen hatte selbst keinen Stand
+
+### Zuerst: was ich verworfen habe
+
+Mit vier Maerkten im Speicher (435) liesse sich `cli marktkombinationen`
+nachfahren - fuenfzehn Kombinationen durch die Zulassungsstrecke. Nach dem
+Maszstab von Befund 416, der sechs Haltedauer-Deckel als sechs Versuche
+gebucht hat, waeren das **fuenfzehn Versuche**, um eine bereits verzeichnete
+Schliessung zu bestaetigen.
+
+Das ist schlechter Gegenwert fuer die einzige wirklich knappe Groesse des
+Projekts. Nicht jede nachpruefbare Zahl ist es wert, nachgeprueft zu werden,
+wenn die Pruefung in der Waehrung bezahlt wird, die fehlt.
+
+### Der Mangel, den die Heilung selbst trug
+
+Befund 408 hat diagnostiziert, warum gepflegte Zahlen nicht mehr
+reproduzierten:
+
+> `data_store/` steht in .gitignore, jeder Container holt ihn neu, und **keine
+> gepflegte Zahl hat verzeichnet, auf welchem Stand sie gemessen wurde**.
+
+Daraus entstand `datenstempel` und mit ihm `ALTZAHLEN`: je Zahl der gepflegte
+Wert und ein `heute`. **Und diese Ersatzspalte trug denselben Mangel** - kein
+Stand, kein Weg, sie nachzurechnen.
+
+Vorzuwerfen ist das niemandem: Solange es keinen benennbaren Speicher gab, war
+es nicht zu heilen. Seit Befund 429 und 435 gibt es einen, der auf
+dokumentierte Befehle hin entsteht und auf gepruefte Fingerabdruecke.
+
+### Nachgemessen, und alle sechs halten
+
+| Zahl | gepflegt | `heute` | jetzt | Weg |
+|---|---|---|---|---|
+| DSR mit der Annahme | 0,5958 | 0,5994 | **0,5994** | `cli streuung` |
+| DSR mit der Messung | 0,2761 | 0,2794 | **0,2794** | `cli streuung` |
+| Kapitalendstand, wie gebaut | 2318,32 | 2331,38 | **2331,38** | `cli finanzierung --stress` |
+| Kapitalendstand, mit Funding | 1632,86 | 1643,22 | **1643,22** | `cli finanzierung --stress` |
+| Schiefe ueber alle Trades | 3,376 | 3,3683 | **3,3683** | `test_referenz.py` |
+| Woelbung ueber alle Trades | 15,415 | 15,3571 | **15,3571** | `test_referenz.py` |
+
+**Und es hat keinen Versuch gekostet.** Das steht nicht als meine Einschaetzung
+da - `cli nachpruefung` sagt es in seiner eigenen Kopfzeile:
+
+    Versuche   203 (unveraendert - Nachmessen ist kein Versuch)
+
+Die gepflegten Werte bleiben unangetastet. Sie anzupassen waere "die Umkehrung
+des Verfahrens" (364), und der Test sagt es ausdruecklich: Stimmt der alte Wert
+wieder, gehoert der **Eintrag** aus `ALTZAHLEN` - nicht die Zahl von damals
+nachgezogen.
+
+### Gebaut
+
+Zwei Felder an `Altzahl`: `befehl` - wie sich `heute` nachrechnen laesst - und
+`nachgeprueft` - in welchem Befund es auf der gepinnten Reihe wieder gemessen
+wurde. **Leer heisst *nicht geprueft* und nicht *stimmt nicht***, dieselbe
+Unterscheidung, die Befund 430 an den erwarteten Ausfaellen eingezogen hat; ein
+Vorgabewert, der "bestanden" bedeutet, waere ein Freibrief.
+
+### Zwei Fehlgriffe, beide durch Nachsehen statt Annehmen abgefangen
+
+**Erstens**: `cli form` gibt Schiefe 3,422 und Woelbung 15,817 - weder der
+gepflegte noch der `heute`-Wert. Mein erster Impuls war, eine Drift zu melden.
+Befund 356 fuehrt aber **drei** Zahlen:
+
+    SPOTPUNKT          3,4646 / 15,9173   ueber die 156 *gehandelten* Trades
+    Gegenprobe (356)   3,376  / 15,415    ueber *alle 158*
+    cli form           3,422  / 15,817    am *Konto*-Punkt
+
+Drei verschiedene Fragen. Genau die Verwechslung, mit der ich in Befund 428
+eine Drift gemeldet habe, die es nicht gab - diesmal habe ich zuerst
+nachgesehen, was die Groesse bedeutet.
+
+**Zweitens**: In das frische `befehl`-Feld habe ich fuer die zwei Momente
+`cli nachpruefung` geschrieben und den Lauf gestartet. Der faehrt 26
+Katalogkandidaten und rechnet diese Zahl **nicht** - gemessen wird sie von
+`tests/test_referenz.py`, bei jedem Lauf der Datenauswahl, und die war in
+diesem Zyklus gruen. Ich habe also einen teuren Lauf begonnen, um zu messen,
+was eine bestehende Zusicherung schon hielt. Abgebrochen, Feld berichtigt, und
+ein Test haelt jetzt fest, dass dort der Test und nicht der Befehl steht.

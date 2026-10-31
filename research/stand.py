@@ -5798,6 +5798,52 @@ BEHOBEN: tuple[Richtung, ...] = (
         "dokumentierte Weg **jeden** Forschungsmarkt auf **beiden** "
         "Kerzenlaengen nennt",
         435,
+        zuletzt=436,
+    ),
+    # Befund 436: Die Spalte, die den Mangel heilen sollte, trug ihn selbst.
+    Richtung(
+        "Die Ersatzspalte der Altzahlen hatte selbst keinen Stand",
+        "**Zuerst verworfen**: Mit vier Maerkten im Speicher liesse sich 'cli "
+        "marktkombinationen' nachfahren - fuenfzehn Kombinationen durch die "
+        "Zulassungsstrecke, nach dem Maszstab von Befund 416 also fuenfzehn "
+        "Versuche, um eine bereits verzeichnete Schliessung zu bestaetigen. "
+        "Schlechter Gegenwert fuer die einzige knappe Groesse des Projekts. "
+        "**Stattdessen**: Befund 408 hat diagnostiziert, warum gepflegte "
+        "Zahlen nicht mehr reproduzierten - *'keine gepflegte Zahl hat "
+        "verzeichnet, auf welchem Stand sie gemessen wurde'* - und daraus "
+        "'datenstempel' samt 'ALTZAHLEN' gebaut: je Zahl der gepflegte Wert "
+        "und ein 'heute'. **Und diese Ersatzspalte trug denselben Mangel**: "
+        "kein Stand, kein Weg, sie nachzurechnen. Solange es keinen "
+        "benennbaren Speicher gab, war das nicht zu heilen; seit 429 und 435 "
+        "gibt es einen, der auf dokumentierte Befehle hin entsteht. "
+        "**Nachgemessen hat jede der sechs ihren 'heute'-Wert gehalten**, "
+        "und zwar ohne einen Versuch zu kosten - 'cli nachpruefung' sagt es "
+        "in seiner eigenen Ausgabe: *'Versuche 203 (unveraendert - "
+        "Nachmessen ist kein Versuch)'*. DSR mit der Annahme **0,5994**, mit "
+        "der Messung **0,2794** ('cli streuung'); Kapitalendstaende "
+        "**2331,38** und **1643,22** ('cli finanzierung --stress'); Schiefe "
+        "**3,3683** und Woelbung **15,3571** ueber die Zusicherung in "
+        "'tests/test_referenz.py', die bei jedem Lauf der Datenauswahl "
+        "greift. Die gepflegten Werte bleiben unangetastet - sie anzupassen "
+        "waere die Umkehrung des Verfahrens (364). Gebaut sind zwei Felder: "
+        "'befehl' und 'nachgeprueft'; leer heisst *nicht geprueft* und nicht "
+        "*stimmt nicht*, dieselbe Unterscheidung wie bei den erwarteten "
+        "Ausfaellen aus 430. **Zwei Fehlgriffe von mir, beide durch "
+        "Nachsehen statt Annehmen abgefangen.** Erstens gibt 'cli form' "
+        "Schiefe 3,422 und Woelbung 15,817 - weder gepflegt noch 'heute', "
+        "und mein erster Impuls war, eine Drift zu melden. Befund 356 fuehrt "
+        "aber **drei** Zahlen: 'SPOTPUNKT' 3,4646/15,9173 ueber die 156 "
+        "**gehandelten** Trades, die Gegenprobe 3,376/15,415 ueber **alle "
+        "158**, und 'cli form' rechnet am **Konto**-Punkt. Drei Fragen, keine "
+        "Drift - genau die Verwechslung, mit der ich in Befund 428 eine "
+        "Drift gemeldet habe, die es nicht gab. Zweitens habe ich in das "
+        "frische 'befehl'-Feld fuer die zwei Momente 'cli nachpruefung' "
+        "geschrieben und den Lauf gestartet; der faehrt 26 Katalogkandidaten "
+        "und rechnet diese Zahl **nicht** - gemessen wird sie von einem "
+        "Test, der laengst laeuft. Ich habe also einen teuren Lauf begonnen, "
+        "um zu messen, was eine gruene Zusicherung schon hielt. Beides "
+        "steht als Kommentar am Eintrag und als Test",
+        436,
     ),
 )
 
