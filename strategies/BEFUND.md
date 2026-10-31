@@ -38917,3 +38917,92 @@ verwechselt genau die zwei Korrekturen, die dieser Befund trennt. Ohne
 Mehrfachtest gibt es keine Bonferroni-Korrektur - aber wenn verschobene
 Teiler auf dieser Zelle 6,0 erreichen, ist eine Latte von 2,0 bedeutungslos.
 Der Test war falsch, nicht der Code.
+
+## Vierhundertfuenfunddreissig. Der dokumentierte Weg liess eine Familie des Scans ausfallen
+
+### Aufgefallen beim Lesen der eigenen Laufausgaben
+
+In jeder Scan-Ausgabe aus Befund 433 und 434 steht dieselbe Zeile:
+
+    Marktbreite: nicht gemessen (1 andere Maerkte auf 15m, noetig 2).
+
+Auf jeder der vier Kerzenlaengen, auf beiden Maerkten. Eine der **vier
+Familien** des Scans faellt aus - und der Scan ist der Befehl, der entscheidet,
+ob sich Versuche ueberhaupt lohnen.
+
+Nicht, weil sie nie gemessen worden waere. Das Register schliesst sie
+ausdruecklich, unter `GESCHLOSSEN`, Einstiegsseite (Befunde 272/276):
+
+> vier Familien, zwei Maerkte, zwei Kerzenlaengen: kein Fund haelt. **Die
+> Marktbreite kam als erste ueber die Schwelle (-3,74 gegen 3,62) und faellt
+> an der Verschiebungsprobe - 2 von 584.**
+
+Sie fehlte, weil `wiederherstellung` aus Befund 429 **zwei von vier**
+Forschungsmaerkten herstellt: BTC und ETH, die Maerkte, auf denen die
+Zulassung steht. `data.reference.PAIRS` fuehrt vier.
+
+Das ist dieselbe Klasse Luecke wie 429 und 430 - der dokumentierte Weg stellt
+nicht die ganze Messfaehigkeit her -, nur diesmal so, dass eine ganze Familie
+ausfaellt und eine Schliessung des Registers nicht nachpruefbar ist. **Dass
+der Scan den Ausfall dazusagt, ist der einzige Grund, warum es auffindbar
+war.** Eine Familie, die stillschweigend ausfiele, waere die teurere Sorte
+Fehler - genau das Muster, das Befund 430 an den Datentests abgestellt hat.
+
+### Nachgeladen reproduziert sich die Schliessung
+
+| | dokumentiert (272/276) | gemessen jetzt |
+|---|---|---|
+| bester t (Marktbreite BTC 1d) | -3,74 | **-3,73** (L960/H4, n=585) |
+| Latte | 3,62 | 3,62 |
+| Verschiebungsprobe | 2 von 584 | **3 von 584** (0,51 %) |
+| noetig | - | 0,029 % |
+
+Und der Grund steht in der Ausgabe dabei: **der Teiler wechselt auf 585
+Beobachtungen nur 15-mal seinen Zustand.** Ein Teiler, der fuenfzehnmal
+umschaltet, hat keine 585 unabhaengigen Gelegenheiten - er hat fuenfzehn.
+
+ETH 1d: bester t = +3,52 gegen 3,61, keine Zelle ueber der Schwelle.
+
+### Die zwei Maerkte sind nicht gratis
+
+Sie bringen 42 Zellen mit, und die Latte rechnet sie mit:
+
+    BTC 1d   131 -> 173 Zellen   Latte 3,55 -> 3,62   geeicht 5,71 -> 5,83
+    ETH 1d   122 -> 164 Zellen   Latte 3,53 -> 3,61   geeicht 3,87 -> 3,95
+
+**Eine vierte Familie zu messen kostet Lattenhoehe, genau wie ein Versuch.**
+Der Scan rechnet das von sich aus mit, und das ist richtig so: Wer mehr
+Gelegenheiten prueft, muss hoeher springen. Die Zahlen aus Befund 434 stehen
+damit auf einem Speicher mit zwei Maerkten; am Urteil aendert das nichts, BTC
+1d liegt mit +3,69 unter beiden geeichten Latten.
+
+### Die Nebenpruefung, an der alles haengt
+
+`speicher_ist_gepinnt` prueft die Menge **aller** Endtermine im Speicher:
+
+    enden = {bis for _, bis, _ in stand.values()}
+    return bool(enden) and enden <= {SERIENENDE, FEINENDE - timedelta(days=1)}
+
+Eine Breitenreihe mit einem anderen Ende haette damit das Tor aus Befund 430
+umgeworfen - und die drei begruendeten Ausfaelle der Datenauswahl in
+unbegruendete verwandelt. Genau die Lage, aus der 427 bis 430 herausgefuehrt
+haben.
+
+Geladen auf dieselben Pins (`--bis 2026-08-30` fuer Tageskerzen,
+`--bis 2026-10-18` fuer die Feinreihe) bleibt `gepinnt` **True**, und die
+erwarteten Ausfaelle sind unveraendert die drei. Gemessen, nicht gehofft, und
+die Gegenprobe mit verschobenem Ende steht als Test.
+
+### Gebaut
+
+`breitenreihen()` rechnet die Maerkte aus `PAIRS` **minus** den
+Zulassungsreihen - wer hier eine zweite Liste pflegt, hat zwei Listen, und
+eine davon ist irgendwann falsch. `breitenbefehle()` holt sie auf beiden
+Kerzenlaengen, mit denselben Enden wie die Zulassungsreihen und mit einer
+`rm -rf`-Zeile davor (ein Speicher wird durch Nachladen nicht kuerzer,
+Befund 429).
+
+Dazu ein Waechter, der verlangt, dass der dokumentierte Weg **jeden**
+Forschungsmarkt auf **beiden** Kerzenlaengen nennt. Ohne ihn waere diese
+Luecke genau so wieder entstanden: Es gab kein Versehen im Code, nur eine
+Liste, die zwei Eintraege kuerzer war als die, auf die der Scan sich stuetzt.

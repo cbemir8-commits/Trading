@@ -462,6 +462,75 @@ LAENGER_ALS_DIE_REIHE: tuple[str, ...] = (
 )
 
 
+#: Der gemeinsame Anfang der Breitenreihen. Beide fangen dort an, wo ETH
+#: anfaengt - frueher gibt Bitstamp fuer sie nichts her, und der Korb koennte
+#: einen Vorlauf ohnehin nicht nutzen (Befund 318).
+BREITENANFANG = date(2017, 8, 16)
+
+
+def breitenreihen() -> tuple[str, ...]:
+    """Die Forschungsmaerkte, die **nicht** zur Zulassung gehoeren.
+
+    Gerechnet aus ``data.reference.PAIRS`` und nicht hingeschrieben: Wer hier
+    eine Liste pflegt, hat zwei Listen, und eine davon ist irgendwann falsch.
+    """
+    from data.reference import PAIRS
+
+    zulassung = {r.symbol for r in REIHEN}
+    return tuple(sorted(s for s in PAIRS if s not in zulassung))
+
+
+def breitenbefehle() -> tuple[str, ...]:
+    """Die Befehle fuer die vierte Familie des Scans - Befund 435.
+
+    ``cli scan`` prueft vier Familien, und eine davon ist die **Marktbreite**:
+    die Spanne, geteilt nach dem Zustand der *uebrigen* Maerkte. Sie braucht
+    mindestens zwei andere Maerkte auf derselben Kerzenlaenge, also drei im
+    Speicher.
+
+    **Der dokumentierte Weg stellte zwei her.** ``befehle`` und
+    ``feinbefehle`` holen BTC und ETH - die Maerkte, auf denen die Zulassung
+    steht -, und das ist richtig und war unvollstaendig: ``PAIRS`` fuehrt
+    vier Forschungsmaerkte, und ohne die anderen zwei meldet der Scan auf
+    jeder Laenge *"Marktbreite: nicht gemessen (1 andere Maerkte, noetig 2)"*.
+    Eine von vier Familien faellt damit aus, und die Schliessung aus Befund
+    272/276 - die Marktbreite kam als erste ueber die Schwelle und fiel an
+    der Verschiebungsprobe - ist nicht nachpruefbar.
+
+    Der Scan sagt den Ausfall ehrlich dazu, und nur deshalb ist es
+    aufgefallen. Eine Familie, die stillschweigend ausfiele, waere die
+    teurere Sorte Fehler.
+
+    **Die Enden sind dieselben wie bei den Zulassungsreihen**, und das ist
+    keine Bequemlichkeit: ``speicher_ist_gepinnt`` prueft die Menge **aller**
+    Endtermine im Speicher. Eine Breitenreihe mit anderem Ende wuerde das Tor
+    aus Befund 430 umwerfen und die drei begruendeten Ausfaelle in
+    unbegruendete verwandeln. Gemessen nach dem Laden der zwei Tagesreihen:
+    ``gepinnt`` bleibt ``True``.
+    """
+    nach = SERIENENDE + timedelta(days=1)
+    maerkte = breitenreihen()
+    if not maerkte:
+        return ()
+    zeilen = [
+        "rm -rf "
+        + " ".join(
+            f"data_store/candles/{s}/{iv}" for s in maerkte for iv in (INTERVALL, "15")
+        )
+    ]
+    zeilen += [
+        f"python -m cli referenz -i {INTERVALL} --symbol {s} "
+        f"--von {BREITENANFANG.isoformat()} --bis {nach.isoformat()}"
+        for s in maerkte
+    ]
+    zeilen += [
+        f"python -m cli referenz -i 15 --symbol {s} "
+        f"--von {FEINANFANG.isoformat()} --bis {FEINENDE.isoformat()}"
+        for s in maerkte
+    ]
+    return tuple(zeilen)
+
+
 def wiederherstellung() -> tuple[str, ...]:
     """Alles, was ein frischer Container braucht, um messen zu koennen.
 
@@ -486,6 +555,10 @@ def wiederherstellung() -> tuple[str, ...]:
         "",
         "# Feinreihe (Viertelstundenkerzen) - dort messen Generation 6 und 7",
         *feinbefehle(),
+        "",
+        "# Breitenreihen - ohne sie faellt die vierte Familie des Scans aus",
+        "# ('Marktbreite: nicht gemessen'), Befund 435.",
+        *breitenbefehle(),
         "",
         "# Nicht hergestellt: ein Speicher, der ueber die Reihe hinausreicht.",
         "# Drei Datentests brauchen ihn und fallen hier - mit Grund, siehe",

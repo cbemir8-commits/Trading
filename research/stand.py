@@ -5753,6 +5753,51 @@ BEHOBEN: tuple[Richtung, ...] = (
         "erreichen, ist eine Latte von 2,0 bedeutungslos. Der Test war "
         "falsch, nicht der Code",
         434,
+        zuletzt=435,
+    ),
+    # Befund 435: Der dokumentierte Weg stellte zwei von vier
+    # Forschungsmaerkten her - und liess damit eine Familie ausfallen.
+    Richtung(
+        "Der dokumentierte Weg liess eine Familie des Scans ausfallen",
+        "Aufgefallen beim Lesen der eigenen Laufausgaben aus 433/434: Der "
+        "Scan meldet auf **jeder** Laenge *'Marktbreite: nicht gemessen "
+        "(1 andere Maerkte, noetig 2)'*. Eine seiner vier Familien faellt "
+        "also aus. **Nicht, weil sie nie gemessen worden waere** - das "
+        "Register schliesst sie in 272/276 ausdruecklich: *'Die Marktbreite "
+        "kam als erste ueber die Schwelle (-3,74 gegen 3,62) und faellt an "
+        "der Verschiebungsprobe - 2 von 584.'* Sie fehlte, weil "
+        "'wiederherstellung' (429) **zwei von vier** Forschungsmaerkten "
+        "herstellt: BTC und ETH, auf denen die Zulassung steht, waehrend "
+        "'PAIRS' vier fuehrt. Dieselbe Klasse Luecke wie 429/430 - der "
+        "dokumentierte Weg stellt nicht die ganze Messfaehigkeit her -, nur "
+        "diesmal so, dass eine Familie ausfaellt und die Schliessung aus "
+        "272/276 nicht nachpruefbar ist. Dass der Scan den Ausfall "
+        "**dazusagt**, ist der einzige Grund, warum es auffindbar war. "
+        "**Nachgeladen reproduziert sich die Schliessung**: Marktbreite auf "
+        "BTC 1d bester t = **-3,73** (L960/H4, n=585) gegen 3,62, "
+        "Verschiebungsprobe **3 von 584** (0,51 %) gegen noetige 0,029 % - "
+        "und der Grund steht dabei, der Teiler wechselt auf 585 "
+        "Beobachtungen nur **15-mal** seinen Zustand. Dokumentiert waren "
+        "-3,74 und 2 von 584. ETH 1d: bester t = +3,52 gegen 3,61, keine "
+        "Zelle ueber der Schwelle. **Und die zwei Maerkte sind nicht "
+        "gratis**: Sie bringen 42 Zellen mit, BTC 1d steigt von 131 auf 173, "
+        "die Latte von 3,55 auf **3,62** und die geeichte von 5,71 auf 5,83. "
+        "Eine vierte Familie zu messen kostet Lattenhoehe, genau wie ein "
+        "Versuch - der Scan rechnet das von sich aus mit, und die Zahlen aus "
+        "Befund 434 stehen damit auf einem Speicher mit zwei Maerkten. Das "
+        "Urteil aendert sich dadurch nicht: BTC 1d liegt mit +3,69 unter "
+        "beiden geeichten Latten. **Die kritische Nebenpruefung**: "
+        "'speicher_ist_gepinnt' prueft die Menge **aller** Endtermine im "
+        "Speicher, eine Breitenreihe mit anderem Ende haette also das Tor "
+        "aus 430 umgeworfen und die drei begruendeten Ausfaelle in "
+        "unbegruendete verwandelt. Geladen auf dieselben Pins bleibt "
+        "'gepinnt' True - gemessen, nicht gehofft, und die Gegenprobe mit "
+        "verschobenem Ende steht als Test. Gebaut sind 'breitenreihen()' - "
+        "aus 'PAIRS' gerechnet, nicht als zweite Liste gepflegt - und "
+        "'breitenbefehle()', dazu ein Waechter, der verlangt, dass der "
+        "dokumentierte Weg **jeden** Forschungsmarkt auf **beiden** "
+        "Kerzenlaengen nennt",
+        435,
     ),
 )
 
