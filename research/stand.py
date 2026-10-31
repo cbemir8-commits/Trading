@@ -5844,6 +5844,60 @@ BEHOBEN: tuple[Richtung, ...] = (
         "um zu messen, was eine gruene Zusicherung schon hielt. Beides "
         "steht als Kommentar am Eintrag und als Test",
         436,
+        zuletzt=437,
+    ),
+    # Befund 437: Die Bedingungen, an denen alles gemessen wird - und sieben
+    # davon standen als nackte Zahl da.
+    Richtung(
+        "Sieben Gate-Schwellen waren nackte Zahlen",
+        "Die Frage, die ich in allen Audits nicht gestellt hatte: **woher "
+        "kommen die Schwellen der Gates?** Nicht um eine zu lockern - das "
+        "ist ausgeschlossen -, sondern weil eine geschaetzte Gate-Schwelle "
+        "die folgenreichste Schaetzung im System waere. "
+        "'GateThresholds' fuehrt **15 Felder**, und acht tragen lange "
+        "Ableitungen: warum 15 % Jahresrendite und nicht 'die Haelfte der "
+        "Messlatte' (die waere unerfuellbar gewesen), warum -10 % im "
+        "schlechtesten Jahr, warum eine Untergrenze an aktiven Fenstern "
+        "ueberhaupt. 'min_deflated_sharpe' traegt sogar eine gemessene "
+        "Studie darueber, was die 0,95 **bedeutet**, samt dem Satz, dass sie "
+        "trotzdem stehen bleibt. **Sieben standen ohne ein Wort da**: "
+        "min_oos_sharpe 1,0, max_oos_drawdown_pct 12,0, "
+        "min_window_consistency 0,5, min_plateau_ratio 0,6, "
+        "max_monte_carlo_drawdown_pct 15,0, min_regime_profit_factor 0,9, "
+        "cost_stress_factor 2,0. Nachgesehen, nicht vermutet: Bei sechs "
+        "erklaeren die Gate-Funktionen das **Verfahren** und nicht die "
+        "**Zahl** - 'gate_parameter_plateau' nennt die Variationsbreite von "
+        "plus/minus 20 % und nicht, warum 0,6 der Nachbarn; 'gate_consistency' "
+        "begruendet, warum Bestaendigkeit geprueft wird, nicht warum die "
+        "Haelfte. Bei **einer** gab es eine Ableitung, die nur den Docstring "
+        "des Gates erreichte: Der Drawdown-Deckel liegt bewusst unter dem "
+        "Kill-Switch (12 gegen 15 %) - dieselbe Luecke, die Befund 210 "
+        "verzeichnet hat (*die Ableitung gilt weiter, sie erreicht nur keinen "
+        "Docstring*), und diese Zahl traegt eine gemessene Schlussfolgerung: "
+        "'zielfenster' verwirft das Skalieren, weil der Rueckgang dabei auf "
+        "12,42 % steigt. **Zwei Stellen verdienen eigene Erwaehnung.** "
+        "'max_monte_carlo_drawdown_pct' liegt genau auf den 15 % des "
+        "Kill-Switch, waehrend der echte Drawdown ausdruecklich **darunter** "
+        "gesetzt wurde - beim tatsaechlichen Verlauf soll Luft bleiben, bei "
+        "der vertauschten Reihenfolge nicht. Das kann gewollt sein, "
+        "aufgeschrieben hat es niemand. Und bei "
+        "'min_regime_profit_factor' **widersprechen Begruendung und Zahl**: "
+        "'gate_regime_split' schreibt *'ein Faktor unter 1 zeigt dagegen "
+        "einen echten strukturellen Nachteil'*, die Schwelle laesst 0,9 zu - "
+        "ein Kandidat mit 0,95 in einer Marktphase besteht also ein Gate, "
+        "dessen eigene Begruendung sagt, er sollte es nicht. **Geaendert "
+        "wurde keine einzige Zahl**, und das ist gemessen und nicht "
+        "behauptet: 75 Zeilen hinzu, keine entfernt, und die Werte sind im "
+        "Vergleich vor/nach byte-identisch. Weder die 0,9 nach oben - das "
+        "verschaerfte ein Gate, ohne dass es gemessen waere - noch der Satz, "
+        "der dann die Zahl beschoenigte. Eine Schwelle anzufassen, deren "
+        "Herkunft niemand kennt, ist in beide Richtungen eine Behauptung, "
+        "und wo der eigene Kandidat liegt, ist bekannt. Wo keine Ableitung "
+        "existiert, steht das jetzt ausdruecklich dort - eine erfundene waere "
+        "schlimmer als keine. Dazu ein Waechter ueber den Syntaxbaum, der "
+        "kein Feld ohne Docstring durchlaesst und ein neues Feld auffallen "
+        "laesst",
+        437,
     ),
 )
 

@@ -286,8 +286,43 @@ class GateThresholds:
     fragt, ob dieselbe Rendite mit weniger Rueckgang erkauft wurde."""
 
     min_oos_sharpe: float = 1.0
+    """**Eine Entscheidung ohne verzeichnete Ableitung** (Befund 437).
+
+    Im Modul erklaert keine Stelle, warum 1,0 und nicht 0,8 oder 1,2 - die
+    Zahl taucht nur dort auf, wo sie benutzt wird. ``gate_sample_size``
+    begruendet die **Stichprobe** mit ihr ("erst ab rund 100 Trades wird der
+    Standardfehler klein genug, dass ein Unterschied zwischen 0,8 und 1,2
+    ueberhaupt Bedeutung hat"), setzt sie also voraus.
+
+    Hingeschrieben wird hier keine Begruendung, die es nicht gibt. Geaendert
+    wird die Zahl auch nicht: Eine Schwelle anzufassen, deren Herkunft
+    niemand kennt, ist in beide Richtungen eine Behauptung - und wo der
+    eigene Kandidat liegt, ist bekannt."""
+
     max_oos_drawdown_pct: float = 12.0
+    """**Abgeleitet, und die Ableitung steht in ``gate_drawdown``**: Die
+    Schwelle liegt bewusst unter dem Kill-Switch von 15 % - eine Strategie,
+    die im Backtest schon an die Abschaltgrenze stoesst, reisst sie live mit
+    Sicherheit.
+
+    Sie erreichte bis Befund 437 nur den Docstring des Gates und nicht den
+    der Zahl. Das ist dieselbe Sorte Luecke, die Befund 210 verzeichnet hat:
+    *die Ableitung gilt weiter - sie erreicht nur keinen Docstring.*
+
+    **Diese Zahl traegt eine gemessene Schlussfolgerung**: ``zielfenster``
+    verwirft das Skalieren, weil der Rueckgang dabei von 9,87 auf 12,42 %
+    steigt und damit genau hier anschlaegt."""
+
     min_window_consistency: float = 0.5
+    """**Eine Entscheidung ohne verzeichnete Ableitung** (Befund 437).
+
+    ``gate_consistency`` begruendet, **warum** Bestaendigkeit geprueft wird -
+    "eine Strategie, deren gesamter Gewinn aus einem einzigen guenstigen
+    Quartal stammt, sieht hervorragend aus und ist trotzdem wertlos" -, aber
+    nicht, warum die Haelfte der Fenster und nicht zwei Drittel.
+
+    ``min_active_windows`` darunter ist dagegen abgeleitet und zeigt, wie der
+    Unterschied aussieht, wenn er verzeichnet ist."""
 
     worst_year_pct: float = -10.0
     """Die schlechteste Zwoelfmonatsperiode darf nicht schlimmer sein als das.
@@ -306,9 +341,49 @@ class GateThresholds:
     Ohne diese Schranke waere die Quote ein Schlupfloch: Wer in einem einzigen
     Fenster handelt und gewinnt, haette 100 % Bestaendigkeit."""
     min_plateau_ratio: float = 0.6
+    """**Eine Entscheidung ohne verzeichnete Ableitung** (Befund 437).
+
+    ``gate_parameter_plateau`` begruendet das Verfahren - alle
+    Indikatorperioden um plus/minus 20 % variieren, "der wirksamste
+    Einzeltest gegen Ueberanpassung" - und nennt die Variationsbreite. Warum
+    **0,6** der Nachbarn profitabel sein muessen und nicht 0,5 oder 0,75,
+    steht nirgends."""
+
     max_monte_carlo_drawdown_pct: float = 15.0
+    """**Gleich dem Kill-Switch** - und das ist eine Beobachtung, keine
+    verzeichnete Ableitung (Befund 437).
+
+    ``gate_monte_carlo`` begruendet das Verfahren (Reihenfolge vertauschen,
+    95. Perzentil des Rueckgangs) und nicht die Grenze. Dass sie genau auf
+    den 15 % des Kill-Switch liegt, waehrend ``max_oos_drawdown_pct``
+    ausdruecklich **darunter** gesetzt wurde, ist auffaellig: Beim
+    tatsaechlichen Verlauf soll Luft bleiben, bei der vertauschten
+    Reihenfolge nicht. Das kann gewollt sein - die Vertauschung ist ein
+    Was-waere-wenn und kein Verlauf -, aufgeschrieben hat es niemand."""
+
     min_regime_profit_factor: float = 0.9
+    """**Hier widersprechen Begruendung und Zahl** (Befund 437).
+
+    ``gate_regime_split`` schreibt: *"ein Faktor unter 1 zeigt dagegen einen
+    echten strukturellen Nachteil"* - und diese Schwelle laesst 0,9 zu. Ein
+    Kandidat mit Profitfaktor 0,95 in einer Marktphase besteht damit ein
+    Gate, dessen eigene Begruendung sagt, er sollte es nicht.
+
+    Das kann eine gewollte Toleranz sein: Eine Phase knapp unter dem
+    Break-even ist etwas anderes als ein struktureller Ausfall, und 0,9 ist
+    eine ruhige Zahl dafuer. **Geaendert wird hier nichts** - weder die Zahl
+    nach oben, was ein Gate verschaerfte, ohne dass es gemessen waere, noch
+    der Satz, der dann die Zahl beschoenigte. Verzeichnet ist, dass beide
+    nicht zueinander passen; was gelten soll, entscheidet nicht der Code."""
+
     cost_stress_factor: float = 2.0
+    """**Eine Entscheidung ohne verzeichnete Ableitung** (Befund 437).
+
+    ``gate_cost_stress`` misst genau, **was** die Verdopplung kostet - und
+    warum der Faktor zwei ist und nicht 1,5 oder 3, steht dort nicht. Die
+    Entscheidung, ob der Stress kuenftig auch das Funding umfassen soll,
+    steht dagegen ausdruecklich in ``stand.py``: Alle bisherigen Eintraege
+    sind unter dem schwaecheren Stress gemessen."""
     min_deflated_sharpe: float = 0.95
     """Die Latte des haertesten Gates - **und sie ist keine 5-%-Schranke.**
 

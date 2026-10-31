@@ -39087,3 +39087,105 @@ Katalogkandidaten und rechnet diese Zahl **nicht** - gemessen wird sie von
 diesem Zyklus gruen. Ich habe also einen teuren Lauf begonnen, um zu messen,
 was eine bestehende Zusicherung schon hielt. Abgebrochen, Feld berichtigt, und
 ein Test haelt jetzt fest, dass dort der Test und nicht der Befehl steht.
+
+## Vierhundertsiebenunddreissig. Sieben Gate-Schwellen waren nackte Zahlen
+
+### Die Frage, die ich in allen Audits nicht gestellt hatte
+
+Sechs Durchlaeufe lang habe ich Messwerkzeuge geprueft: die Huerden des Scans,
+seine Latte, den Wiederherstellungsweg, die gepflegten Zahlen, den Auftrag an
+die KI. Nie geprueft hatte ich die Zahlen, an denen **alles** gemessen wird.
+
+Nicht um eine zu lockern - das ist in diesem Projekt ausgeschlossen -, sondern
+weil eine geschaetzte Gate-Schwelle die folgenreichste Schaetzung im System
+waere.
+
+### Acht tragen Ableitungen, sieben trugen nichts
+
+`GateThresholds` fuehrt fuenfzehn Felder. Acht sind sorgfaeltig begruendet, und
+zwar gegen die naheliegende Alternative:
+
+> `min_cagr_pct = 15.0` ... Sie steht hier statt der naheliegenden Forderung
+> "mindestens die Haelfte der Rendite der Messlatte". Die waere unerfuellbar
+> gewesen: BTC hat sich von 2020 bis 2026 vervielfacht, aber mit rund 77 %
+> Rueckgang.
+
+`min_deflated_sharpe` traegt sogar eine **gemessene Studie** darueber, was die
+0,95 bedeutet - und den Satz, dass die Zahl trotzdem stehen bleibt.
+
+Sieben standen ohne ein Wort da:
+
+    min_oos_sharpe                 1,0
+    max_oos_drawdown_pct          12,0
+    min_window_consistency         0,5
+    min_plateau_ratio              0,6
+    max_monte_carlo_drawdown_pct  15,0
+    min_regime_profit_factor       0,9
+    cost_stress_factor             2,0
+
+### Nachgesehen, nicht vermutet
+
+Bei **sechs** erklaeren die Gate-Funktionen das *Verfahren* und nicht die
+*Zahl*. `gate_parameter_plateau` nennt die Variationsbreite von plus/minus
+20 % und heisst den Test "den wirksamsten Einzeltest gegen Ueberanpassung" -
+warum 0,6 der Nachbarn profitabel sein muessen und nicht 0,5, steht nirgends.
+`gate_consistency` begruendet, *warum* Bestaendigkeit geprueft wird, nicht
+warum die Haelfte der Fenster.
+
+Bei **einer** gab es eine Ableitung, die nur den Docstring des Gates erreichte:
+
+> Die Schwelle liegt bewusst unter dem Kill-Switch (12 % gegen 15 %): Eine
+> Strategie, die im Backtest schon an die Abschaltgrenze stoesst, wird sie
+> live mit Sicherheit reissen.
+
+Das ist genau die Luecke, die Befund 210 verzeichnet hat - *die Ableitung gilt
+weiter, sie erreicht nur keinen Docstring*. Und diese Zahl traegt eine
+gemessene Schlussfolgerung: `zielfenster` verwirft das Skalieren, weil der
+Rueckgang dabei von 9,87 auf 12,42 % steigt und genau hier anschlaegt.
+
+### Zwei Stellen verdienen eigene Erwaehnung
+
+**Der Monte-Carlo-Deckel liegt genau auf dem Kill-Switch** (15 %), waehrend der
+Deckel fuer den tatsaechlichen Verlauf ausdruecklich **darunter** gesetzt wurde.
+Beim echten Verlauf soll Luft bleiben, bei der vertauschten Reihenfolge nicht.
+Das kann gewollt sein - die Vertauschung ist ein Was-waere-wenn und kein
+Verlauf -, aufgeschrieben hat es niemand.
+
+**Und bei einer widersprechen Begruendung und Zahl.** `gate_regime_split`
+schreibt:
+
+> Geprueft wird der Profitfaktor je Umfeld ... ein Faktor **unter 1** zeigt
+> dagegen einen echten strukturellen Nachteil.
+
+`min_regime_profit_factor` laesst **0,9** zu. Ein Kandidat mit Profitfaktor
+0,95 in einer Marktphase besteht damit ein Gate, dessen eigene Begruendung
+sagt, er sollte es nicht.
+
+Das kann eine gewollte Toleranz sein: Eine Phase knapp unter dem Break-even ist
+etwas anderes als ein struktureller Ausfall. Verzeichnet ist es nicht.
+
+### Geaendert wurde keine einzige Zahl - und das ist gemessen
+
+    research/gates.py | 75 +++++++++++++++++++++++++++++++++++++++++++++++++++
+    1 file changed, 75 insertions(+)
+
+Keine Zeile entfernt, und die Schwellenwerte im Vergleich vor/nach
+**byte-identisch**. Weder die 0,9 nach oben - das verschaerfte ein Gate, ohne
+dass es gemessen waere - noch der Satz, der dann die Zahl beschoenigte.
+
+Eine Schwelle anzufassen, deren Herkunft niemand kennt, ist in beide
+Richtungen eine Behauptung. Und wo der eigene Kandidat liegt, ist bekannt:
+Messlatte 14,339 von 15, Deflated Sharpe 0,5826 von 0,95. Genau dann ist
+Zurueckhaltung keine Vorsicht, sondern Pflicht.
+
+Wo keine Ableitung existiert, steht das jetzt ausdruecklich am Feld. **Eine
+erfundene waere schlimmer als keine** - sie saehe wie eine Begruendung aus und
+wuerde nie wieder geprueft.
+
+### Gebaut
+
+Ein Waechter ueber den Syntaxbaum: kein Feld von `GateThresholds` ohne
+Docstring, und ein neu hinzugefuegtes Feld faellt auf, statt durchzurutschen.
+Gelesen wird der Baum und nicht die Zeilennummer - wer waehrend eines
+Suitenlaufs editiert, bekommt sonst Phantome (Befund 427). Dazu eine Wache
+ueber die Werte selbst: Wer eine Zahl aendert, muss an dieser Liste vorbei.
