@@ -12640,6 +12640,40 @@ def stand(
         if not r.passed and r.message:
             console.print(f"      [dim]{r.message}[/]")
 
+    # **Und jetzt relativ** (Befund 438). Die Spalte darueber ist absolut, und
+    # absolute Abstaende sind nicht vergleichbar: 0,390 beim schlechtesten
+    # Jahr steht auf einer Schwelle von 10, 0,081 bei der Bestaendigkeit auf
+    # einer von 0,5. Wer die Spalte liest, haelt die groessere Zahl fuer die
+    # groessere Reserve - und sieht genau die eine Aussage nicht, die
+    # darinsteckt: Der Kandidat ist einem zehnten Durchfaller naeher als dem
+    # Bestehen seines naechsten offenen Gates.
+    if spotgates:
+        from research.engstelle import aus_gates, engste
+
+        stellen = aus_gates(spotgates)
+        eng = engste(stellen)
+        if eng is not None and eng.anteil is not None:
+            console.print()
+            console.print(
+                f"  [dim]Engste bestandene Stelle, als Anteil der Schwelle: "
+                f"[bold]{eng.name}[/] mit {eng.anteil:.1%} Reserve"
+                + (
+                    f" - faellt in {eng.faellt_in} von 11 Fensteraufteilungen "
+                    f"(Befund 420)"
+                    if eng.faellt_in is not None
+                    else ""
+                )
+                + ".[/]"
+            )
+            offen = [
+                s for s in stellen if not s.bestanden and s.anteil is not None
+            ]
+            if offen and offen[0].anteil > eng.anteil:
+                console.print(
+                    f"  [dim]Das ist weniger Reserve, als {offen[0].name} zum "
+                    f"Bestehen fehlt ({offen[0].anteil:.1%}).[/]"
+                )
+
     # **Der zweite Punkt gehoert auch in die Aufgabenliste, nicht nur in die
     # Zeile darueber.** Bis Befund 164 kam sie allein aus dem berichteten
     # Punkt und nannte beim Bestand genau die zwei Gates, die unter Spot

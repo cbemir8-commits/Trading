@@ -140,6 +140,15 @@ VORGELAGERT: dict[str, str] = {
     # Befund 349: 'Doppel.handelt' nimmt Genome ohne Trades aus dem Vergleich,
     # und 'rangprobe' benutzt es auch - also eine Schicht vor der Bilanz.
     "research.rangprobe.Doppel": "handelt() nimmt Genome ohne Trades heraus",
+    # Befund 438: 'Stelle.bestanden' ist das Urteil ueber **ein** Gate und
+    # keine Bilanz ueber elf - trotzdem greift die Suche ueber BILANZFELDER,
+    # und das ist richtig so: Der Name allein sagt es nicht.
+    #
+    # 'aus_gates' wirft uebersprungene Gates weg, **bevor** eine 'Stelle'
+    # entsteht, und liest 'status == "pass"' statt 'GateResult.passed' - genau
+    # weil letzteres ein uebersprungenes Gate als bestanden zaehlt (321/322).
+    # Eine 'Stelle' kann also nie ein ungeurteiltes Gate halten.
+    "research.engstelle.Stelle": "aus_gates() laesst uebersprungene Gates weg",
 }
 
 #: Typen, bei denen die Frage **offen** ist - aufgelistet, nicht geprueft.
@@ -433,13 +442,19 @@ def test_die_zahl_der_offenen_faelle_steht_fest() -> None:
     von sechs gemessenen Haltedeckeln. Sie steht unter ``VERZEICHNET``, weil
     sie feste Staende haelt und nicht gerade urteilt - und weil in allen
     sechs neun von elf geurteilt sind, ohne Aussetzer.
+
+    Von 26 auf 27 mit Befund 438: 'engstelle.Stelle'. Sie steht unter
+    ``VORGELAGERT`` - 'aus_gates' nimmt uebersprungene Gates heraus, bevor
+    eine 'Stelle' entsteht. **Die Wache hat hier funktioniert**: Der Typ war
+    neu, trug ein 'bestanden', und der Test hat die Einordnung erzwungen,
+    statt ihn stillschweigend durchzulassen.
     """
     assert not OFFEN, "seit Befund 352 leer - und das bleibt zu pruefen"
     assert len(MIT_SKIPINFO) == 13
     assert len(MIT_ERSCHLOSSENEM) == 8
-    assert len(VORGELAGERT) == 2
+    assert len(VORGELAGERT) == 3
     assert len(OHNE_BILANZFELD) == 4
-    assert len(_traeger()) == 26
+    assert len(_traeger()) == 27
 
 
 # **Die Messung, die Befund 332 offen gelassen hat** (Befund 333).

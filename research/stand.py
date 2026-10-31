@@ -5898,6 +5898,68 @@ BEHOBEN: tuple[Richtung, ...] = (
         "kein Feld ohne Docstring durchlaesst und ein neues Feld auffallen "
         "laesst",
         437,
+        zuletzt=438,
+    ),
+    # Befund 438: Die Abstandsspalte war absolut - und verdeckte damit die
+    # eine Aussage, die in ihr steckte.
+    Richtung(
+        "Die engste Stelle war in der Tafel nicht zu sehen",
+        "Befund 437 hat sieben Schwellen ohne Ableitung verzeichnet und zwei "
+        "Ungereimtheiten benannt - **ohne zu messen, ob sie etwas kosten**. "
+        "Eine unerklaerte Schwelle, von der der Kandidat weit entfernt ist, "
+        "ist ein Schoenheitsfehler; eine, an der er klebt, ist ein Risiko. "
+        "'cli stand' zeigt je Gate den Abstand seit 394/395, aber **absolut** "
+        "- und absolute Abstaende sind nicht vergleichbar: 0,390 beim "
+        "schlechtesten Jahr steht auf einer Schwelle von 10, 0,081 bei der "
+        "Bestaendigkeit auf einer von 0,5. Wer die Spalte liest, haelt die "
+        "groessere Zahl fuer die groessere Reserve. **Relativ gerechnet kehrt "
+        "sich das um, und eine Aussage faellt heraus, die vorher nicht zu "
+        "sehen war**: Schlechtestes Jahr **3,9 %** Reserve, Messlatte "
+        "**4,4 %** fehlend - der Kandidat ist einem **zehnten Durchfaller "
+        "naeher als dem Bestehen seines naechsten offenen Gates.** Und es ist "
+        "dasselbe Gate, das Befund 420 als unbelastbarstes gemessen hat: "
+        "faellt in 5 von 11 Fensteraufteilungen, oefter als die Messlatte mit "
+        "1 von 11. Zwei unabhaengige Masze zeigen auf dieselbe Stelle. "
+        "Die zweitengste bestandene ist die **Bestaendigkeit** mit 16,2 % - "
+        "und ihre 0,5 ist eine der sieben ohne verzeichnete Ableitung. "
+        "**Mein Vorbehalt aus 437 kostet dagegen nichts**: Dort steht, dass "
+        "'min_regime_profit_factor = 0,9' der eigenen Begruendung des Gates "
+        "widerspricht; gemessen steht der Kandidat bei einem Profitfaktor von "
+        "**5,275** und bestaende es bei 1,0 genauso. Die Ungereimtheit bleibt "
+        "verzeichnet, weil sie fuer kuenftige Kandidaten gilt - fuer diesen "
+        "ist sie gegenstandslos, und das gehoert dazugesagt. **Zwei "
+        "Fallgruben, beide aus den Daten**: 'Kosten-Stress' hat Schwelle "
+        "null, ein Anteil ist dort nicht definiert und 'unendlich viel "
+        "Reserve' waere eine Zahl, die nach einer Messung aussieht - das Gate "
+        "bekommt keinen. Und bei 'Messlatte' und 'Stichprobengroesse' steht "
+        "je nach Ausgang eine **andere Groesse** in derselben Spalte (Befund "
+        "395 hat dort Faktor elf gemessen); der Anteil wird gerechnet, die "
+        "Bedingung aber mitgefuehrt und ausgewiesen. Uebersprungene Gates "
+        "kommen nicht vor - ein Gate ohne Urteil hat keinen Abstand. "
+        "**Mein Fehlgriff, und er ist lehrreich**: In 'aus_gates' stand "
+        "'getattr(e.status, \'passed\', e.status == \'passed\')'. "
+        "'GateStatus' ist ein StrEnum mit den Werten 'pass'/'fail'/'skip', "
+        "hat kein 'passed' und vergleicht sich nicht mit 'passed' - damit kam "
+        "**jedes** Gate als nicht bestanden heraus und die Rangliste war "
+        "leer. Der Abschnitt erschien einfach nicht. **Kein Test hat es "
+        "gefangen**, weil mein Doppel ein '.passed' hatte, das der echte Typ "
+        "nicht hat: Der Test prueffte meine Annahme statt des Codes. "
+        "Aufgefallen ist es am echten Lauf. Jetzt faehrt der Test "
+        "'GateResult' und 'GateStatus' selbst, und 'GateResult.passed' wird "
+        "bewusst **nicht** benutzt - es ist 'status is not FAIL', ein "
+        "uebersprungenes Gate zaehlt dort als bestanden (321/322). "
+        "**Und eine zweite Wache hat zugeschlagen**: 'test_gatezahlen' "
+        "fuehrt seit Befund 332/349 ein Verzeichnis jedes Typs mit einer "
+        "Gate-Bilanz und verlangt von jedem **neuen**, sich einzuordnen - "
+        "weil 'GateResult.passed' ein uebersprungenes Gate als bestanden "
+        "zaehlt. 'Stelle' traegt ein 'bestanden', also hat der Test die "
+        "Einordnung erzwungen statt sie durchzulassen. Eingeordnet ist sie "
+        "unter 'VORGELAGERT': 'aus_gates' nimmt uebersprungene Gates heraus, "
+        "**bevor** eine 'Stelle' entsteht, und liest den Status statt "
+        "'passed'. Das Verzeichnis zaehlt damit 27 statt 26. "
+        "Gelockert ist nichts: Der Befund rechnet gemessene Abstaende um und "
+        "aendert keine Schwelle",
+        438,
     ),
 )
 

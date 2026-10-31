@@ -39189,3 +39189,136 @@ Docstring, und ein neu hinzugefuegtes Feld faellt auf, statt durchzurutschen.
 Gelesen wird der Baum und nicht die Zeilennummer - wer waehrend eines
 Suitenlaufs editiert, bekommt sonst Phantome (Befund 427). Dazu eine Wache
 ueber die Werte selbst: Wer eine Zahl aendert, muss an dieser Liste vorbei.
+
+## Vierhundertachtunddreissig. Die engste Stelle war in der Tafel nicht zu sehen
+
+### Die Frage, die 437 offen gelassen hat
+
+Befund 437 hat sieben Gate-Schwellen ohne Ableitung verzeichnet und zwei
+Ungereimtheiten benannt - **ohne zu messen, ob sie etwas kosten**. Eine
+unerklaerte Schwelle, von der der Kandidat weit entfernt ist, ist ein
+Schoenheitsfehler; eine, an der er klebt, ist ein Risiko.
+
+### Absolute Abstaende sind nicht vergleichbar
+
+`cli stand` zeigt je Gate den Abstand seit Befund 394/395 - absolut:
+
+    + Drawdown              10.640 gegen  12.000   Spot 2.131 Reserve
+    - Schlechtestes Jahr   -10.320 gegen -10.000   Spot 0.390 Reserve
+    + Bestaendigkeit         0.516 gegen   0.500   Spot 0.081 Reserve
+
+Wer die Spalte liest, haelt 2,131 fuer viel und 0,081 fuer wenig. Die
+Schwellen darunter sind 12, 10 und 0,5 - die Zahlen stehen auf drei
+verschiedenen Maszstaeben.
+
+### Relativ gerechnet kehrt es sich um
+
+| Gate | Anteil der Schwelle | Herkunft (437) |
+|---|---:|---|
+| **Schlechtestes Jahr** | **3,9 % Reserve** | abgeleitet |
+| **Messlatte** | **4,4 % fehlt** | abgeleitet |
+| Bestaendigkeit | 16,2 % Reserve | **ohne** |
+| Drawdown | 17,8 % Reserve | abgeleitet |
+| Deflated Sharpe | 38,7 % fehlt | abgeleitet |
+| Monte-Carlo | 44,5 % Reserve | Beobachtung |
+| Out-of-Sample-Sharpe | 57,6 % Reserve | **ohne** |
+| Parameter-Plateau | 66,7 % Reserve | **ohne** |
+| Regime-Aufteilung | 486,1 % Reserve | widersprechend |
+| Stichprobengroesse | 800,0 % Reserve | abgeleitet |
+| Kosten-Stress | kein Anteil (Schwelle null) | **ohne** |
+
+**Der Kandidat ist einem zehnten Durchfaller naeher als dem Bestehen seines
+naechsten offenen Gates.** 3,9 % gegen 4,4 %. Die absolute Spalte legt genau
+das Gegenteil nahe - 0,390 gegen 0,661 -, und deshalb hat es niemand so
+gesehen.
+
+Und es ist **dasselbe Gate**, das Befund 420 als das unbelastbarste gemessen
+hat: 'Schlechtestes Jahr' faellt in **5 von 11** Fensteraufteilungen, oefter
+als die Messlatte mit 1 von 11. Zwei unabhaengige Masze zeigen auf dieselbe
+Stelle.
+
+Die zweitengste bestandene ist die **Bestaendigkeit** mit 16,2 %, und ihre 0,5
+ist eine der sieben Schwellen ohne verzeichnete Ableitung.
+
+### Mein Vorbehalt aus 437 kostet dagegen nichts
+
+437 hat verzeichnet, dass `min_regime_profit_factor = 0,9` der eigenen
+Begruendung des Gates widerspricht ("ein Faktor unter 1 zeigt einen echten
+strukturellen Nachteil"). Gemessen steht der Kandidat bei einem Profitfaktor
+von **5,275** - er bestaende das Gate bei einer Schwelle von 1,0 genauso.
+
+Die Ungereimtheit bleibt verzeichnet, weil sie fuer jeden **kuenftigen**
+Kandidaten gilt. Fuer diesen ist sie gegenstandslos, und das gehoert
+dazugesagt: Ein Vorbehalt, der nichts kostet, als Risiko zu fuehren, waere
+dieselbe Ueberzeichnung, die Befund 342 am Preis der KI abgestellt hat.
+
+### Zwei Fallgruben, beide aus den Daten und nicht geraten
+
+**Schwelle null.** `Kosten-Stress` meldet 942,865 gegen 0,000 - ein Anteil ist
+dort nicht definiert, und "unendlich viel Reserve" waere eine Zahl, die nach
+einer Messung aussieht. Das Gate bekommt keinen Anteil und steht hinten, nicht
+vorn.
+
+**Zwei Groessen in einer Spalte.** Bei `Messlatte` und `Stichprobengroesse`
+steht je nach Ausgang des Laufs eine andere Groesse in `value`/`threshold` -
+Befund 395 hat dort einen Faktor elf gemessen. Der Anteil wird gerechnet, die
+Bedingung aber mitgefuehrt und ausgewiesen; wer solche Paare ueber Laeufe
+hinweg vergleicht, vergleicht Massstaebe.
+
+### Mein Fehlgriff, und er ist lehrreich
+
+In `aus_gates` stand:
+
+    bestanden=bool(getattr(e.status, "passed", e.status == "passed"))
+
+`GateStatus` ist ein `StrEnum` mit den Werten `pass`/`fail`/`skip`. Es hat kein
+`passed`, und es vergleicht sich mit `"pass"` und nicht mit `"passed"`. Damit
+kam **jedes** Gate als nicht bestanden heraus, die Rangliste war leer, und der
+Abschnitt in `cli stand` erschien einfach nicht.
+
+**Kein Test hat es gefangen** - weil mein Doppel ein `.passed` hatte, das der
+echte Typ nicht hat. Der Test prueffte meine Annahme statt des Codes.
+Aufgefallen ist es am echten Lauf, und das ist der Grund, warum dieses Projekt
+Rauchtests auf echten Daten verlangt.
+
+Jetzt faehrt der Test `GateResult` und `GateStatus` selbst. Und
+`GateResult.passed` wird bewusst **nicht** benutzt: Es ist `status is not
+FAIL`, ein uebersprungenes Gate zaehlt dort als bestanden (Befund 321/322) -
+gelesen wird der Status.
+
+### Was das nicht ist
+
+Keine Rangliste, welches Gate man als naechstes angehen sollte. Eine knappe
+Reserve sagt, wo es wackelt, nicht wo etwas zu holen ist; die offenen zwei
+Gates bleiben die offenen zwei. **Und gelockert ist nichts**: Dieser Befund
+rechnet gemessene Abstaende um und aendert keine Schwelle.
+
+### Und eine zweite Wache hat zugeschlagen
+
+`tests/test_gatezahlen.py` fuehrt seit Befund 332/349 ein Verzeichnis **jedes**
+Typs in `research/` mit einer Gate-Bilanz und verlangt von jedem neuen, sich
+einzuordnen - weil `GateResult.passed` ein uebersprungenes Gate als bestanden
+zaehlt und eine rohe Bilanz das verdeckt.
+
+`Stelle` traegt ein `bestanden`, also hat die Wache gegriffen:
+
+    AssertionError: nicht eingeordnet: ['research.engstelle.Stelle'] - kann
+    der Typ sagen, ob jedes Gate geurteilt hat?
+
+Eingeordnet ist sie unter `VORGELAGERT`: `aus_gates` nimmt uebersprungene
+Gates heraus, **bevor** eine `Stelle` entsteht, und liest `status == "pass"`
+statt `passed`. Eine `Stelle` kann also nie ein ungeurteiltes Gate halten. Das
+Verzeichnis zaehlt damit 27 statt 26.
+
+Zwei Wachen an einem Tag - der Fixture-Waechter aus 429 hatte in Befund 431
+dasselbe getan. Das ist der Unterschied zwischen einer Regel, die ich mir
+vornehme, und einer, die geprueft wird.
+
+### Nachtrag zum Ablauf
+
+Beim Beheben habe ich `tests/test_gatezahlen.py` waehrend des laufenden
+Datenlaufs editiert - zum dritten Mal in dieser Sitzung das Phantom aus Befund
+427 (`inspect.getsource` liest nach Zeilennummer). Der Lauf wurde verworfen und
+beide Auswahlen neu aufgesetzt, statt ein Ergebnis zu verwenden, dem nicht zu
+trauen ist. Die Regel kenne ich, und ich verstosse weiter dagegen; was hilft,
+ist nicht der Vorsatz, sondern das Verwerfen des Laufs.
