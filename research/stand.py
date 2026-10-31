@@ -5559,7 +5559,12 @@ BEHOBEN: tuple[Richtung, ...] = (
         "teilt bei 'laenge // 2', die Mitte haengt also an beiden Enden der "
         "Reihe. Auf der Zelle, die den Fund trug (L16/H16), haelt das Urteil "
         "nur in **5 von 11** verschobenen Raendern - gekippt bei 10k, 30k und "
-        "50k an beiden Enden. **Wie scharf das ist**: zwischen 220.000 und "
+        "50k an beiden Enden. **Diese Zahl haengt an der Leiter, mit der sie "
+        "gemessen ist** (berichtigt in 433): Die Stufen waren absolute "
+        "Balkenzahlen und damit auf diese eine Reihenlaenge geeicht. "
+        "Anteilig gerechnet sind es **1 von 11** - das Urteil haelt also, und "
+        "zwar deutlicher, als ich es verzeichnet hatte. "
+        "**Wie scharf das ist**: zwischen 220.000 und "
         "219.728 Balken, also **272 Balken** oder knapp drei Tage, springt "
         "die zweite Haelfte von -3,13 auf +0,75 und das Urteil kippt, "
         "waehrend die erste sich nicht ruehrt (-2,83 beide). Das ist nicht "
@@ -5591,7 +5596,7 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Waechter aus 429 sie gefangen, vor dem Push. Derselbe Fehler, und er "
         "ist trotzdem nicht in die Reihe gekommen",
         431,
-        zuletzt=432,
+        zuletzt=433,
     ),
     # Befund 432: Der Auftrag an die KI nennt das richtige Ziel - in einer
     # Einheit, in der der Empfaenger es nicht einstellen kann.
@@ -5639,6 +5644,62 @@ BEHOBEN: tuple[Richtung, ...] = (
         "ausgibt - eine Rechnung, die man hinschreiben kann, keine, die man "
         "sich merkt",
         432,
+    ),
+    # Befund 433: Der Scan auf den zwei Laengen, die er nie gesehen hat - und
+    # zwei Fehler in dem, was 431 dafuer gebaut hat.
+    Richtung(
+        "Die Randprobe war auf eine Reihenlaenge geeicht",
+        "Der dritte offene Punkt des Dauerlaufs ist ebenfalls ueberholt: **P7 "
+        "ist gebaut, gemessen und geschlossen** (271 und GESCHLOSSEN). "
+        "'data/termine.py' traegt FOMC und Halbierungen, 'research/schock.py' "
+        "den Abdruck in abgeschlossenen Kerzen, und der Kalender sperrt mit "
+        "138 Terminen in acht Jahren **sechs** Einstiege - mit Kosten "
+        "wirkungslos. Ein echtes Nachrichten-Overlay gibt es aus Grund nicht: "
+        "Wer eine Schlagzeile vom 12. Maerz kennt und am 11. nicht einsteigt, "
+        "misst Hellsicht, nicht Vorsicht. Zweiter Punkt nach dem KI-Punkt "
+        "(432), den ich beinahe nachgebaut haette. **Gefahren habe ich "
+        "stattdessen den Scan auf den Laengen, die er nie gesehen hat.** "
+        "'cli scan --aus' fasst beim Lesen zusammen ('data/resample.py' gab "
+        "es samt Tests); in den Speicher wird **nichts** geschrieben, das "
+        "wuerde 'speicher_ist_gepinnt' und damit das Tor aus 430 umwerfen. "
+        "229.728 / 16 = 14.358 Vierstundenkerzen, / 4 = 57.432 "
+        "Stundenkerzen, keine Luecke verworfen. **Ergebnis: auf 4h und 1h "
+        "erreicht nichts die Latte** - BTC 4h +2,57 und ETH 4h +3,08 gegen "
+        "3,64, BTC 1h +2,76 und ETH 1h +2,61 gegen 3,68. Ueber alle vier "
+        "Laengen und zwei Maerkte haben damit genau **zwei** Zellen ihre "
+        "Latte je genommen, und beide hat eine spaetere Huerde verworfen: "
+        "BTC 1d (+3,69, Verschiebungsprobe) und BTC 15m (-3,94, Randprobe, "
+        "431). Ausgerechnet 4h ist die Laenge, die 'taktung' als "
+        "arithmetisch tragfaehig nennt; tragfaehig heisst nicht, dass dort "
+        "etwas ist. **Zwei Fehler in dem, was ich in 431 gebaut habe**, und "
+        "beide sind erst beim Fahren auf einer anderen Laenge aufgefallen. "
+        "Erstens waren 'RANDSCHRITTE' **absolute** Balkenzahlen, geeicht auf "
+        "die 229.728 der Feinreihe: Auf 1h sind davon fuenf von zehn "
+        "Sprossen prueffbar, auf 4h **keine** - 'schritt * 2 >= len' wirft "
+        "alle weg, uebrig bleibt 'voll', und 'traegt()' verlangt "
+        "Einstimmigkeit. Die Probe haette 'haelt in allen 1' gemeldet und "
+        "waere bestanden: ein Freibrief, dieselbe Bauart, die 430 an den "
+        "erwarteten Ausfaellen abgestellt hat. Jetzt sind die Stufen "
+        "anteilig ('RANDANTEILE'), so gewaehlt, dass sie auf der Feinreihe "
+        "die gemessenen Stufen von 431 treffen - **mit einem haerteren "
+        "Ergebnis: die Haelften-Huerde haelt dort in 1 von 11 Raendern, "
+        "nicht in 5 von 11.** Das Urteil von 431 haelt also und wird "
+        "deutlicher; meine Zahl hing an der Leiter, mit der ich sie gemessen "
+        "hatte. Die absoluten Stufen bleiben als nachrechenbarer Nachweis, "
+        "und ein Test reproduziert die 5 exakt. Zweitens kuerzten die "
+        "Sprossennamen auf Tausender - auf 4h sind die Stufen 574, 1292, "
+        "1867, 2441, 3159, und '1292 // 1000' ist dasselbe wie "
+        "'1867 // 1000'. Zwei verschiedene Pruefungen hiessen '1k', und "
+        "'beschreibe' meldete 'gekippt bei hinten 1k, hinten 1k'. Gefangen "
+        "hat das mein eigener Test, nicht ich. **Und eine Beobachtung, die "
+        "nicht ich gebaut habe**: Die Eichung der Latte reicht ueber die acht "
+        "Reihen von 2,52 bis 6,58, und die vier Werte ueber 4 stehen samt "
+        "und sonders auf Zellen mit Rueckblick 48 oder mehr - waehrend die "
+        "angewandte Latte durchweg bei 3,5 bis 3,7 liegt. Auf langen "
+        "Rueckblicken ist die Latte aus der Zellenzahl also **nicht** "
+        "vorsichtig; was dort schuetzt, ist die Rotationsprobe, und sie hat "
+        "es getan (BTC 1d, L48, Eichung 4,14, verworfen)",
+        433,
     ),
 )
 

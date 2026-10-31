@@ -4416,6 +4416,12 @@ def scan(
         help="Symbole, durch Komma getrennt.",
     ),
     intervall: str = typer.Option("15", "--intervall", "-i"),
+    aus: str = typer.Option(
+        "", "--aus",
+        help="Das Zielintervall aus einem feineren zusammenfassen, z.B. "
+             "'--intervall 240 --aus 15'. Fuer Kerzenlaengen, die der "
+             "Speicher nicht fuehrt.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Steckt in dieser Zeitreihe ueberhaupt ein Vorteil? Vor jeder Suche.
@@ -4487,6 +4493,35 @@ def scan(
     interval_obj = Interval(intervall)
     symbole = [x.strip() for x in maerkte.split(",") if x.strip()]
 
+    # **Zusammenfassen statt nachladen** (Befund 433). Der Speicher fuehrt 15m
+    # und D; 1h und 4h fuehrt er nicht, und 'taktung' nennt ausgerechnet 4h
+    # als Laenge, die den Deflated Sharpe arithmetisch tragen koennte. Sie
+    # dort hineinzuschreiben waere der falsche Weg: Es wuerde
+    # 'datenstand.speicher_ist_gepinnt' umwerfen und damit das Tor aus Befund
+    # 430, das die Datenauswahl erst wieder pruefbar gemacht hat.
+    #
+    # 'data.resample' fasst stattdessen beim Lesen zusammen, mit
+    # 'vollstaendig=True': Eine Kerze, in die wegen einer Luecke Bausteine
+    # fehlen, faellt weg, statt wie jede andere auszusehen.
+    from data.resample import resample, teilbar
+
+    quell_obj = Interval(aus) if aus else interval_obj
+    if aus and not teilbar(quell_obj, interval_obj):
+        console.print(
+            f"[red]{interval_obj.label} ist kein ganzes Vielfaches von "
+            f"{quell_obj.label}.[/] Zusammengefasste Kerzen haetten dann "
+            "wechselnd viele Bausteine - eine Reihe, die nicht ist, was sie "
+            "zu sein vorgibt."
+        )
+        raise typer.Exit(2)
+
+    def _lies(sym: str):
+        # Lesen und, wenn verlangt, auf das Zielintervall zusammenfassen.
+        rohe = store.read(sym, quell_obj)
+        if rohe is None or rohe.empty or quell_obj == interval_obj:
+            return rohe
+        return resample(rohe, quell_obj, interval_obj)
+
     # Rueckblick und Haltedauer in Balken. Bewusst ein grobes Raster ueber
     # mehrere Groessenordnungen: Es geht um die Frage, **ob** irgendwo etwas
     # ist, nicht um den besten Parameter. Ein feines Raster waere schon der
@@ -4498,14 +4533,17 @@ def scan(
     # in einer Option - siehe den Kommentar weiter unten.
     breitenrahmen = {}
     for s, iv in store.series():
-        if iv != interval_obj or s not in PAIRS:
+        # Gesucht wird im **Quell**intervall: Im Zielintervall liegt bei
+        # '--aus' nichts, und die Marktbreite braucht dieselbe Behandlung
+        # wie die gescannte Reihe.
+        if iv != quell_obj or s not in PAIRS:
             continue
-        gelesen = store.read(s, iv)
+        gelesen = _lies(s)
         if not gelesen.empty:
             breitenrahmen[s] = gelesen
 
     for symbol in symbole:
-        frame = store.read(symbol, interval_obj)
+        frame = _lies(symbol)
         if frame.empty:
             console.print(f"[red]Keine Kerzen fuer {symbol} {interval_obj.label}.[/]")
             continue

@@ -12,6 +12,12 @@ etwas anderes.
 Gemessen auf der Zelle, die auf Viertelstundenkerzen den Fund trug (BTC, L16,
 H16): Die erste Haelfte ruehrt sich nicht, die zweite dreht das Vorzeichen,
 und das Urteil haelt nur in **5 von 11** Raendern.
+
+**Berichtigt in Befund 433**: Diese 5 von 11 sind mit *absoluten* Stufen
+(10k bis 50k) gemessen und damit auf die Laenge der Feinreihe geeicht.
+Anteilig gerechnet sind es **1 von 11** - das Urteil haelt also, und zwar
+deutlicher. Die absoluten Stufen bleiben als Nachweis erhalten und werden
+hier gegen die anteiligen gestellt.
 """
 
 from __future__ import annotations
@@ -76,8 +82,11 @@ class TestDieLeiterGehtNachBeidenSeiten:
         namen = [name for name, _ in probe.haelt_bei]
 
         assert namen[0] == "voll"
-        assert "hinten 5k" in namen and "vorne 5k" in namen
-        assert "hinten 10k" in namen and "vorne 10k" in namen
+        # **Die genaue Balkenzahl, nicht "5k"** (Befund 433): Die
+        # Tausender-Abkuerzung war auf 431s Stufen geeicht und machte auf
+        # kurzen Reihen zwei verschiedene Sprossen namensgleich.
+        assert "hinten 5000" in namen and "vorne 5000" in namen
+        assert "hinten 10000" in namen and "vorne 10000" in namen
         assert len(namen) == 5
 
     def test_zu_grosse_schritte_fallen_weg(self) -> None:
@@ -227,11 +236,25 @@ class TestAnDerZelleDieDenFundTrug:
     der nie eingetreten ist."""
 
     def test_die_huerde_haelt_nicht_an_allen_raendern(self, btc_fein) -> None:
+        """Mit den anteiligen Stufen aus Befund 433."""
         probe = pruefe_rand(btc_fein, 16, 16)
 
         assert not probe.traegt()
         assert probe.geprueft == 11
-        assert 3 <= probe.gehalten <= 8, probe.beschreibe()
+        assert probe.gehalten <= 3, probe.beschreibe()
+
+    def test_die_absoluten_stufen_geben_die_messung_von_431(self, btc_fein) -> None:
+        """Der Nachweis: Was 431 verzeichnet hat, laesst sich nachrechnen -
+        und es ist die mildere der beiden Leitern."""
+        from research.vorteilsscan import RANDSCHRITTE
+
+        absolut = pruefe_rand(btc_fein, 16, 16, schritte=RANDSCHRITTE)
+        anteilig = pruefe_rand(btc_fein, 16, 16)
+
+        assert absolut.geprueft == anteilig.geprueft == 11
+        assert absolut.gehalten == 5, absolut.beschreibe()
+        assert anteilig.gehalten < absolut.gehalten
+        assert not absolut.traegt() and not anteilig.traegt()
 
     def test_die_erste_haelfte_ruehrt_sich_nicht(self, btc_fein) -> None:
         """Die Trennung, die den Befund traegt: Nicht die Zelle ist unruhig,

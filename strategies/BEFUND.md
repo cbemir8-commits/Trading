@@ -38712,3 +38712,100 @@ zu merken: `0,2708 * Wurzel(115) = 2,904`, und das Modul selbst gibt
 also war der Eingang falsch. Dass `guete` im Projekt den Sharpe **je Trade**
 meint und nicht das Produkt, steht in `als_auftrag` sogar als Formel - ich
 hatte sie gelesen und trotzdem falsch eingesetzt.
+
+## Vierhundertdreiunddreissig. Die Randprobe war auf eine Reihenlaenge geeicht
+
+### Zuerst: der dritte offene Punkt, der seit 271 geschlossen ist
+
+P7 - "News- und Termin-Overlay" - ist **gebaut, gemessen und geschlossen**.
+`data/termine.py` traegt FOMC-Entscheidungen und Halbierungen,
+`research/schock.py` den Abdruck eines Schocks in abgeschlossenen Kerzen, und
+Befund 271 hat es gemessen: 138 Termine sperren in acht Jahren **sechs**
+Einstiege, und mit Kosten ist das Overlay wirkungslos (`GESCHLOSSEN`).
+
+Ein echtes *Nachrichten*-Overlay gibt es aus Grund nicht, und der Grund steht
+im Kopf von `schock.py`:
+
+> Ein Overlay, das eine Schlagzeile vom 12. Maerz 2020 kennt und deshalb am
+> 11. Maerz nicht einsteigt, misst nicht Vorsicht, sondern Hellsicht.
+
+Nach dem KI-Punkt in Befund 432 ist das der **zweite von vier** Punkten der
+Dauerlauf-Liste, den ich beinahe nachgebaut haette.
+
+### Gefahren habe ich stattdessen den Scan auf den ungetesteten Laengen
+
+Der Speicher fuehrt 15m und D. 1h und 4h fuehrt er nicht - und ausgerechnet 4h
+nennt `taktung` als Laenge, die den Deflated Sharpe arithmetisch tragen
+koennte. `cli scan --aus` fasst jetzt beim Lesen zusammen; `data/resample.py`
+gab es samt Tests und samt der Lookahead-Vorsicht (`vollstaendig=True` wirft
+Kerzen weg, in die wegen einer Luecke Bausteine fehlen).
+
+**In den Speicher wird nichts geschrieben.** Das waere der naheliegende Weg
+gewesen und der falsche: Es wuerde `datenstand.speicher_ist_gepinnt` umwerfen
+und damit das Tor aus Befund 430, das die Datenauswahl erst wieder pruefbar
+gemacht hat. 229 728 / 16 = **14 358** Vierstundenkerzen, / 4 = **57 432**
+Stundenkerzen, keine Luecke verworfen.
+
+### Das Ergebnis: auf 4h und 1h erreicht nichts die Latte
+
+| Laenge | BTC t | ETH t | Latte | Eichung BTC | Eichung ETH |
+|--------|------:|------:|------:|------------:|------------:|
+| 1d     | **+3,69** | +2,88 | 3,55 / 3,53 | 4,14 | 2,82 |
+| 4h     | +2,57 | +3,08 | 3,64 | 6,16 | 6,58 |
+| 1h     | +2,76 | +2,61 | 3,68 | 6,30 | 2,87 |
+| 15m    | **-3,94** | -3,08 | 3,71 | 2,52 | 2,79 |
+
+Ueber vier Laengen und zwei Maerkte haben genau **zwei** Zellen ihre Latte je
+genommen, und beide hat eine spaetere Huerde verworfen: BTC 1d durch die
+Verschiebungsprobe (23 von 1325), BTC 15m durch die Randprobe (Befund 431).
+Tragfaehig heisst nicht, dass dort etwas ist.
+
+### Zwei Fehler in dem, was ich in 431 gebaut habe
+
+Beide sind erst aufgefallen, weil ich dieselbe Probe auf einer anderen
+Reihenlaenge gefahren habe. Kein Test haette sie gefunden, solange nur die
+Feinreihe gemessen wurde.
+
+**Erstens: absolute Stufen.** `RANDSCHRITTE` waren 10 000 bis 50 000 Balken -
+geeicht auf die 229 728 der Feinreihe. Die Bedingung `schritt * 2 >= len`
+wirft zu grosse Sprossen weg, also bleiben auf Stundenkerzen fuenf von zehn
+uebrig und auf Vierstundenkerzen **keine**. Uebrig bleibt die Pruefung
+"voll", und `traegt()` verlangt Einstimmigkeit:
+
+    Randprobe(haelt_bei=(("voll", True),)).traegt()  ->  True
+                                                          "haelt in allen 1"
+
+Eine Probe, die auf einer kurzen Reihe zu einer einzigen Pruefung
+zusammenfaellt und dann bestanden meldet, ist ein **Freibrief** - dieselbe
+Bauart, die Befund 430 an den erwarteten Ausfaellen abgestellt hat.
+
+Jetzt sind die Stufen anteilig (`RANDANTEILE`), gewaehlt so, dass sie auf der
+Feinreihe die gemessenen Stufen von 431 ungefaehr treffen (9189 bis 50 540
+gegen 10 000 bis 50 000) - eine Verallgemeinerung der Grundlage, keine neue
+Wahl. **Mit einem haerteren Ergebnis:** Auf derselben Zelle haelt die
+Haelften-Huerde in **1 von 11** Raendern statt in 5 von 11. Das Urteil von 431
+haelt also und wird deutlicher; meine Zahl hing an der Leiter, mit der ich sie
+gemessen hatte. Die absoluten Stufen bleiben als nachrechenbarer Nachweis
+erhalten, und ein Test auf echten Daten reproduziert die 5 exakt.
+
+**Zweitens: zweideutige Namen.** Die Sprossen hiessen nach Tausendern, weil
+bei 431 alle Stufen zehntausenderweise lagen. Auf 4h sind die Stufen 574,
+1292, 1867, 2441 und 3159 - und `1292 // 1000` ist dasselbe wie
+`1867 // 1000`. Zwei verschiedene Pruefungen hiessen `1k`, und `beschreibe`
+meldete *"gekippt bei hinten 1k, hinten 1k"*. Jetzt steht die genaue
+Balkenzahl: laenger zu lesen, dafuer nachpruefbar. **Gefangen hat das mein
+eigener Test, nicht ich.**
+
+### Und eine Beobachtung, die nicht von mir gebaut ist
+
+Die Eichung der Latte - das 99. Perzentil dessen, was verschobene Teiler
+erreichen - reicht ueber die acht Reihen von **2,52 bis 6,58**. Die vier Werte
+ueber 4 stehen samt und sonders auf Zellen mit Rueckblick 48 oder mehr,
+waehrend die angewandte Latte durchweg bei 3,5 bis 3,7 liegt.
+
+Auf langen Rueckblicken ist die Latte aus der Zellenzahl also **nicht**
+vorsichtig: Zufall erreicht dort t = 6, die Latte verlangt 3,6. Was dort
+schuetzt, ist nicht die Latte, sondern die Rotationsprobe - und sie hat es
+getan: BTC 1d, L48, Eichung 4,14, t = +3,69 ueber der Latte und von der
+Verschiebungsprobe verworfen. Die Huerden tragen zusammen, die erste allein
+nicht.

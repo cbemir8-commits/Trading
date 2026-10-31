@@ -724,6 +724,25 @@ def urteil(
 #: genug, dass die Mitte der Reihe wandert, klein genug, dass fuenf Stufen in
 #: die Reihe passen. Verschoben wird an **beiden** Enden, denn die Mitte
 #: haengt an beiden (Befund 431).
+#: **Anteile der Reihenlaenge, nicht Balkenzahlen** (Befund 433). In Befund
+#: 431 standen hier 10_000 bis 50_000 - absolut, und damit auf die 229_728
+#: Balken der Feinreihe geeicht. Auf Stundenkerzen sind davon nur fuenf von
+#: elf Sprossen ueberhaupt prueffbar, auf Vierstundenkerzen genau eine: Die
+#: Bedingung ``schritt * 2 >= len`` wirft alle anderen weg. Eine Probe, die
+#: auf einer kurzen Reihe zu einer einzigen Pruefung zusammenfaellt und dann
+#: "haelt in allen 1" meldet, ist ein Freibrief - genau die Bauart, die
+#: Befund 430 an den erwarteten Ausfaellen abgestellt hat.
+#:
+#: Die Anteile sind so gewaehlt, dass sie auf der Feinreihe die gemessenen
+#: Stufen von 431 ungefaehr treffen (9189 bis 50540 gegen 10_000 bis 50_000).
+#: Das ist eine Verallgemeinerung der gemessenen Grundlage und keine neue
+#: Wahl - **mit einem Ergebnis, das haerter ausfaellt**: Auf derselben Zelle
+#: haelt die Huerde damit in 1 von 11 Raendern statt in 5 von 11.
+RANDANTEILE: tuple[float, ...] = (0.04, 0.09, 0.13, 0.17, 0.22)
+
+#: Die absoluten Stufen aus Befund 431 - **nur noch als Nachweis.** Wer die
+#: dort verzeichnete Messung nachrechnen will, uebergibt sie an
+#: ``pruefe_rand(..., schritte=RANDSCHRITTE)``.
 RANDSCHRITTE: tuple[int, ...] = (10_000, 20_000, 30_000, 40_000, 50_000)
 
 
@@ -799,23 +818,71 @@ class Randprobe:
         )
 
 
+def randschritte(laenge: int, *, anteile: tuple[float, ...] = RANDANTEILE) -> tuple[int, ...]:
+    """Die Sprossen der Leiter fuer eine Reihe dieser Laenge - Befund 433.
+
+    Jede Sprosse muss zwei Bedingungen erfuellen, um etwas zu pruefen: Sie
+    darf nicht null sein, und sie darf nicht die halbe Reihe wegnehmen. Was
+    beides nicht schafft, wird hier weggelassen und nicht erst in
+    ``pruefe_rand`` verworfen - sonst sieht der Aufrufer eine Leiter mit elf
+    Sprossen und bekommt eine mit einer.
+    """
+    stufen = []
+    for anteil in anteile:
+        schritt = round(anteil * laenge)
+        if schritt >= 1 and schritt * 2 < laenge:
+            stufen.append(schritt)
+    return tuple(stufen)
+
+
+def _randname(schritt: int) -> str:
+    """Eine Sprosse benennen, und zwar eindeutig.
+
+    Bei 431 hiess sie "10k" bis "50k", weil die Stufen zehntausenderweise
+    lagen und die Reihe immer dieselbe war. Mit anteiligen Stufen traegt das
+    nicht mehr: Auf Vierstundenkerzen sind die Stufen 574, 1292, 1867, 2441
+    und 3159 - und ``1292 // 1000`` ist dasselbe wie ``1867 // 1000``. Zwei
+    Sprossen hiessen "1k", und ``beschreibe`` meldete "gekippt bei hinten 1k,
+    hinten 1k".
+
+    Deshalb die genaue Balkenzahl. Sie ist laenger zu lesen und dafuer
+    nachpruefbar - ein Bericht, in dem zwei verschiedene Pruefungen gleich
+    heissen, laesst den Leser nicht nachsehen (Befund 431).
+    """
+    return str(schritt)
+
+
 def pruefe_rand(
-    close, rueckblick: int, halten: int, *, schritte: tuple[int, ...] = RANDSCHRITTE
+    close,
+    rueckblick: int,
+    halten: int,
+    *,
+    anteile: tuple[float, ...] = RANDANTEILE,
+    schritte: tuple[int, ...] | None = None,
 ) -> Randprobe:
-    """Die Haelften-Huerde ueber verschobene Raender - Befund 431.
+    """Die Haelften-Huerde ueber verschobene Raender - Befund 431/433.
 
     Gerechnet und nicht gepflegt: Die Leiter im Kopf von ``Randprobe`` kommt
     aus dieser Funktion, und wer sie nachrechnet, bekommt sie neu.
+
+    ``schritte`` setzt absolute Balkenzahlen und uebergeht ``anteile``. Das
+    ist fuer den Nachweis der Messung aus Befund 431 da und nicht fuer den
+    laufenden Betrieb: Absolute Stufen sind auf **eine** Reihenlaenge geeicht
+    (Befund 433).
     """
     werte = np.asarray(close, dtype=float)
+    leiter = (
+        tuple(s for s in schritte if s >= 1 and s * 2 < len(werte))
+        if schritte is not None
+        else randschritte(len(werte), anteile=anteile)
+    )
     stufen: list[tuple[str, bool]] = [("voll", pruefe_stabilitaet(werte, rueckblick, halten).haelt)]
-    for schritt in schritte:
-        if schritt * 2 >= len(werte):
-            continue
+    for schritt in leiter:
+        name = _randname(schritt)
         stufen.append(
-            (f"hinten {schritt // 1000}k", pruefe_stabilitaet(werte[:-schritt], rueckblick, halten).haelt)
+            (f"hinten {name}", pruefe_stabilitaet(werte[:-schritt], rueckblick, halten).haelt)
         )
         stufen.append(
-            (f"vorne {schritt // 1000}k", pruefe_stabilitaet(werte[schritt:], rueckblick, halten).haelt)
+            (f"vorne {name}", pruefe_stabilitaet(werte[schritt:], rueckblick, halten).haelt)
         )
     return Randprobe(haelt_bei=tuple(stufen))
