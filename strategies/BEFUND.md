@@ -39531,3 +39531,101 @@ meldet, halte ich die andere an**, statt sie weiterlaufen zu lassen. Ein Lauf,
 dessen Quelltext sich unter ihm bewegt, ist ohnehin zu verwerfen - ihn weiter
 rechnen zu lassen kostet nur Zeit und erzeugt ein Ergebnis, das wie eines
 aussieht.
+
+## Vierhunderteinundvierzig. "Entfaellt diese Arbeit" sagte nichts ueber die Marge
+
+### Zum zehnten Mal bestaetigt, und diesmal aus der richtigen Quelle
+
+Am Kandidaten ist alles Messbare gemessen. Die vier naechstliegenden der
+achtzehn offenen Fragen - schlechtestes Jahr am Spot-Punkt, Timing gegen
+Zufallseinstiege, Familienaussage am Schnitt, Luecke gegen Holdout - haben
+**alle** verzeichnete Messungen. Sie stehen in `OFFEN`, weil die Frage nicht
+abschliessend entschieden ist, nicht weil nichts gemessen waere.
+
+Das ist ein Unterschied, den ich vorher nicht gesehen hatte: `OFFEN` ist keine
+Liste unbearbeiteter Aufgaben, sondern eine Liste von Fragen, deren Antwort
+teilweise ist - und das Register weiss es.
+
+### Also den Abschnitt angesehen, der dem naechsten Leser den Weg weist
+
+`cli stand` schliesst mit "WORAN DIE ARBEIT LIEGT", und der Abschnitt ist
+genau und gut begruendet:
+
+> **4 Gates offen - aber nicht 4 Aufgaben.**
+>
+> Messlatte: eine gesetzte Schwelle, keine Messung. Sie zu aendern ist eine
+> Geschaeftsentscheidung und faellt nicht hier.
+>
+> Deflated Sharpe: durchgemessen, alle naheliegenden Wege sind zu. Weitere
+> Laeufe **an diesem Gate** kosten Zeit ohne offene Frage - was offen bleibt,
+> ist ein Kandidat und keine Rechnung.
+>
+> **Hier liegt die Arbeit: Schlechtestes Jahr, Parameter-Plateau.**
+>
+> ... klaert sie sich zu 'Spot', **entfaellt diese Arbeit.**
+
+### Fuer die Gate-Zahl stimmt das. Ueber die Marge sagt es nichts
+
+Befund 438 hat gemessen, wie knapp diese zwei Gates am Spot-Punkt halten:
+
+    Schlechtestes Jahr     3,9 % Reserve   <- duennste aller elf Gates
+    Parameter-Plateau     66,7 % Reserve
+
+Und dasselbe Gate faellt in **5 von 11** Fensteraufteilungen (Befund 420).
+
+Zwei Aufgaben, die beide "entfallen", und eine davon nur auf dem Papier. Wer
+den Satz liest und daraus schliesst, die Frage nach dem Betriebspunkt sei die
+ganze Huerde, liest ihn so, wie er gemeint ist - und bekommt ein zu bequemes
+Bild.
+
+### Gebaut
+
+Der Absatz traegt die Reserven jetzt daneben, **knappste zuerst**, und nennt
+es beim Namen, wenn eine unter 5 % liegt:
+
+    **Wie knapp es dort haelt, steht nicht in der Gate-Zahl.** Reserve als
+    Anteil der Schwelle: Schlechtestes Jahr 3.9%, Parameter-Plateau 66.7%.
+    Die duennste davon ist Schlechtestes Jahr, und zwar duenner als jede
+    andere bestandene Stelle - 'entfaellt' heisst hier: besteht knapp.
+
+**Ohne Messung bleibt er, wie er war.** Nicht gemessen ist etwas anderes als
+komfortabel, und eine Reserve wird nicht erfunden - ohne Zahlen erscheint der
+Zusatz nicht, und ein Test haelt das fest.
+
+Gerechnet wird sie aus denselben Gate-Ergebnissen, aus denen die engste Stelle
+kommt (`engstelle.aus_gates`), also **keine zweite Quelle**. Das ist die Lehre
+aus Befund 439, diesmal von Anfang an angewandt statt am Tag danach.
+
+### Was das nicht ist
+
+Keine Verschaerfung. Der alte Satz bleibt stehen, weil seine Aussage ueber die
+Gate-Zahl richtig ist; der Zusatz ergaenzt sie. **Gelockert ist ebenfalls
+nichts** - der Befund schreibt eine gemessene Zahl neben einen Satz, der ohne
+sie zu bequem liest.
+
+Und er betrifft ausgerechnet die Entscheidung, die beim Nutzer liegt: welcher
+Betriebspunkt die Zulassung traegt (Befund 400). Wer sie trifft, soll wissen,
+dass der guenstigere Punkt zwei Gates loest - eines davon mit drei Komma neun
+Prozent Luft.
+
+### Die Wache aus 319 hat wieder nachgefasst
+
+Weil dieser Eintrag vier offene Fragen **namentlich** nennt, erzeugt er
+Erwaehnungen, die neuer sind als ihr Lesestand. Bei einer war das so -
+*"Timing gegen Zufallseinstiege"*, gelesen bis Befund 295 -, und sie steht
+jetzt auf 441, mit der Abgrenzung dabei: Der Eintrag bleibt in `OFFEN`, weil
+seine Antwort teilweise ist (mit Deckeln raeumen alle vier Maerkte die
+Schwelle, ohne nur ETH; die 198 Versuche mitgerechnet sind es 2 von 4), nicht
+weil nichts gemessen waere. Kein neuer Fund zu dieser Richtung.
+
+Das ist der zweite Durchlauf in Folge, in dem derselbe Mechanismus mich zur
+Vollstaendigkeit zwingt - und er hat recht: Wer eine geschlossene Richtung
+erwaehnt, soll sagen, ob er sie gelesen hat.
+
+### Und die Regel aus 440 hat gehalten
+
+Als die Nicht-Daten-Auswahl rot meldete, habe ich die Datenauswahl
+**angehalten**, statt sie weiterrechnen zu lassen. Ein Lauf, dessen Quelltext
+sich unter ihm bewegt, ist ohnehin zu verwerfen; vier Mal in dieser Sitzung
+habe ich ihn trotzdem laufen lassen. Diesmal nicht - und der Unterschied ist
+nicht der Vorsatz, sondern dass die Regel sagt, **wann** zu handeln ist.

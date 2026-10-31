@@ -6063,6 +6063,52 @@ BEHOBEN: tuple[Richtung, ...] = (
         "an, sobald eine rot meldet, statt die zweite weiterlaufen zu "
         "lassen - der Vorsatz allein hat vier Mal nicht gereicht",
         440,
+        zuletzt=441,
+    ),
+    # Befund 441: Der Satz, der dem naechsten Leser sagt, woran zu arbeiten
+    # ist - und was er ueber die Marge nicht sagte.
+    Richtung(
+        "'Entfaellt diese Arbeit' sagte nichts ueber die Marge",
+        "Zum zehnten Mal bestaetigt: Am Kandidaten ist alles Messbare "
+        "gemessen. Die vier naechstliegenden der achtzehn offenen Fragen - "
+        "schlechtestes Jahr am Spot-Punkt, Timing gegen Zufallseinstiege, "
+        "Familienaussage am Schnitt, Luecke gegen Holdout - haben alle "
+        "verzeichnete Messungen; sie stehen in OFFEN, weil die Frage nicht "
+        "abschliessend entschieden ist, nicht weil nichts gemessen waere. "
+        "**Also den Abschnitt angesehen, der dem naechsten Leser sagt, woran "
+        "zu arbeiten ist.** Er ist genau und gut begruendet - vier Gates "
+        "offen, aber nicht vier Aufgaben; die Messlatte eine "
+        "Geschaeftsentscheidung; der Deflated Sharpe durchgemessen, 'was "
+        "offen bleibt, ist ein Kandidat und keine Rechnung'. Und er endet "
+        "mit: *'klaert sie sich zu Spot, entfaellt diese Arbeit'*. **Fuer "
+        "die Gate-Zahl stimmt das, ueber die Marge sagt es nichts** - und "
+        "Befund 438 hat gemessen, dass eines der beiden Gates am Spot-Punkt "
+        "mit **3,9 %** haelt, der duennsten Reserve aller elf, und in 5 von "
+        "11 Fensteraufteilungen faellt (420). Das andere haelt mit **66,7 "
+        "%**. Zwei Aufgaben, die beide 'entfallen', und eine davon nur auf "
+        "dem Papier. Der Absatz traegt die Reserven jetzt daneben, knappste "
+        "zuerst, und nennt es beim Namen, wenn eine unter 5 % liegt: "
+        "*'entfaellt heisst hier: besteht knapp'*. **Ohne Messung bleibt er, "
+        "wie er war** - nicht gemessen ist etwas anderes als komfortabel, und "
+        "eine Reserve wird nicht erfunden. Gerechnet wird sie aus denselben "
+        "Gate-Ergebnissen, aus denen die engste Stelle kommt, also keine "
+        "zweite Quelle (die Lehre aus 439, diesmal von Anfang an). "
+        "**Gelockert ist nichts**: Der Befund schreibt eine gemessene Zahl "
+        "neben einen Satz, der ohne sie zu bequem liest, und das betrifft "
+        "ausgerechnet die Entscheidung, die beim Nutzer liegt - welcher "
+        "Betriebspunkt die Zulassung traegt (400). **Und die Wache aus 319 hat "
+        "wieder nachgefasst**: Weil dieser Eintrag vier offene Fragen "
+        "namentlich nennt, erzeugt er Erwaehnungen, die neuer sind als ihr "
+        "Lesestand - bei einer ('Timing gegen Zufallseinstiege', gelesen bis "
+        "295) war das so, und sie steht jetzt auf 441 mit der Abgrenzung "
+        "dabei. Das ist die zweite Sitzung in Folge, in der derselbe "
+        "Mechanismus mich zur Vollstaendigkeit zwingt, und er hat recht: Wer "
+        "eine geschlossene Richtung erwaehnt, soll sagen, ob er sie gelesen "
+        "hat. **Die neue Regel aus 440 hat dabei gehalten** - die zweite "
+        "Auswahl habe ich angehalten, sobald die erste rot meldete, statt "
+        "einen Lauf weiterrechnen zu lassen, dessen Quelltext sich unter ihm "
+        "bewegt",
+        441,
     ),
 )
 

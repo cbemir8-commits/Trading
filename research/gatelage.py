@@ -53,7 +53,7 @@ Forderung ist als "der Vorteil ist zu 78 % echt".
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
 
@@ -159,6 +159,20 @@ class Gatelage:
     zweitpunkt: str | None = None
     """Name des anderen Betriebspunkts, falls einer gemessen wurde."""
 
+    dort_reserve: dict[str, float] = field(default_factory=dict)
+    """Je Gate seine Reserve am zweiten Punkt, als **Anteil der Schwelle**.
+
+    Ohne sie liest sich der Absatz zum Betriebspunkt zu bequem: "klaert sie
+    sich zu Spot, entfaellt diese Arbeit" stimmt fuer die Gate-**Zahl** und
+    sagt nichts darueber, wie knapp es dort haelt (Befund 441). Gemessen
+    haelt 'Schlechtestes Jahr' am Spot-Punkt mit **3,9 %** - der duennsten
+    Reserve aller elf Gates - und faellt in 5 von 11 Fensteraufteilungen
+    (Befund 420/438), waehrend 'Parameter-Plateau' dort mit 66,7 % steht.
+    Zwei Aufgaben, die beide "entfallen", und eine davon nur auf dem Papier.
+
+    Leer heisst: nicht gemessen, und dann bleibt der Absatz wie vorher.
+    """
+
     @property
     def offen(self) -> list[Hindernis]:
         """Die Gates, an denen tatsaechlich Arbeit liegt."""
@@ -215,13 +229,36 @@ class Gatelage:
             if alle
             else f"**{len(haengend)} davon haengen am Betriebspunkt.**"
         )
-        return [
+        absatz = [
             f"{kopf} Unter '{self.zweitpunkt}' bestanden: {namen}. Berichtet "
             f"wird weiter der schlechtere Punkt, weil die Voraussetzung offen "
             f"ist - klaert sie sich zu '{self.zweitpunkt}', entfaellt diese "
             f"Arbeit. Gemessen wird dadurch nichts besser: derselbe Kandidat, "
             f"andere Handelsbedingungen."
         ]
+        # **Und wie knapp es dort haelt** (Befund 441). "Entfaellt" stimmt
+        # fuer die Gate-Zahl; ueber die Marge sagt es nichts, und bei einem
+        # dieser Gates ist sie die duennste von allen.
+        mit_reserve = [
+            (h.name, self.dort_reserve[h.name])
+            for h in haengend
+            if h.name in self.dort_reserve
+        ]
+        if mit_reserve:
+            mit_reserve.sort(key=lambda x: x[1])
+            liste = ", ".join(f"{n} {r:.1%}" for n, r in mit_reserve)
+            absatz.append(
+                f"**Wie knapp es dort haelt, steht nicht in der Gate-Zahl.** "
+                f"Reserve als Anteil der Schwelle: {liste}."
+                + (
+                    f" Die duennste davon ist {mit_reserve[0][0]}, und zwar "
+                    f"duenner als jede andere bestandene Stelle - "
+                    f"'entfaellt' heisst hier: besteht knapp."
+                    if mit_reserve[0][1] < 0.05
+                    else ""
+                )
+            )
+        return absatz
 
     def urteil(self) -> str:
         if not self.hindernisse:
@@ -278,6 +315,7 @@ def ordne(
     *,
     zweitpunkt: str | None = None,
     dort_offen: Iterable[str] | None = None,
+    dort_reserve: Mapping[str, float] | None = None,
 ) -> Gatelage:
     """Die nicht bestandenen Gates eines Berichts einordnen.
 
@@ -319,7 +357,11 @@ def ordne(
                 nur_hier=zweitpunkt is not None and r.name not in dort,
             )
         )
-    return Gatelage(hindernisse=hindernisse, zweitpunkt=zweitpunkt)
+    return Gatelage(
+        hindernisse=hindernisse,
+        zweitpunkt=zweitpunkt,
+        dort_reserve=dict(dort_reserve or {}),
+    )
 
 
 __all__ = [

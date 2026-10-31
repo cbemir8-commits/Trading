@@ -12679,11 +12679,27 @@ def stand(
     # Punkt und nannte beim Bestand genau die zwei Gates, die unter Spot
     # bestehen - eine Arbeit, die sich mit der Antwort auf eine offene Frage
     # aufloest. Berichtet wird weiter der schlechtere Punkt.
+    # **Und die Reserven des zweiten Punkts dazu** (Befund 441): Ohne sie
+    # liest sich "klaert sie sich zu Spot, entfaellt diese Arbeit" zu bequem.
+    # Gerechnet wird der Anteil aus denselben Gate-Ergebnissen, aus denen die
+    # engste Stelle kommt - keine zweite Quelle (Befund 439).
+    dort_reserve: dict[str, float] = {}
+    if spotgates:
+        from research.engstelle import aus_gates as _stellen_aus
+
+        dort_reserve = {
+            s.name: s.anteil
+            for s in _stellen_aus(spotgates)
+            if s.bestanden and s.anteil is not None
+        }
     lage = (
         ordne(gates.results)
         if zweitpunkt is None
         else ordne(
-            gates.results, zweitpunkt=zweitpunkt.name, dort_offen=zweitpunkt.offen
+            gates.results,
+            zweitpunkt=zweitpunkt.name,
+            dort_offen=zweitpunkt.offen,
+            dort_reserve=dort_reserve,
         )
     )
     if lage.hindernisse:

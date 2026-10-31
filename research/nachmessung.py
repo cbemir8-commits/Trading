@@ -298,7 +298,14 @@ GELESEN: dict[str, int] = {
     # betrifft 'landschaft' und 'machbarkeit', die buchen, und nicht
     # 'marktkombinationen', das nicht bucht.
     "Zaehlt ein Sweep am Bestand als Versuch?": 440,
-    "Timing gegen Zufallseinstiege": 295,
+    # **Befund 441 nennt sie wieder** - dort als eine der vier offenen
+    # Fragen, die ich gelesen habe, um festzustellen, dass sie alle
+    # verzeichnete Messungen tragen. Gelesen und abgegrenzt: Der
+    # Eintrag steht in OFFEN, weil seine Antwort teilweise ist (mit
+    # Deckeln raeumen alle vier Maerkte, ohne nur ETH; mit 198
+    # Versuchen gerechnet 2 von 4), nicht weil nichts gemessen waere.
+    # Kein neuer Fund zu dieser Richtung.
+    "Timing gegen Zufallseinstiege": 441,
     "Der Preis in Reststreuungen": 295,
     # **Befund 305 hat beide erneut angesehen** - und es war zweimal etwas
     # anderes.
