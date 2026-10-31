@@ -39393,3 +39393,141 @@ sie entsteht erst im Rumpf der Gate-Funktionen (`GateResult(name=...)` neben
 Bewacht ist sie dreifach: jedes Feld existiert wirklich, **keines wird zweimal
 benutzt** - ein Tippfehler dort ordnete die Herkunft stillschweigend falsch
 ein -, und alle elf Gates kommen vor.
+
+## Vierhundertvierzig. Eine Messung abgelehnt mit einem Preis, den niemand erhebt
+
+### Erst eine Beobachtung ueber mich
+
+Neun Befunde lang habe ich meine eigenen Fragen gestellt. Das Register fuehrt
+**achtzehn offene** - ich hatte sie nie gelesen.
+
+Eine davon ist *"Zaehlt ein Sweep am Bestand als Versuch?"* (Befund 233,
+zuletzt 282), und sie betrifft genau das Urteil, auf das ich mich in Befund
+436 berufen habe.
+
+### Meine Begruendung von damals war in beiden Teilen falsch
+
+In 436 habe ich `cli marktkombinationen` abgelehnt:
+
+> Nach dem Maszstab von Befund 416 (sechs Deckel = sechs Versuche) waeren das
+> fuenfzehn Versuche, um eine bereits verzeichnete Schliessung zu bestaetigen.
+
+**Erstens bucht der Befehl keinen Versuch.** Gemessen: 23 Befehle fahren die
+Zulassungsstrecke, **acht** buchen, und er ist nicht dabei.
+
+**Zweitens - und das ist der eigentliche Fehler - soll er keinen kosten**, und
+sein eigener Docstring sagt warum:
+
+> **Kostet keinen Versuch.** Mehr Maerkte sind mehr *Daten*, nicht mehr
+> Einfaelle - dieselbe Regel auf einer breiteren Grundlage. Der Deflated
+> Sharpe korrigiert dafuer, dass man bei genug Einfaellen etwas findet.
+
+Die Begruendung traegt. Ein Marktkorb ist kein Einfall; sechs
+Haltedauer-Deckel (Befund 416) sind dagegen sechs **Regeln**. Die
+Unterscheidung ist kohaerent - ich hatte sie nur nicht gelesen und stattdessen
+einen Maszstab von einer Stelle auf eine andere uebertragen.
+
+Ich habe also eine nuetzliche Messung mit einem Preis abgelehnt, den niemand
+erhebt. Dasselbe Muster wie in 436 selbst, wo ich `cli nachpruefung` gestartet
+habe, um zu messen, was ein Test schon hielt: nicht nachsehen, sondern
+annehmen.
+
+### Also gefahren, was 436 haette fahren sollen
+
+Und dabei beinahe der Fehler aus Befund 428. Der erste Lauf meldet den
+**Perpetual**-Punkt, die dokumentierte Tabelle in `erlaubter_gueteverlust`
+steht am **Spot**-Punkt. Erkennbar war es daran, dass meine 12,95 %
+Jahresrendite genau die Perpetual-Zahl der Gate-Tafel ist und die
+dokumentierten 14,34 die Spot-Zahl. Diesmal **vor** dem Schreiben bemerkt und
+mit `--spot` wiederholt.
+
+Am richtigen Punkt reproduziert es sauber:
+
+| Korb | Trades | dok | DSR | dok | p.a. | dok |
+|---|---:|---:|---:|---:|---:|---:|
+| BTC+ETH | 158 | 158 | 0,5826 | 0,5881 | **14,34** | 14,34 |
+| BTC+ETH+LTC | 266 | 266 | 0,4801 | 0,4855 | **11,50** | 11,50 |
+| BTC+ETH+XRP | 267 | 267 | 0,4555 | 0,4609 | **11,32** | 11,32 |
+| BTC+ETH+LTC+XRP | 375 | 375 | 0,4123 | 0,4175 | **9,95** | 9,95 |
+
+Trades und Jahresrendite treffen **exakt**. Der DSR liegt gleichmaessig um
+0,0054 tiefer - und *gleichmaessig* heisst: keine Datendrift, sonst waere der
+Abstand ungleich.
+
+### Und es ist ganz der Versuchszaehler
+
+Gerechnet mit derselben Formel, die das Gate benutzt:
+
+    Versuche     DSR
+         198   0,5882     <- die dokumentierte Zahl
+         203   0,5827     <- heute
+
+Der heutige Stand ist 203. Der gesamte Unterschied ist damit erklaert, und
+zwar gerechnet statt vermutet.
+
+**Das bestaetigt unabhaengig den Preis aus Befund 342.** Dort ist ein Versuch
+mit 0,0011 DSR-Punkten beziffert. Hier kosten fuenf Versuche 0,0055 - also
+0,0011 je Versuch. Zwei voellig verschiedene Wege, dieselbe Zahl.
+
+### Die Aussage, die 'erlaubter_gueteverlust' traegt, haelt
+
+**2,37-mal so viele Trades, Deflated Sharpe minus 29,2 %** gegen dokumentierte
+"zweieinhalbmal" und 29 %. Die 29 % treffen auf die Stelle; die 2,5 war eine
+Rundung von 2,37 und damit eine Spur guenstiger als gemessen.
+
+Mehr Beobachtungen helfen also weiter nur, solange die Guete langsamer faellt
+als eins durch Wurzel n - und hier faellt sie schneller. Der Weg ueber mehr
+Maerkte bleibt zu.
+
+### Eine Falle habe ich vermieden
+
+Mein erster Quellcheck zeigte `vorschlag` als **nicht** buchend. Es bucht
+ueber `_miss_vorschlaege`. Eine Pruefung am Befehl allein haette ausgerechnet
+die Stelle uebersehen, an der KI-Vorschlaege gezaehlt werden - und die
+*muessen* gezaehlt werden, das sagt der Kopf von `analyst.py` ausdruecklich.
+
+Der Waechter zaehlt mittelbare Buchungen jetzt mit. Und er **rechnet** die
+buchende Menge aus dem Quelltext, statt sie zu pflegen: Die Lehre aus Befund
+439, einen Tag alt, diesmal von Anfang an angewandt.
+
+### Und die Suite hat vier Mal nachgefasst, jedes Mal zu Recht
+
+**Zwei Waechter pinnen eine Zaehlung des Berichtsordners.** Zwei Laeufe zu je
+fuenfzehn Koerben heben sie um 30 - von 554 auf 584.
+
+Gemessen aendert das nichts am Befund von 348: Die dreissig neuen Eintraege
+haben eine kleinste Trade-Zahl von **81**, keiner liegt unter der hoechsten
+Aussetzschwelle (30), keiner hat null Trades. `unter Schwelle 175` und
+`ohne Handel 109` bleiben unveraendert. Nachgezogen ist nur die Gesamtzahl,
+mit der Arithmetik daneben - und mit dem Vermerk, dass es eine **Zaehlung**
+ist und keine gemessene Eigenschaft. Dieser Unterschied ist der Grund, warum
+das Nachziehen hier richtig ist und bei einer gepflegten Messzahl die
+"Umkehrung des Verfahrens" waere (Befund 364).
+
+**Der dritte Waechter** verlangte, dass ich die zitierte offene Frage als
+*gelesen* verzeichne - der Mechanismus, den Befund 319 gebaut hat. Mein
+Abschnitt nennt *"Zaehlt ein Sweep am Bestand als Versuch?"*, also erzeugt er
+eine Erwaehnung, die neuer ist als der letzte Lesestand. `GELESEN` steht jetzt
+auf 440, mit dem Vermerk, dass die Frage selbst **offen bleibt**: Sie betrifft
+`landschaft` und `machbarkeit`, die buchen, nicht `marktkombinationen`, das
+nicht bucht.
+
+**Der vierte** einen Eintrag fuer `12,95 %`, weil die Zahl jetzt in zwei
+Abschnitten steht - in der Gate-Tafel, wo sie gegen die Schwelle von 15 steht,
+und hier, wo sie das Erkennungszeichen fuer den falschen Betriebspunkt ist.
+Beide Stellen brauchen sie, und das steht in `MEHRFACH`.
+
+Dass eine Messung in diesem Projekt Nebenwirkungen auf gepinnte Zaehlungen
+hat, ist dabei die eigentliche Auskunft dieses Nachtrags.
+
+### Mein Verfahrensfehler, zum vierten Mal
+
+Beim Beheben lief die Datenauswahl noch - also ist sie verworfen und neu
+aufgesetzt. Das ist in dieser Sitzung das vierte Mal, und der Vorsatz hat
+jedes Mal nicht gereicht.
+
+Was ich daraus aendere, ist nicht der Vorsatz: **Sobald eine Auswahl rot
+meldet, halte ich die andere an**, statt sie weiterlaufen zu lassen. Ein Lauf,
+dessen Quelltext sich unter ihm bewegt, ist ohnehin zu verwerfen - ihn weiter
+rechnen zu lassen kostet nur Zeit und erzeugt ein Ergebnis, das wie eines
+aussieht.

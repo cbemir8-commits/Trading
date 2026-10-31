@@ -1,0 +1,279 @@
+{
+  "intervall": "1d",
+  "betriebspunkt": "Perpetual (Hebel 3, mit Funding)",
+  "versuche": 203,
+  "kombinationen": [
+    {
+      "maerkte": "BTC+ETH",
+      "anzahl": 2,
+      "bestanden": 7,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Schlechtestes Jahr",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 158,
+      "cagr_pct": 12.951,
+      "rueckgang_pct": 10.6401,
+      "dsr": 0.4579
+    },
+    {
+      "maerkte": "BTC+ETH+XRP",
+      "anzahl": 3,
+      "bestanden": 7,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Schlechtestes Jahr",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 267,
+      "cagr_pct": 9.9843,
+      "rueckgang_pct": 10.6317,
+      "dsr": 0.3175
+    },
+    {
+      "maerkte": "ETH",
+      "anzahl": 1,
+      "bestanden": 7,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Drawdown",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 81,
+      "cagr_pct": 13.1058,
+      "rueckgang_pct": 13.1541,
+      "dsr": 0.2712
+    },
+    {
+      "maerkte": "BTC+ETH+LTC",
+      "anzahl": 3,
+      "bestanden": 6,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Schlechtestes Jahr",
+        "Regime-Aufteilung",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 266,
+      "cagr_pct": 10.1928,
+      "rueckgang_pct": 11.998,
+      "dsr": 0.3443
+    },
+    {
+      "maerkte": "BTC",
+      "anzahl": 1,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Deflated Sharpe"
+      ],
+      "trades": 117,
+      "cagr_pct": 9.3474,
+      "rueckgang_pct": 19.9647,
+      "dsr": 0.3234
+    },
+    {
+      "maerkte": "BTC+ETH+LTC+XRP",
+      "anzahl": 4,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Regime-Aufteilung",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 375,
+      "cagr_pct": 8.6623,
+      "rueckgang_pct": 12.5081,
+      "dsr": 0.2788
+    },
+    {
+      "maerkte": "ETH+LTC",
+      "anzahl": 2,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 189,
+      "cagr_pct": 8.8806,
+      "rueckgang_pct": 16.2243,
+      "dsr": 0.2258
+    },
+    {
+      "maerkte": "ETH+LTC+XRP",
+      "anzahl": 3,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 298,
+      "cagr_pct": 7.2842,
+      "rueckgang_pct": 15.4991,
+      "dsr": 0.1295
+    },
+    {
+      "maerkte": "ETH+XRP",
+      "anzahl": 2,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 190,
+      "cagr_pct": 8.5816,
+      "rueckgang_pct": 12.5334,
+      "dsr": 0.1179
+    },
+    {
+      "maerkte": "BTC+LTC",
+      "anzahl": 2,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 185,
+      "cagr_pct": 8.5232,
+      "rueckgang_pct": 14.9478,
+      "dsr": 0.1014
+    },
+    {
+      "maerkte": "BTC+XRP",
+      "anzahl": 2,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 186,
+      "cagr_pct": 8.1128,
+      "rueckgang_pct": 11.9333,
+      "dsr": 0.0951
+    },
+    {
+      "maerkte": "BTC+LTC+XRP",
+      "anzahl": 3,
+      "bestanden": 5,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 294,
+      "cagr_pct": 7.0241,
+      "rueckgang_pct": 14.642,
+      "dsr": 0.0866
+    },
+    {
+      "maerkte": "LTC+XRP",
+      "anzahl": 2,
+      "bestanden": 3,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 217,
+      "cagr_pct": 4.1916,
+      "rueckgang_pct": 19.5386,
+      "dsr": 0.019
+    },
+    {
+      "maerkte": "LTC",
+      "anzahl": 1,
+      "bestanden": 2,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Deflated Sharpe",
+        "Kosten-Stress",
+        "Parameter-Plateau"
+      ],
+      "trades": 108,
+      "cagr_pct": 4.4633,
+      "rueckgang_pct": 27.2553,
+      "dsr": 0.012
+    },
+    {
+      "maerkte": "XRP",
+      "anzahl": 1,
+      "bestanden": 2,
+      "gesamt": 11,
+      "offen": [
+        "Messlatte",
+        "Out-of-Sample-Sharpe",
+        "Drawdown",
+        "Schlechtestes Jahr",
+        "Bestaendigkeit",
+        "Monte-Carlo",
+        "Regime-Aufteilung",
+        "Deflated Sharpe",
+        "Parameter-Plateau"
+      ],
+      "trades": 109,
+      "cagr_pct": 3.5116,
+      "rueckgang_pct": 23.0643,
+      "dsr": 0.0071
+    }
+  ],
+  "urteil": "Kein Kandidat besteht alle Gates. Am weitesten kommt 'BTC+ETH' mit 7 von 11; offen bleiben: Messlatte, Schlechtestes Jahr, Deflated Sharpe, Parameter-Plateau."
+}

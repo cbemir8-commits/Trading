@@ -290,7 +290,14 @@ GELESEN: dict[str, int] = {
     # Dieselbe Frage, zwei Richtungen, zwei Vorzeichen. Das ist kein
     # Widerspruch im Register, sondern der Grund, warum die Frage beim Nutzer
     # liegt: "Zaehlt" heisst an zwei Stellen etwas anderes.
-    "Zaehlt ein Sweep am Bestand als Versuch?": 391,
+    # **Befund 440 liest sie wieder**, und diesmal war sie der Anlass: Der
+    # Eintrag fragt, ob ein Sweep am Bestand als Versuch zaehlt, und 440
+    # hat daran gemessen, dass meine Begruendung in 436 den falschen
+    # Maszstab angelegt hat - ein Marktkorb ist mehr Daten, keine
+    # weitere Hypothese. Die offene Frage selbst bleibt offen: Sie
+    # betrifft 'landschaft' und 'machbarkeit', die buchen, und nicht
+    # 'marktkombinationen', das nicht bucht.
+    "Zaehlt ein Sweep am Bestand als Versuch?": 440,
     "Timing gegen Zufallseinstiege": 295,
     "Der Preis in Reststreuungen": 295,
     # **Befund 305 hat beide erneut angesehen** - und es war zweimal etwas

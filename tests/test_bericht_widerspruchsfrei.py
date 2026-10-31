@@ -78,6 +78,14 @@ MEHRFACH: dict[str, str] = {
     # Dieselbe Groesse, absichtlich zweimal: die Hebelnutzung aus Befund 106
     # steht im Register und in der Begruendung zu 'cli healthcheck'.
     "0,2%": "Hebelnutzung (Befund 106), Register und Nutzerbefehl",
+    # Die Jahresrendite am **Perpetual**-Punkt (Befund 440): einmal in der
+    # Gate-Tafel, wo sie gegen die Schwelle von 15 steht, und einmal im
+    # Eintrag zu 440 - dort ist sie das **Erkennungszeichen** dafuer, dass
+    # mein erster Lauf der Marktkombinationen am falschen Betriebspunkt
+    # gemessen hat. Dieselbe Messung, und genau diese zwei Stellen brauchen
+    # sie: Ohne die Tafel waere sie unbelegt, ohne den Eintrag waere nicht
+    # festgehalten, woran der Punktverwechsler zu erkennen ist.
+    "12,95%": "Jahresrendite am Perpetual-Punkt (Befund 440), Tafel und Eintrag",
     # Die Obergrenze der Preisspanne aus Befund 230 - im Abschnitt selbst
     # und im Registereintrag, der sie zitiert.
     "1,26%": "Preisspanne des Suchens (Befund 230), Abschnitt und Register",

@@ -5996,6 +5996,73 @@ BEHOBEN: tuple[Richtung, ...] = (
         "benutzt (ein Tippfehler dort ordnete die Herkunft stillschweigend "
         "falsch ein), und alle elf Gates kommen vor",
         439,
+        zuletzt=440,
+    ),
+    # Befund 440: Ich habe eine Messung abgelehnt mit einem Preis, den
+    # niemand erhebt - und sie dann gefahren.
+    Richtung(
+        "Eine Messung abgelehnt mit einem Preis, den niemand erhebt",
+        "**Erst eine Beobachtung ueber mich**: Neun Befunde lang habe ich "
+        "meine eigenen Fragen gestellt, waehrend das Register **achtzehn "
+        "offene** fuehrt, die ich nie gelesen hatte. Eine davon - 'Zaehlt ein "
+        "Sweep am Bestand als Versuch?' (233/282) - betrifft genau das "
+        "Urteil, auf das ich mich in Befund 436 berufen habe. **Nachgemessen "
+        "war meine Begruendung von damals in beiden Teilen falsch.** Dort "
+        "habe ich 'cli marktkombinationen' abgelehnt, weil es 'fuenfzehn "
+        "Versuche' kosten wuerde. Erstens bucht der Befehl **keinen**: Von "
+        "23 Befehlen, die die Zulassungsstrecke fahren, buchen acht, und er "
+        "ist nicht dabei. Zweitens, und das ist der eigentliche Fehler, sagt "
+        "sein Docstring ausdruecklich, dass er keinen kosten **soll**, mit "
+        "einer Begruendung, die traegt: *'Mehr Maerkte sind mehr Daten, nicht "
+        "mehr Einfaelle - der Deflated Sharpe korrigiert dafuer, dass man bei "
+        "genug Einfaellen etwas findet.'* Ein Marktkorb ist kein Einfall; "
+        "sechs Haltedauer-Deckel (416) sind dagegen sechs **Regeln**, und die "
+        "Unterscheidung ist kohaerent - ich hatte sie nur nicht gelesen. "
+        "**Also gefahren, was 436 haette fahren sollen**, auf dem seit 435 "
+        "wiederhergestellten Vier-Markt-Speicher. Und dabei beinahe der "
+        "Fehler aus 428: Der erste Lauf meldet den **Perpetual**-Punkt, die "
+        "dokumentierte Tabelle steht am **Spot**-Punkt - erkennbar daran, "
+        "dass meine 12,95 % genau die Perpetual-Jahresrendite der Gate-Tafel "
+        "sind. Diesmal vor dem Schreiben bemerkt und mit '--spot' "
+        "wiederholt. **Am richtigen Punkt reproduziert es sauber**: Trades "
+        "158 / 266 / 267 / 375 und Jahresrendite 14,34 / 11,50 / 11,32 / "
+        "9,95 treffen **exakt**, der DSR liegt gleichmaessig um 0,0054 "
+        "tiefer. Gleichmaessig heisst: keine Datendrift. **Und es ist ganz "
+        "der Versuchszaehler**, gerechnet mit derselben Formel, die das Gate "
+        "benutzt: 0,5881 entspricht **198** Versuchen, 0,5826 entspricht "
+        "**203** - und 203 ist der heutige Stand. Damit bestaetigt dieser "
+        "Lauf unabhaengig den Preis aus Befund 342: fuenf Versuche kosten "
+        "0,0055 DSR-Punkte, also **0,0011 je Versuch**, genau die dort "
+        "gerechnete Zahl. Zwei Wege, dieselbe Zahl. Die Aussage, die "
+        "'erlaubter_gueteverlust' traegt, haelt ebenfalls: **2,37-mal so "
+        "viele Trades, DSR minus 29,2 %** gegen dokumentierte "
+        "'zweieinhalbmal' und 29 % - die 2,5 war eine Rundung von 2,37, also "
+        "eine Spur guenstiger als gemessen. **Eine Falle habe ich "
+        "vermieden**: Mein erster Quellcheck zeigte 'vorschlag' als nicht "
+        "buchend - es bucht ueber '_miss_vorschlaege'. Eine Pruefung am "
+        "Befehl allein haette ausgerechnet die Stelle uebersehen, an der "
+        "KI-Vorschlaege gezaehlt werden. Der Waechter zaehlt mittelbare "
+        "Buchungen jetzt mit und rechnet die buchende Menge aus dem "
+        "Quelltext, statt sie zu pflegen (439). **Und die Suite hat vier Mal "
+        "nachgefasst**, jedes Mal zu Recht: Zwei Waechter pinnen eine "
+        "**Zaehlung** des Berichtsordners, und zwei Laeufe zu je fuenfzehn "
+        "Koerben heben sie um 30 (554 auf 584). Gemessen aendert das nichts "
+        "am Befund von 348 - die dreissig neuen Eintraege haben eine "
+        "kleinste Trade-Zahl von 81, keiner liegt unter der Aussetzschwelle "
+        "von 30, keiner hat null Trades, und 'unter Schwelle 175 / ohne "
+        "Handel 109' bleibt unveraendert. Der dritte Waechter verlangte, "
+        "dass ich die zitierte offene Frage als **gelesen** verzeichne "
+        "(der Mechanismus aus 319), der vierte einen Eintrag fuer '12,95 %', "
+        "weil die Zahl jetzt in zwei Abschnitten steht und sagen muss, was "
+        "sie an welcher Stelle bedeutet. Dass eine Messung in diesem Projekt "
+        "Nebenwirkungen auf gepinnte Zaehlungen hat, ist dabei die "
+        "eigentliche Auskunft: Sie sind keine gemessenen Eigenschaften, und "
+        "das steht jetzt an ihnen dran. **Mein Verfahrensfehler zum vierten "
+        "Mal**: Beim Beheben lief die Datenauswahl noch, also ist sie "
+        "verworfen und neu aufgesetzt. Ab jetzt halte ich beide Auswahlen "
+        "an, sobald eine rot meldet, statt die zweite weiterlaufen zu "
+        "lassen - der Vorsatz allein hat vier Mal nicht gereicht",
+        440,
     ),
 )
 

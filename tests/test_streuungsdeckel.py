@@ -450,9 +450,15 @@ class TestDieLetzteAnnahmeImModulIstGemessen:
             alle.extend(_tradezahlen(json.loads(datei.read_text())))
         unter = sum(1 for t in alle if t < GUETESCHWELLE)
 
-        assert len(alle) == 554
+        # **Von 554 auf 584** (Befund 440): Zwei Laeufe von
+        # 'cli marktkombinationen' zu je fuenfzehn Koerben. Der **Zaehler**
+        # bleibt bei 121 - gemessen hat keiner der dreissig neuen Eintraege
+        # weniger als 81 Trades. Was dieser Test festhaelt, ist deshalb
+        # unberuehrt: Die 113 Nullen stecken weiter in 'nachpruefung', und
+        # nur die Zulassungslaeufe sind die Population.
+        assert len(alle) == 584
         assert unter == 121
-        assert 1 - unter / len(alle) == pytest.approx(0.782, abs=5e-4)
+        assert 1 - unter / len(alle) == pytest.approx(0.793, abs=5e-4)
         # Und genau deshalb ist die Form benannt:
         from research.streuung import VERSUCHSFORM
 

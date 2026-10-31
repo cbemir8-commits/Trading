@@ -39,12 +39,29 @@ KLEINSTE_TRADE_ZAHL = 75
 JE_FORM: dict[str, tuple[int, int]] = {
     # Form: Eintraege, davon unter einer Aussetzschwelle
     "punkte": (83, 0),
-    "kombinationen": (60, 0),
+    # **Von 60 auf 90** (Befund 440): Zwei Laeufe von
+    # 'cli marktkombinationen' zu je fuenfzehn Koerben - einmal am
+    # Perpetual-, einmal am Spot-Punkt. Die Zahl ist eine **Zaehlung des
+    # Berichtsordners**, nicht eine gemessene Eigenschaft: Jeder neue
+    # Bericht verschiebt sie, und das ist richtig so. Was der Befund von
+    # 348 traegt, ist nicht die Zahl, sondern dass alle fuenf Formen
+    # gelesen werden und die Nullen in 'nachpruefung' stecken.
+    "kombinationen": (90, 0),
     "bestenliste": (141, 22),
     "stufen": (91, 37),
     "ergebnisse": (179, 116),
 }
-ALLE = 554
+#: Alle Eintraege ueber alle fuenf Berichtsformen.
+#:
+#: **Von 554 auf 584** (Befund 440): Zwei Laeufe von 'cli marktkombinationen'
+#: zu je fuenfzehn Koerben. Das ist eine **Zaehlung des Berichtsordners** und
+#: keine gemessene Eigenschaft - jeder neue Bericht verschiebt sie.
+#:
+#: Die zwei Zahlen darunter bleiben, und das ist der Punkt: Gemessen haben die
+#: dreissig neuen Eintraege eine kleinste Trade-Zahl von 81, keiner liegt
+#: unter der hoechsten Aussetzschwelle (30) und keiner hat null Trades. Der
+#: Befund von 348 ist damit unberuehrt.
+ALLE = 584
 UNTER_SCHWELLE = 175
 OHNE_HANDEL = 109
 
