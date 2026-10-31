@@ -5591,6 +5591,54 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Waechter aus 429 sie gefangen, vor dem Push. Derselbe Fehler, und er "
         "ist trotzdem nicht in die Reihe gekommen",
         431,
+        zuletzt=432,
+    ),
+    # Befund 432: Der Auftrag an die KI nennt das richtige Ziel - in einer
+    # Einheit, in der der Empfaenger es nicht einstellen kann.
+    Richtung(
+        "Der Auftrag stand in Einheiten, die der Analyst nicht setzen kann",
+        "Zum Durchlauf gehoerte der offene Punkt 'Die Research-KI wird im "
+        "Wettbewerb nicht genutzt'. **Der ist ueberholt**: Befund 146 hat sie "
+        "angehaengt, 'cli wettbewerb --ki' fragt sie vor der Schleife **und "
+        "je Runde**, mit Versuchs- und Geldschranke, und ihre Kandidaten sind "
+        "in der Ausgabe als '(KI)' gefuehrt. Dass sie nicht mitlaeuft, ist "
+        "kein Loch im Bau, sondern eine Nutzerentscheidung - sie steht unter "
+        "ENTSCHEIDUNGEN und ist seit 342 **gerechnet**: ein Vorschlag kostet "
+        "0,0011 DSR-Punkte, der Einwand steht auf den Modellkosten und den "
+        "neun Nieten, nicht auf dem Gate. Ich haette den Zyklus beinahe damit "
+        "verbracht, Vorhandenes zu bauen; 'cli nachgesehen' (425) hat auch "
+        "die n_eff-Route abgefangen, die 'datenbedarf' schon mit 2181 Tagen "
+        "beziffert hat. **Die Luecke, die wirklich offen war**, liegt eine "
+        "Ebene tiefer: Der Auftrag verlangt 161 Trades und Sharpe je Trade "
+        "ueber 0,2465 - und **keine der beiden Groessen kann der Empfaenger "
+        "einstellen.** Er fuellt 'stop', 'targets', 'cooldown_bars' und "
+        "'max_hold_bars' aus; Trade-Zahl und Sharpe sind Ergebnisse davon. "
+        "Nachgezaehlt standen im Auftragstext 'Haltedauer' 0x, 'max_hold' 0x, "
+        "'Bruttobewegung' 0x, 'Gebuehr' 0x. Das ist derselbe Fehler, den "
+        "'auftragslage' an sich selbst behoben hat - falsches Ziel -, nur in "
+        "der Einheit. Gemessen auf der Zulassungsreihe: 161 Trades auf den "
+        "3300 gemeinsamen Tagen sind **ein Trade alle 20,5 Tage**, die "
+        "gemessene Streuung einer 20-Tage-Bewegung ist **24,50 %**, und "
+        "verlangt sind davon **7,13 % brutto je Trade**. Die Gebuehr ist "
+        "dabei **0,6 %** der Anforderung, also kein Faktor - die Gegenrichtung "
+        "zu 'taktung', wo sich die Linien erst bei sehr vielen Trades "
+        "schneiden. Der Bestand ist die Gegenprobe: 156 Trades, Takt 21,2 "
+        "Tage, 0,2708 gegen noetige 0,2952 - knapp 8 % zu wenig, was zur "
+        "bekannten Luecke passt. Gebaut ist 'research/auftragstakt.py', "
+        "verdrahtet an drei Stellen samt '--auftrag', und es kostet keinen "
+        "Versuch: umgerechnet wird eine Anforderung, nicht ein Kandidat. "
+        "**Zwei Warnungen stehen im Auftrag selbst**, weil beide Zahlen sonst "
+        "falsch gelesen werden: Ein kuerzerer Ausstieg bringt **keine** "
+        "Trades - Befund 416 hat sechs Deckel gemessen, die Zahl blieb 156 "
+        "bis 158 -, und 'noetig SR' ist die Anforderung an einen Alleingang, "
+        "nicht an einen Partner. **Mein Fehlgriff dabei**: genau diese zweite "
+        "Verwechslung. Ich habe 'bestand_sharpe' nochmals durch die Wurzel "
+        "der Stichprobe geteilt, 246 statt 161 Trades als Ziel gelesen und "
+        "fast einen Befund darauf gestellt. Gefangen hat es die Kontrollzeile "
+        "0,2708 * Wurzel(115) = 2,904 gegen die 3,6178, die das Modul selbst "
+        "ausgibt - eine Rechnung, die man hinschreiben kann, keine, die man "
+        "sich merkt",
+        432,
     ),
 )
 

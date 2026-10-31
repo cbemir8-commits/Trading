@@ -38617,3 +38617,98 @@ gefangen, mit Datei, Klasse, Name und Scope im Fehlertext, und zwar **vor**
 dem Push statt Wochen danach. Das ist der Unterschied zwischen einer Regel,
 die ich mir vornehme, und einer, die geprueft wird: Ich habe denselben Fehler
 wieder gemacht, und er ist trotzdem nicht in die Reihe gekommen.
+
+## Vierhundertzweiunddreissig. Der Auftrag stand in Einheiten, die der Analyst nicht setzen kann
+
+### Zuerst: ein offener Punkt, der seit 146 geschlossen ist
+
+Zum Durchlauf gehoert die Liste offener Punkte, und darin steht *"Die
+Research-KI ist gebaut, wird im Wettbewerb aber nicht genutzt"*. Nachgesehen
+ist das ueberholt. Befund 146 hat sie angehaengt; `cli wettbewerb --ki` fragt
+sie **vor der Schleife und je Runde**, mit Versuchs- und Geldschranke, und
+ihre Kandidaten stehen in der Ausgabe als `(KI)`.
+
+Dass sie nicht mitlaeuft, ist kein Loch im Bau. Es ist eine
+**Nutzerentscheidung**, sie steht unter `ENTSCHEIDUNGEN`, und sie ist seit
+Befund 342 gerechnet: Ein Vorschlag kostet 0,0011 DSR-Punkte, zwanzig 0,0207;
+der Einwand steht auf den Modellkosten und den neun erfolglosen Vorschlaegen,
+nicht auf dem Gate. Die Entscheidung gehoert damit nicht mir.
+
+Ich haette diesen Zyklus beinahe damit verbracht, Vorhandenes zu bauen.
+`cli nachgesehen` (425) hat das abgefangen - und gleich noch die n_eff-Route,
+die `datenbedarf` mit **2181 Tagen** beziffert hat, und die Vorratsdecke
+(1,579 gegen noetige 1,937). Das ist der erste Zyklus, in dem der Befehl aus
+425 echte Arbeit gespart hat, und zwar zweimal.
+
+### Die Luecke, die wirklich offen war
+
+Der Auftrag an die KI ist gut gebrieft - `auftragslage.als_auftrag` nennt den
+Deflated Sharpe, die noetige Guete, die Partnerkarte und sogar die gemessene
+Nicht-Vorhersagekraft der Fensterkorrelation. Er verlangt:
+
+    161 Trades im selben Zeitraum, Sharpe je Trade ueber 0,2465
+
+**Keine dieser beiden Groessen kann der Empfaenger einstellen.** Er fuellt ein
+Genom aus, und dessen Felder heissen `stop`, `targets`, `cooldown_bars` und
+`max_hold_bars`. Trade-Zahl und Sharpe je Trade sind *Ergebnisse* davon,
+gemessen hinterher ueber elf Gates. Nachgezaehlt im Auftragstext:
+
+    'Haltedauer'      0x
+    'max_hold'        0x
+    'Bruttobewegung'  0x
+    'Gebuehr'         0x
+
+Das ist derselbe Fehler, den `auftragslage` an sich selbst behoben hat - der
+Auftrag nannte das falsche Ziel -, nur eine Ebene tiefer: Jetzt nennt er das
+richtige Ziel in einer Einheit, in der es sich nicht einstellen laesst.
+
+### Umgerechnet, auf der Zulassungsreihe gemessen
+
+| Trades | Takt/Tage | Streuung % | noetig SR | brutto % | Gebuehr-Anteil |
+|-------:|----------:|-----------:|----------:|---------:|---------------:|
+|    146 |      22,6 |      28,18 |    0,3038 |     8,56 |           0,5% |
+|    156 |      21,2 |      25,69 |    0,2952 |     7,58 |           0,5% |
+|    161 |      20,5 |      24,50 |    0,2911 |     7,13 |           0,6% |
+|    185 |      17,8 |      22,28 |    0,2740 |     6,10 |           0,7% |
+
+Der Auftrag heisst damit: **alle 20,5 Tage ein Trade, und davon 7,13 %
+Bruttobewegung mitnehmen**, wo eine 20-Tage-Bewegung 24,50 % streut. Das ist
+eine Anweisung, gegen die man ein Genom bauen kann.
+
+Die Zeile 156 ist der Bestand und die Gegenprobe: Er handelt in diesem Takt
+und hat 0,2708 gegen noetige 0,2952 - knapp 8 % zu wenig, was zur bekannten
+Luecke passt. Haette die Zeile etwas anderes gesagt, waere die Rechnung
+falsch.
+
+**Und die Gebuehr redet hier nicht mit**: 0,04 % vom Nominalwert sind 0,5 bis
+0,7 % der verlangten Bewegung. Das ist die Gegenrichtung zu `taktung`, wo sich
+Anforderung und Gebuehr bei sehr vielen Trades schneiden - in diesem Band ist
+davon nichts zu sehen. Die Gegenprobe steht als Test: Bei 10 000 Trades und
+0,032 % verlangter Bewegung kippt das Urteil.
+
+### Zwei Warnungen, die mit in den Auftrag gehoeren
+
+**Ein kuerzerer Ausstieg bringt keine Trades.** Befund 416 hat sechs
+Haltedauer-Deckel am massgeblichen Kandidaten gemessen, und die Zahl der
+fertigen Trades blieb bei jedem zwischen 156 und 158 - der Deckel bringt
+*andere* Beobachtungen, nicht mehr. Ohne diese Warnung liest sich der Takt als
+Bauanleitung fuer `max_hold_bars`, und das waere die falsche Schraube.
+
+**'noetig SR' ist der Alleingang, nicht der Partner.** Die Spalte nennt, was
+eine Regel braeuchte, die das Gate allein raeumt. Als Partner neben dem
+Bestand genuegt weniger, und diese Zahl steht weiter oben im Auftrag.
+
+### Mein Fehlgriff dabei
+
+Genau diese zweite Verwechslung ist mir selbst unterlaufen, und zwar
+folgenschwer: Ich habe `bestand_sharpe` nochmals durch die Wurzel der
+Stichprobe geteilt - `guete / sqrt(n_eff)` statt `guete` -, daraufhin **246
+statt 161 Trades** als Ziel gelesen und eine ganze Messreihe darauf gestellt,
+inklusive einer Haltedauer von 13 statt 20 Tagen.
+
+Gefangen hat es eine Kontrollzeile, die man hinschreiben kann statt sie sich
+zu merken: `0,2708 * Wurzel(115) = 2,904`, und das Modul selbst gibt
+`noetige_guete = 3,6178` aus. Die beiden Zahlen gehoeren in dieselbe Einheit,
+also war der Eingang falsch. Dass `guete` im Projekt den Sharpe **je Trade**
+meint und nicht das Produkt, steht in `als_auftrag` sogar als Formel - ich
+hatte sie gelesen und trotzdem falsch eingesetzt.

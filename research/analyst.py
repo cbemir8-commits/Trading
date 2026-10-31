@@ -229,6 +229,7 @@ def build_prompt(
     count: int = PROPOSALS_PER_CYCLE,
     lage=None,
     ausschluesse=None,
+    takt: str = "",
 ) -> str:
     """Den Auftrag zusammenstellen.
 
@@ -249,6 +250,14 @@ def build_prompt(
     schlaegt der Analyst weiter Regelarten vor, die durchgemessen sind - in
     Befund 83 waren zwei von vier eigenen Vorschlaegen aus einer Familie, die
     Befund 84 dann geschlossen hat.
+
+    ``takt`` ist der Abschnitt aus ``auftragstakt.als_auftrag`` und schliesst
+    die letzte Luecke darin (Befund 432): ``lage`` nennt Trade-Zahl und Sharpe
+    je Trade, und **beides kann dieser Empfaenger nicht einstellen** - er
+    fuellt ``stop``, ``targets``, ``cooldown_bars`` und ``max_hold_bars`` aus.
+    Der Abschnitt rechnet die Anforderung in Takt und Bruttobewegung je Trade
+    um, also in die Einheit dieser Felder. Ohne ihn bleibt der Auftrag, wie er
+    war.
     """
     parts: list[str] = []
 
@@ -349,6 +358,11 @@ def build_prompt(
 
     if lage is not None:
         parts.append(lage.als_auftrag())
+
+    # Direkt hinter der Lage und vor den Ausschluessen: Der Takt rechnet
+    # **deren** Zahlen um, steht also nur mit ihnen sinnvoll da.
+    if takt:
+        parts.append(takt)
 
     # Nach dem Auftrag und vor der Aufgabe: Erst was gebraucht wird, dann was
     # dafuer ausscheidet. Umgekehrt liest sich der Prompt als Verbotsliste mit
@@ -470,6 +484,7 @@ def propose(
     max_tokens: int = 4000,
     lage=None,
     ausschluesse=None,
+    takt: str = "",
 ) -> AnalystResult:
     """Einen Forschungszyklus durchfuehren.
 
@@ -494,6 +509,7 @@ def propose(
         count=count,
         lage=lage,
         ausschluesse=ausschluesse,
+        takt=takt,
     )
 
     response = client.complete(system=SYSTEM_PROMPT, prompt=prompt, max_tokens=max_tokens)

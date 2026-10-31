@@ -1957,10 +1957,12 @@ def _ask_the_analyst(settings, journal_path: Path) -> list:
         )
 
     client = AnthropicClient(settings.llm.anthropic_api_key.get_secret_value())
+    lage = _auftragslage(Path(settings.paths.state))
     result = propose(
         client, journal=journal, budget=budget, already_tried=tried,
-        lage=_auftragslage(Path(settings.paths.state)),
+        lage=lage,
         ausschluesse=_ausschluesse(),
+        takt=_auftragstakt(lage, settings),
     )
     save_budget(budget_path, budget)
 
@@ -2185,6 +2187,46 @@ def _auftragslage(zustand: Path):
         # Was traegt, ist die Luecke selbst (beste Guete 2,484 gegen 3,516
         # ueber 18 Messungen), und die steht weiter oben im Auftrag.
     )
+
+
+def _auftragstakt(lage, settings) -> str:
+    """Den Auftrag in Genom-Groessen umrechnen - Befund 432.
+
+    ``_auftragslage`` nennt Trade-Zahl und Sharpe je Trade. **Beides kann der
+    Empfaenger nicht einstellen**; er fuellt ``stop``, ``targets``,
+    ``cooldown_bars`` und ``max_hold_bars`` aus. Hier wird daraus ein Takt in
+    Tagen und eine Bruttobewegung in Prozent - dieselbe Einheit wie diese
+    Felder.
+
+    Die Streuung wird aus den **echten** Tageskerzen gemessen, also braucht
+    dieser Weg den Speicher. Fehlt er, bleibt der Abschnitt leer und der
+    Auftrag ist der von vorher: Ein Abschnitt mit gesetzten Zahlen waere
+    schlechter als keiner.
+    """
+    from research.auftragstakt import als_auftrag, rechne
+    from research.referenz import SPOTPUNKT
+
+    try:
+        store = CandleStore(settings.paths.data_store)
+        frame = store.read("BTCUSD_BITSTAMP", Interval.D1)
+    except Exception:
+        # Ein fehlender oder unlesbarer Speicher ist hier kein Fehler: Der
+        # Auftrag bleibt dann der von vorher, statt mit gesetzten Zahlen
+        # dazustehen.
+        return ""
+    if frame is None or frame.empty:
+        return ""
+
+    unten, oben = lage.ziel_spanne
+    ziele = tuple(sorted({unten, lage.bestes_ziel, oben, SPOTPUNKT.trades}))
+    stufen = rechne(
+        frame,
+        ziele=ziele,
+        versuche=lage.versuche,
+        schiefe=SPOTPUNKT.schiefe,
+        woelbung=SPOTPUNKT.woelbung,
+    )
+    return als_auftrag(stufen, ziel_trades=lage.bestes_ziel)
 
 
 def _ausschluesse():
@@ -4121,6 +4163,7 @@ def vorschlag(
             build_prompt(
                 journal=[], thresholds=GateThresholds(), lage=lage,
                 ausschluesse=_ausschluesse(),
+                takt=_auftragstakt(lage, settings),
             )
         )
         return
@@ -4152,6 +4195,7 @@ def vorschlag(
     ergebnis = propose(
         client, journal=[], budget=budget, already_tried=bekannt, lage=lage,
         ausschluesse=_ausschluesse(),
+        takt=_auftragstakt(lage, settings),
     )
     if datei is None:
         save_budget(state / "budget.json", budget)
