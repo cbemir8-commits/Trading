@@ -39,6 +39,17 @@ from backtest.metrics import Metrics, compute_metrics
 
 log = structlog.get_logger(__name__)
 
+#: Der Massstab dieses Moduls, aus seinem eigenen Kopf: *"Eine Strategie, die
+#: zwei Drittel der Rendite bei einem Drittel des Drawdowns liefert, ist der
+#: Messlatte ueberlegen, obwohl sie weniger verdient."*
+#:
+#: **Bis Befund 444 stand der Satz nur im Kopf.** ``verdict_for`` verlangte
+#: einen irgendwie kleineren Rueckgang und 0,6 der Rendite - und nannte das
+#: Ergebnis "deutlich ruhiger". Wer einen Massstab aufschreibt und einen
+#: anderen rechnet, hat zwei Massstaebe, und einer davon ist falsch.
+RENDITEANTEIL: float = 2 / 3
+RUECKGANGSANTEIL: float = 1 / 3
+
 
 @dataclass(frozen=True, slots=True)
 class Benchmark:
@@ -63,24 +74,93 @@ class Benchmark:
             f"Sharpe {self.metrics.sharpe:.2f}"
         )
 
-    def verdict_for(self, strategy: Metrics) -> str:
-        """Ein Satz dazu, ob sich der Aufwand gelohnt haette."""
-        better_return = strategy.total_return_pct > self.return_pct
-        better_drawdown = strategy.max_drawdown_pct < self.max_drawdown_pct
+    def verdict_for(
+        self, strategy: Metrics, *, kill_switch_pct: float | None = None
+    ) -> str:
+        """Ein Satz dazu, ob sich der Aufwand gelohnt haette.
 
-        if better_return and better_drawdown:
+        ``kill_switch_pct`` kommt von aussen - aus ``settings.risk.
+        max_drawdown_pct`` -, weil eine Aussage ueber ein Konto die Schwelle
+        dieses Kontos braucht. Ohne sie wird sie **nicht** getroffen; eine
+        hier gepflegte 15 waere die zweite Quelle, von der vier Befunde
+        dieses Projekts handeln (158, 159, 165).
+
+        **Was hier bis Befund 444 stand** und nicht gemessen war: *"Weniger
+        Rendite, aber deutlich ruhiger - fuer ein Konto mit
+        15 %-Kill-Switch der bessere Handel."* Die Bedingung dazu verlangte
+        einen **irgendwie** kleineren Rueckgang und 0,6 der Rendite. Damit
+        bekam eine Strategie mit 74,9 % Rueckgang gegen eine Messlatte von
+        75,0 % das Urteil "deutlich ruhiger" und eine Empfehlung fuer ein
+        Konto, das bei 15 % abschaltet - beide waeren laengst liquidiert
+        gewesen. Der Massstab steht im Kopf dieses Moduls und wird jetzt
+        gerechnet: zwei Drittel der Rendite bei einem Drittel des
+        Rueckgangs.
+        """
+        better_return = strategy.total_return_pct > self.return_pct
+        ruhiger = strategy.max_drawdown_pct < self.max_drawdown_pct
+
+        if better_return and ruhiger:
             return "Schlaegt die Messlatte in beidem - Rendite und Rueckgang."
-        if better_drawdown and strategy.total_return_pct > self.return_pct * 0.6:
-            return (
-                "Weniger Rendite, aber deutlich ruhiger - fuer ein Konto mit "
-                "15 %-Kill-Switch der bessere Handel."
-            )
+        if ruhiger:
+            return self._ruhiger_satz(strategy, kill_switch_pct)
         if better_return:
             return "Mehr Rendite, aber nicht ruhiger."
         return (
             "Schlechter als Nichtstun. Halten haette mehr gebracht, "
             "ohne Gebuehren und ohne Liquidationsrisiko."
         )
+
+    def _anteile(self, strategy: Metrics) -> tuple[float, float] | None:
+        """Rendite- und Rueckgangsanteil - oder ``None``.
+
+        ``None``, wenn die Messlatte nichts verdient oder nicht zurueckging:
+        Dann hat "zwei Drittel der Rendite bei einem Drittel des Rueckgangs"
+        keinen Bezugspunkt, und ein Anteil waere eine Zahl ohne Bedeutung.
+        """
+        if self.return_pct <= 0 or self.max_drawdown_pct <= 0:
+            return None
+        return (
+            strategy.total_return_pct / self.return_pct,
+            strategy.max_drawdown_pct / self.max_drawdown_pct,
+        )
+
+    def _schaltersatz(self, strategy: Metrics, grenze: float | None) -> str:
+        """Der Zusatz zum Kill-Switch - nur mit dessen Schwelle."""
+        if grenze is None:
+            return ""
+        if strategy.max_drawdown_pct < grenze:
+            return (
+                f" Mit {strategy.max_drawdown_pct:.1f} % bleibt er unter dem "
+                f"Kill-Switch von {grenze:.0f} % - fuer ein solches Konto der "
+                f"bessere Handel."
+            )
+        return (
+            f" Mit {strategy.max_drawdown_pct:.1f} % liegt er aber ueber dem "
+            f"Kill-Switch von {grenze:.0f} %: Auch dieser Handel haette "
+            f"ausgeloest."
+        )
+
+    def _ruhiger_satz(self, strategy: Metrics, grenze: float | None) -> str:
+        anteile = self._anteile(strategy)
+        if anteile is None:
+            return (
+                "Ruhiger als die Messlatte, aber diese hat nichts verdient "
+                "oder ging nicht zurueck - ein Anteil davon sagt nichts."
+                + self._schaltersatz(strategy, grenze)
+            )
+        rendite, rueckgang = anteile
+        erreicht = rendite >= RENDITEANTEIL and rueckgang <= RUECKGANGSANTEIL
+        wie = "deutlich ruhiger" if erreicht else "etwas ruhiger"
+        satz = (
+            f"Weniger Rendite, aber {wie}: {rendite:.0%} der Rendite bei "
+            f"{rueckgang:.0%} des Rueckgangs."
+        )
+        if not erreicht:
+            satz += (
+                " Der Massstab dieses Moduls - zwei Drittel der Rendite bei "
+                "einem Drittel des Rueckgangs - ist damit nicht erreicht."
+            )
+        return satz + self._schaltersatz(strategy, grenze)
 
 
 def benchmark_at_equal_risk(

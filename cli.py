@@ -16210,7 +16210,7 @@ def nachgesehen(
     **Vor** dem Messen, nicht danach. Das Register verzeichnet acht Faelle, in
     denen dieses Projekt etwas nachgebaut hat, das es besass (268, 359, 388,
     396, 407, 418, 423, 424); die beiden letzten haben je einen ganzen
-    Arbeitsgang gekostet. Der Grund ist Groesse: 104 Forschungsmodule und 72
+    Arbeitsgang gekostet. Der Grund ist Groesse: 107 Forschungsmodule und 72
     Befehle, rund 1500 Docstrings. Wer von Hand grept, sucht am Ort der
     **Frage**, die er stellt - und nicht am Ort der **Groesse**, die er messen
     will. Genau daran sind 423 und 424 gescheitert.

@@ -6211,6 +6211,59 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Monotonie, Anschlag, Luecke und die offenen Gates je Zeile",
         443,
     ),
+    # Befund 444: Die Fehlerklasse aus 443 mechanisch gesucht - und der
+    # Massstab, der nur im Modulkopf stand.
+    Richtung(
+        "Ungelesene Urteilssaetze waren nie gesucht worden",
+        "Befund 443 hat einen Satz gefunden, der eine Groesse behauptete, die "
+        "er nicht gemessen hat - und ich habe ihn **durch Zufall** gefunden, "
+        "beim Nachrechnen einer anderen Zahl. Der Zweig stand in keinem Test; "
+        "er konnte falsch sein, ohne dass etwas rot wird. Das ist eine "
+        "**Fehlerklasse**, und sie ist mechanisch auffindbar: Eine Funktion, "
+        "die je nach Ausgang etwas anderes behauptet, hat mehrere "
+        "Textrueckgaben, und jede davon ist eine Aussage. Gebaut ist "
+        "'research/urteilszweige.py' in zwei getrennten Haelften - statisch "
+        "per AST, dynamisch aus einer Messung, die **von aussen** kommt, "
+        "damit das Modul nicht von 'coverage' abhaengt. **Gemessen an der "
+        "Nicht-Daten-Auswahl**: 157 Urteilsfunktionen, 29 mit mindestens "
+        "einer ungelesenen Rueckgabe, 2 davon ganz ungelesen. Nachgesehen "
+        "habe ich die ganz ungelesenen und die, deren Zweig etwas "
+        "**vergleicht** - dort sitzt die Klasse aus 443. **Ein echter Fund**: "
+        "'Benchmark.verdict_for' sagte *'Weniger Rendite, aber deutlich "
+        "ruhiger - fuer ein Konto mit 15 %-Kill-Switch der bessere Handel'*, "
+        "und die Bedingung dazu verlangte einen **irgendwie** kleineren "
+        "Rueckgang und 0,6 der Rendite. Gemessen: Eine Strategie mit 74,9 % "
+        "Rueckgang gegen eine Messlatte von 75,0 % - ein Zehntel "
+        "Prozentpunkt, das Fuenffache des Kill-Switch - bekam 'deutlich "
+        "ruhiger' und eine Empfehlung fuer ein Konto, das bei 15 % "
+        "abschaltet. Beide waeren laengst liquidiert gewesen. **Der Massstab "
+        "stand im Kopf desselben Moduls**: *'zwei Drittel der Rendite bei "
+        "einem Drittel des Drawdowns'* - wer einen Massstab aufschreibt und "
+        "einen anderen rechnet, hat zwei Massstaebe, und einer ist falsch. "
+        "Jetzt wird der aufgeschriebene gerechnet, der Satz nennt die "
+        "Anteile, und die Kill-Switch-Schwelle kommt aus "
+        "'settings.risk.max_drawdown_pct' statt als 15 im Rumpf zu stehen - "
+        "ohne sie wird die Kontoaussage **nicht** getroffen. **Zur "
+        "Tragweite**: 'verdict_for' hat ausser Tests keinen Aufrufer, die "
+        "Falschaussage war real aber latent. **Ein Verdacht loeste sich beim "
+        "Lesen auf**: 'vorratsdecke._deckentext' behauptet 'die Kopplung "
+        "traegt', und 'tragfaehig' ist vorher geprueft - der Kontrollfluss "
+        "deckt den Satz. **Zwei eigene Fehler dabei**: Mein erster Entwurf "
+        "zaehlte mit 'ast.walk' die Rueckgaben innerer Funktionen zur "
+        "aeusseren, und ich habe eine Zahl (135) in den Modulkopf "
+        "geschrieben, die ich gerechnet statt gemessen hatte - gemessen sind "
+        "157. Ein Werkzeug gegen ungemessene Behauptungen darf nicht mit "
+        "einer anfangen. Und beim ersten Auswerten standen Analyse und "
+        "Messung auf **verschiedenen Staenden**: Die Coverage-Daten waren "
+        "aelter als meine Aenderung an 'benchmark.py', die Zeilennummern "
+        "hatten sich verschoben, und zwei Eintraege waren Artefakte. "
+        "**Nebenbefund, vom Waechter erzwungen**: Die Zahl '104 "
+        "Forschungsmodule' im Kopf von 'nachgesehen' stand mit "
+        "|107 - 104| = 3 genau an der Grenze ihrer Toleranz - sie hielt noch, "
+        "aber das naechste Modul haette sie gebrochen. Auf 107 nachgezogen, "
+        "nicht die Toleranz geweitet",
+        444,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

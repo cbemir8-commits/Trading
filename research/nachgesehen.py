@@ -14,7 +14,7 @@ Arbeitsgang gekostet:
   von ``stand.Suchbudget`` zieht woertlich dieselbe Folgerung.
 
 Der Grund ist nicht Unachtsamkeit, sondern Groesse. Der durchsuchbare Bestand
-sind **104 Forschungsmodule und 72 Befehle** mit rund 1500 Docstrings. Wer von
+sind **107 Forschungsmodule und 72 Befehle** mit rund 1500 Docstrings. Wer von
 Hand grept, sucht am Ort der **Frage**, die er gerade stellt - und nicht am Ort
 der **Groesse**, die er messen will. Genau daran sind 423 und 424 gescheitert:
 gesucht in ``erreichbarkeit``, gelegen in ``verbund`` und ``stand``.

@@ -39843,3 +39843,127 @@ Keine Schwelle, kein Gate, kein Urteil bewegt sich zugunsten des Kandidaten.
 Die eine inhaltliche Aenderung geht in die unbequeme Richtung: Was fehlt, ist
 fuenfmal so viel wie dokumentiert, und die Kostenfamilie ist erschoepft,
 ohne dass ein Gate dabei herausfaellt.
+
+## Vierhundertvierundvierzig. Ungelesene Urteilssaetze waren nie gesucht worden
+
+Befund 443 hat einen Satz gefunden, der eine Groesse **behauptete**, die er
+nicht gemessen hat. Gefunden habe ich ihn beim Nachrechnen einer anderen
+Zahl - **durch Zufall**. Das ist der eigentliche Mangel: Die Stelle war nicht
+schwer zu sehen, nur hatte niemand hingesehen, und sie war auch nicht schwer
+zu *finden*. Der Zweig stand in keinem Test.
+
+Das ist eine **Fehlerklasse**, und sie ist mechanisch auffindbar:
+
+> Eine Funktion, die je nach Ausgang etwas anderes behauptet, hat mehrere
+> Textrueckgaben. Jede davon ist eine Aussage. Eine, die kein Test erreicht,
+> kann falsch sein, ohne dass etwas rot wird.
+
+### Zwei Haelften, getrennt gehalten
+
+`research/urteilszweige.py` sucht sie. **Statisch** per AST: alle Funktionen
+in `research/` mit mindestens zwei Textrueckgaben. **Dynamisch**: welche
+dieser Zeilen eine Messung nie erreicht hat - und die Messung kommt *von
+aussen* als Abbildung Datei -> erreichte Zeilen, damit das Modul nicht von
+`coverage` abhaengt und in der normalen Auswahl pruefbar bleibt.
+
+Gemessen an der Nicht-Daten-Auswahl:
+
+    Urteilsfunktionen (>= 2 Textrueckgaben)    157
+    davon mit mindestens einer ungelesenen      29
+    ganz ungelesen                               2
+
+**Das ist eine Reihenfolge, kein Mangel** (Befund 118). Der Zweig fuer
+"nichts gemessen" gehoert in jedes ordentliche Urteil und wird zu Recht
+selten gefahren. Zuerst hinzusehen ist dort, wo ein Zweig etwas
+**vergleicht** - genau das war die Stelle in 443.
+
+### Ein echter Fund: "deutlich ruhiger" war nicht gemessen
+
+`Benchmark.verdict_for` sagte:
+
+> Weniger Rendite, aber **deutlich ruhiger** - fuer ein Konto mit
+> 15 %-Kill-Switch der bessere Handel.
+
+Die Bedingung dazu verlangte einen **irgendwie** kleineren Rueckgang und 0,6
+der Rendite. Gemessen:
+
+    Messlatte (Halten)     400,0 % Rendite   75,0 % Rueckgang
+    Strategie              244,0 % Rendite   74,9 % Rueckgang
+    -> "deutlich ruhiger - fuer ein Konto mit 15 %-Kill-Switch der bessere
+       Handel."
+
+Ein Zehntel Prozentpunkt ruhiger, beim **Fuenffachen** des Kill-Switch. Beide
+waeren laengst liquidiert gewesen - das Konto, dem der Satz den Handel
+empfiehlt, haette ihn nie erlebt.
+
+**Und der Massstab stand im Kopf desselben Moduls:**
+
+> Eine Strategie, die zwei Drittel der Rendite bei einem Drittel des
+> Drawdowns liefert, ist der Messlatte ueberlegen, obwohl sie weniger
+> verdient.
+
+Wer einen Massstab aufschreibt und einen anderen rechnet, hat zwei
+Massstaebe, und einer davon ist falsch. Jetzt wird der aufgeschriebene
+gerechnet: `RENDITEANTEIL = 2/3`, `RUECKGANGSANTEIL = 1/3`, und der Satz
+nennt die erreichten Anteile statt sie zu behaupten. Die
+Kill-Switch-Schwelle kommt als Parameter aus `settings.risk.max_drawdown_pct`
+- ohne sie wird die Aussage ueber ein Konto **nicht** getroffen, denn eine
+hier gepflegte 15 waere die zweite Quelle, von der vier Befunde dieses
+Projekts handeln (158, 159, 165).
+
+Der Fall, der den Kern zeigt: 267 % Rendite bei 25 % Rueckgang erfuellt den
+Massstab - zwei Drittel bei einem Drittel - und loest den Schalter
+**trotzdem** aus. Ruhiger und am Massstab heisst nicht tragbar, und das sagt
+der Satz jetzt.
+
+**Zur Tragweite, damit sie nicht groesser klingt als sie ist**: `verdict_for`
+hat ausser Tests keinen Aufrufer. Die Falschaussage war real, aber latent -
+sie stand bereit, nicht auf einem Bildschirm.
+
+### Ein Verdacht, der sich beim Lesen aufloeste
+
+`vorratsdecke._deckentext` behauptet in einem ungelesenen Zweig *"Die
+Kopplung traegt"*. Das sieht nach derselben Klasse aus - ist es aber nicht:
+Der Zweig liegt hinter `if not decke.tragfaehig: return ...`, der
+Kontrollfluss deckt den Satz. **Nachsehen heisst nicht finden**, und das
+gehoert zum Ergebnis.
+
+### Drei eigene Fehler, und alle drei lehrreich
+
+**Erstens**, mein erster Entwurf zaehlte mit `ast.walk` die Rueckgaben
+innerer Funktionen zur aeusseren. `ast.walk` steigt in verschachtelte `def`
+ab; ein `continue` auf dem inneren Knoten verhindert das nicht.
+
+**Zweitens** - und das ist der peinliche -, habe ich eine Zahl in den
+Modulkopf geschrieben, die ich **gerechnet statt gemessen** hatte: "135, weil
+der Fehler die Zahl aufgeblaeht haben muss". Gemessen sind **157**. Ein
+Werkzeug gegen ungemessene Behauptungen darf nicht mit einer ungemessenen
+Behauptung anfangen, und auch die zweite Zahl im Registereintrag ("30 mit
+ungelesener Rueckgabe") war geraten - gemessen sind 29.
+
+**Drittens** standen beim ersten Auswerten Analyse und Messung auf
+**verschiedenen Staenden**: Die Coverage-Daten waren aelter als meine
+Aenderung an `benchmark.py`, die Zeilennummern hatten sich verschoben, und
+zwei Eintraege der Fahndungsliste waren Artefakte - gemeldet wurde ein Zweig,
+den es in dieser Form nicht mehr gab. Das steht jetzt im Modulkopf als
+Bedienungshinweis: Wer auswertet, faehrt die Auswahl **nach** der letzten
+Aenderung.
+
+### Nebenbefund, vom Waechter erzwungen
+
+`nachgesehen` nennt in seinem Kopf "104 Forschungsmodule und 72 Befehle".
+Gemessen sind es 107 Module - und `test_nachgesehen` prueft nicht nur die
+Zeichenkette, sondern `abs(len(module) - 104) <= 3`. Die Spanne war damit
+**genau ausgeschoepft**: Der Waechter hielt noch, und das naechste
+Forschungsmodul haette ihn gebrochen - also ausgerechnet dieser Befund, der
+eines hinzufuegt.
+
+Nachgezogen ist die **Zahl**, nicht die Toleranz. Die Toleranz ist da, damit
+normales Wachsen keine Textpflege erzwingt; sie zu weiten, weil sie
+aufgebraucht ist, waere dasselbe wie ein gelockertes Gate, nur unauffaelliger.
+
+### Gelockert ist nichts
+
+Keine Schwelle, kein Gate, kein Urteil bewegt sich. Korrigiert ist ein Satz,
+der ruhiger klang als die Zahlen dahinter - und gebaut ist das Werkzeug, das
+die naechsten solchen Saetze findet, ohne auf Zufall zu warten.

@@ -94,8 +94,14 @@ class TestDerBestandDeckBeidesAb:
         kopf = n.__doc__ or ""
         module = {d for stelle, _ in bestand() if (d := stelle.datei) != "cli.py"}
 
-        assert "104 Forschungsmodule" in kopf
-        assert abs(len(module) - 104) <= 3, f"gemessen {len(module)} Module"
+        # **Neu verankert in Befund 444**: Die Spanne war mit |107 - 104| = 3
+        # genau ausgeschoepft - der Waechter hielt noch, aber ohne Luft, und
+        # das naechste Forschungsmodul haette ihn gebrochen. Die Toleranz ist
+        # da, damit normales Wachsen keine Textpflege erzwingt; ist sie
+        # aufgebraucht, gehoert die Zahl nachgezogen und nicht die Toleranz
+        # geweitet.
+        assert "107 Forschungsmodule" in kopf
+        assert abs(len(module) - 107) <= 3, f"gemessen {len(module)} Module"
         assert 1300 <= len(bestand()) <= 1700, f"gemessen {len(bestand())}"
 
     def test_gelesen_wird_der_quelltext_nicht_der_importstand(self) -> None:
