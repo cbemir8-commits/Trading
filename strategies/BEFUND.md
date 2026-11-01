@@ -40121,3 +40121,83 @@ Die Funktion, die den Grund jetzt **zaehlt** statt ihn zu behaupten, ist
 selbst eine Urteilsfunktion. Der Waechter ist einen Zyklus alt und hat als
 erstes den gemeldet, der ihn gebaut hat. Nachgezogen ist die Zahl, und der
 Grund steht daneben.
+
+## Vierhundertsechsundvierzig. Nicht jeder Aussetzer hat denselben Grund
+
+Befund 445 hat gestern `GateReport.passed` verschaerft: Ein Gate ohne Urteil
+ist keine Zulassung. Das war richtig und bleibt. **Heute die Gegenprobe an
+meiner eigenen Arbeit** - denn eine Verschaerfung kann in die andere Richtung
+schiefgehen, und die Frage, die 445 offen liess, lautet: Kann eine Zulassung
+spaeter noch kommen?
+
+### Neun Aussetzstellen, zwei Arten
+
+Per AST aus `research/gates.py` gezaehlt - und **nicht** per Textsuche, denn
+`GateStatus.SKIP` steht auch in Vergleichen (`vergleichbar`), und das ist
+keine Aussetzstelle, sondern eine Pruefung:
+
+    gate_benchmark            1   Keine Testfenster
+    gate_worst_year           1   Testzeitraum kuerzer als zwoelf Monate
+    gate_monte_carlo          2   zu wenige Trades / zu wenige Zeitraeume
+    gate_regime_split         2   zu wenige Trades  /  kein Umfeld mit Verlusten
+    gate_parameter_plateau    1   Genom hat keine variierbaren Perioden
+    gate_deflated_sharpe      2   zu wenige Trades  /  keine Streuung
+    ------------------------------------------------------------------
+    neun Stellen in sechs Gates
+
+**Sechs sind Stichprobenfragen.** Mehr Trades oder mehr Historie, und das
+Gate urteilt. Wer daran scheitert, kann wiederkommen - und genau fuer diese
+Faelle ist die Verschaerfung aus 445 gebaut.
+
+**Drei sind strukturell**, und da hilft keine Datenmenge:
+
+* `Genom hat keine variierbaren Perioden` - eine Regel ohne Regler hat kein
+  Plateau, das sich messen laesst.
+* `Kein Umfeld mit Verlusten - der Profitfaktor ist dort unendlich`
+* `Keine Streuung in den Ergebnissen`
+
+Die beiden letzten treten ausgerechnet dann ein, wenn ein Ergebnis **zu gut**
+ist, um einen Quotienten zu bilden. Ein Kandidat dieser Form koennte nie
+zugelassen werden, solange ein Aussetzer blockiert.
+
+### Gemessen kostet das heute nichts
+
+    Genome im Katalog                          54
+    davon ohne variierbare Periode              0
+
+Und der Spitzenkandidat hat Nachbarn. Die Verschaerfung aus 445 kostet also
+keinen bestehenden Kandidaten - **das Risiko ist Zukunft, nicht Gegenwart.**
+Ohne diese Messung waere 445 eine Hoffnung gewesen.
+
+### Was hier nicht entschieden wird
+
+Die sichere Richtung bleibt stehen. Einen Aussetzer als bestanden zu zaehlen
+waere die stille Aufwertung aus Befund 322; ihn durchzulassen, **weil** er
+strukturell ist, waere eine Entscheidung ueber die Zulassung und keine
+statistische.
+
+Beziffert ist beides, entschieden keines - wie beim Betriebspunkt (Befund
+400). Die Frage steht in `OFFEN` und wartet auf den Nutzer.
+
+### Gebaut
+
+`research/aussetzer.py` - das Modul, das seit Befund 346 die Aussetzschwellen
+fuehrt - traegt jetzt auch die Gruende:
+
+* `aussetzstellen()` zaehlt sie per AST aus dem Quelltext, `AUSSETZSTELLEN`
+  haelt die gemessene Menge, und der Test vergleicht. Keine gepflegte Liste
+  (die Lehre aus Befund 439).
+* `STRUKTURELL` nennt die drei Gates, bei denen mehr Daten nicht helfen. Das
+  ist die **einzige** Einordnung, die sich nicht ableiten laesst - ob mehr
+  Daten helfen, steht in der Bedingung und nicht in ihrer Form. Dieselbe
+  Bauart wie `engstelle.FELD_JE_GATE`, und ebenso bewacht.
+* `STRUKTURMARKEN` haelt die Botschaften als **Fundstelle, nicht als
+  Schalter**: Wer einen Grund programmatisch unterscheiden will, soll das an
+  der Bedingung tun. Eine Zeichenkette als Steuerung ist die Bauart, an der
+  Befund 420 und 430 haengen.
+
+### Gelockert ist nichts
+
+Keine Schwelle, kein Gate, kein Urteil bewegt sich. Dieser Befund misst eine
+Nebenwirkung meiner eigenen Verschaerfung, findet sie heute gegenstandslos,
+und schreibt die Frage auf, statt sie selbst zu beantworten.

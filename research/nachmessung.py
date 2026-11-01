@@ -430,6 +430,16 @@ ENTSCHEIDUNGSBEGRIFFE: dict[str, tuple[str, ...]] = {
 }
 
 BEGRIFFE: dict[str, tuple[str, ...]] = {
+    # Befund 446: Die Namen der Sache - wer diese Richtung weitermisst,
+    # schreibt ueber strukturelle Aussetzer und variierbare Perioden, nicht
+    # ueber "eine Zulassung dauerhaft verhindern".
+    "Darf ein strukturell uebersprungenes Gate eine Zulassung "
+    "dauerhaft verhindern?": (
+        "strukturell",
+        "variierbare Perioden",
+        "Aussetzstelle",
+        "keine Streuung in den Ergebnissen",
+    ),
     # Befund 332: Die Begriffe sind die Namen der Sache, nicht die des
     # Eintrags - ein spaeterer Befund ueber ausgesetzte Gates schreibt
     # "uebersprungen" oder "bestanden_echt", nicht "sechzehn Gate-Zahlen".

@@ -49,11 +49,23 @@ Schluss und keine Meldung, und deshalb steht es hier getrennt.
 
 from __future__ import annotations
 
+import ast
 import json
 from dataclasses import dataclass
 from pathlib import Path
 
-__all__ = ["FORMEN", "SCHWELLEN", "Berichtslage", "Punktlage", "lese"]
+__all__ = [
+    "AUSSETZSTELLEN",
+    "FORMEN",
+    "SCHWELLEN",
+    "STRUKTURELL",
+    "STRUKTURMARKEN",
+    "Berichtslage",
+    "Punktlage",
+    "aussetzbar",
+    "aussetzstellen",
+    "lese",
+]
 
 #: Die Aussetzschwellen aus ``gates.py`` - Gate zu Mindest-Trade-Zahl.
 #:
@@ -329,3 +341,108 @@ def lese(ordner: Path | str) -> Berichtslage:
     for datei in sorted(wurzel.rglob("*.json")):
         gefunden.extend(_punkte_der_datei(datei))
     return Berichtslage(punkte=tuple(gefunden))
+
+
+# --- Warum ein Gate aussetzt --------------------------------------------------
+#
+# **Die Frage, die Befund 445 offen gelassen hat.** Dort verlangt
+# ``GateReport.passed`` seit jeher zu Recht, dass jedes Gate geurteilt hat -
+# aber nicht jeder Aussetzer hat denselben Grund, und der Unterschied
+# entscheidet, ob eine Zulassung **spaeter** moeglich ist:
+#
+# **Stichprobe.** Mehr Trades oder mehr Historie, und das Gate urteilt. Ein
+# Kandidat, der daran scheitert, kann wiederkommen.
+#
+# **Struktur.** Keine Datenmenge hilft - das Genom hat keinen variierbaren
+# Regler, oder das Ergebnis ist entartet (kein einziger Verlust, keine
+# Streuung). Ein solcher Kandidat kann **nie** zugelassen werden, solange ein
+# Aussetzer blockiert.
+#
+# Gemessen ist der zweite Fall heute nicht erreichbar: **0 von 54** Genomen des
+# Katalogs haben keine variierbare Periode. Die Verschaerfung aus 445 kostet
+# also keinen bestehenden Kandidaten. Ob sie einen kuenftigen kosten darf, ist
+# eine Entscheidung ueber die Zulassung und keine statistische - sie steht in
+# ``OFFEN`` und wird hier nicht getroffen (Befund 446).
+
+#: Wie viele Aussetzstellen jede Gate-Funktion hat - **gemessen, nicht
+#: gepflegt**: ``aussetzstellen()`` rechnet die Zahl per AST aus dem Quelltext
+#: und der Test darunter vergleicht.
+#:
+#: **Wer hier eine Zahl aendert, hat eine Aussetzstelle hinzugefuegt oder
+#: entfernt.** Beides ist in Ordnung; unbemerkt soll es nicht passieren, denn
+#: jede neue Stelle ist ein weiterer Weg, an dem ein Gate kein Urteil faellt.
+AUSSETZSTELLEN: dict[str, int] = {
+    "gate_benchmark": 1,
+    "gate_worst_year": 1,
+    "gate_monte_carlo": 2,
+    "gate_regime_split": 2,
+    "gate_parameter_plateau": 1,
+    "gate_deflated_sharpe": 2,
+}
+
+#: Die Gates, die aus **strukturellen** Gruenden aussetzen koennen.
+#:
+#: Die einzige Einordnung, die sich nicht ableiten laesst: Ob mehr Daten
+#: helfen, steht in der Bedingung und nicht in ihrer Form. Ausgeschrieben
+#: statt geraten - dieselbe Bauart wie ``engstelle.FELD_JE_GATE``.
+#:
+#:     Parameter-Plateau    Genom hat keine variierbaren Perioden
+#:     Regime-Aufteilung    kein Umfeld mit Verlusten (Profitfaktor unendlich)
+#:     Deflated Sharpe      keine Streuung in den Ergebnissen
+STRUKTURELL: frozenset[str] = frozenset(
+    {"gate_parameter_plateau", "gate_regime_split", "gate_deflated_sharpe"}
+)
+
+#: Die Botschaften, an denen ein struktureller Aussetzer zu erkennen ist.
+#:
+#: Als Fundstelle und nicht als Schalter: Wer einen Grund **programmatisch**
+#: unterscheiden will, soll das an der Bedingung tun und nicht an einem
+#: Textvergleich - eine Zeichenkette als Steuerung ist die Bauart, an der
+#: Befund 420 und 430 haengen.
+STRUKTURMARKEN: tuple[str, ...] = (
+    "keine variierbaren Perioden",
+    "Kein Umfeld mit Verlusten",
+    "Keine Streuung in den Ergebnissen",
+)
+
+
+def _ist_skip(aufruf: ast.Call) -> bool:
+    for kw in aufruf.keywords:
+        if (
+            kw.arg == "status"
+            and isinstance(kw.value, ast.Attribute)
+            and kw.value.attr == "SKIP"
+        ):
+            return True
+    return False
+
+
+def aussetzstellen(quelle: Path | str | None = None) -> dict[str, int]:
+    """Jede Stelle in ``gates.py``, die ein ``SKIP`` erzeugt - je Funktion.
+
+    Per AST und nicht per Textsuche: ``GateStatus.SKIP`` kommt auch in
+    Vergleichen vor (``if GateStatus.SKIP in (a.status, b.status)``), und das
+    ist keine Aussetzstelle, sondern eine Pruefung.
+    """
+    datei = Path(quelle) if quelle else Path(__file__).resolve().parent / "gates.py"
+    baum = ast.parse(datei.read_text(encoding="utf-8"))
+    gezaehlt: dict[str, int] = {}
+    for fn in ast.walk(baum):
+        if not isinstance(fn, ast.FunctionDef | ast.AsyncFunctionDef):
+            continue
+        treffer = sum(
+            1
+            for k in ast.walk(fn)
+            if isinstance(k, ast.Call)
+            and isinstance(k.func, ast.Name)
+            and k.func.id == "GateResult"
+            and _ist_skip(k)
+        )
+        if treffer:
+            gezaehlt[fn.name] = treffer
+    return gezaehlt
+
+
+def aussetzbar() -> tuple[str, ...]:
+    """Die Gate-Funktionen, die ueberhaupt aussetzen koennen - geordnet."""
+    return tuple(sorted(aussetzstellen()))

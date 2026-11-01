@@ -6335,6 +6335,34 @@ BEHOBEN: tuple[Richtung, ...] = (
 #: Getrennt von ``GESCHLOSSEN``, weil "gemessen und offen" etwas anderes ist
 #: als "gemessen und zu". Ein Eintrag hier ist eine Zusage, keine Ablage.
 OFFEN: tuple[Richtung, ...] = (
+    # Aufgeworfen von 446: Nebenwirkung der Verschaerfung aus 445, gemessen
+    # und nicht entschieden - die Entscheidung gehoert dem Nutzer.
+    Richtung(
+        "Darf ein strukturell uebersprungenes Gate eine Zulassung "
+        "dauerhaft verhindern?",
+        "Befund 445 verlangt, dass jedes Gate geurteilt hat - sonst keine "
+        "Zulassung. Richtig, und es bleibt. **Offen ist, was das fuer die "
+        "zweite Art von Aussetzer heisst.** Von neun Aussetzstellen in sechs "
+        "Gates sind sechs Stichprobenfragen: Mehr Trades, und das Gate "
+        "urteilt - wer daran scheitert, kann wiederkommen. **Drei sind "
+        "strukturell**, und da hilft keine Datenmenge: 'Genom hat keine "
+        "variierbaren Perioden' (Parameter-Plateau), 'Kein Umfeld mit "
+        "Verlusten - der Profitfaktor ist dort unendlich' (Regime-Aufteilung) "
+        "und 'Keine Streuung in den Ergebnissen' (Deflated Sharpe). Ein "
+        "Kandidat dieser Form kann **nie** zugelassen werden, solange ein "
+        "Aussetzer blockiert - und die beiden letzten treten ausgerechnet "
+        "dann ein, wenn ein Ergebnis **zu gut** ist, um einen Quotienten zu "
+        "bilden. **Gemessen kostet das heute nichts**: 0 von 54 Genomen des "
+        "Katalogs haben keine variierbare Periode, und der Spitzenkandidat "
+        "hat Nachbarn. Die Frage ist also nicht dringend, nur unbeantwortet. "
+        "**Was hier nicht entschieden wird**: Die sichere Richtung bleibt "
+        "stehen. Einen Aussetzer als bestanden zu zaehlen waere die stille "
+        "Aufwertung aus 322; ihn durchzulassen, weil er strukturell ist, "
+        "waere eine Entscheidung ueber die Zulassung und keine statistische. "
+        "Beziffert ist beides, entschieden keines - wie beim Betriebspunkt "
+        "(400)",
+        446,
+    ),
     # Aufgeworfen von 395: Die Leiter am Spot-Punkt zeigt ein bestandenes
     # Gate, dessen Abstand nur in eine Richtung laufen kann.
     Richtung(
