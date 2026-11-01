@@ -18,6 +18,8 @@ unbelastbarste gemessen hat (faellt in 5 von 11 Fensteraufteilungen).
 
 from __future__ import annotations
 
+import pytest
+
 from research.engstelle import (
     AUFTEILUNGEN,
     FELD_JE_GATE,
@@ -29,21 +31,40 @@ from research.engstelle import (
     herkunft_je_gate,
 )
 
-#: Der Spot-Punkt, wie ``cli stand`` ihn meldet: Schwelle und Abstand sind
-#: abgelesen, der Wert daraus zurueckgerechnet (Schwelle plus/minus Abstand,
-#: Richtung aus dem Status). Gegengeprueft an Befund 416: -9,6100 und 9,869.
+#: Der Spot-Punkt, **aus einem Lauf gemessen** (Befund 442).
+#:
+#: Bis 442 standen hier zurueckgerechnete Werte: Schwelle und Abstand aus der
+#: Tafel von ``cli stand`` abgelesen, der Wert daraus wiederhergestellt
+#: (Schwelle plus/minus Abstand, Richtung aus dem Status). Neun der elf Zeilen
+#: hat das getroffen, zwei nicht - und die Abweichungen waren von zwei
+#: verschiedenen Arten:
+#:
+#: * ``Bestaendigkeit`` stand auf 0,581 und liegt bei 0,580645 (= 18/31). Die
+#:   Rueckrechnung aus einem auf drei Stellen gerundeten Abstand gibt die
+#:   Stelle nicht her; der Anteil wurde dadurch 16,2 % statt **16,1 %**.
+#: * ``Kosten-Stress`` stand auf 942,865 und liegt bei 1863,726. Das war
+#:   kein Rundungsfehler: 942,8654 ist ein **Endkapital in EUR** aus Befund
+#:   365 ("955,7552 / 942,8654 / 625,8040"). Ich habe aus der falschen Zeile
+#:   einer alten Ausgabe abgeschrieben, und es ist nur deshalb nirgends
+#:   aufgefallen, weil eine Schwelle von null keinen Anteil hat - die Zeile
+#:   steht in keiner Rangfolge.
+#:
+#: Die Tabelle bleibt, weil die Tests darunter ohne Speicher laufen muessen.
+#: Sie ist jetzt aber ein **nachgeprueftes Abbild** und keine Abschrift:
+#: ``TestDieRangfolgeAmEchtenLauf`` vergleicht sie in der Datenauswahl Zeile
+#: fuer Zeile gegen den Lauf.
 SPOT: tuple[tuple[str, float, float, bool, str], ...] = (
-    ("Schlechtestes Jahr", -9.610, -10.0, True, ""),
-    ("Bestaendigkeit", 0.581, 0.5, True, ""),
-    ("Drawdown", 9.869, 12.0, True, ""),
-    ("Monte-Carlo", 8.326, 15.0, True, ""),
-    ("Out-of-Sample-Sharpe", 1.576, 1.0, True, ""),
-    ("Parameter-Plateau", 1.000, 0.6, True, ""),
-    ("Regime-Aufteilung", 5.275, 0.9, True, ""),
-    ("Kosten-Stress", 942.865, 0.0, True, ""),
-    ("Stichprobengroesse", 2250.0, 250.0, True, "Zeit im Markt"),
-    ("Messlatte", 14.339, 15.0, False, "Jahresrendite"),
-    ("Deflated Sharpe", 0.5826, 0.95, False, ""),
+    ("Schlechtestes Jahr", -9.61, -10.0, True, ""),
+    ("Bestaendigkeit", 0.5806451612903226, 0.5, True, ""),
+    ("Drawdown", 9.868736145650873, 12.0, True, ""),
+    ("Monte-Carlo", 8.326469445606186, 15.0, True, ""),
+    ("Out-of-Sample-Sharpe", 1.576216469796038, 1.0, True, ""),
+    ("Parameter-Plateau", 1.0, 0.6, True, ""),
+    ("Regime-Aufteilung", 5.275072895909707, 0.9, True, ""),
+    ("Kosten-Stress", 1863.7258550703123, 0.0, True, ""),
+    ("Stichprobengroesse", 2250.0, 250.0, True, "Tage im Markt"),
+    ("Messlatte", 14.339, 15.0, False, "Jahresrendite gegen Betriebsschwelle"),
+    ("Deflated Sharpe", 0.5825843258003591, 0.95, False, ""),
 )
 
 
@@ -72,7 +93,7 @@ class TestDerAnteilMachtVergleichbar:
 
     def test_eine_schwelle_null_gibt_keinen_anteil(self) -> None:
         """'Unendlich viel Reserve' waere eine Zahl, die nach einer Messung
-        aussieht - Kosten-Stress meldet 942,865 gegen 0,000."""
+        aussieht - Kosten-Stress meldet 1863,726 gegen 0,000."""
         kosten = next(s for s in _stellen() if s.name == "Kosten-Stress")
 
         assert kosten.schwelle == 0.0
@@ -287,3 +308,143 @@ class TestUebersprungeneGatesKommenNichtVor:
 
         assert engste(stellen) is not None
         assert engste(stellen).name == "Drawdown"
+
+
+# **Die Fixture auf Modulebene, nicht in der Klasse** (Befund 426/428/429/431):
+# Eine Fixture mit eigenem Scope als Instanzmethode ist ein Fehler, und der
+# Waechter aus 429 faengt sie - aber erst, nachdem sie geschrieben war.
+@pytest.fixture(scope="module")
+def spotgates():
+    """Die elf Gates am Spot-Punkt, aus einem echten Lauf.
+
+    Dasselbe Rezept wie 'cli stand': Zulassungsreihe schneiden, Spitzenkandidat
+    laden, '_spotpunkt' fahren. Kostet keinen Versuch - dieselbe Regel,
+    dieselben Daten, andere Handelsbedingungen.
+    """
+    from pathlib import Path
+
+    import cli
+    from backtest.portfolio_walkforward import common_range
+    from core.config import get_settings
+    from core.models import Interval
+    from data.store import CandleStore
+    from research.admission import load_trials
+    from research.datenstand import alle_geschnitten
+    from research.seeds import spitzenkandidat
+
+    einstellungen = get_settings()
+    symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
+    speicher = CandleStore(einstellungen.paths.data_store)
+    roh = {s: speicher.read(s, Interval.D1) for s in symbole}
+    if any(r is None or r.empty for r in roh.values()):
+        pytest.skip("keine Tageskerzen im Speicher")
+    rahmen = alle_geschnitten(common_range(roh))
+    gates, _, _ = cli._spotpunkt(
+        rahmen, symbole, spitzenkandidat(),
+        load_trials(Path(einstellungen.paths.state) / "trials.json"),
+        einstellungen,
+    )
+    return gates
+
+
+@pytest.mark.daten
+@pytest.mark.langsam
+class TestDieRangfolgeAmEchtenLauf:
+    """**Die Luecke, die ich mir in 438 gelassen habe** (Befund 442).
+
+    Dort stand die Rangfolge gegen eine **handeingetragene** Tabelle - meine
+    Abschrift einer Terminalausgabe. Befund 408 hat gezeigt, was das kostet:
+    vierzehn Zyklen rote Datenauswahl, die niemand sah, weil die Zahlen
+    nirgends gegen einen Lauf standen.
+
+    Geprueft wird deshalb nicht die Abschrift, sondern die **Behauptung**.
+    """
+
+    def test_die_engste_bestandene_stelle_ist_das_schlechteste_jahr(
+        self, spotgates
+    ) -> None:
+        eng = engste(aus_gates(spotgates))
+
+        assert eng is not None
+        assert eng.name == "Schlechtestes Jahr"
+
+    def test_und_sie_liegt_bei_knapp_vier_prozent(self, spotgates) -> None:
+        eng = engste(aus_gates(spotgates))
+
+        assert 0.035 < eng.anteil < 0.045, eng.anteil
+
+    def test_sie_ist_duenner_als_der_messlatte_fehlt(self, spotgates) -> None:
+        """**Die Aussage von Befund 438**, jetzt gegen einen Lauf: Der
+        Kandidat ist einem zehnten Durchfaller naeher als dem Bestehen seines
+        naechsten offenen Gates."""
+        stellen = aus_gates(spotgates)
+        eng = engste(stellen)
+        latte = next(s for s in stellen if s.name == "Messlatte")
+
+        assert not latte.bestanden
+        assert eng.anteil < latte.anteil
+
+    def test_offen_sind_messlatte_und_deflated_sharpe(self, spotgates) -> None:
+        offen = {s.name for s in aus_gates(spotgates) if not s.bestanden}
+
+        assert offen == {"Messlatte", "Deflated Sharpe"}
+
+    def test_der_kosten_stress_hat_keinen_anteil(self, spotgates) -> None:
+        """Schwelle null - 'unendlich viel Reserve' waere eine Zahl, die nach
+        einer Messung aussieht."""
+        kosten = next(s for s in aus_gates(spotgates) if s.name == "Kosten-Stress")
+
+        assert kosten.schwelle == 0.0
+        assert kosten.anteil is None
+
+    def test_mein_vorbehalt_aus_437_bleibt_gegenstandslos(self, spotgates) -> None:
+        """Das Regime-Gate haelt weit ueber 1,0 - die Ungereimtheit zwischen
+        Schwelle 0,9 und der Begruendung des Gates kostet diesen Kandidaten
+        nichts (Befund 438)."""
+        regime = next(
+            s for s in aus_gates(spotgates) if s.name == "Regime-Aufteilung"
+        )
+
+        assert regime.wert > 1.0
+        assert regime.anteil > 4.0
+
+    def test_die_tabelle_oben_ist_das_abbild_dieses_laufs(
+        self, spotgates
+    ) -> None:
+        """**Und die Gegenprobe**, die die Tabelle vom Hoerensagen befreit.
+
+        Elf Zeilen, Zeile fuer Zeile: Wert, Schwelle, Ausgang und Bedingung.
+        Damit ist ``SPOT`` keine zweite Quelle mehr (Befund 439), sondern ein
+        Abbild, dessen Abweichung auffaellt - in **beide** Richtungen: Eine
+        Datendrift wird hier genauso rot wie eine falsche Abschrift.
+        """
+        gemessen = {s.name: s for s in aus_gates(spotgates)}
+        erwartet = {s.name: s for s in _stellen()}
+
+        assert set(gemessen) == set(erwartet)
+        for name, soll in erwartet.items():
+            ist = gemessen[name]
+            assert ist.wert == pytest.approx(soll.wert, abs=1e-9), name
+            assert ist.schwelle == pytest.approx(soll.schwelle, abs=1e-9), name
+            assert ist.bestanden is soll.bestanden, name
+            assert ist.bedingung == soll.bedingung, name
+
+    def test_die_zwei_zeilen_aus_442_stehen_richtig(self, spotgates) -> None:
+        """Die beiden, die vorher falsch waren - **mit** ihrer Art von
+        Fehler, damit nicht wieder jemand zurueckrechnet.
+
+        'Bestaendigkeit' war eine Rueckrechnung aus einer Rundung (0,581
+        statt 0,580645; 16,2 % statt 16,1 %). 'Kosten-Stress' war eine Zahl
+        aus einem **anderen Befund**: 942,8654 ist ein Endkapital in EUR aus
+        365, kein Gate-Wert. Dass das nichts verschoben hat, lag allein an
+        der Schwelle null - ohne Anteil steht die Zeile in keiner Rangfolge.
+        """
+        gemessen = {s.name: s for s in aus_gates(spotgates)}
+
+        bestand = gemessen["Bestaendigkeit"]
+        assert bestand.wert == pytest.approx(18 / 31, abs=1e-12)
+        assert round(bestand.anteil * 100, 1) == 16.1
+
+        kosten = gemessen["Kosten-Stress"]
+        assert kosten.wert > 1800.0
+        assert kosten.wert != pytest.approx(942.8654, abs=1.0)

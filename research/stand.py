@@ -5920,7 +5920,7 @@ BEHOBEN: tuple[Richtung, ...] = (
         "dasselbe Gate, das Befund 420 als unbelastbarstes gemessen hat: "
         "faellt in 5 von 11 Fensteraufteilungen, oefter als die Messlatte mit "
         "1 von 11. Zwei unabhaengige Masze zeigen auf dieselbe Stelle. "
-        "Die zweitengste bestandene ist die **Bestaendigkeit** mit 16,2 % - "
+        "Die zweitengste bestandene ist die **Bestaendigkeit** mit 16,1 % - "
         "und ihre 0,5 ist eine der sieben ohne verzeichnete Ableitung. "
         "**Mein Vorbehalt aus 437 kostet dagegen nichts**: Dort steht, dass "
         "'min_regime_profit_factor = 0,9' der eigenen Begruendung des Gates "
@@ -6109,6 +6109,59 @@ BEHOBEN: tuple[Richtung, ...] = (
         "einen Lauf weiterrechnen zu lassen, dessen Quelltext sich unter ihm "
         "bewegt",
         441,
+        zuletzt=442,
+    ),
+    # Befund 442: Die Tafel, gegen die ich meine Tafel geprueft habe.
+    Richtung(
+        "Neun von elf Zeilen trafen - und die zwei anderen waren zwei Arten "
+        "von Fehler",
+        "Die Rangfolge aus Befund 438, auf die sich 441 beruft, stand gegen "
+        "eine **handeingetragene** Tabelle: Schwelle und Abstand aus der "
+        "Tafel von 'cli stand' abgelesen, der Wert daraus zurueckgerechnet. "
+        "Der Modulkopf sagte das sogar ausdruecklich - und keiner der acht "
+        "Tests trug einen Datenstempel, also war nichts davon gegen einen "
+        "**Lauf** gesichert, nur gegen meine Abschrift. Was das kostet, hat "
+        "Befund 408 gemessen: vierzehn Zyklen rote Datenauswahl, die niemand "
+        "sah. **Also gefahren**, am Spot-Punkt, mit demselben Rezept wie "
+        "'cli stand' - kostet keinen Versuch, dieselbe Regel auf denselben "
+        "Daten. **Die Aussage haelt vollstaendig**: engste bestandene Stelle "
+        "'Schlechtestes Jahr' mit 3,9 % Reserve, Messlatte 4,4 % fehlend, "
+        "offen genau ('Messlatte', 'Deflated Sharpe'), Rangfolge "
+        "unveraendert. **Neun der elf Zeilen treffen, zwei nicht**, und sie "
+        "sind von verschiedener Art. Die ''Bestaendigkeit'' lag bei 0,581 "
+        "statt 0,580645 (= 18/31) und damit bei 16,2 % statt **16,1 %** - "
+        "ein auf drei Stellen gerundeter Abstand gibt die Stelle nicht her, "
+        "mehr war es nicht. Die zweite ist der eigentliche Befund: "
+        "''Kosten-Stress'' stand auf 942,865 und liegt bei **1863,726**. Das "
+        "ist kein Rundungsfehler - 942,8654 ist ein **Endkapital in EUR** aus "
+        "Befund 365 ('955,7552 / 942,8654 / 625,8040'). Ich habe aus der "
+        "falschen Zeile einer alten Ausgabe abgeschrieben, eine Zahl mit "
+        "einer anderen Einheit und einer anderen Groessenordnung, und sie "
+        "stand zwei Befunde lang in einer Tafel und in einem Docstring. "
+        "**Warum es niemandem auffiel, ist die lehrreiche Haelfte**: Dieses "
+        "Gate hat Schwelle null, bekommt deshalb seit 438 ausdruecklich "
+        "keinen Anteil - und eine Zahl ohne Anteil steht in keiner "
+        "Rangfolge, also prueft sie auch keine Rangfolge nach. Die "
+        "Vorsichtsmassnahme, die den Unsinn 'unendlich viel Reserve' "
+        "verhindert, hat denselben Eintrag gleichzeitig unpruefbar gemacht. "
+        "**Gebaut ist der Test, der die Behauptung sichert statt der "
+        "Abschrift**: 'TestDieRangfolgeAmEchtenLauf' rechnet die Rangfolge "
+        "mit '@pytest.mark.daten' aus einem Lauf und vergleicht die Tabelle "
+        "Zeile fuer Zeile - Wert, Schwelle, Ausgang, Bedingung. Damit ist "
+        "'SPOT' keine zweite Quelle mehr (439), sondern ein nachgeprueftes "
+        "Abbild, dessen Abweichung in **beide** Richtungen auffaellt: Eine "
+        "Datendrift wird dort genauso rot wie eine falsche Abschrift. **Zwei "
+        "Nebenbefunde, beide aus demselben Lauf**: Die 'bedingung'-Texte sind "
+        "laenger als in meiner Tafel ('Jahresrendite gegen "
+        "Betriebsschwelle', 'Tage im Markt' statt 'Zeit im Markt') - auch das "
+        "Abschrift statt Messung. Und mein Vorbehalt aus 437 bleibt "
+        "gegenstandslos: Das Regime-Gate haelt mit 486,1 % Reserve, die "
+        "Ungereimtheit seiner Schwelle kostet diesen Kandidaten nichts. "
+        "**Gelockert ist nichts**: Keine Schwelle, kein Gate, kein Urteil "
+        "bewegt sich. Korrigiert sind zwei Zahlen in meiner eigenen "
+        "Dokumentation, und die Methode, die sie erzeugt hat, ist "
+        "abgeschafft",
+        442,
     ),
 )
 

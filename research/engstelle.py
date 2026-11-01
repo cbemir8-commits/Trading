@@ -22,17 +22,15 @@ Fensteraufteilungen das Gate faellt) und die Herkunft der Schwelle aus 437.
 
 Gemessen am Spot-Punkt, dem Punkt, auf den sich jede zitierte Zahl bezieht.
 
-**Woher die Werte kommen**, weil das ein Unterschied ist: Die Spalte
-"Schwelle" und der Spot-**Abstand** stehen so in der Tafel von ``cli stand``
-(Befund 394/395). Die Spalte "Wert" ist daraus zurueckgerechnet - Schwelle
-plus oder minus Abstand, die Richtung aus dem Status, weil beim Rueckgang
-weniger besser ist und beim Sharpe mehr. Gegengeprueft an zwei unabhaengig
-verzeichneten Zahlen: Befund 416 nennt fuer denselben Punkt 'Schlechtestes
-Jahr' **-9,6100** und 'Drawdown' **9,869** - beide treffen.
+**Woher die Werte kommen**, weil das ein Unterschied ist: Sie sind in einem
+Spot-Lauf **gemessen** (Befund 442). Bis dahin waren sie zurueckgerechnet -
+Schwelle und Abstand aus der Tafel von ``cli stand`` abgelesen (Befund
+394/395), der Wert daraus wiederhergestellt. Neun der elf Zeilen hat das
+getroffen; die beiden anderen stehen unten bei den Fallgruben.
 
     Gate                     Wert  Schwelle   Anteil  Herkunft
     Schlechtestes Jahr     -9,610   -10,000     3,9 %  abgeleitet
-    Bestaendigkeit          0,581     0,500    16,2 %  **ohne**
+    Bestaendigkeit        0,58065     0,500    16,1 %  **ohne**
     Drawdown                9,869    12,000    17,8 %  abgeleitet
     Monte-Carlo             8,326    15,000    44,5 %  Beobachtung
     Out-of-Sample-Sharpe    1,576     1,000    57,6 %  **ohne**
@@ -61,9 +59,16 @@ ist sie gegenstandslos, und das gehoert dazugesagt.
 
 Zwei Fallgruben, beide aus den Daten und nicht geraten
 ------------------------------------------------------
-**Schwelle null.** ``Kosten-Stress`` meldet 942,865 gegen 0,000 - ein Anteil
+**Schwelle null.** ``Kosten-Stress`` meldet 1863,726 gegen 0,000 - ein Anteil
 ist dort nicht definiert, und 'unendlich viel Reserve' waere eine Zahl, die
 nach einer Messung aussieht. Das Gate bekommt keinen Anteil.
+
+**Und genau diese Zeile stand bis 442 falsch da** (mit 942,865), ohne dass es
+etwas verschob: Eine Zahl ohne Anteil steht in keiner Rangfolge, also prueft
+sie auch keine Rangfolge nach. 942,8654 ist ein **Endkapital in EUR** aus
+Befund 365 - abgeschrieben aus der falschen Zeile einer alten Ausgabe. Die
+zweite Abweichung war die ``Bestaendigkeit``: 0,581 statt 0,580645, weil ein
+auf drei Stellen gerundeter Abstand die Stelle nicht hergibt.
 
 **Zwei Groessen in einer Spalte.** ``GateResult.bedingung`` warnt, dass bei
 'Messlatte' und 'Stichprobengroesse' je nach Ausgang des Laufs eine andere

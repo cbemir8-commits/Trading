@@ -39629,3 +39629,107 @@ Als die Nicht-Daten-Auswahl rot meldete, habe ich die Datenauswahl
 sich unter ihm bewegt, ist ohnehin zu verwerfen; vier Mal in dieser Sitzung
 habe ich ihn trotzdem laufen lassen. Diesmal nicht - und der Unterschied ist
 nicht der Vorsatz, sondern dass die Regel sagt, **wann** zu handeln ist.
+
+## Vierhundertzweiundvierzig. Neun von elf Zeilen trafen - und die zwei anderen waren zwei Arten von Fehler
+
+Die Rangfolge aus Befund 438, auf die sich 441 beruft, stand gegen eine
+**handeingetragene** Tabelle. Der Modulkopf von `tests/test_engstelle.py`
+sagte das sogar ausdruecklich:
+
+> Die Spalte "Wert" ist daraus zurueckgerechnet - Schwelle plus oder minus
+> Abstand, die Richtung aus dem Status.
+
+Und keiner der acht Tests trug `@pytest.mark.daten`. Damit war keine dieser
+Zahlen gegen einen **Lauf** gesichert, nur gegen meine Abschrift einer
+Terminalausgabe. Was das kostet, hat Befund 408 gemessen: vierzehn Zyklen
+rote Datenauswahl, die niemand sah, weil nichts die Zahlen gegen ihre Quelle
+hielt.
+
+Also gefahren - am Spot-Punkt, mit demselben Rezept wie `cli stand`. Das
+kostet keinen Versuch: dieselbe Regel, dieselben Daten, nur andere
+Handelsbedingungen.
+
+### Die Aussage haelt vollstaendig
+
+    Spot-Gates: 11, offen dort: ('Messlatte', 'Deflated Sharpe')
+
+      Schlechtestes Jahr        3.9% Reserve
+      Messlatte                 4.4% fehlt
+      Bestaendigkeit           16.1% Reserve
+      Drawdown                 17.8% Reserve
+      Deflated Sharpe          38.7% fehlt
+      Monte-Carlo              44.5% Reserve
+      Out-of-Sample-Sharpe     57.6% Reserve
+      Parameter-Plateau        66.7% Reserve
+      Regime-Aufteilung       486.1% Reserve
+      Stichprobengroesse      800.0% Reserve
+      Kosten-Stress          kein Anteil (Schwelle null)
+
+    Engste bestandene Stelle: Schlechtestes Jahr mit 3.9% Reserve.
+      Dasselbe Gate faellt in 5 von 11 Fensteraufteilungen (Befund 420).
+
+Engste bestandene Stelle, naechstes offenes Gate, Rangfolge, offene Menge -
+alles wie in 438 verzeichnet. **Der Kandidat ist einem zehnten Durchfaller
+naeher als dem Bestehen seines naechsten offenen Gates**, und das steht
+jetzt auf einer Messung.
+
+### Zwei Zeilen trafen nicht, und sie sind nicht dieselbe Art von Fehler
+
+**Die harmlose.** `Bestaendigkeit` lag bei 0,581 und liegt bei 0,580645
+(= 18/31), der Anteil also bei 16,2 % statt **16,1 %**. Ein auf drei Stellen
+gerundeter Abstand gibt die vierte Stelle nicht her - die Rueckrechnung kann
+das nicht besser wissen. Mehr ist es nicht.
+
+**Die andere ist der eigentliche Befund.** `Kosten-Stress` stand auf 942,865
+und liegt bei **1863,726**. Das ist kein Rundungsfehler, und es ist auch
+keine Drift:
+
+> 942,8654 ist ein **Endkapital in EUR** aus Befund 365
+> ("955,7552 / 942,8654 / 625,8040").
+
+Ich habe aus der falschen Zeile einer alten Ausgabe abgeschrieben - eine Zahl
+mit einer anderen Einheit und einer anderen Groessenordnung -, und sie stand
+zwei Befunde lang in einer Tafel und in einem Docstring.
+
+### Warum es niemandem auffiel, ist die lehrreiche Haelfte
+
+Dieses Gate hat Schwelle null. Befund 438 hat dafuer ausdruecklich
+entschieden, ihm **keinen Anteil** zu geben, weil "unendlich viel Reserve"
+eine Zahl waere, die nach einer Messung aussieht. Das war richtig - und es
+hat denselben Eintrag gleichzeitig unpruefbar gemacht:
+
+**Eine Zahl ohne Anteil steht in keiner Rangfolge, also prueft sie auch keine
+Rangfolge nach.** Acht Tests liefen ueber diese Tabelle, keiner konnte diese
+Zeile beruehren. Die Vorsichtsmassnahme gegen eine Scheinmessung hat eine
+Scheinzahl gedeckt.
+
+### Gebaut ist der Test, der die Behauptung sichert statt der Abschrift
+
+`TestDieRangfolgeAmEchtenLauf` rechnet die Rangfolge mit
+`@pytest.mark.daten` aus einem Lauf: engste bestandene Stelle, ihr Anteil,
+der Vergleich gegen das Fehlende der Messlatte, die offene Menge. Und die
+Gegenprobe vergleicht die Tabelle Zeile fuer Zeile gegen den Lauf - Wert,
+Schwelle, Ausgang, Bedingung.
+
+Damit ist `SPOT` keine zweite Quelle mehr (die Lehre aus 439), sondern ein
+**nachgeprueftes Abbild**, dessen Abweichung in *beide* Richtungen
+auffaellt: Eine Datendrift wird dort genauso rot wie eine falsche Abschrift.
+Die Tabelle bleibt, weil die uebrigen Tests ohne Speicher laufen muessen -
+aber sie behauptet nichts mehr auf eigene Rechnung.
+
+### Zwei Nebenbefunde aus demselben Lauf
+
+Die `bedingung`-Texte sind laenger als in meiner Tafel: *"Jahresrendite gegen
+Betriebsschwelle"* und *"Tage im Markt"* statt meines *"Zeit im Markt"*.
+Auch das Abschrift statt Messung, und auch das jetzt gemessen.
+
+Und mein Vorbehalt aus 437 bleibt gegenstandslos: Das Regime-Gate haelt mit
+486,1 % Reserve. Die Ungereimtheit seiner Schwelle (0,9 gegen eine
+Begruendung, die fuer 1,0 argumentiert) kostet **diesen** Kandidaten nichts;
+sie bleibt verzeichnet, weil sie fuer kuenftige gilt.
+
+### Gelockert ist nichts
+
+Keine Schwelle, kein Gate, kein Urteil bewegt sich. Korrigiert sind zwei
+Zahlen in meiner eigenen Dokumentation - und die Methode, die sie erzeugt
+hat, ist abgeschafft.
