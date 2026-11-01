@@ -40306,3 +40306,105 @@ sich jede gepruefte Stelle wie ein Mangel.
 Keine Schwelle, kein Gate, kein Urteil bewegt sich. Korrigiert ist eine
 Erklaerung von mir, und gesichert sind die Zahlen einer Entscheidung, die
 nicht mir gehoert.
+
+## Vierhundertachtundvierzig. Die Latten der Erfuellungstafel standen auf fremden Momenten
+
+Der Nutzer wird als naechstes auf **Viertelstunden** suchen - Generation 6/7
+gehoert dorthin. Die Tafel, die dazu Auskunft gibt, ist
+`research/erfuellung.py`, und ihre Auskunft ist unbequem:
+
+    Betriebspunkt   beste Regel                     n_eff   Guete   Latte  Anteil
+    Tageskerzen     Bestand (Spot wie gebaut)         115   2,904   3,611   0,804
+    Tageskerzen     Spitze allein                     114   2,690   3,609   0,745
+    Tageskerzen     + Trend-Beteiligung 200           136   2,986   3,648   0,819
+    15 Minuten      Trendbeteiligung mit Puffer       584   0,744   3,964   0,188
+    15 Minuten      Seltener grosser Ausbruch        1065   0,156   4,065   0,038
+    15 Minuten      Starker Trend, Momentum          1818  -0,780   4,138  -0,188
+
+Die feinere Kerze **halbiert die Latte je Trade** (0,164 gegen 0,337) -
+gefunden wurde dort aber so viel weniger, dass der Abstand das Vierfache ist.
+
+### Eine Latte haengt an drei Dingen
+
+Effektive Stichprobe, Versuchsstand, Verteilungsform. Die Tafel nannte die
+erste immer, die zweite bei **einer** von sechs Zeilen und die dritte bei
+keiner - obwohl das Feld `versuche` seit Befund 281 existiert und sein
+eigener Docstring sagt:
+
+> Die Latte haengt am Zaehler - sie steigt mit jedem Versuch -, und eine
+> aufgeschriebene Latte ohne ihren Stand ist eine Zahl ohne ihre Bedingung.
+
+### Nachtraeglich bestimmbar - gerade wegen der Empfindlichkeit
+
+    n_eff   neutral  bestand  leicht  stark   links   Spanne
+      115    4,4975   3,6106  4,2159  3,2336  5,3924   2,159
+      584    4,4246   3,9653  4,2860  3,6840  4,7618   1,078
+     1065    4,4167   4,0658  4,3119  3,8412  4,6587   0,818
+     1818    4,4127   4,1384  4,3314  3,9575  4,5942   0,637
+
+**Eine grosse Stichprobe macht die Form nicht gleichgueltig.** Und deshalb
+ist die Zuordnung eindeutig: Alle sechs gespeicherten Latten treffen den
+Stand **198** unter der Form des **Bestands** auf 0,0013, waehrend die
+naechste plausible Form 0,280 daneben liegt - zweihundertmal weiter.
+
+### Damit stehen drei Latten auf fremden Momenten
+
+Die drei Viertelstunden-Regeln sind nicht der Bestand. Ihre Latten tragen
+seine Schiefe (3,4646) und Woelbung (15,9173), nicht ihre eigenen - und die
+eigenen sind nirgends verzeichnet. Gesucht: jede `*.json` und `*.jsonl` unter
+`reports/` nach den drei Regelnamen mit passender `n_eff`. Kein Treffer.
+
+Das ist derselbe Fehler wie in Befund 355, **gespiegelt**:
+
+> Ich habe die noetige Guete von Hand gerechnet und die Vorgabemomente
+> stehen lassen - Schiefe 0, Woelbung 3 statt der gemessenen.
+
+Dort die Vorgabemomente statt der gemessenen, hier die **fremden** statt der
+eigenen. Und `Referenzpunkt.noetige_guete` war genau dagegen gebaut: *"Wer
+sie von hier nimmt, bekommt sie mit den Momenten, zu denen sie gehoert."*
+
+### Die Aussage haelt trotzdem, und das ist der Punkt
+
+Die Unsicherheit geht nicht in die bequeme Richtung:
+
+    Form fuer n_eff 584         Latte    Anteil
+    neutral                    4,4246     0,168
+    bestand (eingetragen)      3,9653     0,188
+    stark schief               3,6840     0,202
+
+Mit neutralen Momenten waere der Anteil **niedriger**. Nur eine stark
+schiefe Verteilung hilft, und auch dort steht 0,202 gegen 0,80 - **der
+Faktor bleibt vier, in jeder gerechneten Form.** Geaendert wird deshalb
+keine Zahl der Tafel; eingetragen wird, worauf sie steht.
+
+### Eingetragen
+
+* `versuche=198` bei allen sechs Zeilen, jede mit ihrer Nachrechnung im
+  Kommentar.
+* `formquelle` als neues Feld: `"eigen"` nur beim Bestand, `"bestand"` bei
+  den fuenf anderen. Innerhalb desselben Betriebspunkts ist das Leihen eine
+  kleine Unschaerfe; ueber Betriebspunkte hinweg ist es der Fehler aus 190.
+
+Zwoelf Tests sichern es, darunter die Empfindlichkeit selbst.
+
+### Und zwei eigene Fehlgriffe auf dem Weg
+
+**Erstens** habe ich die Latten mit einer selbstgebauten Bisektion
+gerechnet, statt `erreichbarkeit.noetiger_sharpe` zu nehmen - eine zweite
+Umsetzung derselben Groesse, die Lehre aus Befund 439.
+
+**Zweitens**, und das haette den Befund verdreht: Aus der Bisektion mit
+**neutralen** Momenten kam heraus, dass die Viertelstunden-Zeilen 4,42 statt
+3,96 braeuchten, und ich habe daraus geschlossen, sie stuenden auf ihren
+**eigenen** Momenten - so wie Befund 191 es verlangt. Die kanonische
+Funktion mit der Bestandsform hat den Schluss umgedreht: Sie stehen auf den
+fremden. Der Unterschied zwischen "richtig gerechnet" und "mit der richtigen
+Form gerechnet" ist genau der Befund.
+
+Auch die Schranke im Test war zuerst geschaetzt - 0,32 aus der Zeile "leicht
+schief" statt 0,280 aus der naechsten. Gemessen steht sie jetzt da.
+
+### Gelockert ist nichts
+
+Keine Schwelle, kein Gate, kein Urteil bewegt sich. Die Tafel sagt dasselbe
+wie vorher - sie sagt jetzt auch, woraus.

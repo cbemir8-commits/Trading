@@ -137,6 +137,24 @@ class Betriebspunkt:
     traegt (Befund 227).
     """
 
+    formquelle: str = ""
+    """**Wessen** Verteilungsform in der Latte steckt - Befund 448.
+
+    Die Latte haengt stark an Schiefe und Woelbung: Bei n_eff 584 liegt sie
+    zwischen 3,6840 und 4,7618, je nach Form. Eine Latte ohne ihre Form ist
+    deshalb so unvollstaendig wie eine ohne ihren Versuchsstand.
+
+    * ``"eigen"`` - die Momente dieses Punkts selbst.
+    * ``"bestand"`` - die des Referenzpunkts, also **geliehen**. Innerhalb
+      desselben Betriebspunkts ist das eine kleine Unschaerfe; ueber
+      Betriebspunkte hinweg ist es der Fehler aus Befund 190.
+    * ``""`` - nicht vermerkt.
+
+    Dass es nachtraeglich bestimmbar war, liegt an dieser Empfindlichkeit:
+    Die gespeicherten Latten treffen die Bestandsform auf 0,0013, und jede
+    andere Form haette um Zehntel abgewichen.
+    """
+
     def __post_init__(self) -> None:
         if self.effektiv <= 0:
             raise ValueError(f"{self.regel}: keine Stichprobe, keine Aussage.")
@@ -210,6 +228,9 @@ GEMESSEN: tuple[Betriebspunkt, ...] = (
         # Rechnung haelt, hat bei 198 Versuchen gestimmt und bei 203 nicht
         # mehr (Befund 281).
         versuche=198,
+        # Dieser Punkt **ist** der Referenzpunkt - hier sind es seine eigenen
+        # Momente (Befund 448).
+        formquelle="eigen",
     ),
     # **Der Verbundlauf aus Befund 155**, beide Zeilen aus derselben Messung.
     # Nur innerhalb dieses Paares ist der Vergleich zulaessig.
@@ -222,6 +243,13 @@ GEMESSEN: tuple[Betriebspunkt, ...] = (
         latte=3.6088,
         befund=155,
         lauf="Verbund 155",
+        # **Nachgemessen, nicht geraten** (Befund 448): Bei n_eff 114 und der
+        # Verteilungsform des Bestands ergibt die Rechnung 3,6088 bei 198
+        # Versuchen und 3,6159 bei 203 - gespeichert ist 3,6088, auf vier
+        # Stellen. Damit steht die Latte auf demselben Stand wie die des
+        # Bestands, und das Paar aus 155 ist mit ihr vergleichbar.
+        versuche=198,
+        formquelle="bestand",
     ),
     Betriebspunkt(
         name="Tageskerzen",
@@ -232,7 +260,44 @@ GEMESSEN: tuple[Betriebspunkt, ...] = (
         latte=3.6479,
         befund=155,
         lauf="Verbund 155",
+        # Dieselbe Rechnung (Befund 448): n_eff 136, Form des Bestands - 3,6479
+        # bei 198 Versuchen, 3,6550 bei 203. Gespeichert ist 3,6479.
+        versuche=198,
+        formquelle="bestand",
     ),
+    # **Diese drei Latten stehen auf fremden Momenten** (Befund 448).
+    #
+    # Nachgerechnet mit 'erreichbarkeit.noetiger_sharpe' treffen sie den Stand
+    # 198 **unter der Verteilungsform des Bestands** (Schiefe 3,4646, Woelbung
+    # 15,9173), und zwar auf 0,0013:
+    #
+    #     Regel                          gespeichert   Bestandsform bei 198
+    #     Trendbeteiligung mit Puffer          3,9640                 3,9653
+    #     Seltener grosser Ausbruch            4,0650                 4,0658
+    #     Starker Trend, Momentum              4,1380                 4,1384
+    #
+    # Zufall ist das nicht: Die Latte haengt **stark** an der Form. Bei n_eff
+    # 584 liegt sie zwischen 3,6840 (stark schief) und 4,7618 (linksschief),
+    # eine Spanne von 1,08; selbst bei n_eff 1818 sind es noch 0,64. Eine
+    # andere Form haette die Zahl um Zehntel verschoben, nicht um Tausendstel.
+    #
+    # Damit ist es derselbe Fehler wie in Befund 355, nur gespiegelt: Dort
+    # standen die **Vorgabe**momente statt der gemessenen, hier stehen die
+    # Momente eines **anderen** Punkts. Die drei Regeln sind nicht der
+    # Bestand, und ihre eigenen Formen sind nirgends verzeichnet - auch nicht
+    # in den Berichten (jede '*.json' und '*.jsonl' unter 'reports/' nach den
+    # drei Regelnamen mit passender n_eff durchsucht, kein Treffer).
+    #
+    # **Die Aussage des Moduls haelt trotzdem**, und das ist der Grund, hier
+    # nichts zu aendern: Mit neutralen Momenten waere die Latte *hoeher*
+    # (4,4246) und der Anteil **niedriger** - 0,168 statt 0,188. Nur eine
+    # stark schiefe Verteilung hilft, und auch dort steht 0,202 gegen gut
+    # 0,80. Der Faktor bleibt vier.
+    #
+    # ``versuche=198`` ist deshalb eingetragen und ``formquelle='bestand'``
+    # sagt, wessen Momente darin stecken. Was fehlt, ist die eigene Form - und
+    # bis sie gemessen ist, traegt der Anteil dieser drei Zeilen eine
+    # Unsicherheit von rund einem Zehntel seiner selbst.
     Betriebspunkt(
         name="15 Minuten",
         intervall="15",
@@ -241,6 +306,8 @@ GEMESSEN: tuple[Betriebspunkt, ...] = (
         guete=0.744,
         latte=3.964,
         befund=171,
+        versuche=198,
+        formquelle="bestand",
     ),
     Betriebspunkt(
         name="15 Minuten",
@@ -250,6 +317,8 @@ GEMESSEN: tuple[Betriebspunkt, ...] = (
         guete=0.156,
         latte=4.065,
         befund=171,
+        versuche=198,
+        formquelle="bestand",
     ),
     Betriebspunkt(
         name="15 Minuten",
@@ -259,6 +328,8 @@ GEMESSEN: tuple[Betriebspunkt, ...] = (
         guete=-0.780,
         latte=4.138,
         befund=171,
+        versuche=198,
+        formquelle="bestand",
     ),
 )
 

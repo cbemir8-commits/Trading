@@ -485,3 +485,171 @@ class TestDerVerbundStehtImVergleich:
         ).bericht()
 
         assert "Im selben Lauf (Verbund 155)" in text
+
+
+class TestWorausDieLattenGerechnetSind:
+    """**Die Latten standen ohne ihre Bedingungen da** - Befund 448.
+
+    Eine Latte haengt an drei Dingen: der effektiven Stichprobe, dem
+    Versuchsstand und der Verteilungsform. ``GEMESSEN`` nannte die erste
+    immer, die zweite bei **einer** von sechs Zeilen und die dritte bei
+    keiner.
+
+    Beide liessen sich nachtraeglich bestimmen, und zwar gerade **weil** die
+    Latte so empfindlich ist: Alle sechs treffen den Stand 198 unter der Form
+    des Bestands auf 0,0013, und jede andere Form haette um Zehntel
+    abgewichen.
+
+    Das Ergebnis ist unbequem: Die drei Viertelstunden-Latten stehen auf den
+    Momenten eines **anderen** Betriebspunkts. Das ist der Fehler aus Befund
+    355, gespiegelt - dort die Vorgabemomente statt der gemessenen, hier die
+    fremden statt der eigenen.
+    """
+
+    #: Plausible Verteilungsformen, um die Empfindlichkeit zu zeigen.
+    FORMEN = (
+        ("neutral", 0.0, 3.0),
+        ("bestand", 3.4646, 15.9173),
+        ("leicht schief", 1.0, 5.0),
+        ("stark schief", 6.0, 40.0),
+        ("linksschief", -2.0, 9.0),
+    )
+
+    @staticmethod
+    def _latte(n: int, versuche: int, schiefe: float, woelbung: float) -> float:
+        """Die Latte als **Guete** - ueber die kanonische Rechnung.
+
+        ``noetiger_sharpe`` gibt den noetigen Sharpe **je Trade**; die Guete
+        ist das Produkt mit der Wurzel aus n. Eine eigene Bisektion hier
+        waere die zweite Umsetzung (Befund 439).
+        """
+        from math import sqrt
+
+        from research.erreichbarkeit import noetiger_sharpe
+
+        wert = noetiger_sharpe(
+            effektiv=n, trials=versuche, skew=schiefe, kurtosis=woelbung
+        )
+        assert wert is not None, (n, versuche)
+        return wert * sqrt(n)
+
+    def test_jede_zeile_nennt_ihren_versuchsstand(self) -> None:
+        """``0`` hiess "nicht vermerkt" - bei fuenf von sechs Zeilen."""
+        from research.erfuellung import GEMESSEN
+
+        for b in GEMESSEN:
+            assert b.versuche > 0, b.regel
+
+    def test_und_wessen_momente_darin_stecken(self) -> None:
+        from research.erfuellung import GEMESSEN
+
+        for b in GEMESSEN:
+            assert b.formquelle in {"eigen", "bestand"}, (b.regel, b.formquelle)
+
+    def test_alle_sechs_treffen_den_stand_198(self) -> None:
+        """Unter der Form des Bestands, auf 0,0013."""
+        from research.erfuellung import GEMESSEN
+
+        for b in GEMESSEN:
+            gerechnet = self._latte(b.effektiv, 198, 3.4646, 15.9173)
+
+            assert abs(gerechnet - b.latte) < 0.0015, (b.regel, gerechnet, b.latte)
+
+    def test_nur_der_bestand_steht_auf_eigenen_momenten(self) -> None:
+        """Die fuenf anderen leihen - und drei davon ueber den
+        Betriebspunkt hinweg, was Befund 190 als Fehler benennt."""
+        from research.erfuellung import GEMESSEN
+
+        eigen = [b.regel for b in GEMESSEN if b.formquelle == "eigen"]
+        geliehen_fremder_punkt = [
+            b.regel
+            for b in GEMESSEN
+            if b.formquelle == "bestand" and b.intervall != "D"
+        ]
+
+        assert eigen == ["Bestand (Spot wie gebaut)"]
+        assert len(geliehen_fremder_punkt) == 3
+
+
+class TestDieLatteHaengtStarkAnDerForm:
+    """Der Grund, warum die Zuordnung ueberhaupt moeglich war - und warum
+    die geliehene Form eine Unsicherheit ist und keine Kleinigkeit."""
+
+    def test_bei_kleiner_stichprobe_liegen_zwei_punkte_dazwischen(self) -> None:
+        latten = [
+            TestWorausDieLattenGerechnetSind._latte(115, 198, sk, wo)
+            for _, sk, wo in TestWorausDieLattenGerechnetSind.FORMEN
+        ]
+
+        assert max(latten) - min(latten) > 2.0
+
+    def test_und_selbst_bei_1818_noch_ein_halber(self) -> None:
+        """Eine grosse Stichprobe macht die Form nicht gleichgueltig."""
+        latten = [
+            TestWorausDieLattenGerechnetSind._latte(1818, 198, sk, wo)
+            for _, sk, wo in TestWorausDieLattenGerechnetSind.FORMEN
+        ]
+
+        assert max(latten) - min(latten) > 0.5
+
+    def test_deshalb_ist_die_zuordnung_eindeutig(self) -> None:
+        """Bei n_eff 584 liegt die naechste plausible Form **0,280** daneben -
+        die gespeicherte Latte trifft die Bestandsform auf 0,0013, also um
+        mehr als den Faktor zweihundert genauer.
+
+        (Hier stand zuerst 0,32 - geschaetzt aus der Zeile 'leicht schief'
+        statt der naechsten, 'stark schief'. Gemessen sind es 0,280.)
+        """
+        gespeichert = 3.964
+        abstaende = {
+            name: abs(
+                TestWorausDieLattenGerechnetSind._latte(584, 198, sk, wo) - gespeichert
+            )
+            for name, sk, wo in TestWorausDieLattenGerechnetSind.FORMEN
+        }
+        naechste = min(v for k, v in abstaende.items() if k != "bestand")
+
+        assert abstaende["bestand"] < 0.002
+        assert naechste == pytest.approx(0.280, abs=0.002)
+        assert naechste > 100 * abstaende["bestand"]
+
+
+class TestDieAussageHaeltTrotzdem:
+    """**Wichtiger als die Unsicherheit**: Sie geht nicht in die bequeme
+    Richtung. Mit eigenen, unbekannten Momenten koennte der Anteil der
+    Viertelstunden steigen oder fallen - und selbst im guenstigsten
+    gerechneten Fall bleibt der Faktor vier."""
+
+    def test_heute_sind_die_tagesanteile_etwas_niedriger(self) -> None:
+        """Der Zaehler steht auf 203, die Latten auf 198."""
+        from research.erfuellung import GEMESSEN
+
+        erwartet = {
+            "Bestand (Spot wie gebaut)": 0.8027,
+            "Spitze allein": 0.7440,
+            "+ Trend-Beteiligung 200": 0.8170,
+        }
+        for b in GEMESSEN:
+            if b.regel not in erwartet:
+                continue
+            heute = b.guete / TestWorausDieLattenGerechnetSind._latte(
+                b.effektiv, 203, 3.4646, 15.9173
+            )
+
+            assert heute == pytest.approx(erwartet[b.regel], abs=0.0005), b.regel
+            assert heute < b.guete / b.latte, b.regel
+
+    def test_mit_neutralen_momenten_wird_der_abstand_groesser(self) -> None:
+        neutral = TestWorausDieLattenGerechnetSind._latte(584, 198, 0.0, 3.0)
+
+        assert 0.744 / neutral == pytest.approx(0.168, abs=0.002)
+
+    def test_selbst_im_guenstigsten_fall_bleibt_der_faktor_vier(self) -> None:
+        """Nur eine stark schiefe Verteilung hilft den Viertelstunden - und
+        auch dort steht 0,202 gegen gut 0,80."""
+        guenstig = TestWorausDieLattenGerechnetSind._latte(584, 198, 6.0, 40.0)
+        anteil = 0.744 / guenstig
+        tag = 0.8027
+
+        assert anteil == pytest.approx(0.202, abs=0.002)
+        assert tag / anteil > 3.9

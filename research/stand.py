@@ -6375,6 +6375,54 @@ BEHOBEN: tuple[Richtung, ...] = (
         "('alle gemeinsam traegt nur 50%'). Nachsehen heisst nicht finden",
         447,
     ),
+    # Befund 448: Die Tafel, die sagt, auf welcher Kerzenlaenge die Suche
+    # lohnt - und worauf ihre Latten standen.
+    Richtung(
+        "Die Latten der Erfuellungstafel standen auf fremden Momenten",
+        "Der Nutzer wird als naechstes auf **Viertelstunden** suchen "
+        "(Generation 6/7). Die Tafel, die dazu Auskunft gibt, ist "
+        "'research/erfuellung.py': Sie vergleicht je Betriebspunkt den "
+        "**Erfuellungsgrad** - erreichte durch noetige Guete -, weil Guete "
+        "und Latte verschiedener Punkte nicht gegeneinander duerfen (Befund "
+        "190). Ihr Ergebnis ist unbequem und eindeutig: Auf Tageskerzen "
+        "raeumt der beste Fund **0,80** seiner Latte, auf Viertelstunden "
+        "**0,19** - das Vierfache an Abstand, obwohl die feinere Kerze die "
+        "Latte **je Trade** halbiert. **Eine Latte haengt aber an drei "
+        "Dingen**: effektiver Stichprobe, Versuchsstand und "
+        "Verteilungsform. Die Tafel nannte die erste immer, die zweite bei "
+        "**einer** von sechs Zeilen und die dritte bei keiner - obwohl das "
+        "Feld 'versuche' seit Befund 281 existiert und sein eigener "
+        "Docstring sagt, eine Latte ohne ihren Stand sei 'eine Zahl ohne "
+        "ihre Bedingung'. **Beides liess sich nachtraeglich bestimmen**, und "
+        "zwar gerade weil die Latte so empfindlich ist: Alle sechs treffen "
+        "den Stand **198** unter der Verteilungsform des **Bestands**, auf "
+        "0,0013 - und die naechste plausible Form liegt 0,280 daneben, also "
+        "zweihundertmal weiter. Zufall ist das nicht. **Damit stehen die drei "
+        "Viertelstunden-Latten auf den Momenten eines anderen "
+        "Betriebspunkts** - derselbe Fehler wie in Befund 355, gespiegelt: "
+        "Dort standen die Vorgabemomente statt der gemessenen, hier die "
+        "fremden statt der eigenen. Die eigenen Formen sind nirgends "
+        "verzeichnet, auch nicht in den Berichten (jede '*.json' und "
+        "'*.jsonl' unter 'reports/' nach den drei Regelnamen mit passender "
+        "n_eff durchsucht, kein Treffer). **Die Aussage haelt trotzdem, und "
+        "das ist der Punkt**: Mit neutralen Momenten waere die Latte hoeher "
+        "und der Anteil **niedriger** (0,168 statt 0,188); nur eine stark "
+        "schiefe Verteilung hilft, und auch dort steht 0,202 gegen 0,80. Der "
+        "Faktor bleibt vier, in jeder gerechneten Form. **Eingetragen**: "
+        "'versuche=198' bei allen sechs Zeilen und ein neues Feld "
+        "'formquelle' ('eigen' nur beim Bestand, 'bestand' bei den fuenf "
+        "anderen). Zwoelf Tests sichern es, darunter die Empfindlichkeit "
+        "selbst - eine grosse Stichprobe macht die Form **nicht** "
+        "gleichgueltig, bei n_eff 1818 liegen noch 0,64 zwischen den Formen. "
+        "**Und zwei eigene Fehlgriffe auf dem Weg**: Ich habe die Latten "
+        "zuerst mit einer selbstgebauten Bisektion gerechnet statt mit "
+        "'erreichbarkeit.noetiger_sharpe' - eine zweite Umsetzung derselben "
+        "Groesse (439) - und daraus geschlossen, die Viertelstunden-Zeilen "
+        "stuenden auf eigenen Momenten, weil sie die **neutrale** Form nicht "
+        "treffen. Sie treffen die des Bestands. Die kanonische Funktion hat "
+        "den Schluss umgedreht",
+        448,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
