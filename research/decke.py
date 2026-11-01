@@ -36,6 +36,46 @@ Zur Groessenordnung, auf derselben Skala:
     alles zusammen ohne Funding   +0,0168
     verbleibende Luecke           -0,0692
 
+Nachgemessen auf heutiger Basis
+-------------------------------
+**Die Tafel oben rechnet mit n = 152** - und das ist seit Befund 135
+ueberholt (siehe "Zum Stand" unten). Der **Befehl** rechnet laengst auf der
+wirksamen Stichprobe; nur dieser Modulkopf trug die alten Zahlen weiter, und
+die Stelle, die das sagt, stand 170 Zeilen darunter. Weil die Saetze oben
+keine Aufzeichnung sind, sondern eine Aussage ueber den **Jetzt**-Stand
+("es fehlen 0,0692"), ist derselbe Befehl neu gefahren (Befund 443):
+
+    Perpetual wie gebaut      DSR 0,4579   7/11 Gates
+    Spot wie gebaut           DSR 0,5826   9/11 Gates
+    Spot ohne Slippage        DSR 0,5889   9/11 Gates
+    Spot ohne Gebuehren       DSR 0,6015   9/11 Gates
+    Spot voellig kostenfrei   DSR 0,6079   9/11 Gates   <- Decke
+
+**Die Aussage haelt - und sie wird schaerfer, nicht milder.** Drei Dinge
+haben sich geaendert, alle in dieselbe Richtung:
+
+* Die Luecke ist nicht 0,0692, sondern **0,3421**: das Vierkommaneunfache.
+* Der Topf ist ebenfalls groesser (0,0253 statt 0,0168), aber die Luecke ist
+  jetzt das **13,5-fache** davon statt des Vierfachen.
+* **Kosten abzuschalten kauft kein Gate mehr.** Die alte Tafel gewann bei
+  null Gebuehren ein zehntes Gate; heute stehen alle vier Spot-Zeilen auf
+  9/11, und offen sind in **jeder** Zeile genau 'Messlatte' und 'Deflated
+  Sharpe'.
+
+Der dritte Punkt ist der tragende. "Erschoepft" hiess 2026 noch
+"erschoepft, nachdem ein Gate dabei herausfiel"; heute heisst es
+**erschoepft, ohne dass ein einziges Gate kippt**.
+
+Das gilt auch unterhalb der Kosten (``--anschlag``, Befund 127): Ohne
+Terminkalender, ohne Verfallsfrist der Limits und ohne Risk-Officer bleibt es
+bei 9/11 mit denselben zwei offenen Gates. Der hoechste dort gemessene Wert
+ist **0,6301** (Kalender ab) gegen die Schwelle 0,95 - und der Risk-Officer
+kostet nichts, ohne ihn faellt der Wert auf 0,6181 zurueck.
+
+Auf dieser Basis wird auch der Streitfall Slippage noch kleiner: Ihr Wegfall
+traegt 0,0063, das ist ein **Vierundfuenfzigstel** der Luecke, nicht ein
+Sechzehntel.
+
 Die gewaehlte Slippage - ``slippage_bps = 1,0`` und ``stop_slippage_bps =
 5,0``, beide nie gemessen - ist damit als Streitfall erledigt. Ihre ganze
 plausible Spanne ist ein Sechzehntel der Luecke, und die Gates halten bis zum
@@ -617,9 +657,15 @@ class Reibungsprobe:
     def anschlag_haelt(self) -> bool:
         """Ist "Kosten null" der hoechste Wert der Reihe?
 
-        Wenn ja, liegt unterhalb nichts, und Befund 111 steht. Wenn nein, gibt
-        es eine Bremse, die mehr wert ist als alle Kosten zusammen - und dann
-        war der Anschlag keiner.
+        Wenn ja, liegt unterhalb nichts, und Befund 111 steht. Wenn nein, war
+        der Anschlag keiner - unterhalb der Kostendecke liegt etwas.
+
+        **Was daraus nicht folgt** (Befund 443): dass diese Bremse mehr wert
+        waere als alle Kosten zusammen. Genau das stand hier, und gemessen war
+        es falsch - die Bremse traegt +0,0222, die Kosten zusammen +0,0253.
+        Ein Vergleich zweier Groessen ist kein Nebenprodukt eines
+        Maximumvergleichs; er wird gerechnet (``kostenwert``) oder nicht
+        behauptet.
         """
         anschlag, hoch = self.kostenanschlag, self.hoechster
         return anschlag is not None and hoch is not None and anschlag is hoch
@@ -635,6 +681,18 @@ class Reibungsprobe:
             return None
         vergleich = spaeter or danach
         return max(s.dsr for s in vergleich) - anschlag.dsr
+
+    def kostenwert(self) -> float | None:
+        """Was alle Kosten zusammen tragen - "Kosten null" gegen "wie gebaut".
+
+        Die Groesse, gegen die eine Bremse zu vergleichen ist (Befund 443).
+        ``None``, wenn die Reihe keine Zeile **vor** dem Anschlag hat: Dann
+        gibt es nichts zu vergleichen, und eine Zahl waere erfunden.
+        """
+        anschlag = self.kostenanschlag
+        if anschlag is None or not self.stufen or self.stufen[0] is anschlag:
+            return None
+        return anschlag.dsr - self.stufen[0].dsr
 
     def urteil(self) -> str:
         if not self.stufen:
@@ -657,9 +715,20 @@ class Reibungsprobe:
                 f"schlechterer Qualitaet."
             )
         hoch = self.hoechster
+        gewinn, kosten = self.gewinn_durch_oeffnen(), self.kostenwert()
+        vergleich = ""
+        if gewinn is not None and kosten is not None:
+            # **Gerechnet, nicht behauptet** (Befund 443). Hier stand "eine
+            # Bremse, die mehr wert ist als alle Kosten zusammen" - als Satz,
+            # nicht als Messung, und auf den heutigen Zahlen falsch.
+            richtung = "mehr" if gewinn > kosten else "weniger"
+            vergleich = (
+                f" Diese Bremse traegt {gewinn:+.4f} und ist damit "
+                f"{richtung} wert als alle Kosten zusammen ({kosten:+.4f})."
+            )
         return (
             f"**Der Anschlag haelt nicht.** '{hoch.name}' kommt auf "
-            f"{hoch.dsr:.4f} gegen {anschlag.dsr:.4f} bei 'Kosten null' - es "
-            f"gibt eine Bremse, die mehr wert ist als alle Kosten zusammen. "
+            f"{hoch.dsr:.4f} gegen {anschlag.dsr:.4f} bei 'Kosten null' - "
+            f"unterhalb der Kostendecke liegt also etwas.{vergleich} "
             f"Befund 111 gehoert entsprechend korrigiert."
         )

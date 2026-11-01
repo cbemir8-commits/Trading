@@ -204,7 +204,14 @@ def test_die_nachgemessenen_eintraege_stehen_fest() -> None:
         # Befund 168 hat die Kopplung zu Ende gerechnet (Decke 1,931 gegen
         # noetige 3,522), Befund 169 sie auf die SMA-Familie eingeschraenkt.
         "Trade-Zahl heben": 169,
-        "Kostenannahmen": 127,
+        # Befund 127 hat den Anschlag unterhalb der Kosten geprueft.
+        # Befund 443 hat die ganze Familie auf heutiger Basis nachgefahren:
+        # Die Luecke ist 0,3421 statt der verzeichneten 0,0692 - das
+        # Vierkommaneunfache -, und der tragende Unterschied ist der
+        # Gate-Zaehler: Kosten abzuschalten gewann damals ein zehntes Gate,
+        # heute stehen alle vier Spot-Zeilen auf 9/11. **Die Richtung bleibt
+        # geschlossen** - sie ist nur deutlicher zu als vorher.
+        "Kostenannahmen": 443,
         "Schnittpunkt als Prognose": 126,
         # Befund 141: 14 Paare mit dem Bestand, an der Einteilung des Gates.
         # Befund 151: dieselben 14 noch einmal, mit verlaengertem Nachlauf -

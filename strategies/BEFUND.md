@@ -39733,3 +39733,113 @@ sie bleibt verzeichnet, weil sie fuer kuenftige gilt.
 Keine Schwelle, kein Gate, kein Urteil bewegt sich. Korrigiert sind zwei
 Zahlen in meiner eigenen Dokumentation - und die Methode, die sie erzeugt
 hat, ist abgeschafft.
+
+## Vierhundertdreiundvierzig. Die Decke stand auf alter Basis - und ein Urteilssatz behauptete, was er nicht gemessen hat
+
+`research/decke.py` ist das Modul, das sagt, **wo noch Evidenz herkommen
+kann und wo nicht mehr**. Sein Kopf trug eine Tafel auf `n = 152` und diesen
+Satz:
+
+> **Die Kostenfamilie ist erschoepft.** Bei Kosten null steht der Kandidat
+> bei 0,8808, die Schwelle liegt bei 0,95. Es fehlen 0,0692 ... Was nach dem
+> Funding noch im Topf war, sind 0,0168; die Luecke ist das Vierfache davon.
+
+Das ist keine Aufzeichnung eines Laufs, sondern eine Aussage ueber den
+**Jetzt**-Stand. Die Stelle, die auf die ueberholte Basis hinweist, stand
+170 Zeilen darunter - und der Befehl selbst rechnet laengst auf der
+wirksamen Stichprobe. Also nachgefahren; `cli decke` kostet keinen Versuch.
+
+### Die Aussage haelt - und wird schaerfer, nicht milder
+
+    Stufe                     Befund 111       heute
+    ------------------------------------------------
+    Perpetual wie gebaut       DSR 0,7641   DSR 0,4579   7/11
+    Spot wie gebaut            DSR 0,8640   DSR 0,5826   9/11
+    Spot ohne Slippage         DSR 0,8684   DSR 0,5889   9/11
+    Spot ohne Gebuehren        DSR 0,8766   DSR 0,6015   9/11
+    Spot voellig kostenfrei    DSR 0,8808   DSR 0,6079   9/11  <- Decke
+
+Drei Dinge haben sich geaendert, alle in dieselbe Richtung:
+
+* Die Luecke ist nicht 0,0692, sondern **0,3421** - das Vierkommaneunfache.
+* Der Topf ist ebenfalls gewachsen (0,0253 statt 0,0168), aber die Luecke ist
+  jetzt das **13,5-fache** davon statt des Vierfachen.
+* Die Slippage - nie gemessener Streitfall - traegt 0,0063 und damit ein
+  **Vierundfuenfzigstel** der Luecke, nicht ein Sechzehntel.
+
+### Der tragende Teil ist der Gate-Zaehler
+
+Die alte Tafel gewann bei null Gebuehren ein **zehntes** Gate. Heute stehen
+alle vier Spot-Zeilen auf 9/11, und offen sind in *jeder* Zeile genau
+`Messlatte` und `Deflated Sharpe`.
+
+> "Erschoepft" hiess damals *erschoepft, nachdem ein Gate dabei herausfiel*.
+> Heute heisst es **erschoepft, ohne dass ein einziges Gate kippt.**
+
+Das gilt auch unterhalb der Kosten (`--anschlag`, Befund 127):
+
+    Spot wie gebaut               158 Trades  DSR 0,5826  9/11
+    + Kosten null (Befund 111)    158 Trades  DSR 0,6079  9/11
+    + ohne Terminkalender         160 Trades  DSR 0,6301  9/11
+    + Limits verfallen nie        160 Trades  DSR 0,6301  9/11
+    + ohne Risk-Officer           162 Trades  DSR 0,6181  9/11
+
+Mit **jeder** abschaltbaren Reibung ab ist 0,6301 das Beste, was gemessen
+wurde - gegen eine Schwelle von 0,95. Und der Risk-Officer kostet nichts:
+ohne ihn faellt der Wert auf 0,6181 zurueck. Die Sicherheit ist nicht der
+Preis.
+
+### Damit hat sich Befund 127 umgekehrt
+
+Dort stand das Gegenteil, und es war damals richtig gemessen:
+
+> **Jede weitere Abschaltung macht es schlechter.** Die Bremsen sind keine
+> Kosten, sondern Filter.
+
+Und als Nebenbefund, dass der Terminkalender am kostenfreien Anschlag die
+Messlatte haelt - 10 von 11 mit ihm, 9 ohne. Heute traegt der Kalender
+**+0,0222** und haelt **kein** Gate. Beide Aussagen von 127 sind gekippt.
+Die Rechnung von damals bleibt richtig; geaendert hat sich der Befund.
+
+### Und dabei ein Satz gefunden, der eine Messung vortaeuschte
+
+`Reibungsprobe.urteil()` schloss aus *"'Kosten null' ist nicht das
+Maximum"* auf:
+
+> es gibt eine Bremse, die mehr wert ist als alle Kosten zusammen
+
+Das ist keine Folgerung, sondern eine **zweite Behauptung** - und auf den
+heutigen Zahlen eine falsche:
+
+    die Bremse (Kalender ab)        +0,0222
+    alle Kosten zusammen            +0,0253
+
+Sie ist also **weniger** wert, nicht mehr. Der Satz stand als Zeichenkette im
+Code, ohne dass irgendetwas ihn gerechnet hat, und kein Test hing an ihm -
+die Doppel in `test_decke.py` fahren die Reihe von 127, in der der Anschlag
+haelt, sodass dieser Zweig nie mit echten Zahlen gelesen wurde.
+
+Gebaut ist `kostenwert()`: Das Urteil rechnet den Vergleich jetzt, nennt
+**beide** Zahlen und die Richtung - und wo es keine Zeile vor dem Anschlag
+gibt, behauptet es nichts, statt eine Groesse zu schaetzen. Dass der
+Anschlag *nicht* haelt, bleibt richtig. Nur die Groesse war erfunden.
+
+### Gesichert an einem Lauf, nicht an einer Abschrift
+
+Die Lehre aus Befund 442, einen Zyklus alt: `tests/test_kostendecke.py`
+faehrt `cli decke` und `cli decke --anschlag` mit `@pytest.mark.daten` und
+prueft die fuenf Stufen, ihre Monotonie (weniger Kosten koennen denselben
+Lauf nicht schlechter machen), den Anschlag, die Luecke, das Verhaeltnis zum
+Topf und die offenen Gates **je Zeile**. Dazu die Gegenprobe gegen den
+massgeblichen Punkt - und zwar als Naehe, nicht als Gleichheit: `cli decke`
+meldet fuer "Spot wie gebaut" eine Guete von 0,2853 ueber 158 Trades,
+`referenz.SPOTPUNKT` fuehrt 0,2708 ueber 156 gehandelte bei 115 wirksamen
+Beobachtungen. Zwei Groessen, die im Deflated Sharpe nahe beieinander
+landen - sie gleichzusetzen waere der Fehler aus Befund 428.
+
+### Gelockert ist nichts
+
+Keine Schwelle, kein Gate, kein Urteil bewegt sich zugunsten des Kandidaten.
+Die eine inhaltliche Aenderung geht in die unbequeme Richtung: Was fehlt, ist
+fuenfmal so viel wie dokumentiert, und die Kostenfamilie ist erschoepft,
+ohne dass ein Gate dabei herausfaellt.

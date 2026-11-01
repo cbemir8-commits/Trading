@@ -267,7 +267,7 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         "Kostenannahmen",
         "bei Kosten null fehlen 0,0692 - Anschlag nachgeprueft",
         111,
-        zuletzt=127,
+        zuletzt=443,
     ),
     Richtung(
         "Schwacher Vorteil (5 %)",
@@ -419,6 +419,7 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Bremsen unterhalb der Kostendecke",
         "Kalender, Verfallsfrist, Risk-Officer - oeffnen kostet -0,0046",
         127,
+        zuletzt=443,
     ),
     Richtung(
         "Alte Tabelle als Vergleichspunkt",
@@ -6162,6 +6163,53 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Dokumentation, und die Methode, die sie erzeugt hat, ist "
         "abgeschafft",
         442,
+    ),
+    # Befund 443: Die Decke stand auf alter Basis - und ein Urteilssatz
+    # behauptete eine Groesse, die er nicht gemessen hat.
+    Richtung(
+        "Die Kostendecke war auf alter Basis gerechnet",
+        "'research/decke.py' ist das Modul, das sagt, wo noch Evidenz "
+        "herkommen kann und wo nicht mehr. Sein Kopf trug eine Tafel auf "
+        "n = 152 und den Satz *'Es fehlen 0,0692 ... die Luecke ist das "
+        "Vierfache'* des noch im Topf Verbleibenden. Das ist keine "
+        "Aufzeichnung, sondern eine Aussage ueber den **Jetzt**-Stand - und "
+        "die Stelle, die auf die alte Basis hinwies, stand 170 Zeilen "
+        "darunter. **Der Befehl rechnet laengst richtig**; nachgefahren "
+        "(kostet keinen Versuch) steht die Kostenfamilie bei DSR 0,4579 "
+        "(Perpetual) / 0,5826 (Spot) / 0,5889 / 0,6015 / 0,6079 (kostenfrei). "
+        "**Die Aussage haelt und wird schaerfer**: Die Luecke ist nicht "
+        "0,0692, sondern **0,3421** - das Vierkommaneunfache -, und obwohl "
+        "der Topf ebenfalls gewachsen ist (0,0253 statt 0,0168), ist die "
+        "Luecke jetzt das **13,5-fache** davon statt des Vierfachen. Die "
+        "Slippage, nie gemessener Streitfall, traegt 0,0063: ein "
+        "Vierundfuenfzigstel der Luecke statt eines Sechzehntels. **Der "
+        "tragende Teil ist aber der Gate-Zaehler**: Die alte Tafel gewann bei "
+        "null Gebuehren ein zehntes Gate, heute stehen alle vier Spot-Zeilen "
+        "auf 9/11, und offen sind in **jeder** Zeile genau 'Messlatte' und "
+        "'Deflated Sharpe'. 'Erschoepft' hiess damals *erschoepft, nachdem "
+        "ein Gate dabei herausfiel*; heute heisst es **erschoepft, ohne dass "
+        "ein einziges Gate kippt** - auch unterhalb der Kosten: ohne "
+        "Terminkalender, ohne Verfallsfrist und ohne Risk-Officer bleibt es "
+        "bei 9/11 mit denselben zwei Gates, hoechster Wert 0,6301 gegen die "
+        "Schwelle 0,95, und der Risk-Officer kostet nichts (ohne ihn faellt "
+        "es auf 0,6181). **Damit hat sich Befund 127 umgekehrt**: Dort stand "
+        "*'Jede weitere Abschaltung macht es schlechter'* und der "
+        "Terminkalender hielt am kostenfreien Anschlag die Messlatte; heute "
+        "traegt der Kalender +0,0222 und haelt kein Gate. **Und dabei ein "
+        "Satz gefunden, der eine Messung vortaeuschte**: 'Reibungsprobe."
+        "urteil' schloss aus 'Kosten null ist nicht das Maximum' auf *'es "
+        "gibt eine Bremse, die mehr wert ist als alle Kosten zusammen'*. Das "
+        "ist keine Folgerung, sondern eine zweite Behauptung - und auf den "
+        "heutigen Zahlen eine falsche: Die Bremse traegt +0,0222, die Kosten "
+        "zusammen +0,0253, sie ist also **weniger** wert. Gebaut ist "
+        "'kostenwert()'; der Satz rechnet den Vergleich jetzt und nennt beide "
+        "Zahlen, und ohne Vergleichszeile behauptet er nichts. Dass der "
+        "Anschlag **nicht** haelt, bleibt richtig - nur die Groesse war "
+        "erfunden. **Gesichert ist das an einem Lauf**, nicht an einer "
+        "Abschrift (die Lehre aus 442): 'tests/test_kostendecke.py' faehrt "
+        "'cli decke' und 'cli decke --anschlag' und prueft Stufen, "
+        "Monotonie, Anschlag, Luecke und die offenen Gates je Zeile",
+        443,
     ),
 )
 
