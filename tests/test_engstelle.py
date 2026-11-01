@@ -42,12 +42,19 @@ from research.engstelle import (
 #: * ``Bestaendigkeit`` stand auf 0,581 und liegt bei 0,580645 (= 18/31). Die
 #:   Rueckrechnung aus einem auf drei Stellen gerundeten Abstand gibt die
 #:   Stelle nicht her; der Anteil wurde dadurch 16,2 % statt **16,1 %**.
-#: * ``Kosten-Stress`` stand auf 942,865 und liegt bei 1863,726. Das war
-#:   kein Rundungsfehler: 942,8654 ist ein **Endkapital in EUR** aus Befund
-#:   365 ("955,7552 / 942,8654 / 625,8040"). Ich habe aus der falschen Zeile
-#:   einer alten Ausgabe abgeschrieben, und es ist nur deshalb nirgends
-#:   aufgefallen, weil eine Schwelle von null keinen Anteil hat - die Zeile
-#:   steht in keiner Rangfolge.
+#: * ``Kosten-Stress`` stand auf 942,865 und liegt bei 1863,726. Das war kein
+#:   Rundungsfehler, sondern der **Betriebspunkt-Fehler aus Befund 428**:
+#:   942,865 ist derselbe Gate-Wert am **Perpetual**-Punkt, und 'cli stand'
+#:   meldet ihn dort so. Ich hatte die berichtete Spalte in eine Tafel
+#:   geschrieben, die am Spot-Punkt steht. Aufgefallen ist es nirgends, weil
+#:   eine Schwelle von null keinen Anteil hat - die Zeile steht in keiner
+#:   Rangfolge.
+#:
+#:   **Und meine Erklaerung dazu war ebenfalls falsch** (Befund 447). In 443
+#:   stand hier, 942,8654 sei ein Endkapital in EUR aus Befund 365
+#:   ("955,7552 / 942,8654 / 625,8040"), abgeschrieben aus der falschen Zeile.
+#:   Die Ziffern stimmen zufaellig ueberein, und die Geschichte klang
+#:   praeziser als die Wahrheit. Gemessen ist es der Perpetual-Wert.
 #:
 #: Die Tabelle bleibt, weil die Tests darunter ohne Speicher laufen muessen.
 #: Sie ist jetzt aber ein **nachgeprueftes Abbild** und keine Abschrift:
@@ -434,10 +441,15 @@ class TestDieRangfolgeAmEchtenLauf:
         Fehler, damit nicht wieder jemand zurueckrechnet.
 
         'Bestaendigkeit' war eine Rueckrechnung aus einer Rundung (0,581
-        statt 0,580645; 16,2 % statt 16,1 %). 'Kosten-Stress' war eine Zahl
-        aus einem **anderen Befund**: 942,8654 ist ein Endkapital in EUR aus
-        365, kein Gate-Wert. Dass das nichts verschoben hat, lag allein an
-        der Schwelle null - ohne Anteil steht die Zeile in keiner Rangfolge.
+        statt 0,580645; 16,2 % statt 16,1 %). 'Kosten-Stress' war der Wert
+        **des anderen Betriebspunkts**: 942,865 ist derselbe Gate-Wert am
+        Perpetual-Punkt, und genau so meldet 'cli stand' ihn. Dass das
+        nichts verschoben hat, lag allein an der Schwelle null - ohne Anteil
+        steht die Zeile in keiner Rangfolge.
+
+        **Befund 443 hat das falsch erklaert** (richtiggestellt in 447): Dort
+        stand, die Zahl sei ein Endkapital aus Befund 365. Die Ziffern
+        stimmen zufaellig ueberein.
         """
         gemessen = {s.name: s for s in aus_gates(spotgates)}
 

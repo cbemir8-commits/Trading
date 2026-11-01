@@ -65,10 +65,16 @@ nach einer Messung aussieht. Das Gate bekommt keinen Anteil.
 
 **Und genau diese Zeile stand bis 442 falsch da** (mit 942,865), ohne dass es
 etwas verschob: Eine Zahl ohne Anteil steht in keiner Rangfolge, also prueft
-sie auch keine Rangfolge nach. 942,8654 ist ein **Endkapital in EUR** aus
-Befund 365 - abgeschrieben aus der falschen Zeile einer alten Ausgabe. Die
-zweite Abweichung war die ``Bestaendigkeit``: 0,581 statt 0,580645, weil ein
-auf drei Stellen gerundeter Abstand die Stelle nicht hergibt.
+sie auch keine Rangfolge nach. 942,865 ist derselbe Gate-Wert am
+**Perpetual**-Punkt - der Betriebspunkt-Fehler aus Befund 428, in eine Tafel
+geschrieben, die am Spot-Punkt steht. Die zweite Abweichung war die
+``Bestaendigkeit``: 0,581 statt 0,580645, weil ein auf drei Stellen
+gerundeter Abstand die Stelle nicht hergibt.
+
+**Befund 443 hat die erste Abweichung falsch erklaert** und 447 es
+richtiggestellt: Dort stand, 942,8654 sei ein Endkapital in EUR aus Befund
+365, aus der falschen Zeile abgeschrieben. Die Ziffern stimmen zufaellig
+ueberein - und die Geschichte klang praeziser als die Wahrheit.
 
 **Zwei Groessen in einer Spalte.** ``GateResult.bedingung`` warnt, dass bei
 'Messlatte' und 'Stichprobengroesse' je nach Ausgang des Laufs eine andere

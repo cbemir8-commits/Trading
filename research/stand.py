@@ -6135,11 +6135,14 @@ BEHOBEN: tuple[Richtung, ...] = (
         "ein auf drei Stellen gerundeter Abstand gibt die Stelle nicht her, "
         "mehr war es nicht. Die zweite ist der eigentliche Befund: "
         "''Kosten-Stress'' stand auf 942,865 und liegt bei **1863,726**. Das "
-        "ist kein Rundungsfehler - 942,8654 ist ein **Endkapital in EUR** aus "
-        "Befund 365 ('955,7552 / 942,8654 / 625,8040'). Ich habe aus der "
-        "falschen Zeile einer alten Ausgabe abgeschrieben, eine Zahl mit "
-        "einer anderen Einheit und einer anderen Groessenordnung, und sie "
-        "stand zwei Befunde lang in einer Tafel und in einem Docstring. "
+        "ist kein Rundungsfehler, sondern der **Betriebspunkt-Fehler aus "
+        "Befund 428**: 942,865 ist derselbe Gate-Wert am Perpetual-Punkt, und "
+        "'cli stand' meldet ihn dort so - ich hatte die berichtete Spalte in "
+        "eine Tafel geschrieben, die am Spot-Punkt steht. **Hier stand bis "
+        "447 eine andere, falsche Erklaerung**: 942,8654 sei ein Endkapital "
+        "in EUR aus Befund 365, aus der falschen Zeile abgeschrieben. Die "
+        "Ziffern stimmen zufaellig ueberein; die Geschichte klang praeziser "
+        "als die Wahrheit. "
         "**Warum es niemandem auffiel, ist die lehrreiche Haelfte**: Dieses "
         "Gate hat Schwelle null, bekommt deshalb seit 438 ausdruecklich "
         "keinen Anteil - und eine Zahl ohne Anteil steht in keiner "
@@ -6327,6 +6330,50 @@ BEHOBEN: tuple[Richtung, ...] = (
         "jeder Aussetzschwelle. Die Verschaerfung aendert keine gemessene "
         "Zahl - sie schliesst einen Weg, den niemand gegangen ist",
         445,
+    ),
+    # Befund 447: Der Lagebericht gefragt, was als naechstes dran ist - und
+    # dabei eine eigene Fehldiagnose aus 443 gefunden.
+    Richtung(
+        "Eine Fehldiagnose, die praeziser klang als die Wahrheit",
+        "Statt eine Richtung zu erfinden, 'cli stand' gefragt. Er nennt zwei "
+        "Stellen, an denen die Arbeit liegt - **Schlechtestes Jahr und "
+        "Parameter-Plateau** -, und sagt zu beiden offenen Gates, warum dort "
+        "nichts mehr zu rechnen ist: Die Messlatte ist eine gesetzte "
+        "Schwelle, der Deflated Sharpe durchgemessen. **Und in seiner "
+        "Gate-Tafel stand die Widerlegung meiner eigenen Erklaerung aus "
+        "443**: 'Kosten-Stress 942.865 gegen 0.000, Spot 1863.726 Reserve'. "
+        "Die 942,865 ist derselbe Gate-Wert am **Perpetual**-Punkt - der "
+        "Betriebspunkt-Fehler aus Befund 428, in eine Tafel geschrieben, die "
+        "am Spot-Punkt steht. In 443 habe ich daraus eine andere Geschichte "
+        "gemacht: 942,8654 sei ein Endkapital in EUR aus Befund 365, "
+        "abgeschrieben aus der falschen Zeile. Die Ziffern stimmen zufaellig "
+        "ueberein, und die Erklaerung klang praeziser als die Wahrheit - "
+        "dieselbe Sorte Fehler wie die Ursachenzuschreibung in 322, die 323 "
+        "berichtigen musste. Die **Zahl** in 443 war richtig und ist "
+        "korrigiert geblieben; falsch war nur, warum sie dort stand. An vier "
+        "Stellen richtiggestellt, mit Vermerk statt stillem Umschreiben. "
+        "**Dann die genannte Arbeit angesehen**: Der Plateau-Wert 0,500 ist "
+        "keine Messung der Gebietsform, sondern der Zeitpunkt einer Sperre, "
+        "und das ist seit Befund 313 als **Entscheidung** verzeichnet - "
+        "'messen, hinschreiben, nicht selbst entscheiden'. Was fehlte, war "
+        "der Lauf: Die Zahlen dieser Entscheidung standen gegen eine "
+        "Abschrift (die Luecke aus 442), obwohl sie beim Nutzer liegen. "
+        "Nachgefahren mit 'cli freigabe' (kostet keinen Versuch): **Die "
+        "durchgehende Spalte reproduziert auf den Cent** (-103,63 und "
+        "-103,90), die Walk-Forward-Spalte ist gewandert (+233,04 auf "
+        "+233,92 und +239,08 auf +240,26). Das passt zur Bauart - der "
+        "durchgehende Lauf faehrt die ganze Reihe, die Walk-Forward-"
+        "Aufteilung haengt am Ende der Reihe, und das ist seit 313 gewachsen. "
+        "**Unveraendert ist, was das Gate benutzt**: das Vorzeichen, bei "
+        "genau zwei Nachbarn verschieden, die Gate-Werte 0,500 gegen 1,000 "
+        "und die 1020 verhinderten Einstiege. Dreizehn Datentests fahren das "
+        "jetzt. **Und ein Verdacht hat sich beim Nachsehen aufgeloest**: Der "
+        "Lagebericht nennt '110 Einstiege verhindert', das Register 1020 - "
+        "ich hielt das fuer eine Drift. Es sind zwei Groessen: 1020 ist die "
+        "Summe ueber alle zwoelf, 110 die gescheiterte Seite der "
+        "**schwaechsten** Stellgroesse, und der Satz davor setzt sie "
+        "('alle gemeinsam traegt nur 50%'). Nachsehen heisst nicht finden",
+        447,
     ),
 )
 

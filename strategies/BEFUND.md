@@ -39691,6 +39691,16 @@ Ich habe aus der falschen Zeile einer alten Ausgabe abgeschrieben - eine Zahl
 mit einer anderen Einheit und einer anderen Groessenordnung -, und sie stand
 zwei Befunde lang in einer Tafel und in einem Docstring.
 
+> **Berichtigt (447).** Der Absatz darueber ist falsch, und zwar die
+> *Erklaerung*, nicht die Zahl. `942,865` ist derselbe Gate-Wert am
+> **Perpetual**-Punkt - `cli stand` meldet ihn dort so, direkt neben der
+> Spot-Reserve von 1863,726. Es war also der Betriebspunkt-Fehler aus Befund
+> 428 und kein Abschreiben aus einer anderen Zeile. Dass 942,8654 in Befund
+> 365 zufaellig auch als Endkapital vorkommt, hat mich zu einer Geschichte
+> verleitet, die praeziser klang als die Wahrheit. Der Befund selbst steht
+> unveraendert; falsch war nur die Ursachenzuschreibung - dieselbe Sorte
+> Fehler wie in 322/323.
+
 ### Warum es niemandem auffiel, ist die lehrreiche Haelfte
 
 Dieses Gate hat Schwelle null. Befund 438 hat dafuer ausdruecklich
@@ -40201,3 +40211,98 @@ fuehrt - traegt jetzt auch die Gruende:
 Keine Schwelle, kein Gate, kein Urteil bewegt sich. Dieser Befund misst eine
 Nebenwirkung meiner eigenen Verschaerfung, findet sie heute gegenstandslos,
 und schreibt die Frage auf, statt sie selbst zu beantworten.
+
+## Vierhundertsiebenundvierzig. Eine Fehldiagnose, die praeziser klang als die Wahrheit
+
+Statt eine Richtung zu erfinden, den Lagebericht gefragt. `cli stand` ist
+dafuer gebaut und kostet keinen Versuch. Er sagt klar, wo die Arbeit liegt:
+
+> **4 Gates offen - aber nicht 4 Aufgaben.**
+> Messlatte: eine gesetzte Schwelle, keine Messung.
+> Deflated Sharpe: durchgemessen, alle naheliegenden Wege sind zu.
+> **Hier liegt die Arbeit: Schlechtestes Jahr, Parameter-Plateau.**
+
+### Und in seiner Gate-Tafel stand meine eigene Widerlegung
+
+    + Kosten-Stress    942.865 gegen 0.000    Spot 1863.726 Reserve
+
+Die `942,865` ist derselbe Gate-Wert am **Perpetual**-Punkt. Mein Fehler in
+Befund 442 war also der Betriebspunkt-Fehler aus 428: die berichtete Spalte
+in eine Tafel geschrieben, die am Spot-Punkt steht.
+
+In Befund 443 habe ich daraus eine andere Geschichte gemacht:
+
+> 942,8654 ist ein **Endkapital in EUR** aus Befund 365
+> ("955,7552 / 942,8654 / 625,8040"). Ich habe aus der falschen Zeile einer
+> alten Ausgabe abgeschrieben.
+
+Die Ziffern stimmen zufaellig ueberein - und die Erklaerung klang praeziser
+als die Wahrheit. Eine falsche Zeile abzuschreiben ist eine konkrete,
+erzaehlbare Ursache; "Betriebspunkte verwechselt" ist die langweilige. Ich
+habe die konkrete genommen, weil sie passte.
+
+Das ist dieselbe Sorte Fehler wie die Ursachenzuschreibung in Befund 322, die
+323 berichtigen musste: **Der Befund stand, falsch war nur das Warum.** Und
+es ist bitter, weil 443 selbst ein Befund darueber ist, Erklaerungen nicht zu
+erfinden.
+
+Richtiggestellt an vier Stellen - mit Vermerk, nicht durch stilles
+Umschreiben: `tests/test_engstelle.py`, `research/engstelle.py`, der
+Registereintrag 443 und die Laborbuchstelle.
+
+### Dann die genannte Arbeit angesehen
+
+Der Plateau-Wert `0,500` ist kein Mass der Gebietsform. Das Gate faehrt seine
+zwoelf Nachbarn als **durchgehenden** Backtest, und eine dauerhafte Sperre -
+Not-Aus oder Wochenlimit - laeuft bis zur manuellen Freigabe, die in einem
+durchgehenden Lauf nie kommt.
+
+Das ist seit Befund 313 gemessen und als **Entscheidung** verzeichnet:
+
+> Es ist eine Geschaeftsentscheidung, weil sie ein Gate von 'durchgefallen'
+> auf 'bestanden' verschoebe - und weil sie entsteht, waehrend der eigene
+> Kandidat genau daran haengt. Dieselbe Antwort wie in 278: messen,
+> hinschreiben, nicht selbst entscheiden.
+
+**Was fehlte, war der Lauf.** Die Zahlen einer Entscheidung, die beim Nutzer
+liegt, standen gegen eine Abschrift - genau die Luecke, die Befund 442
+geschlossen hat.
+
+### Nachgefahren mit `cli freigabe`
+
+    Nachbar                  durchgehend     Walk-Forward (313 -> heute)
+    alle gemeinsam x1,2          -103,63     +233,04 -> +233,92
+    sma(period=50) x1,2          -103,90     +239,08 -> +240,26
+
+Die durchgehende Spalte reproduziert **auf den Cent**, die Walk-Forward-
+Spalte ist gewandert. Das passt zur Bauart und ist keine Drift: Der
+durchgehende Lauf faehrt die ganze Reihe und aendert sich nicht, solange ihr
+Anfang gleich bleibt; die Walk-Forward-Aufteilung haengt am **Ende** der
+Reihe, und das ist seit 313 gewachsen.
+
+**Unveraendert ist genau das, was das Gate benutzt:**
+
+    das Vorzeichen            bei zwei von zwoelf Nachbarn verschieden
+    Gate-Wert durchgehend     0,500
+    Gate-Wert Walk-Forward    1,000   (Schwelle 0,600)
+    verhinderte Einstiege     1020
+
+Dreizehn Datentests fahren das jetzt und vergleichen Zeile fuer Zeile. Damit
+steht die offene Entscheidung des Nutzers auf Zahlen, die heute noch stimmen.
+
+### Ein Verdacht, der sich beim Nachsehen aufloeste
+
+Der Lagebericht nennt *"110 Einstiege verhindert"*, das Register **1020**.
+Ich hielt das fuer eine Drift um das Neunfache. Es sind zwei Groessen: 1020
+ist die Summe ueber alle zwoelf Nachbarn, 110 die gescheiterte Seite der
+**schwaechsten** Stellgroesse - und der Halbsatz davor setzt sie (*"alle
+gemeinsam traegt nur 50%"*). Der Code summiert genau das.
+
+Nachsehen heisst nicht finden, und das gehoert zum Ergebnis - sonst liest
+sich jede gepruefte Stelle wie ein Mangel.
+
+### Gelockert ist nichts
+
+Keine Schwelle, kein Gate, kein Urteil bewegt sich. Korrigiert ist eine
+Erklaerung von mir, und gesichert sind die Zahlen einer Entscheidung, die
+nicht mir gehoert.
