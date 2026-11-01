@@ -224,7 +224,17 @@ GELESEN: dict[str, int] = {
     # **Verbund** mit dem Bestand sagen sie nichts - der braucht die gemeinsamen
     # Trades beider Beine, und der ist seit 193 unveraendert gemessen. Die
     # Richtung bleibt offen, sie hat nur eine Umgebung bekommen.
-    "Bestand + 'Grosser Trendausbruch'": 393,
+    #
+    # **Befund 449 nennt sie zum dritten Mal** - als Zeile in der Tafel des
+    # Viertelstunden-Vorrats: n_eff 1502, -0,0579 je Trade, Guete -2,243
+    # gegen eine Latte von 4,228.
+    #
+    # Gelesen und **abgegrenzt**, und die Abgrenzung ist hier eine andere als
+    # bei 393: Das sind Zahlen auf **Viertelstunden**, die Richtung handelt
+    # von einem Verbund auf **Tageskerzen**. Zwei Betriebspunkte, und sie
+    # gegeneinander zu lesen waere der Fehler aus Befund 190. Dass die Regel
+    # auf 15m negativ laeuft, sagt ueber ihren Beitrag auf 1d nichts.
+    "Bestand + 'Grosser Trendausbruch'": 449,
     "Holdout auf fremden Maerkten": 295,
     # **Befund 330, und diesmal benutzt statt zitiert.** Der Lauf hat den
     # Versuchszaehler ueber ``PATHS__STATE`` auf eine Wegwerf-Ablage umgelenkt,

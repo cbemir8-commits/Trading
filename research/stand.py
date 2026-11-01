@@ -6423,6 +6423,51 @@ BEHOBEN: tuple[Richtung, ...] = (
         "den Schluss umgedreht",
         448,
     ),
+    # Befund 449: Die Messung, ob ein Vorrat je reichen kann, war auf
+    # Viertelstunden bei einem von 39 Stuecken stehengeblieben.
+    Richtung(
+        "Der Vorrat auf Viertelstunden war nie zu Ende gemessen",
+        "'cli vorratsdecke' misst, **ob ein Vorrat je reichen kann**: Faellt "
+        "die Qualitaet je Trade mit der Menge, hat 'SR * sqrt(n)' ein "
+        "Maximum, und liegt das unter der Latte, kann darin nichts bestehen. "
+        "Auf Tageskerzen ist der Lauf vollstaendig (6 von 6 Stuecken) und "
+        "sagt: *'Beide Haelften gibt es - nur nie zusammen'* - fuenf von 18 "
+        "Regeln haben die noetige Qualitaet gezeigt, keine davon bei mehr als "
+        "n_eff 58. **Auf Viertelstunden stand er bei einem von 39**, und "
+        "genau dort sucht der Nutzer als naechstes (Generation 6/7). Zwoelf "
+        "weitere Stuecke gefahren, Kosten gemessen: 5 Minuten 23 je Stueck, "
+        "alle 39 also rund dreieinhalb Stunden. **Es bleibt eine Teilmessung** "
+        "- 13 von 39 -, und was sie hergibt, ist trotzdem deutlich. **Keine "
+        "Decke ablesbar, und die Methode sagt es selbst**: |t| = 1,42 liegt "
+        "unter 2, und ohne eine einzige Regel ('Momentum Ruecksetzer') bleibt "
+        "t = 0,00 stehen - *'eine Decke, die ein Punkt loeschen kann, ist "
+        "keine'*. **Der Befund, der keine Gerade braucht**: Von zwoelf "
+        "gemessenen Regeln haben **zwei** eine positive Qualitaet je Trade - "
+        "'Trendbeteiligung mit Puffer' mit 0,0336 und 'Seltener grosser "
+        "Ausbruch' mit 0,0047 -, die uebrigen zehn sind negativ. Die mildeste "
+        "Anforderung des Vorrats liegt bei 0,0488 je Trade (bei n_eff 8041), "
+        "und die **beste je gemessene Qualitaet ist 31 % darunter**. Damit "
+        "steht es anders als auf Tageskerzen: Dort fehlt die **Verbindung** "
+        "aus Qualitaet und Menge, hier fehlt die Qualitaet selbst. Die "
+        "Guete der besten Regel ist 0,815 gegen eine Latte von 3,889, und "
+        "keine der zwoelf haette bei irgendeinem Versuchsstand geraeumt. "
+        "**Und der Lauf beziffert Befund 448 von der anderen Seite**: Mit den "
+        "Momenten des Bestands gerechnet stuenden **9 von 12** Regeln zu "
+        "milde da, am weitesten 'Mean Reversion Uebertreibung' mit +0,508 "
+        "Guetepunkten Latte - genau der Fehler, den 448 in der "
+        "Erfuellungstafel gefunden hat, hier unabhaengig gemessen. **Zwei "
+        "Wachen haben gehalten**: Der Befehl weigert sich, die beiden "
+        "September-Protokolle dazuzulegen, weil ihnen Code, Katalog und "
+        "Kerzenabdruck fehlen (*'zwei Stuecke unter verschiedenen "
+        "Bedingungen sind zwei Messungen, keine'*), und die gepinnte "
+        "Berichtszaehlung bleibt bei 584 - nachgesehen, nicht angenommen: "
+        "Vorratsdecke-Protokolle tragen keine Gate-Bilanz, und die Zaehlung "
+        "aus 348 erfasst die fuenf Formen, die eine tragen. **Ein eigener "
+        "Fehler**: Ich hatte 'eine von zwoelf Regeln ist positiv' "
+        "geschrieben und die Zeile mit 0,0047 als Null gelesen. Mein eigener "
+        "Test hat es gefunden, bevor es stand",
+        449,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

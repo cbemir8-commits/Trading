@@ -40408,3 +40408,107 @@ schief" statt 0,280 aus der naechsten. Gemessen steht sie jetzt da.
 
 Keine Schwelle, kein Gate, kein Urteil bewegt sich. Die Tafel sagt dasselbe
 wie vorher - sie sagt jetzt auch, woraus.
+
+## Vierhundertneunundvierzig. Der Vorrat auf Viertelstunden war nie zu Ende gemessen
+
+`cli vorratsdecke` beantwortet die Frage, die vor jeder Suche steht: **Kann
+dieser Vorrat je reichen?** Faellt die Qualitaet je Trade mit der Menge, hat
+`SR * sqrt(n)` ein Maximum - und liegt das unter der Latte, ist dort nichts
+zu holen.
+
+Auf Tageskerzen ist der Lauf **vollstaendig** (6 von 6 Stuecken):
+
+> **Beide Haelften gibt es - nur nie zusammen.** Am wenigsten verlangt
+> 'Momentum Ruecksetzer' bei n_eff 254: 0,2641 je Trade, und sie selbst
+> bringt -0,1358. Fuenf von 18 Regeln haben diese Qualitaet gezeigt - aber
+> keine davon bei mehr als n_eff 58.
+
+Auf Viertelstunden stand er bei **einem von 39** - und genau dort sucht der
+Nutzer als naechstes. Zwoelf weitere Stuecke gefahren; ein Stueck kostet
+5 Minuten 23, alle 39 also rund dreieinhalb Stunden.
+
+### Keine Decke ablesbar - und die Methode sagt es selbst
+
+    Regel                            n_eff  SR/Trade   Guete  noetig  bis
+    Trendbeteiligung mit Puffer        589    0.0336   0.815   3.889    -
+    Seltener grosser Ausbruch         1177    0.0047   0.160   4.167    -
+    Starker Trend, Momentum           2016   -0.0339  -1.522   4.271    -
+    Trendbeteiligung EMA200           3229   -0.0280  -1.591   3.783    -
+    Langsamer Kreuzer (Messlatte 2)   1053   -0.0600  -1.947   4.160    -
+    Grosser Trendausbruch             1502   -0.0579  -2.243   4.228    -
+    Nur mit der Drift                 1727   -0.0643  -2.671   4.242    -
+    Momentum-Beteiligung              5376   -0.0424  -3.107   3.982    -
+    Mean Reversion Uebertreibung       295   -0.2151  -3.694   4.339    -
+    EMA-Kreuzung (Messlatte)          3680   -0.0790  -4.793   4.349    -
+    Volatilitaets-Ausbruch            5016   -0.1069  -7.572   4.355    -
+    Momentum Ruecksetzer              8041   -0.2113 -18.952   4.380    -
+
+> **Keine Decke ablesbar** (|t| = 1.42 liegt unter 2). **Die Gerade haengt
+> an einer einzigen Regel.** Ohne 'Momentum Ruecksetzer' steht t = +0.00
+> statt -1.42. Eine Decke, die ein Punkt loeschen kann, ist keine.
+
+Die Spalte `bis` - der hoechste Versuchsstand, bei dem eine Regel die
+Schwelle noch geraeumt haette - ist bei **allen zwoelf** leer.
+
+### Der Befund, der keine Gerade braucht
+
+**Zwei** der zwoelf Regeln haben eine positive Qualitaet je Trade: 0,0336
+und 0,0047. Die uebrigen zehn sind negativ. Dem gegenueber steht die
+**mildeste Anforderung des Vorrats**: 0,0488 je Trade, bei n_eff 8041.
+
+    beste je gemessene Qualitaet      0,0336
+    mildeste Anforderung              0,0488
+    Abstand                             31 %
+
+Damit steht es auf Viertelstunden **anders** als auf Tageskerzen. Dort fehlt
+die Verbindung aus Qualitaet und Menge - beide Haelften gibt es. Hier:
+
+> Was fehlt, fehlt nicht an der Kombination, sondern an der **Qualitaet
+> selbst.**
+
+Und die mildeste Anforderung gehoert ausgerechnet der schlechtesten Regel:
+Die Latte je Trade faellt mit der Wurzel aus n, und 'Momentum Ruecksetzer'
+hat mit n_eff 8041 die groesste Stichprobe - bei -0,2113 je Trade. Niedrige
+Anforderung ist hier keine Eigenschaft der Qualitaet, sondern der Menge.
+
+### Befund 448 von der anderen Seite beziffert
+
+Derselbe Lauf misst, was gestern in der Erfuellungstafel stand:
+
+> Mit den Momenten des Bestands gerechnet stuenden **9 von 12** Regeln zu
+> milde da. Am weitesten 'Mean Reversion Uebertreibung': **+0,508**
+> Guetepunkte Latte, die die Vorgabe verschluckt hat.
+
+Das ist derselbe Fehler wie in 448, hier unabhaengig gemessen - und die
+Richtung stimmt mit der dortigen Rechnung: Die geliehenen Momente sind zu
+mild, nicht zu streng.
+
+### Zwei Wachen haben gehalten
+
+**Die erste**: Der Befehl weigert sich, die beiden September-Protokolle zu
+den heutigen zu legen - ihnen fehlen Code, Katalog und Kerzenabdruck.
+
+> Zwei Stuecke unter verschiedenen Bedingungen sind zwei Messungen, keine.
+
+**Die zweite**, nachgesehen statt angenommen: Die gepinnte Berichtszaehlung
+bleibt bei 584, obwohl dreizehn Protokolle dazukamen. Grund: Diese
+Protokolle tragen keine Gate-Bilanz (`bestanden`/`gesamt`), und die Zaehlung
+aus Befund 348 erfasst die fuenf Formen, die eine tragen. Die Falle aus 440
+war hier also keine - aber das war vorher nicht klar.
+
+### Ein eigener Fehler
+
+Ich hatte "eine von zwoelf Regeln ist positiv" geschrieben und die Zeile mit
+0,0047 als Null gelesen. **Mein eigener Test hat es gefunden, bevor es
+stand** - zwei sind positiv. Die Aussage bleibt, weil 0,0047 ein Zehntel der
+besten und ein Zehntel der mildesten Anforderung ist; die Zahl war trotzdem
+falsch.
+
+### Was offen bleibt
+
+26 von 39 Stuecken. Die Teilmessung sagt nichts darueber, was in den
+uebrigen 26 steckt - sie sagt, was in den gemessenen dreizehn steckt, und
+dass daraus keine Decke zu lesen ist. Dreieinhalb Stunden Rechenzeit
+trennen diesen Stand von einer vollstaendigen Antwort.
+
+**Gelockert ist nichts.** Keine Schwelle, kein Gate, kein Urteil bewegt sich.
