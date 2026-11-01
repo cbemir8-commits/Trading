@@ -440,6 +440,14 @@ ENTSCHEIDUNGSBEGRIFFE: dict[str, tuple[str, ...]] = {
 }
 
 BEGRIFFE: dict[str, tuple[str, ...]] = {
+    # Befund 450: Wer diese Richtung weitermisst, schreibt ueber Kippfaktor,
+    # Slippage und Reibung - nicht ueber "haengt die Kopplung".
+    "Haengt die Kopplung auf Viertelstunden an der Reibung?": (
+        "Kippfaktor",
+        "Slippage",
+        "Reibung je Trade",
+        "doppelter Gebuehr",
+    ),
     # Befund 446: Die Namen der Sache - wer diese Richtung weitermisst,
     # schreibt ueber strukturelle Aussetzer und variierbare Perioden, nicht
     # ueber "eine Zulassung dauerhaft verhindern".

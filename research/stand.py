@@ -6467,6 +6467,49 @@ BEHOBEN: tuple[Richtung, ...] = (
         "geschrieben und die Zeile mit 0,0047 als Null gelesen. Mein eigener "
         "Test hat es gefunden, bevor es stand",
         449,
+        zuletzt=450,
+    ),
+    # Befund 450: Die Messung zu Ende gefahren - und ein Vorgehensfehler, den
+    # das Werkzeug selbst gemeldet hat.
+    Richtung(
+        "Auf Viertelstunden haette keine Regel je geraeumt",
+        "Befund 449 hat die Vorratsdecke auf Viertelstunden von einem auf "
+        "dreizehn von 39 Stuecken gebracht. **Jetzt sind alle 39 gefahren**, "
+        "und zwar auf **einem** Code-Stand - denn dazwischen lag ein Fehler "
+        "von mir, den der Befehl gefunden hat: Der Commit von 449 hat den "
+        "Code-Abdruck geaendert, und die dreizehn liessen sich mit den neuen "
+        "nicht mehr zusammenlegen (*'zwei Stuecke unter verschiedenen "
+        "Bedingungen sind zwei Messungen, keine'*). Eine stueckweise Messung "
+        "gehoert auf einen Stand, **ohne Commit dazwischen**; die dreizehn "
+        "sind neu gefahren und bleiben als Aufzeichnung liegen. "
+        "**Das Ergebnis ueber 36 Regeln mit Latte** (drei Genome handeln auf "
+        "15m nicht): **Zwei** haben eine positive Qualitaet je Trade - 0,0336 "
+        "und 0,0047 -, die uebrigen 34 sind negativ bis -0,2641. Am naechsten "
+        "kommt 'Trendbeteiligung mit Puffer' mit Guete 0,815 gegen eine Latte "
+        "von 3,889: **es fehlen 3,074**, das sind 0,64 Streuungen dieses "
+        "Vorrats, und der Median aller 36 Luecken liegt bei 11,437. **Der "
+        "tragende Satz**: *'Keine einzige Regel dieses Vorrats haette die "
+        "Schwelle bei irgendeinem Versuchsstand geraeumt. Auch beim ersten "
+        "Versuch nicht.'* Der Versuchszaehler ist hier also nicht die "
+        "Ursache, und Suchdisziplin nicht das Thema - was fehlt, fehlt an der "
+        "Qualitaet. **Eine Decke bleibt trotzdem unlesbar**, und die Methode "
+        "zeigt dabei Disziplin: |t| = 1,89 liegt unter 2, die Gerade haengt "
+        "an 'Trendbeteiligung mit Puffer' (ohne sie t = -1,42) - und **ohne "
+        "'Mean Reversion Uebertreibung' waere sie mit -2,41 signifikant**. "
+        "Das Modul sagt es und nimmt die guenstige Auslassung nicht. Auch "
+        "keiner der drei Schnitte bestaetigt: Eine zu kleine Aussenmenge "
+        "zaehlt nicht als Bestaetigung, sonst wuerde der Befund umso "
+        "sicherer, je feiner man schneidet. **Befund 448 ueber den ganzen "
+        "Katalog beziffert**: Mit den Momenten des Bestands stuenden **33 von "
+        "36** Regeln zu milde da, am weitesten 'RSI-Ruecksetzer im Trend' mit "
+        "+0,547 Guetepunkten. **Und eine neue, offene Frage**: Auf "
+        "Tageskerzen war die Kopplung keine Reibungsfrage (Kippfaktor 29). "
+        "Hier verschwindet sie bei **doppelter** Gebuehr - rund 0,1 % je "
+        "Roundtrip, und das liegt in der Reichweite der Slippage allein, die "
+        "im Ausfuehrungspreis steckt und sich aus den Trades nicht abziehen "
+        "laesst. Ob die Kopplung hier an den Signalen oder an der Reibung "
+        "haengt, ist damit **nicht entschieden**; sie steht in 'OFFEN'",
+        450,
     ),
 )
 
@@ -6475,6 +6518,34 @@ BEHOBEN: tuple[Richtung, ...] = (
 #: Getrennt von ``GESCHLOSSEN``, weil "gemessen und offen" etwas anderes ist
 #: als "gemessen und zu". Ein Eintrag hier ist eine Zusage, keine Ablage.
 OFFEN: tuple[Richtung, ...] = (
+    # Aufgeworfen von 450: Auf Tageskerzen war die Kopplung keine
+    # Reibungsfrage - auf Viertelstunden steht das offen.
+    Richtung(
+        "Haengt die Kopplung auf Viertelstunden an der Reibung?",
+        "Die Kopplung zwischen Trade-Zahl und Qualitaet ist seit Befund 75 "
+        "die Eigenschaft, die den Vorrat deckelt. **Auf Tageskerzen ist "
+        "entschieden, dass sie nicht an den Kosten haengt**: 'cli "
+        "kostenanteil' findet keinen Kippfaktor unter tausend, und die "
+        "verzeichnete Zahl ist 29 - erst bei 29-facher Gebuehr verschwindet "
+        "sie, was niemand bezahlt. **Auf Viertelstunden liegt es anders**, "
+        "gemessen in Befund 450 ueber 36 Regeln: Rechnet man die Gebuehr "
+        "zurueck, geht die Korrelation von -0,226 auf -0,171, und bei "
+        "**doppelter** Gebuehr verschwindet sie. Das sind rund 0,1 % je "
+        "Roundtrip. **Warum es hier nicht zu entscheiden war**: Diese "
+        "Groessenordnung liegt in der Reichweite dessen, was allein die "
+        "Slippage ausmachen kann - und die steckt im Ausfuehrungspreis, "
+        "laesst sich aus den Trades also nicht abziehen. Die Gebuehr kann man "
+        "zurueckrechnen, die Slippage nicht. **Was es entscheiden wuerde**: "
+        "Ein Lauf mit gemessener statt angesetzter Slippage, oder derselbe "
+        "Vorrat auf Kerzen, deren Haltedauer die Reibung je Trade "
+        "verkleinert. Beides ist messbar und nicht gemessen. **Warum es "
+        "zaehlt**: Haengt die Kopplung an der Reibung, ist sie keine "
+        "Eigenschaft der Signale, und der Deckel dieses Vorrats steht an "
+        "einer anderen Stelle als gedacht - fuer die Suche auf 15 Minuten "
+        "waere das der Unterschied zwischen 'hier ist nichts' und 'hier ist "
+        "etwas, das die Gebuehr frisst'",
+        450,
+    ),
     # Aufgeworfen von 446: Nebenwirkung der Verschaerfung aus 445, gemessen
     # und nicht entschieden - die Entscheidung gehoert dem Nutzer.
     Richtung(

@@ -40512,3 +40512,101 @@ dass daraus keine Decke zu lesen ist. Dreieinhalb Stunden Rechenzeit
 trennen diesen Stand von einer vollstaendigen Antwort.
 
 **Gelockert ist nichts.** Keine Schwelle, kein Gate, kein Urteil bewegt sich.
+
+## Vierhundertfuenfzig. Auf Viertelstunden haette keine Regel je geraeumt
+
+Befund 449 hat die Vorratsdecke auf Viertelstunden von einem auf dreizehn von
+39 Stuecken gebracht. Jetzt sind **alle 39** gefahren - und dazwischen lag
+ein Fehler von mir, den der Befehl selbst gefunden hat.
+
+### Der Fehler zuerst
+
+Der Commit von 449 hat den Code-Abdruck geaendert. Beim naechsten
+Zusammenlegen:
+
+> `2026-11-01_165707.jsonl` gehoert nicht zu `2026-11-01_145745.jsonl` -
+> code: '21e8dcf9315fab0a' gegen '0656d92019edb265'. **Zwei Stuecke unter
+> verschiedenen Bedingungen sind zwei Messungen, keine.**
+
+Eine stueckweise Messung gehoert auf **einen** Stand, ohne Commit dazwischen.
+Das `--stueck`-Werkzeug ist dafuer gebaut, eine lange Messung zu teilen -
+nicht dafuer, sie ueber einen Arbeitstag mit Commits zu verteilen. Die
+dreizehn sind neu gefahren; sie bleiben als Aufzeichnung liegen, aber
+anschlussfaehig sind sie nicht.
+
+### Das Ergebnis: 36 Regeln, zwei davon positiv
+
+    Regel                            n_eff  SR/Trade   Guete  noetig  bis
+    Trendbeteiligung mit Puffer        589    0.0336   0.815   3.889    -
+    Seltener grosser Ausbruch         1177    0.0047   0.160   4.167    -
+    ... 34 weitere, alle negativ bis -0.2641 ...
+    Momentum Ruecksetzer              8041   -0.2113 -18.952   4.380    -
+
+Drei Genome handeln auf 15 Minuten nicht und stehen ohne Zahlen. Die Spalte
+`bis` - der hoechste Versuchsstand, bei dem eine Regel noch geraeumt haette -
+ist bei **allen 36** leer:
+
+> **Keine einzige Regel dieses Vorrats haette die Schwelle bei irgendeinem
+> Versuchsstand geraeumt. Auch beim ersten Versuch nicht. Suchdisziplin ist
+> hier nicht das Thema.**
+
+Das ist die scharfste Form des Befundes. Der Versuchszaehler - die Groesse,
+die jeden Vorschlag teurer macht - ist hier **nicht** die Ursache. Was fehlt,
+fehlt an der Qualitaet.
+
+Am naechsten kommt 'Trendbeteiligung mit Puffer': Guete 0,815 gegen 3,889,
+**es fehlen 3,074**. Das sind 0,64 Streuungen dieses Vorrats - und der Median
+aller 36 Luecken liegt bei 11,437, also beim Vierfachen.
+
+### Eine Decke bleibt unlesbar - und die Methode zeigt Disziplin
+
+> **Keine Decke ablesbar** (|t| = 1.89 liegt unter 2). Bei 36 Regeln ist
+> r = -0.309. **Die Gerade haengt an einer einzigen Regel.** Ohne
+> 'Trendbeteiligung mit Puffer' steht t = -1.42.
+
+Und dann der Satz, auf den es ankommt:
+
+> Es ist nicht 'Ausreisser allgemein': **Ohne 'Mean Reversion Uebertreibung'
+> waere sie mit -2.41 staerker als mit allen.**
+
+Eine Auslassung haette die Gerade signifikant gemacht. Das Modul nennt sie
+und **nimmt sie nicht**. Ebenso bei den Schnitten: Keiner der drei hat die
+Kopplung geprueft, weil die Aussenmenge zu klein war - und eine zu kleine
+Aussenmenge zaehlt ausdruecklich nicht als Bestaetigung, *"sonst wuerde der
+Befund umso sicherer, je feiner man schneidet - das Gegenteil einer
+Robustheitspruefung."*
+
+### Befund 448 ueber den ganzen Katalog
+
+> Mit den Momenten des Bestands gerechnet stuenden **33 von 36** Regeln zu
+> milde da. Am weitesten 'RSI-Ruecksetzer im Trend': **+0,547** Guetepunkte
+> Latte, die die Vorgabe verschluckt hat.
+
+Gestern waren es drei Zeilen einer Tafel, heute 33 von 36 Regeln. Die
+Richtung ist dieselbe: Geliehene Momente sind **zu mild**.
+
+### Und eine neue, offene Frage
+
+Auf Tageskerzen ist entschieden, dass die Kopplung nicht an den Kosten
+haengt - erst bei 29-facher Gebuehr verschwindet sie. Auf Viertelstunden
+liegt es anders:
+
+    Gebuehr zurueckgerechnet    -0,226 -> -0,171
+    bei 2-facher Gebuehr        verschwindet die Kopplung
+
+Rund 0,1 % je Roundtrip. **Das liegt in der Reichweite dessen, was allein die
+Slippage ausmachen kann** - und die steckt im Ausfuehrungspreis, laesst sich
+aus den Trades also nicht abziehen. Die Gebuehr kann man zurueckrechnen, die
+Slippage nicht.
+
+Damit ist nicht entschieden, ob die Kopplung hier an den **Signalen** oder an
+der **Reibung** haengt. Fuer die Suche auf 15 Minuten ist das der Unterschied
+zwischen "hier ist nichts" und "hier ist etwas, das die Gebuehr frisst". Die
+Frage steht in `OFFEN`, mit dem, was sie entscheiden wuerde: ein Lauf mit
+gemessener statt angesetzter Slippage.
+
+### Gelockert ist nichts
+
+Keine Schwelle, kein Gate, kein Urteil bewegt sich. Was dieser Befund
+hinzufuegt, ist eine vollstaendige Messung dort, wo als naechstes gesucht
+wird - und sie faellt negativ aus.
