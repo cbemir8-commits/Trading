@@ -375,3 +375,75 @@ class TestEntdoppelt:
         namen = [z.split("  ")[0].strip() for z in zeilen]
 
         assert len(namen) == len(set(namen)), f"Dubletten in der Tabelle: {namen}"
+
+
+class TestWarumKeinFaktor:
+    """**Ein Satz schob zwei Ursachen auf eine** - Befund 445.
+
+    ``Abstand.faktor`` ist ``None`` aus zwei Gruenden: ``noetig`` ist
+    ``None``, weil bei dieser Stichprobe kein Sharpe genuegt - oder der
+    Kandidat hat keinen positiven Vorteil, womit ein Faktor nicht definiert
+    ist. Das Urteil nannte nur den ersten:
+
+        keiner mit einer Trade-Zahl, bei der das Gate ueberhaupt erreichbar
+        waere
+
+    Das ist eine Aussage ueber die **Stichprobe**, und sie stand auch dann
+    da, wenn die Stichprobe reichte und schlicht der Vorteil fehlte. Zwei
+    Ursachen, eine davon den Daten zugeschrieben, die andere dem Kandidaten -
+    und ``Abstand.als_satz`` unterscheidet sie seit jeher.
+    """
+
+    def test_ohne_vorteil_wird_nicht_die_trade_zahl_beschuldigt(
+        self, tmp_path: Path
+    ) -> None:
+        bericht(tmp_path, punkte=[punkt(sharpe=-0.05, trades=200, dsr=0.1)])
+
+        text = Front(punkte=lade(tmp_path), versuche=157).urteil()
+
+        assert "keinen positiven Vorteil je Trade" in text
+        assert "Trade-Zahl, bei der das Gate ueberhaupt erreichbar" not in text
+
+    def test_der_satz_nennt_die_zahl_der_betroffenen(self, tmp_path: Path) -> None:
+        bericht(
+            tmp_path,
+            punkte=[
+                punkt(stellung=1.0, sharpe=-0.05, trades=200, dsr=0.1),
+                punkt(stellung=2.0, sharpe=-0.02, trades=200, dsr=0.1),
+            ],
+        )
+
+        text = Front(punkte=lade(tmp_path), versuche=157).urteil()
+
+        assert "2 haben keinen positiven Vorteil" in text
+
+    def test_und_sagt_dass_kein_faktor_zu_rechnen_ist(self, tmp_path: Path) -> None:
+        """Die Tatsache bleibt - nur ihre Begruendung war falsch."""
+        bericht(tmp_path, punkte=[punkt(sharpe=-0.05, trades=200, dsr=0.1)])
+
+        text = Front(punkte=lade(tmp_path), versuche=157).urteil()
+
+        assert "laesst sich ein Faktor zur Schwelle rechnen" in text
+
+    def test_die_beiden_ursachen_sind_wirklich_zwei(self) -> None:
+        """Gemessen am Typ selbst, damit der Satz nicht nur zu meinem
+        Doppel passt."""
+        from research.suchbudget import Abstand, Kandidat
+
+        flach = Kandidat(
+            name="flach", trades=200, sharpe_je_trade=-0.05,
+            schiefe=0.0, woelbung=3.0, effektiv=200,
+        )
+        gut = Kandidat(
+            name="gut", trades=200, sharpe_je_trade=0.20,
+            schiefe=0.0, woelbung=3.0, effektiv=200,
+        )
+
+        ohne_vorteil = Abstand(kandidat=flach, noetig=0.30)
+        unerreichbar = Abstand(kandidat=gut, noetig=None)
+        normal = Abstand(kandidat=gut, noetig=0.30)
+
+        assert ohne_vorteil.faktor is None
+        assert ohne_vorteil.noetig is not None, "die Stichprobe reicht hier"
+        assert unerreichbar.faktor is None
+        assert normal.faktor is not None

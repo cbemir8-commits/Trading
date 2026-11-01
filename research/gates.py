@@ -185,13 +185,43 @@ class GateReport:
     """
 
     @property
+    def uebersprungen(self) -> list[str]:
+        """Gates, die gar nicht geurteilt haben.
+
+        ``GateResult.passed`` heisst "nicht durchgefallen", und ein
+        ausgesetztes Gate ist nicht durchgefallen (Befund 321/322). Unter 30
+        Trades setzen Regime-Aufteilung und Deflated Sharpe aus, unter 20
+        auch Monte-Carlo - also ausgerechnet die haertesten.
+        """
+        return [r.name for r in self.results if r.status is GateStatus.SKIP]
+
+    @property
     def passed(self) -> bool:
         """Zugelassen - und zwar nur nach einer **vollstaendigen** Pruefung
-        auf den Daten der Boerse, auf der gehandelt wird."""
+        auf den Daten der Boerse, auf der gehandelt wird.
+
+        **Bis Befund 445 stand "vollstaendig" nur in diesem Satz.** Gerechnet
+        wurden die Datenquelle und das Fehlen eines ``FAIL`` - und weil
+        ``GateResult.passed`` "nicht durchgefallen" heisst, war ein
+        ausgesetztes Gate darin enthalten. Ein Kandidat mit 25 Trades konnte
+        damit zugelassen werden, **ohne dass Deflated Sharpe und
+        Regime-Aufteilung je geurteilt haben** - die beiden Gates, an denen
+        dieses Projekt steht. Ein leerer Bericht kam auf dasselbe hinaus:
+        ``all(...)`` ueber nichts ist wahr.
+
+        Befund 322 hat genau diese drei Bedingungen fuer den Katalogtyp
+        ``nachpruefung.Ergebnis`` verlangt und sie *"die Sorte stiller
+        Aufwertung, gegen die die ganze Zulassungsstrecke gebaut ist"*
+        genannt. Der Berichtstyp war seither streng, die Zulassung selbst
+        nicht - und ``Candidate.admitted`` und ``pick_champion`` stehen auf
+        dieser Eigenschaft.
+        """
         return (
             not self.vorauswahl
             and not self.referenzdaten
-            and all(r.passed for r in self.results)
+            and not self.uebersprungen
+            and bool(self.results)
+            and all(r.status is GateStatus.PASS for r in self.results)
         )
 
     @property
@@ -222,6 +252,19 @@ class GateReport:
                 f"{self.genome_id}: {len(self.results)} von {len(self.results)} "
                 f"in der Vorauswahl - die teuren Gates fehlen noch"
             )
+        if not self.results:
+            return f"{self.genome_id}: kein Gate gelaufen - nichts zu melden"
+        if not self.failures and self.uebersprungen:
+            # **Nicht 'alle bestanden'** (Befund 445): Die uebersprungenen
+            # stecken in 'bestanden', und welche es sind, haengt an der
+            # Trade-Zahl - also gehoeren sie beim Namen genannt.
+            offen = ", ".join(self.uebersprungen)
+            geurteilt = len(self.results) - len(self.uebersprungen)
+            return (
+                f"{self.genome_id}: {geurteilt} von {len(self.results)} Gates "
+                f"geurteilt und bestanden - {len(self.uebersprungen)} haben "
+                f"nicht geurteilt ({offen}), keine Zulassung"
+            )
         names = ", ".join(r.name for r in self.failures)
         return (
             f"{self.genome_id}: durchgefallen bei {len(self.failures)} von "
@@ -234,13 +277,42 @@ class GateReport:
         Das ist der Lernmechanismus: Nicht nur *dass* etwas durchgefallen ist,
         sondern mit welchem Wert gegen welche Schwelle. Ohne die Zahlen kann
         die KI nicht gezielt nachbessern und probiert nur blind weiter.
+
+        **Und sie darf nie leer sein** (Befund 445). Bis dahin gab sie fuer
+        einen Bericht aus der Vorauswahl oder von Forschungskerzen, in dem
+        nichts durchgefallen war, die **leere Zeichenkette** zurueck: Die
+        KI bekam weder "bestanden" noch "was fehlt noch", sondern nichts.
+        ``summary`` hatte fuer genau diese Faelle seit jeher einen Satz -
+        die Rueckmeldung, die den Suchlauf steuert, hatte ihn nicht.
         """
         if self.passed:
             return "Alle Gates bestanden."
-        return "\n".join(
+        zeilen = [
             f"- {r.name}: {r.value:.3f} gegen Schwelle {r.threshold:.3f}. {r.message}"
             for r in self.failures
-        )
+        ]
+        if not self.results:
+            zeilen.append(
+                "- Kein Gate ist gelaufen. Hier ist nichts nachzubessern, "
+                "weil nichts gemessen wurde."
+            )
+        if self.uebersprungen:
+            zeilen.append(
+                f"- Ohne Urteil geblieben: {', '.join(self.uebersprungen)}. "
+                f"Ein Gate, das nicht geurteilt hat, ist nicht bestanden - "
+                f"in aller Regel reicht die Stichprobe nicht dafuer."
+            )
+        if self.vorauswahl:
+            zeilen.append(
+                "- Vorauswahl: Die teuren Gates fehlen noch. Das ist keine "
+                "Zulassung, auch wenn nichts durchgefallen ist."
+            )
+        if self.referenzdaten:
+            zeilen.append(
+                "- Forschungskerzen: Die Zulassung gehoert auf die Daten der "
+                "Boerse, auf der gehandelt wird."
+            )
+        return "\n".join(zeilen)
 
 
 @dataclass(frozen=True, slots=True)

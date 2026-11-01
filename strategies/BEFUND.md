@@ -39967,3 +39967,157 @@ aufgebraucht ist, waere dasselbe wie ein gelockertes Gate, nur unauffaelliger.
 Keine Schwelle, kein Gate, kein Urteil bewegt sich. Korrigiert ist ein Satz,
 der ruhiger klang als die Zahlen dahinter - und gebaut ist das Werkzeug, das
 die naechsten solchen Saetze findet, ohne auf Zufall zu warten.
+
+## Vierhundertfuenfundvierzig. Die Zulassung verlangte keine vollstaendige Pruefung
+
+Die Fahndungsliste aus Befund 444 abgearbeitet - 29 Urteilsfunktionen mit
+ungelesener Rueckgabe, alle gelesen.
+
+    dreiundzwanzig    Entartungsfaelle ("Nichts gemessen.", "")
+    einer             vorbildlich (reihenfolge._laufsatz)
+    drei              Verdachtsfaelle, die beim Lesen gehalten haben
+    zwei              Funde
+
+### Die drei, die gehalten haben
+
+Das gehoert zum Ergebnis, sonst liest sich eine Fahndungsliste wie eine
+Mangelliste:
+
+* `vorratsdecke._deckentext` behauptet *"Die Kopplung traegt"* - und
+  `tragfaehig` ist vorher geprueft. Der Kontrollfluss deckt den Satz.
+* `kostenanteil.urteil` sagt *"auch bei tausendfacher Gebuehr verschwindet
+  sie nicht"* - und trifft damit genau die `obergrenze=1000.0` seiner
+  eigenen Suche.
+* `phasen.urteil` schliesst von *"keine Regel traegt im Abwaertsmarkt
+  besser"* auf *"ein Verbund kann sie nicht herstellen"*. Mein Instinkt sagte
+  Diversifikation - aber diese Eigenschaft ist **additiv** in den Beinen:
+  Ist jedes Bein im Abwaertsmarkt schlechter, ist die Summe es auch. Der
+  Schluss traegt, mein Verdacht nicht.
+
+**Nachsehen heisst nicht finden**, und drei von fuenf Verdachtsfaellen waren
+keine.
+
+### Der kleinere Fund: ein Satz schob zwei Ursachen auf eine
+
+`front.urteil` meldete, wenn kein Punkt einen Faktor zur Schwelle hergibt:
+
+> keiner mit einer Trade-Zahl, bei der das Gate ueberhaupt erreichbar waere
+
+`Abstand.faktor` ist aber aus **zwei** Gruenden `None`:
+
+    noetig is None                 bei dieser Stichprobe genuegt kein Sharpe
+    sharpe_je_trade <= 0           kein positiver Vorteil, Faktor undefiniert
+
+Gemessen am Typ selbst: Ein Kandidat mit `sharpe_je_trade = -0,05` bei 200
+Beobachtungen und `noetig = 0,30` hat `faktor is None` - die Stichprobe
+reicht, der Vorteil fehlt. Der Satz schob das auf die **Daten**, obwohl die
+Ursache beim **Kandidaten** liegt. `Abstand.als_satz` unterscheidet beides
+seit jeher. Jetzt zaehlt `_warum_kein_faktor` die Faelle und nennt beide
+Gruende.
+
+### Der groessere Fund: "vollstaendig" stand nur im Docstring
+
+`GateReport.passed` ist die Eigenschaft, auf der `Candidate.admitted` und
+`pick_champion` stehen - also die, die entscheidet, was in `champion.json`
+landet. Ihr Docstring sagt seit jeher:
+
+> Zugelassen - und zwar nur nach einer **vollstaendigen** Pruefung auf den
+> Daten der Boerse, auf der gehandelt wird.
+
+Gerechnet wurden die Datenquelle und das Fehlen eines `FAIL`:
+
+```python
+return (
+    not self.vorauswahl
+    and not self.referenzdaten
+    and all(r.passed for r in self.results)
+)
+```
+
+`GateResult.passed` heisst "nicht durchgefallen", und ein **ausgesetztes**
+Gate ist nicht durchgefallen. `all(...)` ueber eine leere Liste ist wahr.
+Gemessen:
+
+    ein Gate uebersprungen   passed = True   "alle 2 Gates bestanden"
+    kein Gate gelaufen       passed = True   "alle 0 Gates bestanden"
+
+### Und es trifft ausgerechnet die haertesten Gates
+
+    Deflated Sharpe       setzt unter 30 Trades aus
+    Regime-Aufteilung     setzt unter 30 Trades aus
+    Monte-Carlo           setzt unter 20 Trades aus
+
+Ein Kandidat mit 25 Trades war damit **zugelassen, ohne dass der Deflated
+Sharpe je geurteilt hat** - das Gate, an dem dieses Projekt steht. Der
+billigste Weg, das haerteste Gate zu bestehen, war, zu wenig zu handeln.
+
+Genau so heisst Befund 322: *"Nicht zu handeln war die beste Art, Gates zu
+bestehen."*
+
+### Das Bittere: es war entschieden
+
+Befund 322 hat fuer den **Katalogtyp** `nachpruefung.Ergebnis.zugelassen`
+genau die drei fehlenden Bedingungen verlangt:
+
+```python
+return (
+    not self.vorauswahl
+    and not self.uebersprungen
+    and self.gesamt > 0
+    and self.bestanden == self.gesamt
+)
+```
+
+Und ihr Fehlen so genannt:
+
+> Das ist genau die Sorte stiller Aufwertung, gegen die die ganze
+> Zulassungsstrecke gebaut ist.
+
+Der **Berichts**typ war seither streng, die **Zulassung** selbst nicht. Zehn
+Befunde (321, 322, 332, 338, 346, 347, 348, 349, 350, 351) haben jede
+*Anzeige* von Gate-Bilanzen ehrlich gemacht - und die *Entscheidung*
+uebersehen. Die Liste aus 444 hat sie in einem Durchgang gefunden, weil der
+Zweig, der sie traegt, nie ein Test gelesen hat.
+
+### Behoben
+
+* `passed` verlangt jetzt alle drei Bedingungen: nicht leer, nichts
+  uebersprungen, jedes Gate auf `PASS`.
+* `uebersprungen` nennt die Gates ohne Urteil beim Namen.
+* `summary` sagt *"1 von 2 Gates geurteilt und bestanden - 1 hat nicht
+  geurteilt (Deflated Sharpe), keine Zulassung"* statt *"alle 2 Gates
+  bestanden"*.
+* `feedback_for_ai` ist **nie leer**. Bis jetzt gab es fuer eine Vorauswahl
+  ohne Durchfaller die leere Zeichenkette zurueck - die Research-KI bekam
+  weder "bestanden" noch "was fehlt noch", sondern nichts. `summary` hatte
+  fuer genau diese Faelle seit jeher einen Satz; die Rueckmeldung, die den
+  Suchlauf steuert, hatte ihn nicht.
+
+Ein Test faehrt alle 36 Kombinationen aus zwei Gate-Status, Vorauswahl und
+Forschungskerzen und sichert, dass **in keiner Lage** eine leere
+Rueckmeldung entsteht - und dass "Alle Gates bestanden." nur dasteht, wenn
+`passed` gilt.
+
+### Kein Kandidat verliert etwas
+
+Es gibt kein `champion.json`, und die Spitze handelt 156 Trades, also weit
+ueber jeder Aussetzschwelle. Von 894 betroffenen Tests ist keiner
+umgefallen - niemand hatte je behauptet, ein uebersprungenes Gate sei eine
+Zulassung.
+
+**Die Verschaerfung aendert keine gemessene Zahl.** Sie schliesst einen Weg,
+den niemand gegangen ist - und das ist der Zeitpunkt, an dem ein Weg zu
+schliessen nichts kostet.
+
+### Der Waechter aus 444 hat seinen Autor gemeldet
+
+`test_urteilszweige` pinnt die Zahl der Urteilsfunktionen, damit eine neue
+Aussage nicht unbemerkt entsteht. Sie stand auf 157 - und die
+Nicht-Daten-Auswahl meldete 158:
+
+    front.py:_warum_kein_faktor
+
+Die Funktion, die den Grund jetzt **zaehlt** statt ihn zu behaupten, ist
+selbst eine Urteilsfunktion. Der Waechter ist einen Zyklus alt und hat als
+erstes den gemeldet, der ihn gebaut hat. Nachgezogen ist die Zahl, und der
+Grund steht daneben.

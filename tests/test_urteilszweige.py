@@ -36,7 +36,12 @@ from research.urteilszweige import (
 #: was eine ungelesene Aussage kostet. Die dynamische Haelfte steht nicht
 #: unter Test - sie braucht einen Lauf unter 'coverage' und gehoert in den
 #: Modulkopf, wo sie datiert ist.
-URTEILSFUNKTIONEN: int = 157
+#:
+#: 157 bei 444, **158 seit 445**: Dort ist 'front._warum_kein_faktor'
+#: entstanden, weil ein Satz zwei Ursachen auf eine schob - und die Funktion,
+#: die den Grund jetzt zaehlt, ist selbst eine Urteilsfunktion. Der Waechter
+#: hat sie am ersten Tag seines Bestehens gemeldet.
+URTEILSFUNKTIONEN: int = 158
 
 
 def _fn(quelle: str) -> ast.FunctionDef:

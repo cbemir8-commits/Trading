@@ -2593,6 +2593,7 @@ BEHOBEN: tuple[Richtung, ...] = (
         "dass jedes Gate gelaufen ist (eine **Verschaerfung**), Tabelle und "
         "Urteil sagen, was nicht geurteilt hat. Gemessen wird unveraendert",
         321,
+        zuletzt=445,
     ),
     # Dieselbe Verwechslung, eine Stelle weiter - und dort schlimmer.
     Richtung(
@@ -2630,7 +2631,7 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Finanzierungsregeln, die der Kassamarkt nicht messen kann - offen "
         "bleiben **vier**, alle aus Generation 1",
         322,
-        326,
+        445,
     ),
     # Die Lehre aus 323, im Werkzeug statt im Kopf.
     Richtung(
@@ -6263,6 +6264,69 @@ BEHOBEN: tuple[Richtung, ...] = (
         "aber das naechste Modul haette sie gebrochen. Auf 107 nachgezogen, "
         "nicht die Toleranz geweitet",
         444,
+    ),
+    # Befund 445: Die Fahndungsliste aus 444 abgearbeitet - und dabei die
+    # Stelle gefunden, an der die Verschaerfung aus 322 nie ankam.
+    Richtung(
+        "Die Zulassung verlangte keine vollstaendige Pruefung",
+        "Die Liste aus Befund 444 abgearbeitet: 29 Urteilsfunktionen mit "
+        "ungelesener Rueckgabe, alle gelesen. **Dreiundzwanzig sind "
+        "harmlos** - Entartungsfaelle wie 'Nichts gemessen.' oder ''. Einer "
+        "ist vorbildlich: 'reihenfolge._laufsatz' traegt einen Kommentar, "
+        "dass die Begruendung nicht schaerfer sein darf als die Rechnung. "
+        "**Drei Verdachtsfaelle haben beim Lesen gehalten**, und das gehoert "
+        "zum Ergebnis: 'vorratsdecke._deckentext' behauptet 'die Kopplung "
+        "traegt', doch 'tragfaehig' ist vorher geprueft; 'kostenanteil."
+        "urteil' sagt 'auch bei tausendfacher Gebuehr' und trifft damit "
+        "genau die 'obergrenze=1000.0' seiner Suche; 'phasen.urteil' "
+        "schliesst von 'keine Regel traegt im Abwaertsmarkt besser' auf "
+        "'ein Verbund kann sie nicht herstellen' - mein Instinkt sagte "
+        "Diversifikation, aber diese Eigenschaft ist **additiv** in den "
+        "Beinen, der Schluss traegt. **Zwei sind Funde.** Der zweite: "
+        "'front.urteil' meldete *'keiner mit einer Trade-Zahl, bei der das "
+        "Gate ueberhaupt erreichbar waere'*, wenn kein Punkt einen Faktor "
+        "hergibt. 'Abstand.faktor' ist aber aus **zwei** Gruenden 'None' - "
+        "weil bei dieser Stichprobe kein Sharpe genuegt, **oder** weil der "
+        "Kandidat keinen positiven Vorteil hat. Der Satz schob beides auf "
+        "die Daten, obwohl die zweite Ursache beim Kandidaten liegt; "
+        "'Abstand.als_satz' unterscheidet sie seit jeher. Jetzt zaehlt "
+        "'_warum_kein_faktor' die Faelle und nennt beide Gruende. **Der "
+        "erste ist der folgenreichste dieser Sitzung**: "
+        "'GateReport.feedback_for_ai' und, dahinter, 'GateReport.passed'. "
+        "Dessen Docstring sagt seit jeher *'nur nach einer **vollstaendigen** "
+        "Pruefung'* - gerechnet wurden die Datenquelle und das Fehlen eines "
+        "FAIL. Weil 'GateResult.passed' 'nicht durchgefallen' heisst, steckte "
+        "ein **ausgesetztes** Gate darin, und 'all(...)' ueber eine leere "
+        "Liste ist wahr. Gemessen: Ein Bericht mit einem uebersprungenen Gate "
+        "meldete 'alle 2 Gates bestanden' und 'passed = True'; ein Bericht "
+        "**ohne jedes Gate** meldete 'alle 0 Gates bestanden'. Darauf stehen "
+        "'Candidate.admitted' und 'pick_champion' - also 'champion.json'. "
+        "**Und es trifft ausgerechnet die haertesten Gates**: Unter 30 Trades "
+        "setzen Deflated Sharpe und Regime-Aufteilung aus, unter 20 auch "
+        "Monte-Carlo. Ein Kandidat mit 25 Trades war damit zugelassen, ohne "
+        "dass das Gate je geurteilt hat, an dem dieses Projekt steht - "
+        "genau der Satz, mit dem Befund 322 betitelt ist: *'Nicht zu handeln "
+        "war die beste Art, Gates zu bestehen.'* **Das Bittere ist, dass es "
+        "entschieden war**: 322 hat fuer den Katalogtyp "
+        "'nachpruefung.Ergebnis.zugelassen' genau diese drei Bedingungen "
+        "verlangt - nicht leer, nichts uebersprungen, alles bestanden - und "
+        "ihr Fehlen *'die Sorte stiller Aufwertung, gegen die die ganze "
+        "Zulassungsstrecke gebaut ist'* genannt. Der **Berichts**typ war "
+        "seither streng, die **Zulassung** selbst nicht. Zehn Befunde (321, "
+        "322, 332, 338, 346, 347, 348, 349, 350, 351) haben jede Anzeige "
+        "ehrlich gemacht und die Entscheidung uebersehen. **Behoben**: "
+        "'passed' verlangt jetzt alle drei, 'uebersprungen' nennt die Gates "
+        "ohne Urteil, 'summary' sagt '1 von 2 geurteilt und bestanden' statt "
+        "'alle 2 bestanden', und 'feedback_for_ai' ist **nie leer** - bis "
+        "jetzt gab es fuer eine Vorauswahl ohne Durchfaller die leere "
+        "Zeichenkette zurueck, die KI bekam also weder 'bestanden' noch 'was "
+        "fehlt'. Ein Test faehrt alle 36 Kombinationen aus Status, Vorauswahl "
+        "und Forschungskerzen und sichert, dass nie eine leere Rueckmeldung "
+        "entsteht. **Kein Kandidat verliert etwas**: Es gibt kein "
+        "'champion.json', und die Spitze handelt 156 Trades, also weit ueber "
+        "jeder Aussetzschwelle. Die Verschaerfung aendert keine gemessene "
+        "Zahl - sie schliesst einen Weg, den niemand gegangen ist",
+        445,
     ),
 )
 

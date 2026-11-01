@@ -319,14 +319,50 @@ class Front:
             )
         return "\n".join(zeilen)
 
+    def _warum_kein_faktor(self) -> str:
+        """Warum kein Punkt einen Faktor hergibt - **gezaehlt, nicht geraten**.
+
+        ``Abstand.faktor`` ist ``None`` aus **zwei** Gruenden: ``noetig`` ist
+        ``None``, weil bei dieser Stichprobe kein Sharpe genuegt - oder der
+        Kandidat hat keinen positiven Vorteil, sodass ein Faktor gar nicht
+        definiert ist.
+
+        **Bis Befund 445 nannte der Satz hier nur den ersten** ("keiner mit
+        einer Trade-Zahl, bei der das Gate ueberhaupt erreichbar waere"). Das
+        ist eine Aussage ueber die Stichprobe, und sie stand auch dann da,
+        wenn die Stichprobe reichte und schlicht der Vorteil fehlte - zwei
+        Ursachen, eine davon den Daten zugeschrieben, die andere dem
+        Kandidaten. ``Abstand.als_satz`` unterscheidet sie seit jeher.
+        """
+        abstaende = self.abstaende
+        ohne_latte = sum(1 for a in abstaende if a.noetig is None)
+        ohne_vorteil = sum(
+            1
+            for a in abstaende
+            if a.noetig is not None and a.kandidat.sharpe_je_trade <= 0
+        )
+        teile = []
+        if ohne_latte:
+            teile.append(
+                f"Bei {ohne_latte} genuegt bei dieser Stichprobe kein Sharpe"
+            )
+        if ohne_vorteil:
+            teile.append(
+                f"{ohne_vorteil} haben keinen positiven Vorteil je Trade, "
+                f"womit ein Faktor nicht definiert ist"
+            )
+        if not teile:
+            return "Der Grund steht nicht in den Abstaenden."
+        return "; ".join(teile) + "."
+
     def urteil(self) -> str:
         if not self.punkte:
             return "Keine einordenbaren Messpunkte gefunden."
         nah = self.naechster
         if nah is None or nah.faktor is None:
             return (
-                f"{len(self.punkte)} Punkte gemessen, keiner mit einer "
-                f"Trade-Zahl, bei der das Gate ueberhaupt erreichbar waere."
+                f"{len(self.punkte)} Punkte gemessen, fuer keinen laesst sich "
+                f"ein Faktor zur Schwelle rechnen. {self._warum_kein_faktor()}"
             )
         if self.bestanden:
             namen = ", ".join(p.name for p in self.bestanden[:3])
