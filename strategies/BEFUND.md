@@ -40610,3 +40610,79 @@ gemessener statt angesetzter Slippage.
 Keine Schwelle, kein Gate, kein Urteil bewegt sich. Was dieser Befund
 hinzufuegt, ist eine vollstaendige Messung dort, wo als naechstes gesucht
 wird - und sie faellt negativ aus.
+
+## Vierhunderteinundfuenfzig. Die Viertelstunden-Zeilen der Erfuellungstafel waren ueberholt
+
+Befund 450 hat die Vorratsdecke auf Viertelstunden vollstaendig gefahren.
+Damit war die **Erfuellungstafel** gegenzupruefen - die Tafel, die sagt, auf
+welcher Kerzenlaenge die Suche eher lohnt, und die der Nutzer vor dem
+naechsten Lauf liest.
+
+### Zwei Dinge sind dabei belegt
+
+**Erstens, dass die Tafel die richtige Regel fuehrt.** Sie nennt seit 171
+'Trendbeteiligung mit Puffer' als besten Viertelstunden-Fund - aber als
+besten von 36 **Messungen**. Jetzt ist sie die beste eines **vollstaendig
+gemessenen** Katalogs: 39 Stuecke, 36 Regeln mit Latte, und keine davon
+besser.
+
+**Zweitens, dass ihre Zeilen ueberholt waren** - und nicht nur in der Latte,
+wie Befund 448 fand, sondern in den Messwerten selbst:
+
+    Regel                          n_eff        Guete         Anteil
+    Trendbeteiligung mit Puffer   584->589   0,744->0,815   0,1877->0,210
+    Seltener grosser Ausbruch    1065->1177  0,156->0,160   0,0384->0,038
+    Starker Trend, Momentum      1818->2016 -0,780->-1,522 -0,1885->-0,356
+
+Die Reihe ist seit 171 gewachsen, jede Stichprobe mit ihr.
+
+### Die tragende Zahl bewegt sich - in die unerwartete Richtung
+
+    bisher gemeldet   das 4,4-fache
+    neu gemessen      das 3,8-fache
+
+Die Aussage bleibt: Tageskerzen sind naeher am Ziel. Aber die Groesse war
+**13 % zu guenstig** fuer sie - und der Grund ist nicht, dass der Bestand
+schlechter geworden waere. Die **Viertelstunden-Regel ist besser geworden**
+(0,1877 auf 0,2096). Wer eine Zahl nicht nachmisst, weil er ihr Vorzeichen
+kennt, verpasst genau solche Bewegungen.
+
+### Eine Zeile steht auf vier Stellen still
+
+'Seltener grosser Ausbruch' traegt 0,0384 wie damals - obwohl die Stichprobe
+von 1065 auf 1177 und die Guete von 0,156 auf 0,160 gewachsen ist. Die Latte
+ist proportional mitgewachsen.
+
+Das ist **Zufall und keine Eigenschaft**: Die dritte Zeile derselben Tafel
+ist um 89 % gewandert. Zwei Zahlen, die gleich bleiben, sind kein Beleg fuer
+Stabilitaet, wenn die dritte es nicht tut.
+
+### Eingetragen als neue Zeilen, nicht als Ueberschreibung
+
+    befund=450, lauf="Vorratsdecke 450", versuche=203, formquelle="eigen"
+
+Die Vorratsdecke rechnet jede Latte auf den Momenten **ihrer** Regel (Befund
+191). Damit ist der Fehler aus Befund 448 - geliehene Momente - fuer diese
+drei Zeilen behoben, und zwar **durch eine Messung statt durch eine
+Korrektur**. Die alten Zeilen bleiben als Aufzeichnung ihres Laufs stehen,
+mit `formquelle="bestand"` daran.
+
+### Acht Tests haben nachgefasst
+
+Die Tafel ist von sechs auf neun Zeilen gewachsen, und die Wache aus Befund
+223 verlangt, dass jede Zahl des Kopfes in den Daten steht und umgekehrt -
+weil dort einmal drei Betriebspunkte gemischt standen. Also mussten die
+neuen Latten, Anteile und der Wert je Trade in den Kopf, und die
+Zusicherungen ueber Versuchsstand und Formquelle wurden praeziser:
+
+* sechs Zeilen stehen auf 198 Versuchen und geliehenen Momenten,
+* drei auf 203 und eigenen,
+* vier insgesamt auf eigenen (der Bestand und die drei neuen).
+
+Nachgezogen, nicht abgeschwaecht.
+
+### Gelockert ist nichts
+
+Keine Schwelle, kein Gate, kein Urteil bewegt sich. Bewegt hat sich eine
+Zahl, die der Nutzer zur Entscheidung liest - und sie steht jetzt auf einer
+vollstaendigen Messung statt auf einer drei Befunde alten.

@@ -57,6 +57,42 @@ gut das Doppelte. Gefunden wurde auf den feinen Kerzen aber so viel weniger,
 dass der Abstand groesser ist und nicht kleiner: 0,188 gegen 0,804, also gut
 das Vierfache.
 
+Nachgemessen (Befund 450)
+-------------------------
+Die Viertelstunden-Zeilen stammten aus Befund 171 und sind **ueberholt** -
+nicht nur in der Latte (448), sondern in den Messwerten. Die Vorratsdecke
+dort ist inzwischen vollstaendig gefahren, 39 Stuecke und 36 Regeln mit
+Latte:
+
+    Regel                          n_eff    Guete   Latte   Anteil
+    Trendbeteiligung mit Puffer      589    0,815   3,889    0,210
+    Seltener grosser Ausbruch       1177    0,160   4,167    0,038
+    Starker Trend, Momentum         2016   -1,522   4,271   -0,356
+
+Gegen die Zeilen von 171: die Stichproben 584 -> 589, 1065 -> 1177 und
+1818 -> 2016, die Anteile 0,1877 -> 0,210, 0,0384 -> 0,038 und
+-0,1885 -> -0,356.
+
+Die Reihe ist seit 171 gewachsen, jede Stichprobe mit ihr. Die mittlere
+Zeile traegt auf vier Stellen denselben Anteil, obwohl Stichprobe und Guete
+gewachsen sind - die Latte ist proportional mitgewachsen, und das ist
+Zufall: Die dritte Zeile ist um 89 % gewandert.
+
+Je Trade verlangt die Schwelle der besten Viertelstunden-Regel jetzt 0,1603
+ab, dem Bestand auf Tageskerzen 0,3367 - weiter gut das Doppelte.
+
+**Zwei Dinge sind damit belegt.** Erstens, dass 'Trendbeteiligung mit
+Puffer' wirklich die beste Regel dieses Betriebspunkts ist - vorher war sie
+die beste von 36 gemessenen, jetzt die beste eines vollstaendig gemessenen
+Katalogs. Zweitens die Zahl, auf die es ankommt: **das 3,9-fache statt des
+4,4-fachen.** Die Aussage bleibt, die Groesse war 13 % zu guenstig fuer die
+Tageskerzen.
+
+Und ein Befund, der neben dem Verhaeltnis steht und nicht darin: **Keine der
+36 Regeln haette die Schwelle bei irgendeinem Versuchsstand geraeumt**, auch
+nicht beim ersten Versuch (450). Der Erfuellungsgrad sagt, wie weit es ist;
+dieser Satz sagt, dass Suchdisziplin dort nicht das Thema ist.
+
 *(Dieser Absatz nannte bis Befund 223 "0,0968 statt 0,3406" und mischte
 damit drei Betriebspunkte: 0,0968 gilt bei n_eff 1830 - der ganzen Leiter,
 nicht der Regel -, und 0,3406 bei n_eff 112, dem vor Befund 152 ueberholten
@@ -330,6 +366,69 @@ GEMESSEN: tuple[Betriebspunkt, ...] = (
         befund=171,
         versuche=198,
         formquelle="bestand",
+    ),
+    # **Dieselben drei Regeln, neu gemessen** (Befund 450). Die
+    # Vorratsdecke auf Viertelstunden ist jetzt vollstaendig gefahren - 39
+    # Stuecke, 36 Regeln mit Latte -, und damit ist zweierlei belegt:
+    #
+    # **Erstens**, dass 'Trendbeteiligung mit Puffer' wirklich die beste
+    # Regel dieses Betriebspunkts ist. Die Tafel hat sie seit 171 so
+    # gefuehrt; vorher war das der beste von 36 gemessenen, jetzt ist es der
+    # beste eines vollstaendig gemessenen Katalogs.
+    #
+    # **Zweitens, dass die Zeilen von 171 ueberholt sind** - und zwar nicht
+    # nur in der Latte (Befund 448), sondern in den Messwerten selbst. Die
+    # Reihe ist seit 171 gewachsen, jede Stichprobe mit ihr:
+    #
+    #     Regel                          n_eff      Guete    Anteil
+    #     Trendbeteiligung mit Puffer   584->589  0,744->0,815  0,1877->0,2096
+    #     Seltener grosser Ausbruch    1065->1177  0,156->0,160  0,0384->0,0384
+    #     Starker Trend, Momentum      1818->2016 -0,780->-1,522 -0,1885->-0,3564
+    #
+    # Die mittlere Zeile traegt auf **vier Stellen** denselben Anteil,
+    # obwohl Stichprobe und Guete gewachsen sind: Die Latte ist proportional
+    # mitgewachsen. Das ist Zufall und keine Eigenschaft - die anderen zwei
+    # Zeilen sind gewandert, eine davon um 89 %.
+    #
+    # Die Latten hier stehen auf den **eigenen** Momenten jeder Regel, wie
+    # das Gate sie nimmt (Befund 191) - das ist der Unterschied zu den drei
+    # Zeilen darueber, und er ist in 450 beziffert: Mit den Momenten des
+    # Bestands stuenden 33 von 36 Regeln zu milde da.
+    Betriebspunkt(
+        name="15 Minuten",
+        intervall="15",
+        regel="Trendbeteiligung mit Puffer",
+        effektiv=589,
+        guete=0.8152,
+        latte=3.8893,
+        befund=450,
+        lauf="Vorratsdecke 450",
+        versuche=203,
+        formquelle="eigen",
+    ),
+    Betriebspunkt(
+        name="15 Minuten",
+        intervall="15",
+        regel="Seltener grosser Ausbruch",
+        effektiv=1177,
+        guete=0.1600,
+        latte=4.1668,
+        befund=450,
+        lauf="Vorratsdecke 450",
+        versuche=203,
+        formquelle="eigen",
+    ),
+    Betriebspunkt(
+        name="15 Minuten",
+        intervall="15",
+        regel="Starker Trend, Momentum",
+        effektiv=2016,
+        guete=-1.5222,
+        latte=4.2708,
+        befund=450,
+        lauf="Vorratsdecke 450",
+        versuche=203,
+        formquelle="eigen",
     ),
 )
 

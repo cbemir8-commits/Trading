@@ -103,22 +103,32 @@ class TestDieGemessenenPunkte:
         assert SPOTPUNKT.versuche >= tag.versuche
         assert heute >= tag.latte
 
-    def test_die_viertelstunden_stammen_aus_befund_171(self) -> None:
+    def test_die_viertelstunden_stammen_aus_171_und_450(self) -> None:
+        """**Dreimal 171, dreimal 450** (Befund 451): Dieselben drei Regeln,
+        neu gemessen, nachdem die Vorratsdecke dort vollstaendig gefahren
+        war. Die alten Zeilen bleiben als Aufzeichnung ihres Laufs."""
         fein = [p for p in GEMESSEN if p.intervall == "15"]
 
-        assert {p.befund for p in fein} == {171}
-        assert len(fein) == 3
+        assert {p.befund for p in fein} == {171, 450}
+        assert len(fein) == 6
+        assert sorted(p.regel for p in fein if p.befund == 171) == sorted(
+            p.regel for p in fein if p.befund == 450
+        )
 
     def test_der_bestand_raeumt_vier_fuenftel_seiner_latte(self) -> None:
         tag = next(p for p in GEMESSEN if p.intervall == "D")
 
         assert tag.anteil == pytest.approx(0.804, abs=5e-3)
 
-    def test_der_beste_viertelstundenfund_knapp_ein_fuenftel(self) -> None:
+    def test_der_beste_viertelstundenfund_gut_ein_fuenftel(self) -> None:
+        """0,188 bei 171, **0,210** neu gemessen (Befund 450/451) - und es
+        ist dieselbe Regel, jetzt belegt als beste eines vollstaendig
+        gemessenen Katalogs und nicht nur von 36 Messungen."""
         fein = bester_je_intervall()["15"]
 
         assert fein.regel == "Trendbeteiligung mit Puffer"
-        assert fein.anteil == pytest.approx(0.188, abs=5e-3)
+        assert fein.befund == 450
+        assert fein.anteil == pytest.approx(0.210, abs=5e-3)
 
 
 class TestWasDieFeinereKerzeLoest:
@@ -137,11 +147,19 @@ class TestWasDieFeinereKerzeLoest:
         assert fein.noetig_je_trade < tag.noetig_je_trade / 2
 
     def test_und_der_abstand_wird_trotzdem_groesser(self) -> None:
-        """**Der Befund in einem Satz.**"""
+        """**Der Befund in einem Satz** - mit der Groesse, die er heute hat.
+
+        Bis Befund 451 stand hier ``* 4``, auf den Zahlen von 171. Neu
+        gemessen ist der Abstand **3,8-fach** statt vierfach: Die
+        Viertelstunden-Regel ist besser geworden (0,1877 auf 0,2096), der
+        Bestand nicht. Die Aussage bleibt, die Zahl war 13 % zu guenstig.
+        """
         tag = next(p for p in GEMESSEN if p.intervall == "D")
         fein = bester_je_intervall()["15"]
+        faktor = tag.anteil / fein.anteil
 
-        assert tag.anteil > fein.anteil * 4
+        assert faktor == pytest.approx(3.84, abs=0.05)
+        assert faktor > 3.5
 
 
 class TestDerKopfStimmtMitDenDatenUeberein:
@@ -546,29 +564,65 @@ class TestWorausDieLattenGerechnetSind:
         for b in GEMESSEN:
             assert b.formquelle in {"eigen", "bestand"}, (b.regel, b.formquelle)
 
-    def test_alle_sechs_treffen_den_stand_198(self) -> None:
-        """Unter der Form des Bestands, auf 0,0013."""
+    def test_die_sechs_von_198_treffen_die_bestandsform(self) -> None:
+        """Unter der Form des Bestands, auf 0,0013.
+
+        **Sechs von neun** seit Befund 451: Die drei neu gemessenen Zeilen
+        stehen auf 203 Versuchen und auf ihren **eigenen** Momenten - sie
+        treffen diese Rechnung nicht und sollen es nicht.
+        """
         from research.erfuellung import GEMESSEN
 
-        for b in GEMESSEN:
+        geliehen = [b for b in GEMESSEN if b.versuche == 198]
+
+        assert len(geliehen) == 6
+        for b in geliehen:
             gerechnet = self._latte(b.effektiv, 198, 3.4646, 15.9173)
 
             assert abs(gerechnet - b.latte) < 0.0015, (b.regel, gerechnet, b.latte)
 
-    def test_nur_der_bestand_steht_auf_eigenen_momenten(self) -> None:
-        """Die fuenf anderen leihen - und drei davon ueber den
-        Betriebspunkt hinweg, was Befund 190 als Fehler benennt."""
+    def test_die_drei_neuen_stehen_auf_203_und_eigenen_momenten(self) -> None:
+        """Der Fehler aus 448, bei diesen drei Zeilen behoben - nicht durch
+        Umschreiben der alten, sondern durch eine neue Messung."""
         from research.erfuellung import GEMESSEN
 
-        eigen = [b.regel for b in GEMESSEN if b.formquelle == "eigen"]
+        neu = [b for b in GEMESSEN if b.befund == 450]
+
+        assert len(neu) == 3
+        for b in neu:
+            assert b.versuche == 203, b.regel
+            assert b.formquelle == "eigen", b.regel
+            assert b.intervall == "15", b.regel
+
+    def test_wer_auf_eigenen_momenten_steht_und_wer_leiht(self) -> None:
+        """Bis Befund 450 stand **nur** der Bestand auf eigenen Momenten,
+        und drei Zeilen liehen ueber den Betriebspunkt hinweg - der Fehler
+        aus 190. Jetzt stehen vier auf eigenen: der Bestand und die drei neu
+        gemessenen Viertelstunden-Zeilen.
+
+        Die drei geliehenen von 171 bleiben als Aufzeichnung stehen, mit
+        ``formquelle='bestand'`` daran."""
+        from research.erfuellung import GEMESSEN
+
+        eigen = sorted(b.regel for b in GEMESSEN if b.formquelle == "eigen")
         geliehen_fremder_punkt = [
             b.regel
             for b in GEMESSEN
             if b.formquelle == "bestand" and b.intervall != "D"
         ]
 
-        assert eigen == ["Bestand (Spot wie gebaut)"]
+        assert eigen == sorted(
+            [
+                "Bestand (Spot wie gebaut)",
+                "Trendbeteiligung mit Puffer",
+                "Seltener grosser Ausbruch",
+                "Starker Trend, Momentum",
+            ]
+        )
         assert len(geliehen_fremder_punkt) == 3
+        assert {
+            b.befund for b in GEMESSEN if b.formquelle == "bestand" and b.intervall != "D"
+        } == {171}
 
 
 class TestDieLatteHaengtStarkAnDerForm:

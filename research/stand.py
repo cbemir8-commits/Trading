@@ -6510,6 +6510,46 @@ BEHOBEN: tuple[Richtung, ...] = (
         "laesst. Ob die Kopplung hier an den Signalen oder an der Reibung "
         "haengt, ist damit **nicht entschieden**; sie steht in 'OFFEN'",
         450,
+        zuletzt=451,
+    ),
+    # Befund 451: Die Erfuellungstafel auf die vollstaendige Messung gezogen.
+    Richtung(
+        "Die Viertelstunden-Zeilen der Erfuellungstafel waren ueberholt",
+        "Befund 450 hat die Vorratsdecke auf Viertelstunden vollstaendig "
+        "gefahren. Damit war die **Erfuellungstafel** gegenzupruefen - die "
+        "Tafel, die sagt, auf welcher Kerzenlaenge die Suche eher lohnt, und "
+        "die der Nutzer vor dem naechsten Lauf liest. **Zwei Dinge sind "
+        "dabei belegt.** Erstens, dass 'Trendbeteiligung mit Puffer' "
+        "wirklich die beste Regel dieses Betriebspunkts ist: Die Tafel fuehrt "
+        "sie seit 171 so, aber als beste von 36 **Messungen** - jetzt ist sie "
+        "die beste eines vollstaendig gemessenen Katalogs. Zweitens, dass "
+        "ihre Zeilen **ueberholt** waren, und zwar nicht nur in der Latte "
+        "(das war 448), sondern in den Messwerten selbst. Die Reihe ist seit "
+        "171 gewachsen, jede Stichprobe mit ihr: n_eff 584 auf 589, 1065 auf "
+        "1177, 1818 auf 2016, und die Anteile 0,1877 auf **0,210**, 0,0384 "
+        "auf 0,038 und -0,1885 auf **-0,356**. **Die tragende Zahl bewegt "
+        "sich**: Das Verhaeltnis Tageskerzen zu Viertelstunden ist das "
+        "**3,8-fache** und nicht das 4,4-fache - die Aussage bleibt, die "
+        "Groesse war 13 % zu guenstig fuer die Tageskerzen. Und sie bewegt "
+        "sich in die unerwartete Richtung: Die Viertelstunden-Regel ist "
+        "besser geworden, nicht schlechter. **Eine Zeile steht auf vier "
+        "Stellen still**: 'Seltener grosser Ausbruch' traegt 0,0384 wie "
+        "damals, obwohl Stichprobe und Guete gewachsen sind - die Latte ist "
+        "proportional mitgewachsen. Das ist Zufall und keine Eigenschaft; die "
+        "dritte Zeile ist um 89 % gewandert. **Eingetragen als neue Zeilen, "
+        "nicht als Ueberschreibung**: 'befund=450', 'lauf=\"Vorratsdecke "
+        "450\"', 'versuche=203' und 'formquelle=\"eigen\"' - denn die "
+        "Vorratsdecke rechnet jede Latte auf den Momenten **ihrer** Regel "
+        "(Befund 191). Damit ist der Fehler aus 448 fuer diese drei Zeilen "
+        "behoben, und zwar durch eine Messung statt durch eine Korrektur; die "
+        "alten bleiben als Aufzeichnung ihres Laufs stehen, mit "
+        "'formquelle=\"bestand\"' daran. **Acht Tests haben nachgefasst**, "
+        "alle zu Recht: Die Tafel ist von sechs auf neun Zeilen gewachsen, "
+        "und die Wache aus Befund 223 verlangt, dass jede Zahl des Kopfes in "
+        "den Daten steht und umgekehrt. Nachgezogen sind sie, nicht "
+        "abgeschwaecht - inklusive der Zusicherung, welche Zeilen auf "
+        "geliehenen Momenten stehen und welche nicht",
+        451,
     ),
 )
 
