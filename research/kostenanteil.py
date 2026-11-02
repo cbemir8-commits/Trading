@@ -691,16 +691,42 @@ class Reibungsleiter:
         ohne = self.reibungslos
         if fehler and ohne is not None:
             grenzfall = max(fehler, key=lambda x: x[2])
-            teile.append(
+            # **Der Faktor kommt aus dem Eintrag und steht nicht im Text**
+            # (Befund 455). Hier stand 'bei f = 1' als Prosa, waehrend der Wert
+            # daneben aus 'fehler[min(1, len-1)]' kam. Auf Tageskerzen war das
+            # dieselbe Sprosse wie der Grenzfall, und der Satz las sich dann:
+            # "je nach f etwas anderes: bei f = 1 -0,614, bei f = 1 schon
+            # -0,614". Eine Beschriftung, die der Wert nicht deckt.
+            erste = fehler[min(1, len(fehler) - 1)]
+            # Verglichen werden die **gedruckten** Zahlen, nicht die Eintraege:
+            # Zwei verschiedene Sprossen mit demselben Wert auf drei Stellen
+            # zeigen den Widerspruch ebenso wenig.
+            widersprechen = abs(erste[1] - grenzfall[1]) >= 0.0005
+            kopf = (
                 f"**Und die reibungslose Welt ist eine einzige.** Sie steht "
-                f"gemessen bei {ohne:+.3f}. 'brutto(f)' behauptet ueber "
-                f"**dieselbe** Welt je nach f etwas anderes: bei f = 1 "
-                f"{fehler[min(1, len(fehler) - 1)][1]:+.3f}, bei f = "
-                f"{grenzfall[0]:g} schon {grenzfall[1]:+.3f} - "
-                f"{grenzfall[2]:.3f} daneben. Die Naeherung haelt die Trades "
-                f"fest; je weiter hinaus sie rechnet, desto weniger traegt "
-                f"das."
+                f"gemessen bei {ohne:+.3f}. "
             )
+            if widersprechen:
+                teile.append(
+                    kopf + f"'brutto(f)' behauptet ueber **dieselbe** Welt je "
+                    f"nach f etwas anderes: bei f = {erste[0]:g} "
+                    f"{erste[1]:+.3f}, bei f = {grenzfall[0]:g} schon "
+                    f"{grenzfall[1]:+.3f} - {grenzfall[2]:.3f} daneben. Die "
+                    f"Naeherung haelt die Trades fest; je weiter hinaus sie "
+                    f"rechnet, desto weniger traegt das."
+                )
+            else:
+                # Kein Widerspruch zu melden - also wird keiner behauptet. Was
+                # bleibt, ist der Abstand zur Messung, und der ist die ganze
+                # Aussage.
+                teile.append(
+                    kopf + f"'brutto(f)' sagt bei **jedem** gemessenen f "
+                    f"dasselbe, naemlich {grenzfall[1]:+.3f} - "
+                    f"{grenzfall[2]:.3f} daneben. Die Naeherung widerspricht "
+                    f"sich hier also nicht; sie liegt nur neben der Messung, "
+                    f"und zwar ueber alle "
+                    f"{len(fehler)} Sprossen gleich weit."
+                )
             gerechnet = self.gerechneter_kipppunkt
             if gerechnet is not None:
                 teile.append(

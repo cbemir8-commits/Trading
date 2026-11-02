@@ -14109,6 +14109,14 @@ class _GelesenerVorrat:
     versuchsstand: int
     faktoren: list[float]
     leiter: dict[float, list]
+    sprossenpunkte: dict[float, list]
+    """Je Sprosse die Punkte fuer ihre **Decke** (Befund 456).
+
+    Getrennt von ``leiter``: Dort stehen ``Taktpunkt``e fuer die Kopplung, hier
+    ``Punkt``e fuer die Latte. Leer, wenn die Protokolle aelter sind als 456 -
+    dann fehlt ``n_eff`` je Sprosse, und die Guete ist ohne das nicht zu haben.
+    """
+
     punkte: list
     taktpunkte: list
     nach_familie: dict[str, list]
@@ -14168,6 +14176,7 @@ def _vorrat_aus_protokollen(
         versuchsstand=stand,
         faktoren=faktoren,
         leiter={f: [] for f in faktoren},
+        sprossenpunkte={f: [] for f in faktoren},
         punkte=[], taktpunkte=[], nach_familie={}, grob_familie={},
         nach_logik={}, ohne_latte=[], stumm=0,
     )
@@ -14213,6 +14222,20 @@ def _vorrat_aus_protokollen(
                     kostenanteil=float(satz["kostenanteil"]),
                 )
             )
+            # **Die Decke der Sprosse** (Befund 456). Nur wenn ``n_eff``
+            # dasteht: Die Guete aus der Trade-Zahl zu rechnen waere die
+            # Verwechslung, gegen die die effektive Stichprobe im Gate steht -
+            # am Spot-Punkt sind es 156 Trades und 115 wirksame.
+            if satz.get("n_eff") is not None:
+                gelesen.sprossenpunkte[faktor].append(
+                    Punkt(
+                        name,
+                        int(satz["n_eff"]),
+                        float(satz["sr_je_trade"]),
+                        schiefe=satz.get("schiefe"),
+                        woelbung=satz.get("woelbung"),
+                    )
+                )
             continue
         if ergebnis == "kein Kandidat":
             gelesen.stumm += 1
@@ -14391,6 +14414,9 @@ def vorratsdecke(
     if reibungslos and 0.0 not in faktoren:
         faktoren.insert(0, 0.0)
     leiter: dict[float, list[Taktpunkt]] = {f: [] for f in faktoren}
+    # Je Sprosse die Punkte fuer ihre Decke (Befund 456) - getrennt von
+    # ``leiter``, weil dort die Kopplung und hier die Latte gemessen wird.
+    sprossenpunkte: dict[float, list[Punkt]] = {f: [] for f in faktoren}
 
     if aus:
         gelesen = _vorrat_aus_protokollen(
@@ -14398,6 +14424,7 @@ def vorratsdecke(
         )
         versuche = gelesen.versuchsstand
         faktoren, leiter = gelesen.faktoren, gelesen.leiter
+        sprossenpunkte = gelesen.sprossenpunkte
         punkte, taktpunkte = gelesen.punkte, gelesen.taktpunkte
         nach_familie = gelesen.nach_familie
         grob_familie = gelesen.grob_familie
@@ -14612,15 +14639,41 @@ def vorratsdecke(
                 kostenanteil=None if takt is None else takt.kostenanteil,
             )
             for faktor in faktoren:
-                sprosse = ohne_zensierte(
-                    run_portfolio_walkforward(
-                        frames, lambda g=genom: compile_genome(g),
-                        sprossenkosten[faktor],
-                    )
+                rohsprosse = run_portfolio_walkforward(
+                    frames, lambda g=genom: compile_genome(g),
+                    sprossenkosten[faktor],
                 )
+                sprosse = ohne_zensierte(rohsprosse)
                 nackt = Taktpunkt.aus_trades(genom.name, sprosse.all_trades)
                 if nackt is not None:
                     leiter[faktor].append(nackt)
+                # **Die Decke der Sprosse** (Befund 456). Dieselben vier
+                # Groessen wie am Grundlauf und mit **denselben** Funktionen
+                # gemessen - eine zweite Herleitung waere der Fehler aus
+                # Befund 439. Die Guete braucht 'n_eff', und das ist nicht die
+                # Trade-Zahl: Am Spot-Punkt stehen 156 Trades und 115
+                # wirksame.
+                sprossenkandidat = Kandidat.aus_trades(
+                    genom.name, sprosse.all_trades
+                )
+                sprossenpunkt = None
+                if sprossenkandidat is not None and sprosse.windows:
+                    sprossenprobe = stichprobe_wie_im_gate(
+                        sprosse.all_trades,
+                        beine=getattr(rohsprosse, "beine", None),
+                        bloecke=[
+                            [float(x.net_pnl) for x in w.trades]
+                            for w in sprosse.windows
+                        ],
+                    )
+                    sprossenpunkt = Punkt(
+                        genom.name,
+                        sprossenprobe.effektiv,
+                        sprossenkandidat.sharpe_je_trade,
+                        schiefe=sprossenkandidat.schiefe,
+                        woelbung=sprossenkandidat.woelbung,
+                    )
+                    sprossenpunkte[faktor].append(sprossenpunkt)
                 # Jede Sprosse einzeln und sofort: Bei einer Leiter kostet ein
                 # Genom ein Vielfaches, und ein Abbruch mittendrin soll nicht
                 # auch noch die schon gerechnete Grundmessung mitnehmen.
@@ -14631,6 +14684,15 @@ def vorratsdecke(
                     trades=len(sprosse.all_trades),
                     sr_je_trade=None if nackt is None else nackt.sharpe_je_trade,
                     kostenanteil=None if nackt is None else nackt.kostenanteil,
+                    # **Gemessene Groessen, keine Urteile** (Befund 299) - die
+                    # Latte entsteht beim Lesen aus diesen Zahlen und dem
+                    # Versuchsstand des Kopfes, nicht hier.
+                    n_eff=None if sprossenpunkt is None else sprossenpunkt.n_eff,
+                    guete=None if sprossenpunkt is None else sprossenpunkt.guete,
+                    schiefe=None if sprossenpunkt is None else sprossenpunkt.schiefe,
+                    woelbung=(
+                        None if sprossenpunkt is None else sprossenpunkt.woelbung
+                    ),
                     # Fuer 'Kostenfrage' nicht noetig, fuer die Tabelle schon -
                     # und ein Protokoll, aus dem sich der Lauf nicht
                     # nachbauen laesst, ist nur die halbe Rettung (Befund 300).
@@ -14742,8 +14804,12 @@ def vorratsdecke(
     # den Modulkopf geschrieben. Gesteuert hat er nichts: Bericht und Preis
     # standen weiter da, als stuende die Gerade fest. Die Probe laeuft
     # deshalb **immer** mit - ein Schalter waere etwas, das man vergisst.
-    probe = einflussprobe(punkte)
-    console.print(urteil(decke, lambda n: noetige_guete(n, versuche), probe=probe))
+    # **``einfluss`` und nicht ``probe``** (Befund 455). Dieser Name hiess
+    # ``probe``, und die Reibungsleiter weiter unten setzte ``probe =
+    # bild.probe`` - eine ``kostenanteil.Reibungsprobe``. Ab dort trug derselbe
+    # Name ein anderes Ding, und ``preisurteil`` bekam es untergeschoben.
+    einfluss = einflussprobe(punkte)
+    console.print(urteil(decke, lambda n: noetige_guete(n, versuche), probe=einfluss))
 
     # **Worauf die Kopplung steht.** Befund 168 hat r = -0,714 ueber den
     # ganzen Vorrat gemeldet; Befund 169 hat nachgesehen, wer das traegt.
@@ -14861,10 +14927,43 @@ def vorratsdecke(
         console.print(bild.tabelle())
         console.print()
         console.print(bild.urteil())
-        probe = bild.probe
-        if probe is not None:
+        reibungsprobe = bild.probe
+        if reibungsprobe is not None:
             console.print()
-            console.print(probe.urteil())
+            console.print(reibungsprobe.urteil())
+
+        # **Und was die Reibung an der Decke aendert** (Befund 456). Die
+        # Leiter darueber berichtet die **Kopplung**; auf Tageskerzen haengt
+        # die Guete daran nicht (rho +0,072, Befund 290). Die Zahl, die dort
+        # entscheidet, ist der Abstand zur Latte - und der stand bisher nur
+        # fuer den Betriebspunkt da.
+        from research.deckenleiter import Deckenleiter, Deckensprosse
+
+        # Der Betriebspunkt ist die Sprosse bei Faktor 1 und kommt aus dem
+        # Grundlauf - genau wie bei der Leiter darueber. Sonst faehrt die
+        # Leiter an der Stelle vorbei, an der alle uebrigen Zahlen des
+        # Projekts stehen.
+        decken = Deckenleiter(
+            sprossen=(
+                Deckensprosse(faktor=1.0, punkte=tuple(punkte)),
+                *(
+                    Deckensprosse(faktor=f, punkte=tuple(sprossenpunkte.get(f, ())))
+                    for f in faktoren
+                    if f != 1.0
+                ),
+            ),
+            versuche=versuche,
+        )
+        if decken.mit_decke:
+            console.print(
+                "\n[bold]Dieselben Regeln an ihren Latten[/]\n"
+                "  [dim]Die kleinste Luecke je Sprosse. Die Latte gehoert der "
+                "Regel und rechnet mit deren Schiefe und Woelbung (Befund "
+                "191).[/]\n"
+            )
+            console.print(decken.tabelle())
+            console.print()
+            console.print(decken.urteil())
 
     # **Wo der Bestand in seinem eigenen Vorrat steht.** Der zweite Weg zur
     # selben Aussage wie der Deflated Sharpe - und ein unabhaengiger: Der
@@ -14947,7 +15046,7 @@ def vorratsdecke(
                 bestand=decke.rest(SPOTPUNKT.effektiv, SPOTPUNKT.guete)
                 if passt
                 else None,
-                probe=probe,
+                probe=einfluss,
             )
         )
 

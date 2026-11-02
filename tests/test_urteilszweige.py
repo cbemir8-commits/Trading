@@ -41,7 +41,14 @@ from research.urteilszweige import (
 #: entstanden, weil ein Satz zwei Ursachen auf eine schob - und die Funktion,
 #: die den Grund jetzt zaehlt, ist selbst eine Urteilsfunktion. Der Waechter
 #: hat sie am ersten Tag seines Bestehens gemeldet.
-URTEILSFUNKTIONEN: int = 158
+#:
+#: **161 seit 456**: 'deckenleiter' bringt drei mit - 'urteil' mit fuenf
+#: Zweigen und die beiden Formulierer 'als_abstand' und 'als_wort' mit je
+#: zweien. Die beiden sind klein und trotzdem Urteile: Sie entscheiden, ob
+#: dort "es fehlen 1,061" oder "sie raeumt ihre Latte um 0,012" steht, und
+#: das ist der folgenreichste Satz, den dieser Bericht drucken kann. Der
+#: Waechter hat sie gemeldet, bevor eine Zeile davon gelesen war.
+URTEILSFUNKTIONEN: int = 161
 
 
 def _fn(quelle: str) -> ast.FunctionDef:

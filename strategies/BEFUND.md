@@ -40925,3 +40925,157 @@ die volle Suite lief - genau Befund 427. Der Lauf war abzubrechen und zu
 wiederholen. Gekostet hat es nur Zeit, weil die Zeilenzahl gleich blieb und
 sich damit keine Fundstelle verschoben hat; das war Glueck und kein Verdienst.
 Die Regel bleibt, wie sie ist: erst alle Aenderungen, dann messen.
+
+## Vierhundertfuenfundfuenfzig. Zwei Dinge unter einem Namen
+
+``cli vorratsdecke -i D --reibungslos`` ist abgestuerzt - **nach
+vollstaendiger Messung**, am Bericht:
+
+    AttributeError: 'Reibungsprobe' object has no attribute 'haelt'
+
+In ``vorratsdecke()`` hiess eine ``Einflussprobe`` ``probe``. Vierhundert
+Zeilen weiter unten setzte die Reibungsleiter::
+
+    probe = bild.probe          # eine kostenanteil.Reibungsprobe
+
+Ab dort trug derselbe Name ein anderes Ding, und ``preisurteil(probe=probe)``
+bekam es untergeschoben.
+
+### Warum es nie aufgefallen ist
+
+``preisurteil`` laeuft nur bei **tragfaehiger** Decke. Auf 15 Minuten traegt
+sie nicht (Befund 450), also lief diese Zeile mit einer Leiter nie. Auf
+Tageskerzen traegt sie - und der Absturz kam beim ersten Versuch.
+
+### Der Absturz war das Glueck
+
+Haette die falsche Klasse zufaellig ein Feld ``haelt`` gehabt, waere kein
+Fehler gekommen, sondern ein **Urteil aus der falschen Quelle**. Und das war
+knapp: Drei Klassen stehen hier nebeneinander, zwei davon gleich benannt.
+
+    vorratsdecke.Einflussprobe      haelt
+    kostenanteil.Reibungsprobe      belastbar
+    decke.Reibungsprobe             anschlag_haelt
+
+Alle drei beantworten dieselbe Art Frage - "traegt das hier?" - und alle drei
+nennen sie anders. Dass daraus ein Absturz wurde und keine falsche Zahl, liegt
+an dieser Uneinheitlichkeit. Ein Projekt, das seine Marken konsequent
+``haelt`` genannt haette, haette hier still das Falsche gedruckt.
+
+Deshalb ist die Wache nicht "nenne sie einheitlich", sondern das Gegenteil:
+Ein Test haelt fest, dass jede der drei Marken **nur** an ihrer eigenen Klasse
+haengt. Dazu zwei weitere - der Bericht laeuft auf Tageskerzen mit Leiter
+durch, und ein AST-Test verbietet, ``probe`` in dieser Funktion wieder zweimal
+zu belegen.
+
+### Und ein zweiter Fehler im selben Satz
+
+Der Bericht behauptete einen Widerspruch, den seine eigenen Zahlen nicht
+zeigen:
+
+> **Und die reibungslose Welt ist eine einzige.** Sie steht gemessen bei
+> -0.611. 'brutto(f)' behauptet ueber **dieselbe** Welt je nach f etwas
+> anderes: bei f = 1 -0.614, **bei f = 1** schon -0.614 - 0.004 daneben.
+
+``bei f = 1`` stand als Prosa, waehrend der Wert daneben aus einem Index kam
+(``fehler[min(1, len-1)]``). Auf Viertelstunden traf der Index die Sprosse, die
+die Prosa nannte; auf Tageskerzen war es dieselbe Sprosse wie der Grenzfall,
+und der Satz verglich eine Zahl mit sich selbst.
+
+Jetzt kommt der Faktor aus dem Eintrag, und wo die beiden Werte auf drei
+Stellen gleich sind, wird **kein** Widerspruch behauptet - dann steht da, was
+wahr ist: die Naeherung liegt neben der Messung, ueber alle Sprossen gleich
+weit.
+
+Eine Beschriftung, die der Wert nicht deckt, ist schlimmer als keine: Sie
+sieht nach einer Messung aus.
+
+## Vierhundertsechsundfuenfzig. Die Reibung traegt die Luecke auf Tageskerzen nicht
+
+Befund 453 hat die Sprosse bei Faktor 0 auf **Viertelstunden** gefahren: Die
+Reibung traegt 44 % der Kopplung. Die naheliegende Fortsetzung waere dieselbe
+Leiter auf Tageskerzen - und sie waere die falsche Frage gewesen.
+
+### Warum die Kopplung hier nichts entscheidet
+
+Befund 290 hat auf Tageskerzen gemessen:
+
+> Die Qualitaet je Trade faellt mit der Menge (rho = -0,679, t = -3,70), aber
+> die **Guete** haengt nicht daran (rho = +0,072, t = +0,29). Was fehlt, fehlt
+> an der Guete.
+
+Die Reibungsleiter berichtet die Kopplung. Auf Tageskerzen berichtet sie damit
+eine Zahl, die nichts entscheidet, und schweigt zu der, die alles entscheidet:
+Wie weit ist die naechste Regel von **ihrer** Latte?
+
+Gefahren habe ich die Leiter trotzdem zuerst so, und sie sagt:
+
+    Faktor   Regeln   r netto
+         0       13    -0,611
+         1       13    -0,614
+
+Die Kopplung ueberlebt die reibungslose Welt also fast unveraendert - 0,5 %
+des Weges zur Null, gegen 44 % auf Viertelstunden. Richtig gemessen, und zur
+eigentlichen Frage sagt es nichts.
+
+### Die Zahl, die zaehlt
+
+Dafuer gibt es jetzt ``research/deckenleiter.py``: dieselben Sprossen, aber an
+den **Latten** statt an der Kopplung.
+
+    Faktor   Regeln   beste Guete   Latte   fehlt
+         0       13         2,297   3,358   1,061
+         1       13         2,484   3,564   1,080
+
+**Nein: 1,8 %.** Billiger zu handeln bewegt diese Decke nicht. Damit ist eine
+weitere Erklaerung fuer die Luecke von 1,080 ausgeschlossen - und zwar durch
+einen Lauf statt durch eine Rechnung.
+
+### Warum die Guete gemessen werden musste und nicht zu rechnen war
+
+Die Sprosse hielt bisher nur ``sr_je_trade`` fest. Die Guete ist ``SR`` mal
+Wurzel aus ``n_eff``, und ``n_eff`` ist nicht die Trade-Zahl - am Spot-Punkt
+stehen 156 Trades und 115 wirksame.
+
+Ich war versucht, sie aus der vorhandenen Zeile zu rechnen: Alle Regeln
+handeln ohne Reibung dieselbe Zahl von Trades, also schien ``n_eff``
+unveraendert. Gemessen:
+
+    13 von 13 mit gleicher Trade-Zahl
+    10 von 13 mit gleichem n_eff        (59 -> 60, 86 -> 91, 45 -> 46)
+
+Fuer drei von dreizehn Regeln haette die falsche Latte dagestanden. Die
+Sprosse haelt ``n_eff``, ``guete``, ``schiefe`` und ``woelbung`` deshalb jetzt
+fest, gemessen mit **denselben** Funktionen wie der Grundlauf - eine zweite
+Herleitung waere der Fehler aus Befund 439.
+
+### Die naechste Regel wechselt
+
+Mit Reibung steht ``Donchian-Ausbruch 55/20`` ihrer Latte am naechsten, ohne
+Reibung ``Trend-Beteiligung 50 Tage``. **Jede einzelne** Guete steigt ohne
+Reibung - und die kleinste Luecke bewegt sich trotzdem fast nicht, weil die
+Latte mit ``n_eff`` und den Momenten mitgeht.
+
+Deshalb meldet der Bericht die kleinste **Luecke** und nicht die hoechste
+Guete, und deshalb sagt er den Wechsel ausdruecklich: Sonst laese sich die
+Tafel wie eine Verbesserung derselben Zeile.
+
+### Gegengeprueft, ohne es zu wollen
+
+Der Lauf ist zweimal gefahren - der erste Code-Stand war der mit dem noch
+unberichtigten Bericht (455). Beide Protokolle tragen dieselben Zahlen auf
+alle drei Stellen, und das ist mehr als eine Wiederholung: Zwischen ihnen
+liegen Aenderungen am **Bericht**, nicht am Messpfad, und genau das zeigt
+sich.
+
+### Was damit gesagt ist und was nicht
+
+**Gesagt**: Auf Tageskerzen ist die Reibung nicht der Anschlag. Wer die Luecke
+schliessen will, braucht bessere Signale und nicht billigere Ausfuehrung.
+
+**Nicht gesagt**: dass die Luecke unschliessbar ist. Gemessen ist dieser
+Vorrat - 13 Regeln mit Latte aus 25 Genomen -, nicht der Raum aller
+Strategien.
+
+**Gelockert ist nichts.** Keine Schwelle bewegt sich; hinzugekommen ist eine
+Messung, die eine Erklaerung ausschliesst.

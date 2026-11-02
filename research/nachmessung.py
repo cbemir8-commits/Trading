@@ -448,6 +448,15 @@ BEGRIFFE: dict[str, tuple[str, ...]] = {
         "Reibung je Trade",
         "doppelter Gebuehr",
     ),
+    # Befund 456: Die Schwesterfrage auf Tageskerzen misst die **Luecke** und
+    # nicht die Kopplung - wer sie weitermisst, schreibt ueber Latten,
+    # Deckenleitern und reibungslose Laeufe.
+    "Traegt die Reibung die Luecke auf Tageskerzen?": (
+        "Deckenleiter",
+        "kleinste Luecke",
+        "reibungslos",
+        "ihren Latten",
+    ),
     # Befund 446: Die Namen der Sache - wer diese Richtung weitermisst,
     # schreibt ueber strukturelle Aussetzer und variierbare Perioden, nicht
     # ueber "eine Zulassung dauerhaft verhindern".

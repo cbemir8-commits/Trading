@@ -337,6 +337,17 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         "Reichweite der Naeherung, nicht der Reibung",
         453,
     ),
+    # Gefahren in 456, auf der Kerzenlaenge, die den Spot-Punkt traegt. Die
+    # Schwesterfrage zu 453 - und mit der anderen Zielgroesse.
+    Richtung(
+        "Traegt die Reibung die Luecke auf Tageskerzen?",
+        "Nein, gemessen: 1,8 %. Dieselben 13 Regeln mit Latte ohne jede "
+        "Reibung lassen die kleinste Luecke von 1,080 auf 1,061 fallen. "
+        "Billiger zu handeln bewegt diese Decke nicht - was fehlt, fehlt an "
+        "den Signalen. Gemessen wird die Luecke und nicht die Kopplung: Die "
+        "haengt hier an der Guete nicht (290)",
+        456,
+    ),
 )
 
 
@@ -6643,6 +6654,35 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Zeilenzahl gleich blieb",
         454,
     ),
+    # Befund 455: Ein Name trug zwei Dinge - und der Absturz war das Glueck.
+    Richtung(
+        "Zwei Dinge unter einem Namen",
+        "'cli vorratsdecke -i D --reibungslos' ist nach **vollstaendiger** "
+        "Messung am Bericht abgestuerzt: \"'Reibungsprobe' object has no "
+        "attribute 'haelt'\". In 'vorratsdecke()' hiess eine 'Einflussprobe' "
+        "'probe'; weiter unten setzte die Reibungsleiter 'probe = bild.probe' "
+        "- eine 'kostenanteil.Reibungsprobe' -, und ab dort trug derselbe "
+        "Name ein anderes Ding. 'preisurteil(probe=probe)' bekam es "
+        "untergeschoben. **Warum es nie aufgefallen ist**: 'preisurteil' "
+        "laeuft nur bei tragfaehiger Decke; auf 15 Minuten traegt sie nicht "
+        "(450), also lief die Zeile mit Leiter nie. Auf Tageskerzen traegt "
+        "sie. **Der Absturz war das Glueck**: Haette die falsche Klasse "
+        "zufaellig ein Feld 'haelt' gehabt - sie hat 'belastbar', und "
+        "'decke.Reibungsprobe' hat 'anschlag_haelt' -, waere kein Fehler "
+        "gekommen, sondern ein Urteil aus der falschen Quelle. Behoben durch "
+        "zwei Namen ('einfluss', 'reibungsprobe'), gesichert durch drei "
+        "Wachen: der Bericht laeuft auf Tageskerzen mit Leiter durch, die "
+        "drei Klassen tragen paarweise verschiedene Marken, und ein "
+        "AST-Test verbietet, 'probe' in dieser Funktion wieder zweimal zu "
+        "belegen. **Und ein zweiter Fehler im selben Satz**: 'bei f = 1' "
+        "stand als Prosa, waehrend der Wert daneben aus einem Index kam. Auf "
+        "Tageskerzen war das dieselbe Sprosse wie der Grenzfall, und der "
+        "Bericht behauptete einen Widerspruch, den seine eigenen Zahlen "
+        "nicht zeigen: \"je nach f etwas anderes: bei f = 1 -0,614, bei f = 1 "
+        "schon -0,614\". Jetzt kommt der Faktor aus dem Eintrag, und ohne "
+        "Unterschied auf drei Stellen wird kein Widerspruch behauptet",
+        455,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -6926,9 +6966,13 @@ OFFEN: tuple[Richtung, ...] = (
         "aber ist davon nichts uebrig (rho +0,072, keine Auslassung haelt). "
         "Das Tor bleibt zu, aber nur wegen der langsam steigenden Latte "
         "(+0,28 Guetepunkte von n_eff 60 auf 260) - gegen eine Luecke von "
-        "1,080 ist das kein Weg. Was fehlt, fehlt an der Guete",
+        "1,080 ist das kein Weg. Was fehlt, fehlt an der Guete. **Und es "
+        "fehlt auch nicht an der Reibung** (456): Dieselben 13 Regeln ohne "
+        "jede Gebuehr und Slippage lassen die Luecke von 1,080 auf 1,061 "
+        "fallen - 1,8 %. Damit ist eine weitere Erklaerung ausgeschlossen, "
+        "und zwar durch einen Lauf statt durch eine Rechnung",
         178,
-        290,
+        456,
     ),
     # **Der Eintrag, dessen Fehlen einen Lauf gekostet hat.** Befund 177 hat
     # die Richtung als neue formuliert, 122 Befunde nach ihrer Messung. Eine
