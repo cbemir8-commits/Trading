@@ -128,6 +128,66 @@ class Sackgasse:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class Hebel:
+    """Ein **mechanischer** Weg zur Luecke - und was er gemessen hergibt.
+
+    Keine gemeinsame Masszahl, sondern je Hebel seine eigene (Befund 457):
+    Befund 290 misst, dass die Guete mit der Menge **nicht** steigt, Befund
+    456 misst einen **Anteil**. Beides in ein gemeinsames "bewegt X Punkte"
+    zu pressen waere eine Einheitlichkeit, die die Messungen nicht haben -
+    und der Analyst bekaeme eine Zahl, die keine der beiden ist.
+    """
+
+    name: str
+    gemessen: str
+    """Was gemessen wurde, in den Groessen **dieser** Messung."""
+
+    befund: int
+    nachzurechnen: str
+    """Der Befehl, der die Zahl neu holt. Eine Abschrift, die niemand
+    nachrechnen kann, veraltet unbemerkt - derselbe Grund wie bei
+    ``GEMESSENE_REGELN``."""
+
+    def als_zeile(self) -> str:
+        return (
+            f"- **{self.name}** (Befund {self.befund}): {self.gemessen} "
+            f"Nachzurechnen mit `{self.nachzurechnen}`."
+        )
+
+
+#: Die zwei Hebel, nach denen ein Optimierer zuerst greift - beide gemessen.
+#:
+#: Sie stehen hier als Zahlen und werden nicht neu gerechnet, aus demselben
+#: Grund wie ``GEMESSENE_REGELN``: Ein Katalogdurchlauf nur fuer einen
+#: Auftragstext waere Rechenzeit fuer nichts. Jede Zeile sagt, womit sie
+#: nachzurechnen ist; weicht etwas ab, ist diese Liste falsch und nicht die
+#: Messung.
+GEMESSENE_HEBEL: tuple[Hebel, ...] = (
+    Hebel(
+        name="Mehr handeln",
+        gemessen=(
+            "Die Guete steigt mit der Trade-Zahl nicht (Rangkorrelation "
+            "+0,072 ueber 18 Regeln, keine Auslassung raeumt die Schwelle) - "
+            "die Wurzel aus der Stichprobe nimmt zurueck, was die Qualitaet "
+            "je Trade verliert (-0,679). Die Latte steigt dabei um 0,28."
+        ),
+        befund=290,
+        nachzurechnen="cli vorratsdecke -i D",
+    ),
+    Hebel(
+        name="Billiger handeln",
+        gemessen=(
+            "Ohne **jede** Gebuehr und Slippage faellt die kleinste Luecke "
+            "von 1,080 auf 1,061 - 1,8 %. Gemessen als ganzer Lauf mit "
+            "'CostModel.scaled(0)', nicht zurueckgerechnet."
+        ),
+        befund=456,
+        nachzurechnen="cli vorratsdecke -i D --reibungslos",
+    ),
+)
+
+
 @dataclass(slots=True)
 class Ausschluesse:
     """Was der Analyst wissen muss, bevor er vorschlaegt."""
@@ -144,6 +204,13 @@ class Ausschluesse:
     """Selbstgebaute Regeln aus Befund 77 und 83: Name, Trades, Sharpe je
     Trade. Sie stehen nicht im Journal des Research-Loops, weil sie nicht
     dort entstanden sind - und fehlten dem Analysten deshalb."""
+
+    hebel: list[Hebel] = field(default_factory=list)
+    """Die mechanischen Wege, die gemessen und erledigt sind (Befund 457).
+
+    Leer per Vorgabe und **nicht** aus ``GEMESSENE_HEBEL`` vorbelegt: Ein
+    blanko erzeugtes ``Ausschluesse()`` soll nichts sagen. Gefuellt wird es
+    von den Fabriken, die auch den Rest holen."""
 
     @property
     def geschlossene(self) -> list[Sackgasse]:
@@ -223,6 +290,29 @@ class Ausschluesse:
                 "",
             ]
 
+        if self.hebel:
+            # **Die zwei Hebel, nach denen man zuerst greift** (Befund 457).
+            # Beide sind gemessen, und beide schliessen die Luecke nicht. Wer
+            # das nicht weiss, optimiert auf Taktung oder auf Kosten - und
+            # jeder solche Vorschlag kostet einen Versuch und hebt die Huerde
+            # fuer alle folgenden.
+            zeilen += [
+                "## Was die Luecke nicht ist\n",
+                "Es fehlen **1,080 Guetepunkte**. Zwei naheliegende",
+                "mechanische Wege dorthin sind durchgemessen:",
+                "",
+            ]
+            zeilen += [h.als_zeile() for h in self.hebel]
+            zeilen += [
+                "",
+                "Weder Menge noch Reibung also. **Kein Verbot** - eine Regel",
+                "darf oefter oder seltener handeln als der Bestand. Aber ein",
+                "Vorschlag, dessen Vorteil *aus* der Taktung oder *aus*",
+                "gesparten Kosten kommt, ist hier gemessen wirkungslos und",
+                "kostet trotzdem einen Versuch.",
+                "",
+            ]
+
         return "\n".join(zeilen)
 
 
@@ -234,7 +324,11 @@ def aus_familienbild(bild, *, gescheiterte=None) -> Ausschluesse:
     Frage, welche Familie geschlossen ist.
     """
     if not bild.genug:
-        return Ausschluesse(gescheiterte=list(gescheiterte or []))
+        # Die Hebel haengen nicht an der Familienmessung - sie gehoeren auch
+        # in einen Auftrag, der ueber Familien nichts sagen kann.
+        return Ausschluesse(
+            gescheiterte=list(gescheiterte or []), hebel=list(GEMESSENE_HEBEL)
+        )
 
     sackgassen = [
         # ``je_familie`` liefert je Familie (Anzahl, Mittel, schlechtestes,
@@ -248,15 +342,18 @@ def aus_familienbild(bild, *, gescheiterte=None) -> Ausschluesse:
         widerspruch=bild.guete_faehrt_auf_aehnlichkeit,
         permutation_haelt=bild.trennt_echt,
         gescheiterte=list(gescheiterte or []),
+        hebel=list(GEMESSENE_HEBEL),
     )
 
 
 __all__ = [
+    "GEMESSENE_HEBEL",
     "GEMESSENE_REGELN",
     "GESCHEITERTE_EIGENBAUTEN",
     "MINDESTBELEG",
     "SPUERBARER_WIDERSPRUCH",
     "Ausschluesse",
+    "Hebel",
     "Sackgasse",
     "aus_familienbild",
 ]

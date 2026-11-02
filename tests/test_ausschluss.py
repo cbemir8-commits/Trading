@@ -21,9 +21,11 @@ from __future__ import annotations
 import pytest
 
 from research.ausschluss import (
+    GEMESSENE_HEBEL,
     GEMESSENE_REGELN,
     GESCHEITERTE_EIGENBAUTEN,
     Ausschluesse,
+    Hebel,
     Sackgasse,
     aus_familienbild,
 )
@@ -167,14 +169,35 @@ class TestAuftragstext:
 
         assert "Zielkonflikt" not in schwach.als_auftrag()
 
-    def test_zu_duennes_familienbild_liefert_nichts(self) -> None:
+    def test_zu_duennes_familienbild_schliesst_keine_familie_aus(self) -> None:
+        """**Die geschuetzte Eigenschaft ist die Familie, nicht der ganze
+        Text.** Hier stand ``als_auftrag() == ""``, und Befund 457 hat das
+        rot gemacht: Die gemessenen Hebel ("Menge und Reibung sind es nicht")
+        haengen an der Familienmessung nicht und gehoeren auch in einen
+        Auftrag, der ueber Familien nichts sagen kann.
+
+        Die Zusicherung ist damit nicht gelockert, sondern genauer: Eine
+        Gruppierung, die dem Zufall nicht standhaelt, darf keinen Vorschlag
+        verhindern - und genau das wird gepruefet, Abschnitt fuer Abschnitt.
+        """
         duenn = aus_familienbild(
             bild_aus([Regel(name="a", trades=99, sharpe_je_trade=0.2, familie="x")])
         )
+        text = duenn.als_auftrag()
 
         assert duenn.sackgassen == []
         assert not duenn.traegt
-        assert duenn.als_auftrag() == ""
+        assert "gemessen und geschlossen" not in text
+        assert "Zielkonflikt" not in text
+        assert "Bereits gemessen" not in text
+        # Was dasteht, haengt nicht an der duennen Messung.
+        assert "Was die Luecke nicht ist" in text
+
+    def test_ein_blankes_ausschluesse_sagt_weiterhin_nichts(self) -> None:
+        """Die Hebel kommen aus den Fabriken und nicht aus der Vorgabe - ein
+        von Hand erzeugtes Objekt behauptet nichts."""
+        assert Ausschluesse().als_auftrag() == ""
+        assert Ausschluesse().hebel == []
 
 
 class TestPrompt:
@@ -204,8 +227,17 @@ class TestPrompt:
         assert vorher == leer
 
     def test_der_prompt_waechst_messbar(self) -> None:
-        """Rund 1,5 kB - genug, um etwas zu sagen, klein genug, um den
-        Auftrag nicht zu ertraenken."""
+        """Genug, um etwas zu sagen, klein genug, um den Auftrag nicht zu
+        ertraenken.
+
+        **1570 bis Befund 456, 2712 seit 457**: Dazugekommen ist der
+        Abschnitt "Was die Luecke nicht ist" - 974 Zeichen, gemessen 18,7 %
+        des ganzen Prompts. Erst waren es 1400; das Budget dieses Tests hat
+        die erste Fassung abgewiesen, und die zweite sagt dasselbe kuerzer.
+
+        Das Budget bleibt eine Grenze und kein Freibrief: Der Abschnitt
+        ersetzt zwei Versuche, die auf Taktung oder Kosten optimieren, und
+        ein Versuch kostet 0,0011 DSR-Punkte fuer **alle** folgenden."""
         from research.analyst import build_prompt
         from research.gates import GateThresholds
 
@@ -215,7 +247,7 @@ class TestPrompt:
             journal=[], thresholds=GateThresholds(), ausschluesse=aus
         )
 
-        assert len(mit) - len(ohne) == pytest.approx(1570, abs=250)
+        assert len(mit) - len(ohne) == pytest.approx(2712, abs=250)
 
 
 class TestAusDemVersuchsverzeichnis:
@@ -314,3 +346,97 @@ class TestAusDemVersuchsverzeichnis:
             return
         verbuende = [n for n, _, _ in echt if n.startswith("Verbund")]
         assert len(verbuende) == 3
+
+
+class TestWasDieLueckeNichtIst:
+    """Befund 457. Die zwei Hebel, nach denen ein Optimierer zuerst greift -
+    mehr handeln und billiger handeln -, sind beide gemessen und schliessen
+    die Luecke nicht. Dem Analysten stand das nicht zur Verfuegung.
+
+    Ein Vorschlag, dessen Vorteil aus der Taktung oder aus gesparten Kosten
+    kommt, kostet einen Versuch und hebt die Huerde fuer alle folgenden um
+    0,0011 DSR-Punkte.
+    """
+
+    def _text(self) -> str:
+        aus = aus_familienbild(echtes_bild(), gescheiterte=GESCHEITERTE_EIGENBAUTEN)
+        return " ".join(aus.als_auftrag().split())
+
+    def test_beide_hebel_stehen_im_auftrag(self) -> None:
+        text = self._text()
+
+        assert "Was die Luecke nicht ist" in text
+        for h in GEMESSENE_HEBEL:
+            assert h.name in text
+            assert f"Befund {h.befund}" in text
+
+    def test_jeder_sagt_womit_er_nachzurechnen_ist(self) -> None:
+        """Eine Abschrift, die niemand nachrechnen kann, veraltet unbemerkt -
+        derselbe Grund wie bei ``GEMESSENE_REGELN``."""
+        text = self._text()
+
+        for h in GEMESSENE_HEBEL:
+            assert h.nachzurechnen in text
+            assert h.nachzurechnen.startswith("cli vorratsdecke")
+
+    def test_der_befehl_gibt_es_wirklich(self) -> None:
+        """Sonst zeigt der Auftrag auf etwas, das es nicht gibt - und das
+        faellt erst auf, wenn jemand es tippt."""
+        from typer.testing import CliRunner
+
+        from cli import app
+
+        for h in GEMESSENE_HEBEL:
+            name = h.nachzurechnen.split()[1]
+            ergebnis = CliRunner().invoke(app, [name, "--help"])
+
+            assert ergebnis.exit_code == 0, h.nachzurechnen
+            for schalter in (x for x in h.nachzurechnen.split() if x.startswith("--")):
+                assert schalter in ergebnis.output, f"{schalter} in {name}"
+
+    def test_die_zahlen_stehen_so_im_register(self) -> None:
+        """**Die tragende Zusicherung.** Der Auftragstext ist eine Abschrift
+        gemessener Zahlen; stimmt er mit dem Register nicht ueberein, ist er
+        falsch - und ein falscher Auftrag kostet einen ganzen Wettbewerb.
+
+        Geprueft wird gegen 'Menge statt Qualitaet' (178, zuletzt 456), weil
+        dort beide Messungen zusammenstehen.
+        """
+        from research.stand import OFFEN
+
+        eintrag = next(r for r in OFFEN if r.befund == 178)
+        zusammen = " ".join(h.gemessen for h in GEMESSENE_HEBEL)
+
+        for zahl in ("+0,072", "-0,679", "1,080 auf 1,061", "1,8 %"):
+            assert zahl in eintrag.ergebnis, f"{zahl} fehlt im Register"
+            assert zahl in zusammen, f"{zahl} fehlt im Auftrag"
+        assert eintrag.zuletzt == 456
+
+    def test_es_ist_kein_verbot(self) -> None:
+        """Dieselbe Haltung wie beim Zielkonflikt: Der Abschnitt sagt, warum
+        die Aufgabe schwer ist, und verbietet keine Bauart."""
+        text = self._text()
+
+        assert "**Kein Verbot**" in text
+        assert "darf oefter oder seltener handeln" in text
+
+    def test_keine_gemeinsame_masszahl(self) -> None:
+        """**Absicht** (Befund 457): 290 misst, dass die Guete mit der Menge
+        nicht steigt, 456 misst einen Anteil. Ein Feld 'wirkung: float' haette
+        beide in eine Zahl gepresst, die keine der zwei ist.
+        """
+        felder = Hebel.__dataclass_fields__
+
+        assert set(felder) == {"name", "gemessen", "befund", "nachzurechnen"}
+        assert felder["befund"].type in ("int", int)
+        assert not [n for n, f in felder.items() if f.type in ("float", float)]
+
+    def test_die_hebel_kommen_aus_den_fabriken(self) -> None:
+        """Auch aus der duennen: Sie haengen an der Familienmessung nicht."""
+        duenn = aus_familienbild(
+            bild_aus([Regel(name="a", trades=99, sharpe_je_trade=0.2, familie="x")])
+        )
+        voll = aus_familienbild(echtes_bild())
+
+        assert duenn.hebel == list(GEMESSENE_HEBEL)
+        assert voll.hebel == list(GEMESSENE_HEBEL)

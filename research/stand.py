@@ -6683,6 +6683,38 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Unterschied auf drei Stellen wird kein Widerspruch behauptet",
         455,
     ),
+    # Befund 457: Der Auftrag verschwieg die beiden Hebel, nach denen ein
+    # Optimierer zuerst greift - und beide sind gemessen und erledigt.
+    Richtung(
+        "Die Luecke ohne ihre zwei erledigten Hebel",
+        "Der Auftrag an die Research-KI nannte die noetige Guete, den "
+        "Versuchsstand und die Kopplung - aber nicht, **was die Luecke nicht "
+        "ist**. Zwei mechanische Wege liegen nahe, und beide sind "
+        "durchgemessen: mehr handeln (290: die Guete steigt mit der "
+        "Trade-Zahl nicht, Rangkorrelation +0,072, keine Auslassung raeumt "
+        "die Schwelle) und billiger handeln (456: ohne jede Reibung faellt "
+        "die Luecke von 1,080 auf 1,061, also 1,8 %). Ein Vorschlag, dessen "
+        "Vorteil aus der Taktung oder aus gesparten Kosten kommt, war damit "
+        "nicht ausgeschlossen - er kostet einen Versuch und hebt die Huerde "
+        "fuer alle folgenden um 0,0011 DSR-Punkte. Eingetragen als Abschnitt "
+        "'Was die Luecke nicht ist' in 'ausschluss.Ausschluesse', mit je "
+        "Hebel dem Befehl, der die Zahl neu holt. **Kein Verbot**, dieselbe "
+        "Haltung wie beim Zielkonflikt: Eine Regel darf oefter oder seltener "
+        "handeln als der Bestand. **Keine gemeinsame Masszahl**, und das ist "
+        "Absicht: 290 misst, dass die Guete mit der Menge nicht steigt, 456 "
+        "misst einen Anteil - ein Feld 'wirkung: float' haette beide in eine "
+        "Zahl gepresst, die keine der zwei ist. Gesichert durch fuenf "
+        "Wachen, darunter die tragende: Die Zahlen des Auftrags muessen so "
+        "im Register stehen, denn ein falscher Auftrag kostet einen ganzen "
+        "Wettbewerb. **Zwei eigene Wachen haben zugefasst**: Das "
+        "Groessenbudget des Prompts hat meine erste, zu wortreiche Fassung "
+        "abgewiesen (1400 Zeichen; die zweite sagt dasselbe in 974), und ein "
+        "Test verlangte 'als_auftrag() == \"\"' bei duenner Familienmessung - "
+        "zu Recht rot, denn die Hebel haengen daran nicht; die Zusicherung "
+        "ist jetzt genauer statt gelockert und prueft Abschnitt fuer "
+        "Abschnitt",
+        457,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

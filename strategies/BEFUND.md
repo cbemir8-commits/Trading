@@ -41079,3 +41079,86 @@ Strategien.
 
 **Gelockert ist nichts.** Keine Schwelle bewegt sich; hinzugekommen ist eine
 Messung, die eine Erklaerung ausschliesst.
+
+## Vierhundertsiebenundfuenfzig. Die Luecke ohne ihre zwei erledigten Hebel
+
+Der Auftrag an die Research-KI ist seit Befund 121 scharf: Er nennt die
+noetige Guete, den heutigen Versuchsstand samt Wirkung auf die Huerde, die
+Kopplung, den Zielkonflikt und die geschlossenen Familien. Was er **nicht**
+nannte: was die Luecke nicht ist.
+
+### Die zwei Hebel, nach denen man zuerst greift
+
+Es fehlen 1,080 Guetepunkte. Wer das liest und optimieren soll, greift nach
+zwei Dingen - und beide sind durchgemessen:
+
+**Mehr handeln** (Befund 290). Die Guete steigt mit der Trade-Zahl nicht:
+Rangkorrelation +0,072 ueber 18 Regeln, keine der 18 Auslassungen raeumt die
+Schwelle. Die Qualitaet je Trade faellt dabei durchaus (-0,679), aber die
+Wurzel aus der Stichprobe nimmt genau das zurueck. Die Latte steigt zugleich
+um 0,28.
+
+**Billiger handeln** (Befund 456). Ohne jede Gebuehr und Slippage faellt die
+kleinste Luecke von 1,080 auf 1,061 - 1,8 %. Gemessen als ganzer Lauf mit
+``CostModel.scaled(0)``, nicht zurueckgerechnet.
+
+Ein Vorschlag, dessen Vorteil aus der Taktung oder aus gesparten Kosten
+kommt, war damit nicht ausgeschlossen. Er kostet einen Versuch und hebt die
+Huerde fuer **alle** folgenden um 0,0011 DSR-Punkte.
+
+### Kein Verbot
+
+Dieselbe Haltung wie beim Zielkonflikt aus Befund 84: Eine Regel darf oefter
+oder seltener handeln als der Bestand. Der Abschnitt sagt nicht "baue das
+nicht", sondern "der Vorteil muss woanders herkommen".
+
+### Keine gemeinsame Masszahl, und das ist Absicht
+
+Mein erster Entwurf hatte ein Feld ``wirkung: float`` - Guetepunkte, die ein
+Hebel bewegt. Das waere falsch gewesen:
+
+* Befund 290 misst, dass die Guete mit der Menge **nicht steigt**. Die 0,28
+  dort ist der Anstieg der **Latte**, kein Gewinn.
+* Befund 456 misst einen **Anteil** an der Luecke.
+
+In eine Spalte gepresst haetten beide eine Zahl getragen, die keine der zwei
+ist - und der Analyst haette sie als vergleichbar gelesen. ``Hebel`` traegt
+deshalb die Struktur (Name, Fundstelle, Nachrechenbefehl) und die Messung in
+**ihren eigenen** Groessen.
+
+### Zwei eigene Wachen haben zugefasst
+
+**Das Groessenbudget.** ``test_der_prompt_waechst_messbar`` pinnt den Zuwachs
+des Prompts - *"genug, um etwas zu sagen, klein genug, um den Auftrag nicht zu
+ertraenken"*. Meine erste Fassung brauchte rund 1400 Zeichen und ist daran
+abgewiesen worden. Die zweite sagt dasselbe in **974** und steht damit bei
+18,7 % des ganzen Prompts.
+
+**Die duenne Familienmessung.** Ein Test verlangte ``als_auftrag() == ""``,
+wenn das Familienbild zu duenn ist. Er wurde rot, und zu Recht: Die Hebel
+haengen an der Familienmessung nicht und gehoeren auch in einen Auftrag, der
+ueber Familien nichts sagen kann.
+
+Die Zusicherung ist deshalb nicht gelockert, sondern **genauer**: Sie prueft
+jetzt Abschnitt fuer Abschnitt, dass keine Familie und kein Zielkonflikt
+behauptet wird - und dass ein von Hand erzeugtes ``Ausschluesse()`` weiterhin
+gar nichts sagt.
+
+### Die tragende Wache
+
+Der Auftragstext ist eine Abschrift gemessener Zahlen. Eine Abschrift
+veraltet unbemerkt - genau das war Befund 122, wo die Regelliste acht
+Eintraege trug und das Verzeichnis elf.
+
+Deshalb prueft ein Test die Zahlen des Auftrags **gegen das Register**, und
+jeder Hebel nennt den Befehl, der seine Zahl neu holt:
+
+    cli vorratsdecke -i D
+    cli vorratsdecke -i D --reibungslos
+
+Ein weiterer Test ruft diese Befehle mit ``--help`` auf und prueft, dass es
+sie samt Schaltern gibt. Ein Auftrag, der auf etwas zeigt, das es nicht gibt,
+faellt sonst erst auf, wenn jemand es tippt.
+
+**Gelockert ist nichts.** Keine Schwelle, kein Gate; hinzugekommen ist eine
+Auskunft, die zwei Versuche spart.
