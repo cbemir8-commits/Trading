@@ -6551,6 +6551,42 @@ BEHOBEN: tuple[Richtung, ...] = (
         "geliehenen Momenten stehen und welche nicht",
         451,
     ),
+    # Befund 452: Die Reibungsleiter gefahren - und genau unterschieden, was
+    # sie widerlegt und was nicht.
+    Richtung(
+        "Mehr Reibung macht die Kopplung staerker, nicht schwaecher",
+        "Befund 450 hat offen gelassen, ob die Kopplung auf Viertelstunden an "
+        "den **Signalen** oder an der **Reibung** haengt. Die Rueckrechnung "
+        "konnte es nicht entscheiden: Sie kann die Gebuehr abziehen, die "
+        "Slippage nicht - die steckt im Ausfuehrungspreis. Die **Leiter** "
+        "kann es, weil sie den Backtest neu faehrt ('CostModel.scaled(k)'), "
+        "womit Gebuehr **und** Slippage skalieren und Fuellungen, Stops und "
+        "Risikogrenzen mitreagieren (254/256). Gefahren: Sprosse bei Faktor "
+        "2 ueber alle 39 Stuecke, ein Code-Stand, dreieinhalb Stunden. "
+        "**Gemessen**: r netto -0,226 im Grundlauf, **-0,240** bei doppelter "
+        "Reibung, je 36 Regeln. Die Kopplung wird **staerker**, nicht null - "
+        "mehr Reibung trifft die haeufig handelnden Regeln haerter, und genau "
+        "das ist die Kopplung. **Was das widerlegt**: den Satz 'bei 2-facher "
+        "Gebuehr verschwindet sie' als Aussage ueber gemessene doppelte "
+        "Reibung. Die lineare Rueckrechnung traegt nicht. **Was das nicht "
+        "widerlegt, und hier haette ich beinahe zu viel behauptet**: Die "
+        "Hypothese hinter jenem Satz lautet, die *wahre* Reibung sei etwa "
+        "doppelt so hoch wie angesetzt und die Kopplung ganz davon. Reibung "
+        "**aufzuschlagen** prueft die falsche Richtung - dass mehr Reibung "
+        "mehr Kopplung macht, ist mit beiden Hypothesen vereinbar. "
+        "Entscheidend ist die Sprosse bei **Faktor 0**, und das Modul ist "
+        "dafuer gebaut: 'Reibungsleiter.urteil' haelt die gemessene "
+        "reibungslose Welt gegen 'brutto(f)', das *'ueber dieselbe Welt je "
+        "nach f etwas anderes behauptet'*. Dieser Zweig ist nicht gelaufen, "
+        "und ein Test sichert, dass das Urteil ihn auch nicht behauptet. Die "
+        "Frage bleibt in 'OFFEN', jetzt mit der genauen Messung und ihren "
+        "Kosten: 39 Stuecke bei Faktor 0, dreieinhalb Stunden. **Ein "
+        "eigener Fehlgriff**: Mein Test verlangte von jedem der 39 "
+        "Protokolle eine Sprosse. Drei tragen keine - die drei Genome, die "
+        "auf 15m nicht handeln, und eine Regel ohne Trades hat keine Sprosse "
+        "zu messen. Zu streng geprueft; der Code hatte recht",
+        452,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -6575,10 +6611,17 @@ OFFEN: tuple[Richtung, ...] = (
         "Groessenordnung liegt in der Reichweite dessen, was allein die "
         "Slippage ausmachen kann - und die steckt im Ausfuehrungspreis, "
         "laesst sich aus den Trades also nicht abziehen. Die Gebuehr kann man "
-        "zurueckrechnen, die Slippage nicht. **Was es entscheiden wuerde**: "
-        "Ein Lauf mit gemessener statt angesetzter Slippage, oder derselbe "
-        "Vorrat auf Kerzen, deren Haltedauer die Reibung je Trade "
-        "verkleinert. Beides ist messbar und nicht gemessen. **Warum es "
+        "zurueckrechnen, die Slippage nicht. **Was es entscheiden wuerde** "
+        "(praezisiert in Befund 452): die Sprosse der Reibungsleiter bei "
+        "**Faktor 0**. 'CostModel.scaled(0)' setzt Gebuehr **und** Slippage "
+        "auf null, und 'Reibungsleiter.urteil' haelt die so gemessene "
+        "reibungslose Welt gegen 'brutto(f)' - das ueber dieselbe Welt je "
+        "nach f etwas anderes behauptet. Kosten: 39 Stuecke, dreieinhalb "
+        "Stunden. **Was schon gemessen ist** (452): die Sprosse bei Faktor 2 "
+        "- dort steht die Kopplung bei -0,240 gegen -0,226 im Grundlauf, wird "
+        "also **staerker**. Das widerlegt die lineare Rueckrechnung, aber "
+        "nicht die Hypothese: Aufschlagen prueft die falsche Richtung. "
+        "**Warum es "
         "zaehlt**: Haengt die Kopplung an der Reibung, ist sie keine "
         "Eigenschaft der Signale, und der Deckel dieses Vorrats steht an "
         "einer anderen Stelle als gedacht - fuer die Suche auf 15 Minuten "

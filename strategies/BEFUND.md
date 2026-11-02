@@ -40686,3 +40686,72 @@ Nachgezogen, nicht abgeschwaecht.
 Keine Schwelle, kein Gate, kein Urteil bewegt sich. Bewegt hat sich eine
 Zahl, die der Nutzer zur Entscheidung liest - und sie steht jetzt auf einer
 vollstaendigen Messung statt auf einer drei Befunde alten.
+
+## Vierhundertzweiundfuenfzig. Mehr Reibung macht die Kopplung staerker, nicht schwaecher
+
+Befund 450 hat eine Frage offen gelassen: Haengt die Kopplung zwischen
+Trade-Zahl und Qualitaet auf Viertelstunden an den **Signalen** oder an der
+**Reibung**? Die Rueckrechnung konnte es nicht entscheiden - sie kann die
+Gebuehr abziehen, die Slippage nicht, denn die steckt im Ausfuehrungspreis.
+
+Die **Leiter** kann es: Sie faehrt den Backtest neu mit
+`CostModel.scaled(k)`, womit Gebuehr *und* Slippage skalieren und
+Fuellungen, Stops und Risikogrenzen mitreagieren (Befund 254/256).
+
+### Gemessen: Sprosse bei Faktor 2, alle 39 Stuecke, 3,5 Stunden
+
+    Faktor   Regeln   r netto
+         1       36    -0,226
+         2       36    -0,240
+
+Die Kopplung wird bei doppelter Reibung **staerker**, nicht null. Mehr
+Reibung trifft die haeufig handelnden Regeln haerter - und genau das ist die
+Kopplung.
+
+### Was das widerlegt
+
+Den Satz *"bei 2-facher Gebuehr verschwindet sie"* als Aussage ueber
+**gemessene** doppelte Reibung. Die lineare Rueckrechnung traegt nicht: Sie
+zieht die Gebuehr aus einer festgehaltenen Handelsliste ab, waehrend der
+echte Lauf andere Trades macht.
+
+### Was das nicht widerlegt
+
+Und hier haette ich beinahe zu viel behauptet. Das Ergebnis *liest* sich wie
+eine Widerlegung der Reibungshypothese. Es ist keine.
+
+Die Hypothese hinter jenem Satz lautet: **die wahre Reibung ist etwa doppelt
+so hoch wie angesetzt, und die Kopplung ist ganz davon.** Reibung
+*aufzuschlagen* prueft die falsche Richtung - dass mehr Reibung mehr Kopplung
+macht, ist mit beiden Hypothesen vereinbar. Eine friktionsgetriebene Kopplung
+wuerde bei mehr Friktion auch staerker.
+
+Entscheidend ist die Sprosse bei **Faktor 0**, und das Modul ist genau dafuer
+gebaut:
+
+> ``CostModel.scaled(0)`` setzt Gebuehr **und** Slippage auf null - die
+> Engine nimmt beide als Parameter. Laesst man dieselben Regeln zweimal
+> laufen, einmal mit und einmal ohne jede Reibung, steht die Kopplung ohne
+> Faktorargument da (Befund 254).
+
+`Reibungsleiter.urteil` hat dafuer einen eigenen Zweig, der die gemessene
+reibungslose Welt gegen `brutto(f)` haelt - *"behauptet ueber dieselbe Welt
+je nach f etwas anderes"*. Dieser Zweig ist hier **nicht** gelaufen, und ein
+Test sichert, dass das Urteil ihn auch nicht behauptet.
+
+Die Frage bleibt in `OFFEN` - jetzt mit der genauen Messung und ihren Kosten:
+39 Stuecke bei Faktor 0, dreieinhalb Stunden.
+
+### Ein eigener Fehlgriff
+
+Mein Test verlangte von jedem der 39 Protokolle eine Sprosse. Drei tragen
+keine: die drei Genome, die auf 15 Minuten nicht handeln - und eine Regel
+ohne Trades hat keine Sprosse zu messen. Zu streng geprueft; der Code hatte
+recht. Jetzt verlangt der Test die Sprosse von den 36 handelnden und zaehlt
+die drei anderen ab.
+
+### Gelockert ist nichts
+
+Keine Schwelle, kein Gate, kein Urteil bewegt sich. Hinzugekommen ist eine
+gemessene Sprosse - und die Praezisierung, welche Messung die offene Frage
+wirklich entscheidet.
