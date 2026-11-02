@@ -59,9 +59,11 @@ __all__ = [
     "FORMEN",
     "SCHWELLEN",
     "STRUKTURELL",
+    "STRUKTURGRUENDE",
     "STRUKTURMARKEN",
     "Berichtslage",
     "Punktlage",
+    "Strukturgrund",
     "aussetzbar",
     "aussetzstellen",
     "lese",
@@ -380,30 +382,74 @@ AUSSETZSTELLEN: dict[str, int] = {
     "gate_deflated_sharpe": 2,
 }
 
-#: Die Gates, die aus **strukturellen** Gruenden aussetzen koennen.
+@dataclass(frozen=True, slots=True)
+class Strukturgrund:
+    """Ein struktureller Aussetzer: Gate, Fundstelle, und was er verlangt.
+
+    **Eine Quelle statt zwei Listen** (Befund 458). Hier standen
+    ``STRUKTURELL`` (drei Funktionsnamen) und ``STRUKTURMARKEN`` (drei
+    Botschaften) nebeneinander, und die **Paarung** hat nichts geprueft: Ein
+    Test sah nach, dass jede Marke irgendwo in ``gates.py`` steht, nicht dass
+    sie in *ihrem* Gate steht. Genau die Bauart, die Befund 439 teuer bezahlt
+    hat.
+
+    ``verlangt`` ist der Teil, den kein Quelltext hergibt: was eine Regel
+    mitbringen muss, damit das Gate ueberhaupt urteilt. Das gehoert in den
+    Auftrag an die Research-KI (457/458) - ein Vorschlag dieser Form kann
+    sonst nie zugelassen werden, egal wie gut er ist.
+    """
+
+    gate: str
+    marke: str
+    """Die Botschaft im Quelltext - als Fundstelle, nicht als Schalter.
+
+    Wer einen Grund **programmatisch** unterscheiden will, soll das an der
+    Bedingung tun und nicht an einem Textvergleich: Eine Zeichenkette als
+    Steuerung ist die Bauart, an der Befund 420 und 430 haengen.
+    """
+
+    verlangt: str
+
+
+#: Die drei strukturellen Aussetzer - Gate, Marke und Anforderung in einem.
 #:
-#: Die einzige Einordnung, die sich nicht ableiten laesst: Ob mehr Daten
+#: Die Einordnung "strukturell" laesst sich nicht ableiten: Ob mehr Daten
 #: helfen, steht in der Bedingung und nicht in ihrer Form. Ausgeschrieben
-#: statt geraten - dieselbe Bauart wie ``engstelle.FELD_JE_GATE``.
-#:
-#:     Parameter-Plateau    Genom hat keine variierbaren Perioden
-#:     Regime-Aufteilung    kein Umfeld mit Verlusten (Profitfaktor unendlich)
-#:     Deflated Sharpe      keine Streuung in den Ergebnissen
-STRUKTURELL: frozenset[str] = frozenset(
-    {"gate_parameter_plateau", "gate_regime_split", "gate_deflated_sharpe"}
+#: statt geraten - dieselbe Bauart wie ``engstelle.FELD_JE_GATE``. Die
+#: **Paarung** ist dagegen pruefbar, und ein Test prueft sie: Jede Marke muss
+#: im Rumpf **ihres** Gates stehen.
+STRUKTURGRUENDE: tuple[Strukturgrund, ...] = (
+    Strukturgrund(
+        gate="gate_parameter_plateau",
+        marke="keine variierbaren Perioden",
+        verlangt=(
+            "mindestens eine variierbare Periode - ohne Nachbarn gibt es "
+            "kein Plateau zu messen"
+        ),
+    ),
+    Strukturgrund(
+        gate="gate_regime_split",
+        marke="Kein Umfeld mit Verlusten",
+        verlangt=(
+            "mindestens ein Umfeld mit Verlusten - ohne das ist der "
+            "Profitfaktor unendlich und kein Quotient zu bilden"
+        ),
+    ),
+    Strukturgrund(
+        gate="gate_deflated_sharpe",
+        marke="Keine Streuung in den Ergebnissen",
+        verlangt=(
+            "Streuung in den Ergebnissen - ohne sie gibt es keinen "
+            "Deflated Sharpe"
+        ),
+    ),
 )
 
+#: Die Gates, die aus **strukturellen** Gruenden aussetzen koennen.
+STRUKTURELL: frozenset[str] = frozenset(g.gate for g in STRUKTURGRUENDE)
+
 #: Die Botschaften, an denen ein struktureller Aussetzer zu erkennen ist.
-#:
-#: Als Fundstelle und nicht als Schalter: Wer einen Grund **programmatisch**
-#: unterscheiden will, soll das an der Bedingung tun und nicht an einem
-#: Textvergleich - eine Zeichenkette als Steuerung ist die Bauart, an der
-#: Befund 420 und 430 haengen.
-STRUKTURMARKEN: tuple[str, ...] = (
-    "keine variierbaren Perioden",
-    "Kein Umfeld mit Verlusten",
-    "Keine Streuung in den Ergebnissen",
-)
+STRUKTURMARKEN: tuple[str, ...] = tuple(g.marke for g in STRUKTURGRUENDE)
 
 
 def _ist_skip(aufruf: ast.Call) -> bool:

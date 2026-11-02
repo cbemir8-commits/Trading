@@ -230,14 +230,20 @@ class TestPrompt:
         """Genug, um etwas zu sagen, klein genug, um den Auftrag nicht zu
         ertraenken.
 
-        **1570 bis Befund 456, 2712 seit 457**: Dazugekommen ist der
-        Abschnitt "Was die Luecke nicht ist" - 974 Zeichen, gemessen 18,7 %
-        des ganzen Prompts. Erst waren es 1400; das Budget dieses Tests hat
-        die erste Fassung abgewiesen, und die zweite sagt dasselbe kuerzer.
+        **1570 bis Befund 456, 2712 seit 457, 3322 seit 458.** Zweimal hat
+        das Budget dieses Tests eine zu wortreiche erste Fassung abgewiesen -
+        457 ging von 1400 auf 974 Zeichen, 458 von 801 auf 575.
 
-        Das Budget bleibt eine Grenze und kein Freibrief: Der Abschnitt
-        ersetzt zwei Versuche, die auf Taktung oder Kosten optimieren, und
-        ein Versuch kostet 0,0011 DSR-Punkte fuer **alle** folgenden."""
+        Das Budget bleibt eine Grenze und kein Freibrief: Jeder Abschnitt
+        ersetzt Versuche, die ins Leere laufen, und ein Versuch kostet 0,0011
+        DSR-Punkte fuer **alle** folgenden.
+
+        **Und eine Zahl zum Mitlesen**: Die Ausschluesse sind jetzt 57,2 %
+        des ganzen Prompts (3322 von 5811 Zeichen). Das ist der Punkt, an dem
+        "klein genug, um den Auftrag nicht zu ertraenken" von einer Formel zu
+        einer Frage wird. Noch traegt es - die Aufgabe selbst steht am Ende
+        und ist kurz -, aber der naechste Abschnitt braucht ein Argument und
+        nicht nur Platz im Budget."""
         from research.analyst import build_prompt
         from research.gates import GateThresholds
 
@@ -247,7 +253,9 @@ class TestPrompt:
             journal=[], thresholds=GateThresholds(), ausschluesse=aus
         )
 
-        assert len(mit) - len(ohne) == pytest.approx(2712, abs=250)
+        assert len(mit) - len(ohne) == pytest.approx(3322, abs=250)
+        # Die Aufgabe selbst muss zuletzt stehen und darf nicht untergehen.
+        assert mit.index("## Auftrag") > mit.index("## Was eine Regel")
 
 
 class TestAusDemVersuchsverzeichnis:
@@ -440,3 +448,69 @@ class TestWasDieLueckeNichtIst:
 
         assert duenn.hebel == list(GEMESSENE_HEBEL)
         assert voll.hebel == list(GEMESSENE_HEBEL)
+
+
+class TestWasEineRegelBeurteilbarMacht:
+    """Befund 458. Der Auftrag nannte Schwellen - aber nicht die **Bauart**.
+
+    Seit Befund 445 zaehlt ein Gate, das nicht geurteilt hat, nicht als
+    bestanden. Drei Gates koennen strukturell aussetzen (446), und ein
+    Vorschlag dieser Form kann nie zugelassen werden, egal wie gut er ist.
+    Das ist die einzige Art Fehler, die sich durch Qualitaet nicht heilen
+    laesst - und sie stand nicht im Auftrag.
+    """
+
+    def _text(self) -> str:
+        aus = aus_familienbild(echtes_bild(), gescheiterte=GESCHEITERTE_EIGENBAUTEN)
+        return " ".join(aus.als_auftrag().split())
+
+    def test_alle_drei_anforderungen_stehen_im_auftrag(self) -> None:
+        from research.aussetzer import STRUKTURGRUENDE
+
+        text = self._text()
+
+        assert "Was eine Regel beurteilbar macht" in text
+        for grund in STRUKTURGRUENDE:
+            assert " ".join(grund.verlangt.split()) in text, grund.gate
+
+    def test_der_grund_steht_dabei_und_nicht_nur_die_forderung(self) -> None:
+        """Eine Forderung ohne Grund liest sich als Willkuer - und der Grund
+        ist hier der Mechanismus: kein Nachbar, kein Quotient, keine
+        Streuung."""
+        text = self._text()
+
+        assert "nicht geurteilt" in text
+        assert "zaehlt nicht als bestanden" in text
+        assert "keine Guete und keine Datenmenge" in text
+
+    def test_die_offene_entscheidung_wird_genannt(self) -> None:
+        """**Nicht verschwiegen** (446): Die letzten zwei greifen, wenn ein
+        Ergebnis zu gut ist, und ob das eine Zulassung dauerhaft verhindern
+        darf, gehoert dem Nutzer."""
+        text = self._text()
+
+        assert "zu gut" in text
+        assert "sichere Richtung" in text
+
+    def test_sie_kommen_aus_dem_aussetzer_modul(self) -> None:
+        """Keine zweite Liste: Der Auftrag liest ``STRUKTURGRUENDE``, und
+        dasselbe Modul sichert, dass jede Marke im Rumpf ihres Gates steht."""
+        from research.aussetzer import STRUKTURGRUENDE
+
+        voll = aus_familienbild(echtes_bild())
+        duenn = aus_familienbild(
+            bild_aus([Regel(name="a", trades=99, sharpe_je_trade=0.2, familie="x")])
+        )
+
+        assert voll.form == list(STRUKTURGRUENDE)
+        assert duenn.form == list(STRUKTURGRUENDE)
+        assert Ausschluesse().form == []
+
+    def test_die_bauart_steht_vor_den_schwellen(self) -> None:
+        """Wer die Form verfehlt, wird nicht knapp abgelehnt, sondern gar
+        nicht geurteilt. Das gehoert vor "was die Luecke nicht ist"."""
+        text = self._text()
+
+        assert text.index("Was eine Regel beurteilbar macht") < text.index(
+            "Was die Luecke nicht ist"
+        )

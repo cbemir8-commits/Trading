@@ -30,6 +30,7 @@ from research.aussetzer import (
     AUSSETZSTELLEN,
     SCHWELLEN,
     STRUKTURELL,
+    STRUKTURGRUENDE,
     STRUKTURMARKEN,
     aussetzbar,
     aussetzstellen,
@@ -139,6 +140,51 @@ class TestDieBeidenArtenSindGetrennt:
 
         for marke in STRUKTURMARKEN:
             assert marke in quelle, marke
+
+    def test_jede_marke_steht_im_rumpf_ihres_eigenen_gates(self) -> None:
+        """**Die Wache, die gefehlt hat** (Befund 458). Der Test darueber
+        sieht nach, ob eine Marke *irgendwo* in ``gates.py`` steht - nicht,
+        ob sie in **ihrem** Gate steht. Damit haette eine falsche Paarung
+        gruen bestanden: drei Namen in einer Liste, drei Texte in einer
+        zweiten, und nichts dazwischen.
+        """
+        import ast
+
+        from research import gates
+
+        quelle = inspect.getsource(gates)
+        zeilen = quelle.splitlines()
+        rumpf_je_gate = {
+            k.name: "\n".join(zeilen[k.lineno - 1 : k.end_lineno])
+            for k in ast.walk(ast.parse(quelle))
+            if isinstance(k, ast.FunctionDef)
+        }
+
+        for grund in STRUKTURGRUENDE:
+            assert grund.gate in rumpf_je_gate, grund.gate
+            assert grund.marke in rumpf_je_gate[grund.gate], grund
+            # Und die Gegenprobe: in keinem **anderen** Gate.
+            fremde = [
+                name
+                for name, rumpf in rumpf_je_gate.items()
+                if name != grund.gate and grund.marke in rumpf
+            ]
+            assert fremde == [], f"{grund.marke!r} auch in {fremde}"
+
+    def test_die_beiden_listen_kommen_aus_einer_quelle(self) -> None:
+        """``STRUKTURELL`` und ``STRUKTURMARKEN`` werden abgeleitet, nicht
+        gepflegt - sonst laufen sie auseinander (Befund 439)."""
+        assert set(STRUKTURELL) == {g.gate for g in STRUKTURGRUENDE}
+        assert set(STRUKTURMARKEN) == {g.marke for g in STRUKTURGRUENDE}
+        assert len(STRUKTURGRUENDE) == len(STRUKTURELL) == len(STRUKTURMARKEN)
+
+    def test_jeder_grund_sagt_was_eine_regel_mitbringen_muss(self) -> None:
+        """Der Teil, den kein Quelltext hergibt - und der in den Auftrag
+        gehoert (458)."""
+        for grund in STRUKTURGRUENDE:
+            assert grund.verlangt
+            assert len(grund.verlangt) > 30, grund.gate
+            assert "ohne" in grund.verlangt.lower(), grund.gate
 
 
 class TestHeuteKostetDieVerschaerfungNichts:

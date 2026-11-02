@@ -41162,3 +41162,74 @@ faellt sonst erst auf, wenn jemand es tippt.
 
 **Gelockert ist nichts.** Keine Schwelle, kein Gate; hinzugekommen ist eine
 Auskunft, die zwei Versuche spart.
+
+## Vierhundertachtundfuenfzig. Bauart statt Schwelle - und eine ungepruefte Paarung
+
+Befund 457 hat dem Auftrag gesagt, was die Luecke **nicht** ist. Was noch
+fehlte, ist eine Stufe davor: Was macht eine Regel ueberhaupt
+**beurteilbar**?
+
+### Die einzige Art Fehler, die Qualitaet nicht heilt
+
+Seit Befund 445 gilt: Ein Gate, das nicht geurteilt hat, zaehlt nicht als
+bestanden. Drei Gates koennen aus strukturellen Gruenden aussetzen (446), und
+da hilft keine Guete und keine Datenmenge:
+
+    Parameter-Plateau    braucht eine variierbare Periode
+                         - ohne Nachbarn gibt es kein Plateau zu messen
+    Regime-Aufteilung    braucht ein Umfeld mit Verlusten
+                         - sonst ist der Profitfaktor unendlich
+    Deflated Sharpe      braucht Streuung in den Ergebnissen
+
+Ein Vorschlag dieser Form kann **nie** zugelassen werden, egal wie gut er
+ist. Wer die Form verfehlt, wird nicht knapp abgelehnt, sondern gar nicht
+geurteilt - und das stand nicht im Auftrag. Jetzt steht es dort, mit dem
+Mechanismus daneben: Eine Forderung ohne Grund liest sich als Willkuer.
+
+Die offene Entscheidung aus 446 steht dabei und ist nicht verschwiegen: Die
+letzten zwei greifen ausgerechnet dann, wenn ein Ergebnis **zu gut** ist fuer
+einen Quotienten. Ob das eine Zulassung dauerhaft verhindern darf, gehoert
+dem Nutzer.
+
+### Und ein Werkzeugfehler, den der Weg dorthin aufgedeckt hat
+
+``STRUKTURELL`` trug drei Funktionsnamen, ``STRUKTURMARKEN`` drei
+Botschaften - zwei handgepflegte Listen nebeneinander. Geprueft hat das ein
+Test:
+
+    for marke in STRUKTURMARKEN:
+        assert marke in quelle, marke        # quelle = ganze gates.py
+
+**Die Paarung prueft er nicht.** Ob *"Kein Umfeld mit Verlusten"* zu
+``gate_regime_split`` gehoert oder zu ``gate_parameter_plateau``, sieht
+dieser Test nicht - eine falsche Zuordnung waere gruen durchgelaufen. Genau
+die Bauart, die Befund 439 teuer bezahlt hat.
+
+Jetzt gibt es ``STRUKTURGRUENDE`` als **eine** Quelle - Gate, Marke und
+Anforderung in einem Satz -, aus der beide Listen abgeleitet werden. Drei
+Wachen:
+
+* Jede Marke steht im Rumpf **ihres** Gates.
+* Und in keinem anderen.
+* Beide abgeleiteten Listen sind deckungsgleich mit der Quelle.
+
+Die dritte Angabe, ``verlangt``, ist der Teil, den kein Quelltext hergibt:
+was eine Regel mitbringen muss. Deshalb steht sie bei den anderen zwei und
+nicht in einer vierten Liste im Auftragsmodul.
+
+### Das Groessenbudget hat wieder zugefasst
+
+Meine erste Fassung des Abschnitts brauchte 801 Zeichen; die genommene sagt
+dasselbe in **575**. Das ist das zweite Mal in zwei Befunden - der Test
+arbeitet.
+
+Dazu eine Zahl, die ich festhalte, weil sie eine Grenze markiert: Die
+Ausschluesse sind jetzt **57,2 %** des ganzen Prompts, 3322 von 5811
+Zeichen. Noch traegt es, denn die Aufgabe selbst steht am Ende und ist kurz,
+und ein Test sichert diese Reihenfolge. Aber *"klein genug, um den Auftrag
+nicht zu ertraenken"* wird damit von einer Formel zu einer Frage: Der
+naechste Abschnitt braucht ein Argument und nicht nur Platz im Budget.
+
+**Gelockert ist nichts.** Keine Schwelle, kein Gate; hinzugekommen ist eine
+Auskunft ueber Bauart - und eine Wache, die eine falsche Zuordnung nicht mehr
+durchlaesst.

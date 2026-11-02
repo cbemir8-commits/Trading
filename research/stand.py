@@ -6715,6 +6715,35 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Abschnitt",
         457,
     ),
+    # Befund 458: Der Auftrag nannte Schwellen, aber nicht die Bauart - und
+    # zwei Listen trugen eine Paarung, die nichts geprueft hat.
+    Richtung(
+        "Bauart statt Schwelle - und eine ungepruefte Paarung",
+        "Seit Befund 445 zaehlt ein Gate, das **nicht geurteilt** hat, nicht "
+        "als bestanden; drei Gates koennen strukturell aussetzen (446). Ein "
+        "Vorschlag dieser Form kann nie zugelassen werden, egal wie gut er "
+        "ist - die einzige Art Fehler, die sich durch Qualitaet nicht heilen "
+        "laesst -, und sie stand nicht im Auftrag. Eingetragen als Abschnitt "
+        "'Was eine Regel beurteilbar macht' mit den drei Anforderungen und "
+        "ihrem Mechanismus: eine variierbare Periode (sonst kein Nachbar fuer "
+        "ein Plateau), ein Umfeld mit Verlusten (sonst kein Quotient) und "
+        "Streuung in den Ergebnissen (sonst kein Deflated Sharpe). Die "
+        "offene Entscheidung aus 446 steht dabei, nicht verschwiegen. **Und "
+        "ein Werkzeugfehler nebenbei**: 'STRUKTURELL' (drei Funktionsnamen) "
+        "und 'STRUKTURMARKEN' (drei Botschaften) standen als zwei "
+        "handgepflegte Listen nebeneinander, und die **Paarung** hat nichts "
+        "geprueft - der Test sah nach, ob eine Marke *irgendwo* in "
+        "'gates.py' steht, nicht ob sie in **ihrem** Gate steht. Eine "
+        "falsche Zuordnung waere gruen durchgelaufen. Jetzt gibt es "
+        "'STRUKTURGRUENDE' als eine Quelle, aus der beide abgeleitet werden, "
+        "und drei Wachen: jede Marke im Rumpf ihres Gates, in keinem "
+        "anderen, und beide Listen deckungsgleich mit der Quelle. **Das "
+        "Groessenbudget hat wieder zugefasst** - 801 Zeichen abgewiesen, 575 "
+        "genommen. Gemessen stehen die Ausschluesse jetzt bei 57,2 % des "
+        "Prompts (3322 von 5811); das ist festgehalten, weil der naechste "
+        "Abschnitt ein Argument braucht und nicht nur Platz",
+        458,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

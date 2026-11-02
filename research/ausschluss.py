@@ -47,6 +47,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from research.aussetzer import STRUKTURGRUENDE
+
 #: Ab dieser Korrelation zwischen Aehnlichkeit und Qualitaet gilt der
 #: Zielkonflikt als gemessen und gehoert benannt.
 SPUERBARER_WIDERSPRUCH = 0.3
@@ -205,6 +207,16 @@ class Ausschluesse:
     Trade. Sie stehen nicht im Journal des Research-Loops, weil sie nicht
     dort entstanden sind - und fehlten dem Analysten deshalb."""
 
+    form: list = field(default_factory=list)
+    """Die strukturellen Aussetzer - ``aussetzer.Strukturgrund`` (Befund 458).
+
+    Keine Schwellen, sondern **Bauart**: Ein Gate, das nicht geurteilt hat,
+    zaehlt seit Befund 445 nicht als bestanden, und drei Gates koennen aus
+    strukturellen Gruenden aussetzen. Da hilft keine Guete und keine
+    Datenmenge - ein Vorschlag dieser Form kann nie zugelassen werden.
+
+    Leer per Vorgabe, aus demselben Grund wie ``hebel``."""
+
     hebel: list[Hebel] = field(default_factory=list)
     """Die mechanischen Wege, die gemessen und erledigt sind (Befund 457).
 
@@ -290,6 +302,27 @@ class Ausschluesse:
                 "",
             ]
 
+        if self.form:
+            # **Bauart vor Schwellen** (Befund 458). Wer die Form verfehlt,
+            # wird nicht knapp abgelehnt, sondern gar nicht geurteilt - und
+            # das ist die einzige Art Fehler, die sich durch Qualitaet nicht
+            # heilen laesst.
+            zeilen += [
+                "## Was eine Regel beurteilbar macht\n",
+                "Ein Gate, das **nicht geurteilt** hat, zaehlt nicht als",
+                "bestanden - und drei koennen strukturell aussetzen. Da hilft",
+                "keine Guete und keine Datenmenge. Eine Regel braucht:",
+                "",
+            ]
+            zeilen += [f"- {g.verlangt}" for g in self.form]
+            zeilen += [
+                "",
+                "Die letzten zwei greifen, wenn ein Ergebnis **zu gut** ist",
+                "fuer einen Quotienten. Bis das entschieden ist, gilt die",
+                "sichere Richtung.",
+                "",
+            ]
+
         if self.hebel:
             # **Die zwei Hebel, nach denen man zuerst greift** (Befund 457).
             # Beide sind gemessen, und beide schliessen die Luecke nicht. Wer
@@ -327,7 +360,9 @@ def aus_familienbild(bild, *, gescheiterte=None) -> Ausschluesse:
         # Die Hebel haengen nicht an der Familienmessung - sie gehoeren auch
         # in einen Auftrag, der ueber Familien nichts sagen kann.
         return Ausschluesse(
-            gescheiterte=list(gescheiterte or []), hebel=list(GEMESSENE_HEBEL)
+            gescheiterte=list(gescheiterte or []),
+            hebel=list(GEMESSENE_HEBEL),
+            form=list(STRUKTURGRUENDE),
         )
 
     sackgassen = [
@@ -343,6 +378,7 @@ def aus_familienbild(bild, *, gescheiterte=None) -> Ausschluesse:
         permutation_haelt=bild.trennt_echt,
         gescheiterte=list(gescheiterte or []),
         hebel=list(GEMESSENE_HEBEL),
+        form=list(STRUKTURGRUENDE),
     )
 
 
