@@ -294,3 +294,96 @@ class TestWasDieZeilenTragen:
         kopf, messungen = lies(stand.pfad)
         assert kopf["intervall"] == "1d"
         assert messungen[0]["intervall"] == "15m"
+
+
+class TestWelcheStueckeZuEinemStandGehoeren:
+    """``stuecke_von`` - und der Fehlgriff, der es gebaut hat (Befund 454).
+
+    Zwei Tests haben ihre Stuecke mit einem Datums-Glob ausgewaehlt. Das ging
+    gut, bis am naechsten Morgen die zweite Leiter in denselben Ordner
+    gemessen hat: Derselbe Glob lieferte beide Staende, und ``zusammen`` hat
+    sie zu Recht abgewiesen. Rot war die **Auswahl**, nicht die Messung.
+    """
+
+    def _lege(self, ordner: Path, name: str, code: str) -> Path:
+        stand = Zwischenstand(
+            pfad=ordner / f"{name}.jsonl", bedingungen={"art": "decke", "code": code}
+        )
+        stand.beginne()
+        stand.halte_fest(regel="Eine")
+        return stand.pfad
+
+    def test_der_abdruck_waehlt_aus_und_nicht_der_name(self, tmp_path: Path) -> None:
+        from research.zwischenstand import stuecke_von
+
+        a = self._lege(tmp_path, "2026-11-02_0201", "aaaa1111")
+        b = self._lege(tmp_path, "2026-11-02_0259", "bbbb2222")
+
+        # Der Glob, der beide traf - genau der Fehlgriff.
+        assert len(sorted(tmp_path.glob("2026-11-02_*.jsonl"))) == 2
+        assert stuecke_von(tmp_path, "aaaa1111") == (a,)
+        assert stuecke_von(tmp_path, "bbbb2222") == (b,)
+
+    def test_was_so_ausgewaehlt_ist_laesst_sich_zusammenlegen(
+        self, tmp_path: Path
+    ) -> None:
+        """Die Eigenschaft, auf die es ankommt: Die Auswahl ist **eine**
+        Messung - ``zusammen`` nimmt sie ohne Einspruch."""
+        from research.zwischenstand import stuecke_von, zusammen
+
+        self._lege(tmp_path, "eins", "aaaa1111")
+        self._lege(tmp_path, "zwei", "aaaa1111")
+        self._lege(tmp_path, "drei", "bbbb2222")
+
+        pfade = stuecke_von(tmp_path, "aaaa1111")
+        kopf, messungen = zusammen(pfade)
+
+        assert len(pfade) == 2
+        assert kopf["code"] == "aaaa1111"
+        assert len(messungen) == 2
+
+    def test_ein_anfang_genuegt(self, tmp_path: Path) -> None:
+        """Abdruecke sind sechzehn Zeichen lang und werden gekuerzt
+        zitiert."""
+        from research.zwischenstand import stuecke_von
+
+        a = self._lege(tmp_path, "eins", "b963512ffae9c28e")
+
+        assert stuecke_von(tmp_path, "b963512f") == (a,)
+
+    def test_ein_mehrdeutiger_anfang_wird_abgewiesen(self, tmp_path: Path) -> None:
+        """**Nicht** stillschweigend beide: Eine Auswahl, die zwei Staende
+        mischt, ist der Fehler, gegen den dieses Modul steht."""
+        from research.zwischenstand import Uneinig, stuecke_von
+
+        self._lege(tmp_path, "eins", "ab11")
+        self._lege(tmp_path, "zwei", "ab22")
+
+        with pytest.raises(Uneinig, match="verschiedene Abdruecke"):
+            stuecke_von(tmp_path, "ab")
+
+    def test_ein_leerer_abdruck_waehlt_nicht_alles(self, tmp_path: Path) -> None:
+        from research.zwischenstand import Uneinig, stuecke_von
+
+        self._lege(tmp_path, "eins", "ab11")
+
+        with pytest.raises(Uneinig, match="leerer Abdruck"):
+            stuecke_von(tmp_path, "   ")
+
+    def test_fremde_protokolle_sind_kein_fehler(self, tmp_path: Path) -> None:
+        """In einem gewachsenen Berichtsordner liegen auch Protokolle ohne
+        dieses Feld - die sind hier nicht gemeint, nicht kaputt."""
+        from research.zwischenstand import stuecke_von
+
+        a = self._lege(tmp_path, "eins", "ab11")
+        (tmp_path / "fremd.jsonl").write_text('{"art": "kopf"}\n', encoding="utf-8")
+        (tmp_path / "kaputt.jsonl").write_text("kein json\n", encoding="utf-8")
+
+        assert stuecke_von(tmp_path, "ab11") == (a,)
+
+    def test_nichts_passt_ist_leer_und_kein_fehler(self, tmp_path: Path) -> None:
+        from research.zwischenstand import stuecke_von
+
+        self._lege(tmp_path, "eins", "ab11")
+
+        assert stuecke_von(tmp_path, "cd99") == ()

@@ -326,6 +326,17 @@ GESCHLOSSEN: tuple[Richtung, ...] = (
         272,
         zuletzt=276,
     ),
+    # Aufgeworfen von 450, gefahren in 452 und 453. Die Ausfuehrung steht im
+    # Laborbuch - hier das Stichwort mit seinen Zahlen.
+    Richtung(
+        "Haengt die Kopplung auf Viertelstunden an der Reibung?",
+        "Teils, gemessen: dieselben 36 Regeln ohne jede Reibung "
+        "('CostModel.scaled(0)' setzt Gebuehr und Slippage auf null) tragen "
+        "-0,127 gegen -0,226 - die Reibung hebt 44 % des Weges zur Null auf, "
+        "der Rest haengt an den Signalen. Der Kippfaktor 2,1 misst die "
+        "Reichweite der Naeherung, nicht der Reibung",
+        453,
+    ),
 )
 
 
@@ -6586,6 +6597,51 @@ BEHOBEN: tuple[Richtung, ...] = (
         "auf 15m nicht handeln, und eine Regel ohne Trades hat keine Sprosse "
         "zu messen. Zu streng geprueft; der Code hatte recht",
         452,
+        zuletzt=453,
+    ),
+    # Befund 454: Zwei Wachen wurden rot, weil die Arbeit besser wurde.
+    Richtung(
+        "Eine Wache am Dateinamen ist eine Wache auf Zeit",
+        "Nach Befund 453 waren vier Tests rot, und **keine Messung war "
+        "falsch**. Beide Ursachen sind derselbe Fehler in zwei Gestalten: "
+        "Eine Zusicherung hing an einer Angabe, die neue Arbeit mitbewegt. "
+        "**Erstens der Dateiname.** Der Test zu 452 waehlte seine 39 Stuecke "
+        "mit 'reports/vorratsdecke/2026-11-02_*.jsonl'. Richtig, solange nur "
+        "diese Leiter im Ordner lag; als 453 in derselben Nacht die zweite "
+        "fuhr, lieferte derselbe Glob **78** Stuecke aus zwei Code-Staenden, "
+        "und 'zusammen' hat sie zu Recht abgewiesen (3 Fehlschlaege, 7 "
+        "Fehler). Das Datum im Namen sagt, **wann** gemessen wurde; der "
+        "Abdruck im Kopf sagt, **unter welchen Bedingungen** - und nur das "
+        "Zweite entscheidet, ob zwei Stuecke eine Messung sind. Gebaut: "
+        "'zwischenstand.stuecke_von(wurzel, abdruck)' waehlt ueber den Kopf, "
+        "nimmt einen gekuerzten Anfang und weist einen **mehrdeutigen** ab, "
+        "statt stillschweigend zwei Staende zu mischen. Beide "
+        "Feinkerzen-Tests gehen jetzt darueber, und einer prueft die "
+        "Trennung ausdruecklich: Die andere Leiter ist nicht dabei. "
+        "**Zweitens der Name eines Registereintrags.** Die Wache aus 303 "
+        "verlangte, dass 'cli reibung' den Eintrag aus 255/302 an erster "
+        "Stelle anmeldet - als Zeichenkette. 453 hat die Frage nachgemessen "
+        "und geschlossen; sein Eintrag ist neuer und traegt zwei Stichworte "
+        "im Namen, steht also oben. **Die Reihenfolge war besser geworden, "
+        "und der Test rot.** Jetzt geprueft wird die Eigenschaft: Oben steht "
+        "eine *geschlossene* Antwort, die 'Reibung' und 'Kopplung' im Namen "
+        "traegt - und der Eintrag aus 302 steht weiter in den fuenf, die "
+        "'auskunft' zeigt, denn gefunden zu werden genuegt nicht. **Die "
+        "Lehre, und sie reicht ueber diese zwei hinaus**: Eine Wache, die am "
+        "Dateinamen, am Datum oder am Wortlaut eines Namens haengt, ist "
+        "gegen Verfall gebaut, nicht gegen Fehler - sie wird rot, wenn die "
+        "Arbeit **besser** wird, und das ist die teuerste Art von Rot, weil "
+        "sie zum Lockern einlaedt. Festzuhalten ist das Kriterium selbst. "
+        "**Zwei Nebenfunde.** Mein Eintrag zu 453 berichtet eine Messung, "
+        "trug das Wort 'gemessen' aber nicht - der Hinweis 'nennt eine "
+        "Messung' stand fuer ihn auf nein, obwohl seine zweite Haelfte "
+        "genau von gemessen gegen gerechnet handelt. Wort eingesetzt, und "
+        "die Wache verlangt es jetzt vom **obersten** Treffer, nicht von "
+        "irgendeinem. Und ein Verfahrensfehler von mir: Ich habe 'stand.py' "
+        "bearbeitet, waehrend die Suite lief - Befund 427. Der Lauf war "
+        "abzubrechen und zu wiederholen; gekostet hat es nur Zeit, weil die "
+        "Zeilenzahl gleich blieb",
+        454,
     ),
 )
 
@@ -6594,41 +6650,6 @@ BEHOBEN: tuple[Richtung, ...] = (
 #: Getrennt von ``GESCHLOSSEN``, weil "gemessen und offen" etwas anderes ist
 #: als "gemessen und zu". Ein Eintrag hier ist eine Zusage, keine Ablage.
 OFFEN: tuple[Richtung, ...] = (
-    # Aufgeworfen von 450: Auf Tageskerzen war die Kopplung keine
-    # Reibungsfrage - auf Viertelstunden steht das offen.
-    Richtung(
-        "Haengt die Kopplung auf Viertelstunden an der Reibung?",
-        "Die Kopplung zwischen Trade-Zahl und Qualitaet ist seit Befund 75 "
-        "die Eigenschaft, die den Vorrat deckelt. **Auf Tageskerzen ist "
-        "entschieden, dass sie nicht an den Kosten haengt**: 'cli "
-        "kostenanteil' findet keinen Kippfaktor unter tausend, und die "
-        "verzeichnete Zahl ist 29 - erst bei 29-facher Gebuehr verschwindet "
-        "sie, was niemand bezahlt. **Auf Viertelstunden liegt es anders**, "
-        "gemessen in Befund 450 ueber 36 Regeln: Rechnet man die Gebuehr "
-        "zurueck, geht die Korrelation von -0,226 auf -0,171, und bei "
-        "**doppelter** Gebuehr verschwindet sie. Das sind rund 0,1 % je "
-        "Roundtrip. **Warum es hier nicht zu entscheiden war**: Diese "
-        "Groessenordnung liegt in der Reichweite dessen, was allein die "
-        "Slippage ausmachen kann - und die steckt im Ausfuehrungspreis, "
-        "laesst sich aus den Trades also nicht abziehen. Die Gebuehr kann man "
-        "zurueckrechnen, die Slippage nicht. **Was es entscheiden wuerde** "
-        "(praezisiert in Befund 452): die Sprosse der Reibungsleiter bei "
-        "**Faktor 0**. 'CostModel.scaled(0)' setzt Gebuehr **und** Slippage "
-        "auf null, und 'Reibungsleiter.urteil' haelt die so gemessene "
-        "reibungslose Welt gegen 'brutto(f)' - das ueber dieselbe Welt je "
-        "nach f etwas anderes behauptet. Kosten: 39 Stuecke, dreieinhalb "
-        "Stunden. **Was schon gemessen ist** (452): die Sprosse bei Faktor 2 "
-        "- dort steht die Kopplung bei -0,240 gegen -0,226 im Grundlauf, wird "
-        "also **staerker**. Das widerlegt die lineare Rueckrechnung, aber "
-        "nicht die Hypothese: Aufschlagen prueft die falsche Richtung. "
-        "**Warum es "
-        "zaehlt**: Haengt die Kopplung an der Reibung, ist sie keine "
-        "Eigenschaft der Signale, und der Deckel dieses Vorrats steht an "
-        "einer anderen Stelle als gedacht - fuer die Suche auf 15 Minuten "
-        "waere das der Unterschied zwischen 'hier ist nichts' und 'hier ist "
-        "etwas, das die Gebuehr frisst'",
-        450,
-    ),
     # Aufgeworfen von 446: Nebenwirkung der Verschaerfung aus 445, gemessen
     # und nicht entschieden - die Entscheidung gehoert dem Nutzer.
     Richtung(

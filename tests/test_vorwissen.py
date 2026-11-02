@@ -42,9 +42,44 @@ class TestDieWacheGegenBefund302:
 
     def test_und_zwar_ganz_oben(self) -> None:
         """Achtzehn Treffer nuetzen nichts, wenn der richtige an Platz
-        zwoelf steht - vor einem Lauf liest man die ersten Zeilen."""
+        zwoelf steht - vor einem Lauf liest man die ersten Zeilen.
+
+        Hier stand der **Name** des Eintrags aus 255/302. Befund 453 hat die
+        Frage auf Viertelstunden nachgemessen und seinen Eintrag
+        geschlossen; der steht nun oben, und der Test war rot - obwohl die
+        Reihenfolge besser geworden war. Ein Name als Zusicherung heisst:
+        Jede bessere Antwort macht die Wache rot.
+
+        Gepruefte Eigenschaft ist deshalb die, auf die es ankommt: Oben
+        steht eine **geschlossene** Antwort, die diese Frage im Namen
+        traegt - also eine, die den Lauf ersparen koennte.
+        """
         erste = was_schon_dasteht(*REIBUNG)[0]
-        assert erste.richtung.name == "Traegt die Reibung die Kopplung auf kurzen Kerzen?"
+        name = erste.richtung.name.lower()
+
+        assert erste.lage == "geschlossen"
+        assert "reibung" in name and "kopplung" in name
+
+    def test_und_nennt_eine_messung(self) -> None:
+        """Scharfer als ``test_der_eintrag_ist_als_gemessen_erkennbar``, das
+        irgendeinen Treffer genuegen laesst: Was einen Lauf ersparen kann,
+        ist eine **Messung** und keine Vermutung - und der oberste Eintrag
+        ist der, den man vor dem Lauf liest.
+
+        Aufgefallen an meinem eigenen Eintrag zu 453: Er berichtet eine
+        Messung, trug das Wort aber nicht, und der Hinweis stand damit auf
+        'nein'. Das Wort gehoert dort hin, weil die zweite Haelfte des
+        Eintrags von der Unterscheidung gemessen/gerechnet handelt.
+        """
+        assert was_schon_dasteht(*REIBUNG)[0].gemessen
+
+    def test_und_der_eintrag_aus_302_steht_noch_im_gezeigten_teil(self) -> None:
+        """Gefunden zu werden genuegt nicht - ``auskunft`` zeigt fuenf. Was
+        dahinter steht, liest vor dem Lauf niemand, und genau das war Befund
+        302."""
+        assert "Traegt die Reibung die Kopplung auf kurzen Kerzen?" in auskunft(
+            *REIBUNG
+        )
 
     def test_der_eintrag_ist_als_gemessen_erkennbar(self) -> None:
         treffer = was_schon_dasteht(*REIBUNG)

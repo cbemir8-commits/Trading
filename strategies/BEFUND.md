@@ -40755,3 +40755,173 @@ die drei anderen ab.
 Keine Schwelle, kein Gate, kein Urteil bewegt sich. Hinzugekommen ist eine
 gemessene Sprosse - und die Praezisierung, welche Messung die offene Frage
 wirklich entscheidet.
+
+## Vierhundertdreiundfuenfzig. Die Kopplung ueberlebt ohne jede Reibung
+
+Befund 450 hat gefragt, ob die Kopplung zwischen Trade-Zahl und Qualitaet auf
+Viertelstunden an den **Signalen** oder an der **Reibung** haengt. Befund 452
+hat die Sprosse bei Faktor 2 gefahren und genau gesagt, was sie *nicht*
+entscheidet: Reibung aufzuschlagen prueft die falsche Richtung.
+
+Entscheidend ist die Sprosse bei **Faktor 0**, und die ist jetzt gefahren -
+alle 39 Stuecke auf einem Code-Stand. `CostModel.scaled(0)` setzt Gebuehr
+**und** Slippage auf null, beide sind Parameter der Engine, und der Lauf wird
+neu gefahren. Genau das kann die Rueckrechnung nicht: Sie haelt die Trades
+fest und kommt an die Slippage ohnehin nicht heran, weil die im
+Ausfuehrungspreis steckt.
+
+### Die Antwort ist "teils"
+
+    Faktor   Regeln   r netto
+         0       36    -0,127
+         1       36    -0,226
+
+> **Teils.** Die Reibung hebt **44 %** des Weges zur Null auf - sie traegt
+> einen sichtbaren Teil, aber ohne sie bleibt die Kopplung negativ. Was
+> uebrig bleibt, haengt an den Signalen.
+
+Das ist genauer als ein Ja oder ein Nein, und es ist die nuetzlichere
+Auskunft: Der Weg "bessere Konditionen" ist damit **beziffert** statt
+vermutet. Er traegt knapp die Haelfte - und nicht alles.
+
+### Der zweite Fund betrifft die Methode
+
+> **Damit ist der Kippfaktor keine Messung.** 'Kostenfrage' meldet 2.1 - den
+> Punkt, an dem die Naeherung die Null erreicht. Die Welt, ueber die sie dort
+> redet, ist nachgemessen worden und steht bei -0.127. **Was der Faktor
+> angibt, ist die Reichweite der Rechnung und nicht die der Reibung.**
+
+Und schaerfer noch: Die Naeherung behauptet ueber **dieselbe** reibungslose
+Welt je nach f etwas anderes.
+
+    f = 1    -0,171     0,044 daneben
+    f = 0    -0,226     0,099 daneben
+    gemessen -0,127
+
+Je weiter die Rechnung hinausreicht, desto weniger traegt sie - weil sie die
+Trades festhaelt, waehrend der echte Lauf andere macht. Das ist derselbe
+Grund wie bei der Sprosse aus 452, nur hier an der Zahl zu sehen, die aus
+der Naeherung einen Befund gemacht hatte.
+
+### Ein Nebenbefund desselben Laufs, sauber gebaut
+
+> **Keine von 36 raeumt ihre Latte.** Das heisst nicht, dass die Quote null
+> ist: Bei 95% Vertrauen liegt sie hoechstens bei 8.0%, **wenn** die 36
+> Regeln 36 unabhaengige Ziehungen sind. Sie sind es nicht: Strukturell
+> zerfallen sie in 20 Gruppen, und auf denen gerechnet steht dort 13.9%.
+> **Die ehrliche Auskunft ist die Spanne.**
+
+Eine Regel, die eine Abwandlung ihrer Nachbarin ist, zaehlt nicht als eigene
+Ziehung - und weil nicht feststeht, wie viel Eigenes in ihr steckt, nennt
+das Urteil beide Enden statt eines Punktschaetzers.
+
+### Ein eigener Rechenfehler
+
+Ich hatte die "0,099 daneben" des Berichts als Abstand der beiden
+Naeherungswerte **voneinander** gelesen. Das sind 0,055. Die 0,099 ist der
+Abstand der schlechteren Naeherung zum **gemessenen** Wert. Mein eigener
+Test hat es gefunden, bevor es im Laborbuch stand.
+
+### Damit ist eine offene Frage geschlossen
+
+Der Eintrag aus 450 wandert von `OFFEN` nach `GESCHLOSSEN` - mit der
+Antwort, nicht mit einem Verweis. Von achtzehn offenen Richtungen sind es
+damit siebzehn, plus die aus 446.
+
+**Gelockert ist nichts.** Keine Schwelle, kein Gate, kein Urteil bewegt sich.
+Hinzugekommen ist eine Antwort auf eine Frage, die ich selbst aufgeworfen
+habe - und die Feststellung, dass eine Zahl, die drei Befunde lang als
+Kippfaktor zitiert wurde, die Reichweite der Rechnung misst und nicht die
+der Reibung.
+
+## Vierhundertvierundfuenfzig. Eine Wache am Dateinamen ist eine Wache auf Zeit
+
+Nach Befund 453 war die Suite rot: vier Fehlschlaege, sieben Fehler. **Keine
+Messung war falsch.** Beide Ursachen sind derselbe Fehler in zwei Gestalten -
+eine Zusicherung hing an einer Angabe, die neue Arbeit mitbewegt.
+
+### Erstens: der Dateiname
+
+Der Test zu Befund 452 waehlte seine neununddreissig Stuecke so:
+
+    MUSTER = (
+        "reports/vorratsdecke/2026-11-01_2*.jsonl",
+        "reports/vorratsdecke/2026-11-02_*.jsonl",
+    )
+
+Das war richtig, solange nur diese Leiter im Ordner lag. Befund 453 hat in
+derselben Nacht die zweite Leiter gefahren, in dieselbe Ablage, und derselbe
+Glob lieferte **78** Stuecke aus zwei Code-Staenden. `zusammen` hat sie zu
+Recht abgewiesen - mit genau dem Satz, fuer den es gebaut ist:
+
+> Zwei Stuecke unter verschiedenen Bedingungen sind zwei Messungen, keine.
+
+Der Test war rot, obwohl beide Messungen in Ordnung waren. Falsch war die
+**Auswahl**.
+
+> Das Datum im Namen sagt, **wann** gemessen wurde. Der Abdruck im Kopf sagt,
+> **unter welchen Bedingungen**. Nur das Zweite entscheidet, ob zwei Stuecke
+> eine Messung sind - also waehlt man danach aus.
+
+Gebaut ist deshalb `zwischenstand.stuecke_von(wurzel, abdruck)`: Es liest die
+Koepfe und nimmt die Stuecke eines Standes. Ein gekuerzter Abdruck genuegt -
+sechzehn Zeichen zitiert niemand ganz -, und ein **mehrdeutiger** Anfang wird
+abgewiesen statt stillschweigend zwei Staende zu mischen. Fremde Protokolle
+im Ordner sind kein Fehler, nur nicht gemeint.
+
+Beide Feinkerzen-Tests gehen jetzt darueber. Damit ist "ein Code-Stand" keine
+Zusicherung mehr, sondern die Bauart - geprueft wird jetzt, was es ueberhaupt
+zu pruefen gibt: dass es neununddreissig sind, dass `zusammen` sie nimmt, und
+dass die **andere** Leiter nicht dabei ist.
+
+### Zweitens: der Name eines Registereintrags
+
+Die Wache aus Befund 303 verlangte, dass `cli reibung` den Eintrag aus 255/302
+an erster Stelle anmeldet - als Zeichenkette:
+
+    assert erste.richtung.name == "Traegt die Reibung die Kopplung auf kurzen Kerzen?"
+
+Befund 453 hat die Frage nachgemessen und geschlossen. Sein Eintrag ist neuer
+und traegt zwei der vier Stichworte im Namen, steht also oben. Die
+Reihenfolge war **besser** geworden, und der Test rot.
+
+Gezeigt wird jetzt beides, und geprueft die Eigenschaft statt des Wortlauts:
+Oben steht eine *geschlossene* Antwort mit "Reibung" und "Kopplung" im Namen -
+eine, die den Lauf ersparen koennte. Und der Eintrag aus 302 steht weiter in
+den fuenf, die `auskunft` wirklich hinschreibt, denn gefunden zu werden
+genuegt nicht; das war Befund 302.
+
+### Die Lehre, und sie reicht ueber diese zwei hinaus
+
+Eine Wache, die am Dateinamen, am Datum oder am Wortlaut eines Namens haengt,
+ist gegen **Verfall** gebaut und nicht gegen **Fehler**. Sie wird rot, wenn
+die Arbeit besser wird.
+
+Das ist die teuerste Art von Rot, weil sie zum Lockern einlaedt: Vier rote
+Tests nach einer Messung, die stimmt, sehen aus wie ein Grund, die
+Zusicherung wegzunehmen. Richtig ist, das **Kriterium** festzuhalten - hier
+den Abdruck und die Eigenschaft - und nicht die Gestalt, in der es gerade
+aufgetreten ist.
+
+**Gelockert ist nichts.** Die beiden Wachen pruefen heute mehr als vorher:
+Die eine, dass die Stuecke eines Standes zusammenliegen *und* die des anderen
+nicht; die andere, dass eine geschlossene Antwort oben steht *und* der
+Eintrag aus 302 gezeigt wird.
+
+### Zwei Nebenfunde
+
+**Der Hinweis "nennt eine Messung" stand fuer meinen eigenen Eintrag auf
+nein.** Der Eintrag zu 453 berichtet eine Messung - `-0,127 gegen -0,226`,
+gefahren ueber neununddreissig Stuecke -, trug das Wort "gemessen" aber nicht.
+Der Hinweis in `vorwissen` sucht genau dieses Wort. Dass es fehlte, ist bei
+diesem Eintrag besonders schief, weil seine zweite Haelfte von der
+Unterscheidung gemessen gegen gerechnet handelt. Das Wort steht jetzt drin,
+und die Wache verlangt es vom **obersten** Treffer statt von irgendeinem:
+`test_der_eintrag_ist_als_gemessen_erkennbar` liess `any(...)` genuegen, und
+oben steht der Eintrag, den man vor dem Lauf liest.
+
+**Und ein Verfahrensfehler von mir.** Ich habe `stand.py` bearbeitet, waehrend
+die volle Suite lief - genau Befund 427. Der Lauf war abzubrechen und zu
+wiederholen. Gekostet hat es nur Zeit, weil die Zeilenzahl gleich blieb und
+sich damit keine Fundstelle verschoben hat; das war Glueck und kein Verdienst.
+Die Regel bleibt, wie sie ist: erst alle Aenderungen, dann messen.

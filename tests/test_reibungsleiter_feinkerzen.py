@@ -42,17 +42,21 @@ dieser Test sichert, dass das Urteil es auch nicht behauptet.
 
 from __future__ import annotations
 
-import glob
 import json
 from pathlib import Path
 
 import pytest
 
-#: Die 39 Protokolle der Faktor-2-Leiter - ein Code-Stand.
-MUSTER = (
-    "reports/vorratsdecke/2026-11-01_2*.jsonl",
-    "reports/vorratsdecke/2026-11-02_*.jsonl",
-)
+#: Der Code-Stand dieser Leiter - **das** Auswahlkriterium.
+#:
+#: Hier stand ein Datums-Glob (``2026-11-01_2*`` und ``2026-11-02_*``), und
+#: der war richtig, solange nur diese Leiter im Ordner lag. Am naechsten
+#: Morgen hat Befund 453 die Faktor-0-Leiter auf denselben Ordner gefahren,
+#: und derselbe Glob lieferte 78 Stuecke aus zwei Staenden - der Test war rot,
+#: obwohl beide Messungen stimmten. Siehe ``zwischenstand.stuecke_von``.
+ABDRUCK = "bfcaf92e158b4874"
+
+ORDNER = "reports/vorratsdecke"
 
 STUECKE, MIT_LATTE = 39, 36
 
@@ -61,10 +65,13 @@ GRUND_R, SPROSSE_R, FAKTOR = -0.226, -0.240, 2.0
 
 
 def _pfade() -> list[str]:
-    aus: list[str] = []
-    for m in MUSTER:
-        aus.extend(sorted(glob.glob(m)))
-    return sorted(aus)
+    return _andere_leiter(ABDRUCK)
+
+
+def _andere_leiter(abdruck: str) -> list[str]:
+    from research.zwischenstand import stuecke_von
+
+    return [str(p) for p in stuecke_von(ORDNER, abdruck)]
 
 
 @pytest.fixture(scope="module")
@@ -85,13 +92,28 @@ def urteil() -> str:
 
 class TestDieLeiterIstGefahrenUndAufEinemStand:
     def test_neununddreissig_protokolle_ein_abdruck(self) -> None:
-        abdruecke = {
-            json.loads(Path(p).read_text().splitlines()[0]).get("code")
-            for p in _pfade()
-        }
+        """Die Auswahl geht ueber den Abdruck, also ist "ein Stand" keine
+        Zusicherung mehr, sondern die Bauart. Gepruefte Eigenschaft ist
+        deshalb: Es sind **39** Stuecke, und ``zusammen`` nimmt sie."""
+        from research.zwischenstand import zusammen
 
-        assert len(_pfade()) == STUECKE
-        assert len(abdruecke) == 1, abdruecke
+        pfade = _pfade()
+        kopf, _ = zusammen(pfade)
+
+        assert len(pfade) == STUECKE
+        assert kopf["code"] == ABDRUCK
+
+    def test_und_die_andere_leiter_ist_nicht_dabei(self) -> None:
+        """**Der Fehlgriff aus Befund 454, festgehalten.** Beide Leitern
+        liegen im selben Ordner, und die eine lief in der Nachtstunde nach
+        der anderen - nach dem Datum ausgewaehlt waeren es 78 Stuecke."""
+        from tests.test_reibungslos_feinkerzen import ABDRUCK as ANDERE
+
+        meine, andere = set(_pfade()), set(_andere_leiter(ANDERE))
+
+        assert ABDRUCK != ANDERE
+        assert len(andere) == STUECKE
+        assert meine & andere == set()
 
     def test_jedes_handelnde_stueck_traegt_grundlauf_und_sprosse(self) -> None:
         """Die Sprosse allein waere keine Messung - verglichen wird gegen

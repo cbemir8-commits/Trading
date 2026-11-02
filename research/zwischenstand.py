@@ -59,7 +59,15 @@ from pathlib import Path
 #: ``None``, das ein gemessener Wert sein kann.
 _FEHLT = object()
 
-__all__ = ["Uneinig", "Zwischenstand", "lies", "neu", "scheibe", "zusammen"]
+__all__ = [
+    "Uneinig",
+    "Zwischenstand",
+    "lies",
+    "neu",
+    "scheibe",
+    "stuecke_von",
+    "zusammen",
+]
 
 #: Felder, die sich zwischen zwei Stuecken **derselben** Messung aendern
 #: duerfen - und nur diese.
@@ -189,6 +197,60 @@ def lies(pfad: Path | str) -> tuple[dict, tuple[dict, ...]]:
         elif satz.get("art") == "messung":
             messungen.append(satz)
     return kopf, tuple(messungen)
+
+
+def stuecke_von(
+    wurzel: Path | str, abdruck: str, *, feld: str = "code", muster: str = "*.jsonl"
+) -> tuple[Path, ...]:
+    """Die Protokolle eines Ordners, deren Kopf **diesen** Abdruck traegt.
+
+    Der Anlass ist ein eigener Fehlgriff (Befund 454). Zwei Tests haben ihre
+    Stuecke mit einem Datums-Glob ausgewaehlt::
+
+        "reports/vorratsdecke/2026-11-02_*.jsonl"
+
+    Das war richtig, solange an jenem Tag eine Leiter gefahren wurde. Als am
+    naechsten Morgen die zweite auf demselben Ordner lief, lieferte derselbe
+    Glob **78** Stuecke aus zwei Code-Staenden, und ``zusammen`` hat sie zu
+    Recht abgewiesen. Der Test war rot, obwohl beide Messungen in Ordnung
+    waren - die Auswahl war falsch, nicht die Messung.
+
+        Das Datum im Namen sagt, **wann** gemessen wurde. Der Abdruck im Kopf
+        sagt, **unter welchen Bedingungen**. Nur das Zweite entscheidet, ob
+        zwei Stuecke eine Messung sind - also waehlt man danach aus.
+
+    ``abdruck`` darf ein Anfang sein: Die Abdruecke sind sechzehn Zeichen
+    lang, und zitiert werden sie meist gekuerzt. Passt der Anfang auf mehrere
+    **verschiedene** Abdruecke, ist das ``Uneinig`` - eine Auswahl, die
+    stillschweigend zwei Staende mischt, waere genau der Fehler, gegen den
+    dieses Modul steht.
+
+    Dateien ohne Kopf oder ohne dieses Feld werden uebergangen, nicht
+    gemeldet: In einem gewachsenen Berichtsordner liegen auch Protokolle
+    anderer Art, und die sind hier kein Fehler, sondern nur nicht gemeint.
+    """
+    gesucht = abdruck.strip()
+    if not gesucht:
+        raise Uneinig(
+            "Ein leerer Abdruck passt auf jeden Stand - damit ist nichts "
+            "ausgewaehlt."
+        )
+    treffer: list[Path] = []
+    gefunden: set[str] = set()
+    for pfad in sorted(Path(wurzel).glob(muster)):
+        kopf, _ = lies(pfad)
+        wert = kopf.get(feld)
+        if not isinstance(wert, str) or not wert.startswith(gesucht):
+            continue
+        treffer.append(pfad)
+        gefunden.add(wert)
+    if len(gefunden) > 1:
+        raise Uneinig(
+            f"'{gesucht}' passt auf {len(gefunden)} verschiedene Abdruecke "
+            f"({', '.join(sorted(gefunden))}) - ein laengerer Anfang "
+            f"entscheidet, welcher gemeint ist."
+        )
+    return tuple(treffer)
 
 
 def zusammen(
