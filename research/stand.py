@@ -6744,6 +6744,46 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Abschnitt ein Argument braucht und nicht nur Platz",
         458,
     ),
+    # Befund 459: Der Befehl, den der Nutzer faehrt, war in der Suite nur mit
+    # '--help' gelaufen - und seine Generationenhilfe war drei Generationen alt.
+    Richtung(
+        "Der Befehl kannte den Katalog nicht, den er faehrt",
+        "**Zwei Luecken an derselben Stelle.** Erstens die Hilfe: "
+        "'--generation' sagte 'Startkatalog. 7 = Scalp-Setups, 8 = "
+        "Abfolge-Modell und Short-Seite' - zehn Generationen gibt es, zwei "
+        "nannte dieser Satz, und die beiden neuesten (9 und 10) sind fuer "
+        "**Tageskerzen** gedacht, also fuer die Kerzenlaenge des "
+        "Spitzenkandidaten. Wer eine daily-Runde wollte, musste 'seeds.py' "
+        "lesen. Gebaut: 'cli generationen', abgeleitet aus 'GENERATIONS', "
+        "'VORGESEHEN' und 'kennzahlen.gebrauchte_kennzahlen'; die Hilfe "
+        "verweist darauf und kann nicht veralten. Gegengeprueft: Die Summe "
+        "der passenden Generationen ist 25 auf Tageskerzen und 39 auf "
+        "Viertelstunden - genau die Zahlen, die 456 und 450 gefahren haben. "
+        "**Zweitens die Runde selbst**: 'cli wettbewerb' lief in der Suite "
+        "nur mit '--help'; die Strecke dahinter - Katalog, Kerzenpruefung, "
+        "Walk-Forward, elf Gates, Bestenliste, Versuchszaehler, Varianten - "
+        "war nie am Stueck gelaufen. Jetzt gibt es zwei Laeufe: einen "
+        "**Trockenlauf** ('TRADING_TROCKENLAUF=1') im echten "
+        "Arbeitsverzeichnis, der mit dem **echten** Versuchsstand rechnet und "
+        "nichts hinterlaesst, und einen isolierten, der zeigt, dass "
+        "Bestenliste, Zaehler und Bericht wirklich entstehen - 19 Sekunden "
+        "zusammen. **Gemessen entwarnt**: Die Finanzierungsabhaengigkeit "
+        "sitzt nur in Generation 4 (3 von 3) und 5 (2 von 3); 8, 9 und 10 "
+        "brauchen keine. **Mein Fehler, und es war der dritte dieser Art in "
+        "diesem Projekt**: Ich habe den isolierten Lauf zuerst gebaut und den "
+        "Trockenlauf nicht gekannt - fuenf Probelaeufe ohne jede Umlenkung, "
+        "und 'cli wettbewerb' legt einen Zulassungsbericht ab, committet ihn "
+        "und **pusht**: fuenf Commits auf dem Zweig, die niemand wollte. Das "
+        "steht zweimal aufgeschrieben (117 und 331), die Warnung im Kopf von "
+        "'test_rauchtest', und 'cli nachgesehen' findet "
+        "'versuche.trockenlauf' auf Platz 2. Ich habe nicht gesucht, sondern "
+        "gebaut - derselbe Fehler wie 423 und 424. Gefunden hat mich die "
+        "gepinnte Berichtszaehlung aus 348: 141 auf 146. Vorwaerts "
+        "aufgeraeumt (Dateien weg, Historie steht), und eine Wache prueft "
+        "jetzt Zaehler, Berichtszahl **und** Bestenliste gegen den Stand vor "
+        "dem Lauf",
+        459,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

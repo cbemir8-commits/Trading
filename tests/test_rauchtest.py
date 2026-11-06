@@ -80,6 +80,11 @@ HARMLOS: frozenset[str] = frozenset({
     # des Projekts, und genau deshalb gehoert er hierher und nicht ins
     # Stillschweigen: Unbekannt ist ein Fehler.
     "nachgesehen",
+    # 'generationen' (Befund 459) baut die Genome der Kataloge, liest ihre
+    # Kennzahlennamen und druckt eine Uebersicht. Keine Kerzen, kein
+    # Walk-Forward, kein Netz, kein Versuch - und diese Wache hat den Befehl
+    # am Tag seiner Entstehung gemeldet.
+    "generationen",
     "abstand", "anwaerter", "aufloesung", "betriebspunkt",
     "decke", "duerre", "evidenz", "finanzierung",
     "form", "freigabe", "front", "gatemuster", "haelften",
@@ -156,7 +161,20 @@ HARMLOS: frozenset[str] = frozenset({
 #: command"), und 'bericht' griff 'Treffer.zeile' statt 'Treffer.stelle.zeile'.
 #: Ohne den Lauf waere beides durch die Tests gekommen, die nur das Modul
 #: fragen.
-GELAUFEN = 57
+#:
+#: 58 seit Befund 459: 'cli generationen' ist gefahren worden - ohne
+#: Kerzenlaenge (alle zehn Generationen) und mit '-i D' (sechs markiert, 25
+#: Genome zusammen). Der Versuchszaehler stand vor und nach den Laeufen bei
+#: 203, geschrieben wurde nichts. Die Zahl 25 stimmt mit dem Lauf aus Befund
+#: 456 ueberein, die 39 auf Viertelstunden mit den Stuecken aus 450 - eine
+#: Uebersicht, die sich nicht gegenrechnen laesst, waere nur eine Behauptung.
+#:
+#: **Und derselbe Arbeitsgang hat den Kopf dieses Moduls widerlegt bekommen**
+#: (459): Ich habe 'cli wettbewerb' fuenfmal ohne 'TRADING_TROCKENLAUF'
+#: rauchgetestet, und jeder Lauf hat seinen Zulassungsbericht committet und
+#: gepusht. Der Absatz zu Befund 331 oben beschreibt genau das - zum zweiten
+#: Mal, nach 117. Meiner war der dritte.
+GELAUFEN = 58
 TRACEBACKS = 0
 SAUBER_ABGELEHNT = ("quelle", "review", "vorschlag")
 

@@ -41233,3 +41233,135 @@ naechste Abschnitt braucht ein Argument und nicht nur Platz im Budget.
 **Gelockert ist nichts.** Keine Schwelle, kein Gate; hinzugekommen ist eine
 Auskunft ueber Bauart - und eine Wache, die eine falsche Zuordnung nicht mehr
 durchlaesst.
+
+## Vierhundertneunundfuenfzig. Der Befehl kannte den Katalog nicht, den er faehrt
+
+Zwei Luecken an derselben Stelle - und beide betreffen genau den Befehl, den
+der Nutzer ausfuehren soll.
+
+### Erstens: eine Hilfe, die drei Generationen alt war
+
+    --generation  Startkatalog. 7 = Scalp-Setups, 8 = Abfolge-Modell und
+                  Short-Seite.  [default: 8]
+
+Zehn Generationen gibt es. Zwei nennt dieser Satz. Und die beiden neuesten, 9
+und 10, sind fuer **Tageskerzen** gedacht - fuer die Kerzenlaenge, auf der der
+Spitzenkandidat steht. Wer eine daily-Runde fahren wollte, musste ``seeds.py``
+lesen.
+
+Dieselbe Bauart wie in Befund 454: eine handgeschriebene Liste, die ab dem Tag
+veraltet, an dem sie geschrieben wird, und niemand merkt es, weil sie
+plausibel bleibt.
+
+``cli generationen`` leitet die Liste jetzt ab - Nummer und Kerzenlaenge aus
+``seeds.GENERATIONS`` und ``seeds.VORGESEHEN``, die Finanzierungsabhaengigkeit
+aus ``kennzahlen.gebrauchte_kennzahlen``. Die Hilfe verweist darauf, statt zu
+zaehlen.
+
+**Und zwei Begriffe von "Katalog" sind jetzt auseinandergehalten**, denn beide
+sind richtig:
+
+    cli wettbewerb -g N    faehrt genau eine Generation
+    cli vorratsdecke -i D  faehrt alle, die zur Kerzenlaenge passen
+
+Das Erste ist Absicht - *"was widerlegt ist, muss nicht erneut geprueft
+werden"*, und jeder Wiederholungsversuch hebt die Huerde fuer alle folgenden.
+Die Summen gegengeprueft: **25** auf Tageskerzen, **39** auf Viertelstunden -
+genau die Zahlen, die Befund 456 und 450 gefahren haben.
+
+### Zweitens: die Runde war nie am Stueck gelaufen
+
+``cli wettbewerb`` wurde in der Suite **nur mit ``--help``** aufgerufen. Die
+Strecke dahinter - Katalog laden, Kerzen pruefen, Walk-Forward, elf Gates,
+Bestenliste, Versuchszaehler, Varianten bilden - ist nie durchgelaufen. Ein
+Fehler irgendwo darin kostet den Nutzer Stunden, und niemand haette es vorher
+gewusst.
+
+Jetzt laeuft eine Runde auf Generation 5 als Rauchtest: 22 Sekunden, drei
+Genome, davon eines messbar. Geprueft wird, dass die Maschine laeuft - **kein
+Urteil**: In einer frischen Ablage steht der Versuchszaehler auf 0, die Latte
+ist also die eines ersten Versuchs. "5 von 9 Gates" heisst dort etwas anderes
+als unter den echten 203 Versuchen.
+
+Nebenbei gemessen und damit **entwarnt**: Die Finanzierungsabhaengigkeit sitzt
+nur in Generation 4 (alle drei Regeln) und 5 (zwei von drei). Die
+Generationen, die man heute faehrt - 8 auf Viertelstunden, 9 und 10 auf
+Tageskerzen -, brauchen keine.
+
+### Mein Fehler - und es war der dritte dieser Art in diesem Projekt
+
+Ich habe den isolierten Lauf zuerst gebaut: ``PATHS__STATE`` umgelenkt, dann
+gemerkt, dass ``write_report`` mit ``root=Path.cwd()`` schreibt, dann ein
+eigenes Arbeitsverzeichnis, dann fuenf Pfadvariablen und
+``REPORT__AUTOPUSH=false``.
+
+Dafuer gibt es einen Schalter. **Einen.**
+
+    TRADING_TROCKENLAUF=1
+
+Er ist seit Befund 116 genau dafuer gebaut, und sein Vertrag lautet, im
+Docstring von ``versuche.trockenlauf``: *"Wer die Variable setzt, hinterlaesst
+nichts - Zaehler, Bestenliste und Berichte gleichermassen."* Gemessen haelt er
+das: Zaehler-Abdruck unveraendert, kein ``leaderboard.json``, Berichtsordner
+bei sieben Dateien - und jede Unterdrueckung wird **einzeln** gemeldet.
+
+Er ist dem isolierten Lauf sogar ueberlegen, und zwar in der Sache: Er rechnet
+mit dem **echten** Versuchsstand. In einer frischen Ablage steht der Zaehler
+auf 0, die Latte ist die eines ersten Versuchs, und aus so einem Lauf ist kein
+Urteil zu lesen.
+
+Beide stehen jetzt da - der Trockenlauf als der eigentliche Rauchtest, der
+isolierte Lauf fuer das, was jener nicht zeigen kann: dass die **schreibende**
+Seite arbeitet.
+
+#### Was mich das gekostet hat
+
+Die fuenf Probelaeufe ohne Umlenkung haben je einen Zulassungsbericht abgelegt,
+und ``cli wettbewerb`` **committet und pusht** ihn. Fuenf Commits auf dem
+Zweig, die niemand wollte:
+
+    e3f5b9c  Bericht: 1 Kandidaten, 0 zugelassen (BTCUSD_BITSTAMP 1d)
+    650c3c0  Bericht: 1 Kandidaten, 0 zugelassen (BTCUSD_BITSTAMP 1d)
+    ...
+
+#### Und das ist das Unangenehme daran
+
+Es steht aufgeschrieben. Zweimal.
+
+* **Befund 117** (``54770ec``) - der Vorfall selbst, beschrieben im Docstring
+  von ``core/report.py``.
+* **Befund 331** (``e00ffb7``) - dieselbe Sache wieder, und daraufhin die
+  Warnung im Kopf von ``test_rauchtest``: *"'wettbewerb' aber legt einen
+  Bericht ab, committet ihn und pusht. (...) Wer hier einen Befehl
+  rauchtestet, setzt die Variable und verlaesst sich nicht auf eine
+  Teilabdeckung."*
+
+Meiner war der dritte. Und ``cli nachgesehen "Rauchtest, der nichts
+hinterlassen darf"`` findet ``versuche.trockenlauf`` auf Platz zwei - der
+Befehl, den Befund 425 gebaut hat, damit mir genau das nicht passiert.
+
+Ich habe nicht gesucht, sondern gebaut. Derselbe Fehler wie in Befund 423 und
+424, nur teurer: Dort ist Rechenzeit verloren gegangen, hier sind fuenf
+Commits auf einen fremden Zweig gelaufen.
+
+#### Gefunden hat mich eine Wache
+
+Die gepinnte Berichtszaehlung aus Befund 348 ist von **141 auf 146**
+gewandert und hat es innerhalb von Minuten gemeldet. Ein Test, der die
+Messungen des Projekts veraendert, ist schlimmer als kein Test - und diese
+Zahl steht genau dafuer da.
+
+Aufgeraeumt habe ich **vorwaerts**: Die fuenf Dateien sind geloescht, die
+Commits bleiben in der Historie. Eine veroeffentlichte Historie umzuschreiben
+waere die groessere Unordnung, und was passiert ist, soll nachlesbar sein.
+
+### Was daraus fuer den Nutzer folgt
+
+``cli wettbewerb`` ist kein Befehl, den man zum Ausprobieren laufen laesst: Er
+zaehlt Versuche, die die Huerde dauerhaft heben, und er schreibt von selbst
+ins Repository. Wer probieren will, setzt ``TRADING_TROCKENLAUF=1`` - ein
+Schalter, und er deckt alles.
+
+**Gelockert ist nichts.** Keine Schwelle, kein Gate; hinzugekommen sind eine
+Uebersicht, die nicht veraltet, und die ersten Tests, die die ganze Runde
+fahren.

@@ -561,7 +561,7 @@ def wettbewerb(
     ),
     generation: int = typer.Option(
         8, "--generation", "-g",
-        help="Startkatalog. 7 = Scalp-Setups, 8 = Abfolge-Modell und Short-Seite."
+        help="Startkatalog - **eine** Generation, nicht alle. Welche es gibt, fuer welche Kerzenlaenge und mit wie vielen Genomen: 'cli generationen'. Hier stand eine Liste von Hand, die drei Generationen alt war (Befund 459)."
     ),
     von_spitze: bool = typer.Option(
         False, "--von-spitze",
@@ -3957,7 +3957,10 @@ def korb(
         help="Symbole, durch Komma getrennt.",
     ),
     intervall: str = typer.Option("D", "--intervall", "-i"),
-    generation: int = typer.Option(9, "--generation", "-g", help="Startkatalog."),
+    generation: int = typer.Option(
+        9, "--generation", "-g",
+        help="Startkatalog. Welche es gibt: 'cli generationen'.",
+    ),
     vola_ziel: float = typer.Option(
         50.0, help="Vola-Ziel in Prozent. Siehe `betriebspunkt` fuer die Stufen."
     ),
@@ -16295,6 +16298,39 @@ def aufteilung(
         "\n[dim]Kein Versatz ist der richtige. Wer sich einen aussucht, "
         "lockert das Gate.[/]"
     )
+
+
+@app.command()
+def generationen(
+    intervall: str = typer.Option(
+        "", "--intervall", "-i",
+        help="Hebt die Generationen hervor, die zu dieser Kerzenlaenge "
+             "passen, und nennt ihre Summe.",
+    ),
+) -> None:
+    """Welche Generationen es gibt - und was in ihnen steht.
+
+    **Der Anlass war eine veraltete Hilfe** (Befund 459). ``--generation``
+    sagte *"7 = Scalp-Setups, 8 = Abfolge-Modell und Short-Seite"* - zehn
+    Generationen gibt es, zwei nannte dieser Satz, und die beiden neuesten (9
+    und 10) sind fuer **Tageskerzen** gedacht, also fuer die Kerzenlaenge, auf
+    der der Spitzenkandidat steht. Wer eine daily-Runde fahren wollte, musste
+    ``seeds.py`` lesen.
+
+    Diese Liste wird **abgeleitet** und nicht gepflegt: Nummer und
+    Kerzenlaenge kommen aus ``seeds.GENERATIONS`` und ``seeds.VORGESEHEN``,
+    die Finanzierungsabhaengigkeit aus ``kennzahlen.gebrauchte_kennzahlen``.
+
+    **Zwei Begriffe von "Katalog"**, und beide sind richtig: ``wettbewerb -g
+    N`` faehrt genau eine Generation - was widerlegt ist, muss nicht erneut
+    geprueft werden -, ``vorratsdecke -i D`` alle, die zur Kerzenlaenge
+    passen. Deshalb nennt diese Uebersicht immer beides.
+
+    Kostet keinen Versuch: Es wird nichts gerechnet und nichts ausgewaehlt.
+    """
+    from research.generationen import bericht
+
+    console.print(bericht(intervall=intervall or None))
 
 
 @app.command()
