@@ -662,5 +662,10 @@ class Vergleich:
             f"Steigung von {wert:.2f} gegen die geforderten "
             f"{MINDESTSTEIGUNG:.1f}. Ein gedeckelter Ausstieg loest die "
             f"Kopplung also nicht: Der gepflanzte Vorteil kommt auch dann "
-            f"nicht in der Groesse an, gegen die der Deflated Sharpe prueft."
+            f"nicht in der Groesse an, gegen die der Deflated Sharpe prueft. "
+            f"**Und auf echten Daten ist es inzwischen gemessen** (Befund "
+            f"416, 'research.haltedeckel'): sechs Deckel am massgeblichen "
+            f"Punkt lassen die Trade-Zahl zwischen 156 und 158 - kein "
+            f"Mengeneffekt -, heben den Deflated Sharpe aber von 0,5826 auf "
+            f"0,7903. Hier endet also die Mengen-Route, nicht der Deckel."
         )

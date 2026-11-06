@@ -6842,6 +6842,53 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Messung hier den Zustand; auch elf von elf waeren keine Zulassung",
         461,
     ),
+    # Befund 462: Dieser Lauf hat 'nachmessung' gefragt, welche offene
+    # Richtung nie nachgemessen ist - und ist auf 177 geschickt worden, dessen
+    # Antwort seit 46 Befunden im Projekt steht.
+    Richtung(
+        "Der Befund, der die offene Richtung gemessen hat, liess sie offen",
+        "Befund 416 hat 'Gedeckelter Ausstieg' aus Befund 177 auf der echten "
+        "Zulassungsreihe durchgemessen - sechs Deckel, elf Gates - und den "
+        "Registereintrag unberuehrt gelassen. Sein Modulkopf nennt die Luecke "
+        "sogar: *'der einzige dort ohne Nachmessung - zu Recht, denn das "
+        "Ergebnis war eindeutig'*, geschrieben in derselben Datei, die das "
+        "Gegenteil dann misst. **Der Preis ist dieser Lauf**: 'nachmessung' "
+        "liest das Register, nicht die Modulkoepfe, also galt 177 als die "
+        "einzige offene Richtung ohne Nachmessung - neben der "
+        "Nutzerentscheidung aus Befund 446 - und war der Kandidat fuer "
+        "messbare Arbeit. Zwei Abschnitte Lesen: alles schon gemessen. "
+        "Dieselbe Lehre wie 178 ('Eine Richtung, die nicht im Register steht, "
+        "wird ein zweites Mal gegangen'), nur eine Stufe spaeter - hier stand "
+        "die Richtung drin und ihre **Antwort** nicht. **Gemessen, warum die "
+        "Wache so eng ist**: Das naheliegende Kriterium - ein Eintrag nennt "
+        "einen aelteren, der kein 'zuletzt' traegt - trifft **99 von 351** "
+        "Eintraegen, ueber 157 solcher Nennungen; fast jeder Befund zitiert "
+        "seine Vorgaenger. (Ich habe diese Zahl zuerst als '157 Eintraege' "
+        "gemeldet - Nennungen als Eintraege gezaehlt.) Das ist "
+        "der Fehler aus 118 (elf Befehle als fehlend gemeldet, die es gab). "
+        "Auf **offene** Richtungen eingeschraenkt bleiben **4 von 19**, und "
+        "drei davon waren verzeichnet (395 auf 416, 332 auf 352, 213 auf "
+        "239); unverzeichnet war genau einer. **Auch die weitere Fassung ist "
+        "gemessen und verworfen**: Nackte Zahlen statt 'Befund N' nennen 13 "
+        "der 19 offenen Richtungen, aber belegbar falsch - '56.000 Versuchen' "
+        "trifft Befund 56, '100 % der zufaelligen Sperren' trifft Befund 100. "
+        "Die Wache verlangt deshalb "
+        "nicht 'zuletzt', sondern **eine verzeichnete Entscheidung**: "
+        "'zuletzt' oder ein Eintrag in 'GELESEN'. Beides kann nur setzen, wer "
+        "gelesen hat - der Grundsatz des Moduls ('Es entscheidet nichts') "
+        "bleibt unberuehrt. Nachgezogen: 177 traegt die Messung aus 416 und "
+        "bleibt offen, weil der Deckel als Wettbewerbskandidat nie gelaufen "
+        "ist; Befund 446 steht als **gelesen und abgegrenzt** - seine einzige "
+        "Erwaehnung (458) nennt die Gruende, aus denen ein Gate uebersprungen "
+        "wird, und entscheidet nicht, ob das eine Zulassung dauerhaft "
+        "verhindern darf; der Modulkopf von 'haltedeckel' sagt jetzt, wo die "
+        "Antwort "
+        "steht; und das Urteil in 'teststaerke' nennt die echte Messung, "
+        "statt nur die gepflanzte zu melden. **Was die Wache nicht kann**: "
+        "Sie haengt an einer Textstelle und ist zu umgehen, indem man die "
+        "Nummer nicht schreibt - ein Verdachtsmelder, wie das ganze Modul",
+        462,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -7108,11 +7155,37 @@ OFFEN: tuple[Richtung, ...] = (
         176,
         347,
     ),
+    # **Nachgezogen erst in Befund 462, 46 Befunde zu spaet.** Befund 416 hat
+    # genau diese Richtung auf der echten Reihe gemessen - und den Eintrag
+    # stehen gelassen, wie er war. Der Modulkopf von 'haltedeckel' nennt ihn
+    # dabei beim Namen ("der einzige dort ohne Nachmessung"), also war die
+    # Luecke sichtbar und ist uebersehen worden, nicht verborgen.
+    #
+    # Er bleibt in ``OFFEN``: Die **Frage** von 177 ist beantwortet, ihre
+    # Fortsetzung nicht. Ein Deckel als Wettbewerbskandidat kostet Versuche
+    # und ist nie gelaufen - das ist eine Zusage, keine Ablage.
     Richtung(
         "Gedeckelter Ausstieg",
-        "vier Deckel von 10 bis 40 Kerzen, keiner entkoppelt (beste Steigung "
-        "0,36 gegen 0,5) - der Deckel bindet, aendert die Trade-Zahl aber nicht",
+        "vier Deckel von 10 bis 40 Kerzen auf **gepflanzten** Trends, keiner "
+        "entkoppelt (beste Steigung 0,36 gegen 0,5) - der Deckel bindet, "
+        "aendert die Trade-Zahl aber nicht. **Auf der echten Zulassungsreihe "
+        "ist es gemessen** (416): sechs Deckel - 0, 10, 20, 40, 60, 90 -, "
+        "derselbe Kandidat, dieselben elf Gates, und Deckel 0 trifft "
+        "'referenz.SPOTPUNKT' auf die Stelle. **Die Mengen-Route ist damit "
+        "zu**: Die fertigen Trades bleiben bei jedem Deckel zwischen 156 und "
+        "158 - ein frueherer Ausstieg bringt **andere** Beobachtungen, nicht "
+        "mehr. Was bleibt, ist ein **Gueteeffekt**: Beim 40er-Deckel steigt "
+        "die Guete je Trade von 0,2708 auf 0,2951, die wirksame Stichprobe "
+        "von 115 auf 123, der Deflated Sharpe von 0,5826 auf 0,7903 - und "
+        "bestanden ist weiter nichts (neun von elf, dem Deflated Sharpe "
+        "fehlen 0,164, und die Messlatte wird mit 14,1220 sogar schlechter). "
+        "**Offen ist deshalb die Fortsetzung, nicht die Frage**: Der Gipfel "
+        "liegt nicht-monoton in der Mitte der sechs Werte, ein Einbau waehlte "
+        "also einen Parameter nach dem Ergebnis. Der Deckel gehoert in den "
+        "Wettbewerb, wo er Versuche kostet - mit 209 statt 203 Versuchen "
+        "0,7858 -, und dort ist er nie gelaufen",
         177,
+        416,
     ),
     Richtung(
         "Menge statt Qualitaet",

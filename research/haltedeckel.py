@@ -6,6 +6,15 @@ beste Steigung lag bei 0,36 gegen die geforderten 0,5. Der Eintrag dazu steht
 seit 238 Befunden in ``OFFEN``, und er ist der einzige dort ohne Nachmessung -
 zu Recht, denn das Ergebnis war eindeutig.
 
+.. note:: **Dieser Satz hat 46 Befunde lang nicht mehr gestimmt** (Befund
+   462). Was hier unter *"Was gemessen ist"* folgt, **ist** die Nachmessung
+   von Befund 177 - geschrieben in derselben Datei, die den Eintrag als "ohne
+   Nachmessung" bezeichnet. ``Richtung.zuletzt`` ist dabei nicht gesetzt
+   worden, und ``research.nachmessung`` liest das Register, nicht die
+   Modulkoepfe: 177 galt weiter als die einzige nie nachgemessene offene
+   Richtung und hat einen spaeteren Lauf genau dorthin geschickt. Seit 462
+   traegt der Eintrag die Zahlen von unten und zeigt auf 416.
+
 Nie gemessen war, was ein Deckel auf der **echten** Zulassungsreihe mit dem
 massgeblichen Kandidaten tut. Daran haengt die Mengen-Route zum Deflated
 Sharpe: Dem Gate fehlen rund 75 wirksame Beobachtungen, und der Lagebericht

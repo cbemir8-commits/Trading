@@ -41536,3 +41536,150 @@ und das Erste uebersehen.
 **Gelockert ist nichts.** Keine Schwelle, kein Gate, kein Urteil; hinzugekommen
 ist eine Einteilung, die nicht mehr in die falsche Richtung zeigt - und eine
 Berichtigung meiner eigenen fuenf Meldungen.
+
+## Vierhundertzweiundsechzig. Der Befund, der die offene Richtung gemessen hat, liess sie offen
+
+Dieser Durchlauf hat getan, was Schritt zwei verlangt: gefragt, wo der
+wirksamste naechste Schritt liegt. Befund 461 hatte gerade gemessen, dass kein
+Gate mehr eine offene Frage traegt, also blieb nur die Liste der offenen
+Richtungen. Von neunzehn sind genau zwei nie nachgemessen - eine davon ist eine
+Nutzerentscheidung aus Befund 446, die niemand ausser dem Nutzer schliessen
+kann. Uebrig blieb **eine**: *"Gedeckelter Ausstieg"*, Befund 177.
+
+Der Eintrag las sich wie Arbeit:
+
+> vier Deckel von 10 bis 40 Kerzen, keiner entkoppelt (beste Steigung 0,36
+> gegen 0,5) - der Deckel bindet, aendert die Trade-Zahl aber nicht
+
+Gemessen war das auf **gepflanzten** Trends. Was ein Haltedauerdeckel auf der
+echten Zulassungsreihe tut, stand da nicht. Also habe ich nicht gemessen,
+sondern erst gelesen - die Regel aus den Befunden 459 und 460 -, und zwar die
+beiden spaeteren Erwaehnungen, die `nachmessung` zu dieser Richtung meldet:
+Befund 432 mit drei Treffern, Befund 416 mit einem.
+
+### Die Antwort stand seit 46 Befunden im Projekt
+
+Befund 416 heisst *"Ein Haltedeckel hebt den Deflated Sharpe um 0,21 - und
+besteht nicht"*. Er hat genau diese Frage auf der echten Reihe durchgemessen:
+sechs Deckel - 0, 10, 20, 40, 60, 90 -, derselbe Kandidat, dieselben elf Gates,
+mit Deckel 0 als Gegenprobe auf `referenz.SPOTPUNKT`. Das Ergebnis ist
+eindeutig und steht dem Eintrag entgegen, ohne ihm zu widersprechen:
+
+* **Kein Mengeneffekt.** Die fertigen Trades bleiben zwischen 156 und 158, bei
+  jedem Deckel. Ein frueherer Ausstieg bringt andere Beobachtungen, nicht mehr.
+  Die Mengen-Route zum Deflated Sharpe ist damit zu.
+* **Ein Gueteeffekt.** Beim 40er-Deckel steigt die Guete je Trade von 0,2708
+  auf 0,2951, die wirksame Stichprobe von 115 auf 123, der Deflated Sharpe von
+  0,5826 auf 0,7903.
+* **Bestanden ist nichts.** Weiter neun von elf, dem Deflated Sharpe fehlen
+  0,164, und die Messlatte wird mit 14,1220 sogar schlechter.
+* **Eingebaut wird er nicht.** Der Gipfel liegt nicht-monoton in der Mitte von
+  sechs probierten Werten, also waehlte ein Einbau einen Parameter nach dem
+  Ergebnis - mit 209 statt 203 Versuchen sind es 0,7858.
+
+Befund 432 hat das Ergebnis danach sogar **benutzt**: Im Auftrag an die
+Research-KI steht seither die Warnung, ein kuerzerer Ausstieg bringe keine
+Trades, mit genau diesen Zahlen.
+
+### Wo die Luecke sitzt
+
+`Richtung.zuletzt` ist nicht gesetzt worden. Der Eintrag trug weiter die
+gepflanzten Zahlen und zeigte auf 177.
+
+Das ist nicht in einer dunklen Ecke passiert. Der Modulkopf von
+`research/haltedeckel.py` - die Datei, die die Nachmessung **enthaelt** -
+nennt die Luecke selbst:
+
+> Der Eintrag dazu steht seit 238 Befunden in `OFFEN`, und er ist der einzige
+> dort ohne Nachmessung - zu Recht, denn das Ergebnis war eindeutig.
+
+Darunter folgt, unter der Ueberschrift *"Was gemessen ist"*, das Gegenteil.
+Derselbe Absatz, dieselbe Datei. Und `research/nachmessung.py` liest das
+**Register**, nicht die Modulkoepfe: Fuer jedes Werkzeug danach war 177 die
+einzige nie nachgemessene offene Richtung - und hat diesen Lauf genau dorthin
+geschickt.
+
+**Der Preis ist dieser Zyklus.** Zwei Abschnitte Lesen fuer eine Antwort, die
+dastand. Dieselbe Lehre wie Befund 178 - *"Eine Richtung, die nicht im Register
+steht, wird ein zweites Mal gegangen"* -, nur eine Stufe spaeter: Hier stand
+die Richtung drin und ihre Antwort nicht. Und dieselbe Familie wie 425: nicht
+nachgesehen, sondern beinahe nachgebaut.
+
+### Die Wache, und drei Fassungen davon
+
+Der Modulkopf von `nachmessung` verbietet ausdruecklich, `zuletzt` aus einer
+Textsuche zu setzen: *"Erwaehnt zu werden ist nicht dasselbe wie nachgemessen
+zu werden."* Daran aendert dieser Befund nichts. Die Wache verlangt deshalb
+keine Nachmessung, sondern eine **verzeichnete Entscheidung** - `zuletzt`
+oder einen Eintrag in `GELESEN`. Beides kann nur setzen, wer gelesen hat.
+
+Welche Nennung zaehlt, ist gemessen und nicht geraten:
+
+| Kriterium | Treffer |
+| --- | --- |
+| Eintrag nennt einen aelteren ohne `zuletzt` | 99 von 351 Eintraegen |
+| Nackte Zahl nennt eine offene Richtung | 13 von 19 Richtungen |
+| `"Befund N"` nennt eine offene Richtung | 4 von 19 Richtungen |
+
+Die erste Fassung ist Rauschen - fast jeder Befund zitiert seine Vorgaenger,
+und Zitieren ist nicht Nachmessen. Das ist der Fehler aus Befund 118, wo eine
+Textsuche elf Befehle als fehlend gemeldet hat, die es gab.
+
+**Diese Zeile hat mich selbst erwischt.** Ich habe sie zuerst mit *"157 von
+351 Eintraegen"* gemeldet. Gemessen sind 157 **Nennungen**, die sich auf
+**99** Eintraege verteilen - ich habe die Paare gezaehlt und als Eintraege
+aufgeschrieben. Die Richtung der Aussage aendert das nicht, ihre Groesse um
+den Faktor anderthalb. Der Test zaehlt jetzt Eintraege, damit Behauptung und
+Wache dieselbe Groesse meinen.
+
+Die zweite ist **belegbar falsch**, und zwar an ihren eigenen Treffern:
+`56.000 Versuchen` trifft Befund 56, `100 % der zufaelligen Sperren` trifft
+Befund 100. Beide Richtungen hat niemand gemeint.
+
+Von den vier Treffern der dritten Fassung waren drei verzeichnet - 395 auf 416,
+332 auf 352, 213 auf 239. Unverzeichnet war genau einer.
+
+### Was die Wache nicht kann
+
+Sie haengt an einer Textstelle und ist zu umgehen, indem man die Nummer
+weglaesst. Mein erster Entwurf dieses Registereintrags hat das versehentlich
+getan - *"aus 446"* statt *"aus Befund 446"* -, und beide Nennungen von 177
+standen als nackte Zahl da. Das ist korrigiert; der Eintrag, der die Wache
+einfuehrt, steht jetzt unter ihr.
+
+Dass sie nur die ehrliche Nennung faengt, ist dabei weniger schlimm, als es
+klingt: Wer eine Richtung nachmisst, nennt sie - genau so, wie 416 es getan
+hat. Die Wache faengt den Fall, der den veralteten Zeiger erzeugt.
+
+Und sie nervt nicht. Gezaehlt werden nur Nennungen **nach** der massgeblichen
+Fundstelle. Wer nachzieht, loescht damit genau die Nennung, die den Hinweis
+ausgeloest hat. Mein erster Anlauf des Tests hat das nicht gewusst und 416 in
+der Liste erwartet - er ist daran gefallen und hat mir die Eigenschaft gezeigt.
+
+### Nachgezogen
+
+* **177** traegt die Messung aus 416 und zeigt dorthin. Er bleibt in `OFFEN`:
+  Die *Frage* ist beantwortet, ihre Fortsetzung nicht - ein Deckel als
+  Wettbewerbskandidat kostet Versuche und ist nie gelaufen.
+* **446** steht als gelesen und abgegrenzt. Seine einzige Erwaehnung (458)
+  baut `STRUKTURGRUENDE` als Quelle der Gruende, aus denen ein Gate
+  uebersprungen wird; ob ein solcher Uebersprung eine Zulassung dauerhaft
+  verhindern darf, entscheidet das nicht. Die Frage bleibt beim Nutzer.
+* Der Modulkopf von `haltedeckel` sagt jetzt, dass sein eigener Satz 46
+  Befunde lang nicht mehr gestimmt hat, und wo die Antwort steht.
+* Das Urteil in `research/teststaerke.py` meldete nur die gepflanzte Messung.
+  Es nennt jetzt die echte dazu - wer dort landet, erfaehrt, dass die Frage
+  entschieden ist.
+
+Beide `GELESEN`-Eintraege stehen auf **462** und nicht tiefer, aus demselben
+Grund, aus dem Befund 295 auf 295 steht und nicht auf 294: Der Abschnitt, der
+die Lesung festhaelt, nennt beide Richtungen selbst und erzeugt damit eine
+neue Erwaehnung. Bei 432 und 458 waere jede sofort wieder ungelesen - der
+Eintrag haette sich selbst widerlegt.
+
+**Gelockert ist nichts**, und gewonnen ist auch nichts: keine Schwelle, kein
+Gate, kein Urteil, keine Zulassung. Der Zustand des Projekts ist unveraendert,
+und die Sperre aus Befund 461 steht weiter - die Boersendaten fehlen,
+`GateReport.passed` verlangt `not referenzdaten`, und jede Zahl hier steht auf
+Bitstamp. Was dieser Befund aendert, ist allein, dass die naechste Suche nach
+Arbeit nicht noch einmal dorthin geschickt wird, wo die Antwort schon liegt.

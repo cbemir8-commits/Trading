@@ -396,7 +396,13 @@ class TestDieSucheHatJetztEinGedaechtnis:
         # der Bauart' ist von "gelesen" auf "nachgemessen" gehoben - seine
         # Fundstelle steht auf 347, also liegt keine Erwaehnung mehr dahinter.
         # Das ist der staerkere Zustand, nicht der Verlust eines Eintrags.
-        assert len(durch) == 6
+        #
+        # **Acht seit Befund 462**, und das waren die beiden letzten offenen
+        # Richtungen ohne jede verzeichnete Entscheidung: 'Gedeckelter
+        # Ausstieg' (nachgezogen auf 416, Erwaehnung in 432 gelesen) und
+        # 'Darf ein strukturell uebersprungenes Gate ...' (Erwaehnung in 458
+        # gelesen und abgegrenzt, die Frage bleibt beim Nutzer).
+        assert len(durch) == 8
 
     def test_drei_davon_wurden_nachgezogen(self) -> None:
         """Gelesen heisst nicht abgehakt: Drei der sieben waren wirkliche

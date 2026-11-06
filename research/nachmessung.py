@@ -365,6 +365,26 @@ GELESEN: dict[str, int] = {
     # Aussetzschwellen. Ein Buchungseintrag daneben waere eine zweite
     # Wahrheit ueber denselben Stand.
     "Einstieg, der nicht am Rauschen haengt": 321,
+    # **Befund 462, und beide Eintraege stehen auf 462 und nicht tiefer** -
+    # aus demselben Grund wie die 295 oben: Der Abschnitt, der die Lesung
+    # festhaelt, nennt beide Richtungen selbst und erzeugt damit eine neue
+    # Erwaehnung. Bei 432 bzw. 458 waere jede sofort wieder ungelesen.
+    #
+    # 'Gedeckelter Ausstieg' ist **nachgezogen und gelesen**: Die Nachmessung
+    # steht in 416 ('zuletzt' zeigt jetzt dorthin), und die Erwaehnung in 432
+    # ist gelesen und abgegrenzt - sie benutzt das Ergebnis als Warnung im
+    # Auftrag an die Research-KI ("ein kuerzerer Ausstieg bringt keine
+    # Trades"), misst aber nichts nach.
+    "Gedeckelter Ausstieg": 462,
+    # 'Darf ein strukturell uebersprungenes Gate ...' ist gelesen und
+    # **ausdruecklich nicht nachgezogen**: Die einzige Erwaehnung (458) baut
+    # 'STRUKTURGRUENDE' als einzige Quelle der Gruende, aus denen ein Gate
+    # uebersprungen wird. Das sagt, **warum** uebersprungen wird, und nicht,
+    # ob ein solcher Uebersprung eine Zulassung dauerhaft verhindern darf -
+    # das bleibt die Frage des Eintrags und sie liegt beim Nutzer. Wer 458
+    # anders liest, haelt eine Aufzaehlung fuer eine Entscheidung.
+    "Darf ein strukturell uebersprungenes Gate eine Zulassung dauerhaft "
+    "verhindern?": 462,
 }
 
 #: Suchbegriffe je Richtung - geschlossene **und offene**.
