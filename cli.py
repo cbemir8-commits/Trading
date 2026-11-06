@@ -16339,6 +16339,13 @@ def nachgesehen(
         ..., help="Die Groesse oder Frage, nach der gesucht wird."
     ),
     grenze: int = typer.Option(8, "--grenze", "-n", help="Wie viele Treffer."),
+    auch_tests: bool = typer.Option(
+        False, "--auch-tests",
+        help="Auch die Docstrings der Tests durchsuchen. Dort steht mehr "
+             "geschriebenes Wissen als im ganzen Rest (4239 gegen 1570), und "
+             "es kostet messbar Rangfolge - deshalb nicht die Vorgabe "
+             "(Befund 460).",
+    ),
 ) -> None:
     """Wo ist diese Groesse im Projekt schon gemessen?
 
@@ -16356,11 +16363,12 @@ def nachgesehen(
     Kostet keinen Versuch: Es wird nichts gerechnet und nichts ausgewaehlt,
     nur gelesen, was dasteht.
     """
-    from research.nachgesehen import abnahme, bericht
+    from research.nachgesehen import BAEUME, ZUSATZBAEUME, abnahme, bericht
 
-    console.print(bericht(frage, grenze=grenze))
+    baeume = BAEUME + ZUSATZBAEUME if auch_tests else BAEUME
+    console.print(bericht(frage, grenze=grenze, baeume=baeume))
     if frage.strip().lower() in {"abnahme", "probe"}:
-        for fall, platz in abnahme(grenze=grenze):
+        for fall, platz in abnahme(grenze=grenze, baeume=baeume):
             marke = f"Rang {platz}" if platz else "nicht gefunden"
             console.print(f"  {fall.befund or '-':>4}  {marke:16} {fall.erwartet}")
 

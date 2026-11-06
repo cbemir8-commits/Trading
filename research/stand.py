@@ -6784,6 +6784,32 @@ BEHOBEN: tuple[Richtung, ...] = (
         "dem Lauf",
         459,
     ),
+    # Befund 460: Die naheliegende Verbesserung der Suche ist gemessen falsch.
+    Richtung(
+        "Die Suche sieht ein Viertel des Projekts - und soll es",
+        "'cli nachgesehen' liest die Docstrings aus 'research/' und 'cli.py': "
+        "gemessen **1570 von 6114** im Projekt, also 25,7 %. Allein 'tests/' "
+        "traegt **4239** - mehr als alles andere zusammen -, und dieses "
+        "Projekt schreibt seine Befunde ausdruecklich in Test-Docstrings. Den "
+        "Index zu erweitern war also die naheliegende Verbesserung, und **die "
+        "Abnahme aus Befund 425 hat sie abgewiesen**: Quote 5/6 auf 4/6, weil "
+        "der Fall aus 418 von Rang 7 (von 8) herausfaellt. Ein zweites Mass "
+        "sagt dasselbe: Die Frage, deren Antwort mir in 459 gefehlt hat, "
+        "findet den Quelltext in der Vorgabe auf **Rang 1** - mit 'tests/' im "
+        "Index auf Rang 2, hinter dem Test, den ich hinterher darueber "
+        "geschrieben habe. Ein Index, der die Aufzeichnung eines Fehlers "
+        "ueber das Werkzeug stellt, das ihn verhindert, sucht schlechter. "
+        "**Entschieden, nicht begruendet**: Die Reichweite bleibt erreichbar "
+        "('--auch-tests', 5809 Eintraege), die Vorgabe bleibt die abgenommene "
+        "Rangfolge, und der Bericht nennt bei erweitertem Index dessen eigene "
+        "Quote statt der geprueften. Mein Fall aus 459 ist als sechster "
+        "Probefall eingetragen - der einzige, bei dem nicht die Handsuche "
+        "versagt hat, sondern ich. Die Wache dazu ist ein "
+        "**Entscheidungsvermerk**: Sie faellt auch, wenn die Erweiterung "
+        "einmal besser waere, und das heisst dann neu messen und neu "
+        "entscheiden, nicht Zahl nachziehen",
+        460,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

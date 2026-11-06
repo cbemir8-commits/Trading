@@ -41365,3 +41365,84 @@ Schalter, und er deckt alles.
 **Gelockert ist nichts.** Keine Schwelle, kein Gate; hinzugekommen sind eine
 Uebersicht, die nicht veraltet, und die ersten Tests, die die ganze Runde
 fahren.
+
+## Vierhundertsechzig. Die Suche sieht ein Viertel des Projekts - und soll es
+
+``cli nachgesehen`` gibt es, damit dieses Projekt nicht nachbaut, was es
+besitzt (Befund 425). In Befund 459 habe ich genau das getan, und zwar zum
+dritten Mal in derselben Sache. Also habe ich das Werkzeug ausgemessen.
+
+### Was es sieht
+
+    Baum         Dateien   Docstrings
+    research         110         1426
+    tests            302         4239
+    cli.py             1          144
+    backtest/strategy/core/execution/web   29   305
+
+**1570 von 6114**, also 25,7 %. Allein ``tests/`` traegt mehr Docstrings als
+alles andere zusammen - und dieses Projekt schreibt seine Befunde
+ausdruecklich dorthin: Jede Wache nennt in ihrem Docstring den Grund, die
+Messung und die Lehre.
+
+Den Index zu erweitern war damit die naheliegende Verbesserung. Ich habe sie
+nicht gebaut, sondern erst gemessen.
+
+### Die Abnahme hat sie abgewiesen
+
+    Index      Eintraege   Quote   Raenge der sechs Faelle
+    Vorgabe         1570     5/6   3, 2, 7, 2, -, 1
+    + tests         5809     4/6   3, 2, -, 2, -, 2
+
+Der Fall aus Befund 418 stand auf **Rang 7 von 8**. Mit ``tests/`` im Index
+faellt er heraus. Mehr Wissen im Index verdraengt den Fall, der schon knapp
+war - und knapp war er, weil Befund 418 ihn als Fehlgriff verzeichnet hat.
+
+Ein zweites Mass sagt dasselbe, und es ist das unangenehmere: Die Frage,
+deren Antwort mir in 459 gefehlt hat, findet den Quelltext in der Vorgabe auf
+**Rang 1**:
+
+    1. versuche.py:trockenlauf
+       Laeuft gerade etwas, das nichts hinterlassen darf?
+
+Mit ``tests/`` im Index steht davor ``test_wettbewerbsrunde.py`` - der Test,
+den ich **hinterher** darueber geschrieben habe.
+
+> Ein Index, der die Aufzeichnung eines Fehlers ueber das Werkzeug stellt, das
+> ihn verhindert, sucht schlechter.
+
+### Entschieden, nicht begruendet
+
+Die Reichweite bleibt erreichbar, aber ausdruecklich: ``--auch-tests`` nimmt
+die 4239 Test-Docstrings dazu. Die Vorgabe bleibt die Rangfolge, die
+abgenommen ist, und der Bericht nennt bei erweitertem Index **dessen eigene**
+Quote - eine Rangfolge, deren Abnahme niemand kennt, liest sich sonst wie die
+geprueefte.
+
+Was ich ausdruecklich **nicht** gemacht habe: ein Gewicht je Baum einfuehren,
+bis die sechs Faelle wieder passen. Sechs Faelle sind zu wenig, um daran zu
+drehen; das waere Anpassen an die Abnahme statt Messen mit ihr.
+
+### Mein eigener Fall ist jetzt der sechste
+
+``PROBEFAELLE`` verzeichnet Fehlgriffe, bei denen die **Handsuche** versagt
+hat. Meiner ist der erste, bei dem nicht die Suche versagt hat, sondern ich:
+Die Antwort stand auf Rang 1, und ich habe nicht gesucht.
+
+Er gehoert trotzdem hinein, und zwar genau deshalb: Er sichert die Rangfolge,
+die diesen Fehler vermeidbar macht. Steht diese Antwort nicht mehr oben, ist
+der naechste Umweg wahrscheinlicher.
+
+### Die Wache ist ein Entscheidungsvermerk
+
+``test_die_vorgabe_sucht_nicht_schlechter_als_der_grosse_index`` faellt auch
+dann, wenn die Erweiterung einmal **besser** waere. Das ist Absicht. Sie ist
+kein Zahlenschutz, sondern die Festlegung aus diesem Befund; wird sie rot,
+heisst das "neu messen und neu entscheiden" und nicht "Zahl nachziehen".
+
+Und die Mengenwachen sind als **Verhaeltnis** gebaut, nicht als Zahl: Eine
+Wache, die an einer Docstring-Zahl haengt, wird rot, sobald jemand einen
+Docstring schreibt - genau die Bauart, die Befund 454 verworfen hat.
+
+**Gelockert ist nichts.** Keine Schwelle, kein Gate; hinzugekommen ist eine
+gemessene Entscheidung gegen eine Verbesserung, die plausibel war.

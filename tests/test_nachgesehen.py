@@ -40,8 +40,13 @@ class TestDieAbnahmeAnDenEigenenFehlgriffen:
             f"gemessen {platz}"
         )
 
-    def test_die_quote_ist_vier_von_fuenf(self) -> None:
-        assert quote() == (4, 5)
+    def test_die_quote_ist_fuenf_von_sechs(self) -> None:
+        """4 von 5 bis Befund 459, **5 von 6 seit 460**: Dazugekommen ist der
+        Fall, bei dem nicht die Suche versagt hat, sondern ich - die Antwort
+        stand auf Rang 1, und ich habe nicht gesucht. Er gehoert in die
+        Abnahme, weil er die Rangfolge sichert, die diesen Fehler vermeidbar
+        macht."""
+        assert quote() == (5, 6)
 
     def test_die_beiden_teuren_faelle_sind_dabei(self) -> None:
         """423 und 424 haben je einen Arbeitsgang gekostet. Wenn das Werkzeug
@@ -148,7 +153,7 @@ class TestWasDieSucheNichtTut:
         text = bericht("Deflated Sharpe Versuchsstand")
 
         assert "Abnahme an den eigenen Fehlgriffen" in text
-        assert f"4 von 5 in den ersten {GRENZE}" in text
+        assert f"5 von 6 in den ersten {GRENZE}" in text
 
 
 class TestDieRangfolgeIstNichtNachgestellt:

@@ -70,6 +70,35 @@ GRENZE = 8
 #: Begriffe unter dieser Laenge taugen nicht als Suchwort ("der", "je", "und").
 MINDESTLAENGE = 4
 
+#: Die Baeume, die der Index **standardmaessig** liest.
+#:
+#: Nicht ``tests/``, und das ist eine **gemessene** Entscheidung (Befund 460) -
+#: siehe ``ZUSATZBAEUME``.
+BAEUME: tuple[str, ...] = ("research", "cli.py")
+
+#: Was ``--auch-tests`` dazunimmt.
+#:
+#: **Warum nicht immer.** Gemessen steht in ``tests/`` mehr geschriebenes
+#: Wissen als im ganzen Rest: 4239 Docstrings gegen 1570 im Index, und dieses
+#: Projekt schreibt seine Befunde ausdruecklich in Test-Docstrings. Der Index
+#: zu erweitern war die naheliegende Verbesserung - und die Abnahme aus Befund
+#: 425 hat sie abgewiesen:
+#:
+#:     Index      Eintraege   Quote   Raenge der fuenf Faelle
+#:     heute           1570     4/5   3, 2, 7, 2, -
+#:     + tests         5809     3/5   3, 2, -, 2, -
+#:
+#: Der Fall aus Befund 418 stand auf Rang 7 von 8 und faellt heraus. Und ein
+#: zweites Mass sagt dasselbe: Die Frage, deren Antwort mir in Befund 459
+#: gefehlt hat, findet den **Quelltext** heute auf Rang 1 - mit ``tests/`` im
+#: Index auf Rang 2, hinter dem Test, den ich hinterher darueber geschrieben
+#: habe. Ein Index, der die Aufzeichnung eines Fehlers ueber das Werkzeug
+#: stellt, das ihn verhindert, sucht schlechter.
+#:
+#: Deshalb bleibt die Reichweite da, aber ausdruecklich: Wer in den Tests
+#: sucht, sagt es. Die Vorgabe bleibt die Rangfolge, die abgenommen ist.
+ZUSATZBAEUME: tuple[str, ...] = ("tests",)
+
 
 def flach(text: str) -> str:
     """Kleinschreibung ohne Umlautschreibweisen.
@@ -106,17 +135,29 @@ class Treffer:
     """Welche Suchbegriffe hier vorkommen - damit ein Treffer pruefbar ist."""
 
 
-@lru_cache(maxsize=1)
-def bestand() -> tuple[tuple[Stelle, str], ...]:
-    """Alle Docstrings aus ``research/`` und ``cli.py``, flach gelegt.
+@lru_cache(maxsize=2)
+def bestand(baeume: tuple[str, ...] = BAEUME) -> tuple[tuple[Stelle, str], ...]:
+    """Alle Docstrings dieser Baeume, flach gelegt.
 
     Gelesen wird der Quelltext, nicht der Importstand: Ein Modul, das in
     diesem Lauf niemand importiert hat, muss gefunden werden. Genau daran
     haengt das Urteil von ``test_wachenaudit`` (Vermerk aus Befund 409), und
     hier waere es ein stiller Ausfall statt einer Meldung.
+
+    ``baeume`` ist die Vorgabe ``BAEUME`` und nicht alles, was Docstrings hat -
+    warum, steht bei ``ZUSATZBAEUME``, mit der Messung dazu. Ein Verzeichnis
+    wird rekursiv gelesen, eine Datei einzeln.
     """
     wurzel = Path(__file__).resolve().parent.parent
-    dateien = [*sorted((wurzel / "research").glob("*.py")), wurzel / "cli.py"]
+    dateien: list[Path] = []
+    for name in baeume:
+        ort = wurzel / name
+        if ort.is_dir():
+            dateien.extend(
+                p for p in sorted(ort.rglob("*.py")) if "__pycache__" not in p.parts
+            )
+        else:
+            dateien.append(ort)
     gesammelt: list[tuple[Stelle, str]] = []
     for pfad in dateien:
         if not pfad.exists():
@@ -135,19 +176,24 @@ def bestand() -> tuple[tuple[Stelle, str], ...]:
     return tuple(gesammelt)
 
 
-@lru_cache(maxsize=1)
-def _haeufigkeit() -> tuple[Counter[str], int]:
+@lru_cache(maxsize=2)
+def _haeufigkeit(baeume: tuple[str, ...] = BAEUME) -> tuple[Counter[str], int]:
     zaehler: Counter[str] = Counter()
-    eintraege = bestand()
+    eintraege = bestand(baeume)
     for _, text in eintraege:
         for wort in set(text.split()):
             zaehler[wort] += 1
     return zaehler, len(eintraege)
 
 
-def gewicht(wort: str) -> float:
-    """``log(N/df)`` - ein seltenes Wort wiegt mehr als ein haeufiges."""
-    df, anzahl = _haeufigkeit()
+def gewicht(wort: str, baeume: tuple[str, ...] = BAEUME) -> float:
+    """``log(N/df)`` - ein seltenes Wort wiegt mehr als ein haeufiges.
+
+    Das Gewicht haengt am Bestand: Ein Wort, das in ``research/`` selten ist,
+    kann in ``tests/`` haeufig sein. Deshalb reist ``baeume`` mit, statt dass
+    zwei Indexe sich ein Gewicht teilen.
+    """
+    df, anzahl = _haeufigkeit(baeume)
     return math.log(anzahl / (1 + df.get(wort, 0)))
 
 
@@ -156,21 +202,28 @@ def suchworte(frage: str) -> tuple[str, ...]:
     return tuple(sorted(w for w in worte if len(w) >= MINDESTLAENGE))
 
 
-def durchsuche(frage: str, *, grenze: int = GRENZE) -> tuple[Treffer, ...]:
+def durchsuche(
+    frage: str, *, grenze: int = GRENZE, baeume: tuple[str, ...] = BAEUME
+) -> tuple[Treffer, ...]:
     """Die Stellen, an denen diese Groesse schon beschrieben sein koennte.
 
     **Verdachtsfaelle, keine Antworten** (Befund 118). Wer einen Treffer
     uebernimmt, hat ihn gelesen.
+
+    ``baeume`` ist die abgenommene Vorgabe; ``BAEUME + ZUSATZBAEUME`` sucht
+    auch in den Tests und kostet dabei messbar Rangfolge (Befund 460).
     """
     worte = suchworte(frage)
     if not worte:
         return ()
     treffer: list[Treffer] = []
-    for stelle, text in bestand():
+    for stelle, text in bestand(baeume):
         dabei = tuple(w for w in worte if w in text)
         if not dabei:
             continue
-        treffer.append(Treffer(stelle, sum(gewicht(w) for w in dabei), dabei))
+        treffer.append(
+            Treffer(stelle, sum(gewicht(w, baeume) for w in dabei), dabei)
+        )
     treffer.sort(key=lambda t: (-t.punkte, str(t.stelle)))
     return tuple(treffer[:grenze])
 
@@ -229,27 +282,55 @@ PROBEFAELLE: tuple[Probefall, ...] = (
         407,
         False,
     ),
+    # **Der Fall, bei dem nicht die Suche versagt hat, sondern ich** (459).
+    # Alle anderen fuenf sind Stellen, die eine Handsuche nicht gefunden hat.
+    # Diese hier steht auf Rang 1 - ich habe nicht gesucht und stattdessen
+    # einen Umweg gebaut (eigenes Arbeitsverzeichnis, fuenf Pfadvariablen),
+    # und fuenf Probelaeufe haben ihre Berichte committet und gepusht.
+    #
+    # Er gehoert in die Abnahme, weil er die Rangfolge sichert, die diesen
+    # Fehler vermeidbar macht: Wenn diese Antwort nicht mehr oben steht, ist
+    # der naechste Umweg wahrscheinlicher.
+    Probefall(
+        "Rauchtest der nichts hinterlassen darf",
+        "versuche.py:trockenlauf",
+        459,
+        True,
+    ),
 )
 
 
-def rang(fall: Probefall, *, grenze: int = GRENZE) -> int | None:
+def rang(
+    fall: Probefall, *, grenze: int = GRENZE, baeume: tuple[str, ...] = BAEUME
+) -> int | None:
     """Auf welchem Platz die erwartete Stelle steht - ``None``, wenn nicht."""
-    namen = [str(t.stelle) for t in durchsuche(fall.frage, grenze=grenze)]
+    namen = [
+        str(t.stelle) for t in durchsuche(fall.frage, grenze=grenze, baeume=baeume)
+    ]
     return namen.index(fall.erwartet) + 1 if fall.erwartet in namen else None
 
 
-def abnahme(*, grenze: int = GRENZE) -> tuple[tuple[Probefall, int | None], ...]:
+def abnahme(
+    *, grenze: int = GRENZE, baeume: tuple[str, ...] = BAEUME
+) -> tuple[tuple[Probefall, int | None], ...]:
     """Jeder Probefall mit seinem gemessenen Rang.
 
     **Gerechnet, nicht gepflegt** (Befund 408): Wer die Rangfolge aendert,
     sieht es hier, statt eine alte Zahl weiterzutragen.
+
+    Mit ``baeume`` laesst sich ein anderer Index abnehmen - genau so ist die
+    Entscheidung aus Befund 460 gefallen, statt sie zu begruenden.
     """
-    return tuple((fall, rang(fall, grenze=grenze)) for fall in PROBEFAELLE)
+    return tuple(
+        (fall, rang(fall, grenze=grenze, baeume=baeume)) for fall in PROBEFAELLE
+    )
 
 
-def quote(*, grenze: int = GRENZE) -> tuple[int, int]:
+def quote(
+    *, grenze: int = GRENZE, baeume: tuple[str, ...] = BAEUME
+) -> tuple[int, int]:
     """Wie viele der Probefaelle gefunden werden, von wie vielen."""
-    gemessen = abnahme(grenze=grenze)
+    gemessen = abnahme(grenze=grenze, baeume=baeume)
     return sum(1 for _, platz in gemessen if platz is not None), len(gemessen)
 
 
@@ -260,9 +341,15 @@ VORBEHALT = (
 )
 
 
-def bericht(frage: str, *, grenze: int = GRENZE) -> str:
-    """Die Treffer als Text - mit dem Vorbehalt, nicht ohne."""
-    treffer = durchsuche(frage, grenze=grenze)
+def bericht(
+    frage: str, *, grenze: int = GRENZE, baeume: tuple[str, ...] = BAEUME
+) -> str:
+    """Die Treffer als Text - mit dem Vorbehalt, nicht ohne.
+
+    Steht ein anderer Index dahinter als der abgenommene, sagt der Bericht es:
+    Eine Rangfolge, deren Abnahme niemand kennt, liest sich sonst wie die
+    geprueefte."""
+    treffer = durchsuche(frage, grenze=grenze, baeume=baeume)
     zeilen = [f"Gesucht: {frage}", ""]
     if not treffer:
         zeilen.append("  Keine Stelle gefunden.")
@@ -270,7 +357,7 @@ def bericht(frage: str, *, grenze: int = GRENZE) -> str:
         zeilen.append(f"  {platz}. {t.stelle}")
         zeilen.append(f"     {t.stelle.zeile[:88]}")
         zeilen.append(f"     Worte: {', '.join(t.worte)}")
-    gefunden, von = quote(grenze=grenze)
+    gefunden, von = quote(grenze=grenze, baeume=baeume)
     zeilen += [
         "",
         f"  {VORBEHALT}",
@@ -278,4 +365,12 @@ def bericht(frage: str, *, grenze: int = GRENZE) -> str:
         f"  Abnahme an den eigenen Fehlgriffen: {gefunden} von {von} "
         f"in den ersten {grenze} Treffern.",
     ]
+    if tuple(baeume) != BAEUME:
+        zusatz = ", ".join(x for x in baeume if x not in BAEUME)
+        zeilen.append(
+            f"  **Erweiterter Index** ({zusatz}): {len(bestand(baeume))} "
+            f"Eintraege statt {len(bestand())}. Das kostet Rangfolge - die "
+            f"Quote oben ist die **dieses** Index, nicht die der Vorgabe "
+            f"(Befund 460)."
+        )
     return "\n".join(zeilen)
