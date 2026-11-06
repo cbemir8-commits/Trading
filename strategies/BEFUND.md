@@ -41446,3 +41446,93 @@ Docstring schreibt - genau die Bauart, die Befund 454 verworfen hat.
 
 **Gelockert ist nichts.** Keine Schwelle, kein Gate; hinzugekommen ist eine
 gemessene Entscheidung gegen eine Verbesserung, die plausibel war.
+
+## Vierhunderteinundsechzig. Die Art, die in der Einteilung gefehlt hat
+
+``gatelage`` ordnet die durchgefallenen Gates nach **Art des Hindernisses**
+statt nach Abstand - das ist seine ganze Daseinsberechtigung, und Befund 91
+hat sie teuer bezahlt. Drei Arten gab es:
+
+    WIRTSCHAFTLICH   Eine gesetzte Schwelle, keine Messung.
+    DURCHGEMESSEN    Untersucht, alle Wege geschlossen.
+    OFFEN            "Nie untersucht. Hier liegt die Arbeit."
+
+Und so standen dort zwei Gates:
+
+    **Hier liegt die Arbeit: Schlechtestes Jahr, Parameter-Plateau.**
+
+### Beide sind untersucht
+
+* **Schlechtestes Jahr** faellt nur am Perpetual-Punkt. Am Spot-Punkt haelt es
+  mit 0,39 Reserve (336/386), und Befund 420 hat gemessen, dass es in 5 von 11
+  Fensteraufteilungen faellt.
+* **Parameter-Plateau**: Befund 92/163 hat die gemeldete Form berichtigt,
+  Befund 313 hat gemessen, dass die zwoelf Nachbarn auf Laeufen standen, die
+  eine dauerhafte Sperre stillgelegt hatte - 110 Einstiege verhindert, und
+  eine Freigabe kommt in einem durchgehenden Lauf nie.
+
+Was bei beiden bleibt, ist keine Messung, sondern eine **Entscheidung ueber
+den Messaufbau**: welcher Betriebspunkt die Zulassung traegt (400/414), und ob
+das Plateau-Gate seine Nachbarn kuenftig im Walk-Forward messen soll. Die
+zweite weist ``cli freigabe`` ausdruecklich von sich, und zu Recht: Sie
+verschiebt ein Gate von durchgefallen auf bestanden, waehrend der eigene
+Kandidat dicht daneben steht.
+
+### Was die fehlende Art gekostet hat
+
+Mich fuenf Arbeitsgaenge. Die Befunde 457 bis 460 haben alle das Umfeld
+geschaerft - den Auftrag an die Research-KI, die Generationenuebersicht, die
+Suche -, weil der meistgelesene Bericht des Projekts sagte, die Arbeit liege
+an zwei Gates. Dort liegt keine.
+
+Das ist genau der Fehler, gegen den ``gatelage`` gebaut wurde: eine Zeile, die
+plausibel aussieht und in die falsche Richtung zeigt. Nur eine Ebene hoeher -
+nicht in der Zahl, sondern in der Einteilung.
+
+### Gebaut
+
+``Art.ENTSCHEIDUNG`` mit ``ENTSCHEIDUNGSGATES`` als **benannter Liste**,
+dieselbe Pflicht wie bei den anderen zwei: Wer ein Gate der Arbeit entzieht,
+nennt es samt Fundstellen, statt es zu erraten. Ein Test prueft, dass jede
+Fundstelle im Laborbuch existiert und dass kein Gate auf zwei Listen steht.
+
+Und eine Stelle haette still verstummt: Der Betriebspunkt-Absatz aus Befund
+164 rechnete ueber ``offen``, und das ist jetzt leer. Er rechnet ueber
+``anstehend`` - offen **plus** Entscheidungssachen -, denn genau von diesen
+zwei Gates handelt er.
+
+**Keine Aufwertung.** Die Gates fallen weiter durch, ``passed`` ist unberuehrt,
+keine Schwelle bewegt sich; ein Test prueft es mechanisch gegen die
+Gate-Ergebnisse. Was sich aendert, ist nur, wohin der Bericht den Leser
+schickt - und der sagt jetzt:
+
+> **Kein Gate, an dem eine offene Frage haengt.** Was bleibt, liegt beim
+> Nutzer oder ist gemessen - weitere Laeufe auf diesen Daten aendern den
+> Zustand nicht.
+
+### Und das korrigiert meine eigene Darstellung
+
+Ich habe fuenf Zyklen lang berichtet, das Hindernis sei die Guete-Luecke von
+1,080 Punkten und der naechste Schritt eine Wettbewerbsrunde mit neuen
+Kandidaten. Das ist nicht falsch, aber es ist nicht das Erste.
+
+``reihenfolge`` sagt gemessen etwas Schaerferes, und es stand die ganze Zeit
+in ``cli stand``:
+
+> **Gesperrt: Boersendaten fehlen (Nr. 102).** Solange sie steht, aendert keine
+> Messung auf diesen Daten den Zustand - auch elf von elf Gates waeren keine
+> Zulassung. Aufheben kann sie: Nutzer.
+
+``GateReport.passed`` verlangt ``not referenzdaten``, und ``data/reference.py``
+haelt seit jeher fest, dass Bitstamp-Kerzen fuer die Vorauswahl taugen und fuer
+die Zulassung nicht. **Jede Gate-Zahl dieses Projekts steht auf Bitstamp.** Die
+Guete-Luecke liegt *hinter* dieser Sperre, nicht vor ihr.
+
+Der Befehl dazu heisst ``cli backfill --intervall D --von 2017-08-16`` - und
+nicht der 15-Minuten-Backfill, den ich wiederholt genannt habe. Beides steht
+in ``cli stand`` unter "NUR AUF DEINEM RECHNER"; ich habe das Zweite berichtet
+und das Erste uebersehen.
+
+**Gelockert ist nichts.** Keine Schwelle, kein Gate, kein Urteil; hinzugekommen
+ist eine Einteilung, die nicht mehr in die falsche Richtung zeigt - und eine
+Berichtigung meiner eigenen fuenf Meldungen.

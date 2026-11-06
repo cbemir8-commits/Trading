@@ -69,6 +69,24 @@ class Art(StrEnum):
     """Untersucht, alle Wege geschlossen. Weitere Laeufe daran kosten Zeit,
     ohne dass eine offene Frage dahintersteht."""
 
+    ENTSCHEIDUNG = "entscheidung"
+    """Gemessen; was bleibt, ist eine Entscheidung und faellt nicht hier.
+
+    **Die Art, die gefehlt hat** (Befund 461). Ohne sie landete jedes
+    gemessene Gate, dessen Rest eine Entscheidung ist, in ``OFFEN`` - also
+    unter "nie untersucht, hier liegt die Arbeit". Genau diese Zeile hat mich
+    ueber fuenf Arbeitsgaenge an zwei Gates geschickt, an denen keine Messung
+    offen ist.
+
+    Unterschied zu ``WIRTSCHAFTLICH``: Dort ist die **Schwelle** eine
+    Setzung. Hier ist die Schwelle gemessen und der Streitpunkt ist der
+    Messaufbau - welcher Betriebspunkt gilt, oder ob ein Gate seine Nachbarn
+    im Walk-Forward messen soll.
+
+    **Keine Aufwertung.** Das Gate bleibt durchgefallen, 'passed' bleibt
+    falsch, keine Schwelle bewegt sich. Was sich aendert, ist nur, wohin der
+    Bericht den Leser schickt."""
+
     OFFEN = "offen"
     """Nie untersucht. Hier liegt die Arbeit."""
 
@@ -89,6 +107,32 @@ WIRTSCHAFTLICHE_GATES: frozenset[str] = frozenset({"Messlatte"})
 #: ist Geschichte, nicht Stand."* ``research/nachmessung.py`` fuehrt beide
 #: seit jeher; dieses Modul tat es nicht.
 DURCHGEMESSENE_GATES: dict[str, tuple[int, int]] = {"Deflated Sharpe": (89, 291)}
+
+#: Gates, die gemessen sind und deren Rest eine **Entscheidung** ist, mit
+#: ``(zuerst, zuletzt)`` im Laborbuch - Befund 461.
+#:
+#: Als Liste und nicht als Erkennungsregel, aus demselben Grund wie bei
+#: ``WIRTSCHAFTLICHE_GATES``: Wer ein Gate zur Entscheidungssache erklaert,
+#: entzieht es der Arbeit. Das gehoert benannt, nicht geraten.
+#:
+#: Beide Eintraege sind gemessen, und beide Reste sind ausdruecklich keine
+#: Rechenfrage:
+#:
+#:     Schlechtestes Jahr   faellt nur am Perpetual-Punkt; am Spot-Punkt haelt
+#:                          es mit 0,39 Reserve (336/386). Was bleibt, ist die
+#:                          Wahl des Betriebspunkts - zwei Minuten im
+#:                          Bybit-Handelsmenue (400/414).
+#:     Parameter-Plateau    92/163 hat die Form berichtigt, 313 gemessen, dass
+#:                          die Nachbarn auf Laeufen standen, die eine
+#:                          dauerhafte Sperre stillgelegt hatte. Ob das Gate
+#:                          sie kuenftig im Walk-Forward messen soll,
+#:                          verschoebe es von durchgefallen auf bestanden -
+#:                          'cli freigabe' weist die Frage ausdruecklich von
+#:                          sich, weil der eigene Kandidat dicht daneben steht.
+ENTSCHEIDUNGSGATES: dict[str, tuple[int, int]] = {
+    "Schlechtestes Jahr": (336, 420),
+    "Parameter-Plateau": (92, 313),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -179,9 +223,21 @@ class Gatelage:
         return [h for h in self.hindernisse if h.art is Art.OFFEN]
 
     @property
+    def anstehend(self) -> list[Hindernis]:
+        """Gates, bei denen hier noch etwas zu tun oder zu entscheiden ist.
+
+        **Nicht nur ``offen``** (Befund 461). Seit es die vierte Art gibt,
+        sind die beiden Gates, die am anderen Betriebspunkt bestehen, als
+        Entscheidungssache eingeordnet - und der Absatz aus Befund 164 handelt
+        genau von ihnen. Ueber ``offen`` allein gerechnet waere er stumm
+        geworden, und zwar still.
+        """
+        return self.offen + self.entschieden_werden
+
+    @property
     def am_punkt(self) -> list[Hindernis]:
-        """Offene Gates, die am anderen Betriebspunkt bestehen."""
-        return [h for h in self.offen if h.nur_hier]
+        """Anstehende Gates, die am anderen Betriebspunkt bestehen."""
+        return [h for h in self.anstehend if h.nur_hier]
 
     @property
     def beim_nutzer(self) -> list[Hindernis]:
@@ -190,6 +246,11 @@ class Gatelage:
     @property
     def abgeschlossen(self) -> list[Hindernis]:
         return [h for h in self.hindernisse if h.art is Art.DURCHGEMESSEN]
+
+    @property
+    def entschieden_werden(self) -> list[Hindernis]:
+        """Gemessene Gates, deren Rest eine Entscheidung ist (Befund 461)."""
+        return [h for h in self.hindernisse if h.art is Art.ENTSCHEIDUNG]
 
     @property
     def irrefuehrende(self) -> list[Hindernis]:
@@ -223,7 +284,7 @@ class Gatelage:
         if not haengend or self.zweitpunkt is None:
             return []
         namen = ", ".join(h.name for h in haengend)
-        alle = len(haengend) == len(self.offen)
+        alle = len(haengend) == len(self.anstehend)
         kopf = (
             "**Die ganze Arbeit haengt am Betriebspunkt.**"
             if alle
@@ -287,15 +348,28 @@ class Gatelage:
                 f"Frage - was offen bleibt, ist ein Kandidat und keine "
                 f"Rechnung."
             )
+        if wahl := self.entschieden_werden:
+            namen = ", ".join(
+                f"{h.name} ({h.stelle})" if h.fundstelle else h.name
+                for h in wahl
+            )
+            teile.append(
+                f"{namen}: gemessen - was bleibt, ist eine **Entscheidung** "
+                f"ueber den Messaufbau und keine Rechenfrage. Sie faellt "
+                f"nicht hier, und das Gate bleibt bis dahin durchgefallen: "
+                f"Einen Aufbau nach dem Ergebnis zu waehlen, lockert das Gate."
+            )
         if offen:
             namen = ", ".join(h.name for h in offen)
             teile.append(f"**Hier liegt die Arbeit: {namen}.**")
             teile.extend(self._punktabsatz())
         else:
             teile.append(
-                "**Kein Gate mehr, an dem eine offene Frage haengt.** Was "
-                "bleibt, liegt beim Nutzer oder ist gemessen."
+                "**Kein Gate, an dem eine offene Frage haengt.** Was bleibt, "
+                "liegt beim Nutzer oder ist gemessen - weitere Laeufe auf "
+                "diesen Daten aendern den Zustand nicht."
             )
+            teile.extend(self._punktabsatz())
 
         irre = self.irrefuehrende
         if irre:
@@ -347,6 +421,9 @@ def ordne(
         elif r.name in DURCHGEMESSENE_GATES:
             zuerst, fundstelle = DURCHGEMESSENE_GATES[r.name]
             art = Art.DURCHGEMESSEN
+        elif r.name in ENTSCHEIDUNGSGATES:
+            zuerst, fundstelle = ENTSCHEIDUNGSGATES[r.name]
+            art = Art.ENTSCHEIDUNG
         else:
             art, zuerst, fundstelle = Art.OFFEN, None, None
         hindernisse.append(
@@ -366,6 +443,7 @@ def ordne(
 
 __all__ = [
     "DURCHGEMESSENE_GATES",
+    "ENTSCHEIDUNGSGATES",
     "WIRTSCHAFTLICHE_GATES",
     "Art",
     "Gatelage",

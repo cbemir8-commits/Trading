@@ -105,28 +105,65 @@ class TestIrrefuehrung:
 
 class TestEinordnung:
     def test_vier_offene_gates_sind_nicht_vier_aufgaben(self) -> None:
-        """**Der zweite tragende Test.**
+        """**Der zweite tragende Test.** Die Einsicht aus Befund 91 steht
+        unveraendert: Der Abstand in der Tabelle sagt nichts ueber die Art des
+        Hindernisses.
 
-        Fuenfzehn Laeufe gingen an den Deflated Sharpe. Zwei Gates daneben
-        sind in dieser Zeit nie angesehen worden, und eines liegt ueberhaupt
-        nicht in meiner Hand. Der Abstand in der Tabelle sagt darueber nichts.
+        **Drei Arten bis Befund 460, vier seit 461.** Die beiden Gates, die
+        hier als "nie untersucht" standen, sind gemessen: 'Schlechtestes
+        Jahr' faellt nur am Perpetual-Punkt (336/386/420), beim
+        'Parameter-Plateau' hat 92/163 die Form berichtigt und 313 gemessen,
+        dass die Nachbarn auf stillgelegten Laeufen standen. Was bei beiden
+        bleibt, ist eine Entscheidung ueber den Messaufbau.
+
+        Diese Zeile hat mich ueber fuenf Arbeitsgaenge an zwei Gates
+        geschickt, an denen keine Messung offen ist.
         """
         lage = ordne(GEMESSEN)
 
         assert len(lage.hindernisse) == 4, "bestandene zaehlen nicht mit"
-        assert [h.name for h in lage.offen] == [
-            "Schlechtestes Jahr", "Parameter-Plateau"
-        ]
         assert [h.name for h in lage.beim_nutzer] == ["Messlatte"]
         assert [h.name for h in lage.abgeschlossen] == ["Deflated Sharpe"]
+        assert [h.name for h in lage.entschieden_werden] == [
+            "Schlechtestes Jahr", "Parameter-Plateau"
+        ]
+        assert lage.offen == [], "heute haengt an keinem Gate eine offene Frage"
 
-    def test_das_urteil_trennt_die_drei_arten(self) -> None:
+    def test_das_urteil_trennt_die_vier_arten(self) -> None:
         urteil = ordne(GEMESSEN).urteil()
 
         assert "nicht 4 Aufgaben" in urteil
         assert "Geschaeftsentscheidung" in urteil
         assert "durchgemessen" in urteil
-        assert "Hier liegt die Arbeit: Schlechtestes Jahr, Parameter-Plateau" in urteil
+        assert "eine **Entscheidung** ueber den Messaufbau" in urteil
+        assert "Hier liegt die Arbeit" not in urteil
+
+    def test_und_sagt_dass_dabei_nichts_gelockert_wird(self) -> None:
+        """**Die Zusicherung gegen den naheliegenden Verdacht** (Befund 461):
+        Ein Gate zur Entscheidungssache zu erklaeren sieht aus wie eine
+        Aufwertung. Es ist keine - es faellt weiter durch, und das Urteil sagt
+        es."""
+        lage = ordne(GEMESSEN)
+        urteil = lage.urteil()
+
+        assert "das Gate bleibt bis dahin durchgefallen" in urteil
+        assert "lockert das Gate" in urteil
+        # Und mechanisch: eingeordnet wird, nicht geurteilt.
+        for h in lage.entschieden_werden:
+            quelle = next(r for r in GEMESSEN if r.name == h.name)
+            assert not quelle.passed
+            assert (h.wert, h.schwelle) == (
+                float(quelle.value), float(quelle.threshold)
+            )
+
+    def test_ein_unbekanntes_gate_bleibt_offen(self) -> None:
+        """Die Gegenprobe: Die vierte Art ist eine **Liste**, keine Regel.
+        Was in keiner steht, ist weiterhin Arbeit."""
+        fremd = FakeErgebnis("Irgendein neues Gate", 1.0, 2.0, "", passed=False)
+        lage = ordne([fremd])
+
+        assert [h.art for h in lage.hindernisse] == [Art.OFFEN]
+        assert "Hier liegt die Arbeit: Irgendein neues Gate" in lage.urteil()
 
     def test_die_fundstelle_wird_mitgenannt(self) -> None:
         """Ein Gate fuer durchgemessen zu erklaeren, ohne zu sagen wo, waere
@@ -220,7 +257,8 @@ class TestEinordnung:
         )
 
         assert lage.offen == []
-        assert "Kein Gate mehr, an dem eine offene Frage haengt" in lage.urteil()
+        assert "Kein Gate, an dem eine offene Frage haengt" in lage.urteil()
+        assert "aendern den Zustand nicht" in lage.urteil()
 
 
 class TestTabelle:
@@ -263,15 +301,20 @@ class TestArbeitAmBetriebspunkt:
         ]
 
     def test_das_urteil_sagt_es_dazu(self) -> None:
-        """**Der Kern der Sache.** Wer 'Hier liegt die Arbeit' liest, muss
-        erfahren, dass sie sich mit einer Antwort erledigt."""
+        """**Der Kern der Sache.** Wer eine Aufgabe genannt bekommt, muss
+        erfahren, dass sie sich mit einer Antwort erledigt.
+
+        Seit Befund 461 stehen diese zwei Gates als Entscheidungssache da und
+        nicht mehr unter 'Hier liegt die Arbeit' - der Absatz zum
+        Betriebspunkt gilt unveraendert und rechnet deshalb ueber
+        ``anstehend`` statt ueber ``offen``."""
         text = ordne(
             GEMESSEN,
             zweitpunkt="Spot",
             dort_offen=("Messlatte", "Deflated Sharpe"),
         ).urteil()
 
-        assert "Hier liegt die Arbeit: Schlechtestes Jahr, Parameter-Plateau." in text
+        assert "eine **Entscheidung** ueber den Messaufbau" in text
         assert "Die ganze Arbeit haengt am Betriebspunkt." in text
         assert "Spot" in text
 
@@ -280,7 +323,8 @@ class TestArbeitAmBetriebspunkt:
         Zweitpunkt steht kein Wort davon da."""
         text = ordne(GEMESSEN).urteil()
 
-        assert "Hier liegt die Arbeit: Schlechtestes Jahr, Parameter-Plateau." in text
+        assert "Schlechtestes Jahr" in text
+        assert "Parameter-Plateau" in text
         assert "Betriebspunkt" not in text
         assert ordne(GEMESSEN).am_punkt == []
 
@@ -325,3 +369,86 @@ class TestArbeitAmBetriebspunkt:
 
         assert lage.am_punkt == []
         assert "Betriebspunkt" not in lage.urteil()
+
+
+class TestDieVierteArtIstBelegt:
+    """Befund 461. Ein Gate zur Entscheidungssache zu erklaeren entzieht es
+    der Arbeit - deshalb steht es in einer **Liste** und nicht in einer Regel,
+    und deshalb muss jeder Eintrag belegt sein.
+
+    Dieselbe Pflicht wie bei ``DURCHGEMESSENE_GATES`` seit Befund 293: Wer
+    eine Fundstelle nennt, muss die letzte nennen.
+    """
+
+    def test_jeder_eintrag_nennt_zwei_fundstellen(self) -> None:
+        from research.gatelage import ENTSCHEIDUNGSGATES
+
+        assert ENTSCHEIDUNGSGATES
+        for name, (zuerst, zuletzt) in ENTSCHEIDUNGSGATES.items():
+            assert zuerst > 0, name
+            assert zuletzt >= zuerst, f"{name}: {zuletzt} vor {zuerst}"
+
+    def test_und_die_gibt_es_im_laborbuch(self) -> None:
+        """Eine Fundstelle, die nicht trifft, ist keine - und hier traegt sie
+        die Aussage, dass gemessen wurde."""
+        import re
+        from pathlib import Path
+
+        from research.gatelage import ENTSCHEIDUNGSGATES
+        from research.stand import zahlwort
+
+        text = Path("strategies/BEFUND.md").read_text(encoding="utf-8")
+        nummern = {
+            int(m.group(1))
+            for m in re.finditer(r"^## (?:\w+)", text, re.M)
+            if False
+        } or None
+        vorhanden = {
+            z.lower() for z in re.findall(r"^## ([A-Za-zÄÖÜäöüß]+)\.", text, re.M)
+        }
+
+        for name, (zuerst, zuletzt) in ENTSCHEIDUNGSGATES.items():
+            for nummer in (zuerst, zuletzt):
+                assert zahlwort(nummer).lower() in vorhanden, f"{name}: {nummer}"
+        assert nummern is None  # der erste Ausdruck ist Absicht leer
+
+    def test_keine_ueberschneidung_mit_den_anderen_arten(self) -> None:
+        """Ein Gate auf zwei Listen waere eine Einteilung, die nichts
+        einteilt - und die Reihenfolge in ``ordne`` entschiede still."""
+        from research.gatelage import (
+            DURCHGEMESSENE_GATES,
+            ENTSCHEIDUNGSGATES,
+            WIRTSCHAFTLICHE_GATES,
+        )
+
+        mengen = [
+            set(WIRTSCHAFTLICHE_GATES),
+            set(DURCHGEMESSENE_GATES),
+            set(ENTSCHEIDUNGSGATES),
+        ]
+        for i, a in enumerate(mengen):
+            for b in mengen[i + 1 :]:
+                assert a & b == set(), a & b
+
+    def test_die_art_sagt_dass_sie_nichts_aufwertet(self) -> None:
+        """Der Text unter der Art traegt hier die Aussage: Wer sie liest, soll
+        nicht glauben, das Gate sei bestanden.
+
+        **Am Quelltext geprueft und nicht an ``__doc__``**: Ein
+        ``StrEnum``-Mitglied hat keinen eigenen Docstring - ``__doc__`` liefert
+        den der Klasse, und die Zusicherung waere an der falschen
+        Zeichenkette gruen geworden. Beim ersten Lauf genau so passiert.
+        """
+        import inspect
+
+        from research import gatelage
+
+        quelle = inspect.getsource(gatelage)
+        nach_art = quelle.split('ENTSCHEIDUNG = "entscheidung"')[1].split(
+            'OFFEN = "offen"'
+        )[0]
+        nach_offen = quelle.split('OFFEN = "offen"')[1].split("\n\n\n")[0]
+
+        assert "Keine Aufwertung" in nach_art
+        assert "bleibt durchgefallen" in nach_art
+        assert "Nie untersucht" in nach_offen

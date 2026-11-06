@@ -6810,6 +6810,38 @@ BEHOBEN: tuple[Richtung, ...] = (
         "entscheiden, nicht Zahl nachziehen",
         460,
     ),
+    # Befund 461: 'Hier liegt die Arbeit' nannte zwei Gates, an denen keine
+    # Messung offen ist - und hat mich fuenf Arbeitsgaenge lang fehlgeleitet.
+    Richtung(
+        "Die Art, die in der Einteilung gefehlt hat",
+        "'gatelage' ordnet die durchgefallenen Gates nach Art des "
+        "Hindernisses: wirtschaftlich (Schwelle ist gesetzt), durchgemessen "
+        "(alle Wege zu) und **offen**, und 'offen' heisst im Quelltext "
+        "wortwoertlich *'Nie untersucht. Hier liegt die Arbeit.'* So standen "
+        "dort 'Schlechtestes Jahr' und 'Parameter-Plateau' - **beide "
+        "gemessen**: Das schlechteste Jahr faellt nur am Perpetual-Punkt und "
+        "haelt am Spot mit 0,39 Reserve (336/386/420); beim Plateau hat "
+        "92/163 die Form berichtigt und 313 gemessen, dass die Nachbarn auf "
+        "Laeufen standen, die eine dauerhafte Sperre stillgelegt hatte. Was "
+        "bei beiden bleibt, ist eine **Entscheidung ueber den Messaufbau** - "
+        "welcher Betriebspunkt gilt (400/414), und ob das Plateau-Gate seine "
+        "Nachbarn im Walk-Forward messen soll, was 'cli freigabe' "
+        "ausdruecklich von sich weist. Gebaut: 'Art.ENTSCHEIDUNG' mit "
+        "'ENTSCHEIDUNGSGATES' als benannter Liste - wer ein Gate der Arbeit "
+        "entzieht, nennt es, statt es zu erraten - und der Betriebspunkt-"
+        "Absatz aus 164 rechnet jetzt ueber 'anstehend' statt 'offen', sonst "
+        "waere er still verstummt. **Keine Aufwertung**: Die Gates fallen "
+        "weiter durch, 'passed' ist unberuehrt, keine Schwelle bewegt sich - "
+        "ein Test prueft es mechanisch. Der Bericht sagt jetzt: kein Gate, an "
+        "dem eine offene Frage haengt. **Und das korrigiert meine eigene "
+        "Darstellung**: Ich habe fuenf Zyklen lang die Guete-Luecke als das "
+        "Hindernis gemeldet. 'reihenfolge' sagt gemessen etwas anderes und "
+        "Schaerferes - 'Boersendaten fehlen' ist eine **Sperre**, "
+        "'GateReport.passed' verlangt 'not referenzdaten', und jede Zahl "
+        "dieses Projekts steht auf Bitstamp. Solange sie steht, aendert keine "
+        "Messung hier den Zustand; auch elf von elf waeren keine Zulassung",
+        461,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
