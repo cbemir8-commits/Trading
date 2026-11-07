@@ -8285,7 +8285,7 @@ def front(
     from pathlib import Path
 
     from research.admission import load_trials
-    from research.front import Front, lade
+    from research.front import Front, herkunft, lade
 
     settings = get_settings()
     trials = load_trials(Path(settings.paths.state) / "trials.json")
@@ -8304,6 +8304,15 @@ def front(
     # ausgewertet wird. Wie viele Laeufe dahinterstehen, steht daneben
     # (Befund 150).
     mehrfach = len(punkte) - len(lage.punkte)
+    # **Die Herkunft der Berichte gehoert unter die Tafel** (Befund 466).
+    #
+    # Dieser Befehl zieht alle Machbarkeitsberichte zu einer Aussage zusammen
+    # ("kein einziger von 30 Punkten erreicht die Schwelle"). Gemessen nennt
+    # von dreizehn Berichten **einer** seinen Betriebspunkt; das Feld gibt es
+    # erst seit Befund 242, und eine Wache kann nichts nachtragen, was nie
+    # geschrieben wurde. Geheilt wird damit nichts - gesagt wird, was die
+    # Zusammenfassung traegt.
+    lage_herkunft = herkunft(Path.cwd() / "reports" / "machbarkeit")
     console.print(
         f"\n[bold]Die gemessene Front[/]\n"
         f"  Punkte     {len(lage.punkte)} aus "
@@ -8315,6 +8324,13 @@ def front(
             else ""
         )
         + f"\n  Versuche   {trials}\n"
+        + f"  Herkunft   {lage_herkunft.gesamt} Berichte, "
+        + (
+            "alle mit Betriebspunkt"
+            if lage_herkunft.eindeutig
+            else f"{lage_herkunft.ohne} davon ohne Betriebspunkt"
+        )
+        + "\n"
     )
     console.print(lage.tabelle(hoechstens=hoechstens))
     farbe = "green" if lage.bestanden else "yellow"
@@ -8327,6 +8343,8 @@ def front(
         "Und: Das ist eine Aussage ueber die gemessenen Punkte, nicht ueber "
         "alle denkbaren.[/]\n"
     )
+    farbe = "green" if lage_herkunft.eindeutig else "yellow"
+    console.print(f"[{farbe}]{lage_herkunft.satz()}[/]\n")
 
 
 @app.command()
@@ -8396,7 +8414,7 @@ def anwaerter(
     passende = [g for g in VORGESEHEN if passt_zum_intervall(g, intervall)]
     console.print(
         f"\n[bold]Anwaerter als Verbund-Partner[/] auf {' + '.join(symbole)} "
-        f"{interval_obj.label}\n"
+        f"{interval_obj.label}, {_betriebspunkt(bestand, configs)}\n"
         f"  Bestand    '{bestand.name}': {len(spitze.all_trades)} Trades zu je "
         f"{eigen.sharpe_je_trade:.4f}\n"
         f"  Katalog    Generationen {', '.join(str(g) for g in sorted(passende))}\n"
@@ -9732,7 +9750,8 @@ def aufloesung(
     genome = spitzenkandidat()
 
     console.print(
-        f"\n[bold]Aufloesung[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"\n[bold]Aufloesung[/] {' + '.join(symbole)} {interval_obj.label}, "
+        f"{_betriebspunkt(genome, configs)}\n"
         f"  Kandidat   {genome.name}\n"
         f"  Feindaten  {fein_obj.label} fuer {len(feine)} von {len(symbole)} "
         f"Beinen\n"
@@ -11755,7 +11774,8 @@ def streuung(
 
     console.print(
         f"\n[bold]Streuung ueber die Versuche[/] '{genome.name}' auf "
-        f"{' + '.join(symbole)} {interval_obj.label}\n"
+        f"{' + '.join(symbole)} {interval_obj.label}, "
+        f"{_betriebspunkt(genome, configs)}\n"
         f"  Historie   {spanne} Tage, {len(trades)} Trades "
         f"({stichprobe.effektiv} davon unabhaengig)\n"
         f"  Qualitaet  {kandidat.sharpe_je_trade:.4f} je Trade, Schiefe "

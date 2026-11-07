@@ -42030,3 +42030,101 @@ und der Grund steht in ihrem Docstring.
 **Gelockert ist nichts**, und keine Zahl bewegt sich: Gedruckt wird dieselbe
 Messung, nur mit ihrer Voraussetzung daneben. Die Sperre aus Befund 461 steht
 weiter - die Boersendaten fehlen.
+
+## Vierhundertsechsundsechzig. Gate-Zahlen auf dem Schirm, ohne ihren Betriebspunkt
+
+Befund 465 hat `cli abstand` berichtigt und eine Stelle **ausdruecklich offen**
+gelassen:
+
+> Ob andere Befehle, die Gate-Zahlen auf den Schirm drucken, denselben Mangel
+> haben. Mein Erkenner nennt 21 Kandidaten, aber `cli stand` ist darunter und
+> nennt seinen Punkt nachweislich - also ist der Erkenner falsch, nicht die 21
+> richtig, und eine ehrliche Antwort heisst 21 Befehle fahren.
+
+Das ist hier gemacht.
+
+### Erst sauber verengen, dann fahren
+
+Der Erkenner aus 465 - "nennt die Funktion `_betriebspunkt`?" - war zu grob.
+Diesmal ueber den **Rumpf** statt den Rohtext, damit Kommentare nicht zaehlen
+(Befund 399), und mit allen bekannten Wegen, auf denen ein Punkt in eine
+Ausgabe kommt:
+
+    75  Befehle
+    32  drucken im Code eine Gate-Zahl
+    14  nennen dabei auf keinem bekannten Weg einen Punkt
+
+Statische Abwesenheit ist kein Beweis, also gefahren:
+
+| | Zahl | Befehle |
+| --- | --- | --- |
+| gefahren, bestaetigt | 5 | `anwaerter`, `aufloesung`, `front`, `koernung`, `streuung` |
+| gefahren, entkraeftet | 1 | `finanzierung` |
+| zu langsam fuer einen Lauf | 3 | `paare`, `rangprobe`, `sperrprobe` |
+| nicht fahrbar | 5 | `adaptiv`, `korb`, `verbund`, `wettbewerb`, `trade` |
+
+`finanzierung` ist der Grund, warum man faehrt statt zu schliessen: Es nennt
+seinen Punkt, der Text kommt nur aus einem `research`-Modul und nicht aus dem
+Befehl. Die vier schreibenden stehen in `WIRKT_NACH_AUSSEN` (Befund 330/331),
+`trade` handelt - beide fahre ich nicht, um eine Kopfzeile zu pruefen.
+
+Der klarste der fuenf war `cli aufloesung`:
+
+    Lauf              Trades   Rendite  Rueckgang   Sharpe   Gates
+    pessimistisch        158    12.95 %     10.64 %    1.435    7/11
+    aufgeloest           158    12.95 %     10.64 %    1.435    7/11
+
+**"7/11"** ist genau die Zeichenkette, die der Modulkopf von Befund 242 als
+verwechselbar nennt - am Spot-Punkt sind es 9 von 11.
+
+### Der zweite Fund wiegt schwerer als die Kopfzeilen
+
+`cli front` zieht **alle** Machbarkeitsberichte zu einer Aussage zusammen und
+schliesst: *"Kein einziger von 30 gemessenen Punkten erreicht die Schwelle."*
+
+Gemessen nennen von **13** Berichten genau **einer** seinen Betriebspunkt:
+
+    reports/machbarkeit:  13 Berichte
+      mit betriebspunkt    1   'Spot (kein Hebel, kein Funding)'
+      ohne                12
+
+Das ist kein Versaeumnis der Wache aus Befund 242 - die erzwingt das Feld fuer
+die vier dateischreibenden Berichtsarten, und `machbarkeit` ist eine davon.
+Nur: Die zwoelf sind **vor** dem Einbau geschrieben, und eine Wache kann
+nichts nachtragen, was nie geschrieben wurde.
+
+Ich habe gehofft, es sei ableitbar: Alle dreizehn tragen ein Feld
+`hebelwirkung`. Es hilft nicht - das ist eine Tafel je Gate mit Spanne,
+Abstand und naechster Stellung, kein Hebelvermerk. Die Herkunft der zwoelf ist
+weg.
+
+Also wird nicht geraten, sondern **gezaehlt**. `research/front.herkunft` liest
+die Berichte, zaehlt die genannten Punkte und sagt einen von drei Saetzen:
+alle gleich, keiner genannt, oder - der gefaehrlichere Fall - **verschiedene**
+Punkte in einer Tafel. Fehlende Angabe macht die Aussage ungewiss; zwei
+verschiedene machen sie falsch. `cli front` druckt es unter der Tafel, und der
+Satz nennt nie einen Punkt, den nichts belegt.
+
+### Was offen bleibt, und warum
+
+`cli koernung` baut seine Konfigurationen je Kontosprosse in einer Closure. Den
+Punkt im Kopf zu nennen heisst dort entweder umbauen oder ihn ein **zweites
+Mal** herleiten - und eine zweite Herleitung desselben Umstands ist die
+naechste Stelle, an der beide auseinanderlaufen (Befund 415). Es bleibt
+benannt, nicht erzwungen.
+
+Dazu die drei zu langsamen und die fuenf nicht fahrbaren. Alle neun stehen mit
+ihrem Grund in `OFFEN_MIT_GRUND`, derselben Bauart wie `ABSICHTLICH_ENG` aus
+Befund 464 und `ENTSCHEIDUNGSGATES` aus 461: Wer eine Stelle stehen laesst,
+nennt sie.
+
+### Mein eigener Fehler
+
+Eine Begruendung in dieser Liste lautete `"Handelt."` - acht Zeichen. Meine
+eigene Wache, die verlangt, dass jeder Grund einer ist, hat sie als
+Platzhalter zurueckgewiesen. Das ist genau der Zweck solcher Listen: Sie
+machen das Auslassen sichtbar, auch das eigene.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Vier Ausgaben nennen jetzt ihre Voraussetzung, eine nennt, wie gut sie belegt
+ist. Die Sperre aus Befund 461 steht weiter - die Boersendaten fehlen.

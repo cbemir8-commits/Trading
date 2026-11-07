@@ -37,6 +37,21 @@ Deshalb wird auf den heutigen Stand umgerechnet, wo die Angaben reichen. Wo
 nicht, bleibt der Wert des Laufs stehen und der Punkt wird markiert - eine
 erfundene Umrechnung waere schlimmer als eine sichtbare Luecke.
 
+**Und sie tragen ihren Betriebspunkt nicht** (Befund 466). Befund 242 hat das
+Feld eingefuehrt und eine Wache dazugestellt, die es fuer die vier
+dateischreibenden Berichtsarten erzwingt - gemessen traegt es von den
+dreizehn Berichten unter ``reports/machbarkeit`` genau **einer**, die
+uebrigen zwoelf sind vor dem Einbau geschrieben. Eine Wache kann nichts
+nachtragen, was nie geschrieben wurde.
+
+Der Unterschied ist derselbe, den Befund 242 beschreibt: Zwischen den beiden
+Punkten liegen ein Hebel ueber 1,0 und ein Funding ueber null, und daran
+haengen zwei Gates. Eine Zusammenfassung ueber Punkte, von denen die meisten
+nicht sagen, an welchem Punkt sie entstanden sind, kann deshalb nicht mehr
+behaupten als: *so sieht es aus, wenn man sie zusammenlegt*. ``herkunft``
+zaehlt das, und ``cli front`` druckt es - nicht um es zu heilen, sondern damit
+der Leser es weiss.
+
 Die aelteren Berichte tragen die **Form** der Verteilung nicht mit; dort gilt
 die Voreinstellung, also die Form des Spitzenkandidaten. Fuer Punkte derselben
 Familie ist das eine brauchbare Naeherung, aber eine Naeherung - und beim
@@ -399,3 +414,89 @@ class Front:
             f"effektive Stichprobe des Gates - die Latte liegt also hoeher "
             f"als hier steht (Befund 149)."
         )
+
+
+@dataclass(frozen=True, slots=True)
+class Herkunftslage:
+    """Wie viele der Berichte ihren Betriebspunkt nennen - und welchen.
+
+    **Befund 466.** Nicht der Punkt selbst ist das Ergebnis, sondern wie
+    gut er belegt ist. Eine Zusammenfassung ueber Messungen verschiedener
+    Handelsbedingungen ist nicht falsch - sie ist nur etwas anderes als eine
+    Messung, und der Unterschied gehoert in die Ausgabe.
+    """
+
+    gesamt: int
+    genannt: tuple[tuple[str, int], ...] = ()
+    """Die genannten Punkte mit ihrer Anzahl, haeufigster zuerst."""
+
+    @property
+    def ohne(self) -> int:
+        return self.gesamt - sum(n for _, n in self.genannt)
+
+    @property
+    def eindeutig(self) -> bool:
+        """Nennen **alle** Berichte denselben Punkt?"""
+        return self.gesamt > 0 and self.ohne == 0 and len(self.genannt) == 1
+
+    @property
+    def gemischt(self) -> bool:
+        """Nennen zwei Berichte **verschiedene** Punkte?"""
+        return len(self.genannt) > 1
+
+    def satz(self) -> str:
+        """Ein Satz fuer die Ausgabe - oder einer, der nichts behauptet."""
+        if not self.gesamt:
+            return "Keine Berichte."
+        if self.eindeutig:
+            return (
+                f"Alle {self.gesamt} Berichte nennen denselben Betriebspunkt: "
+                f"{self.genannt[0][0]}."
+            )
+        namen = ", ".join(f"{name} ({n})" for name, n in self.genannt)
+        if self.gemischt:
+            return (
+                f"**Verschiedene Betriebspunkte in einer Tafel**: {namen}"
+                + (f", {self.ohne} ohne Angabe" if self.ohne else "")
+                + ". Zwischen den Punkten liegen ein Hebel und ein Funding, "
+                "und daran haengen zwei Gates (Befund 242) - diese Zeilen "
+                "gegeneinander zu lesen ist der Fehler aus Befund 428."
+            )
+        return (
+            f"**{self.ohne} von {self.gesamt} Berichten nennen ihren "
+            f"Betriebspunkt nicht**"
+            + (f"; genannt wird {namen}" if self.genannt else "")
+            + ". Das Feld gibt es seit Befund 242; was davor geschrieben "
+            "wurde, traegt es nicht und laesst sich nicht nachtragen. Die "
+            "Zusammenfassung gilt also fuer die Punkte, wie sie zusammen "
+            "liegen, und nicht fuer einen Betriebspunkt."
+        )
+
+
+def herkunft(ordner: Path | str) -> Herkunftslage:
+    """Zaehlt, wie viele Machbarkeitsberichte ihren Betriebspunkt nennen.
+
+    Gezaehlt werden **Berichte**, nicht Messpunkte: Das Feld steht je Bericht,
+    und ein Bericht ohne Angabe macht alle seine Punkte ungewiss, nicht einen.
+
+    Beschaedigte Dateien werden uebersprungen - wie in ``lade``, und aus
+    demselben Grund: Eine geratene Herkunft waere schlimmer als eine gezaehlte
+    Luecke.
+    """
+    from collections import Counter
+
+    gezaehlt: Counter[str] = Counter()
+    gesamt = 0
+    for datei in sorted(Path(ordner).glob("*.json")):
+        try:
+            daten = json.loads(datei.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        gesamt += 1
+        punkt = daten.get("betriebspunkt")
+        if isinstance(punkt, str) and punkt.strip():
+            gezaehlt[punkt.strip()] += 1
+    return Herkunftslage(
+        gesamt=gesamt,
+        genannt=tuple(sorted(gezaehlt.items(), key=lambda kv: (-kv[1], kv[0]))),
+    )

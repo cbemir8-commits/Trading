@@ -48,7 +48,13 @@ from research.urteilszweige import (
 #: dort "es fehlen 1,061" oder "sie raeumt ihre Latte um 0,012" steht, und
 #: das ist der folgenreichste Satz, den dieser Bericht drucken kann. Der
 #: Waechter hat sie gemeldet, bevor eine Zeile davon gelesen war.
-URTEILSFUNKTIONEN: int = 161
+#: **162 seit 466**: 'front.satz' sagt, wie gut der Betriebspunkt der
+#: Machbarkeitsberichte belegt ist - alle gleich, keiner genannt, oder
+#: verschiedene in einer Tafel. Drei Zweige, und der dritte ist der
+#: folgenreichste: Fehlende Angabe macht die Zusammenfassung ungewiss, zwei
+#: verschiedene machen sie falsch. Dass dieser Waechter sie gemeldet hat, ist
+#: richtig so - ein neuer Urteilssatz gehoert gesehen, bevor er gelesen wird.
+URTEILSFUNKTIONEN: int = 162
 
 
 def _fn(quelle: str) -> ast.FunctionDef:

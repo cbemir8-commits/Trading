@@ -7025,6 +7025,49 @@ BEHOBEN: tuple[Richtung, ...] = (
         "gedruckt wird dieselbe Messung mit ihrer Voraussetzung daneben",
         465,
     ),
+    # Befund 466: Die Stelle, die 465 ausdruecklich offen gelassen hat -
+    # gefahren statt geschaetzt.
+    Richtung(
+        "Gate-Zahlen auf dem Schirm, ohne ihren Betriebspunkt",
+        "Befund 465 hat 'cli abstand' berichtigt und eine Stelle offen "
+        "gelassen: ob andere Befehle, die Gate-Zahlen drucken, denselben "
+        "Mangel haben. Dort stand, die ehrliche Antwort heisse Befehle "
+        "fahren. **Gefahren.** Zuerst sauber verengt - nicht mit dem "
+        "Erkenner aus 465 (der nannte 21 Kandidaten, darunter 'cli stand', "
+        "das seinen Punkt nachweislich nennt), sondern ueber den **Rumpf** "
+        "statt den Rohtext (399): von 75 Befehlen drucken 32 im Code eine "
+        "Gate-Zahl, 14 nennen dabei keinen Punkt. Dann gefahren, denn "
+        "statische Abwesenheit ist kein Beweis: **fuenf bestaetigt** "
+        "(anwaerter, aufloesung, front, koernung, streuung), **einer "
+        "entkraeftet** (finanzierung nennt ihn, der Text kommt aus einem "
+        "research-Modul), drei zu langsam fuer einen Lauf, fuenf nicht "
+        "fahrbar (vier schreiben und stehen in 'WIRKT_NACH_AUSSEN', 'trade' "
+        "handelt). Der klarste Fall war 'cli aufloesung': Es druckt die "
+        "Spalte **'7/11'** - genau die Zeichenkette, die der Modulkopf von "
+        "Befund 242 als verwechselbar nennt, denn am Spot-Punkt sind es 9 von "
+        "11. **Und ein zweiter Fund, der schwerer wiegt als die Kopfzeilen**: "
+        "'cli front' zieht alle Machbarkeitsberichte zu einer Aussage "
+        "zusammen ('kein einziger von 30 gemessenen Punkten erreicht die "
+        "Schwelle'), und von **13** Berichten nennt genau **einer** seinen "
+        "Betriebspunkt. Das Feld gibt es seit Befund 242 - die zwoelf anderen "
+        "sind davor geschrieben, und eine Wache kann nichts nachtragen, was "
+        "nie geschrieben wurde. Das Feld 'hebelwirkung', das alle dreizehn "
+        "tragen, hilft nicht: Es ist eine Tafel je Gate, kein Hebelvermerk. "
+        "Gebaut: Vier Koepfe nennen den Punkt, gelesen mit '_betriebspunkt' "
+        "aus Genom und Konfigurationen; 'front' druckt stattdessen die "
+        "**Herkunftslage** - gezaehlt, nicht geraten, mit einem eigenen Satz "
+        "fuer den gefaehrlicheren Fall, dass zwei Berichte verschiedene "
+        "Punkte nennen. **Was offen bleibt, steht mit Grund da**: 'koernung' "
+        "baut seine Konfigurationen je Kontosprosse in einer Closure, und den "
+        "Punkt dort zu nennen heisst umbauen oder ihn zweitens herleiten - "
+        "was Befund 415 verbietet; drei Befehle waren zu langsam, fuenf nicht "
+        "fahrbar. **Mein eigener Fehler**: Eine Begruendung in der Liste "
+        "lautete 'Handelt.', und meine eigene Wache hat sie als "
+        "Platzhalter zurueckgewiesen. **Gelockert ist nichts**: keine "
+        "Schwelle, kein Gate, keine Zahl - vier Ausgaben nennen ihre "
+        "Voraussetzung, eine nennt, wie gut sie belegt ist",
+        466,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
