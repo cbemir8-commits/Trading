@@ -5071,9 +5071,42 @@ def abstand(
         trades=n, sharpe=sharpe, trials=trials, skew=schiefe, kurtosis=woelbung
     )
 
+    # **Der Betriebspunkt gehoert in die Kopfzeile** (Befund 465).
+    #
+    # Dieser Befehl rechnet mit '--spot' auf dem anderen Punkt, und die
+    # Kopfzeile war in beiden Faellen **zeichengleich**. Gemessen auf
+    # derselben Reihe, derselben Kerzenlaenge, denselben 156/115 Trades und
+    # denselben 203 Versuchen:
+    #
+    #     Vorgabe (Perpetual)   DSR 0,458   Guete 0,254   noetig 221
+    #     --spot                DSR 0,583   Guete 0,271   noetig 191
+    #
+    # Die 191 ist die Zahl, die 'datenbedarf' und 'erreichbarkeit' fuehren.
+    # Wer die Vorgabe fuhr und mit einem zitierten Projektwert verglich, las
+    # also ueber zwei Betriebspunkte hinweg - der Fehler, den Befund 242 mit
+    # "elf Mal vorgekommen" beziffert, hier an der Zahl, die alles steuert.
+    #
+    # Gelesen wird der Punkt mit '_betriebspunkt' aus Genom und
+    # Konfigurationen, nicht aus dem Schalter: Eine zweite Herleitung
+    # desselben Umstands waere die naechste Stelle, an der beide
+    # auseinanderlaufen (Befund 415).
+    from research.referenz import PERPETUALPUNKT, SPOTPUNKT
+
+    punkt = _betriebspunkt(genome, configs)
     console.print(f"\n[bold]Abstand zum Gate[/] {' + '.join(symbole)} "
-                  f"{interval_obj.label}\n")
+                  f"{interval_obj.label}, {punkt}\n")
     console.print(ergebnis.bericht())
+    # **Und der andere Punkt daneben, als Zahl.** Ohne ihn bleiben 221 und 191
+    # zwei unerklaerte Zahlen fuer eine Frage - genau das, woran dieses
+    # Projekt wiederholt haengengeblieben ist (Befund 370).
+    anderer = SPOTPUNKT if not spot else PERPETUALPUNKT
+    console.print(
+        f"[dim]Am anderen Betriebspunkt ({anderer.name}) steht der Deflated "
+        f"Sharpe bei {anderer.dsr:.4f} und die Guete bei {anderer.guete:.4f} "
+        f"(Befund {anderer.befund}); umschalten mit "
+        f"{'--spot' if not spot else 'ohne --spot'}. Die beiden Punkte "
+        f"gegeneinander zu lesen ist der Fehler aus Befund 428.[/dim]\n"
+    )
 
     tabelle = Table(header_style="bold", title="Was die Suche kostet")
     tabelle.add_column("Versuche", justify="right")

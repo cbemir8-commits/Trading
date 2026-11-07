@@ -6981,6 +6981,50 @@ BEHOBEN: tuple[Richtung, ...] = (
         "ist nichts**, und gewonnen ist kein Gate: Die Sperre aus 461 steht",
         464,
     ),
+    # Befund 465: Dieselbe Klasse ein drittes Mal - und diesmal an der Zahl,
+    # die die Reihenfolge der ganzen Arbeit bestimmt.
+    Richtung(
+        "Zwei Laeufe, zeichengleicher Kopf, verschiedene Zahlen",
+        "'cli abstand' beantwortet die steuernde Frage - was fehlt zum "
+        "Deflated Sharpe, was kostet Weitersuchen - und kennt '--spot', "
+        "rechnet also auf **beiden** Betriebspunkten. Seine Kopfzeile lautete "
+        "in beiden Faellen Zeichen fuer Zeichen gleich: 'Abstand zum Gate "
+        "BTCUSD_BITSTAMP + ETHUSD_BITSTAMP 1d'. Gemessen auf derselben Reihe, "
+        "denselben 156/115 Trades und denselben 203 Versuchen: Vorgabe DSR "
+        "**0,458**, Guete 0,254, noetig **221**, 'es fehlen 106'; mit '--spot' "
+        "DSR **0,583**, Guete 0,271, noetig **191**, 'es fehlen 76'. "
+        "**Die 191 ist die Zahl, die das Projekt fuehrt** - 'datenbedarf' "
+        "nennt sie im Kopf, 'erreichbarkeit.noetige_trades' liefert sie, und "
+        "'SPOTPUNKT.noetiges_n()' gibt 190, nach Befund 409 dieselbe Antwort "
+        "mit einer Rundung. Wer die Vorgabe fuhr und mit einer zitierten "
+        "Projektzahl verglich, las ueber zwei Betriebspunkte hinweg - der "
+        "Fehler, den Befund 242 mit 'elf Mal vorgekommen' beziffert, und 106 "
+        "gegen 76 ist keine Rundung, sondern vierzig Prozent. **Warum die "
+        "Wache aus 242 es nicht fand**: 'test_berichte_betriebspunkt' prueft "
+        "vier Berichtsarten, und zwar die, die eine **Datei** ablegen; "
+        "'abstand' legt keine ab, er druckt. Die Regel war richtig, ihre "
+        "Reichweite endete am Dateisystem - dieselbe Klasse wie die drei "
+        "Faelle aus 463. Gebaut: Der Kopf nennt den Punkt, gelesen mit "
+        "'_betriebspunkt' aus Genom und Konfigurationen statt aus dem "
+        "Schalter, und darunter steht der andere Punkt mit seiner Zahl, damit "
+        "221 und 191 nicht zwei unerklaerte Zahlen fuer eine Frage bleiben "
+        "(370). Gewacht auf zwei Ebenen: im Rumpf - nicht im Rohtext, denn "
+        "mein eigener Begruendungskommentar nennt '_betriebspunkt' und eine "
+        "nackte Suche waere schon durch ihn gruen (399) - und an der Ausgabe "
+        "zweier echter Laeufe, weil ein Quelltext-Treffer nicht heisst, dass "
+        "etwas gedruckt wird (394). **Was nicht gemessen ist, und das gehoert "
+        "dazu**: ob andere Befehle, die Gate-Zahlen auf den Schirm drucken, "
+        "denselben Mangel haben. Mein Erkenner nennt 21 Kandidaten, aber "
+        "'cli stand' ist darunter und nennt seinen Punkt nachweislich - also "
+        "ist der Erkenner falsch, nicht die 21 richtig, und eine ehrliche "
+        "Antwort heisst 21 Befehle fahren. **Mein eigener Fehler dabei**: Die "
+        "Fixture der teuren Ebene stand als Methode in der Klasse und hat mit "
+        "'assert not self._finalizers' abgebrochen - der dritte Fall dieser "
+        "Bauart nach 426 und 429, und der zweite von mir. **Gelockert ist "
+        "nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich - "
+        "gedruckt wird dieselbe Messung mit ihrer Voraussetzung daneben",
+        465,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

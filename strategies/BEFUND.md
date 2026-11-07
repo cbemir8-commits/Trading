@@ -41923,3 +41923,110 @@ prueft eine andere Datei als die, die benutzt wird.
 steht - die Boersendaten fehlen. Was dieser Befund aendert: 106 Zeiger sind
 jetzt gewacht, eine Regel steht einmal statt viermal, und die Frage "gibt es
 noch eine zu kurze Wache" ist beantwortet statt offen.
+
+## Vierhundertfuenfundsechzig. Zwei Laeufe, zeichengleicher Kopf, verschiedene Zahlen
+
+`cli abstand` beantwortet die Frage, die die Reihenfolge der ganzen Arbeit
+bestimmt: *Was fehlt zum Deflated Sharpe, und was kostet Weitersuchen?* Er
+kennt den Schalter `--spot`, rechnet also auf **beiden** Betriebspunkten.
+
+Seine Kopfzeile lautete in beiden Faellen Zeichen fuer Zeichen gleich:
+
+    Abstand zum Gate BTCUSD_BITSTAMP + ETHUSD_BITSTAMP 1d
+
+Dieselbe Reihe, dieselbe Kerzenlaenge, dieselben 156 rohen und 115 wirksamen
+Trades, dieselben 203 Versuche. Und darunter:
+
+| Lauf | DSR | Guete je Trade | noetige Trades | es fehlen |
+| --- | --- | --- | --- | --- |
+| Vorgabe (Perpetual) | 0,458 | 0,254 | **221** | 106 |
+| `--spot` | 0,583 | 0,271 | **191** | 76 |
+
+**Die 191 ist die Zahl, die das Projekt fuehrt.** `research/datenbedarf.py`
+nennt sie im Modulkopf, `erreichbarkeit.noetige_trades` liefert sie, und
+`referenz.SPOTPUNKT.noetiges_n()` gibt 190 - nach Befund 409 dieselbe Antwort
+mit einer Rundung auf vier Stellen.
+
+Wer also die Vorgabe fuhr und das Ergebnis mit irgendeiner zitierten
+Projektzahl verglich, las ueber zwei Betriebspunkte hinweg. Das ist der Fehler,
+den Befund 242 mit *"elf Mal vorgekommen"* beziffert - hier an der Zahl, an der
+die Reihenfolge haengt. Und *"es fehlen 106"* gegen *"es fehlen 76"* ist keine
+Rundung, sondern vierzig Prozent.
+
+### Wie ich darauf gestossen bin
+
+Nicht durch Suchen nach diesem Fehler. Ich hatte `cli abstand` laufen lassen,
+um etwas anderes zu pruefen, und in der Ausgabe stand *"noetig sind 221
+wirksame"* - waehrend ich aus dem Register 190/191 kannte. Zwei Zahlen fuer
+eine Frage, und das ist nach Befund 370 genau das Zeichen, dem man nachgehen
+muss.
+
+Mein erster Verdacht war ein Rechenfehler. Nachgerechnet war es keiner: Mit
+Guete 0,254 und 203 Versuchen sind 221 Trades richtig, und 0,254/0,458 ist
+`PERPETUALPUNKT`. Die Ausgabe war **in sich stimmig** - ihr fehlte nur der
+Satz, zu welchem Punkt sie gehoert.
+
+### Warum die Wache aus Befund 242 es nicht gefunden hat
+
+`test_berichte_betriebspunkt` haelt genau diese Regel, und sein Modulkopf sagt
+sie allgemein:
+
+> Eine Datei, in der "9 von 11" steht, ohne zu welchem Punkt, ist damit nicht
+> bloss unvollstaendig, sondern verwechselbar.
+
+Geprueft werden vier Berichtsarten - und zwar die, die eine **Datei** ablegen.
+`cli abstand` legt keine ab, er druckt. Die Regel war richtig, ihre Reichweite
+endete am Dateisystem.
+
+Das ist dieselbe Klasse wie die drei Faelle aus Befund 463 und wie die Frage,
+die Befund 464 ueber die Suite gemessen hat. Dort war die Antwort "die Klasse
+ist leer" - weil 464 nach **Verbotsregeln** gesucht hat. Diese hier ist keine:
+Sie verlangt, dass etwas *dasteht*, nicht dass etwas fehlt. Die Suche von 464
+konnte sie nicht sehen.
+
+### Gebaut
+
+Der Kopf nennt den Punkt, und zwar gelesen mit `_betriebspunkt` aus Genom und
+Konfigurationen - nicht aus dem Schalter. Eine zweite Herleitung desselben
+Umstands waere die naechste Stelle, an der beide auseinanderlaufen (Befund
+415). Darunter steht der andere Punkt mit seiner Zahl und dem Hinweis auf
+Befund 428, damit 221 und 191 nicht als zwei unerklaerte Zahlen stehenbleiben.
+
+Gewacht wird auf zwei Ebenen, und beide sind noetig:
+
+* **im Rumpf**, mit `rumpf` aus `tests/quelltext.py` statt einer nackten
+  Textsuche. Mein eigener Begruendungskommentar nennt `_betriebspunkt`, eine
+  Suche ueber den Rohtext waere also schon durch ihn gruen - der Mechanismus
+  aus Befund 399, hier gegen mich selbst.
+* **an der Ausgabe** zweier echter Laeufe. Ein Quelltext-Treffer heisst nicht,
+  dass etwas gedruckt wird; genau das war Befund 394, wo es elf Zeilen in
+  keiner Ausgabe gab. Der Test prueft, dass die beiden Koepfe sich
+  unterscheiden lassen, dass jeder Lauf den anderen Punkt mit Zahl nennt, und
+  - als Voraussetzung des ganzen Befundes - dass 221 und 191 wirklich
+  auseinandergehen. Waeren sie gleich, waere der fehlende Punkt gleichgueltig.
+
+### Was nicht gemessen ist
+
+Ob andere Befehle, die Gate-Zahlen auf den Schirm drucken, denselben Mangel
+haben. Mein Erkenner - "nennt die Funktion `_betriebspunkt`?" - liefert 21
+Kandidaten, aber `cli stand` ist darunter und nennt seinen Punkt
+nachweislich: Er holt ihn anders. Also ist der Erkenner falsch, nicht die 21
+richtig, und eine ehrliche Antwort heisst 21 Befehle fahren und ihre Ausgaben
+lesen.
+
+Das ist Arbeit fuer einen eigenen Durchlauf, und sie steht hier als offene
+Stelle, statt als Zahl, die ich nicht vertreten kann. Dieselbe Regel wie in
+Befund 118: Eine Suche, deren Treffer man ungeprueft uebernimmt, ist schlimmer
+als keine.
+
+### Mein eigener Fehler
+
+Die Fixture der teuren Ebene stand als Methode in der Klasse, mit einem
+Gueltigkeitsbereich ueber die Funktion hinaus - pytest bricht das mit
+`assert not self._finalizers` ab. **Der dritte Fall dieser Bauart** nach den
+Befunden 426 und 429, und der zweite von mir. Sie steht jetzt auf Modulebene,
+und der Grund steht in ihrem Docstring.
+
+**Gelockert ist nichts**, und keine Zahl bewegt sich: Gedruckt wird dieselbe
+Messung, nur mit ihrer Voraussetzung daneben. Die Sperre aus Befund 461 steht
+weiter - die Boersendaten fehlen.
