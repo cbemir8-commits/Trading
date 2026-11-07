@@ -42128,3 +42128,94 @@ machen das Auslassen sichtbar, auch das eigene.
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Vier Ausgaben nennen jetzt ihre Voraussetzung, eine nennt, wie gut sie belegt
 ist. Die Sperre aus Befund 461 steht weiter - die Boersendaten fehlen.
+
+## Vierhundertsiebenundsechzig. Die Kopfzeile hat den Kommentar widerlegt
+
+Befund 466 hat vier Stellen offen gelassen: drei Befehle als *"zu langsam fuer
+einen Lauf"* und `cli koernung` als bewusst nicht behoben. Alle vier sind jetzt
+erledigt - und dabei ist etwas aufgefallen, das ich nicht gesucht habe.
+
+### "Zu langsam" war kein Grund, sondern ein zu kurzer Aufruf
+
+In der Messung von 466 hatte ich mehrere Befehle in einem Aufruf gefahren, mit
+275 Sekunden je Stueck. Einzeln, mit der ganzen Zeitgrenze, laufen
+`rangprobe` und `paare` durch. Bei `sperrprobe` braucht man den Lauf gar nicht:
+Es sagt selbst *"Eine Ziehung dauert 8.2 s, 200 davon also rund 27 Minuten"* -
+und druckt seinen **Kopf** vorher. Der Kopf ist das, worum es geht.
+
+Alle drei hatten den Mangel. Am deutlichsten `rangprobe`:
+
+    1/20 Trendfolge Ausbruch                        5/11 -> 5/11
+    2/20 Momentum Ruecksetzer                       5/11 -> 5/11
+    ...
+   20/20 Vola-Ziel, langes Messfenster              7/11 -> 7/11
+
+**Vierzig Gate-Zahlen**, und kein Wort dazu, zu welchem Betriebspunkt sie
+gehoeren. Am Spot-Punkt stehen dieselben Regeln anders da - das ist der ganze
+Inhalt von Befund 242.
+
+`paare` druckt *"Guete 2.913, noetig 3.659"* und eine Tafel mit Guete, noetig
+und fehlt je Partner. Dasselbe Bild.
+
+### `koernung` ging doch, ohne Befund 415 zu verletzen
+
+In 466 hatte ich es stehen gelassen, weil es seine Konfigurationen je
+Kontosprosse in einer Closure baut und den Punkt dort zu nennen eine **zweite**
+Herleitung desselben Umstands gewesen waere.
+
+Es gibt einen dritten Weg: Die Closure merkt sich, womit sie gerechnet hat.
+
+    benutzte_configs: dict[str, BacktestConfig] = {}
+    ...
+        benutzte_configs.update(configs)
+
+Damit wird der Punkt aus **genau den** Konfigurationen gelesen, mit denen der
+Lauf gerechnet hat - eine Herleitung, keine zweite. Er steht jetzt im Kopf des
+Abschnitts, in dem die Gate-Zahlen auch wirklich stehen:
+
+    Alle Gates je Kontostand (Versuchsstand 203, Perpetual (Hebel 3, mit Funding))
+
+### Und dann hat die neue Zeile den Kommentar widerlegt
+
+`rangprobe` traegt seit Befund 326 diesen Kommentar:
+
+> Am Kassa-Betriebspunkt sind das die fuenf Finanzierungsregeln.
+
+Die neue Kopfzeile meldet gemessen:
+
+    Rangprobe BTCUSD_BITSTAMP + ETHUSD_BITSTAMP 1d, Perpetual (kein Hebel, mit Funding)
+
+Nachgesehen, nicht vermutet: `baue_configs` setzt `funding` nicht, also gilt
+die Vorgaberate **0,0001** - es wird Funding verrechnet. Und die 25
+Tageskandidaten tragen alle einen Hebel von hoechstens 1,0 (elf mit 0,4, neun
+mit 0,5, fuenf mit 1,0), also greift kein Hebel. Gemessen ist der Punkt damit
+"Perpetual (kein Hebel, mit Funding)" und nicht Kassa.
+
+Die Prosa hat neunzig Befunde lang etwas anderes behauptet als der Code tat.
+Aufgefallen ist es erst, als die Ausgabe den Punkt **nennen musste** - und das
+ist der ganze Wert dieser Arbeit: Eine Angabe, die aus den Objekten gelesen
+wird, kann der Prosa widersprechen. Ein Kommentar kann das nicht.
+
+**Berichtigt wurde der Kommentar, nicht die Messung.** Die Fundingrate zu
+entfernen wuerde jede Zahl bewegen, die dieser Befehl druckt - das ist keine
+Berichtigung, sondern eine andere Messung, und sie waere eine Entscheidung
+ueber den Messaufbau. Dass die Reihe keine **echten** Raten fuehrt, bleibt die
+offene Frage aus Befund 100 und aendert nichts daran, dass die Vorgaberate
+verrechnet wird.
+
+### Der Zensus ist damit zu
+
+    gefahren und bestaetigt      8   anwaerter, aufloesung, front, koernung,
+                                     paare, rangprobe, sperrprobe, streuung
+    gefahren und entkraeftet     1   finanzierung
+    nicht fahrbar                5   adaptiv, korb, verbund, wettbewerb, trade
+
+Sieben nennen ihren Punkt, `front` nennt die Herkunftslage. Offen sind nur die
+fuenf, die man nicht fahren darf: vier schreiben und stehen in
+`WIRKT_NACH_AUSSEN`, einer handelt. Die Liste `OFFEN_MIT_GRUND` ist von neun
+auf fuenf geschmolzen, und die Wache verlangt jetzt, dass jeder verbleibende
+Grund "schreibt" oder "handelt" sagt - "zu langsam" wird nicht mehr
+akzeptiert.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Die Sperre aus Befund 461 steht weiter - die Boersendaten fehlen.

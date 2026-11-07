@@ -259,7 +259,18 @@ GELESEN: dict[str, int] = {
     # von einem Verbund auf **Tageskerzen**. Zwei Betriebspunkte, und sie
     # gegeneinander zu lesen waere der Fehler aus Befund 190. Dass die Regel
     # auf 15m negativ laeuft, sagt ueber ihren Beitrag auf 1d nichts.
-    "Bestand + 'Grosser Trendausbruch'": 449,
+    #
+    # **Befund 467 nennt sie zum vierten Mal**, und diesmal am harmlosesten:
+    # Der Abschnitt zitiert eine Ausgabe von 'cli rangprobe', und 'Trendfolge
+    # Ausbruch' steht dort als **erste Zeile einer Tafel** - als Beleg dafuer,
+    # wie zwanzig Zeilen 'x/11 -> y/11' ohne Betriebspunkt aussehen.
+    #
+    # Gelesen und abgegrenzt: Das ist keine Messung dieser Regel, sondern ein
+    # Formatbeleg. Die 5 von 11 dort sind ausserdem die Regel **allein** auf
+    # dem Perpetual-Punkt; der Eintrag handelt vom **Verbund** mit dem Bestand
+    # auf Tageskerzen und ist seit 193 unveraendert gemessen. Zwei Messungen,
+    # kein Widerspruch - dieselbe Abgrenzung wie bei 322 und 350.
+    "Bestand + 'Grosser Trendausbruch'": 467,
     "Holdout auf fremden Maerkten": 295,
     # **Befund 330, und diesmal benutzt statt zitiert.** Der Lauf hat den
     # Versuchszaehler ueber ``PATHS__STATE`` auf eine Wegwerf-Ablage umgelenkt,

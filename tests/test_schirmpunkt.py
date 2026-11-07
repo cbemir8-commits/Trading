@@ -21,14 +21,24 @@ damit Prosa nicht zaehlt (Befund 399):
 
 Und dann gefahren, denn statische Abwesenheit ist kein Beweis:
 
-    gefahren und bestaetigt      5   anwaerter, aufloesung, front,
-                                     koernung, streuung
+    gefahren und bestaetigt      8   anwaerter, aufloesung, front, koernung,
+                                     paare, rangprobe, sperrprobe, streuung
     gefahren und entkraeftet     1   finanzierung (nennt ihn, der Text kommt
                                      aus einem research-Modul)
-    zu langsam fuer einen Lauf   3   paare, rangprobe, sperrprobe
     nicht fahrbar                5   adaptiv, korb, verbund, wettbewerb
                                      (schreiben - 'WIRKT_NACH_AUSSEN'),
                                      trade (handelt)
+
+Die drei, die in Befund 466 als "zu langsam" standen, sind in Befund 467
+gefahren: mit einem Lauf je Aufruf passen sie in die Zeitgrenze, und bei
+``sperrprobe`` genuegt der Kopf, der vor den 27 Minuten Rechnung steht. Alle
+drei hatten den Mangel.
+
+**Und die neue Zeile hat sofort eine falsche Prosa ueberfuehrt**: Der
+Kommentar in ``rangprobe`` behauptete "Am Kassa-Betriebspunkt". Gemessen ist
+es "Perpetual (kein Hebel, mit Funding)" - ``baue_configs`` setzt ``funding``
+nicht, also gilt die Vorgaberate 0,0001. Berichtigt wurde der Kommentar, nicht
+die Messung.
 
 Der klarste Fall war ``cli aufloesung``: Es druckt eine Spalte **"7/11"** -
 genau die Zeichenkette, die der Modulkopf von Befund 242 als verwechselbar
@@ -61,21 +71,29 @@ import pytest
 from research.front import Herkunftslage, herkunft
 from tests.quelltext import rumpf
 
-#: Die Befehle, die gefahren wurden und ihren Punkt jetzt im Kopf nennen.
-BERICHTIGT = ("anwaerter", "aufloesung", "streuung")
+#: Die Befehle, die gefahren wurden und ihren Punkt jetzt nennen.
+#:
+#: **Sieben seit Befund 467**: Die drei "zu langsamen" aus 466 sind gefahren -
+#: ``rangprobe`` druckt zwanzig Zeilen "x/11 -> y/11", also vierzig
+#: Gate-Zahlen; ``paare`` eine Tafel mit Guete und noetig je Partner;
+#: ``sperrprobe`` nennt seine Huerde im Kopf. Alle drei hatten den Mangel.
+#: Und ``koernung`` ist es doch geworden: Die Closure merkt sich jetzt, womit
+#: sie gerechnet hat, also wird der Punkt aus **einer** Herleitung gelesen
+#: und Befund 415 bleibt gewahrt.
+BERICHTIGT = (
+    "anwaerter",
+    "aufloesung",
+    "koernung",
+    "paare",
+    "rangprobe",
+    "sperrprobe",
+    "streuung",
+)
 
 #: Gemessen und **nicht** behoben, mit Grund - wie ``ABSICHTLICH_ENG`` in
 #: ``test_wachenreichweite`` (Befund 464) und ``ENTSCHEIDUNGSGATES`` (461):
 #: Wer eine Stelle stehen laesst, nennt sie.
 OFFEN_MIT_GRUND: dict[str, str] = {
-    "koernung": (
-        "Baut seine Konfigurationen je Kontosprosse in einer Closure. Den "
-        "Punkt im Kopf zu nennen heisst umbauen oder ihn zweitens herleiten - "
-        "und eine zweite Herleitung verbietet Befund 415."
-    ),
-    "paare": "Zu langsam fuer einen Lauf in der Messung - nicht gefahren.",
-    "rangprobe": "Zu langsam fuer einen Lauf in der Messung - nicht gefahren.",
-    "sperrprobe": "Zu langsam fuer einen Lauf in der Messung - nicht gefahren.",
     "adaptiv": "Schreibt - steht in 'WIRKT_NACH_AUSSEN', ein Rauschtest darf "
                "nichts hinterlassen (Befund 330/331).",
     "korb": "Schreibt - steht in 'WIRKT_NACH_AUSSEN'.",
@@ -109,13 +127,38 @@ class TestDieVierNennenIhrenPunkt:
         assert "herkunft(" in code
         assert "lage_herkunft" in code
 
-    def test_koernung_steht_mit_grund_offen(self) -> None:
-        """Die Gegenprobe zur Liste: Was nicht behoben ist, traegt einen
-        Grund - und ist nicht stillschweigend ausgelassen."""
+    def test_was_offen_bleibt_schreibt_oder_handelt(self) -> None:
+        """**Die Liste ist zusammengeschmolzen** (Befund 467). Uebrig sind nur
+        die fuenf, die man nicht fahren darf - vier schreiben, einer handelt.
+        "Zu langsam" ist kein Grund mehr: Mit einem Lauf je Aufruf passten
+        alle drei in die Zeitgrenze, und bei ``sperrprobe`` genuegte der Kopf,
+        der vor den 27 Minuten Rechnung steht.
+        """
+        assert set(OFFEN_MIT_GRUND) == {
+            "adaptiv", "korb", "verbund", "wettbewerb", "trade",
+        }
+        for grund in OFFEN_MIT_GRUND.values():
+            assert "Schreibt" in grund or "Handelt" in grund or "schreibt" in grund
+
+    def test_koernung_liest_die_benutzten_konfigurationen(self) -> None:
+        """Nicht neu hergeleitet, sondern die der Schleife gemerkt - sonst
+        waere es die zweite Herleitung, die Befund 415 verbietet."""
         import cli
 
-        assert "koernung" in OFFEN_MIT_GRUND
-        assert "_betriebspunkt(" not in rumpf(cli.koernung)
+        code = rumpf(cli.koernung)
+
+        assert "benutzte_configs" in code
+        assert "benutzte_configs.update(configs)" in code
+
+    def test_rangprobe_bildet_eine_menge_statt_zu_behaupten(self) -> None:
+        """Zwanzig Genome, und der Hebel steckt im Genom - also kann der Punkt
+        je Kandidat anders sein. Gebildet statt angenommen."""
+        import cli
+
+        code = rumpf(cli.rangprobe)
+
+        assert "verschiedene Punkte" in code
+        assert "_betriebspunkt(" in code
 
     def test_jeder_offene_fall_nennt_einen_grund(self) -> None:
         for befehl, grund in OFFEN_MIT_GRUND.items():

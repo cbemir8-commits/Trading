@@ -7531,7 +7531,8 @@ def sperrprobe(
         console.print("[red]Diese Massnahme entfernt keinen Einstieg.[/]")
         raise typer.Exit(2)
     console.print(
-        f"\n[bold]Sperrprobe[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"\n[bold]Sperrprobe[/] {' + '.join(symbole)} {interval_obj.label}, "
+        f"{_betriebspunkt(genome, configs)}\n"
         f"  Massnahme  {massnahme}"
         + (f" ({kerzen} Kerzen)" if massnahme == "abkuehlung" else "")
         + "\n"
@@ -8683,6 +8684,16 @@ def koernung(
     # verglichen die Spalten zwei verschiedene Huerden miteinander.
     trials = load_trials(Path(settings.paths.state) / "trials.json")
 
+    # **Die benutzten Konfigurationen, festgehalten** (Befund 467).
+    #
+    # Dieser Befehl baut sie je Kontosprosse hier drinnen, und der Abschnitt
+    # 'Alle Gates je Kontostand' druckte seine Gate-Zahlen ohne den
+    # Betriebspunkt. Ihn dort aus Einstellungen neu herzuleiten waere eine
+    # **zweite** Herleitung desselben Umstands - die naechste Stelle, an der
+    # beide auseinanderlaufen (Befund 415). Deshalb merkt sich die Schleife,
+    # womit sie wirklich gerechnet hat, und der Punkt wird daraus gelesen.
+    benutzte_configs: dict[str, BacktestConfig] = {}
+
     def lauf(
         kapital: Decimal, *, fein: bool, mit_gates: bool = False
     ) -> tuple[Kontostufe, Gatelauf | None] | None:
@@ -8703,6 +8714,7 @@ def koernung(
                 initial_equity=kapital, enforce_risk_limits=True,
                 kalender=_terminkalender(settings) or None,
             )
+        benutzte_configs.update(configs)
         bericht = run_portfolio_walkforward(
             frames, lambda: compile_genome(genome), configs
         )
@@ -8814,7 +8826,10 @@ def koernung(
     )
 
     if gatelaeufe:
-        console.print(f"\n[bold]Alle Gates je Kontostand[/] (Versuchsstand {trials})")
+        console.print(
+            f"\n[bold]Alle Gates je Kontostand[/] (Versuchsstand {trials}, "
+            f"{_betriebspunkt(genome, benutzte_configs)})"
+        )
         leiter = Gateleiter(laeufe=gatelaeufe)
         console.print("\n" + leiter.tabelle())
         console.print(
@@ -9905,9 +9920,20 @@ def rangprobe(
     # **Befund 326.** ``passt_zum_intervall`` haelt Regeln von der falschen
     # Kerzenlaenge fern; es gibt aber einen zweiten Grund, aus dem eine Regel
     # hier nichts ausloesen kann - eine Kennzahl, die es auf dieser Reihe
-    # nicht gibt. Am Kassa-Betriebspunkt sind das die fuenf
-    # Finanzierungsregeln. Gewertet zu werden kostet jede einen Versuch, und
-    # Versuche heben die Huerde des Deflated Sharpe fuer alle anderen.
+    # nicht gibt. Das sind die fuenf Finanzierungsregeln: Die Reihe fuehrt
+    # keine Funding-Raten, also ist ``funding_zscore`` durchweg leer.
+    # Gewertet zu werden kostet jede einen Versuch, und Versuche heben die
+    # Huerde des Deflated Sharpe fuer alle anderen.
+    #
+    # **Hier stand "Am Kassa-Betriebspunkt"** (berichtigt in Befund 467), und
+    # das war falsch. ``baue_configs`` setzt ``funding`` nicht, also gilt die
+    # Vorgaberate von 0,0001 - gerechnet wird mit Funding, und die Kandidaten
+    # tragen alle einen Hebel von hoechstens 1,0. Gemessen ist der Punkt also
+    # "Perpetual (kein Hebel, mit Funding)", nicht Kassa. Aufgefallen ist es
+    # erst, als die Kopfzeile ihn nennen musste - die Prosa hatte neunzig
+    # Befunde lang etwas anderes behauptet als der Code tat. Dass die Reihe
+    # keine echten Raten fuehrt, ist die offene Frage aus Befund 100 und
+    # aendert daran nichts: Die Vorgaberate wird verrechnet.
     verstummt = kennzahlen.stumme(kandidaten, erster)
     if verstummt:
         blind = {x.genom for x in verstummt}
@@ -9919,8 +9945,20 @@ def rangprobe(
         )
         raise typer.Exit(2)
 
+    # **Der Betriebspunkt, und zwar ueber alle Kandidaten** (Befund 467).
+    #
+    # Dieser Befehl druckt zwanzig Zeilen 'x/11 -> y/11', also vierzig
+    # Gate-Zahlen, und nannte den Punkt nicht - obwohl der Kommentar oben ihn
+    # beim Namen hat ("Am Kassa-Betriebspunkt"). Hier wird er nicht
+    # behauptet, sondern gebildet: Der Hebel steckt im Genom und kann je
+    # Kandidat anders sein, also entsteht eine **Menge**. Stimmen alle
+    # ueberein, steht einer da; sonst stehen sie alle da, denn dann sind die
+    # Zeilen nicht gegeneinander zu lesen (Befund 428).
+    punkte = sorted({_betriebspunkt(k, konfigurationen[False]) for k in kandidaten})
     console.print(
-        f"\n[bold]Rangprobe[/] {' + '.join(symbole)} {interval_obj.label}\n"
+        f"\n[bold]Rangprobe[/] {' + '.join(symbole)} {interval_obj.label}, "
+        + (punkte[0] if len(punkte) == 1 else f"verschiedene Punkte: {', '.join(punkte)}")
+        + "\n"
         f"  Genome     {len(kandidaten)}\n"
         f"  Konto      {kapital:,.0f} EUR in beiden Laeufen\n"
         f"  Versuche   {trials} in beiden Laeufen\n"
@@ -13988,7 +14026,7 @@ def paare(
 
     console.print(
         f"\n[bold]Gemessene Paare[/] auf {' + '.join(symbole)} "
-        f"{interval_obj.label}\n"
+        f"{interval_obj.label}, {_betriebspunkt(bestand, configs)}\n"
         f"  Bestand    '{bestand.name}' allein: n = {allein_n}, "
         f"Guete {allein_g:.3f}, noetig {allein_ziel:.3f}\n"
         f"  Historie   {spanne} Tage, {versuche} Versuche bisher\n"

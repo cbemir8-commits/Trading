@@ -7068,6 +7068,40 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Voraussetzung, eine nennt, wie gut sie belegt ist",
         466,
     ),
+    # Befund 467: Der Rest des Zensus aus 466 - und die neue Zeile hat sofort
+    # eine falsche Prosa ueberfuehrt.
+    Richtung(
+        "Die Kopfzeile hat den Kommentar widerlegt",
+        "Befund 466 hat drei Befehle als 'zu langsam fuer einen Lauf' "
+        "benannt und einen - 'koernung' - als bewusst offen. **Alle vier sind "
+        "jetzt erledigt.** Zu langsam war kein Grund, sondern ein zu kurzer "
+        "Aufruf: Mit einem Lauf je Aufruf liefen 'rangprobe' und 'paare' "
+        "durch, und bei 'sperrprobe' genuegt der Kopf, der vor den 27 Minuten "
+        "Rechnung steht. Alle drei hatten den Mangel, und 'rangprobe' am "
+        "deutlichsten: Es druckt **zwanzig** Zeilen 'x/11 -> y/11', also "
+        "vierzig Gate-Zahlen, ohne ein Wort zum Punkt. 'koernung' ist doch "
+        "gegangen, ohne 415 zu verletzen: Die Closure, die die "
+        "Konfigurationen je Kontosprosse baut, merkt sich jetzt, womit sie "
+        "gerechnet hat - gelesen wird aus **einer** Herleitung, nicht aus "
+        "einer zweiten. Damit nennen sieben Befehle ihren Punkt und einer "
+        "('front') die Herkunftslage; offen sind nur noch die fuenf, die man "
+        "nicht fahren darf. **Der eigentliche Fund kam dabei von selbst**: "
+        "Der Kommentar in 'rangprobe' behauptet seit Befund 326 'Am "
+        "Kassa-Betriebspunkt', und die neue Kopfzeile meldet gemessen "
+        "'Perpetual (kein Hebel, mit Funding)'. Nachgesehen: 'baue_configs' "
+        "setzt 'funding' nicht, also gilt die Vorgaberate **0,0001** - "
+        "gerechnet wird mit Funding, und die 25 Tageskandidaten tragen alle "
+        "einen Hebel von hoechstens 1,0. Die Prosa hat also neunzig Befunde "
+        "lang etwas anderes behauptet als der Code tat, und aufgefallen ist "
+        "es erst, als die Ausgabe den Punkt nennen musste. **Berichtigt wurde "
+        "der Kommentar, nicht die Messung**: Die Fundingrate zu entfernen "
+        "wuerde jede Zahl dieses Befehls bewegen, und das ist keine "
+        "Berichtigung, sondern eine andere Messung. Dass die Reihe keine "
+        "echten Raten fuehrt, bleibt die offene Frage aus Befund 100 und "
+        "aendert nichts daran, dass die Vorgaberate verrechnet wird. "
+        "**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl",
+        467,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
