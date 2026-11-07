@@ -7142,6 +7142,43 @@ BEHOBEN: tuple[Richtung, ...] = (
         "**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl",
         468,
     ),
+    # Befund 469: Die letzte Zeile des wichtigsten Abschnitts stand auf dem
+    # falschen von zwei Begriffen, die das Modul nebeneinander fuehrt.
+    Richtung(
+        "Die Schlusszeile sagte, was laufen kann, nicht was wirkt",
+        "Vier Richtungen gesucht, drei kamen geschlossen zurueck - und das "
+        "gehoert berichtet, weil die Suche genau dafuer da ist. Die Wirkung "
+        "der **Vorgabe-Fundingrate** ist in 'finanzierung' durchgemessen "
+        "(Kipppunkte 5,99 % und 9,75 % p.a., Formabhaengigkeit aus 266, rund "
+        "das Neunfache der Handelsgebuehren). Meine eigenen sieben "
+        "Registereintraege sind mit 2,1 bis 3,2 Medianlaengen lang, aber "
+        "**keiner** steht unter den zehn laengsten des Registers - kein "
+        "Verstoss gegen 275. Und der Abschnitt 'WAS DEN ZUSTAND AENDERN KANN' "
+        "erreicht den Lagebericht vollstaendig, samt der berichtigten "
+        "Backfill-Zeile aus 463. **Gefunden wurde die letzte Zeile dieses "
+        "Abschnitts**: Sie stand auf 'Lage.hier' - 'laesst sich aus diesem "
+        "Container ausfuehren' - und lautete 'Hier laufen wuerde: +24,6 % "
+        "Guete am Spot-Punkt.', direkt unter dem Urteil 'Solange sie steht, "
+        "aendert keine Messung auf diesen Daten den Zustand'. Sie ist die "
+        "**letzte** des Abschnitts, also die, nach der gehandelt wird, und "
+        "sie widerspricht sowohl dem Urteil darueber als auch dem Hinweis "
+        "ihrer eigenen Zeile ('Die Suche holt sie nach diesem Modell nicht "
+        "mehr ein'). Das ist dieselbe Fehllesung, die Befund 461 an meinen "
+        "eigenen Meldungen berichtigt hat - fuenf Zyklen lang die "
+        "Guete-Luecke als das Hindernis gemeldet. **Der Begriff dafuer war "
+        "da**: 'Lage' fuehrt 'hier' (ausfuehrbar) und 'wirkt' (wirksam) "
+        "nebeneinander, und der Docstring von 'wirkt' sagt den Unterschied "
+        "woertlich - 'sonst laeuft es gegen eine Wand, die keine Messung "
+        "verschiebt'. Der Bericht hat den ersten genommen und den zweiten "
+        "daneben stehen lassen. Gebaut: 'Lage.hierzeile' leitet den Satz aus "
+        "**beiden** ab, nennt den hiesigen Schritt weiter und setzt seine "
+        "Wirkung daneben; bei gefallener Sperre bleibt die Zeile knapp, denn "
+        "dann waere der Zusatz eine Warnung ohne Grund. Formuliert wird er im "
+        "Modul und nicht im Befehl, damit es eine Fassung bleibt (415). "
+        "**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl - "
+        "eine Zeile sagt jetzt, was sie meint",
+        469,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

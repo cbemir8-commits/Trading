@@ -12620,13 +12620,16 @@ def stand(
             console.print(f"  [{farbe}]{s.als_zeile()}[/]")
             console.print(f"      [dim]{s.hinweis}[/]")
         console.print(f"\n  [red]{reihenfolge.urteil()}[/]")
-        hiesige = ", ".join(s.name for s in reihenfolge.hier)
-        console.print(
-            f"  [yellow]Hier laufen wuerde: {hiesige or 'nichts davon'}. "
-            "Alles andere liegt beim Nutzer oder hat gemessen keine Quelle.[/]"
-            if reihenfolge.hier
-            else "  [yellow]Kein Schritt laeuft aus diesem Container heraus.[/]"
-        )
+        # **Die Schlusszeile kommt jetzt aus 'hierzeile'** (Befund 469).
+        #
+        # Hier stand sie auf 'reihenfolge.hier' allein - also auf
+        # "ausfuehrbar" - und war damit die letzte Zeile des Abschnitts,
+        # direkt unter dem Urteil "aendert keine Messung auf diesen Daten den
+        # Zustand". Wer nach ihr handelt, geht die Guete-Luecke an, die Befund
+        # 461 als Fehllesung berichtigt hat. 'Lage' fuehrt den zweiten
+        # Begriff ('wirkt') schon; formuliert wird er dort, damit es eine
+        # Fassung bleibt (Befund 415).
+        console.print(f"  [yellow]{reihenfolge.hierzeile()}[/]")
 
     # **Der zweite Betriebspunkt gehoert daneben, nicht in einen Befund.**
     # Bis Befund 112 zeigte dieser Bericht allein den Perpetual-Stand - 7 von

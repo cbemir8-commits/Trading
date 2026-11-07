@@ -60,7 +60,13 @@ from research.urteilszweige import (
 #: Punktangabe macht die Zusammenfassung ungewiss, zwei Kerzenlaengen machen
 #: sie falsch (Befund 190). Zwei Urteile, zwei Funktionen - und dieser
 #: Waechter hat die zweite am Tag ihrer Entstehung gemeldet.
-URTEILSFUNKTIONEN: int = 163
+#: **164 seit 469**: 'reihenfolge.hierzeile' sagt, was sich hier tun laesst -
+#: **und ob es den Zustand aendert**. Drei Zweige, und der mittlere ist der
+#: Grund: Bei offener Sperre steht die Wirkung daneben, bei gefallener nicht,
+#: denn dann waere der Zusatz eine Warnung ohne Grund. Dass dieser Waechter
+#: sie meldet, ist richtig - es ist die letzte Zeile des wichtigsten
+#: Abschnitts, also die, nach der gehandelt wird.
+URTEILSFUNKTIONEN: int = 164
 
 
 def _fn(quelle: str) -> ast.FunctionDef:

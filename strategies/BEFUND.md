@@ -42299,3 +42299,92 @@ Treffer man ungeprueft uebernimmt, ist schlimmer als keine (Befund 118).
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Die Sperre aus Befund 461 steht weiter - die Boersendaten fehlen.
+
+## Vierhundertneunundsechzig. Die Schlusszeile sagte, was laufen kann, nicht was wirkt
+
+Sieben Zyklen in Folge haben Funde derselben Familie ergeben, mit sichtbar
+fallendem Ertrag. Dieser Durchlauf hat deshalb vier Richtungen gesucht statt
+einer - und drei kamen geschlossen zurueck. Das gehoert aufgeschrieben, weil
+es der Zweck der Suche ist.
+
+**Die Vorgabe-Fundingrate.** Befund 467 hatte sie aufgeworfen: Jede
+Perpetual-Zahl rechnet mit 0,0001, weil `data_store/funding/` leer ist. In
+`research/finanzierung.py` ist sie durchgemessen - Kipppunkte je Gate (5,99 %
+und 9,75 % p.a.), Formabhaengigkeit aus Befund 266, Funding rund das
+Neunfache der Handelsgebuehren.
+
+**Meine eigenen Registereintraege.** Befund 275 haelt die Listen kurz, und
+meine Eintraege 462 bis 468 sind 2,1 bis 3,2 Medianlaengen lang. Gemessen
+gegen den Bestand ist das kein Verstoss: Die zehn laengsten Eintraege des
+Registers (2978 bis 3858 Zeichen) stammen alle aus frueheren Zyklen, keiner
+von mir ist darunter. Die 300-Zeichen-Grenze gilt ohnehin nur fuer
+`GESCHLOSSEN`.
+
+**Erreicht der wichtigste Abschnitt eine Ausgabe?** Ja. `cli stand` druckt
+`WAS DEN ZUSTAND AENDERN KANN` vollstaendig - fuenf Zeilen mit Art, Name,
+Zustaendigem und Fundstelle, jede mit ihrem Hinweis, und die Sperre in Rot.
+Die Backfill-Zeile darin traegt die in Befund 463 berichtigte Fassung mit
+`-m BTCUSDT,ETHUSDT`.
+
+### Gefunden wurde die letzte Zeile dieses Abschnitts
+
+So endet er:
+
+      Gesperrt: Boersendaten fehlen (Nr. 102). Solange sie steht, aendert
+      keine Messung auf diesen Daten den Zustand - auch elf von elf Gates
+      waeren keine Zulassung. Aufheben kann sie: Nutzer.
+      Hier laufen wuerde: +24,6 % Guete am Spot-Punkt. Alles andere liegt
+      beim Nutzer oder hat gemessen keine Quelle.
+
+Die letzte Zeile ist die, nach der gehandelt wird. Und sie sagt das Gegenteil
+der Zeile darueber: *"aendert keine Messung den Zustand"*, dann *"hier laufen
+wuerde: die Guete-Luecke"*. Sie widerspricht auch dem Hinweis ihrer **eigenen**
+Zeile, der sechs Zeilen hoeher steht - *"Die Suche holt sie nach diesem Modell
+nicht mehr ein"*.
+
+Das ist genau die Fehllesung, die Befund 461 an meinen eigenen Meldungen
+berichtigt hat: fuenf Zyklen lang die Guete-Luecke als das Hindernis gemeldet,
+waehrend die Sperre davor stand. Wer diese Zeile als Auftrag liest, geht
+denselben Weg noch einmal - und sie steht an der Stelle, an der man aufhoert
+zu lesen.
+
+### Der Begriff dafuer war schon da
+
+`Lage` fuehrt beides nebeneinander:
+
+    hier       laesst sich aus diesem Container ausfuehren
+    wirkt      aendert den Zustand - jetzt, nicht irgendwann
+
+Und der Docstring von `wirkt` sagt den Unterschied woertlich:
+
+> Eine Sperre wirkt immer: Sie aufzuheben ist die Voraussetzung fuer alles
+> andere. Alles andere wirkt nur, wenn **keine** Sperre mehr offen ist - sonst
+> laeuft es gegen eine Wand, die keine Messung verschiebt.
+
+Es gibt sogar `wirksame()` und `vergeblich()`. Gemessen steht heute **ein**
+Schritt in `wirksame` (die Sperre selbst) und **vier** in `vergeblich`,
+darunter genau der, den die Schlusszeile empfahl.
+
+Der Bericht hat den ersten Begriff genommen und den zweiten daneben stehen
+lassen. Das ist nicht ein fehlendes Werkzeug, sondern ein falsch gegriffenes -
+und deshalb war es nur zu sehen, wenn man die letzte Zeile gegen die
+drittletzte liest.
+
+### Gebaut
+
+`Lage.hierzeile()` leitet den Satz aus **beiden** Begriffen ab. Verschwiegen
+wird nichts: Der hiesige Schritt steht weiter da, seine Wirkung daneben.
+
+    Hier laufen wuerde: +24,6 % Guete am Spot-Punkt - und es aendert den
+    Zustand **nicht**, solange die Sperre steht; es bleibt Vorarbeit. Alles
+    andere liegt beim Nutzer oder hat gemessen keine Quelle.
+
+Faellt die Sperre, bleibt die Zeile knapp - dann waere der Zusatz eine Warnung
+ohne Grund, und ein Test prueft genau diese Gegenprobe. Formuliert wird der
+Satz im Modul und nicht im Befehl, damit es **eine** Fassung bleibt (Befund
+415); der Befehl ruft nur noch ab, und eine Wache prueft am Rumpf, dass er es
+tut (394/399).
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Die Sperre aus Befund 461 steht weiter - die Boersendaten fehlen. Was sich
+aendert: Die Zeile, an der man aufhoert zu lesen, sagt jetzt, was sie meint.

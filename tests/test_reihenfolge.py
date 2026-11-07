@@ -156,3 +156,65 @@ class TestDerGemesseneStand:
     def test_keine_zeile_ohne_hinweis(self):
         """Eine Zeile, die nicht sagt, was zu tun waere, hilft niemandem."""
         assert all(s.hinweis for s in STAND)
+
+
+class TestDieSchlusszeileSagtNichtNurWasLaufenKann:
+    """**Befund 469.** Die letzte Zeile des Abschnitts ist die, nach der
+    gehandelt wird - und sie stand auf ``hier`` allein.
+
+    ``hier`` heisst *ausfuehrbar*, ``wirkt`` heisst *wirksam*. Diese Klasse
+    fuehrt beide Begriffe nebeneinander, und der Docstring von ``wirkt`` sagt
+    den Unterschied woertlich: *"sonst laeuft es gegen eine Wand, die keine
+    Messung verschiebt."* Der Bericht hat den ersten genommen.
+
+    Dieselbe Fehllesung hat Befund 461 an den eigenen Meldungen berichtigt -
+    fuenf Zyklen lang die Guete-Luecke als das Hindernis gemeldet, waehrend
+    die Sperre davor stand.
+    """
+
+    def test_bei_offener_sperre_sagt_sie_dass_es_nichts_aendert(self) -> None:
+        lage = Lage(schritte=STAND)
+        zeile = lage.hierzeile()
+
+        assert lage.gesperrt, "ohne Sperre prueft dieser Test die andere Haelfte"
+        assert lage.hier, "ohne hiesigen Schritt stuende die Zeile nicht da"
+        assert "aendert den Zustand" in zeile
+        assert "nicht" in zeile
+        assert "Vorarbeit" in zeile
+
+    def test_sie_nennt_den_schritt_weiter(self) -> None:
+        """Verschwiegen wird nichts: Was hier laufen kann, steht da - nur mit
+        seiner Wirkung daneben."""
+        lage = Lage(schritte=STAND)
+
+        for s in lage.hier:
+            assert s.name in lage.hierzeile()
+
+    def test_ohne_sperre_bleibt_sie_knapp(self) -> None:
+        """Die Gegenprobe: Faellt die Sperre, ist der Zusatz falsch und muss
+        weg - sonst stuende dort eine Warnung ohne Grund."""
+        lage = Lage(schritte=tuple(s for s in STAND if s.art is not Art.SPERRE))
+        zeile = lage.hierzeile()
+
+        assert not lage.gesperrt
+        assert "Vorarbeit" not in zeile
+        assert "Hier laufen wuerde" in zeile
+
+    def test_ohne_hiesigen_schritt_sagt_sie_das(self) -> None:
+        lage = Lage(schritte=tuple(s for s in STAND if not s.hier_machbar))
+
+        assert not lage.hier
+        assert lage.hierzeile() == (
+            "Kein Schritt laeuft aus diesem Container heraus."
+        )
+
+    def test_die_zeile_steht_wirklich_im_bericht(self) -> None:
+        """Ein Satz, der in keiner Ausgabe vorkommt, ist keine Zusicherung
+        (Befund 394) - geprueft am Rumpf, damit die Begruendung im Kommentar
+        nicht genuegt (Befund 399)."""
+        import cli
+        from tests.quelltext import rumpf
+
+        code = rumpf(cli.stand)
+
+        assert "hierzeile()" in code

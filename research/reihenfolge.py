@@ -209,6 +209,43 @@ class Lage:
         """Schritte, die bei offener Sperre nichts am Zustand aendern."""
         return tuple(s for s in self.schritte if not self.wirkt(s))
 
+    def hierzeile(self) -> str:
+        """Was sich hier tun laesst - **und ob es den Zustand aendert.**
+
+        **Befund 469.** Diese Zeile stand im Lagebericht auf ``hier`` allein,
+        also auf *"laesst sich aus diesem Container ausfuehren"*. Sie ist die
+        **letzte** des Abschnitts, und genau nach ihr richtet sich, wer ihn
+        liest. Direkt darueber steht das Urteil *"Solange sie steht, aendert
+        keine Messung auf diesen Daten den Zustand"* - und darunter dann
+        *"Hier laufen wuerde: +24,6 % Guete am Spot-Punkt."*
+
+        Diese Klasse fuehrt beide Begriffe schon nebeneinander: ``hier``
+        heisst ausfuehrbar, ``wirkt`` heisst wirksam, und der Docstring von
+        ``wirkt`` sagt den Unterschied woertlich - *"sonst laeuft es gegen
+        eine Wand, die keine Messung verschiebt."* Der Bericht hat den
+        ersten genommen und den zweiten daneben stehen lassen.
+
+        Das ist dieselbe Fehllesung, die Befund 461 an meinen eigenen
+        Meldungen berichtigt hat: fuenf Zyklen lang die Guete-Luecke als das
+        Hindernis gemeldet, waehrend die Sperre davor stand. Wer diese Zeile
+        als Auftrag liest, geht denselben Weg noch einmal.
+        """
+        hiesige = self.hier
+        if not hiesige:
+            return "Kein Schritt laeuft aus diesem Container heraus."
+        namen = ", ".join(s.name for s in hiesige)
+        rest = (
+            "Alles andere liegt beim Nutzer oder hat gemessen keine Quelle."
+        )
+        vergeblich = {s.name for s in self.vergeblich()}
+        if all(s.name in vergeblich for s in hiesige):
+            return (
+                f"Hier laufen wuerde: {namen} - und es aendert den Zustand "
+                f"**nicht**, solange die Sperre steht; es bleibt Vorarbeit. "
+                f"{rest}"
+            )
+        return f"Hier laufen wuerde: {namen}. {rest}"
+
     def urteil(self) -> str:
         if not self.schritte:
             return "Keine Schritte erfasst - dazu ist nichts zu sagen."
