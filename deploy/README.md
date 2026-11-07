@@ -170,9 +170,10 @@ umgehen.
 ## 5. Daten und Strategie
 
 ```bash
-.venv/bin/python -m cli backfill        # ~8 Minuten, resumierbar
+.venv/bin/python -m cli backfill -m BTCUSDT,ETHUSDT --intervall D --von 2017-08-16
+.venv/bin/python -m cli funding -m BTCUSDT,ETHUSDT --von 2020-03-30
 .venv/bin/python -m cli quality         # Lücken, Duplikate, Ausreißer
-.venv/bin/python -m cli research        # Walk-Forward + neun Gates
+.venv/bin/python -m cli research        # Walk-Forward + elf Gates
 ```
 
 `research` läuft einige Minuten. Wahrscheinlich besteht **kein** Kandidat —

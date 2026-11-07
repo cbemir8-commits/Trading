@@ -41683,3 +41683,148 @@ und die Sperre aus Befund 461 steht weiter - die Boersendaten fehlen,
 `GateReport.passed` verlangt `not referenzdaten`, und jede Zahl hier steht auf
 Bitstamp. Was dieser Befund aendert, ist allein, dass die naechste Suche nach
 Arbeit nicht noch einmal dorthin geschickt wird, wo die Antwort schon liegt.
+
+## Vierhundertdreiundsechzig. Drei Wachen mit derselben Regel, drei zu kurze Reichweiten
+
+Befund 461 hat gemessen, dass in diesem Container kein Lauf den Zustand
+aendert, und `research/reihenfolge.py` sagt es seit Befund 102 in einem Satz:
+
+> Aus diesem Container heraus gibt es keinen Schritt mehr, der den Zustand
+> aendert. Die Bybit-Regionssperre wird nicht umgangen; was hier laeuft,
+> bleibt Vorarbeit.
+
+Wenn das so ist, dann ist die wertvollste Vorarbeit die **eine Zeile**, mit
+der der Nutzer die Sperre aufhebt. Ich habe sie nachgesehen, weil ich sie im
+Bericht davor selbst genannt hatte. Sie ist falsch.
+
+### Der Korb war an genau einer Stelle gewacht
+
+`BEIM_NUTZER` fuehrt sechs Befehlszeilen, und alle sechs tragen
+`-m BTCUSDT,ETHUSDT`. `test_nutzerbefehle` prueft das seit Befund 357 streng:
+Befehl existiert, Argumente lassen sich lesen, Intervall ist `D`, Generation
+passt zur geladenen Kerzenlaenge, Korb vollstaendig.
+
+Ausserhalb von `BEIM_NUTZER` sieht es anders aus. Gemessen, Zeilen die man
+kopiert und einfuegt:
+
+| | Vorschriften | davon mit Korb |
+| --- | --- | --- |
+| `BEIM_NUTZER` | 6 | 6 |
+| alles andere | 8 | **0** |
+
+Die acht:
+
+* `README.md` dreimal `backfill`, zweimal `wettbewerb`, einmal `funding` -
+  darunter **der erste Befehlsblock der Datei**, direkt unter dem Satz, dass
+  `passed` Boersendaten verlangt und der Container geoblockt ist. Also genau
+  die Zeile, mit der die Sperre aufgehoben werden soll.
+* `deploy/WINDOWS.md` *"Schritt 6: Kursdaten laden"* - ein nackter `backfill`,
+  der 1m/15m/1h/4h ab 2020-03-30 auf einem Bein laedt. Und *"Schritt 7"* ein
+  `--intervall D` ohne `--von`.
+* `deploy/README.md` *"5. Daten und Strategie"* - ebenso nackt.
+* `install.py` druckt *"Drei Schritte, einer nach dem anderen"*, und Schritt 2
+  war `python -m cli backfill`.
+* `cli.py` im Modulkopf, `research/seeds.py` im Kommentar,
+  `research/reihenfolge.py` in dem Satz, der den naechsten Schritt nennt.
+
+Was das kostet, steht im System selbst - `cli._korbwarnung` sagt es zur
+Laufzeit: **BTC allein haelt 5 von 11 Gates gegen 9 von 11 auf dem Korb**
+(Befunde 264/318). Die Warnung erscheint, aber sie blockt nicht, und sie
+kommt erst, wenn der Befehl schon laeuft. Wer der Anleitung folgt, laedt
+stundenlang ein Bein und sucht darauf - und die Versuche, die der Wettbewerb
+dabei bucht, sind nicht zurueckzuholen.
+
+### Ein nackter Aufruf ist kein Wegweiser, wenn er in Schritt 6 steht
+
+Befund 213 hat eine Unterscheidung eingefuehrt, die richtig ist: Wer
+`--intervall` nennt, muss `--von` mitnennen, aber ein blosses
+`python -m cli backfill` ist *"ein Wegweiser, keine Vorschrift"*.
+
+In einer nummerierten Installationsanleitung haelt das nicht. `deploy/WINDOWS.md`
+schreibt unter der Ueberschrift *"Schritt 6: Kursdaten laden"* einen nackten
+Aufruf und darunter *"Rund 8 Minuten"* - das ist keine Wegbeschreibung, das
+ist die Anweisung. Dasselbe in `deploy/README.md` und in `install.py`.
+
+### Dieselbe Luecke, zwei weitere Regeln
+
+Was mich auf die Verallgemeinerung gebracht hat: Die Wache aus Befund 213
+sieht in vier Dateien. Zwei Verletzungen ihrer eigenen Regel standen in
+Dateien, die nicht dazugehoeren - `deploy/WINDOWS.md` und `research/seeds.py`.
+
+Und die Wache aus Befund 210 - *"neun Gates"* statt elf - prueft **eine**
+Datei, `cli.py`. Gemessen lebte die falsche Zahl an sieben Stellen weiter:
+
+    research/analyst.py      2x
+    research/admission.py    2x
+    research/exits.py        1x
+    core/config.py           1x
+    deploy/README.md         1x
+
+`research/analyst.py` ist das Modul, nach dem der Registereintrag von Befund
+210 benannt ist (*"Neun Gates im Docstring des Analysten"*). Der Eintrag ist
+nicht falsch - er nennt `_ask_the_analyst`, und dort stimmt die Zahl. Falsch
+ist der Eindruck, den er hinterlaesst, und die Wache macht ihn unsichtbar.
+
+Drei richtige Regeln, drei Reichweiten, und alle drei enden an derselben
+Stelle: dort, wo jemand die Wache gebaut hat.
+
+### Die Ausnahme, ohne die diese Arbeit Schaden anrichtet
+
+`research/koernung.py` spricht von *"den uebrigen neun Gates"* und *"den
+anderen neun Gates"* - und hat recht. Elf minus die zwei Kennzahlen, die dort
+ueber eine Leiter gefahren werden, sind neun; drei Zeilen darunter steht
+*"Alle elf"*. Eine Ersetzung ueber alle Treffer haette dort einen Fehler
+eingebaut, wo vorher keiner war.
+
+Deshalb ist die Ausnahme Teil der Regel und nicht Teil der Pflege: Wer von
+den *uebrigen* oder *anderen* neun spricht, rechnet und behauptet nicht.
+
+### Gebaut
+
+* `QUELLEN` in `tests/test_ladehinweise.py` deckt jetzt acht Anleitungsstellen
+  ab statt vier - die Regel aus 213 sieht dorthin, wo Anleitungen stehen.
+* Eine Korbwache ueber **dieselbe** Liste: Jede kopierbare Vorschrift fuer
+  `backfill`, `funding` oder `wettbewerb` muss den vollen Korb nennen. Eine
+  Liste, zwei Regeln - zwei Listen waeren die naechste Stelle aus Befund 439.
+* Die Gate-Zahl ueber **jede** Datei, die etwas behauptet. Diese Liste ist
+  **abgeleitet** und nicht gepflegt: alle `.py` ausser `tests/`, dazu die drei
+  Anleitungen. `tests/` bleibt draussen, weil dort die Geschichte der Fehler
+  steht und ein Test den alten Stand zitieren darf.
+* Die Regel selbst steht jetzt **einmal**. `test_stand` prueft damit weiter
+  `cli.py` und seine Gegenproben, `test_ladehinweise` alles uebrige.
+* Alle acht Vorschriften tragen den Korb, die fehlenden `--von` sind
+  nachgetragen, die sieben falschen Gate-Zahlen stehen auf elf.
+
+### Was der Zeilenanker kostet, und was er bringt
+
+Die erste Fassung des Suchmusters hat jede Erwaehnung gezaehlt: **42
+Vorschriften, 38 ohne Korb**. Das ist Rauschen - Prosa in Docstrings
+(*"``cli funding`` muss gelaufen sein"*), Berichtstitel (*"cli wettbewerb
+Runde 3"*) und Laufzeithinweise, die bewusst **ein** Instrument nennen. Der
+Fehler aus Befund 118.
+
+Mit dem Anker am Zeilenanfang bleiben **acht**, und alle acht waren echt.
+
+### Mein eigener Fehler, zweimal
+
+Der erste Entwurf des Musters hat die Trockenlauf-Zeile der README nicht
+gesehen, weil `TRADING_TROCKENLAUF=1` davor stand. Eine zu kurze Reichweite im
+Werkzeug gegen zu kurze Reichweiten; die Zeile steht jetzt als eigene
+Gegenprobe im Test.
+
+Und der Registereintrag zu diesem Befund hat beim ersten Anlauf eine
+Befehlszeile woertlich zitiert. Damit hat er den **Anker einer fremden Wache**
+an sich gezogen: `test_der_wettbewerb_nennt_seinen_preis` sucht im Lagebericht
+den Abschnitt zu diesem Befehl und prueft, ob dort der Preis steht - und fand
+meinen Eintrag statt der Nutzerzeile. Genau die Klasse aus Befund 399, eine
+Zeichenkettensuche, die auch Prosa trifft, nur diesmal in meiner eigenen
+Prosa. Der Eintrag nennt den Befehl jetzt beschreibend.
+
+Und ich habe dem Nutzer den unvollstaendigen Befehl im Bericht davor selbst
+genannt - zweimal, ohne ihn nachzusehen, obwohl die vollstaendige Fassung im
+Register steht.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, kein Urteil, keine
+Zulassung. Der Zustand ist unveraendert und die Sperre aus Befund 461 steht
+weiter. Was sich aendert, ist, dass der Schritt, der sie aufhebt, jetzt
+ueberall gleich und vollstaendig dasteht.

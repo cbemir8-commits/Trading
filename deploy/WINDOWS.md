@@ -119,11 +119,18 @@ Steht dort etwas von „Region blockiert", hör auf und sag mir Bescheid.
 ## Schritt 6: Kursdaten laden
 
 ```
-.venv\Scripts\python -m cli backfill
+.venv\Scripts\python -m cli backfill -m BTCUSDT,ETHUSDT --intervall D --von 2017-08-16
 ```
 
-Rund 8 Minuten. Es lädt sechs Jahre Bitcoin-Kurse. Läuft ein Balken durch,
-alles in Ordnung.
+Es lädt die Tageskerzen von Bitcoin **und** Ethereum ab 2017. Läuft ein Balken
+durch, alles in Ordnung.
+
+Beides muss dabeistehen, und zwar aus gemessenen Gründen: Ohne `-m` lädt der
+Befehl nur das konfigurierte Symbol, und auf BTC allein hält der Bestand 5 von
+11 Gates gegen 9 von 11 auf dem Korb (Befunde 264/318). Ohne `--intervall D`
+lädt er 1m/15m/1h/4h und **keine** Tageskerze, auf der alle elf Gates stehen;
+ohne `--von` beginnt er 2020-03-30, die zweitschlechteste der sechs gemessenen
+Stufen (Befund 212).
 
 Dann prüfen, ob die Daten sauber sind:
 
@@ -136,7 +143,7 @@ Dann prüfen, ob die Daten sauber sind:
 ## Schritt 6b: Funding-Daten laden
 
 ```
-.venv\Scripts\python -m cli funding
+.venv\Scripts\python -m cli funding -m BTCUSDT,ETHUSDT --von 2020-03-30
 ```
 
 Dauert unter einer Minute. Das sind **keine Kurse**, sondern die Zahlungen, die
@@ -152,7 +159,7 @@ wäre aber nur eine fehlende Datei.
 ## Schritt 7: Strategie suchen
 
 ```
-.venv\Scripts\python -m cli backfill --intervall D
+.venv\Scripts\python -m cli backfill -m BTCUSDT,ETHUSDT --intervall D --von 2017-08-16
 ```
 
 ```

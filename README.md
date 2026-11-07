@@ -29,8 +29,9 @@ passed` verlangt Börsendaten). Der Entwicklungscontainer ist von Bybit
 geoblockt; von deinem Rechner aus geht es:
 
 ```bash
-python -m cli backfill --intervall D --von 2017-08-16   # Börsenkerzen laden
-python -m cli wettbewerb --generation 9                 # Strategien suchen (Tageskerzen)
+python -m cli backfill -m BTCUSDT,ETHUSDT --intervall D --von 2017-08-16   # Börsenkerzen laden
+python -m cli funding -m BTCUSDT,ETHUSDT --von 2020-03-30                  # Funding-Raten
+python -m cli wettbewerb -m BTCUSDT,ETHUSDT --generation 9                 # Strategien suchen (Tageskerzen)
 ```
 
 Zwei weitere Dinge kann nur dein Konto beantworten:
@@ -38,7 +39,7 @@ Zwei weitere Dinge kann nur dein Konto beantworten:
 | Was | Womit | Warum |
 |---|---|---|
 | Perpetuals oder nur Spot? | `python -m cli healthcheck` | Bybit EU führt unter MiCA keine Perpetuals. Am gemessenen Stand hängen daran zwei Gates. |
-| Echte Funding-Raten | `python -m cli funding --von 2020-03-30` | `data_store/funding/` ist leer; bisher rechnet alles mit dem Vorgabewert, und Funding ist der größte Kostenblock. |
+| Echte Funding-Raten | `python -m cli funding -m BTCUSDT,ETHUSDT --von 2020-03-30` | `data_store/funding/` ist leer; bisher rechnet alles mit dem Vorgabewert, und Funding ist der größte Kostenblock. |
 
 Das vollständige Laborbuch mit allen Messungen steht in
 [`strategies/BEFUND.md`](strategies/BEFUND.md).
@@ -180,13 +181,13 @@ in die `.env` auf dem Server.
 ```bash
 python -m cli setup                       # Zugangsdaten einrichten
 python -m cli healthcheck                 # zuerst auf jedem neuen Server
-python -m cli backfill --intervall D --von 2017-08-16   # Historie laden (resumierbar)
+python -m cli backfill -m BTCUSDT,ETHUSDT --intervall D --von 2017-08-16   # Historie laden (resumierbar)
 python -m cli status                      # was liegt im Speicher?
 python -m cli quality                     # Lücken, Duplikate, Ausreißer
 python -m cli ingest                      # Live-Kerzen mitschreiben
 python -m cli leverage --kapital 500      # Hebel-Tabelle für dein Konto
 python -m cli stand                       # wo steht das Projekt?
-python -m cli wettbewerb --generation 9   # Strategien suchen (Tageskerzen)
+python -m cli wettbewerb -m BTCUSDT,ETHUSDT --generation 9   # Strategien suchen (Tageskerzen)
 python -m cli research                    # ein einzelner Pruefdurchgang
 python -m cli review                      # laeuft die Strategie noch?
 python -m cli trade --trocken             # Handelsplan zeigen, keine Order
@@ -200,7 +201,7 @@ einzelnen Befunden. `python -m cli --help` listet sie alle.
 ### `TRADING_TROCKENLAUF` — probieren, ohne Spuren
 
 ```bash
-TRADING_TROCKENLAUF=1 python -m cli wettbewerb --generation 9
+TRADING_TROCKENLAUF=1 python -m cli wettbewerb -m BTCUSDT,ETHUSDT --generation 9
 ```
 
 Mit gesetzter Variable **hinterlässt kein Befehl etwas**: kein Versuchszähler,
@@ -221,7 +222,7 @@ Kurzfassung — nach jedem Befehl kurz schauen, ob etwas Rotes dabei war:
 ```
 python install.py                       einrichten, 1-3 Minuten
 .venv\Scripts\python -m cli setup       Bybit verbinden
-.venv\Scripts\python -m cli backfill --intervall D --von 2017-08-16    Kurse laden
+.venv\Scripts\python -m cli backfill -m BTCUSDT,ETHUSDT --intervall D --von 2017-08-16    Kurse laden
 .venv\Scripts\python -m cli research    Strategie suchen
 start.bat                               loslaufen lassen
 ```

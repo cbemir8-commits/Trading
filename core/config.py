@@ -333,7 +333,7 @@ class PathSettings(BaseModel):
     Kerzen lassen sich jederzeit nachladen, ein ausgeloester Kill-Switch nicht."""
 
     strategies: str = "strategies"
-    """Zugelassene Genome. Was hier liegt, hat die neun Gates bestanden."""
+    """Zugelassene Genome. Was hier liegt, hat die elf Gates bestanden."""
 
     referenz: str = "referenz"
     """Nachgeschlagene Daten aus kanonischen Quellen - eingecheckt.

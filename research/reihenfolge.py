@@ -398,7 +398,8 @@ STAND: tuple[Schritt, ...] = (
         hinweis=(
             "Jede Zahl steht auf Bitstamp-Kassakursen. GateReport.passed "
             "verlangt Boersendaten - ohne sie gibt es keine Zulassung, egal "
-            "wie viele Gates halten. 'cli backfill --intervall D --von 2017-08-16'."
+            "wie viele Gates halten. 'cli backfill -m BTCUSDT,ETHUSDT "
+            "--intervall D --von 2017-08-16'."
         ),
     ),
     _beobachtungen(),

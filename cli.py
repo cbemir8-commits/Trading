@@ -3,8 +3,8 @@
     python -m cli --help
 
     python -m cli healthcheck              # zuerst ausfuehren auf neuem Server
-    python -m cli backfill --intervall D --von 2017-08-16
-    python -m cli funding                  # zweite Datenquelle: Positionierung
+    python -m cli backfill -m BTCUSDT,ETHUSDT --intervall D --von 2017-08-16
+    python -m cli funding -m BTCUSDT,ETHUSDT --von 2020-03-30   # Positionierung
     python -m cli status
     python -m cli quality
     python -m cli research                 # Strategien pruefen

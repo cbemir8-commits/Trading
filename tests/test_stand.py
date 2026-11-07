@@ -1522,14 +1522,17 @@ class TestDieFalscheGatezahlKommtNichtWieder:
         Nimmt den Text als Argument, damit die Regel selbst pruefbar ist:
         Eine Wache, die nur gegen die eigene Datei laeuft, kann nicht zeigen,
         dass sie etwas faende (Befund 209).
-        """
-        import re
 
-        return [
-            z
-            for z in re.findall(r"[^\n]*neun Gates[^\n]*", text)
-            if "statt elf" not in z and '"neun Gates"' not in z
-        ]
+        **Seit Befund 463 steht die Regel an einer Stelle.** Sie galt hier fuer
+        ``cli.py`` allein, und gemessen lebte die falsche Zahl danach an sieben
+        weiteren Stellen in fuenf Dateien - eine davon im Analysten, nach dem
+        der Registereintrag von 210 benannt ist. Die Umsetzung liegt jetzt in
+        ``tests.test_ladehinweise``, das sie ueber jede Datei fuehrt, die etwas
+        behauptet; hier bleiben die Gegenproben.
+        """
+        from tests.test_ladehinweise import behauptungen
+
+        return behauptungen(text)
 
     def test_keine_stelle_nennt_mehr_neun_gates(self) -> None:
         assert self._fundstellen(Path("cli.py").read_text()) == []

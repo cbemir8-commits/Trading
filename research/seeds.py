@@ -819,7 +819,7 @@ GENERATION_4 = [
 # sie springt rein und raus und frisst genau die Gebuehren, die diese
 # Generation vermeiden sollte. Der Text war richtig, die Zeitebene falsch.
 #
-#     python -m cli backfill --intervall D
+#     python -m cli backfill -m BTCUSDT,ETHUSDT --intervall D --von 2017-08-16
 #     python -m cli research --intervall D
 
 

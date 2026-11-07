@@ -6889,6 +6889,55 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Nummer nicht schreibt - ein Verdachtsmelder, wie das ganze Modul",
         462,
     ),
+    # Befund 463: Dieselbe Klasse wie 462, aber nicht im Register, sondern in
+    # der Anleitung - und diesmal an der Zeile, die die Sperre aufheben soll.
+    Richtung(
+        "Drei Wachen mit derselben Regel, drei zu kurze Reichweiten",
+        "Befund 461 hat gemessen, dass kein Lauf in diesem Container den "
+        "Zustand aendert; 'reihenfolge' sagt es seit Befund 102. Also galt "
+        "der Blick dem einen Schritt, der die Sperre aufhebt - und der steht "
+        "in der Anleitung **falsch**. 'BEIM_NUTZER' fuehrt sechs Zeilen, alle "
+        "mit '-m BTCUSDT,ETHUSDT', und 'test_nutzerbefehle' prueft das seit "
+        "Befund 357. Ausserhalb davon: **acht kopierbare Vorschriften, keine "
+        "einzige mit Korb** - darunter der erste Befehlsblock der README, also "
+        "genau die Zeile, mit der der Nutzer die Sperre aufheben soll, und die "
+        "nummerierten Schritte beider Installationsanleitungen ('Schritt 6: "
+        "Kursdaten laden' laedt 1m/15m/1h/4h ab 2020-03-30 auf einem Bein). "
+        "Gemessen und nicht umkehrbar: BTC allein haelt 5 von 11 Gates gegen "
+        "9 von 11 auf dem Korb (264/318), und der Wettbewerb bucht seine "
+        "Versuche rundenweise. **Dieselbe Luecke bei zwei weiteren Regeln**: "
+        "Die Wache aus Befund 213 (Intervall ohne Datum) sah in vier Dateien "
+        "und uebersah 'deploy/WINDOWS.md' und 'research/seeds.py', wo genau "
+        "ihr Fall stand; die Wache aus Befund 210 ('neun Gates' statt elf) "
+        "sah in **eine** Datei, und die falsche Zahl lebte an sieben Stellen "
+        "in fuenf Dateien weiter - eine davon in 'research/analyst.py', also "
+        "dem Modul, nach dem der Eintrag von 210 benannt ist. Drei richtige "
+        "Regeln, drei Reichweiten, die an derselben Stelle enden: dort, wo "
+        "jemand die Wache gebaut hat. **Die Ausnahme ist gemessen und nicht "
+        "geraten**: 'koernung' spricht von 'den uebrigen neun Gates' und hat "
+        "recht - elf minus die zwei Kennzahlen der Leiter -, eine blinde "
+        "Ersetzung haette dort einen Fehler eingebaut, wo keiner war. Gebaut: "
+        "'QUELLEN' auf acht Anleitungsstellen erweitert, eine Korbwache ueber "
+        "dieselbe Liste, und die Gate-Zahl ueber **jede** Datei, die etwas "
+        "behauptet - die Liste dafuer ist abgeleitet und nicht gepflegt, "
+        "sonst waere es die naechste Stelle aus Befund 439. Die Regel der "
+        "Gate-Zahl steht jetzt einmal und wird von beiden Wachen benutzt. "
+        "**Was der Zeilenanker kostet und bringt**: Ohne ihn trifft das "
+        "Muster 42 Stellen, 38 davon Prosa in Docstrings - der Fehler aus "
+        "Befund 118; mit ihm acht, und alle acht waren echt. **Mein eigener "
+        "Fehler dabei, zweimal**: Der erste Entwurf des Musters hat die "
+        "Trockenlauf-Zeile der README uebersehen, weil 'TRADING_TROCKENLAUF=1' "
+        "vor dem Aufruf stand - eine zu kurze Reichweite im Werkzeug gegen zu "
+        "kurze Reichweiten. Und dieser Eintrag hat beim ersten Anlauf eine "
+        "Befehlszeile woertlich zitiert, womit er den Anker einer fremden "
+        "Wache an sich gezogen hat ('kostet einen Versuch' stand danach im "
+        "falschen Abschnitt) - die Klasse aus Befund 399, in meiner eigenen "
+        "Prosa. Und ich habe dem Nutzer den "
+        "unvollstaendigen Befehl im Bericht davor selbst genannt. **Gelockert "
+        "ist nichts**: keine Schwelle, kein Gate, kein Urteil, und die Sperre "
+        "aus 461 steht weiter",
+        463,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

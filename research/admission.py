@@ -2,7 +2,7 @@
 
 Jedes Genom durchlaeuft dieselben Stationen:
 
-    Genom -> Compiler -> Walk-Forward -> neun Gates -> zugelassen / abgelehnt
+    Genom -> Compiler -> Walk-Forward -> elf Gates -> zugelassen / abgelehnt
 
 Danach wird unter den Zugelassenen **ein** Champion bestimmt und in
 ``strategies/champion.json`` geschrieben. Nur dieser wird gehandelt.
@@ -18,7 +18,7 @@ Strategie durchgeht. Nach hundert Laeufen mit je fuenf Genomen sind es 500
 Versuche, nicht fuenf.
 
 **Der Champion wird nach Bestaendigkeit gewaehlt, nicht nach Rendite.** Unter
-Kandidaten, die alle neun Gates bestanden haben, liegen die Renditeunterschiede
+Kandidaten, die alle elf Gates bestanden haben, liegen die Renditeunterschiede
 im Rauschen - wer danach auswaehlt, waehlt Rauschen aus. Der Anteil profitabler
 Fenster sagt mehr darueber, ob eine Strategie naechsten Monat noch funktioniert.
 """

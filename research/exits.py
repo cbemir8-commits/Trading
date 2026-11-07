@@ -23,7 +23,7 @@ geschlossen wurden, bleibt Geld liegen.
 
 Beide Zahlen sagen etwas ueber die **schon gehandelten** Trades. Das ist ihre
 Staerke und ihre Grenze zugleich: Sie zeigen, wo Spielraum ist - aber jeder
-Vorschlag daraus ist eine Hypothese, die durch dieselben neun Gates muss wie
+Vorschlag daraus ist eine Hypothese, die durch dieselben elf Gates muss wie
 jede andere. Wer die MAE-Verteilung direkt in Parameter uebersetzt, hat nichts
 gelernt, sondern nur auf einem Umweg ueberangepasst.
 """

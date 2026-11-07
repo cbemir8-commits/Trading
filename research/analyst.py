@@ -3,7 +3,7 @@
 Das ist die Stelle, an der ein Sprachmodell im System vorkommt - und die
 Bauweise ist bewusst eng:
 
-    KI  ->  JSON-Genom  ->  Pydantic-Validierung  ->  Compiler  ->  neun Gates
+    KI  ->  JSON-Genom  ->  Pydantic-Validierung  ->  Compiler  ->  elf Gates
 
 **Die KI schreibt niemals ausfuehrbaren Code.** Sie fuellt eine Datenstruktur
 aus, deren Felder, Wertebereiche und erlaubte Indikatoren vorher feststehen.
@@ -15,7 +15,7 @@ Systemverhalten nur noch so gut wie das Modell an diesem Tag.
 Was die KI also tatsaechlich tut: Sie liest, was schon versucht wurde und
 **woran es gescheitert ist**, und formuliert daraus die naechste Hypothese.
 Das ist echte Arbeit - aber es ist Vorschlagsarbeit. Zugelassen wird nichts
-davon durch die KI; das entscheiden dieselben neun Gates wie bei einem von
+davon durch die KI; das entscheiden dieselben elf Gates wie bei einem von
 Hand geschriebenen Genom, inklusive Mehrfachtest-Korrektur.
 
 Warum das Journal so wichtig ist
