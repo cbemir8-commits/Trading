@@ -307,3 +307,92 @@ def test_die_herkunftslage_ist_ein_wert_und_kein_text() -> None:
     assert dataclasses.is_dataclass(lage)
     with pytest.raises(dataclasses.FrozenInstanceError):
         lage.gesamt = 2  # type: ignore[misc]
+
+
+class TestDieVierteDimensionDerQuellen:
+    """**Befund 468.** Befund 228 nennt drei Dimensionen - Kerzenlaenge,
+    Versuche, Instrument -, und Befund 466 hat nur die dritte nachgetragen.
+
+    Nachgemessen an den acht Ausgaben des Zensus: Zwei Luecken blieben.
+    ``cli aufloesung`` druckte zwei Zeilen "7/11", ohne die Versuchszahl zu
+    nennen, obwohl das Gate darin mit ``trials_so_far=trials`` rechnet. Und
+    ``cli front`` nannte weder Reihe noch Kerzenlaenge seiner Quellen,
+    obwohl jeder Bericht beides traegt.
+    """
+
+    def test_aufloesung_nennt_seine_versuchszahl(self) -> None:
+        import cli
+
+        code = rumpf(cli.aufloesung)
+        # **Am Auszeichnungstext ankern, nicht am Wort**: Der erste Treffer
+        # fuer "Aufloesung" im Rumpf ist eine andere Zeichenkette, und der
+        # erste Entwurf dieses Tests hat deshalb das falsche Fenster gelesen.
+        kopf = code[code.index("[bold]Aufloesung[/]") :][:400]
+
+        assert "trials" in kopf, "die Versuchszahl steht nicht im Kopf"
+
+    def test_front_nennt_reihe_und_kerzenlaenge_der_quellen(self) -> None:
+        import cli
+
+        assert "dimensionen()" in rumpf(cli.front)
+
+    def test_die_heutigen_quellen_sind_einig(self) -> None:
+        """Gemessen, nicht geglaubt - und als **Eigenschaft**: Waeren sie
+        uneinig, waere die Tafel von 'cli front' nicht zu lesen."""
+        from pathlib import Path
+
+        lage = herkunft(Path("reports/machbarkeit"))
+
+        assert lage.gesamt > 0
+        assert lage.eine_reihe, lage.dimensionen()
+
+
+class TestZweiKerzenlaengenMachenDieTafelFalsch:
+    """Der Unterschied zu ``satz``: Eine fehlende Punktangabe macht die
+    Aussage **ungewiss**, zwei Kerzenlaengen machen sie **falsch**."""
+
+    @staticmethod
+    def _schreibe(ordner, name: str, *, kerze: str, maerkte: list[str]) -> None:
+        (ordner / name).write_text(
+            json.dumps({"regler": "stop", "punkte": [],
+                        "intervall": kerze, "maerkte": maerkte}),
+            encoding="utf-8",
+        )
+
+    def test_eine_kerzenlaenge_steht_knapp_da(self, tmp_path) -> None:
+        for i in range(3):
+            self._schreibe(tmp_path, f"{i}.json", kerze="1d", maerkte=["BTC", "ETH"])
+        lage = herkunft(tmp_path)
+
+        assert lage.eine_reihe
+        assert lage.dimensionen() == "BTC + ETH 1d"
+
+    def test_zwei_kerzenlaengen_werden_benannt(self, tmp_path) -> None:
+        self._schreibe(tmp_path, "a.json", kerze="1d", maerkte=["BTC", "ETH"])
+        self._schreibe(tmp_path, "b.json", kerze="15m", maerkte=["BTC", "ETH"])
+        text = herkunft(tmp_path).dimensionen()
+
+        assert not herkunft(tmp_path).eine_reihe
+        assert "Verschiedene Quellen" in text
+        assert "Kerzenlaengen" in text
+        assert "Befund 190" in text
+
+    def test_zwei_reihen_werden_benannt(self, tmp_path) -> None:
+        self._schreibe(tmp_path, "a.json", kerze="1d", maerkte=["BTC", "ETH"])
+        self._schreibe(tmp_path, "b.json", kerze="1d", maerkte=["BTC"])
+        text = herkunft(tmp_path).dimensionen()
+
+        assert "Verschiedene Quellen" in text
+        assert "Reihen" in text
+
+    def test_ohne_angabe_wird_nichts_behauptet(self, tmp_path) -> None:
+        """Die aelteren Berichte koennten die Felder auch nicht tragen - dann
+        steht dort kein geratener Wert."""
+        (tmp_path / "a.json").write_text(
+            json.dumps({"regler": "stop", "punkte": []}), encoding="utf-8"
+        )
+        lage = herkunft(tmp_path)
+
+        assert lage.reihen == () and lage.kerzen == ()
+        assert not lage.eine_reihe
+        assert lage.dimensionen() == "ohne Angabe von Reihe und Kerzenlaenge"

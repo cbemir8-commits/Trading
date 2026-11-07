@@ -430,6 +430,22 @@ class Herkunftslage:
     genannt: tuple[tuple[str, int], ...] = ()
     """Die genannten Punkte mit ihrer Anzahl, haeufigster zuerst."""
 
+    reihen: tuple[tuple[str, int], ...] = ()
+    """Die Kursreihen der Berichte - **Befund 468**.
+
+    Befund 466 hat nur den Betriebspunkt gezaehlt. Befund 228 nennt aber
+    **drei** Dimensionen, und zwei davon stehen in jedem dieser Berichte:
+    ``maerkte`` und ``intervall``. Gemessen sind sich heute alle dreizehn
+    einig - und genau deshalb gehoert es geprueft statt geglaubt: Ein Bericht
+    von einer anderen Kerzenlaenge in dieser Tafel waere der Fehler aus
+    Befund 190, wo ein auf Tageskerzen gemessener Kandidat gegen eine Gerade
+    aus Viertelstunden-Regeln stand und als bester Stand der
+    Projektgeschichte zu lesen war.
+    """
+
+    kerzen: tuple[tuple[str, int], ...] = ()
+    """Die Kerzenlaengen der Berichte, haeufigste zuerst."""
+
     @property
     def ohne(self) -> int:
         return self.gesamt - sum(n for _, n in self.genannt)
@@ -443,6 +459,42 @@ class Herkunftslage:
     def gemischt(self) -> bool:
         """Nennen zwei Berichte **verschiedene** Punkte?"""
         return len(self.genannt) > 1
+
+    @property
+    def eine_reihe(self) -> bool:
+        """Stehen alle Berichte auf **derselben** Reihe und Kerzenlaenge?"""
+        return len(self.reihen) == 1 and len(self.kerzen) == 1
+
+    def dimensionen(self) -> str:
+        """Reihe und Kerzenlaenge der Quellen - oder die Warnung dazu.
+
+        Getrennt von ``satz``, weil es ein anderer Fehler ist: Eine fehlende
+        Punktangabe macht die Zusammenfassung ungewiss, **zwei Kerzenlaengen
+        in einer Tafel machen sie falsch** (Befund 190).
+        """
+        if not self.gesamt:
+            return "Keine Berichte."
+        if self.eine_reihe:
+            return f"{self.reihen[0][0]} {self.kerzen[0][0]}"
+        teile = []
+        if len(self.kerzen) > 1:
+            teile.append(
+                "Kerzenlaengen " + ", ".join(f"{k} ({n})" for k, n in self.kerzen)
+            )
+        if len(self.reihen) > 1:
+            teile.append(
+                "Reihen " + ", ".join(f"{r} ({n})" for r, n in self.reihen)
+            )
+        if not teile:
+            return "ohne Angabe von Reihe und Kerzenlaenge"
+        return (
+            "**Verschiedene Quellen in einer Tafel**: "
+            + "; ".join(teile)
+            + ". Punkte verschiedener Kerzenlaengen gegeneinander zu lesen ist "
+            "der Fehler aus Befund 190 - dort stand ein auf Tageskerzen "
+            "gemessener Kandidat gegen eine Gerade aus Viertelstunden-Regeln "
+            "und las sich als bester Stand der Projektgeschichte."
+        )
 
     def satz(self) -> str:
         """Ein Satz fuer die Ausgabe - oder einer, der nichts behauptet."""
@@ -486,6 +538,8 @@ def herkunft(ordner: Path | str) -> Herkunftslage:
     from collections import Counter
 
     gezaehlt: Counter[str] = Counter()
+    reihen: Counter[str] = Counter()
+    kerzen: Counter[str] = Counter()
     gesamt = 0
     for datei in sorted(Path(ordner).glob("*.json")):
         try:
@@ -496,7 +550,19 @@ def herkunft(ordner: Path | str) -> Herkunftslage:
         punkt = daten.get("betriebspunkt")
         if isinstance(punkt, str) and punkt.strip():
             gezaehlt[punkt.strip()] += 1
+        maerkte = daten.get("maerkte")
+        if isinstance(maerkte, list) and maerkte:
+            reihen[" + ".join(str(x) for x in maerkte)] += 1
+        kerze = daten.get("intervall")
+        if isinstance(kerze, str) and kerze.strip():
+            kerzen[kerze.strip()] += 1
+
+    def geordnet(zaehler: Counter[str]) -> tuple[tuple[str, int], ...]:
+        return tuple(sorted(zaehler.items(), key=lambda kv: (-kv[1], kv[0])))
+
     return Herkunftslage(
         gesamt=gesamt,
-        genannt=tuple(sorted(gezaehlt.items(), key=lambda kv: (-kv[1], kv[0]))),
+        genannt=geordnet(gezaehlt),
+        reihen=geordnet(reihen),
+        kerzen=geordnet(kerzen),
     )

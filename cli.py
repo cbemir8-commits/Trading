@@ -8325,6 +8325,10 @@ def front(
             else ""
         )
         + f"\n  Versuche   {trials}\n"
+        # **Reihe und Kerzenlaenge der Quellen** (Befund 468). Dieser Kopf
+        # nannte beides nicht, obwohl jeder Bericht es traegt - und eine
+        # Tafel aus zwei Kerzenlaengen ist der Fehler aus Befund 190.
+        + f"  Quellen    {lage_herkunft.dimensionen()}\n"
         + f"  Herkunft   {lage_herkunft.gesamt} Berichte, "
         + (
             "alle mit Betriebspunkt"
@@ -9764,10 +9768,17 @@ def aufloesung(
     }
     genome = spitzenkandidat()
 
+    # **Die Versuchszahl gehoert in den Kopf** (Befund 468). Dieser Befehl
+    # druckt zwei Zeilen '7/11', und das Gate darin rechnet mit
+    # 'trials_so_far=trials' - ohne die Zahl ist die Bilanz nicht
+    # nachzurechnen. Befund 228 nennt sie als eine der drei Dimensionen, die
+    # ein Bericht fuehren muss; hier fehlte sie als einzige der acht Befehle
+    # aus dem Zensus von Befund 466.
     console.print(
         f"\n[bold]Aufloesung[/] {' + '.join(symbole)} {interval_obj.label}, "
         f"{_betriebspunkt(genome, configs)}\n"
         f"  Kandidat   {genome.name}\n"
+        f"  Versuche   {trials}\n"
         f"  Feindaten  {fein_obj.label} fuer {len(feine)} von {len(symbole)} "
         f"Beinen\n"
     )

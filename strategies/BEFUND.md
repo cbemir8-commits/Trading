@@ -42219,3 +42219,83 @@ akzeptiert.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Die Sperre aus Befund 461 steht weiter - die Boersendaten fehlen.
+
+## Vierhundertachtundsechzig. Zwei der acht Ausgaben fuehrten nicht alle Dimensionen
+
+Zuerst zwei Umwege, die beide die Suche abgefangen hat - und das gehoert
+aufgeschrieben, weil es der Zweck des Werkzeugs ist.
+
+Befund 467 hatte etwas Substanzielles aufgeworfen: Jede Perpetual-Zahl dieses
+Projekts rechnet mit einer **Vorgabe-Fundingrate** von 0,0001, weil
+`data_store/funding/` leer ist. Was macht diese erfundene Zahl mit den Gates?
+
+`cli nachgesehen` hat auf `research/finanzierung.py` gezeigt, Modulkopf: *"Die
+teuerste Annahme des Systems steht auf einem Vorgabewert."* Dort steht alles:
+die Leiter ueber sechs Saetze, die Kipppunkte je Gate auf 0,11 Punkte genau
+(Schlechtestes Jahr haelt bis 5,99 %, Parameter-Plateau bis 9,75 % p.a.), die
+Formabhaengigkeit aus Befund 266, und dass Funding rund das **Neunfache** der
+Handelsgebuehren ist. Gebaut wurde also nichts davon.
+
+### Was offen war, lag eine Ebene daneben
+
+Die Befunde 466 und 467 haben acht Ausgaben um den Betriebspunkt ergaenzt.
+Befund 228 nennt aber **drei** Dimensionen, die ein Bericht fuehren muss -
+Kerzenlaenge, Versuche, Instrument -, und ich hatte nur die dritte
+nachgetragen. Also dieselben acht Ausgaben noch einmal, diesmal gegen alle:
+
+| Befehl | Reihe | Kerzen | Punkt | Versuche |
+| --- | --- | --- | --- | --- |
+| anwaerter | ja | ja | ja | ja |
+| aufloesung | ja | ja | ja | **nein** |
+| front | **nein** | **nein** | ja | ja |
+| koernung | ja | ja | ja | ja |
+| paare | ja | ja | ja | ja |
+| rangprobe | ja | ja | ja | ja |
+| sperrprobe | ja | ja | ja | ja |
+| streuung | ja | ja | ja | ja |
+
+**`cli aufloesung`** druckt zwei Zeilen `7/11` und nannte die Versuchszahl
+nicht - obwohl das Gate darin mit `trials_so_far=trials` rechnet. Ohne sie ist
+die Bilanz nicht nachzurechnen: Dasselbe Genom bei 10 Versuchen und bei 203
+bekommt verschiedene Deflated-Sharpe-Werte, und das ist der ganze Inhalt von
+`cli abstand`.
+
+**`cli front`** nannte weder Reihe noch Kerzenlaenge seiner Quellen, obwohl
+jeder der 13 Berichte beides traegt. Gemessen sind sich heute alle 13 einig -
+`BTCUSD_BITSTAMP + ETHUSD_BITSTAMP`, `1d` -, also ein gemessenes Nein. Und
+genau deshalb gehoert es geprueft statt geglaubt: Ein Bericht einer anderen
+Kerzenlaenge in dieser Tafel waere der Fehler aus Befund 190, wo ein auf
+Tageskerzen gemessener Kandidat gegen eine Gerade aus Viertelstunden-Regeln
+stand und sich als bester Stand der Projektgeschichte las. *"Ein Ausschlag
+nach oben ist schwerer zu bemerken als ein Absturz."*
+
+`Herkunftslage` fuehrt jetzt alle drei Dimensionen, und `dimensionen()` steht
+**neben** `satz()` statt darin - weil es ein anderer Fehler ist:
+
+> Eine fehlende Punktangabe macht die Zusammenfassung **ungewiss**, zwei
+> Kerzenlaengen machen sie **falsch**.
+
+### Zwei eigene Fehlgriffe beim Messen, und beide derselben Art
+
+**Der Schnellzensus las die alten Logdateien.** Meine Schleife suchte die
+Ausgabe je Befehl in mehreren moeglichen Dateinamen und nahm den **letzten**
+Treffer - nicht den neuesten. Das waren die Protokolle von vor dem Eingriff,
+und die Tafel meldete alle acht Punkte als fehlend, obwohl ich vier davon
+selbst mit eigenen Augen geprueft hatte. Nach Aenderungszeit sortiert kam das
+Bild oben heraus.
+
+**Die Wache ankerte am falschen Wort.** `code.index("Aufloesung")` trifft im
+Rumpf eine andere Zeichenkette als die Kopfzeile, also las der Test das
+falsche Fenster. Und nachdem ich am Auszeichnungstext `[bold]Aufloesung[/]`
+ankerte, griff sie weiter ins Leere: Mein Begruendungskommentar stand
+**innerhalb** der f-String-Folge, und `rumpf` macht Kommentare zu
+Leerzeichen - das Fenster lief darin aus, bevor es die neue Zeile erreichte.
+Der Kommentar steht jetzt ueber dem Aufruf, wo er ohnehin hingehoert.
+
+Das ist in dieser Reihe das dritte Mal, dass mein eigenes Messwerkzeug
+daneben lag (nach 466 und 467), und jedes Mal in derselben Richtung: Es
+meldete **zu viel** oder las **das Falsche**, nie zu wenig. Eine Suche, deren
+Treffer man ungeprueft uebernimmt, ist schlimmer als keine (Befund 118).
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Die Sperre aus Befund 461 steht weiter - die Boersendaten fehlen.

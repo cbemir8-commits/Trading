@@ -7102,6 +7102,46 @@ BEHOBEN: tuple[Richtung, ...] = (
         "**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl",
         467,
     ),
+    # Befund 468: Der Zensus war auf eine Dimension verengt - nachgemessen
+    # ueber alle drei, die Befund 228 nennt.
+    Richtung(
+        "Zwei der acht Ausgaben fuehrten nicht alle Dimensionen",
+        "Zuerst zwei Umwege, die beide die Suche abgefangen hat: Die Frage, "
+        "was die **Vorgabe-Fundingrate** mit den Gates macht - aufgeworfen "
+        "von Befund 467 -, ist in 'research/finanzierung.py' laengst "
+        "gemessen, samt Kipppunkten je Gate (5,99 % und 9,75 % p.a.), der "
+        "Formabhaengigkeit aus 266 und dem Verhaeltnis zu den "
+        "Handelsgebuehren (rund das Neunfache). Gebaut wurde also nichts "
+        "davon. **Was offen war, lag eine Ebene daneben**: Die Befunde 466 "
+        "und 467 haben acht Ausgaben um den **Betriebspunkt** ergaenzt - "
+        "Befund 228 nennt aber **drei** Dimensionen, und nachgemessen an "
+        "denselben acht Ausgaben fehlten zwei Stuecke. 'cli aufloesung' "
+        "druckt zwei Zeilen '7/11', ohne die **Versuchszahl** zu nennen, "
+        "obwohl das Gate darin mit 'trials_so_far=trials' rechnet - ohne sie "
+        "ist die Bilanz nicht nachzurechnen. Und 'cli front' nannte weder "
+        "**Reihe noch Kerzenlaenge** seiner Quellen, obwohl jeder der 13 "
+        "Berichte beides traegt. Gemessen sind sich heute alle 13 einig "
+        "(BTCUSD_BITSTAMP + ETHUSD_BITSTAMP, 1d) - ein gemessenes Nein, und "
+        "genau deshalb gehoert es geprueft statt geglaubt: Ein Bericht einer "
+        "anderen Kerzenlaenge in dieser Tafel waere der Fehler aus Befund "
+        "190, wo ein auf Tageskerzen gemessener Kandidat gegen eine Gerade "
+        "aus Viertelstunden-Regeln stand und als bester Stand der "
+        "Projektgeschichte zu lesen war. 'Herkunftslage' fuehrt jetzt alle "
+        "drei Dimensionen, und 'dimensionen()' steht neben 'satz()', weil es "
+        "ein anderer Fehler ist: Eine fehlende Punktangabe macht die "
+        "Zusammenfassung **ungewiss**, zwei Kerzenlaengen machen sie "
+        "**falsch**. **Zwei eigene Fehlgriffe beim Wachenbau**: Mein "
+        "Schnellzensus hat die alten Logdateien gelesen statt der neuen - die "
+        "Schleife nahm den letzten Treffer, nicht den neuesten - und meldete "
+        "alle acht Punkte als fehlend, obwohl ich vier davon selbst geprueft "
+        "hatte. Und die Wache auf die Versuchszahl ankerte am Wort "
+        "'Aufloesung' statt am Auszeichnungstext, las damit das falsche "
+        "Fenster, und griff danach ins Leere, weil mein Begruendungs"
+        "kommentar **innerhalb** der f-String-Folge stand und 'rumpf' ihn zu "
+        "Leerzeichen macht. Der Kommentar steht jetzt ueber dem Aufruf. "
+        "**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl",
+        468,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

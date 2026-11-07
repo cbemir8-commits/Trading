@@ -54,7 +54,13 @@ from research.urteilszweige import (
 #: folgenreichste: Fehlende Angabe macht die Zusammenfassung ungewiss, zwei
 #: verschiedene machen sie falsch. Dass dieser Waechter sie gemeldet hat, ist
 #: richtig so - ein neuer Urteilssatz gehoert gesehen, bevor er gelesen wird.
-URTEILSFUNKTIONEN: int = 162
+#: **163 seit 468**: 'front.dimensionen' sagt, ob die Quellen einer Tafel auf
+#: derselben Reihe und Kerzenlaenge stehen. Es ist ausdruecklich **nicht** in
+#: 'satz' eingebaut, weil es ein anderer Fehler ist: Eine fehlende
+#: Punktangabe macht die Zusammenfassung ungewiss, zwei Kerzenlaengen machen
+#: sie falsch (Befund 190). Zwei Urteile, zwei Funktionen - und dieser
+#: Waechter hat die zweite am Tag ihrer Entstehung gemeldet.
+URTEILSFUNKTIONEN: int = 163
 
 
 def _fn(quelle: str) -> ast.FunctionDef:
