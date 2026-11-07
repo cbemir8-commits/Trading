@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 import pytest
 
 from research.reihenfolge import STAND, Art, Lage, Schritt, Wer
-from research.stand import zahlwort
 
 
 def schritt(**kw) -> Schritt:
@@ -143,15 +141,17 @@ class TestDerGemesseneStand:
 
         Eine Zeile ohne nachlesbaren Abschnitt waere eine Behauptung mit
         Nummer davor.
+
+        **Und seit Befund 464 dieselbe Umsetzung**: Diese Pruefung stand
+        viermal da, jedes Mal mit einem nachgebauten Suchmuster fuer die
+        Ueberschriften. Vier Fassungen einer Regel sind vier Gelegenheiten,
+        dass sie auseinanderlaufen - und sie waren schon auseinandergelaufen.
         """
+        from research.nachmessung import ohne_abschnitt
+
         text = Path("strategies/BEFUND.md").read_text()
-        ueberschriften = set(
-            re.findall(r"^## ([A-Za-zaeoeueAEOEUEss]+)\.", text, re.M)
-        )
-        fehlend = sorted(
-            {s.befund for s in STAND if zahlwort(s.befund) not in ueberschriften}
-        )
-        assert fehlend == [], f"Fundstellen ohne Abschnitt: {fehlend}"
+        fehlend = ohne_abschnitt([s.befund for s in STAND], text)
+        assert fehlend == (), f"Fundstellen ohne Abschnitt: {fehlend}"
 
     def test_keine_zeile_ohne_hinweis(self):
         """Eine Zeile, die nicht sagt, was zu tun waere, hilft niemandem."""

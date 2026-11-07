@@ -6938,6 +6938,49 @@ BEHOBEN: tuple[Richtung, ...] = (
         "aus 461 steht weiter",
         463,
     ),
+    # Befund 464: Die Klasse aus 463 ueber die ganze Suite gemessen - und das
+    # Ergebnis ist ein gemessenes Nein, kein neuer Fund.
+    Richtung(
+        "Dieselbe Regel stand viermal, dreimal schwaecher",
+        "Befund 463 hat dreimal denselben Bauplan gefunden: eine richtige "
+        "Regel, deren Wache dort steht, wo der Fehler gefunden wurde, und "
+        "nicht dort, wo die Regel gilt. Also die Frage an die ganze Suite. "
+        "Gemessen ueber den Syntaxbaum aller 297 Testdateien: Eine "
+        "**Verbotsregel** - 'assert ... not in', 'assert not ...', "
+        "'assert ... == []' - ist von Natur aus projektweit, denn 'nirgends' "
+        "ist keine Eigenschaft einer Datei. Es gibt **sieben** mit weiter "
+        "Reichweite und **sieben** an genau einer Datei, und alle sieben "
+        "engen sind berechtigt: fuenfmal ist das Laborbuch der Korpus selbst, "
+        "einmal handelt die Regel von genau diesem Modulkopf, einmal ist es "
+        "die Gegenprobe aus 463. **Die Klasse ist leer** - das ist ein "
+        "gemessenes Nein und kein Fund. Eine Wache haelt sie leer: Eine neue "
+        "enge Verbotsregel verlangt entweder Reichweite oder einen Satz in "
+        "'ABSICHTLICH_ENG', und ein Eintrag fuer einen Test, den es nicht "
+        "mehr gibt, faellt ebenfalls auf. **Zwei eigene Messfehler dabei, "
+        "beide lehrreich**: Der erste Lauf meldete 13 statt 7, und ein "
+        "Treffer war 'test_jeder_aufruf_im_projekt_nennt_seine_herkunft' - "
+        "die Wache, an der die Sperre haengt. Das sah nach einem Loch an der "
+        "folgenreichsten Stelle aus und war keines: Der Test liest "
+        "'Path(\"research\").glob(\"*.py\")', mein Erkenner sah nur "
+        "woertliche Dateinamen. Nachgezaehlt hat 'evaluate_gates' **26** "
+        "Aufrufstellen, alle in 'cli.py' und 'research/admission.py', also "
+        "beide in der Reichweite; eine Zusicherung haelt das jetzt fest. Und "
+        "die Zahl 6 war eine Unterzaehlung: Der Erkenner kannte als leere "
+        "Sammlung nur '[]' und hat eine Regel mit '== ()' lautlos aus der "
+        "Grundgesamtheit verloren - eine zu kleine Grundgesamtheit sieht aus "
+        "wie ein gutes Ergebnis. **Gefunden wurde stattdessen etwas anderes**: "
+        "'jede Fundstelle steht im Laborbuch' stand **viermal** da - fuer "
+        "STAND, GESCHLOSSEN, BEHOBEN und OFFEN -, jedes Mal mit einem "
+        "nachgebauten Suchmuster fuer die Ueberschriften, und **dreimal "
+        "schwaecher**: Nur die Fassung fuer OFFEN sah auch auf 'zuletzt'. "
+        "Damit waren **106** Nachmessungs-Zeiger ungewacht; gemessen ist "
+        "keiner davon kaputt, aber keiner war geprueft. Jetzt fuehren alle "
+        "vier 'nachmessung.ohne_abschnitt' aus, das denselben Parser benutzt "
+        "wie die Suche, die das Laborbuch durchsucht - wer es anders zerlegt "
+        "als die Suche, prueft eine andere Datei als die benutzte. **Gelockert "
+        "ist nichts**, und gewonnen ist kein Gate: Die Sperre aus 461 steht",
+        464,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

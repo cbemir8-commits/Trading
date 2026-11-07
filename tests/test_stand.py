@@ -78,13 +78,20 @@ class TestRichtung:
         genau darauf verlaesst sich ein Lauf, der wissen will, ob eine Frage
         schon beantwortet ist. In Befund 90 habe ich eine 15-Minuten-Messung
         wiederholt, die unter Nr. 29 laengst dastand.
+
+        **Seit Befund 464 auch die Nachmessung.** Diese Pruefung sah nur auf
+        ``befund``, und ``zuletzt`` zeigt genauso auf einen Abschnitt, den
+        jemand nachlesen soll - bei ``GESCHLOSSEN`` fuenfzehnmal.
         """
-        import re
+        from research.nachmessung import ohne_abschnitt
 
         text = Path("strategies/BEFUND.md").read_text()
-        ueberschriften = set(re.findall(r"^## ([A-Za-zaeoeueAEOEUEss]+)\.", text, re.M))
-        fehlend = sorted(
-            {r.befund for r in GESCHLOSSEN if zahlwort(r.befund) not in ueberschriften}
+        fehlend = list(
+            ohne_abschnitt(
+                [r.befund for r in GESCHLOSSEN]
+                + [r.zuletzt for r in GESCHLOSSEN if r.zuletzt],
+                text,
+            )
         )
 
         assert fehlend == [], (
@@ -459,19 +466,21 @@ class TestDieTrennung:
         assert doppelt == set(), f"Fundstellen in beiden Listen: {doppelt}"
 
     def test_jede_behobene_fundstelle_steht_im_laborbuch(self) -> None:
-        """Dieselbe Pruefung wie fuer ``GESCHLOSSEN`` - ein Eintrag ohne
-        nachlesbare Messung ist auch hier eine Behauptung."""
-        import re
+        """Dieselbe Pruefung wie fuer ``GESCHLOSSEN``, und seit Befund 464
+        **dieselbe Umsetzung** - ein Eintrag ohne nachlesbare Messung ist auch
+        hier eine Behauptung, und bei ``BEHOBEN`` haengen 91 Nachmessungen
+        daran, die vorher niemand geprueft hat."""
         from pathlib import Path
 
+        from research.nachmessung import ohne_abschnitt
+
         text = Path("strategies/BEFUND.md").read_text()
-        ueberschriften = set(
-            re.findall(r"^## ([A-Za-zaeoeueAEOEUEss]+)\.", text, re.M)
+        fehlend = ohne_abschnitt(
+            [r.befund for r in BEHOBEN]
+            + [r.zuletzt for r in BEHOBEN if r.zuletzt],
+            text,
         )
-        fehlend = sorted(
-            {r.befund for r in BEHOBEN if zahlwort(r.befund) not in ueberschriften}
-        )
-        assert fehlend == [], f"Fundstellen ohne Abschnitt: {fehlend}"
+        assert fehlend == (), f"Fundstellen ohne Abschnitt: {fehlend}"
 
     def test_die_richtungen_stehen_in_der_reihenfolge_der_untersuchung(self) -> None:
         """Der Docstring sagt "wie sie untersucht wurden".
@@ -1281,15 +1290,21 @@ class TestDasOffeneRegisterWirdAuchGezeigt:
         assert len(namen) == len(set(namen))
 
     def test_jede_fundstelle_gibt_es_wirklich(self) -> None:
-        """Wie fuer ``GESCHLOSSEN`` seit Befund 90 - hier war es nie geprueft."""
-        import re
+        """Wie fuer ``GESCHLOSSEN`` seit Befund 90 - hier war es nie geprueft.
+
+        **Diese Fassung war die strengste der vier** (Befund 464): Sie sah
+        schon auf ``zuletzt``, die drei anderen nicht. Jetzt sehen alle vier
+        auf beides, und zwar durch dieselbe Funktion.
+        """
+        from research.nachmessung import ohne_abschnitt
 
         text = Path("strategies/BEFUND.md").read_text()
-        ueberschriften = set(re.findall(r"^## ([A-Za-zaeoeueAEOEUEss]+)\.", text, re.M))
-        nummern = {r.befund for r in OFFEN} | {r.zuletzt for r in OFFEN if r.zuletzt}
-        fehlend = sorted(n for n in nummern if zahlwort(n) not in ueberschriften)
+        fehlend = ohne_abschnitt(
+            [r.befund for r in OFFEN] + [r.zuletzt for r in OFFEN if r.zuletzt],
+            text,
+        )
 
-        assert fehlend == [], f"Fundstellen ohne Abschnitt im Laborbuch: {fehlend}"
+        assert fehlend == (), f"Fundstellen ohne Abschnitt im Laborbuch: {fehlend}"
 
     def test_es_steht_vor_den_werkzeugbefunden(self) -> None:
         """Die Reihenfolge sagt, was wichtiger ist: erst zu, dann offen, dann

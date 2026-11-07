@@ -41828,3 +41828,98 @@ Register steht.
 Zulassung. Der Zustand ist unveraendert und die Sperre aus Befund 461 steht
 weiter. Was sich aendert, ist, dass der Schritt, der sie aufhebt, jetzt
 ueberall gleich und vollstaendig dasteht.
+
+## Vierhundertvierundsechzig. Dieselbe Regel stand viermal, dreimal schwaecher
+
+Befund 463 hat dreimal denselben Bauplan gefunden: eine richtige Regel, deren
+Wache dort steht, wo der Fehler gefunden wurde, und nicht dort, wo die Regel
+gilt. Dreimal ist keine Zufallszahl, also die Frage an die ganze Suite: **wo
+steht noch so eine?**
+
+### Was eine Verbotsregel ist, und warum sie projektweit gilt
+
+Ein Test, der behauptet, etwas komme **nicht** vor - `assert ... not in ...`,
+`assert not ...`, `assert ... == []` -, behauptet etwas ueber *nirgends*. Und
+"nirgends" ist keine Eigenschaft einer Datei. Genau diese Form ist deshalb die
+Stelle, an der eine zu kurze Reichheit unsichtbar bleibt: Der Test ist gruen,
+weil er in die eine Datei sieht, in der der Fehler schon behoben ist.
+
+Gemessen ueber den Syntaxbaum aller 297 Testdateien:
+
+    Verbotsregeln mit weiter Reichweite (Glob, abgeleitete Liste)      7
+    Verbotsregeln an genau einer Datei                                 7
+
+Und alle sieben engen sind berechtigt - fuenfmal **ist** das Laborbuch der
+Korpus, von dem die Regel spricht; einmal handelt die Regel von genau diesem
+Modulkopf; einmal ist es die Gegenprobe aus Befund 463, deren weite Fassung
+jetzt in `test_ladehinweise` steht.
+
+**Die Klasse ist leer.** Das ist ein gemessenes Nein und kein Fund, und es
+gehoert genauso aufgeschrieben: Wer es nicht messt, sucht in drei Zyklen
+wieder.
+
+Gehalten wird sie von einer Wache, die nichts verbietet, sondern einen Satz
+verlangt: Eine neue enge Verbotsregel braucht entweder Reichweite oder einen
+Eintrag in `ABSICHTLICH_ENG` mit Grund - dieselbe Bauart wie
+`ENTSCHEIDUNGSGATES` aus Befund 461. Und ein Eintrag fuer einen Test, den es
+nicht mehr gibt, faellt ebenfalls auf; eine Erlaubnis ins Leere ist die Stelle,
+unter der die naechste Regel hindurchrutscht.
+
+### Zwei eigene Messfehler, und beide waren die Arbeit wert
+
+**Der erste meldete 13 statt 7**, und einer der Treffer hiess
+`test_jeder_aufruf_im_projekt_nennt_seine_herkunft`. An dieser Wache haengt die
+Sperre selbst: `GateReport.passed` verlangt `not referenzdaten`, die Herkunft
+kommt aus den Namen der Kursreihen, und ein `evaluate_gates` ohne
+Herkunftsangabe waere die folgenreichste Luecke, die dieses Projekt haben kann
+- Befund 283 hatte sie schon einmal.
+
+Es war keine. Der Test liest `[*Path("research").glob("*.py"), Path("cli.py")]`,
+also das ganze Verzeichnis; mein Erkenner sah nur woertliche Dateinamen und den
+Glob nicht. Nachgezaehlt hat `evaluate_gates` **26** Aufrufstellen, alle in
+`cli.py` und `research/admission.py` - beide in der Reichweite. Das steht jetzt
+als eigene Zusicherung da, denn geprueft hatte es vorher niemand, es stimmte
+nur.
+
+**Der zweite war die 6.** Mein Erkenner kannte als leere Sammlung nur `[]`.
+`test_die_offenen_werden_wirklich_durchsucht` prueft `ohne == ()` und fiel
+damit lautlos aus der Grundgesamtheit - und eine zu kleine Grundgesamtheit
+sieht aus wie ein gutes Ergebnis. Dieselbe Falle, gegen die Befund 209 gebaut
+ist, nur in meinem Messwerkzeug. `_ist_leer` kennt jetzt `[]`, `()` und
+`set()`, und drei Zusicherungen pruefen den Erkenner an je einer Form.
+
+Dazu kam eine dritte Ungenauigkeit, und zwar als Testname: Ein
+`test_es_gibt_mehr_weite_als_enge_regeln` hat behauptet, die weite Reichweite
+sei der Normalfall. Gemessen sind es sieben und sieben. Der Test heisst jetzt
+`test_beide_bauarten_kommen_wirklich_vor` und sichert zu, was zutrifft - beide
+Bauarten gibt es, in mindestens drei verschiedenen Dateien.
+
+### Gefunden wurde etwas anderes
+
+Beim Durchsehen der sieben engen Regeln fiel auf, dass vier von ihnen
+**dieselbe** Regel sind: *jede Fundstelle steht im Laborbuch*, einmal fuer
+`STAND`, einmal fuer `GESCHLOSSEN`, einmal fuer `BEHOBEN`, einmal fuer `OFFEN`.
+Vier Fassungen, jede mit einem eigenen nachgebauten Suchmuster fuer die
+Ueberschriften - und sie waren schon auseinandergelaufen:
+
+| Liste | Eintraege | mit `zuletzt` | `zuletzt` geprueft |
+| --- | --- | --- | --- |
+| GESCHLOSSEN | 42 | 15 | nein |
+| BEHOBEN | 292 | 91 | nein |
+| OFFEN | 19 | 18 | **ja** |
+
+**106 Nachmessungs-Zeiger waren ungewacht.** Gemessen ist keiner davon kaputt
+- jede der 106 Nummern hat ihren Abschnitt -, aber geprueft hat es nichts. Und
+`zuletzt` ist genau der Zeiger, auf den sich ein Lauf verlaesst, der wissen
+will, wo der heutige Stand steht; Befund 130 kam daher, dass so ein Zeiger ins
+Alte zeigte.
+
+Jetzt fuehren alle vier `nachmessung.ohne_abschnitt` aus, und zwar mit `befund`
+**und** `zuletzt`. Gelesen wird mit `abschnitte` statt mit einem eigenen
+Muster: Wer das Laborbuch anders zerlegt als die Suche, die es durchsucht,
+prueft eine andere Datei als die, die benutzt wird.
+
+**Gelockert ist nichts**, und gewonnen ist kein Gate. Die Sperre aus Befund 461
+steht - die Boersendaten fehlen. Was dieser Befund aendert: 106 Zeiger sind
+jetzt gewacht, eine Regel steht einmal statt viermal, und die Frage "gibt es
+noch eine zu kurze Wache" ist beantwortet statt offen.

@@ -31,6 +31,7 @@ ist schlimmer als keine.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from research.stand import Richtung, zahlwort
@@ -42,6 +43,7 @@ __all__ = [
     "Abschnitt",
     "Spur",
     "abschnitte",
+    "ohne_abschnitt",
     "spuren",
 ]
 
@@ -124,6 +126,29 @@ def abschnitte(text: str) -> tuple[Abschnitt, ...]:
         ende = roh[k + 1][0] - 1 if k + 1 < len(roh) else len(zeilen) - 1
         aus.append(Abschnitt(nummer, titel, start, ende))
     return tuple(aus)
+
+
+def ohne_abschnitt(nummern: Iterable[int], text: str) -> tuple[int, ...]:
+    """Welche dieser Befundnummern haben **keinen** Abschnitt im Laborbuch?
+
+    Eine Nummer ohne nachlesbaren Abschnitt ist eine Behauptung mit Nummer
+    davor - der Fehler aus Befund 90, wo eine 15-Minuten-Messung wiederholt
+    wurde, die unter Nr. 29 laengst dastand.
+
+    **Eine Umsetzung fuer vier Listen** (Befund 464). Diese Pruefung stand
+    viermal da - fuer ``STAND``, ``GESCHLOSSEN``, ``BEHOBEN`` und ``OFFEN``
+    -, jedes Mal mit einem nachgebauten Ueberschriften-Suchmuster, und
+    **dreimal schwaecher**: Nur die Fassung fuer ``OFFEN`` sah auch auf
+    ``zuletzt``. Gemessen waren damit 106 Nachmessungs-Zeiger in
+    ``GESCHLOSSEN`` und ``BEHOBEN`` ungeprueft (keiner davon kaputt, aber
+    keiner gewacht).
+
+    Gelesen wird mit ``abschnitte`` und nicht mit einem eigenen Muster: Wer
+    das Laborbuch anders zerlegt als die Suche, die es durchsucht, prueft
+    eine andere Datei als die, die benutzt wird.
+    """
+    vorhanden = {a.nummer for a in abschnitte(text)}
+    return tuple(sorted({n for n in nummern if n not in vorhanden}))
 
 
 @dataclass(frozen=True, slots=True)
