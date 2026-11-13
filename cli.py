@@ -338,8 +338,9 @@ def backfill(
     der Korb aus BTC und ETH, auf dem jede Zulassungszahl dieses Projekts steht,
     auf Bybit-Kerzen nie entstehen: Der Nutzer laedt, was ihm gesagt wird, und
     'cli wettbewerb' sucht danach auf **einem** Bein. Gemessen ist, was das
-    kostet - BTC allein steht bei 5 von 11 gegen 9 von 11 auf dem Korb -, und
-    die Versuche dafuer sind gebucht und nicht zurueckzuholen.
+    kostet - BTC allein steht bei 5 von 11 gegen 9 von 11 auf dem Korb, beides
+    am Kassa-Punkt -, und die Versuche dafuer sind gebucht und nicht
+    zurueckzuholen.
     """
     _configure_logging(verbose)
     settings = get_settings()
@@ -557,7 +558,10 @@ def wettbewerb(
         help="Mehrere Maerkte als Portfolio, durch Komma getrennt. Leer = "
              "einzelner Markt. **Suchen und Pruefen gehoeren auf dieselbe "
              "Aufstellung** - der Spitzenkandidat steht auf BTC allein bei "
-             "5 von 11, auf BTC + ETH bei 7 von 11.",
+             "5 von 11, auf BTC + ETH bei 9 von 11 (Kassa-Punkt, 203 "
+             "Versuche). Hier stand '7 von 11' fuer den Korb: Das ist "
+             "derselbe Korb am **Perpetual**-Punkt und halbierte den Preis "
+             "des fehlenden '-m' von vier Gates auf zwei (Befund 471).",
     ),
     generation: int = typer.Option(
         8, "--generation", "-g",
@@ -734,8 +738,16 @@ def wettbewerb(
     # vorher. Mit mehreren wird der Wettbewerb auf genau die Beine gestellt,
     # aus denen jede Zulassungszahl des Projekts stammt. Der Unterschied ist
     # kein Detail: derselbe Spitzenkandidat kommt auf BTC allein auf 5 von 11
-    # (Deflated Sharpe 0,190), auf BTC + ETH auf 7 von 11 (0,843). Wer auf dem
-    # einen Berg sucht und auf dem anderen prueft, optimiert am Ziel vorbei.
+    # (Deflated Sharpe 0,4560), auf BTC + ETH auf 9 von 11 (0,5826) - gemessen
+    # am Kassa-Punkt bei 203 Versuchen, 'reports/marktkombinationen'. Wer auf
+    # dem einen Berg sucht und auf dem anderen prueft, optimiert am Ziel
+    # vorbei.
+    #
+    # **Befund 471.** Hier stand '7 von 11 (0,843)' fuer den Korb. Die 7 ist
+    # der **Perpetual**-Punkt auf demselben Korb (Befund 106), die 0,843 ein
+    # Stand von vor den heutigen Versuchen - zwei verschiedene Messungen als
+    # ein Paar gelesen, und damit kostete das fehlende '-m' scheinbar zwei
+    # Gates statt vier.
     frames: dict | None = None
     configs: dict | None = None
     if len(symbole) > 1:
@@ -1992,7 +2004,8 @@ _KONTRAKT_ZU_SYMBOL = {
 #:
 #: **Jede Zulassungszahl steht auf diesem Korb** (Befunde 264/318): 9 von 11 auf
 #: BTC + ETH, 8 von 11 auf ein Bein gekuerzt, 5 von 11 fuer BTC auf seiner
-#: eigenen Reihe. Der Korb zieht den Rueckgang unter den jedes Beins, weil die
+#: eigenen Reihe - alle drei am **Kassa-Punkt** (Befund 471; am
+#: Perpetual-Punkt sind es 7 von 11 auf demselben Korb). Der Korb zieht den Rueckgang unter den jedes Beins, weil die
 #: beiden nicht gleichzeitig fallen.
 #:
 #: Steht hier, weil 'cli backfill' bis Befund 357 **ein** Symbol geladen hat -
@@ -2028,7 +2041,8 @@ def _korbwarnung(symbole, befehl: str, zusatz: str = "") -> None:
         f"[yellow]Der Zulassungskorb ist {', '.join(ZULASSUNGSKORB)}; hier "
         f"fehlt {', '.join(fehlend)}.[/]\n"
         f"[dim]Jede Zulassungszahl dieses Projekts steht auf dem Korb - BTC "
-        f"allein kommt auf 5 von 11 gegen 9 von 11 (Befunde 264/318). "
+        f"allein kommt auf 5 von 11 gegen 9 von 11, beides am Kassa-Punkt "
+        f"(Befunde 264/318, 471). "
         f"Vollstaendig laden:\n"
         f"  python -m cli {befehl} -m {','.join(ZULASSUNGSKORB)}"
         + (f" {zusatz}" if zusatz else "")

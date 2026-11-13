@@ -42495,3 +42495,79 @@ diesen Tests im Praesens, und es gibt sie nicht.
 Die Sperre aus Befund 102 steht weiter - die Boersendaten fehlen. Was sich
 aendert: Zwei Beweise, die es in der Suite nur noch dem Namen nach gab,
 rechnen wieder.
+
+## Vierhunderteinundsiebzig. Zwei Stellen halbierten den Preis des fehlenden Korbs
+
+Vier Stellen in `cli.py` vergleichen **ein Bein** mit dem Zulassungskorb. Zwei
+nannten fuer den Korb 7 von 11, zwei 9 von 11 - in derselben Datei:
+
+    341   BTC allein steht bei 5 von 11 gegen 9 von 11 auf dem Korb
+    560   auf BTC allein bei 5 von 11, auf BTC + ETH bei 7 von 11
+    736   auf BTC allein auf 5 von 11 (DSR 0,190), auf BTC + ETH auf 7 (0,843)
+    2031  BTC allein kommt auf 5 von 11 gegen 9 von 11
+
+### Gemessen, nicht entschieden
+
+Das Projekt hat die Antwort selbst im Speicher. `reports/marktkombinationen`,
+neuester Stand, mit dem Betriebspunkt im Kopf:
+
+    Betriebspunkt: Spot (kein Hebel, kein Funding)   Intervall 1d   203 Versuche
+
+    Maerkte           n   bestanden   Trades      DSR
+    BTC               1       5/11      117   0,4560
+    ETH               1       8/11       81   0,3413
+    BTC+ETH           2       9/11      158   0,5826
+    BTC+ETH+XRP       3       9/11      267   0,4555
+    BTC+ETH+LTC+XRP   4       9/11      375   0,4123
+
+Also **9**. Das Paar ist 5 gegen 9, und der Unterschied ist nicht zwei Gates,
+sondern vier.
+
+### Die 7 ist nicht erfunden
+
+Sie ist derselbe Korb am **Perpetual**-Punkt (Befund 106): BTC + ETH steht
+dort bei 7 von 11, am Kassa-Punkt bei 9. Verwechselt, nicht geraten - und
+damit dieselbe Klasse wie Befund 428, die Befund 242 elfmal gezaehlt hat.
+
+Die beiden DSR-Werte im Kommentar sind von derselben Art: 0,843 liegt
+**ueber** dem heutigen Korbwert 0,5826. Der Deflated Sharpe faellt, wenn die
+Versuche steigen, also ist 0,843 ein Stand von vor den heutigen 203 Versuchen.
+Zwei Messungen, als ein Paar gelesen.
+
+### Was es anrichtete
+
+Die falsche Zahl stand nicht in einem Forschungsmodul, sondern in der **Hilfe
+von `-m`** am Befehl, der seine Versuche unwiderruflich bucht. Wer dort liest,
+dass das zweite Bein zwei Gates bringt, haelt es fuer eine Feinheit. Es bringt
+vier. Befund 357 hat genau diesen Fehler teuer genannt - *"ein gebuchter
+Versuch kommt nicht zurueck"* -, und die Zeile, die davor warnt, hat den Preis
+halbiert.
+
+### Die Ursache stand schon im Register
+
+Keine der vier Stellen nannte ihren Betriebspunkt. Das ist Befund 468 fuer
+diese Familie: Eine Gate-Zahl ohne ihren Punkt laesst sich gegen die falsche
+Leiter lesen - und so wandert eine 7 an die Stelle einer 9, ohne dass es
+jemandem auffaellt, weil beide Zahlen echt sind.
+
+### Gebaut
+
+Alle vier Stellen berichtigt, und jede nennt jetzt ihren Punkt; die
+Korbkonstante ebenso. Dazu eine Wache mit drei Zusicherungen:
+
+* Keine Ein-Bein-Stelle gibt dem Korb die Perpetual-Zahl **allein**. Sie darf
+  daneben stehen - aber nur als das, was sie ist.
+* Jede Stelle, die eine Gate-Zahl nennt, nennt ihren Betriebspunkt.
+* Die Zahlen **und die DSR-Werte** in `cli.py` sind die des neuesten
+  gemessenen Berichts. Diese Zusicherung geht rot, sobald die Prosa von der
+  Messung weglaeuft, und das ist ihr Zweck.
+
+Geprueft wird hier ausdruecklich der **Rohtext** und nicht der Rumpf. Befund
+399 verlangt das Gegenteil, aus gutem Grund - dort soll Prosa keine
+Zusicherung erfuellen. Hier *ist* die Prosa der Gegenstand: Die falschen
+Zahlen standen in einem Hilfetext und in einem Kommentar, also wird geprueft,
+was ein Mensch liest.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Die Sperre aus Befund 102 steht weiter. Was sich aendert: Der Preis des
+fehlenden `-m` steht in seiner gemessenen Hoehe.

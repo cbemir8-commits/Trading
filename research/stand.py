@@ -7226,6 +7226,41 @@ BEHOBEN: tuple[Richtung, ...] = (
         "rechnen wieder",
         470,
     ),
+    # Befund 471: Der Preis des fehlenden '-m' stand zweimal halb so hoch -
+    # weil die Korbzahl vom falschen Betriebspunkt stammte.
+    Richtung(
+        "Zwei Stellen halbierten den Preis des fehlenden Korbs",
+        "Vier Stellen in 'cli.py' vergleichen **ein Bein** mit dem "
+        "Zulassungskorb. Zwei nannten fuer den Korb **7 von 11**, zwei **9 "
+        "von 11** - in derselben Datei. **Gemessen am eigenen Bericht** "
+        "('reports/marktkombinationen', Betriebspunkt im Kopf benannt: Spot, "
+        "kein Hebel, kein Funding; 1d; 203 Versuche): BTC allein 5 von 11 bei "
+        "DSR 0,4560, BTC + ETH 9 von 11 bei 0,5826. Also 9. **Die 7 ist nicht "
+        "erfunden** - sie ist derselbe Korb am **Perpetual**-Punkt (Befund "
+        "106). Verwechselt, nicht geraten, und dieselbe Klasse wie Befund 428, "
+        "die 242 elfmal gezaehlt hat. **Was es anrichtete**: Die falsche Zahl "
+        "stand in der Hilfe von '-m' am Befehl, der seine Versuche "
+        "unwiderruflich bucht. Dort las sich der Preis des fehlenden "
+        "Korbbeins als **zwei** Gates statt vier - also als Kleinigkeit, "
+        "waehrend 341 und 2031 denselben Vergleich richtig mit 5 gegen 9 "
+        "fuehren. Der Kommentar im Wettbewerb trug zusaetzlich die DSR-Werte "
+        "0,190 und 0,843; 0,843 liegt ueber dem heutigen Korbwert 0,5826 und "
+        "ist ein Stand von vor den heutigen Versuchen - zwei Messungen als ein "
+        "Paar gelesen. **Die Ursache steht im Register schon**: Keine der vier "
+        "Stellen nannte ihren Betriebspunkt. Genau das ist Befund 468 fuer "
+        "diese Familie - eine Gate-Zahl ohne Punkt laesst sich gegen die "
+        "falsche Leiter lesen, und so wandert eine 7 an die Stelle einer 9. "
+        "**Gebaut**: alle vier Stellen berichtigt und jede nennt jetzt ihren "
+        "Punkt, der Korbkonstante ebenso; dazu eine Wache, die dreierlei "
+        "haelt - keine Ein-Bein-Stelle gibt dem Korb die Perpetual-Zahl "
+        "allein, jede Stelle mit einer Gate-Zahl nennt ihren Punkt, und die "
+        "Zahlen samt DSR in 'cli.py' sind die des neuesten gemessenen "
+        "Berichts. Die letzte Zusicherung geht rot, sobald die Prosa von der "
+        "Messung weglaeuft, und das ist ihr Zweck. **Gelockert ist nichts**: "
+        "keine Schwelle, kein Gate, keine Zahl - der Preis steht jetzt in "
+        "seiner gemessenen Hoehe",
+        471,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
