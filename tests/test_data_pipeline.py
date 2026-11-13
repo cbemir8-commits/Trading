@@ -345,10 +345,40 @@ class TestRateLimiter:
         elapsed = time.monotonic() - start
         assert elapsed >= 0.06  # 4 Wartezeiten a 20 ms
 
-    def test_zero_disables_limiting(self) -> None:
+    def test_zero_disables_limiting(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Hier stand die Behauptung "darf nicht blockieren" als Kommentar,
+        und nichts hat sie geprueft: Der Test bestand, solange ``wait`` nicht
+        **wirft** - haette es geschlafen, waere er haengen geblieben statt rot
+        zu werden. Jetzt wird das Schlafen gezaehlt, nicht die Uhr befragt:
+        eine Zeitschwelle waere auf einem belasteten Rechner launisch.
+        """
+        import data.backfill as modul
+
+        geschlafen: list[float] = []
+        monkeypatch.setattr(modul.time, "sleep", geschlafen.append)
+
         limiter = RateLimiter(requests_per_second=0)
         limiter.wait()
-        limiter.wait()  # darf nicht blockieren
+        limiter.wait()
+
+        assert limiter.min_interval == 0.0
+        assert geschlafen == []
+
+    def test_und_der_zaehler_sieht_ein_schlafen_wirklich(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Die Gegenprobe zum Test darueber: Ohne sie koennte ``geschlafen ==
+        []`` auch daran liegen, dass die falsche Stelle ersetzt wurde."""
+        import data.backfill as modul
+
+        geschlafen: list[float] = []
+        monkeypatch.setattr(modul.time, "sleep", geschlafen.append)
+
+        limiter = RateLimiter(requests_per_second=50)
+        limiter.wait()
+        limiter.wait()
+
+        assert geschlafen, "der Begrenzer hat nicht geschlafen - oder der Zaehler sitzt falsch"
 
 
 # ---------------------------------------------------------------------------
