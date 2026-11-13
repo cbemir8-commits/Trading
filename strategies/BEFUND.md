@@ -42388,3 +42388,110 @@ tut (394/399).
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Die Sperre aus Befund 461 steht weiter - die Boersendaten fehlen. Was sich
 aendert: Die Zeile, an der man aufhoert zu lesen, sagt jetzt, was sie meint.
+
+## Vierhundertsiebzig. Zwei Uebersprungsstellen standen vor dem eigentlichen Beweis
+
+Die Suite war gruen. So sah die Zeile aus, nach der man aufhoert zu lesen:
+
+    6679 passed, 2 skipped, 183 deselected in 544.55s (0:09:04)
+
+Zwei uebersprungen. Beide Stellen sassen in Tests, die sich **selbst** als den
+eigentlichen Beweis bezeichnen - und genau deshalb ist es ein Fund und keine
+Aufraeumarbeit.
+
+### Der erste: ein Zaehler ist weitergelaufen
+
+`test_der_verbund_stimmt_mit_dem_lauf_ueberein` ist der einzige Test, der die
+drei Verbundzahlen nicht aus dem Modulkopf nimmt, sondern gegen den echten
+Walk-Forward nachrechnet. Sein Docstring sagt, wofuer er da ist:
+
+> Die Tests oben rechnen mit den Zahlen aus dem Modulkopf. Sie wuerden auch
+> dann bestehen, wenn die Messung dahinter falsch waere [...] Das ist der
+> Preis dafuer, dass Befund 140 nicht dasselbe Schicksal erleidet wie Befund
+> 73.
+
+Darunter stand `if versuche != 198: pytest.skip(...)`. Der Versuchszaehler
+steht bei 203. Der Test, der das Schicksal von Befund 73 verhindern sollte,
+hat dieses Schicksal selbst erlitten - still, bei gruener Suite.
+
+**Gemessen, ob der Zaehler die gepruefter Zahlen ueberhaupt beruehrt.** Er tut
+es nicht: `stichprobe` rechnet aus Trades und Beinsumme, die Guete aus
+`sharpe_je_trade` und n. Der Zaehler geht allein in `dsr` und in die Latten -
+beides prueft dieser Test nicht. Also Sperre gehoben und den Lauf gemacht:
+
+    1 passed in 64.81s
+
+Alle drei Paare stimmen weiter: 114/2,690, 136/2,986, 109/2,641. Die Sperre
+hat eine funktionierende Pruefung fuer nichts stillgelegt, und 65 Sekunden
+waren der ganze Preis.
+
+### Der zweite: ein Aufbau, der die Lage nie erzeugt
+
+`test_der_deckel_greift_und_kuerzt` traegt im Docstring die Worte **"Der
+eigentliche Test"** und darunter `if ungedeckelt <= verbund.beinsumme:
+pytest.skip("dieser Aufbau kuerzt schon von selbst")`.
+
+Nachgerechnet mit den Helfern der Datei selbst:
+
+    muster/muster versatz=1000   roh=96   ungedeckelt=96   Beine=[48, 48] -> nichts zu deckeln
+    blockmuster beidseitig       roh=160  ungedeckelt=31   Beine=[30, 30] -> kuerzt schon selbst
+    gegenlaeufige Niveaus        roh=160  ungedeckelt=78   Beine=[30, 30] -> der Deckel bindet
+
+Der gewaehlte Aufbau konnte die Wirkung nicht zeigen: Streuen die Werte
+innerhalb eines Fensters wie zwischen den Fenstern, ist der ICC null, beide
+Beine tragen ihre volle Zahl, und ihre Vereinigung traegt genau die Summe.
+Dann ist `ungedeckelt == beinsumme`, der Test uebersprang, und die Deckelung
+war nie gezeigt - in der Klasse, deren Kopf sie beschreibt.
+
+Mit **gegenlaeufigen** Fensterniveaus bindet sie: Jedes Bein traegt 30, die
+Vereinigung gilt ungedeckelt als 78, weil der Schaetzer die Abhaengigkeit
+nicht mehr sieht, sobald hohe und tiefe Niveaus im selben Block liegen. Das
+ist dieselbe Blindheit wie im echten Fall aus Befund 153, dort 527 gegen 365.
+
+Der Uebersprung ist jetzt eine **Zusicherung**: Traegt der Aufbau die Lage
+nicht mehr, wird der Test rot und nicht still.
+
+### Der Bestand drumherum ist gesund
+
+Damit aus zwei Stellen keine Erzaehlung ueber den ganzen Testbaum wird, ist er
+gezaehlt: 41 Uebersprungsstellen, davon 36 Datenfragen ("keine Kerzen im
+Speicher", "nicht gefunden"), drei der Durchfall einer Suche. Gefeuert haben
+im gruenen Lauf **nur diese zwei**.
+
+### Was verboten ist, und was absichtlich nicht
+
+Verboten ist die Bauart: **Kein Uebersprung haengt an einem
+Gleichheitsvergleich gegen eine eingetragene Zahl.** Gemessen ohne eine
+einzige Ausnahme erfuellbar. Eine Schwelle ("weniger als vier Reihen im
+Speicher") bleibt erlaubt - sie sagt "zu wenig zum Messen" und nicht "ein
+anderer Stand als damals". Die Wache traegt ihre Gegenproben mit, auch die
+unangenehme: `True` ist in Python ein `int`, ein `== True` darf also nicht als
+eingetragene Zahl gelten.
+
+Die naheliegende breitere Regel - ein Uebersprung darf nicht an denselben
+Namen haengen, die der Test zusichert - ist **nicht** gebaut. Sie traefe
+gemessen sieben Stellen, sechs davon voellig richtig. Eine Regel mit sechs
+Ausnahmen ist eine Ausnahmeliste; die Zahl steht deshalb als Test und nicht
+als Behauptung.
+
+### Eigener Fehlgriff
+
+Mein Schnellzensus hat die drei Durchfallstellen als "unbedingt" gemeldet,
+also als Tests, die niemals laufen. Sie sind das Ende einer Suchschleife
+(`for ... if Treffer: return` und danach der Uebersprung) und feuern nie.
+Fuenftes Mal, dass eine schnelle Zaehlung von mir zu viel meldet und nie zu
+wenig. Die Wache klassifiziert daher nach Verhalten - steht eine Schleife in
+derselben Funktion? - und nicht nach Syntaxform.
+
+### Beilaeufig gemessen
+
+Kein einziger Test traegt die Markierung `network`. Die Mechanik in
+`conftest.py`, die netzabhaengige Tests standardmaessig ueberspringt, wacht
+also ueber eine leere Menge. Das ist kein Mangel - die Regionssperre bleibt
+unberuehrt und wird nicht umgangen -, aber der Kopf der Datei spricht von
+diesen Tests im Praesens, und es gibt sie nicht.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Die Sperre aus Befund 102 steht weiter - die Boersendaten fehlen. Was sich
+aendert: Zwei Beweise, die es in der Suite nur noch dem Namen nach gab,
+rechnen wieder.

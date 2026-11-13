@@ -82,8 +82,15 @@ def muster(n: int, hoch: float, tief: float) -> list[list[float]]:
     return [[hoch, tief, hoch] if i % 2 == 0 else [tief, hoch, tief] for i in range(n)]
 
 
-def blockmuster(n: int, *, spanne: float = 6.0, je: int = 4) -> list[list[float]]:
+def blockmuster(
+    n: int, *, spanne: float = 6.0, je: int = 4, gegenlaeufig: bool = False
+) -> list[list[float]]:
     """Fenster, **innerhalb** derer sich die Trades gleichen.
+
+    ``gegenlaeufig`` dreht die Fensterniveaus um (Befund 470). Zwei so
+    gebaute Beine tragen einzeln ihre Abhaengigkeit, ihre Vereinigung aber
+    mischt hohe und tiefe Niveaus in denselben Block - und genau dann ist der
+    ICC-Schaetzer blind und der Deckel aus Befund 153 bindet.
 
     Der erste Anlauf dieser Datei benutzte ``muster``: Dort streuen die Werte
     innerhalb jedes Fensters genauso wie zwischen den Fenstern, der ICC ist
@@ -95,7 +102,11 @@ def blockmuster(n: int, *, spanne: float = 6.0, je: int = 4) -> list[list[float]
     Abhaengigkeit, die das Gate erkennen soll.
     """
     return [
-        [spanne * ((i % 5) - 2) + (0.3 if k % 2 else -0.3) for k in range(je)]
+        [
+            (-spanne if gegenlaeufig else spanne) * ((i % 5) - 2)
+            + (0.3 if k % 2 else -0.3)
+            for k in range(je)
+        ]
         for i in range(n)
     ]
 
@@ -533,9 +544,16 @@ def test_der_verbund_stimmt_mit_dem_lauf_ueberein() -> None:
     from strategy.genome import SizingSpec
 
     einstellungen = get_settings()
+    # **Kein Uebersprung am Zaehlerstand** (Befund 470). Hier stand
+    # ``if versuche != 198: pytest.skip(...)``. Seit der Zaehler weitergelaufen
+    # ist, hat der einzige Test, der die Verbundzahlen gegen den echten Lauf
+    # nachrechnet, nicht mehr gerechnet - still, bei gruener Suite.
+    #
+    # Gemessen haengt keine der geprueften Zahlen am Zaehler: ``stichprobe``
+    # rechnet aus Trades und ``beinsumme``, die Guete aus ``sharpe_je_trade``
+    # und n. Der Zaehler geht allein in ``dsr`` und in die Latten - beides
+    # prueft dieser Test nicht.
     versuche = load_trials(Path(einstellungen.paths.state) / "trials.json")
-    if versuche != 198:
-        pytest.skip(f"Zaehler steht bei {versuche}, Befund 140 galt bei 198")
 
     symbole = ["BTCUSD_BITSTAMP", "ETHUSD_BITSTAMP"]
     frames, configs, _ = clim._korb_daten(symbole, Interval("D"), einstellungen)
@@ -643,18 +661,35 @@ class TestDieObergrenze:
         assert verbund.beinsumme is None
 
     def test_der_deckel_greift_und_kuerzt(self) -> None:
-        """**Der eigentliche Test.** Ein Verbund, dessen Bloecke keine
-        Abhaengigkeit zeigen, bekaeme ohne Deckel die volle rohe Zahl."""
-        a = bericht(muster(16, 3.0, -1.0))
-        b = bericht(muster(16, -1.0, 3.0), versatz=1000)
+        """**Der eigentliche Test** - und er hat lange nichts geprueft (470).
+
+        Hier stand ein Aufbau aus ``muster`` und darunter ein Uebersprung
+        ("dieser Aufbau kuerzt schon von selbst"). Gemessen trugen beide Beine
+        48 und ihre Vereinigung 96: Es gab nichts zu deckeln, der Test
+        uebersprang still, und die Deckelwirkung war nie gezeigt - in der
+        Klasse, deren Kopf sie beschreibt.
+
+        Mit **gegenlaeufigen** Niveaus bindet der Deckel: Jedes Bein traegt
+        30, die Vereinigung gilt ungedeckelt als 78. Das ist dieselbe
+        Blindheit des Schaetzers wie im echten Fall aus Befund 153, dort 527
+        gegen 365.
+
+        Der Uebersprung ist jetzt eine **Zusicherung**: Traegt der Aufbau die
+        Lage nicht mehr, wird dieser Test rot und nicht still.
+        """
+        a = bericht(blockmuster(20))
+        b = bericht(blockmuster(20, gegenlaeufig=True), versatz=1000)
         verbund = baue([("A", a), ("B", b)], versuche=166)
 
         ungedeckelt = stichprobe_wie_im_gate(
             verbund.trades, bloecke=verbund.bloecke or None
         ).effektiv
 
-        if ungedeckelt <= verbund.beinsumme:
-            pytest.skip("dieser Aufbau kuerzt schon von selbst")
+        assert verbund.beinsumme is not None
+        assert ungedeckelt > verbund.beinsumme, (
+            f"ungedeckelt {ungedeckelt} <= Beinsumme {verbund.beinsumme}: "
+            f"ohne bindenden Deckel zeigt dieser Test nichts."
+        )
         assert verbund.stichprobe.effektiv == verbund.beinsumme
         assert verbund.stichprobe.effektiv < ungedeckelt
 

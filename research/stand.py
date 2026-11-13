@@ -7179,6 +7179,53 @@ BEHOBEN: tuple[Richtung, ...] = (
         "eine Zeile sagt jetzt, was sie meint",
         469,
     ),
+    # Befund 470: Zwei Tests, die sich selbst den eigentlichen Beweis nennen,
+    # haben still aufgehoert zu pruefen - bei gruener Suite.
+    Richtung(
+        "Zwei Uebersprungsstellen standen vor dem eigentlichen Beweis",
+        "Die Suite war gruen: 6679 bestanden, **2 uebersprungen** - und genau "
+        "die zwei sassen in Tests, die sich selbst als den eigentlichen "
+        "Beweis bezeichnen. **Erster**: Der einzige Test, der die drei "
+        "Verbundzahlen gegen den echten Walk-Forward nachrechnet, sagt in "
+        "seinem Docstring, er sei da, 'damit Befund 140 nicht dasselbe "
+        "Schicksal erleidet wie Befund 73' - und uebersprang an 'versuche != "
+        "198', seit der Zaehler auf 203 steht. Gemessen haengt **keine** "
+        "seiner Zahlen am Zaehler: 'stichprobe' rechnet aus Trades und "
+        "Beinsumme, die Guete aus 'sharpe_je_trade' und n; der Zaehler geht "
+        "allein in 'dsr' und in die Latten. Sperre gehoben, Lauf gemacht: "
+        "besteht bei 203 in 65 Sekunden, alle drei Paare stimmen (114/2,690, "
+        "136/2,986, 109/2,641). Die Sperre hat eine funktionierende Pruefung "
+        "fuer nichts stillgelegt. **Zweiter**: 'Der eigentliche Test' der "
+        "Deckelung uebersprang, weil sein Aufbau die Wirkung nie erzeugte - "
+        "beide Beine 48, die Vereinigung 96, nichts zu deckeln, und das in "
+        "der Klasse, deren Kopf die Deckelung beschreibt. Mit "
+        "**gegenlaeufigen** Fensterniveaus bindet sie: Beine 30 und 30, "
+        "Vereinigung ungedeckelt 78 - dieselbe Blindheit des Schaetzers wie "
+        "im echten Fall aus 153 (527 gegen 365). Der Uebersprung ist jetzt "
+        "eine Zusicherung: Traegt der Aufbau die Lage nicht, wird der Test "
+        "rot und nicht still. **Der Bestand drumherum ist gesund**: Von 41 "
+        "Uebersprungsstellen sind 36 Datenfragen ('keine Kerzen im "
+        "Speicher'), drei der Durchfall einer Suche, und gefeuert haben nur "
+        "diese zwei. **Verbot der Bauart**: Kein Uebersprung haengt mehr an "
+        "einem Gleichheitsvergleich gegen eine eingetragene Zahl - ohne "
+        "Ausnahme erfuellbar, mit Gegenproben, die auch die Schwelle 'weniger "
+        "als vier Reihen' und das 'True ist ein int'-Loch abdecken. **Nicht "
+        "gebaut und warum**: Die naheliegende breitere Regel - ein "
+        "Uebersprung darf nicht an denselben Namen haengen wie die "
+        "Zusicherung - traefe gemessen sieben Stellen, sechs davon voellig "
+        "richtig; sie waere eine Ausnahmeliste und keine Regel, und die Zahl "
+        "steht als Test statt als Behauptung. **Eigener Fehlgriff**: Mein "
+        "Schnellzensus meldete die drei Durchfallstellen als 'unbedingt', "
+        "also als Tests, die niemals laufen - sie sind das Ende einer "
+        "Suchschleife. Fuenftes Mal, dass eine schnelle Zaehlung von mir zu "
+        "viel meldet, nie zu wenig; die Wache klassifiziert deshalb nach "
+        "Verhalten und nicht nach Syntaxform. **Beilaeufig gemessen**: Kein "
+        "einziger Test traegt 'network', die Uebersprungsmechanik in "
+        "'conftest.py' wacht also ueber eine leere Menge. **Gelockert ist "
+        "nichts**: keine Schwelle, kein Gate, keine Zahl - zwei Beweise "
+        "rechnen wieder",
+        470,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
