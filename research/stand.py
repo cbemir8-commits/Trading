@@ -7302,6 +7302,92 @@ BEHOBEN: tuple[Richtung, ...] = (
         "haben ihren Punkt bekommen",
         472,
     ),
+    # Befund 473: Der Rauchtest war ein Protokoll, kein Lauf - und einer der
+    # 58 Befehle brach seit 95 Befunden ab.
+    Richtung(
+        "Ein Befehl im Nutzerpfad brach seit fuenfundneunzig Befunden ab",
+        "Der Rauchtest von Befund 247 ist ein **Protokoll**: 'GELAUFEN = 58' "
+        "und 'TRACEBACKS = 0' stehen als Zahlen da, gefahren wird nichts. Sein "
+        "eigener Kopf sagte 'seither nie wiederholt' - 130 Befunde lang "
+        "richtig. Nachgeholt, alle 58 im Trockenlauf: **einer bricht ab.** "
+        "'cli instrument' stirbt mit 'InvalidOperation' an "
+        "'costs.scaled(Decimal(gebuehren))' - und 'gebuehren' ist nicht der "
+        "Parameter des Helfers, sondern die **Kommandozeilen-Option** des "
+        "Befehls; der eigene heisst 'gebuehrenfaktor'. Beide Namen kamen in "
+        "Befund 377 im selben Commit herein, der Rumpf griff von Anfang an den "
+        "falschen. **Und es war nie erreichbar richtig**: Ohne '--gebuehren' "
+        "ist die Option der Leerstring und 'Decimal(\"\")' wirft; mit "
+        "'--gebuehren' kehrt der Befehl vorher zurueck, weil die "
+        "Gebuehrenleiter ein eigener Zweig ist. Der dritte von drei "
+        "Messlaeufen hat also 95 Befunde lang nicht gerechnet, und der Nutzer "
+        "sah zwei Zeilen und danach einen Traceback statt des Urteils - bei "
+        "einem Befehl, auf den die Zeile zu 'healthcheck' ausdruecklich "
+        "verweist. **Warum kein Test das sah**: 'test_instrument' prueft das "
+        "Modul mit von Hand gebauten Laeufen, bis hin zur Darstellung des "
+        "Gebuehrenstresses - also der Messung, die der Befehl nicht "
+        "herstellen konnte. Genau das hat der Lauf zu Befund 425 "
+        "vorhergesagt. **Was der Fix sichtbar macht**, eine Zahl, die es "
+        "vorher nicht gab: Spot mit doppelten Gebuehren, 158 Trades, 14,10 % "
+        "im Jahr, 10,10 % Rueckgang, 9 von 11 Gates - an den Gebuehren "
+        "scheitert der Kandidat also nicht; was Bybits Spot-Tarif wirklich "
+        "ist, sagt das weiter nicht (108). **Gebaut**: Eine Wache faehrt den "
+        "Befehl selbst (50 Sekunden je Aufruf) statt sein Modul, und eine "
+        "statische Regel verbietet die Bauart - kein verschachtelter Helfer "
+        "liest einen Namen, der Option seines Befehls ist, wenn er selbst "
+        "einen Parameter hat, der damit anfaengt. Ueber 'cli.py' gemessen: "
+        "null nach dem Fix, genau eine davor. **Ehrlich zum Rest des Laufs**: "
+        "'scan' und 'sperrprobe' laufen laenger als die Zeit, die ich ihnen "
+        "gab (4,5 und 9,5 Minuten), fehlerfrei aber **nicht zu Ende** - sie "
+        "stehen als unfertig verzeichnet und nicht als sauber. 'nachgesehen' "
+        "verlangt sein Argument. Die drei sauberen Ablehnungen von 247 sagen "
+        "weiter dasselbe, und der Versuchszaehler stand vor und nach allen "
+        "Laeufen bei 203. **Und der Lauf hat etwas angerichtet**: Einer der "
+        "58 war falsch eingeteilt und hat den Kerzenspeicher verlaengert - "
+        "das ist Befund 474, und es gehoert hierher und nicht in eine "
+        "Fussnote. **Gelockert ist nichts**: keine Schwelle, kein Gate, "
+        "keine Zahl - ein Befehl rechnet wieder",
+        473,
+        474,
+    ),
+    # Befund 474: Der Rauchtest selbst hat den gepinnten Speicher verlaengert,
+    # weil ein ladender Befehl als harmlos gefuehrt war.
+    Richtung(
+        "Der Rauchtest hat den Speicher verlaengert, auf dem alles steht",
+        "Der Lauf aus Befund 473 hat nicht nur etwas gefunden, er hat etwas "
+        "**veraendert**. 'cli referenz' stand unter 'HARMLOS' - und laedt an "
+        "der Boerse und schreibt den Kerzenspeicher; seine Option 'bis' hat "
+        "die Vorgabe *jetzt*. **Gemessen an den Zeitstempeln**: Die "
+        "Parquet-Dateien '2026-10' und '2026-11' der Viertelstundenreihe "
+        "wurden um 03:20:57 und 03:20:58 geschrieben, 'cli referenz' lief um "
+        "03:20:58. Danach lief die BTC-Feinreihe bis **heute** statt bis zum "
+        "Pin: 232.334 statt 229.728 Balken. **Was damit weg war**: "
+        "'speicher_ist_gepinnt' falsch, 'erwartete_ausfaelle(stand)' leer - "
+        "also die Grundlage des Commit-Gates, denn die drei dokumentierten "
+        "Ausfaelle sind nur auf dem gepinnten Speicher erwartet (430) - und "
+        "'test_randprobe' rot: Die Messung von Befund 431 haelt auf der "
+        "laengeren Reihe in 0 von 11 Raendern statt in 5. Eine stille "
+        "Verschiebung der Messgrundlage, von einem Werkzeug verursacht, das "
+        "nur hinsehen sollte. **Wiederhergestellt**: '2026-11.parquet' "
+        "entfernt, '2026-10.parquet' auf 'open_time < 2026-10-18' gekuerzt; "
+        "danach wieder 229.728 Balken bis 2026-10-17, auf den Balken genau "
+        "der Stand aus 'GEPINNT', Pin haelt, die drei Ausfaelle sind zurueck "
+        "und die betroffenen Tests gruen. **Die Regel stand schon da und "
+        "nirgends als Test**: Der Kopf des Rauchtests sagt 'Im Zweifel "
+        "hierher - ein Befehl, der faelschlich fehlt, stellt womoeglich eine "
+        "Order'. Jetzt haelt eine Wache sie nach: Kein Befehl unter 'HARMLOS' "
+        "verwendet einen schreibenden Einstiegspunkt ('backfill_reference', "
+        "'backfill_funding', '.write', '.write_frame'). Gemessen war genau "
+        "einer schuldig, naemlich dieser, und die Gegenprobe zeigt, dass der "
+        "Melder bei 'funding' und 'ingest' anschlaegt, die richtig drueben "
+        "stehen. 'GELAUFEN' faellt von 58 auf 57, weil der Befehl nicht mehr "
+        "dazugehoert. **Mein Fehler, nicht der des Projekts**: Die "
+        "Einteilung war falsch, aber gefahren habe ich sie. Dass der Schaden "
+        "umkehrbar war, lag an den Pins von Befund 430 - ohne sie waere nicht "
+        "einmal aufgefallen, dass sich etwas verschoben hat. **Gelockert ist "
+        "nichts**: keine Schwelle, kein Gate, keine Zahl - der gepinnte "
+        "Stand ist wieder der, auf dem die gepflegten Zahlen gemessen sind",
+        474,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

@@ -9057,7 +9057,15 @@ def instrument(
             )
             configs[x] = BacktestConfig(
                 instrument=grund.instrument, risk=grund.risk,
-                costs=grund.costs.scaled(Decimal(gebuehren))
+                # **Befund 473.** Hier stand 'Decimal(gebuehren)' - die
+                # Kommandozeilen-Option dieses Befehls, nicht der Faktor
+                # dieses Aufrufs. Beide Namen kamen in Befund 377 im selben
+                # Commit herein, und der Rumpf griff von Anfang an den
+                # falschen: Ohne '--gebuehren' ist die Option der Leerstring,
+                # 'Decimal("")' wirft, und der dritte Messlauf dieses Befehls
+                # hat nie gerechnet. Mit '--gebuehren' kehrt der Befehl schon
+                # vorher zurueck, also war die Zeile nie erreichbar richtig.
+                costs=grund.costs.scaled(Decimal(gebuehrenfaktor))
                 if gebuehrenfaktor != 1 else grund.costs,
                 funding=FundingSchedule(default_rate=Decimal(funding)),
                 initial_equity=grund.initial_equity,

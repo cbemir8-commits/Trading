@@ -42640,3 +42640,182 @@ steht als Test.
 Die Sperre aus Befund 102 steht weiter. Was sich aendert: Drei Zahlen haben
 ihren Betriebspunkt bekommen, und die Regel prueft nicht mehr eine Datei,
 sondern alle, die solche Zahlen fuehren.
+
+## Vierhundertdreiundsiebzig. Ein Befehl im Nutzerpfad brach seit fuenfundneunzig Befunden ab
+
+Der Rauchtest von Befund 247 ist ein **Protokoll**, kein Lauf:
+
+    GELAUFEN = 58
+    TRACEBACKS = 0
+
+Das sind Zahlen in einer Datei. Gefahren wird dabei nichts - und der Kopf
+derselben Datei sagte es selbst: *"Seither ist der Rauchtest nie wiederholt
+worden."* 130 Befunde lang richtig. Die Liste wurde gepflegt (355, 400, 425,
+459 haben je ihren neuen Befehl einzeln gefahren), die urspruenglichen 52
+nicht erneut.
+
+Nachgeholt, alle 58 mit `TRADING_TROCKENLAUF=1`. **Einer bricht ab:**
+
+    cli instrument  ->  InvalidOperation: [<class 'decimal.ConversionSyntax'>]
+                        cli.py:9060 in messe
+                        costs=grund.costs.scaled(Decimal(gebuehren))
+
+### Der Fehler
+
+`messe` ist ein Helfer **innerhalb** von `instrument` und hat den Parameter
+`gebuehrenfaktor`. Gegriffen hat er `gebuehren` - die
+**Kommandozeilen-Option** des Befehls:
+
+    gebuehren: str = typer.Option("", "--gebuehren", ...)
+
+Python sagt dazu nichts, weil der Name existiert. Und beide kamen im
+**selben** Commit herein, Befund 377:
+
+    git log -S'"--gebuehren"'            -> d79dafe  (Befund 377)
+    git log -S'scaled(Decimal(gebuehren))' -> d79dafe  (Befund 377)
+    git log -S'gebuehrenfaktor'          -> d79dafe  (Befund 377)
+
+Der Rumpf griff also von Anfang an den falschen Namen.
+
+### Nie erreichbar richtig
+
+Zwei Wege, und keiner fuehrt an der Zeile vorbei:
+
+* **Ohne** `--gebuehren` ist die Option der Leerstring, `Decimal("")` wirft -
+  und zwar beim **dritten** von drei Messlaeufen, also nachdem die ersten zwei
+  Zeilen schon auf dem Schirm stehen. Der Nutzer sieht zwei Messungen und
+  danach einen Traceback statt des Urteils.
+* **Mit** `--gebuehren` kehrt der Befehl schon vorher zurueck: Die
+  Gebuehrenleiter ist ein eigener Zweig mit eigenem `return`.
+
+Der dritte Messlauf hat damit 95 Befunde lang nicht gerechnet. Und das bei
+einem Befehl, auf den die Nutzerzeile zu `healthcheck` ausdruecklich
+verweist - *"`cli instrument` rechnet es nach"*.
+
+### Warum kein Test das gesehen hat
+
+`tests/test_instrument.py` prueft das Modul `research/instrument` mit von Hand
+gebauten `Lauf`-Objekten - bis hin zu
+`test_der_gebuehrenstress_wird_als_stress_gekennzeichnet`, also der
+**Darstellung** einer Messung, die der Befehl nicht herstellen konnte. Der
+Lauf zu Befund 425 hat genau das vorhergesagt:
+
+> Ohne den Lauf waere beides durch die Tests gekommen, die nur das Modul
+> fragen.
+
+### Was der Fix sichtbar macht
+
+Eine Zahl, die es vorher nicht gab:
+
+    Spot                        158 Trades   14.34 % p.a.  Rueckgang  9.87 %  9/11
+    Spot, doppelte Gebuehren    158 Trades   14.10 % p.a.  Rueckgang 10.10 %  9/11
+
+An den Gebuehren scheitert der Kandidat also nicht. Was Bybits Spot-Tarif
+wirklich ist, sagt das weiter **nicht** - Befund 108 hat die Bruchstelle bei
+`x2,75` beziffert, mehr nicht.
+
+### Gebaut
+
+Zwei Wachen, eine schnell und eine langsam:
+
+* Die langsame **faehrt den Befehl** statt sein Modul: Exit null, kein
+  Traceback, und alle drei Messzeilen stehen da. Gemessen 50 Sekunden je
+  Aufruf - der Preis dafuer, dass "laeuft" nicht wieder 95 Befunde lang eine
+  Vermutung ist.
+* Die schnelle verbietet die **Bauart**: Kein verschachtelter Helfer liest
+  einen Namen, der Option seines Befehls ist, wenn er selbst einen Parameter
+  hat, der mit diesem Namen anfaengt. Ueber `cli.py` gemessen - null nach dem
+  Fix, genau eine davor. Dass ein Helfer die Option seines Befehls liest, ist
+  der Normalfall (`settings`, `symbole`); erst die Verschattung durch den
+  eigenen, laengeren Parameter macht es zum Verdacht, und die Gegenprobe
+  darauf steht als Test.
+
+### Ehrlich zum Rest des Laufs
+
+Nicht alles ist gemessen zu Ende:
+
+* `scan` lief ueber **4,5 Minuten** ohne eine Zeile Ausgabe, `sperrprobe`
+  ueber **9,5 Minuten** mit stetigem Fortschritt - beide fehlerfrei, beide
+  **nicht zu Ende**. Sie stehen jetzt als unfertig verzeichnet und werden
+  nicht als sauber gezaehlt: Ein abgeschnittener Lauf ist kein Ergebnis.
+* `nachgesehen` verlangt sein Argument (Exit 2, Nutzungshinweis) - richtig,
+  aber mit Voreinstellungen nicht fahrbar.
+* Die drei sauberen Ablehnungen von 247 (`quelle`, `review`, `vorschlag`)
+  sagen weiter genau dasselbe.
+* Der Versuchszaehler stand vor und nach allen Laeufen bei **203**.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Die Sperre aus Befund 102 steht weiter. Was sich aendert: Ein Befehl im
+Nutzerpfad rechnet wieder, und der Rauchtest ist nicht mehr nur ein
+Protokoll.
+
+## Vierhundertvierundsiebzig. Der Rauchtest hat den Speicher verlaengert, auf dem alles steht
+
+Der Lauf aus Befund 473 hat nicht nur etwas gefunden - er hat etwas
+**veraendert**, und das gehoert an dieselbe Stelle wie der Fund.
+
+`cli referenz` stand unter `HARMLOS`. Es laedt Bitstamp-Kerzen und schreibt
+sie in den Speicher, und seine Option hat die Vorgabe *jetzt*:
+
+    bis: str | None = typer.Option(None, help="Enddatum. Standard: jetzt.")
+
+### Gemessen an den Zeitstempeln
+
+    data_store/.../BTCUSD_BITSTAMP/15/2026-11.parquet   geschrieben 03:20:58
+    data_store/.../BTCUSD_BITSTAMP/15/2026-10.parquet   geschrieben 03:20:57
+    cli referenz                                        gelaufen    03:20:58
+
+Danach lief die BTC-Feinreihe bis **heute** statt bis zum Pin:
+
+    vorher   2020-03-30 .. 2026-10-17   229.728 Balken
+    nachher  2020-03-30 .. 2026-11-14   232.334 Balken
+
+### Was damit weg war
+
+* `speicher_ist_gepinnt` **falsch**.
+* `erwartete_ausfaelle(stand)` **leer** - also die Grundlage des
+  Commit-Gates. Die drei dokumentierten Ausfaelle sind nur auf dem gepinnten
+  Speicher erwartet; das ist genau die Bedingung, die Befund 430 eingezogen
+  hat, damit die Liste kein Freibrief wird.
+* `test_randprobe` rot: Die Messung von Befund 431 haelt auf der laengeren
+  Reihe in **0 von 11** Raendern statt in 5.
+
+Eine stille Verschiebung der Messgrundlage - verursacht von einem Werkzeug,
+das nur hinsehen sollte.
+
+### Wiederhergestellt
+
+    2026-11.parquet   entfernt
+    2026-10.parquet   gekuerzt auf open_time < 2026-10-18
+
+Danach wieder 229.728 Balken bis 2026-10-17 - **auf den Balken genau** der
+Stand, den `GEPINNT` verzeichnet -, der Pin haelt, die drei erwarteten
+Ausfaelle sind zurueck, und die betroffenen Tests sind gruen.
+
+### Die Regel stand schon da, nur nirgends als Test
+
+Der Kopf des Rauchtests sagt sie seit Befund 247:
+
+> **Im Zweifel hierher.** Ein Befehl, der faelschlich hier steht, wird nicht
+> rauchgetestet; einer, der faelschlich fehlt, stellt womoeglich eine Order.
+
+Eine Einteilung, die niemand nachrechnet, ist eine Meinung. Jetzt haelt eine
+Wache sie nach: **Kein Befehl unter `HARMLOS` verwendet einen schreibenden
+Einstiegspunkt** (`backfill_reference`, `backfill_funding`, `.write`,
+`.write_frame`). Gemessen war genau einer schuldig, naemlich dieser - und die
+Gegenprobe zeigt, dass der Melder bei `funding` und `ingest` anschlaegt, die
+richtig in `WIRKT_NACH_AUSSEN` stehen. `GELAUFEN` faellt von 58 auf 57, weil
+der Befehl nicht mehr dazugehoert.
+
+### Mein Fehler, nicht der des Projekts
+
+Die Einteilung war falsch - gefahren habe ich sie. Und dass der Schaden
+umkehrbar war, lag an den Pins aus Befund 430: Ohne sie waere nicht einmal
+aufgefallen, dass sich etwas verschoben hat. Ein Speicher, der bis "heute"
+laeuft, ist bei jedem Lauf ein anderer; genau davor warnt Befund 363, und
+genau das ist hier fuer zwei Stunden passiert.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Die Sperre aus Befund 102 steht weiter. Was sich aendert: Der gepinnte Stand
+ist wieder der, auf dem die gepflegten Zahlen gemessen sind - und ein
+ladender Befehl gilt nicht mehr als harmlos.
