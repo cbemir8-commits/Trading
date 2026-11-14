@@ -43447,3 +43447,84 @@ Entscheidung war und kein Versehen.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Zwei Befunde haben ihre Herkunft bekommen.
+
+## Vierhundertdreiundachtzig. Die Annahme im haertesten Gate ist nicht mehr die strengere Zahl
+
+Die Spur aus Befund 482 weitergegangen: Welche Wachen sehen die 168
+``.jsonl``-Protokolle gar nicht?
+
+### Zuerst ein Negativbefund
+
+``research.streuung.aus_berichten`` durchsucht ``reports/`` mit
+``rglob("*.json")`` und laesst damit 168 Protokolle mit 704 Messungen aussen
+vor. Gemessen verliert es dabei **nichts**: 0 der 704 Zeilen tragen ``regler``
+oder ``stellung``, die Entnahme findet dort also keinen Punkt - 50 Punkte mit
+und ohne Protokolle.
+
+Und die 627 Zeilen, die sehr wohl einen gemessenen Sharpe je Trade tragen,
+gehoeren **nicht** in diese Streuung: Es sind Katalogregeln und keine gebuchten
+Versuche. Sie zusammenzuwerfen waere der Fehler aus Befund 393 - zwei
+Grundgesamtheiten in einer Rechnung.
+
+### Der Fund lag daneben
+
+Das Urteil dieses Moduls endet mit dem Satz, der das haerteste Gate so stehen
+laesst, wie es steht:
+
+> Eine Streuung, die nur die Mitte kennt, ist zu klein. Sie hier einzusetzen
+> wuerde die Huerde mit einem Wert senken, von dem bekannt ist, dass er zu
+> niedrig ist. Deshalb bleibt die Annahme stehen - sie ist die strengere
+> Richtung.
+
+Er stand **unbedingt** da - keine Bedingung, kein Vergleich -, an drei
+Stellen: im Vergleichssatz, im Nicht-verwendbar-Zweig und im
+Verwendbar-Zweig; dazu im Modulkopf und in ``Empfindlichkeit``.
+
+### Gemessen stimmt er nicht mehr
+
+    Berichte        50 Punkte   sqrt(V) = 0,0394   die Reglerscans
+    Verzeichnis     11 Punkte   sqrt(V) = 0,2067   gebuchte Versuche (377)
+    zusammen        61 Punkte   sqrt(V) = 0,1072
+    Annahme im Gate                       0,0909   bei n_eff 122
+
+Die Messung liegt **ueber** der Annahme, und zwar bei jeder plausiblen
+Stichprobe: Faktor 1,14 bei n_eff 115 bis 1,34 bei 158. Die Annahme ist damit
+die **mildere** Zahl - das Gate urteilt mit 0,0909 bei DSR 0,5994, mit der
+Messung waeren es 0,2794. Gedruckt stand folgerichtig *"also 0.8-mal so hoch"*,
+ein Satz, der nur mit einem Faktor ueber 1 funktioniert.
+
+**Der Modulkopf hat es vorhergesagt**: *"Die Schaetzung waechst auf die Annahme
+zu, solange man Versuche nachtraegt."* Dass sie darueber hinausgewachsen ist,
+hat kein Text bemerkt, weil die Richtung behauptet und nicht gerechnet wurde.
+Der Umschlag kommt vom Versuchsverzeichnis aus Befund 377 - genau von der
+Quelle, die der Kopf als Abhilfe benennt.
+
+### Gebaut
+
+``Streuung.richtung`` rechnet die Richtung nach, ``_richtungssatz`` nennt sie,
+und beide Richtungen erzeugen den jeweils richtigen Satz.
+
+Die Wache prueft **nicht die Zahl** - die bewegt sich mit jedem gebuchten
+Versuch -, sondern dass kein Satz die Richtung behauptet, ohne sie zu rechnen:
+
+* Gegenproben in beide Richtungen, an gebauten Lagen.
+* Dass nie beide Saetze zugleich erscheinen.
+* Dass der Vergleichssatz die Seite benennt.
+* Dass auch der heute **unerreichbare** Verwendbar-Zweig sie nennt - dort
+  faellt so etwas sonst nie auf.
+* Am echten Bestand: dass die Berichte allein unter und das Verzeichnis ueber
+  der Annahme liegen, und dass die Richtung heute nach oben zeigt.
+
+Eine Wache, die nur die heutige Zahl festnagelt, waere beim naechsten Kippen
+genauso stumm geblieben wie die, die es diesmal war.
+
+### Am Gate aendert sich nichts
+
+Welche Zahl dort steht, ist eine **Entscheidung** und keine Auswertung. Die
+Abdeckung liegt bei 30 % gegen verlangte 90 %, ``verwendbar`` bleibt falsch,
+und eine eigene Zusicherung haelt das fest - damit aus einem Fund keine
+Lockerung wird.
+
+**Gelockert ist nichts**, und dieser Fund zeigt ohnehin in die andere
+Richtung: Wenn schon diese zu schmale Auswahl ueber der Annahme liegt, liegt
+die wahre Streuung eher noch hoeher.

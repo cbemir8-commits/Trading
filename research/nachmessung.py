@@ -355,7 +355,15 @@ GELESEN: dict[str, int] = {
     # weitere Hypothese. Die offene Frage selbst bleibt offen: Sie
     # betrifft 'landschaft' und 'machbarkeit', die buchen, und nicht
     # 'marktkombinationen', das nicht bucht.
-    "Zaehlt ein Sweep am Bestand als Versuch?": 440,
+    # **Befund 483 nennt die Reglerscans wieder**, und zwar als Quelle der
+    # engen Punkte: Aus den Berichten allein streuen die 50 Reglerpunkte mit
+    # 0,0394, weil jeder Scan einen Knopf um den Bestand herum variiert.
+    # Gelesen und **abgegrenzt**: Das ist eine Aussage ueber die *Streuung*
+    # der Punkte, die ein Sweep liefert, und keine darueber, ob er als
+    # Versuch **zaehlt**. Genau diese Zweideutigkeit des Wortes "zaehlen"
+    # steht oben schon. Die offene Frage bleibt offen; 483 hat ihr nur eine
+    # Umgebung gegeben.
+    "Zaehlt ein Sweep am Bestand als Versuch?": 483,
     # **Befund 441 nennt sie wieder** - dort als eine der vier offenen
     # Fragen, die ich gelesen habe, um festzustellen, dass sie alle
     # verzeichnete Messungen tragen. Gelesen und abgegrenzt: Der

@@ -54,6 +54,37 @@ Eine Zahl aus dieser Auswahl in das Gate zu setzen hiesse, die Huerde mit einem
 Wert zu senken, von dem man weiss, dass er zu niedrig ist. Das ist der Grund,
 warum dieses Modul rechnet und nicht handelt.
 
+Und die Richtung ist gekippt - Befund 483
+-----------------------------------------
+**Der Absatz darueber stimmt nicht mehr, und die Zahlen daneben sind von
+damals.** Er war richtig, als er geschrieben wurde: Aus den Berichten allein
+streuen die 50 Reglerpunkte mit **0,0394** - weit unter der Annahme.
+
+Dann kam das Verzeichnis (Befund 377). Heute gemessen:
+
+    Berichte        50 Punkte   sqrt(V) = 0,0394
+    Verzeichnis     11 Punkte   sqrt(V) = 0,2067
+    zusammen        61 Punkte   sqrt(V) = 0,1072
+
+Die Annahme liegt bei **0,0909** (effektive Stichprobe 122). Die gemessene
+Streuung liegt also **darueber**, und zwar bei jeder plausiblen Stichprobe
+(Faktor 1,14 bis 1,34). Der Satz oben sagt das Gegenteil, und dasselbe stand
+in zwei weiteren Textstellen und in jeder Ausgabe von ``cli streuung``:
+
+    Deshalb bleibt die Annahme stehen - sie ist die strengere Richtung.
+
+**Sie ist heute die mildere.** Das Gate urteilt mit 0,0909 bei DSR 0,5994; mit
+der gemessenen 0,1072 waeren es 0,2794. Dieser Modulkopf hat das Wachsen
+vorhergesagt - *"Die Schaetzung waechst auf die Annahme zu, solange man
+Versuche nachtraegt"* -, und dass sie darueber hinausgewachsen ist, hat kein
+Text bemerkt, weil die Richtung behauptet und nicht gerechnet wurde.
+
+Seit 483 rechnet ``Streuung.richtung`` sie nach, und jeder Satz darueber nennt
+sie. **Am Gate aendert sich nichts**: Welche Zahl dort steht, ist eine
+Entscheidung und keine Auswertung, und die Auswahl bleibt zu schmal. Nur
+zeigt die Enge der Auswahl jetzt in dieselbe Richtung wie die Messung - die
+wahre Streuung liegt eher noch hoeher.
+
 Was daraus folgt
 ----------------
 Nicht: "Das Gate ist zu streng." Sondern: **Die Versuche gehoeren
@@ -435,6 +466,47 @@ class Streuung:
         }
 
     @property
+    def richtung(self) -> int | None:
+        """Steht die Messung **unter** der Annahme oder darueber? - Befund 483.
+
+        ``-1`` heisst: Die Messung ist kleiner als die Annahme; sie
+        einzusetzen wuerde die Huerde **senken**, und die Annahme ist die
+        strengere Richtung. ``+1`` heisst das Gegenteil. ``0`` heisst gleich.
+
+        **Warum das gerechnet und nicht geschrieben wird.** Bis Befund 483
+        behaupteten drei Textstellen die Richtung *unbedingt* - "Sie hier
+        einzusetzen wuerde die Huerde mit einem Wert senken, von dem bekannt
+        ist, dass er zu niedrig ist. Deshalb bleibt die Annahme stehen - sie
+        ist die strengere Richtung." Das war richtig, als es geschrieben
+        wurde: Aus den Berichten allein streuen die 50 Reglerpunkte mit
+        0,0394 gegen eine Annahme von 0,0814.
+
+        Dann kam das Verzeichnis (Befund 377). Seine 11 gebuchten Versuche
+        streuen mit 0,2067, die Zusammenlegung mit **0,1072** - und damit
+        **ueber** der Annahme (0,0909 bei der heutigen effektiven
+        Stichprobe). Der Kopf dieses Moduls hat das Wachsen vorhergesagt
+        ("Die Schaetzung waechst auf die Annahme zu, solange man Versuche
+        nachtraegt"); dass sie darueber hinausgewachsen ist, hat kein Text
+        bemerkt, weil keiner nachgesehen hat.
+
+        Die Folge ist nicht harmlos und sie zeigt in die **strenge**
+        Richtung: Das Gate urteilt heute mit 0,0909 (DSR 0,5994) statt mit
+        der gemessenen 0,1072 (DSR 0,2794). Die Annahme ist also die
+        **mildere** Zahl, nicht die strengere - und der Satz, der das Gate so
+        stehen laesst, wie es steht, sagte das Gegenteil.
+
+        Geaendert wird am Gate deshalb **nichts**: Welche Zahl dort stehen
+        soll, ist eine Entscheidung und keine Auswertung, und die Auswahl
+        bleibt zu schmal. Was sich aendert, ist, dass die Richtung gemessen
+        dasteht.
+        """
+        if self.gemessen is None or self.angenommen is None:
+            return None
+        if self.gemessen == self.angenommen:
+            return 0
+        return 1 if self.gemessen > self.angenommen else -1
+
+    @property
     def breiteste(self) -> tuple[str, float] | None:
         """Die Quelle mit der groessten Streuung - und wie gross sie ist.
 
@@ -480,9 +552,13 @@ class Streuung:
             )
 
         angenommen = self.angenommen
+        # **Befund 483.** Hier stand "also {x:.1f}-mal so hoch" - ein Satz,
+        # der nur stimmt, solange die Annahme die groessere Zahl ist. Heute
+        # ist sie es nicht, und gedruckt stand "also 0.8-mal so hoch".
         vergleich = (
-            f"Die Annahme im Gate liegt bei {angenommen:.4f}, also "
-            f"{angenommen / self.gemessen:.1f}-mal so hoch. "
+            f"Die Annahme im Gate liegt bei {angenommen:.4f}, also das "
+            f"{angenommen / self.gemessen:.2f}-fache davon - "
+            f"{'darunter' if self.richtung == 1 else 'darueber'}. "
             if angenommen
             else ""
         )
@@ -511,10 +587,10 @@ class Streuung:
                 f"{len(self.punkte)} von {self.versuche} Versuchen liegen vor "
                 f"({self.abdeckung:.0%}), ihre Streuung betraegt "
                 f"{self.gemessen:.4f}. {vergleich}\n\n"
-                f"Das ist ein Befund ueber die **Eingabe**, keine Freigabe: Die "
-                f"Annahme durch die Messung zu ersetzen senkt die Huerde des "
-                f"strengsten Gates. Diese Entscheidung faellt nicht in einer "
-                f"Auswertung."
+                f"Das ist ein Befund ueber die **Eingabe**, keine Freigabe: "
+                f"Die Annahme durch die Messung zu ersetzen bewegt die Huerde "
+                f"des strengsten Gates. Diese Entscheidung faellt nicht in "
+                f"einer Auswertung.\n\n{self._richtungssatz()}"
             )
 
         return (
@@ -528,16 +604,46 @@ class Streuung:
             f"Knopf um den Bestand herum. Die Verlierer - etwa die vierzehn "
             f"15-Minuten-Kandidaten mit -9 bis -44 % im Jahr - haben nie einen "
             f"Bericht bekommen.{einzelquelle}\n\n"
-            f"Eine Streuung, die nur die Mitte kennt, ist zu klein. Sie hier "
-            f"einzusetzen wuerde die Huerde mit einem Wert senken, von dem "
-            f"bekannt ist, dass er zu niedrig ist. Deshalb bleibt die Annahme "
-            f"stehen - sie ist die strengere Richtung.\n\n"
+            f"{self._richtungssatz()}\n\n"
             f"Was fehlte, war ein Verzeichnis - **und das gibt es**: "
             f"'state/trials.json' haelt zu jedem gebuchten Versuch seinen "
             f"Sharpe je Trade fest, seit Befund 377 aus jedem Befehl, der "
             f"zaehlt. Was fehlt, ist die Abdeckung: Der Grundstock aus der "
             f"Zeit davor kann keinen Punkt nachliefern."
             f"{self._deckelsatz()}"
+        )
+
+    def _richtungssatz(self) -> str:
+        """In welche Richtung die Messung von der Annahme abweicht - 483.
+
+        **Gerechnet und nicht geschrieben.** Bis 483 stand hier ein Satz, der
+        die Richtung unbedingt behauptete; er war bei seiner Entstehung
+        richtig und ist es heute nicht mehr. Ein Urteil, das die Richtung
+        seines eigenen Fehlers nennt, muss sie nachrechnen.
+        """
+        if self.richtung is None:
+            return ""
+        eng = (
+            "Eine Streuung, die nur die Mitte kennt, ist zu klein - und was "
+            "fehlt, fehlt am unteren Ende."
+        )
+        if self.richtung <= 0:
+            return (
+                f"{eng} Sie hier einzusetzen wuerde die Huerde mit einem "
+                f"Wert **senken**, von dem bekannt ist, dass er zu niedrig "
+                f"ist. Deshalb bleibt die Annahme stehen - sie ist die "
+                f"strengere Richtung."
+            )
+        return (
+            f"{eng} **Und trotzdem liegt sie ueber der Annahme** "
+            f"({self.gemessen:.4f} gegen {self.angenommen:.4f}). Die Annahme "
+            f"ist damit nicht die strengere, sondern die **mildere** Zahl: "
+            f"Sie zu ersetzen wuerde die Huerde **heben**, und die zu schmale "
+            f"Auswahl heisst, dass die wahre Streuung eher noch hoeher liegt. "
+            f"Geaendert wird am Gate hier nichts - welche Zahl dort steht, "
+            f"ist eine Entscheidung und keine Auswertung. Aber der Satz, der "
+            f"das Gate so stehen laesst, wie es steht, darf nicht mehr "
+            f"lauten, die Annahme sei die strengere Richtung."
         )
 
     def _deckelsatz(self) -> str:
@@ -713,10 +819,17 @@ class Vereinheitlichung:
     ist.
 
     **Und die Richtung.** ``streuung`` haelt fest, dass die gemessene Streuung
-    zu niedrig liegt, weil die Verlierer fehlen, und dass die Annahme deshalb
-    in der strengeren Richtung stehen bleibt. 0,0542 liegt mitten im Bereich
-    der verworfenen Messung (0,0428 bis 0,0608) - das ist kein unabhaengiger
-    Beleg, sondern dieselbe Untertreibung auf einem anderen Weg.
+    zu niedrig liegt, weil die Verlierer fehlen. 0,0542 liegt mitten im
+    Bereich der damals verworfenen Messung (0,0428 bis 0,0608) - das ist kein
+    unabhaengiger Beleg, sondern dieselbe Untertreibung auf einem anderen Weg.
+
+    **Hier stand ausserdem, die Annahme bleibe deshalb "in der strengeren
+    Richtung" - das gilt nicht mehr** (Befund 483). Heute streuen die 61
+    bekannten Versuche mit 0,1072 gegen eine Annahme von 0,0909; die Annahme
+    ist die mildere Zahl. Fuer dieses Objekt aendert das nichts, im
+    Gegenteil: 0,0542 liegt nun **noch weiter** unter der Messung, und die
+    Verlockung, die es ausrechnet, ist damit noch deutlicher eine
+    Untertreibung.
 
     Dieses Objekt rechnet die Verlockung aus und benennt sie. Es wird dem Gate
     **nicht** uebergeben; ``tests/test_vereinheitlichung.py`` haelt das fest.

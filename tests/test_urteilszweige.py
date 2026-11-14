@@ -80,7 +80,15 @@ from research.urteilszweige import (
 #: dieselbe Falschmeldung wie 'Bericht: <Ordner>' in Befund 244, und sie ist
 #: genau die Zeile, nach der man spaeter sucht, wenn man wissen will, woher
 #: ein Protokoll kam - was in 482 zweimal noetig war.
-URTEILSFUNKTIONEN: int = 166
+#: **167 seit 483**: 'streuung.Streuung._richtungssatz' sagt, in welche
+#: Richtung das Einsetzen der gemessenen Streuung die Huerde des haertesten
+#: Gates bewegen wuerde. Drei Zweige, und dass dieser Waechter sie meldet,
+#: ist der Befund selbst: Bis 483 stand die Richtung an drei Stellen
+#: **unbedingt** da - "Deshalb bleibt die Annahme stehen, sie ist die
+#: strengere Richtung" -, war bei ihrer Entstehung richtig und ist es seit
+#: dem Versuchsverzeichnis (377) nicht mehr. Ein Satz ohne Bedingung kann
+#: nicht auffallen; einer, der rechnet, schon.
+URTEILSFUNKTIONEN: int = 167
 
 
 def _fn(quelle: str) -> ast.FunctionDef:

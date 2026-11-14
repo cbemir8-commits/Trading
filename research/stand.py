@@ -7711,6 +7711,59 @@ BEHOBEN: tuple[Richtung, ...] = (
         "bekommen",
         482,
     ),
+    # Befund 483: Der Satz, der das haerteste Gate so stehen laesst, wie es
+    # steht, sagt seit dem Versuchsverzeichnis das Gegenteil der Messung.
+    Richtung(
+        "Die Annahme im haertesten Gate ist nicht mehr die strengere Zahl",
+        "Die Spur aus 482 weitergegangen - welche Wachen die 168 "
+        "'.jsonl'-Protokolle gar nicht sehen. **Zuerst ein Negativbefund**: "
+        "'research.streuung.aus_berichten' durchsucht 'reports/' mit "
+        "'rglob(\"*.json\")' und laesst damit 168 Protokolle mit 704 "
+        "Messungen aussen vor - gemessen verliert es dabei **nichts**: 0 der "
+        "704 Zeilen tragen 'regler' oder 'stellung', also findet die Entnahme "
+        "dort keinen Punkt (50 Punkte mit und ohne Protokolle). Und die 627 "
+        "Zeilen, die sehr wohl einen gemessenen Sharpe je Trade tragen, "
+        "gehoeren **nicht** in diese Streuung: Es sind Katalogregeln und "
+        "keine gebuchten Versuche, und sie zusammenzuwerfen waere der Fehler "
+        "aus Befund 393 - zwei Grundgesamtheiten in einer Rechnung. **Der "
+        "Fund lag daneben.** Das Urteil dieses Moduls endet mit dem Satz, der "
+        "das Gate so stehen laesst, wie es steht: 'Sie hier einzusetzen "
+        "wuerde die Huerde mit einem Wert senken, von dem bekannt ist, dass "
+        "er zu niedrig ist. Deshalb bleibt die Annahme stehen - sie ist die "
+        "strengere Richtung.' Er stand **unbedingt** da, an drei Stellen - im "
+        "Vergleichssatz, im Nicht-verwendbar-Zweig und im "
+        "Verwendbar-Zweig -, dazu im Modulkopf und in 'Empfindlichkeit'. "
+        "**Gemessen stimmt er nicht mehr**: Berichte allein 50 Punkte mit "
+        "sqrt(V) 0,0394, das Verzeichnis 11 Punkte mit 0,2067, zusammen 61 "
+        "Punkte mit **0,1072** gegen eine Annahme von **0,0909** (effektive "
+        "Stichprobe 122) - die Messung liegt darueber, bei jeder plausiblen "
+        "Stichprobe (Faktor 1,14 bei n_eff 115 bis 1,34 bei 158). Die Annahme "
+        "ist damit die **mildere** Zahl: Das Gate urteilt mit 0,0909 bei DSR "
+        "0,5994, mit der Messung waeren es 0,2794. Gedruckt stand "
+        "folgerichtig 'also 0.8-mal so hoch' - ein Satz, der nur mit einem "
+        "Faktor ueber 1 funktioniert. **Der Modulkopf hat es vorhergesagt** "
+        "('Die Schaetzung waechst auf die Annahme zu, solange man Versuche "
+        "nachtraegt'), und dass sie darueber hinausgewachsen ist, hat kein "
+        "Text bemerkt, weil die Richtung behauptet und nicht gerechnet wurde; "
+        "der Umschlag kommt vom Versuchsverzeichnis aus Befund 377. "
+        "**Gebaut**: 'Streuung.richtung' rechnet sie nach, '_richtungssatz' "
+        "nennt sie, und beide Richtungen erzeugen den jeweils richtigen Satz. "
+        "Die Wache prueft nicht die Zahl - die bewegt sich mit jedem "
+        "gebuchten Versuch -, sondern dass **kein Satz die Richtung "
+        "behauptet, ohne sie zu rechnen**: Gegenproben in beide Richtungen, "
+        "dass nie beide Saetze zugleich erscheinen, dass der Vergleichssatz "
+        "die Seite benennt, dass auch der heute unerreichbare "
+        "Verwendbar-Zweig sie nennt, und am echten Bestand, dass die "
+        "Berichte allein unter und das Verzeichnis ueber der Annahme liegen. "
+        "**Am Gate aendert sich nichts**: Welche Zahl dort steht, ist eine "
+        "Entscheidung und keine Auswertung, die Abdeckung bleibt bei 30 % "
+        "gegen verlangte 90 %, und 'verwendbar' bleibt falsch - eine eigene "
+        "Zusicherung haelt das fest, damit aus einem Fund keine Lockerung "
+        "wird. **Gelockert ist nichts**, und dieser Fund zeigt ohnehin in die "
+        "andere Richtung: Wenn schon diese zu schmale Auswahl ueber der "
+        "Annahme liegt, liegt die wahre Streuung eher noch hoeher",
+        483,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
