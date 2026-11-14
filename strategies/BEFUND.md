@@ -43259,3 +43259,104 @@ Aussage des Projekts ist gemessen richtig. Neu ist, dass sie es bleiben muss.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Die Sperre aus Befund 102 steht weiter.
+
+## Vierhunderteinundachtzig. Hinterlaesst nichts - ausser dem, worauf alles steht
+
+Weiter in der Liste aus Befund 479. Der naechste Kopf war der von
+``test_kerzenwache_vollstaendig``: *"Jeder Befehl, der Kataloge laedt, prueft
+die Kerzenlaenge."*
+
+### Zuerst ein Negativbefund, und der gehoert aufgeschrieben
+
+Gemessen **haelt** dieser Kopf. Von 17 Befehlen, die mehrere Regeln laden und
+ein Intervall nehmen, pruefen 15 die Kerzenlaenge. Die zwei anderen:
+
+* ``generationen`` listet den Katalog und rechnet nicht.
+* ``vorschlag`` holt seine Regeln aus Bestenliste und Vorschlagsdatei - also
+  aus einer Quelle, die der Melder (``load_seeds`` / ``GENERATIONS``) nicht
+  sieht - und **rechnet nichts**: kein ``run_portfolio_walkforward``, kein
+  ``run_admission``, kein ``evaluate_gates``, kein ``compile_genome``.
+
+Die Frage, auf die es ankam, war die nach der Bauart von Befund 479: Gibt es
+einen Befehl, der **rechnet** und seine Regeln aus einer dritten Quelle holt?
+Das waere die Luecke. Gemessen: **0 von 15.** Nichts zu bauen - und das steht
+hier, damit der naechste Lauf es nicht neu sucht.
+
+### Der naechste Kopf war der Fund
+
+``test_trockenlauf_deckt_alles`` traegt seinen Anspruch im Dateinamen, und der
+Kopf wiederholt ihn: *"Der Trockenlauf deckt alle Schreibstellen."*
+
+Die Datei prueft die Variable, die Sendestelle und warum ``PATHS__STATE`` nicht
+genuegt. **Die Schreibstellen zaehlt sie nie auf.** Der Anspruch stand als
+Wort da, nicht als Messung.
+
+Gemessen deckte der Trockenlauf vier Stellen - Zaehler, Bestenliste, Bericht,
+Senden. Die **Datenspeicher** waren nie darunter:
+
+    data/store.py:158    CandleStore.write_frame    fragt_trockenlauf=False
+    data/funding.py:108  FundingStore.write         fragt_trockenlauf=False
+
+Das sind, nachgezaehlt, **genau die zwei** Stellen im ganzen Baum, die eine
+Tabelle dauerhaft ablegen. Beide schrieben mit gesetzter Variable weiter.
+
+### Und es ist eingetreten
+
+Nicht theoretisch. Der Rauchtest aus Befund 473 lief ausdruecklich mit
+``TRADING_TROCKENLAUF=1``, und ``cli referenz`` hat den gepinnten
+Kerzenspeicher trotzdem um 2.606 Balken verlaengert - Befund 474. Weg waren
+damit ``speicher_ist_gepinnt`` und ``erwartete_ausfaelle``, also die Grundlage
+des Commit-Gates; die Wiederherstellung ging von Hand.
+
+**Befund 474 hat die Einteilung geheilt, nicht das Werkzeug.** Seither nimmt
+kein Befehl unter ``HARMLOS`` einen schreibenden Einstiegspunkt. Das ist die
+richtige Wache an der richtigen Stelle - sie schuetzt den Rauchtest. Sie
+schuetzt nicht die Zusage des Werkzeugs, und die galt weiter fuer mehr, als es
+konnte.
+
+### Gebaut
+
+Beide Ablagen fragen jetzt ``trockenlauf()`` **in der Schreibstelle selbst**,
+nicht in der Aufrufstelle - das ist die Lehre, die Befund 331 selbst zieht -
+und melden die Abmeldung auf Fehlerstufe, wie der Zaehler es tut.
+
+Dazu eine Deckungswache, die **nachzaehlt statt zu behaupten**
+(``tests/test_trockenlaufdeckung.py``):
+
+* Jede Funktion mit ``to_parquet``/``to_csv`` muss fragen.
+* Mit Nichtleere-Zusicherung - die Lehre aus Befund 479, wo eine Wache die
+  leere Menge gegen alles verglich.
+* Gegenproben fuer gedeckt und ungedeckt, dafuer dass eine Wache beim
+  **Aufrufer** nicht zaehlt (genau die Bauart der Luecke von 331), und dafuer
+  dass ein ``json.dump`` keine Tabellenablage ist.
+* Der Vorfall aus 474 im Kleinen nachgestellt: Speicher mit Stand, Lauf mit
+  gesetzter Variable, Stand muss derselbe bleiben. Am laufenden Speicher und
+  nicht am Quelltext - die Lehre aus Befund 425.
+
+### Die Grenze steht als Liste mit Grund, nicht als Wort "alle"
+
+"Alle" durch ein anderes Wort zu ersetzen waere dieselbe Bauart. Gedeckt sind
+die Stellen, die beim **Messen** schreiben. Journal, Zugangsdatei,
+Zwischenstand und Sperrdatei bleiben absichtlich draussen, jede mit Grund in
+der Wache - und die prueft, dass jede dieser Stellen wirklich schreibt und
+keine davon eine Tabellenablage ist.
+
+Warum die Regel eng gezogen ist: Ein Melder auf *jede* Schreibstelle findet 89
+Treffer - ``mkdir``, ``unlink``, jedes ``json.dump`` in einen Bericht. Eine
+Regel ueber 89 Stellen mit 78 Ausnahmen ist keine Regel.
+
+### Und mein eigener Melder war erst enger als der Baum
+
+Der erste Entwurf durchsuchte sieben Ordner und ``cli.py``. Daneben lagen
+``scripts/``, ``strategy/`` - Einzahl, neben dem schon durchsuchten
+``strategies/`` - und ``install.py``. Gemessen liegen dort **null** Ablagen,
+die Zahl "zwei" stimmt also. Aber sie war angenommen und nicht geprueft, und
+eine Wache, die enger sucht als der Baum, meldet die naechste Ablage nicht.
+
+Das ist dieselbe Bauart wie der Fund selbst, einen Schritt weiter innen.
+Jetzt haelt eine Zusicherung nach, dass kein Modul des Projekts ungesehen
+bleibt, und nennt beim Fehlschlag das Modul und die Liste, die zu ergaenzen
+ist.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Ein Werkzeug haelt jetzt, was sein Name sagt.

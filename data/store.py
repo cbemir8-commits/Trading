@@ -159,6 +159,32 @@ class CandleStore:
         if frame.empty:
             return 0
 
+        # **Befund 481.** Der Trockenlauf deckte diese Stelle nicht, und das
+        # hat einmal wehgetan: Der Rauchtest aus Befund 473 lief mit
+        # ``TRADING_TROCKENLAUF=1``, und 'cli referenz' hat den gepinnten
+        # Speicher trotzdem um 2.606 Balken verlaengert (Befund 474). Die
+        # Wache steht hier und nicht in der Aufrufstelle - sonst waere sie
+        # eine Vereinbarung und keine Wache.
+        #
+        # Der Import steht lokal, wie in ``core.report``: ``data`` liegt
+        # unter ``research``, und nur die Wache braucht die Richtung.
+        from research.versuche import TROCKENLAUF, trockenlauf
+
+        if trockenlauf():
+            # Laut und auf Fehlerstufe, wie beim Zaehler: Ein stiller
+            # Trockenlauf waere schlimmer als das Problem, das er loest.
+            log.error(
+                "speicher.trockenlauf",
+                symbol=symbol,
+                interval=interval.label,
+                waere=len(frame),
+                variable=TROCKENLAUF,
+                folge="Es wird NICHTS geschrieben. Wer wirklich laden will, "
+                "muss die Variable loeschen - sonst bleibt der Speicher so, "
+                "wie er ist.",
+            )
+            return 0
+
         frame = frame.sort_values("open_time").reset_index(drop=True)
         added = 0
 

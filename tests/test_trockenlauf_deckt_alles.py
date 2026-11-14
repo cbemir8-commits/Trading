@@ -33,6 +33,26 @@ Ich habe ein Teilmittel gebaut, wo ein vollstaendiges lag - dieselbe Bauart wie
 Befund 302 und 318, nur diesmal nicht bei einer Messung, sondern bei einem
 Werkzeug. Der Vorflug aus 319/320/324 fragt das Register vor einer **Messung**;
 vor einem **Werkzeug** habe ich ihn nicht gefragt.
+
+Und "alle" war weiterhin zu viel - Befund 481
+---------------------------------------------
+Der Name dieser Datei ist ein Anspruch, und dieser Kopf wiederholt ihn. Was
+unten steht, prueft die Variable, die Sendestelle und warum ``PATHS__STATE``
+nicht genuegt. **Die Schreibstellen zaehlt nichts davon auf.** Gedeckt waren
+vier - Zaehler, Bestenliste, Bericht, Senden -, und die **Datenspeicher**
+waren nie darunter: ``CandleStore.write_frame`` und ``FundingStore.write``
+schrieben mit gesetzter Variable weiter.
+
+Das ist derselbe Vorfall noch einmal, und er ist eingetreten: Der Rauchtest
+aus Befund 473 lief mit ``TRADING_TROCKENLAUF=1`` und hat den gepinnten
+Kerzenspeicher um 2.606 Balken verlaengert (Befund 474). Befund 474 hat die
+**Einteilung** geheilt - kein Befehl unter ``HARMLOS`` nimmt einen
+schreibenden Einstiegspunkt - und das Werkzeug gelassen, wie es war.
+
+Seit 481 fragen beide Ablagen, und die Abdeckung steht als Messung statt als
+Wort: ``tests/test_trockenlaufdeckung.py`` zaehlt jede Stelle nach, die eine
+Tabelle dauerhaft ablegt, und fuehrt die Stellen, die absichtlich draussen
+bleiben, mit Grund.
 """
 
 from __future__ import annotations

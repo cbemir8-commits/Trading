@@ -7593,6 +7593,66 @@ BEHOBEN: tuple[Richtung, ...] = (
         "kein Gate, keine Zahl",
         480,
     ),
+    # Befund 481: Der Trockenlauf deckte die Datenspeicher nicht - und genau
+    # das ist in Befund 474 eingetreten.
+    Richtung(
+        "Hinterlaesst nichts - ausser dem, worauf alles steht",
+        "Weiter in der Liste aus 479. Der naechste Kopf war der von "
+        "'test_kerzenwache_vollstaendig' ('Jeder Befehl, der Kataloge laedt, "
+        "prueft die Kerzenlaenge') - **gemessen haelt er**: Von 17 Befehlen, "
+        "die mehrere Regeln laden und ein Intervall nehmen, pruefen 15; "
+        "'generationen' listet nur, und 'vorschlag' holt seine Regeln aus "
+        "Bestenliste und Vorschlagsdatei, **rechnet aber nichts** (kein "
+        "'run_portfolio_walkforward', 'run_admission', 'evaluate_gates', "
+        "'compile_genome'). Kein rechnender Befehl ist dem Melder "
+        "unsichtbar - 0 von 15. Ein Negativbefund, und er steht hier, damit "
+        "ihn der naechste Lauf nicht neu sucht. **Der naechste Kopf war der "
+        "Fund**: 'test_trockenlauf_deckt_alles' traegt den Anspruch im Namen "
+        "und wiederholt ihn im Kopf - 'Der Trockenlauf deckt alle "
+        "Schreibstellen'. Die Datei prueft die Variable, die Sendestelle und "
+        "warum 'PATHS__STATE' nicht genuegt; **die Schreibstellen zaehlt sie "
+        "nie auf**. Gemessen deckte der Trockenlauf vier Stellen - Zaehler, "
+        "Bestenliste, Bericht, Senden - und die **Datenspeicher** waren nie "
+        "darunter: 'data/store.py:158 CandleStore.write_frame' und "
+        "'data/funding.py:108 FundingStore.write' sind die genau zwei "
+        "Stellen im Baum, die eine Tabelle dauerhaft ablegen, und beide "
+        "schrieben mit gesetzter Variable weiter. **Das ist nicht "
+        "theoretisch**: Der Rauchtest aus 473 lief ausdruecklich mit "
+        "'TRADING_TROCKENLAUF=1', und 'cli referenz' hat den gepinnten "
+        "Kerzenspeicher trotzdem um 2.606 Balken verlaengert - Befund 474, "
+        "mit 'speicher_ist_gepinnt' falsch, 'erwartete_ausfaelle' leer und "
+        "Wiederherstellung von Hand. **474 hat die Einteilung geheilt, nicht "
+        "das Werkzeug**: Seither nimmt kein Befehl unter 'HARMLOS' einen "
+        "schreibenden Einstiegspunkt - die richtige Wache fuer den "
+        "Rauchtest, aber nicht fuer die Zusage des Werkzeugs, und die galt "
+        "weiter fuer mehr, als es konnte. **Gebaut**: Beide Ablagen fragen "
+        "jetzt 'trockenlauf()' in der **Schreibstelle selbst** - nicht in "
+        "der Aufrufstelle, das ist die Lehre, die 331 selbst zieht - und "
+        "melden die Abmeldung auf Fehlerstufe, wie der Zaehler. Dazu eine "
+        "Deckungswache, die **nachzaehlt statt zu behaupten**: Jede Funktion "
+        "mit 'to_parquet'/'to_csv' muss fragen, mit Nichtleere-Zusicherung "
+        "(Lehre aus 479), Gegenproben fuer gedeckt/ungedeckt, dafuer dass "
+        "eine Wache beim **Aufrufer** nicht zaehlt - genau die Bauart der "
+        "Luecke von 331 - und dafuer, dass ein 'json.dump' keine "
+        "Tabellenablage ist; dazu der Vorfall aus 474 im Kleinen "
+        "nachgestellt, am laufenden Speicher und nicht am Quelltext (425). "
+        "**Die Grenze steht als Liste mit Grund statt als Wort 'alle'**: "
+        "Journal, Zugangsdatei, Zwischenstand und Sperrdatei bleiben "
+        "absichtlich draussen - sie schreiben nicht beim Messen -, und die "
+        "Wache prueft, dass jede dieser Stellen wirklich schreibt und keine "
+        "davon eine Tabellenablage ist. Ein Melder auf *jede* Schreibstelle "
+        "fand 89 Treffer; eine Regel ueber 89 Stellen mit 78 Ausnahmen ist "
+        "keine Regel. **Und mein eigener Melder war erst enger als der "
+        "Baum**: Der erste Entwurf durchsuchte sieben Ordner und 'cli.py' - "
+        "'scripts', 'strategy' (Einzahl, neben 'strategies') und "
+        "'install.py' fehlten. Gemessen liegen dort null Ablagen, aber das "
+        "war angenommen und nicht geprueft; jetzt haelt eine Zusicherung "
+        "nach, dass kein Modul des Baums ungesehen bleibt - sonst meldet die "
+        "Wache die naechste Ablage nicht, also genau die Bauart, die dieser "
+        "Befund behebt. **Gelockert ist nichts**: keine Schwelle, kein Gate, "
+        "keine Zahl - ein Werkzeug haelt jetzt, was sein Name sagt",
+        481,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

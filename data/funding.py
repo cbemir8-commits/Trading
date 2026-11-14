@@ -108,6 +108,24 @@ class FundingStore:
     def write(self, symbol: str, rates: list[FundingRate]) -> int:
         if not rates:
             return 0
+
+        # **Befund 481**, dieselbe Luecke wie beim Kerzenspeicher: Der
+        # Trockenlauf hat diese Ablage nie gedeckt. Gefunden wurde sie nicht
+        # durch einen Vorfall, sondern beim Nachzaehlen - sie ist die zweite
+        # von genau zwei Stellen, die eine Tabelle dauerhaft ablegen.
+        from research.versuche import TROCKENLAUF, trockenlauf
+
+        if trockenlauf():
+            log.error(
+                "funding.trockenlauf",
+                symbol=symbol,
+                waere=len(rates),
+                variable=TROCKENLAUF,
+                folge="Es wird NICHTS geschrieben. Wer wirklich laden will, "
+                "muss die Variable loeschen.",
+            )
+            return 0
+
         incoming = funding_to_frame(rates)
         existing = self.read(symbol)
 

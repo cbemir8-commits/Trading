@@ -111,6 +111,29 @@ def trockenlauf() -> bool:
     Zaehler, Bestenliste und Berichte gleichermassen. Die Richtung ist die
     sichere: Wird die Variable vergessen, ist die Folge "es wurde nichts
     geschrieben" - aergerlich und wiederholbar. Umgekehrt ist sie es nicht.
+
+    **Und der Satz war trotzdem zu weit - Befund 481.** "Hinterlaesst
+    nichts" stand hier, gedeckt waren vier Stellen: Zaehler, Bestenliste,
+    Bericht und das Senden. Die **Datenspeicher** waren nie darunter. Das ist
+    nicht theoretisch aufgefallen: Der Rauchtest aus Befund 473 lief mit
+    dieser Variable, und 'cli referenz' hat den gepinnten Kerzenspeicher um
+    2.606 Balken verlaengert (Befund 474) - damit war die Grundlage des
+    Commit-Gates weg, und die Wiederherstellung ging von Hand.
+
+    Befund 474 hat die **Einteilung** des Rauchtests geheilt: Kein Befehl
+    unter ``HARMLOS`` nimmt einen schreibenden Einstiegspunkt. Das Werkzeug
+    blieb, wie es war - und seine Zusage galt weiter fuer mehr, als es
+    konnte. Seit 481 fragen auch ``data.store.CandleStore.write_frame`` und
+    ``data.funding.FundingStore.write``; gemessen sind das **genau** die zwei
+    Stellen im Baum, die eine Tabelle dauerhaft ablegen
+    (``tests/test_trockenlaufdeckung.py`` zaehlt sie nach, statt es zu
+    behaupten).
+
+    **Was die Variable weiter nicht deckt, und zwar absichtlich**: Journal,
+    Trade-Mitschrift, Zugangsdatei und Zwischenstand. Die gehoeren zum
+    Handelsbetrieb und zum Einrichten, nicht zum Messen - und ein Rauchtest
+    darf sie gar nicht erst anfassen. Diese Grenze steht jetzt als Liste mit
+    Gruenden in der Deckungswache und nicht mehr als Wort "alle".
     """
     wert = os.environ.get(TROCKENLAUF, "").strip().lower()
     return wert not in ("", "0", "nein", "false", "aus")
