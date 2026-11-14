@@ -218,8 +218,16 @@ def run_admission(
     damit auf BTC allein, waehrend jede Zulassungszahl des Projekts aus dem
     Portfolio BTC + ETH stammt - und das ist nicht dasselbe Ziel:
 
-        Spitzenkandidat auf BTC allein     5 von 11, Deflated Sharpe 0,190
-        Spitzenkandidat auf BTC + ETH      7 von 11, Deflated Sharpe 0,843
+        Spitzenkandidat auf BTC allein     5 von 11, Deflated Sharpe 0,4560
+        Spitzenkandidat auf BTC + ETH      9 von 11, Deflated Sharpe 0,5826
+
+    Beides am **Kassa-Punkt** bei 203 Versuchen, gemessen in
+    ``reports/marktkombinationen``. **Befund 472**: Hier stand "7 von 11,
+    Deflated Sharpe 0,843". Die 7 ist derselbe Korb am **Perpetual**-Punkt
+    (Befund 106), die 0,843 ein Stand von vor den heutigen Versuchen - zwei
+    Messungen als ein Paar gelesen, und damit kostete das fehlende Portfolio
+    scheinbar zwei Gates statt vier. Befund 471 hat dasselbe Paar in ``cli.py``
+    berichtigt und diese Fassung uebersehen; sie ist die, aus der es stammt.
 
     Wer auf dem einen Berg sucht und auf dem anderen prueft, findet
     zuverlaessig das Falsche. Werden ``frames`` uebergeben, laeuft die Pruefung

@@ -7261,6 +7261,47 @@ BEHOBEN: tuple[Richtung, ...] = (
         "seiner gemessenen Hoehe",
         471,
     ),
+    # Befund 472: Die Wache von 471 sah eine Datei und ein Umfeld - das Paar
+    # stand auch dort, wo es herkommt.
+    Richtung(
+        "Dieselbe falsche Zahl stand in der Datei, aus der sie stammt",
+        "Befund 471 hat eine Stelle **per Hand** gefunden. Die Verallgemeinerung "
+        "ist die eigentliche Arbeit: jede 'N von 11'-Aussage, die eine "
+        "Aufstellung beim Namen nennt, gegen den gemessenen Kombinationsbericht "
+        "gestellt - in 'cli.py' und ganz 'research/'. **Zwei weitere gefunden, "
+        "und die erste ist mein eigener unvollstaendiger Fix von einem "
+        "Durchlauf zuvor**: Das identische Paar - 5 von 11 bei Deflated Sharpe "
+        "0,190 gegen 7 von 11 bei 0,843 - steht in 'research/admission.py', "
+        "also in der Datei, aus der die Fassung in 'cli.py' abgeschrieben war. "
+        "Die Wache von 471 las nur 'cli.py' und nur das Umfeld von 'BTC "
+        "allein'; eine Regel, die eine Datei prueft, sichert eine Datei. "
+        "**Die zweite sitzt noch naeher am Kern**: Im Docstring von "
+        "'spitzenkandidat' - der kanonischen Beschreibung des gepflegten "
+        "Kandidaten - standen 13,47 % im Jahr, 10,64 % Rueckgang, 152 Trades "
+        "und '7 von 11 Gates' **ohne ihren Betriebspunkt**. Gemessen in "
+        "'betriebspunkt' ist das das Perpetual-Tripel; am Spot-Punkt sind es "
+        "14,83 %, 9,87 % und 9 von 11. Zwei Gates Unterschied, und wer nur den "
+        "Docstring liest, erfaehrt nicht, welcher Stand das ist. Dass dort der "
+        "schlechtere steht, ist richtig und bleibt - solange offen ist, was das "
+        "Konto anbietet, gilt der unguenstigere Stand; benannt ist er jetzt. "
+        "Der Deflated Sharpe daneben ('0,863 gegen 0,95') passt zu keinem der "
+        "beiden gefuehrten Werte (Perpetual 0,7641, Spot 0,8640), liegt aber an "
+        "Spots Zahl - ein Stand von vor den heutigen Versuchen, und damit die "
+        "dritte Messung in derselben Zeile. Er steht jetzt nicht mehr dort, "
+        "sondern da, wo er je Punkt gefuehrt wird. **Gebaut**: Die Regel gilt "
+        "fuer beide Orte und lautet - wer eine Aufstellung nennt, nennt "
+        "entweder die gemessene Zahl oder seinen Punkt. Eine abweichende Zahl "
+        "ist naemlich nicht falsch; sie kann der andere Punkt sein. Falsch ist "
+        "sie **ohne** ihn. Gemessen 23 Stellen, null Verstoesse. **Eigener "
+        "Fehlgriff beim Wachenbau**: Mein erster Entwurf nahm 'dem Korb' als "
+        "Marktnennung und traf damit einen Registereintrag, in dem '3 statt 2 "
+        "von 11' eine Leiterzeile ist - ein Melder, der das falsche Ding "
+        "findet, ist schlimmer als keiner. Jetzt zaehlen nur ausdrueckliche "
+        "Marktnennungen, und die Gegenprobe darauf steht als Test. **Gelockert "
+        "ist nichts**: keine Schwelle, kein Gate, keine Zahl - drei Zahlen "
+        "haben ihren Punkt bekommen",
+        472,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

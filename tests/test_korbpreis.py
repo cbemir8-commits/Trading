@@ -18,6 +18,19 @@ verlangt, Zusicherungen am Rumpf zu pruefen, damit Prosa sie nicht erfuellt.
 Hier ist die Prosa der Gegenstand: Die falschen Zahlen standen in einem
 Hilfetext und in einem Kommentar. Geprueft wird also genau das, was ein
 Mensch liest.
+
+**Befund 472 hat die Regel verallgemeinert.** Die Wache von 471 sah nur
+``cli.py`` und nur das Umfeld von "BTC allein" - und uebersah damit, dass
+dasselbe Paar (5 von 11 bei 0,190 gegen 7 von 11 bei 0,843) in
+``research/admission.py`` stand, also dort, wo es herkommt. Dazu kam
+``research/seeds.py``: Im Docstring des Spitzenkandidaten selbst standen
+13,47 % und 7 von 11 - das Perpetual-Tripel - ohne ihren Punkt, waehrend am
+Spot-Punkt 14,83 % und 9 von 11 gelten.
+
+Jetzt gilt die Regel fuer ``cli.py`` und ganz ``research/``: Wer eine
+Aufstellung beim Namen nennt, nennt entweder die gemessene Zahl oder seinen
+Betriebspunkt. Gemessen ohne eine einzige Ausnahme erfuellbar - 23 Stellen,
+null Verstoesse.
 """
 
 from __future__ import annotations
@@ -200,3 +213,145 @@ class TestGegenDieEigeneMessung:
                 f"DSR {deutsch} aus dem Bericht steht nicht in cli.py - "
                 f"dort stehen also andere Zahlen als die gemessenen."
             )
+
+
+# ---------------------------------------------------------------------------
+#  Befund 472: dieselbe Regel fuer jede benannte Aufstellung
+# ---------------------------------------------------------------------------
+
+#: Schreibweise in der Prosa -> Schluessel im Kombinationsbericht.
+#:
+#: Absichtlich **nur** ausdrueckliche Marktnennungen. "dem Korb" stand hier im
+#: ersten Entwurf mit drin und traf damit einen Registereintrag, in dem "3
+#: statt 2 von 11" eine Leiterzeile ist und kein Korbwert - ein Melder, der
+#: das falsche Ding findet, ist schlimmer als keiner.
+SCHREIBWEISEN: tuple[tuple[str, str], ...] = (
+    ("BTC + ETH + LTC + XRP", "BTC+ETH+LTC+XRP"),
+    ("BTC+ETH+LTC+XRP", "BTC+ETH+LTC+XRP"),
+    ("BTC + ETH + XRP", "BTC+ETH+XRP"),
+    ("BTC + ETH + LTC", "BTC+ETH+LTC"),
+    ("BTC + ETH", "BTC+ETH"),
+    ("BTC+ETH", "BTC+ETH"),
+    ("BTC allein", "BTC"),
+    ("ETH allein", "ETH"),
+)
+
+GATEZAHL = re.compile(r"(\d+) von 11")
+
+
+def geprueft_werden() -> tuple[Path, ...]:
+    return (WURZEL / "cli.py", *sorted((WURZEL / "research").glob("*.py")))
+
+
+@dataclass(frozen=True, slots=True)
+class Aussage:
+    datei: str
+    zeile: int
+    aufstellung: str
+    zahlen: frozenset[int]
+    nennt_punkt: bool
+
+
+def aussagen(text: str, datei: str, *, breite: int = 3) -> tuple[Aussage, ...]:
+    """Jede ``N von 11``-Aussage, die eine Aufstellung beim Namen nennt."""
+    zeilen = text.splitlines()
+    gefunden = []
+    for i, z in enumerate(zeilen):
+        if "von 11" not in z:
+            continue
+        fenster = re.sub(
+            r"\s+", " ", " ".join(x.strip() for x in zeilen[max(0, i - breite) : i + breite + 1])
+        )
+        schluessel = next((s for p, s in SCHREIBWEISEN if p in fenster), None)
+        if schluessel is None:
+            continue
+        gefunden.append(
+            Aussage(
+                datei=datei,
+                zeile=i + 1,
+                aufstellung=schluessel,
+                zahlen=frozenset(int(x) for x in GATEZAHL.findall(fenster)),
+                nennt_punkt=any(w in fenster for w in PUNKTWORTE),
+            )
+        )
+    return tuple(gefunden)
+
+
+ALLE_AUSSAGEN = tuple(
+    a
+    for datei in geprueft_werden()
+    for a in aussagen(datei.read_text(encoding="utf-8"), datei.name)
+)
+
+
+class TestDerMelderDerZweitenRegel:
+    def test_er_findet_genug_stellen(self) -> None:
+        """Sonst besteht die Regel darunter leer."""
+        assert len(ALLE_AUSSAGEN) >= 10, [
+            (a.datei, a.zeile) for a in ALLE_AUSSAGEN
+        ]
+
+    def test_er_erkennt_die_alte_fassung_aus_admission(self) -> None:
+        """Genau die zwei Zeilen, die 471 uebersehen hat."""
+        alt = aussagen(
+            "Spitzenkandidat auf BTC allein     5 von 11, Deflated Sharpe 0,190\n"
+            "Spitzenkandidat auf BTC + ETH      7 von 11, Deflated Sharpe 0,843",
+            "probe.py",
+        )
+
+        assert alt, "der Melder sieht die alte Fassung nicht"
+        assert all(not a.nennt_punkt for a in alt)
+        assert any(7 in a.zahlen and 9 not in a.zahlen for a in alt)
+
+    def test_aber_nicht_eine_leiterzeile_am_wort_korb(self) -> None:
+        """Die Gegenprobe gegen den eigenen ersten Entwurf: 'dem Korb' allein
+        darf keine Aufstellung sein."""
+        leiter = aussagen(
+            "die unterste Zeile bei 3 statt 2 von 11 - die Messlatte auf "
+            "einem Bein statt auf dem Korb zu messen bewegt sie kaum",
+            "probe.py",
+        )
+
+        assert leiter == ()
+
+
+@pytest.mark.daten
+class TestJedeBenannteAufstellung:
+    def test_nennt_die_gemessene_zahl_oder_ihren_punkt(self) -> None:
+        """**Die Regel von Befund 472.**
+
+        Eine abweichende Zahl ist nicht falsch - sie kann ein anderer
+        Betriebspunkt sein (Perpetual 7 gegen Kassa 9 auf demselben Korb).
+        Falsch ist eine abweichende Zahl **ohne** ihren Punkt: Dann liest sie
+        sich gegen die falsche Leiter.
+        """
+        paar = gemessenes_paar()
+        if paar is None:
+            pytest.skip("kein Kombinationsbericht im Speicher")
+        _, _, daten = paar
+        gemessen = {k["maerkte"]: k["bestanden"] for k in daten["kombinationen"]}
+
+        schuldig = [
+            f"{a.datei}:{a.zeile} ({a.aufstellung}: gemessen "
+            f"{gemessen[a.aufstellung]}, im Text {sorted(a.zahlen)})"
+            for a in ALLE_AUSSAGEN
+            if a.aufstellung in gemessen
+            and gemessen[a.aufstellung] not in a.zahlen
+            and not a.nennt_punkt
+        ]
+
+        assert schuldig == [], (
+            "Gate-Zahl weicht vom gemessenen Bericht ab und nennt keinen "
+            f"Betriebspunkt: {schuldig}"
+        )
+
+    def test_und_die_aufstellungen_kommen_im_bericht_vor(self) -> None:
+        """Sonst prueft die Regel an einer Schreibweise vorbei, die der
+        Bericht gar nicht kennt."""
+        paar = gemessenes_paar()
+        if paar is None:
+            pytest.skip("kein Kombinationsbericht im Speicher")
+        _, _, daten = paar
+        bekannt = {k["maerkte"] for k in daten["kombinationen"]}
+
+        assert {s for _, s in SCHREIBWEISEN} <= bekannt

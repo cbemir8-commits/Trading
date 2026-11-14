@@ -2177,8 +2177,22 @@ def spitzenkandidat() -> Genome:
     abtippt, ist keine, auf die man Geld setzen sollte.
 
     Gemessen ueber August 2017 bis August 2026 auf BTC + ETH, Walk-Forward,
-    nach Gebuehren: 13,47 % im Jahr, 10,64 % Rueckgang, 152 Trades, Deflated
-    Sharpe 0,863 gegen 0,95. **Stand: 7 von 11 Gates.**
+    nach Gebuehren - und **am Perpetual-Punkt**: 13,47 % im Jahr, 10,64 %
+    Rueckgang, 152 Trades. **Stand: 7 von 11 Gates.** Am Spot-Punkt sind es
+    14,83 %, 9,87 % und **9 von 11** (``research/betriebspunkt``). Dass hier
+    der schlechtere steht, ist Absicht: Solange offen ist, was das Konto
+    anbietet, gilt der unguenstigere Stand.
+
+    **Befund 472**: Der Punkt stand hier nicht dabei, und das ist bei genau
+    diesen Zahlen keine Kleinigkeit - 13,47/10,64 ist das Perpetual-Tripel,
+    14,83/9,87 das des Spot-Punkts, und zwei Gates liegen dazwischen. Der
+    Deflated Sharpe stand daneben als "0,863 gegen 0,95", ebenfalls ohne
+    Punkt; er liegt an Spots 0,8640 und nicht an Perpetuals 0,7641 - beides
+    Staende aus Befund 108 und seit Befund 152 ueberholt -, ist aber mit
+    keinem der beiden identisch. Also eine dritte Messung in derselben Zeile.
+    Welcher Wert je Punkt **heute** gilt, steht in ``research.referenz``
+    ('SPOTPUNKT', 'PERPETUALPUNKT') und wird dort gepflegt; hier steht er
+    deshalb nicht mehr.
 
     Zum Vola-Ziel von 19,3 - und warum es dort bleibt
     -------------------------------------------------

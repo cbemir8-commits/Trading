@@ -660,6 +660,18 @@ class TestUeberholteZahlenImRegister:
             # heisst weniger Evidenz. Das Verhaeltnis ueberlebt die
             # Umrechnung, die einzelne Zahl nicht.
             "Der Ladehinweis schickte Tageskerzen auf 2320 Tage": ("0,8640",),
+            # **Befund 472.** Der Eintrag handelt davon, dass ein Docstring
+            # einen Deflated Sharpe ohne Betriebspunkt fuehrte, und nennt die
+            # zwei Werte, an denen die Zuordnung haengt - Spots 0,8640 gegen
+            # Perpetuals 0,7641 aus Befund 108. Beide sind ausdruecklich als
+            # ueberholt bezeichnet ("ein Stand von vor den heutigen 203
+            # Versuchen"); genannt werden sie, weil ohne sie nicht nachlesbar
+            # waere, **warum** 0,863 zu Spot und nicht zu Perpetual gehoert.
+            # Geschichte, kein Stand.
+            "Dieselbe falsche Zahl stand in der Datei, aus der sie stammt": (
+                "0,8640",
+                "0,7641",
+            ),
         }, (
             "Ein Registereintrag nennt eine ueberholte Kennzahl. Ist sie als "
             "Geschichte gemeint, gehoert der Eintrag in diese Liste; ist sie "

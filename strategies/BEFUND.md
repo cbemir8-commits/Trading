@@ -42571,3 +42571,72 @@ was ein Mensch liest.
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Die Sperre aus Befund 102 steht weiter. Was sich aendert: Der Preis des
 fehlenden `-m` steht in seiner gemessenen Hoehe.
+
+## Vierhundertzweiundsiebzig. Dieselbe falsche Zahl stand in der Datei, aus der sie stammt
+
+Befund 471 hat eine Stelle **per Hand** gefunden. Die Verallgemeinerung ist
+die eigentliche Arbeit: Jede `N von 11`-Aussage, die eine Aufstellung beim
+Namen nennt, gegen den gemessenen Kombinationsbericht gestellt - in `cli.py`
+und ganz `research/`.
+
+### Der erste Fund ist mein eigener unvollstaendiger Fix
+
+Das identische Paar steht in `research/admission.py`:
+
+    Spitzenkandidat auf BTC allein     5 von 11, Deflated Sharpe 0,190
+    Spitzenkandidat auf BTC + ETH      7 von 11, Deflated Sharpe 0,843
+
+Das ist die Datei, aus der die Fassung in `cli.py` abgeschrieben war. Die
+Wache von 471 las **eine** Datei und **ein** Umfeld ("BTC allein") - und eine
+Regel, die eine Datei prueft, sichert eine Datei. Einen Durchlauf zuvor habe
+ich den Fund gemeldet und die Quelle stehen gelassen.
+
+### Der zweite sitzt noch naeher am Kern
+
+Im Docstring von `spitzenkandidat` - der kanonischen Beschreibung des
+gepflegten Kandidaten - stand:
+
+    Gemessen ueber August 2017 bis August 2026 auf BTC + ETH, Walk-Forward,
+    nach Gebuehren: 13,47 % im Jahr, 10,64 % Rueckgang, 152 Trades, Deflated
+    Sharpe 0,863 gegen 0,95. **Stand: 7 von 11 Gates.**
+
+Kein Betriebspunkt. Und bei genau diesen Zahlen ist das keine Kleinigkeit -
+`research/betriebspunkt` fuehrt beide Staende nebeneinander:
+
+    Perpetual   152 Trades, 13,47 % p.a., 10,64 % Rueckgang   7/11   DSR 0,7641
+    Spot        152 Trades, 14,83 % p.a.,  9,87 % Rueckgang   9/11   DSR 0,8640
+
+13,47/10,64 ist also das **Perpetual**-Tripel. Zwei Gates liegen zwischen den
+Staenden, und wer nur den Docstring liest, erfaehrt nicht, welcher es ist.
+
+Dass dort der schlechtere steht, ist richtig und bleibt: Solange offen ist,
+was das Konto anbietet, gilt der unguenstigere Stand. Benannt ist er jetzt.
+
+Der Deflated Sharpe daneben ist die dritte Messung in derselben Zeile: 0,863
+passt zu **keinem** der beiden gefuehrten Werte, liegt aber an Spots 0,8640
+und nicht an Perpetuals 0,7641 - ein Stand von vor den heutigen 203
+Versuchen. Er steht jetzt nicht mehr im Docstring, sondern da, wo er je Punkt
+gefuehrt wird.
+
+### Die Regel
+
+Wer eine Aufstellung beim Namen nennt, nennt **entweder die gemessene Zahl
+oder seinen Betriebspunkt.**
+
+Eine abweichende Zahl ist naemlich nicht falsch - sie kann der andere Punkt
+sein; 7 von 11 ist auf demselben Korb richtig, am Perpetual-Punkt. Falsch ist
+sie **ohne** ihn, denn dann liest sie sich gegen die falsche Leiter. Gemessen
+ueber `cli.py` und ganz `research/`: 23 Stellen, **null Verstoesse**.
+
+### Eigener Fehlgriff beim Wachenbau
+
+Mein erster Entwurf nahm "dem Korb" als Marktnennung. Damit traf er einen
+Registereintrag, in dem "3 statt 2 von 11" eine **Leiterzeile** ist und kein
+Korbwert - ein Melder, der das falsche Ding findet, ist schlimmer als keiner.
+Jetzt zaehlen nur ausdrueckliche Marktnennungen, und die Gegenprobe darauf
+steht als Test.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Die Sperre aus Befund 102 steht weiter. Was sich aendert: Drei Zahlen haben
+ihren Betriebspunkt bekommen, und die Regel prueft nicht mehr eine Datei,
+sondern alle, die solche Zahlen fuehren.
