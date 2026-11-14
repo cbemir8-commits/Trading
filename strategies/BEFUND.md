@@ -42819,3 +42819,82 @@ genau das ist hier fuer zwei Stunden passiert.
 Die Sperre aus Befund 102 steht weiter. Was sich aendert: Der gepinnte Stand
 ist wieder der, auf dem die gepflegten Zahlen gemessen sind - und ein
 ladender Befehl gilt nicht mehr als harmlos.
+
+## Vierhundertfuenfundsiebzig. Die Decke stand auf einem Vorrat, den der Befehl nicht mehr liefert
+
+Dieser Befund verdankt sich einem eigenen Fehler. Vor zwei Durchlaeufen habe
+ich berichtet, zwei Berichtsfamilien haetten keine Datei - mein Suchmuster
+griff nur `*.json`, die Dateien sind `.jsonl`:
+
+    reibung:       25 Dateien, neueste 2026-11-14_032322.jsonl
+    vorratsdecke: 143 Dateien, neueste 2026-11-14_033354.jsonl
+
+Damit war mein Schluss *"die Methode von Befund 472 laesst sich nicht
+ausweiten"* fuer diese zwei falsch begruendet. Hier ist, was dort lag.
+
+### Der Kopf nennt achtzehn, der Befehl liefert dreizehn
+
+`research/vorratsdecke` sagt: *"Gemessen auf dem heutigen Vorrat (18 Regeln,
+Versuchsstand 203)."* Der heutige Bericht sagt etwas anderes:
+
+    Kopf:  genome 25   versuchsstand 203   betriebspunkt Spot   intervall 1d
+    Zeilen: 13 gemessen | 6 identisch | 5 kein Kandidat | 1 keine Latte
+
+Dreizehn. Und die fuenf, die im gepinnten Vorrat stehen und heute fehlen,
+stammen alle aus **Generation 2** - die nach `seeds.VORGESEHEN` auf
+Viertelstundenkerzen gehoert:
+
+    Grosser Trendausbruch            Nur mit der Drift
+    Seltener grosser Ausbruch        Langsamer Kreuzer (Messlatte 2)
+    Starker Trend, Momentum
+
+Mit `-i D` filtert der Befehl sie heraus, und das ist **richtig**: Eine Regel
+auf fremder Kerzenlaenge ist eine andere Regel unter demselben Namen (Befund
+64/214). Nur stand die Decke damit auf einem Vorrat, den der Befehl auf
+Tageskerzen nicht mehr herstellt - und ob sie auf den reinen dreizehn haelt,
+hatte niemand nachgerechnet.
+
+### Nachgerechnet
+
+Mit den Funktionen des Moduls, auf den gepinnten Zahlen ohne die fuenf:
+
+    achtzehn (gemischt)   r = -0,5442   t = -2,5948   tragfaehig
+    dreizehn (nur 1d)     r = -0,8196   t = -4,7452   tragfaehig
+
+Die Decke wird **staerker**, nicht schwaecher. Und sie bleibt an einem Punkt
+zerbrechlich - an demselben:
+
+    ohne Regel                           r         t  tragfaehig
+    Momentum Ruecksetzer           -0,4346   -1,5259  nein  <-- loescht sie
+    Volatilitaets-Ausbruch         -0,8887   -6,1302  ja
+    Trend-Beteiligung 50 Tage      -0,8493   -5,0865  ja
+    Trendfolge Ausbruch            -0,8446   -4,9892  ja
+    ... alle uebrigen              zwischen -0,80 und -0,84   ja
+
+Der Satz des Moduls gilt damit woertlich weiter: *Eine Decke, die ein Punkt
+loeschen kann, ist keine.*
+
+### Und die gepflegten Zahlen reproduzieren
+
+Die dreizehn stehen im heutigen Bericht mit **identischem** n_eff und
+identischer Qualitaet je Trade - Abweichung null bei einer Toleranz von
+5e-5 -, und die beste Guete ist weiter 2,484 ('Donchian-Ausbruch 55/20').
+Gewandert ist der **Umfang** des Vorrats, nicht die Rechnung.
+
+### Gebaut
+
+Der Kopf nennt die Mischung und beide Staende: achtzehn, wo sie als Zahlen
+eines Tages gemeint sind, dreizehn, wo von "heute" die Rede ist. Dazu eine
+Wache mit vier Zusicherungen:
+
+* Die fuenf kommen wirklich aus einer Viertelstunden-Generation - **am
+  Katalog nachgesehen**, nicht behauptet.
+* Die intervallreinen Zahlen stimmen (r, t mit Toleranz).
+* Die Zerbrechlichkeit nennt dieselbe **eine** Regel - waere es plotzlich
+  keine mehr oder eine andere, waere das ein eigener Befund.
+* Der Modulkopf sagt es, denn ein Befund, der nur im Laborbuch steht, warnt
+  den naechsten Leser des Kopfes nicht.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich,
+und die Schlussfolgerung des Moduls aendert sich nicht - sie steht nur jetzt
+auf dem Vorrat, von dem sie spricht. Die Sperre aus Befund 102 steht weiter.

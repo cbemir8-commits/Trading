@@ -270,7 +270,19 @@ GELESEN: dict[str, int] = {
     # dem Perpetual-Punkt; der Eintrag handelt vom **Verbund** mit dem Bestand
     # auf Tageskerzen und ist seit 193 unveraendert gemessen. Zwei Messungen,
     # kein Widerspruch - dieselbe Abgrenzung wie bei 322 und 350.
-    "Bestand + 'Grosser Trendausbruch'": 467,
+    #
+    # **Befund 475 nennt sie zum fuenften Mal**, und noch harmloser als 467:
+    # Der Abschnitt zaehlt die fuenf Regeln auf, die im gepinnten Vorrat der
+    # 'vorratsdecke' aus einer Viertelstunden-Generation stammen, und
+    # 'Grosser Trendausbruch' ist eine davon - eine Herkunftsangabe, keine
+    # Messung.
+    #
+    # Gelesen und abgegrenzt: Dass die Regel in Generation 2 steht, sagt
+    # ueber ihren Beitrag im **Verbund** mit dem Bestand auf Tageskerzen
+    # nichts. Das waere sogar der Fehler aus Befund 190 - zwei
+    # Kerzenlaengen gegeneinander gelesen. Die Richtung bleibt offen und seit
+    # 193 unveraendert gemessen.
+    "Bestand + 'Grosser Trendausbruch'": 475,
     "Holdout auf fremden Maerkten": 295,
     # **Befund 330, und diesmal benutzt statt zitiert.** Der Lauf hat den
     # Versuchszaehler ueber ``PATHS__STATE`` auf eine Wegwerf-Ablage umgelenkt,

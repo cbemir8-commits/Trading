@@ -7388,6 +7388,48 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Stand ist wieder der, auf dem die gepflegten Zahlen gemessen sind",
         474,
     ),
+    # Befund 475: Die achtzehn Regeln der Vorratsdecke mischen zwei
+    # Kerzenlaengen - nachgerechnet, und die Aussage haelt staerker.
+    Richtung(
+        "Die Decke stand auf einem Vorrat, den der Befehl nicht mehr liefert",
+        "**Dieser Befund verdankt sich einem eigenen Fehler**: Ich hatte "
+        "gemeldet, zwei Berichtsfamilien haetten keine Datei - mein "
+        "Suchmuster griff nur '*.json', die Dateien sind '.jsonl'. Es sind 25 "
+        "und 143, die neuesten von heute. Damit war mein Schluss 'die Methode "
+        "von 472 laesst sich nicht ausweiten' fuer diese zwei falsch "
+        "begruendet, und hier ist, was dort lag. **Der Kopf von "
+        "'vorratsdecke' sagt 'Gemessen auf dem heutigen Vorrat (18 Regeln, "
+        "Versuchsstand 203)'.** Gemessen am heutigen Bericht (1d, Spot-Punkt, "
+        "203 Versuche, 25 Genome) liefert der Befehl aber **dreizehn** "
+        "gemessene Regeln: Fuenf der achtzehn stammen aus **Generation 2**, "
+        "und die gehoert nach 'seeds.VORGESEHEN' auf Viertelstundenkerzen. "
+        "Mit '-i D' filtert der Befehl sie heraus, und das ist richtig - eine "
+        "Regel auf fremder Kerzenlaenge ist eine andere Regel unter demselben "
+        "Namen (64/214). **Damit stand die Decke auf einem Vorrat, den der "
+        "Befehl auf Tageskerzen nicht mehr herstellt, und ob sie auf den "
+        "reinen dreizehn haelt, war ungemessen.** Nachgerechnet mit den "
+        "Funktionen des Moduls: gemischte achtzehn r = -0,5442 bei t = "
+        "-2,5948; intervallreine dreizehn r = **-0,8196** bei t = **-4,7452** "
+        "- also **staerker**, nicht schwaecher. Und sie bleibt an einem Punkt "
+        "zerbrechlich, an **demselben**: Ohne 'Momentum Ruecksetzer' (n_eff "
+        "254) faellt sie auf r = -0,4346 bei t = -1,5259 und traegt nicht "
+        "mehr; jede andere der dreizehn Auslassungen laesst sie stehen, "
+        "mehrere machen sie staerker. Der Satz des Moduls - 'eine Decke, die "
+        "ein Punkt loeschen kann, ist keine' - gilt damit woertlich weiter. "
+        "**Und die gepflegten Zahlen reproduzieren**: Die dreizehn stehen im "
+        "heutigen Bericht mit identischem n_eff **und** identischer Qualitaet "
+        "je Trade, Abweichung null, und die beste Guete ist weiter 2,484. "
+        "Gewandert ist der Umfang des Vorrats, nicht die Rechnung. **Gebaut**: "
+        "Der Kopf nennt die Mischung und beide Staende - achtzehn, wo sie als "
+        "Zahlen eines Tages gemeint sind, dreizehn, wo von heute die Rede ist "
+        "-, und eine Wache haelt vier Dinge: dass die fuenf wirklich aus "
+        "einer Viertelstunden-Generation kommen (am Katalog nachgesehen, nicht "
+        "behauptet), dass die reinen Zahlen stimmen, dass die Zerbrechlichkeit "
+        "dieselbe Regel nennt, und dass der Kopf es sagt. **Gelockert ist "
+        "nichts**: keine Schwelle, kein Gate, keine Zahl - die Aussage steht "
+        "jetzt auf dem Vorrat, von dem sie spricht",
+        475,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

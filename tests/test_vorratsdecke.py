@@ -872,3 +872,104 @@ def test_der_modulkopf_sagt_dass_es_jetzt_wirkt() -> None:
     assert "SEIT BEFUND 285" in kopf
     assert "einflussprobe" in kopf
     assert "preisurteil" in kopf
+
+
+#: Die fuenf Regeln im gepinnten Vorrat, die aus einer
+#: Viertelstunden-Generation stammen - Befund 475.
+#:
+#: Sie stehen hier als Daten, damit die Mischung nicht stillschweigend
+#: weitervererbt wird. Dass sie im Vorrat von Befund 183/285 mitgezaehlt
+#: wurden, ist Geschichte und kein Vorwurf; dass es niemand nachgerechnet
+#: hatte, war der Fund.
+AUS_FEINGENERATION: frozenset[str] = frozenset({
+    "Grosser Trendausbruch",
+    "Nur mit der Drift",
+    "Seltener grosser Ausbruch",
+    "Langsamer Kreuzer (Messlatte 2)",
+    "Starker Trend, Momentum",
+})
+
+
+def _intervallrein() -> list:
+    """Der gepinnte Vorrat ohne die Regeln fremder Kerzenlaenge."""
+    return [
+        Punkt(n, e, s) for n, e, s in VORRAT_285 if n not in AUS_FEINGENERATION
+    ]
+
+
+class TestDerVorratMischteZweiKerzenlaengen:
+    """**Befund 475.** Der Modulkopf nannte achtzehn Regeln "den heutigen
+    Vorrat". Auf Tageskerzen liefert der Befehl dreizehn - fuenf der achtzehn
+    gehoeren einer Viertelstunden-Generation.
+
+    Geprueft wird hier beides: dass die Zuordnung stimmt, und dass die
+    Aussage des Moduls auf dem intervallreinen Vorrat weiter gilt. Sie gilt -
+    staerker sogar.
+    """
+
+    def test_die_fuenf_stammen_wirklich_aus_einer_feingeneration(self) -> None:
+        """Nicht behauptet, sondern am Katalog nachgesehen."""
+        from research.seeds import GENERATIONS, VORGESEHEN
+
+        herkunft: dict[str, list[int]] = {}
+        for generation, eintraege in GENERATIONS.items():
+            for eintrag in eintraege:
+                genom = eintrag() if callable(eintrag) else eintrag
+                herkunft.setdefault(genom.name, []).append(generation)
+
+        for name in AUS_FEINGENERATION:
+            generationen = herkunft.get(name)
+            assert generationen, f"'{name}' steht in keinem Katalog mehr"
+            for g in generationen:
+                assert VORGESEHEN.get(g) == "15", (
+                    f"'{name}' kommt aus Generation {g}, vorgesehen ist "
+                    f"{VORGESEHEN.get(g)!r} - dann traegt dieser Befund nicht"
+                )
+
+    def test_und_sie_sind_wirklich_im_gepinnten_vorrat(self) -> None:
+        namen = {n for n, _, _ in VORRAT_285}
+
+        assert namen >= AUS_FEINGENERATION
+        assert len(VORRAT_285) == 18
+        assert len(_intervallrein()) == 13
+
+    def test_die_decke_wird_ohne_sie_staerker(self) -> None:
+        """Das Ergebnis, auf das es ankommt: Die Aussage des Moduls haengt
+        nicht an der Mischung. Waere sie ohne die fuenf **weg**, waere der
+        ganze Abschnitt eine Aussage ueber einen Vorrat, den es nicht gibt.
+        """
+        gemischt = baue(self.punkte_alle())
+        rein = baue(_intervallrein())
+
+        assert gemischt.tragfaehig and rein.tragfaehig
+        assert rein.r == pytest.approx(-0.8196, abs=0.002)
+        assert rein.t == pytest.approx(-4.745, abs=0.02)
+        assert abs(rein.t) > abs(gemischt.t), "staerker, nicht schwaecher"
+
+    def test_und_bleibt_an_demselben_einen_punkt_zerbrechlich(self) -> None:
+        """Dieselbe Zerbrechlichkeit, dieselbe Regel - und das ist der Grund,
+        warum der Satz 'eine Decke, die ein Punkt loeschen kann, ist keine'
+        woertlich weitergilt."""
+        punkte = _intervallrein()
+        ohne = {
+            p.name: baue([q for q in punkte if q.name != p.name]) for p in punkte
+        }
+        loeschend = sorted(n for n, d in ohne.items() if not d.tragfaehig)
+
+        assert loeschend == ["Momentum Ruecksetzer"], loeschend
+        assert ohne["Momentum Ruecksetzer"].t == pytest.approx(-1.526, abs=0.02)
+
+    def test_der_modulkopf_nennt_die_mischung(self) -> None:
+        """Ein Befund, der nur im Laborbuch steht, warnt den naechsten Leser
+        des Kopfes nicht (Befund 394/399-Familie)."""
+        import research.vorratsdecke as modul
+
+        kopf = modul.__doc__ or ""
+
+        assert "Befund 475" in kopf
+        assert "dreizehn" in kopf
+        assert "Generation 2" in kopf
+        assert "-0,8196" in kopf
+
+    def punkte_alle(self) -> list:
+        return [Punkt(n, e, s) for n, e, s in VORRAT_285]

@@ -39,6 +39,42 @@ Befund 183 notierte dort -0,98. Der Unterschied ist die Rundung: Die
 Handmessung lief ueber die gedruckte Tabelle mit vier Nachkommastellen, der
 Lauf ueber die vollen Werte.
 
+DIE ACHTZEHN MISCHEN ZWEI KERZENLAENGEN - BEFUND 475
+----------------------------------------------------
+"Der heutige Vorrat" waren es, als der Absatz geschrieben wurde. Heute
+liefert ``cli vorratsdecke`` auf Tageskerzen **dreizehn** gemessene Regeln,
+nicht achtzehn: Fuenf der achtzehn stammen aus **Generation 2**, und die
+gehoert auf Viertelstundenkerzen (``seeds.VORGESEHEN``). Der Befehl filtert
+sie auf ``-i D`` heraus, und das ist richtig - eine Regel auf fremder
+Kerzenlaenge ist eine andere Regel unter demselben Namen (Befund 64/214).
+
+    Grosser Trendausbruch            Nur mit der Drift
+    Seltener grosser Ausbruch        Langsamer Kreuzer (Messlatte 2)
+    Starker Trend, Momentum
+
+Die Decke oben ist also ueber einen Vorrat gerechnet, den der Befehl auf
+Tageskerzen nicht mehr herstellt. **Nachgerechnet auf den intervallreinen
+dreizehn** - dieselben Zahlen, nur ohne die fuenf:
+
+    achtzehn (gemischt)   r = -0,5442   t = -2,5948   tragfaehig
+    dreizehn (nur 1d)     r = -0,8196   t = -4,7452   tragfaehig
+
+Die Decke wird dadurch **staerker**, nicht schwaecher - und sie bleibt an
+**einem** Punkt zerbrechlich, an demselben: Ohne 'Momentum Ruecksetzer'
+(n_eff 254) faellt sie auf r = -0,4346 bei t = -1,5259 und traegt nicht mehr.
+Jede andere der dreizehn Auslassungen laesst sie stehen, mehrere machen sie
+staerker. Der Satz darueber - *eine Decke, die ein Punkt loeschen kann, ist
+keine* - gilt woertlich weiter.
+
+Und die gepflegten Zahlen reproduzieren: Von den achtzehn stehen dreizehn im
+heutigen Bericht, mit **identischem** n_eff und identischer Qualitaet je
+Trade (Abweichung null), und die beste Guete ist weiter 2,484. Was gewandert
+ist, ist der Umfang des Vorrats - nicht die Rechnung.
+
+Befund 475 hat das nachgerechnet und haelt es als Test fest. Die achtzehn
+bleiben stehen, wo sie als Zahlen eines Tages gemeint sind; wo von "heute"
+die Rede ist, sind es dreizehn.
+
 **Die Familienaussage aus Befund 169 haelt nicht.** Auf 18 Regeln hat unter
 keiner der beiden Indikator-Einteilungen eine Familie mehr die Mehrheit; nach
 Regellogik hat 'Trend' zwoelf von achtzehn, traegt aber selbst nicht
