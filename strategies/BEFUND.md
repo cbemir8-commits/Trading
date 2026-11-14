@@ -43120,3 +43120,75 @@ Lehre wie in Befund 474, wo "dem Korb" eine Leiterzeile traf.
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Die Sperre aus Befund 102 steht weiter. Was sich aendert: Drei Zeilen lassen
 sich wieder einfuegen.
+
+## Vierhundertneunundsiebzig. Die Wache auf den Versuchszaehler lief leer
+
+Die Verallgemeinerung von Befund 478: Dort war eine Wache schmaler als ihre
+Behauptung. Gezaehlt, wie oft das noch so sein koennte - **28** Testkoepfe
+behaupten Vollstaendigkeit oder Einzigkeit. Angesehen habe ich den
+folgenreichsten: den Versuchszaehler. Jeder gebuchte Versuch hebt die Huerde
+des Deflated Sharpe dauerhaft und ist nicht zurueckzuholen.
+
+### Dieselbe Frage, zweimal im Baum
+
+``tests/test_versuchszaehler_wer`` sucht nach **beiden** Buchungswegen:
+
+    BUCHUNGEN = ("save_trials", "_verzeichne(")
+
+Mit Begruendung, und sie ist die Lehre aus Befund 282:
+
+> Eine Wache, die am Namen einer Funktion haengt statt an der Wirkung,
+> verliert genau die, die sich aendern.
+
+``tests/test_rauchtest`` sucht eine Datei weiter nach **einem**:
+
+    zaehlend = {
+        n.name for n in ast.walk(baum)
+        if isinstance(n, ast.FunctionDef) and not n.name.startswith("_")
+        and "save_trials" in ast.unparse(n)
+    }
+    assert zaehlend <= set(WIRKT_NACH_AUSSEN)
+
+### Und der Weg ist weg
+
+Gemessen am heutigen ``cli.py``:
+
+    Befehle mit 'save_trials' im Rumpf:    0
+    Befehle mit '_verzeichne(' im Rumpf:   7
+
+``zaehlend`` ist also die **leere Menge**, und die ist Teilmenge von allem.
+Die Zusicherung ist seit der Umstellung immer wahr. Die Wache, die melden
+sollte, wenn ein Befehl Versuche bucht, ohne als nach aussen wirkend
+eingeteilt zu sein, prueft nichts - genau die 0-von-0-Falle, die Befund 470
+an den Uebersprungsstellen gefunden hat, hier in der teuersten Ecke.
+
+Es ist auch derselbe Melderfehler, den Befund 282 **eine Datei weiter**
+behoben hat. Dort wurde er gesehen, hier blieb er stehen, bis er verstummte.
+
+### Gebaut
+
+Die Frage steht jetzt **einmal** in ``tests/zaehlerwege`` - beide Wege, mit
+der Begruendung aus 282 -, und beide Wachen fragen sie. Das ist die Lehre aus
+Befund 464, hier zum zweiten Mal in dieser Sitzung.
+
+Dazu drei Zusicherungen, die fehlten:
+
+* Die gefundene Menge ist **nicht leer**. Ohne das kann dieselbe Wache
+  wieder verstummen, und niemand merkt es.
+* Sie ist dieselbe wie die gepflegte Liste der sieben - gegen die eine
+  Liste geprueft, nicht gegen eine zweite (Befund 234).
+* Kein Befehl bucht **nur** noch auf dem alten Weg. Geht das wieder auf
+  null, ist der Test rot und jemand sieht hin.
+
+Und der Melder selbst hat Gegenproben: beide Wege einzeln, der leere Fall,
+und dass eine Hilfsfunktion (``_verzeichne`` bucht ja selbst) nicht als
+Befehl zaehlt. Ohne sie waere er der dritte ungepruefte Zaehler in dieser
+Sitzung.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Die Sperre aus Befund 102 steht weiter. Was sich aendert: Eine Wache prueft
+wieder.
+
+**Offen bleiben 27 der 28 Koepfe** - behauptete Vollstaendigkeit, nicht
+nachgerechnet. Das ist eine Liste und kein Fund; wer dort weitersucht,
+fange beim Folgenreichsten an.

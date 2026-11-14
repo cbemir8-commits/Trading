@@ -23,6 +23,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.zaehlerwege import BUCHUNGSWEGE, zaehlende_befehle
+
 SUCHEN = ("wettbewerb", "research")
 
 #: Alle Befehle, die den Versuchszaehler fortschreiben.
@@ -58,26 +60,17 @@ def _quelle(name: str) -> str:
 
 #: Die beiden Wege, auf denen der Zaehler steigt.
 #:
-#: **Beide gehoeren hierher** (Befund 282). Bis dahin suchte diese Wache nur
-#: nach ``save_trials``. Als ``landschaft`` und ``machbarkeit`` auf
-#: Einzelnachweise umgestellt wurden, waeren sie damit aus der Aufsicht
-#: gefallen - nicht weil sie aufgehoert haetten zu zaehlen, sondern weil sie
-#: es anders tun. Eine Wache, die am Namen einer Funktion haengt statt an der
-#: Wirkung, verliert genau die, die sich aendern.
-BUCHUNGEN = ("save_trials", "_verzeichne(")
+#: **Steht seit Befund 479 in ``tests/zaehlerwege``**, weil dieselbe Frage
+#: auch der Rauchtest stellt - und dort nur nach ``save_trials`` gesucht
+#: wurde, also seit der Umstellung nach nichts. Zwei Fassungen einer Regel
+#: sind zwei Gelegenheiten, dass sie auseinanderlaufen (464); hier war es
+#: passiert. Die Begruendung, warum **beide** Wege dazugehoeren, steht dort.
+BUCHUNGEN = BUCHUNGSWEGE
 
 
 def _schreiber() -> set[str]:
     """Alle Befehle, die den Zaehler fortschreiben - gefunden, nicht gelistet."""
-    baum = ast.parse(Path("cli.py").read_text())
-    aus = set()
-    for n in ast.walk(baum):
-        if not isinstance(n, ast.FunctionDef) or n.name.startswith("_"):
-            continue
-        quelle = ast.unparse(n)
-        if any(weg in quelle for weg in BUCHUNGEN):
-            aus.add(n.name)
-    return aus
+    return zaehlende_befehle()
 
 
 class TestWerDenZaehlerSchreibt:

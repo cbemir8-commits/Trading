@@ -89,6 +89,8 @@ import ast
 import re
 from pathlib import Path
 
+from tests.zaehlerwege import zaehlende_befehle
+
 #: Befehle, die auf etwas ausserhalb dieses Behaelters wirken - mit dem Grund.
 #:
 #: **Im Zweifel hierher.** Ein Befehl, der faelschlich hier steht, wird nicht
@@ -282,16 +284,23 @@ class TestDieEinteilungIstVollstaendig:
 
         Gelesen wird die Menge aus dem Quelltext, nicht aus einer zweiten
         Liste - sonst waeren es wieder zwei Wahrheiten (Befund 234).
-        """
-        baum = ast.parse(Path("cli.py").read_text())
-        zaehlend = {
-            n.name
-            for n in ast.walk(baum)
-            if isinstance(n, ast.FunctionDef)
-            and not n.name.startswith("_")
-            and "save_trials" in ast.unparse(n)
-        }
 
+        **Und sie wird jetzt richtig gelesen** (Befund 479). Hier stand eine
+        eigene Suche nach ``save_trials`` - dem einen von **zwei**
+        Buchungswegen. Heute bucht kein Befehl mehr so; alle sieben gehen
+        ueber ``_verzeichne(``. Damit fand diese Zusicherung die **leere
+        Menge** und verglich sie gegen alles, denn leer ist Teilmenge von
+        allem. Genau diesen Melderfehler hat Befund 282 eine Datei weiter
+        behoben; hier blieb er stehen, bis er still wurde. Die Frage steht
+        seit 479 einmal in ``tests/zaehlerwege``, und die Nichtleere ist
+        zugesichert - sonst kann sie wieder verstummen.
+        """
+        zaehlend = zaehlende_befehle()
+
+        assert zaehlend, (
+            "kein Befehl bucht einen Versuch - dann sucht diese Wache am "
+            "falschen Weg, wie bis Befund 479"
+        )
         assert zaehlend <= set(WIRKT_NACH_AUSSEN), (
             f"schreibt den Zaehler, steht aber nicht in WIRKT_NACH_AUSSEN: "
             f"{sorted(zaehlend - set(WIRKT_NACH_AUSSEN))}"

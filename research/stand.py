@@ -7519,6 +7519,40 @@ BEHOBEN: tuple[Richtung, ...] = (
         "wieder einfuegen",
         478,
     ),
+    # Befund 479: Die Wache auf den Versuchszaehler verglich die leere Menge
+    # gegen alles - und leer ist Teilmenge von allem.
+    Richtung(
+        "Die Wache auf den Versuchszaehler lief leer",
+        "Dieselbe Frage stand **zweimal** im Baum: Welche Befehle schreiben "
+        "den Versuchszaehler fort? 'test_versuchszaehler_wer' sucht nach "
+        "**beiden** Buchungswegen - 'save_trials' und '_verzeichne(' - und "
+        "traegt die Begruendung dafuer: Befund 282 hat dort genau den Fehler "
+        "behoben, nur nach dem einen zu suchen, weil 'landschaft' und "
+        "'machbarkeit' sonst aus der Aufsicht gefallen waeren. "
+        "'test_rauchtest' sucht eine Datei weiter **nur nach 'save_trials'** "
+        "- und gemessen kommt der heute in **keinem** Befehlsrumpf mehr vor; "
+        "alle sieben buchen ueber '_verzeichne('. Damit fand die Zusicherung "
+        "die **leere Menge** und verglich sie gegen alles: 'zaehlend <= "
+        "set(WIRKT_NACH_AUSSEN)' ist fuer die leere Menge immer wahr. **Die "
+        "Wache, die melden sollte, wenn ein Befehl Versuche bucht, ohne als "
+        "wirkend eingeteilt zu sein, prueft seit der Umstellung nichts** - "
+        "und das ist die teuerste Ecke des Projekts, weil jeder gebuchte "
+        "Versuch die Huerde des Deflated Sharpe dauerhaft hebt und nicht "
+        "zurueckzuholen ist. Gefunden wurde es ueber die Verallgemeinerung "
+        "von 478: Ich habe die **28** Testkoepfe gezaehlt, die "
+        "Vollstaendigkeit oder Einzigkeit behaupten, und mir den "
+        "folgenreichsten angesehen. **Gebaut**: Die Frage steht jetzt einmal "
+        "in 'tests/zaehlerwege' - beide Wege, mit der Begruendung aus 282 -, "
+        "und beide Wachen fragen sie; das ist die Lehre aus 464, hier zum "
+        "zweiten Mal. Dazu drei Zusicherungen, die fehlten: Die gefundene "
+        "Menge ist **nicht leer** (sonst kann sie wieder verstummen), sie ist "
+        "dieselbe wie die gepflegte Liste der sieben, und kein Befehl bucht "
+        "nur noch auf dem alten Weg. Der Melder selbst hat jetzt "
+        "Gegenproben - beide Wege einzeln, der leere Fall, und dass eine "
+        "Hilfsfunktion nicht als Befehl zaehlt. **Gelockert ist nichts**: "
+        "keine Schwelle, kein Gate, keine Zahl - eine Wache prueft wieder",
+        479,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
