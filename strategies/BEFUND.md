@@ -43192,3 +43192,70 @@ wieder.
 **Offen bleiben 27 der 28 Koepfe** - behauptete Vollstaendigkeit, nicht
 nachgerechnet. Das ist eine Liste und kein Fund; wer dort weitersucht,
 fange beim Folgenreichsten an.
+
+## Vierhundertachtzig. Der einzige Weg in den Markt war ungesichert
+
+Weiter in der Liste aus Befund 479, beim Folgenreichsten.
+``tests/test_risk_officer`` nennt den Risk-Officer
+
+> das Einzige, was zwischen einer fehlerhaften Strategie und einem leeren
+> Konto steht
+
+Das ist die gefaehrlichste Aussage dieses Projekts: Dort haengt echtes Geld
+dran, und die Live-Schleife laeuft nachts unbeaufsichtigt.
+
+### Gemessen stimmt sie
+
+Fuenf Stellen rufen das Ordergateway:
+
+    execution/live.py:305     place_market   reduce_only=True
+    execution/router.py:201   place_limit    reduce_only=False   <- der Einstieg
+    execution/router.py:335   place_limit    reduce_only=True
+    execution/router.py:375   place_limit    reduce_only=True
+    execution/router.py:534   place_market   reduce_only=True
+
+Die eine ausserhalb des Routers ist ein Notausstieg einer Position **ohne
+Stop** - die darf der Officer nicht blockieren, und der Code sagt es selbst:
+*"Position ohne Stop ist der gefaehrlichste Zustand ueberhaupt."* Von den
+fuenf traegt genau eine kein ``reduce_only``: die eroeffnende im Router.
+
+Der Einstieg geht ueber ``router.open``, und der hat **genau einen**
+Aufrufer:
+
+    live.py:1696   decision = self.officer.evaluate(...)
+    live.py:1702   if isinstance(decision, Vetoed): ... return
+    live.py:1716   self.bracket = self.router.open(signal, decision.sized)
+
+Gefragt wird also **vor** dem Handeln, und der Veto-Zweig kehrt zurueck.
+
+### Was fehlte, ist die Pruefung
+
+42 Teststellen nennen ``router.open``, ``officer.evaluate`` oder ``Vetoed`` -
+alle pruefen **Verhalten**. Die **Struktur** war ungesichert: ein Umbau mit
+einem zweiten Einstieg, oder einer, der den Officer erst danach fragt, waere
+durch die ganze Suite gekommen.
+
+Das ist die Lage aus Befund 394 und 477: Das Wissen liegt im System, nur
+nicht dort, wo es wirkt.
+
+### Gebaut
+
+Drei Zusicherungen am Syntaxbaum:
+
+* Es gibt **genau einen** ``router.open``-Aufruf.
+* Er steht in der Live-Schleife.
+* In derselben Funktion kommt ``officer.evaluate`` **vor** ihm - dieselbe
+  Reihenfolgepruefung wie in ``test_versuchszaehler_wer``.
+
+Dazu die Regel, dass ausserhalb des Routers eine Order nur **verkleinern**
+darf, und vier Gegenproben: dass ``pfad.open("a")`` kein Markteintritt ist
+(ein Textmuster auf ``.open(`` findet im Baum vier solche Stellen), dass
+``self.router.open`` schon einer ist, dass ``reduce_only`` erkannt wird, und
+dass es die ``reduce_only``-Stelle wirklich gibt - sonst bestaende die Regel
+leer.
+
+**Gefunden wurde kein Fehler, und das ist das Ergebnis.** Die gefaehrlichste
+Aussage des Projekts ist gemessen richtig. Neu ist, dass sie es bleiben muss.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Die Sperre aus Befund 102 steht weiter.

@@ -7553,6 +7553,46 @@ BEHOBEN: tuple[Richtung, ...] = (
         "keine Schwelle, kein Gate, keine Zahl - eine Wache prueft wieder",
         479,
     ),
+    # Befund 480: Die folgenreichste Behauptung des Projekts stimmt - und
+    # nichts hat sie geprueft.
+    Richtung(
+        "Der einzige Weg in den Markt war ungesichert",
+        "Weiter in der Liste aus 479, beim Folgenreichsten: "
+        "'test_risk_officer' nennt den Risk-Officer 'das Einzige, was "
+        "zwischen einer fehlerhaften Strategie und einem leeren Konto "
+        "steht'. Dort haengt echtes Geld dran, und die Live-Schleife laeuft "
+        "nachts unbeaufsichtigt. **Gemessen stimmt die Behauptung.** Fuenf "
+        "Stellen rufen das Ordergateway: vier in 'execution/router.py', eine "
+        "in 'execution/live.py' - und die eine dort ist ein "
+        "'reduce_only'-Notausstieg einer Position **ohne Stop**, die der "
+        "Officer nicht blockieren darf; der Code sagt es selbst ('Position "
+        "ohne Stop ist der gefaehrlichste Zustand ueberhaupt'). Der Einstieg "
+        "geht ueber 'router.open', und der hat **genau einen** Aufrufer: "
+        "live.py 1716, unmittelbar hinter 'officer.evaluate' in 1696, mit dem "
+        "Veto-Zweig davor. Von den fuenf Orderstellen traegt nur eine kein "
+        "'reduce_only' - die eroeffnende im Router. **Was fehlte, ist die "
+        "Pruefung.** 42 Teststellen nennen 'router.open', "
+        "'officer.evaluate' oder 'Vetoed'; alle pruefen Verhalten. Die "
+        "**Struktur** - ein Weg, und der hinter dem Tor - war ungesichert: "
+        "Ein Umbau mit einem zweiten Einstieg, oder einer, der den Officer "
+        "erst danach fragt, waere durch die ganze Suite gekommen. Das ist "
+        "die Lage aus Befund 394 und 477 - das Wissen liegt im System, nur "
+        "nicht dort, wo es wirkt. **Gebaut**: Drei Zusicherungen am "
+        "Syntaxbaum - es gibt genau einen 'router.open'-Aufruf, er steht in "
+        "der Live-Schleife, und in derselben Funktion kommt "
+        "'officer.evaluate' **vor** ihm (dieselbe Reihenfolgepruefung wie in "
+        "'test_versuchszaehler_wer'); dazu die Regel, dass ausserhalb des "
+        "Routers eine Order nur **verkleinern** darf. Mit Gegenproben: dass "
+        "ein 'pfad.open(\"a\")' kein Markteintritt ist - ein Textmuster auf "
+        "'.open(' findet im Baum vier solche Stellen -, dass "
+        "'self.router.open' schon einer ist, und dass es die "
+        "'reduce_only'-Stelle wirklich gibt, sonst bestaende die Regel leer. "
+        "**Gefunden wurde kein Fehler, und das ist das Ergebnis**: Die "
+        "gefaehrlichste Aussage des Projekts ist gemessen richtig. Neu ist, "
+        "dass sie es bleiben muss. **Gelockert ist nichts**: keine Schwelle, "
+        "kein Gate, keine Zahl",
+        480,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
