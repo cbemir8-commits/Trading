@@ -18,6 +18,29 @@ Was das gekostet hat: bisher nichts. Die sechs Dateien vom 2026-09-02 stammen
 aus echten Laeufen (Befunde 176 und 178), und keiner der 49 Schluesselpfade
 eines Teststaerke-Berichts faellt unter ``VERBOTEN``. Es ist wie in Befund 241
 und 243: Es traegt etwas, nur nicht das Bauteil, dem man es zuschreiben wuerde.
+
+Der Satz oben stimmt nicht - Befund 482
+---------------------------------------
+Die erste Zeile dieses Kopfes ist ein Anspruch, und er ist falsch.
+``research/zwischenstand.py`` legt seine Protokolle unter
+``reports/<art>/<zeitpunkt>.jsonl`` ab - 168 Dateien im Baum - und trug von
+den drei Zusagen genau **eine**: den Namensschutz, nicht den Trockenlauf und
+nicht ``scrub``.
+
+Diese Wache konnte es nicht sehen, und zwar zweimal zu eng: ``_befehle``
+liest **nur ``cli.py``**, also ist ein schreibendes Modul unsichtbar; und
+``_schreibt`` sucht nach ``write_text``/``json.dump``/``mkdir``, waehrend der
+Protokollweg mit ``pfad.open("a")`` und ``datei.write(...)`` schreibt.
+
+**Es ist eingetreten**: Der Rauchtest aus Befund 473 lief mit
+``TRADING_TROCKENLAUF=1`` und hat zwei Protokolle hinterlassen, die in
+``491688c`` mitcommittet wurden - und Befund 475 und 476 haben ihre Zahlen
+aus genau diesen Dateien genommen.
+
+Die verallgemeinerte Regel steht in ``tests/test_berichtswege.py``: nicht
+"geht durch ``write_report``" - das ist ein Funktionsname -, sondern **wer in
+den Berichtsverlauf schreibt, traegt die Zusagen**. Diese Datei bleibt, weil
+sie den Weg ueber ``cli.py`` genauer prueft als die allgemeine Regel.
 """
 
 from __future__ import annotations

@@ -73,7 +73,14 @@ from research.urteilszweige import (
 #: dahin trotzdem sein Ergebnis aus. Dass dieser Waechter den neuen Satz am
 #: Tag seiner Entstehung meldet, ist richtig so - er ist genau die
 #: Einschraenkung, deren Fehlen den Fehler getragen hat.
-URTEILSFUNKTIONEN: int = 165
+#: **166 seit 482**: 'zwischenstand.Zwischenstand.zeile' sagt dem Nutzer vor
+#: dem Lauf, wo sein Protokoll entsteht - und im Trockenlauf, dass keines
+#: entsteht. Zwei Zweige, und der zweite ist der Grund: Bis 482 nannte die
+#: Zeile auch dort einen Pfad, an dem nichts angelegt wurde. Das ist
+#: dieselbe Falschmeldung wie 'Bericht: <Ordner>' in Befund 244, und sie ist
+#: genau die Zeile, nach der man spaeter sucht, wenn man wissen will, woher
+#: ein Protokoll kam - was in 482 zweimal noetig war.
+URTEILSFUNKTIONEN: int = 166
 
 
 def _fn(quelle: str) -> ast.FunctionDef:

@@ -71,6 +71,18 @@ heutigen Bericht, mit **identischem** n_eff und identischer Qualitaet je
 Trade (Abweichung null), und die beste Guete ist weiter 2,484. Was gewandert
 ist, ist der Umfang des Vorrats - nicht die Rechnung.
 
+**Woher "der heutige Bericht" kam - Befund 482.** Es ist
+``reports/vorratsdecke/2026-11-14_033354.jsonl``, und den hat **kein
+absichtlicher Lauf** erzeugt: Er stammt aus dem Rauchtest von Befund 473,
+der mit ``TRADING_TROCKENLAUF=1`` lief - der Protokollweg fragte diese
+Variable damals nicht. Die Zahlen oben halten trotzdem, und das ist
+gemessen: Der Kopf nennt die gepinnte Tagesreihe mit 3301 Balken je Markt,
+und ``cli referenz`` hatte am selben Morgen nur die Viertelstundenreihe
+verlaengert (Befund 474). Was fehlte, war die **Herkunft** - ein Befund
+stand auf einem Bericht, den niemand bestellt hat, und das stand nirgends.
+Seit 482 fragt ``research.zwischenstand`` den Trockenlauf; die Datei bleibt
+liegen, weil sie die nachlesbare Grundlage dieses Absatzes ist.
+
 Befund 475 hat das nachgerechnet und haelt es als Test fest. Die achtzehn
 bleiben stehen, wo sie als Zahlen eines Tages gemeint sind; wo von "heute"
 die Rede ist, sind es dreizehn.

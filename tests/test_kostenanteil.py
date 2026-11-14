@@ -314,6 +314,17 @@ class TestVonTradesZumTaktpunkt:
 #: abzuschreiben waere eine zweite Fassung, und die Wache
 #: ``test_die_zahlen_stehen_nur_an_dieser_einen_stelle`` hat genau das
 #: gemeldet - zu Recht. Geholt wird sie deshalb aus dem Katalog.
+#: **Woher diese vierzehn Zeilen kommen - Befund 482.** Aus
+#: ``reports/reibung/2026-11-14_032322.jsonl``, und den hat **kein
+#: absichtlicher Lauf** erzeugt: Er stammt aus dem Rauchtest von Befund 473,
+#: der mit ``TRADING_TROCKENLAUF=1`` lief - der Protokollweg fragte diese
+#: Variable damals nicht, weil er an ``core.report.write_report`` vorbeiging.
+#:
+#: Die Zahlen halten, und das ist gemessen: Der Kopf des Protokolls nennt die
+#: gepinnte Tagesreihe mit 3301 Balken je Markt und den Kassa-Punkt;
+#: ``cli referenz`` hatte am selben Morgen nur die Viertelstundenreihe
+#: verlaengert (Befund 474). Was fehlte, war die **Herkunft**. Die Datei
+#: bleibt liegen, weil sie die Grundlage dieser Tabelle ist.
 REIBUNG_476: tuple[tuple[str, int, float, float], ...] = (
     ("Mean Reversion Uebertreibung", 7, 12.1429, 0.0108),
     ("Trend-Beteiligung (fair gerechnet)", 51, 46.6078, 0.0014),

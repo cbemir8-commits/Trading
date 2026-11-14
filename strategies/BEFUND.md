@@ -43360,3 +43360,90 @@ ist.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Ein Werkzeug haelt jetzt, was sein Name sagt.
+
+## Vierhundertzweiundachtzig. Zwei Befunde standen auf Berichten, die niemand bestellt hat
+
+Weiter in der Liste aus Befund 479, gleich gebaut wie 481.
+``tests/test_berichtswache`` beginnt mit einem Anspruch:
+
+> Wer nach ``reports/`` schreibt, geht durch ``write_report``.
+
+Dahinter stehen die drei Zusagen, die Befund 244 einzeln benannt hat: die
+Trockenlauf-Wache aus 116, ``scrub`` gegen Schluessel, die nicht in ein
+oeffentliches Repository gehoeren, und der Schutz gegen zwei Laeufe in
+derselben Sekunde.
+
+### Der Satz stimmt nicht
+
+``research/zwischenstand.py`` legt seine Protokolle unter
+``reports/<art>/<zeitpunkt>.jsonl`` ab - 168 Dateien im Baum, 25 unter
+``reibung`` und 143 unter ``vorratsdecke``. Von den drei Zusagen trug es genau
+**eine**: den Namensschutz. Nicht den Trockenlauf, nicht ``scrub``.
+
+Die Wache konnte es nicht sehen, und zwar zweimal zu eng:
+
+* ``_befehle`` liest **nur ``cli.py``**. Ein schreibendes Modul ist unsichtbar.
+* ``_schreibt`` sucht ``write_text``/``json.dump``/``mkdir``. Der Protokollweg
+  schreibt mit ``pfad.open("a")`` und ``datei.write(...)``.
+
+### Und es ist eingetreten
+
+Der Rauchtest aus Befund 473 lief mit ``TRADING_TROCKENLAUF=1``. Zurueck
+blieben zwei Protokolle - ``reibung/2026-11-14_032322.jsonl`` mit 44
+Messungen und ``vorratsdecke/2026-11-14_033354.jsonl`` mit 25 -, und ich habe
+sie in ``491688c`` mitcommittet. Der dritte Lauf dieser Art in der
+Projekthistorie, nach ``54770ec`` (Befund 117) und ``e00ffb7`` (Befund 331).
+
+**Das Folgenreiche ist nicht der Commit.** Befund 475 und Befund 476 haben
+ihre Zahlen aus genau diesen zwei Dateien genommen:
+
+    475   "Von den achtzehn stehen dreizehn im heutigen Bericht"
+    476   die vierzehn Taktpunkte in REIBUNG_476
+
+Die Zahlen halten, und das ist gemessen, nicht angenommen: Beide
+Protokollkoepfe nennen die gepinnte Tagesreihe mit 3301 Balken je Markt und
+den Kassa-Punkt, und ``cli referenz`` hatte am selben Morgen nur die
+Viertelstundenreihe verlaengert (Befund 474). Was fehlte, war die
+**Herkunft** - zwei Befunde standen auf Berichten, die niemand absichtlich
+erzeugt hat, und das stand nirgends.
+
+### Was heute kein Schaden war
+
+* **Kein verbotenes Feld**: 0 von 168 Protokollen tragen einen Schluessel aus
+  ``core.report.VERBOTEN``.
+* **Die Latte ist unberuehrt.** ``cli rennen`` nimmt alle
+  ``reports/vorratsdecke/*.jsonl``, gruppiert nach (Betriebspunkt, Katalog,
+  Codestand) und waehlt die groesste Gruppe als dritte Schaetzung der
+  Ideenstreuung - die in den Deflated Sharpe eingeht. Mit und ohne das
+  Rauchtest-Protokoll: **anzahl 19, Streuung 0,0589**. Es bildet eine eigene
+  Gruppe von einem (13 Regeln, keine Streuung) und verliert den Vergleich.
+* **Latent war es trotzdem.** Sein Codestand ist der heutige. Der naechste
+  absichtliche Lauf auf diesem Code waere mit ihm **verschmolzen**, und dann
+  haette eine Rauchtest-Messung die Huerde des haertesten Gates mitbestimmt.
+
+### Gebaut
+
+``beginne`` und ``halte_fest`` fragen den Trockenlauf und legen nichts an;
+der Kopf geht durch ``scrub``; und ``zeile()`` nennt im Trockenlauf keinen
+Pfad mehr - dieselbe Lehre wie *"Bericht: <Ordner>"* in Befund 244. Ein
+dreistuendiger Lauf darf dabei nicht abbrechen, also meldet ``beginne`` einmal
+auf Fehlerstufe und ``halte_fest`` schweigt danach.
+
+Dazu die verallgemeinerte Regel in ``tests/test_berichtswege.py``: nicht "geht
+durch ``write_report``" - das ist ein Funktionsname, und der Fund zeigt, dass
+es einen zweiten Weg geben darf -, sondern **wer in den Berichtsverlauf
+schreibt, traegt die Zusagen**. Gemessen sind das drei Module, mit einem
+Melder, der Anhaengen sieht und Pfadbildung von Prosa trennt, und mit
+Gegenproben fuer beides.
+
+### Die zwei Dateien bleiben liegen
+
+Sie sind die nachlesbare Grundlage zweier Befunde. Sie zu loeschen waere das
+Gegenteil eines Laborbuchs - dieselbe Entscheidung wie bei den 554 alten
+Berichten in der offenen Richtung zu Befund 332. Ihre Herkunft steht jetzt
+dort, wo ihre Zahlen stehen (im Kopf von ``research/vorratsdecke.py`` und
+ueber ``REIBUNG_476``), und eine Zusicherung haelt fest, dass das eine
+Entscheidung war und kein Versehen.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Zwei Befunde haben ihre Herkunft bekommen.

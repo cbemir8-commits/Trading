@@ -55,6 +55,10 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
+import structlog
+
+log = structlog.get_logger(__name__)
+
 #: Steht fuer "dieses Feld gibt es hier gar nicht" - unterscheidbar von
 #: ``None``, das ein gemessener Wert sein kann.
 _FEHLT = object()
@@ -89,11 +93,29 @@ class Uneinig(RuntimeError):  # noqa: N818 - deutsche Namen, wie ueberall hier
 
 @dataclass(slots=True)
 class Zwischenstand:
-    """Schreibt jede Messung sofort - eine Zeile, ein Ergebnis."""
+    """Schreibt jede Messung sofort - eine Zeile, ein Ergebnis.
+
+    **Und das geht in den Berichtsverlauf - Befund 482.** Die Protokolle
+    liegen unter ``reports/<art>/`` und waren damit der zweite Weg dorthin,
+    an ``core.report.write_report`` vorbei: ohne Trockenlauf-Wache und ohne
+    ``scrub``. Die Wache dagegen (``tests/test_berichtswache``) konnte es
+    nicht sehen, weil sie nur ``cli.py`` durchsucht und ihr Schreibmuster
+    kein ``open("a")`` kennt.
+
+    Was das gekostet hat, gemessen: Der Rauchtest aus Befund 473 lief mit
+    ``TRADING_TROCKENLAUF=1`` und hat zwei Protokolle hinterlassen, die in
+    ``491688c`` mitcommittet wurden - und **Befund 475 und 476 haben ihre
+    Zahlen aus genau diesen zwei Dateien genommen**. Die Zahlen halten (beide
+    auf der gepinnten Tagesreihe, 3301 Balken je Markt); die Herkunft war
+    stumm. Seit 482 fragen ``beginne`` und ``halte_fest`` den Trockenlauf,
+    und der Kopf geht durch ``scrub``.
+    """
 
     pfad: Path
     bedingungen: dict[str, object] = field(default_factory=dict)
     _offen: bool = False
+    _trocken: bool = False
+    """``True``, wenn dieser Lauf nichts hinterlassen darf (Befund 482)."""
 
     def __post_init__(self) -> None:
         self.pfad = Path(self.pfad)
@@ -104,13 +126,44 @@ class Zwischenstand:
         **Der Kopf zuerst und nicht am Ende**: Bricht der Lauf ab, sollen die
         Zeilen trotzdem eine Herkunft haben.
         """
+        # **Befund 482.** Dieselbe Wache wie in ``core.report.write_report``,
+        # aus demselben Grund: Ein Rauchtest gehoert nicht in den
+        # Berichtsverlauf - er sieht dort aus wie ein Lauf und ist keiner.
+        # Genau das ist passiert; die zwei Protokolle vom 2026-11-14 tragen
+        # die Zahlen von Befund 475 und 476.
+        #
+        # Der Import steht lokal, wie dort: ``research.zwischenstand`` wird
+        # von Messbefehlen geladen, und nur die Wache braucht die Richtung.
+        from research.versuche import TROCKENLAUF, trockenlauf
+
+        if trockenlauf():
+            # Laut und auf Fehlerstufe, wie beim Zaehler und beim Speicher.
+            log.error(
+                "zwischenstand.trockenlauf",
+                pfad=str(self.pfad),
+                variable=TROCKENLAUF,
+                folge="Es wird KEIN Protokoll angelegt. Der Lauf rechnet "
+                "weiter, hinterlaesst aber nichts - wer das Protokoll "
+                "braucht, muss die Variable loeschen.",
+            )
+            self._offen = True
+            self._trocken = True
+            return
+
         self.pfad.parent.mkdir(parents=True, exist_ok=True)
         # ``art`` **zuletzt**: Eine Bedingung, die zufaellig so heisst, darf
         # nicht dazu fuehren, dass der Kopf nicht mehr als Kopf zu erkennen
         # ist. Dann geht lieber die Bedingung verloren als die ganze Datei.
+        #
+        # ``scrub`` auf die Bedingungen (Befund 482): Sie kommen aus dem
+        # Befehl und landen in einem oeffentlichen Repository. Gemessen traegt
+        # heute keines der 168 Protokolle ein verbotenes Feld - die Wache ist
+        # fuer das naechste da, nicht fuer die vorhandenen.
+        from core.report import scrub
+
         kopf = {
             "begonnen": datetime.now(UTC).isoformat(timespec="seconds"),
-            **self.bedingungen,
+            **scrub(dict(self.bedingungen)),
             "art": "kopf",
         }
         with self.pfad.open("w", encoding="utf-8") as datei:
@@ -137,6 +190,11 @@ class Zwischenstand:
                 "Zwischenstand ohne 'beginne' - dann stuenden die Zeilen ohne "
                 "Kopf da, und niemand wuesste, worauf sie gemessen sind."
             )
+        if self._trocken:
+            # Befund 482: Kein Kopf, also auch keine Zeilen. Lautlos hier,
+            # weil ``beginne`` es schon auf Fehlerstufe gesagt hat - eine
+            # Meldung je Messung waere bei 25 Genomen nur Laerm.
+            return
         satz = json.dumps(
             {**werte, "art": "messung"}, ensure_ascii=False, default=str
         )
@@ -145,7 +203,21 @@ class Zwischenstand:
             datei.flush()
 
     def zeile(self) -> str:
-        """Was dem Nutzer vor dem Lauf dazu gesagt wird."""
+        """Was dem Nutzer vor dem Lauf dazu gesagt wird.
+
+        **Im Trockenlauf steht hier etwas anderes - Befund 482.** Dieselbe
+        Lehre wie bei *"Bericht: <Ordner>"* in Befund 244: Eine Zeile, die
+        einen Pfad nennt, an dem nichts entsteht, ist eine Falschmeldung -
+        und sie ist genau die Zeile, nach der man spaeter sucht, wenn man
+        wissen will, woher ein Protokoll kam.
+        """
+        from research.versuche import TROCKENLAUF, trockenlauf
+
+        if trockenlauf():
+            return (
+                f"Zwischenstand: keiner - {TROCKENLAUF} ist gesetzt. Der "
+                f"Lauf rechnet, hinterlaesst aber nichts."
+            )
         return (
             f"Zwischenstand: {self.pfad} - jede Messung wird sofort "
             f"geschrieben, ein Abbruch verliert hoechstens die laufende."

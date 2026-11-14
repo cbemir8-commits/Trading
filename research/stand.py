@@ -7653,6 +7653,64 @@ BEHOBEN: tuple[Richtung, ...] = (
         "keine Zahl - ein Werkzeug haelt jetzt, was sein Name sagt",
         481,
     ),
+    # Befund 482: Der zweite Weg in den Berichtsverlauf - und zwei Befunde,
+    # die auf Rauchtest-Protokollen stehen.
+    Richtung(
+        "Zwei Befunde standen auf Berichten, die niemand bestellt hat",
+        "Weiter in der Liste aus 479, gleich gebaut wie 481. "
+        "'test_berichtswache' beginnt mit einem Anspruch: 'Wer nach "
+        "reports/ schreibt, geht durch write_report' - dahinter die drei "
+        "Zusagen aus Befund 244 (Trockenlauf-Wache, 'scrub', Namensschutz). "
+        "**Der Satz stimmt nicht.** 'research/zwischenstand.py' legt seine "
+        "Protokolle unter 'reports/<art>/<zeitpunkt>.jsonl' ab - 168 Dateien "
+        "im Baum, 25 unter 'reibung' und 143 unter 'vorratsdecke' - und trug "
+        "von den drei Zusagen genau **eine**: den Namensschutz, nicht den "
+        "Trockenlauf und nicht 'scrub'. **Zweimal zu eng gesucht**: Die "
+        "Wache liest nur 'cli.py', also ist ein schreibendes Modul "
+        "unsichtbar; und ihr Muster kennt 'write_text', 'json.dump' und "
+        "'mkdir', waehrend der Protokollweg mit 'pfad.open(\"a\")' und "
+        "'datei.write(...)' schreibt. **Und es ist eingetreten**: Der "
+        "Rauchtest aus Befund 473 lief mit 'TRADING_TROCKENLAUF=1' und hat "
+        "zwei Protokolle hinterlassen (reibung 03:23:22 mit 44 Messungen, "
+        "vorratsdecke 03:33:54 mit 25), die ich in '491688c' mitcommittet "
+        "habe - der dritte Lauf dieser Art nach '54770ec' (117) und "
+        "'e00ffb7' (331). **Das Folgenreiche ist nicht der Commit**: Befund "
+        "475 und 476 haben ihre Zahlen aus genau diesen zwei Dateien "
+        "genommen - 'Von den achtzehn stehen dreizehn im heutigen Bericht' "
+        "und die vierzehn Taktpunkte in 'REIBUNG_476'. **Die Zahlen halten, "
+        "gemessen**: Beide Koepfe nennen die gepinnte Tagesreihe mit 3301 "
+        "Balken je Markt und den Kassa-Punkt, und 'cli referenz' hatte am "
+        "selben Morgen nur die Viertelstundenreihe verlaengert (474). Was "
+        "fehlte, war die **Herkunft**: Zwei Befunde standen auf Berichten, "
+        "die niemand absichtlich erzeugt hat, und das stand nirgends. "
+        "**Weiter gemessen statt angenommen**: 0 von 168 Protokollen tragen "
+        "ein Feld aus 'VERBOTEN'. Und die Latte ist unberuehrt - 'cli "
+        "rennen' gruppiert alle 'reports/vorratsdecke/*.jsonl' nach "
+        "(Betriebspunkt, Katalog, Codestand) und nimmt die groesste Gruppe "
+        "als dritte Schaetzung der Ideenstreuung, die in den Deflated Sharpe "
+        "eingeht; mit und ohne das Rauchtest-Protokoll **anzahl 19, Streuung "
+        "0,0589**, denn es bildet eine eigene Gruppe von einem (13 Regeln, "
+        "keine Streuung) und verliert den Vergleich. **Latent war es "
+        "trotzdem**: Sein Codestand ist der heutige, der naechste "
+        "absichtliche Lauf auf diesem Code waere mit ihm verschmolzen - dann "
+        "haette eine Rauchtest-Messung die Huerde des haertesten Gates "
+        "mitbestimmt. **Gebaut**: 'beginne' und 'halte_fest' fragen den "
+        "Trockenlauf und legen nichts an, der Kopf geht durch 'scrub', und "
+        "'zeile()' nennt im Trockenlauf keinen Pfad mehr - dieselbe Lehre wie "
+        "'Bericht: <Ordner>' in 244. Dazu die verallgemeinerte Regel in "
+        "'tests/test_berichtswege.py': nicht 'geht durch write_report', das "
+        "ist ein Funktionsname, sondern **wer in den Berichtsverlauf "
+        "schreibt, traegt die Zusagen** - gemessen drei Module, mit einem "
+        "Melder, der Anhaengen sieht und Pfadbildung von Prosa trennt, und "
+        "mit Gegenproben fuer beides. **Die zwei Dateien bleiben liegen**: "
+        "Sie sind die nachlesbare Grundlage zweier Befunde, und sie zu "
+        "loeschen waere das Gegenteil eines Laborbuchs; ihre Herkunft steht "
+        "jetzt dort, wo ihre Zahlen stehen, und eine Zusicherung haelt fest, "
+        "dass das eine Entscheidung war. **Gelockert ist nichts**: keine "
+        "Schwelle, kein Gate, keine Zahl - zwei Befunde haben ihre Herkunft "
+        "bekommen",
+        482,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
