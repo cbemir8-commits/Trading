@@ -7430,6 +7430,55 @@ BEHOBEN: tuple[Richtung, ...] = (
         "jetzt auf dem Vorrat, von dem sie spricht",
         475,
     ),
+    # Befund 476: Das Kostenurteil erklaerte eine Kopplung weg, die auf
+    # seinem eigenen Vorrat nicht da war - und ein Punkt entschied alles.
+    Richtung(
+        "Ein Urteil ueber eine Kopplung, die es dort nicht gab",
+        "Die zweite '.jsonl'-Familie, die ich in 475 offen gelassen habe. Der "
+        "Reibungsbericht von heute (1d, Spot-Punkt, 25 Genome, 14 mit Zahlen) "
+        "gegen den Kopf von 'kostenanteil' gestellt: Dort steht die Kopplung, "
+        "um deren Ursache das ganze Modul streitet, bei **r = -0,602** "
+        "(Trades gegen Qualitaet je Trade, Befund 75/77). Gemessen mit den "
+        "Funktionen des Moduls liegt sie heute bei **+0,013**, die Mechanik "
+        "bei +0,062 statt +0,831. **Sie ist auf diesem Vorrat nicht da.** "
+        "Und das hat einen einzigen Grund: 'Mean Reversion Uebertreibung' mit "
+        "**sieben** Trades und Qualitaet -0,4724 - wenige Ausloesungen *und* "
+        "das schlechteste Ergebnis, also genau die Gegenrichtung zu 'wer "
+        "oefter handelt, handelt schlechter'. Ohne diesen Punkt stehen die "
+        "Zahlen wieder bei -0,614 und +0,501, also dort, wo der Kopf sie "
+        "nennt; die zwei Vorraete teilen 13 Namen, und dieser eine ist der "
+        "Unterschied. **Der Fund ist aber das Urteil**: 'Kostenfrage.urteil' "
+        "ging direkt zu 'kippfaktor', und der gibt 'None' auch dann zurueck, "
+        "wenn netto **nicht negativ** ist - es gibt dann keine Kopplung, die "
+        "ein Faktor aufheben koennte. Gedruckt wurde trotzdem 'Die Kopplung "
+        "liegt nicht an den Kosten. Auch bei tausendfacher Gebuehr "
+        "verschwindet sie nicht.' - bei +0,013. Eine Erklaerung fuer etwas, "
+        "das nicht da ist. Befund 187 hat den anderen Fall geschlossen (ein "
+        "kleiner Kippfaktor, wegbehauptet); dieser war uebrig. **Und derselbe "
+        "Satz war schon einmal geprueft** - ein Lesedurchgang hat ihn gegen "
+        "die 'obergrenze=1000.0' seiner Suche gehalten und zu Recht fuer "
+        "richtig erklaert. Was dort nicht gelesen wurde, ist der Zweig mit "
+        "positivem netto. **Gebaut**: Ein eigener Urteilszweig fuer 'keine "
+        "Kopplung zu erklaeren', und 'einflussprobe' nachgezogen, wie "
+        "'vorratsdecke' sie seit Befund 285 hat - ihr Satz haengt an **jedem** "
+        "Zweig des Urteils und sagt, wenn die Antwort an einem Punkt haengt. "
+        "'haelt' prueft bewusst nur das **Vorzeichen** und ohne gesetzte "
+        "Schwelle: Liegt die Korrelation nahe null, dreht jede kleine "
+        "Auslassung es - und genau das ist die Auskunft. **Widerlegt ist "
+        "nichts von oben**: Die Rechnung 'Gebuehr zurueckrechnen bewegt zehn "
+        "Tausendstel' bleibt, wo sie gemessen wurde. Dazu kommt ihre "
+        "Reichweite. **Eigener Fehler beim Bauen, von einer fremden Wache "
+        "gefunden**: Mein Testvorrat schrieb die Qualitaet je Trade aus - und "
+        "dreizehn der vierzehn Regeln fuehrt 'referenz' schon, mit "
+        "identischem Wert. Das war eine zweite Fassung von dreizehn "
+        "gepflegten Zahlen; die Wache 'die Zahlen stehen nur an dieser einen "
+        "Stelle' hat eine davon gemeldet und damit alle. Der Vorrat holt sie "
+        "jetzt aus dem Katalog und traegt nur, was dort nicht steht - Trades, "
+        "Haltedauer, Kostenanteil und die eine Regel ausserhalb. **Gelockert "
+        "ist nichts**: keine Schwelle, kein Gate, keine Zahl - ein Urteil "
+        "sagt jetzt, wenn es keines gibt",
+        476,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

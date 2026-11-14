@@ -300,3 +300,144 @@ class TestVonTradesZumTaktpunkt:
         streuung = statistics.stdev(werte)
         brutto_mittel = (statistics.fmean(werte) + 0.5) / streuung
         assert t.brutto(1.0) == pytest.approx(brutto_mittel)
+
+
+#: Der heutige Reibungsvorrat - Befund 476.
+#:
+#: (Name, Trades, Haltedauer in Tagen, Kostenanteil) aus
+#: ``reports/reibung``: 1d, Spot-Punkt, 25 Genome, davon 14 mit Zahlen.
+#: Zahlen eines Tages, keine Zusicherung ueber den heutigen Katalog - wie
+#: ``VORRAT_285`` in ``test_vorratsdecke``.
+#:
+#: **Die Qualitaet je Trade steht hier nicht.** Dreizehn der vierzehn Regeln
+#: fuehrt ``research.referenz`` schon, mit identischem Wert; sie hier
+#: abzuschreiben waere eine zweite Fassung, und die Wache
+#: ``test_die_zahlen_stehen_nur_an_dieser_einen_stelle`` hat genau das
+#: gemeldet - zu Recht. Geholt wird sie deshalb aus dem Katalog.
+REIBUNG_476: tuple[tuple[str, int, float, float], ...] = (
+    ("Mean Reversion Uebertreibung", 7, 12.1429, 0.0108),
+    ("Trend-Beteiligung (fair gerechnet)", 51, 46.6078, 0.0014),
+    ("Donchian-Ausbruch 55/20", 58, 49.4483, 0.0013),
+    ("Trendbeteiligung EMA200", 66, 16.0000, 0.0030),
+    ("EMA-Kreuzung (Messlatte)", 71, 35.9718, 0.0043),
+    ("Momentum-Beteiligung", 101, 12.0495, 0.0037),
+    ("Trend beide Richtungen", 101, 44.3069, 0.0018),
+    ("Momentum-Beteiligung 90 Tage", 101, 21.7525, 0.0017),
+    ("Volatilitaets-Ausbruch", 103, 26.4369, 0.0053),
+    ("Trend-Beteiligung 100 Tage", 108, 24.0556, 0.0020),
+    ("Trendfolge Ausbruch", 138, 13.9928, 0.0055),
+    ("Trend-Beteiligung 50 Tage", 158, 17.2025, 0.0018),
+    ("Momentum Ruecksetzer", 264, 10.0265, 0.0086),
+    ("Trendbeteiligung mit Puffer", 308, 13.0065, 0.0033),
+)
+
+#: Die eine Regel, die der Zulassungskatalog **nicht** fuehrt - und die das
+#: ganze Urteil entscheidet. Ihre Qualitaet steht deshalb hier.
+AUSSERHALB_476: tuple[str, float] = ("Mean Reversion Uebertreibung", -0.4724)
+
+
+def _qualitaeten() -> dict[str, float]:
+    """Qualitaet je Trade je Regel - aus der einen Quelle."""
+    from research.referenz import VORRAT_TAGESKERZEN
+
+    aus = {p.name: p.je_trade for p in VORRAT_TAGESKERZEN}
+    aus[AUSSERHALB_476[0]] = AUSSERHALB_476[1]
+    return aus
+
+
+def _frage_476(*, ohne: str | None = None) -> Kostenfrage:
+    qualitaet = _qualitaeten()
+    return Kostenfrage(
+        punkte=[
+            Taktpunkt(n, t, qualitaet[n], h, k)
+            for n, t, h, k in REIBUNG_476
+            if n != ohne
+        ]
+    )
+
+
+class TestEinPunktEntschiedDasGanzeUrteil:
+    """**Befund 476.** Der Reibungsbericht von heute hat vierzehn Regeln, eine
+    mehr als der Vorratsbericht - und diese eine kippt alles.
+
+    'Mean Reversion Uebertreibung' hat **sieben** Trades und Qualitaet
+    -0,4724: wenige Ausloesungen *und* das schlechteste Ergebnis, also genau
+    die Gegenrichtung zu "wer oefter handelt, handelt schlechter".
+    """
+
+    def test_mit_allen_vierzehn_gibt_es_keine_kopplung(self) -> None:
+        f = _frage_476()
+
+        assert f.netto == pytest.approx(0.013, abs=0.002)
+        assert f.mechanik == pytest.approx(0.062, abs=0.004)
+
+    def test_ohne_den_einen_punkt_ist_sie_wieder_da(self) -> None:
+        """Und zwar in der Groesse, die der Modulkopf nennt (r = -0,602 aus
+        Befund 75/77)."""
+        f = _frage_476(ohne="Mean Reversion Uebertreibung")
+
+        assert f.netto == pytest.approx(-0.614, abs=0.003)
+        assert f.mechanik == pytest.approx(0.501, abs=0.004)
+
+    def test_die_probe_nennt_genau_diesen_punkt(self) -> None:
+        probe = _frage_476().einflussprobe()
+
+        assert probe is not None
+        assert not probe.haelt
+        name, wert = probe.staerkster
+        assert name == "Mean Reversion Uebertreibung"
+        assert wert == pytest.approx(-0.614, abs=0.003)
+        assert probe.spanne == pytest.approx(0.627, abs=0.003)
+
+    def test_und_das_urteil_erklaert_nichts_weg(self) -> None:
+        """**Der Kern des Befundes.** Vorher stand hier "Die Kopplung liegt
+        nicht an den Kosten. Auch bei tausendfacher Gebuehr verschwindet sie
+        nicht." - bei einer Korrelation von +0,013.
+        """
+        urteil = _frage_476().urteil()
+
+        assert "keine Kopplung zu erklaeren" in urteil
+        assert "nicht an den Kosten" not in urteil
+        assert "tausendfacher" not in urteil
+        assert "haengt an einem Punkt" in urteil
+        assert "Mean Reversion Uebertreibung" in urteil
+
+    def test_der_kippfaktor_war_schon_vorher_ehrlich(self) -> None:
+        """Er gab ``None`` zurueck - nur hat das Urteil es als "kein Faktor
+        hebt sie auf" gelesen statt als "es gibt nichts aufzuheben"."""
+        f = _frage_476()
+
+        assert f.netto is not None and f.netto >= 0
+        assert f.kippfaktor() is None
+
+
+class TestDieProbeHaeltAuchDieGegenrichtung:
+    def test_ein_breit_gestreuter_vorrat_haengt_an_keinem_punkt(self) -> None:
+        """Die Gegenprobe: Ohne sie koennte ``haelt`` immer falsch sein."""
+        f = _frage_476(ohne="Mean Reversion Uebertreibung")
+        probe = f.einflussprobe()
+
+        assert probe is not None
+        assert probe.haelt, probe.satz()
+        assert "keinem einzelnen Punkt" in probe.satz()
+        assert "das Vorzeichen bleibt" in probe.satz()
+
+    def test_zu_wenige_punkte_geben_keine_probe(self) -> None:
+        """Vier Punkte genuegen fuer ``genug``, aber nicht fuer eine
+        Auslassung - dann ist ``None`` die ehrliche Antwort."""
+        klein = Kostenfrage(
+            punkte=[Taktpunkt(f"k{i}", t, 0.3 - i * 0.05, 1.0, 0.002)
+                    for i, t in enumerate((50, 100, 200, 400))]
+        )
+
+        assert klein.genug
+        assert klein.einflussprobe() is None
+
+    def test_das_urteil_traegt_den_satz_in_jedem_zweig(self) -> None:
+        """Sonst stuende die Einschraenkung nur in einem von drei Faellen."""
+        from tests.quelltext import rumpf
+
+        code = rumpf(Kostenfrage.urteil)
+
+        assert code.count("{zusatz}") >= 4, code
+        assert "einflussprobe()" in code

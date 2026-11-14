@@ -42898,3 +42898,86 @@ Wache mit vier Zusicherungen:
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich,
 und die Schlussfolgerung des Moduls aendert sich nicht - sie steht nur jetzt
 auf dem Vorrat, von dem sie spricht. Die Sperre aus Befund 102 steht weiter.
+
+## Vierhundertsechsundsiebzig. Ein Urteil ueber eine Kopplung, die es dort nicht gab
+
+Die zweite `.jsonl`-Familie, die Befund 475 offen gelassen hat. Der
+Reibungsbericht von heute gegen den Kopf von `research/kostenanteil`.
+
+### Die Kopplung ist auf diesem Vorrat nicht da
+
+Der Kopf steht auf **r = -0,602** zwischen Trade-Zahl und Qualitaet je Trade
+(Befund 75/77) - das ist die Kopplung, um deren Ursache das ganze Modul
+streitet. Gemessen mit `Kostenfrage` auf dem heutigen Bericht (1d,
+Spot-Punkt, 25 Genome, 14 mit Zahlen):
+
+    Trades <-> Qualitaet       +0,013   (Kopf: -0,602 ueber 18 Regeln)
+    Trades <-> Kostenanteil    +0,062   (Kopf: +0,831 ueber 10 Regeln)
+
+### Und ein Punkt entscheidet alles
+
+Der Vorratsbericht und der Reibungsbericht teilen **13** Namen. Der
+Reibungsbericht hat genau einen mehr:
+
+    Mean Reversion Uebertreibung     7 Trades   Qualitaet -0,4724
+
+Wenige Ausloesungen *und* das schlechteste Ergebnis - genau die
+Gegenrichtung zu "wer oefter handelt, handelt schlechter". Die Einflussprobe
+ueber alle vierzehn:
+
+    ohne Regel                           Trades       SR     netto  Mechanik
+    Mean Reversion Uebertreibung              7  -0,4724   -0,6140   +0,5014
+    Momentum Ruecksetzer                    264  -0,1358   +0,2621   -0,2468
+    Trend-Beteiligung (fair gerechnet)       51  +0,3274   +0,0783   +0,0029
+    ... alle uebrigen                   zwischen +0,0057 und +0,0316
+
+Ohne den einen Punkt stehen die Zahlen wieder dort, wo der Kopf sie nennt.
+
+### Der Fund ist das Urteil
+
+`Kostenfrage.urteil` ging direkt zu `kippfaktor` - und der gibt `None` auch
+dann zurueck, wenn `netto` **nicht negativ** ist:
+
+    if not self.genug or (self.netto or 0) >= 0:
+        return None
+
+Es gibt dann keine Kopplung, die ein Faktor aufheben koennte. Gedruckt wurde
+trotzdem:
+
+> **Die Kopplung liegt nicht an den Kosten.** [...] Auch bei tausendfacher
+> Gebuehr verschwindet sie nicht.
+
+Bei +0,013. Eine Erklaerung fuer etwas, das nicht da ist.
+
+Befund 187 hat den anderen Fall dieser Funktion geschlossen - ein kleiner
+Kippfaktor, der wegbehauptet wurde. Dieser Zweig war uebrig. Und **derselbe
+Satz war schon einmal geprueft**: Ein Lesedurchgang hat ihn gegen die
+`obergrenze=1000.0` seiner Suche gehalten und zu Recht fuer richtig erklaert.
+Was dort nicht gelesen wurde, ist der Zweig mit positivem `netto`.
+
+### Gebaut
+
+* Ein eigener Urteilszweig: *"Auf diesem Vorrat gibt es keine Kopplung zu
+  erklaeren."*
+* `einflussprobe` nachgezogen, wie `vorratsdecke` sie seit Befund 285 hat -
+  und ihr Satz haengt an **jedem** Zweig des Urteils, nicht nur an einem.
+* `haelt` prueft bewusst nur das **Vorzeichen** und ohne gesetzte Schwelle:
+  Liegt die Korrelation nahe null, dreht jede kleine Auslassung es, und genau
+  das ist die Auskunft. Ein Vorzeichen, das an einem von vierzehn Punkten
+  haengt, ist keines.
+
+Das Urteil auf dem heutigen Vorrat lautet jetzt:
+
+    **Auf diesem Vorrat gibt es keine Kopplung zu erklaeren.** Trades und
+    Qualitaet je Trade korrelieren mit +0.013. Ob die Gebuehr eine Kopplung
+    traegt, ist damit hier keine Frage - und die Antwort von einem anderen
+    Vorrat gilt hier nicht.
+
+    **Die Antwort haengt an einem Punkt**: Ohne 'Mean Reversion
+    Uebertreibung' steht die Korrelation bei -0.614 statt +0.013. Bei so
+    wenigen Regeln ist ihr Vorzeichen damit keine Auskunft.
+
+**Widerlegt ist nichts von oben.** Die Rechnung "Gebuehr zurueckrechnen
+bewegt zehn Tausendstel" bleibt, wo sie gemessen wurde; dazu kommt ihre
+Reichweite. **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl
+bewegt sich. Die Sperre aus Befund 102 steht weiter.

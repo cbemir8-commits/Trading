@@ -37,6 +37,32 @@ Rechnet man die Gebuehr zurueck, bleibt die Kopplung praktisch unveraendert:
 
 **Zehn Tausendstel.** Die Hypothese ist damit widerlegt.
 
+AUF DEM HEUTIGEN VORRAT IST DIE FRAGE NICHT STELLBAR - BEFUND 476
+-----------------------------------------------------------------
+Der Reibungsbericht von heute (1d, Spot-Punkt, 25 Genome, davon 14 mit
+Zahlen) gibt eine andere Lage:
+
+    Trades <-> Qualitaet       +0,013   (hier: -0,602 ueber 18 Regeln)
+    Trades <-> Kostenanteil    +0,062   (hier: +0,831 ueber 10 Regeln)
+
+Die Kopplung, um deren Ursache dieses Modul streitet, ist auf diesem Vorrat
+**nicht da**. Und sie hat einen einzigen Grund: 'Mean Reversion
+Uebertreibung' mit **sieben** Trades und Qualitaet -0,4724 - wenige
+Ausloesungen *und* das schlechteste Ergebnis, also genau die Gegenrichtung.
+Laesst man diesen Punkt weg, stehen die Zahlen wieder da, wo sie hier stehen:
+
+    ohne diesen Punkt          -0,614 / +0,501
+
+**Widerlegt ist damit nichts von oben** - die Rechnung "Gebuehr
+zurueckrechnen bewegt zehn Tausendstel" bleibt, wo sie gemessen wurde. Was
+dazukommt, ist die Reichweite: Ein Vorzeichen, das an einem von vierzehn
+Punkten haengt, ist keine Auskunft, und ``urteil`` sprach bis 476 sein
+Ergebnis auch dann aus, wenn gar keine Kopplung dastand ("auch bei
+tausendfacher Gebuehr verschwindet sie nicht" - bei +0,013).
+
+``einflussprobe`` ist deshalb nachgebaut, wie ``vorratsdecke`` sie seit
+Befund 285 hat, und ihr Satz haengt an **jedem** Zweig des Urteils.
+
 Warum die Rechnung trotzdem unvollstaendig ist
 ----------------------------------------------
 ``net_pnl = gross_pnl - fees - funding``, und die **Slippage steckt im
@@ -186,6 +212,59 @@ class Taktpunkt:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class Kostenfluss:
+    """Was aus der Kopplung wird, wenn **eine einzige** Regel fehlt - 476.
+
+    ``vorratsdecke`` hat diese Probe seit Befund 285, weil dort eine Gerade
+    an einem Punkt hing. Hier fehlte sie, und hier haengt mehr daran: Auf
+    vierzehn Regeln des heutigen Reibungsberichts bringt 'Mean Reversion
+    Uebertreibung' - **sieben** Trades, Qualitaet -0,4724 - die Korrelation
+    von -0,614 auf +0,013. Ohne diese Probe liest sich das Urteil wie eine
+    Aussage ueber den Vorrat; es ist eine ueber einen Punkt.
+    """
+
+    netto_mit: float
+    """Die Korrelation durch **alle** Punkte."""
+
+    ohne: tuple[tuple[str, float], ...]
+    """(Name, Korrelation ohne diesen Punkt) - nach Betrag der Aenderung."""
+
+    @property
+    def staerkster(self) -> tuple[str, float]:
+        """Der Punkt, dessen Fehlen am meisten bewegt."""
+        return self.ohne[0]
+
+    @property
+    def spanne(self) -> float:
+        return abs(self.staerkster[1] - self.netto_mit)
+
+    @property
+    def haelt(self) -> bool:
+        """Behaelt die Korrelation ihr **Vorzeichen** bei jeder Auslassung?
+
+        Bewusst streng und ohne gesetzte Schwelle: Liegt die Korrelation nahe
+        null, dreht jede kleine Auslassung das Vorzeichen - und genau das ist
+        die Auskunft. Ein Vorzeichen, das an einem von vierzehn Punkten
+        haengt, ist keines.
+        """
+        return all((w < 0) == (self.netto_mit < 0) for _, w in self.ohne)
+
+    def satz(self) -> str:
+        name, wert = self.staerkster
+        if self.haelt:
+            return (
+                f"Die Lage haengt an keinem einzelnen Punkt: Die staerkste "
+                f"Auslassung ('{name}') bewegt die Korrelation um "
+                f"{self.spanne:.3f} auf {wert:+.3f}, das Vorzeichen bleibt."
+            )
+        return (
+            f"**Die Antwort haengt an einem Punkt**: Ohne '{name}' steht die "
+            f"Korrelation bei {wert:+.3f} statt {self.netto_mit:+.3f}. Bei so "
+            f"wenigen Regeln ist ihr Vorzeichen damit keine Auskunft."
+        )
+
+
 @dataclass(slots=True)
 class Kostenfrage:
     """Traegt die Gebuehr die gemessene Kopplung?"""
@@ -247,10 +326,57 @@ class Kostenfrage:
             zeilen.append(f"{f:>8g} {wert:>+10.3f} {wert - netto:>+11.3f}")
         return "\n".join(zeilen)
 
+    def einflussprobe(self) -> Kostenfluss | None:
+        """Was aus der Kopplung wird, wenn **eine einzige** Regel fehlt.
+
+        Dieselbe Probe, die ``vorratsdecke`` seit Befund 285 hat, und aus
+        demselben Grund: Auf vierzehn Regeln entscheidet ein Punkt. Gemessen
+        (Befund 476) kippt 'Mean Reversion Uebertreibung' mit **sieben**
+        Trades die Korrelation von -0,614 auf +0,013 - und damit das ganze
+        Urteil.
+
+        ``None``, wenn zu wenige Punkte da sind, um einen weglassen zu
+        koennen: ``genug`` verlangt vier, also braucht die Probe fuenf.
+        """
+        mit = self.netto
+        if mit is None or len(self.punkte) < 5:
+            return None
+        ohne: list[tuple[str, float]] = []
+        for p in self.punkte:
+            rest = Kostenfrage(punkte=[q for q in self.punkte if q.name != p.name])
+            wert = rest.netto
+            if wert is not None:
+                ohne.append((p.name, wert))
+        if not ohne:
+            return None
+        ohne.sort(key=lambda x: -abs(x[1] - mit))
+        return Kostenfluss(netto_mit=mit, ohne=tuple(ohne))
+
     def urteil(self) -> str:
         netto, brutto, mechanik = self.netto, self.brutto(1.0), self.mechanik
         if netto is None or brutto is None:
             return "Zu wenige Punkte - ueber die Ursache laesst sich nichts sagen."
+
+        probe = self.einflussprobe()
+        zusatz = f"\n\n{probe.satz()}" if probe is not None else ""
+
+        # **Befund 476.** Hier ging es direkt zu 'kippfaktor', und der gibt
+        # 'None' auch dann zurueck, wenn 'netto' **nicht negativ** ist - es
+        # gibt dann keine Kopplung, die ein Faktor aufheben koennte. Der Satz
+        # darunter sprach aber trotzdem sein Urteil: "Die Kopplung liegt
+        # nicht an den Kosten. Auch bei tausendfacher Gebuehr verschwindet
+        # sie nicht." Gemessen am heutigen Reibungsbericht stand er bei
+        # netto = +0,013 da - eine Erklaerung fuer etwas, das nicht da ist.
+        # Befund 187 hat den anderen Fall geschlossen (Kippfaktor klein);
+        # dieser war uebrig.
+        if netto >= 0:
+            return (
+                f"**Auf diesem Vorrat gibt es keine Kopplung zu erklaeren.** "
+                f"Trades und Qualitaet je Trade korrelieren mit "
+                f"{netto:+.3f}. Ob die Gebuehr eine Kopplung traegt, ist "
+                f"damit hier keine Frage - und die Antwort von einem anderen "
+                f"Vorrat gilt hier nicht.{zusatz}"
+            )
 
         vorhanden = (
             f"Der Mechanismus ist da: Trades und Kostenanteil korrelieren mit "
@@ -267,7 +393,7 @@ class Kostenfrage:
         if kipp is None:
             return (
                 f"**Die Kopplung liegt nicht an den Kosten.** {gemessen}Auch "
-                f"bei tausendfacher Gebuehr verschwindet sie nicht.\n\n"
+                f"bei tausendfacher Gebuehr verschwindet sie nicht.{zusatz}\n\n"
                 f"Sie ist damit eine Eigenschaft der **Signale**, nicht einer "
                 f"Reibung: Haeufigere Ausloeser tragen weniger Vorteil je "
                 f"Ausloesung. Das ist nicht wegverhandelbar - keine "
@@ -283,7 +409,7 @@ class Kostenfrage:
             return (
                 f"**Die Kopplung liegt nicht an den Kosten.** {gemessen}{wo} "
                 f"Das verlangt kein Handelsplatz, und selbst eine Slippage, "
-                f"die die Kosten verfuenffachte, bliebe darunter.\n\n"
+                f"die die Kosten verfuenffachte, bliebe darunter.{zusatz}\n\n"
                 f"Sie ist damit eine Eigenschaft der **Signale**, nicht einer "
                 f"Reibung: Haeufigere Ausloeser tragen weniger Vorteil je "
                 f"Ausloesung. Das ist nicht wegverhandelbar - keine "
@@ -304,7 +430,7 @@ class Kostenfrage:
             f"Damit ist hier **nicht entschieden**, ob die Kopplung an den "
             f"Signalen oder an der Reibung haengt. Auf Tageskerzen war sie "
             f"es nicht (Kippfaktor 29); dieser Vorrat liegt anders, und das "
-            f"Urteil von dort gilt hier nicht."
+            f"Urteil von dort gilt hier nicht.{zusatz}"
         )
 
 

@@ -66,7 +66,14 @@ from research.urteilszweige import (
 #: denn dann waere der Zusatz eine Warnung ohne Grund. Dass dieser Waechter
 #: sie meldet, ist richtig - es ist die letzte Zeile des wichtigsten
 #: Abschnitts, also die, nach der gehandelt wird.
-URTEILSFUNKTIONEN: int = 164
+#: **165 seit 476**: 'kostenanteil.Kostenfluss.satz' sagt, ob die gemessene
+#: Kopplung an einem einzelnen Punkt haengt. Zwei Zweige, und sie sind der
+#: Grund des Befundes: Auf vierzehn Regeln kippt eine mit sieben Trades die
+#: Korrelation von -0,614 auf +0,013, und das Urteil darueber sprach bis
+#: dahin trotzdem sein Ergebnis aus. Dass dieser Waechter den neuen Satz am
+#: Tag seiner Entstehung meldet, ist richtig so - er ist genau die
+#: Einschraenkung, deren Fehlen den Fehler getragen hat.
+URTEILSFUNKTIONEN: int = 165
 
 
 def _fn(quelle: str) -> ast.FunctionDef:
