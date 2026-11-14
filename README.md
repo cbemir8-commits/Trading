@@ -220,11 +220,11 @@ Schritt für Schritt, ohne Fachwörter: **[deploy/WINDOWS.md](deploy/WINDOWS.md)
 Kurzfassung — nach jedem Befehl kurz schauen, ob etwas Rotes dabei war:
 
 ```
-python install.py                       einrichten, 1-3 Minuten
-.venv\Scripts\python -m cli setup       Bybit verbinden
-.venv\Scripts\python -m cli backfill -m BTCUSDT,ETHUSDT --intervall D --von 2017-08-16    Kurse laden
-.venv\Scripts\python -m cli research    Strategie suchen
-start.bat                               loslaufen lassen
+python install.py                       # einrichten, 1-3 Minuten
+.venv\Scripts\python -m cli setup       # Bybit verbinden
+.venv\Scripts\python -m cli backfill -m BTCUSDT,ETHUSDT --intervall D --von 2017-08-16    # Kurse laden
+.venv\Scripts\python -m cli research    # Strategie suchen
+start.bat                               # loslaufen lassen
 ```
 
 `install.py` läuft auf allen drei Systemen. Auf macOS und Linux heißt der

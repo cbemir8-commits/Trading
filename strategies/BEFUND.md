@@ -43044,3 +43044,79 @@ Tages, und sie umzuschreiben waere das Gegenteil eines Laborbuchs.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Die Sperre aus Befund 102 steht weiter.
+
+## Vierhundertachtundsiebzig. Drei Zeilen der Kurzfassung waren nicht benutzbar
+
+``tests/test_nutzerbefehle`` ist die Wache, die Befund 167 und 214 nachgezogen
+hat: Sie parst jede Zeile aus ``BEIM_NUTZER`` gegen die echte Kommandozeile.
+Ihr Kopf sagte dazu:
+
+> ``BEIM_NUTZER`` ist die **einzige** Stelle, an der dieses Projekt jemanden
+> bittet, etwas auf seinem eigenen Rechner zu tun.
+
+Das ist nicht so. Gemessen:
+
+    README.md            28 Befehlszeilen
+    deploy/README.md      7
+    deploy/WINDOWS.md     6
+    install.py            3   (als f-String gedruckt, nach der Installation)
+    --------------------------
+                         44   davon 2 Zeilen einer Zeichnung
+
+Keine einzige davon wurde geparst.
+
+### Drei waren nicht benutzbar
+
+Alle drei in diesem Block des README, unter der Zeile *"Kurzfassung - nach
+jedem Befehl kurz schauen, ob etwas Rotes dabei war"* - also unter einem Satz,
+der sagt, dass man sie eintippt:
+
+    .venv\Scripts\python -m cli setup       Bybit verbinden
+    .venv\Scripts\python -m cli backfill -m ... --von 2017-08-16    Kurse laden
+    .venv\Scripts\python -m cli research    Strategie suchen
+
+Die Erlaeuterung traegt kein ``#``. Wer die erste Zeile einfuegt, bekommt
+
+    Got unexpected extra argument(s) (Bybit verbinden)
+
+und das ist **woertlich** die Meldung aus Befund 167 - derselbe Fehler, 311
+Befunde spaeter, in der Datei, die die Haustuer des Projekts ist.
+
+Die anderen Anleitungen machen es richtig: ``deploy/README.md`` setzt ``#``
+vor die Erlaeuterung, ``deploy/WINDOWS.md`` laesst den Befehl allein stehen.
+Nur die Kurzfassung brach die Form.
+
+### Vier Anlaeufe fuer den Melder
+
+Das gehoert in diesen Eintrag, weil jeder Fehlgriff eine andere Form von
+"falsch gefunden" ist:
+
+1. **Am Zeilenanfang verankert**: meldete sechzehn richtige Zeilen, weil er
+   den Shell-Kommentar (``cli quality   # Luecken``) als Argumente las. Der
+   Kommentar gehoert abgestreift, nicht beanstandet.
+2. **Unverankert**: fand endlich ``install.py`` - dort steht
+   ``say(f"  1.  {python} -m cli setup")`` -, dafuer aber eine
+   **Markdown-Tabellenzeile** des README samt der halben Prosa dahinter.
+3. **Begrenzt**: Treffer bis zum ersten schliessenden Backtick,
+   Anfuehrungszeichen oder Zeilenende. Damit blieb einer: ``python -m cli
+   --help`` als "fehlender Befehl" - ``--help`` ist eine Option der
+   **Gruppe**.
+4. **Fertig**: Zeichnungen benannt ausgenommen, Gruppenaufrufe gegen die
+   Gruppe geprueft. Jede der vier Lehren steht als Gegenprobe im Test.
+
+Ein Melder, der das falsche Ding findet, ist schlimmer als keiner - dieselbe
+Lehre wie in Befund 474, wo "dem Korb" eine Leiterzeile traf.
+
+### Gebaut
+
+* Die drei Zeilen tragen ``#``. In PowerShell ist das ein Kommentar, und die
+  Kurzfassung ist fuer PowerShell geschrieben.
+* Der Kopf der fremden Wache behauptet die Einzigkeit nicht mehr und verweist
+  auf die neue.
+* ``tests/test_anleitungsbefehle.py`` parst alle 42 aufrufbaren Zeilen der
+  vier Dateien - geparst und nicht gefahren, wie in Befund 307, also ohne
+  Boerse, Schluessel und Daten.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Die Sperre aus Befund 102 steht weiter. Was sich aendert: Drei Zeilen lassen
+sich wieder einfuegen.

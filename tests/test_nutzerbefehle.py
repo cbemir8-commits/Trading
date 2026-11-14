@@ -1,8 +1,8 @@
 """Die Befehle fuer den Nutzer, gegen die echte Kommandozeile - Befund 307.
 
-``BEIM_NUTZER`` ist die einzige Stelle, an der dieses Projekt jemanden bittet,
-etwas auf seinem eigenen Rechner zu tun. Was dort steht, wird kopiert und
-eingefuegt - und zweimal ist genau daran etwas schiefgegangen:
+``BEIM_NUTZER`` ist die Stelle **im Register**, an der dieses Projekt jemanden
+bittet, etwas auf seinem eigenen Rechner zu tun. Was dort steht, wird kopiert
+und eingefuegt - und zweimal ist genau daran etwas schiefgegangen:
 
     Befund 167   ', dann wettbewerb' stand als Prosa hinter dem Backfill.
                  Wer die Zeile kopierte, bekam
@@ -14,6 +14,13 @@ eingefuegt - und zweimal ist genau daran etwas schiefgegangen:
 Beide Male war der Text richtig gemeint und falsch benutzbar. Diese Tests
 fahren die Zeilen nicht aus - sie **parsen** sie gegen die echte
 Befehlsstruktur, was ohne Boerse, Schluessel und Daten geht.
+
+**Hier stand "die einzige Stelle" - und das war falsch** (Befund 478). Die
+Anleitungen bitten auch: ``README.md``, ``install.py``, ``deploy/README.md``
+und ``deploy/WINDOWS.md`` tragen zusammen 37 Befehlszeilen, und drei davon
+waren nicht benutzbar - mit woertlich der Meldung aus Befund 167. Der Satz
+hier war der Grund, warum niemand dort nachgesehen hat;
+``tests/test_anleitungsbefehle.py`` parst sie jetzt mit derselben Methode.
 """
 
 from __future__ import annotations

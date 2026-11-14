@@ -7479,6 +7479,46 @@ BEHOBEN: tuple[Richtung, ...] = (
         "sagt jetzt, wenn es keines gibt",
         476,
     ),
+    # Befund 478: Die Wache auf die Nutzerbefehle sagte, es gebe nur eine
+    # Stelle - und drei Zeilen der Haustuer waren nicht benutzbar.
+    Richtung(
+        "Drei Zeilen der Kurzfassung waren nicht benutzbar",
+        "'test_nutzerbefehle' parst 'BEIM_NUTZER' gegen die echte "
+        "Kommandozeile - genau die Wache, die Befund 167 und 214 nachgezogen "
+        "hat - und sagte in seinem Kopf, 'BEIM_NUTZER' sei die **einzige** "
+        "Stelle, an der dieses Projekt jemanden bittet, etwas auf seinem "
+        "Rechner zu tun. **Das ist nicht so.** Gemessen tragen 'README.md', "
+        "'install.py', 'deploy/README.md' und 'deploy/WINDOWS.md' zusammen "
+        "**44** Befehlszeilen (28/3/7/6), davon zwei Zeilen einer Zeichnung; "
+        "keine einzige wurde geparst. **Drei waren nicht benutzbar**, alle "
+        "drei im Codeblock unter 'Kurzfassung - nach jedem Befehl kurz "
+        "schauen, ob etwas Rotes dabei war', also unter einer Zeile, die sagt, "
+        "dass man sie eintippt: 'setup Bybit verbinden', 'backfill ... Kurse "
+        "laden', 'research Strategie suchen' - die Erlaeuterung ohne '#'. Wer "
+        "die erste einfuegt, bekommt 'Got unexpected extra argument(s) (Bybit "
+        "verbinden)', und das ist **woertlich** die Meldung aus Befund 167. "
+        "Die anderen Anleitungen machen es richtig: 'deploy/README.md' setzt "
+        "'#' vor die Erlaeuterung, 'deploy/WINDOWS.md' laesst den Befehl "
+        "allein stehen - nur die Haustuer brach die Form. **Gebaut**: Die drei "
+        "Zeilen tragen jetzt '#', der Kopf der fremden Wache behauptet die "
+        "Einzigkeit nicht mehr und verweist weiter, und eine neue Wache parst "
+        "alle 42 aufrufbaren Zeilen der vier Dateien mit derselben Methode - "
+        "geparst und nicht gefahren, also ohne Boerse, Schluessel und Daten. "
+        "**Vier Anlaeufe hat der Melder gebraucht, und das gehoert dazu**: Am "
+        "Zeilenanfang verankert meldete er sechzehn richtige Zeilen, weil er "
+        "den Shell-Kommentar als Argumente las; unverankert fand er "
+        "'install.py' endlich, dafuer aber eine Markdown-Tabellenzeile samt "
+        "halber Prosa; und 'python -m cli --help' meldete er als fehlenden "
+        "Befehl, obwohl '--help' eine Option der Gruppe ist. Jetzt wird der "
+        "Treffer **begrenzt** - bis zum schliessenden Backtick, "
+        "Anfuehrungszeichen oder Zeilenende -, Zeichnungen sind benannt "
+        "ausgenommen und Gruppenaufrufe gegen die Gruppe geprueft; jede dieser "
+        "vier Lehren steht als Gegenprobe im Test. Ein Melder, der das falsche "
+        "Ding findet, ist schlimmer als keiner. **Gelockert ist nichts**: "
+        "keine Schwelle, kein Gate, keine Zahl - drei Zeilen lassen sich "
+        "wieder einfuegen",
+        478,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
