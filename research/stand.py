@@ -7703,9 +7703,29 @@ OFFEN: tuple[Richtung, ...] = (
         "aus und zaehlen als bestanden, also faellt die rohe Bilanz nicht und "
         "die Bruchstelle bleibt unsichtbar. An den gemessenen Stufen aendert es "
         "nichts (alle weit ueber 30 Trades) - eine Bedingung, keine gefundene "
-        "Fehlmessung. Kein Typ steht mehr offen",
+        "Fehlmessung. Kein Typ steht mehr offen. **Und die erste der zwei "
+        "offenen Haelften ist nachgemessen** (477): Beide dort genannten "
+        "Ursachen treffen auf dem heutigen Stand nicht zu. 'run_expensive' "
+        "aus **laesst weg statt zu ueberspringen** - gemessen am "
+        "Spitzenkandidaten am Spot-Punkt: mit den teuren Gates elf Urteile, "
+        "neun bestanden, null Aussetzer; ohne sie **neun** Urteile, sieben "
+        "bestanden, null Aussetzer, und der Bericht traegt 'vorauswahl', "
+        "womit 'passed' schon durch die Bauart falsch ist. Der Nenner faellt "
+        "also mit, und mitgezaehlt wird nichts, was nicht geurteilt hat. Die "
+        "zweite Ursache ist eine Eigenschaft des Genoms und nicht des Laufs: "
+        "'gate_parameter_plateau' setzt aus, wenn seine Nachbarschaft leer "
+        "ist - ueber **53** verschiedene Genome aller Generationen ist keine "
+        "leer, und der Spitzenkandidat hat zwoelf Nachbarn. Damit ist die "
+        "Untergrenze heute nicht zu tief, und das ist eine **Bedingung** und "
+        "kein Fund: Kommt ein Genom ohne variierbare Periode in den Katalog, "
+        "oder fuehrt 'run_expensive' aus die teuren Gates kuenftig als "
+        "uebersprungen statt sie weglassen, dann wird sie es - und zwei "
+        "Wachen melden genau das, eine davon mit einer Gegenprobe am echten "
+        "Aussetzzweig. **Unberuehrt bleibt die zweite Haelfte**: die 554 "
+        "Berichte vor 348 mit ihren rohen Paaren, darunter 109 mit null "
+        "Trades",
         332,
-        352,
+        477,
     ),
     Richtung(
         "Holdout auf fremden Maerkten",

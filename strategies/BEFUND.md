@@ -42981,3 +42981,66 @@ Das Urteil auf dem heutigen Vorrat lautet jetzt:
 bewegt zehn Tausendstel" bleibt, wo sie gemessen wurde; dazu kommt ihre
 Reichweite. **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl
 bewegt sich. Die Sperre aus Befund 102 steht weiter.
+
+## Vierhundertsiebenundsiebzig. Setzt mehr aus, als die Trade-Zahl verraet?
+
+Diesmal nicht aus einem Verdacht, sondern aus dem Register selbst. Von den
+neunzehn offenen Richtungen sind achtzehn **gemessen und als Entscheidung
+offen** - nicht meine. Eine sagt woertlich, dass eine Messung fehlt.
+Eintrag 332, hinter *"Kein Typ steht mehr offen"*:
+
+> **Offen bleibt zweierlei**: Acht der sechzehn erschliessen nur eine
+> **Untergrenze** - 'run_expensive' aus oder eine feste Periode setzt mehr
+> aus, als die Trade-Zahl verraet; und die 554 Berichte, die vor 348
+> geschrieben wurden, tragen ihre rohen Paare weiter.
+
+Die erste Haelfte ist messbar. Beide dort genannten Ursachen, nachgerechnet.
+
+### 'run_expensive' aus laesst weg statt zu ueberspringen
+
+Am Spitzenkandidaten, Spot-Punkt, 158 Trades, 203 Versuche:
+
+    run_expensive=True    11 Urteile   9 bestanden   2 durchgefallen   0 ausgesetzt
+    run_expensive=False    9 Urteile   7 bestanden   2 durchgefallen   0 ausgesetzt
+
+Der Nenner **faellt mit**: Die teuren Gates stehen gar nicht in der Liste,
+statt als uebersprungen darin zu stehen. Und der kurze Bericht traegt
+``vorauswahl``, womit ``passed`` schon durch die Bauart falsch ist (Befund
+102/445). Es wird also nichts mitgezaehlt, was nicht geurteilt hat - die
+Untergrenze liegt hier nicht zu tief, weil es nichts zu tief zu liegen gibt.
+
+### Keine variierbare Periode: kein Genom im Katalog
+
+Das ist die zweite Ursache, und sie ist eine Eigenschaft des **Genoms**:
+``gate_parameter_plateau`` setzt aus, wenn ``nachbarschaft(genome, 0.2)``
+leer ist. Gemessen ueber alle Generationen:
+
+    53 verschiedene Genome   ->   0 ohne Nachbarn
+    Spitzenkandidat          ->   12 Nachbarn
+
+``erschlossen_bei`` kann diesen Grund grundsaetzlich nicht nennen - sie sieht
+nur die Trade-Zahl. Nur tritt er heute nirgends auf.
+
+### Eine Bedingung, kein Fund
+
+Genau die Form, in der Befund 332 seine eigenen Teilergebnisse fuehrt. Zwei
+Wachen halten sie:
+
+* Jedes Katalog-Genom hat Nachbarn - kommt eines ohne herein, wird die
+  Untergrenze wirklich zu tief, und das faellt auf.
+* ``run_expensive=False`` liefert neun Urteile, null Aussetzer und die
+  ``vorauswahl``-Flagge. Faengt es an, Gates als uebersprungen zu fuehren,
+  geht der Test rot.
+
+Dazu die **Gegenprobe am echten Aussetzzweig**: Mit leerer Nachbarschaft
+liefert die Gate-Funktion ``SKIP`` und die Botschaft "Genom hat keine
+variierbaren Perioden". Ohne sie koennte der Zweig toter Code sein und der
+Test darueber nichts sagen.
+
+**Offen bleibt die zweite Haelfte, unberuehrt**: die 554 Berichte, die vor
+Befund 348 geschrieben wurden und ihre rohen Paare weitertragen, darunter 109
+mit null Trades. Daran aendert diese Messung nichts - es sind Artefakte ihres
+Tages, und sie umzuschreiben waere das Gegenteil eines Laborbuchs.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Die Sperre aus Befund 102 steht weiter.
