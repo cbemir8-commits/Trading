@@ -665,7 +665,10 @@ class Budget:
                 f"Faktor {wie}{spotfaktor:.2f} - die Zahl oben traegt eine "
                 f"Kostenannahme mit, die dort entfaellt. **Auch das ist noch "
                 f"die rohe Trade-Zahl** (Befund 486): Dieser Faktor teilt "
-                f"dieselbe Latte, nur durch eine andere Guete."
+                f"dieselbe Latte, nur durch eine andere Guete. Beide Zahlen "
+                f"stehen auf der **ganzen** Trade-Liste, die am Datenende "
+                f"beendeten eingeschlossen - so wie die Kandidaten, mit denen "
+                f"sie verglichen werden (Befund 390)."
             )
 
         # **Der gepaarte Abstand** (Befund 486). Bis hierher stand als
@@ -691,7 +694,12 @@ class Budget:
                     f"{punkt.guete:.4f} - **Faktor {faktor:.2f}**. Das ist "
                     f"die Zahl, gegen die ein neuer Einfall antreten muss; "
                     f"die Faktoren oben sind Untergrenzen auf der rohen "
-                    f"Trade-Zahl."
+                    f"Trade-Zahl. **Warum die Guete hier kleiner ist** "
+                    f"(Befund 488): Dieser Punkt steht auf den **fertig "
+                    f"gehandelten** Trades - so urteilt das Gate seit Befund "
+                    f"152, und die am Datenende beendeten bleiben draussen. "
+                    f"Es sind zwei Messungen desselben Punktes auf zwei "
+                    f"Trade-Saetzen, keine Abweichung."
                 )
 
         unerreichbar = [a for a in self.abstaende() if not a.erreichbar]

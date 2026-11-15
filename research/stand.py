@@ -7950,6 +7950,50 @@ BEHOBEN: tuple[Richtung, ...] = (
         "effektive, die Lage las sich also immer besser als sie ist",
         487,
     ),
+    # Befund 488: Zwei Spot-Gueten in benachbarten Saetzen - mein eigener
+    # Einbau aus 486, und der Unterschied ist der Trade-Satz.
+    Richtung(
+        "Zwei Spot-Gueten nebeneinander, und keine nannte ihren Trade-Satz",
+        "**Zuerst ein Negativbefund zur Spur aus 487**: Alle sieben Stellen "
+        "in 'cli.py', die einen Kandidaten bauen und daraus eine gate-nahe "
+        "Zahl rechnen, tragen die effektive Stichprobe - die Klasse ist nach "
+        "487 leer. Meine ersten vier 'Treffer' waren Wortkollisionen: Das "
+        "Muster 'hebel(' trifft '_ohne_hebel(', und das ist der Hebel im "
+        "Sinne von Leverage, nicht die Hebelzerlegung (478, drittes Mal in "
+        "dieser Sitzung). **Der Fund war mein eigener Einbau.** Befund 486 "
+        "hat in das Urteil von 'cli suchbudget' den gepaarten Absatz "
+        "gesetzt, und damit standen dort zwei Spot-Gueten unmittelbar "
+        "nebeneinander: 0,2853 im Satz darueber, 0,2708 im neuen - 5,4 % "
+        "auseinander, beide 'Spot', und kein Satz sagte, woran das liegt. "
+        "Genau diese Sorte Doppelzahl bekaempft das Projekt sonst (234). "
+        "**Gemessen am laufenden Code**: '_spotguete(fertige=True)' = 0,2708 "
+        "= 'SPOTPUNKT.guete', '_spotguete(fertige=False)' = 0,2853. Der "
+        "Unterschied ist der Trade-Satz - fertig gehandelte gegen die ganze "
+        "Liste mit den am Datenende zwangsweise geschlossenen. **Und das "
+        "Gate nimmt die fertigen**: 'research/gates.py' schneidet seit "
+        "Befund 152 mit 'ohne_zensierte(walkforward)'. Die 0,2853 ist damit "
+        "genau die Zahl, die 151/152 aus dem Gate herausgenommen haben - im "
+        "Kopf von 'randschnitt' steht sie als 0,2848, und dort trugen in "
+        "Befund 22 fuenfundzwanzig Randtrades den **ganzen** Vorteil. "
+        "**Beide Stellen sind trotzdem richtig**: 'cli suchbudget' und 'cli "
+        "form' muessen die ganze Liste nehmen, weil ihre Gegenzahlen darauf "
+        "stehen und zwei Zahlen nebeneinander denselben Satz brauchen - das "
+        "ist Befund 390, und beide Aufrufe nennen ihn. Gefehlt hat keine "
+        "Rechnung, sondern die **Angabe des Satzes**. **Gebaut**: Beide "
+        "Saetze nennen ihn jetzt, und eine eigene Wache haelt die Zahlen "
+        "dahinter fest - dass 'SPOTPUNKT' auf den fertigen steht, dass die "
+        "ganze Liste 5,4 % hoeher liegt, dass die Stelle in 'gates.py' da "
+        "ist, dass jeder '_spotguete'-Aufruf 'fertige' woertlich nennt und "
+        "beide Einstellungen vorkommen (sonst waere der Schalter eine "
+        "Attrappe). **Was der Trade-Satz nicht umwirft**: Das Verhaeltnis "
+        "Spot zu Perpetual haelt - 1,068 fertig gegen 1,064 auf der ganzen "
+        "Liste. Die Niveaus liegen rund 6 % hoeher, die Aussage ueber den "
+        "Betriebspunkt bleibt. **Gelockert ist nichts**: keine Schwelle, "
+        "kein Gate, keine Zahl - die 1,25 aus 486 steht unveraendert, und "
+        "jetzt steht auch da, warum ihre Guete kleiner ist als die Zeile "
+        "darueber",
+        488,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

@@ -43827,3 +43827,77 @@ als keiner (Befund 478).
 **Gelockert ist nichts**, und der Fund zeigt in die strenge Richtung: Die rohe
 Stichprobe ist nie kleiner als die effektive (Befund 139) - die Lage las sich
 also immer besser, als sie ist.
+
+## Vierhundertachtundachtzig. Zwei Spot-Gueten nebeneinander, und keine nannte ihren Trade-Satz
+
+### Zuerst ein Negativbefund zur Spur aus 487
+
+Alle sieben Stellen in ``cli.py``, die einen Kandidaten bauen und daraus eine
+gate-nahe Zahl rechnen, tragen die effektive Stichprobe. Nach Befund 487 ist
+die Klasse leer.
+
+Meine ersten vier "Treffer" waren Wortkollisionen: Das Muster ``hebel(``
+trifft ``_ohne_hebel(``, und das ist der Hebel im Sinne von **Leverage**,
+nicht die Hebelzerlegung. Dritte Mal in dieser Sitzung, dass mein Melder das
+falsche Ding fand (Befund 478).
+
+### Der Fund war mein eigener Einbau
+
+Befund 486 hat in das Urteil von ``cli suchbudget`` den gepaarten Absatz
+gesetzt. Damit standen dort zwei Spot-Gueten unmittelbar nebeneinander:
+
+    ... Unter Spot-Bedingungen (0.2853 statt 0.2682, kein Funding) ...
+    ... die Guete dort bei 0.2708 - Faktor 1.25 ...
+
+5,4 % auseinander, beide "Spot", und kein Satz sagte, woran das liegt. Genau
+diese Sorte Doppelzahl bekaempft dieses Projekt sonst (Befund 234: zwei
+Fassungen einer Groesse laufen auseinander).
+
+### Gemessen am laufenden Code
+
+    _spotguete(fertige=True )     = 0,2708   = SPOTPUNKT.guete
+    _spotguete(fertige=False)     = 0,2853
+    SPOTPUNKT.guete (Befund 152)  = 0,2708
+
+Der Unterschied ist der **Trade-Satz**: fertig gehandelte Trades gegen die
+ganze Liste, die am Datenende zwangsweise geschlossenen eingeschlossen.
+
+**Und das Gate nimmt die fertigen.** ``research/gates.py`` schneidet seit
+Befund 152:
+
+    # **Nur fertig gehandelte Trades** (Befund 152). Ein am Datenende ...
+    gehandelt = ohne_zensierte(walkforward)
+
+Die 0,2853 ist damit genau die Zahl, die Befund 151/152 aus dem Gate
+herausgenommen haben - im Kopf von ``research/randschnitt.py`` steht sie als
+0,2848 in der Zeile "Ende gekuerzt 0". Dort trugen in Befund 22
+fuenfundzwanzig solcher Randtrades den **ganzen** Vorteil.
+
+### Beide Stellen sind trotzdem richtig
+
+``cli suchbudget`` und ``cli form`` **muessen** die ganze Liste nehmen: Ihre
+Gegenzahlen stehen darauf, und zwei Zahlen nebeneinander brauchen denselben
+Satz. Das ist Befund 390, und beide Aufrufe nennen ihn.
+
+Gefehlt hat also keine Rechnung, sondern die **Angabe des Satzes**.
+
+### Gebaut
+
+Beide Saetze nennen ihn jetzt. Eine eigene Wache haelt die Zahlen dahinter
+fest: dass ``SPOTPUNKT`` auf den fertigen steht, dass die ganze Liste 5,4 %
+hoeher liegt, dass die Schnittstelle in ``gates.py`` da ist, dass jeder
+``_spotguete``-Aufruf ``fertige`` woertlich nennt und **beide** Einstellungen
+vorkommen - sonst waere der Schalter eine Attrappe.
+
+### Was der Trade-Satz nicht umwirft
+
+    fertig        0,2708 / 0,2535 = 1,068
+    ganze Liste   0,2853 / 0,2682 = 1,064
+
+Die **Niveaus** liegen rund 6 % hoeher, das **Verhaeltnis** haelt. Die Aussage
+ueber den Betriebspunkt bleibt gueltig; nur die Latte darf nicht mit der
+hoeheren Guete verglichen werden.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl. Die 1,25 aus
+Befund 486 steht unveraendert - und jetzt steht auch da, warum ihre Guete
+kleiner ist als die Zeile darueber.
