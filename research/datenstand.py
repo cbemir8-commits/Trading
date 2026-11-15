@@ -457,9 +457,13 @@ def kerzenschluessel(intervall: object) -> str:
     Funktion, nicht der Aufruf.
 
     Deshalb nimmt diese Stelle, was kommt - ``Interval``, Wert, Etikett oder
-    Enum-Name - und antwortet mit dem Wert. Die Zuordnung ist **aus
-    ``Interval`` abgeleitet** und nicht aufgeschrieben: Eine gepflegte Liste
-    von Schreibweisen waere die naechste, die altert (Befund 234/485).
+    Enum-Name - und antwortet mit dem Wert.
+
+    **Die Deutung selbst steht seit Befund 494 in ``Interval.gedeutet``**,
+    neben den beiden Schreibweisen. Hier bleibt nur die Uebersetzung in den
+    Schluessel, auf den ``REIHENENDE`` und ``REIHENNAME`` geschluesselt sind
+    - denn ``laufkosten.MESSUNGEN`` ist auf die **andere** Schreibweise
+    geschluesselt, und beide duerfen ihre behalten.
 
     Was keiner Kerzenlaenge entspricht, kommt unveraendert zurueck. Dann
     findet ``REIHENENDE`` nichts, und das ist richtig: Fuer eine fremde
@@ -467,13 +471,8 @@ def kerzenschluessel(intervall: object) -> str:
     """
     from core.models import Interval
 
-    if isinstance(intervall, Interval):
-        return intervall.value
-    text = str(intervall)
-    for mitglied in Interval:
-        if text in (mitglied.value, mitglied.label, mitglied.name):
-            return mitglied.value
-    return text
+    gedeutet = Interval.gedeutet(intervall)
+    return str(intervall) if gedeutet is None else gedeutet.value
 
 
 def nach_intervall(

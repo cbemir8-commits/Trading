@@ -8190,6 +8190,47 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Interval, nicht die Form",
         493,
     ),
+    # Befund 494: Nach 493 gefragt, wo dieselbe Form noch steht - und eine
+    # zweite Konvention in derselben Sache gefunden.
+    Richtung(
+        "Zwei Schreibweisen, zwei Antworten",
+        "Nach Befund 493 **gefragt statt gewartet**: Wo steht dieselbe Form "
+        "noch? Gezaehlt im Baum sind es **drei** Tafeln nach Kerzenlaenge, "
+        "und sie sind nicht einheitlich geschluesselt - 'REIHENENDE' und "
+        "'REIHENNAME' auf den **Wert** ('D', '15'), 'laufkosten.MESSUNGEN' "
+        "auf das **Etikett** ('1d', '15m'). Von den Zugriffen auf Tafeln "
+        "dieser Bauart gehen **neun** ueber '.get', wo ein Fehlgriff still in "
+        "einen Ersatzzweig faellt; die dreizehn mit '[...]' werfen einen "
+        "KeyError und sind ungefaehrlich. Gemessen: 'dauer(\'1d\', 30)' "
+        "ergibt 180,0 Sekunden, 'dauer(\'D\', 30)' ergibt **None** - "
+        "dieselbe Kerzenlaenge, zwei Antworten, und die falsche klang nach "
+        "Sorgfalt: *'Laufzeit fuer \'D\' nicht gemessen (bekannt: 15m, 1d) "
+        "- hier wird nichts hochgerechnet.'* Ein Satz, der sich weigert zu "
+        "schaetzen, wo eine Messung daliegt. **Ehrlich dazu: in 'cli.py' war "
+        "nichts kaputt** - beide Aufrufstellen uebergeben "
+        "'interval_obj.label', und das passt zu dieser Tafel. Kaputt war der "
+        "**Vertrag** der Funktion, und genau so ist 493 entstanden: Ich habe "
+        "die andere Schreibweise uebergeben, weil ich die Konvention der "
+        "Nachbartafel kannte. **Keine einheitliche Konvention erzwungen**: "
+        "'MESSUNGEN' schluesselt mit Absicht auf das Etikett, weil seine "
+        "Schluessel in der Auskunft stehen - 'bekannt: 15m, 1d' liest sich, "
+        "wie ein Mensch es sagt. Die Tafeln behalten ihre Schreibweise; was "
+        "nicht bleibt, ist die Falle am Zugriff. **Gebaut**: "
+        "'Interval.gedeutet' steht neben den beiden Schreibweisen, wo sie "
+        "herkommen; jede Tafel deutet erst und fragt dann in ihrer eigenen. "
+        "'kerzenschluessel' ist seitdem die Uebersetzung in den Wert, "
+        "'laufkosten._etikett' die in das Etikett. Was keine Kerzenlaenge "
+        "ist, findet weiter nichts - 'cli reibung -i W' bekommt richtig "
+        "'nicht gemessen'; Deuten heisst nicht Hochrechnen (370). "
+        "**Geprueft wird die Wirkung**, die Lehre aus 493: Jede Tafel wird in "
+        "jeder Schreibweise gefragt und muss dasselbe antworten, mit "
+        "Gegenprobe auf die ungemessene Kerzenlaenge. Dazu eine Inventur, die "
+        "die Tafeln **findet** statt sie zu listen - kommt eine vierte dazu, "
+        "faellt sie auf, und ihr Modul muss deuten. Dieselbe Bauart wie "
+        "SCHNITTWEGE und BUCHUNGSWEGE, eine Ebene tiefer: am Schluessel statt "
+        "am Funktionsnamen. **Gelockert ist nichts**",
+        494,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

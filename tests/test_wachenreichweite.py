@@ -79,11 +79,17 @@ zwei davon. Die Wache, die das haette melden sollen, war die hier.
 
 Nach dem Umbau gemessen:
 
-    Verbotsregeln mit weiter Reichweite                               20
+    Verbotsregeln mit weiter Reichweite                               21
     Verbotsregeln an genau einer Datei                                27
       verschiedene Namenspaare darunter                               26
       begruendet in ABSICHTLICH_ENG (7 Eintraege, 8 Vorkommen)         8
       Aussagen ueber die Befehlsschicht (NUR_DIE_BEFEHLSDATEI)        19
+
+Die weite Zahl stand nach Befund 485 auf 20 und steht seit Befund 494 auf 21:
+Die Tafel-Inventur in ``test_kerzendeutung`` sichert ueber den ganzen Baum zu,
+dass keine Tafel nach Kerzenlaenge ohne Deutung abgefragt wird. Beide Male hat
+diese Wache den Zuwachs gemeldet, bevor er in einem Kopf als Behauptung
+stehenblieb - genau der Dienst, fuer den sie in 484 gebaut wurde.
 
 27 Vorkommen bei 26 Paaren: ``test_jede_fundstelle_gibt_es_wirklich`` steht
 zweimal in ``test_stand``, einmal fuer GESCHLOSSEN und einmal fuer OFFEN -
@@ -522,12 +528,20 @@ class TestDieMessungSelbst:
         eng, weit = _verbotsregeln()
         paare = {(d, f) for d, f, _ in eng}
 
-        # **20 seit Befund 485**, und die Zahl ist ihr eigener Beleg: Der
+        # **20 seit Befund 485**, und die Zahl war ihr eigener Beleg: Der
         # Melder jenes Befundes leitet seine Grundgesamtheit mit 'rglob' ab
         # und sichert dabei die Abwesenheit eines Namens zu - also eine neue
         # weite Verbotsregel. Dass diese Zusicherung sie gemeldet hat, ist
         # genau der Dienst, fuer den sie in 484 gebaut wurde.
-        assert weit == 20, weit
+        #
+        # **21 seit Befund 494**, und zum zweiten Mal aus demselben Grund: Die
+        # Tafel-Inventur in 'test_kerzendeutung' sucht mit 'rglob' jede Tafel
+        # nach Kerzenlaenge und sichert zu, dass **keine** davon ohne Deutung
+        # abgefragt wird. Eine Abwesenheit ueber den ganzen Baum ist eine
+        # weite Regel; sie ist hier gewollt, denn eine vierte Tafel soll
+        # auffallen, wo immer sie steht. Gemeldet hat sie diese Wache - nicht
+        # ich beim Aufschreiben.
+        assert weit == 21, weit
         assert len(eng) == 27, len(eng)
         assert len(paare) == 26, len(paare)
         assert len(ABSICHTLICH_ENG) == 7

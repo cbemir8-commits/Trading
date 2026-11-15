@@ -44280,3 +44280,74 @@ jetzt je Reihe ueber ihr eigenes Ende.
 
 **Gelockert ist nichts**, und keine gepflegte Zahl bewegt sich. Was sich
 bewegt, ist der Schnitt: Er greift wieder.
+
+## Vierhundertvierundneunzig. Zwei Schreibweisen, zwei Antworten
+
+Befund 493 war mein Fehler: Die Reihentafel ist auf den **Wert** der
+Kerzenlaenge geschluesselt, neun Befehle uebergaben das **Etikett**, und der
+Schnitt griff im Betrieb nie. Danach habe ich gefragt, wo dieselbe Form noch
+steht - statt zu warten, bis es wieder auffaellt.
+
+### Die Inventur
+
+Gezaehlt im Baum: **drei** Tafeln nach Kerzenlaenge, und sie sind nicht
+einheitlich geschluesselt.
+
+    research/datenstand.py  REIHENENDE   Wert     "D", "15"
+    research/datenstand.py  REIHENNAME   Wert     "D", "15"
+    research/laufkosten.py  MESSUNGEN    Etikett  "1d", "15m"
+
+Dazu: Von den Zugriffen auf Tafeln dieser Bauart gehen **neun** ueber
+``.get`` - ein Fehlgriff faellt dort **still** in einen Ersatzzweig. Die
+dreizehn Zugriffe mit ``[...]`` werfen einen KeyError und sind damit laut und
+ungefaehrlich.
+
+### Was gemessen wurde
+
+    dauer("1d", 30) == 180.0        dauer("D", 30) is None
+
+Dieselbe Kerzenlaenge, zwei Antworten. Und die falsche klang nach Sorgfalt:
+
+    Laufzeit fuer 'D' nicht gemessen (bekannt: 15m, 1d)
+    - hier wird nichts hochgerechnet.
+
+Ein Satz, der sich weigert zu schaetzen, wo eine Messung daliegt.
+
+**Ehrlich dazu: in ``cli.py`` war nichts kaputt.** Beide Aufrufstellen
+uebergeben ``interval_obj.label``, und das passt zu dieser Tafel. Kaputt war
+der **Vertrag** der Funktion - und genau so ist 493 entstanden: Ich habe die
+andere Schreibweise uebergeben, weil ich die Konvention der Nachbartafel
+kannte.
+
+### Warum keine einheitliche Konvention erzwungen wurde
+
+``MESSUNGEN`` schluesselt mit Absicht auf das Etikett: Seine Schluessel
+**stehen in der Auskunft**. *"bekannt: 15m, 1d"* liest sich, wie ein Mensch es
+sagt; *"bekannt: 15, D"* nicht. Die Tafeln duerfen ihre Schreibweise behalten.
+Was nicht bleiben darf, ist die Falle am Zugriff.
+
+Deshalb steht die Deutung jetzt in ``Interval.gedeutet`` - **neben** den
+beiden Schreibweisen, wo sie herkommen, und nicht in dem Modul, das sie
+zuerst gebraucht hat. Jede Tafel deutet erst und fragt dann in ihrer eigenen
+Schreibweise. ``datenstand.kerzenschluessel`` ist seitdem nur noch die
+Uebersetzung in den Wert, ``laufkosten._etikett`` die in das Etikett.
+
+Was keine Kerzenlaenge ist, kommt unveraendert zurueck und findet nichts -
+dann ist "nicht gemessen" die richtige Antwort, und ``cli reibung -i W``
+bekommt sie weiterhin. Deuten heisst nicht hochrechnen.
+
+### Geprueft wird die Wirkung
+
+Das ist die Lehre aus 493, und sie ist hier die Bauform des Tests: Die Regel
+dort prueft die **Form** - niemand ruft die Tagesfassung direkt -, und
+darunter tat der Verteiler nichts. ``tests/test_kerzendeutung.py`` fragt
+stattdessen jede Tafel in **jeder** Schreibweise und verlangt dieselbe
+Antwort; dazu eine Gegenprobe, dass eine ungemessene Kerzenlaenge ungemessen
+bleibt.
+
+Und eine Inventur, die die Tafeln im Baum **findet** statt sie zu listen:
+Kommt eine vierte dazu, faellt sie auf, und das Modul, das sie haelt, muss
+deuten. Das ist dieselbe Bauart wie ``SCHNITTWEGE`` und ``BUCHUNGSWEGE`` -
+nur eine Ebene tiefer, am Schluessel statt am Funktionsnamen.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl.

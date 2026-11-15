@@ -106,6 +106,32 @@ class Laufkosten:
 #: Sie veralten mit jeder Aenderung an den Gates und an der Maschine. Das ist
 #: hinnehmbar: Eine veraltete **Messung** ist immer noch besser als eine
 #: frische Schaetzung, und die Fundstelle steht daneben.
+def _etikett(intervall: object) -> str:
+    """Die Kerzenlaenge in der Schreibweise, auf die ``MESSUNGEN`` schluesselt.
+
+    **Befund 494.** Diese Tafel ist auf das **Etikett** geschluesselt
+    (``"1d"``, ``"15m"``), weil ihre Schluessel in der Auskunft stehen -
+    *"bekannt: 15m, 1d"* liest sich, wie ein Mensch es sagt.
+    ``datenstand.REIHENENDE`` ist auf den **Wert** geschluesselt (``"D"``,
+    ``"15"``). Zwei Konventionen in derselben Sache, beide still abgefragt:
+
+        dauer("1d", 30) == 180.0        dauer("D", 30) is None
+
+    Dieselbe Kerzenlaenge, zwei Antworten - und die zweite sah aus wie eine
+    Auskunft: *"Laufzeit fuer 'D' nicht gemessen (bekannt: 15m, 1d) - hier
+    wird nichts hochgerechnet."* Ein Satz, der Sorgfalt zeigt, wo eine
+    Messung vorliegt.
+
+    Jetzt wird erst gedeutet und dann in der eigenen Schreibweise gefragt.
+    Was keine Kerzenlaenge ist, kommt unveraendert zurueck und findet nichts
+    - dann ist "nicht gemessen" die richtige Antwort.
+    """
+    from core.models import Interval
+
+    gedeutet = Interval.gedeutet(intervall)
+    return str(intervall) if gedeutet is None else gedeutet.label
+
+
 MESSUNGEN: dict[str, Laufkosten] = {
     "1d": Laufkosten(
         kerzen=3_277, je_genom=6.0, gemessen_in=296,
@@ -133,7 +159,7 @@ def dauer(intervall: str, genome: int, sprossen: int = 0) -> float | None:
     hochgerechnete Zahl. Wer eine braucht, misst sie. Ebenso ``None``, wenn
     Sprossen verlangt werden und deren Preis hier nicht gemessen ist.
     """
-    kosten = MESSUNGEN.get(intervall)
+    kosten = MESSUNGEN.get(_etikett(intervall))
     if kosten is None or genome < 0 or sprossen < 0:
         return None
     if sprossen and kosten.je_sprosse is None:
@@ -161,7 +187,7 @@ def dauer_ohne_gates(intervall: str, genome: int, stufen: int = 1) -> float | No
     Das ist derselbe Massstabsfehler wie in 296 und 298, nur ein drittes Mal
     vermieden: Wer hier mit ``je_genom`` rechnete, kaeme auf das Dreifache.
     """
-    kosten = MESSUNGEN.get(intervall)
+    kosten = MESSUNGEN.get(_etikett(intervall))
     if kosten is None or kosten.je_sprosse is None or genome < 0 or stufen < 0:
         return None
     return kosten.je_sprosse * stufen * genome
@@ -176,7 +202,7 @@ def auskunft_ohne_gates(intervall: str, genome: int, stufen: int = 1) -> str:
             f"Laufzeit fuer '{intervall}' nicht gemessen (bekannt: {gemessen}) "
             f"- hier wird nichts hochgerechnet."
         )
-    kosten = MESSUNGEN[intervall]
+    kosten = MESSUNGEN[_etikett(intervall)]
     return (
         f"{genome} Genome mal {stufen} Stufe{'n' if stufen != 1 else ''}, "
         f"{_zeitwort(sekunden)} - gemessen mit {kosten.je_sprosse:.0f} s je "
@@ -193,7 +219,7 @@ def auskunft(intervall: str, genome: int, sprossen: int = 0) -> str:
             f"Laufzeit fuer '{intervall}' nicht gemessen (bekannt: {gemessen}) "
             f"- hier wird nichts hochgerechnet."
         )
-    kosten = MESSUNGEN[intervall]
+    kosten = MESSUNGEN[_etikett(intervall)]
     zeit = _zeitwort(sekunden)
     # Der Tausenderpunkt wird auf der **Zahl** gesetzt und nicht auf dem
     # fertigen Satz: Ein pauschales replace(",", ".") traf auch das Komma

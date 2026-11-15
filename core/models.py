@@ -77,6 +77,42 @@ class Interval(StrEnum):
             Interval.MN1: "1M",
         }[self]
 
+    @classmethod
+    def gedeutet(cls, was: object) -> Interval | None:
+        """Welche Kerzenlaenge ist gemeint? ``None``, wenn keine.
+
+        **Hier stehen zwei Schreibweisen derselben Sache** - der Wert ist der
+        Bybit-Parameter (``"D"``), das Etikett ist menschenlesbar (``"1d"``) -
+        und das hat zweimal Geld gekostet:
+
+        * Befund 493: ``datenstand.REIHENENDE`` ist auf den **Wert**
+          geschluesselt, neun Befehle uebergaben das **Etikett**. Der
+          Reihenschnitt griff deshalb im Betrieb nie.
+        * Befund 494: ``laufkosten.MESSUNGEN`` ist auf das **Etikett**
+          geschluesselt - die umgekehrte Konvention, in derselben Sache.
+          ``dauer("1d", 30)`` ergab 180 Sekunden, ``dauer("D", 30)`` ergab
+          ``None``, also "nicht gemessen".
+
+        Beides war still: ein Fehlgriff fiel in einen Ersatzzweig, der wie
+        eine Antwort aussieht. Deshalb steht die Deutung **hier**, neben den
+        beiden Schreibweisen, und nicht in dem Modul, das sie zuerst
+        gebraucht hat. Wer eine Tafel nach Kerzenlaenge fragt, deutet erst
+        und fragt dann in der Schreibweise, auf die seine Tafel
+        geschluesselt ist.
+
+        Erkannt werden das ``Interval`` selbst, der Wert, das Etikett und der
+        Enum-Name (``"D1"``). Die Zuordnung ist **abgeleitet** und nicht
+        aufgeschrieben: eine gepflegte Liste von Schreibweisen waere die
+        naechste, die altert.
+        """
+        if isinstance(was, cls):
+            return was
+        text = str(was)
+        for mitglied in cls:
+            if text in (mitglied.value, mitglied.label, mitglied.name):
+                return mitglied
+        return None
+
 
 class Side(StrEnum):
     BUY = "Buy"
