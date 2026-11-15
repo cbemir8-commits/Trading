@@ -7,15 +7,16 @@ Die Lehre aus Befund 479, eine Stufe weiter
 dritte ungepruefte Zaehler in dieser Sitzung."*
 
 ``tests/schnittwege`` ist in diesem Zyklus entstanden und haette genau so
-dagestanden: **acht** Dateien fragen ihn - sieben auf Modulebene, eine in
-einer Funktion -, und nichts fragte ihn selbst. Gaebe ``schneidet`` eines
+dagestanden: **neun** Dateien fragen ihn - acht auf Modulebene, eine in einer
+Funktion -, und nichts fragte ihn selbst. Gaebe ``schneidet`` eines
 Tages immer ``True`` zurueck - ein zu weites Wort in ``SCHNITTWEGE`` genuegt -,
-dann waeren acht Wachen auf einen Schlag leer erfuellt, und keine davon wuerde
-rot. Das ist dieselbe Bauart wie die leere Teilmenge in 479, nur an der
+dann waeren neun Dateien voll Wachen auf einen Schlag leer erfuellt, und keine
+davon wuerde rot. Das ist dieselbe Bauart wie die leere Teilmenge in 479, nur an der
 anderen Ecke.
 
-Die Acht ist gezaehlt, nicht geschaetzt, und steht als Zusicherung weiter
-unten - der erste Entwurf dieses Kopfes sagte sieben.
+Die Zahl ist gezaehlt, nicht geschaetzt, und steht als Zusicherung weiter
+unten: Der erste Entwurf dieses Kopfes sagte sieben, gemessen waren es acht,
+und mit Befund 495 kam ``test_kerzenabdruck`` als neunte dazu.
 
 Was hier geprueft wird
 ----------------------
@@ -132,7 +133,7 @@ class TestAmEchtenQuelltext:
 
         assert schneidende_befehle() - set(inventur) == {"korb"}
 
-    def test_acht_dateien_haengen_an_ihm(self) -> None:
+    def test_neun_dateien_haengen_an_ihm(self) -> None:
         """Warum diese Datei existiert, als Zahl - und sie ist gezaehlt, nicht
         geschaetzt (der erste Entwurf des Kopfes sagte sieben).
 
@@ -153,7 +154,7 @@ class TestAmEchtenQuelltext:
             )
         }
 
-        assert len(frager) == 8, sorted(frager)
+        assert len(frager) == 9, sorted(frager)
 
     def test_niemand_schneidet_mehr_von_hand(self) -> None:
         """Seit 491 geht jeder Schnitt ueber den Verteiler. Die Regel steht

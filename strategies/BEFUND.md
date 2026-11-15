@@ -44351,3 +44351,107 @@ deuten. Das ist dieselbe Bauart wie ``SCHNITTWEGE`` und ``BUCHUNGSWEGE`` -
 nur eine Ebene tiefer, am Schluessel statt am Funktionsnamen.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl.
+
+## Vierhundertfuenfundneunzig. Die Herkunft war hohl
+
+``cli._kerzenabdruck`` schreibt in jeden Protokollkopf, worauf gerechnet wurde.
+Sein Zweck steht in seinem Docstring: *"Befund 102 haelt fest, dass Kerzen ohne
+Herkunft Zahlen ohne Bedeutung sind. Zwei Stuecke auf verschieden langen Reihen
+waeren zwei Messungen."*
+
+Darin stand:
+
+    {'zeilen': '3301', 'von': '0', 'bis': '3300'}
+
+Gelesen wurde ``rahmen.index``. Die Rahmen, die wirklich hereinkommen, kommen
+aus ``common_range``: Sie haben einen **Zaehler** als Index, und die Zeit steht
+in ``open_time``. Gemessen tragen **167 von 169** Protokollen im Baum diese
+Form; die zwei anderen sind aelter als das Feld. Es war also nie etwas anderes
+darin.
+
+Damit war die Zusage des Docstrings **umgekehrt falsch**: Zwei Stuecke auf
+verschieden langen Reihen bekamen denselben Abdruck, solange sie gleich viele
+Zeilen hatten. Die Wache gegen zwei Messungen in einem Lauf verglich eine Zahl
+mit sich selbst.
+
+### Warum es niemand gemerkt hat - und eine Berichtigung an mir selbst
+
+Der erste Entwurf dieses Abschnitts sagte, ``rahmen.index`` sei der falsche
+Griff. Das ist zu einfach, und die Suite hat es mir gezeigt: Die Wache dazu
+(Befund 300, ``test_abdruck``) prueft mit einem Rahmen, dessen **Index** die
+Zeit traegt - und fuer diese Form war der alte Griff **richtig**. Nur erzeugt
+sie kein Aufrufer.
+
+Meine erste Reparatur hat deshalb nur umgedreht, welche Form kaputt ist: Fuenf
+Zusicherungen aus 300 fielen, weil ``open_time`` dort nicht existiert. Jetzt
+werden **beide** Formen bedient - die Spalte, wenn sie da ist, sonst ein
+Zeitindex -, und ein Zaehler als Index ergibt leere Felder. Nichts ist
+ehrlicher als eine Zahl, die wie eine Zeit aussieht.
+
+Die Lehre ist die aus Befund 493, einmal mehr: **Gemessen wurde die Funktion,
+nicht der Aufruf.** Deshalb geht die neue Probe durch ``common_range`` selbst,
+statt einen Rahmen nachzubauen.
+
+Gelesen hat das Feld niemand - es ist Herkunft fuer einen spaeteren Leser, und
+fuer 167 Protokolle ist sie unbrauchbar. Die Nachbarfelder sind in Ordnung:
+``_katalogabdruck`` und ``_codeabdruck`` hashen wirklich Inhalt, und der
+Docstring des Codeabdrucks begruendet sogar, warum er **nicht** ueber ``HEAD``
+hasht. Dort war die Sorgfalt; eine Zeile weiter stand ein Zaehler.
+
+Die alten 167 werden **nicht** umgeschrieben - das waere eine Messung
+nachtraeglich aendern. Sie werden gezaehlt: Wird es mehr, ist der Test rot.
+Dieselbe Haltung wie bei den 554 alten Berichten in OFFEN 332.
+
+### Wo das Schweigen teuer ist
+
+Die offene Richtung zu Befund 387 nennt ihr Kriterium selbst: *"Teuer wird es
+da, wo eine gepflegte Zahl aus ``referenz.py`` danebensteht oder eine
+unwiderrufliche Entscheidung daran haengt."* Danach gefiltert, statt alle 41
+Walk-Forward-Befehle in einen Topf zu werfen:
+
+    Walk-Forward-Befehle                                41
+    davon mit einer gepflegten Zahl daneben              9
+    davon stumm                                          6
+
+Die sechs sind ``decke``, ``koernung``, ``nachpruefung``, ``regler``,
+``suchbudget`` und ``vorratsdecke``. Sie nennen jetzt ihre Reihe. Geschnitten
+wird nichts: Auf allem zu rechnen, was da ist, ist richtig; es muss nur
+dastehen (Befund 370).
+
+Die Zahl 32 aus Befund 491 bleibt richtig - sie zaehlt alle schweigenden
+Laeufe. Teuer sind davon sechs, und das ist der Unterschied zwischen einer
+Liste und einer Entscheidung.
+
+### Und mein eigener Prozessfehler
+
+``reports/reibung/2026-11-15_190038.jsonl`` ist mein Rauchtest aus dem
+Zyklus zu Befund 494. Verbucht wurde es in ``ac43db4``, **stillschweigend**,
+als waere es eine Messung - einen Zyklus nachdem ich Befund 482 ueber genau
+diesen Fall geschrieben habe.
+
+Die Abhilfe lag bereit und ich habe sie nicht benutzt: ``TRADING_TROCKENLAUF=1``
+unterdrueckt das Protokoll, gemessen an diesem Zyklus - 27 Protokolle vorher,
+27 nachher, und der Lauf sagt es selbst (*"Zwischenstand: keiner -
+TRADING_TROCKENLAUF ist gesetzt"*).
+
+Geloescht wird nichts, wie in 482: Die Datei steht, und hier steht, woher sie
+kommt. Dasselbe gilt fuer ``reports/reibung/2026-11-15_210256.jsonl`` - der
+Rauchtest zu **diesem** Befund, bewusst ohne Trockenlauf gefahren, weil genau
+dieses Protokoll der Beleg fuer die Reparatur ist: Es ist das erste im Baum,
+dessen Abdruck Kerzenzeiten traegt.
+
+### Geprueft wird die Wirkung
+
+Die Lehre aus Befund 493, hier als Bauform: Eine Regel auf die **Form** haette
+nichts gemerkt - das Feld war da, es stand nur Unsinn darin. Also prueft die
+Regel, dass zwei gleich lange Reihen mit verschiedenen Spannen auch
+verschiedene Abdruecke ergeben. Der erste Entwurf dieser Probe nahm 2017 und
+2020; 2020 hat 366 Tage, die Zeilenzahl unterschied sich, und der Test waere
+auch mit dem alten Abdruck gruen geworden. Mein Pruefaufbau, nicht der Code -
+jetzt stehen zwei Nicht-Schaltjahre da, und eine Zusicherung sichert das ab.
+
+Die Regel zu den teuren Befehlen **leitet ihre Grundgesamtheit ab**: Wer eine
+gepflegte Zahl neben seine stellt, muss seine Reihe nennen. Kommt ein Befehl
+dazu, faellt er auf.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl.

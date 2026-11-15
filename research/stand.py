@@ -8231,6 +8231,63 @@ BEHOBEN: tuple[Richtung, ...] = (
         "am Funktionsnamen. **Gelockert ist nichts**",
         494,
     ),
+    # Befund 495: Das Feld fuer die Herkunft trug einen Zaehler - und sechs
+    # teure Laeufe nannten ihre Reihe nicht.
+    Richtung(
+        "Die Herkunft war hohl",
+        "'cli._kerzenabdruck' schreibt in jeden Protokollkopf, worauf "
+        "gerechnet wurde; sein Docstring nennt den Zweck: *'Kerzen ohne "
+        "Herkunft sind Zahlen ohne Bedeutung (102). Zwei Stuecke auf "
+        "verschieden langen Reihen waeren zwei Messungen.'* Darin stand "
+        "\u007b'zeilen': '3301', 'von': '0', 'bis': '3300'\u007d - "
+        "'rahmen.index' ist bei diesen Rahmen ein **Zaehler von 0**, die Zeit "
+        "steht in 'open_time'. Gemessen tragen **167 von 169** Protokollen "
+        "diese Form; die zwei anderen sind aelter als das Feld, es war also "
+        "nie etwas anderes darin. Damit war die Zusage **umgekehrt falsch**: "
+        "**Warum es niemand gemerkt hat, und eine Berichtigung an mir "
+        "selbst**: Der erste Entwurf dieses Eintrags sagte, 'rahmen.index' "
+        "sei der falsche Griff - zu einfach. Die Wache dazu (300, "
+        "'test_abdruck') prueft mit einem Rahmen, dessen **Index** die Zeit "
+        "traegt, und fuer diese Form war der alte Griff **richtig**; nur "
+        "erzeugt sie kein Aufrufer. Meine erste Reparatur hat darum nur "
+        "umgedreht, welche Form kaputt ist - fuenf Zusicherungen aus 300 "
+        "fielen. Jetzt werden beide Formen bedient, und ein Zaehler als Index "
+        "ergibt leere Felder. "
+        "Zwei Stuecke auf verschieden langen Reihen bekamen denselben "
+        "Abdruck, solange sie gleich viele Zeilen hatten - die Wache gegen "
+        "zwei Messungen in einem Lauf verglich eine Zahl mit sich selbst. "
+        "Gelesen hat das Feld niemand; die Nachbarfelder sind in Ordnung "
+        "('_katalogabdruck' und '_codeabdruck' hashen Inhalt, und der "
+        "Codeabdruck begruendet sogar, warum er nicht ueber HEAD hasht - "
+        "dort war die Sorgfalt, eine Zeile weiter stand ein Zaehler). Die "
+        "alten 167 werden **nicht** umgeschrieben, das waere eine Messung "
+        "nachtraeglich aendern; sie werden gezaehlt, und mehr macht den Test "
+        "rot (wie die 554 alten Berichte in OFFEN 332). **Dazu: wo das "
+        "Schweigen teuer ist.** Die offene Richtung 387 nennt ihr Kriterium "
+        "selbst - teuer ist, wo eine gepflegte Zahl danebensteht. Danach "
+        "gefiltert: 41 Walk-Forward-Befehle, **9** mit einer gepflegten Zahl "
+        "daneben, **6** davon stumm ('decke', 'koernung', 'nachpruefung', "
+        "'regler', 'suchbudget', 'vorratsdecke'). Sie nennen jetzt ihre "
+        "Reihe; geschnitten wird nichts (370). Die 32 aus 491 bleiben "
+        "richtig - sie zaehlen alle schweigenden Laeufe; teuer sind sechs, "
+        "und das ist der Unterschied zwischen einer Liste und einer "
+        "Entscheidung. **Und mein eigener Prozessfehler**: "
+        "'reports/reibung/2026-11-15_190038.jsonl' ist mein Rauchtest aus dem "
+        "Zyklus zu 494 und wurde in 'ac43db4' stillschweigend mitverbucht, "
+        "als waere es eine Messung - einen Zyklus nachdem ich Befund 482 "
+        "ueber genau diesen Fall geschrieben habe. Die Abhilfe lag bereit "
+        "und ich habe sie nicht benutzt: 'TRADING_TROCKENLAUF=1' unterdrueckt "
+        "das Protokoll, gemessen an diesem Zyklus (27 vorher, 27 nachher). "
+        "Geloescht wird nichts, wie in 482 - die Datei steht, und im "
+        "Laborbuch steht, woher sie kommt. **Geprueft wird die Wirkung** "
+        "(Lehre aus 493): Eine Regel auf die Form haette nichts gemerkt, das "
+        "Feld war da. Also wird geprueft, dass zwei gleich lange Reihen mit "
+        "verschiedenen Spannen verschiedene Abdruecke ergeben - und der erste "
+        "Entwurf dieser Probe nahm 2017 und 2020, wo 2020 366 Tage hat und "
+        "der Test auch mit dem alten Abdruck gruen geworden waere. Mein "
+        "Pruefaufbau, nicht der Code. **Gelockert ist nichts**",
+        495,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -8385,10 +8442,14 @@ OFFEN: tuple[Richtung, ...] = (
         "'cli stand' meldet aus dem Plan '27 bleiben (Abbruch bei 230)', "
         "'cli abstand' rechnet 21 - zwei Zahlen fuer dieselbe Frage, und nur "
         "die zweite steht auf der Reihe (behoben in 389). **Heute sind es "
-        "8 / 5 / 31** (490): Die drei neuen sind 'adaptiv', 'machbarkeit' und "
-        "'verbund'; 'korb' schneidet ebenfalls seit 490, faellt aber aus "
-        "dieser Inventur, weil sie 'spitzenkandidat' im Block verlangt und er "
-        "Saaten laedt. **Die Regel steht "
+        "8 / 10 / 26** (495): Die acht Schneider stehen seit 490; 'korb' "
+        "schneidet ebenfalls, faellt aber aus dieser Inventur, weil sie "
+        "'spitzenkandidat' im Block verlangt und er Saaten laedt. Die zehn "
+        "Nenner sind seit 495 zehn - 'decke', 'koernung', 'nachpruefung', "
+        "'regler', 'suchbudget' und 'vorratsdecke' sind dazugekommen, weil "
+        "sie eine gepflegte Zahl neben ihre eigene setzen. Die alten drei "
+        "Schneider von 490 sind 'adaptiv', 'machbarkeit' und "
+        "'verbund'. **Die Regel steht "
         "jetzt - Befund 490.** Sie zerfaellt in zwei Teile, weil der Schnitt "
         "zwei verschiedene Dinge tut: 'geschnitten' kuerzt **nur am oberen "
         "Ende** auf SERIENENDE, den Anfang holt 'common_range' im "
@@ -8428,7 +8489,7 @@ OFFEN: tuple[Richtung, ...] = (
         "Kommentar'. Derselbe Kanal, eine Zeile hinter 'common_range', traegt "
         "den Reihenvermerk fuer alle 41",
         387,
-        zuletzt=493,
+        zuletzt=495,
     ),
     Richtung(
         # **Der Name traegt keine Zahl mehr** (Befund 352). Er hat sie von 332

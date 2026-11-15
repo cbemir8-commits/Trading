@@ -244,7 +244,7 @@ class TestDieInventurStimmtNoch:
                 keins.append(name)
         return schneiden, nennen, keins
 
-    def test_acht_schneiden_fuenf_nennen_einunddreissig_keins(self) -> None:
+    def test_acht_schneiden_zehn_nennen_sechsundzwanzig_keins(self) -> None:
         """Die Zahlen wandern, wenn ein Befehl sich entscheidet - und genau
         dafuer ist der Test da.
 
@@ -276,9 +276,9 @@ class TestDieInventurStimmtNoch:
         weil eine Zahl oder eine Entscheidung daran haengt - genau der
         Anhaltspunkt, den die offene Richtung selbst nennt.
         """
-        schneidet, nennt, keins = self._inventur()
+        schneiden, nennen, keins = self._inventur()
 
-        assert sorted(schneidet) == [
+        assert sorted(schneiden) == [
             "abstand",
             "adaptiv",
             "anatomie",
@@ -288,15 +288,20 @@ class TestDieInventurStimmtNoch:
             "stand",
             "verbund",
         ]
-        assert sorted(nennt) == [
+        assert sorted(nennen) == [
             "abstand",
             "aufteilung",
+            "decke",
+            "koernung",
+            "nachpruefung",
+            "regler",
             "rennen",
             "stand",
             "suchbudget",
+            "vorratsdecke",
         ]
-        assert len(keins) == 31, (
-            f"{len(keins)} statt 31 Befehle ohne Reihe - wer einen Befehl auf "
+        assert len(keins) == 26, (
+            f"{len(keins)} statt 26 Befehle ohne Reihe - wer einen Befehl auf "
             f"den Spitzenkandidaten setzt, entscheidet sich fuer eine Reihe "
             f"(Befund 387/390/394/400/490): {sorted(keins)}"
         )
@@ -307,12 +312,12 @@ class TestDieInventurStimmtNoch:
         der Messung gebildet, nicht ein zweites Mal hingeschrieben."""
         from research.stand import OFFEN
 
-        schneidet, nennt, keins = self._inventur()
+        schneiden, nennen, keins = self._inventur()
         eintrag = next(r for r in OFFEN if r.befund == 387)
-        zeile = f"{len(schneidet)} / {len(nennt)} / {len(keins)}"
+        zeile = f"{len(schneiden)} / {len(nennen)} / {len(keins)}"
 
         assert f"**Heute sind es {zeile}**" in eintrag.ergebnis, zeile
-        assert eintrag.zuletzt == 493
+        assert eintrag.zuletzt == 495
 
 
 @pytest.mark.daten

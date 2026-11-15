@@ -6444,6 +6444,10 @@ def nachpruefung(
         roh[symbol] = frame
 
     frames = common_range(roh)
+    # **Eine gepflegte Zahl steht hier daneben** (Befund 495), also
+    # gehoert die Reihe dazu - gerechnet wird auf allem, was da ist,
+    # es muss nur dastehen (Befund 370).
+    console.print(f"[dim]Reihe: {_reihenzeile(frames, interval_obj)}[/]")
     erster = next(iter(frames.values()))
     configs = {
         x: BacktestConfig(
@@ -8789,6 +8793,10 @@ def koernung(
             raise typer.Exit(2)
         roh[symbol] = frame
     frames = common_range(roh)
+    # **Eine gepflegte Zahl steht hier daneben** (Befund 495), also
+    # gehoert die Reihe dazu - gerechnet wird auf allem, was da ist,
+    # es muss nur dastehen (Befund 370).
+    console.print(f"[dim]Reihe: {_reihenzeile(frames, interval_obj)}[/]")
     genome = spitzenkandidat()
 
     erster = next(iter(frames.values()))
@@ -12338,6 +12346,10 @@ def suchbudget(
         roh[symbol] = frame
 
     frames = common_range(roh)
+    # **Eine gepflegte Zahl steht hier daneben** (Befund 495), also
+    # gehoert die Reihe dazu - gerechnet wird auf allem, was da ist,
+    # es muss nur dastehen (Befund 370).
+    console.print(f"[dim]Reihe: {_reihenzeile(frames, interval_obj)}[/]")
     configs = {
         x: BacktestConfig(
             instrument=_fallback_instrument(_bybit_kontrakt(x)),
@@ -13014,6 +13026,10 @@ def decke(
             raise typer.Exit(2)
         roh[symbol] = frame
     gemeinsam = common_range(roh)
+    # **Eine gepflegte Zahl steht hier daneben** (Befund 495), also
+    # gehoert die Reihe dazu - gerechnet wird auf allem, was da ist,
+    # es muss nur dastehen (Befund 370).
+    console.print(f"[dim]Reihe: {_reihenzeile(gemeinsam, interval_obj)}[/]")
     trials = load_trials(Path(settings.paths.state) / "trials.json")
     basis = spitzenkandidat()
     ohne_hebel = basis.model_copy(
@@ -13651,6 +13667,10 @@ def regler(
             raise typer.Exit(2)
         roh[symbol] = frame
     frames = common_range(roh)
+    # **Eine gepflegte Zahl steht hier daneben** (Befund 495), also
+    # gehoert die Reihe dazu - gerechnet wird auf allem, was da ist,
+    # es muss nur dastehen (Befund 370).
+    console.print(f"[dim]Reihe: {_reihenzeile(frames, interval_obj)}[/]")
     echt = load_trials(Path(settings.paths.state) / "trials.json")
     # Der Zaehlerstand ist **nie** eine Stellschraube fuer ein besseres
     # Ergebnis - er darf nur gesetzt werden, um eine alte Tabelle
@@ -14302,12 +14322,44 @@ def _kerzenabdruck(frames) -> dict[str, dict[str, str]]:
 
     Befund 102 haelt fest, dass Kerzen ohne Herkunft Zahlen ohne Bedeutung
     sind. Zwei Stuecke auf verschieden langen Reihen waeren zwei Messungen.
+
+    **Hier standen Zeilennummern** (Befund 495). Gelesen wurde
+    ``rahmen.index`` - und die Rahmen, die wirklich hereinkommen, kommen aus
+    ``common_range``: Sie haben einen Zaehler als Index und die Zeit in
+    ``open_time``. Gemessen trugen **167 von 169** Protokollen:
+
+        {'zeilen': '3301', 'von': '0', 'bis': '3300'}
+
+    Das ist keine Herkunft, sondern dieselbe Zahl dreimal.
+
+    **Warum es niemand gemerkt hat**: Die Wache dazu (Befund 300,
+    ``test_abdruck``) prueft mit einem Rahmen, dessen **Index** die Zeit
+    traegt. Fuer diese Form war der alte Griff richtig - nur erzeugt sie kein
+    Aufrufer. Gemessen wurde die Funktion, nicht der Aufruf; dieselbe Luecke
+    wie in Befund 493.
+
+    Deshalb werden jetzt **beide** Formen bedient: die Spalte ``open_time``,
+    wenn sie da ist, sonst ein Zeitindex. Ein Zaehler als Index ergibt
+    nichts - und nichts ist ehrlicher als eine Zahl, die wie eine Zeit
+    aussieht.
     """
+    import pandas as pd
+
+    def _rand(rahmen) -> tuple[str, str]:
+        if rahmen is None or len(rahmen) == 0:
+            return "", ""
+        if "open_time" in getattr(rahmen, "columns", ()):
+            zeiten = rahmen["open_time"]
+            return str(zeiten.iloc[0]), str(zeiten.iloc[-1])
+        if isinstance(rahmen.index, pd.DatetimeIndex):
+            return str(rahmen.index[0]), str(rahmen.index[-1])
+        return "", ""
+
     return {
         markt: {
             "zeilen": str(len(rahmen)),
-            "von": str(rahmen.index[0]),
-            "bis": str(rahmen.index[-1]),
+            "von": _rand(rahmen)[0],
+            "bis": _rand(rahmen)[1],
         }
         for markt, rahmen in sorted(frames.items())
     }
@@ -14669,6 +14721,10 @@ def vorratsdecke(
     else:
         store = CandleStore(settings.paths.data_store)
         frames = common_range({x: store.read(x, interval_obj) for x in symbole})
+        # **Eine gepflegte Zahl steht hier daneben** (Befund 495), also
+        # gehoert die Reihe dazu - gerechnet wird auf allem, was da ist,
+        # es muss nur dastehen (Befund 370).
+        console.print(f"[dim]Reihe: {_reihenzeile(frames, interval_obj)}[/]")
         configs = _spotconfigs(symbole, settings)
 
         def _skaliert(faktor: float):
