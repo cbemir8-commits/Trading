@@ -102,6 +102,42 @@ Stelle; genau davor warnt dieses Modul in seinem eigenen Kopf.)*
 Das widerspricht Befund 171 nicht, es beziffert ihn. Dort steht *"die
 Vielfalt ist da und sie verliert"* - hier steht, um welchen Faktor.
 
+Dieselbe Aussage in der Einheit, die der Nutzer vergleicht - 489
+----------------------------------------------------------------
+Der Erfuellungsgrad ist dimensionslos und deshalb das richtige Mass fuer den
+Vergleich. Zum **Entscheiden** - wohin die verbleibenden Versuche gehoeren -
+ist er unanschaulich: 0,210 gegen 0,804 sagt nicht, um welchen Faktor eine
+Idee besser werden muesste.
+
+Nachgemessen mit ``cli suchbudget`` (kostet keinen Versuch), auf dem Katalog
+von heute und bei 203 Versuchen:
+
+    Betriebspunkt   bester Kandidat                Trades      hat    noetig   Faktor
+    Tageskerzen     Trend 50 Tage mit Konfluenz       158   0,2682   ≥0,2949   ≥1,10
+    15 Minuten      Trendbeteiligung mit Puffer       635   0,0050   ≥0,1558  ≥31,19
+
+Am gepflegten Kassa-Punkt durchgerechnet - Stichprobe, Guete und Form aus
+derselben Messung (Befund 486) - sind es auf Tageskerzen **1,25**. Auf
+Viertelstunden laesst sich das nicht gepaart rechnen: Die effektive Stichprobe
+dieser Regel ist nicht gemessen, und sie zu schaetzen verbietet
+``research/unabhaengigkeit.py`` ohne Gegenprobe gegen eine bekannte Null.
+
+**Das macht den Schluss nur sicherer.** Die rohe Trade-Zahl ueberschaetzt die
+Unabhaengigkeit, also ist ``≥31,19`` selbst eine **Untergrenze** - die
+wirkliche Entfernung ist groesser. Der Vergleich 1,25 gegen 31 haengt an
+keiner Schaetzung.
+
+Von 37 gemessenen Kandidaten auf Viertelstunden hat **einer** einen positiven
+Sharpe je Trade und damit ueberhaupt einen rechenbaren Faktor; die 29
+naechstbesten tragen ein negatives Vorzeichen, bei ihnen genuegt kein Sharpe.
+Generation 8 ist dabei (``Abfolge-Modell`` -0,227, ``Abfolge ohne Luecke``
+-0,216, ``Abfolge ohne Strukturbruch`` -0,172).
+
+**Neu ist daran nichts.** Befund 450 sagt es schon: *"Keine der 36 Regeln
+haette die Schwelle bei irgendeinem Versuchsstand geraeumt."* Dieser Absatz
+bestaetigt es mit einem zweiten Werkzeug und nennt die Zahl, nach der man beim
+Entscheiden greift.
+
 Kostet keinen Versuch: gerechnet auf veroeffentlichten Zahlen.
 """
 

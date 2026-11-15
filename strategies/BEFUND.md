@@ -43901,3 +43901,66 @@ hoeheren Guete verglichen werden.
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl. Die 1,25 aus
 Befund 486 steht unveraendert - und jetzt steht auch da, warum ihre Guete
 kleiner ist als die Zeile darueber.
+
+## Vierhundertneunundachtzig. Die verbleibenden Versuche gehoeren auf die Tageskerzen
+
+Nach drei Zyklen an den Zahlen des Nutzers (486, 487, 488) die Frage dahinter:
+**Wohin gehoeren seine 27 verbleibenden Versuche?**
+
+Die dritte Zeile der offenen Punkte nennt ``cli backfill --intervall 15
+--von 2020-03-30``, dann ``cli wettbewerb``. Dessen Vorgabe-Generation ist **8**, und die liegt
+auf Viertelstunden (``seeds.VORGESEHEN``). Dieser Weg richtet die Versuche
+also auf die feinen Kerzen.
+
+### Gemessen
+
+``cli suchbudget`` auf dem Katalog von heute, 203 Versuche, beide
+Referenzreihen - der Befehl kostet ausdruecklich **keinen** Versuch:
+
+    Betriebspunkt   bester Kandidat                Trades      hat    noetig   Faktor
+    Tageskerzen     Trend 50 Tage mit Konfluenz       158   0,2682   ≥0,2949   ≥1,10
+    15 Minuten      Trendbeteiligung mit Puffer       635   0,0050   ≥0,1558  ≥31,19
+
+Am gepflegten Kassa-Punkt gepaart gerechnet (Befund 486): auf Tageskerzen
+**1,25**.
+
+Von 37 gemessenen Kandidaten auf Viertelstunden hat **einer** einen positiven
+Sharpe je Trade und damit ueberhaupt einen rechenbaren Faktor. Die 29
+naechstbesten tragen ein negatives Vorzeichen - bei ihnen genuegt kein Sharpe.
+Generation 8 ist dabei: ``Abfolge-Modell`` -0,227, ``Abfolge ohne Luecke``
+-0,216, ``Abfolge ohne Strukturbruch`` -0,172.
+
+### Der Vergleich haengt an keiner Schaetzung
+
+Die effektive Stichprobe der 15m-Regel ist **nicht** gemessen, und sie zu
+schaetzen verbietet ``research/unabhaengigkeit.py`` ohne Gegenprobe gegen eine
+bekannte Null. Gerechnet ist deshalb auf der rohen Trade-Zahl - und die
+ueberschaetzt die Unabhaengigkeit. ``≥31,19`` ist damit selbst eine
+**Untergrenze**: Die wirkliche Entfernung ist groesser, nie kleiner.
+
+Die fehlende Messung macht den Schluss also **sicherer**, nicht unsicherer.
+
+### Neu ist daran nichts, und das gehoert dazugesagt
+
+Befund 450 hat es bereits: *"Keine der 36 Regeln haette die Schwelle bei
+irgendeinem Versuchsstand geraeumt, auch nicht beim ersten Versuch."* Und
+Befund 171 davor: *"die Vielfalt ist da und sie verliert."*
+
+Dies ist eine **Bestaetigung mit einem zweiten Werkzeug**, kein Fund. Was sie
+beitraegt, ist die **Einheit**: Der gepflegte Vergleich steht als
+Erfuellungsgrad - 0,210 gegen 0,804, das 3,9-fache -, und daran liest niemand
+ab, dass eine Idee auf den feinen Kerzen **fuenfundzwanzigmal** besser werden
+muesste als der Bestand auf den groben. Zum Vergleichen ist der
+Erfuellungsgrad das richtige Mass; zum **Entscheiden** greift man nach dem
+Faktor.
+
+### Was nicht behauptet wird
+
+Nicht, dass Viertelstunden schlechter **sind**. Der Kopf von ``erfuellung``
+sagt es sauber: Es ist eine Aussage ueber das, was auf ihnen **gefunden**
+wurde - der beste Fund aus Jahren gegen den besten eines gemessenen Katalogs.
+Wer dort etwas Neues findet, aendert die Lage. Wer die verbleibenden Versuche
+nach heutigem Stand verteilt, hat eine klare Antwort.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Eine Empfehlung steht jetzt auf einer Messung statt auf einer Gewohnheit.

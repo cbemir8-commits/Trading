@@ -7994,6 +7994,52 @@ BEHOBEN: tuple[Richtung, ...] = (
         "darueber",
         488,
     ),
+    # Befund 489: Wohin die verbleibenden Versuche gehoeren - bestaetigt mit
+    # einem zweiten Werkzeug, und in der Einheit, nach der man greift.
+    Richtung(
+        "Die verbleibenden Versuche gehoeren auf die Tageskerzen",
+        "Nach drei Zyklen an den Zahlen des Nutzers (486, 487, 488) die "
+        "Frage dahinter: Wohin gehoeren seine 27 verbleibenden Versuche? Die "
+        "dritte Zeile der offenen Punkte nennt 'cli backfill --intervall 15 "
+        "--von 2020-03-30', dann 'cli wettbewerb' - und dessen "
+        "Vorgabe-Generation ist **8**, die "
+        "auf Viertelstunden liegt ('seeds.VORGESEHEN'). Dieser Weg richtet "
+        "die Versuche also auf die feinen Kerzen. **Gemessen mit 'cli "
+        "suchbudget'** (kostet keinen Versuch), Katalog von heute, 203 "
+        "Versuche, beide Referenzreihen: Auf Tageskerzen kommt 'Trend 50 "
+        "Tage mit Konfluenz' auf 158 Trades zu je 0,2682 gegen eine Latte von "
+        "0,2949 - Faktor >= 1,10, gepaart am Kassa-Punkt 1,25. Auf "
+        "Viertelstunden kommt 'Trendbeteiligung mit Puffer' auf 635 Trades zu "
+        "je **0,0050** gegen 0,1558 - Faktor **>= 31,19**. Von 37 gemessenen "
+        "Kandidaten dort hat **einer** einen positiven Sharpe je Trade und "
+        "damit ueberhaupt einen rechenbaren Faktor; die 29 naechstbesten "
+        "tragen ein negatives Vorzeichen, bei ihnen genuegt kein Sharpe. "
+        "Generation 8 ist dabei ('Abfolge-Modell' -0,227, 'Abfolge ohne "
+        "Luecke' -0,216, 'Abfolge ohne Strukturbruch' -0,172). **Der "
+        "Vergleich haengt an keiner Schaetzung**: Die effektive Stichprobe "
+        "der 15m-Regel ist nicht gemessen, und sie zu schaetzen verbietet "
+        "'research/unabhaengigkeit.py' ohne Gegenprobe gegen eine bekannte "
+        "Null - aber die rohe Trade-Zahl ueberschaetzt die Unabhaengigkeit, "
+        "also ist 31,19 selbst eine **Untergrenze**. Die fehlende Messung "
+        "macht den Schluss sicherer, nicht unsicherer. **Neu ist daran "
+        "nichts, und das gehoert dazugesagt**: Befund 450 hat es bereits - "
+        "'Keine der 36 Regeln haette die Schwelle bei irgendeinem "
+        "Versuchsstand geraeumt, auch nicht beim ersten Versuch' -, und "
+        "Befund 171 davor: 'die Vielfalt ist da und sie verliert'. Dies ist "
+        "eine **Bestaetigung mit einem zweiten Werkzeug**, kein Fund. Was "
+        "sie beitraegt, ist die Einheit: Der gepflegte Vergleich steht als "
+        "Erfuellungsgrad (0,210 gegen 0,804, das 3,9-fache), und daran liest "
+        "niemand ab, dass eine Idee auf den feinen Kerzen "
+        "**fuenfundzwanzigmal** besser werden muesste als der Bestand auf den "
+        "groben. **Was nicht behauptet wird**: dass Viertelstunden "
+        "schlechter *sind*. Es ist eine Aussage ueber das, was auf ihnen "
+        "gefunden wurde - der beste Fund aus Jahren gegen den besten eines "
+        "gemessenen Katalogs; der Kopf von 'erfuellung' sagt das selbst. "
+        "**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl - "
+        "eine Empfehlung steht jetzt auf einer Messung statt auf einer "
+        "Gewohnheit",
+        489,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
