@@ -7764,6 +7764,55 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Annahme liegt, liegt die wahre Streuung eher noch hoeher",
         483,
     ),
+    # Befund 484: Die Wache gegen zu enge Wachen hielt 'ast.walk' fuer eine
+    # Dateisuche - und hat deshalb die eine uebersehen, die wirklich eng war.
+    Richtung(
+        "Die Wache gegen enge Wachen sah den Syntaxbaum fuer ein Dateisystem",
+        "Drei Befunde hintereinander hatten dieselbe Bauart - eine Wache, die "
+        "enger sucht als ihre Behauptung (481, 482, 483). Dafuer gibt es in "
+        "diesem Projekt eine eigene Meta-Wache: 'test_wachenreichweite' "
+        "(Befund 464) haelt die Klasse 'Verbotsregel an genau einer Datei "
+        "ohne Grund' leer. Also die Frage an sie selbst: Warum hat sie die "
+        "Regel aus 482 nicht gemeldet? **Zwei Loecher, gemessen.** Erstens "
+        "stand in 'WEITE_REICHWEITE' der bloze Name 'walk'. 'os.walk' laeuft "
+        "ueber ein Dateisystem, 'ast.walk' ueber den Syntaxbaum **einer** "
+        "Datei - und fast jede quelltextpruefende Wache dieses Projekts parst "
+        "mit 'ast' und laeuft mit 'ast.walk'. Gemessen waren **52 der 71** "
+        "Verbotsregeln nur auf diesem Weg 'weit', und **20** davon lasen "
+        "genau eine Datei, keine mit Grund, keine je gefragt. Zweitens sah "
+        "'_literale_dateien' nur in die Testfunktion: In "
+        "'test_berichtswache' liest der Helfer '_befehle()' die Datei, also "
+        "null literale Dateien und kein Glob - die Regel fiel durch **beide** "
+        "Zweige der Einordnung und wurde nirgends geprueft. **Und genau diese "
+        "Regel war dann zu eng**: Befund 482 hat gefunden, dass "
+        "'research/zwischenstand.py' ebenfalls nach 'reports/' schreibt, an "
+        "allen drei Zusagen vorbei, 168 Protokolle, zwei Befunde darauf. Die "
+        "Wache, die das haette melden sollen, war diese. **Gebaut**: "
+        "'_ist_dateidurchlauf' entscheidet am Empfaenger statt am Namen "
+        "('os'/'Path' weit, 'ast' nicht; ein unbenanntes 'walk' gilt als "
+        "weit, weil die sichere Richtung ist, eine Regel **in** der Aufsicht "
+        "zu behalten), und '_mit_helfern' folgt den Modulhelfern zwei Stufen "
+        "tief. Sechs Gegenproben dafuer, in beide Richtungen. **Die 20 sind "
+        "eingeordnet, nicht abgehakt**: 19 von ihnen reden wirklich von der "
+        "Befehlsschicht ('es gibt kein Flag, das die Familien trennt', 'jeder "
+        "Befehl ist eingeteilt'), und Befehle stehen in 'cli.py' - die stehen "
+        "jetzt in 'NUR_DIE_BEFEHLSDATEI', einer gepflegten Liste mit einer "
+        "Begruendung fuer die Kategorie statt neunzehn Kopien desselben "
+        "Satzes, den 'test_jeder_grund_ist_einer' zu Recht verbietet. Die "
+        "zwanzigste war die aus 482 und hat ihren eigenen Grund bekommen: Sie "
+        "bleibt an 'cli.py', weil sie dort Befehl fuer Befehl genauer prueft, "
+        "und die weite Fassung steht seit 482 in 'test_berichtswege'. "
+        "**Nebenfehler derselben Zeile**: 'weit += 1 if dateien else 0' "
+        "zaehlte nur, was weit war *und* zusaetzlich eine Datei nannte - 17 "
+        "Regeln, die gerade durch ihren Glob weit sind, fielen aus der Zahl. "
+        "Und die Kopfzahlen waren von 464: 'sieben und sieben' gegen heute "
+        "gemessene 19 weite und 27 enge (26 Namenspaare, einer steht zweimal "
+        "in zwei Klassen); sie stehen jetzt als Zusicherung und nicht als "
+        "Prosa. **Gelockert ist nichts**: keine Schwelle, kein Gate, keine "
+        "Zahl - zwanzig Regeln sind aus dem Schatten in die Aufsicht "
+        "gekommen",
+        484,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

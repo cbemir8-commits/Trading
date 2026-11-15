@@ -43528,3 +43528,78 @@ Lockerung wird.
 **Gelockert ist nichts**, und dieser Fund zeigt ohnehin in die andere
 Richtung: Wenn schon diese zu schmale Auswahl ueber der Annahme liegt, liegt
 die wahre Streuung eher noch hoeher.
+
+## Vierhundertvierundachtzig. Die Wache gegen enge Wachen sah den Syntaxbaum fuer ein Dateisystem
+
+Drei Befunde hintereinander hatten dieselbe Bauart: eine Wache, die enger
+sucht als ihre Behauptung (481, 482, 483). Dafuer gibt es in diesem Projekt
+eine eigene Meta-Wache - ``tests/test_wachenreichweite`` aus Befund 464 haelt
+die Klasse *"Verbotsregel an genau einer Datei, ohne Grund"* leer.
+
+Also die Frage an sie selbst: **Warum hat sie die Regel aus 482 nicht
+gemeldet?**
+
+### Zwei Loecher, gemessen
+
+**``walk`` ist zweideutig.** In ``WEITE_REICHWEITE`` stand der bloze Name.
+``os.walk`` laeuft ueber ein Dateisystem, ``ast.walk`` ueber den Syntaxbaum
+**einer** Datei - und fast jede quelltextpruefende Wache dieses Projekts parst
+mit ``ast`` und laeuft mit ``ast.walk``. Gemessen:
+
+    Verbotsregeln, "weit" nur durch ast.walk      52 von 71
+    davon mit genau einer gelesenen Datei         20
+    davon mit Grund                                0
+
+**Der Dateizugriff darf einen Aufruf entfernt liegen.** ``_literale_dateien``
+sah nur in die Testfunktion. In ``test_berichtswache`` liest der Helfer
+``_befehle()`` die Datei - damit null literale Dateien, kein Glob, und die
+Regel fiel durch **beide** Zweige der Einordnung: nicht weit, nicht eng,
+nirgends geprueft.
+
+### Und genau diese Regel war zu eng
+
+Befund 482 hat gefunden, dass ``research/zwischenstand.py`` ebenfalls nach
+``reports/`` schreibt und an allen drei Zusagen vorbeiging - 168 Protokolle,
+und zwei Befunde standen auf zwei davon. Die Wache, die das haette melden
+sollen, war die hier.
+
+### Gebaut
+
+``_ist_dateidurchlauf`` entscheidet am **Empfaenger** statt am Namen: ``os``
+und ``Path`` sind weit, ``ast`` ist es nicht. Ein unbenanntes ``walk(...)``
+gilt als weit - die sichere Richtung ist, eine Regel **in** der Aufsicht zu
+behalten, denn genau ihr Verlust war dieser Befund. ``_mit_helfern`` folgt den
+Modulhelfern zwei Stufen tief. Sechs Gegenproben, in beide Richtungen.
+
+### Die zwanzig sind eingeordnet, nicht abgehakt
+
+19 von ihnen reden wirklich von der **Befehlsschicht** - *"es gibt kein Flag,
+das die Familien trennt"*, *"jeder Befehl ist eingeteilt"*, *"diese Stelle
+rechnet ohne den zensierten Punkt"* -, und Befehle stehen in ``cli.py``. Sie
+stehen jetzt in ``NUR_DIE_BEFEHLSDATEI``: eine gepflegte Liste mit einer
+Begruendung fuer die **Kategorie**, nicht neunzehn Kopien desselben Satzes -
+genau den verbietet ``test_jeder_grund_ist_einer`` zu Recht. Gepflegt und
+nicht abgeleitet, damit eine neue Regel auffaellt und jemand prueft, ob ihre
+Aussage wirklich eine ueber Befehle ist.
+
+Bei einer der zwanzig war sie es nicht. Die aus 482 hat ihren eigenen Grund
+bekommen: Sie bleibt an ``cli.py``, weil sie dort Befehl fuer Befehl genauer
+prueft, und die weite Fassung derselben Regel steht seit 482 in
+``test_berichtswege``.
+
+### Zwei Nebenfehler derselben Zeile
+
+``weit += 1 if dateien else 0`` zaehlte nur, was weit war **und** zusaetzlich
+eine Datei nannte - 17 Regeln, die gerade durch ihren Glob weit sind, fielen
+aus der Zahl.
+
+Und die Zahlen im Kopf waren von 464: *"sieben und sieben"* gegen heute
+gemessene **19 weite und 27 enge** (26 Namenspaare; einer steht zweimal, in
+zwei Klassen derselben Datei). Sie stehen jetzt als Zusicherung und nicht als
+Prosa.
+
+Die Lehre ist die dieser Datei, auf sie selbst angewandt: Ein Erkenner, der am
+Namen haengt statt an der Sache, verliert genau die Faelle, um die es geht.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Zwanzig Regeln sind aus dem Schatten in die Aufsicht gekommen.
