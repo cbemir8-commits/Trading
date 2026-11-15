@@ -7904,6 +7904,52 @@ BEHOBEN: tuple[Richtung, ...] = (
         "sie wird nur richtig genannt",
         486,
     ),
+    # Befund 487: Die Hebelzerlegung erklaerte ein Gate auf einer anderen
+    # Stichprobe, als das Gate geurteilt hat - an zwei Stellen.
+    Richtung(
+        "Die Erklaerung stand auf einer anderen Stichprobe als das Urteil",
+        "Die Spur aus 486 weitergegangen: Wo sonst stehen Zaehler und Nenner "
+        "aus zwei Messungen? **Zwei Negativbefunde zuerst.** Die Tabelle von "
+        "'cli suchbudget' auf die effektiven Stichproben aller Kandidaten zu "
+        "heben, verbietet 'research/unabhaengigkeit.py' selbst: Ohne "
+        "Gegenprobe gegen eine bekannte Null ist eine Kuerzung 'keine "
+        "Strenge, sondern eine Muenze' - bei dreissig Bloecken faellt der "
+        "Schaetzer auch ohne jede Abhaengigkeit auf 78 von 154. Und der "
+        "Auftrag an die Research-KI ist bereits richtig: 'aus_messungen' "
+        "nimmt die effektive Stichprobe, sein einziger Aufrufer uebergibt "
+        "'SPOTPUNKT.effektiv' und '.guete' - erledigt in Befund 139/292. "
+        "**Der Fund lag an der dritten Stelle.** 'cli adaptiv' rechnet die "
+        "Gates aus und schreibt darunter 'WORAN DAS HAERTESTE GATE HAENGT' - "
+        "die Zerlegung in vier Hebel. Das Gate urteilt mit "
+        "'stichprobe_wie_im_gate(...).effektiv'; der Kandidat fuer die "
+        "Zerlegung kam aus 'Kandidat.aus_trades(...)', das 'effektiv' nicht "
+        "fuellt, also aus der **rohen** Trade-Zahl. Dasselbe in 'cli "
+        "instrument'. 'cli stand' baute ihn von Hand mit der gemessenen "
+        "Stichprobe - die Lehre war da, aber als **Stelle** und nicht als "
+        "Regel (Befund 217). **Gemessen am Bestand** (158 roh, 115 effektiv, "
+        "Guete 0,2708): Qualitaet je Trade +8,4 % gegen +24,6 %, "
+        "unabhaengige Trades +20,2 % gegen +65,2 %, und die Woelbung gilt "
+        "roh als **offener** Weg, auf der Stichprobe des Gates ist sie "
+        "geschlossen. Der Satz, den der Nutzer liest, sagte deshalb '3 von 4 "
+        "Wegen sind offen ... am wenigsten verlangt Qualitaet je Trade: +8%' "
+        "statt '2 von 4 ... +25%'. Das ist keine Ungenauigkeit: Die Wege "
+        "sind die Entscheidungsgrundlage, ob Weitersuchen an dieser Regel "
+        "ueberhaupt Sinn hat. **Gebaut**: 'cli._kandidat_wie_im_gate' macht "
+        "die Rechnung einmal, und alle drei Stellen fragen sie - auch die, "
+        "die es schon richtig machte, denn zwei Fassungen einer Rechnung "
+        "laufen auseinander (168). Dazu die Regel **ohne Ausnahmeliste**: Wer "
+        "ein 'Budget' baut, nennt die Stichprobe, auf der er urteilt - durch "
+        "den Helfer, durch 'SPOTPUNKT.effektiv' oder durch einen "
+        "uebergebenen 'betriebspunkt'; gemessen erfuellen das fuenf von fuenf "
+        "Stellen, und eine gepflegte Ausnahmeliste waere die Bauart aus 484 "
+        "und 485. **Mein eigener Melder fand erst das falsche Ding**: Die "
+        "Zeichenkette 'effektiv=stichprobe.effektiv' steht auch in 'cli "
+        "teststaerke', dort fuer ein anderes Objekt - jetzt am Syntaxbaum "
+        "geprueft (478). **Gelockert ist nichts**, und der Fund zeigt in die "
+        "strenge Richtung: Die rohe Stichprobe ist nie kleiner als die "
+        "effektive, die Lage las sich also immer besser als sie ist",
+        487,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

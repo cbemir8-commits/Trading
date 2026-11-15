@@ -43747,3 +43747,83 @@ Eine eigene Zusicherung haelt das fest, damit aus einem Fund keine Lockerung
 wird.
 
 **Gelockert ist nichts.** Die Latte wird nur richtig genannt.
+
+## Vierhundertsiebenundachtzig. Die Erklaerung stand auf einer anderen Stichprobe als das Urteil
+
+Die Spur aus Befund 486 weitergegangen: Wo sonst stehen Zaehler und Nenner aus
+zwei Messungen?
+
+### Zwei Negativbefunde zuerst
+
+**Die Tabelle von ``cli suchbudget`` auf effektive Stichproben zu heben,
+verbietet das Projekt selbst.** ``research/unabhaengigkeit.py`` hat die Regel
+gemessen hergeleitet: Ohne Gegenprobe gegen eine bekannte Null ist eine
+Kuerzung *"keine Strenge, sondern eine Muenze"* - bei dreissig Bloecken faellt
+der Schaetzer auch ohne jede Abhaengigkeit auf 78 von 154. Ein uniformes
+Verhaeltnis anzuwenden waere genau die Schaetzung, die dort verworfen wurde.
+
+**Der Auftrag an die Research-KI ist bereits richtig.** ``aus_messungen``
+nimmt die effektive Stichprobe - der Docstring sagt es ausdruecklich -, und
+sein einziger Aufrufer uebergibt ``SPOTPUNKT.effektiv`` und ``.guete``. Das
+hat Befund 139/292 erledigt.
+
+### Der Fund lag an der dritten Stelle
+
+``cli adaptiv`` rechnet die Gates aus und schreibt darunter **WORAN DAS
+HAERTESTE GATE HAENGT** - die Zerlegung in vier Hebel. Beides stand auf
+verschiedenen Zahlen:
+
+* ``research/gates.py`` urteilt mit ``stichprobe_wie_im_gate(...).effektiv``.
+* Der Kandidat kam aus ``Kandidat.aus_trades(...)``, das ``effektiv`` nicht
+  fuellt - ``stichprobe`` liefert dann die **rohe** Trade-Zahl.
+
+Dasselbe in ``cli instrument``. ``cli stand`` baute den Kandidaten von Hand
+mit der gemessenen Stichprobe: Die Lehre war da, aber als **Stelle** und nicht
+als Regel (Befund 217).
+
+### Was das ausgemacht hat
+
+Am Bestand - 158 rohe Trades, 115 effektiv, Guete 0,2708:
+
+    Hebel                  roh (158)        effektiv (115)
+    Qualitaet je Trade     +8,4 %           +24,6 %
+    unabhaengige Trades    +20,2 %          +65,2 %
+    Schiefe                unmoeglich       unmoeglich
+    Woelbung               **moeglich**     **unmoeglich**
+
+Und damit der Satz, den der Nutzer liest:
+
+    roh        **3 von 4 Wegen sind offen** ... Am wenigsten verlangt
+               Qualitaet je Trade: +8%.
+    effektiv   **2 von 4 Wegen sind offen** ... Am wenigsten verlangt
+               Qualitaet je Trade: +25%.
+
+Der Befehl nannte einen Weg offen, den das Gate nicht offen hat, und den
+noetigen Zuwachs um das Dreifache zu klein. Das ist keine Ungenauigkeit: **Die
+Wege sind die Entscheidungsgrundlage** - sie sagen, ob Weitersuchen an dieser
+Regel ueberhaupt Sinn hat.
+
+### Gebaut
+
+``cli._kandidat_wie_im_gate`` macht die Rechnung einmal, und alle drei Stellen
+fragen sie - auch die, die es schon richtig machte. Zwei Fassungen einer
+Rechnung sind zwei Gelegenheiten, dass sie auseinanderlaufen (Befund 168).
+
+Dazu die Regel **ohne Ausnahmeliste**: Wer ein ``Budget`` baut, nennt die
+Stichprobe, auf der er urteilt - durch den Helfer, durch
+``SPOTPUNKT.effektiv`` oder durch einen uebergebenen ``betriebspunkt``.
+Gemessen erfuellen das fuenf von fuenf Stellen. Eine gepflegte Ausnahmeliste
+waere genau die Bauart, die Befund 484 und 485 gefunden haben.
+
+### Mein eigener Melder fand erst das falsche Ding
+
+Die Zusicherung "niemand baut den Kandidaten mehr von Hand" suchte die
+Zeichenkette ``effektiv=stichprobe.effektiv``. Die steht auch in ``cli
+teststaerke``, dort aber fuer ein **anderes** Objekt. Jetzt wird am
+Syntaxbaum geprueft: ein ``Kandidat(...)``-Aufruf mit ``effektiv``-Argument
+ausserhalb des Helfers. Ein Melder, der das falsche Ding findet, ist schlimmer
+als keiner (Befund 478).
+
+**Gelockert ist nichts**, und der Fund zeigt in die strenge Richtung: Die rohe
+Stichprobe ist nie kleiner als die effektive (Befund 139) - die Lage las sich
+also immer besser, als sie ist.

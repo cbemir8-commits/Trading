@@ -3528,6 +3528,54 @@ def _spotconfigs(symbole, settings):
     return configs
 
 
+def _kandidat_wie_im_gate(name: str, bericht, *, beine_von=None):
+    """Ein Kandidat mit der Stichprobe, auf der das Gate urteilt - 487.
+
+    ``Kandidat.aus_trades`` fuellt ``effektiv`` nicht, und ``stichprobe``
+    liefert dann die **rohe** Trade-Zahl. Jede Zahl, die daraus faellt -
+    ``noetig``, ``faktor``, die Hebelzerlegung -, steht damit auf einer
+    anderen Stichprobe als das Urteil, das sie erklaeren soll. Genau diesen
+    Fehler haben Befund 135 und 139 benannt, und ``research/gates.py`` rechnet
+    seit dann mit ``stichprobe_wie_im_gate(...).effektiv``.
+
+    **Behoben war er an einer Stelle, nicht als Regel** (Befund 487). ``cli
+    stand`` baute den Kandidaten von Hand mit der gemessenen Stichprobe;
+    ``cli adaptiv`` und ``cli instrument`` nahmen weiter die rohe. Dieselbe
+    Rechnung an drei Stellen laeuft auseinander (Befund 168), also steht sie
+    jetzt einmal hier.
+
+    ``beine_von`` ist der Bericht, aus dem die Beine kommen, wenn die Trades
+    aus einem gefilterten stammen - in ``cli stand`` sind das die Trades ohne
+    die zensierten Randtrades, die Beine aber die des ganzen Laufs.
+
+    Gibt ``(kandidat, stichprobe)`` zurueck; ``kandidat`` ist ``None``, wenn
+    sich aus den Trades keiner bauen laesst.
+    """
+    from research.gates import stichprobe_wie_im_gate
+    from research.suchbudget import Kandidat
+
+    trades = list(bericht.all_trades)
+    stichprobe = stichprobe_wie_im_gate(
+        trades,
+        beine=getattr(beine_von if beine_von is not None else bericht, "beine", None),
+        bloecke=[[float(t.net_pnl) for t in w.trades] for w in bericht.windows],
+    )
+    roh = Kandidat.aus_trades(name, trades)
+    if roh is None:
+        return None, stichprobe
+    return (
+        Kandidat(
+            name=roh.name,
+            trades=roh.trades,
+            sharpe_je_trade=roh.sharpe_je_trade,
+            schiefe=roh.schiefe,
+            woelbung=roh.woelbung,
+            effektiv=stichprobe.effektiv,
+        ),
+        stichprobe,
+    )
+
+
 def _spotguete(frames, symbole, genome, settings, *, fertige: bool) -> float | None:
     """Die Guete desselben Kandidaten unter Kassa-Bedingungen.
 
@@ -6915,7 +6963,7 @@ def adaptiv(
     from research.admission import load_trials
     from research.gates import evaluate_gates
     from research.seeds import spitzenkandidat
-    from research.suchbudget import Budget, Kandidat
+    from research.suchbudget import Budget
     from strategy.compiler import compile_genome
 
     _configure_logging(verbose)
@@ -6998,7 +7046,10 @@ def adaptiv(
     bestanden = sum(1 for r in gates.results if r.passed)
     console.print(f"\n  {bestanden} von {len(gates.results)} bestanden")
 
-    eintrag = Kandidat.aus_trades(genome.name, bericht.all_trades)
+    # **Befund 487.** Hier stand 'Kandidat.aus_trades(...)' ohne effektive
+    # Stichprobe - die Hebelzerlegung darunter erklaerte damit ein Gate, das
+    # unmittelbar darueber auf der effektiven geurteilt hat.
+    eintrag, _stichprobe = _kandidat_wie_im_gate(genome.name, bericht)
     if eintrag is not None:
         budget = Budget(versuche=trials, kandidaten=[eintrag])
         console.print("\nWORAN DAS HAERTESTE GATE HAENGT")
@@ -8977,7 +9028,9 @@ def instrument(
                 trials_so_far=trials, frames=frames, configs=configs,
             )
             dsr = next(r for r in ergebnisse.results if r.name == "Deflated Sharpe")
-            eintrag = Kandidat.aus_trades("Spot", bericht.all_trades)
+            # Befund 487: mit der Stichprobe, auf der 'ergebnisse' geurteilt
+            # hat - sonst steht die Latte darunter auf der rohen Zahl.
+            eintrag, _stichprobe = _kandidat_wie_im_gate("Spot", bericht)
             stufe = Gebuehrenstufe(
                 faktor=faktor, dsr=float(dsr.value),
                 guete=eintrag.sharpe_je_trade if eintrag else 0.0,
@@ -12481,7 +12534,7 @@ def stand(
     from research.reihenfolge import Lage as Reihenfolgelage
     from research.seeds import spitzenkandidat
     from research.stand import Lage
-    from research.suchbudget import Budget, Kandidat
+    from research.suchbudget import Budget
     from research.versuche import TROCKENLAUF, trockenlauf
     from strategy.compiler import compile_genome
 
@@ -12529,7 +12582,6 @@ def stand(
     # leer, und die Latte fiel auf die rohe Trade-Zahl zurueck: 0,2984 statt
     # der wirklichen. Genau der Fehler aus Befund 139, an der Stelle, die ein
     # Leser zuerst aufschlaegt (Befund 148).
-    from research.gates import stichprobe_wie_im_gate
     from research.randschnitt import ohne_zensierte, randtrades
 
     # **Nur fertig gehandelte Trades** (Befund 152) - genau wie im Gate. Ein
@@ -12538,20 +12590,11 @@ def stand(
     # ``kombiniert`` (Rendite, Rueckgang) bleibt er drin, dort gehoert er hin.
     zensiert = randtrades(bericht.all_trades)
     gehandelt = ohne_zensierte(bericht)
-    stichprobe = stichprobe_wie_im_gate(
-        gehandelt.all_trades,
-        beine=getattr(bericht, "beine", None),
-        bloecke=[[float(t.net_pnl) for t in w.trades] for w in gehandelt.windows],
-    )
-    roh = Kandidat.aus_trades(genome.name, gehandelt.all_trades)
-    eintrag = (
-        None if roh is None
-        else Kandidat(
-            name=roh.name, trades=roh.trades,
-            sharpe_je_trade=roh.sharpe_je_trade,
-            schiefe=roh.schiefe, woelbung=roh.woelbung,
-            effektiv=stichprobe.effektiv,
-        )
+    # Befund 487: dieselbe Rechnung wie in 'adaptiv' und 'instrument', jetzt
+    # aus einer Hand. Die Beine kommen aus dem **ganzen** Lauf, die Trades
+    # aus dem ohne die zensierten Randtrades.
+    eintrag, stichprobe = _kandidat_wie_im_gate(
+        genome.name, gehandelt, beine_von=bericht
     )
     qualitaet = eintrag.sharpe_je_trade if eintrag else 0.0
     budget = Budget(versuche=trials, kandidaten=[eintrag] if eintrag else [])
