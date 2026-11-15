@@ -7813,6 +7813,54 @@ BEHOBEN: tuple[Richtung, ...] = (
         "gekommen",
         484,
     ),
+    # Befund 485: Die Wache gegen festgeschriebene Maengel entschied ueber
+    # eine gepflegte Namensliste, was ueberhaupt ein Bauteil ist.
+    Richtung(
+        "Vier Mal dieselbe Bauart: eine Wache an einer gepflegten Namensliste",
+        "Nach 484 dieselbe Frage an die naechste Meta-Wache. "
+        "'test_zusicherungen' (Befund 245) verlangt fuer jede Zusicherung, "
+        "dass ein Bauteil **fehlt**, einen Grund - weil in Befund 242 ein "
+        "Mangel als Zusicherung festgeschrieben worden war. Ihr Kopf sagt, "
+        "sie finde 'ueber die Namen, die im Projekt fuer eine Wache stehen', "
+        "und genau das war das Problem: 'WACHEN' ist eine **gepflegte** "
+        "Liste und entschied damit, was als Bauteil gilt. **Zwei Luecken, "
+        "gemessen.** Erstens war unsichtbar, was nicht auf der Liste stand: "
+        "Fuenf Zusicherungen pruefen am Quelltext die Abwesenheit eines "
+        "wirklich definierten Bauteils - 'resample' in 'CandleStore.read', "
+        "'alle_geschnitten' in 'jahresbild', 'lade_champion' in "
+        "'vorratsdecke', '_ohne_hebel' vor dem Kassa-Punkt und 'range(' in "
+        "'_nach_wort' -, und keine war je gefragt worden. Zweitens fiel die "
+        "Schreibweise mit Klammer durch: Gesucht wurde \"'save_trials'\" "
+        "woertlich, und \"'save_trials('\" - die natuerliche Form fuer 'dieser "
+        "Aufruf kommt nicht vor' - traf nicht; zwei weitere Zusicherungen "
+        "standen so daneben, zu **genau** dem Namen, fuer den die Liste "
+        "gebaut wurde. Die Grundgesamtheit stieg damit von 4 auf 13. "
+        "**Gefunden wurde kein festgeschriebener Mangel**: Alle neun neuen "
+        "Faelle halten eine Entscheidung, jeder mit Grund eingetragen - und "
+        "das ist das Ergebnis, denn gefragt worden war keine von ihnen. Eine "
+        "davon schuetzt dieselbe Sache wie Befund 474: 'CandleStore.read' "
+        "kennt keinen Rueckfall auf feinere Kerzen, sonst entstuende eine "
+        "fehlende Tagesreihe stillschweigend aus den Viertelstundenkerzen. "
+        "**Gebaut**: Die Grundgesamtheit wird abgeleitet - eine "
+        "Zeichenkette, die das Projekt als Funktion oder Klasse wirklich "
+        "definiert, geprueft an **Quelltext**. Der Quelltext-Filter ist das "
+        "Entscheidende: Ohne ihn findet die Suche 48 Treffer, und die "
+        "meisten sind Zusicherungen ueber Ausgabetext ('mindestens' kommt in "
+        "einem Satz nicht vor), bei denen der Name nur zufaellig mit einem "
+        "Bauteil kollidiert - ein Melder, der das falsche Ding findet, ist "
+        "schlimmer als keiner (478). Die Quelltext-Kette wird transitiv "
+        "verfolgt, weil die staerkste Bauart aus dem Quelltext erst einen "
+        "Baum und daraus die Menge der **Aufrufnamen** baut; ein Filter, der "
+        "eine Stufe sieht, verliert gerade sie. Sechs Gegenproben fuer den "
+        "Melder, darunter die gegen das Rauschen. **Und die Wache aus 484 "
+        "hat sofort gearbeitet**: Mein neuer Melder leitet mit 'rglob' ab "
+        "und sichert dabei eine Abwesenheit zu, ist also selbst eine neue "
+        "weite Verbotsregel - die gepinnte Zahl dort stieg von 19 auf 20 und "
+        "hat es gemeldet. **Gelockert ist nichts**: keine Schwelle, kein "
+        "Gate, keine Zahl - neun Zusicherungen sind zum ersten Mal gefragt "
+        "worden",
+        485,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

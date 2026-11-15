@@ -79,7 +79,7 @@ zwei davon. Die Wache, die das haette melden sollen, war die hier.
 
 Nach dem Umbau gemessen:
 
-    Verbotsregeln mit weiter Reichweite                               19
+    Verbotsregeln mit weiter Reichweite                               20
     Verbotsregeln an genau einer Datei                                27
       verschiedene Namenspaare darunter                               26
       begruendet in ABSICHTLICH_ENG (7 Eintraege, 8 Vorkommen)         8
@@ -522,7 +522,12 @@ class TestDieMessungSelbst:
         eng, weit = _verbotsregeln()
         paare = {(d, f) for d, f, _ in eng}
 
-        assert weit == 19, weit
+        # **20 seit Befund 485**, und die Zahl ist ihr eigener Beleg: Der
+        # Melder jenes Befundes leitet seine Grundgesamtheit mit 'rglob' ab
+        # und sichert dabei die Abwesenheit eines Namens zu - also eine neue
+        # weite Verbotsregel. Dass diese Zusicherung sie gemeldet hat, ist
+        # genau der Dienst, fuer den sie in 484 gebaut wurde.
+        assert weit == 20, weit
         assert len(eng) == 27, len(eng)
         assert len(paare) == 26, len(paare)
         assert len(ABSICHTLICH_ENG) == 7

@@ -43603,3 +43603,73 @@ Namen haengt statt an der Sache, verliert genau die Faelle, um die es geht.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Zwanzig Regeln sind aus dem Schatten in die Aufsicht gekommen.
+
+## Vierhundertfuenfundachtzig. Vier Mal dieselbe Bauart: eine Wache an einer gepflegten Namensliste
+
+Nach Befund 484 dieselbe Frage an die naechste Meta-Wache.
+``tests/test_zusicherungen`` (Befund 245) verlangt fuer jede Zusicherung, dass
+ein Bauteil **fehlt**, einen Grund - weil in Befund 242 ein Mangel als
+Zusicherung festgeschrieben worden war. Ihr Kopf sagt, sie finde *"ueber die
+Namen, die im Projekt fuer eine Wache stehen"*.
+
+Genau das war das Problem: ``WACHEN`` ist eine **gepflegte** Liste und
+entschied damit, was ueberhaupt als Bauteil gilt. Dieselbe Bauart wie 463, 479
+und 484 - vier Mal in dieser Sitzung.
+
+### Zwei Luecken, gemessen
+
+**Was nicht auf der Liste stand, war unsichtbar.** Fuenf Zusicherungen pruefen
+am Quelltext die Abwesenheit eines wirklich definierten Bauteils:
+
+    resample           in CandleStore.read
+    alle_geschnitten   in cli jahresbild
+    lade_champion      in cli vorratsdecke
+    _ohne_hebel        vor dem Kassa-Punkt in cli stand
+    range(             in nachmessung._nach_wort
+
+Keine davon war je gefragt worden.
+
+**Die Schreibweise mit Klammer fiel durch.** Gesucht wurde ``'save_trials'``
+woertlich; ``'save_trials('`` - die natuerliche Form fuer *"dieser Aufruf
+kommt nicht vor"* - traf nicht. Zwei weitere Zusicherungen standen so daneben,
+und zwar zu **genau** dem Namen, fuer den die Liste gebaut wurde.
+
+Die Grundgesamtheit stieg damit von 4 auf 13.
+
+### Gefunden wurde kein festgeschriebener Mangel
+
+Alle neun neuen Faelle halten eine **Entscheidung**, jeder mit Grund
+eingetragen. Das ist das Ergebnis, und es ist eines: Gefragt worden war keine
+von ihnen.
+
+Eine davon schuetzt dieselbe Sache wie Befund 474: ``CandleStore.read`` kennt
+keinen Rueckfall auf feinere Kerzen, sonst entstuende eine fehlende Tagesreihe
+stillschweigend aus den Viertelstundenkerzen.
+
+### Gebaut
+
+Die Grundgesamtheit wird **abgeleitet**: eine Zeichenkette, die das Projekt als
+Funktion oder Klasse wirklich definiert, geprueft an **Quelltext**.
+
+Der Quelltext-Filter ist dabei das Entscheidende. Ohne ihn findet die Suche
+**48** Treffer, und die meisten sind Zusicherungen ueber *Ausgabetext* -
+``assert "mindestens" not in satz`` -, bei denen der Name nur zufaellig mit
+einem Bauteil kollidiert. Ein Melder, der das falsche Ding findet, ist
+schlimmer als keiner (Befund 478).
+
+Die Quelltext-Kette wird **transitiv** verfolgt, weil die staerkste Bauart aus
+dem Quelltext erst einen Baum und daraus die Menge der **Aufrufnamen** baut -
+ein Textfund kann ein Kommentar sein, ein Aufrufname nicht. Ein Filter, der
+nur eine Stufe sieht, verliert gerade sie. Sechs Gegenproben fuer den Melder,
+darunter die gegen das Rauschen.
+
+### Und die Wache aus 484 hat sofort gearbeitet
+
+Mein neuer Melder leitet seine Grundgesamtheit mit ``rglob`` ab und sichert
+dabei die Abwesenheit eines Namens zu - er ist also selbst eine neue **weite**
+Verbotsregel. Die in 484 gepinnte Zahl stieg von 19 auf 20 und hat es
+gemeldet. Das ist genau der Dienst, fuer den sie einen Zyklus vorher gebaut
+wurde.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Neun Zusicherungen sind zum ersten Mal gefragt worden.
