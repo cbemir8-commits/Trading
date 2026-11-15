@@ -5074,7 +5074,7 @@ def abstand(
     # also 21 statt 146 verbleibende Versuche. Die zu grosszuegige Zahl stand
     # an der Stelle, an der eine unwiderrufliche Entscheidung haengt.
     frames, _reihe = nach_intervall(frames, interval_obj.label)
-    console.print(f"[dim]Reihe: {reihenzeile(frames)}[/dim]")
+    console.print(f"[dim]Reihe: {reihenzeile(frames, interval_obj.label)}[/dim]")
     genome = spitzenkandidat()
     if spot:
         # Spot kennt keinen Hebel - und die beiden offenen Gates stehen an
@@ -11350,7 +11350,7 @@ def rennen(
     if kandidat is None or kandidat.sharpe_je_trade <= 0:
         console.print("[red]Keine auswertbaren Trades.[/]")
         raise typer.Exit(2)
-    console.print(f"[dim]Reihe: {reihenzeile(frames)}[/]")
+    console.print(f"[dim]Reihe: {reihenzeile(frames, interval_obj.label)}[/]")
 
     # Hier stand die Einteilung des Gates **von vor Befund 135** - ohne
     # Quartalsbloecke, also 152 statt 112 Beobachtungen. Die Rechnung lief
@@ -12502,7 +12502,7 @@ def _kerzenbestand(store) -> str:
     return "; ".join(gefunden) + _reihenvermerk(store)
 
 
-def _reihenzeile(frames) -> str:
+def _reihenzeile(frames, intervall: str) -> str:
     """Die Reihe, auf der die Zahlen des Berichts stehen (Befund 370).
 
     Durchreicher auf ``datenstand.reihenzeile``, damit der Satz dort steht,
@@ -12510,7 +12510,7 @@ def _reihenzeile(frames) -> str:
     """
     from research.datenstand import reihenzeile
 
-    return reihenzeile(frames)
+    return reihenzeile(frames, intervall)
 
 
 def _reihenvermerk(store) -> str:
@@ -12686,7 +12686,7 @@ def stand(
         # laeuft bis heute, die gepflegten Zahlen stehen auf der Reihe bis
         # 'datenstand.SERIENENDE' - ohne diese Angabe stehen hier 157 Trades
         # neben den 156 aus 'referenz.py' und niemand weiss, warum.
-        reihe=_reihenzeile(frames),
+        reihe=_reihenzeile(frames, interval_obj.label),
         zweitpunkt=zweitpunkt,
         # **Die zweite Bedingung der Aussicht** (Befund 398). Gemessen im
         # Spot-Lauf oben, nicht gepflegt - die Schranke rechnet der Bericht.
@@ -12823,11 +12823,11 @@ def stand(
     # Zwei Reihen in einer Tafel sind sonst genau das, wovor Befund 387 warnt.
     # Deshalb steht ueber jeder Spalte, worauf sie steht.
     spoturteil = {r.name: r for r in spotgates or ()}
-    console.print(f"  [dim]Perpetual auf dem Speicher: {reihenzeile(frames)}[/]")
+    console.print(f"  [dim]Perpetual auf dem Speicher: {reihenzeile(frames, interval_obj.label)}[/]")
     if spoturteil:
         console.print(
             f"  [dim]Spot auf der Zulassungsreihe: "
-            f"{reihenzeile(spotrahmen)}[/]\n"
+            f"{reihenzeile(spotrahmen, interval_obj.label)}[/]\n"
         )
     for r in gates.results:
         zeichen = "+" if r.passed else "-"
@@ -16222,7 +16222,7 @@ def aufteilung(
     # eine Zahl neben den Abstand aus 'referenz.py', also gehoert er auf
     # dieselbe Reihe.
     geschnitten, _reihe = nach_intervall(roh, interval_obj.label)
-    console.print(f"[dim]Reihe: {reihenzeile(geschnitten)}[/]")
+    console.print(f"[dim]Reihe: {reihenzeile(geschnitten, interval_obj.label)}[/]")
     genome = _ohne_hebel(spitzenkandidat())
     configs = _spotconfigs(symbole, settings)
     if ohne_limits:

@@ -516,6 +516,14 @@ ENTSCHEIDUNGSBEGRIFFE: dict[str, tuple[str, ...]] = {
 }
 
 BEGRIFFE: dict[str, tuple[str, ...]] = {
+    # Befund 492: Wer diese Richtung weitermisst, schreibt ueber die Feinzeile,
+    # den Pin der Feinreihe und den Kopf, in den sie nicht mehr passt.
+    "Die Feinzeile ist gebaut, geprueft und wird nie gedruckt": (
+        "feinzeile",
+        "FEINBALKEN",
+        "Bestandszeile",
+        "elf Zeilen",
+    ),
     # Befund 450: Wer diese Richtung weitermisst, schreibt ueber Kippfaktor,
     # Slippage und Reibung - nicht ueber "haengt die Kopplung".
     "Haengt die Kopplung auf Viertelstunden an der Reibung?": (

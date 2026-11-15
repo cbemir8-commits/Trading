@@ -365,7 +365,7 @@ class TestDerKopfSagtAufWelcherReiheDieZahlenStehen:
     def test_eine_laengere_reihe_wird_benannt(self) -> None:
         from research.datenstand import reihenzeile
 
-        zeile = reihenzeile({"a": self._rahmen("2017-08-16", "2026-10-18")})
+        zeile = reihenzeile({"a": self._rahmen("2017-08-16", "2026-10-18")}, "D")
 
         assert "laenger als die Zulassungsreihe" in zeile
         assert "2026-08-29" in zeile
@@ -374,7 +374,7 @@ class TestDerKopfSagtAufWelcherReiheDieZahlenStehen:
     def test_genau_die_reihe_auch(self) -> None:
         from research.datenstand import reihenzeile
 
-        zeile = reihenzeile({"a": self._rahmen("2017-08-16", "2026-08-29")})
+        zeile = reihenzeile({"a": self._rahmen("2017-08-16", "2026-08-29")}, "D")
 
         assert zeile.endswith("- die Zulassungsreihe")
         assert "3300 Balken" not in zeile, "Balken sind nicht Tage"
@@ -382,7 +382,7 @@ class TestDerKopfSagtAufWelcherReiheDieZahlenStehen:
     def test_eine_kuerzere_reihe_auch(self) -> None:
         from research.datenstand import reihenzeile
 
-        zeile = reihenzeile({"a": self._rahmen("2017-08-16", "2026-06-30")})
+        zeile = reihenzeile({"a": self._rahmen("2017-08-16", "2026-06-30")}, "D")
 
         assert "kuerzer als die Zulassungsreihe" in zeile
 
@@ -394,7 +394,8 @@ class TestDerKopfSagtAufWelcherReiheDieZahlenStehen:
             {
                 "btc": self._rahmen("2012-01-01", "2026-08-29"),
                 "eth": self._rahmen("2017-08-16", "2026-08-29"),
-            }
+            },
+            "D",
         )
 
         assert zeile.startswith("2017-08-16 bis 2026-08-29")
@@ -402,7 +403,7 @@ class TestDerKopfSagtAufWelcherReiheDieZahlenStehen:
     def test_ohne_kerzen_sagt_sie_das(self) -> None:
         from research.datenstand import reihenzeile
 
-        assert reihenzeile({}) == "keine Kerzen"
+        assert reihenzeile({}, "D") == "keine Kerzen"
 
     def test_gemessen_wird_die_spanne_und_nicht_der_speicher(self) -> None:
         """**Der Fehler aus dem ersten Anlauf.** Hier lief ``fehlt`` auf
@@ -418,7 +419,8 @@ class TestDerKopfSagtAufWelcherReiheDieZahlenStehen:
             {
                 "BTCUSD_BITSTAMP": self._rahmen("2017-08-16", "2026-08-29"),
                 "ETHUSD_BITSTAMP": self._rahmen("2017-08-16", "2026-08-29"),
-            }
+            },
+            "D",
         )
 
         assert "ohne die Zulassungsreihe" not in zeile
@@ -459,4 +461,4 @@ class TestDerKopfSagtAufWelcherReiheDieZahlenStehen:
         else:
             raise AssertionError("'stand' steht nicht mehr in cli.py")
 
-        assert "reihe=_reihenzeile(frames)" in quelle
+        assert "reihe=_reihenzeile(" in quelle

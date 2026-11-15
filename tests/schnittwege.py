@@ -39,6 +39,16 @@ Was die Wege unterscheidet
 
 Ein direkter Aufruf der Tagesfassung ist seit 491 verboten - nicht weil sie
 falsch waere, sondern weil sie die Kerzenlaenge nicht kennt.
+
+Und dasselbe fuer das Nennen - Befund 492
+-----------------------------------------
+Schneiden und Nennen sind zwei Fragen (die Inventur in
+``test_abstandsreihe`` haelt sie auseinander), aber dieselbe Bauart: Fuenf
+Zusicherungen pruefen, ob ein Befehl ``"reihenzeile(frames)"`` **im Text**
+hat. Als 492 dem Vermerk die Kerzenlaenge mitgab, fielen alle fuenf - zum
+**vierten** Mal nach 282, 479 und 491, und diesmal war die Lehre schon im
+Haus. Deshalb steht der Melder fuer das Nennen hier daneben und nicht noch
+einmal in fuenf Dateien.
 """
 
 from __future__ import annotations
@@ -46,7 +56,14 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-__all__ = ["SCHNITTWEGE", "schneidende_befehle", "schneidet"]
+__all__ = [
+    "NENNWEGE",
+    "SCHNITTWEGE",
+    "nennende_befehle",
+    "nennt",
+    "schneidende_befehle",
+    "schneidet",
+]
 
 #: Die Wege, auf denen ein Befehl auf eine gepflegte Reihe schneidet.
 SCHNITTWEGE: tuple[str, ...] = (
@@ -55,10 +72,43 @@ SCHNITTWEGE: tuple[str, ...] = (
     "nach_intervall",
 )
 
+#: Die Wege, auf denen ein Befehl die Reihe **nennt**, auf der er rechnet.
+#:
+#: ``reihenzeile`` ist die Spanne dieses Laufs, ``_reihenvermerk`` der
+#: Bestand des Speichers, ``feinzeile`` die Feinreihe - drei Fragen, ein
+#: Zweck: Die Zahl soll nicht ohne ihre Reihe dastehen (Befund 370).
+NENNWEGE: tuple[str, ...] = (
+    "reihenzeile",
+    "_reihenzeile",
+    "_reihenvermerk",
+    "feinzeile",
+)
+
 
 def schneidet(quelle: str) -> bool:
     """Schneidet dieser Quelltext auf eine gepflegte Reihe?"""
     return any(f"{weg}(" in quelle for weg in SCHNITTWEGE)
+
+
+def nennt(quelle: str) -> bool:
+    """Nennt dieser Quelltext die Reihe, auf der er rechnet?"""
+    return any(f"{weg}(" in quelle for weg in NENNWEGE)
+
+
+def nennende_befehle(quelle: str | None = None) -> set[str]:
+    """Alle Befehle in ``cli.py``, die ihre Reihe nennen.
+
+    Gefunden und nicht gelistet, wie bei den Schneidern - zwei Listen waeren
+    zwei Wahrheiten (Befund 234).
+    """
+    text = Path("cli.py").read_text(encoding="utf-8") if quelle is None else quelle
+    gefunden: set[str] = set()
+    for knoten in ast.walk(ast.parse(text)):
+        if not isinstance(knoten, ast.FunctionDef) or knoten.name.startswith("_"):
+            continue
+        if nennt(ast.unparse(knoten)):
+            gefunden.add(knoten.name)
+    return gefunden
 
 
 def schneidende_befehle(quelle: str | None = None) -> set[str]:

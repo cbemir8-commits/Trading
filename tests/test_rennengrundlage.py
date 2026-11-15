@@ -33,7 +33,7 @@ import pytest
 
 import cli
 from research.wettrennen import Rennen
-from tests.schnittwege import SCHNITTWEGE, schneidet
+from tests.schnittwege import NENNWEGE, SCHNITTWEGE, nennt, schneidet
 
 #: Gemessen, siehe Kopf. Perpetual-Punkt, 203 Versuche.
 SPEICHER_ALLE = (0.2665, 120)
@@ -45,7 +45,7 @@ class TestDerBefehlStehtAufDerGateGrundlage:
         quelle = inspect.getsource(cli.rennen)
 
         assert schneidet(quelle), SCHNITTWEGE
-        assert "reihenzeile(frames)" in quelle
+        assert nennt(quelle), NENNWEGE
 
     def test_und_nimmt_die_fertigen_trades(self) -> None:
         quelle = inspect.getsource(cli.rennen)

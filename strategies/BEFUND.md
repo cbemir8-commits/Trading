@@ -44165,3 +44165,118 @@ Zahl, damit sie nicht wieder geschaetzt wird.
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Heute sind beide Schnitte wirkungslos - und genau deshalb war der Fehler
 unsichtbar.
+
+## Vierhundertzweiundneunzig. Der Reihenvermerk kannte die Kerzenlaenge nicht
+
+Befund 491 hat den **Schnitt** intervallbewusst gemacht. Der **Vermerk**
+daneben nicht. ``datenstand.reihenzeile``, gebaut in Befund 370, damit eine
+Zahl nicht ohne ihre Reihe dasteht, verglich weiter gegen ``SERIENENDE`` - die
+Tagesreihe. Alle vier Befehle, die ihn drucken (``abstand``, ``aufteilung``,
+``rennen``, ``stand``), nehmen ``-i``.
+
+Gemessen am echten Speicher, auf Viertelstundenkerzen:
+
+    229728 Balken gemeinsam - laenger als die Zulassungsreihe
+    (bis 2026-08-29); die Zahlen hier weichen deshalb von referenz.py ab
+
+229.728 Balken bis 2026-10-17 **sind** die gepflegte Feinreihe - die gepinnte
+Zahl aus Befund 426. Der Vermerk, der einen unerklaerten Unterschied
+verhindern sollte, erfand einen, und zwar im Kopf von ``cli stand``.
+
+### Die Kerzenlaenge ist Pflicht
+
+``reihenzeile(frames, intervall)`` - kein Vorgabewert. Der Weg in diesen
+Fehler war genau ein Vorgabewert: ``-i`` steht bei allen vier Befehlen auf
+``D``, und der Vermerk nahm stillschweigend dasselbe an. Wer die Kerzenlaenge
+nennen muss, kann sie nicht vergessen.
+
+### Die Grenze wird gefragt, nicht nachgebaut
+
+Die beiden Reihen enden verschieden: Tagesreihe geschlossen (2026-08-29),
+Feinreihe halboffen (2026-10-17). Ein ``<=`` dort ergaebe 229.729 statt
+229.728 - ``fein_geschnitten`` sagt das selbst. ``letzter_tag`` rechnet den
+Unterschied deshalb nicht nach, sondern legt eine kurze Probe vor das Ende und
+laesst den **echten Schnitt** entscheiden, welcher Tag bleibt.
+
+### Und eine zweite Wahrheit stand schon da
+
+``speicher_ist_gepinnt`` hielt die Menge der erlaubten Enden von Hand:
+
+    {SERIENENDE, FEINENDE - timedelta(days=1)}
+
+Daran haengt das Tor aus Befund 430 - also ob die drei Datenausfaelle
+*erwartet* sind. Zwei Stellen, die dieselbe halboffene Grenze aufschreiben,
+sind zwei Wahrheiten, und die zweite altert. Die Menge kommt jetzt aus
+``REIHENENDE`` und ``letzter_tag``; gemessen ergibt das dieselben zwei Tage,
+die vorher dastanden.
+
+### Zum vierten Mal dieselbe Bauart
+
+Fuenf Zusicherungen pruefen ``"reihenzeile(frames)"`` **als Text** und fielen
+alle, als der Vermerk die Kerzenlaenge bekam - nach Befund 282, 479 und 491.
+Der Melder steht jetzt als ``NENNWEGE``/``nennt`` in ``tests/schnittwege``,
+neben den Schneidern, und die Inventur in ``test_abstandsreihe`` fragt ihn.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl.
+
+## Vierhundertdreiundneunzig. Das Etikett war nicht der Schluessel
+
+**Mein Fehler aus Befund 491, und er war still.**
+
+491 hat neun Befehlen ``nach_intervall(frames, interval_obj.label)`` gegeben
+und ``REIHENENDE`` auf ``"D"``/``"15"`` geschluesselt - auf den **Wert**.
+Aber:
+
+    Interval("D").value  == "D"       Interval("D").label  == "1d"
+    Interval("15").value == "15"      Interval("15").label == "15m"
+
+Der Verteiler bekam das Etikett und suchte den Wert. Er fand nie eine
+gepflegte Reihe, fiel in den Zweig *"keine gepflegte"* und schnitt im Betrieb
+**nie**. Gemessen an einem Rahmen, der ueber ``SERIENENDE`` hinausgeht:
+
+    nach_intervall(x, "D")   61 -> 29 Balken   "bis 2026-08-29"
+    nach_intervall(x, "1d")  61 -> 61 Balken   "keine gepflegte fuer 1d-Kerzen"
+
+Damit hat Befund 491 den Schnitt an neun Befehlen nicht intervallbewusst
+gemacht, sondern **abgeschaltet** - gegenueber Befund 490, wo vier von ihnen
+noch ``alle_geschnitten`` riefen. Dass heute keine Zahl kippt, liegt allein
+daran, dass der Speicher genau auf den Reihenenden endet. Nach dem naechsten
+Backfill waere es eine falsche Zahl neben ``referenz.py`` gewesen - genau die
+Lage, gegen die 490 und 491 gebaut waren.
+
+### Warum es gruen blieb
+
+Alle Tests aus 491 uebergaben die Literale ``"D"`` und ``"15"``. **Gemessen
+wurde die Funktion, nicht der Aufruf.** Und die Regel dort -
+``test_niemand_ruft_die_tagesfassung_direkt`` - prueft, dass niemand die
+Tagesfassung **direkt** ruft, nicht dass der Verteiler etwas kuerzt: eine
+Wache auf die Form, keine auf die Wirkung.
+
+Gefunden hat es ein **Rauchtest auf echten Daten**. ``cli abstand -i D``
+druckte *"keine gepflegte Reihe"*, wo die Zulassungsreihe stehen musste. Der
+Grundsatz, der solche Rauchtests verlangt, steht nicht zufaellig im
+Dauerauftrag.
+
+### Gebaut
+
+``kerzenschluessel`` nimmt die Kerzenlaenge in jeder Schreibweise, die
+``Interval`` kennt - das Objekt, den Wert, das Etikett, den Enum-Namen - und
+antwortet mit dem Wert. Die Zuordnung ist **aus ``Interval`` abgeleitet** und
+nicht aufgeschrieben: eine gepflegte Liste von Schreibweisen waere die
+naechste, die altert (Befund 234/485).
+
+Was keiner Kerzenlaenge entspricht, kommt unveraendert zurueck und findet
+keine gepflegte Reihe. Das ist die Richtung aus Befund 370 und bleibt so.
+
+### Geprueft wird jetzt die Wirkung
+
+``tests/test_kerzenschluessel.py`` nimmt **jedes** Mitglied von ``Interval``
+und prueft Wert, Etikett, Name und Objekt; fuer die beiden gepflegten Reihen
+prueft es, dass auf jeder Schreibweise wirklich **gekuerzt** wird und die
+Zeile keine fremde Reihe nennt. Der erste Entwurf dieser Probe war selbst
+falsch - sie endete am 30.09., was fuer die Tagesreihe ausserhalb und fuer die
+Feinreihe innerhalb liegt. Mein Pruefaufbau, nicht der Code; die Probe reicht
+jetzt je Reihe ueber ihr eigenes Ende.
+
+**Gelockert ist nichts**, und keine gepflegte Zahl bewegt sich. Was sich
+bewegt, ist der Schnitt: Er greift wieder.

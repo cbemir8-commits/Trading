@@ -8124,6 +8124,72 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Fehler unsichtbar",
         491,
     ),
+    # Befund 492: Der Vermerk neben dem Schnitt kannte die Kerzenlaenge auch
+    # nicht - und das Tor schrieb die Grenze ein zweites Mal auf.
+    Richtung(
+        "Der Reihenvermerk kannte die Kerzenlaenge nicht",
+        "Befund 491 hat den **Schnitt** intervallbewusst gemacht. Der "
+        "**Vermerk** daneben - 'datenstand.reihenzeile', gebaut in Befund 370, "
+        "damit eine Zahl nicht ohne ihre Reihe dasteht - verglich weiter gegen "
+        "SERIENENDE, die Tagesreihe. Alle vier Befehle, die ihn drucken "
+        "('abstand', 'aufteilung', 'rennen', 'stand'), nehmen '-i'. Gemessen "
+        "am echten Speicher stand auf Viertelstundenkerzen: *'229728 Balken "
+        "gemeinsam - laenger als die Zulassungsreihe (bis 2026-08-29); die "
+        "Zahlen hier weichen deshalb von referenz.py ab'* - und 229.728 "
+        "Balken bis 2026-10-17 **sind** die gepflegte Feinreihe, die gepinnte "
+        "Zahl aus Befund 426. Der Vermerk, der einen unerklaerten Unterschied "
+        "verhindern sollte, erfand einen, und zwar im Kopf von 'cli stand'. "
+        "**Gebaut**: 'reihenzeile(frames, intervall)' - die Kerzenlaenge ist "
+        "**Pflicht**, weil ein Vorgabewert genau der Weg hinein war. Die "
+        "Grenze kommt aus 'letzter_tag', und das **fragt den Schnitt** statt "
+        "den Vergleich nachzubauen: Die Tagesreihe endet geschlossen "
+        "(2026-08-29), die Feinreihe halboffen (2026-10-17), und wer diesen "
+        "Unterschied ein zweites Mal aufschreibt, hat zwei Wahrheiten. "
+        "**Und eine stand schon da**: 'speicher_ist_gepinnt' - daran haengt "
+        "das Tor aus Befund 430, also ob die drei Datenausfaelle erwartet "
+        "sind - hielt '{SERIENENDE, FEINENDE - timedelta(days=1)}' von Hand. "
+        "Die Menge kommt jetzt aus REIHENENDE und 'letzter_tag'; gemessen "
+        "ergibt das dieselben zwei Tage. **Und zum vierten Mal dieselbe "
+        "Bauart**: Fuenf Zusicherungen pruefen 'reihenzeile(frames)' als "
+        "Text und fielen alle, als der Vermerk die Kerzenlaenge bekam - nach "
+        "282, 479 und 491. Der Melder steht jetzt als 'NENNWEGE'/'nennt' in "
+        "'tests/schnittwege', neben den Schneidern. **Gelockert ist nichts**: "
+        "keine Schwelle, kein Gate, keine Zahl",
+        492,
+    ),
+    # Befund 493: Mein Schnitt aus 491 hat im Betrieb nie geschnitten - das
+    # Etikett der Kerzenlaenge ist nicht ihr Wert.
+    Richtung(
+        "Das Etikett war nicht der Schluessel",
+        "**Mein Fehler aus Befund 491, und er war still.** 491 hat neun "
+        "Befehlen 'nach_intervall(frames, interval_obj.label)' gegeben und "
+        "REIHENENDE auf 'D'/'15' geschluesselt - auf den **Wert**. Aber "
+        "Interval('D').label ist '1d' und Interval('15').label ist '15m'. Der "
+        "Verteiler bekam das Etikett, suchte den Wert, fand nie eine "
+        "gepflegte Reihe und schnitt im Betrieb **nie**. Gemessen an einem "
+        "Rahmen ueber SERIENENDE hinaus: 'nach_intervall(x, \"D\")' kuerzt 61 "
+        "auf 29 Balken, 'nach_intervall(x, \"1d\")' laesst 61 stehen und sagt "
+        "'keine gepflegte fuer 1d-Kerzen'. Damit hat 491 den Schnitt an neun "
+        "Befehlen nicht intervallbewusst gemacht, sondern **abgeschaltet** - "
+        "gegenueber 490, wo vier von ihnen noch 'alle_geschnitten' riefen. "
+        "Dass heute keine Zahl kippt, liegt allein daran, dass der Speicher "
+        "genau auf den Reihenenden endet; nach dem naechsten Backfill waere "
+        "es eine falsche Zahl neben 'referenz.py' gewesen. **Warum es gruen "
+        "blieb**: Alle Tests aus 491 uebergaben die Literale 'D' und '15' - "
+        "gemessen wurde die Funktion, nicht der Aufruf -, und die Regel dort "
+        "prueft, dass niemand die Tagesfassung **direkt** ruft, nicht dass "
+        "der Verteiler etwas kuerzt. Eine Wache auf die Form, keine auf die "
+        "Wirkung. **Gefunden hat es ein Rauchtest auf echten Daten**: 'cli "
+        "abstand -i D' druckte 'keine gepflegte Reihe'. **Gebaut**: "
+        "'kerzenschluessel' nimmt das Interval-Objekt, den Wert, das Etikett "
+        "oder den Enum-Namen und antwortet mit dem Wert; die Zuordnung ist "
+        "**aus Interval abgeleitet**, nicht aufgeschrieben (234/485). Was "
+        "keiner Kerzenlaenge entspricht, kommt unveraendert zurueck und findet "
+        "keine gepflegte Reihe - die Richtung aus 370. Geprueft wird jetzt "
+        "die **Wirkung** auf jeder Schreibweise und fuer jedes Mitglied von "
+        "Interval, nicht die Form",
+        493,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -8131,6 +8197,28 @@ BEHOBEN: tuple[Richtung, ...] = (
 #: Getrennt von ``GESCHLOSSEN``, weil "gemessen und offen" etwas anderes ist
 #: als "gemessen und zu". Ein Eintrag hier ist eine Zusage, keine Ablage.
 OFFEN: tuple[Richtung, ...] = (
+    # Aufgeworfen von 492: beim Nachsehen gemessen, nicht entschieden - wo
+    # eine Zeile hingehoert, ist eine Entscheidung ueber den Berichtskopf.
+    Richtung(
+        "Die Feinzeile ist gebaut, geprueft und wird nie gedruckt",
+        "Beim Nachsehen zu 492 gemessen: 'datenstand.feinzeile' - die Zeile, "
+        "die sagt, ob die **Feinreihe** die gepflegte ist, samt dem Pin "
+        "FEINBALKEN=229.728 aus Befund 426 - hat **keinen Aufrufer**. Nur "
+        "ihre eigenen Tests rufen sie, und im Register steht Prosa darueber. "
+        "Gebaut, geprueft, und niemand sieht sie. **Was sie heute noch "
+        "allein kann**: Seit 492 beantwortet 'reihenzeile' die Frage nach der "
+        "Reihe dieses Laufs fuer **beide** Kerzenlaengen; uebrig bleibt der "
+        "Vergleich gegen den Pin je Markt. Der gehoert zur Bestandszeile "
+        "('_kerzenbestand', wo '_reihenvermerk' dasselbe fuer die Tagesreihe "
+        "tut) und nicht zum Laufvermerk. **Warum es nicht einfach eingebaut "
+        "wurde**: Der Kopf von 'cli stand' ist auf elf Zeilen festgenagelt "
+        "('test_elf_zeilen'), und zwar mit Absicht - eine zwoelfte Zeile ist "
+        "eine Entscheidung ueber den Kopf, keine Reparatur. Als Zusatz an die "
+        "Bestandszeile waere sie moeglich, und dann muesste sie schweigen, wo "
+        "nichts abweicht (wie 'nach_intervall' es tut), sonst steht in jedem "
+        "Lauf eine Null, die niemand liest",
+        492,
+    ),
     # Aufgeworfen von 446: Nebenwirkung der Verschaerfung aus 445, gemessen
     # und nicht entschieden - die Entscheidung gehoert dem Nutzer.
     Richtung(
@@ -8299,7 +8387,7 @@ OFFEN: tuple[Richtung, ...] = (
         "Kommentar'. Derselbe Kanal, eine Zeile hinter 'common_range', traegt "
         "den Reihenvermerk fuer alle 41",
         387,
-        zuletzt=491,
+        zuletzt=493,
     ),
     Richtung(
         # **Der Name traegt keine Zahl mehr** (Befund 352). Er hat sie von 332

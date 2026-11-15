@@ -40,7 +40,7 @@ import pytest
 import cli
 from research.gates import GateStatus
 from research.referenz import SPOTPUNKT
-from tests.schnittwege import SCHNITTWEGE, schneidet
+from tests.schnittwege import NENNWEGE, SCHNITTWEGE, nennt, schneidet
 
 
 class TestDerSpotpunktStehtAufDerReihe:
@@ -58,7 +58,8 @@ class TestDerSpotpunktStehtAufDerReihe:
     def test_und_nennt_die_reihe_ueber_der_tafel(self) -> None:
         quelle = inspect.getsource(cli.stand)
 
-        assert "reihenzeile(spotrahmen)" in quelle
+        assert nennt(quelle), NENNWEGE
+        assert "spotrahmen," in quelle
 
     def test_der_kopf_bleibt_auf_allem_was_da_ist(self) -> None:
         """Befund 370 hat das entschieden, und es gilt weiter: 'Auf allem zu
@@ -68,7 +69,7 @@ class TestDerSpotpunktStehtAufDerReihe:
 
         assert "frames = common_range(roh)" in quelle
         assert "Perpetual auf dem Speicher" in quelle
-        assert "reihenzeile(frames)" in quelle
+        assert nennt(quelle), NENNWEGE
 
 
 class TestDieTafel:

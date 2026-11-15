@@ -34,7 +34,7 @@ import pytest
 
 import cli
 from research.aufteilung import VERSATZ, Aufteilungsstreuung, streuung
-from tests.schnittwege import SCHNITTWEGE, schneidet
+from tests.schnittwege import NENNWEGE, SCHNITTWEGE, nennt, schneidet
 
 #: Die Jahresrenditen aus Befund 400, Versatz 0 bis 10.
 GEMESSENE_RENDITE = (
@@ -174,7 +174,7 @@ class TestDerBefehl:
         koerper = rumpf(cli.aufteilung)
 
         assert schneidet(koerper), SCHNITTWEGE
-        assert "reihenzeile(geschnitten)" in koerper
+        assert nennt(koerper), NENNWEGE
 
     def test_er_laesst_die_messlatte_aus_der_tafel(self) -> None:
         """Sie traegt zwei Groessen (Befund 395) - in einer Streuungstafel

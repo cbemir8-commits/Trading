@@ -239,8 +239,26 @@ def grenzen(frames: Mapping[str, PandasRahmen]) -> dict[str, tuple[date, date, i
     return stand
 
 
-def reihenzeile(frames: Mapping[str, PandasRahmen]) -> str:
+def reihenzeile(frames: Mapping[str, PandasRahmen], intervall: object) -> str:
     """Eine Zeile: Auf welcher Reihe stehen diese Zahlen?
+
+    **Der Vermerk kannte die Kerzenlaenge nicht** (Befund 492). Bis dahin
+    verglich er immer gegen ``SERIENENDE``, die **Tagesreihe** - und alle
+    vier Befehle, die ihn drucken, nehmen ``-i``. Auf Viertelstundenkerzen
+    stand deshalb gemessen:
+
+        229728 Balken gemeinsam - laenger als die Zulassungsreihe
+        (bis 2026-08-29); die Zahlen hier weichen deshalb von referenz.py ab
+
+    229.728 Balken bis 2026-10-17 **sind** die gepflegte Feinreihe. Der
+    Vermerk, der einen unerklaerten Unterschied verhindern sollte, erfand
+    einen. Das ist dieselbe Blindheit wie beim Schnitt in Befund 491, eine
+    Stelle weiter - und ``intervall`` ist hier **Pflicht**, weil ein
+    Vorgabewert genau der Weg war, auf dem sie entstand.
+
+    ``intervall`` ist das Etikett der Kerzenlaenge (``Interval.label``). Die
+    Grenze kommt aus ``letzter_tag``, also aus dem echten Schnitt, nicht aus
+    einem zweiten Vergleich.
 
     **Befund 370.** Der Kopf von ``cli stand`` nannte Kandidat, Maerkte,
     Kerzenlaenge, Betriebspunkt, Trades, Rendite, Rueckgang, Gates und
@@ -271,14 +289,22 @@ def reihenzeile(frames: Mapping[str, PandasRahmen]) -> str:
     bis = min(b for _, b, _ in stand.values())
     balken = min(n for _, _, n in stand.values())
     kopf = f"{von} bis {bis}, {balken} Balken gemeinsam"
-    if bis > SERIENENDE:
+    schluessel = kerzenschluessel(intervall)
+    letzte = letzter_tag(schluessel)
+    if letzte is None:
         return (
-            f"{kopf} - laenger als die Zulassungsreihe (bis {SERIENENDE}); "
+            f"{kopf} - keine gepflegte Reihe fuer {schluessel}-Kerzen, "
+            f"gerechnet wird auf dem Speicher"
+        )
+    name = REIHENNAME[schluessel]
+    if bis > letzte:
+        return (
+            f"{kopf} - laenger als {name} (bis {letzte}); "
             f"die Zahlen hier weichen deshalb von referenz.py ab"
         )
-    if bis < SERIENENDE:
-        return f"{kopf} - kuerzer als die Zulassungsreihe (bis {SERIENENDE})"
-    return f"{kopf} - die Zulassungsreihe"
+    if bis < letzte:
+        return f"{kopf} - kuerzer als {name} (bis {letzte})"
+    return f"{kopf} - {name}"
 
 
 def fehlt(vorhanden: Mapping[str, tuple[date, date, int]]) -> tuple[str, ...]:
@@ -414,8 +440,44 @@ def alle_fein_geschnitten(
 REIHENENDE: dict[str, date] = {"D": SERIENENDE, "15": FEINENDE}
 
 
+def kerzenschluessel(intervall: object) -> str:
+    """Welche Kerzenlaenge ist gemeint - aus dem Enum abgeleitet, nicht geraten.
+
+    **Befund 493, und der Fehler war meiner.** ``Interval("D").label`` ist
+    ``"1d"``, nicht ``"D"``. Befund 491 hat neun Befehlen
+    ``nach_intervall(frames, interval_obj.label)`` gegeben und ``REIHENENDE``
+    auf ``"D"``/``"15"`` geschluesselt - auf den **Wert**. Damit fand der
+    Verteiler nie eine gepflegte Reihe und schnitt im Betrieb **nie**:
+
+        nach_intervall(x, "D")   61 -> 29 Balken
+        nach_intervall(x, "1d")  61 -> 61 Balken, "keine gepflegte"
+
+    Die Tests liefen gruen, weil sie alle die Literale ``"D"``/``"15"``
+    uebergaben und nicht den Weg, den die Befehle nehmen. Gemessen wurde die
+    Funktion, nicht der Aufruf.
+
+    Deshalb nimmt diese Stelle, was kommt - ``Interval``, Wert, Etikett oder
+    Enum-Name - und antwortet mit dem Wert. Die Zuordnung ist **aus
+    ``Interval`` abgeleitet** und nicht aufgeschrieben: Eine gepflegte Liste
+    von Schreibweisen waere die naechste, die altert (Befund 234/485).
+
+    Was keiner Kerzenlaenge entspricht, kommt unveraendert zurueck. Dann
+    findet ``REIHENENDE`` nichts, und das ist richtig: Fuer eine fremde
+    Kerzenlaenge gibt es keine gepflegte Reihe (Befund 370).
+    """
+    from core.models import Interval
+
+    if isinstance(intervall, Interval):
+        return intervall.value
+    text = str(intervall)
+    for mitglied in Interval:
+        if text in (mitglied.value, mitglied.label, mitglied.name):
+            return mitglied.value
+    return text
+
+
 def nach_intervall(
-    frames: Mapping[str, PandasRahmen], intervall: str
+    frames: Mapping[str, PandasRahmen], intervall: object
 ) -> tuple[dict[str, PandasRahmen], str]:
     """Auf die Reihe **dieser** Kerzenlaenge kuerzen - und sagen, auf welche.
 
@@ -425,23 +487,75 @@ def nach_intervall(
     **nicht** geschnitten und genau das gesagt, statt mit dem Ende einer
     fremden Kerzenlaenge zu kuerzen.
 
-    ``intervall`` ist das Etikett der Kerzenlaenge (``"D"``, ``"15"``), also
-    ``Interval.label``.
+    ``intervall`` ist die Kerzenlaenge in **jeder** Schreibweise, die
+    ``Interval`` kennt - das Objekt selbst, sein Wert (``"D"``), sein Etikett
+    (``"1d"``) oder sein Enum-Name (``"D1"``). Der Schluessel kommt aus
+    ``kerzenschluessel``, und genau daran hat dieser Verteiler in Befund 491
+    vorbeigegriffen: Er bekam das Etikett und suchte den Wert, also schnitt er
+    **nie**. Seit Befund 493 ist die Schreibweise keine Falle mehr.
     """
-    ende = REIHENENDE.get(intervall)
+    schluessel = kerzenschluessel(intervall)
+    ende = REIHENENDE.get(schluessel)
     if ende is None:
         return dict(frames), (
-            f"Reihe: keine gepflegte fuer {intervall}-Kerzen - nicht "
+            f"Reihe: keine gepflegte fuer {schluessel}-Kerzen - nicht "
             f"geschnitten, gerechnet wird auf dem Speicher"
         )
     kurz = (
         alle_fein_geschnitten(frames)
-        if intervall == "15"
+        if schluessel == "15"
         else alle_geschnitten(frames)
     )
     verloren = sum(len(frames[k]) - len(kurz[k]) for k in frames)
     zusatz = f", {verloren} Balken ausserhalb" if verloren else ""
     return kurz, f"Reihe: bis {ende}{zusatz}"
+
+
+#: Wie die gepflegte Reihe einer Kerzenlaenge im Bericht heisst.
+#:
+#: Getrennt von ``REIHENENDE``, weil der Name keine Grenze ist - und mit
+#: derselben Tastatur gepflegt: ``test_reihenname`` prueft, dass beide Tafeln
+#: dieselben Kerzenlaengen kennen. Eine Tafel, die eine Kerzenlaenge mehr
+#: kennt als die andere, ist der Fehler aus Befund 491 in Zeitlupe.
+REIHENNAME: dict[str, str] = {
+    "D": "die Zulassungsreihe",
+    "15": "die gepflegte Feinreihe",
+}
+
+
+def letzter_tag(intervall: object) -> date | None:
+    """Der letzte Tag, der zur gepflegten Reihe dieser Kerzenlaenge gehoert.
+
+    **Gefragt, nicht nachgebaut** (Befund 492). Die beiden Reihen enden
+    verschieden: Die Tagesreihe ist am oberen Ende **geschlossen**
+    (``<= SERIENENDE``), die Feinreihe **halboffen** (``< FEINENDE``) - ein
+    ``<=`` dort nimmt den ersten Balken des Folgetags mit und ergibt 229.729
+    statt 229.728. Wer diesen Unterschied an einer zweiten Stelle
+    aufschreibt, hat zwei Wahrheiten, und die zweite altert.
+
+    Deshalb legt diese Funktion eine kurze Probe vor das Ende und laesst den
+    **echten Schnitt** entscheiden, welcher Tag bleibt. Fuer eine
+    Kerzenlaenge ohne gepflegte Reihe gibt sie ``None`` - das ist keine Null,
+    sondern "es gibt keine", und der Aufrufer muss es unterscheiden.
+    """
+    import pandas as pd
+
+    schluessel = kerzenschluessel(intervall)
+    ende = REIHENENDE.get(schluessel)
+    if ende is None:
+        return None
+    probe = {
+        "x": pd.DataFrame(
+            {
+                "open_time": pd.date_range(
+                    ende - timedelta(days=2), ende, freq="D", tz="UTC"
+                )
+            }
+        )
+    }
+    kurz, _zeile = nach_intervall(probe, schluessel)
+    uebrig = kurz["x"]["open_time"]
+    return None if uebrig.empty else uebrig.max().date()
 
 
 def feinzeile(frames: Mapping[str, PandasRahmen]) -> str:
@@ -638,9 +752,18 @@ def speicher_ist_gepinnt(stand: Mapping[str, tuple[date, date, int]]) -> bool:
     zusammengefuegt. Gerechnet und nicht angenommen: Daran haengt, ob die
     Ausfaelle unten erwartet sind, und eine Liste von Entschuldigungen, die
     immer gilt, ist ein Freibrief.
+
+    **Die erlaubten Enden werden gefragt, nicht aufgeschrieben** (Befund 492).
+    Hier stand ``{SERIENENDE, FEINENDE - timedelta(days=1)}`` - die halboffene
+    Grenze der Feinreihe, ein zweites Mal von Hand. Zwei Stellen, die
+    dieselbe Regel aufschreiben, sind zwei Wahrheiten, und an dieser haengt
+    das Tor aus Befund 430. Jetzt kommt die Menge aus ``REIHENENDE`` und
+    ``letzter_tag``, also aus dem echten Schnitt; gemessen ergibt das
+    dieselben zwei Tage wie vorher.
     """
     enden = {bis for _, bis, _ in stand.values()}
-    return bool(enden) and enden <= {SERIENENDE, FEINENDE - timedelta(days=1)}
+    erlaubt = {tag for iv in REIHENENDE if (tag := letzter_tag(iv)) is not None}
+    return bool(enden) and enden <= erlaubt
 
 
 def erwartete_ausfaelle(

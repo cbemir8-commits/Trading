@@ -41,7 +41,7 @@ import cli
 from research.gates import GateThresholds, deflated_sharpe_ratio
 from research.referenz import SPOTPUNKT
 from research.stand import BUDGET
-from tests.schnittwege import SCHNITTWEGE, schneidet
+from tests.schnittwege import NENNWEGE, SCHNITTWEGE, nennt, schneidet
 
 #: Gemessen, siehe Kopf.
 FENSTER_REIHE = 224
@@ -79,7 +79,7 @@ class TestDerBefehlStehtJetztAufDerReihe:
         Durchgang gefehlt, als ich den Referenzpunkt fuer gerissen hielt."""
         quelle = inspect.getsource(cli.abstand)
 
-        assert "reihenzeile(frames)" in quelle
+        assert nennt(quelle), NENNWEGE
 
     def test_der_docstring_nennt_den_unterschied(self) -> None:
         text = cli.abstand.__doc__ or ""
@@ -223,7 +223,7 @@ class TestDieInventurStimmtNoch:
         grenzen = [m.start() for m in re.finditer(r"\n@app\.command\(\)", t)]
         grenzen.append(len(t))
         schneiden: list[str] = []
-        nennt: list[str] = []
+        nennen: list[str] = []
         keins: list[str] = []
         for anfang, ende in pairwise(grenzen):
             block = t[anfang:ende]
@@ -235,14 +235,14 @@ class TestDieInventurStimmtNoch:
                 continue
             name = treffer.group(1)
             g = schneidet(block)
-            n = "reihenzeile" in block or "_reihenvermerk" in block
+            n = nennt(block)
             if g:
                 schneiden.append(name)
             if n:
-                nennt.append(name)
+                nennen.append(name)
             if not g and not n:
                 keins.append(name)
-        return schneiden, nennt, keins
+        return schneiden, nennen, keins
 
     def test_acht_schneiden_fuenf_nennen_einunddreissig_keins(self) -> None:
         """Die Zahlen wandern, wenn ein Befehl sich entscheidet - und genau
@@ -312,7 +312,7 @@ class TestDieInventurStimmtNoch:
         zeile = f"{len(schneidet)} / {len(nennt)} / {len(keins)}"
 
         assert f"**Heute sind es {zeile}**" in eintrag.ergebnis, zeile
-        assert eintrag.zuletzt == 491
+        assert eintrag.zuletzt == 493
 
 
 @pytest.mark.daten
