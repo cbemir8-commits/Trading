@@ -44041,3 +44041,127 @@ es muss nur dastehen.
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Vier Buchungen koennen nicht mehr stillschweigend auf einer laengeren Reihe
 entstehen.
+
+## Vierhunderteinundneunzig. Der Schnitt kannte die Kerzenlaenge nicht
+
+**Mein eigener Fehler aus dem Zyklus davor.** Befund 490 hat vier buchenden
+Befehlen ``alle_geschnitten`` gegeben. Das kuerzt auf ``SERIENENDE``
+(2026-08-29) - **unabhaengig von der Kerzenlaenge**. Alle vier nehmen ``-i``,
+und fuer feine Kerzen gilt ``FEINENDE`` (2026-10-18):
+
+    BTCUSD_BITSTAMP D :   5355 ->   5355 Balken   unveraendert
+    BTCUSD_BITSTAMP 15: 229728 -> 224929 Balken   4.799 Balken weg
+
+Sieben Wochen, stillschweigend. Die passende Fassung lag im selben Modul
+daneben (``fein_geschnitten``), und ich habe die falsche genommen.
+
+### Und der Mangel war aelter als mein Eingriff
+
+Beim Nachsehen stellte sich heraus: Die **fuenf** Befehle, die schon vor 490
+schnitten - ``abstand``, ``anatomie``, ``rennen``, ``stand``, ``aufteilung`` -
+nehmen ebenfalls ``-i`` mit Vorgabe ``D`` und riefen ebenfalls die
+Tagesfassung. Der Mangel bestand damit seit Befund 387/390/394/400 und war nur
+nie gefahren worden.
+
+Mein Fehler hat einen aelteren aufgedeckt. Das ist der Grund, warum er hier
+mit seinen Zahlen steht und nicht als Fussnote.
+
+### Gebaut
+
+``datenstand.nach_intervall`` waehlt die Reihe am Etikett der Kerzenlaenge und
+**sagt, welche**:
+
+    D     -> SERIENENDE, geschlossen am oberen Ende  (<=)
+    15    -> FEINENDE, halboffen                     (<)
+    sonst -> nicht geschnitten, und das steht in der Zeile
+
+Die halboffene Grenze ist kein Zierrat: ``fein_geschnitten`` sagt selbst, dass
+ein ``<=`` den ersten Balken des Folgetags mitnimmt und 229.729 statt 229.728
+ergibt. Ein Verteiler, der die Vergleiche nachbaut, baut genau diesen Fehler
+nachher ein - deshalb ruft er die beiden vorhandenen Funktionen auf.
+
+Fuer eine Kerzenlaenge ohne gepflegte Reihe wird **nicht** geschnitten. Das
+ist die Richtung aus Befund 370 - *"auf allem zu rechnen, was da ist, ist
+richtig; es muss nur dastehen"* -, und mit dem Ende einer fremden Kerzenlaenge
+zu kuerzen waere genau der Fehler, um den es hier geht.
+
+Alle **neun** schneidenden Befehle gehen jetzt darueber, und eine Zusicherung
+verbietet den direkten Aufruf der Tagesfassung. Ein Verteiler statt neun
+Verzweigungen: Wer an neun Stellen von Hand waehlt, waehlt an der zehnten
+falsch (Befund 168).
+
+### Acht Wachen hingen am Namen einer Funktion
+
+Erst geschaetzt, dann gezaehlt - die erste Fassung dieses Abschnitts sprach von
+drei. Gemessen am Stand vor dem Befund sind es **acht** Stellen, jede als
+derselbe Funktionsname:
+
+    tests/test_abstandsreihe.py:69    assert "alle_geschnitten(frames)" in quelle
+    tests/test_abstandsreihe.py:231   g = "alle_geschnitten" in block
+    tests/test_anatomie.py:304        assert ... in self._quelle()
+    tests/test_aufteilungsstreuung.py:175  assert "alle_geschnitten(roh)" in koerper
+    tests/test_elf_zeilen.py:54       assert "spotrahmen = alle_geschnitten(..."
+    tests/test_rennengrundlage.py:46  assert "alle_geschnitten(frames)" in quelle
+    tests/test_wachenaudit.py:195     assert "spotrahmen = alle_geschnitten(..."
+    tests/test_reihenschnitt.py:121   if "alle_geschnitten" not in wf[name]
+
+**Fuenf** davon fielen im Lauf; die drei in ``test_abstandsreihe`` und
+``test_reihenschnitt`` hatte ich beim Bauen von Hand nachgezogen - und daran
+war zu sehen, dass die Bauart falsch ist und nicht die einzelne Zeile. Die
+Inventur sah dabei auf einen Schlag **einen** Schneider statt neun; sie haette
+gemeldet, acht Befehle haetten sich zurueckentschieden. Keiner hatte sich
+entschieden.
+
+Alle acht **Stellen** - sie liegen in sieben Dateien - fragen jetzt
+``tests/schnittwege``. Dieselbe Lehre wie bei ``BUCHUNGSWEGE`` in Befund 282
+und 479 - hier zum **dritten** Mal: Eine Wache am Namen einer Funktion
+verliert genau die, die sich aendern.
+
+### Und der neue Melder wird selbst geprueft
+
+Befund 479 hat den Satz geliefert, der hier noch einmal gilt: *"Ohne sie waere
+er der dritte ungepruefte Zaehler in dieser Sitzung."* **Acht Dateien** fragen
+``schnittwege`` - sieben auf Modulebene, eine in einer Funktion; gezaehlt und
+als Zusicherung festgehalten -, und zunaechst fragte ihn nichts. Ein zu weites
+Wort in ``SCHNITTWEGE`` genuegt, und acht Dateien voll Wachen sind auf einen
+Schlag leer erfuellt, ohne dass eine rot wird.
+
+``tests/test_schnittwege.py`` prueft ihn: jeden der drei Wege einzeln, die
+Gegenproben (``common_range`` schneidet den Anfang und zaehlt **nicht**, ein
+Name ohne Klammer zaehlt nicht), und am echten ``cli.py`` die Nichtleere samt
+der Zahl neun.
+
+Dabei steht auch der Unterschied zur Inventur jetzt als Messung da: Der Melder
+findet neun, die Inventur acht, und die Luecke ist genau ``korb`` - die
+Inventur verlangt ``spitzenkandidat`` im Block, ``korb`` laedt Saaten. Beide
+Zahlen sind richtig und beantworten verschiedene Fragen; begruendet war das
+vorher, gerechnet ist es jetzt (Befund 234).
+
+### Was dabei gezaehlt wurde, statt geschaetzt zu bleiben
+
+Die offene Richtung zu Befund 387 sprach von *"den 30 nicht buchenden
+Laeufen"*. Die Zahl war geschaetzt. Gemessen:
+
+    Walk-Forward-Befehle in cli.py          41
+    nennen die Reihe (seit 491 ueber nach_intervall)   9
+    schweigen                                        32
+
+Fuer die 32 gilt der Satz aus Befund 370 - *"auf allem zu rechnen, was da ist,
+ist richtig, es muss nur dastehen"*. Es steht nicht da.
+
+**Und sie von Hand zu bedienen waere wieder Befund 168.** Alle 41 gehen durch
+``run_portfolio_walkforward`` oder ``run_walkforward``. Der Vermerk gehoert an
+die Stelle, an der die Rahmen in den Lauf eintreten - eine Stelle, nicht 32.
+
+**Der Weg dorthin steht schon im Modul.** Die Engine meldet den Hinweis auf
+die Verlustgrenzen je Bein absichtlich ueber ihren structlog-Logger, mit genau
+dieser Begruendung im Kommentar daneben: *"deshalb steht der Hinweis im
+Protokoll statt nur in einem Kommentar"*. Derselbe Kanal, eine Zeile hinter
+``common_range``, traegt den Reihenvermerk fuer alle 41.
+
+Das ist der naechste Schritt und steht so im Register; hier steht nur die
+Zahl, damit sie nicht wieder geschaetzt wird.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Heute sind beide Schnitte wirkungslos - und genau deshalb war der Fehler
+unsichtbar.

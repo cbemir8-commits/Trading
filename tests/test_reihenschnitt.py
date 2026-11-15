@@ -71,6 +71,7 @@ from pathlib import Path
 import pytest
 
 from research.datenstand import SERIENENDE
+from tests.schnittwege import schneidet
 from tests.zaehlerwege import zaehlende_befehle
 
 WURZEL = Path(__file__).resolve().parents[1]
@@ -114,11 +115,16 @@ class TestJederBuchendeLaufSchneidet:
     Ende auf mehr als der Zulassungsreihe."""
 
     def test_alle(self) -> None:
+        """**Geprueft wird der Schnitt, nicht ein Funktionsname** (Befund
+        491). Diese Regel suchte ``alle_geschnitten`` und fiel, als die
+        Schneider auf ``nach_intervall`` umgestellt wurden - dieselbe Bauart,
+        gegen die sie selbst gebaut ist.
+        """
         wf = walkforwardbefehle()
         offen = [
             name
             for name in sorted(zaehlende_befehle() & set(wf))
-            if "alle_geschnitten" not in wf[name]
+            if not schneidet(wf[name])
         ]
 
         assert offen == [], (

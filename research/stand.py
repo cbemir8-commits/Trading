@@ -8040,6 +8040,90 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Gewohnheit",
         489,
     ),
+    # Befund 490: Die Regel, die die offene Richtung zu 387 verlangt hat -
+    # und vier Buchungen, die nicht mehr auf dem Speicher entstehen.
+    Richtung(
+        "Welche Frage braucht die Reihe, welche den Speicher",
+        "Die offene Richtung zu Befund 387 verlangte ausdruecklich eine "
+        "Regel; sie steht jetzt und ist gerechnet. **Was der Schnitt wirklich "
+        "tut**: 'geschnitten' kuerzt nur am **oberen** Ende auf SERIENENDE - "
+        "den Anfang holt 'common_range' im Portfolio-Walk-Forward aus dem "
+        "juengeren Bein. Ich hatte ein festes Datumsfenster angenommen und es "
+        "am laufenden Code widerlegt. Damit ist der Anfang bei jedem Korblauf "
+        "ohnehin die Zulassungsreihe: BTC 5355 Balken ab 2012 werden zu 3301 "
+        "ab 2017-08-16. **Woran man es vor dem Lauf erkennt: am Datenstand, "
+        "nicht am Befehl.** Heute endet der Tagesspeicher genau auf "
+        "SERIENENDE, also ist der Schnitt an allen 41 Walk-Forward-Befehlen "
+        "wirkungslos - 'common_range(alle_geschnitten(x))' ist zeilengleich "
+        "mit 'common_range(x)', und bei einem Markt bleiben 5355 Balken 5355. "
+        "Die Liste der 34 ist damit **gerechnet** keine Liste von 34 Fehlern. "
+        "Wirksam wird der Schnitt beim naechsten Laden; der empfohlene "
+        "Backfill laedt bis heute. **Umgestellt sind die vier Befehle mit "
+        "unwiderruflicher Folge** ('korb', 'machbarkeit', 'adaptiv', "
+        "'verbund'): Eine Versuchsbuchung faellt nicht zurueck, und ihr "
+        "Sharpe je Trade geht in das Verzeichnis, aus dem 'streuung.py' "
+        "schaetzt. Der erste Anlauf ersetzte alle 24 Stellen auf einmal - "
+        "genau die Blindheit, vor der die offene Richtung warnt - und wurde "
+        "zurueckgenommen. Die Wache hat keine Ausnahmeliste: Die Menge kommt "
+        "aus 'zaehlende_befehle()'. **Vier eigene Fehler hat die Suite dabei "
+        "gefangen**: die 24-Stellen-Blindheit, die Annahme ueber "
+        "'geschnitten', eine Abwesenheitszusage ohne Grund (Wache aus 485) "
+        "und die Inventurzahlen 5/5/34, die jetzt 8/5/31 lauten. **Gelockert "
+        "ist nichts**: keine Schwelle, kein Gate, keine Zahl",
+        490,
+    ),
+    # Befund 491: Mein Schnitt aus 490 kannte die Kerzenlaenge nicht - und
+    # der Mangel war aelter als mein Eingriff.
+    Richtung(
+        "Der Schnitt kannte die Kerzenlaenge nicht",
+        "**Mein eigener Fehler aus dem Zyklus davor.** Befund 490 hat vier "
+        "buchenden Befehlen 'alle_geschnitten' gegeben, und das kuerzt auf "
+        "SERIENENDE (2026-08-29) **unabhaengig von der Kerzenlaenge**. Alle "
+        "vier nehmen '-i', und fuer feine Kerzen gilt FEINENDE (2026-10-18): "
+        "Gemessen werden aus 229.728 Viertelstundenbalken **224.929** - 4.799 "
+        "weg, sieben Wochen, stillschweigend. Die passende Fassung lag im "
+        "selben Modul daneben ('fein_geschnitten'), und ich habe die falsche "
+        "genommen. **Und der Mangel war aelter als mein Eingriff**: Die fuenf "
+        "Befehle, die schon vor 490 schnitten - 'abstand', 'anatomie', "
+        "'rennen', 'stand', 'aufteilung' -, nehmen ebenfalls '-i' mit "
+        "Vorgabe 'D' und riefen ebenfalls die Tagesfassung. Der Fehler "
+        "bestand seit Befund 387/390/394/400 und war nur nie gefahren "
+        "worden; mein Fehler hat einen aelteren aufgedeckt. **Gebaut**: "
+        "'datenstand.nach_intervall' waehlt die Reihe am Etikett der "
+        "Kerzenlaenge und sagt, welche - 'D' auf SERIENENDE geschlossen, "
+        "'15' auf FEINENDE halboffen, und fuer eine Kerzenlaenge ohne "
+        "gepflegte Reihe wird **nicht** geschnitten, sondern genau das "
+        "gesagt (die Richtung aus Befund 370). Der Verteiler ruft die beiden "
+        "vorhandenen Funktionen auf, statt die Vergleiche nachzubauen: "
+        "'fein_geschnitten' sagt selbst, dass ein '<=' den ersten Balken des "
+        "Folgetags mitnimmt und 229.729 statt 229.728 ergibt. Alle **neun** "
+        "schneidenden Befehle gehen jetzt darueber, und eine Zusicherung "
+        "verbietet den direkten Aufruf der Tagesfassung - ein Verteiler "
+        "statt neun Verzweigungen, denn wer an neun Stellen von Hand waehlt, "
+        "waehlt an der zehnten falsch (168). **Und acht Wachen hingen am "
+        "Namen einer Funktion**: erst geschaetzt mit drei, dann am Stand vor "
+        "dem Befund gezaehlt - acht Stellen, fuenf davon fielen im Lauf, drei "
+        "hatte ich beim Bauen von Hand nachgezogen, und daran war zu sehen, "
+        "dass die Bauart falsch ist und nicht die einzelne Zeile. Die "
+        "Inventur in 'test_abstandsreihe' sah auf einen Schlag **einen** "
+        "Schneider statt neun. Alle acht fragen jetzt 'tests/schnittwege'; "
+        "dieselbe Lehre wie bei 'BUCHUNGSWEGE' in Befund 282 und 479, hier "
+        "zum dritten Mal. **Und der Melder wird selbst geprueft**: Acht "
+        "Dateien fragen ihn - gezaehlt, nicht geschaetzt -, zunaechst fragte "
+        "ihn nichts; ein zu weites Wort in SCHNITTWEGE, und acht Wachen sind "
+        "leer erfuellt, ohne dass "
+        "eine rot wird (der Satz aus 479). 'tests/test_schnittwege' prueft "
+        "jeden Weg einzeln, die Gegenproben ('common_range' schneidet den "
+        "Anfang und zaehlt nicht) und am echten 'cli.py' die Nichtleere samt "
+        "der Zahl neun. Dabei steht der Unterschied zur Inventur jetzt als "
+        "Messung da: Melder neun, Inventur acht, die Luecke ist genau 'korb', "
+        "weil die Inventur 'spitzenkandidat' im Block verlangt und 'korb' "
+        "Saaten laedt - vorher begruendet, jetzt gerechnet (234). "
+        "**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl - "
+        "heute sind beide Schnitte wirkungslos, und genau deshalb war der "
+        "Fehler unsichtbar",
+        491,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -8199,11 +8283,23 @@ OFFEN: tuple[Richtung, ...] = (
         "wirkungsloser Handgriff, nach dem naechsten Backfill ein "
         "entscheidender. Der erste Anlauf ersetzte alle 24 Stellen auf "
         "einmal - genau die Blindheit, vor der dieser Eintrag warnt, und "
-        "zurueckgenommen. Offen bleiben die 30 nicht buchenden Laeufe: Fuer "
-        "sie gilt derselbe Satz wie fuer 'stand' in Befund 370 - auf allem zu "
-        "rechnen, was da ist, ist richtig, es muss nur dastehen",
+        "zurueckgenommen. **Offen und jetzt gezaehlt statt geschaetzt** (491): "
+        "Von den 41 Walk-Forward-Befehlen nennen **9** die Reihe - die neun, "
+        "die seit 491 ueber 'nach_intervall' gehen -, und **32 schweigen**. "
+        "Fuer sie gilt derselbe Satz wie fuer 'stand' in Befund 370: auf "
+        "allem zu rechnen, was da ist, ist richtig, es muss nur dastehen. Der "
+        "Eintrag sprach vorher von 30; die Zahl war geschaetzt. **Und die "
+        "32 von Hand zu bedienen waere wieder 168**: Alle 41 gehen durch "
+        "'run_portfolio_walkforward' oder 'run_walkforward' - der Vermerk "
+        "gehoert an die Stelle, an der die Rahmen in den Lauf eintreten, "
+        "nicht an 32 Aufrufe. **Und der Weg dorthin steht schon im Modul**: "
+        "Die Engine meldet den Hinweis auf die Verlustgrenzen je Bein "
+        "absichtlich ueber ihren structlog-Logger, mit der Begruendung "
+        "'deshalb steht der Hinweis im Protokoll statt nur in einem "
+        "Kommentar'. Derselbe Kanal, eine Zeile hinter 'common_range', traegt "
+        "den Reihenvermerk fuer alle 41",
         387,
-        zuletzt=490,
+        zuletzt=491,
     ),
     Richtung(
         # **Der Name traegt keine Zahl mehr** (Befund 352). Er hat sie von 332

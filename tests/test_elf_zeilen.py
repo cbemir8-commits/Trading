@@ -40,6 +40,7 @@ import pytest
 import cli
 from research.gates import GateStatus
 from research.referenz import SPOTPUNKT
+from tests.schnittwege import SCHNITTWEGE, schneidet
 
 
 class TestDerSpotpunktStehtAufDerReihe:
@@ -51,7 +52,7 @@ class TestDerSpotpunktStehtAufDerReihe:
     def test_der_statusschirm_schneidet_fuer_ihn(self) -> None:
         quelle = inspect.getsource(cli.stand)
 
-        assert "spotrahmen = alle_geschnitten(frames)" in quelle
+        assert schneidet(quelle), SCHNITTWEGE
         assert "spotrahmen, symbole, genome, trials, settings" in quelle
 
     def test_und_nennt_die_reihe_ueber_der_tafel(self) -> None:

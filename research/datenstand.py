@@ -400,6 +400,50 @@ def alle_fein_geschnitten(
     return {name: fein_geschnitten(rahmen) for name, rahmen in frames.items()}
 
 
+#: Welche gepflegte Reihe zu welcher Kerzenlaenge gehoert.
+#:
+#: **Der Anlass ist ein eigener Fehler - Befund 491.** Befund 490 hat vier
+#: buchenden Befehlen ``alle_geschnitten`` gegeben, und das kuerzt auf
+#: ``SERIENENDE`` **unabhaengig von der Kerzenlaenge**. Alle vier nehmen
+#: ``-i``; mit ``-i 15`` haetten sie damit 4.799 Balken verloren - sieben
+#: Wochen, denn fuer feine Kerzen gilt ``FEINENDE`` und nicht ``SERIENENDE``.
+#: Die passende Fassung lag im selben Modul daneben.
+#:
+#: Ein Verteiler statt vier Verzweigungen: Wer an vier Stellen von Hand
+#: waehlt, waehlt an der fuenften falsch (Befund 168).
+REIHENENDE: dict[str, date] = {"D": SERIENENDE, "15": FEINENDE}
+
+
+def nach_intervall(
+    frames: Mapping[str, PandasRahmen], intervall: str
+) -> tuple[dict[str, PandasRahmen], str]:
+    """Auf die Reihe **dieser** Kerzenlaenge kuerzen - und sagen, auf welche.
+
+    Gibt die Rahmen und eine Zeile zurueck. Die Zeile ist kein Zierrat: Befund
+    370 hat entschieden, dass ein Lauf auf allem rechnen darf, was da ist -
+    *"es muss nur dastehen"*. Wo keine gepflegte Reihe existiert, wird deshalb
+    **nicht** geschnitten und genau das gesagt, statt mit dem Ende einer
+    fremden Kerzenlaenge zu kuerzen.
+
+    ``intervall`` ist das Etikett der Kerzenlaenge (``"D"``, ``"15"``), also
+    ``Interval.label``.
+    """
+    ende = REIHENENDE.get(intervall)
+    if ende is None:
+        return dict(frames), (
+            f"Reihe: keine gepflegte fuer {intervall}-Kerzen - nicht "
+            f"geschnitten, gerechnet wird auf dem Speicher"
+        )
+    kurz = (
+        alle_fein_geschnitten(frames)
+        if intervall == "15"
+        else alle_geschnitten(frames)
+    )
+    verloren = sum(len(frames[k]) - len(kurz[k]) for k in frames)
+    zusatz = f", {verloren} Balken ausserhalb" if verloren else ""
+    return kurz, f"Reihe: bis {ende}{zusatz}"
+
+
 def feinzeile(frames: Mapping[str, PandasRahmen]) -> str:
     """Eine Zeile: Auf welcher Feinreihe stehen diese Zahlen?
 

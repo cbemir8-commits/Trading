@@ -47,6 +47,7 @@ import pathlib
 import pytest
 
 from tests.quelltext import nur_code
+from tests.schnittwege import SCHNITTWEGE, schneidet
 
 #: Variablennamen, die in diesem Projekt einen Quelltext tragen.
 TRAEGER = ("quelle", "src", "code", "text", "kopf", "rumpf", "koerper")
@@ -192,7 +193,7 @@ class TestDieWerkzeugeDahinter:
         return inspect.getsource(cli.stand)
 
     def test_code_bleibt_stehen(self) -> None:
-        assert "spotrahmen = alle_geschnitten(frames)" in nur_code(self._quelle())
+        assert schneidet(nur_code(self._quelle())), SCHNITTWEGE
 
     def test_eine_gedruckte_zeichenkette_auch(self) -> None:
         """Was ein Befehl druckt, ist eine Zusicherung wert - ausgeblendet

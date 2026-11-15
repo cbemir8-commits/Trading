@@ -41,6 +41,7 @@ import cli
 from research.gates import GateThresholds, deflated_sharpe_ratio
 from research.referenz import SPOTPUNKT
 from research.stand import BUDGET
+from tests.schnittwege import SCHNITTWEGE, schneidet
 
 #: Gemessen, siehe Kopf.
 FENSTER_REIHE = 224
@@ -64,9 +65,14 @@ def _dsr(versuche: int) -> float:
 
 class TestDerBefehlStehtJetztAufDerReihe:
     def test_er_schneidet(self) -> None:
+        """**Geprueft wird der Schnitt, nicht ein Funktionsname** (Befund
+        491). Hier stand ``alle_geschnitten(frames)``, und als die neun
+        Schneider auf den intervallbewussten Verteiler umgestellt wurden, fiel
+        diese Zusicherung - obwohl der Befehl genau das tat, was sie meint.
+        """
         quelle = inspect.getsource(cli.abstand)
 
-        assert "alle_geschnitten(frames)" in quelle
+        assert schneidet(quelle), SCHNITTWEGE
 
     def test_und_nennt_die_reihe(self) -> None:
         """Die einzeilige Auskunft aus Befund 370. Genau sie hat mir in diesem
@@ -216,7 +222,7 @@ class TestDieInventurStimmtNoch:
         t = pathlib.Path("cli.py").read_text()
         grenzen = [m.start() for m in re.finditer(r"\n@app\.command\(\)", t)]
         grenzen.append(len(t))
-        schneidet: list[str] = []
+        schneiden: list[str] = []
         nennt: list[str] = []
         keins: list[str] = []
         for anfang, ende in pairwise(grenzen):
@@ -228,15 +234,15 @@ class TestDieInventurStimmtNoch:
             if not (laeuft and "spitzenkandidat" in block):
                 continue
             name = treffer.group(1)
-            g = "alle_geschnitten" in block
+            g = schneidet(block)
             n = "reihenzeile" in block or "_reihenvermerk" in block
             if g:
-                schneidet.append(name)
+                schneiden.append(name)
             if n:
                 nennt.append(name)
             if not g and not n:
                 keins.append(name)
-        return schneidet, nennt, keins
+        return schneiden, nennt, keins
 
     def test_acht_schneiden_fuenf_nennen_einunddreissig_keins(self) -> None:
         """Die Zahlen wandern, wenn ein Befehl sich entscheidet - und genau
@@ -306,7 +312,7 @@ class TestDieInventurStimmtNoch:
         zeile = f"{len(schneidet)} / {len(nennt)} / {len(keins)}"
 
         assert f"**Heute sind es {zeile}**" in eintrag.ergebnis, zeile
-        assert eintrag.zuletzt == 490
+        assert eintrag.zuletzt == 491
 
 
 @pytest.mark.daten

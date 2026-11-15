@@ -4047,7 +4047,7 @@ def korb(
     Zum Ausprobieren ``TRADING_TROCKENLAUF=1`` setzen.
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
-    from research.datenstand import alle_geschnitten
+    from research.datenstand import nach_intervall
     from research.gates import evaluate_gates
     from research.seeds import load_seeds
     from strategy.compiler import compile_genome
@@ -4064,7 +4064,8 @@ def korb(
     # Versuch, und das ist unwiderruflich. Heute wirkungslos (der
     # Tagesspeicher endet genau auf SERIENENDE), wirksam beim naechsten
     # Backfill.
-    frames = alle_geschnitten(frames)
+    frames, reihe = nach_intervall(frames, interval_obj.label)
+    console.print(f'[dim]{reihe}[/]')
     erster = next(iter(frames.values()))
 
     trials_path = Path(settings.paths.state) / "trials.json"
@@ -5039,7 +5040,7 @@ def abstand(
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
-    from research.datenstand import alle_geschnitten, reihenzeile
+    from research.datenstand import nach_intervall, reihenzeile
     from research.erreichbarkeit import bewerte, kennzahlen_aus_pnl
     from research.gates import stichprobe_wie_im_gate
     from research.randschnitt import ohne_zensierte, randtrades
@@ -5072,7 +5073,7 @@ def abstand(
     # Suchbudget bis 349 Versuchen, auf der Reihe 0,5826 und bis **224** -
     # also 21 statt 146 verbleibende Versuche. Die zu grosszuegige Zahl stand
     # an der Stelle, an der eine unwiderrufliche Entscheidung haengt.
-    frames = alle_geschnitten(frames)
+    frames, _reihe = nach_intervall(frames, interval_obj.label)
     console.print(f"[dim]Reihe: {reihenzeile(frames)}[/dim]")
     genome = spitzenkandidat()
     if spot:
@@ -6038,7 +6039,7 @@ def machbarkeit(
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from core.report import write_report
     from research.admission import load_trials
-    from research.datenstand import alle_geschnitten
+    from research.datenstand import nach_intervall
     from research.gates import evaluate_gates
     from research.machbarkeit import (
         REGLER,
@@ -6079,7 +6080,9 @@ def machbarkeit(
     # Backfill, der bis heute laedt - dann soll hier nichts
     # stillschweigend laenger rechnen als die Zahlen, gegen die es
     # verglichen wird (387/474).
-    frames = common_range(alle_geschnitten(roh))
+    roh, reihe = nach_intervall(roh, interval_obj.label)
+    console.print(f'[dim]{reihe}[/]')
+    frames = common_range(roh)
     erster = next(iter(frames.values()))
     configs = {
         x: BacktestConfig(
@@ -6983,7 +6986,7 @@ def adaptiv(
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.adaptiv import FensterWahl
     from research.admission import load_trials
-    from research.datenstand import alle_geschnitten
+    from research.datenstand import nach_intervall
     from research.gates import evaluate_gates
     from research.seeds import spitzenkandidat
     from research.suchbudget import Budget
@@ -7017,7 +7020,9 @@ def adaptiv(
     # Backfill, der bis heute laedt - dann soll hier nichts
     # stillschweigend laenger rechnen als die Zahlen, gegen die es
     # verglichen wird (387/474).
-    frames = common_range(alle_geschnitten(roh))
+    roh, reihe = nach_intervall(roh, interval_obj.label)
+    console.print(f'[dim]{reihe}[/]')
+    frames = common_range(roh)
     genome = spitzenkandidat()
     configs = {
         x: BacktestConfig(
@@ -7761,7 +7766,7 @@ def anatomie(
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.admission import load_trials
     from research.anatomie import BAUTEILE, Lage, traegt_das_bauteil, vergleiche
-    from research.datenstand import alle_geschnitten
+    from research.datenstand import nach_intervall
     from research.gates import GateStatus, evaluate_gates, vergleichbar
     from research.randschnitt import fertige
     from research.referenz import SPOTPUNKT
@@ -7788,7 +7793,8 @@ def anatomie(
     # geschnitten (Befund 363), Spot-Bedingungen ('_spotconfigs'), Hebel
     # gedeckelt ('_ohne_hebel').
     frames, _configs, _spanne = _korb_daten(symbole, interval_obj, settings)
-    frames = alle_geschnitten(frames)
+    frames, reihe = nach_intervall(frames, interval_obj.label)
+    console.print(f'[dim]{reihe}[/]')
     configs = _spotconfigs(symbole, settings)
     versuche = load_trials(Path(settings.paths.state) / "trials.json")
     genom = _ohne_hebel(spitzenkandidat())
@@ -10987,7 +10993,7 @@ def verbund(
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.admission import load_trials
-    from research.datenstand import alle_geschnitten
+    from research.datenstand import nach_intervall
     from research.seeds import load_seeds, spitzenkandidat
     from research.verbund import baue, noetige_guete
     from research.versuche import Versuch
@@ -11008,7 +11014,8 @@ def verbund(
     # Versuch, und das ist unwiderruflich. Heute wirkungslos (der
     # Tagesspeicher endet genau auf SERIENENDE), wirksam beim naechsten
     # Backfill.
-    frames = alle_geschnitten(frames)
+    frames, reihe = nach_intervall(frames, interval_obj.label)
+    console.print(f'[dim]{reihe}[/]')
 
     gesucht = partner.strip().lower()
     treffer = [g for g in load_seeds(generation) if gesucht in g.name.lower()]
@@ -11288,7 +11295,7 @@ def rennen(
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.admission import load_trials
-    from research.datenstand import alle_geschnitten, reihenzeile
+    from research.datenstand import nach_intervall, reihenzeile
     from research.gates import stichprobe_wie_im_gate
     from research.randschnitt import ohne_zensierte
     from research.referenz import SPOTPUNKT
@@ -11328,7 +11335,7 @@ def rennen(
     # Oben holt die Suche irgendwann auf, unten nie. Welche der beiden Zahlen
     # gilt, ist keine Geschmacksfrage: Zugelassen wird auf der Reihe, und
     # beurteilt werden die fertig gehandelten Trades.
-    frames = alle_geschnitten(frames)
+    frames, _reihe = nach_intervall(frames, interval_obj.label)
     erster = next(iter(frames.values()))
     spanne_tage = (
         erster["open_time"].iloc[-1] - erster["open_time"].iloc[0]
@@ -12570,7 +12577,7 @@ def stand(
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
     from research.betriebspunkt import Betriebslage, Betriebspunkt
-    from research.datenstand import alle_geschnitten, reihenzeile
+    from research.datenstand import nach_intervall, reihenzeile
     from research.gatelage import ordne
     from research.gates import GateStatus, evaluate_gates, vergleichbar
     from research.reihenfolge import STAND as REIHENFOLGE
@@ -12653,7 +12660,7 @@ def stand(
     # Reihe (Befund 370). Der Spot-Punkt aber ist der Punkt aus
     # 'referenz.SPOTPUNKT', und wer die beiden nebeneinander legt, soll nicht
     # zwei Reihen vergleichen.
-    spotrahmen = alle_geschnitten(frames)
+    spotrahmen, _reihe = nach_intervall(frames, interval_obj.label)
     spotgates, zweitpunkt, spotjahre = _spotpunkt(
         spotrahmen, symbole, genome, trials, settings
     )
@@ -16186,7 +16193,7 @@ def aufteilung(
         rangzeile,
         streuung,
     )
-    from research.datenstand import alle_geschnitten, reihenzeile
+    from research.datenstand import nach_intervall, reihenzeile
     from research.gates import (
         GateStatus,
         evaluate_gates,
@@ -16214,7 +16221,7 @@ def aufteilung(
     # **Auf der Zulassungsreihe** (Befund 387/390/394): Dieser Befehl setzt
     # eine Zahl neben den Abstand aus 'referenz.py', also gehoert er auf
     # dieselbe Reihe.
-    geschnitten = alle_geschnitten(roh)
+    geschnitten, _reihe = nach_intervall(roh, interval_obj.label)
     console.print(f"[dim]Reihe: {reihenzeile(geschnitten)}[/]")
     genome = _ohne_hebel(spitzenkandidat())
     configs = _spotconfigs(symbole, settings)

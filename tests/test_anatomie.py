@@ -37,6 +37,7 @@ from research.anatomie import (
     traegt_das_bauteil,
     vergleiche,
 )
+from tests.schnittwege import SCHNITTWEGE, schneidet
 
 
 def _lage(**kwargs) -> Lage:
@@ -301,7 +302,7 @@ class TestDerBefehlMisstDenZulassungspunkt:
         raise AssertionError("'anatomie' steht nicht mehr in cli.py")
 
     def test_die_reihe_wird_geschnitten(self) -> None:
-        assert "alle_geschnitten(frames)" in self._quelle()
+        assert schneidet(self._quelle()), SCHNITTWEGE
 
     def test_die_spot_bedingungen_werden_genommen(self) -> None:
         assert "_spotconfigs(symbole, settings)" in self._quelle()
