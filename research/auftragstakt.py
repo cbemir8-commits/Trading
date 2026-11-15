@@ -165,16 +165,100 @@ def rechne(
     return tuple(stufen)
 
 
-def als_auftrag(stufen: tuple[Takt, ...], *, ziel_trades: int) -> str:
+def balken_fuer_tage(tage: float, intervall: object) -> int:
+    """Wie viele Kerzen dieser Laenge auf ``tage`` Tage gehen.
+
+    **Abgeleitet aus ``Interval.duration``** und nicht aufgeschrieben: Eine
+    zweite Tafel waere die zweite Wahrheit, und ``datenstand.BALKEN_JE_TAG``
+    haelt die 96 fuer die Feinreihe schon (Befund 494). Dass beide
+    uebereinstimmen, steht als Zusicherung in ``test_auftragsbalken``.
+
+    **Nicht "Balken je Tag"**, und das ist eine Berichtigung aus dem Bauen
+    dieses Befundes: Der erste Entwurf rechnete Balken je Tag und gab fuer
+    Wochenkerzen ``0`` zurueck - eine Zahl, die luegt, denn ein Takt von 20,5
+    Tagen sind dort drei Balken. Gefragt ist immer eine Dauer, nie ein
+    Verhaeltnis.
+
+    ``None`` gibt es hier nicht: Was keine Kerzenlaenge ist, ist ein Fehler
+    im Aufruf und nicht eine Null.
+    """
+    from datetime import timedelta
+
+    from core.models import Interval
+
+    gedeutet = Interval.gedeutet(intervall)
+    if gedeutet is None:
+        raise ValueError(f"keine Kerzenlaenge: {intervall!r}")
+    return round(timedelta(days=tage) / gedeutet.duration)
+
+
+def _kerzensatz(intervall: object) -> str:
+    """Der Satz, der die Kerzenlaenge im Auftrag benennt.
+
+    Fuer Kerzen unter einem Tag die Balken je Tag, darueber die Tage je
+    Kerze - beides aus derselben Dauer, damit keine der beiden Richtungen
+    eine Null wird.
+    """
+    from datetime import timedelta
+
+    from core.models import Interval
+
+    kerze = Interval.gedeutet(intervall)
+    if kerze is None:
+        raise ValueError(f"keine Kerzenlaenge: {intervall!r}")
+    if kerze.duration <= timedelta(days=1):
+        return (
+            f"**Gerechnet wird auf {kerze.label}-Kerzen** - ein Tag sind "
+            f"{balken_fuer_tage(1, kerze)} Balken."
+        )
+    tage = kerze.duration / timedelta(days=1)
+    return (
+        f"**Gerechnet wird auf {kerze.label}-Kerzen** - eine Kerze sind "
+        f"{tage:.0f} Tage."
+    )
+
+
+def _feldgrenze(feld: str) -> int:
+    """Die obere Grenze eines Genom-Feldes - **gefragt, nicht gewusst**.
+
+    ``cooldown_bars`` darf hoechstens 200 sein, ``max_hold_bars`` 2000. Die
+    Zahlen hier hinzuschreiben waere die zweite Wahrheit; sie stehen im
+    Modell, und das Modell ist, was der Vorschlag durchlaufen muss.
+    """
+    from strategy.genome import Genome
+
+    for metadaten in Genome.model_fields[feld].metadata:
+        grenze = getattr(metadaten, "le", None)
+        if grenze is not None:
+            return int(grenze)
+    raise ValueError(f"{feld} hat keine obere Grenze")
+
+
+def als_auftrag(
+    stufen: tuple[Takt, ...], *, ziel_trades: int, intervall: object
+) -> str:
     """Der Abschnitt, der in den Prompt gehoert.
 
     Leer, wenn nichts gerechnet werden konnte - ein Auftragsabschnitt ohne
     Zahlen ist schlechter als keiner, weil er wie eine Anforderung aussieht.
+
+    ``intervall`` ist **Pflicht** (Befund 496). Dieser Abschnitt ist in Befund
+    432 gebaut worden, um den Auftrag in die Einheit zu bringen, die der
+    Empfaenger einstellt - und er rechnete in **Tagen**, waehrend zwei der
+    vier genannten Felder in **Kerzen** zaehlen. Auf Tageskerzen stimmt das
+    zufaellig; auf Viertelstundenkerzen ist ein Takt von 20,5 Tagen **1968
+    Balken**, und ``cooldown_bars`` darf hoechstens 200 sein. Die Anforderung
+    war dort also nicht nur in der falschen Einheit, sondern im Schema gar
+    nicht ausdrueckbar - und die Kerzenlaenge stand nirgends im Auftrag.
+    Ein Vorgabewert waere genau der Weg zurueck dorthin.
     """
     if not stufen:
         return ""
 
     ziel = next((s for s in stufen if s.trades == ziel_trades), stufen[0])
+    ziel_balken = balken_fuer_tage(ziel.takt_tage, intervall)
+    sperre = _feldgrenze("cooldown_bars")
+
     zeilen = [
         "## Was das in Genom-Groessen heisst\n",
         "Die Trade-Zahl und der Sharpe je Trade oben sind **Ergebnisse**. "
@@ -183,8 +267,12 @@ def als_auftrag(stufen: tuple[Takt, ...], *, ziel_trades: int) -> str:
         "Umgerechnet",
         f"auf die {GEMEINSAME_TAGE} Tage, auf denen beide Beine Kerzen haben:",
         "",
+        _kerzensatz(intervall) + " 'cooldown_bars'",
+        "und 'max_hold_bars' zaehlen **Kerzen, nicht Tage**; verwechsle das "
+        "nicht.",
+        "",
         f"- **Takt: ein Trade alle {ziel.takt_tage:.1f} Tage** fuer "
-        f"{ziel.trades} Trades.",
+        f"{ziel.trades} Trades - das sind **{ziel_balken} Balken**.",
         f"- **Bruttobewegung: rund {ziel.brutto_pct:.1f} % je Trade.** Die "
         f"gemessene Streuung",
         f"  einer Bewegung ueber {round(ziel.takt_tage)} Tage ist "
@@ -196,13 +284,29 @@ def als_auftrag(stufen: tuple[Takt, ...], *, ziel_trades: int) -> str:
         "",
         "Die Spanne, damit du siehst, wohin es sich lohnt:",
         "",
-        "    Trades  Takt/Tage  Streuung%  noetig SR  brutto%",
+        "    Trades  Takt/Tage  Takt/Balken  Streuung%  noetig SR  brutto%",
     ]
     for s in stufen:
         zeilen.append(
-            f"    {s.trades:>6} {s.takt_tage:>10.1f} {s.streuung_pct:>10.2f} "
+            f"    {s.trades:>6} {s.takt_tage:>10.1f} "
+            f"{balken_fuer_tage(s.takt_tage, intervall):>12} "
+            f"{s.streuung_pct:>10.2f} "
             f"{s.noetiger_sharpe:>10.4f} {s.brutto_pct:>8.2f}"
         )
+    if ziel_balken > sperre:
+        zeilen += [
+            "",
+            "**Der Takt passt auf dieser Kerzenlaenge nicht in das Feld.** "
+            "'cooldown_bars'",
+            f"darf hoechstens {sperre} sein, verlangt sind {ziel_balken} "
+            f"Balken. Eine Sperrfrist",
+            "kann den Takt hier also nicht herstellen - er muss aus den "
+            "Einstiegsbedingungen",
+            "kommen. Auf dieser Kerzenlaenge ist das Ziel damit schwerer zu "
+            "treffen als auf",
+            "Tageskerzen, und das ist gemessen, nicht vermutet (Befund "
+            "450/489).",
+        ]
     zeilen += [
         "",
         "**Zwei Warnungen dazu.**",

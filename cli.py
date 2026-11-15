@@ -896,7 +896,7 @@ def wettbewerb(
     def _vorschlaege() -> list:
         if not ki:
             return []
-        neu = _ask_the_analyst(settings, journal_path)
+        neu = _ask_the_analyst(settings, journal_path, interval_obj)
         bekannt = {g.genome_id for g in aktuell}
         return [g for g in neu if g.genome_id not in bekannt]
 
@@ -1688,7 +1688,7 @@ def research(
 
     genomes: list[Genome] = []
     if ki:
-        genomes = _ask_the_analyst(settings, journal_path)
+        genomes = _ask_the_analyst(settings, journal_path, interval_obj)
         if not genomes:
             console.print(
                 "[yellow]Keine brauchbaren Vorschlaege - es laufen die "
@@ -1894,7 +1894,7 @@ def _send_report(settings, payload: dict) -> None:
         console.print(f"[dim]Er liegt aber in {file}[/]")
 
 
-def _ask_the_analyst(settings, journal_path: Path) -> list:
+def _ask_the_analyst(settings, journal_path: Path, intervall) -> list:
     """Die Research-KI um neue Kandidaten bitten.
 
     Sie schlaegt vor, sie entscheidet nicht: Jeder Vorschlag durchlaeuft
@@ -1974,7 +1974,7 @@ def _ask_the_analyst(settings, journal_path: Path) -> list:
         client, journal=journal, budget=budget, already_tried=tried,
         lage=lage,
         ausschluesse=_ausschluesse(),
-        takt=_auftragstakt(lage, settings),
+        takt=_auftragstakt(lage, settings, intervall),
     )
     save_budget(budget_path, budget)
 
@@ -2203,7 +2203,7 @@ def _auftragslage(zustand: Path):
     )
 
 
-def _auftragstakt(lage, settings) -> str:
+def _auftragstakt(lage, settings, intervall) -> str:
     """Den Auftrag in Genom-Groessen umrechnen - Befund 432.
 
     ``_auftragslage`` nennt Trade-Zahl und Sharpe je Trade. **Beides kann der
@@ -2240,7 +2240,9 @@ def _auftragstakt(lage, settings) -> str:
         schiefe=SPOTPUNKT.schiefe,
         woelbung=SPOTPUNKT.woelbung,
     )
-    return als_auftrag(stufen, ziel_trades=lage.bestes_ziel)
+    return als_auftrag(
+        stufen, ziel_trades=lage.bestes_ziel, intervall=intervall
+    )
 
 
 def _ausschluesse():
@@ -4236,7 +4238,7 @@ def vorschlag(
             build_prompt(
                 journal=[], thresholds=GateThresholds(), lage=lage,
                 ausschluesse=_ausschluesse(),
-                takt=_auftragstakt(lage, settings),
+                takt=_auftragstakt(lage, settings, intervall),
             )
         )
         return
@@ -4268,7 +4270,7 @@ def vorschlag(
     ergebnis = propose(
         client, journal=[], budget=budget, already_tried=bekannt, lage=lage,
         ausschluesse=_ausschluesse(),
-        takt=_auftragstakt(lage, settings),
+        takt=_auftragstakt(lage, settings, intervall),
     )
     if datei is None:
         save_budget(state / "budget.json", budget)

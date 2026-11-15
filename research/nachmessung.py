@@ -431,7 +431,14 @@ GELESEN: dict[str, int] = {
     # ist gelesen und abgegrenzt - sie benutzt das Ergebnis als Warnung im
     # Auftrag an die Research-KI ("ein kuerzerer Ausstieg bringt keine
     # Trades"), misst aber nichts nach.
-    "Gedeckelter Ausstieg": 462,
+    #
+    # **Befund 496 nennt 'max_hold_bars' wieder**, und zwar nur als Feldnamen:
+    # Der Abschnitt dort handelt von der **Einheit** - das Feld zaehlt Kerzen,
+    # der Auftrag rechnete in Tagen - und sagt nichts darueber, ob ein Deckel
+    # Trades bringt. Gelesen und abgegrenzt, kein neuer Fund zu dieser
+    # Richtung. (Dass der Zeiger mitwandern muss, ist die Lehre aus 295: Wer
+    # den Namen nennt, erzeugt selbst einen Treffer.)
+    "Gedeckelter Ausstieg": 496,
     # 'Darf ein strukturell uebersprungenes Gate ...' ist gelesen und
     # **ausdruecklich nicht nachgezogen**: Die einzige Erwaehnung (458) baut
     # 'STRUKTURGRUENDE' als einzige Quelle der Gruende, aus denen ein Gate

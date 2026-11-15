@@ -88,7 +88,15 @@ from research.urteilszweige import (
 #: strengere Richtung" -, war bei ihrer Entstehung richtig und ist es seit
 #: dem Versuchsverzeichnis (377) nicht mehr. Ein Satz ohne Bedingung kann
 #: nicht auffallen; einer, der rechnet, schon.
-URTEILSFUNKTIONEN: int = 167
+#: **168 seit 496**: 'auftragstakt._kerzensatz' sagt dem Analysten, auf
+#: welcher Kerzenlaenge gerechnet wird - und das in zwei Zweigen, weil ein
+#: Balken kuerzer oder laenger als ein Tag sein kann. Der zweite ist der
+#: Grund, warum er hier auffaellt: 'ein Tag sind 0 Balken' waere auf
+#: Wochenkerzen herausgekommen, und eine Null, die wie eine Umrechnung
+#: aussieht, ist schlimmer als keine Angabe. Der Satz rechnet also, statt
+#: unbedingt dazustehen - dieselbe Lehre wie bei 'Streuung._richtungssatz'
+#: eine Zeile darueber.
+URTEILSFUNKTIONEN: int = 168
 
 
 def _fn(quelle: str) -> ast.FunctionDef:

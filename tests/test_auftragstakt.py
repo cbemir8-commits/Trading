@@ -122,7 +122,7 @@ class TestDieGebuehrRedetHierNichtMit:
 class TestWasImAuftragLandet:
     def _text(self) -> str:
         stufen = rechne(_reihe(), ziele=(146, 161, 185), versuche=203)
-        return als_auftrag(stufen, ziel_trades=161)
+        return als_auftrag(stufen, ziel_trades=161, intervall="D")
 
     def test_er_nennt_die_felder_die_der_empfaenger_setzt(self) -> None:
         """Der Punkt des Befundes: Trade-Zahl und Sharpe sind Ergebnisse."""
@@ -160,7 +160,7 @@ class TestWasImAuftragLandet:
     def test_ohne_stufen_bleibt_er_leer(self) -> None:
         """Ein Auftragsabschnitt ohne Zahlen sieht wie eine Anforderung aus
         und ist keine."""
-        assert als_auftrag((), ziel_trades=161) == ""
+        assert als_auftrag((), ziel_trades=161, intervall="D") == ""
 
 
 class TestDerAuftragRuftIhnAuf:
@@ -186,12 +186,31 @@ class TestDerAuftragRuftIhnAuf:
 
     def test_und_die_cli_rechnet_ihn_an_jeder_stelle(self) -> None:
         """Drei Stellen, und '--auftrag' ist die wichtigste: Wer sich den
-        Auftrag anzeigen laesst, muss den sehen, der gestellt wird."""
+        Auftrag anzeigen laesst, muss den sehen, der gestellt wird.
+
+        **Geprueft wird der Aufruf, nicht sein Wortlaut** (Befund 496): Diese
+        Regel zaehlte den Text 'takt=_auftragstakt(lage, settings)' und fiel,
+        als die Kerzenlaenge dazukam - dieselbe Bauart, gegen die 282, 479,
+        491 und 492 gebaut sind, hier zum fuenften Mal.
+        """
+        import ast
         from pathlib import Path
 
-        quelle = Path("cli.py").read_text()
+        baum = ast.parse(Path("cli.py").read_text(encoding="utf-8"))
+        aufrufe = [
+            k
+            for k in ast.walk(baum)
+            if isinstance(k, ast.Call)
+            and isinstance(k.func, ast.Name)
+            and k.func.id == "_auftragstakt"
+        ]
 
-        assert quelle.count("takt=_auftragstakt(lage, settings)") == 3
+        assert len(aufrufe) == 3, len(aufrufe)
+        knapp = [ast.unparse(k) for k in aufrufe if len(k.args) < 3]
+        assert knapp == [], (
+            "rechnet den Takt ohne Kerzenlaenge - dann steht der Auftrag in "
+            f"Tagen und die Felder zaehlen Balken (Befund 496): {knapp}"
+        )
 
     def test_ohne_speicher_bleibt_der_auftrag_der_alte(self) -> None:
         """Gesetzte Zahlen waeren schlechter als keine."""

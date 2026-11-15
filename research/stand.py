@@ -8288,6 +8288,47 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Pruefaufbau, nicht der Code. **Gelockert ist nichts**",
         495,
     ),
+    # Befund 496: Der Auftrag an die Research-KI rechnete in Tagen, und zwei
+    # der vier Felder, die er nennt, zaehlen Kerzen.
+    Richtung(
+        "Der Auftrag rechnete in Tagen, die Felder zaehlen Balken",
+        "'research/auftragstakt' ist in Befund 432 entstanden, weil der "
+        "Auftrag an die Research-KI das Ziel in einer Einheit nannte, die der "
+        "Empfaenger nicht einstellen kann. Sein eigener Satz: *'Hier wird "
+        "daraus ein Takt in **Tagen** und eine Bruttobewegung in Prozent - "
+        "dieselbe Einheit wie diese Felder.'* Zwei der vier genannten Felder "
+        "zaehlen aber **Kerzen**: 'cooldown_bars' und 'max_hold_bars'; im "
+        "Compiler vergleicht 'ctx.index - position < genome.cooldown_bars' "
+        "Balkenindizes. Auf Tageskerzen ist ein Balken ein Tag, und die "
+        "Aussage stimmt **zufaellig**. Gemessen auf der anderen "
+        "Kerzenlaenge: 161 Trades im Takt von 20,5 Tagen sind **20 Balken** "
+        "auf 1d und **1968** auf 15m - und 'cooldown_bars' ist im Modell auf "
+        "**200** begrenzt, die Anforderung war dort also gar nicht "
+        "ausdrueckbar. Dazu stand die Kerzenlaenge **nirgends** im Auftrag: "
+        "Gemessen am 14.961 Zeichen langen Text kommt weder 'Kerzenlaenge' "
+        "noch 'Intervall', '1d', '15m' oder 'Tageskerze' darin vor, und "
+        "'_ask_the_analyst' bekam sie nicht uebergeben. **Beide Befehle, die "
+        "die KI fragen, nehmen '-i' und '--ki'** ('wettbewerb', 'research'), "
+        "und der Auftrag war in beiden Faellen derselbe. Teuer ist das, weil "
+        "jeder Vorschlag einen Versuch kostet und der Zaehler nicht faellt. "
+        "**Gebaut**: Der Abschnitt nennt die Kerzenlaenge, gibt den Takt in "
+        "Balken, fuehrt eine Spalte 'Takt/Balken' und sagt es, wenn die Zahl "
+        "nicht in das Feld passt - die Grenze kommt aus dem Genom-Modell, "
+        "nicht aus einer zweiten Stelle. Die Kerzenlaenge ist **Pflicht**, "
+        "weil ein Vorgabewert der Weg hinein war. **Zwei Berichtigungen aus "
+        "dem Bauen**: 'Balken je Tag' ist das falsche Mass - fuer "
+        "Wochenkerzen gibt es 0, obwohl 20,5 Tage dort drei Balken sind; "
+        "gefragt ist eine Dauer, also 'balken_fuer_tage'. Und mein "
+        "Quervergleich rechnete die **gedruckte**, gerundete Tageszahl mal 96 "
+        "und fand 1712 gegen 1709 - das Anzeigeformat, nicht der Code. "
+        "**Gemessen und nicht gefunden**: Der Dauerauftrag nennt, die "
+        "Research-KI werde im Wettbewerb nicht genutzt und schlage nur "
+        "Varianten vor. Beide Haelften sind stale - 'cli wettbewerb --ki' "
+        "ruft sie (146), und der Auftrag bittet um 'N neue Genome' mit dem "
+        "vollen Schema, das 'parse_proposals' gegen das Modell validiert. "
+        "Was fehlte, war die Einheit. **Gelockert ist nichts**",
+        496,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.

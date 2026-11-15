@@ -44455,3 +44455,87 @@ gepflegte Zahl neben seine stellt, muss seine Reihe nennen. Kommt ein Befehl
 dazu, faellt er auf.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl.
+
+## Vierhundertsechsundneunzig. Der Auftrag rechnete in Tagen, die Felder zaehlen Balken
+
+``research/auftragstakt`` ist in Befund 432 entstanden, weil der Auftrag an die
+Research-KI das richtige Ziel in einer Einheit nannte, die der Empfaenger nicht
+einstellen kann. Sein eigener Satz:
+
+    Hier wird daraus ein Takt in **Tagen** und eine Bruttobewegung in
+    Prozent - dieselbe Einheit wie diese Felder.
+
+Zwei der vier genannten Felder zaehlen aber **Kerzen**: ``cooldown_bars`` und
+``max_hold_bars``. Im Compiler steht es unmissverstaendlich -
+``ctx.index - position < self.genome.cooldown_bars`` vergleicht Balkenindizes.
+Auf Tageskerzen ist ein Balken ein Tag, und die Aussage stimmt **zufaellig**.
+
+### Gemessen auf der anderen Kerzenlaenge
+
+    161 Trades, Takt 20,5 Tage   ->     20 Balken auf 1d
+                                 ->   1968 Balken auf 15m
+
+Und ``cooldown_bars`` ist im Genom-Modell auf **200** begrenzt. Auf
+Viertelstundenkerzen war die Anforderung also nicht nur in der falschen
+Einheit, sondern im Schema **gar nicht ausdrueckbar**.
+
+Dazu stand die Kerzenlaenge **nirgends** im Auftrag. Gemessen am 14.961
+Zeichen langen Text: kein "Kerzenlaenge", kein "Intervall", kein "1d", kein
+"15m", kein "Tageskerze". Der Empfaenger konnte die Umrechnung nicht
+vornehmen, weil ihm die Zahl fehlte, mit der man rechnet - und
+``_ask_the_analyst`` bekam die Kerzenlaenge gar nicht uebergeben.
+
+**Beide Befehle, die die KI fragen, nehmen ``-i`` und ``--ki``**:
+``wettbewerb`` und ``research``. Der Auftrag war in beiden Faellen derselbe.
+Teuer ist das, weil jeder Vorschlag einen Versuch kostet und der Zaehler nicht
+faellt: Ein Kandidat, der 96-mal zu dicht handelt, hebt die Huerde dauerhaft
+fuer alle kuenftigen.
+
+### Was der Abschnitt jetzt sagt
+
+    **Gerechnet wird auf 15m-Kerzen** - ein Tag sind 96 Balken. 'cooldown_bars'
+    und 'max_hold_bars' zaehlen **Kerzen, nicht Tage**; verwechsle das nicht.
+
+    - **Takt: ein Trade alle 20.5 Tage** fuer 161 Trades - das sind **1968 Balken**.
+
+    Trades  Takt/Tage  Takt/Balken  Streuung%  noetig SR  brutto%
+
+    **Der Takt passt auf dieser Kerzenlaenge nicht in das Feld.** 'cooldown_bars'
+    darf hoechstens 200 sein, verlangt sind 1968 Balken.
+
+Die Tage bleiben stehen - sie sind die Messung. Die Grenze kommt aus dem
+Genom-Modell und ist nicht hingeschrieben. Die Kerzenlaenge ist **Pflicht**:
+Ein Vorgabewert war der Weg in diesen Fehler, denn ``-i`` steht auf ``D``, und
+der Abschnitt nahm das stillschweigend an.
+
+### Zwei Berichtigungen aus dem Bauen
+
+**Erstens: "Balken je Tag" ist das falsche Mass.** Der erste Entwurf rechnete
+genau das und gab fuer Wochenkerzen ``0`` zurueck - eine Zahl, die luegt, denn
+ein Takt von 20,5 Tagen sind dort drei Balken. Gefragt ist immer eine Dauer,
+nie ein Verhaeltnis; ``balken_fuer_tage`` heisst jetzt so, weil es das tut.
+Gemeldet hat es die Regel, die jedes Mitglied von ``Interval`` durchprobiert.
+
+**Zweitens: mein Quervergleich war falsch.** Er rechnete die **gedruckte**, auf
+eine Stelle gerundete Tageszahl mal 96 und fand 1712 gegen 1709 - das
+Anzeigeformat, kein Fehler. Verglichen wird jetzt gegen dieselben
+Takt-Objekte, aus denen die Tafel gesetzt wird.
+
+### Was dabei gemessen und **nicht** gefunden wurde
+
+Der Dauerauftrag nennt seit langem: *"Die Research-KI ist gebaut, wird im
+Wettbewerb aber nicht genutzt - sie koennte neue Kandidaten vorschlagen statt
+nur Varianten."* Beide Haelften sind gemessen stale:
+
+* Sie **ist** am Wettbewerb. ``cli wettbewerb --ki`` ruft sie, filtert
+  bekannte Genome heraus, und ihre Vorschlaege laufen durch dieselben elf
+  Gates und zaehlen im Versuchszaehler (Befund 146, Kommentar steht im Code).
+* Sie wird um **neue Genome** gebeten, nicht um Varianten. Der Auftrag sagt
+  *"Schlage N neue Genome vor"* und reicht das vollstaendige Schema mit;
+  ``parse_proposals`` validiert jedes Genom gegen das Modell und biegt nichts
+  zurecht.
+
+Was fehlte, war nicht die Anbindung, sondern die Einheit - und das ist dieser
+Befund.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl.

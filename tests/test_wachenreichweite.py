@@ -80,9 +80,9 @@ zwei davon. Die Wache, die das haette melden sollen, war die hier.
 Nach dem Umbau gemessen:
 
     Verbotsregeln mit weiter Reichweite                               21
-    Verbotsregeln an genau einer Datei                                27
-      verschiedene Namenspaare darunter                               26
-      begruendet in ABSICHTLICH_ENG (7 Eintraege, 8 Vorkommen)         8
+    Verbotsregeln an genau einer Datei                                28
+      verschiedene Namenspaare darunter                               27
+      begruendet in ABSICHTLICH_ENG (8 Eintraege, 9 Vorkommen)         9
       Aussagen ueber die Befehlsschicht (NUR_DIE_BEFEHLSDATEI)        19
 
 Die weite Zahl stand nach Befund 485 auf 20 und steht seit Befund 494 auf 21:
@@ -145,6 +145,16 @@ WEITE_EMPFAENGER = frozenset({"os", "pathlib", "Path", "shutil"})
 #: ``ENTSCHEIDUNGSGATES`` (Befund 461): Wer eine Stelle der Pruefung entzieht,
 #: nennt sie, statt sie zu erraten.
 ABSICHTLICH_ENG: dict[tuple[str, str], str] = {
+    (
+        "test_auftragstakt.py",
+        "test_und_die_cli_rechnet_ihn_an_jeder_stelle",
+    ): (
+        "Die Regel handelt von den drei Aufrufstellen in 'cli.py' - dort wird "
+        "der Takt gerechnet, und nur dort kann er ohne Kerzenlaenge gerechnet "
+        "werden (Befund 496). In einer anderen Datei waere nichts zu pruefen: "
+        "'als_auftrag' verlangt die Kerzenlaenge seitdem als Pflichtwort, und "
+        "das steht als eigene Zusicherung in 'test_auftragsbalken'."
+    ),
     (
         "test_ideenstreuung.py",
         "test_der_modulkopf_von_wettrennen_behauptet_es_nicht_mehr",
@@ -542,9 +552,9 @@ class TestDieMessungSelbst:
         # auffallen, wo immer sie steht. Gemeldet hat sie diese Wache - nicht
         # ich beim Aufschreiben.
         assert weit == 21, weit
-        assert len(eng) == 27, len(eng)
-        assert len(paare) == 26, len(paare)
-        assert len(ABSICHTLICH_ENG) == 7
+        assert len(eng) == 28, len(eng)
+        assert len(paare) == 27, len(paare)
+        assert len(ABSICHTLICH_ENG) == 8
         assert len(NUR_DIE_BEFEHLSDATEI) == 19
         assert paare == set(ABSICHTLICH_ENG) | NUR_DIE_BEFEHLSDATEI
 
