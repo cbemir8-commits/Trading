@@ -137,6 +137,15 @@ BEGRUENDET: dict[str, str] = {
     # Schreibweisen uebersah. Jede einzeln gelesen: alle neun halten eine
     # Entscheidung. Gefunden wurde also kein festgeschriebener Mangel - und
     # genau das ist das Ergebnis, denn gefragt worden war keine von ihnen.
+    "test_die_regel_leitet_ihre_grundgesamtheit_ab": (
+        "Gehalten wird, dass eine Regel ihre Grundgesamtheit **ableitet** "
+        "(Befund 490): Die Wache auf den Reihenschnitt fragt "
+        "'zaehlende_befehle()' und darf deshalb keinen Befehl beim Namen "
+        "nennen - 'korb' steht dort als Stellvertreter fuer jeden. Eine "
+        "gepflegte Namensliste an dieser Stelle waere genau die Bauart, die "
+        "Befund 484 und 485 gefunden haben. Dass diese Wache hier anschlaegt, "
+        "ist ihr Dienst: Sie hat meine eigene Zusicherung gefangen."
+    ),
     "test_machbarkeit_schreibt_einzelnachweise": (
         "Dieselbe Entscheidung wie beim Verzeichnisweg (Befund 377), nur in "
         "der Schreibweise 'save_trials(' - und gerade die hat die alte Wache "

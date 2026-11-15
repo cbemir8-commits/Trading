@@ -4047,6 +4047,7 @@ def korb(
     Zum Ausprobieren ``TRADING_TROCKENLAUF=1`` setzen.
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
+    from research.datenstand import alle_geschnitten
     from research.gates import evaluate_gates
     from research.seeds import load_seeds
     from strategy.compiler import compile_genome
@@ -4058,6 +4059,12 @@ def korb(
 
     symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
     frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
+    # **Die Zulassungsreihe, nicht der Speicher** (Befund 490) - derselbe
+    # Grund wie in 'machbarkeit' und 'adaptiv': Dieser Befehl bucht einen
+    # Versuch, und das ist unwiderruflich. Heute wirkungslos (der
+    # Tagesspeicher endet genau auf SERIENENDE), wirksam beim naechsten
+    # Backfill.
+    frames = alle_geschnitten(frames)
     erster = next(iter(frames.values()))
 
     trials_path = Path(settings.paths.state) / "trials.json"
@@ -6031,6 +6038,7 @@ def machbarkeit(
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from core.report import write_report
     from research.admission import load_trials
+    from research.datenstand import alle_geschnitten
     from research.gates import evaluate_gates
     from research.machbarkeit import (
         REGLER,
@@ -6057,7 +6065,21 @@ def machbarkeit(
             raise typer.Exit(2)
         roh[symbol] = frame
 
-    frames = common_range(roh)
+    # **Die Zulassungsreihe, nicht der Speicher** (Befund 490).
+    #
+    # Dieser Befehl **bucht einen Versuch**, und eine Buchung ist
+    # unwiderruflich: Sein Sharpe je Trade geht in das Verzeichnis, aus
+    # dem 'research/streuung.py' die Streuung ueber die Versuche
+    # schaetzt. Gerechnet wird deshalb auf der Reihe, auf der die
+    # gepflegten Zahlen stehen.
+    #
+    # **Heute ist das wirkungslos, und das ist gemessen**: 'geschnitten'
+    # kuerzt nur am oberen Ende auf SERIENENDE, und der Tagesspeicher
+    # endet genau dort (2026-08-29). Wirksam wird es beim naechsten
+    # Backfill, der bis heute laedt - dann soll hier nichts
+    # stillschweigend laenger rechnen als die Zahlen, gegen die es
+    # verglichen wird (387/474).
+    frames = common_range(alle_geschnitten(roh))
     erster = next(iter(frames.values()))
     configs = {
         x: BacktestConfig(
@@ -6961,6 +6983,7 @@ def adaptiv(
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.adaptiv import FensterWahl
     from research.admission import load_trials
+    from research.datenstand import alle_geschnitten
     from research.gates import evaluate_gates
     from research.seeds import spitzenkandidat
     from research.suchbudget import Budget
@@ -6980,7 +7003,21 @@ def adaptiv(
             raise typer.Exit(2)
         roh[symbol] = frame
 
-    frames = common_range(roh)
+    # **Die Zulassungsreihe, nicht der Speicher** (Befund 490).
+    #
+    # Dieser Befehl **bucht einen Versuch**, und eine Buchung ist
+    # unwiderruflich: Sein Sharpe je Trade geht in das Verzeichnis, aus
+    # dem 'research/streuung.py' die Streuung ueber die Versuche
+    # schaetzt. Gerechnet wird deshalb auf der Reihe, auf der die
+    # gepflegten Zahlen stehen.
+    #
+    # **Heute ist das wirkungslos, und das ist gemessen**: 'geschnitten'
+    # kuerzt nur am oberen Ende auf SERIENENDE, und der Tagesspeicher
+    # endet genau dort (2026-08-29). Wirksam wird es beim naechsten
+    # Backfill, der bis heute laedt - dann soll hier nichts
+    # stillschweigend laenger rechnen als die Zahlen, gegen die es
+    # verglichen wird (387/474).
+    frames = common_range(alle_geschnitten(roh))
     genome = spitzenkandidat()
     configs = {
         x: BacktestConfig(
@@ -10950,6 +10987,7 @@ def verbund(
     """
     from backtest.portfolio_walkforward import run_portfolio_walkforward
     from research.admission import load_trials
+    from research.datenstand import alle_geschnitten
     from research.seeds import load_seeds, spitzenkandidat
     from research.verbund import baue, noetige_guete
     from research.versuche import Versuch
@@ -10965,6 +11003,12 @@ def verbund(
     _pruefe_generation(generation, interval_obj)
     symbole = [s.strip() for s in maerkte.split(",") if s.strip()]
     frames, configs, spanne = _korb_daten(symbole, interval_obj, settings)
+    # **Die Zulassungsreihe, nicht der Speicher** (Befund 490) - derselbe
+    # Grund wie in 'machbarkeit' und 'adaptiv': Dieser Befehl bucht einen
+    # Versuch, und das ist unwiderruflich. Heute wirkungslos (der
+    # Tagesspeicher endet genau auf SERIENENDE), wirksam beim naechsten
+    # Backfill.
+    frames = alle_geschnitten(frames)
 
     gesucht = partner.strip().lower()
     treffer = [g for g in load_seeds(generation) if gesucht in g.name.lower()]

@@ -43964,3 +43964,80 @@ nach heutigem Stand verteilt, hat eine klare Antwort.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Eine Empfehlung steht jetzt auf einer Messung statt auf einer Gewohnheit.
+
+## Vierhundertneunzig. Welche Frage braucht die Reihe, welche den Speicher
+
+Die offene Richtung zu Befund 387 stellt die Frage ausdruecklich:
+
+> Offen ist die Regel: Welche Frage braucht die Reihe, welche den Speicher, und
+> woran erkennt man das vor dem Lauf? Bis die Regel steht, wird nichts
+> umgestellt - 35 Befehle blind zu schneiden waere dieselbe Blindheit, nur in
+> die andere Richtung.
+
+Hier steht die Regel, und sie ist gerechnet.
+
+### Was der Schnitt wirklich tut - mein erster Irrtum
+
+``datenstand.geschnitten`` kuerzt **nur am oberen Ende** auf ``SERIENENDE``.
+Den Anfang holt es nicht; der kommt aus ``common_range`` im
+Portfolio-Walk-Forward, aus dem juengeren Bein. Das steht im Docstring, und ich
+hatte ein festes Datumsfenster angenommen - am laufenden Code widerlegt.
+
+Damit zerfaellt die Frage in zwei:
+
+* **Der Anfang** ist bei jedem Korblauf ohnehin die Zulassungsreihe.
+  ``run_portfolio_walkforward`` ruft ``common_range`` als erste Handlung: BTC
+  5355 Balken ab 2012-01-01 werden zu 3301 ab 2017-08-16.
+* **Das obere Ende** schneidet nur, wer ``alle_geschnitten`` ruft.
+
+### Woran man es vor dem Lauf erkennt
+
+**Nicht am Befehl, sondern am Datenstand.** Heute endet der Tagesspeicher genau
+auf ``SERIENENDE`` (2026-08-29), der Feinspeicher vor ``FEINENDE``. Gemessen:
+
+    Vorgabekorb   common_range(alle_geschnitten(x)) zeilengleich common_range(x)
+    ein Markt     alle_geschnitten(x) == x            (5355 bleibt 5355)
+
+Der Schnitt am oberen Ende ist also **heute an allen 41 Walk-Forward-Befehlen
+wirkungslos**, und die Liste der 34 ist damit **gerechnet** keine Liste von 34
+Fehlern.
+
+**Wirksam wird er beim naechsten Laden.** Der empfohlene Backfill laedt bis
+heute; danach liegt das Speicherende ueber ``SERIENENDE``, und ein Befehl ohne
+Schnitt rechnet auf einer laengeren Reihe als die Zahlen, gegen die er
+verglichen wird. Das ist die Lage aus Befund 474, nur am anderen Ende.
+
+### Wo es teuer ist
+
+Die offene Richtung nennt den Anhaltspunkt selbst: *"Teuer wird es da, wo eine
+gepflegte Zahl aus ``referenz.py`` danebensteht oder eine unwiderrufliche
+Entscheidung daran haengt."*
+
+Unwiderruflich ist genau eines: **eine Versuchsbuchung.** Der Zaehler faellt
+nicht, und der gebuchte Sharpe je Trade geht in das Verzeichnis, aus dem
+``research/streuung.py`` die Streuung ueber die Versuche schaetzt.
+
+Deshalb schneiden seit 490 die vier buchenden Walk-Forward-Befehle -
+``korb``, ``machbarkeit``, ``adaptiv``, ``verbund``. Heute ein wirkungsloser
+Handgriff, nach dem naechsten Backfill ein entscheidender.
+
+### Umgestellt wurde nur das
+
+Der erste Anlauf ersetzte **alle 24** Stellen auf einmal. Das ist genau die
+Blindheit, vor der der Eintrag warnt, und wurde zurueckgenommen, bevor etwas
+davon gelaufen ist.
+
+Die Wache dazu hat **keine Ausnahmeliste**: Die Menge kommt aus
+``zaehlende_befehle()``, also abgeleitet - der Unterschied zu den Bauarten aus
+Befund 484 und 485. Und sie prueft am Syntaxbaum, dass die Regel selbst keinen
+Befehl beim Namen nennt; der erste Entwurf suchte das Wort "Ausnahme" in seiner
+eigenen Datei und scheiterte an der eigenen Zusicherung - dieselbe
+Selbstwiderlegung wie bei GELESEN in Befund 295.
+
+Offen bleiben die 30 nicht buchenden Laeufe. Fuer sie gilt derselbe Satz wie
+fuer ``stand`` in Befund 370: Auf allem zu rechnen, was da ist, ist richtig -
+es muss nur dastehen.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
+Vier Buchungen koennen nicht mehr stillschweigend auf einer laengeren Reihe
+entstehen.

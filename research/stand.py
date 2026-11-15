@@ -8171,9 +8171,39 @@ OFFEN: tuple[Richtung, ...] = (
         "Versuche. **Und ein zweiter Widerspruch ist schon sichtbar**: "
         "'cli stand' meldet aus dem Plan '27 bleiben (Abbruch bei 230)', "
         "'cli abstand' rechnet 21 - zwei Zahlen fuer dieselbe Frage, und nur "
-        "die zweite steht auf der Reihe (behoben in 389)",
+        "die zweite steht auf der Reihe (behoben in 389). **Heute sind es "
+        "8 / 5 / 31** (490): Die drei neuen sind 'adaptiv', 'machbarkeit' und "
+        "'verbund'; 'korb' schneidet ebenfalls seit 490, faellt aber aus "
+        "dieser Inventur, weil sie 'spitzenkandidat' im Block verlangt und er "
+        "Saaten laedt. **Die Regel steht "
+        "jetzt - Befund 490.** Sie zerfaellt in zwei Teile, weil der Schnitt "
+        "zwei verschiedene Dinge tut: 'geschnitten' kuerzt **nur am oberen "
+        "Ende** auf SERIENENDE, den Anfang holt 'common_range' im "
+        "Portfolio-Walk-Forward aus dem juengeren Bein (so der Docstring, und "
+        "ich hatte ein festes Datumsfenster angenommen - am Code widerlegt). "
+        "Damit ist der Anfang bei jedem Korblauf ohnehin die Zulassungsreihe: "
+        "BTC 5355 Balken ab 2012 werden zu 3301 ab 2017-08-16. Offen war also "
+        "nur das obere Ende, und **dort ist der Schnitt heute an allen 41 "
+        "Walk-Forward-Befehlen wirkungslos**, gemessen: Der Tagesspeicher "
+        "endet genau auf SERIENENDE (2026-08-29), der Feinspeicher vor "
+        "FEINENDE; 'common_range(alle_geschnitten(korb))' ist zeilengleich mit "
+        "'common_range(korb)', und bei einem einzelnen Markt bleiben 5355 "
+        "Balken 5355. Die Liste der 34 ist damit **gerechnet** keine Liste von "
+        "34 Fehlern. **Woran man es vor dem Lauf erkennt: nicht am Befehl, "
+        "sondern am Datenstand** - wirksam wird der Schnitt, sobald geladen "
+        "wird, und der empfohlene Backfill laedt bis heute. **Umgestellt sind "
+        "deshalb genau die vier Befehle, an denen eine unwiderrufliche "
+        "Entscheidung haengt** ('korb', 'machbarkeit', 'adaptiv', 'verbund'): "
+        "Eine Versuchsbuchung faellt nicht zurueck, und ihr Sharpe je Trade "
+        "geht in das Verzeichnis, aus dem 'streuung.py' schaetzt. Heute ein "
+        "wirkungsloser Handgriff, nach dem naechsten Backfill ein "
+        "entscheidender. Der erste Anlauf ersetzte alle 24 Stellen auf "
+        "einmal - genau die Blindheit, vor der dieser Eintrag warnt, und "
+        "zurueckgenommen. Offen bleiben die 30 nicht buchenden Laeufe: Fuer "
+        "sie gilt derselbe Satz wie fuer 'stand' in Befund 370 - auf allem zu "
+        "rechnen, was da ist, ist richtig, es muss nur dastehen",
         387,
-        zuletzt=394,
+        zuletzt=490,
     ),
     Richtung(
         # **Der Name traegt keine Zahl mehr** (Befund 352). Er hat sie von 332

@@ -238,7 +238,7 @@ class TestDieInventurStimmtNoch:
                 keins.append(name)
         return schneidet, nennt, keins
 
-    def test_fuenf_schneiden_fuenf_nennen_vierunddreissig_keins(self) -> None:
+    def test_acht_schneiden_fuenf_nennen_einunddreissig_keins(self) -> None:
         """Die Zahlen wandern, wenn ein Befehl sich entscheidet - und genau
         dafuer ist der Test da.
 
@@ -252,22 +252,35 @@ class TestDieInventurStimmtNoch:
         Zahl neben den Abstand aus 'referenz.py' setzt und deshalb von
         Anfang an schneidet und nennt.
 
-        Jetzt sind es 5 / 5 / 34 - die 34 bleiben zweimal gleich: 'stand'
+        Bei 400 waren es 5 / 5 / 34 - die 34 blieben zweimal gleich: 'stand'
         nannte die Reihe schon und wanderte nur in die erste Liste, und
         'aufteilung' kam in beide Listen zugleich.
 
-        Die offene Regel bleibt offen: Es wird nicht umgestellt, weil zwei es
-        tun, sondern weil eine Zahl daran haengt. Beide Umstellungen folgen
-        damit dem Anhaltspunkt, den die offene Richtung selbst nennt.
+        **Jetzt sind es 8 / 5 / 31** (Befund 490). Dort steht die Regel, die
+        diese Richtung offen gelassen hatte, und sie hat drei Befehle
+        mitgebracht: 'adaptiv', 'machbarkeit' und 'verbund' **buchen einen
+        Versuch**, und eine Buchung ist das Einzige, was in diesem Projekt
+        unwiderruflich ist - ihr Sharpe je Trade geht in das Verzeichnis, aus
+        dem 'streuung.py' die Streuung ueber die Versuche schaetzt. 'korb'
+        bucht ebenfalls und ist hier nicht dabei: Diese Inventur verlangt
+        'spitzenkandidat' im Block, und 'korb' laedt Saaten. Er schneidet seit
+        490 trotzdem, aus demselben Grund.
+
+        Es wird also weiter nicht umgestellt, weil mehrere es tun, sondern
+        weil eine Zahl oder eine Entscheidung daran haengt - genau der
+        Anhaltspunkt, den die offene Richtung selbst nennt.
         """
         schneidet, nennt, keins = self._inventur()
 
         assert sorted(schneidet) == [
             "abstand",
+            "adaptiv",
             "anatomie",
             "aufteilung",
+            "machbarkeit",
             "rennen",
             "stand",
+            "verbund",
         ]
         assert sorted(nennt) == [
             "abstand",
@@ -276,10 +289,10 @@ class TestDieInventurStimmtNoch:
             "stand",
             "suchbudget",
         ]
-        assert len(keins) == 34, (
-            f"{len(keins)} statt 34 Befehle ohne Reihe - wer einen Befehl auf "
+        assert len(keins) == 31, (
+            f"{len(keins)} statt 31 Befehle ohne Reihe - wer einen Befehl auf "
             f"den Spitzenkandidaten setzt, entscheidet sich fuer eine Reihe "
-            f"(Befund 387/390/394/400): {sorted(keins)}"
+            f"(Befund 387/390/394/400/490): {sorted(keins)}"
         )
 
     def test_und_das_register_nennt_genau_diese_zahlen(self) -> None:
@@ -293,7 +306,7 @@ class TestDieInventurStimmtNoch:
         zeile = f"{len(schneidet)} / {len(nennt)} / {len(keins)}"
 
         assert f"**Heute sind es {zeile}**" in eintrag.ergebnis, zeile
-        assert eintrag.zuletzt == 394
+        assert eintrag.zuletzt == 490
 
 
 @pytest.mark.daten
