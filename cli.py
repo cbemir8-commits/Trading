@@ -12214,6 +12214,7 @@ def suchbudget(
     from backtest.engine import BacktestConfig
     from backtest.portfolio_walkforward import common_range, run_portfolio_walkforward
     from research.admission import load_trials
+    from research.referenz import SPOTPUNKT
     from research.seeds import GENERATIONS, spitzenkandidat
     from research.suchbudget import Budget, Kandidat
     from strategy.compiler import compile_genome
@@ -12303,6 +12304,12 @@ def suchbudget(
         spotguete=_spotguete(
             frames, symbole, spitzenkandidat(), settings, fertige=False
         ),
+        # **Befund 486.** Der gepflegte Kassa-Punkt, damit der Abstand
+        # einmal **durchgehend** aus einer Messung dasteht: Stichprobe,
+        # Guete, Schiefe und Woelbung von dort. Die Zahl darueber teilt die
+        # Latte der rohen Trade-Zahl durch eine Guete aus einem anderen
+        # Lauf und meldete deshalb Faktor 1,03 statt 1,25.
+        betriebspunkt=SPOTPUNKT,
     )
 
     console.print("[bold]Die Grenzlinie[/]")
@@ -12344,9 +12351,8 @@ def suchbudget(
     console.print("[bold]Was Weitersuchen an der Linie verschiebt[/]")
     # Gerechnet auf der **effektiven** Stichprobe des massgeblichen Punktes.
     # Hier stand die rohe 152; die Linie lag damit rund 14 % zu tief
-    # (Befund 139).
-    from research.referenz import SPOTPUNKT
-
+    # (Befund 139). Der Import steht seit Befund 486 oben bei den anderen -
+    # der gepaarte Abstand braucht denselben Punkt.
     for weitere in (0, 40, 90, 190, 390):
         # Mit **seinen** Momenten, nicht der Vorgabe (Befund 192). Sie
         # aehneln einander (3,4646 gegen 3,473), sind aber nicht dieselben,

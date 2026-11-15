@@ -43673,3 +43673,77 @@ wurde.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine Zahl bewegt sich.
 Neun Zusicherungen sind zum ersten Mal gefragt worden.
+
+## Vierhundertsechsundachtzig. Der Abstand zur Grenzlinie war aus zwei Messungen gerechnet
+
+Nach fuenf Zyklen Haertung einmal an die Stelle, die den **Lauf des Nutzers**
+betrifft. ``cli suchbudget`` sagt, wie weit der Bestand von der Grenzlinie weg
+ist - das ist die Zahl, gegen die seine 27 verbleibenden Versuche antreten.
+
+Als Schlagzahl stand dort:
+
+> Unter Spot-Bedingungen (0.2853 statt 0.2682, kein Funding) ist es Faktor
+> mindestens 1.03
+
+### Gerechnet war das aus zwei Messungen
+
+    spotfaktor = nah.noetig / self.spotguete
+
+``nah.noetig`` ist die Latte bei der **rohen** Trade-Zahl des
+Bestenlisten-Eintrags - 158 Trades, 0,2935. ``spotguete`` ist die Guete
+desselben Bestands unter Kassa-Bedingungen, aus einem **anderen** Lauf -
+0,2853. Zaehler und Nenner kommen aus zwei Messungen, und das ist der Fehler
+aus Befund 428 und 242, nur diesmal in der folgenreichsten Zahl des Befehls.
+
+### Gepaart gerechnet
+
+    Latte bei 158 rohen Trades        0,2935
+    Latte bei 115 effektiven          0,3374      (SPOTPUNKT.effektiv)
+
+    Guete live (_spotguete)           0,2853  ->  roh 1,03   effektiv 1,18
+    Guete gepflegt (SPOTPUNKT)        0,2708  ->  roh 1,08   effektiv 1,25
+
+Die sauberste Paarung ist die untere Zeile **durchgehend**: Stichprobe, Guete,
+Schiefe und Woelbung aus ``research.referenz.SPOTPUNKT``. **Faktor 1,25.**
+
+Und 1,03 liest sich anders als 1,25. Dieselbe Lehre wie Befund 379 - *"ohne die
+Groessenordnung liest sich das wie 'knapp verpasst'"* -, nur hier an der Zahl,
+die bestimmt, worauf der Nutzer seine letzten Versuche richtet.
+
+### Der Satz daneben war auch falsch
+
+Dort stand: *"Die effektive Stichprobe dieses Kandidaten ist nicht gemessen."*
+Fuer den Bestenlisten-Eintrag stimmt das. Es las sich aber wie "das Projekt
+kennt sie nicht" - und ``research.referenz.SPOTPUNKT`` fuehrt sie seit langem
+(156 Trades, 115 effektiv), **und derselbe Befehl benutzt sie zehn Zeilen
+weiter** fuer die Tabelle "Was Weitersuchen an der Linie verschiebt".
+
+Die Zahl lag in der Hand und ging nicht in die Schlagzahl ein.
+
+### Gebaut
+
+``Budget.am_betriebspunkt`` rechnet Latte und Faktor durchgehend aus **einem**
+Punkt. Ein ``Protocol`` statt eines Imports von ``research.referenz``: Das
+Modul rechnet, und welcher Punkt hereinkommt, entscheidet der Aufrufer - ein
+Test darf einen eigenen bauen.
+
+Der Befehl uebergibt ``SPOTPUNKT`` und importiert ihn nur noch **einmal**;
+vorher stand der Import mitten in der Funktion, fuer die Tabelle allein, und
+zwei Importe derselben Sache sind zwei Gelegenheiten, verschiedene Punkte zu
+nehmen (Befund 234). Beide rohen Faktoren bleiben stehen - sie sind nicht
+falsch, nur Untergrenzen -, jetzt ausdruecklich so benannt.
+
+Dreizehn Zusicherungen, darunter: dass eine kleinere Stichprobe und mehr
+Versuche die Latte heben, dass ohne Guete ``None`` und nicht Null herauskommt,
+dass ohne uebergebenen Punkt nichts erfunden wird, und dass
+``am_betriebspunkt`` die Latte **nicht selbst** rechnet, sondern ``noetig_bei``
+fragt - es gibt keine zweite Formel und keinen Abschlag.
+
+### Am Gate aendert sich nichts
+
+Keine Schwelle, keine Latte, kein Gate bewegt sich. Der Fund zeigt in die
+**strenge** Richtung: Der Abstand ist groesser als gemeldet, nicht kleiner.
+Eine eigene Zusicherung haelt das fest, damit aus einem Fund keine Lockerung
+wird.
+
+**Gelockert ist nichts.** Die Latte wird nur richtig genannt.

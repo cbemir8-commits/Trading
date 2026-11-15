@@ -40,6 +40,7 @@ nur, wohin sie muesste, und wie weit alles Bisherige davon entfernt war.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Protocol
 
 from research.erreichbarkeit import MAX_SHARPE, noetiger_sharpe
 from research.gates import GateThresholds, deflated_sharpe_ratio
@@ -72,6 +73,23 @@ ZIEL = GateThresholds().min_deflated_sharpe
 #: sich das Versuchsfenster schliesst - 233 gegen 235.
 SCHIEFE = 3.473
 WOELBUNG = 15.951
+
+
+class Betriebspunkt(Protocol):
+    """Ein Punkt, dessen vier Eingaben aus **derselben** Messung kommen.
+
+    Ein Protokoll und kein Import von ``research.referenz``: Dieses Modul
+    rechnet, und welcher Punkt hereingegeben wird, entscheidet der Aufrufer -
+    ``research.referenz.Referenzpunkt`` passt, und ein Test darf einen
+    eigenen bauen. Gebraucht werden genau die vier Groessen, die in die
+    Latte eingehen, und der Name fuer den Satz darueber (Befund 486).
+    """
+
+    name: str
+    effektiv: int
+    guete: float
+    schiefe: float
+    woelbung: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -322,8 +340,24 @@ class Budget:
     Ohne diesen Wert steht im Urteil ein Faktor, der eine Kostenannahme
     mittraegt, die im Spot-Handel entfaellt - Faktor 1,15 statt 1,08.
 
+    **Die beiden Zahlen sind die von Befund 126**; heute lauten sie 1,10 und
+    1,03, und beide sind Untergrenzen auf der rohen Trade-Zahl. Die
+    gepaarte, gate-nahe Zahl steht in ``am_betriebspunkt`` (Befund 486).
+
     ``None`` heisst "nicht gemessen" und nicht "kein Unterschied": Dann bleibt
     das Urteil wie zuvor, statt einen zweiten Punkt zu erfinden.
+    """
+
+    betriebspunkt: Betriebspunkt | None = None
+    """Ein **durchgehend** gemessener Punkt - Stichprobe, Guete, Form.
+
+    **Befund 486.** ``spotguete`` allein genuegt nicht: Sie wird gegen die
+    Latte der rohen Trade-Zahl geteilt, und damit stammen Zaehler und Nenner
+    aus zwei Laeufen. Mit diesem Feld kommt der ganze Abstand aus einer
+    Messung, und er faellt deutlich hoeher aus - 1,25 statt 1,03.
+
+    ``None`` heisst wieder "nicht uebergeben": Dann steht der gepaarte Satz
+    nicht da, statt mit geratenen Werten zu rechnen.
     """
 
     def noetig_bei(
@@ -345,6 +379,35 @@ class Budget:
             skew=self.schiefe if schiefe is None else schiefe,
             kurtosis=self.woelbung if woelbung is None else woelbung,
         )
+
+    def am_betriebspunkt(
+        self,
+        *,
+        effektiv: int,
+        guete: float,
+        schiefe: float,
+        woelbung: float,
+        versuche: int | None = None,
+    ) -> tuple[float, float] | None:
+        """Latte und Faktor **durchgehend** aus einem Betriebspunkt - 486.
+
+        Alle vier Eingaben kommen aus **derselben** Messung. Das ist der
+        ganze Punkt: Der Spot-Satz dieses Moduls teilte die Latte der rohen
+        Trade-Zahl (158 Trades, 0,2935) durch eine Guete aus einem anderen
+        Lauf (0,2853) und meldete Faktor 1,03. Eine Zahl aus zwei Messungen
+        ist der Fehler aus Befund 428 und 242.
+
+        Gepaart gerechnet sieht es anders aus: Die Latte bei der effektiven
+        Stichprobe des Kassa-Punkts (115) liegt bei 0,3374, seine Guete bei
+        0,2708 - **Faktor 1,25**. Das ist die Zahl, gegen die ein neuer
+        Einfall antreten muss, und sie liest sich anders als 1,03.
+        """
+        latte = self.noetig_bei(
+            effektiv, versuche=versuche, schiefe=schiefe, woelbung=woelbung
+        )
+        if latte is None or guete <= 0:
+            return None
+        return latte, latte / guete
 
     def abstaende(self, *, versuche: int | None = None) -> list[Abstand]:
         """Jeder Kandidat an der Linie - mit seiner **eigenen** Stichprobe.
@@ -579,10 +642,13 @@ class Budget:
         ]
         if nah.untergrenze:
             teile.append(
-                "Die effektive Stichprobe dieses Kandidaten ist nicht "
-                "gemessen; gerechnet ist auf der rohen Trade-Zahl. Das Gate "
-                "rechnet seit Befund 135 mit der effektiven, und die ist "
-                "kleiner - die wirkliche Latte liegt also hoeher."
+                "Die effektive Stichprobe **dieses Bestenlisten-Eintrags** "
+                "ist nicht gemessen; gerechnet ist auf der rohen Trade-Zahl. "
+                "Das Gate rechnet seit Befund 135 mit der effektiven, und "
+                "die ist kleiner - die wirkliche Latte liegt also hoeher. "
+                "**Wie viel hoeher, steht nicht in diesem Satz** (Befund "
+                "486): Fuer den gepflegten Kassa-Punkt ist sie gemessen, und "
+                "der Abstand dort folgt weiter unten."
             )
 
         # **Der zweite Betriebspunkt** (Befund 126). Die Kandidaten kommen aus
@@ -597,8 +663,36 @@ class Budget:
                 f"Unter Spot-Bedingungen ({self.spotguete:.4f} statt "
                 f"{nah.kandidat.sharpe_je_trade:.4f}, kein Funding) ist es "
                 f"Faktor {wie}{spotfaktor:.2f} - die Zahl oben traegt eine "
-                f"Kostenannahme mit, die dort entfaellt."
+                f"Kostenannahme mit, die dort entfaellt. **Auch das ist noch "
+                f"die rohe Trade-Zahl** (Befund 486): Dieser Faktor teilt "
+                f"dieselbe Latte, nur durch eine andere Guete."
             )
+
+        # **Der gepaarte Abstand** (Befund 486). Bis hierher stand als
+        # Schlagzahl 'Faktor mindestens 1,03' - die Latte der rohen
+        # Trade-Zahl geteilt durch eine Guete aus einem anderen Lauf. Eine
+        # Zahl aus zwei Messungen ist der Fehler aus 428 und 242, und sie
+        # las sich wie 'knapp daneben'. Gepaart gerechnet ist es 1,25.
+        if self.betriebspunkt is not None:
+            punkt = self.betriebspunkt
+            gepaart = self.am_betriebspunkt(
+                effektiv=punkt.effektiv,
+                guete=punkt.guete,
+                schiefe=punkt.schiefe,
+                woelbung=punkt.woelbung,
+            )
+            if gepaart is not None:
+                latte, faktor = gepaart
+                teile.append(
+                    f"**Am gepflegten {punkt.name} durchgerechnet** - "
+                    f"Stichprobe, Guete, Schiefe und Woelbung aus derselben "
+                    f"Messung: Die Latte bei {punkt.effektiv} effektiven "
+                    f"Beobachtungen liegt bei {latte:.4f}, die Guete dort bei "
+                    f"{punkt.guete:.4f} - **Faktor {faktor:.2f}**. Das ist "
+                    f"die Zahl, gegen die ein neuer Einfall antreten muss; "
+                    f"die Faktoren oben sind Untergrenzen auf der rohen "
+                    f"Trade-Zahl."
+                )
 
         unerreichbar = [a for a in self.abstaende() if not a.erreichbar]
         if unerreichbar:

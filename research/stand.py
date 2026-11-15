@@ -7861,6 +7861,49 @@ BEHOBEN: tuple[Richtung, ...] = (
         "worden",
         485,
     ),
+    # Befund 486: Die Zahl, gegen die der Nutzer seine letzten Versuche
+    # richtet, stand aus zwei Messungen zusammengerechnet zu niedrig da.
+    Richtung(
+        "Der Abstand zur Grenzlinie war aus zwei Messungen gerechnet",
+        "Nach fuenf Zyklen Haertung einmal an die Stelle, die den **Lauf des "
+        "Nutzers** betrifft: 'cli suchbudget' sagt, wie weit der Bestand von "
+        "der Grenzlinie weg ist, und das ist die Zahl, gegen die seine 27 "
+        "verbleibenden Versuche antreten. Als Schlagzahl stand dort 'Unter "
+        "Spot-Bedingungen ... Faktor mindestens 1.03'. **Gerechnet war das "
+        "aus zwei Messungen**: 'spotfaktor = nah.noetig / self.spotguete' - "
+        "der Zaehler ist die Latte bei der **rohen** Trade-Zahl des "
+        "Bestenlisten-Eintrags (158 Trades, 0,2935), der Nenner die Guete "
+        "desselben Bestands unter Kassa-Bedingungen aus einem **anderen** "
+        "Lauf (0,2853). Das ist der Fehler aus Befund 428 und 242, nur in "
+        "der folgenreichsten Zahl des Befehls. **Gepaart gerechnet**, alle "
+        "vier Eingaben aus derselben Messung: Die Latte bei der effektiven "
+        "Stichprobe des Kassa-Punkts (115) liegt bei 0,3374, seine Guete bei "
+        "0,2708 - **Faktor 1,25** statt 1,03. Mit der Live-Guete waeren es "
+        "1,18; die sauberste Paarung ist der gepflegte Punkt durchgehend. "
+        "**Und der Satz daneben war auch falsch**: Dort stand 'Die effektive "
+        "Stichprobe dieses Kandidaten ist nicht gemessen' - fuer den "
+        "Bestenlisten-Eintrag richtig, aber es las sich wie 'das Projekt "
+        "kennt sie nicht'. 'research.referenz.SPOTPUNKT' fuehrt sie seit "
+        "langem (156 Trades, 115 effektiv), **und derselbe Befehl benutzt "
+        "sie zehn Zeilen weiter** fuer die Tabelle 'Was Weitersuchen an der "
+        "Linie verschiebt'. Die Zahl lag in der Hand und ging nicht in die "
+        "Schlagzahl ein. **Gebaut**: 'Budget.am_betriebspunkt' rechnet Latte "
+        "und Faktor durchgehend aus einem Punkt - ein Protokoll statt eines "
+        "Imports, damit das Modul rechnet und der Aufrufer entscheidet -, "
+        "der Befehl uebergibt 'SPOTPUNKT' und importiert ihn nur noch "
+        "einmal, und beide rohen Faktoren bleiben stehen, jetzt ausdruecklich "
+        "als Untergrenzen benannt. Dreizehn Zusicherungen, darunter die "
+        "Gegenproben, dass eine kleinere Stichprobe und mehr Versuche die "
+        "Latte heben, dass ohne Guete 'None' und nicht Null herauskommt, und "
+        "dass 'am_betriebspunkt' die Latte **nicht** selbst rechnet, sondern "
+        "'noetig_bei' fragt - es gibt keine zweite Formel und keinen "
+        "Abschlag. Dazu die Altzahl in 'spotguete' datiert (1,15/1,08 sind "
+        "die Zahlen von Befund 126, heute 1,10 und 1,03). **Gelockert ist "
+        "nichts, und dieser Fund zeigt nach oben**: Der Abstand ist groesser "
+        "als gemeldet, nicht kleiner - die Latte selbst bewegt sich nicht, "
+        "sie wird nur richtig genannt",
+        486,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
