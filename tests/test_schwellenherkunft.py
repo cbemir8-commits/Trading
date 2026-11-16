@@ -85,6 +85,18 @@ def _felder_mit_doc() -> dict[str, str]:
 
 
 class TestJedeSchwelleSagtWoherSieKommt:
+    def test_es_gibt_ueberhaupt_schwellen_zu_pruefen(self) -> None:
+        """**Nichtleere-Zusicherung** (Befund 479/501). Die Regel darunter
+        sagt "keine steht ohne ein Wort da" - und das ist fuer die leere
+        Menge wahr. Findet ``_felder_mit_doc`` eines Tages nichts mehr, weil
+        die Klasse umgebaut oder umbenannt wurde, bestaende sie weiter und
+        prueefte nichts. Genau so ist in Befund 479 die Wache auf den
+        Versuchszaehler verstummt.
+        """
+        felder = _felder_mit_doc()
+
+        assert len(felder) >= 8, sorted(felder)
+
     def test_keine_steht_ohne_ein_wort_da(self) -> None:
         ohne = sorted(n for n, d in _felder_mit_doc().items() if not d.strip())
 

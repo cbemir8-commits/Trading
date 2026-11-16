@@ -44794,3 +44794,69 @@ weil jede Zusicherung ihre Zahl selbst nennen soll. Und nicht ``strategies``,
 das ist dieses Laborbuch.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl.
+
+## Fuenfhunderteins. Zwei Wachen konnten verstummen
+
+Befund 479 endet mit einer Zahl, die seither offenstand: *"Ich habe die **28**
+Testkoepfe gezaehlt, die Vollstaendigkeit oder Einzigkeit behaupten, und mir
+den folgenreichsten angesehen."* Angesehen war einer - die Wache auf den
+Versuchszaehler, die auf der leeren Menge still bestand. Die anderen nicht.
+
+Dieser Befund sieht die uebrigen an, und zwar nach der **Fehlerform** statt
+nach dem Kopftext: Eine Zusicherung besteht still, wenn ihre
+Grundgesamtheit aus dem Baum kommt (``rglob``, ``read_text``, ``ast.walk``,
+ein Melder) **und** ihre Form auf der leeren Menge wahr ist (``<=``,
+``== []``, ``not any``) **und** nichts zusichert, dass die Suche etwas
+findet.
+
+### Der Trichter, und er hat mich dreimal korrigiert
+
+    Zusicherungen mit leerfester Form                495
+    davon mit Grundgesamtheit aus dem Baum            77
+    davon ohne jede Nichtleere in ihrer Datei          3
+    davon wirklich ungesichert                         2
+
+Jede Stufe war eine Berichtigung an meinem eigenen Erkenner:
+
+* **495 war zu breit.** Die meisten ``== []`` pruefen ein *erwartetes* leeres
+  Ergebnis auf festen Eingaben - "dieser Unsinn ergibt kein Genom". Das kann
+  nicht verstummen.
+* **77 war zu breit.** Viele Abwesenheitsregeln haben ihre Nichtleere als
+  **eigenen Test** daneben, so wie 479 es eingefuehrt hat; mein Erkenner sah
+  nur in dieselbe Funktion.
+* **3 war zu breit.** ``test_versuchskosten`` traegt seine Gegenprobe seit dem
+  eigenen Befund - ``assert self._im_code(pfad) != []``, und ``!= []`` kannte
+  mein Muster nicht.
+
+### Die zwei echten
+
+**``test_schwellenherkunft``** sagt "keine Schwelle steht ohne ein Wort da" -
+und das ist fuer die leere Menge wahr. Faende ``_felder_mit_doc`` eines Tages
+nichts mehr, weil ``GateThresholds`` umgebaut oder umbenannt wird, bestaende
+die Regel weiter. Jetzt steht die Nichtleere daneben: mindestens acht Felder.
+
+**``test_vereinheitlichung``** sucht mit einem regulaeren Ausdruck nach einem
+Zulassungspfad, der die vereinheitlichte Streuung als **Eingabe** nimmt - das
+blockierende Gate haengt daran. Wird das Feld einmal umbenannt, trifft das
+Muster nichts mehr und die Regel meldet Ruhe. Jetzt prueft eine Gegenprobe,
+dass der Melder eine eingebaute Stelle findet, und dass sein Muster dasselbe
+ist wie in der Regel.
+
+### Und die Gegenprobe hat sich selbst gefunden
+
+Der erste Entwurf schrieb den verbotenen Ausdruck als Zeichenkette in die
+Gegenprobe - woraufhin die Regel darueber **diese Testdatei** meldete.
+Dieselbe Selbstwiderlegung wie bei GELESEN in Befund 295, und zum dritten Mal
+in diesem Dutzend Befunde (nach dem Docstring in 492 und dem ``json`` in 497).
+Die Probe wird jetzt zur Laufzeit zusammengesetzt.
+
+### Warum der Erkenner keine Regel wird
+
+Er hat in einem Zyklus **drei** Berichtigungen gebraucht, und die letzte Stufe
+hatte noch einen Falschtreffer von drei. Eine heuristische Wache braucht eine
+gepflegte Ausnahmeliste, und die waere die naechste, die altert (Befund 485).
+Also steht hier die **Messung** mit ihren Zahlen, damit sie wiederholbar ist -
+und nicht eine Regel, die ich selbst nicht ohne Liste betreiben kann.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl -
+zwei Wachen pruefen wieder etwas.

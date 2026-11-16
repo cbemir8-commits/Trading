@@ -193,6 +193,34 @@ class TestDasGateNimmtSieNicht:
             and muster.search(datei.read_text(encoding="utf-8"))
         ]
         assert verdacht == []
+        assert len(list(Path(".").glob("**/*.py"))) > 50, "nichts durchsucht"
+
+    def test_der_melder_wuerde_eine_neue_stelle_sehen(self) -> None:
+        """**Gegenprobe zur Abwesenheit** (Befund 479/501). Die Regel darueber
+        besteht auch, wenn das Muster nichts mehr trifft - etwa weil das Feld
+        einmal umbenannt wird. Dann meldete sie Ruhe, wo niemand mehr
+        hinsieht; genau so ist in 479 die Wache auf den Versuchszaehler
+        verstummt. Hier wird deshalb geprueft, dass der Melder eine
+        eingebaute Stelle wirklich findet.
+        """
+        import re
+
+        # **Die Probe wird zusammengesetzt, nicht hingeschrieben.** Der erste
+        # Entwurf stellte den verbotenen Ausdruck als Zeichenkette hierher -
+        # und die Regel darueber fand daraufhin **diese Datei**. Dieselbe
+        # Selbstwiderlegung wie bei GELESEN in Befund 295, und zum dritten
+        # Mal in diesem Dutzend Befunde.
+        feld = "sharpe_" + "variance"
+        wert = "vereinheit" + "licht"
+        muster = re.compile(feld + r"\s*=[^)\n]*" + wert)
+
+        assert muster.search(f"    {feld}=lage.{wert}(),\n")
+        assert muster.search(f"{feld} = {wert}")
+        assert not muster.search(f"{feld}=1.0 / (n - 1)")
+        assert muster.pattern == r"sharpe_variance\s*=[^)\n]*vereinheitlicht", (
+            "das Muster muss dasselbe sein wie in der Regel darueber - sonst "
+            "prueft die Gegenprobe etwas anderes"
+        )
 
     def test_das_urteil_sagt_beides(self, lage: Vereinheitlichung) -> None:
         """Die Zahl **und** die Ablehnung. Eine Zahl ohne Urteil waere eine

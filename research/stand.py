@@ -8482,6 +8482,52 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Zusicherung ihre Zahl selbst nennen soll. **Gelockert ist nichts**",
         500,
     ),
+    # Befund 501: die offene Zahl aus 479 - 28 Vollstaendigkeitskoepfe, einer
+    # angesehen. Hier sind die uebrigen nach der Fehlerform geprueft.
+    Richtung(
+        "Zwei Wachen konnten verstummen",
+        "Befund 479 endet mit einer Zahl, die seither offenstand: *'Ich habe "
+        "die 28 Testkoepfe gezaehlt, die Vollstaendigkeit oder Einzigkeit "
+        "behaupten, und mir den folgenreichsten angesehen.'* Dieser Befund "
+        "sieht die uebrigen an - nach der **Fehlerform** statt nach dem "
+        "Kopftext: Eine Zusicherung besteht still, wenn ihre Grundgesamtheit "
+        "aus dem Baum kommt, ihre Form auf der leeren Menge wahr ist ('<=', "
+        "'== []', 'not any') und nichts zusichert, dass die Suche etwas "
+        "findet. **Der Trichter**: 495 Zusicherungen mit leerfester Form, "
+        "davon 77 mit Grundgesamtheit aus dem Baum, davon 3 ohne jede "
+        "Nichtleere in ihrer Datei, davon **2 wirklich ungesichert**. Jede "
+        "Stufe war eine Berichtigung an meinem eigenen Erkenner: 495 war zu "
+        "breit (die meisten '== []' pruefen ein **erwartetes** leeres "
+        "Ergebnis auf festen Eingaben und koennen nicht verstummen), 77 war "
+        "zu breit (viele Abwesenheitsregeln haben ihre Nichtleere als "
+        "eigenen Test daneben, so wie 479 es eingefuehrt hat), und 3 war zu "
+        "breit ('test_versuchskosten' traegt seine Gegenprobe seit dem "
+        "eigenen Befund - 'assert self._im_code(pfad) != []', und '!= []' "
+        "kannte mein Muster nicht). **Die zwei echten**: "
+        "'test_schwellenherkunft' sagt 'keine Schwelle steht ohne ein Wort "
+        "da' - wahr fuer die leere Menge, und faende '_felder_mit_doc' nach "
+        "einem Umbau von GateThresholds nichts mehr, bestaende die Regel "
+        "weiter; jetzt steht die Nichtleere daneben (mindestens acht "
+        "Felder). Und 'test_vereinheitlichung' sucht per regulaerem Ausdruck "
+        "nach einem Zulassungspfad, der die vereinheitlichte Streuung als "
+        "**Eingabe** nimmt - daran haengt das blockierende Gate; wird das "
+        "Feld umbenannt, trifft das Muster nichts und die Regel meldet Ruhe. "
+        "Jetzt prueft eine Gegenprobe, dass der Melder eine eingebaute "
+        "Stelle findet und dass sein Muster dasselbe ist wie in der Regel. "
+        "**Und die Gegenprobe hat sich selbst gefunden**: Der erste Entwurf "
+        "schrieb den verbotenen Ausdruck als Zeichenkette hin, woraufhin die "
+        "Regel die Testdatei meldete - dieselbe Selbstwiderlegung wie GELESEN "
+        "in 295, zum dritten Mal in diesem Dutzend (nach dem Docstring in 492 "
+        "und dem 'json' in 497); die Probe wird jetzt zur Laufzeit "
+        "zusammengesetzt. **Warum der Erkenner keine Regel wird**: Er hat in "
+        "einem Zyklus drei Berichtigungen gebraucht und auf der letzten Stufe "
+        "noch einen Falschtreffer von drei. Eine heuristische Wache braucht "
+        "eine gepflegte Ausnahmeliste, und die waere die naechste, die "
+        "altert (485). Also steht die **Messung** mit ihren Zahlen im "
+        "Laborbuch, wiederholbar, und keine Regel, die ich ohne Liste nicht "
+        "betreiben kann. **Gelockert ist nichts**",
+        501,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
