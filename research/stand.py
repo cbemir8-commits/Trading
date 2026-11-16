@@ -8410,6 +8410,47 @@ BEHOBEN: tuple[Richtung, ...] = (
         "drei weitere. **Gelockert ist nichts**",
         498,
     ),
+    # Befund 499: Mein Abgleich aus 498 ging ueber Namen und hat eine zweite
+    # Abschrift uebersehen - und eine dritte lag daneben.
+    Richtung(
+        "Es war eine Abschrift mehr",
+        "**Mein Befund 498 war unvollstaendig.** Er hat die Zweitschrift der "
+        "acht gescheiterten Eigenbauten nachgezogen und dabei ueber **Namen** "
+        "verglichen. Im selben Modul stehen dieselben acht Messungen noch "
+        "einmal, unter **Kurznamen** - 'Enge breit' gegen 'Enge vor Bewegung "
+        "breit', 'Ueberverkauft' gegen 'Ueberverkauft ohne Trendfilter'. Ein "
+        "Namensabgleich findet sie nicht, also standen dort die vier alten "
+        "Zahlen weiter. **Gezaehlt sind es vier Abschriften**: das "
+        "Verzeichnis 'state/trials.json' (vom Buchungsweg geschrieben), "
+        "'ausschluss.GESCHEITERTE_EIGENBAUTEN' (acht Zeilen, in 498 "
+        "nachgezogen), 'ausschluss.GEMESSENE_REGELN' (22 Zeilen mit rho) und "
+        "'auftragslage.KATALOGPUNKTE' (22 Paare). Die vierte ist gemessen "
+        "**identisch** mit der Projektion der dritten, einschliesslich der "
+        "vier abgedrifteten Zahlen - gefunden nicht durch Nachdenken, sondern "
+        "durch die Suche nach der Zeichenfolge '0.223766' im ganzen Baum. Das "
+        "ist die Lehre: Wer eine Abschrift berichtigt, sucht nach der **Zahl** "
+        "und nicht nach dem Namen. **Gebaut**: Die vier Zahlen in "
+        "'GEMESSENE_REGELN' stehen auf dem Stand des Verzeichnisses; "
+        "'KATALOGPUNKTE' ist **abgeleitet** statt abgeschrieben, womit vier "
+        "Stellen drei sind und die abgeleitete nicht mehr abdriften kann "
+        "(kein Importzyklus - 'ausschluss' zieht auf Modulebene nur "
+        "'aussetzer'); und der Abgleich laeuft ueber die **Trade-Zahl**, die "
+        "in beiden Tafeln eindeutig ist - die Eindeutigkeit ist selbst eine "
+        "Zusicherung, denn bei einer Kollision verglichen die Regeln still "
+        "die falschen Paare. **Was es aendert: nichts Gedrucktes.** Die "
+        "Gerade durch die 22 Punkte, auf der die Streuungsschaetzung im "
+        "Auftrag steht, bewegt sich um 1,8e-8 in der Steigung und 5,4e-6 im "
+        "Achsabschnitt - auf vier Stellen identisch. Der Wert liegt darin, "
+        "dass eine Abschrift weg ist und die beiden verbliebenen verglichen "
+        "werden; vorher konnten drei von vier Stellen still abdriften. **Und "
+        "ein Fehler in meiner eigenen Wache aus 498**: Sie teilte die Datei "
+        "am ersten Vorkommen des Namens, und mein neuer Kommentar nennt ihn "
+        "weiter oben - sie sah den falschen Block. Sie greift jetzt ueber den "
+        "Syntaxbaum auf den Kommentarblock **vor der Zuweisung**; eine Wache, "
+        "die an der Reihenfolge im Text haengt, verliert genau die Datei, die "
+        "sich aendert (282, 479, 491, 492, 496). **Gelockert ist nichts**",
+        499,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -8437,8 +8478,12 @@ OFFEN: tuple[Richtung, ...] = (
         "aufschlussreichsten Zahlen, die das Projekt hat. **Nicht meine "
         "Entscheidung**: Beide Wege sind vertretbar, und der eine loescht "
         "gemessene Zahlen. Bis sie fallt, bleibt die Liste - geprueft gegen "
-        "das Verzeichnis",
+        "das Verzeichnis. **In Befund 499 wieder beruehrt und unveraendert "
+        "offen**: Dort kam eine zweite Abschrift dazu und eine dritte fiel "
+        "weg, aber die Frage, ob der Rueckfall ueberhaupt richtig ist, hat "
+        "das nicht bewegt - sie bleibt eine Entscheidung des Nutzers",
         498,
+        zuletzt=499,
     ),
     # Aufgeworfen von 492: beim Nachsehen gemessen, nicht entschieden - wo
     # eine Zeile hingehoert, ist eine Entscheidung ueber den Berichtskopf.

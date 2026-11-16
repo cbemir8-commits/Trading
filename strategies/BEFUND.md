@@ -44683,3 +44683,66 @@ Namen und drei weitere. Kein Fund, und es gehoert dazugesagt.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl -
 vier Zahlen sind auf den Stand der Messung gezogen.
+
+## Vierhundertneunundneunzig. Es war eine Abschrift mehr
+
+**Mein Befund 498 war unvollstaendig.** Er hat die Zweitschrift der acht
+gescheiterten Eigenbauten nachgezogen und dabei ueber **Namen** verglichen.
+Zwei Zeilen weiter oben, im selben Modul, stehen dieselben acht Messungen
+noch einmal - unter **Kurznamen**:
+
+    GESCHEITERTE_EIGENBAUTEN      GEMESSENE_REGELN
+    Enge vor Bewegung breit       Enge breit
+    Ueberverkauft ohne Trendfilter Ueberverkauft
+    Rueckkehr zum Volumen...breit Rueckkehr VWAP breit
+
+Ein Namensabgleich findet sie nicht. Also standen dort die vier alten Zahlen
+weiter, genau die, die ich einen Befund vorher berichtigt hatte.
+
+### Gezaehlt: vier Abschriften
+
+    state/trials.json                    das Verzeichnis, vom Buchungsweg
+    ausschluss.GESCHEITERTE_EIGENBAUTEN  acht Zeilen (498 nachgezogen)
+    ausschluss.GEMESSENE_REGELN          22 Zeilen mit rho, Kurznamen
+    auftragslage.KATALOGPUNKTE           22 Paare
+
+Die vierte ist gemessen **identisch** mit der Projektion der dritten - 22 von
+22 Paaren, einschliesslich der vier abgedrifteten Zahlen. Gefunden wurde sie
+nicht durch Nachdenken, sondern durch die Suche nach der Zeichenfolge
+``0.223766`` im ganzen Baum. Das ist die Lehre: Wer eine Abschrift
+berichtigt, sucht nach der Zahl, nicht nach dem Namen.
+
+### Gebaut
+
+* Die vier Zahlen in ``GEMESSENE_REGELN`` stehen auf dem Stand des
+  Verzeichnisses.
+* ``KATALOGPUNKTE`` ist **abgeleitet** statt abgeschrieben - vier Stellen sind
+  damit drei, und die abgeleitete kann nicht mehr abdriften. Kein Importzyklus:
+  ``ausschluss`` zieht auf Modulebene nur ``aussetzer``.
+* Der Abgleich laeuft jetzt ueber die **Trade-Zahl**. Sie ist in beiden Tafeln
+  eindeutig - gemessen, und die Eindeutigkeit ist selbst eine Zusicherung,
+  denn bei einer Kollision verglichen die Regeln still die falschen Paare.
+
+### Was es aendert: nichts Gedrucktes
+
+Wieder gemessen statt vermutet. Die Gerade durch die 22 Punkte, auf der die
+Streuungsschaetzung im Auftrag steht, bewegt sich um **1,8e-8** in der
+Steigung und **5,4e-6** im Achsabschnitt - auf vier Stellen gerundet
+identisch. Im Auftragstext aendert sich keine Zahl.
+
+Der Wert liegt woanders: Eine Abschrift ist weg, und die beiden verbliebenen
+werden verglichen. Vorher waren es vier Stellen, von denen drei still
+abdriften konnten.
+
+### Und ein Fehler in meiner eigenen Wache aus 498
+
+Sie prueft, dass der Kommentar der Liste seine widerlegte Begruendung nicht
+mehr traegt - und teilte die Datei dafuer **am ersten Vorkommen des Namens**.
+Mein neuer Kommentar zu ``GEMESSENE_REGELN`` nennt den Namen weiter oben, und
+damit sah die Wache den falschen Block. Sie greift jetzt ueber den
+Syntaxbaum auf den Kommentarblock **vor der Zuweisung**. Eine Wache, die an
+der Reihenfolge im Text haengt, verliert genau die Datei, die sich aendert -
+und das ist dieselbe Bauart, gegen die 282, 479, 491, 492 und 496 gebaut sind.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl -
+vier Zahlen sind auf den Stand der Messung gezogen.

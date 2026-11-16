@@ -65,6 +65,16 @@ MINDESTBELEG = 4
 #: Walk-Forward ueber 22 Genome nur fuer einen Auftragstext waere Rechenzeit
 #: fuer nichts. Nachzurechnen sind sie mit ``cli anwaerter`` und ``cli
 #: partner``; weicht etwas ab, ist diese Liste falsch und nicht die Messung.
+#:
+#: **Acht davon stehen im Versuchsverzeichnis, und vier waren abgedriftet**
+#: (Befund 499). Die letzten acht Zeilen sind dieselben Regeln wie in
+#: ``GESCHEITERTE_EIGENBAUTEN``, nur unter Kurznamen - "Enge breit" gegen
+#: "Enge vor Bewegung breit". Weil die Namen nicht zusammenpassen, hat der
+#: Abgleich aus Befund 498 sie nicht erfasst: Dort wurde **eine** Abschrift
+#: nachgezogen, diese blieb stehen. Jetzt vergleicht
+#: ``test_ausschlussabgleich`` ueber die **Trade-Zahl**, die in beiden
+#: Tafeln eindeutig ist, und die vier Zahlen stehen auf dem Stand des
+#: Verzeichnisses.
 GEMESSENE_REGELN: tuple[tuple[str, int, float, float | None], ...] = (
     ("Luecke", 258, -0.0368, None),
     ("VWAP-short", 185, -0.1113, -0.536),
@@ -84,10 +94,10 @@ GEMESSENE_REGELN: tuple[tuple[str, int, float, float | None], ...] = (
     ("Volumenschock", 114, 0.158416, 0.396),
     ("Rueckkehr VWAP", 92, -0.120133, 0.063),
     ("Abgriff", 406, -0.120146, 0.129),
-    ("Volumenschock breit", 145, 0.138702, 0.587),
-    ("Rueckkehr VWAP breit", 130, -0.170385, 0.311),
-    ("Ueberverkauft", 133, -0.191948, 0.375),
-    ("Enge breit", 61, 0.223766, 0.437),
+    ("Volumenschock breit", 145, 0.138701, 0.587),
+    ("Rueckkehr VWAP breit", 130, -0.170436, 0.311),
+    ("Ueberverkauft", 133, -0.191881, 0.375),
+    ("Enge breit", 61, 0.223825, 0.437),
 )
 
 #: Die acht selbst gebauten Regeln aus Befund 77 und 83, alle gescheitert.

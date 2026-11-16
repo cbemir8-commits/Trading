@@ -49,6 +49,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from research.ausschluss import GEMESSENE_REGELN
+
 #: Die Fensterkorrelation, ab der ein Vorschlag als "dasselbe Signal" galt.
 #:
 #: **Ueberholt seit Befund 141 und nicht mehr im Auftrag.** Ueber vierzehn
@@ -573,14 +575,13 @@ def aus_messungen(
 #: **Sie sind zweiundzwanzig, und der Auftragstext nannte achtzehn** (Befund
 #: 288). Die Zahl stand als Wort im Text, die Liste ist viermal gewachsen -
 #: derselbe Fehler wie in den Befunden 156 bis 159. Sie wird jetzt gezaehlt.
-KATALOGPUNKTE: tuple[tuple[int, float], ...] = (
-    (258, -0.0368), (185, -0.1113), (156, 0.1894), (124, -0.0469),
-    (109, 0.2231), (106, 0.2160), (101, 0.1649), (67, 0.0833),
-    (58, 0.3074), (56, 0.1067), (53, 0.3185), (51, 0.1342),
-    (50, 0.1377), (36, 0.0576), (18, 0.340522), (114, 0.158416),
-    (92, -0.120133), (406, -0.120146),
-    # Befund 83: vier auf die Ziel-Taktung kalibrierte Regeln.
-    (145, 0.138702), (130, -0.170385), (133, -0.191948), (61, 0.223766),
+#: **Abgeleitet und nicht abgeschrieben** (Befund 499). Hier standen
+#: dieselben 22 Paare noch einmal von Hand - gemessen identisch mit der
+#: Projektion aus ``ausschluss.GEMESSENE_REGELN`` und mit denselben vier
+#: abgedrifteten Zahlen. Vier Abschriften derselben acht Messungen waren es
+#: insgesamt; eine ist damit weg, und die hier kann nicht mehr abdriften.
+KATALOGPUNKTE: tuple[tuple[int, float], ...] = tuple(
+    (trades, sharpe) for _name, trades, sharpe, _rho in GEMESSENE_REGELN
 )
 
 

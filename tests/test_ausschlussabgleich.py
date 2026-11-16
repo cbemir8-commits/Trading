@@ -27,6 +27,25 @@ gescheiterte Regel bleibt gescheitert, und der Auftragstext sagt dasselbe. Der
 Mangel ist die Stille: Waere eine Zahl materiell abgedriftet, waere es genauso
 still geblieben.
 
+Und es war eine Abschrift mehr - Befund 499
+-------------------------------------------
+Der Abgleich aus 498 ging ueber **Namen** und hat deshalb nur eine der
+Abschriften erfasst. Gemessen stehen dieselben acht Messungen an **vier**
+Stellen:
+
+    state/trials.json                   das Verzeichnis, vom Buchungsweg
+    ausschluss.GESCHEITERTE_EIGENBAUTEN acht Zeilen (in 498 nachgezogen)
+    ausschluss.GEMESSENE_REGELN         22 Zeilen mit rho, Kurznamen
+    auftragslage.KATALOGPUNKTE          22 Paare, identisch zur Projektion
+
+In ``GEMESSENE_REGELN`` heissen sie "Enge breit" statt "Enge vor Bewegung
+breit" - **ein Namensabgleich findet sie nicht**, und so standen dort die
+alten vier Zahlen weiter. Die Trade-Zahl ist dagegen in beiden Tafeln
+eindeutig und in jeder Zeile gleich; seit 499 laeuft der Abgleich darueber.
+
+``KATALOGPUNKTE`` ist seit 499 **abgeleitet** statt abgeschrieben - vier
+Stellen sind damit drei.
+
 Was diese Datei tut
 -------------------
 Sie vergleicht die Zweitschrift mit dem Verzeichnis - Namen, Trades und
@@ -150,10 +169,110 @@ class TestDieBegruendungIstNachgezogen:
         keiner: Er beantwortet die Frage, warum die Liste noch da ist, mit
         einem Grund, der nicht mehr gilt.
         """
+        # **Der Kommentarblock vor der Zuweisung**, nicht "alles bis zum
+        # ersten Vorkommen des Namens": Der erste Entwurf teilte den Text so
+        # und fiel, als Befund 499 einen Kommentar davor setzte, der den Namen
+        # nennt. Eine Wache, die an der Reihenfolge im Text haengt, verliert
+        # genau die Datei, die sich aendert.
+        import ast
+
         quelle = (WURZEL / "research" / "ausschluss.py").read_text(
             encoding="utf-8"
         )
-        kopf = quelle.split("GESCHEITERTE_EIGENBAUTEN", 1)[0]
+        zeilen = quelle.splitlines()
+        baum = ast.parse(quelle)
+        zuweisung = next(
+            k
+            for k in baum.body
+            if isinstance(k, ast.AnnAssign)
+            and isinstance(k.target, ast.Name)
+            and k.target.id == "GESCHEITERTE_EIGENBAUTEN"
+        )
+        block: list[str] = []
+        for nr in range(zuweisung.lineno - 2, -1, -1):
+            if not zeilen[nr].startswith("#:"):
+                break
+            block.insert(0, zeilen[nr])
+        kopf = "\n".join(block)
 
+        assert kopf, "die Liste hat keinen Kommentarblock mehr"
         assert "fehlten dem Analysten deshalb vollstaendig" not in kopf
         assert "Rueckfall" in kopf, "wofuer die Liste jetzt da ist, gehoert dazu"
+
+
+class TestAuchDieZweiteTafelStimmt:
+    """**Der Befund, den 498 uebersehen hat.** Der Abgleich dort ging ueber
+    Namen; hier geht er ueber die Trade-Zahl, und erst damit faellt die
+    zweite Abschrift auf."""
+
+    def _paare(self) -> list[tuple[str, int, float, float]]:
+        from research.ausschluss import GEMESSENE_REGELN
+
+        register = {e[1]: (e[0], e[2]) for e in aus_versuchsverzeichnis(VERZEICHNIS)}
+        return [
+            (name, trades, sharpe, register[trades][1])
+            for name, trades, sharpe, _rho in GEMESSENE_REGELN
+            if trades in register
+        ]
+
+    def test_die_trade_zahl_taugt_als_schluessel(self) -> None:
+        """**Erst die Eindeutigkeit, dann der Abgleich.** Gaebe es zwei Zeilen
+        mit derselben Trade-Zahl, verglichen die Regeln darunter die falschen
+        Paare - und zwar still."""
+        from research.ausschluss import GEMESSENE_REGELN
+
+        tafel = [e[1] for e in GEMESSENE_REGELN]
+        register = [e[1] for e in aus_versuchsverzeichnis(VERZEICHNIS)]
+
+        assert len(set(tafel)) == len(tafel), "Trade-Zahl in der Tafel doppelt"
+        assert len(set(register)) == len(register), "im Verzeichnis doppelt"
+
+    def test_es_ueberlappen_welche(self) -> None:
+        """Nichtleere-Zusicherung (Befund 479): Ohne Ueberlappung prueften die
+        Regeln darunter nichts - und genau so war es vor 499 gemeint."""
+        assert len(self._paare()) >= 8, self._paare()
+
+    def test_jede_ueberlappende_zahl_stimmt(self) -> None:
+        schief = [
+            f"{name} ({trades} Trades): Tafel {sharpe}, Verzeichnis {reg}"
+            for name, trades, sharpe, reg in self._paare()
+            if abs(sharpe - reg) > RUNDUNG
+        ]
+
+        assert schief == [], (
+            "weicht vom Versuchsverzeichnis ab - die Messung steht dort, die "
+            f"Tafel wird nachgezogen (Befund 498/499): {schief}"
+        )
+
+
+class TestDieVierteAbschriftIstAbgeleitet:
+    """Eine Abschrift, die gerechnet wird, kann nicht abdriften."""
+
+    def test_katalogpunkte_sind_die_projektion(self) -> None:
+        from research.auftragslage import KATALOGPUNKTE
+        from research.ausschluss import GEMESSENE_REGELN
+
+        assert tuple(
+            (trades, sharpe) for _n, trades, sharpe, _r in GEMESSENE_REGELN
+        ) == KATALOGPUNKTE
+
+    def test_und_stehen_nicht_mehr_als_zahlen_da(self) -> None:
+        """Geprueft am Aufbau: Ein Literal-Tupel waere die Abschrift zurueck."""
+        import ast
+
+        baum = ast.parse(
+            (WURZEL / "research" / "auftragslage.py").read_text(encoding="utf-8")
+        )
+        zuweisung = next(
+            k
+            for k in baum.body
+            if isinstance(k, ast.AnnAssign)
+            and isinstance(k.target, ast.Name)
+            and k.target.id == "KATALOGPUNKTE"
+        )
+
+        assert not isinstance(zuweisung.value, ast.Tuple), (
+            "KATALOGPUNKTE steht wieder als Zahlenliste da - dann driftet sie "
+            "wieder ab (Befund 499)"
+        )
+        assert "GEMESSENE_REGELN" in ast.unparse(zuweisung)
