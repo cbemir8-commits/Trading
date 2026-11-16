@@ -44539,3 +44539,86 @@ Was fehlte, war nicht die Anbindung, sondern die Einheit - und das ist dieser
 Befund.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl.
+
+## Vierhundertsiebenundneunzig. Der Auftrag stand auf einer Datei, die es nicht gibt
+
+``analyst.build_prompt`` fuehrt einen Abschnitt "Was bereits versucht wurde",
+und der Modulkopf nennt seinen Zweck:
+
+    Enthaelt bewusst die **Fehlschlaege mit Zahlen**, nicht nur die Namen der
+    gescheiterten Kandidaten. "Am Kosten-Stresstest gescheitert, Profitfaktor
+    1,08 gegen Schwelle 1,20" laesst sich gezielt angehen; "hat nicht
+    bestanden" nicht.
+
+Gefuellt wird er aus ``state/journal.json``. Diese Datei **existiert nicht**.
+Der Abschnitt sagte das selbst - und zog den falschen Schluss:
+
+    Das Research-Journal ist leer, aber **203 Versuche sind gezaehlt.** ... die
+    Nachweise liegen in einem anderen Verzeichnis und stehen nicht
+    vollstaendig hier.
+
+Die Nachweise liegen in ``state/trials.json`` - **derselben Datei**, aus der
+der Zaehler seine 203 nimmt. Gemessen:
+
+    Zaehler       203
+    mit Eintrag    11   (Kennung, Trades, Sharpe je Trade, Herkunft)
+    Grundstock    192
+
+Darunter die vier aufschlussreichsten Zahlen, die das Projekt hat:
+
+    -0.1201      92  Rueckkehr zum Volumenschwerpunkt
+    -0.1201     406  Abgriff des Vortagestiefs
+    -0.1704     130  Rueckkehr zum Volumenschwerpunkt breit
+    -0.1919     133  Ueberverkauft ohne Trendfilter
+
+Vier Regeln mit plausiblen Namen, gemessen negativ. Genau solche Zeilen sind
+der Grund, warum der Abschnitt existiert - und der Analyst hat sie nie
+gesehen. Ein Vorschlag, der eine davon wiederholt, kostet einen Versuch, und
+der Zaehler faellt nicht.
+
+### Gebaut
+
+``research/versuchsschau.als_auftrag`` macht aus dem Verzeichnis den
+Abschnitt - dieselbe Bauart wie ``auftragslage``, ``ausschluss`` und
+``auftragstakt``: Das Modul, dem die Zahlen gehoeren, schreibt den Satz dazu,
+nicht der Prompt-Bauer. Sortiert nach Guete, damit die Raender zusammenstehen;
+bei mehr als dreissig Eintraegen die besten und schlechtesten fuenfzehn, denn
+die Mitte ist die, aus der am wenigsten zu lernen ist.
+
+Leer, wenn nichts gebucht ist - dann bleibt der Auftrag der von vorher. Ein
+Abschnitt mit Ueberschrift und ohne Zeilen sieht aus wie eine Auskunft und ist
+keine.
+
+Gelesen wird ueber ``versuche.laden``, nicht mit einem eigenen ``json.loads``:
+Der Lader kennt beide Dateiformate und **wirft** bei einem unlesbaren
+Verzeichnis. Ein Standardwert haette die Mehrfachtest-Korrektur ausgehebelt,
+ohne dass ein Lauf stehengeblieben waere - und das ist derselbe Grund, aus dem
+er so gebaut ist.
+
+Alle **drei** Stellen, die einen Auftrag bauen, geben den Abschnitt mit; die
+Regel dazu prueft den **Aufruf**, nicht seinen Wortlaut (Lehre aus 493/496).
+
+### Die Grenze des Befundes
+
+Der Abschnitt ist eine **Auskunft, keine Sperre.** Der Doppelgaengerfilter in
+``parse_proposals`` vergleicht ``genome_id`` - einen Inhaltshash wie
+``66e04da1281c8cd1`` -, das Verzeichnis fuehrt Kennungen wie "Enge vor
+Bewegung". Einen Namen als Kennung im Sinne des Filters zu nehmen waere
+geraten, und geraten wird hier nichts. Zwei Zusicherungen halten die Grenze
+fest: Eine Kennung sperrt keinen Vorschlag, eine ``genome_id`` schon.
+
+Dazu steht es im Auftrag selbst: *"Das ist keine Sperrliste ... Wer hier etwas
+wiederholt, bezahlt es mit einem Versuch."*
+
+### Drei Fehler in meinen eigenen Tests
+
+Alle drei hat die Suite gefunden, keiner hat den Code betroffen:
+
+* Die Lage-Attrappe hatte kein ``als_auftrag`` - ``build_prompt`` ruft es.
+* Die Zusicherung *"kein ``json`` im Helfer"* ist an ihrem **eigenen
+  Docstring** gescheitert, der ``trials.json`` nennt. Dieselbe
+  Selbstwiderlegung wie bei GELESEN in Befund 295, und zum zweiten Mal in
+  diesem Dutzend Befunde. Geprueft wird jetzt der Rumpf ohne Text.
+* Und sie war zu grob: ``json.loads`` ist das Verbotene, nicht das Wort.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl.

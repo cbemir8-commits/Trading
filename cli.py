@@ -1975,6 +1975,7 @@ def _ask_the_analyst(settings, journal_path: Path, intervall) -> list:
         lage=lage,
         ausschluesse=_ausschluesse(),
         takt=_auftragstakt(lage, settings, intervall),
+        verbucht=_verbuchte_versuche(settings),
     )
     save_budget(budget_path, budget)
 
@@ -2201,6 +2202,26 @@ def _auftragslage(zustand: Path):
         # Was traegt, ist die Luecke selbst (beste Guete 2,484 gegen 3,516
         # ueber 18 Messungen), und die steht weiter oben im Auftrag.
     )
+
+
+def _verbuchte_versuche(settings) -> str:
+    """Die gemessenen Versuche mit ihren Zahlen - fuer den Auftrag (Befund 497).
+
+    Der Abschnitt "Was bereits versucht wurde" stand auf
+    ``state/journal.json``, und diese Datei existiert nicht. Die Zahlen liegen
+    in ``state/trials.json`` - derselben Datei, aus der der Zaehler seine Zahl
+    nimmt. Leer, wenn nichts gebucht ist: Dann bleibt der Auftrag, wie er war.
+
+    **Unlesbar ist nicht leer.** Faellt das Verzeichnis mit
+    ``ZaehlerUnlesbarError``, wird hier nichts verschluckt - derselbe Grund
+    wie in ``versuche.laden``: Ein Standardwert haette die
+    Mehrfachtest-Korrektur ausgehebelt, ohne dass ein Lauf stehengeblieben
+    waere.
+    """
+    from research.versuche import laden
+    from research.versuchsschau import als_auftrag
+
+    return als_auftrag(laden(Path(settings.paths.state) / "trials.json"))
 
 
 def _auftragstakt(lage, settings, intervall) -> str:
@@ -4239,6 +4260,7 @@ def vorschlag(
                 journal=[], thresholds=GateThresholds(), lage=lage,
                 ausschluesse=_ausschluesse(),
                 takt=_auftragstakt(lage, settings, intervall),
+                verbucht=_verbuchte_versuche(settings),
             )
         )
         return
@@ -4271,6 +4293,7 @@ def vorschlag(
         client, journal=[], budget=budget, already_tried=bekannt, lage=lage,
         ausschluesse=_ausschluesse(),
         takt=_auftragstakt(lage, settings, intervall),
+        verbucht=_verbuchte_versuche(settings),
     )
     if datei is None:
         save_budget(state / "budget.json", budget)

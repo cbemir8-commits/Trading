@@ -96,7 +96,13 @@ from research.urteilszweige import (
 #: aussieht, ist schlimmer als keine Angabe. Der Satz rechnet also, statt
 #: unbedingt dazustehen - dieselbe Lehre wie bei 'Streuung._richtungssatz'
 #: eine Zeile darueber.
-URTEILSFUNKTIONEN: int = 168
+#: **169 seit 497**: 'versuchsschau.als_auftrag' sagt dem Analysten, was
+#: bereits gemessen wurde - und in mehreren Zweigen, weil ein leeres
+#: Verzeichnis **keinen** Abschnitt ergibt und ein grosses nur seine Raender.
+#: Der erste Zweig ist der Grund, warum er hier auffaellt: Ein Abschnitt mit
+#: Ueberschrift und ohne Zeilen sieht aus wie eine Auskunft und ist keine -
+#: dieselbe Haltung wie in 'auftragstakt.als_auftrag'.
+URTEILSFUNKTIONEN: int = 169
 
 
 def _fn(quelle: str) -> ast.FunctionDef:

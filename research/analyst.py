@@ -230,6 +230,7 @@ def build_prompt(
     lage=None,
     ausschluesse=None,
     takt: str = "",
+    verbucht: str = "",
 ) -> str:
     """Den Auftrag zusammenstellen.
 
@@ -250,6 +251,11 @@ def build_prompt(
     schlaegt der Analyst weiter Regelarten vor, die durchgemessen sind - in
     Befund 83 waren zwei von vier eigenen Vorschlaegen aus einer Familie, die
     Befund 84 dann geschlossen hat.
+
+    ``verbucht`` ist der Abschnitt aus ``versuchsschau.als_auftrag`` und
+    traegt die gemessenen Versuche mit ihren Zahlen herein (Befund 497). Ohne
+    ihn sagt der Auftrag nur, **wie viele** Versuche gezaehlt sind - und genau
+    das ist die Auskunft, die man nicht gezielt angehen kann.
 
     ``takt`` ist der Abschnitt aus ``auftragstakt.als_auftrag`` und schliesst
     die letzte Luecke darin (Befund 432): ``lage`` nennt Trade-Zahl und Sharpe
@@ -307,13 +313,22 @@ def build_prompt(
         # ``state/journal.json`` existiert nicht; die 198 Versuche liegen in
         # ``trials.json``. Wer das Journal leer vorfindet, hat deshalb kein
         # leeres Projekt vor sich, sondern ein anderes Verzeichnis.
+        #
+        # **Und sie stehen jetzt da** (Befund 497). Hier stand der Satz "die
+        # Nachweise liegen in einem anderen Verzeichnis und stehen nicht
+        # vollstaendig hier" - richtig gemeint und in der Sache falsch: Sie
+        # liegen in ``state/trials.json``, derselben Datei, aus der der
+        # Zaehler seine Zahl nimmt, mit Kennung, Trades und Sharpe je Trade.
+        # ``verbucht`` traegt sie herein; ohne das Argument bleibt der
+        # Auftrag, wie er war.
         versuche = getattr(lage, "versuche", 0) or 0
-        if versuche > 0:
+        if verbucht:
+            parts.append(verbucht)
+        elif versuche > 0:
             parts.append(
                 f"Das Research-Journal ist leer, aber **{versuche} Versuche "
                 f"sind gezaehlt.** Dies ist nicht die erste Generation - die "
-                f"Nachweise liegen in einem anderen Verzeichnis und stehen "
-                f"nicht vollstaendig hier. Was bekannt ist, folgt weiter "
+                f"Nachweise stehen nicht hier. Was bekannt ist, folgt weiter "
                 f"unten unter den geschlossenen Richtungen und den bereits "
                 f"gescheiterten Regeln.\n"
             )
@@ -485,6 +500,7 @@ def propose(
     lage=None,
     ausschluesse=None,
     takt: str = "",
+    verbucht: str = "",
 ) -> AnalystResult:
     """Einen Forschungszyklus durchfuehren.
 
@@ -510,6 +526,7 @@ def propose(
         lage=lage,
         ausschluesse=ausschluesse,
         takt=takt,
+        verbucht=verbucht,
     )
 
     response = client.complete(system=SYSTEM_PROMPT, prompt=prompt, max_tokens=max_tokens)

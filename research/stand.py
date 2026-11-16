@@ -8329,6 +8329,50 @@ BEHOBEN: tuple[Richtung, ...] = (
         "Was fehlte, war die Einheit. **Gelockert ist nichts**",
         496,
     ),
+    # Befund 497: Der Abschnitt mit den Fehlschlaegen stand auf einer Datei,
+    # die es nicht gibt - die Zahlen lagen daneben.
+    Richtung(
+        "Der Auftrag stand auf einer Datei, die es nicht gibt",
+        "'analyst.build_prompt' fuehrt einen Abschnitt 'Was bereits versucht "
+        "wurde', und der Modulkopf nennt den Zweck: *'Enthaelt bewusst die "
+        "Fehlschlaege mit Zahlen, nicht nur die Namen der gescheiterten "
+        "Kandidaten.'* Gefuellt wird er aus 'state/journal.json' - und diese "
+        "Datei **existiert nicht**. Der Abschnitt sagte das selbst und zog "
+        "den falschen Schluss: *'die Nachweise liegen in einem anderen "
+        "Verzeichnis und stehen nicht vollstaendig hier.'* Sie liegen in "
+        "'state/trials.json', **derselben Datei**, aus der der Zaehler seine "
+        "203 nimmt. Gemessen: Zaehler 203, davon **11 mit Eintrag** "
+        "(Kennung, Trades, Sharpe je Trade, Herkunft), 192 Grundstock. "
+        "Darunter die vier aufschlussreichsten Zahlen des Projekts - "
+        "'Rueckkehr zum Volumenschwerpunkt' -0,1201 bei 92 Trades, 'Abgriff "
+        "des Vortagestiefs' -0,1201 bei 406, 'Rueckkehr zum "
+        "Volumenschwerpunkt breit' -0,1704 bei 130, 'Ueberverkauft ohne "
+        "Trendfilter' -0,1919 bei 133. Vier Regeln mit plausiblen Namen, "
+        "gemessen negativ, und der Analyst hat sie nie gesehen; ein "
+        "Vorschlag, der eine davon wiederholt, kostet einen Versuch, und der "
+        "Zaehler faellt nicht. **Gebaut**: "
+        "'research/versuchsschau.als_auftrag' macht aus dem Verzeichnis den "
+        "Abschnitt - dieselbe Bauart wie 'auftragslage', 'ausschluss' und "
+        "'auftragstakt', sortiert nach Guete, bei mehr als dreissig "
+        "Eintraegen die Raender. Leer, wenn nichts gebucht ist. Gelesen wird "
+        "ueber 'versuche.laden' und nicht mit einem eigenen 'json.loads': "
+        "Der Lader **wirft** bei einem unlesbaren Verzeichnis, und ein "
+        "Standardwert haette die Mehrfachtest-Korrektur ausgehebelt. Alle "
+        "**drei** Stellen, die einen Auftrag bauen, geben den Abschnitt mit; "
+        "die Regel prueft den Aufruf, nicht seinen Wortlaut (493/496). "
+        "**Die Grenze**: Es ist eine Auskunft, **keine Sperre** - der "
+        "Doppelgaengerfilter vergleicht 'genome_id', einen Inhaltshash, und "
+        "das Verzeichnis fuehrt Kennungen; einen Namen dafuer zu nehmen waere "
+        "geraten. Zwei Zusicherungen halten das fest, und im Auftrag steht "
+        "es auch. **Drei Fehler in meinen eigenen Tests**, alle von der Suite "
+        "gefunden und keiner im Code: eine Lage-Attrappe ohne 'als_auftrag'; "
+        "eine Zusicherung, die an ihrem **eigenen Docstring** scheiterte, "
+        "weil der 'trials.json' nennt (dieselbe Selbstwiderlegung wie GELESEN "
+        "in 295, zum zweiten Mal in diesem Dutzend); und dieselbe "
+        "Zusicherung zu grob - verboten ist 'json.loads', nicht das Wort. "
+        "**Gelockert ist nichts**",
+        497,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
