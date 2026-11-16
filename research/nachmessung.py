@@ -523,6 +523,14 @@ ENTSCHEIDUNGSBEGRIFFE: dict[str, tuple[str, ...]] = {
 }
 
 BEGRIFFE: dict[str, tuple[str, ...]] = {
+    # Befund 498: Wer diese Richtung weitermisst, schreibt ueber die
+    # Zweitschrift, den Zaehler und den Rueckfall - nicht ueber "Eigenbauten".
+    "Darf es gescheiterte Regeln ohne den Versuchszaehler geben?": (
+        "GESCHEITERTE_EIGENBAUTEN",
+        "Zweitschrift",
+        "Rueckfall",
+        "ZaehlerUnlesbarError",
+    ),
     # Befund 492: Wer diese Richtung weitermisst, schreibt ueber die Feinzeile,
     # den Pin der Feinreihe und den Kopf, in den sie nicht mehr passt.
     "Die Feinzeile ist gebaut, geprueft und wird nie gedruckt": (

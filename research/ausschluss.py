@@ -92,19 +92,43 @@ GEMESSENE_REGELN: tuple[tuple[str, int, float, float | None], ...] = (
 
 #: Die acht selbst gebauten Regeln aus Befund 77 und 83, alle gescheitert.
 #:
-#: Sie stehen **nicht** im Journal des Research-Loops, weil sie ausserhalb
-#: davon entstanden sind - und fehlten dem Analysten deshalb vollstaendig.
-#: Genau diese Luecke hat in Befund 83 dazu gefuehrt, dass zwei von vier
-#: Vorschlaegen aus einer Familie kamen, die schon durchgemessen war.
+#: **Ihre Begruendung ist hinfaellig, und vier Zahlen waren falsch** (Befund
+#: 498). Hier stand: *"Sie stehen nicht im Journal des Research-Loops, weil
+#: sie ausserhalb davon entstanden sind - und fehlten dem Analysten deshalb
+#: vollstaendig."* Das galt, bis sie gebucht wurden. Heute stehen alle acht im
+#: **versionierten** Versuchsverzeichnis (``state/trials.json``, Herkunft
+#: ``gen11 partnersuche`` und ``gen12 kalibriert``), und
+#: ``aus_versuchsverzeichnis`` liest sie dort - mit Vorrang vor dieser Liste.
+#:
+#: Geblieben ist eine ungepruefte Zweitschrift, und sie war abgedriftet.
+#: Gemessen gegen das Verzeichnis wichen **vier von acht** Zahlen ab, bis
+#: 6,7e-5:
+#:
+#:     Volumenschock breit                      0,138702  ->  0,138701
+#:     Rueckkehr zum Volumenschwerpunkt breit  -0,170385  -> -0,170436
+#:     Ueberverkauft ohne Trendfilter          -0,191948  -> -0,191881
+#:     Enge vor Bewegung breit                  0,223766  ->  0,223825
+#:
+#: Keine davon bewegt eine Aussage - eine gescheiterte Regel bleibt
+#: gescheitert. Der Mangel ist, dass es niemand verglichen hat: Waere eine
+#: Zahl **materiell** abgedriftet, waere es genauso still geblieben. Die
+#: Zahlen stehen jetzt auf dem Stand des Verzeichnisses, und
+#: ``test_ausschlussabgleich`` vergleicht sie bei jedem Lauf.
+#:
+#: Wofuer die Liste noch da ist: als Rueckfall, wenn das Verzeichnis fehlt
+#: oder leer ist. Ob dieser Rueckfall ueberhaupt richtig ist, ist eine offene
+#: Frage und steht im Register - mit dem Zaehler verschwindet auch die
+#: Mehrfachtest-Korrektur, und acht Fehlschlaege ohne Zaehler sind ein
+#: halber Stand.
 GESCHEITERTE_EIGENBAUTEN: tuple[tuple[str, int, float], ...] = (
     ("Enge vor Bewegung", 18, 0.340522),
     ("Volumenschock mit Fortsetzung", 114, 0.158416),
     ("Rueckkehr zum Volumenschwerpunkt", 92, -0.120133),
     ("Abgriff des Vortagestiefs", 406, -0.120146),
-    ("Volumenschock breit", 145, 0.138702),
-    ("Rueckkehr zum Volumenschwerpunkt breit", 130, -0.170385),
-    ("Ueberverkauft ohne Trendfilter", 133, -0.191948),
-    ("Enge vor Bewegung breit", 61, 0.223766),
+    ("Volumenschock breit", 145, 0.138701),
+    ("Rueckkehr zum Volumenschwerpunkt breit", 130, -0.170436),
+    ("Ueberverkauft ohne Trendfilter", 133, -0.191881),
+    ("Enge vor Bewegung breit", 61, 0.223825),
 )
 
 

@@ -44622,3 +44622,64 @@ Alle drei hat die Suite gefunden, keiner hat den Code betroffen:
 * Und sie war zu grob: ``json.loads`` ist das Verbotene, nicht das Wort.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl.
+
+## Vierhundertachtundneunzig. Die Zweitschrift war abgedriftet
+
+``ausschluss.GESCHEITERTE_EIGENBAUTEN`` haelt acht gescheiterte Regeln mit
+Trades und Sharpe je Trade. Ihre Begruendung stand im Kommentar daneben:
+
+    Sie stehen **nicht** im Journal des Research-Loops, weil sie ausserhalb
+    davon entstanden sind - und fehlten dem Analysten deshalb vollstaendig.
+
+Das galt, bis sie gebucht wurden. Heute stehen alle acht im **versionierten**
+Versuchsverzeichnis ``state/trials.json``, Herkunft ``gen11 partnersuche`` und
+``gen12 kalibriert``, und ``_ausschluesse`` liest sie dort:
+
+    gescheiterte = gemessen or GESCHEITERTE_EIGENBAUTEN
+
+Das Verzeichnis hat Vorrang und ist eine **Obermenge** - elf gegen acht. Die
+Liste ist damit eine Zweitschrift, und sie war abgedriftet:
+
+    Volumenschock breit                      0,138702  ->  0,138701
+    Rueckkehr zum Volumenschwerpunkt breit  -0,170385  -> -0,170436
+    Ueberverkauft ohne Trendfilter          -0,191948  -> -0,191881
+    Enge vor Bewegung breit                  0,223766  ->  0,223825
+
+Vier von acht, bis 6,7e-5. Die Trades stimmen alle.
+
+### Was das wert ist - und was nicht
+
+**Keine dieser Zahlen bewegt eine Aussage.** Eine gescheiterte Regel bleibt
+gescheitert, und weil das Verzeichnis Vorrang hat, stand im Auftragstext
+ohnehin die Zahl aus dem Verzeichnis. Die Korrektur aendert **heute keine
+Ausgabe** - gemessen am Rauchtest, nicht vermutet.
+
+Der Mangel ist die Stille. Niemand hat die beiden Staende verglichen, und
+waere eine Zahl **materiell** abgedriftet, waere es genauso still geblieben.
+Das ist dieselbe Lage wie in Befund 495: Ein Feld war da, es stand nur etwas
+Falsches darin, und keine Regel sah hin.
+
+``test_ausschlussabgleich`` vergleicht sie jetzt bei jedem Lauf - Namen,
+Trades und Zahlen, ohne Uebersprung, weil beide Staende im Repository liegen.
+Die Richtung ist festgelegt: Das **Verzeichnis** ist die Quelle. Es wird vom
+Buchungsweg geschrieben, in dem Augenblick, in dem gemessen wurde; die Liste
+ist von Hand nachgetragen. Wer das umdreht, pflegt die Abschrift und
+berichtigt die Messung.
+
+### Was gemessen und nicht gefunden wurde
+
+**P7 ist gebaut, verdrahtet und gefuellt.** Der Dauerauftrag nennt seit langem
+*"P7: News- und Termin-Overlay ist nie gebaut worden"*. Gemessen: ``data/termine.py``
+hat 533 Zeilen mit ``Terminkalender``, FOMC-Auswertung und Halbierung;
+``BacktestConfig.kalender`` wird an mehr als zehn Stellen in ``cli.py`` ueber
+``_terminkalender(settings)`` gesetzt; und ``referenz/termine.json`` liegt mit
+**138 Terminen** im Repository. Der Punkt ist stale, und zwar in allen drei
+Hinsichten.
+
+**Und die gepflegte Liste verliert nichts.** Die Vermutung, ``gemessen or
+GESCHEITERTE_EIGENBAUTEN`` koenne Fehlschlaege verschlucken, sobald das
+Verzeichnis gefuellt ist, ist gemessen falsch: Das Verzeichnis kennt alle acht
+Namen und drei weitere. Kein Fund, und es gehoert dazugesagt.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl -
+vier Zahlen sind auf den Stand der Messung gezogen.

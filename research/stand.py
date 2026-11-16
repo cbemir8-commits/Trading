@@ -8373,6 +8373,43 @@ BEHOBEN: tuple[Richtung, ...] = (
         "**Gelockert ist nichts**",
         497,
     ),
+    # Befund 498: Die Zweitschrift der gescheiterten Eigenbauten war
+    # abgedriftet, und niemand hat sie mit dem Verzeichnis verglichen.
+    Richtung(
+        "Die Zweitschrift war abgedriftet",
+        "'ausschluss.GESCHEITERTE_EIGENBAUTEN' haelt acht gescheiterte Regeln "
+        "mit Trades und Sharpe je Trade; ihr Kommentar begruendete das so: "
+        "*'Sie stehen nicht im Journal des Research-Loops, weil sie "
+        "ausserhalb davon entstanden sind - und fehlten dem Analysten deshalb "
+        "vollstaendig.'* Das galt, bis sie gebucht wurden. Heute stehen alle "
+        "acht im **versionierten** Versuchsverzeichnis 'state/trials.json' "
+        "(Herkunft 'gen11 partnersuche', 'gen12 kalibriert'), und "
+        "'_ausschluesse' liest sie dort mit Vorrang - 'gemessen or "
+        "GESCHEITERTE_EIGENBAUTEN', und das Verzeichnis ist eine Obermenge "
+        "(elf gegen acht). Die Liste ist damit eine Zweitschrift, und sie war "
+        "abgedriftet: **vier von acht** Zahlen wichen ab, bis 6,7e-5 "
+        "('Volumenschock breit' 0,138702 statt 0,138701, 'Rueckkehr zum "
+        "Volumenschwerpunkt breit' -0,170385 statt -0,170436, 'Ueberverkauft "
+        "ohne Trendfilter' -0,191948 statt -0,191881, 'Enge vor Bewegung "
+        "breit' 0,223766 statt 0,223825); die Trades stimmen alle. **Keine "
+        "dieser Zahlen bewegt eine Aussage**, und weil das Verzeichnis "
+        "Vorrang hat, aendert die Korrektur **heute keine Ausgabe** - am "
+        "Rauchtest gemessen. Der Mangel ist die Stille: Waere eine Zahl "
+        "materiell abgedriftet, waere es genauso still geblieben, wie in "
+        "Befund 495. 'test_ausschlussabgleich' vergleicht jetzt Namen, Trades "
+        "und Zahlen bei jedem Lauf, ohne Uebersprung, weil beide Staende im "
+        "Repository liegen; die Richtung ist festgelegt - das Verzeichnis ist "
+        "die Quelle, die Liste wird nachgezogen. **Gemessen und nicht "
+        "gefunden**: P7 ist gebaut, verdrahtet und gefuellt - 'data/termine.py' "
+        "533 Zeilen mit Terminkalender, FOMC und Halbierung, "
+        "'BacktestConfig.kalender' an mehr als zehn Stellen gesetzt, "
+        "'referenz/termine.json' mit **138 Terminen** im Repository. Der "
+        "Dauerlisten-Punkt *'nie gebaut worden'* ist in allen drei Hinsichten "
+        "stale. Ebenso falsch war meine Vermutung, der Vorrang koenne "
+        "Fehlschlaege verschlucken: Das Verzeichnis kennt alle acht Namen und "
+        "drei weitere. **Gelockert ist nichts**",
+        498,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
@@ -8380,6 +8417,29 @@ BEHOBEN: tuple[Richtung, ...] = (
 #: Getrennt von ``GESCHLOSSEN``, weil "gemessen und offen" etwas anderes ist
 #: als "gemessen und zu". Ein Eintrag hier ist eine Zusage, keine Ablage.
 OFFEN: tuple[Richtung, ...] = (
+    # Aufgeworfen von 498: gemessen, aber nicht zu entscheiden - ob ein
+    # Rueckfall ohne Zaehler richtig ist, ist eine Frage an den Nutzer.
+    Richtung(
+        "Darf es gescheiterte Regeln ohne den Versuchszaehler geben?",
+        "Befund 498 hat die Zweitschrift der acht Eigenbauten nachgezogen und "
+        "dabei die Frage freigelegt, wofuer sie noch da ist. Sie ist der "
+        "**Rueckfall**, wenn 'state/trials.json' fehlt oder leer ist - und "
+        "genau dann fehlt auch der **Versuchszaehler**, denn er steht in "
+        "derselben Datei. **Dafuer, sie zu loeschen**: Das Projekt behandelt "
+        "ein unlesbares Verzeichnis als harten Fehler "
+        "('ZaehlerUnlesbarError'), weil die Mehrfachtest-Korrektur daran "
+        "haengt; acht Fehlschlaege ohne Zaehler sind ein halber Stand, und "
+        "ein halber Stand, der sich vollstaendig anfuehlt, ist schlimmer als "
+        "keiner. Dazu ist die Datei **versioniert**, jeder Klon hat sie, und "
+        "der Rueckfall greift damit nur, wenn jemand sie absichtlich leert. "
+        "**Dafuer, sie zu behalten**: Eine gepruefte Abschrift kostet nichts, "
+        "und ohne sie verliert der Auftrag in genau dem Fall die "
+        "aufschlussreichsten Zahlen, die das Projekt hat. **Nicht meine "
+        "Entscheidung**: Beide Wege sind vertretbar, und der eine loescht "
+        "gemessene Zahlen. Bis sie fallt, bleibt die Liste - geprueft gegen "
+        "das Verzeichnis",
+        498,
+    ),
     # Aufgeworfen von 492: beim Nachsehen gemessen, nicht entschieden - wo
     # eine Zeile hingehoert, ist eine Entscheidung ueber den Berichtskopf.
     Richtung(
