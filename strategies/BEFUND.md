@@ -44746,3 +44746,51 @@ und das ist dieselbe Bauart, gegen die 282, 479, 491, 492 und 496 gebaut sind.
 
 **Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl -
 vier Zahlen sind auf den Stand der Messung gezogen.
+
+## Fuenfhundert. Eine messgenaue Zahl steht an einer Stelle
+
+Zwei Befunde hintereinander waren Abschriften derselben acht Messungen: 498
+hat eine nachgezogen, 499 zwei weitere gefunden - eine davon nur, weil ich
+nach der **Zeichenfolge** ``0.223766`` gesucht habe und nicht nach einem
+Namen. Dieser Befund macht aus der Lehre eine Regel.
+
+### Gemessen
+
+Durchsucht sind ``cli.py`` und die rechnenden Ordner nach Gleitkommazahlen mit
+**fuenf oder mehr Dezimalstellen** - der Form, die eine Messung hat und keine
+Schwelle. Eine Schwelle ist 0,3 oder 1,2; 0,138701 ist ein Ergebnis.
+
+    messgenaue Zahlen im Baum                     10
+    davon in mehr als einem Modul                   1
+
+**Eine**, und sie ist keine Messung: ``0.5772156649015329``, die
+Euler-Mascheroni-Konstante, in ``research/gates.py`` und
+``research/wettrennen.py``. Nach 498 und 499 hatte ich mehr erwartet - die
+Familie ist sonst sauber, und das gehoert genauso dazugesagt wie ein Fund.
+
+### Die eine war schon als Abschrift ausgewiesen
+
+Ihr Kommentar in ``wettrennen`` sagte es selbst:
+
+    Euler-Mascheroni, wie in ``gates.deflated_sharpe_ratio``. **Dieselbe
+    Konstante aus demselben Grund** - es ist dieselbe Extremwertrechnung.
+
+Ein Kommentar, der eine Zweitschrift als Zweitschrift benennt, ersetzt den
+Import nicht. Das Modul importiert ohnehin ``GateThresholds`` aus ``gates``;
+jetzt holt es die Zahl von dort mit.
+
+### Die Regel und ihre eigene Falle
+
+Weil die Menge der doppelten Zahlen damit **leer** ist, besteht eine Regel
+darueber immer - die 0-von-0-Falle aus Befund 209 und 479. Geprueft wird
+deshalb beides: dass es messgenaue Zahlen **gibt** (mindestens fuenf, heute
+zehn) und dass keine in zwei Modulen steht. Dazu zwei Gegenproben: dass der
+Erkenner keine Schwellen mitnimmt, und dass die Eulerzahl in ``gates``
+wirklich noch steht - sonst waere die Regel auch erfuellt, wenn jemand die
+Zahl ueberall geloescht haette.
+
+**Nicht geprueft wird ``tests``.** Dort stehen Messungen absichtlich mehrfach,
+weil jede Zusicherung ihre Zahl selbst nennen soll. Und nicht ``strategies``,
+das ist dieses Laborbuch.
+
+**Gelockert ist nichts**: keine Schwelle, kein Gate, keine gepflegte Zahl.

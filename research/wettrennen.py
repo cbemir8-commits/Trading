@@ -127,11 +127,15 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from statistics import NormalDist, fmean, stdev
 
-from research.gates import GateThresholds
+from research.gates import EULER_MASCHERONI, GateThresholds
 
-#: Euler-Mascheroni, wie in ``gates.deflated_sharpe_ratio``. Dieselbe Konstante
-#: aus demselben Grund - es ist dieselbe Extremwertrechnung.
-EULER_MASCHERONI = 0.5772156649015329
+#: Euler-Mascheroni, wie in ``gates.deflated_sharpe_ratio`` - **von dort
+#: geholt** (Befund 500). Hier stand die Zahl ein zweites Mal, mit dem
+#: Kommentar "Dieselbe Konstante aus demselben Grund". Ein Kommentar, der eine
+#: Zweitschrift als Zweitschrift ausweist, ersetzt den Import nicht: Nach den
+#: Befunden 498 und 499 ist die Zahl an einer Stelle das Mindeste, und dieses
+#: Modul importiert ohnehin aus ``gates``.
+__all__ = ["EULER_MASCHERONI"]
 
 ZIEL = GateThresholds().min_deflated_sharpe
 

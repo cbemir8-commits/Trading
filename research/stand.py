@@ -8451,6 +8451,37 @@ BEHOBEN: tuple[Richtung, ...] = (
         "sich aendert (282, 479, 491, 492, 496). **Gelockert ist nichts**",
         499,
     ),
+    # Befund 500: Aus der Lehre von 499 eine Regel - und der Baum ist sonst
+    # sauber.
+    Richtung(
+        "Eine messgenaue Zahl steht an einer Stelle",
+        "Zwei Befunde hintereinander waren Abschriften derselben acht "
+        "Messungen: 498 hat eine nachgezogen, 499 zwei weitere gefunden - "
+        "eine davon nur, weil ich nach der **Zeichenfolge** '0.223766' "
+        "gesucht habe und nicht nach einem Namen. **Gemessen**: Durchsucht "
+        "sind 'cli.py' und die rechnenden Ordner nach Gleitkommazahlen mit "
+        "fuenf oder mehr Dezimalstellen - der Form, die eine Messung hat und "
+        "keine Schwelle (0,3 ist eine Schwelle, 0,138701 ein Ergebnis). Von "
+        "**10** solchen Zahlen stand genau **eine** in zwei Modulen, und sie "
+        "ist keine Messung: '0.5772156649015329', die "
+        "Euler-Mascheroni-Konstante, in 'gates' und 'wettrennen'. Nach 498 "
+        "und 499 hatte ich mehr erwartet; die Familie ist sonst sauber, und "
+        "das gehoert genauso dazugesagt wie ein Fund. **Die eine war schon "
+        "als Abschrift ausgewiesen**: Ihr Kommentar sagte *'Dieselbe "
+        "Konstante aus demselben Grund'* - ein Kommentar, der eine "
+        "Zweitschrift benennt, ersetzt den Import nicht, und das Modul "
+        "importiert ohnehin aus 'gates'. **Die Regel und ihre eigene Falle**: "
+        "Weil die Menge der doppelten Zahlen jetzt leer ist, besteht eine "
+        "Regel darueber immer (die 0-von-0-Falle aus 209/479). Geprueft wird "
+        "deshalb beides - dass es messgenaue Zahlen **gibt** (mindestens "
+        "fuenf, heute zehn) und dass keine zweimal steht -, dazu zwei "
+        "Gegenproben: dass der Erkenner keine Schwellen mitnimmt, und dass "
+        "die Eulerzahl in 'gates' wirklich noch steht, sonst waere die Regel "
+        "auch bei vollstaendigem Loeschen erfuellt. Nicht geprueft wird "
+        "'tests' - dort stehen Messungen absichtlich mehrfach, weil jede "
+        "Zusicherung ihre Zahl selbst nennen soll. **Gelockert ist nichts**",
+        500,
+    ),
 )
 
 #: Wege, die geoeffnet und noch nicht zu Ende gemessen sind.
